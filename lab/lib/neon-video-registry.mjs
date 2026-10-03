@@ -27,7 +27,8 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
           const storage = validatePrivateMedia({ provider: 'vercel-blob',
             pathname: checked.pathname, sha256: checked.sha256, size: checked.size, contentType: checked.contentType });
           return { id: checked.id, sha256: checked.sha256, size: checked.size,
-            extension: checked.contentType.slice(6), classification: checked.classification, addedAt: updatedAt, storage };
+            extension: checked.contentType.slice(6), classification: checked.classification, addedAt: updatedAt, storage,
+            ...(checked.retainedBank ? {retainedBank:checked.retainedBank} : {}) };
         });
       } catch (error) { throw studioStorageFailure(error); }
     },

@@ -194,6 +194,7 @@ export function createStudioRepository({ pool, scope } = {}) {
       return operation(() => ({ id: validateMediaId(id), expectedRevision: validateRevision(expectedRevision), actor: validateActor(actor) }), async prepared => {
         const previous = await loadMedia(prepared.id);
         if (!previous) fail('studio_media_missing', 404);
+        if (previous.retainedBank) fail('studio_retained_media_immutable',410);
         if (previous.revision !== prepared.expectedRevision || previous.sha256 !== sha256) fail('studio_conflict');
         const { revision: oldRevision, updatedAt, ...record } = previous;
         const next = validateStudioMedia({ ...record, classification: metadata }), revision = newRevision('media');

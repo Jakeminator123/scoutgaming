@@ -1,4 +1,32 @@
 import test from 'node:test';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
+import {loadVideoRegistry,getVideoResponse} from '../lib/video-registry.mjs';
+
+test('retained originals join exact families beside current bank bytes without replacing standards',async t=>{
+  const {registry,repository,items}=await fixture(t);
+  for(const tuple of RETAINED_BANK_VARIANTS)await repository.registerMedia(createRetainedStudioMedia(tuple.id),{actor:'explicit-original-import'});
+  const result=await registry.load();assert.equal(result.videos.length,items.length+6);
+  assert.deepEqual(result.families.flatMap(family=>family.standardIds).sort(),items.map(item=>item.id).sort());
+  for(const original of RETAINED_BANK_VARIANTS){
+    const video=result.videos.find(row=>row.id===original.id),family=result.families.find(row=>row.id===original.familyId);
+    assert.equal(video.sha256,original.sha256);assert.equal(video.bytes,original.size);assert.equal(video.retainedBank,true);
+    assert.equal(video.source,'emil');assert.equal(video.familyId,original.familyId);assert.equal(video.role,'variant');
+    assert.equal(video.reviewStatus,'unreviewed');assert.ok(family.variantIds.includes(original.id));
+    const response=await registry.response(original.id,new Request(`https://studio.example.invalid/studio/api/videos/${original.id}`,{method:'HEAD'}));
+    assert.equal(response.status,404,'missing retained bytes must never substitute current same-name bank files');
+  }
+});
+
+test('both registry and byte reader reject a substituted retained tuple before provider access',async t=>{
+  const {env,options}=await fixture(t),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+  const row={id:record.id,sha256:record.sha256,size:record.size,extension:'mp4',classification:record.classification,retainedBank:{...record.retainedBank,familyId:'astrid/deal.player.left/box1'},
+    storage:{provider:'vercel-blob',pathname:record.pathname,sha256:record.sha256,size:record.size,contentType:record.contentType}};
+  let reads=0;
+  const configured={...options,env,readUploads:async()=>[row],readClassifications:async()=>[],blobClient:{get:async()=>{reads++;throw Error('must not read');}}};
+  await assert.rejects(loadVideoRegistry(configured),error=>error.status===503);
+  assert.equal((await getVideoResponse(record.id,new Request(`https://studio.example.invalid/studio/api/videos/${record.id}`),configured)).status,503);
+  assert.equal(reads,0);
+});
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';

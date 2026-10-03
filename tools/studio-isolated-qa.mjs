@@ -74,17 +74,21 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       ['product-v1', createHash('sha256').update(sql).digest('hex'), '{}', new Date().toISOString()]);
     await run('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=studio.croupier-qa.invalid',
       '-addext', 'subjectAltName=DNS:studio.croupier-qa.invalid,DNS:render.croupier-qa.invalid', '-keyout', join(root, 'fixture.key'), '-out', join(root, 'fixture.crt')], { env });
-    const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');
-    const existing = await runStudioPostgresChecks({ pool, restart }); pool = existing.pool;
     const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql',
       'ops/neon-studio/migrations.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
       'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs',
+      'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
       'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
       'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
       'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
     const sourceHashes = async () => Object.fromEntries(await Promise.all(testedSources.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
     const before = await sourceHashes();
+    const retainedUnitOutput = await run(process.execPath, ['--test', join(repository,'test/studio-retained-bank.mjs')], {env});
+    const retainedContractChecks = Number(/# tests (\d+)/.exec(retainedUnitOutput)?.[1]);
+    if (!Number.isSafeInteger(retainedContractChecks) || retainedContractChecks < 4) throw new Error('retained_contract_checks_missing');
+    const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');
+    const existing = await runStudioPostgresChecks({ pool, restart }); pool = existing.pool;
     const { runStudioCutoverChecks } = await import('../test/studio-cutover-integration.mjs');
     const current = await runStudioCutoverChecks({ pool, restart, tls: { key: await readFile(join(root, 'fixture.key')), cert: await readFile(join(root, 'fixture.crt')) } });
     pool = current.pool;
@@ -92,7 +96,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const imported = await runSpeechLedgerImportSqlChecks({ pool, restart }); pool = imported.pool;
     const integrationChecks = [...current.checks, ...imported.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
-    console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
+    console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();
     return { legacyChecks: existing.checks, integrationChecks };
   } finally {

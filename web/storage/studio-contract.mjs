@@ -108,9 +108,49 @@ export function validateDocumentValue(kind, value, revision, { allowLegacyRead =
   } catch { throw new StudioStorageError('studio_invalid_document', 422); }
 }
 
-// Only NEW review uploads. No legacy source/archive catalogue or Blob I/O here.
+// These six saved identities predate the replacement manifest. The exact
+// original Git bytes were checked against this source manifest before retention.
+// Current bank files and saved policies are never renamed or rewritten.
+export const RETAINED_BANK_PROVENANCE = Object.freeze({
+  sourceCommit: '365f283b4005f0ca2f52312f745af9bfe05fa5e3',
+  sourceManifestSha256: '31b92271aeb2a4cda066306cbf2a141ff5201b26c642fd5cec814312747feff7',
+});
+export const RETAINED_BANK_VARIANTS = Object.freeze([
+  { id:'1ee28b41-f9f1-0879-ff42-8ecd604540f5', sha256:'1ee28b41f9f10879ff428ecd604540f537ad2c359fcf4849d7308966c7aaff53', size:599221,
+    originalRelativePath:'deal/deal_pos1/variant/box_1_variant.mp4', familyId:'astrid/deal.player.left/box0', role:'variant' },
+  { id:'9512c0af-c38e-46d3-a4d0-04428d0388db', sha256:'9512c0afc38e46d3a4d004428d0388dbe9113ba84298df8fa1634074049d8061', size:568868,
+    originalRelativePath:'deal/deal_pos2/variant/box_2_variant.mp4', familyId:'astrid/deal.player.left/box1', role:'variant' },
+  { id:'d3dd14f4-3940-5249-b65d-4f6678a54822', sha256:'d3dd14f439405249b65d4f6678a5482295817a36e115a3fc26055609b5356f61', size:1879487,
+    originalRelativePath:'deal/deal_pos4/variant/box_4_varaint.mp4', familyId:'astrid/deal.player.centre/box3', role:'variant' },
+  { id:'c9b09866-50f7-2e05-0301-7e02499f50a2', sha256:'c9b0986650f72e0503017e02499f50a2ff36881999ff5f57c5d0998e05aeda51', size:315478,
+    originalRelativePath:'idle/variant/idle_smile.mp4', familyId:'astrid/idle.ready/ready', role:'variant' },
+  { id:'15748c18-f7b6-912a-639f-55e632db34d3', sha256:'15748c18f7b6912a639f55e632db34d3102a63677a45ec192a591469261c8abd', size:309588,
+    originalRelativePath:'idle/variant/idle_yawn.mp4', familyId:'astrid/idle.ready/ready', role:'variant' },
+  { id:'0b76ac59-cbb8-657b-cf2e-675aa9db71a4', sha256:'0b76ac59cbb8657bcf2e675aa9db71a4cac9753f134562e5b3bd3ddbc02a2ac6', size:4589527,
+    originalRelativePath:'idle/variant/idle_resa_sig.mp4', familyId:'astrid/idle.ready/ready', role:'variant' },
+].map(Object.freeze));
+export function createRetainedStudioMedia(mediaId) {
+  const original = RETAINED_BANK_VARIANTS.find(row => row.id === mediaId);
+  if (!original) throw new StudioStorageError('studio_invalid_retained_media',422);
+  const [,eventId,situation] = original.familyId.split('/');
+  return { id:original.id,sha256:original.sha256,size:original.size,contentType:'video/mp4',
+    pathname:`croupier/media/dealers/astrid/runtime/retained-bank/${original.id}/${original.sha256}.mp4`,
+    retainedBank:{...RETAINED_BANK_PROVENANCE,originalRelativePath:original.originalRelativePath,familyId:original.familyId,role:original.role},
+    classification:{dealerId:'astrid',eventId,kind:eventId==='idle.ready'?'idle':'action',role:'alternative',
+      situation:eventId==='idle.ready'?'':situation,familyId:original.familyId,
+      label:`Bevarat original · ${original.originalRelativePath.split('/').at(-1)}`,notes:''},
+  };
+}
+
+// Review uploads plus an explicit, bounded retention of six exact bank originals.
+// No provider I/O, automatic import or alternate source selection occurs here.
 export function validateStudioMedia(record) {
   const copy = cloneStudioJson(record);
+  if (copy && !Array.isArray(copy) && (Object.hasOwn(copy,'retainedBank') || RETAINED_BANK_VARIANTS.some(row => row.id === copy.id))) {
+    const expected = createRetainedStudioMedia(copy.id);
+    if (canonicalStudioJson(copy) !== canonicalStudioJson(expected)) throw new StudioStorageError('studio_invalid_retained_media',422);
+    return copy;
+  }
   if (!copy || Array.isArray(copy) || Object.keys(copy).sort().join(',') !== 'classification,contentType,id,pathname,sha256,size'
     || !uuid.test(copy.id) || !sha.test(copy.sha256) || !Number.isSafeInteger(copy.size)
     || copy.size < 16 || copy.size > MAX_VIDEO_BYTES || !['video/mp4', 'video/webm'].includes(copy.contentType)) throw new StudioStorageError('studio_invalid_media', 422);

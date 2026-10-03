@@ -7,7 +7,7 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
 native konto-/partner-/authhandlers och tillhörande formulär är implementerade
-på main. Grovt cirka 65 % av sammanslagningen; källbyte, full helhetsacceptans
+på main. Grovt cirka 65–70 % av sammanslagningen; källbyte, full helhetsacceptans
 och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
@@ -27,8 +27,9 @@ Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
 aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
 
 57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
-Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 33
-acceptansgrupper och 33 oförändrade källhashar, plus runnerguard. 85 riktade
+Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 35
+acceptansgrupper och 35 oförändrade källhashar, plus runnerguard. Fyra rena
+retained-media-guards PASS. 85 riktade
 tal-/journal-/Blob-/import-/operatörsprov PASS. SQL-provet täcker sparad revision/CAS,
 konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
 revoke, signerad actor/scope och walletnonce utan dubbel kreditering.
@@ -73,20 +74,34 @@ Det sparade projektet har 18 aktiva bindningar. Tolv matchar exakt dagens
 lokala och inventerade Render-register. Sex bundna UUID saknas i båda:
 `891c432a` den 29 september ersatte klipp med samma filnamn/familj/roll men
 andra bytes, hash och storlek. Det sparade projektet behåller de äldre
-referenserna. Automappning eller ny visuell approval från liknande filnamn
-är inte tillåten; sökning efter exakta originalobjekt/approvalmetadata pågår.
+referenserna. De sex exakta originalvideorna är nu återfunna i `365f283b`:
+6/6 matchar originalhash/storlek och har inget ljud. Detta är identitetsbevis,
+inte ny visuell acceptans. Kodgrunden för bevarande i privat Blob/Neon och
+en strikt resolver för de sex oförändrade bindningarna är verifierad i riktig
+isolerad PostgreSQL/HTTPS/restart: scope, oföränderlighet, exakt återkörning,
+nekad korrupt tuple och beständighet efter omstart PASS. Alla sex original är
+nu uppladdade som nya immutabla privata Blobobjekt: totalt 8 262 169 bytes,
+full återläsning/hashkontroll PASS. Det privata kvittot
+`retained-bank-blob-receipt.json` har `blobReadbackVerified:true`.
+Ingen retained-media-SQL/import i drift är ännu genomförd.
+Liknande filnamn får inte automappas till ersättningsbytes.
 
 Den äldre Neon-QA-databasen har 25 befintliga konton och ska inte återanvändas
 för ett tomt importprov. En separat QA-databas och begränsad roll är nu
-skapade och verifierade med noll tabeller; produktions- och äldre QA-rader är
-oförändrade. Inga scheman, fixtures eller Render-env har applicerats på den
-nya databasen. Detta ersätter inte den lokala SQL-fixturens acceptans ovan.
+skapade. Den nya databasen är nu initierad med checksumverifierad product-v1,
+Studio 001/002/003, en syntetisk administratör och tre neutrala dokument.
+Spelar-, kostnads- och mediestate är tomma; produktions- och äldre QA-rader är
+oförändrade. Render-QA är inte suspenderad enligt aktuell läskontroll;
+health-/aktivitetskontroll pågår före eventuell samordnad kandidatändring.
+Moln-QA/Render-env är inte aktiverade av denna databasförberedelse.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
-Lab-deployen är fortfarande ERROR från cloud-traceguard; rättningen har ett
-nytt lokalt produktionsbygge PASS med 50 sanerade traces, men molnrättningen
-är ännu inte verifierad. Publicerad kod betyder inte produktionskällbyte.
+Senaste [c78e2cbd](https://github.com/Jakeminator123/github-work/commit/c78e2cbd8feff06c9b2b4995cdbefe20f47dc34f)
+är pushad på main efter full hook PASS. Lab-cloudrättningen är fortfarande
+overifierad: traceguardens fel utreds även mot standalonelänkar; senaste lokala
+Lab-produktionsbygge PASS med 50 sanerade traces räcker inte som molnkvitto. Publicerad kod betyder
+inte produktionskällbyte.
 Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
 lokala databaser, QA-underlag och agentstate har noll referenser i de 50
 kontrollerade lokala traces. Spelmediers aktiva
@@ -105,8 +120,30 @@ Jakobs extra städfråga: `services/test` och `services/test/fixtures` finns int
 De faktiska mapparna `services/astrid-gpu-worker/gateway/test` och
 `services/astrid-gpu-worker/tests` används av CI/testskript och manuella
 browser-/benchmarkverktyg. Fyra Node- och fyra Python-filers syntax PASS.
-Rotens fem JavaScript-fixtures är aktiva imports; kamerans HTML-fixture är
-fortsatt manuell QA utan verifierad ersättare. De behålls, inga blindraderingar.
+Rootens `test/fixtures` har sex spårade filer: fem JavaScript-fixtures används
+av auth/server/SQL/stream/camera-/Lab-tester; HTML-filen är manuell syntetisk
+QA utan verifierad ersättare. `test/tools`, `test/ttols`, `test/web` och motsvarande
+vägar under `services/test` finns inte. `tools` och `web` är separata mappar i
+repo-roten, inte under `test`. Inget obsolet raderingsmål hittades; allt behålls.
+
+Jakobs nästa önskemål är en granskad svarskatalog: frågor/text och valda bild-/
+ljudbilagor kopplas till exakt svarstext/audio/video och kategorier som
+hälsning, komplimang, spelregler och tid. Rekommenderad minsta utbyggnad är
+explicit sparning av en Studio-/QA-kandidat, först från färdiga fullfilspaket:
+bytes i samma privata Blob; sökbar text, scope/ägare, ursprung/request, exakt
+paketrevision/hashar, kategori, kontext och granskningsstatus i Neon.
+Återanvändning kräver godkänt biblioteksexemplar och aktuell spelpolicy;
+namn, aktuellt klockslag, rundor och saldo får inte återanvändas globalt.
+Streaming har ännu inget färdigt AV-arkiv och kräver senare exakt capture,
+aldrig betald fullfilsfallback. Ingen automatisk inspelning av alla spelare
+eller ny katalogimplementation är införd. Avvisade/retired biblioteksbytes
+kan tas bort efter referensprov; kostnads-/requestjournaler ska alltid bestå.
+
+Läsgranskningen fann ett återspelningsfel när en signerad body fördröjdes
+förbi nonce-städningen. Rättningen återkontrollerar signaturens tidsfönster
+efter body, auth, låsväntan och SQL före mutation. Samma obetalda repro ger
+nu 403 och en enda originalkreditering; sex riktade kommandoprov PASS.
+Rättningen är en senare arbetsändring än leverans `c78e2cbd` ovan.
 
 Föregående grundkodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
 **avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Då var läget cirka 40 % av den nya
@@ -217,7 +254,7 @@ request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
 runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
 Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg var läget cirka 30 %;
 native integrationsgrund gav då grovt cirka 40 %; aktuell fortsättning är
-cirka 65 % enligt statusen överst.
+cirka 65–70 % enligt statusen överst.
 Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
 Äldre GitHub-/Vercel-kvitton gäller sina angivna SHA, inte automatiskt senaste kodsteget.
 

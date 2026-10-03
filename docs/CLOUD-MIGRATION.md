@@ -46,6 +46,16 @@ löpande; inga nya plandokument eller parallella statuskopior i docs.
   granskningsbibliotek är därför tillåtet som uttryckligt startbeslut, inte som
   tyst fallback vid databasfel. Aktiva spelklipp/baseline, konton/saldo och
   OpenClaw är inte slask. Förbrukade request-/kostnadsjournaler får inte nollställas.
+- **Nästa önskemål, ännu inte implementerat:** en granskad svarskatalog för
+  fråga/text/valda bild- och ljudbilagor plus svarets exakta audio/video.
+  Första steg bör vara explicit Studio-/QA-sparning från färdiga fullfilspaket:
+  privata bytes i befintlig Blob och Neon för sökbar text, scope/ägare,
+  ursprung/request, paketrevision/hashar, kategori, kontext och approval.
+  Hälsning/komplimang/spelregler/tid är etiketter, aldrig ensamma återbruksgates.
+  Endast godkänt biblioteksexemplar får återbrukas mot aktuell sparad spelpolicy;
+  namn, klockslag, rundor/saldo kräver aktuell kontext och får inte globalreusas.
+  Streaming behöver senare exakt AV-capture utan betald fullfilsfallback.
+  Inga automatiska spelararkiv införs; gallring får inte nollställa kostnadsjournaler.
 - En användaryta: `https://www.scoutgaming.tech/studio`, kallad **Croupier Studio**.
   Klipp, event/regler, observation, zoner och administration finns där.
   Lab/BO försvinner som separata användarytor och menybegrepp. Ingen admin-iframe.
@@ -184,7 +194,7 @@ cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
 publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
 och native BO-UI/API bakom avstängd aktivering: cirka 40 %.
 Det pågående fortsättningssteget med gemensam policy, konto-/partner-/authfunktioner
-och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 65 %; riktig
+och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 65–70 %; riktig
 produktionsimport, helhetsacceptans och avveckling är ännu inte verifierade.
 Viktning: kontrakt/åtkomst
 10, beständig Studio-state 20, enkel native
@@ -214,6 +224,13 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Sex av 18 sparade mediebindningar saknar exakt UUID i lokalt/inventerat
     Render-register efter byte av bytes/hash/storlek den 29 september i
     `891c432a`. Samma filnamn/familj/roll är inte importparitet; ingen automappning.
+    De sex exakta originalvideorna är nu återfunna i `365f283b`, med verifierad
+    originalhash/storlek och inget ljud (6/6). Kodgrunden för privat Blob-/Neon-
+    bevarande och strikt metadataresolver är verifierad i riktig isolerad
+    PostgreSQL/HTTPS/restart. Alla sex original är nu uppladdade som nya
+    immutabla privata Blobobjekt, totalt 8 262 169 bytes; full återläsning/SHA
+    PASS. Privat `retained-bank-blob-receipt.json` har `blobReadbackVerified:true`.
+    Ingen retained-media-SQL/import i drift; detta är inte visuell approval.
     P1 är därför inte helt klart.
 - [ ] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
@@ -317,9 +334,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     57 isolerade konto/auth/partner-/UI-prov och Lab-TypeScript PASS, inklusive
     samtidig tokenförbrukning, rollback, origin, roller, kapacitetsgräns och
     engångsresultatens rensning. Aktuellt isolerat PostgreSQL-/HTTPS-/restartprov
-    PASS: 33 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
+    PASS: 35 acceptansgrupper samt runnerns isoleringsguard, däribland dessa
     login/invite/resend/lösenord/logout/roll-revoke-flöden. Ingen verklig
     mailleverans eller produktionsaktivering följer av det provet.
+    Senare kommandorättningen nekar också fördröjd signerad body efter
+    nonce-städning och signatur som gått ut under auth/låsväntan. Ursprungligt
+    obetalt repro ger nu 403/en originalkreditering; sex kommandoprov PASS.
   - [ ] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
     spelarstatus inklusive Render-runtime cancellation; medie-review,
     gemensam spelprojektion och diskfri Studio-start. Den nya exakta tier/idle-
@@ -335,22 +355,26 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
-  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 33 acceptansgrupper samt
+  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 35 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,
     roll-revoke, signerad actor/scope och återspelad walletnonce täcks. Nytt
     anrop med återspelad nonce får 409 och skapar ingen dubbel kreditering.
     Fryst journalimport, samtidiga importer/exakt återkörning efter restart,
     operatörens kvarvarande tredje försök och atomisk kostnads-/QA-rollback
-    täcks också. 33 källhashar är oförändrade under körningen; 85 riktade
+    täcks också. De sex exakta retained-mediernas scope, oföränderlighet,
+    återkörning, korrupt tuple och återläsning efter restart PASS, liksom fyra
+    rena retained-guards. 35 källhashar är oförändrade under körningen; 85 riktade
     tal-/journal-/Blob-/import-/operatörsprov PASS.
     Egna processer, certifikat och temporär databas städas i runnerns finally.
     Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
     Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
-  - En ny separat tom Neon-QA-databas och begränsad roll är skapade; noll
-    tabeller är verifierade. Äldre QA:s 25 konton och produktionsrader är
-    oförändrade. Scheman, fixtures och Render-env på den nya targeten är ännu
-    inte applicerade; det är förberedelse för moln-QA, inte färdigt P6.
+  - Ny separat Neon-QA-databas är initierad med checksumverifierad product-v1,
+    Studio 001/002/003, en syntetisk administratör och tre neutrala dokument.
+    Spelar-/kostnads-/mediestate är tomma. Äldre QA:s 25 konton och produktion
+    är oförändrade. Render-QA är inte suspenderad enligt läskontroll; faktisk
+    health-/aktivitetskontroll pågår före kandidatändring. Ingen moln-QA-
+    aktivering eller nytt Render-env följer av databasförberedelsen.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
@@ -375,13 +399,17 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   - `services/test`/`services/test/fixtures` finns inte. De faktiska GPU-worker-
     testmapparna och rotens importerade JavaScript-fixtures används aktivt;
     kamerans HTML-fixture har ingen verifierad ersättare. Dessa behålls.
+    Alla sex filer i rootens `test/fixtures` är spårade. `test/tools`,
+    `test/ttols`, `test/web` och motsvarande services/test-vägar saknas;
+    `tools`/`web` är separata repo-rootmappar. Inget verifierat obsolete mål raderas.
 - [ ] **P9 — slutleverans:** fem docs uppdaterade, en John-handoff, aktuella
   miljönamn/guide, endast taskägda commits på main, CI och avsedd drift-SHA
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
-    Lab-cloudbygget är ERROR från traceguard; lokalt rättat bygge PASS med 50
-    sanerade traces, men molnrättningen är inte verifierad. Flagga-av-leveransen
+    Senaste kodleverans `c78e2cbd` är pushad efter full hook PASS.
+    Lab-cloudrättningen är ännu overifierad; traceguard/standalonelänkar utreds,
+    medan senaste lokala Lab-produktionsbygget har 50 sanerade traces PASS. Flagga-av-leveransen
     och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
 
 **Körordning:** P1 först. P2 (metadata), P3 (media/journaler) och P4 (UI)

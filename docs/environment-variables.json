@@ -5,6 +5,7 @@
       "sources": [
         "ops/cloud/config.mjs",
         "ops/cloud/start.mjs",
+      "ops/cloud/container-entry.mjs",
         "ops/cloud/vercel-ingress.mjs",
         "ops/cloud/storage-export.mjs",
       "web/operator-speech-qa.mjs",

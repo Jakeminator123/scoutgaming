@@ -9,13 +9,14 @@ test('traced private credentials, local identities and QA state are forbidden on
   for(const path of ['/app/ops/neon-game/product-schema.sql','/app/media/blob-index.json','/app/open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md']) assert.equal(privateBuildSource(path),false);
 });
 
-test('compiler cache links are not traversed; links in packaged output still fail closed',async()=>{
+test('compiler cache and standalone dependency links are not traversed; server trace links fail closed',async()=>{
   const root=await mkdtemp(join(tmpdir(),'studio-trace-cache-'));
   const cache=await mkdtemp(join(tmpdir(),'studio-compiler-cache-'));
   try {
     await mkdir(join(root,'server'));
     await writeFile(join(root,'server','route.js.nft.json'),JSON.stringify({version:1,files:['../../media/blob-index.json']}));
     await symlink(cache,join(root,'cache'),process.platform==='win32'?'junction':'dir');
+    await symlink(cache,join(root,'standalone'),process.platform==='win32'?'junction':'dir');
     assert.deepEqual(await checkBuildTraces({directory:root}),{checked:1,removed:0});
     await symlink(cache,join(root,'server','unsafe'),process.platform==='win32'?'junction':'dir');
     await assert.rejects(checkBuildTraces({directory:root}),/unsafe_build_trace_entry/);

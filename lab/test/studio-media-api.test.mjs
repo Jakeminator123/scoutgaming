@@ -3,6 +3,16 @@ import assert from 'node:assert/strict';
 import { createStudioMediaApi } from '../lib/studio-media-api.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
+
+test('native classification cannot rewrite a retained original identity or bank family',async()=>{
+  const {api,repository,pool}=await fixture(),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+  await repository.registerMedia(record,{actor:'explicit-import'});const before=pool.snapshot();
+  for(const metadata of [record.classification,{...record.classification,familyId:'astrid/deal.player.left/box1'}]){
+    assert.equal((await api.handle(request('/studio/api/videos/classify','POST',{id:record.id,sha256:record.sha256,previous:record.classification,metadata}))).status,409);
+  }
+  assert.deepEqual(pool.snapshot(),before);
+});
 
 const origin = 'https://studio.example.invalid', scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
 const config = {scope,apiBase:'/studio/api/admin',allowedOrigins:[origin],publicHosts:['studio.example.invalid']};
