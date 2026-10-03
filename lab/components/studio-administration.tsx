@@ -248,7 +248,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('room')}
         {config && <><EmptyRows count={rows(config.rooms).length} />{rows(config.rooms).map((room, index) => <div className={styles.row} key={label(room.id, String(index))}>
           <div><strong>{label(room.name, label(room.id))}</strong><p>{label(room.tier)} · {label(room.state)}</p></div>
-          {mayWrite('room', true) && <form onSubmit={submit('room', form => ({ id: room.id, state: value(form, 'state') }), true)}>
+          {mayWrite('room', true) && <form method="post" onSubmit={submit('room', form => ({ id: room.id, state: value(form, 'state') }), true)}>
             <label>Status<select name="state" defaultValue={label(room.state, 'pending')} disabled={busy}><option value="live">live</option><option value="preview">preview</option><option value="pending">pending</option></select></label>
             <button disabled={busy}>Spara rum</button>
           </form>}
@@ -258,7 +258,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('tier')}
         {config && Object.entries(object(config.tiers) ?? {}).filter(([tier]) => ['classic', 'high', 'vip'].includes(tier)).map(([tier, dealer]) => <div className={styles.row} key={tier}>
           <div><strong>{tier}</strong><p>Dealer: {label(dealer)}</p></div>
-          {mayWrite('tier', true) && <form onSubmit={submit('tier', form => ({ tier, dealer: value(form, 'dealer') }), true)}>
+          {mayWrite('tier', true) && <form method="post" onSubmit={submit('tier', form => ({ tier, dealer: value(form, 'dealer') }), true)}>
             <label>Dealer<select name="dealer" defaultValue={label(dealer, 'vera')} disabled={busy}>{['vera', 'astrid', 'amira', 'mei'].map(id => <option key={id} value={id}>{id}</option>)}</select></label>
             <button disabled={busy}>Spara dealer</button>
           </form>}
@@ -268,7 +268,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       {section === 'pit' && <>
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('pitboss')}
         {config && <><p>Serverns inställningar: payout10x {label(object(config.pitboss)?.payout10x === true ? 'på' : object(config.pitboss)?.payout10x === false ? 'av' : undefined)}; streak5 {label(object(config.pitboss)?.streak5 === true ? 'på' : object(config.pitboss)?.streak5 === false ? 'av' : undefined)}.</p>
-          {mayWrite('pitboss', true) && <form onSubmit={submit('pitboss', form => ({ payout10x: new FormData(form).has('payout10x'), streak5: new FormData(form).has('streak5'), randomWalkMin: Number(value(form, 'randomWalkMin')) }), true)}>
+          {mayWrite('pitboss', true) && <form method="post" onSubmit={submit('pitboss', form => ({ payout10x: new FormData(form).has('payout10x'), streak5: new FormData(form).has('streak5'), randomWalkMin: Number(value(form, 'randomWalkMin')) }), true)}>
             <label className={styles.checkbox}><input name="payout10x" type="checkbox" defaultChecked={object(config.pitboss)?.payout10x === true} disabled={busy} />payout10x</label>
             <label className={styles.checkbox}><input name="streak5" type="checkbox" defaultChecked={object(config.pitboss)?.streak5 === true} disabled={busy} />streak5</label>
             <label>Random floor walk (minuter)<input name="randomWalkMin" type="number" min="1" max="1440" step="1" defaultValue={typeof object(config.pitboss)?.randomWalkMin === 'number' ? object(config.pitboss)!.randomWalkMin as number : ''} required disabled={busy} /></label>
@@ -279,7 +279,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       {section === 'tours' && <>
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('tournament')}
         {config && <><EmptyRows count={rows(config.tournaments).length} />{rows(config.tournaments).map((tour, index) => <p key={label(tour.id, String(index))}><strong>{label(tour.name)}</strong> · {label(tour.format)} · {label(tour.starts)} · {label(tour.state)} · {label(tour.entries)}/{label(tour.cap)}</p>)}</>}
-        {mayWrite('tournament', true) && <form className={styles.form} onSubmit={submit('tournament', form => ({ name: value(form, 'name'), format: value(form, 'format'), buyin: Number(value(form, 'buyin')), pool: Number(value(form, 'pool')), cap: Number(value(form, 'cap') || '0'), starts: value(form, 'starts') }), true)}>
+        {mayWrite('tournament', true) && <form method="post" className={styles.form} onSubmit={submit('tournament', form => ({ name: value(form, 'name'), format: value(form, 'format'), buyin: Number(value(form, 'buyin')), pool: Number(value(form, 'pool')), cap: Number(value(form, 'cap') || '0'), starts: value(form, 'starts') }), true)}>
           <label>Namn<input name="name" required maxLength={100} disabled={busy} /></label>
           <label>Format<input name="format" maxLength={100} required disabled={busy} /></label>
           <label>Buy-in<input name="buyin" type="number" min="0" step="0.01" required disabled={busy} /></label>
@@ -297,7 +297,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <thead><tr><th>Spelare / ID</th><th>Saldo</th><th>Status</th><th>Åtgärd</th></tr></thead>
           <tbody>{rows(resources.players.payload.players).map((player, index) => <tr key={label(player.id, String(index))}>
             <td>{label(player.username, label(player.name))}<small>{label(player.id)}</small></td><td>{label(player.balance)} {label(player.currency)}</td><td>{label(player.status)}</td>
-            <td>{mayWrite('players/status') && resources.players.payload?.administration === true && ['active', 'blocked'].includes(String(player.status)) ? <form onSubmit={submit('players/status', form => ({ playerId: player.id, status: value(form, 'status'), reason: value(form, 'reason') }))}>
+            <td>{mayWrite('players/status') && resources.players.payload?.administration === true && ['active', 'blocked'].includes(String(player.status)) ? <form method="post" onSubmit={submit('players/status', form => ({ playerId: player.id, status: value(form, 'status'), reason: value(form, 'reason') }))}>
               <label>Ny status<select name="status" defaultValue={player.status === 'active' ? 'blocked' : 'active'} disabled={busy}>
                 <option value={player.status === 'active' ? 'blocked' : 'active'}>{player.status === 'active' ? 'blocked' : 'active'}</option><option value="closed">closed (slutgiltigt)</option>
               </select></label><label>Orsak<input name="reason" required maxLength={500} disabled={busy} /></label><button disabled={busy}>Ändra spelarstatus</button>
@@ -305,7 +305,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           </tr>)}</tbody>
         </table></div></>}
         {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration i den här miljön.</p>}
-        {mayWrite('players/create') && resources.players?.payload?.administration === true && <form className={styles.form} onSubmit={submit('players/create', form => {
+        {mayWrite('players/create') && resources.players?.payload?.administration === true && <form method="post" className={styles.form} onSubmit={submit('players/create', form => {
           const password = String(new FormData(form).get('password') ?? '');
           const input = form.elements.namedItem('password');
           if (input instanceof HTMLInputElement) input.value = '';
@@ -325,12 +325,12 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {resources.users?.payload && <><EmptyRows count={rows(resources.users.payload.users).length} />{rows(resources.users.payload.users).map((user, index) => <div className={styles.row} key={label(user.username, String(index))}>
           <div><strong>{label(user.username)}</strong><p>{label(user.role)} · {user.active ? 'aktiverat' : 'väntar på aktivering'}</p></div>
           {sameIdentity(user.username, actor.username) ? <p>Ditt eget konto: rollbyte och borttagning är spärrade.</p> : <div className={styles.actions}>
-            {mayWrite('users/role') && <form onSubmit={submit('users/role', form => ({ username: user.username, role: value(form, 'role') }))}><label>Roll<select name="role" defaultValue={label(user.role, 'reader')} disabled={busy}>{STUDIO_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><button disabled={busy}>Spara roll</button></form>}
+            {mayWrite('users/role') && <form method="post" onSubmit={submit('users/role', form => ({ username: user.username, role: value(form, 'role') }))}><label>Roll<select name="role" defaultValue={label(user.role, 'reader')} disabled={busy}>{STUDIO_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><button disabled={busy}>Spara roll</button></form>}
             {mayWrite('users/remove') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Ta bort administratören ${label(user.username)}? Detta är inte ett spelarkonto.`)) command('users/remove', { username: user.username }); }}>Ta bort administratör</button>}
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
-        {mayWrite('users/invite') && <form className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
+        {mayWrite('users/invite') && <form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <h4>Bjud in administratör</h4><label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
           <label>Roll<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form>}
@@ -342,18 +342,18 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <div><strong>{label(key.name)}</strong><p>Nyckel: dold · {Array.isArray(key.scopes) ? key.scopes.filter(scope => typeof scope === 'string' && PARTNER_SCOPES.includes(scope)).join(', ') : '—'}</p><p>{key.revoked_at ? `Återkallad: ${label(key.revoked_at)}` : 'Aktiv'} · Senast använd: {label(key.last_used)} · Wallet: {key.walletConfigured === true ? 'ansluten' : 'ej ansluten'}</p></div>
           {!key.revoked_at && mayWrite('apikeys/revoke') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Återkalla partnernyckeln för ${label(key.name)}?`)) command('apikeys/revoke', { id: key.id }); }}>Återkalla partnernyckel</button>}
           {!key.revoked_at && mayWrite('apikeys/rotate') && <button disabled={busy} type="button" onClick={() => { if (window.confirm(`Byta HMAC-hemligheten för ${label(key.name)}? Den tidigare hemligheten slutar fungera.`)) command('apikeys/rotate', { id: key.id }); }}>Rotera hemlighet</button>}
-          {!key.revoked_at && mayWrite('apikeys/launch') && Array.isArray(key.scopes) && key.scopes.includes('launch') && <form className={styles.form} onSubmit={submit('apikeys/launch', form => ({ id:key.id, playerId:value(form,'playerId'), displayName:value(form,'displayName'), currency:value(form,'currency'), language:value(form,'language') }))}>
+          {!key.revoked_at && mayWrite('apikeys/launch') && Array.isArray(key.scopes) && key.scopes.includes('launch') && <form method="post" className={styles.form} onSubmit={submit('apikeys/launch', form => ({ id:key.id, playerId:value(form,'playerId'), displayName:value(form,'displayName'), currency:value(form,'currency'), language:value(form,'language') }))}>
             <h4>Starta partnerspel</h4><label>Partnerns spelar-ID<input name="playerId" required maxLength={256} disabled={busy} /></label>
             <label>Visningsnamn<input name="displayName" required maxLength={40} disabled={busy} /></label>
             <label>Valuta<select name="currency" defaultValue="EUR" disabled={busy}>{CURRENCIES.map(currency => <option key={currency}>{currency}</option>)}</select></label>
             <label>Språk<select name="language" disabled={busy}><option value="en">English</option><option value="sv">Svenska</option></select></label><button disabled={busy}>Skapa spellänk</button>
           </form>}
-          {!key.revoked_at && key.walletConfigured !== true && mayWrite('apikeys/credit') && Array.isArray(key.scopes) && key.scopes.includes('wallet') && <form className={styles.form} onSubmit={submit('apikeys/credit', form => ({ id:key.id, playerId:value(form,'playerId'), amount:Number(value(form,'amount')) }))}>
+          {!key.revoked_at && key.walletConfigured !== true && mayWrite('apikeys/credit') && Array.isArray(key.scopes) && key.scopes.includes('wallet') && <form method="post" className={styles.form} onSubmit={submit('apikeys/credit', form => ({ id:key.id, playerId:value(form,'playerId'), amount:Number(value(form,'amount')) }))}>
             <h4>Demo-kreditering</h4><label>Partnerns spelar-ID<input name="playerId" required maxLength={256} disabled={busy} /></label>
             <label>Belopp<input name="amount" type="number" min="0.01" max="100000" step="0.01" required disabled={busy} /></label><button disabled={busy}>Kreditera demo-saldo</button>
           </form>}
         </div>)}</>}
-        {mayWrite('apikeys/create') && <form className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
+        {mayWrite('apikeys/create') && <form method="post" className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
           <h4>Ny partnernyckel</h4><label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
           <label>Wallet-URL (valfritt, HTTPS)<input name="walletUrl" type="url" maxLength={2048} disabled={busy} /></label>
           <label>IP-adresser (valfritt, kommaseparerat)<input name="ipAllow" maxLength={2048} disabled={busy} /></label>
@@ -384,7 +384,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             {line.reviewState === 'unbound-or-changed-media' && <p>Tidigare bedömning gäller inte för nuvarande mediepar.</p>}
             {studioAdminMediaUrl(line.preview) && <video controls preload="none" src={studioAdminMediaUrl(line.preview)!} aria-label={`Förhandsvisning ${label(line.key)}`} />}
             {studioAdminMediaUrl(line.audio) && <audio controls preload="none" src={studioAdminMediaUrl(line.audio)!} aria-label={`Ljud ${label(line.key)}`} />}
-            {mayWrite('voiceline-review', true) && line.reviewable === true && <form onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
+            {mayWrite('voiceline-review', true) && line.reviewable === true && <form method="post" onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
               <label>Bedömning<select name="verdict" defaultValue={label(line.review, '')} disabled={busy}><option value="">Ej granskad</option><option value="approved">Godkänd</option><option value="rejected">Underkänd</option></select></label><button disabled={busy}>Spara manuell granskning</button>
             </form>}
           </article>)}

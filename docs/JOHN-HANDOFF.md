@@ -137,13 +137,31 @@ HTTPS-/restartprovet passerade åter alla 40 grupper och fyra retained-kontrolle
 Nya QA-molnbyggen på samma SHA är READY/LIVE. Login-boot och session/overview
 ger förväntade 200/401 på båda canonicaldomänerna. Full browseracceptans
 stoppades efter fyra lyckade åtkomstkontroller: Nexts SSR-redirect dubblerar
-basePath till `/studio/studio/login` och ger 404. Rättningen pågår; inget login-
+basePath till `/studio/studio/login` och ger 404. Inget login-
 POST, projekt-/pitbyte eller provideranrop gjordes i det stoppade provet.
 SSR-rättningen använder nu apprelativ `/login` och behåller publik `returnTo`;
 även Lissabons gamla redirect ger ett enda prefix. 24 fokuserade prov, inklusive
 fem som kör de verkliga SSR-sidorna/guards genom installerad Next/SWC, samt
 Lab-TypeScript PASS. API- och klientnavigeringens fulla adresser består.
-Ny leverans, QA-ombyggnad och det kompletta browserprovet återstår.
+SSR-rättningen är pushad i `7fe032a8` efter obligatorisk full regression;
+alla tre GitHub-kontroller PASS. Båda nya Vercel-QA och Render-QA är READY/LIVE
+på samma SHA. Alla 14 verkliga bootkontroller PASS, inklusive exakt enkel
+loginredirect och följd login-GET på båda origins. Nästa fullprov stoppades
+åter efter fyra godkända åtkomstkontroller: formuläret kunde skickas före
+React-hydration som browserns vanliga GET. Ett separat anonymt browserprov
+bekräftar kall GET och `user`/`pass` som FormData-namn, medan JS senare kopplas
+in utan fel; inga nya credentials skickades i diagnosen. Den tidigare
+requestens query är redigerad ur underlaget och kan inte rekonstrueras.
+
+Authformulären använder nu explicit intern POST, initialt spärrade fält/knappar,
+laddningsstatus och noscript-information. Fallback nekas med 415 före auth/mejl;
+alla 12 native administrationsformulär använder också POST. 38 riktade prov
+PASS, inklusive installerad React/SWC-SSR och faktisk headless React-hydration,
+kall Enter/submit samt JSON-POST efter hydration. Lab-TypeScript PASS.
+Enbart den nya QA:s syntetiska operatör har fått bytt lösenord och epoch+1;
+egna sessions-/handoff-/lösenordstokens är återkallade, signer och övriga
+identiteter består. Ingen produktions-/äldre-QA-anslutning eller provider
+användes. Leverans, ny QA-ombyggnad och komplett browseracceptans återstår.
 
 Den privata produktionsimporten kräver nu normaliserade hashkontroller för
 130 beroenden/SQL/aktiva manifest och Blob-index mot den levererade main-SHA:n.
@@ -159,6 +177,11 @@ oföränderligt paritetskvitto för tre dokument, sex registerposter, 18 mediefi
 nio kostnads-/operatörstabeller och skyddade spel-/kontorader. Sex tidsgränsprov
 nekar även bevis som hinner gå ut under ett awaitat driftsanrop; 17 ytterligare
 freeze-/recovery-/providerprov PASS. Ingen importplan/apply har körts mot drift.
+Den privata readonly-kontrollen efter driftstart binder separat oföränderlig
+runtime-anchor och observerad aktuell journal, två databasjämförelser och
+faktisk fullavläsning av 18 klipp mellan dem. 13 offlineprov PASS; den förnyar
+inget childless-/frysningsbevis. Produktionsdriverns mutationer är uttryckligen
+blockerade tills verklig full P6-acceptans finns, inklusive mejl och AI/ström.
 
 RunPods faktiska endpoint-health visar kö/pågående jobb 0/0, men idle/ready 1/1.
 Den befintliga konsolen visar samma Croupier-endpoint under Jakobs profil,

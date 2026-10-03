@@ -65,17 +65,25 @@ från klienten. De två tekniska UI-origins består bakom samma publika adress.
 Flaggan migrerar/initialiserar ingenting och får inte slås på före verifierad
 import och kompletterad administration/spelprojektion. Avstängd flagga behåller
 dagens BO; fel med påslagen flagga ger felstängning, inte iframe/diskfallback.
-Inga nya env-värden eller DB-hemligheter har lagts in i molnprojekten här.
-Konto-/partnerhandlers och inbjudningsmail kompletteras i samma integrationssteg;
-endast verkligt inkopplade handlers annonseras. Spelarstatus och partner-
+Produktionsprojekten har ännu inte bytt källa. Den separata native-QA-miljön
+har egen Neon-databas, scope och datarot samt två egna Vercelprojekt; dess
+uppgifter får inte användas som produktionskonfiguration. Konto-/partnerhandlers
+är inkopplade bakom flaggorna; endast verkligt inkopplade actions annonseras.
+Spelarstatus och partner-
 launch/credit/revoke går genom signerad Render-kommandogräns med aktuell
 Neon-identitet och engångsnonce, aldrig en lokal Vercel-walletmutation.
 Den använder befintliga `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`
 och `CROUPIER_VERCEL_INGRESS_SECRET`. Verifierad import, auth/HTTPS- och
-restartacceptans återstår före aktivering; en koddeploy är inte källbytet.
+restartacceptans i drift återstår före aktivering; det isolerade SQL-/HTTPS-/
+restartprovet är godkänt. En koddeploy är inte källbytet.
 `RESEND_API_KEY` på Vercel-Studio är villkorlig för riktiga invite/resend/reset-
 mail. Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
+Kontrollerade Render-/Vercel-/repomiljöer saknar ännu en tillgänglig native
+Resend-koppling. Avsändardomän och fungerande invitation/reset ska verifieras
+före produktionsbytet; kodens äldre `bo@axelio.io` bevisar inte domänägande.
+För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
+nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,
 `CROUPIER_MEDIA_BLOB_INDEX` till samma verifierade aktiva manifest och
 serverhemligheten `BLOB_READ_WRITE_TOKEN` på Vercel-Studio. Token är därför

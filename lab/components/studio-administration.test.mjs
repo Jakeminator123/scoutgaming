@@ -136,6 +136,15 @@ test('render never mutates or requests providers/accounts; only six existing loc
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
 
+test('actual rendered native administration forms explicitly use POST, including account passwords', () => {
+  const h = harness(); let forms = 0;
+  for (const group of navigation.BACKOFFICE_GROUPS) {
+    const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', group.id)));
+    for (const form of html.matchAll(/<form\b[^>]*>/g)) { assert.match(form[0], /method="post"/); ++forms; }
+  }
+  assert.ok(forms >= 12); assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'accounts'))), /type="password"/);
+});
+
 test('unknown identities/roles/groups fail closed, including inherited and prototype values', () => {
   const h = harness();
   for (const value of [null, [], {}, 'admin', actor('constructor'), actor('__proto__'), actor('player'), { username: '', role: 'reader' }, Object.create(actor('superadmin')), { username: 'x\u0000y', role: 'admin' }]) assert.equal(h.studioAdminActor(value), null);
