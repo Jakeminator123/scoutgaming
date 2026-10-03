@@ -36,8 +36,13 @@ Render väntar på runtimecancel före OK; lösenord lämnar inget svar/auditvä
 Saldo, transaktioner, rundor och kostnadsjournaler berörs inte.
 Adminborttagning skyddas mot att två samtidiga åtgärder tar bort sista admin.
 
-Riktade isolerade auth-/API-/UI-prov är godkända. Sammanhållen full regression,
-typkontroller och båda byggresultaten kompletteras i leveransnotisen nedan.
+Källcommit `220d5dfa60e52e4426f572bc733d10a23b7d25ce` är verifierad:
+obligatorisk full commit-hook 1 251 PASS, 5 SKIP, 0 FAIL, inklusive fristående
+HTTP-fixtures och pipelineaudits. Lab 785 PASS/1 SKIP, frontend 40/40 PASS;
+båda explicita TypeScript-kontrollerna och produktionsbyggena PASS. Dealer-
+audit med `--probe` PASS. Skip täcker tre live PostgreSQL/Neon-fixtures,
+browser cold-submit och Linux-processfallet; dessa är inte livebevis. Ingen
+ny fyrdealer-/mänsklig läppsynkacceptans eller ny QA-installation hävdas.
 Den obligatoriska hooken/CI tar nu även nya resolver-, password- och native-
 credentialtester. Windows lokala test-/Next-workers begränsas till fyra;
 CI/publicering behåller sina tidigare workerinställningar.
@@ -47,6 +52,7 @@ Prova admin från spel till Studio, spelarnekande, gamla cookie-/lösenords-
 återkallelser, legacy game-only reset och saldo/historik före/efter. Använd
 syntetiska QA-konton. Detta är en del av P6:s återstående authacceptans,
 inte bevis på installerad QA eller färdigt produktionsbyte.
+
 ## Nästa agent: slutför P6:s AI/GPU-acceptans — 3 oktober
 
 Städleveransen på main är `63d0e917c9828be82e25b0f039c4ef9a1c8f92f4`.
@@ -82,7 +88,8 @@ inspelade greetings och enbart WebSocket-bytes täcker inte detta resultat.
    contexts, faktisk child-env, authority/router och installerade spelmoduler.
    Prepare-only/router-off ger avsiktligt 404 på playback-context och räknas
    inte som acceptans. Normal QA-login finns redan; använd befintlig syntetisk
-   operatör. Ingen recreate/invite/reset/mejlleverans beställs av denna handoff.
+   operatör. Befintlig operatör återskapas inte. Separata auth-/resetprov använder
+   bara ägda syntetiska QA-konton; inga produktionskonton eller mejlprov.
 4. Kör den verkliga ägda QA-kedjan: cookieautentiserad idle-advice/Director i
    shadow, faktiskt SDK-svar, tal via avsedd Cartesia-konfiguration och GPU via
    avsedd RunPod-endpoint. Bind sparad Neon-policy, serverägd session/runda,
@@ -155,9 +162,12 @@ och de main-bundna Node-processerna är GitGuardian-MCP. Inga privata QA-bevis,
 SDK, sourcepins, kostnadsjournaler, konton, råmedia eller kalibreringar raderas.
 Labbets gamla hela `.next` rensades först. Full regression visade då ett enda
 fel: anslutningstestet kräver en verifierad Next-runtime. Den är återbyggd;
-slutstädningen behåller 8 211 983 byte runtime och tar bara dess cache. Netto
-frigörs 1 032 360 345 byte bygglagring (cirka 1,03 GB). Frontendens hela
-byggutdata och båda TypeScript-cachefilerna kan tas bort efter verifieringen.
+första städleveransen behöll 8 211 983 byte Lab-runtime och frigjorde netto
+1 032 360 345 byte bygglagring (cirka 1,03 GB). Credentials-passens verifierade
+byggen återskapade cache; efter full hook rensades 292 363 385 byte på de två
+exakta `.next/cache`-paths och båda TypeScript-cachefilerna. Nu behålls färska
+runtimes: Lab 8 306 510 byte, frontend 3 503 289 byte. Den återskapade cachen
+räknas inte som ytterligare nettofrigjord lagring. Beständig data är bevarad.
 
 Den uppdaterade [systemkartan](CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa)
 skiljer produktion, nya QA och mål efter P7. Senaste QA-installation/fyrdealerprov
