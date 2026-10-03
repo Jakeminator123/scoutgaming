@@ -19,13 +19,17 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
   return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', partnerAuthority } = {}) {
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', partnerAuthority,
+  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' } = {}) {
 
   const digest=t=>createHash('sha256').update(t).digest('hex');
-  const partnerAllowed=async id=>{
+  const partnerAllowed=async (id, stamp)=>{
     if(typeof id!=='string'||!id||typeof partnerAuthority!=='function')return false;
     const key=await partnerAuthority(id);
-    return Boolean(key&&key.id===id&&!key.revoked_at&&!key.wallet_url);
+    if(!key||key.id!==id||key.revoked_at||key.wallet_url)return false;
+    if(stamp===undefined||stamp===null)return allowLegacyPartnerSessions;
+    return typeof stamp==='string'&&/^[a-f0-9]{64}$/.test(stamp)&&typeof key.secret==='string'
+      && digest(key.secret)===stamp;
   };
   const accountStamp = account => account ? `local:${digest(`${account.salt}:${account.hash}`)}` : null;
   // The cloud gateway connects to Web over loopback and does not forward a
@@ -53,12 +57,15 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(String(session.source_stamp??'').startsWith('local:')) {
       if(!playerAccounts || accountStamp((await db.prepare('SELECT salt,hash FROM player_accounts WHERE player_id=?').get(session.player_id)))!==session.source_stamp)return null;
     } else if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=(await db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id));if(!link || !session.source_stamp || (await identity.stamp(link.craig_user_id))!==session.source_stamp)return null;}
-    const partnerKeyId=String(session.source_stamp ?? '').startsWith('partner:') ? session.source_stamp.slice(8) || null : null;
+    const partnerSource = String(session.source_stamp ?? '');
+    const partner = partnerSource.startsWith('partner:') ? /^partner:([^:]+)(?::([a-f0-9]{64}))?$/.exec(partnerSource) : null;
+    if(partnerSource.startsWith('partner:')&&!partner)return null;
+    const partnerKeyId=partner?.[1]??null, partnerKeyStamp=partner?.[2];
     // Historical sessions stay in storage, but revoked keys and unsupported
     // external wallets cannot bypass partner API checks through the native UI.
-    if(partnerKeyId&&!(await partnerAllowed(partnerKeyId)))return null;
+    if(partnerKeyId&&!(await partnerAllowed(partnerKeyId,partnerKeyStamp)))return null;
     return partnerKeyId
-      ? { playerId: session.player_id, partnerKeyId, displayName: session.display_name || 'spelaren' }
+      ? { playerId: session.player_id, partnerKeyId, ...(partnerKeyStamp?{partnerKeyStamp}:{}), displayName: session.display_name || 'spelaren' }
       : { playerId: session.player_id, partnerKeyId: null };
   }
   const user = async req => (await session(req))?.playerId ?? null;
@@ -82,9 +89,14 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
   }
   async function fromPartner(req,claims,maxAge=21600) {
     if(typeof claims?.sub!=='string'||!claims.sub||typeof claims?.partner!=='string'||!claims.partner)throw Error('Invalid Partner launch claims.');
-    if(!(await partnerAllowed(claims.partner)))throw Error('Partner launch is unavailable');
     const displayName=typeof claims.displayName==='string'&&claims.displayName ? claims.displayName : 'spelaren';
-    return db.transaction(async () => issue(req,{player_id:claims.sub,source_stamp:`partner:${claims.partner}`,display_name:displayName},maxAge,'Lax'));
+    return db.transaction(async () => {
+      // Rotation/revocation and session issuance use the same product lock.
+      // Old signed launch claims cannot establish a session after that change.
+      if(!(await partnerAllowed(claims.partner,claims.partner_key_stamp)))throw Error('Partner launch is unavailable');
+      const stamp = claims.partner_key_stamp ? `:${claims.partner_key_stamp}` : '';
+      return issue(req,{player_id:claims.sub,source_stamp:`partner:${claims.partner}${stamp}`,display_name:displayName},maxAge,'Lax');
+    });
   }
   async function handle(req,res) {
     const localAccount = ['/api/auth/player/login','/api/auth/player/register'].includes(req.url);

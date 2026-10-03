@@ -4,16 +4,20 @@ import { createHash, randomBytes } from 'node:crypto';
 // A BO cookie stays on the BO host. Only a single-use, browser-bound code crosses
 // to the game, where it becomes an ordinary player session with no BO role.
 export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publicUrl,boUrl,publicGamePath='/'}) {
-  if (!['/', '/game'].includes(publicGamePath)) throw Error('Invalid public game path');
+  if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   const game=new URL(publicUrl),bo=new URL(boUrl);
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const token=()=>randomBytes(32).toString('hex');
   const validToken=value=>typeof value==='string' && /^[a-f0-9]{64}$/.test(value);
-  const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html', ...(publicGamePath === '/game' ? ['/game','/game/'] : [])].includes(path);
-  const nextPath=value=>{
-    if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return '/';
+  const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html', ...(publicGamePath !== '/' ? ['/game','/game/'] : []),...(publicGamePath === '/blackjack' ? ['/blackjack','/blackjack/'] : [])].includes(path);
+  const nextPath=async value=>{
+    if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return publicGamePath === '/blackjack' ? '/blackjack' : '/';
     const url=new URL(value,game);
-    if(url.origin!==game.origin||!entry(url.pathname))return '/';
+    if(url.origin!==game.origin||!entry(url.pathname))return publicGamePath === '/blackjack' ? '/blackjack' : '/';
+    if(publicGamePath === '/blackjack') {
+      const {canonicalGameDestination}=await import('../public/game-entry-contract.mjs');
+      return canonicalGameDestination(url,{includeLaunch:false});
+    }
     // Launch credentials must not persist across a separate BO login.
     url.searchParams.delete('launch');return url.pathname+url.search;
   };
@@ -31,13 +35,13 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
       // Caddy checks the original URL before the launch handler can set a cookie.
       if(entry(original.pathname)&&(await validLaunch(original.searchParams.get('launch'))))return reply(200);
       const method=req.headers['x-forwarded-method']??'GET';
-      if(entry(original.pathname)&&['GET','HEAD'].includes(method))return reply(302,'', {Location:`/api/auth/bo/start?next=${encodeURIComponent(nextPath(original.pathname+original.search))}`});
+      if(entry(original.pathname)&&['GET','HEAD'].includes(method))return reply(302,'', {Location:`/api/auth/bo/start?next=${encodeURIComponent(await nextPath(original.pathname+original.search))}`});
       return reply(401,'Sign in required');
     }
     const expectedHost=path==='/api/bo/game-login'?bo.host:game.host;
     if(req.headers.host!==expectedHost)return reply(400,'Wrong sign-in host');
     if(path==='/api/auth/bo/start') {
-      const next=nextPath(url.searchParams.get('next'));
+      const next=await nextPath(url.searchParams.get('next'));
       if((await auth.user(req)))return reply(303,'',{Location:next});
       (await db.prepare('DELETE FROM bo_game_handoffs WHERE expires<=?').run(Date.now()));
       const state=token();

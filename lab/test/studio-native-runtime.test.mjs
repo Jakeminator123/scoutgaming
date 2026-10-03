@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, handleNativeAdmin } from '../lib/studio-native-runtime.mjs';
 
 const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
+  CROUPIER_STUDIO_NEON_POLICY: '1',
   CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: 'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require' };
@@ -16,6 +17,7 @@ test('native mode is explicit, scoped and never substitutes zone/general databas
   const config = nativeStudioAdminConfiguration(env);
   assert.deepEqual(config.scope, { environment: 'fixture', workspaceId: 'croupier' });
   for (const change of [{ CROUPIER_GAME_DATABASE_URL: undefined }, { CROUPIER_STUDIO_ENVIRONMENT_ID: undefined },
+    { CROUPIER_STUDIO_NEON_POLICY: undefined },
     { CROUPIER_STUDIO_WORKSPACE_ID: undefined }, { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL },
     { CROUPIER_PUBLIC_ORIGIN: 'http://public.example.invalid' }, { CROUPIER_LAB_UI_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN }]) {
     assert.throws(() => nativeStudioAdminConfiguration({ ...env, ...change }), error => error.statusCode === 503);

@@ -1,4 +1,5 @@
 // Separate presentation routes share the same origin, session and game API.
+import {approvedGameQuery} from './game-entry-contract.mjs';
 export const V2_DEALERS = ['astrid', 'amira'];
 export function dealerVersionPath(dealer, version, observerSearch = '') {
   const key = ['vera', 'astrid', 'amira', 'mei'].includes(dealer) ? dealer : 'vera';
@@ -12,7 +13,12 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   // An explicit V2 comparison remains a separate opt-in presentation.
   if(version !== 'v2' && previous.get('presentation') === 'local')query.set('presentation','local');
   if(previous.has('rehearsal'))query.set('rehearsal','1');
-  return `${version === 'v2' && V2_DEALERS.includes(key) ? '/v2/' : '/'}?${query}`;
+  const originalPath = globalThis.document?.documentElement?.dataset.gamePath === '/blackjack' ? '/blackjack' : '/';
+  if (originalPath === '/blackjack' && !(version === 'v2' && V2_DEALERS.includes(key))) {
+    previous.set('dealer',key);
+    return originalPath+'?'+approvedGameQuery(previous,{origin:globalThis.location?.origin,includeLaunch:false});
+  }
+  return `${version === 'v2' && V2_DEALERS.includes(key) ? '/v2/' : originalPath}?${query}`;
 }
 
 export function installDealerVersionSwitcher({ dealer, version, isBusy }) {

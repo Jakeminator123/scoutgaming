@@ -3,6 +3,7 @@ import { isStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 
 const MAX_BODY = 64 * 1024;
+const renderActions = new Set(['players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [503, 'Action unavailable'], [500, 'Request failed']]);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
 function json(value, status = 200, extra = {}) {
@@ -38,7 +39,7 @@ async function readObject(request) {
 }
 
 /** Dependency-only factory. It neither installs routes nor creates an identity/store. */
-export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, handlers, gates = new Map(), apiBase = '/studio/api/admin' }) {
+export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, handlers, gates = new Map(), apiBase = '/studio/api/admin', mutationTransaction }) {
   if (!['/studio/api/admin', '/api/admin'].includes(apiBase)) throw new TypeError('Invalid admin API base');
   if (typeof authorize !== 'function' || !(handlers instanceof Map) || !(gates instanceof Map)
     || !Array.isArray(allowedOrigins) || !allowedOrigins.length || !Array.isArray(publicHosts) || !publicHosts.length) throw new TypeError('Explicit admin dependencies required');
@@ -51,7 +52,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
   for (const [key, handler] of registered) {
     if (typeof handler !== 'function' || !STUDIO_ADMIN_ENDPOINTS.some(endpoint => `${endpoint.method} ${endpoint.path}` === key)) throw new TypeError('Unknown admin handler');
   }
-  const ready = endpoint => typeof registered.get(`${endpoint.method} ${endpoint.path}`) === 'function'
+  const ready = endpoint => (endpoint.method === 'GET' || renderActions.has(endpoint.action) || typeof mutationTransaction === 'function')
+    && typeof registered.get(`${endpoint.method} ${endpoint.path}`) === 'function'
     && endpoint.handlerRequirements.every(requirement => typeof requirements.get(requirement) === 'function');
   function availableActions(session) {
     let actor; try { actor = sessionActor(session); } catch { return []; }
@@ -86,12 +88,38 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         if (body.username.trim().toLowerCase() === actor.user.trim().toLowerCase()) throw failure(403);
         if (endpoint.action === 'users/role' && !isStudioRole(body.role)) throw failure(400);
       }
-      const context = Object.freeze({ request, body, actor, scope, endpoint });
+      const localMutation = request.method !== 'GET' && !renderActions.has(endpoint.action);
+      const deferred = []; let queueOpen = true;
+      const context = Object.freeze({ request, body, actor, scope, endpoint,
+        ...(localMutation ? { afterCommit(work) {
+          if (!queueOpen || typeof work !== 'function' || deferred.length >= 10) throw failure(503);
+          deferred.push(work);
+        } } : {}) });
+      const refresh = async () => {
+        const current = await authorize(request), principal = sessionActor(current), currentScope = validateStudioScope(current.scope);
+        if (principal.user !== actor.user || principal.role !== actor.role
+          || !studioRoleMeetsMinimum(principal.role, endpoint.minimumRole)
+          || currentScope.environment !== scope.environment || currentScope.workspaceId !== scope.workspaceId) throw failure(403);
+      };
+      // Input and gates may yield for an arbitrary time. Recheck the cookie's
+      // fingerprint/epoch before any mutation capability observes this actor.
+      if (request.method !== 'GET') await refresh();
       for (const requirement of endpoint.handlerRequirements) {
         if (await requirements.get(requirement)(context) !== true) throw failure(403);
       }
-      const result = await registered.get(`${endpoint.method} ${endpoint.path}`)(context);
-      if (result === undefined || result instanceof Response) throw failure(503);
+      const invoke = async () => {
+        if (request.method !== 'GET') await refresh();
+        const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(context);
+        if (value === undefined || value instanceof Response) throw failure(503);
+        return value;
+      };
+      // Render revalidates inside its own product transaction. Local mutations
+      // hold that same product lock while validating current identity and writing.
+      const result = localMutation ? await mutationTransaction(invoke) : await invoke();
+      queueOpen = false;
+      // Mail is an effect of committed identity state. Never send a token whose
+      // surrounding transaction may still roll back or hold the product lock.
+      for (const work of deferred) await work();
       return json(result);
     } catch (error) {
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;

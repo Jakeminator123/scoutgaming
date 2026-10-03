@@ -10,7 +10,16 @@ export function assertNativeStudioRequest(request: Request, config: NativeStudio
 export function studioNativeRuntime(): Promise<{
   config: NativeStudioConfiguration; authorize(request: Request): Promise<NativeStudioSession>;
   api: {handle(request: Request): Promise<Response>; availableActions(session: NativeStudioSession): string[]};
+  repository: any; gamePolicy: any;
+  mutationTransaction<T>(work: () => Promise<T>): Promise<T>;
+  validateProjectBindings?: (project: any) => Promise<void>;
+  videoRegistry?: () => Promise<any>;
+  videoResponse?: (id: string, request: Request) => Promise<Response>;
+  legacyControls?: (project: any) => Promise<any>;
+  uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
+  authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
 }>;
 export function handleNativeAdmin(request: Request): Promise<Response>;
+export function handleNativeAuthAction(request: Request): Promise<Response>;
 export function handleNativeSession(request: Request): Promise<Response>;
 export function nativeStudioErrorResponse(error: unknown): Response;

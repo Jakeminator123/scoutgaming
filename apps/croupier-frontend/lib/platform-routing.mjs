@@ -1,3 +1,4 @@
+import { gameEntryRedirect } from '../../../web/public/game-entry-contract.mjs';
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 export const PLATFORM_SOCKET_ENDPOINTS = Object.freeze({
   '/speech-stream': '/api/platform-speech-stream',
@@ -21,7 +22,9 @@ export function platformConfiguration(env = process.env) {
   const secret = env.CROUPIER_VERCEL_INGRESS_SECRET;
   if (new Set([publicOrigin, backendOrigin, labUiOrigin]).size !== 3) throw Error('Public UI, backend transport and Lab UI origins must be distinct.');
   if (typeof secret !== 'string' || secret.length < 32 || /[\r\n]/.test(secret)) throw Error('A private ingress secret of at least 32 bytes is required.');
-  return { publicOrigin, backendOrigin, labUiOrigin, secret };
+  return { publicOrigin, backendOrigin, labUiOrigin, secret,
+    ...(env.CROUPIER_STUDIO_NATIVE_ADMIN === '1' ? { nativeStudio: true } : {}),
+    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { canonicalGame: true } : {}) };
 }
 
 export function canonicalPlatformPath(value) {
@@ -47,6 +50,7 @@ export function backendPlatformPath(value) {
   const path = canonicalPlatformPath(value);
   if (!path) return false;
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path)
+    || path === '/api/studio-game/command'
     || /^\/api\/bo\/[a-z0-9][a-z0-9/-]*$/.test(path)
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/(?:probe|chat\/memory|astrid\/(?:observation|transcription)|generated-speech)(?:\/|$)/.test(path)
@@ -60,14 +64,20 @@ export function backendPlatformPath(value) {
 export function platformRoute(url, config) {
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
+  const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
+  if (gameRedirect) return {kind:'redirect',destination:config.publicOrigin+gameRedirect};
   // Internal Node endpoints are reachable through these two exact rewrites.
   // A direct browser/API request must not create an alternative public route.
   if (Object.values(PLATFORM_SOCKET_ENDPOINTS).includes(path)) return {kind: 'reject'};
   if (Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, path)) return {kind: 'socket', destination: `${config.publicOrigin}${PLATFORM_SOCKET_ENDPOINTS[path]}${url.search}`};
-  if ((path === '/' || path === '/game' || path === '/game/') && url.searchParams.has('launch')) {
+  if ((path === '/' || path === '/game' || path === '/game/' || config.canonicalGame && ['/blackjack','/blackjack/'].includes(path)) && url.searchParams.has('launch')) {
     return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
   }
   if (path === '/' && ['dealer', 'presentation', 'performance'].some(key => url.searchParams.has(key))) return {kind: 'redirect', destination: `${config.publicOrigin}/game${url.search}`};
+  if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
+    || /^\/studio\/api\/(?:videos|clip-controls)(?:\/|$)/.test(path))) {
+    return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
+  }
   if (backendPlatformPath(path)) return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
   if (path === '/studio' || path.startsWith('/studio/')) return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
   return { kind: 'frontend' };

@@ -10,7 +10,15 @@ export default {
   poweredByHeader: false,
   reactStrictMode: true,
   outputFileTracingRoot: resolve(root, '..'),
-  outputFileTracingIncludes: Object.fromEntries(['/administration', '/api/admin/**', '/api/auth/session']
-    .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql']])),
+  // Production obtains credentials/state from scoped env and Neon. Private
+  // local config, QA evidence and old writable state must never be bundled.
+  outputFileTracingExcludes: { '/*': ['../.env*', './.env*', './data/**', '../web/data/**',
+    '../open-claw/lab/data/**', '../open-claw/lab/runtime/**', '../agent-talk/**', '../.croupier-inbox/**'] },
+  outputFileTracingIncludes: Object.fromEntries(['/', '/administration', '/login', '/set-password', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**']
+    .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql',
+      '../media/layout.json', '../media/blob-index.json', '../media/dealers/*/runtime/**/index.json',
+      '../media/dealers/*/runtime/**/audio/en/bank.json', '../media/dealers/*/runtime/**/performance/manifest.json',
+      '../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', '../media/game/runtime/speech-media.json',
+      '../media/dealers/*/runtime/composited/**/speak.json']])),
   experimental: { externalDir: true },
 };

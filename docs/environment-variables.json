@@ -6,7 +6,9 @@
         "ops/cloud/config.mjs",
         "ops/cloud/start.mjs",
         "ops/cloud/vercel-ingress.mjs",
-        "ops/cloud/storage-export.mjs"
+        "ops/cloud/storage-export.mjs",
+        "web/storage/studio-game-policy.mjs",
+        "web/studio-game-commands.mjs"
       ],
       "required": [
         "NODE_ENV",
@@ -68,7 +70,10 @@
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET",
         "CROUPIER_STORAGE_MAINTENANCE",
-        "CROUPIER_STORAGE_EXPORT_SECRET"
+        "CROUPIER_STORAGE_EXPORT_SECRET",
+        "CROUPIER_STUDIO_NEON_POLICY",
+        "CROUPIER_STUDIO_ENVIRONMENT_ID",
+        "CROUPIER_STUDIO_WORKSPACE_ID"
       ],
       "managed": [
         "PORT",
@@ -116,6 +121,8 @@
       "conditional": [
         "CROUPIER_GAME_URL",
         "CROUPIER_VERCEL_UI",
+        "CROUPIER_STUDIO_NATIVE_ADMIN",
+        "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_PUBLIC_ORIGIN",
         "CROUPIER_BACKEND_ORIGIN",
         "CROUPIER_LAB_UI_ORIGIN",
@@ -291,7 +298,10 @@
     "vercel-lab-ui": {
       "sources": [
         "lab/lib/remote-ui.mjs",
-        "lab/lib/studio-native-runtime.mjs"
+        "lab/lib/studio-native-runtime.mjs",
+        "web/storage/studio-game-policy.mjs",
+        "lab/lib/studio-game-authority.mjs",
+        "lab/lib/neon-video-registry.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -308,14 +318,18 @@
         "CROUPIER_STREAM_LANE",
         "BO_URL",
         "CROUPIER_STUDIO_NATIVE_ADMIN",
+        "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_ENVIRONMENT_ID",
         "CROUPIER_STUDIO_WORKSPACE_ID",
-        "CROUPIER_GAME_DATABASE_URL"
+        "CROUPIER_GAME_DATABASE_URL",
+        "RESEND_API_KEY",
+        "CROUPIER_MEDIA_STORAGE",
+        "CROUPIER_MEDIA_BLOB_INDEX",
+        "BLOB_READ_WRITE_TOKEN"
       ],
       "managed": [],
       "blocked": [
         "CROUPIER_ZONES_DATABASE_URL",
-        "BLOB_READ_WRITE_TOKEN",
         "CARTESIA_API_KEY",
         "RUNPOD_API_KEY",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN"

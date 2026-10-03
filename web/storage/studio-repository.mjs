@@ -161,6 +161,19 @@ export function createStudioRepository({ pool, scope } = {}) {
     getMedia(id) {
       return operation(() => validateMediaId(id), checked => loadMedia(checked), true);
     },
+    listMedia({ limit = 1000 } = {}) {
+      return operation(() => {
+        if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5000) fail('studio_invalid_data', 422);
+        return limit;
+      }, async checked => {
+        const rows = (await query(`/* studio:list-media */ SELECT id,revision,record,updated_at FROM croupier_studio.media_records
+          WHERE environment_id=$1 AND workspace_id=$2 ORDER BY id LIMIT $3`, [checked + 1])).rows;
+        // An incomplete library can hide a saved binding. Fail explicitly
+        // rather than silently truncate or fill it from a legacy disk index.
+        if (rows.length > checked) fail('studio_media_limit_exceeded', 503);
+        return rows.map(row => media(row));
+      }, true);
+    },
     registerMedia(record, { actor } = {}) {
       return operation(() => ({ record: validateStudioMedia(record), actor: validateActor(actor) }), async prepared => {
         const existing = await loadMedia(prepared.record.id);

@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { StudioStorageError, validateStudioEnvironmentId } from './storage/studio-contract.mjs';
+import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
 
-export const GPU_RESERVATION_WINDOW_MS = 720000;
+export { GPU_RESERVATION_WINDOW_MS };
 const MAX_MICRO_USD = 10000000;
 const resources = new Set(['fullfile-provider', 'stream-session', 'operator-qa']);
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
@@ -175,6 +176,18 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
   };
 
   return Object.freeze({
+    environmentId: environment,
+    async findRequest({ ownerHash, requestId, fingerprint, capability } = {}) {
+      const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash);
+      if (!['fullfile', 'stream'].includes(capability)) fail('invalid_generated_speech_journal_input', 422);
+      return transaction(async client => {
+        const saved = await getRequest(client, key);
+        if (!saved) return null;
+        if (saved.owner_hash !== ownerHash || saved.fingerprint !== fingerprint || saved.capability !== capability) fail('generated_speech_request_conflict', 409);
+        return { key, state: saved.state, ...(saved.state === 'completed' && capability === 'fullfile'
+          ? { packageId: saved.package_id, packageMetadata: cloneMetadata(saved.package_metadata) } : {}) };
+      });
+    },
     async acquireLease({ resource, holderId, ttlMs = 60000, recoveryOnly = false } = {}) {
       if (!resources.has(resource) || typeof recoveryOnly !== 'boolean' || (recoveryOnly && resource !== 'stream-session')) fail('invalid_generated_speech_lease', 422);
       check(holderId, identifier); ttl(ttlMs);
@@ -266,6 +279,16 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         const saved = await getRequest(client, key);
         if (!saved || saved.owner_hash !== ownerHash || saved.state !== 'completed' || saved.capability !== 'fullfile') fail('generated_speech_not_found', 404);
         return { key, packageId: saved.package_id, packageMetadata: cloneMetadata(saved.package_metadata) };
+      });
+    },
+    async getCompletedPackageById({ ownerHash, packageId } = {}) {
+      check(ownerHash, hash); check(packageId, identifier);
+      return transaction(async client => {
+        const found = (await client.query(`/* speech:get_package */ SELECT request_key,package_id,package_metadata FROM croupier_studio.speech_requests
+          WHERE environment_id=$1 AND owner_hash=$2 AND package_id=$3 AND state='completed' AND capability='fullfile' LIMIT 2`, [environment, ownerHash, packageId])).rows;
+        if (!found.length) fail('generated_speech_not_found', 404);
+        if (found.length !== 1) fail('generated_speech_journal_invalid', 409);
+        return { key:found[0].request_key, packageId:found[0].package_id, packageMetadata:cloneMetadata(found[0].package_metadata) };
       });
     },
     async initializeBudgetPolicy({ dailyBudgetMicroUsd, confirmation } = {}) {

@@ -10,7 +10,7 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
-import { getGeneratedSpeechService } from './generated-speech.mjs';
+import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createOperatorSpeechQa } from './operator-speech-qa.mjs';
@@ -54,6 +54,23 @@ if (!postgres && process.env.CROUPIER_GAME_DATABASE_URL) throw new Error('Game d
 const storage = postgres ? createPostgresStore({ connectionString: process.env.CROUPIER_GAME_DATABASE_URL,
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
 if (storage) await storage.db.assertInstalled();
+const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
+const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml } = neonStudioEnabled
+  ? await import('./public/game-entry-contract.mjs') : {};
+const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
+const { createRenderStudioPolicy, createRegisteredDealerIdle } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
+const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
+const { createStudioNativeAuth } = neonStudioEnabled ? await import('../lab/lib/studio-native-auth.mjs') : {};
+const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
+const { createStudioMediaRuntime, createStudioPublicMediaAvailability } = neonStudioEnabled ? await import('../lab/lib/studio-media-runtime.mjs') : {};
+const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage,
+  dealerIdle: createRegisteredDealerIdle({ pathFor: publicAssetPath, mediaAvailable: createStudioPublicMediaAvailability({ repositoryRoot: mediaRepository }) }) }) : null;
+const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
+  pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
+if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
+  artifacts: (await import('./speech-blob-artifacts.mjs')).createSpeechBlobArtifacts(),
+});
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
@@ -78,7 +95,7 @@ async function loadProbeRuntime() {
     const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
       domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
     activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
-      projectStore:createProjectStore(process.env.CROUPIER_PRESENTATION_STUDIO_DIR || resolve(root,'../../lab/data')),
+      projectStore:studioPolicyRuntime?.policy.projectStore() || createProjectStore(process.env.CROUPIER_PRESENTATION_STUDIO_DIR || resolve(root,'../../lab/data')),
       settingsProvider:readSettings,serviceProvider:getGeneratedSpeechService,
       chatBusy:playerId=>activePlayerChats.has(JSON.stringify([playerId,'astrid']))});
   }
@@ -213,7 +230,7 @@ const generationsApi = installGenerationsApi({ catalogPath: publicAssetPath('bo/
   verdicts: () => boLoad().genVerdicts ?? {}, tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se',
   mapping: () => clipMapping({ root, bo: boLoad(), publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: process.env.CROUPIER_PUBLIC_GAME_PATH || '/', root }); }
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root }); }
 
 // ---------- backoffice (BO) ----------
 // Real data where it exists (players/transactions from SQLite, dealer assets
@@ -242,6 +259,7 @@ const BO_DEFAULTS = {
   ],
 };
 function boLoad() {
+  if (studioPolicyRuntime) throw Object.assign(new Error('Legacy BO configuration is retired'), { statusCode: 503 });
   try { return { ...BO_DEFAULTS, ...JSON.parse(readSync(BO_PATH, 'utf8')) }; }
   catch { return structuredClone(BO_DEFAULTS); }
 }
@@ -524,7 +542,8 @@ function clipScan() {
   return clips;
 }
 async function boApi(url) {
-  const cfg = boLoad();
+  if (studioPolicyRuntime && url === '/api/bo/config') return studioPolicyRuntime.policy.readGameConfiguration();
+  const cfg = studioPolicyRuntime ? (await studioPolicyRuntime.policy.readSaved()).administration : boLoad();
   if (url === '/api/bo/overview') {
     const day = new Date().toISOString().slice(0, 10);
     // game rounds arrive as balance syncs whose meta names the reason
@@ -574,13 +593,14 @@ async function boApi(url) {
   return null;
 }
 async function boPost(url, body, who) {
+  if (studioPolicyRuntime) return { error: 'Use the native Studio command', statusCode: 410 };
   if (url === '/api/bo/players/create' || url === '/api/bo/players/status') {
     if (!who || !['admin', 'superadmin'].includes(who.role)) return { error: 'admin role required', statusCode: 403 };
     if (!playerAdministration) return { error: 'Player administration requires PostgreSQL storage', statusCode: 503 };
     try {
       if (url.endsWith('/create')) return { ok: true, player: await playerAdministration.create({ ...body, actor: who.sub }) };
       const changed = await playerAdministration.setStatus({ ...body, actor: who.sub });
-      if (changed.changed) {
+      if (changed.changed || changed.status !== 'active') {
         speechStreamService?.cancelPlayer(changed.id);
         for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([changed.id, dealerId]))?.abort('player_account_changed');
         await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
@@ -889,9 +909,9 @@ const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,
-  partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
-const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner)));};
-const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:process.env.CROUPIER_PUBLIC_GAME_PATH || '/',boUrl:BO_URL}));
+  partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
+const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
+const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));
 const boLabAuth=(await backofficeLabAuth({db:boDb,identity:scoutIdentity,boSession:boSessionOk,
   authEpoch:boAuthEpoch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',boUrl:BO_URL,
   labPublicUrl:process.env.LAB_PUBLIC_URL,singleOrigin:process.env.CROUPIER_CLOUD_LAYOUT==='single-origin'}));
@@ -939,16 +959,66 @@ const operatorSpeechQa = createOperatorSpeechQa({
       signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal }),
   }),
 });
+const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
+  scope: studioPolicyRuntime.scope, secret: process.env.CROUPIER_VERCEL_INGRESS_SECRET,
+  publicOrigin: process.env.CROUPIER_PUBLIC_ORIGIN,
+  authorize: createStudioNativeAuth({ boDb, scope: studioPolicyRuntime.scope }), boDb,
+  execute: async ({ action, body, actor }) => {
+    if (action === 'players/status') {
+      const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
+      if (changed.changed || changed.status !== 'active') {
+        speechStreamService?.cancelPlayer(changed.id);
+        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([changed.id, dealerId]))?.abort('player_account_changed');
+        await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
+      }
+      return { ok: true, ...changed };
+    }
+    const method = { 'apikeys/revoke': 'revoke', 'apikeys/rotate': 'rotate', 'apikeys/launch': 'mintLaunch', 'apikeys/credit': 'credit' }[action];
+    if (!method || typeof body?.id !== 'string') throw Object.assign(new Error('Invalid Studio game command'), { statusCode: 400 });
+    const result = await (await partner()).keys[method](body.id, body);
+    if (action === 'apikeys/revoke' || action === 'apikeys/rotate') {
+      const prefix = `partner:${body.id}`;
+      const sessions = await db.prepare('SELECT DISTINCT player_id FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').all(prefix,`${prefix}:%`);
+      await db.prepare('DELETE FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').run(prefix,`${prefix}:%`);
+      for (const { player_id: playerId } of sessions) {
+        speechStreamService?.cancelPlayer(playerId);
+        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('partner_key_changed');
+        await probeRuntime.cancel({ playerId, dealerId: 'astrid' }, 'partner_key_changed');
+      }
+    }
+    return { ok: true, ...result };
+  },
+}) : null;
+const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
+  authorize: createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
+  publicOrigin:process.env.CROUPIER_PUBLIC_ORIGIN,labOrigin:process.env.LAB_PUBLIC_URL,
+}) : null;
 const server = createServer(async (req, res) => {
   try {
   const pathname=new URL(req.url,'http://local').pathname;
+  if (pathname === '/api/studio-game/command') {
+    if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
+    const request = new Request(`${process.env.CROUPIER_PUBLIC_ORIGIN}${req.url}`, { method: req.method, headers: req.headers,
+      ...(req.method === 'POST' ? { body: Readable.toWeb(req), duplex: 'half' } : {}) });
+    const result = await studioGameCommand(request);
+    res.writeHead(result.status, Object.fromEntries(result.headers)); res.end(await result.text()); return;
+  }
+  if (studioPolicyRuntime && pathname.startsWith('/api/bo/') && req.method === 'POST') {
+    res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end('{"error":"legacy_administration_retired"}'); return;
+  }
   if((await boGameAuth(req,res)))return;
+  if (studioPolicyRuntime && pathname === '/api/auth/lab/check') {
+    const checked = await studioLabSession(req);
+    res.writeHead(checked.status,Object.fromEntries(checked.headers));res.end();return;
+  }
   if((await boLabAuth(req,res)))return;
-  { const u=new URL(req.url,'http://local'); const launch=u.searchParams.get('launch');
-    if(['/', '/v2', '/v2/', '/game', '/game/'].includes(pathname) && launch){ const claims=jwtVerify(launch);
+  { const u=new URL(req.url,neonStudioEnabled ? gameOrigin : 'http://local'); const launch=u.searchParams.get('launch');
+    if(['/', '/v2', '/v2/', '/game', '/game/', ...(neonStudioEnabled ? ['/blackjack','/blackjack/'] : [])].includes(pathname) && launch){ const claims=jwtVerify(launch);
       if(!claims?.sub||!claims.partner||!(await getPlayer(claims.sub))){res.writeHead(403,{'Content-Type':'text/plain'});res.end('Launch token invalid or expired');return;}
       u.searchParams.delete('launch');
-      if (process.env.CROUPIER_PUBLIC_GAME_PATH === '/game') u.pathname = '/game';
+      if (neonStudioEnabled) { const destination=canonicalGameDestination(u,{includeLaunch:false}); u.pathname='/blackjack'; u.search=new URL(destination,u).search; }
+      else if (gamePath === '/game') u.pathname = '/game';
       let sessionCookie;
       try { sessionCookie = await auth.fromPartner(req,claims); }
       catch { res.writeHead(403, {'Content-Type':'text/plain','Cache-Control':'no-store'}); res.end('Launch token invalid or expired'); return; }
@@ -1041,7 +1111,9 @@ const server = createServer(async (req, res) => {
   }
   if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
-      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db });
+      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
+        ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
+          videoResponse: studioMediaRuntime.videoResponse, legacyControls: studioMediaRuntime.legacyControls } : {}) });
       if (await presentationApi(req, res, pathname, authenticated)) return;
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Local presentation unavailable' })); return; }
   }
@@ -1334,6 +1406,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   const url = new URL(req.url, 'http://x');
+  const gameRedirect = neonStudioEnabled ? gameEntryRedirect(new URL(req.url,gameOrigin),process.env) : null;
+  if (gameRedirect) {
+    if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }
+    res.writeHead(307,{Location:gameRedirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); res.end(); return;
+  }
   let decoded;
   try { decoded = decodeURIComponent(url.pathname); }
   catch { res.writeHead(400); res.end('bad request'); return; }
@@ -1378,7 +1455,11 @@ const server = createServer(async (req, res) => {
     }
   }
   if (['/v2', '/v2/', '/v2/index.html', '/game', '/game/'].includes(decoded)) path = '/index.html';
-  if (decoded === '/blackjack' || decoded === '/blackjack/') path = '/blackjack-entry.html';
+  if (decoded === '/blackjack' || decoded === '/blackjack/') path = neonStudioEnabled ? '/index.html' : '/blackjack-entry.html';
+  if (decoded === '/player-login' || decoded === '/player-login/') {
+    if (!neonStudioEnabled) { res.writeHead(404); res.end('not found'); return; }
+    path = '/blackjack-entry.html';
+  }
   if (path === '/' || path === '\\') path = '/index.html';
   if (/[/\\]$/.test(path)) path += 'index.html';   // directory index on Windows and POSIX
   const file = join(root, path);
@@ -1387,6 +1468,11 @@ const server = createServer(async (req, res) => {
   }
   const size = statSync(file).size;
   const type = MIME[extname(file)] ?? 'application/octet-stream';
+  if (neonStudioEnabled && type === 'text/html') {
+    const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env);
+    res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
+    res.end(req.method === 'HEAD' ? undefined : html); return;
+  }
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);
   if (range && (range[1] || range[2])) {
     const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
@@ -1416,14 +1502,19 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Service temporarily unavailable' }));
   }
 });
-server.once('close', () => { if (storage) void storage.close(); });
 if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+    ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
   });
-  server.once('close', () => speechStreamService.close());
 }
+server.once('close', async () => {
+  // Persist cancellation/terminal receipts while the journal connection is open.
+  try { await speechStreamService?.close(); }
+  catch { console.error('generated_speech_shutdown_failed'); }
+  finally { if (storage) await storage.close().catch(() => console.error('storage_shutdown_failed')); }
+});
 server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));

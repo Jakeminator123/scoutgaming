@@ -19,10 +19,10 @@ export default async function Page() {
     let session;
     try { session = await native.authorize(request); }
     catch (error) {
-      if ((error as {statusCode?:number})?.statusCode === 401) redirect('/bo/login.html?returnTo=%2Fstudio%2Fadministration');
+      if ((error as {statusCode?:number})?.statusCode === 401) redirect('/studio/login?returnTo=%2Fstudio%2Fadministration');
       throw error;
     }
-    return <NativeAdministration apiBase={native.config.apiBase} availableActions={native.api.availableActions(session)} />;
+    return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} />;
   }
   await authorizeUiPage(new Request(`http://${h.get('host') || 'invalid'}/administration`, { headers: h }));
   return <BackofficePanel origin={backofficeOrigin()} />;

@@ -17,7 +17,7 @@ export function normalizeDisplayName(value) {
 }
 
 export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/' }) {
-  if (!['/', '/game'].includes(publicGamePath)) throw Error('Invalid public game path');
+  if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
   function publish(k, pid, payload) { const set = subs.get(chan(k, pid)); if (!set) return; const line = `id: ${Date.now()}\nevent: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`; for (const res of set) { try { res.write(line); } catch {} } }

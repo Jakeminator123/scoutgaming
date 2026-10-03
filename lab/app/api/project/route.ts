@@ -3,13 +3,19 @@ import { validateProject } from '@/lib/studio-model.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from '@/lib/http-guard.mjs';
 import { legacyClipControls } from '@/lib/legacy-clip-inventory.mjs';
 import { StudioError } from '@/lib/project-store.mjs';
+import { nativeStudioAdminEnabled } from '@/lib/studio-native-runtime.mjs';
+import { handleNativeStudioDocument } from '@/lib/studio-document-api.mjs';
+import { assertRenderStudioWritable } from '@/lib/studio-render-persistence.mjs';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
+  if (nativeStudioAdminEnabled()) return handleNativeStudioDocument(request);
   try { assertLocalRequest(request); return jsonResponse({ project: await studioStore().load(), status: connectionStatus() }); }
   catch (error) { return errorResponse(error); }
 }
 export async function PUT(request: Request) {
+  if (nativeStudioAdminEnabled()) return handleNativeStudioDocument(request);
   try {
+    assertLocalRequest(request); assertRenderStudioWritable();
     const body = await readLocalJson(request);
     validateProject(body?.project);
     await validateVideoBindings(body.project);

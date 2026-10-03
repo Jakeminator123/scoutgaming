@@ -1,8 +1,11 @@
 'use client';
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { StudioAdministration, StudioAdminUiError, type StudioAdminApiBase } from './studio-administration';
+import { createStudioLoginClient, StudioLoginUiError } from '../lib/studio-login-client.mjs';
 
-export function NativeAdministration({ apiBase, availableActions }: {apiBase: StudioAdminApiBase; availableActions: string[]}) {
+export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {apiBase: StudioAdminApiBase; availableActions: string[];gameOrigin?:string}) {
+  const [epoch,setEpoch] = useState(0), [busy,setBusy] = useState(false), [error,setError] = useState('');
+  const writing = useRef(false);
   const session = useCallback(async () => {
     const response = await fetch(`${apiBase.replace(/\/admin$/, '/auth')}/session`, {
       credentials: 'same-origin', cache: 'no-store', redirect: 'error', headers: { Accept: 'application/json' },
@@ -10,5 +13,14 @@ export function NativeAdministration({ apiBase, availableActions }: {apiBase: St
     if (!response.ok) throw new StudioAdminUiError(response.status);
     return response.json();
   }, [apiBase]);
-  return <StudioAdministration apiBase={apiBase} session={session} availableActions={availableActions} />;
+  async function logout() {
+    if (writing.current) return;
+    writing.current = true; setBusy(true); setError(''); setEpoch(value => value+1);
+    const authBase = apiBase === '/studio/api/admin' ? '/studio/api/auth' : '/api/auth';
+    try { await createStudioLoginClient({authBase}).request('logout',{}); window.location.assign(apiBase === '/studio/api/admin' ? '/studio/login' : '/login'); }
+    catch (error) { setError(error instanceof StudioLoginUiError ? error.message : 'Utloggningen kunde inte bekräftas.'); }
+    finally { writing.current = false; setBusy(false); }
+  }
+  return <><button type="button" disabled={busy} onClick={() => void logout()}>Logga ut</button>{error && <p role="alert">{error}</p>}
+    {!busy && <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} />}</>;
 }

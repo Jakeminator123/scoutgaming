@@ -5,6 +5,14 @@ import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { createStudioNativeAuth } from './studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
+import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
+import { createRegisteredDealerIdle } from '../../web/storage/studio-runtime.mjs';
+import { resolveMediaPath } from '../../tools/media-layout.mjs';
+import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
+import { createStudioNativeAuthActions, createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
+import { createStudioGameAuthority } from './studio-game-authority.mjs';
+import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
+import { createStudioUploadService } from './studio-upload-service.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
@@ -17,6 +25,7 @@ export const nativeStudioAdminEnabled = (env = process.env) => env.CROUPIER_STUD
 
 export function nativeStudioAdminConfiguration(env = process.env) {
   if (!nativeStudioAdminEnabled(env)) return null;
+  if (!studioGamePolicyConfiguration(env)) unavailable();
   const origins = [env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN];
   for (const value of origins) {
     let url; try { url = new URL(value); } catch { unavailable(); }
@@ -57,6 +66,8 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
+  policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
+  env = process.env,
 } = {}) {
   if (!config) unavailable();
   poolFactory ??= async connectionString => {
@@ -69,15 +80,58 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     await store.db.assertInstalled({ source: await readFile(resolve(schemaRoot(), 'neon-game/product-schema.sql'), 'utf8') });
     await schemaCheck(pool);
     const repository = repositoryFactory({ pool, scope: config.scope });
+    const repositoryRoot = resolve(schemaRoot(), '..');
+    const dealerIdle = createRegisteredDealerIdle({ repositoryRoot, mediaAvailable: createStudioPublicMediaAvailability({ env, repositoryRoot }),
+      pathFor: (base, file) => resolveMediaPath(`web/public/${base}/${file}`, { repositoryRoot }) });
+    const gamePolicy = policyFactory({ repository, scope: config.scope, dealerIdle });
+    await gamePolicy.readSaved();
+    const media = createStudioMediaRuntime({ repository, scope: config.scope, env, repositoryRoot });
+    const signer = await store.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
+    if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) unavailable();
+    const uploads = createStudioUploadService({ repository, scope: config.scope, ticketKey: Buffer.from(signer.v, 'hex'), env });
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
-    const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope });
+    const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope,
+      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer });
+    const gameAuthority = createStudioGameAuthority({ env, scope: config.scope });
+    const mail = nativeStudioMail(env);
+    const accounts = accountsFactory({ boDb: store.boDb, scope: config.scope, gameAuthority, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN });
+    for (const [key, handler] of accounts.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
+    for (const [key, gate] of accounts.gates) gates.set(key, gate);
+    const authActions = authActionsFactory({ boDb: store.boDb, scope: config.scope, authorize, mail,
+      publicOrigin: env.CROUPIER_PUBLIC_ORIGIN, allowedOrigins: config.allowedOrigins, authBase: config.authBase,
+      rateLimit: createStudioLoginRateLimit({ boDb: store.boDb }),
+      // Use Vercel's trusted connection header only; caller-supplied forwarded
+      // chains cannot create unlimited login-rate buckets.
+      clientAddress: request => request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() || 'shared-unknown' });
     const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
-      publicHosts: config.publicHosts, apiBase: config.apiBase });
-    return Object.freeze({ api, authorize, config });
+      publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction: work => store.boDb.transaction(work) });
+    return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads,
+      mutationTransaction: work => store.boDb.transaction(work), ...media });
   } catch {
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }
     unavailable();
   }
+}
+
+function nativeStudioMail(env) {
+  if (!env.RESEND_API_KEY) return undefined;
+  return Object.freeze({ async send({ to, kind, link }) {
+    try {
+      const sent = await fetch('https://api.resend.com/emails', { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
+        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: 'Scout Backoffice <bo@axelio.io>', to: [to],
+          subject: kind === 'invite' ? 'Croupier Studio: välj ditt lösenord' : 'Croupier Studio: återställ lösenord',
+          text: `${kind === 'invite' ? 'Aktivera ditt befintliga Studio-konto' : 'Återställ lösenordet för ditt Studio-konto'}: ${link}` }) });
+      await sent.body?.cancel(); return { sent: sent.ok };
+    } catch { return { sent: false }; }
+  } });
+}
+
+export async function handleNativeAuthAction(request) {
+  try {
+    const config = nativeStudioAdminConfiguration(); assertNativeStudioRequest(request, config);
+    return (await studioNativeRuntime()).authActions.handle(request);
+  } catch (error) { return nativeStudioErrorResponse(error); }
 }
 
 let runtimePromise;

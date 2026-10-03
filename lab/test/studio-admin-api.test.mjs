@@ -4,7 +4,7 @@ import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 const origin = 'https://studio.example';
 const path = action => `/studio/api/admin/${action}`;
 const session = { user: 'Jakob', role: 'superadmin', scope: { environment: 'isolated-fixture', workspaceId: 'qa' } };
-function api(options = {}) { return createStudioAdminApi({ authorize: async () => session, allowedOrigins: [origin], publicHosts: ['studio.example'], handlers: new Map([['GET ' + path('players'), () => ({ players: [] })], ['POST ' + path('room'), context => ({ actor: context.actor, scope: context.scope })]]), ...options }); }
+function api(options = {}) { return createStudioAdminApi({ authorize: async () => session, mutationTransaction: work => work(), allowedOrigins: [origin], publicHosts: ['studio.example'], handlers: new Map([['GET ' + path('players'), () => ({ players: [] })], ['POST ' + path('room'), context => ({ actor: context.actor, scope: context.scope })]]), ...options }); }
 function request(action = 'room', options = {}) { return new Request(origin + path(action), { method: 'POST', headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: '{}', ...options }); }
 
 test('exact contract routing, unavailable handler and private safe errors', async () => {
@@ -98,4 +98,50 @@ test('storage validation and busy errors keep safe status messages and scope is 
   }]]) }).handle(new Request(origin + path('players')));
   assert.equal(response.status, 200);
   assert.equal((await api({ authorize: () => ({ ...session, scope: {} }) }).handle(new Request(origin + path('players')))).status, 422);
+});
+
+test('local writes are unavailable without an explicit mutation transaction', async () => {
+  const configured = api({ mutationTransaction: undefined });
+  assert.deepEqual(configured.availableActions(session), ['GET players']);
+  assert.equal((await configured.handle(request())).status, 503);
+});
+
+test('revocation while the request body is pending cannot execute a local mutation', async () => {
+  let principal = session, writer, authorizations = 0, invoked = 0, bodyPending;
+  const waiting = new Promise(resolve => { bodyPending = resolve; });
+  const configured = api({ authorize: () => { authorizations++; bodyPending(); return principal; },
+    handlers: new Map([['POST ' + path('room'), () => { invoked++; return { ok: true }; }]]) });
+  const body = new ReadableStream({ start(controller) { writer = controller; } });
+  const pending = configured.handle(request('room', { body, duplex: 'half' }));
+  await waiting;
+  principal = { ...session, role: 'reader' };
+  writer.enqueue(new TextEncoder().encode('{}')); writer.close();
+  assert.equal((await pending).status, 403);
+  assert.equal(invoked, 0); assert.equal(authorizations, 2);
+});
+
+test('identity and scope are checked again after gates while holding the product transaction', async () => {
+  for (const replacement of [{ ...session, role: 'reader' }, { ...session, user: 'other' },
+    { ...session, scope: { ...session.scope, workspaceId: 'other' } }, null]) {
+    let principal = session, locked = false, invoked = 0, checks = 0;
+    const configured = api({ authorize: () => { checks++; return principal; },
+      mutationTransaction: async work => { locked = true; principal = replacement; try { return await work(); } finally { locked = false; } },
+      handlers: new Map([['POST ' + path('players/create'), () => { invoked++; assert.equal(locked, true); return { ok: true }; }]]),
+      gates: new Map([['player-lifecycle-and-ledger', () => true]]) });
+    assert.equal((await configured.handle(request('players/create'))).status, replacement === null ? 401 : 403);
+    assert.equal(invoked, 0); assert.equal(checks, 3);
+  }
+  let checks = 0, locked = false;
+  const configured = api({ authorize: () => { checks++; if (checks === 3) assert.equal(locked, true); return session; },
+    mutationTransaction: async work => { locked = true; try { return await work(); } finally { locked = false; } },
+    handlers: new Map([['POST ' + path('room'), () => { assert.equal(locked, true); return { ok: true }; }]]) });
+  assert.equal((await configured.handle(request())).status, 200); assert.equal(checks, 3);
+});
+
+test('Render-authoritative operations refresh session without holding a local DB transaction', async () => {
+  let invoked = 0;
+  const configured = api({ mutationTransaction: () => { throw Error('Render HTTP must remain outside the product transaction'); },
+    handlers: new Map([['POST ' + path('apikeys/credit'), () => { invoked++; return { ok: true }; }]]),
+    gates: new Map([['game-authority', () => true]]) });
+  assert.equal((await configured.handle(request('apikeys/credit'))).status, 200); assert.equal(invoked, 1);
 });

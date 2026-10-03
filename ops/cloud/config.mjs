@@ -8,6 +8,7 @@ import { readVercelIngressConfig } from './vercel-ingress.mjs';
 import { readStorageExportConfig } from './storage-export.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
+import { gameEntryEnabled } from '../../web/public/game-entry-contract.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -133,8 +134,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   }
   const vercelIngress = readVercelIngressConfig(env);
   if (vercelIngress && (!singleOrigin || vercelIngress.publicOrigin !== gameOrigin)) fail('CROUPIER_PUBLIC_ORIGIN');
-  const publicGamePath = env.CROUPIER_PUBLIC_GAME_PATH || '/';
-  if (!['/', '/game'].includes(publicGamePath) || vercelIngress && publicGamePath !== '/game') fail('CROUPIER_PUBLIC_GAME_PATH');
+  const publicGamePath = gameEntryEnabled(env) ? '/blackjack' : env.CROUPIER_PUBLIC_GAME_PATH || '/';
+  if (!['/', '/game', ...(gameEntryEnabled(env) ? ['/blackjack'] : [])].includes(publicGamePath)
+    || vercelIngress && publicGamePath !== (gameEntryEnabled(env) ? '/blackjack' : '/game')) fail('CROUPIER_PUBLIC_GAME_PATH');
   const storageExport = readStorageExportConfig(env);
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
@@ -242,6 +244,13 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR'].filter(name => env[name] !== undefined)
     .map(name => [name, env[name]]));
   const shared = { ...base, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
+    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? {
+      CROUPIER_STUDIO_NEON_POLICY: '1',
+      CROUPIER_STUDIO_ENVIRONMENT_ID: env.CROUPIER_STUDIO_ENVIRONMENT_ID,
+      CROUPIER_STUDIO_WORKSPACE_ID: env.CROUPIER_STUDIO_WORKSPACE_ID,
+      CROUPIER_PUBLIC_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN,
+      CROUPIER_VERCEL_INGRESS_SECRET: env.CROUPIER_VERCEL_INGRESS_SECRET,
+    } : {}),
     CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
     CROUPIER_MEDIA_STORAGE: config.mediaStorage,
     ...(config.mediaBlobIndex ? { CROUPIER_MEDIA_BLOB_INDEX: config.mediaBlobIndex } : {}),
@@ -291,6 +300,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
       args: [join(REPOSITORY, 'lab/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
       cwd: join(REPOSITORY, 'lab'),
       env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
+        ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { CROUPIER_DATABASE: config.database,
+          CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
         LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
         CROUPIER_LAB_BASE_PATH: config.labBasePath,
         LAB_STUDIO_DATA_DIR: config.paths.studio, CROUPIER_DATA_DIR: config.paths.players,

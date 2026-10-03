@@ -13,7 +13,7 @@ function bodyKeys(body, allowed, required = allowed) {
 
 // Actual domain handlers, not a forwarding proxy. Missing domains are not
 // registered; callers cannot turn a future descriptor into an active feature.
-export function createStudioAdminData({ db, boDb, repository, scope, canAssignDealer, now = () => new Date().toISOString() } = {}) {
+export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy, canAssignDealer, now = () => new Date().toISOString() } = {}) {
   if (!db?.prepare || !boDb?.prepare || !repository?.readDocument || !repository?.saveDocument) fail(503);
   scope = validateStudioScope(scope);
   const players = createPlayerAdministration({ db, now }), handlers = new Map(), gates = new Map();
@@ -26,7 +26,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, canAssignDe
     trusted(context); return run(context);
   });
   async function config() {
-    const document = await repository.readDocument('administration');
+    const document = gamePolicy ? await gamePolicy.readAdministration() : await repository.readDocument('administration');
     if (!document) fail(503); // Explicit import/initialize only; never BO_DEFAULTS.
     return document;
   }
@@ -38,7 +38,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, canAssignDe
       if (previous.revision !== body.expectedRevision) fail(409);
       const value = structuredClone(previous.value);
       await update(value, body, context);
-      const saved = await repository.saveDocument('administration', {
+      const saved = gamePolicy ? await gamePolicy.saveAdministration(value, body.expectedRevision, { actor: trusted(context) }) : await repository.saveDocument('administration', {
         value, actor: trusted(context), expectedRevision: body.expectedRevision,
       });
       return { ok: true, revision: saved.revision };

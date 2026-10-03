@@ -2,7 +2,7 @@
 // Partner API v1 — for operators/aggregators integrating the Croupier AI-dealer tables.
 // Auth: X-Api-Key + X-Timestamp + X-Signature (HMAC-SHA256 hex of `${ts}.${method}.${path}.${body}` with the key's secret).
 // PostgreSQL preserves internal demo wallets; external wallet commands fail explicitly until recovery is verified.
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { buildAssetsManifest, presentationEvents } from '../partner-presentation.mjs';
 
 const DISPLAY_NAME_FORBIDDEN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
@@ -17,13 +17,15 @@ export function normalizeDisplayName(value) {
   return compact;
 }
 
-export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/' }) {
-  if (!['/', '/game'].includes(publicGamePath)) throw Error('Invalid public game path');
+export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/',
+  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' }) {
+  if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
   function publish(k, pid, payload) { const set = subs.get(chan(k, pid)); if (!set) return; const line = `id: ${Date.now()}\nevent: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`; for (const res of set) { try { res.write(line); } catch {} } }
   // events = observe the SSE stream only; play implies it. A key with just events cannot launch or act.
   const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
+  const keyStamp = key => createHash('sha256').update(key.secret).digest('hex');
   const keys = {
     async list() { return (await boDb.prepare('SELECT id, name, key, scopes, wallet_url, ip_allow, created_by, created_at, last_used, revoked_at FROM api_keys ORDER BY created_at DESC').all()).map(r => ({ ...r, scopes: JSON.parse(r.scopes), key: r.key.slice(0, 12) + '…' })); },
     async create({ name, scopes, walletUrl, ipAllow }, who) {
@@ -42,7 +44,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       const pid = String(playerId || 'test-' + randomBytes(3).toString('hex'));
       const p = (await playerFor({ ...row, scopes: JSON.parse(row.scopes) }, pid, currency || 'EUR'));
       const presentedAs = normalizeDisplayName(displayName);
-      const tok = jwtSign({ sub: p.id, partner: row.id, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
+      const tok = jwtSign({ sub: p.id, partner: row.id, partner_key_stamp: keyStamp(row), displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
       const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, displayName: presentedAs, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
@@ -62,8 +64,22 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       return { playerId, balance: nb, currency: p.currency };
       });
     },
-    async revoke(id) { (await boDb.prepare('UPDATE api_keys SET revoked_at=? WHERE id=? AND revoked_at IS NULL').run(new Date().toISOString(), id)); return { ok: true }; },
-    async rotate(id) { const secret = 'cs_' + randomBytes(32).toString('base64url'); (await boDb.prepare('UPDATE api_keys SET secret=? WHERE id=? AND revoked_at IS NULL').run(secret, id)); return { id, secret, note: 'New secret shown ONCE.' }; },
+    async revoke(id) {
+      await boDb.prepare('UPDATE api_keys SET revoked_at=? WHERE id=? AND revoked_at IS NULL').run(new Date().toISOString(), id);
+      for (const [channel, responses] of subs) if (channel.startsWith(`${id}:`)) {
+        for (const response of responses) { try { response.end(); } catch {} } subs.delete(channel);
+      }
+      return { ok: true };
+    },
+    async rotate(id) {
+      const secret = 'cs_' + randomBytes(32).toString('base64url');
+      const changed = await boDb.prepare('UPDATE api_keys SET secret=? WHERE id=? AND revoked_at IS NULL').run(secret, id);
+      if (!changed.changes) throw Object.assign(new Error('Partner key unavailable'), { statusCode: 404 });
+      for (const [channel, responses] of subs) if (channel.startsWith(`${id}:`)) {
+        for (const response of responses) { try { response.end(); } catch {} } subs.delete(channel);
+      }
+      return { id, secret, note: 'New secret shown ONCE.' };
+    },
   };
 
   async function authenticate(req, method, path, body) {
@@ -87,6 +103,10 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   function gameViewOf(savedRow) { try { const g = JSON.parse(savedRow.state); const { view } = shoeCommand(g, { op: 'state' }, 0); return view.round; } catch { return null; } }
   async function playerFor(k, partnerPlayer, currency) {
     return db.transaction(async () => {
+      // Authentication may precede the serialized game transaction. A queued
+      // request signed with a rotated/revoked key must not mutate its player.
+      const current = await boDb.prepare('SELECT secret,revoked_at FROM api_keys WHERE id=?').get(k.id);
+      if (!current || current.revoked_at || current.secret !== k.secret) throw Object.assign(new Error('Partner key unavailable'), { statusCode: 403 });
       const mapping = await db.prepare('SELECT player_id FROM partner_players WHERE key_id=? AND partner_player=?').get(k.id,partnerPlayer);
       if (mapping) {
         const player = await db.prepare('SELECT id,name,currency,balance,status FROM players WHERE id=? FOR UPDATE').get(mapping.player_id);
@@ -135,7 +155,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
         const { playerId, displayName, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         const presentedAs = normalizeDisplayName(displayName);
         const p = (await playerFor(k, playerId, currency));
-        const tok = jwtSign({ sub: p.id, partner: k.id, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
+        const tok = jwtSign({ sub: p.id, partner: k.id, partner_key_stamp: keyStamp(k), displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
         return send(200, { url: `${publicUrl}${publicGamePath}?dealer=astrid&launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') {
         const e=need(k,'play');if(e)return send(e.status,e);
@@ -195,8 +215,9 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   // Session provenance is a separate server argument, never client JSON.
   async function publishNativeRound({ session, playerId, previousView, view, command, balance }) {
     if (!session?.partnerKeyId || session.playerId !== playerId || command.op === 'state') return false;
-    const key = (await boDb.prepare('SELECT id, scopes FROM api_keys WHERE id=? AND revoked_at IS NULL').get(session.partnerKeyId));
+    const key = (await boDb.prepare('SELECT id, scopes, secret FROM api_keys WHERE id=? AND revoked_at IS NULL').get(session.partnerKeyId));
     if (!key || !JSON.parse(key.scopes).some(scope => scope === 'events' || scope === 'play')) return false;
+    if (session.partnerKeyStamp ? session.partnerKeyStamp !== keyStamp(key) : !allowLegacyPartnerSessions) return false;
     const mappings = (await db.prepare('SELECT partner_player FROM partner_players WHERE key_id=? AND player_id=?').all(key.id, playerId));
     // An ambiguous reverse mapping must not broadcast a native player's data.
     if (mappings.length !== 1) return false;

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 import { normalizeSpeechPackage } from './public/speech-package.mjs';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
+import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const PROFILE = ASTRID_VOICE_PROFILE.profileRevision;
@@ -72,18 +73,35 @@ export function generatedSpeechStatus(env = process.env) {
 
 let singleton = null;
 let singletonKey = null;
+let speechJournal = null;
+let speechArtifacts = null;
+function requireArtifacts(artifacts) {
+  if (!artifacts || typeof artifacts.save !== 'function' || typeof artifacts.get !== 'function') fail('generated_speech_artifacts_unavailable');
+  return artifacts;
+}
+export function configureGeneratedSpeechJournal(journal, { artifacts = null } = {}) {
+  if (journal !== null) requireSpeechJournal(journal);
+  if (journal !== null) requireArtifacts(artifacts);
+  if (speechJournal !== journal || speechArtifacts !== artifacts) {
+    singleton = null; singletonKey = null; speechJournal = journal; speechArtifacts = artifacts;
+  }
+}
 export function getGeneratedSpeechService() {
   const { configured, value } = configuration(process.env);
   if (!configured) return null;
-  const key = digest(JSON.stringify(value));
-  if (key !== singletonKey) { singleton = createGeneratedSpeechService(value); singletonKey = key; }
+  if (process.env.CROUPIER_STUDIO_NEON_POLICY === '1') requireSpeechJournal(speechJournal);
+  const key = digest(JSON.stringify([value, process.env.CROUPIER_STUDIO_NEON_POLICY === '1']));
+  if (key !== singletonKey) { singleton = createGeneratedSpeechService(value, { journal:speechJournal, artifacts:speechArtifacts }); singletonKey = key; }
   return singleton;
 }
 
 // Only an explicitly isolated, private preview store. Artifacts never enter the
 // dealer bank or inherit visual acceptance. Request reservations survive failed
 // jobs/restarts: an uncertain paid request is not automatically charged again.
-export function createGeneratedSpeechService(config, { provider = null } = {}) {
+export function createGeneratedSpeechService(config, { provider = null, journal = null, artifacts = null,
+  journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' } = {}) {
+  if (journalRequired || journal) requireSpeechJournal(journal);
+  if (journal) requireArtifacts(artifacts);
   if (!config || !privateDirectory(config.directory)) fail('generated_speech_invalid_directory');
   const directory = resolve(config.directory);
   const voiceId = config.voiceId ?? GENERATED_SPEECH_DEFAULTS.voiceId;
@@ -91,6 +109,7 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
   if (voiceId !== GENERATED_SPEECH_DEFAULTS.voiceId || modelId !== GENERATED_SPEECH_DEFAULTS.modelId) fail('generated_speech_unknown_profile');
   let runtime = provider;
   const pending = new Map();
+  const ownership = journal ? createSpeechJournalLease({ journal, resource:'fullfile-provider' }) : null;
 
   async function store() {
     await mkdir(directory, { recursive: true, mode: 0o700 });
@@ -152,6 +171,7 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
       generation: { requestId: input.requestId, provider: ASTRID_VOICE_PROFILE.provider, modelId, avatarId: 'astrid_spel2x', profileRevision: PROFILE, textSha256: digest(input.text), audioSha256: result.audio.sha256 } });
   }
   async function execute(input, ownerHash, key, fingerprint) {
+    if (journal) return executeJournal(input, ownerHash, key, fingerprint);
     await store();
     const reservation = join(directory, `${key}.request.json`);
     try {
@@ -195,6 +215,40 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
       throw safe;
     } finally { await lock.close(); await unlink(lockPath); }
   }
+  async function executeJournal(input, ownerHash, key, fingerprint) {
+    const identity = { ownerHash, requestId:input.requestId, fingerprint, capability:'fullfile' };
+    const existing = await journal.findRequest(identity);
+    if (existing) {
+      if (existing.state !== 'completed') fail('generated_speech_request_already_attempted', 409);
+      const cached = normalizeSpeechPackage(existing.packageMetadata.speechPackage);
+      const id = existing.packageId?.replace(/^generated-/, '');
+      if (!MEDIA_ID.test(id ?? '') || cached.packageId !== existing.packageId) fail('generated_speech_corrupt_artifact', 409);
+      return cached;
+    }
+    let claimed = false;
+    try {
+      const lease = await ownership.get();
+      input.signal?.throwIfAborted(); await input.beforeCostly?.(); input.signal?.throwIfAborted();
+      const claim = await journal.claimRequest({ ...identity, lease });
+      if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
+      claimed = true;
+      await journal.markRequestSubmissionStarted({ key, lease:await ownership.get() });
+      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId });
+      const result = await runtime.generate({ requestId:`speech-${key}`, text:input.text, signal:input.signal,
+        beforeCostly:async () => { input.signal?.throwIfAborted(); await input.beforeCostly?.(); await ownership.get(); input.signal?.throwIfAborted(); }, onProgress:input.onProgress });
+      if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
+      const id = randomBytes(16).toString('hex'), speechPackage = outputPackage(result, input, id);
+      const saved = await artifacts.save({ artifactId:id, ownerHash, speechPackage, audio:result.audio, video:result.video });
+      if (!saved || JSON.stringify(normalizeSpeechPackage(saved.speechPackage)) !== JSON.stringify(speechPackage)
+        || !saved.artifacts || typeof saved.artifacts !== 'object') fail('generated_speech_corrupt_artifact', 409);
+      await journal.completeRequest({ key, lease:await ownership.get(), packageId:speechPackage.packageId, packageMetadata:saved });
+      return speechPackage;
+    } catch (error) {
+      const safe = safeFailure(error);
+      if (claimed) { try { await journal.failRequest({ key, lease:await ownership.get(), safeCode:safe.code }); } catch {} }
+      throw safe;
+    } finally { try { await ownership.release(); } catch {} }
+  }
   return Object.freeze({
     generate(input) {
       let ownerHash, key, fingerprint;
@@ -217,10 +271,20 @@ export function createGeneratedSpeechService(config, { provider = null } = {}) {
       promise.finally(() => pending.delete(key)).catch(() => {});
       return promise.then(structuredClone);
     },
-    async media({ id, kind, owner } = {}) {
+    async media({ id, kind, owner, request } = {}) {
       try {
         const ownerHash = ownerDigest(owner);
         if (!['audio', 'video'].includes(kind)) fail('generated_speech_not_found', 404);
+        if (journal) {
+          if (!MEDIA_ID.test(id ?? '')) fail('generated_speech_not_found', 404);
+          const saved = await journal.getCompletedPackageById({ ownerHash, packageId:`generated-${id}` });
+          const speechPackage = normalizeSpeechPackage(saved.packageMetadata.speechPackage);
+          if (speechPackage.packageId !== saved.packageId) fail('generated_speech_corrupt_artifact', 409);
+          const media = await artifacts.get({ artifactId:id, kind, ownerHash, completedPackage:saved.packageMetadata, request });
+          if (!Buffer.isBuffer(media?.bytes) || digest(media.bytes) !== speechPackage[kind].sha256
+            || media.contentType !== (kind === 'audio' ? 'audio/wav' : 'video/mp4')) fail('generated_speech_corrupt_artifact', 409);
+          return media;
+        }
         await store();
         const { target, speechPackage } = await artifact(id, ownerHash);
         const bytes = await boundedFile(join(target, kind === 'audio' ? 'audio.wav' : 'video.mp4'), kind === 'audio' ? AUDIO_LIMIT : GENERATED_SPEECH_LIMITS.videoBytes);

@@ -51,9 +51,9 @@ async function writePreview(output) {
       content = content.replace(previous, "const destination = '/frontend-preview/game/?dealer=astrid&presentation=local';");
     }
     if (name === 'auth-modal.mjs') {
-      const previous = "playerEntry.href='/blackjack';";
+      const previous = "playerEntry.href=document.documentElement.dataset.gamePath === '/blackjack' ? '/player-login' : '/blackjack';";
       if (!content.includes(previous)) throw Error('Spelarens interna inloggningslänk har ändrats.');
-      content = content.replace(previous, "playerEntry.href='/frontend-preview/blackjack/';");
+      content = content.replace(previous, "playerEntry.href=document.documentElement.dataset.gamePath === '/blackjack' ? '/player-login' : '/frontend-preview/blackjack/';");
     }
     const target = join(fileURLToPath(output), name);
     await mkdir(dirname(target), { recursive: true });

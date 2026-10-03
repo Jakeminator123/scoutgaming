@@ -8,9 +8,11 @@ export interface StudioAdminContext {
   readonly actor: Readonly<{ user: string; role: StudioRole }>;
   readonly scope: Readonly<StudioAdminScope>;
   readonly endpoint: StudioAdminEndpoint;
+  readonly afterCommit?: (work: () => Promise<unknown>) => void;
 }
 export interface StudioAdminApiOptions {
   apiBase?: '/studio/api/admin' | '/api/admin';
+  mutationTransaction?<T>(work: () => Promise<T>): Promise<T>;
   authorize(request: Request): Promise<StudioAdminSession> | StudioAdminSession;
   allowedOrigins: string[];
   publicHosts: string[];

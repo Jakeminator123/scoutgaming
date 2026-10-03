@@ -1,3 +1,4 @@
+import {canonicalGameDestination} from './game-entry-contract.mjs';
 const form = document.querySelector('form');
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
@@ -5,6 +6,8 @@ const toggle = document.querySelector('#toggle');
 const password = document.querySelector('#password');
 const username = document.querySelector('#username');
 const destination = '/?dealer=astrid&presentation=local';
+const gameDestination = document.documentElement.dataset.gamePath === '/blackjack'
+  ? canonicalGameDestination(new URL(location.search ? location.href : '/player-login?dealer=astrid&presentation=local',location.origin),{includeLaunch:false}) : destination;
 let registering = false, playerAccounts = false, busy = false;
 const kind = () => form.elements.kind.value;
 function render() {
@@ -30,7 +33,7 @@ form.onsubmit = async event => {
     });
     const result = await response.json();
     if (!response.ok) throw Error(result.error || 'Inloggningen misslyckades.');
-    password.value = ''; location.assign(destination);
+    password.value = ''; location.assign(gameDestination);
   } catch (error) { status.textContent = error.message; }
   finally { busy = false; submit.disabled = toggle.disabled = false; }
 };
@@ -38,7 +41,7 @@ try {
   const response = await fetch('/api/auth/session', { cache: 'no-store' });
   if (!response.ok) throw Error('Inloggningen är inte tillgänglig. Ladda om för att försöka igen.');
   const session = await response.json();
-  if (session.authenticated && !session.localDemoProfiles) location.replace(destination);
+  if (session.authenticated && !session.localDemoProfiles) location.replace(gameDestination);
   else {
     playerAccounts = session.playerAccounts === true;
     if (!playerAccounts) form.elements.kind.value = 'scout';

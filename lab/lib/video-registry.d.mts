@@ -1,5 +1,11 @@
 import type { VideoMetadata } from './video-intake.mjs';
-export interface VideoRegistryOptions { archiveDir?: string | null; snapshotPath?: string; uploadDir?: string }
+export interface VideoRegistryOptions {
+  archiveDir?: string | null; snapshotPath?: string; uploadDir?: string;
+  strict?: boolean; repositoryRoot?: string; indexPath?: string; cacheDir?: string;
+  env?: Record<string, string | undefined>;
+  readUploads?(options: VideoRegistryOptions): Promise<any[]>;
+  readClassifications?(options: VideoRegistryOptions): Promise<any[]>;
+}
 export interface RegistryVideo {
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';

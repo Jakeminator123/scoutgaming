@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { createCompanionService } from '../../open-claw/lab/src/companion.mjs';
 import { remoteRequest } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
+import { labUrl } from './lab-url.mjs';
 
 const COOKIE = 'croupier_lab_companion';
 export function labCompanionIdentity(request, settings) {
@@ -14,7 +15,8 @@ export function labCompanionIdentity(request, settings) {
   // accepted here. A future product adapter must derive its own authenticated
   // (tenant, player) identity in a different namespace.
   const identity = createHmac('sha256', secret).update(`croupier-lab-v1\0${fresh}`).digest('hex');
-  return { identity, cookie: token ? null : `${COOKIE}=${fresh}; Path=/api/social; HttpOnly; SameSite=Strict; Max-Age=2592000${new URL(request.url).protocol === 'https:' ? '; Secure' : ''}` };
+  const cookiePath = process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio/api/social' : labUrl('/api/social');
+  return { identity, cookie: token ? null : `${COOKIE}=${fresh}; Path=${cookiePath}; HttpOnly; SameSite=Strict; Max-Age=2592000${new URL(request.url).protocol === 'https:' ? '; Secure' : ''}` };
 }
 
 const directServices = new Map();
