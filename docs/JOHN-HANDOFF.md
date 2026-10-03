@@ -53,7 +53,8 @@ får en kopia av accepterade decoderbytes och verklig frame-/ended-lifecycle.
 Renderer-sessionens klient-UUID hålls separat från serverns cookieägarhash,
 men båda binds till samma aktuella runda. De tre ägarkontrollerna och verkligt
 köslut/idle-stages krävs. 85 riktade offlineprov och fyra-dealer-audit PASS;
-mänsklig synkacceptans och nya live-rehearsals är inte utförda.
+mänsklig synkacceptans återstår. Senare inspelade live-rehearsals redovisas
+nedan; ingen ny AI/GPU-körning eller full P6-acceptans hävdas.
 Nytt kvittoscope är `decoded-product-game-queue`, `gameQueueExecuted:true`;
 `gameWrapperIntegrated:false`, `liveIntegrationVerified:false` och
 `sourceVerification: same-origin-source-readback-loaded-module-unverified`
@@ -80,13 +81,55 @@ anrop eller journalhändelser. Prepare-only run `cb9b6b53-e7b0-4fa9-bc53-c5152dd
 hör till befintlig kampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`; budgeten
 är oförändrad. Detta är paket-/källinstallation, inte körande workeracceptans.
 Privata kvitton: `native-p6-qa-release-5b51af0e/{actual-install-receipt,actual-linux-readback}.json`.
-Vercel-QA:s första 5b51-publicering tappade tidigare per-deployment env/build
-overrides: READY bevisade inte fungerande UI. Återställ exakt accepterade
-QA-overrides vid nästa kodversion; ingen ny tariff, produktionsenv eller nyckel.
 Frontendens exakta allowlist saknade också playback-context-GET. Den routen
-är nu rättad; nio routing/middleware/entry-prov PASS. Nya live-rehearsals återstår.
+är levererad i `966991ef4e4ad4a4ca9f446216c71d14a5d92841`; nio routing/
+middleware/entry-prov, full obligatorisk hook och 3/3 GitHub-CI PASS.
+Render-QA är live på denna SHA som `dep-db0kostg1s2s73eh0uk0`. Alla 17 privata
+källfiler är återlagda efter containerbytet, med oförändrad beständig plan
+och SDK-trädhash. Oberoende SSH-återläsning som UID 1000 verifierar åter nio
+spelblobs mot Git och laddar faktiskt SDK-modulen/constructor utan klient,
+provideranrop, tjänstestart eller journaländring. Kvitton finns privat i
+`native-p6-qa-release-5b51af0e/{rehydrate-966991ef-receipt,actual-linux-readback-966991ef}.json`.
+Vercel-QA:s första 5b51-publicering tappade tidigare per-deployment env/build
+overrides: READY bevisade inte fungerande UI. Korrigerade byggen på 966991ef
+använder exakt tidigare accepterade QA-overrides; ingen ny tariff,
+produktionsenv eller nyckel. Båda korrigerade Vercel-byggen är READY och
+QA-alias är faktiskt bundna/återlästa på samma SHA: frontend
+`dpl_8Bsu9hFD7U7c7wqDTbBcXBC77aZB`, Studio `dpl_PLfAczMttfMAUx3HcwgiPN6bDj8w`.
+Frontendens nio spelmoduler ger HTTP200 och exakt samma SHA256 som Git;
+kvitto `vercel-source-hash-proof-966991ef.json` i samma privata releasekatalog.
+Unauth BO/API returnerar 401/403 och router-off-context404 enligt gränserna.
+Den befintliga syntetiska QA-operatören är live-verifierad med read-only SQL
+och normal Studio-login/BO→spel-handoff genomfördes därefter i IAB. Ingen ny
+användare, inbjudan eller mejlleverans. Astrid greeting i delad Studio-spelare
+visar faktiskt `2/2 completed`; bild `qa-astrid-local-966991ef.jpg`. Detta är
+inspelad uppspelning med giltig QA-cookie, inte betald AI/GPU-acceptans.
+Browsern kan nu öppna spelet; tidigare browser-blockering är inte aktuell på
+den korrigerade publiceringen. En separat CDP-källkontroll fastnade länge och
+gav ingen full huvudram/context-bindning; loaded-module-bevis hävdas inte.
+Alla fyra greeting-rehearsals är därefter faktiskt begärda med Play twice
+på korrekt dealer-URL i samma QA-spelflik. Vera, Amira och Mei återgår med
+aktiva kontroller, matching clip och utan Playback failed; deras gamla UI
+har ingen explicit sluträknare. Astrid/local visar explicit 2/2. Detta är
+funktionell observation, inte nytt läppsynkgodkännande eller assetbaseline.
+Den separata QA-labbdomänens normala login är också faktiskt genomförd:
+AstridStudio visas och Spara är disabled; inga projektinställningar ändrades.
+Sammanhållet privat UI-kvitto: `live-qa-ui-966991ef.json` i releasekatalogen.
+Browsertransporten stängdes efter kontrollerna; slutstädning av agentens två
+QA-flikar kan därför inte bekräftas. RunPod-fliken och andra användarflikar
+är inte stängda av agenten.
+QA-bilder finns i samma privata releasekatalog som
+`qa-{vera,amira,mei}-default-966991ef.jpg` och Astrid/local-bilden ovan.
 
-GitGuardian: remote `5b51af0ecf850a329f46ac4da00cec02340100ca` är återläst med
+Nästa obetalda gräns är faktiskt kontrollerad: SDK-importen ovan fungerar, men
+cookie-endpointen registreras först efter initierad P6-router/authority-brygga.
+Prepare-only plan och avstängda router/providerflaggor ger därför avsiktligt
+404, inte ett godkänt spelkvitto. För start krävs fulla färska manifest,
+ursprunglig giltig initialAdmission och befintlig numerisk budgetjournal;
+entry kräver också tariff/counting-underlag. Skapa inte påhittad admission,
+ny budget eller ersättningsjournal för att kringgå denna gräns.
+
+GitGuardian: remote `966991ef4e4ad4a4ca9f446216c71d14a5d92841` är återläst med
 alla check-runs/check-suites/status: 3/3 CI och båda Vercel-statusar success;
 ingen GG-run, GG-suite queued. Detta visar inte en tom incidentlista.
 Jakob godkände separat två lässcope och därefter ett års giltighet. Årsnyckeln

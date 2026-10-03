@@ -409,7 +409,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     separata renderer-/serveridentiteter och verkligt köslut. Den är avstängd
     utom på avsedd egen QA-origin med explicit flagga och godkänd auth.
     85 riktade offlineprov och audit PASS; faktisk installerad browserkedja,
-    nya rehearsalplays och source-loaded-bevis återstår. Nytt kvitto är ärligt
+    full AI/GPU-rehearsal och source-loaded-bevis återstår. Nytt kvitto är ärligt
     `decoded-product-game-queue`, men ingen full liveacceptans hävdas.
     Käll-overlay omfattar även transitiva literal imports; externa/dynamiska
     beroenden och basimage/frontendinstallationen hålls öppna. Officiell SDK
@@ -424,9 +424,29 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     och nio spelkällor mot exakt Git/Linux-byteidentitet. Prepare-only run
     `cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2` använder befintlig kampanj/budget;
     inga betalda anrop eller nya journalhändelser. Körande worker återstår.
-    Första Vercel-QA-uppdateringen tappade accepterade deployment-overrides;
-    återställ dem exakt. Frontendens saknade playback-context-route är rättad
-    med 9/9 routing/middleware/entry-prov PASS. Ny UI-/liveacceptans återstår.
+    Frontendens saknade playback-context-route är därefter levererad som
+    `966991ef4e4ad4a4ca9f446216c71d14a5d92841`: 9/9 routing/middleware/
+    entry-prov, full hook och 3/3 CI PASS. Render `dep-db0kostg1s2s73eh0uk0`
+    är live på samma SHA; 17 privata källfiler återlagda utan plan-/SDKändring.
+    Oberoende SSH-provet verifierar nio Git-blobs och laddar faktiskt SDK-
+    modulen utan klient/provider/journal/tjänstestart. Första Vercel-QA-
+    uppdateringen tappade accepterade deployment-overrides; korrigerade
+    966991ef-byggen återanvänder dem exakt. Båda är READY och QA-alias faktiskt
+    bundna/återlästa: frontend `dpl_8Bsu9hFD7U7c7wqDTbBcXBC77aZB`, Studio
+    `dpl_PLfAczMttfMAUx3HcwgiPN6bDj8w`. Nio publika spelmoduler ger HTTP200
+    och exakta Git-SHA256. Normal login/BO→spel med befintlig syntetisk QA-
+    operatör fungerar; ingen ny användare/inbjudan/mejl. Astrid greeting i
+    delad Studio-spelare har faktisk `2/2 completed`. CDP-källkontrollen gav
+    inget fullständigt loader/context-bevis; detta hävdas inte som P6-acceptans.
+    Alla fyra greeting-rehearsals begärdes faktiskt med Play twice på rätt
+    QA-dealer-URL: Astrid/local visar 2/2; Vera/Amira/Mei återgår utan visat
+    uppspelningsfel men har ingen explicit sluträknare. Ingen assetbaseline
+    eller mänsklig synkacceptans ändrades. Även den separata QA-labbdomänens
+    login är faktiskt verifierad; inget projekt sparades. Privat UI-kvitto
+    `native-p6-qa-release-5b51af0e/live-qa-ui-966991ef.json`.
+    Cookie-endpointen behöver initierad authority/router med giltig original-
+    admission och numerisk journal; prepare-only/router-off ger avsiktligt404.
+    Färska full-run-manifest, tariff/counting-underlag och liveacceptans återstår.
   - Prisgap får enligt Jakob stå som backlog: faktisk Cartesia-kontotariff
     (extern nyckel, ingen egen kontoinloggning), counting-tariff/uttryckligt
     gratisbevis och RunPods totala startup/execution/idlekostnadsgräns saknas.
