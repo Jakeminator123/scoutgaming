@@ -8,7 +8,7 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
-import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch } from './native-p6-qa-hook.mjs';
+import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
@@ -1043,8 +1043,10 @@ const server = createServer(async (req, res) => {
   if(pathname==='/api/v1/events'&&req.method==='GET'){ (await (await partner()).handleEvents(req,res,new URL(req.url,'http://local'))); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await (await partner()).handle(req,res,pathname); return; }
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
+  const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
+  if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   let authenticated=(await playerSession(req))?.playerId ?? null;
-  const guest=guestPreview && !authenticated && !backoffice && (pathname.startsWith('/api/') || pathname==='/chat');
+  const guest=guestPreview && !authenticated && !backoffice && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
   if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
@@ -1120,6 +1122,16 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
+        ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
+          if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
+          const owner=await chatSessionOwner(request,playerId);
+          return nativeP6OwnedPlaybackContext(nativeP6QaRouter,{playerId,owner,project,readProject,
+            readOwner:async()=>{
+              if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
+              return chatSessionOwner(request,playerId);
+            },readStatus:async()=>authoritativeChatStatus(playerId,await playerSession(request),{
+              dealerId:'astrid',sessionRevision:createHash('sha256').update(owner).digest('hex')},{allowCurrentRound:true})});
+        }}:{}),
         ...(nativeP6QaRouter ? { directorFetchFactory: async ({ req: request, playerId, project, readProject, signal }) => {
           const owner = await chatSessionOwner(request, playerId);
           const initial = await authoritativeChatStatus(playerId, await playerSession(request), {

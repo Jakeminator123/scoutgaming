@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createPresentationApi, presentationInput } from '../web/presentation-api.mjs';
+import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
 import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
@@ -18,6 +19,65 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
+test('native playback context is default off, cookie-owned read-only and refuses substituted policy/owner/round',async()=>{
+  const hash=v=>createHash('sha256').update(v).digest('hex'),playerId='isolated-playback-fixture',owner='player-fixture-owner';
+  const project=createSeedProject(),reader=createNativeP6OwnedPlaybackContextReader({ownLinkedPlayerSha256:hash(playerId),now:()=>1000});
+  for(const race of [null,'owner','policy','round']){
+    let reads=0;
+    const args={playerId,owner,project,readOwner:async()=>race==='owner'?'revoked-owner':owner,
+      readProject:async()=>race==='policy'?{...project,revision:'changed-policy'}:structuredClone(project),
+      readStatus:async()=>({dealerId:'astrid',sessionRevision:hash(owner),roundRevision:race==='round'&&reads++?'2':'1'})};
+    if(race)await assert.rejects(reader(args),{code:'native_p6_qa_playback_state_changed'});
+    else{const result=await reader(args);assert.equal(result.actorSha256,hash(playerId));assert.equal(result.ownerSessionSha256,hash(owner));
+      assert.equal(result.sessionRevision,hash(owner));assert.equal(result.roundRevision,'1');assert.equal(result.observedAtMs,1000);
+      assert.equal(Object.keys(result).length,6);assert.match(result.policySha256,/^[a-f0-9]{64}$/);}
+  }
+  await assert.rejects(reader({playerId:'foreign-fixture',owner,project,readOwner:async()=>owner,
+    readProject:async()=>project,readStatus:async()=>({dealerId:'astrid',sessionRevision:hash(owner),roundRevision:'1'})}),
+    {code:'native_p6_qa_playback_actual_callbacks_required'});
+  let loads=0,callbacks=0;
+  const make=enabled=>createPresentationApi({env:{},store:{load:async()=>{loads++;return structuredClone(project);}},
+    ...(enabled?{nativeP6PlaybackContext:async({req,playerId:id,project:current,readProject})=>{
+      callbacks++;if(req.headers.cookie!=='player_session=fixture')throw Object.assign(Error('cookie_required'),{statusCode:401});
+      return reader({playerId:id,owner,project:current,readProject,readOwner:async()=>owner,
+        readStatus:async()=>({dealerId:'astrid',sessionRevision:hash(owner),roundRevision:'1'})});}}:{})});
+  async function get(handler,{method='GET',query='',cookie='player_session=fixture',id=playerId}={}){
+    const req=Readable.from([]);req.method=method;req.url='/api/presentation/native-p6-playback-context'+query;req.headers={cookie};
+    let status,body,headers;const res={writeHead:(s,h)=>{status=s;headers=h;},end:raw=>{body=JSON.parse(raw);}};
+    await handler(req,res,'/api/presentation/native-p6-playback-context',id);return{status,body,headers};
+  }
+  assert.equal((await get(make(false))).status,404);assert.equal(loads,0);assert.equal(callbacks,0);
+  const handler=make(true),ok=await get(handler);assert.equal(ok.status,200);assert.equal(ok.body.actorSha256,hash(playerId));
+  assert.equal(ok.headers['Cache-Control'],'private, no-store');
+  for(const [input,status]of [[{method:'POST'},405],[{query:'?actorSha256=foreign'},400],[{id:null},401],[{cookie:''},401],[{id:'foreign-fixture'},503]])
+    assert.equal((await get(handler,input)).status,status);
+});
+test('isolated HTTP playback context reads only cookie-owned current state and never accepts body owner fields',async(t)=>{
+  const playerId='http-playback-fixture',owner='player-http-owner',hash=v=>createHash('sha256').update(v).digest('hex');
+  const saved=createSeedProject(),reader=createNativeP6OwnedPlaybackContextReader({ownLinkedPlayerSha256:hash(playerId)});
+  let policy=saved,revoked=false;
+  const handler=createPresentationApi({env:{},store:{load:async()=>structuredClone(policy)},
+    nativeP6PlaybackContext:async({req,playerId:authenticated,project,readProject})=>{
+      if(revoked||req.headers.cookie!=='player_session=isolated-http-cookie')throw Object.assign(Error('cookie_required'),{statusCode:401});
+      return reader({playerId:authenticated,owner,project,readProject,readOwner:async()=>owner,
+        readStatus:async()=>({dealerId:'astrid',sessionRevision:hash(owner),roundRevision:'7'})});
+    }});
+  const server=createServer(async(req,res)=>{await handler(req,res,new URL(req.url,'http://local').pathname,
+    req.headers.cookie==='player_session=isolated-http-cookie'?playerId:null);});
+  server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(()=>{server.closeAllConnections();server.close();});
+  const path=`http://127.0.0.1:${server.address().port}/api/presentation/native-p6-playback-context`;
+  const first=await fetch(path,{headers:{cookie:'player_session=isolated-http-cookie'}}),context=await first.json();
+  assert.equal(first.status,200);assert.equal(context.actorSha256,hash(playerId));assert.equal(context.sessionRevision,hash(owner));
+  assert.equal(context.roundRevision,'7');assert.equal(context.actorSha256.includes(playerId),false);
+  policy={...saved,revision:'fixture-policy-changed'};
+  const current=await (await fetch(path,{headers:{cookie:'player_session=isolated-http-cookie'}})).json();
+  assert.notEqual(current.policySha256,context.policySha256);
+  assert.equal((await fetch(path)).status,401);
+  assert.equal((await fetch(path+'?ownerSessionSha256=foreign',{headers:{cookie:'player_session=isolated-http-cookie'}})).status,400);
+  assert.equal((await fetch(path,{method:'POST',headers:{cookie:'player_session=isolated-http-cookie'},body:'{"actorSha256":"foreign"}'})).status,405);
+  revoked=true;assert.equal((await fetch(path,{headers:{cookie:'player_session=isolated-http-cookie'}})).status,401);
+});
 async function presentationFixtureRequest(handler, playerId, payload, path = '/api/presentation/select') {
   const req = Readable.from([JSON.stringify(payload)]);req.method = 'POST';req.headers = {};
   const res = new EventEmitter();res.writableEnded = false;

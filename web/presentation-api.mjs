@@ -34,7 +34,7 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
-  select = selectPresentation, directorFetchFactory = null, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
@@ -48,6 +48,14 @@ export function createPresentationApi({ db, env = process.env, store = createPro
     }
     if (!pathname.startsWith('/api/presentation/')) return false;
     try {
+      if(pathname==='/api/presentation/native-p6-playback-context'){
+        if(typeof nativeP6PlaybackContext!=='function')fail('Unknown presentation endpoint',404);
+        if(req.method!=='GET')fail('GET required',405);
+        if(new URL(req.url||pathname,'http://local').search)fail('Playback context query forbidden',400);
+        if(!playerId)fail('Sign in required',401);
+        const project=await store.load();
+        json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
+      }
       if (!playerId) fail('Sign in required', 401);
       if (pathname.startsWith('/api/presentation/videos/')) {
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);

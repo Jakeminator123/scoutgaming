@@ -396,6 +396,29 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     totaltak/journal/reservation ändras inte. Kod/offlineprov är inte faktisk
     installation eller P6-acceptans. Nya sourcepins/context ska regenereras;
     konto-/tariffbevis, faktisk runtime och två avkodade playback-ACK återstår.
+  - Fortsatt obetald integration: opt-in cookieautentiserad GET av aktuell
+    playback-context använder exakt egen QA-spelare, serverägd session/runda
+    och återläst sparat projekt. Standardläget är 404 och ingen gäst skapas.
+    Privat collector exekverar hashbundna `playGeneratedSpeech`-wrappern och
+    kräver tre färska ägarkontroller. Collector/runner/produktström-fixtures PASS;
+    `gameWrapperIntegrated:false` och full P6 kvarstår. Privat source-staging
+    bygger en verifierbar Docker-overlay från exakt HEAD, utan SDK-download,
+    manifest, secrets, journalbyte eller aktivering. Installation är ännu obevisad.
+  - Prisgap får enligt Jakob stå som backlog: faktisk Cartesia-kontotariff
+    (extern nyckel, ingen egen kontoinloggning), counting-tariff/uttryckligt
+    gratisbevis och RunPods totala startup/execution/idlekostnadsgräns saknas.
+    Token-/tecken-/credit-/GPU-tid kan mätas ändå och redovisas separat från USD.
+    Budgetprov kontrollerar konto/tariff/maxförbrukning och beständig admission,
+    retry/restart/parallellitet; de verifierar inte produktens spelbeteende.
+    Ingen påhittad nolltariff eller förnyad budget. Betalda prov väntar på dessa
+    underlag; obetald integration och fixtur-QA fortsätter.
+  - Läsande GitGuardian-anslutning verifierad efter Jakobs uttryckliga godkännande:
+    årsnyckel med endast `incidents:read,sources:read`, lokalt DPAPI-krypterad
+    utanför Git. Två MCP-verktyg är låsta till source `30689542` i workspace
+    `795524` och returnerar endast metadata. Full API-lista (en incidentsida,
+    fem locationsidor) visar fem TRIGGERED-incidenter; två saknar fil/rad.
+    Incidenter är inte ändrade eller klassade som rensade. Se aktuell handoff
+    för ID:n, metadata-kvitto och anslutningens användning.
   - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 41 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,

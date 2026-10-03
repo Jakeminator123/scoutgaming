@@ -58,7 +58,37 @@ export async function initializeNativeP6QaRouter(env=process.env){
   const authorityBridge=await bridge.createNativeP6RunnerAuthorityBridge({runId:manifest.runId,campaignId:manifest.campaignId,
     planBindingSha256:manifest.planBindingSha256,stateRoot:qa.stateRoot,target:manifest.target,humanAnchor:manifest.humanAnchor,
     bridgeContextSha256:hash(contextBytes)});
-  return router.createNativeP6QaRouter({manifest,authorityBridge});
+  const middleware=router.createNativeP6QaRouter({manifest,authorityBridge});
+  middleware.readOwnedPlaybackContext=createNativeP6OwnedPlaybackContextReader({ownLinkedPlayerSha256:context.ownLinkedPlayerSha256});
+  return middleware;
+}
+
+// Installed only by the verified ownQA initialization above. All inputs here
+// are server callbacks; no client owner, revision or policy is accepted.
+export function createNativeP6OwnedPlaybackContextReader({ownLinkedPlayerSha256,now=Date.now}={}){
+  need(/^[a-f0-9]{64}$/.test(ownLinkedPlayerSha256??''),'native_p6_qa_playback_linked_player_required');
+  const canonical=value=>value===null||typeof value!=='object'?JSON.stringify(value)
+    :Array.isArray(value)?`[${value.map(canonical).join(',')}]`
+      :`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`;
+  const policyHash=project=>hash(canonical(project));
+  return async({playerId,owner,readOwner,readStatus,readProject,project})=>{
+    need(typeof playerId==='string'&&hash(playerId)===ownLinkedPlayerSha256&&typeof owner==='string'
+      &&owner.length>0&&typeof readOwner==='function'&&typeof readStatus==='function'&&typeof readProject==='function'
+      &&project&&typeof project==='object'&&!Array.isArray(project),'native_p6_qa_playback_actual_callbacks_required');
+    const policySha256=policyHash(project),status=await readStatus();
+    need(status?.dealerId==='astrid'&&status.sessionRevision===hash(owner)&&typeof status.roundRevision==='string'
+      &&status.roundRevision.length>0&&status.roundRevision.length<=128,'native_p6_qa_playback_current_state_required');
+    const currentStatus=await readStatus(),currentProject=await readProject(),currentOwner=await readOwner();
+    need(currentOwner===owner&&policyHash(currentProject)===policySha256&&currentStatus?.dealerId==='astrid'
+      &&currentStatus.sessionRevision===status.sessionRevision&&currentStatus.roundRevision===status.roundRevision,
+      'native_p6_qa_playback_state_changed');
+    return{actorSha256:ownLinkedPlayerSha256,ownerSessionSha256:hash(owner),sessionRevision:status.sessionRevision,
+      roundRevision:status.roundRevision,policySha256,observedAtMs:now()};
+  };
+}
+export async function nativeP6OwnedPlaybackContext(router,args){
+  need(typeof router?.readOwnedPlaybackContext==='function','native_p6_qa_playback_context_unavailable');
+  return router.readOwnedPlaybackContext(args);
 }
 
 // Used only at the trusted existing /chat and operator decision call sites.
