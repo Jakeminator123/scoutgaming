@@ -114,16 +114,25 @@ noll rader. Den aktuella projektkopian med alla 18 verifierade bindningar är
 sparad där via explicit CAS, med oförändrad neutral BO-/socialpolicy. Privat
 `native-qa-project-replica-imported.json` är kvitto för QA-kopian, inte fryst
 produktionsimport. Produktions- och äldre QA-rader är oförändrade.
-Render-QA är inte suspenderad enligt aktuell läskontroll;
-health-/aktivitetskontroll pågår före eventuell samordnad kandidatändring.
-Moln-QA/Render-env är inte aktiverade av denna databasförberedelse.
+Render-QA är nu suspenderad för samordnad kandidatändring till den nya
+databasen/scope och en separat datarot; gamla QA-filer och en gammal öppen
+reservation bevaras oförändrade. Tal-/stream-/kameraproviders är avstängda.
+Två separata Vercel-QA-projekt är skapade; kandidatbyggen pågår utan byte av
+befintliga produktions-/QA-alias. Faktisk molnacceptans återstår.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
 Senaste [c667aa22](https://github.com/Jakeminator123/github-work/commit/c667aa22205fba9e872e744cfe1aba2add3adf84)
 är pushad på main efter full hook och alla tre CI-jobb PASS. Vercel-Lab är
 nu READY för denna leverans; lokal traceguard/build PASS med 50 sanerade
-traces. Den publicerade flagga-av-koden är inte ett produktionskällbyte.
+traces. Senaste [3a5f0517](https://github.com/Jakeminator123/github-work/commit/3a5f0517db5f7f74d494e742f6a0401ed551bb8a)
+är pushad efter full hook med de 40 SQL-/HTTPS-/restartgrupperna ovan,
+röstgranskning, mejl-/skoöversikt och childless PostgreSQL-underhållsläge.
+CI och Vercel-Lab för den leveransen kontrolleras fortfarande; frontend är
+READY. Ett kandidatbygge hittade en legacy-middleware-fixture som ärvde
+nativeflaggan. Testmiljön anger nu båda flaggorna explicit av; alla 31
+frontendtester PASS även när omgivande native-/Neonflaggor är på.
+Den publicerade flagga-av-koden är inte ett produktionskällbyte.
 Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
 lokala databaser, QA-underlag och agentstate har noll referenser i de 50
 kontrollerade lokala traces. Spelmediers aktiva
