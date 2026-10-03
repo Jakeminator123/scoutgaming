@@ -9,6 +9,19 @@ Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
 native konto-/partner-/authhandlers och tillhörande formulär är implementerade
 på main. Grovt cirka 75 % av sammanslagningen; källbyte, full helhetsacceptans
 och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
+Senaste kodleverans är `b2d9ab7e36615701ca86f103427c39e57b815523`: full
+obligatorisk hook och samtliga tre GitHub-kontroller PASS. Additiv 004 är nu
+också installerad i den separata `croupier_studio_qa_abc92154cb15`, utan
+budget-/grindbootstrap: 45 befintliga QA-tabeller och 32 tabeller vardera i
+produktion/äldre QA har identiska före-/efterfingerprints. Båda nya
+fullfilstabellerna är tomma. Detta är QA-verifiering, inte produktionsimport.
+Render-QA:s b2-deploy misslyckades vid containerstart; drift är inte omkopplad.
+Render-fabriken krävde felaktigt bara 001–003 och nekade installerad 004.
+Rättningen omfattar nu samtliga fyra scheman. Faktiskt isolerat SQL-prov
+kör standardfabriken mot sparad Neon-policy och nekar saknad import utan seed.
+41 acceptansgrupper, fyra retained-guards och 46 oförändrade källhashar PASS.
+Ny molnleverans och komplett QA-acceptans krävs; tidigare FAIL-kvitton bevaras.
+
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
 och `/player-login` visar spelarentrén. BO/partner launch och callback följer
@@ -27,8 +40,8 @@ Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
 aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
 
 57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
-Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 40
-acceptansgrupper och 44 oförändrade källhashar, plus runnerguard. Fyra rena
+Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 41
+acceptansgrupper och 46 oförändrade källhashar, plus runnerguard. Fyra rena
 retained-media-guards PASS. 85 riktade
 tal-/journal-/Blob-/import-/operatörsprov PASS. SQL-provet täcker sparad revision/CAS,
 konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
@@ -69,7 +82,7 @@ avstängd. Exakt återkörning skapar inga dubletter; senare förbrukning eller
 kostnads- och operatörsrader. Färdiga paket kräver separat exakt privat
 Blob-metadata och verifierade bytes; inga publika metadata fabriceras.
 
-Read-only Neon-kontroll visar att 001/002 saknas i drift; även 003 krävs före
+Read-only Neon-kontroll visar att 001/002 saknas i drift; även 003/004 krävs före
 aktivering. Ingen Studio-migration eller fryst dataimport är genomförd i drift.
 Render-API och SSH fungerar nu: Jakob godkände
 registrering av datorns befintliga publika Ed25519-nyckel på sitt Render-konto.
@@ -190,8 +203,8 @@ Verkliga serviceanrop nekas före provider vid saknat belopp/policy/budget
 eller försenad ny auth. Åtta minuter måste återstå av ursprungliga tolv;
 300 sekunders maximal klientdeadline och 180 sekunders separat RunPod-TTL
 täcks även vid osäker POST. Alla 13 källhashar består; egen databas/process
-är städade. Det breda uppdaterade SQL-/HTTPS-/restartprovet gav åter 40/40
-grupper samt fyra retained-kontraktsprov PASS. Alla 45 källhashar är
+är städade. Det breda uppdaterade SQL-/HTTPS-/restartprovet gav 41/41
+grupper samt fyra retained-kontraktsprov PASS. Alla 46 källhashar är
 oförändrade; separat kontroll bekräftar noll egna fixturkataloger.
 Betalda prov och aktivering väntar fortsatt på avgränsad livebudget.
 Migration/import seedar ingen fullfilspolicy i den äldre förbrukade
@@ -209,7 +222,15 @@ befintliga mänskliga läppsynkgap kvarstår.
 
 Den privata produktionsimporten kräver normaliserade hashkontroller för
 kritiska beroenden/SQL/aktiva manifest och Blob-index mot levererad main-SHA.
-Den tidigare 130-filers grunden utökas med 004; gamla planer ska inte återbrukas.
+Den aktuella kritiska källmängden är 132 filer; gamla planer ska inte återbrukas.
+87 privata importguards och 36 paritetskontroller PASS utan anslutningar.
+Bytesverktyget kräver alla fyra aktuella SQL-checksummor och elva kostnadstabeller;
+19 fasguards och 13 runtimeparitetsprov PASS. Planberedningen kräver explicit
+main-SHA och gör inget vid import. Den nya policyn för en redan förbrukad
+journal har en separat preparer och avgränsad injicerad executor med elva
+obetalda guards. Den ändrar endast en ny policy, aldrig gamla kostnadsrader,
+och saknar ännu verklig fas-/anslutningsadapter. Alla produktionsskrivande
+molnfaser är fortsatt spärrade tills full faktisk P6-acceptans finns.
 Alla 18 aktiva videobindningar ska fullåterläsas/hashas före SQL-skrivning.
 Samma skarpa läsare har nu fullverifierat alla 18 i nya QA mot Blob med
 tom egen OS-cache, inklusive sex original; noll SQL-/provider-skrivningar.

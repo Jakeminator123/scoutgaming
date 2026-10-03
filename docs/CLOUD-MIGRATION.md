@@ -279,7 +279,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     tappad COMMIT-kvittens, fenced ägare och riktiga serviceanrops noll provider
     före nekad policy/budget/authfördröjning. 13 källhashar är oförändrade och
     egen fixtur städad. Slutlig uppdaterad bred SQL-/HTTPS-/restartacceptans
-    gav 40/40 grupper och fyra retained-kontraktsprov PASS; alla 45 källhashar
+    gav 41/41 grupper och fyra retained-kontraktsprov PASS; alla 46 källhashar
     består och separat städkontroll fann noll egna fixturkataloger.
     Explicit livebudget återstår. Migration/import seedar ingen fullfilspolicy i äldre
     förbrukad produktionsjournal; separat verifierad adoption krävs.
@@ -379,7 +379,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   ljud/chatt samt båda GPU-vägar verifieras utan oavsiktlig ändring. Fixtures först;
   betalda liveprov kräver uttryckligt avgränsad budget/auktorisation. Fysisk kamera/
   mikrofon/mobil/Safari och mänsklig läppsynk redovisas separat om de återstår.
-  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 40 acceptansgrupper samt
+  - [x] Aktuellt obetalt SQL-/restart-/HTTPS-prov: 41 acceptansgrupper samt
     runnerguard PASS i tillfällig lokal PostgreSQL och kortlivad HTTPS-fixture.
     Revisionskonflikt/rollback, spelkonfigprojektion, auth/engångstoken/epoch,
     roll-revoke, signerad actor/scope och återspelad walletnonce täcks. Nytt
@@ -390,13 +390,22 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     återkörning, korrupt tuple och återläsning efter restart PASS, liksom fyra
     rena retained-guards. Röstens exakta identitet/roller/CAS/ändrat par/restart
     samt mejlpreviewer och skostatus med negativ JSON/auth, kortsekretess och
-    500-gräns PASS. 44 källhashar är oförändrade under körningen; 85 riktade
+    500-gräns PASS. Render-standardfabriken accepterar installerade 001–004
+    och sparad Neon-policy; saknad import nekas utan seed. 46 källhashar är
+    oförändrade under körningen; 85 riktade
     tal-/journal-/Blob-/import-/operatörsprov PASS.
     Egna processer, certifikat och temporär databas städas i runnerns finally.
     Inga riktiga konton, molndatabaser, providermejl eller betalda jobb används.
     Full P6 med fyra dealers, live ström/GPU och mänsklig acceptans består öppet.
   - Ny separat Neon-QA-databas är initierad med checksumverifierad product-v1,
-    Studio 001/002/003, en syntetisk administratör och tre dokument.
+    Studio 001/002/003/004, en syntetisk administratör och tre dokument.
+    004 lades till separat efter verkligt 15-gruppers SQL/restartprov och
+    granskad plan: exakt 45 befintliga QA-fingerprints består, liksom 32
+    tabeller vardera i produktion och äldre QA. De två nya fullfilstabellerna
+    är tomma; ingen policy, budget eller grind seedades.
+    B2:s Render-QA-deploy misslyckades före listen eftersom standardfabriken
+    fortfarande krävde bara 001–003. Rättningen är isolerat SQL-verifierad;
+    nästa exakta leverans måste bli LIVE före nya boot-/browserprov.
     Spelar-/kostnadsstate är tomma. De sex exakta originalmedierna har sex
     auditposter och återkörning skrev noll rader. Aktuellt projekt med alla 18
     verifierade bindningar är kopierat via explicit CAS enbart till nya QA;
@@ -440,7 +449,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
   verifiera riktig HTTPS-adress, sparning, spel, auth och återstart.
   - Privata importspärrar: kritiska käll-/SQL-/manifest-/indexfiler måste
-    matcha exakt levererad main-SHA; tidigare 130-filers grund utökas med 004.
+    matcha exakt levererad main-SHA; aktuell mängd är 132 filer.
+    87 importguards/36 paritetskontroller samt 19 fasguards/13 runtimeprov PASS.
+    Faserna kräver alla fyra aktuella SQL-checksummor och elva kostnadstabeller.
+    Separat nonempty-policyadoption är förberedd och har elva obetalda guards;
+    verklig adapter och godkänd deltaacceptans återstår, ingen policy är antagen.
     Alla 18 aktiva videobindningar ska
     fullåterläsas från Blob innan skrivning. Skarpa QA-läsaren har nu
     fullverifierat alla 18 inklusive sex original från tom OS-cache,

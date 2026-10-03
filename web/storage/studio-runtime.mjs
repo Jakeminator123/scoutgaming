@@ -12,7 +12,7 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
   }
   await storage.db.assertInstalled();
   const plan = await schemaCheck({ pool: storage.pool });
-  if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003') {
+  if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004') {
     throw Object.assign(new Error('studio_game_schema_unavailable'), { statusCode: 503 });
   }
   const repository = createStudioRepository({ pool: storage.pool, scope: config.scope });
