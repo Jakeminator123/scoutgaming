@@ -87,6 +87,10 @@ Separat beständig numerisk admission samt SDK-/Render-fasadaptrar har nu
 36/44/27 offlineprov PASS, inklusive faktisk SDK 7.12.1 mot simulerad HTTP.
 Root har granskat exakta filhashar och återkört 106 PASS/1 SKIP; det överhoppade
 provet använder underagentens redan verifierade och borttagna SDK-fixtur.
+Separat fasattestering och opt-in SDK-worker har dessutom 21/22 offlineprov
+PASS, återkörda av root. Workern använder faktisk product-speech/adaptive-
+kod och exakt rollprompt, signerade stage-tickets och bundna process-/SDK-
+fakta. Fasattesteringen ändrar inte ursprunglig plan, budget eller TTL.
 Verklig isolerad SDK-installation, verifierad
 input-/dispatch-/retry- och prisgräns samt kopplade färska driftobservationer
 återstår. De privata adapterproven ersätter inte full P6; CLI tillåter fortsatt
@@ -283,8 +287,8 @@ produktionsjournalen; en explicit verifierad policyadoption krävs där.
 Native mejladaptern kräver nu både Resend-nyckel och explicit
 `CROUPIER_STUDIO_MAIL_FROM`; den tidigare hårdkodade avsändaren är borttagen.
 Fyra obetalda adapterprov PASS, med exakt mottagare/tokenorigin och nekad
-osäker leverans utan automatisk retry. Verklig domän/nyckel och invitation/
-reset-acceptans saknas fortfarande.
+osäker leverans utan automatisk retry. Egen sändardomän är nu verifierad;
+faktisk QA-nyckelkoppling och invitation/reset-acceptans återstår.
 Aktuellt Lab-produktionsbygge/TypeScript PASS med 50 sanerade traces och
 noll kvarvarande privata referenser. Administration/authspår innehåller alla
 fyra SQL-versionerna. Dealer-audit --probe PASS mot oförändrad baseline;
@@ -333,14 +337,27 @@ eller skickade. Jakob har valt **Resend Free**, förnyat Vercel-CLI OAuth och
 själv godkänt Marketplace-villkoren. Marketplace spärrar en ny Free-installation
 eftersom hans konto redan tillhör ett Resend-team. Vanlig Google-inloggning med
 samma konto som Vercel verifierar nu hans befintliga Resend **Free**: 4/3 000
-mejl denna månad, 0/100 idag, 1/3 domäner och avstängd betalning över kvoten.
+mejl denna månad, 0/100 idag, initialt 1/3 domäner och avstängd betalning över kvoten.
 Det befintliga teamets Vercel-integration är förberedd med **Specific Projects**
 och endast `croupier-native-studio-qa-abc92154cb15`. Den nya behörigheten att
-skriva integrationsägda QA-env inväntar Jakobs uttryckliga godkännande; Install
-är inte klickat. scoutgaming.tech är verifierat köpt i samma Vercel-konto med
-Vercels DNS. Föreslagen avsändare är `no-reply@scoutgaming.tech`; domänens
-Resend-verifiering och faktisk invitation/reset-leverans återstår. Ingen betald
-mejlplan, DNS-ändring, API-nyckelkoppling eller produktionsaktivering har utförts.
+skriva integrationsägda QA-env inväntar Jakobs uttryckliga godkännande.
+Automatisk behörighetsgranskning nekade Install-försöket: allmänt ”fortsätt”
+räknades inte som ett uttryckligt ja till ny projektåtkomst/nyckelskrivning.
+Ingen installation utfördes. scoutgaming.tech är köpt i samma Vercel-konto
+och nu tillagd i befintligt Resend Free, region Irland. Resend visar **Verified**
+3 oktober 14:11 svensk tid, kontrollerat i dashboarden 14:19.
+Exakt tre DNS-poster är tillagda: DKIM TXT `resend._domainkey`, MX `send`
+med prioritet 10 och SPF TXT `send`. Alla fem ursprungliga zonposter är
+hashverifierat oförändrade; de nya värdena är också återlästa i publik DNS.
+Första DNS-kvittot stannade på MX-adressens kanoniska slutpunkt; läsande
+kontroll bekräftade rätt värde och en separat fortsättning lade endast till
+saknad SPF, utan återförsök av redan skapade poster. Privat slutkvitto
+`mail-resend-dns-finish-result-20261003.json` har status `three-records-verified`.
+Föreslagen avsändare är `no-reply@scoutgaming.tech`. Faktisk QA-nyckelkoppling
+och invitation/reset-leverans återstår. Ingen betald mejlplan, faktisk
+mejlleverans eller produktionsaktivering har utförts. Jakob vill nu börja med
+några korta liveprov; befintligt totaltak 10 USD används, ingen budget höjs
+eller nollställs automatiskt.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
