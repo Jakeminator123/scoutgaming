@@ -414,7 +414,19 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Käll-overlay omfattar även transitiva literal imports; externa/dynamiska
     beroenden och basimage/frontendinstallationen hålls öppna. Officiell SDK
     7.12.1 är privat source-stagad, full återläsning och 4 prov PASS, befintliga
-    pins oförändrade; detta är ännu inte faktisk Linux-runtimeinstallation.
+    pins oförändrade. SDK-paketet är därefter faktiskt installerat och återläst
+    på egen Linux-QA som UID/GID 1000: 2 962 filer och exakt worker-treehash.
+    Spelkoden är levererad som `5b51af0e`, full hook och 3/3 CI PASS;
+    source-overlay 200 filer och 9 stagingprov PASS. SDK:s exklusiva
+    Linux-installer har 3 isolerade prov PASS. Egen Render-QA-deploy
+    `dep-db0k7j7avr4c7383kheg` är live på 5b51 utan env-/disk-/providerändring;
+    separat faktisk återläsning verifierar SDK, fyra privata source-contexts
+    och nio spelkällor mot exakt Git/Linux-byteidentitet. Prepare-only run
+    `cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2` använder befintlig kampanj/budget;
+    inga betalda anrop eller nya journalhändelser. Körande worker återstår.
+    Första Vercel-QA-uppdateringen tappade accepterade deployment-overrides;
+    återställ dem exakt. Frontendens saknade playback-context-route är rättad
+    med 9/9 routing/middleware/entry-prov PASS. Ny UI-/liveacceptans återstår.
   - Prisgap får enligt Jakob stå som backlog: faktisk Cartesia-kontotariff
     (extern nyckel, ingen egen kontoinloggning), counting-tariff/uttryckligt
     gratisbevis och RunPods totala startup/execution/idlekostnadsgräns saknas.
@@ -423,6 +435,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     retry/restart/parallellitet; de verifierar inte produktens spelbeteende.
     Ingen påhittad nolltariff eller förnyad budget. Betalda prov väntar på dessa
     underlag; obetald integration och fixtur-QA fortsätter.
+    Jakobs inloggade RunPod-webview bekräftar RTX 4090 ×1, 1,10 USD/h,
+    max workers 1, active 0, idle 5 s, execution 600 s och 20 GB containerdisk.
+    FlashBoot är Standard/enabled, ingen network volume. UI:s millisekunder
+    avviker från officiell docs sekundavrundning; använd konservativ sekundgräns.
+    Total kallstartsgräns och exakt lagringstariff återstår; inga inställningar ändrades.
   - Läsande GitGuardian-anslutning verifierad efter Jakobs uttryckliga godkännande:
     årsnyckel med endast `incidents:read,sources:read`, lokalt DPAPI-krypterad
     utanför Git. Två MCP-verktyg är låsta till source `30689542` i workspace

@@ -40,7 +40,8 @@ const AUTH = new Set([
   '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
 const PLAYER = new Set(['/api/player', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/chat']);
-const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config']);
+const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
+  '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
 const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
 

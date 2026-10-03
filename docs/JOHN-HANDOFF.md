@@ -9,7 +9,7 @@ Arbeta i `C:\Users\jakem\Projects\croupier`, på `main` i
 `Jakeminator123/github-work`. Följ `agent-talk/README.md`, claim före ändring,
 och leverera med `node tools/push-github-work.mjs`. Ingen annan branch/worktree,
 Jira eller GitLab. Läs även `ENVIRONMENT-RESTORATION.md` före spel-/medieändring.
-Senaste verifierade QA är exakt `190399386d93a02882d9b18a5ce5af53bb91fe23`;
+Senaste fullständiga 90-checkars QA-acceptans är exakt `190399386d93a02882d9b18a5ce5af53bb91fe23`;
 de tre deployment-ID:na och 90-kvittot står nedan. Läs `git log -1` och GitHub
 main för slutlig källleverans: senare dokument-/testfixar gör inte automatiskt
 den frysta QA-koden nyare. **80 % är en grov arbetsbedömning, inte acceptans.**
@@ -65,7 +65,28 @@ för den tidigare källversionen; dess gamla privata hashvärden får inte åter
 Full obligatorisk hook och fyra-dealer-audit `--probe` PASS för endpointpaketet;
 loggar är `migration-root-resume-{full-check,dealer-probe}.log`.
 
-GitGuardian: remote `8da9d636032bae342d9d1feb5d319f6221b37399` är återläst med
+Senaste spelkopplingen är levererad som
+`5b51af0ecf850a329f46ac4da00cec02340100ca`; full obligatorisk commit-hook PASS.
+Den privata source-overlayn `native-p6-runtime-artifacts/source-5b51af0e/`
+omfattar 200 filer/401 importrelationer, descriptor-råhash
+`11abe4e774b1326d85149563bc45cfafbd646410ef1dcfd0d415a0fa961ca312`.
+9/9 stagingprov PASS. Egen Render-QA-deploy `dep-db0k7j7avr4c7383kheg` är
+live på samma SHA, med oförändrad env och utan cachetömning. SDK 7.12.1 är
+nu faktiskt installerat som UID/GID 1000 på QA:s beständiga disk: 2 962 filer,
+worker-trädfingerprint `ebbb70cbf3b784adcee13323880215dc360ac0e1c5d78891f9813368e6c3da0a`.
+Separat SSH-återläsning verifierar SDK, fyra privata source-contexts och nio
+spelkällor; de nio matchar exakt denna commits Linux/Git-bytes. Inga provider-
+anrop eller journalhändelser. Prepare-only run `cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2`
+hör till befintlig kampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`; budgeten
+är oförändrad. Detta är paket-/källinstallation, inte körande workeracceptans.
+Privata kvitton: `native-p6-qa-release-5b51af0e/{actual-install-receipt,actual-linux-readback}.json`.
+Vercel-QA:s första 5b51-publicering tappade tidigare per-deployment env/build
+overrides: READY bevisade inte fungerande UI. Återställ exakt accepterade
+QA-overrides vid nästa kodversion; ingen ny tariff, produktionsenv eller nyckel.
+Frontendens exakta allowlist saknade också playback-context-GET. Den routen
+är nu rättad; nio routing/middleware/entry-prov PASS. Nya live-rehearsals återstår.
+
+GitGuardian: remote `5b51af0ecf850a329f46ac4da00cec02340100ca` är återläst med
 alla check-runs/check-suites/status: 3/3 CI och båda Vercel-statusar success;
 ingen GG-run, GG-suite queued. Detta visar inte en tom incidentlista.
 Jakob godkände separat två lässcope och därefter ett års giltighet. Årsnyckeln
@@ -108,8 +129,9 @@ Fortsätt i denna ordning:
    filer måste matcha HEAD:s Git-blobs; privata filer och image-bytes hashbinds.
    `QA_BASE_IMAGE` måste vara en immutable digest för samma källa. Inga manifest,
    secrets, journaler, SDK-downloads eller aktiverande env skickas med. SDK
-   `openai@7.12.1`, verklig env, runtimeinstallation/readback och betald admission
-   återstår; en source-artifact är inte bevis för något av detta.
+   `openai@7.12.1` är nu faktiskt installerat och återläst enligt ovan; aktiverad
+   worker, färska full-run-manifest och betald admission återstår. En source-
+   artifact ensam är inte bevis för något av detta.
    Staging omfattar nu även transitiva literal-relative imports och de nio
    faktiska spelkällorna (200 filer/401 relationer vid kodgranskningen).
    Externa paket och fem beräknade importkällor redovisas som uttryckliga
@@ -140,7 +162,14 @@ Fortsätt i denna ordning:
    `Jakeminator123`: endpoint `zsudl8tmzcmiv1`, RTX 4090 ×1, max workers 1,
    active workers 0, idle timeout 5 s, execution timeout 600 s, 20 GB disk,
    ingen network volume; UI visar 1,10 USD/h. Kontorabatt och maximal
-   kallstartstid är inte verifierade. Billing räknar start/execution/idle
+   kallstartstid är inte verifierade. Ny läsning av Jakobs inloggade RunPod-webview
+   bekräftar samma endpoint, RTX 4090/24 GB Pro, 1,10 USD/h och ovanstående
+   gränser. FlashBoot är Standard/enabled; ingen inställning eller worker ändrades.
+   UI säger millisekunddebitering medan aktuell officiell pricing-doc säger
+   uppåtrundning till sekunder. Använd den konservativa sekundgränsen tills
+   avvikelsen klarlagts. Ingen network volume; container disk är 20 GB,
+   med dokumenterat ungefärligt pris 0,10 USD/GB/månad i femminutersintervall.
+   Billing räknar start/execution/idle
    tills worker helt stannat, uppåt till hela sekunder; execution timeout
    ensam begränsar inte all kallstart. Detta är härledd UI-metadata, inte
    ett immutable råkvitto eller aktuell full kostnadsadmission. Jakob har
