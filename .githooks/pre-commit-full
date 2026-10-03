@@ -1,7 +1,7 @@
 #!/bin/sh
 # Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
 set -eu
-node --test test/precommit-checks.mjs
+node --test test/precommit-checks.mjs test/security-status.mjs
 node --test test/backup-lissabon-state.mjs test/migrate-lab-state.mjs
 node --test lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 node --test lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs

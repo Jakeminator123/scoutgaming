@@ -81,10 +81,13 @@ för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
 Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
-Resend Free och avsändardomänen `scoutgaming.tech` är verifierade. Kopplingen
-av Resends API-nyckel till det separata QA-Studio är uttryckligen godkänd och
-under installation; faktisk invitation/reset-leverans är ännu inte verifierad.
-Ingen betald plan eller produktionsaktivering följer av domänverifieringen.
+Resend Free och avsändardomänen `scoutgaming.tech` är verifierade och kopplade
+till det separata QA-Studio. Ett godkänt invitationsmejl skickades genom den
+verkliga Studio-handlaren 2026-10-03; Resend bekräftar `delivered` och mejlet
+hittades i mottagarens Gmail-skräppost kl. 17:31 svensk tid. QA-testkontot och
+dess tokens städades bort efter provet,
+så mejlets länk är nu ogiltig. Ett separat verkligt resetmejl har inte skickats.
+Ingen betald plan eller produktionsaktivering har gjorts.
 För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
 nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,

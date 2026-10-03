@@ -22,6 +22,44 @@ elsewhere in this checkout. `Jakobs-v1` at
 It preserves committed v1; local ignored profiles/settings require separate
 private backup. See `docs/CLOUD-MIGRATION.md`.
 
+## GitGuardian visibility at start and delivery
+
+At task start and before commit/push, read the remote `main` security status.
+Use `node tools/security-status.mjs`; if local GitHub CLI access is unavailable,
+use the connected GitHub `github_fetch` tool. Read `branches/main` first, freeze
+its full SHA, then read that commit's `check-runs`, `check-suites` and `status`.
+`node tools/security-status.mjs --mcp --ref <full-sha>` prints the exact GET URLs.
+Follow pagination; an incomplete response is a coverage gap. After push, check
+the delivered SHA again. Do not install software or create access grants for
+this check automatically.
+
+Expose only app/name/status/conclusion, numeric GitGuardian incident links,
+repository-relative file and line. Never print raw check output, annotations'
+messages, scanner matches, secret values, API error bodies or tokens. The tool's
+exported collector/redactor supports safe connector responses and annotations.
+Report known alerts and coverage gaps to the coordinating agent; continue work
+that they do not affect.
+
+A queued suite, missing run, neutral/skipped check or green ordinary CI is not
+proof of no incidents. GitGuardian's GitHub checks target pull requests; this
+repo's direct-main workflow also needs the intended GitGuardian workspace's
+incident view. A practical read fallback is already available in signed-in
+Chrome: `node tools/security-status.mjs --browser` prints workspace `795524`'s
+repo-filtered open-incidents URL and the known incident link. Reuse that tab;
+verify the workspace and selected `Source` is `Jakeminator123/github-work`
+(source `30689542`). If needed, choose `Source`, search the exact repo name,
+and select it. This filter was verified on 2026-10-03; recheck its visible repo
+binding each time. Read only distinct incident ID/status/repo/file/line/time
+metadata fields. Do not read full page/row text or screenshots containing
+snippets, save views, resolve/ignore incidents or change access. Report the
+observed pages and missing coverage; the browser plan itself performs no read.
+The complete API incident list remains `not-read` without a separately authorized
+`incidents:read` API token or an already connected read-only GitGuardian source.
+Do not silently use another person's workspace or mark incident coverage clear
+without reading it. No `scan` or write permission is needed for incident reads.
+See [GitGuardian check runs](https://docs.gitguardian.com/internal-monitoring/prevent/detect-secrets-in-real-time-in-github)
+and [API scopes](https://docs.gitguardian.com/api-docs/authentication).
+
 ## Active documentation and private archive
 
 Use `lab/docs/README.md` for the user guide and
