@@ -194,7 +194,7 @@ cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
 publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
 och native BO-UI/API bakom avstängd aktivering: cirka 40 %.
 Det pågående fortsättningssteget med gemensam policy, konto-/partner-/authfunktioner
-och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 65–70 %; riktig
+och aktuell isolerad SQL/HTTPS/restartacceptans är grovt cirka 75 %; riktig
 produktionsimport, helhetsacceptans och avveckling är ännu inte verifierade.
 Viktning: kontrakt/åtkomst
 10, beständig Studio-state 20, enkel native
@@ -390,12 +390,20 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     neutral BO-/socialpolicy är oförändrad. Privat
     `native-qa-project-replica-imported.json` är QA-kvitto, inte fryst driftimport.
     Äldre QA:s 25 konton och produktion är oförändrade.
-    Render-QA är återstartad på `ae54a61b`, separat ny datarot/databas/scope,
+    Render-QA är återstartad på `6efb50ee`, separat ny datarot/databas/scope,
     med avstängda tal-/stream-/kameraproviders. Faktisk health/env och samma
     hash/mtime för äldre öppen QA-reservation PASS. Två nya Vercelprojekt är
     READY på samma SHA; deras egna canonicaldomäner ger native boot efter
     exakt Lab-projektdomänregistrering/promotion. Standard-SSO består.
-    Komplett faktisk browseracceptans pågår; produktion/äldre QA består.
+    Login-boot samt session/overview ger 200/401 på båda adresserna.
+    Faktiskt fullprov stoppades efter fyra lyckade åtkomstkontroller eftersom
+    Nexts SSR-redirect gav dubbel `/studio/studio/login` och 404. Rättningen
+    är implementerad med apprelativ login och bevarad publik returnTo;
+    24 fokuserade Next-/SSR-prov och TypeScript PASS. Ny leverans och
+    molnprov återstår; inget login-POST, konfigbyte eller provideranrop
+    hann utföras i det stoppade provet.
+    Ingen komplett browseracceptans eller aktivering är därför verifierad.
+    Produktion/äldre QA består.
 - [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
@@ -405,7 +413,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     fullåterläsas från Blob innan skrivning. Skarpa QA-läsaren har nu
     fullverifierat alla 18 inklusive sex original från tom OS-cache,
     med noll SQL-/provider-skrivningar. Efter import krävs slutlig sex-medie-
-    paritet och kostnadsreplay med noll nya rader. 40 obetalda guards PASS.
+    paritet och kostnadsreplay med noll nya rader. 86 obetalda guards PASS;
+    sex tidsgränsprov täcker även bevis som går ut under väntade driftanrop.
+    Oförändrad originalimport kan återvalideras med ett separat läskvitto,
+    full byte-/dokument-/register-/kostnads-/kontoparitet och fem minuters
+    giltighet, utan återimport eller omskrivna originaltider.
     Faktisk providerhealth har inga köade/pågående jobb men en idle/ready
     worker; färsk dränering återstår. Keys kan enligt Jakob tillhöra Emil;
     inga konto-/nyckeländringar görs. Verklig Resend-sändarkonfiguration
@@ -438,8 +450,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
-    Senaste kodleverans `ae54a61b` är pushad efter full hook och alla tre CI-jobb
-    PASS; båda Vercelbyggen är READY. Lokal traceguard/build har 50 sanerade traces
+    Senaste kodleverans `6efb50ee` är pushad efter full hook och alla tre CI-jobb
+    PASS. Nytt faktiskt isolerat SQL-/HTTPS-/restartprov: 40 grupper, fyra
+    retained-kontroller, 44 oförändrade källhashar och separat noll-process/
+    fixturkatalog-kontroll PASS. Nya native-QA-byggen/browserprov på samma SHA
+    pågår; föregående `ae54a61b` hade båda Vercelbyggen READY.
+    Lokal traceguard/build har 50 sanerade traces
     PASS. Flagga-av-leveransen
     och SQL-fixturerna bockar inte av P1–P9, aktivering eller avveckling.
 

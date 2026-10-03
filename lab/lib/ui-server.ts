@@ -4,6 +4,7 @@ import { studioInitialData } from './studio-server.mjs';
 import { remoteUiConfiguration, authorizeRemoteUi, remoteUiInitialData } from './remote-ui.mjs';
 import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
+import { nextStudioLoginRedirect } from './next-page-navigation.mjs';
 
 async function nativeUi(request: Request) {
   const config = nativeStudioAdminConfiguration();
@@ -15,8 +16,7 @@ async function nativeUi(request: Request) {
   try { session = await native.authorize(normalized); }
   catch (error) {
     if ((error as {statusCode?:number})?.statusCode === 401) {
-      const base = native.config.authBase === '/studio/api/auth' ? '/studio' : '';
-      redirect(`${base}/login?returnTo=%2Fstudio`);
+      redirect(nextStudioLoginRedirect('/studio'));
     }
     throw error;
   }

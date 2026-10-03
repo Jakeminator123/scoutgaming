@@ -130,7 +130,20 @@ för auth, administration, projekt, socialpolicy, video och clip-controls samt
 SSR-sidor. Cookie, body, Origin, roller, CAS och transaktionskontroller består;
 främmande/mixade hosts, protokoll och actions nekas. 63 relevanta prov och
 Lab-TypeScript PASS; två oberoende läsgranskningar har inga kvarvarande
-materiella fynd. Slutlig hook/ny drift-SHA och faktisk molnacceptans återstår.
+materiella fynd. Rättningen är levererad i `6efb50ee` efter full obligatorisk
+hook och alla tre GitHub-kontroller PASS. Det sista riktiga isolerade SQL-/
+HTTPS-/restartprovet passerade åter alla 40 grupper och fyra retained-kontroller;
+44 källhashar består och separat städkontroll fann noll fixturkataloger/processer.
+Nya QA-molnbyggen på samma SHA är READY/LIVE. Login-boot och session/overview
+ger förväntade 200/401 på båda canonicaldomänerna. Full browseracceptans
+stoppades efter fyra lyckade åtkomstkontroller: Nexts SSR-redirect dubblerar
+basePath till `/studio/studio/login` och ger 404. Rättningen pågår; inget login-
+POST, projekt-/pitbyte eller provideranrop gjordes i det stoppade provet.
+SSR-rättningen använder nu apprelativ `/login` och behåller publik `returnTo`;
+även Lissabons gamla redirect ger ett enda prefix. 24 fokuserade prov, inklusive
+fem som kör de verkliga SSR-sidorna/guards genom installerad Next/SWC, samt
+Lab-TypeScript PASS. API- och klientnavigeringens fulla adresser består.
+Ny leverans, QA-ombyggnad och det kompletta browserprovet återstår.
 
 Den privata produktionsimporten kräver nu normaliserade hashkontroller för
 130 beroenden/SQL/aktiva manifest och Blob-index mot den levererade main-SHA:n.
@@ -138,8 +151,14 @@ Alla 18 aktiva videobindningar ska fullåterläsas/hashas före SQL-skrivning.
 Samma skarpa läsare har nu fullverifierat alla 18 i nya QA mot Blob med
 tom egen OS-cache, inklusive sex original; noll SQL-/provider-skrivningar.
 Efter import krävs exakt sex-medieparitet, oförändrade konton/spelrader och
-en andra kostnadsimport som skriver noll rader. 40 privata spärrprov PASS
-utan anslutning eller skrivning. Ingen importplan/apply har körts mot drift.
+en andra kostnadsimport som skriver noll rader. 86 privata spärrprov PASS
+utan anslutning eller skrivning. Återupptagning binder originalpayloaden och
+separata färska driftbevis; originalreceipt, källtid och kostnader skrivs inte om.
+En fullbordad import kan endast återkontrolleras med läsanslutning och ett nytt
+oföränderligt paritetskvitto för tre dokument, sex registerposter, 18 mediefiler,
+nio kostnads-/operatörstabeller och skyddade spel-/kontorader. Sex tidsgränsprov
+nekar även bevis som hinner gå ut under ett awaitat driftsanrop; 17 ytterligare
+freeze-/recovery-/providerprov PASS. Ingen importplan/apply har körts mot drift.
 
 RunPods faktiska endpoint-health visar kö/pågående jobb 0/0, men idle/ready 1/1.
 Den befintliga konsolen visar samma Croupier-endpoint under Jakobs profil,
@@ -147,7 +166,9 @@ min workers 0, max 1, idle timeout 5 s och en individuell idle worker.
 Detta är inte ett dräneringsbevis. Jakob uppger att befintliga nycklar kan
 tillhöra Emil; inga nycklar eller kontoövergripande inställningar ändras.
 Färsk endpoint-/processkontroll krävs vid frysningen. Resend-sändarnyckel
-saknas i både nuvarande Render och Lab; inga verkliga providermejl är verifierade.
+saknas i både nuvarande Render och Lab och i riktade relevanta lokala env-filer;
+fråga om eget konto/avsändardomän väntar på svar. Inga verkliga providermejl är
+verifierade eller skickade.
 
 Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
 är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.

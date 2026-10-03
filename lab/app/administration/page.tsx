@@ -6,6 +6,7 @@ import { NativeAdministration } from '@/components/native-administration';
 import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from '@/lib/studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from '@/lib/studio-native-request.mjs';
 import { redirect } from 'next/navigation';
+import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Backoffice · Croupier Studio' };
@@ -20,7 +21,7 @@ export default async function Page() {
     let session;
     try { session = await native.authorize(request); }
     catch (error) {
-      if ((error as {statusCode?:number})?.statusCode === 401) redirect('/studio/login?returnTo=%2Fstudio%2Fadministration');
+      if ((error as {statusCode?:number})?.statusCode === 401) redirect(nextStudioLoginRedirect('/studio/administration'));
       throw error;
     }
     return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} />;
