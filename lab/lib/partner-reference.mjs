@@ -6,6 +6,7 @@ import { createPartnerObserver, partnerEnvironment } from './partner-observer.mj
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';
 import { sanitizeObservation } from './partner-trace.mjs';
+import { publicGamePath } from '../../web/public/game-entry-contract.mjs';
 
 function generationToken(env) {
   if (Object.hasOwn(env, 'BETTALOTTO_API')) return env.BETTALOTTO_API;
@@ -82,7 +83,7 @@ export function createPartnerReference({ env = () => process.env, token = genera
         const result = await post('/api/v1/launch', { playerId: settings.partner.BETTALOTTO_PARTNER_PLAYER_ID }, settings);
         let url;
         try { url = new URL(result.url); } catch { throw new StudioError('Spelets öppningslänk är ogiltig.', 502); }
-        const gamePath = settings.raw.CROUPIER_PUBLIC_GAME_PATH === '/game' ? '/game' : '/';
+        const gamePath = publicGamePath(settings.raw);
         if (url.origin !== settings.origin || url.pathname !== gamePath || url.username || url.password || !url.searchParams.get('launch')) throw new StudioError('Spelets öppningslänk har fel adress.', 502);
         const presentationMode = body.action === 'launch-staged-base' ? 'astrid-staged-base' : 'partner-default';
         if (presentationMode === 'astrid-staged-base') {

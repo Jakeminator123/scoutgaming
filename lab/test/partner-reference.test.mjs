@@ -62,6 +62,32 @@ test('explicit staged-base launch keeps Partner identity and token but removes i
   assert.equal(staged.expiresIn, 60); assert.equal(staged.presentationMode, 'astrid-staged-base');
 });
 
+test('Partner launch follows the saved-policy route switch and preserves the server-owned launch identity', async () => {
+  for (const [routing,gamePath] of [[{},'/'],[{CROUPIER_PUBLIC_GAME_PATH:'/game'},'/game'],
+    [{CROUPIER_STUDIO_NEON_POLICY:'1'},'/blackjack'],[{CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_GAME_PATH:'/game'},'/blackjack']]) {
+    const supplied = `${ORIGIN}${gamePath}?dealer=vera&launch=fixture-token&presentation=original&motion=smooth60#view`;
+    const api = createPartnerReference({env:{...env,...routing},fetchImpl:async()=>Response.json({url:supplied,expiresIn:60})});
+    const ordinary = await api.endpoint(request('launch'));
+    assert.equal(ordinary.status,200);assert.equal((await ordinary.json()).url,supplied);
+    const staged = await api.endpoint(request('launch-staged-base'));
+    assert.equal(staged.status,200);
+    const url = new URL((await staged.json()).url);
+    assert.equal(url.origin,ORIGIN);assert.equal(url.pathname,gamePath);assert.equal(url.hash,'');
+    assert.deepEqual([...url.searchParams],[['launch','fixture-token'],['dealer','astrid'],['performance','staged']]);
+  }
+});
+
+test('canonical Partner launch rejects retired game paths, wrong origins and non-game destinations', async () => {
+  for (const url of [`${ORIGIN}/?launch=token`,`${ORIGIN}/game?launch=token`,`${ORIGIN}/blackjack/?launch=token`,
+    `${ORIGIN}/player-login?launch=token`,`${ORIGIN}/studio?launch=token`,'https://other.test/blackjack?launch=token']) {
+    const api = createPartnerReference({env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1'},fetchImpl:async()=>Response.json({url})});
+    for (const action of ['launch','launch-staged-base']) {
+      const response = await api.endpoint(request(action));
+      assert.equal(response.status,502);assert.ok(!(await response.text()).includes(url));
+    }
+  }
+});
+
 test('client-supplied identity/destination, foreign origins, query settings and unsupported methods are rejected before network access', async () => {
   let calls = 0; const api = service(() => { calls++; });
   const body = value => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });

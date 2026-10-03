@@ -10,6 +10,19 @@ const documentationFiles = new Set([
   '.ignore', '.cursorignore', '.cursorindexingignore',
 ]);
 
+// Git exports repository-local variables to hooks. Child commands must discover
+// the repository from their explicit cwd, including temporary Git fixtures.
+export function isolatedGitEnvironment(env = process.env) {
+  const result = { ...env };
+  for (const name of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_PREFIX',
+    'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_SHALLOW_FILE',
+    'GIT_GRAFT_FILE', 'GIT_REPLACE_REF_BASE', 'GIT_NO_REPLACE_OBJECTS',
+    'GIT_IMPLICIT_WORK_TREE', 'GIT_INTERNAL_SUPER_PREFIX', 'GIT_CONFIG',
+    'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT']) delete result[name];
+  for (const name of Object.keys(result)) if (/^GIT_CONFIG_(?:KEY|VALUE)_\d+$/.test(name)) delete result[name];
+  return result;
+}
+
 export function parseStagedChanges(output) {
   if (output === '') return [];
   if (!output.endsWith('\0')) throw Error('Invalid staged-file output: missing NUL terminator');
@@ -25,11 +38,11 @@ export function parseStagedChanges(output) {
   return changes;
 }
 
-export function readStagedChanges(root) {
+export function readStagedChanges(root, { env = isolatedGitEnvironment() } = {}) {
   const result = spawnSync('git', [
     '-c', 'diff.relative=false', 'diff', '--cached', '--name-status', '-z',
     '--no-renames', '--no-ext-diff', '--no-textconv', '--',
-  ], { cwd: root, encoding: 'utf8' });
+  ], { cwd: root, encoding: 'utf8', env });
   if (result.error || result.status !== 0) {
     throw Error('Cannot inspect staged changes: ' + (result.error?.message || result.stderr || result.signal || result.status));
   }
@@ -65,7 +78,7 @@ export function checkPlan(mode) {
 
 export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = {}) {
   for (const [command, ...args] of commands) {
-    const result = run(command, args, { cwd, stdio: 'inherit' });
+    const result = run(command, args, { cwd, stdio: 'inherit', env: isolatedGitEnvironment() });
     if (result.error) {
       console.error('Verification could not start: ' + result.error.message);
       return 1;
@@ -80,7 +93,11 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
 
 export function main(args = process.argv.slice(2)) {
   const { forceFull, planOnly } = parseArgs(args);
-  const mode = verificationMode(readStagedChanges(repositoryRoot), { forceFull });
+  const indexEnv = isolatedGitEnvironment();
+  // The invoking Git commit can own a temporary index (for example --only).
+  // Keep that exact index only for this hook's own inspection, never its checks.
+  if (process.env.GIT_INDEX_FILE) indexEnv.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
+  const mode = verificationMode(readStagedChanges(repositoryRoot, { env: indexEnv }), { forceFull });
   const commands = checkPlan(mode);
   if (planOnly) {
     console.log(JSON.stringify({ mode, commands }));

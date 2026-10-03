@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  parseStagedChanges, readStagedChanges, verificationMode, parseArgs, runChecks,
+  parseStagedChanges, readStagedChanges, verificationMode, parseArgs, runChecks, isolatedGitEnvironment,
 } from '../tools/precommit-checks.mjs';
 
 const change = (path, status = 'M') => ({ path, status });
@@ -52,7 +52,7 @@ test('staged parser preserves unusual filenames and rejects malformed output', (
 });
 
 function git(root, args) {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', env: isolatedGitEnvironment() });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 }
@@ -98,6 +98,60 @@ test('failed Git inspection cannot silently select quick checks', async () => {
   const root = await mkdtemp(join(tmpdir(), 'croupier-hook-invalid-'));
   try { assert.throws(() => readStagedChanges(root), /Cannot inspect staged changes/); }
   finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('hook Git environment cannot redirect fixtures or staged reads into the invoking repository', async () => {
+  await fixture(async parent => {
+    await writeFile(join(parent, 'parent.md'), 'parent\n');
+    git(parent, ['add', '--', 'parent.md']);
+    const before = readStagedChanges(parent);
+    const hooks = git(parent, ['config', 'core.hooksPath']);
+    const names = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_PREFIX'];
+    const previous = Object.fromEntries(names.map(name => [name, process.env[name]]));
+    Object.assign(process.env, { GIT_DIR: join(parent, '.git'), GIT_WORK_TREE: parent,
+      GIT_INDEX_FILE: join(parent, '.git', 'index'), GIT_COMMON_DIR: join(parent, '.git'), GIT_PREFIX: 'wrong/' });
+    try {
+      await fixture(async root => {
+        await writeFile(join(root, 'owned.md'), 'fixture\n');
+        git(root, ['add', '--', 'owned.md']);
+        assert.deepEqual(readStagedChanges(root), [change('owned.md', 'A')]);
+        const child = "const {spawnSync}=require('node:child_process');const r=spawnSync('git',['diff','--cached','--name-only'],{encoding:'utf8'});process.exit(r.status===0&&r.stdout.trim()==='owned.md'?0:1);";
+        assert.equal(runChecks([[process.execPath, '-e', child]], { cwd: root }), 0);
+        // A non-repository cwd must not inherit the parent's staged files.
+        const invalid = await mkdtemp(join(tmpdir(), 'croupier-hook-poisoned-'));
+        try { assert.throws(() => readStagedChanges(invalid), /Cannot inspect staged changes/); }
+        finally { await rm(invalid, { recursive: true, force: true }); }
+      });
+      assert.deepEqual(readStagedChanges(parent), before);
+      assert.equal(git(parent, ['config', 'core.hooksPath']), hooks);
+      assert.equal(git(parent, ['config', 'core.bare']).trim(), 'false');
+    } finally {
+      for (const name of names) {
+        if (previous[name] === undefined) delete process.env[name];
+        else process.env[name] = previous[name];
+      }
+    }
+  });
+});
+
+test('the hook inspects its own commit index while child checks remain isolated', async () => {
+  await fixture(async root => {
+    await mkdir(join(root, 'docs'));
+    await writeFile(join(root, 'docs', 'guide.md'), 'guide\n');
+    git(root, ['add', '--', 'docs/guide.md']);
+    assert.equal(mode(readStagedChanges(root)), 'documentation');
+    await writeFile(join(root, 'code.mjs'), 'export {};\n');
+    const env = { ...isolatedGitEnvironment(), GIT_INDEX_FILE: join(root, '.git', 'commit-index') };
+    const staged = spawnSync('git', ['add', '--', 'code.mjs'], { cwd: root, env, encoding: 'utf8' });
+    assert.equal(staged.status, 0, staged.stderr);
+    await mkdir(join(root, 'tools'));
+    const script = join(root, 'tools', 'precommit-checks.mjs');
+    await writeFile(script, await readFile(new URL('../tools/precommit-checks.mjs', import.meta.url)));
+    const plan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env, encoding: 'utf8' });
+    assert.equal(plan.status, 0, plan.stderr);
+    assert.equal(JSON.parse(plan.stdout).mode, 'full');
+    assert.equal(mode(readStagedChanges(root)), 'documentation', 'the default index remains unchanged');
+  });
 });
 
 test('failed, unstartable or interrupted check stops subsequent checks', () => {
