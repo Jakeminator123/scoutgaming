@@ -40,7 +40,9 @@ det isolerade native/Next-startprovet PASS efter återbygget. Labbets tsconfig
 utesluter nu privata `data/` ur app-typkontrollen, så SDK-källpaket inte kräver
 leverantörernas utvecklingsberoenden. 123 lokala dokumentlänkar och diffkontroll
 PASS. Den första fulla regressionen gav 1 216 PASS, fem skip och endast felet
-om saknad runtime ovan; leverans kräver ny godkänd full commit-hook efter rättelsen.
+om saknad runtime ovan. Efter rättelsen är full obligatorisk commit-hook PASS:
+1 217 tester PASS, fem skip, noll fail. Kod- och dokumentstädningen är committad
+på `be204ed8719dcc9577f3118c7145caec12bfe1d7`; denna slutnotis ändrar bara docs.
 Kontrolloggar ligger privat i Windows temp som `croupier-housekeeping-*.log`.
 Push sker via ordinarie main-helper; slutlig SHA/checkstatus läses från GitHub,
 och detta arbete bockar inte av P6/P7/P8.
