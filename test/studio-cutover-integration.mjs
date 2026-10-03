@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
+import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
 import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../lab/lib/studio-native-auth-actions.mjs';
@@ -136,6 +137,27 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     await check('current product-v1 and Studio001/002/003/004 SQL are checksum-verified', async () => {
       await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
       assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003', '004']); assert.equal(plan.toApply.length, 0);
+    });
+    await check('actual Render default schema factory accepts001004 saved Neon policy and denies missing import without seeding', async () => {
+      // URL validation is inert; the supplied pool remains the owned localhost
+      // cluster. No fake schemaCheck replaces the real migrator/catalog checks.
+      const env = { CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_DATABASE:'postgres',
+        CROUPIER_GAME_DATABASE_URL:'postgresql://fixture:synthetic@ep-fixture.neon.tech/croupier_game?sslmode=require',
+        CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment, CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId };
+      const before = await runtime.gamePolicy.readSaved();
+      const saved = await createRenderStudioPolicy({ storage:runtime.store, env, dealerIdle:idle });
+      assert.deepEqual(saved.scope, scope); assert.deepEqual(await saved.policy.readSaved(), before);
+      assert.deepEqual(await saved.repository.readDocument('project'), await runtime.repository.readDocument('project'));
+      assert.deepEqual(await saved.repository.readDocument('administration'), await runtime.repository.readDocument('administration'));
+      const absentScope = { ...scope, environment:`missing_${randomBytes(6).toString('hex')}` };
+      const count = async () => (await pool.query('SELECT count(*)::int n FROM croupier_studio.documents WHERE environment_id=$1', [absentScope.environment])).rows[0].n;
+      assert.equal(await count(), 0);
+      await assert.rejects(createRenderStudioPolicy({ storage:runtime.store,
+        env:{ ...env, CROUPIER_STUDIO_ENVIRONMENT_ID:absentScope.environment }, dealerIdle:idle }),
+        { code:'studio_game_policy_missing' });
+      assert.equal(await count(), 0);
+      assert.deepEqual(await runtime.gamePolicy.readSaved(), before);
+      assert.equal(await createRenderStudioPolicy({ env:{...env,CROUPIER_STUDIO_NEON_POLICY:'0'} }), null);
     });
     await check('HTTPS real native login authenticates current Neon roles and never grants reader project writes', async () => {
       for (const [key, user] of [['admin', names[0]], ['reader', names[1]]]) {
