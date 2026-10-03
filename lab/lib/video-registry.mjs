@@ -145,10 +145,11 @@ function text(value, max = 100) {
 function publicEntry(entry, available, integrity, family) {
   if (entry.classification) return {
     id: entry.id, label: entry.classification.label, dealer: entry.classification.dealerId,
-    fileName: `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
+    fileName: entry.retainedBank ? basename(entry.retainedBank.originalRelativePath) : `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
     sha256: entry.sha256, available, previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
-    bindingScope: 'lab-only', source: 'upload', classification: entry.classification, addedAt: entry.addedAt,
+    bindingScope: 'lab-only', source: entry.retainedBank ? 'emil' : 'upload', classification: entry.classification, addedAt: entry.addedAt,
+    ...(entry.retainedBank ? {retainedBank:true} : {}),
     storage: entry.storage ? 'private-blob' : 'disk',
   };
   if (family) return {
@@ -195,6 +196,19 @@ function publicEntry(entry, available, integrity, family) {
 }
 
 /** Read-only inventory. Availability checks bytes/readability; preview verifies SHA-256. */
+async function validateRetainedEntry(entry) {
+  if (!Object.hasOwn(entry,'retainedBank')) return;
+  try {
+    // Conditional import preserves legacy fixture dependencies when no retained
+    // Neon record is in use. Both list and byte readers enforce the same tuple.
+    const {validateStudioMedia} = await import('../../web/storage/studio-contract.mjs');
+    validateStudioMedia({id:entry.id,sha256:entry.sha256,size:entry.size,contentType:`video/${entry.extension}`,
+      pathname:entry.storage?.pathname,classification:entry.classification,retainedBank:entry.retainedBank});
+    if (entry.storage?.provider !== 'vercel-blob' || entry.storage.sha256 !== entry.sha256
+      || entry.storage.size !== entry.size || entry.storage.contentType !== `video/${entry.extension}`) throw Error('mismatch');
+  } catch {throw new RegistryError(503,'Retained original media identity is unavailable.');}
+}
+
 export async function loadVideoRegistry(options = {}) {
   const selection = selectArchive(options);
   const summary = {
@@ -215,6 +229,7 @@ export async function loadVideoRegistry(options = {}) {
   try { uploads = await (options.readUploads ?? readUploads)(options); }
   catch (error) { if (options.strict) throw error; summary.notes.push('Uppladdningsregistret kunde inte läsas; befintliga filer är bevarade.'); }
   for (const entry of uploads) {
+    await validateRetainedEntry(entry);
     if (entries.has(entry.id)) throw new RegistryError(503, 'Duplicate video identity.');
     entries.set(entry.id, entry);
   }
@@ -339,6 +354,7 @@ export async function getVideoResponse(id, request, options = {}) {
     catch { snapshotFailed = true; }
     if (!entry) {
       uploaded = (await (options.readUploads ?? readUploads)(options)).find(v => v.id === id);
+      if (uploaded) await validateRetainedEntry(uploaded);
       entry = uploaded;
     }
     if (!entry && snapshotFailed) throw new RegistryError(503, 'Video inventory unavailable.');

@@ -1,12 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash,createHmac } from 'node:crypto';
 import { mkdtemp,rm } from 'node:fs/promises';
 import { basename,dirname,join,resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+
+test('an upload grant cannot register retained bank status even with a valid server signature',async t=>{
+  const {settings,context,pool}=await fixture(t),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+  let providerReads=0;
+  const service=createStudioUploadService({...settings,privateMedia:async()=>{providerReads++;throw Error('must not read');}});
+  const payload=Buffer.from(canonicalStudioJson({v:1,actor:'Operator',scope,record,expiresAt:2000})).toString('base64url');
+  const ticket=`${payload}.${createHmac('sha256',key).update(`studio-upload-v1\0${payload}`).digest('base64url')}`;
+  await assert.rejects(service.commit({operation:'commit',ticket},context),error=>error.code==='studio_upload_grant_invalid'&&error.statusCode===403);
+  await assert.rejects(service.prepare({operation:'prepare',sha256:record.sha256,size:record.size,contentType:record.contentType,classification:record.classification,retainedBank:record.retainedBank},{actor:'Operator'}),error=>error.statusCode===400);
+  assert.equal(providerReads,0);assert.equal(pool.snapshot().media.size,0);assert.equal(pool.snapshot().audits.length,0);
+});
 
 const scope=Object.freeze({environment:'test',workspaceId:'studio-test'}),key=Buffer.alloc(32,8),origin='https://studio.example.invalid';
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Uploaded clip',notes:''};

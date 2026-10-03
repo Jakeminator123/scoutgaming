@@ -37,7 +37,11 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
     if (!exact(data,['v','actor','scope','record','expiresAt']) || data.v !== 1 || data.actor !== actor
       || canonicalStudioJson(data.scope) !== canonicalStudioJson(scope) || !Number.isSafeInteger(data.expiresAt)
       || data.expiresAt <= now() || data.expiresAt > now()+TTL) fail('studio_upload_grant_invalid',403);
-    return validateStudioMedia(data.record);
+    const record = validateStudioMedia(data.record);
+    // Only the explicit retained-source import may register reserved originals.
+    // Even a correctly signed upload ticket cannot grant bank identity authority.
+    if (record.retainedBank) fail('studio_upload_grant_invalid',403);
+    return record;
   }
   return Object.freeze({
     async prepare(body,{actor} = {}) {

@@ -53,6 +53,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
           await refresh();
           return repository.transaction(async () => {
             const current = await repository.getMedia(body.id);
+            if (current?.retainedBank) fail('studio_retained_media_immutable',409);
             // Immutable bank clips have no editable review record. New Neon review
             // uploads are classified with prior metadata + exact bytes + row CAS.
             if (!current || current.sha256 !== body.sha256 || current.classification.familyId

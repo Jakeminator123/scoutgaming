@@ -7,6 +7,7 @@ export interface VideoRegistryOptions {
   readClassifications?(options: VideoRegistryOptions): Promise<any[]>;
 }
 export interface RegistryVideo {
+  retainedBank?: true;
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';
   storage?: 'disk' | 'private-blob';

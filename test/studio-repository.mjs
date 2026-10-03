@@ -5,6 +5,22 @@ import { createSeedProject } from '../lab/lib/studio-model.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../web/storage/studio-contract.mjs';
+
+test('explicit retained originals are scoped immutable records with audited idempotent registration',async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool),other=createStudioRepository({pool,scope:{...scope,workspaceId:'other'}});
+  for(const tuple of RETAINED_BANK_VARIANTS){
+    const record=createRetainedStudioMedia(tuple.id),first=await repo.registerMedia(record,{actor:'explicit-retention-import'});
+    assert.deepEqual(await repo.registerMedia(record,{actor:'explicit-retention-import'}),{media:first.media,duplicate:true});
+    const before=pool.snapshot();
+    await assert.rejects(repo.classifyMedia(tuple.id,{sha256:record.sha256,expectedRevision:first.media.revision,metadata:record.classification,actor:'operator'}),error=>error.code==='studio_retained_media_immutable'&&error.statusCode===410);
+    assert.deepEqual(pool.snapshot(),before);
+    await assert.rejects(repo.registerMedia({...record,size:record.size+1},{actor:'operator'}),error=>error.code==='studio_invalid_retained_media');
+    assert.equal(await other.getMedia(tuple.id),null);
+  }
+  assert.equal((await repo.listMedia()).length,6);assert.equal((await other.listMedia()).length,0);
+  assert.equal(pool.snapshot().audits.length,6);assert.ok(pool.snapshot().audits.every(row=>row.actor==='explicit-retention-import'));
+});
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'workspace-1' });
 const repository = pool => createStudioRepository({ pool, scope });

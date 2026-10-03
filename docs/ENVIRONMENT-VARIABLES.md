@@ -30,6 +30,13 @@ en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
 verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan
 postgres-flagga är fel. Zon-URL får aldrig vara reserv för konton/spel.
 
+Ett isolerat native-QA-prov får använda
+`CROUPIER_CLOUD_DATA_ROOT=/var/data/native-studio-qa/<12 hextecken>`.
+Containern kräver då postgres och gemensam policyflagga, exakt matchande
+`qa_native_<suffix>`-miljö, workspace `croupier` och den separata Neon-
+databasen/rollen `croupier_studio_qa_<suffix>`. Skrivbara QA-kataloger skapas
+efter att rootprivilegier släppts. Den befintliga diskens övriga data bevaras.
+
 Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN` och serverhemligheten
 `CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` bevaras för äldre

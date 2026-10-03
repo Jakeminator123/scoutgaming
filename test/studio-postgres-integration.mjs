@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
 import { planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../web/storage/studio-contract.mjs';
 
 const suffix = () => randomBytes(8).toString('hex');
 const hasCode = code => error => error?.code === code;
@@ -92,6 +93,24 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     await assert.rejects(targetRepository.importSnapshot(corrupted, { actor: 'qa', expectedTargetEmpty: true }), hasCode('studio_invalid_snapshot'));
   });
 
+  let retained;
+  await check('six exact retained identities persist in scoped SQL with immutable classification and idempotent import',async()=>{
+    for(const original of RETAINED_BANK_VARIANTS){
+      const record=createRetainedStudioMedia(original.id),first=await repository.registerMedia(record,{actor:'qa-explicit-retained-import'});
+      assert.deepEqual(await repository.registerMedia(record,{actor:'qa-explicit-retained-import'}),{media:first.media,duplicate:true});
+      await assert.rejects(repository.classifyMedia(record.id,{sha256:record.sha256,expectedRevision:first.media.revision,metadata:record.classification,actor:'qa'}),hasCode('studio_retained_media_immutable'));
+    }
+    retained=await repository.listMedia();assert.equal(retained.length,6);
+    assert.equal((await createStudioRepository({pool,scope:{...scope,workspaceId:'no-retained-sources'}}).listMedia()).length,0);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.audit_events WHERE environment_id=$1 AND action=$2',[scope.environment,'register_media'])).rows[0].count,6);
+  });
+  await check('corrupted retained tuple in SQL fails closed and never becomes a review upload',async()=>{
+    const record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+    await pool.query("UPDATE croupier_studio.media_records SET record=jsonb_set(record,'{retainedBank,familyId}','\"astrid/deal.player.left/box1\"'::jsonb) WHERE environment_id=$1 AND workspace_id=$2 AND id=$3",[scope.environment,scope.workspaceId,record.id]);
+    try{await assert.rejects(repository.getMedia(record.id),hasCode('studio_corrupt_media'));await assert.rejects(repository.listMedia(),hasCode('studio_corrupt_media'));}
+    finally{await pool.query('UPDATE croupier_studio.media_records SET record=$4::jsonb WHERE environment_id=$1 AND workspace_id=$2 AND id=$3',[scope.environment,scope.workspaceId,record.id,canonicalStudioJson(record)]);}
+    assert.deepEqual(await repository.listMedia(),retained);
+  });
   let clock = Date.UTC(2026, 9, 3, 23, 58);
   const environmentId = `qa_${suffix()}`;
   let journal = await createSpeechJournal({ pool, environmentId, now: () => clock });
@@ -138,6 +157,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     repository = createStudioRepository({ pool, scope });
     journal = await createSpeechJournal({ pool, environmentId, now: () => clock });
     assert.deepEqual(await repository.readDocument('administration'), saved);
+    assert.deepEqual(await repository.listMedia(),retained);
     assert.equal((await planStudioMigrations({ pool })).toApply.length, 0);
     assert.equal((await journal.listRecoverableSessions()).length, 1);
     assert.equal((await journal.claimRequest({ ownerHash, requestId, fingerprint, capability: 'stream', lease })).status, 'inFlight');
