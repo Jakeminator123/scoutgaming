@@ -123,9 +123,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
     await runtime.repository.initializeDocument('project', { value: createSeedProject(), revision: 'https-project-initial', actor: 'fixture-import' });
     await runtime.repository.initializeDocument('administration', { value: adminValue, revision: 'https-admin-initial', actor: 'fixture-import' });
-    await check('current product-v1 and Studio001/002 SQL are checksum-verified', async () => {
+    await check('current product-v1 and Studio001/002/003 SQL are checksum-verified', async () => {
       await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
-      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002']); assert.equal(plan.toApply.length, 0);
+      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003']); assert.equal(plan.toApply.length, 0);
     });
     await check('HTTPS real native login authenticates current Neon roles and never grants reader project writes', async () => {
       for (const [key, user] of [['admin', names[0]], ['reader', names[1]]]) {

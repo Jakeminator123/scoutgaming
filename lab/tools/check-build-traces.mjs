@@ -14,6 +14,9 @@ export async function checkBuildTraces({directory=resolve(process.cwd(),process.
   let checked=0,removed=0;
   async function visit(folder) {
     for(const row of await readdir(folder,{withFileTypes:true})) {
+      // Next/Vercel may restore the compiler cache through a directory link.
+      // It is not packaged function output and contains no deployment traces.
+      if(folder===root && row.name==='cache') continue;
       if(row.isSymbolicLink()) throw Error('unsafe_build_trace_entry');
       const file=resolve(folder,row.name),distance=relative(root,file);
       if(isAbsolute(distance)||distance.startsWith(`..${sep}`)) throw Error('unsafe_build_trace_entry');
@@ -33,5 +36,8 @@ export async function checkBuildTraces({directory=resolve(process.cwd(),process.
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {console.log(JSON.stringify(await checkBuildTraces({sanitize:process.argv.slice(2).includes('--sanitize')})));}
-  catch {console.error('Studio build tracing verification failed.');process.exitCode=1;}
+  catch(error) {
+    const code=/^[a-z_]{1,80}$/.test(error?.message??'')?error.message:'trace_io_failure';
+    console.error(`Studio build tracing verification failed: ${code}.`);process.exitCode=1;
+  }
 }

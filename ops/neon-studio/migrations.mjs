@@ -12,6 +12,8 @@ const sources = Object.freeze([
   { version: '002', file: '002-generation-journals.sql', optional: true,
     tables: ['speech_execution_leases', 'speech_requests', 'gpu_budget_policies', 'gpu_sessions', 'gpu_reservations'],
     indexes: ['gpu_sessions_open_idx', 'gpu_sessions_provider_job_idx', 'gpu_reservations_day_idx'] },
+  { version: '003', file: '003-operator-speech-qa.sql', optional: true,
+    tables: ['operator_qa_campaigns', 'operator_qa_gate', 'operator_qa_attempts'], indexes: [] },
 ]);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 
@@ -47,7 +49,7 @@ function validateSql(source, sql) {
       if (!targets.every(value => source.tables.some(name => value === `${schema}.${name}`))) refuse('studio_migration_invalid_source', 422);
     } else refuse('studio_migration_invalid_source', 422);
     // References may only address this schema. Dollar blocks, comments and
-    // transaction statements are unsupported in these two reviewed versions.
+    // transaction statements are unsupported in these reviewed versions.
     const unquoted = statement.replace(/'(?:[^']|'')*'/g, "''");
     if (/\/\*|\$[a-z_]*\$|\b(?:BEGIN|COMMIT|ROLLBACK|IF\s+NOT\s+EXISTS|INSERT|UPDATE|DELETE|DROP|ALTER|GRANT)\b/i.test(unquoted)
       || [...unquoted.matchAll(/\b([a-z_][a-z_0-9]*)\.[a-z_][a-z_0-9]*/gi)].some(match => match[1] !== schema)) refuse('studio_migration_invalid_source', 422);

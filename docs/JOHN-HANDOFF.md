@@ -7,7 +7,7 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
 native konto-/partner-/authhandlers och tillhörande formulär är implementerade
-på main. Grovt cirka 60 % av sammanslagningen; källbyte, full helhetsacceptans
+på main. Grovt cirka 65 % av sammanslagningen; källbyte, full helhetsacceptans
 och faktisk avveckling återstår. Inget i detta kodsteg har aktiverat produktion.
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
@@ -27,13 +27,13 @@ Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
 aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
 
 57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
-Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 27
-acceptansgrupper plus runnerguard. Det täcker bland annat sparad revision/CAS,
+Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 33
+acceptansgrupper och 33 oförändrade källhashar, plus runnerguard. 85 riktade
+tal-/journal-/Blob-/import-/operatörsprov PASS. SQL-provet täcker sparad revision/CAS,
 konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
 revoke, signerad actor/scope och walletnonce utan dubbel kreditering.
 Fixtureprocesser, certifikat och databas städades. Inga riktiga konton,
-providermejl, molndatabaser eller betalda jobb användes. Gemensamt bygge/hook,
-aktuell GitHub-leverans och drift-SHA redovisas av integratören när klara.
+providermejl, molndatabaser eller betalda jobb användes.
 
 Talets aktiva fullfil-/stream-/sessionscallers är kopplade till Neon-journalen
 under gemensamma policyflaggan. Nya fullfilspaket använder befintlig privat
@@ -47,15 +47,49 @@ stream-cancellation innan journalens databasanslutning stängs.
 Förberedelseverktygen kräver frysta exakta källbytes/hashar för Studio/BO-
 policy och gamla kostnadsjournaler, stoppade skrivare och dränerad worker.
 Osäkra/förbrukade jobb bevaras och får inte återbetalas eller skickas om.
-Read-only Neon-kontroll visar att 001/002 ännu är pending i drift; ingen
-live-SQL har applicerats. Render-API och SSH fungerar nu: Jakob godkände
+Separat additiv `003-operator-speech-qa.sql` bevarar operatörens kampanjer,
+grind och förbrukade försök; 001/002 och product-v1 är oförändrade. Den explicita
+frysta journalimporten binder scope/källchecksumma och en atomisk SQL-receipt.
+Den bevarar budget, UTC-dygnsreservationer, opaka requestnycklar och gamla
+försök med rå källhash och utan påhittad actor. Saknad aktiv grind förblir
+avstängd. Exakt återkörning skapar inga dubletter; senare förbrukning eller
+ändrad lease blockerar import. Ett fel vid sista receipt rullar tillbaka alla
+kostnads- och operatörsrader. Färdiga paket kräver separat exakt privat
+Blob-metadata och verifierade bytes; inga publika metadata fabriceras.
+
+Read-only Neon-kontroll visar att 001/002 saknas i drift; även 003 krävs före
+aktivering. Ingen Studio-migration eller fryst dataimport är genomförd i drift.
+Render-API och SSH fungerar nu: Jakob godkände
 registrering av datorns befintliga publika Ed25519-nyckel på sitt Render-konto.
 Ingen privat nyckel har överförts, ändrats eller skapats. Read-only pwd på
-produkten PASS. Aktuell export/paritet återstår före byte och avveckling.
+produkten PASS. Läsande export finns, men är uttryckligen **ofryst**: 129
+journalfiler, 18 terminala GPU-jobb, 46 streamrequestkvitton samt
+tre operatörskampanjer med sju försök och ingen aktiv grind. Rå BO- och
+socialpolicyfil saknas; effektiva standardvärden har separat proveniens och
+får inte presenteras som exporterade sparade filer. Importen kräver fryst
+fullständighet och verifierade källor före byte och avveckling.
 
-Lab-TypeScript samt Lab- och frontend-produktionsbyggen PASS. Privata env, lokala databaser,
-QA-underlag och agentstate utesluts från Nexts deploytraces, även på Windows;
-kontroll av 50 färdiga traces har noll privata referenser. Spelmediers aktiva
+Det sparade projektet har 18 aktiva bindningar. Tolv matchar exakt dagens
+lokala och inventerade Render-register. Sex bundna UUID saknas i båda:
+`891c432a` den 29 september ersatte klipp med samma filnamn/familj/roll men
+andra bytes, hash och storlek. Det sparade projektet behåller de äldre
+referenserna. Automappning eller ny visuell approval från liknande filnamn
+är inte tillåten; sökning efter exakta originalobjekt/approvalmetadata pågår.
+
+Den äldre Neon-QA-databasen har 25 befintliga konton och ska inte återanvändas
+för ett tomt importprov. En separat QA-databas och begränsad roll är nu
+skapade och verifierade med noll tabeller; produktions- och äldre QA-rader är
+oförändrade. Inga scheman, fixtures eller Render-env har applicerats på den
+nya databasen. Detta ersätter inte den lokala SQL-fixturens acceptans ovan.
+
+Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
+är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
+Lab-deployen är fortfarande ERROR från cloud-traceguard; rättningen har ett
+nytt lokalt produktionsbygge PASS med 50 sanerade traces, men molnrättningen
+är ännu inte verifierad. Publicerad kod betyder inte produktionskällbyte.
+Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
+lokala databaser, QA-underlag och agentstate har noll referenser i de 50
+kontrollerade lokala traces. Spelmediers aktiva
 index/bank/speech-metadata är fortsatt inkluderade. Dealer-audit med --probe
 PASS för baselinen; detta är inte mänsklig läppsynkacceptans.
 
@@ -94,8 +128,9 @@ API-grunden har säkra errors, Origin/Host/JSON-gräns, explicita specialgates o
 serverägd actor/scope. Partnerlistan väljer inte credential-kolumner.
 
 Produktionsaktivering kräver fortfarande hela återstående P2–P6: aktuell
-explicit import/paritet, privata medieflöden, kostnads-/jobbjournalernas aktiva
-callers och riktig transport-/dealeracceptans. Nuvarande produktdrift använder
+fryst import/paritet, exakta aktiva mediereferenser och riktig transport-/
+dealeracceptans. Aktiva journalcallers är verifierade isolerat, inte i drift.
+Nuvarande produktdrift använder
 fortfarande bo.json/Studio-disk tills det samordnade källbytet genomförs.
 Den aktuella isolerade SQL/HTTPS-verifieringen ovan ska inte upprepas som
 förstudie eller förväxlas med produktions-/GPU-/mänsklig acceptans. Byt
@@ -181,7 +216,8 @@ Tre implementationer körs på exklusiva filer: dokument/CAS/migration, fenced
 request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
 runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
 Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg var läget cirka 30 %;
-senaste native integrationsgrund ovan ger grovt cirka 40 %.
+native integrationsgrund gav då grovt cirka 40 %; aktuell fortsättning är
+cirka 65 % enligt statusen överst.
 Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
 Äldre GitHub-/Vercel-kvitton gäller sina angivna SHA, inte automatiskt senaste kodsteget.
 

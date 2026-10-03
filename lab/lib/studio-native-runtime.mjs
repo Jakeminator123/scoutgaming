@@ -63,7 +63,7 @@ export function assertNativeStudioRequest(request, config) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002') unavailable();
+    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
