@@ -8,7 +8,7 @@ import {platformUiDocument} from '../lib/server-ui.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
 
-const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
+const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
