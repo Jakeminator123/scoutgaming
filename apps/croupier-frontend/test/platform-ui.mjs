@@ -45,6 +45,19 @@ test('platform routes preserve exact backend boundaries, public origin and query
   assert.equal(headers.get('cookie'), 'player_session=test');
 });
 
+test('cookie-owned P6 playback context has one exact backend route without a presentation catch-all', () => {
+  const path = '/api/presentation/native-p6-playback-context';
+  assert.equal(backendPlatformPath(path), true);
+  assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), {kind:'backend', destination:config.backendOrigin + path});
+  for (const extra of [path + '/', path + '/owner', path + 's', '/api/presentation/native-p6',
+    '/api/presentation/unknown', '/api/presentation/native-p6-%70layback-context', path + '\\owner']) {
+    assert.equal(backendPlatformPath(extra), false, extra);
+  }
+  for (const extra of [path + '/', path + '/owner', path + 's', '/api/presentation/native-p6', '/api/presentation/unknown']) {
+    assert.equal(platformRoute(new URL(extra, config.publicOrigin), config).kind, 'frontend', extra);
+  }
+});
+
 test('prepared player uses the actual shared player and keeps BO HTML behind live identity checks', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-vercel-ui-'));
   try {
@@ -88,7 +101,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   try {
-    for (const path of ['/api/bo/me', '/studio/api/project', '/studio/activity']) {
+    for (const path of ['/api/bo/me', '/studio/api/project', '/studio/activity', '/api/presentation/native-p6-playback-context']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);
@@ -96,6 +109,27 @@ test('actual Next middleware disables rewrite caching for backend and authentica
         assert.match(response.headers.get('x-middleware-rewrite'), /^https:\/\/lab-ui\.vercel\.app/);
         assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
       } else assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
+    }
+    const contextPath = '/api/presentation/native-p6-playback-context';
+    const context = module.exports.middleware(new NextRequest(config.publicOrigin + contextPath, {method:'GET', headers:{
+      cookie:'player_session=isolated-unit-session', 'x-croupier-vercel-secret':'spoof', 'x-croupier-native-p6-owner':'spoof',
+      'x-croupier-public-origin':'https://foreign.example', 'x-forwarded-host':'foreign.example', 'x-forwarded-proto':'http',
+      forwarded:'host=foreign.example',
+    }}));
+    assert.equal(context.headers.get('x-middleware-rewrite'), config.backendOrigin + contextPath);
+    assert.equal(context.headers.get('x-middleware-request-cookie'), 'player_session=isolated-unit-session');
+    assert.equal(context.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
+    assert.equal(context.headers.get('x-middleware-request-x-croupier-public-origin'), config.publicOrigin);
+    assert.equal(context.headers.get('x-middleware-request-x-forwarded-host'), new URL(config.publicOrigin).host);
+    assert.equal(context.headers.get('x-middleware-request-x-forwarded-proto'), 'https');
+    assert.equal(context.headers.get('x-middleware-request-forwarded'), null);
+    assert.equal(context.headers.get('x-middleware-request-x-croupier-native-p6-owner'), null);
+    assert.equal(context.headers.get('cdn-cache-control'), 'no-store');
+    assert.equal(context.headers.get('x-vercel-enable-rewrite-caching'), '0');
+    for (const extra of [contextPath + '/owner', contextPath + 's', '/api/presentation/unknown']) {
+      const unmatched = module.exports.middleware(new NextRequest(config.publicOrigin + extra));
+      assert.equal(unmatched.headers.get('x-middleware-rewrite'), null, extra);
+      assert.equal(unmatched.headers.get('x-middleware-request-x-croupier-vercel-secret'), null, extra);
     }
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
