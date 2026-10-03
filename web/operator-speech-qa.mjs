@@ -235,13 +235,17 @@ export function createOperatorSpeechQa({ directory, origin, authenticate, servic
           const context = { dealerId: 'astrid', sessionRevision: `qa-${entry.gate.id}`, roundRevision: 'qa-idle',
             roundPhase: 'idle', round: null, displayName: 'Läppsynkprov', publishedEvents: [], occupiedBoxes: [],
             policy: { generatedText: true, recordedLines: [], silence: false, mediaFamilies: [] } };
+          const readOwner = async () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt
+            && await principal(req) === binding && (!reservation || await reservation.check()) ? entry.owner : null;
+          const readStatus = async () => { await currentEntry(req, playerId); return context; };
+          const ownedContext = Object.freeze({ playerId, owner: entry.owner, readOwner, readStatus,
+            operatorAttempt: attempt, operatorCampaignId: entry.gate.id });
           const timings = {};
           const decision = await completeChatWithSpeech({ request, status: context, owner: entry.owner, playerId,
             signal: entry.controller.signal,
-            readOwner: async () => !entry.controller.signal.aborted && now() < entry.gate.expiresAt
-              && await principal(req) === binding && (!reservation || await reservation.check()) ? entry.owner : null,
-            readStatus: async () => { await currentEntry(req, playerId); return context; },
-            decide: (value, state) => decide(value, state, entry.controller.signal),
+            readOwner,
+            readStatus,
+            decide: (value, state) => decide(value, state, entry.controller.signal, ownedContext),
             streamService: stream,
             onTiming: (stage, ms) => { if (/^[a-z_]{1,64}$/.test(stage) && Number.isSafeInteger(ms) && ms >= 0) timings[stage] = ms; },
           });

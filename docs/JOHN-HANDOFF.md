@@ -96,6 +96,26 @@ input-/dispatch-/retry- och prisgräns samt kopplade färska driftobservationer
 återstår. De privata adapterproven ersätter inte full P6; CLI tillåter fortsatt
 enbart förberedelse och produktionen är fortsatt oaktiverad.
 
+Den avstängda QA-kopplingen går nu genom verkliga serveranrop: exakt tre
+privata routes före Vercel-ingress på enbart den separata Render-QA-tjänsten,
+aktuell spelar-/sessionsägare, färsk spelstatus och operatörens verkliga
+kampanj. Web/SDK/Render-miljöer binds separat. Director returnerar 503 om dess
+verkliga adapter saknas. 55 riktade core-prov PASS och ett Windows-symlinkprov
+SKIP; privata routerprov 35/35, senaste SDK/fas/transportprov 115 och
+budget/brygga 61 PASS. En separat QA-startfil har 15 offlineprov PASS.
+Obligatorisk regression hittade en statisk cloud-import i det avstängda
+läget; importen sker nu först efter opt-in. Det riktiga isolerade BO/Lab-
+authprovet och alla åtta nya route-/ägartester passerar efter rättningen.
+Dealer-audit med `--probe` passerar för alla fyra befintliga tillgångsset.
+Faktisk läsande SSH-kontroll 3 oktober 13:26:40 UTC verifierar fortfarande
+runtime `4d84bffc`, samma PID/startidentitet, exakt QA-scope och fyra avstängda
+providerflaggor. Privat råkvitto finns i `native-p6-runtime-recheck-20261003.json`;
+det är historiskt observationsbevis, inte nytt utgiftstillstånd.
+Installerade privata SDK-/journalartefakter och faktisk helhetskörning
+återstår. Den läsande fasadapterns nio offlineprov ger ingen full attestering:
+färsk provider-/tariffkälla, processens egna molnläsare och bevarad journal/
+kampanj behöver kopplas. Nycklar, journaler eller produktion har inte aktiverats.
+
 Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
 `/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
 och `/player-login` visar spelarentrén. BO/partner launch och callback följer
@@ -340,10 +360,13 @@ samma konto som Vercel verifierar nu hans befintliga Resend **Free**: 4/3 000
 mejl denna månad, 0/100 idag, initialt 1/3 domäner och avstängd betalning över kvoten.
 Det befintliga teamets Vercel-integration är förberedd med **Specific Projects**
 och endast `croupier-native-studio-qa-abc92154cb15`. Den nya behörigheten att
-skriva integrationsägda QA-env inväntar Jakobs uttryckliga godkännande.
-Automatisk behörighetsgranskning nekade Install-försöket: allmänt ”fortsätt”
-räknades inte som ett uttryckligt ja till ny projektåtkomst/nyckelskrivning.
-Ingen installation utfördes. scoutgaming.tech är köpt i samma Vercel-konto
+skriva integrationsägda QA-env är nu uttryckligen godkänd av Jakob.
+Det tidigare Install-försöket nekades av automatisk granskning eftersom
+allmänt ”fortsätt” inte räknades som ett uttryckligt ja. Därefter registrerade
+Vercel två likadana QA-behörigheter utan Resend-callback eller mejlnyckel;
+anslutningen färdigställs i en färsk session och de egna tomma dubbletterna
+städas. Ingen faktisk mejlleverans är ännu verifierad.
+scoutgaming.tech är köpt i samma Vercel-konto
 och nu tillagd i befintligt Resend Free, region Irland. Resend visar **Verified**
 3 oktober 14:11 svensk tid, kontrollerat i dashboarden 14:19.
 Exakt tre DNS-poster är tillagda: DKIM TXT `resend._domainkey`, MX `send`

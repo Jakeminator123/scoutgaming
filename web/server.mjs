@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
+import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
@@ -46,6 +47,7 @@ const publicAssetPath = (...parts) => mediaLayout
 const publicBlobMedia = process.env.CROUPIER_MEDIA_BLOB_INDEX
   ? (await import(pathToFileURL(join(mediaRepository, 'lab/lib/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
+const nativeP6QaRouter = await initializeNativeP6QaRouter();
 const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
 if (!['sqlite', 'postgres'].includes(databaseBackend)) throw new Error('Invalid CROUPIER_DATABASE.');
 const postgres = databaseBackend === 'postgres';
@@ -958,9 +960,10 @@ const operatorSpeechQa = createOperatorSpeechQa({
   origin: process.env.PUBLIC_URL ?? gameOrigin,
   authenticate: boSessionOk,
   service: () => speechStreamService,
-  decide: (request, status, signal) => openClawChat(request, status, {
-    fetchImpl: (url, options = {}) => fetch(url, { ...options,
-      signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal }),
+  decide: (request, status, signal, ownedContext) => openClawChat(request, status, {
+    fetchImpl: nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request, status, signal, ...ownedContext })
+      ?? ((url, options = {}) => fetch(url, { ...options,
+        signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
 const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
@@ -999,6 +1002,7 @@ const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
 }) : null;
 const server = createServer(async (req, res) => {
   try {
+  if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
   if (pathname === '/api/studio-game/command') {
     if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
@@ -1355,9 +1359,15 @@ const server = createServer(async (req, res) => {
           readOwner: async () => (await chatSessionOwner(req, authenticated)),
           readStatus,
           signal: controller.signal,
-          decide: async (value, state) => openClawChat(value, state, { model: probeConfig?.policy.model ?? 'gateway-default', fetchImpl: (url, options = {}) => fetch(url, {
-            ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
-          }) }),
+          decide: async (value, state) => {
+            const model = probeConfig?.policy.model ?? 'gateway-default';
+            const ownedFetch = nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
+              playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
+              readStatus, signal: controller.signal, model });
+            return openClawChat(value, state, { model, fetchImpl: ownedFetch ?? ((url, options = {}) => fetch(url, {
+              ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
+            })) });
+          },
           service: getGeneratedSpeechService(),
           streamService: incoming.acceptsSpeechStream === true ? speechStreamService : null,
         });
