@@ -424,14 +424,26 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     input-/dispatch-/retry- och prisgräns samt färskhetsbindning under faktisk
     fasdeploy återstår. Inget totaltak får nollställas/återbetalas vid omstart,
     och förberedelse-/adapterprov är inte full P6 eller produktionsgodkännande.
+    Den avstängda QA-kopplingen är nu inkopplad i Webs riktiga chatt-/operatörs-
+    flöden och exakt tre privata gatewayroutes. Den kräver serverägd aktuell
+    session/status och separata Render/Web/SDK-bindningar; Director ger 503
+    utan faktisk adapter. 55 riktade core-prov PASS/ett Windows-symlinkprov
+    SKIP, privata routerprov 35/35, SDK/fas/transport 115, budget/brygga 61
+    och separat QA-startfil 15 offlineprov PASS. En statisk cloud-import i
+    avstängt läge upptäcktes av obligatorisk regression och är rättad; riktiga
+    BO/Lab-auth- och åtta route-/ägarprov samt dealer-audit `--probe` PASS.
+    Färsk läsande SSH-observation 13:26:40 UTC verifierar samma QA-runtime
+    `4d84bffc`, PID/startidentitet och fyra avstängda providerflaggor, utan
+    provider-/SQL-/molnmutation. Privata artefakter är ännu inte installerade;
+    fasadapterns nio offlineprov ger inte full faktisk P6-attestering.
     Resend Free är valt, Vercel-CLI OAuth och Marketplace-villkor är godkända
     av Jakob. Marketplace spärrar en ny Free-installation eftersom kontot redan
     tillhör ett Resend-team. Hans befintliga Free-team är nu verifierat med
     4/3 000 mejl, 0/100 idag, initialt 1/3 domäner och betalning över kvoten avstängd.
-    Dess Vercel-integration är förberedd med åtkomst endast till QA Studio.
-    Automatisk behörighetsgranskning nekade Install-försöket eftersom allmänt
-    ”fortsätt” inte godkände ny projektåtkomst/nyckelskrivning uttryckligen;
-    den specifika tillåtelsen återstår och ingen installation utfördes.
+    Jakob har nu uttryckligen godkänt Vercel-integrationens åtkomst endast
+    till QA Studio. Tidigare automatisk granskning nekade allmänt ”fortsätt”.
+    Vercel registrerade därefter QA-behörigheter, men callback/nyckel saknas;
+    en färsk anslutningssession och städning av egna tomma dubbletter pågår.
     scoutgaming.tech är nu tillagd i befintlig Free, i Irland, och Resend
     visar **Verified** 3 oktober 14:11 svensk tid (dashboardkontroll 14:19).
     Exakta DKIM-TXT-, send-MX- och send-SPF-TXT-poster är skapade, återlästa

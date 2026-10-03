@@ -4,11 +4,13 @@
     "render-game": {
       "sources": [
         "ops/cloud/config.mjs",
+        "ops/cloud/gateway.mjs",
         "ops/cloud/start.mjs",
         "ops/cloud/container-entry.mjs",
         "ops/cloud/vercel-ingress.mjs",
         "ops/cloud/storage-export.mjs",
         "web/operator-speech-qa.mjs",
+        "web/native-p6-qa-hook.mjs",
         "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"
@@ -77,16 +79,30 @@
         "CROUPIER_STORAGE_EXPORT_SECRET",
         "CROUPIER_STUDIO_NEON_POLICY",
         "CROUPIER_STUDIO_ENVIRONMENT_ID",
-        "CROUPIER_STUDIO_WORKSPACE_ID"
+        "CROUPIER_STUDIO_WORKSPACE_ID",
+        "CROUPIER_P6_QA_ROUTER",
+        "CROUPIER_P6_QA_ROUTER_SOURCE_SHA256",
+        "CROUPIER_P6_SDK_RUN_ID",
+        "CROUPIER_P6_SDK_DEPLOYMENT_ID",
+        "CROUPIER_P6_SDK_WORKER_TOKEN",
+        "CROUPIER_P6_SDK_READBACK_TOKEN",
+        "CROUPIER_P6_SDK_TICKET_SECRET"
       ],
       "managed": [
         "PORT",
-        "RENDER_EXTERNAL_URL"
+        "RENDER_EXTERNAL_URL",
+        "RENDER_SERVICE_ID",
+        "RENDER_GIT_COMMIT"
       ],
       "blocked": [
         "DEMO_GUEST_ACCESS",
         "CROUPIER_GENERATED_SPEECH_PREVIEW",
-        "CROUPIER_LISSABON_PROFILES"
+        "CROUPIER_LISSABON_PROFILES",
+        "NODE_OPTIONS",
+        "NODE_PATH",
+        "LD_PRELOAD",
+        "NODE_EXTRA_CA_CERTS",
+        "NODE_TLS_REJECT_UNAUTHORIZED"
       ]
     },
     "vercel-entry": {

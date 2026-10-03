@@ -81,9 +81,10 @@ för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
 Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
-Kontrollerade Render-/Vercel-/repomiljöer saknar ännu en tillgänglig native
-Resend-koppling. Avsändardomän och fungerande invitation/reset ska verifieras
-före produktionsbytet. Kodens äldre `bo@axelio.io` bevisar inte domänägande.
+Resend Free och avsändardomänen `scoutgaming.tech` är verifierade. Kopplingen
+av Resends API-nyckel till det separata QA-Studio är uttryckligen godkänd och
+under installation; faktisk invitation/reset-leverans är ännu inte verifierad.
+Ingen betald plan eller produktionsaktivering följer av domänverifieringen.
 För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
 nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,
@@ -93,6 +94,23 @@ villkorlig i nyckelregistret för det nya läget; den installeras inte genom
 kodändringen. Nya reviewposter/klassificeringar läses ur Neon, utan gamla
 uploads-/klassificeringsfiler. Aktiva bankklipp och deras exakta ID/hash består.
 Tillfällig hashverifierad bytescache är disponibel scratch, inte beständig metadata.
+
+Det separata betalda QA-provet har en avstängd koppling:
+`CROUPIER_P6_QA_ROUTER=1` accepteras endast på Render-tjänsten
+`srv-datj7l893c1s73ar3u50`, med dess exakta QA-origin, Neon-databas, scope och
+datarot. Saknad eller `0` flagga importerar inga privata QA-adaptrar.
+`CROUPIER_P6_QA_ROUTER_SOURCE_SHA256`, `CROUPIER_P6_SDK_RUN_ID` och
+`CROUPIER_P6_SDK_DEPLOYMENT_ID` binder den granskade, separat installerade
+kopplingen till körningen. `CROUPIER_P6_SDK_WORKER_TOKEN`,
+`CROUPIER_P6_SDK_READBACK_TOKEN` och `CROUPIER_P6_SDK_TICKET_SECRET` är
+separata privata nycklar för worker, läsande processkvitto och engångsbiljetter.
+De ger ingen automatisk kostnadsreservation eller rätt att starta ett nytt
+försök. Plattformens `RENDER_SERVICE_ID` och `RENDER_GIT_COMMIT` kontrolleras
+också. Web får endast de explicita QA-variablerna, inga talleverantörsnycklar;
+Lab får inga nya QA-nycklar. Opt-in nekar `NODE_OPTIONS`, `NODE_PATH`,
+`LD_PRELOAD`, `NODE_EXTRA_CA_CERTS` och `NODE_TLS_REJECT_UNAUTHORIZED`.
+En saknad, ändrad eller osäkert lagrad privat adapter stoppar uppstarten.
+Kopplingen är ännu inte installerad eller aktiverad i QA eller produktion.
 
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och

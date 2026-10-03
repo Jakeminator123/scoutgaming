@@ -39,9 +39,9 @@ async function fixture(t, { gated = true, lifetime = 60000 } = {}) {
   const options = { directory, origin: ORIGIN, now: () => clock,
     authenticate: req => !revoked && [COOKIE, OTHER].includes(req.headers.cookie) ? { ...claims, role } : null,
     service: () => stream,
-    decide: async (request, status, signal) => {
+    decide: async (request, status, signal, ownedContext) => {
       modelCalls++;
-      if (model) return model(request, status, signal);
+      if (model) return model(request, status, signal, ownedContext);
       return { kind: 'generatedText', exactText: 'Mamma bakar bullar medan pappa brygger kaffe.',
         requestId: request.requestId, dealerId: status.dealerId, sessionRevision: status.sessionRevision, roundRevision: status.roundRevision };
     },
@@ -90,6 +90,20 @@ test('default off; GET never reserves, invokes a model or starts the shared serv
   assert.equal((await f.call()).code, 503);
   assert.equal(f.modelCalls, 0); assert.equal(f.seen.length, 0); assert.deepEqual(await readdir(f.directory), []);
   assert.equal((await f.call('GET', { pathname: '/api/bo/unrelated' })).handled, false);
+});
+
+test('model receives the actual ephemeral owner and live gate callbacks through a trusted context',async t=>{
+  const f=await fixture(t);let received;
+  f.setModel(async(request,status,signal,owned)=>{
+    received=owned;assert.ok(Object.isFrozen(owned));assert.match(owned.playerId,/^operator-qa-/);
+    assert.ok(owned.owner.includes(f.gate.id));assert.equal(owned.operatorCampaignId,f.gate.id);assert.equal(owned.operatorAttempt,1);
+    assert.equal(await owned.readOwner(),owned.owner);assert.deepEqual(await owned.readStatus(),status);assert.equal(signal.aborted,false);
+    return{kind:'generatedText',exactText:'Mamma bakar bullar medan pappa brygger kaffe.',requestId:request.requestId,
+      dealerId:status.dealerId,sessionRevision:status.sessionRevision,roundRevision:status.roundRevision};
+  });
+  assert.equal((await f.call()).code,200);assert.equal(f.seen[0].playerId,received.playerId);assert.equal(f.seen[0].owner,received.owner);
+  f.revoke();await assert.rejects(received.readOwner(),/operator_speech_qa_auth_required/);
+  await assert.rejects(received.readStatus(),/operator_speech_qa_/);
 });
 
 test('auth, role, origin, exact route and bounded JSON reject before reservation', async t => {
