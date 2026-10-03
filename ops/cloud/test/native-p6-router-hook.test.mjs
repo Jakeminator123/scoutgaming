@@ -7,7 +7,7 @@ import {createServer,request as httpRequest} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {NATIVE_P6_QA,nativeP6QaRouterConfig,childSpecifications,validateCloudConfig} from '../config.mjs';
 import {nativeP6QaRouterRequest,createCloudGateway} from '../gateway.mjs';
-import {initializeNativeP6QaRouter,nativeP6OwnedSpeechFetch} from '../../../web/native-p6-qa-hook.mjs';
+import {initializeNativeP6QaRouter,nativeP6OwnedSpeechFetch,nativeP6OwnedDirectorFetch} from '../../../web/native-p6-qa-hook.mjs';
 import {projectOpenClawGameStatus} from '../../../web/openclaw-chat.mjs';
 import {normalizeProductSpeechEnvelope} from '../../../open-claw/lab/src/product-speech.mjs';
 
@@ -31,6 +31,18 @@ test('default-off bootstrap does not read private files or require private crede
     assert.equal(await initializeNativeP6QaRouter(env),null);assert.equal(nativeP6QaRouterRequest(privateRequest(fixture()),null),null);
   }
   assert.equal(nativeP6OwnedSpeechFetch(null,{}),null);
+  assert.equal(nativeP6OwnedDirectorFetch(null,{}),null);
+});
+
+test('Director hook retains actual owner, live state and saved policy readers with an opaque owner cache scope',async()=>{
+  const project={revision:'saved-policy'},readOwner=async()=> 'actual-owner',readStatus=async()=>({dealerId:'astrid',sessionRevision:'s',roundRevision:'r'}),
+    readProject=async()=>project,signal=new AbortController().signal;let captured;
+  const router={fetchForOwnedDirectorRequest:input=>{captured=input;return()=>{};}};
+  const input={playerId:'actual-player',owner:'actual-owner',project,readOwner,readStatus,readProject,signal};
+  const owned=nativeP6OwnedDirectorFetch(router,input);assert.deepEqual(captured,input);assert.match(owned.cacheScope,/^[a-f0-9]{64}$/);
+  assert.notEqual(owned.cacheScope,nativeP6OwnedDirectorFetch(router,{...input,owner:'other-owner'}).cacheScope);
+  assert.notEqual(owned.cacheScope,nativeP6OwnedDirectorFetch(router,{...input,project:{revision:'new-policy'}}).cacheScope);
+  for(const key of ['readOwner','readStatus','readProject'])assert.throws(()=>nativeP6OwnedDirectorFetch(router,{...input,[key]:null}),/actual_director_callbacks_required/);
 });
 
 test('explicit QA requires exact service, Neon role/database, source/deployment and separate credentials',()=>{

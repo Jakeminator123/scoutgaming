@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { once } from 'node:events';
+import { once, EventEmitter } from 'node:events';
+import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createPresentationApi, presentationInput } from '../web/presentation-api.mjs';
@@ -17,6 +18,85 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
+async function presentationFixtureRequest(handler, playerId, payload, path = '/api/presentation/select') {
+  const req = Readable.from([JSON.stringify(payload)]);req.method = 'POST';req.headers = {};
+  const res = new EventEmitter();res.writableEnded = false;
+  res.writeHead = status => { res.status = status; };
+  res.end = raw => { res.body = JSON.parse(raw);res.writableEnded = true; };
+  await handler(req,res,path,playerId);return res;
+}
+const directorProject = () => {
+  const project = createSeedProject();
+  for (const line of project.lines) for (const variant of line.variants) variant.videoGenerationId = null;
+  return project;
+};
+test('owned Director factory is per authenticated request and receives saved policy and committed card projection', async () => {
+  let saved = directorProject(),calls = 0;const transports = [],contexts = [];
+  const db = { prepare: () => ({ get: async () => ({ version:2,payload:JSON.stringify([source]) }) }) };
+  const handler = createPresentationApi({ db,env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
+    store:{load:async()=>structuredClone(saved)},registryLoader:async()=>({families:[],videos:[]}),
+    directorFetchFactory:async context=>{
+      contexts.push(context);const owner = context.playerId;
+      return async (url,options)=>{calls++;await Promise.resolve();
+        assert.equal(url.pathname,'/api/studio/advice');
+        const projected = JSON.parse(options.body);transports.push({owner,projected});
+        assert.deepEqual(projected.input.event.card,source.card);
+        assert.equal(projected.catalog.revision.includes('forged-browser'),false);
+        assert.deepEqual(await context.readProject(),context.project);
+        return Response.json({advice:null,provider:{status:'responded'}});
+      };
+    } });
+  const payload={dealerId:'astrid',version:2,mode:'active',event:{...source,card:{r:'K',s:'♥'}},
+    project:{revision:'forged-browser'},context:{injected:'browser context'}};
+  const first = await Promise.all(['one','two'].map(player=>presentationFixtureRequest(handler,player,payload)));
+  assert.deepEqual(first.map(r=>r.status),[200,200]);assert.equal(calls,2);
+  assert.deepEqual(transports.map(t=>t.owner).sort(),['one','two']);
+  assert.notEqual(contexts[0].req,contexts[1].req);assert.notEqual(contexts[0].signal,contexts[1].signal);
+  const repeat=await presentationFixtureRequest(handler,'one',payload);
+  assert.equal(repeat.status,200);assert.equal(calls,3,'Owned HTTP closure cannot be reused from presentation cache.');
+});
+test('revoked owners and changed saved policy can deny request-local Director before dispatch', async () => {
+  for(const race of ['owner','policy']){
+    let saved=directorProject(),owner='initial',dispatches=0;
+    const handler=createPresentationApi({db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
+      env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
+      store:{load:async()=>structuredClone(saved)},registryLoader:async()=>({families:[],videos:[]}),
+      directorFetchFactory:async ({project,readProject,signal})=>{
+        const boundOwner=owner;
+        queueMicrotask(()=>{if(race==='owner')owner='revoked';else saved={...saved,revision:'new-policy-revision'};});
+        return async()=>{
+          assert.equal(signal.aborted,false);
+          if(owner!==boundOwner||JSON.stringify(await readProject())!==JSON.stringify(project))throw Error('fixture admission denied');
+          dispatches++;return Response.json({advice:null,provider:{status:'responded'}});
+        };
+      }});
+    const response=await presentationFixtureRequest(handler,'one',{dealerId:'astrid',version:2,mode:'active',event:source});
+    assert.equal(response.status,200);assert.equal(response.body.provider,'remote_unavailable_baseline');assert.equal(dispatches,0);
+  }
+});
+test('idle API forwards owner/policy scope and revalidates revoked owners before cached reply', async()=>{
+  const project=createSeedProject(),inventory=await loadVideoRegistry(),at=new Date().toISOString();
+  let revoked=false,calls=0;
+  const handler=createPresentationApi({env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
+    store:{load:async()=>structuredClone(project)},registryLoader:async()=>inventory,
+    directorFetchFactory:async ({playerId})=>{
+      if(revoked)throw Object.assign(Error('fixture revoked owner'),{statusCode:401});
+      const owned=async (_url,options)=>{
+        calls++;const projected=JSON.parse(options.body);
+        return Response.json({advice:{requestId:projected.input.requestId,catalogRevision:projected.catalog.revision,variantId:null},
+          provider:{status:'responded',contextContractVersion:2,observedChatMessages:projected.input.context.observedChat.messages.length}});
+      };
+      owned.cacheScope=createHash('sha256').update(JSON.stringify([playerId,project])).digest('hex');return owned;
+    }});
+  const payload={requestId:'identical-browser-id',dealerId:'astrid',mode:'active',
+    sourceRef:{kind:'renderer-idle',channel:'identical-channel',revision:1,messageId:'identical-message',at},
+    observedChat:{source:'native-observation',before:at,messages:[{role:'user',text:'Hello',at}]}};
+  const path='/api/presentation/idle-advice';
+  const replies=await Promise.all(['one','two'].map(player=>presentationFixtureRequest(handler,player,payload,path)));
+  assert.deepEqual(replies.map(r=>r.body.provider),['responded','responded']);assert.equal(calls,2);
+  assert.equal((await presentationFixtureRequest(handler,'one',payload,path)).status,200);assert.equal(calls,2);
+  revoked=true;assert.equal((await presentationFixtureRequest(handler,'one',payload,path)).status,401);assert.equal(calls,2);
+});
 test('a browser can identify a deal but cannot change its card, hand or hidden state', () => {
   assert.deepEqual(presentationInput({ ...source, card: { r: 'K', s: '♥' }, handIndex: 0 }, [source]), source);
   const hole = { ...source, to: 'dealer', box: null, faceDown: true, card: { r: 'Q', s: '♠' } };

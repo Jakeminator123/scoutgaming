@@ -14,27 +14,55 @@ de tre deployment-ID:na och 90-kvittot står nedan. Läs `git log -1` och GitHub
 main för slutlig källleverans: senare dokument-/testfixar gör inte automatiskt
 den frysta QA-koden nyare. **80 % är en grov arbetsbedömning, inte acceptans.**
 
-GitGuardian för `190399`: check-runs/check-suites/status är lästa, men ingen
-GG-check-run finns och GG-suiten är queued. UI:s kända incident `37830671`
-är fortfarande Triggered; root levererar en syntetisk-fixturrättning i
-`test/studio-cutover-integration.mjs`. Varken fix eller grön vanlig CI bevisar
-rensad incidentlista; läs slutlig SHA/status igen vid leverans enligt agent-talk.
+Övertagandet 3 oktober fortsätter från ren GitHub-main
+`bba3cc281a31bffb27c1df8199f0e669a0103159`. Director använder nu faktisk
+`askDirector`, oförändrad rollprompt och SDK-översättning; Web binder anropet
+till verklig session, aktuell spelstatus och återläst sparad policy. Director
+och texttal delar samma beständiga text-slot. Idle-cache binds till ägare och
+policy. Starten binder råa router-/worker-manifest och verklig Web-child-env;
+full Render-env och SDK-child-env hålls separata. Detta är testad kod,
+inte installerad QA-runtime eller ny liveacceptans. Nya sourcepins/manifest
+måste byggas efter slutlig kod; gamla `minimum-proposal.json` är historisk
+utgångspunkt och dess gamla worker-/routerhashar får inte återanvändas.
+186 riktade worker/brygga/entry/router/runner/hook/idle/API-prov PASS i den
+sammanhållna återkörningen. Obligatorisk full hook och fyra-dealer-audit
+`--probe` PASS; befintliga saknade takes och mänsklig synkacceptans består.
+Loggar finns privat i `migration-root-{directed,full}-check.log` och
+`migration-root-dealer-probe.log`. Inget nytt SQL-/HTTPS-/restart-livekvitto
+eller fyra-dealer-native90-kvitto hävdas för denna senare källkod.
+
+GitGuardian för `bba3cc28`: check-runs/check-suites/status fullständigt lästa;
+3/3 ordinary CI PASS, ingen GG-run, GG-suite queued. Rätt Chrome-workspace
+`795524` och valt Source `Jakeminator123/github-work`/`30689542` är återlästa.
+UI:s enda sida visar fem Triggered-ID:n: `37840514`, `37830671`, `37828691`,
+`37828386`, `37827237`; Next page är disabled. Endast ID/status/filter har
+lästs, inte scannertext. Fil/rad och full API-incidentlista är fortfarande
+not-read. Fixturrättningen ingår i `bba3cc28`; den bevisar inte rensade incidenter.
 
 Fortsätt i denna ordning:
 
-1. **P6: koppla den verkliga egna QA-kedjan.** Core-hookar är opt-in och
-   avstängda; det enda SDK-textsvaret bevisar inte installerad produkt-routing.
-   Implementera faktisk Director-översättning av `/api/studio/advice`
-   (`catalog,input`) med oförändrad rollprompt och samma begränsade stagebudget.
-   Koppla egen SDK-worker/authority/router till faktisk serverägd session,
-   färsk policy, signerad stage-ticket och readback av PID/source/nonce/env.
-   Full Render-env och SDK-barnets verkliga env har separata hashbindningar.
-   Använd inte shared OpenClaw som QA-runtime eller deterministisk baseline
-   som Director-/providerbevis.
+1. **P6: installera och återläs den verkliga egna QA-kedjan.** Core-hookar är
+   fortsatt opt-in och avstängda. Kodkopplingen ovan använder signerad
+   stage-ticket samt färsk PID/source/nonce/env. Bygg samstämmiga nya privata
+   manifest, inklusive entry-contexts obligatoriska `routerManifestSha256`,
+   och verifiera faktisk installation/readback. Använd inte shared OpenClaw
+   som QA-runtime eller deterministisk baseline som providerbevis.
 2. **Lös bara de konkreta återstående åtkomst-/kostnadsgapen.** Den senaste
    läsningen saknar counting-tariff/explicit gratisbevis, Cartesia-kontots
    USD/credit (`/usage/credits` gav 401) och RunPods avsedda endpoints faktiska
    GPU-/idle-/storage-/rabattgräns (adminläsning 403; health 200 är inte pris).
+   Läsande fortsättning har nu verifierat avsedd RunPod-UI i konto
+   `Jakeminator123`: endpoint `zsudl8tmzcmiv1`, RTX 4090 ×1, max workers 1,
+   active workers 0, idle timeout 5 s, execution timeout 600 s, 20 GB disk,
+   ingen network volume; UI visar 1,10 USD/h. Kontorabatt och maximal
+   kallstartstid är inte verifierade. Billing räknar start/execution/idle
+   tills worker helt stannat, uppåt till hela sekunder; execution timeout
+   ensam begränsar inte all kallstart. Detta är härledd UI-metadata, inte
+   ett immutable råkvitto eller aktuell full kostnadsadmission. Jakob har
+   klargjort att Cartesia-nyckeln är extern och att han saknar kontoinloggning;
+   inga fler inloggningsförsök begärs. Public counting/pricing gav inget
+   uttryckligt tariff-/gratisbevis. Dessa kvarvarande gap får inte döljas
+   genom att sätta nollkostnad eller blanda in en annan kontoägares åtkomst.
    Nya QA:s GPU-/fullfilspolicy och operatörskampanj är ännu inte installerade;
    regelbunden SDK-runtime/readback saknas. Privata faktakällor:
    `native-p6-readonly-phase/{host-actual.json,remote-actual-final-2.jsonl,minimum-proposal.json}`.
@@ -45,8 +73,12 @@ Fortsätt i denna ordning:
    kostnadsadmission och isolerat SQL-/HTTPS-/restartprov. Behåll originalets
    totaltak 10 USD, budgetankare, numeriska källa och journal; reservation
    5,251152 USD står kvar, oreserverat 4,748848 USD. Ett SDK-dispatch är redan
-   förbrukat: högst nio återstår av befintliga tio. Gamla fullkampanjens worst
-   case tio ytterligare dispatches ryms därför inte oförändrat.
+   förbrukat: högst nio återstår av befintliga tio. Ny runner använder verklig
+   cookieautentiserad `/api/presentation/idle-advice` i shadow som text-stage:
+   en Director-Terra plus högst fyra Terra/Deep-par = nio nya dispatches.
+   Sparad Neon-policy och tillgängliga modellcandidates måste återläsas före
+   betald submission. WS-done/binary bevisar inte två avkodade playback-ACK;
+   faktisk produktspelar-/browseracceptans är fortsatt ett separat krav.
 4. **P7 först efter verifierad ersättning:** frys verkliga skrivare, verifiera
    GPU-drain, importera aktuell policy/media/kostnadsstate med paritet och byt
    källa en gång. Produktion är inte omkopplad; produktens mejlkonfiguration
