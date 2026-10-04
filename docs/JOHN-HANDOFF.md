@@ -3,6 +3,56 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Beställd slutföring och avgränsat prisundantag — 4 oktober
+
+Jakob har uttryckligen beställt AI/tal/GPU-aktivering, produktionsimport och
+omkoppling, följd av faktisk avveckling med QA kvar. Egna lokala taskbrancher
+och worktrees är tillåtna för detta arbete; originalcheckouten stannar på
+main och endast merge-agenten integrerar/pushar via ordinarie helper.
+Startpunkten är återläst GitHub-main
+`95c2f046594292c9c4a27ba5c810a8715b06ba8d`; appkoden är oförändrad mot
+godkänd installerad QA `e461ef073b63b2d1c937454bbfa31289774fcb8f`.
+
+Exakta Cartesia-/counting-priser är backlog enligt det nya beslutet.
+Avgränsade funktionstester får därför genomföras med explicit dokumenterad
+okänd monetär kostnad och mätt usage, inom ursprungliga numeriska budget-
+och dispatchreservationer. Undantaget är inget nollpris, ingen verifierad
+faktura och ingen generell produktionskostnadsapproval. Journaler, redan
+förbrukade reservationer, ägarskap, idempotens, lease/cancel/terminal och
+skydd mot dubbeljobb består; okända belopp återbetalas inte. Tidigare krav
+nedan att först lösa Cartesia/counting-tariff gäller inte detta avgränsade
+funktionstest. Verklig workerdränering och källa/runtime/playback-bevis krävs
+fortfarande före produktionsomkoppling och borttagning.
+
+Arbetsområden: ai-gpu, prod-data, studio-ux, clean-bo, clean-storage och
+verify, med gemensam absolut agent-talk-tavla och konkreta filöverlämningar.
+Produktionsskrivningar samordnas i ett gemensamt skrivfönster. Checklistan
+bockas endast av med aktuella verifierade resultat; full migration återstår.
+
+Studio-/Git-rättningen är nu lokalt integrerad i main som `438a824b`, från
+workercommit `c40503af`; ingen ny driftsversion är publicerad ännu. Resetens
+spelentré använder konfigurerad game-origin och `/player-login`, partner-
+öppning följer gemensamma adresspolicyn. Hookens riktiga commit-index bevaras
+för egen inspektion, medan Git-fixturer och checkbarn får isolerad Git-miljö.
+Det förhindrar att en temporär testrepo ändrar gemensamma worktree-inställningar.
+`core.bare=false` och `core.hooksPath=.githooks` är återställda och återlästa.
+Färskt separat Nextbygge med fyra workers, typkontroll och obligatorisk
+fullhook: 1 254 PASS, 5 SKIP, 0 FAIL. Tidigare misslyckade QA-/hookkvitton
+bevaras. AI:s första paket är lokalt integrerat som `9ea65dba`, från
+`123d3f1f`; exakt samma Git-träd återanvänder dess fullhook med 1 264 PASS,
+5 SKIP och 0 FAIL. Paketet innehåller avgränsad ursprunglig budget/journal,
+providergränser och rättad disk-/Neon close/cancel-race. Ingen aktivering
+eller produktionsimport har ännu körts. Följdfixen är lokalt integrerad som
+`1af6d491`, från `7cf88ba6`, med identiskt Git-träd och fullhook 1 268 PASS,
+5 SKIP, 0 FAIL. Fullfilspolicyns reservation når Web även under streaming
+enbart för den verifierade bounded-QA-transporten med Neon-journal. Fyra
+privata SDK-källfiler sparas checksumförseglade före budgetaktivering och
+återställs före Web-start efter containerbyte; Dockerbygget förbereder endast
+de två nödvändiga privata katalogerna med UID 1000 och mode 700.
+Städarnas P8-borttagningar hålls separata till dess
+ersättningen är verifierad aktiv. Slutacceptans kräver faktisk provider-,
+spel- och produktionsdrift.
+
 ## P6: parallellt QA-pass och avgränsade kostnadsgap — 4 oktober
 
 Fryst källversion är `e461ef073b63b2d1c937454bbfa31289774fcb8f` på main.
