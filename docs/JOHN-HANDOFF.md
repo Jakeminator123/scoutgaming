@@ -3,55 +3,91 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
-## Senast verifierade driftläge — 4 oktober 03:00 UTC
+## Senast verifierade driftläge — 4 oktober 10:25 UTC
 
-Main `11734dfd344d5601d22926746392eea0b6b2c1be` är pushad och återläst.
-Den innehåller appkoden från `637c6445`; samlad fullhook 1 298 PASS,
-6 SKIP, 0 FAIL, färskt fyrworkerbygge, tracekontroll och typkontroll PASS.
-GitHub-run `37170148712` har tre success-jobb. Samtliga tre QA-tjänster och
-produktens tre tjänster har verifierad 117-källa. QA:s befintliga alias är
-bundna och tio bevarandekontroller passerar. Produktionsdata, dess 44
-miljönycklar och gamla Studio-policy är oförändrade; P7 är inte genomfört.
+Publicerad main och samtliga tre QA-tjänster kör
+`a0c6460560dd99da7bc33feba7efbef0d6de0fce`, med klockrättningen `f8300c51`
+från `ed5f74f2`. Samlad fullhook: 1 310 PASS/6 SKIP/0 FAIL; 29 riktade
+klock-/ägarprov PASS. Oförändrad bygggraf återanvänder godkänt 637-bygge;
+GitHub-run `37173118418` har tre success-jobb. Inga mediebytes ändrades.
 
-Det enda manuella fortsättningsfönstret `8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3`
-bevarade originalets tretton journalposter och alla reservationer. Faktisk
-Studio-login, resetlänk, administration och signerad spelöverlämning passerade.
-Ett separat obetalt prov visade QA-serverns klocka 108 ms före testdatorn;
-QA-wrapperns strikta klockkontroll avvisade då korrekt context. Den efterföljande
-isolerade browserkalibreringen var dokumenterad och ändrade ingen serverstämpel,
-expiry, publik källa eller budget. Den är inte ett normalt browser-PASS.
+QA-Render är faktiskt LIVE på `dep-db12cjvavr4c739uglug`; frontend
+`dpl_3JyHvKZKvE3YVvFaUsfrZywhDSpZ` och Studio
+`dpl_9YK14gYBvvY2PvoEwWoxBKpbwWmL` är READY och befintliga alias ombundna.
+Actual Linux-readback matchar nio publika spelmoduler, inklusive QA-wrappern.
+Sjutton privata testfiler återställda, SDK 7.12.1/2 962 filer oförändrat.
+QA har exakt 42 tidigare miljönycklar, alla AI/admin/P6-flaggor OFF och
+health 200. GET `/blackjack` ger 200; Studio/administration ger korrekt
+307 till `/studio/login`. Dessa GET är inget nytt inloggnings-/uppspelningsprov.
 
-Det betalda streamprovet skapade exakt en descriptor men avvisades före
-transport/uppspelning: den privata helpern skickade sex ägarfält, inklusive
-`observedAtMs`, till ett API som kräver exakt fem. Descriptor→fel tog 20 ms.
-Nytt bild-/ljud-/queue-END-bevis saknas. Servern avbröt det kända GPU-jobbet;
-sessionen är terminal/released/CANCELLED och streamrequesten failed utan paket.
-Kumulativt: 2 generationer, 3 SDK, 1 TTS, 2 GPU, tjugo journalposter,
-inga osäkra dispatchutfall eller automatiska retries. Ingen ytterligare
-generation/GPU-submit ryms i Jakobs två-generationersprov. USD är null,
-reservationerna består och ingen återbetalning gjordes. Bevisen finns under
-befintlig `verify-final-qa/8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3-stream-clock-delayed*`.
+Bevarandekontrollen är uttryckligen 9/10: endast QA-tabellen
+`croupier_game.player_probe_sessions` ändrades 17→15 rader. Samma kodblob
+`82c1e72a525d331b5edfb81d712964a5d73e746e` i e461/117/a0 rensar 24 timmar
+gamla närvarosessioner vid start. Skillnaden är förenlig med den rensningen,
+men borttagna raders tidigare `seen` saknas: orsaken är inte radvis bevisad.
+Övriga 31 kontotabeller, tolv kostnadstabeller, media, disk och journaler matchar.
+Det ursprungliga FALSE-kvittot bevaras; ingen återställning/SQL-skrivning gjordes
+för jämförelsen. Treversionskvittot `8b138acb5d912dd28d12a07fdea11f8be1c714f9d6eba968923808747278c850`
+har därför explicit bevislucka, inte full bevarande- eller P7-acceptans.
 
-QA är återställd och faktiskt OFF på `dep-db0rv0vavr4c73936640`: exakt 42
-tidigare miljönycklar, UID 1000/Web-PID 18, alla flaggor av, router 404,
-health 200 och bevarat manifest/SDK. OFF-kvitto SHA256
-`9b3a214f364a1ea501faff1081a428cf42fa0a801c6fea5c8af1c827db47497c`.
-Efter faktisk DB-expiry 03:03:02 UTC är samtliga leases inaktiva; ingen SQL-lease
-ändrades manuellt. Den bevarade cancellation-helpern stängde därefter journalen
-append-only som post 21, counts 2/3/1/2 och refund0. Cleanup-kvitto SHA256
-`d28a7f06f50c5ae77e6dcdccf3424c9d719d88e001e0d2b4450e49bccbad0bed`
-är en stängd misslyckad körning, ingen acceptans. Providerjobb/kö är noll,
-men varm idle/ready-worker är inte ALL0-drain. Natural-close, full P6,
-produktionsadmission/import/omkoppling och fysisk
-avveckling är därför inte godkända. Städkoden hålls på egna lokala brancher.
-Den privata femfältsrättningen är syntaxgranskad utan ny betald körning.
-Publik bounded-klockrättning `ed5f74f2` är integrerad lokalt som `f8300c51`:
-29 riktade tester och workerfullhook 1 288 PASS/4 SKIP/0 FAIL, med oförändrade
-mediebytes. Rootfullhook passerade 1 310 PASS/6 SKIP/0 FAIL; oförändrad
-bygggraf återanvänder det godkända färska 637-bygget. Publicering återstår;
-faktisk drift är ännu 117. Nytt betalt spelprov behöver ett uttryckligt
-beslut om utökad testkvot; tidigare ja till nycklar gäller fortsatt.
-Äldre versionsstycken nedan beskriver tidigare bevis och ersätter inte detta läge.
+Färsk produktionsläsning 10:14 UTC: `a0c64605`, Render
+`dep-db0s7u8ae00c73euejs0`, samma 44 miljönycklar och äldre Studio-policy.
+32 skyddade tabeller/75 rader och 18 historiska sessionskällor är oförändrade;
+produktchecksumma och källslutning 132 passerar. Studio-schema saknas ännu:
+001–004 väntar. Ingen produktionsimport, policyomkoppling eller fysisk P8.
+
+Det avslutade misslyckade fönstret `8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3`
+gav descriptor men avvisades före transport: privata helpern skickade sex
+ägarfält där API:t kräver fem. Studio/reset/admin/signerad spelöverlämning
+passerade; nytt bild-/ljud-/queue-END-bevis saknas. Privat femfältsfix är
+offlinegranskad och publika klockfixen accepterar högst ±5 s med monotona
+serverstämplar. Ingen browserklockshim behövs i nästa prov.
+
+Originalets tretton poster och reservationer är bevarade. Cancellation stängde
+append-only som post 21/head `6cd7efa091f1769bec9034b37d14c4a396fb1ce85aa22c160502683d0b982e47`;
+kumulativ usage är 2 generationer/3 SDK/1 TTS/2 GPU, refund0/USDnull.
+Cleanup-kvitto `d28a7f06f50c5ae77e6dcdccf3424c9d719d88e001e0d2b4450e49bccbad0bed`
+är inte acceptans. Sessionen är terminal/released/CANCELLED, request failed utan
+paket, lease0 efter verklig expiry, inga osäkra utfall eller automatiska retries.
+Providerjobb/kö/running är noll; varm idle1/ready1 är inte ALL0-drain.
+
+Jakob har nu uttryckligen höjt testtaket från två till SEX genereringar totalt:
+två redan använda, högst fyra ytterligare. Detta supersederar gamla tvåtaket
+framåt, inte gammal journalhistorik. Root kör först ett manuellt omprov.
+Minimal kodutbyggnad för ett nytt länkat fönster efter closed21 är integrerad
+lokalt som `0750077c` från workercommit `8d97406c`. Riktad suite är
+44 PASS/0 FAIL; workerfullhook är 1 300 PASS/5 SKIP/0 FAIL. Ingen gammal
+window/journal öppnas om, kostnader återbetalas inte och tidigare reservationer
+består. Nuvarande QA på a0 har fortfarande det äldre kodtaket; `0750077c`
+måste publiceras och sättas på alla tre QA-tjänster före installation eller
+något nytt betalt anrop.
+
+Jakob förtydligade att BO:s historiska videoklipp inte används för lipsync.
+READONLY bekräftar tysta `/bo/gen/*.mp4`-förhandsvisningar och separata Studio-
+klippförhandsvisningar. Spelets aktiva AI använder `playGeneratedSpeech` med
+validerade stream-/audio-videopaket. Historikklipp är inget lipsyncacceptanskrav;
+BO:s uttryckliga speech-QA-inspelningar och aktiva talpaket bedöms i sitt eget prov.
+
+Jakobs avsikt med Lab är att prova lanes som senare kan användas i produktion,
+exempelvis för mobil, en dealer eller ett spel. Migrationen bevarar befintlig
+redigering, utkast, klippförhandsvisning, revisionsskyddad sparning och spelets
+gemensamma uppspelningsväg. BO är administration och inloggning, inte en separat
+spelström. Nuvarande schema stöder blackjack och fyra dealers; separat
+lane-publicering till produktion, nya dealers och nya spel är ännu inte byggda.
+Städgranskningen av c158/f3 fann inga borttagningar av den befintliga native-vägen.
+f3 avvecklar däremot lokal disksparning och kräver den avsedda Neon-miljön.
+
+Samtliga sex egna sibling-worktrees/brancher är bevarade och använder samma
+absoluta agent-talk. Originalcheckouten är main; core.bare=false och
+core.hooksPath=.githooks återlästa. P8-commits `c158a0be` och `f3f561d3` är
+lokala, ännu inte integrerade. Äldre misslyckade managed-worktrees är bevarade.
+GitGuardian source795524/30689542 är verifierad; en incident-/fem locationsidor:
+fem unika IGNORED/0 OPEN, locationsluckor 37828691/37830671. GitHub-sviten är
+queued utan run; hela workspace-API:t är inte bevisat. Ingen scannertext lästes.
+
+Återstår: publicering av nya källspärren, verklig AI→tal→GPU→spelkö-END, aktuell admission
+och gemensamt P7-skrivfönster/drain/import/omkoppling, därefter förberedd P8.
+Äldre versionsstycken nedan är historiska bevis och ersätter inte detta läge.
 
 ## Beställd slutföring och avgränsat prisundantag — 4 oktober
 
@@ -59,6 +95,8 @@ Jakob har uttryckligen beställt AI/tal/GPU-aktivering, produktionsimport och
 omkoppling, följd av faktisk avveckling med QA kvar. Egna lokala taskbrancher
 och worktrees är tillåtna för detta arbete; originalcheckouten stannar på
 main och endast merge-agenten integrerar/pushar via ordinarie helper.
+Jakob gav därefter uttryckligt mandat att slutföra detta med eget omdöme utan
+upprepade tillståndsfrågor. Tekniska Codex-/connectorgränser gäller separat.
 Startpunkten är återläst GitHub-main
 `95c2f046594292c9c4a27ba5c810a8715b06ba8d`; appkoden är oförändrad mot
 godkänd installerad QA `e461ef073b63b2d1c937454bbfa31289774fcb8f`.
