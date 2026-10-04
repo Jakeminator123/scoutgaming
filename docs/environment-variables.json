@@ -1,5 +1,6 @@
 {
   "schema": 1,
+  "revisionNote": "The manual bounded-QA successor with six generations total reuses the listed QA router, stream and SDK environment names; it adds no environment variable names and preserves prior consumption and reservations.",
   "services": {
     "render-game": {
       "sources": [

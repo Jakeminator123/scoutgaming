@@ -1,7 +1,7 @@
 import {readFile,lstat,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,sha256,aiQaNeed as need,createAiQaBudget} from './native-ai-qa-budget.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaWindowClosed,sha256,aiQaNeed as need,createAiQaBudget} from './native-ai-qa-budget.mjs';
 import {registerBoundedAiQaFullfileAuthority} from './generated-speech.mjs';
 export {boundedAiQaAllowsFullfile} from './generated-speech.mjs';
 const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
@@ -17,7 +17,7 @@ export const AI_QA_SOURCE_PATHS=Object.freeze(fields);
 export function validateAiQaManifest(m,env,now=Date.now()){
   need(m?.purpose==='bounded-native-ai-qa-activation-v1'&&m.campaignId===AI_QA_ORIGINAL.campaignId
     &&m.expectedSha===env.RENDER_GIT_COMMIT&&m.runId===env.CROUPIER_P6_SDK_RUN_ID
-    &&m.deploymentId===env.CROUPIER_P6_SDK_DEPLOYMENT_ID&&equal(m.limits,AI_QA_LIMITS)
+    &&m.deploymentId===env.CROUPIER_P6_SDK_DEPLOYMENT_ID&&equal(m.limits,m.additionalWindow?AI_QA_SIX_LIMITS:AI_QA_LIMITS)
     &&/^[a-f0-9]{64}$/.test(m.privateSnapshotSha256??'')&&m.originalAnchorSha256===AI_QA_ORIGINAL.anchorSha256&&m.actualCostUsd===null
     &&Number.isSafeInteger(m.createdAtMs)&&m.createdAtMs<=now&&m.expiresAtMs>now
     &&m.expiresAtMs-m.createdAtMs<=AI_QA_LIMITS.lifetimeMs
@@ -31,6 +31,13 @@ export function validateAiQaManifest(m,env,now=Date.now()){
       'rootReviewedIntentSha256','preflightSha256','streamRequestIdSha256'].every(k=>/^[a-f0-9]{64}$/.test(c[k]??''))
       &&/^[a-f0-9-]{36}$/.test(c.previousRunId??'')&&/^[a-f0-9]{40}$/.test(c.previousExpectedSha??'')
       &&c.previousRunId!==m.runId,'ai_qa_continuation_manifest_required');
+  }
+  if(m.additionalWindow){const c=m.additionalWindow;
+    need(!m.continuation&&c.predecessorRecordCount>=21&&equal(c.humanAuthorization,AI_QA_SIX_AUTHORIZATION)
+      &&['predecessorJournalSha256','previousManifestSha256','previousAuthoritySourceSha256','rootReviewedIntentSha256','preflightSha256','streamRequestIdSha256'].every(k=>/^[a-f0-9]{64}$/.test(c[k]??''))
+      &&/^[a-f0-9-]{36}$/.test(c.previousRunId??'')&&/^[a-f0-9]{40}$/.test(c.previousExpectedSha??'')
+      &&c.windowGenerations===1&&c.streamOnly===true&&c.globalRemainingGenerations>0&&c.globalRemainingGenerations<=4,
+      'ai_qa_additional_manifest_required');
   }
   return m;
 }
@@ -68,8 +75,8 @@ export async function initializeBoundedAiQa(qa,env){
     manifestRawSha256:sha256(raw),authoritySourceSha256:m.sources['web/native-ai-qa-budget.mjs']});
   // Activation exception is installed beforehand by the operator. A web boot
   // cannot seed policy, reservation or a fresh campaign.
-  const current=await budget.inspect();need(current.exception&&!current.closed,'ai_qa_installed_exception_required');
-  need(Boolean(current.continuation)===Boolean(m.continuation)&&(!m.continuation||current.continuation.rootReviewedIntentSha256===m.continuation.rootReviewedIntentSha256),
+  const current=await budget.inspect();need(current.exception&&!aiQaWindowClosed(current),'ai_qa_installed_exception_required');
+  need(m.additionalWindow?current.additionalWindows.at(-1)?.rootReviewedIntentSha256===m.additionalWindow.rootReviewedIntentSha256:Boolean(current.continuation)===Boolean(m.continuation)&&(!m.continuation||current.continuation.rootReviewedIntentSha256===m.continuation.rootReviewedIntentSha256),
     'ai_qa_manual_continuation_not_installed');
   const client=new OpenAI({apiKey:env.CROUPIER_P6_SDK_OPENAI_API_KEY,maxRetries:0,timeout:30000,
     fetch:async(url,options)=>{
@@ -85,7 +92,7 @@ export async function initializeBoundedAiQa(qa,env){
 }
 export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechRole,directorRole,
   readbackToken,endpointId,fetchImpl=fetch,now=Date.now}={}){
-  let busy=false;const allowedTexts=new Set();
+  let busy=false;const allowedTexts=new Set();const streamWindow=m.additionalWindow??m.continuation;
   const owned=async({playerId,owner,readOwner,signal})=>{
     signal?.throwIfAborted();need(sha256(playerId)===m.ownLinkedPlayerSha256&&await readOwner()===owner,'ai_qa_current_owner_required');
     need(now()<m.expiresAtMs,'ai_qa_manifest_expired');
@@ -115,9 +122,9 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
       pid:process.pid,observedAtMs:now(),limits:m.limits,busy,budget:s,actualCostUsd:null}));return true;
   };
   router.fetchForOwnedRequest=args=>async(_url,options={})=>serial(async()=>{
-    await owned(args);need(!m.continuation||args.streamRequested===true,'ai_qa_continuation_stream_required');
+    await owned(args);need(!streamWindow||args.streamRequested===true,'ai_qa_continuation_stream_required');
     const envelope=await args.readEnvelope();
-    need(!m.continuation||sha256(envelope.request.requestId)===m.continuation.streamRequestIdSha256,
+    need(!streamWindow||sha256(envelope.request.requestId)===streamWindow.streamRequestIdSha256,
       'ai_qa_continuation_request_required');
     need(envelope.status.dealerId==='astrid'&&!envelope.request.observation,'ai_qa_short_text_only');
     const gen=await budget.dispatch('generation',envelope.request.requestId);
@@ -135,7 +142,7 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     }catch(e){await budget.outcome(gen,'uncertain').catch(()=>{});throw e;}
   });
   router.fetchForOwnedDirectorRequest=args=>async(_url,options={})=>serial(async()=>{
-    need(!m.continuation,'ai_qa_continuation_director_denied');
+    need(!streamWindow,'ai_qa_continuation_director_denied');
     await owned(args);const project=await args.readProject(),status=await args.readStatus();
     need(equal(project,args.project)&&status.dealerId==='astrid','ai_qa_current_director_policy');
     const envelope=worker.normalizeNativeP6DirectorEnvelope(JSON.parse(options.body));
@@ -151,12 +158,12 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     if(u.href==='https://api.cartesia.ai/tts/bytes'){
       need(options.method==='POST','ai_qa_tts_method');const body=JSON.parse(options.body),text=body.transcript;
       need(typeof text==='string'&&text.length<=AI_QA_LIMITS.textChars&&allowedTexts.has(sha256(text)),'ai_qa_owned_text_required');
-      resource='tts';id=sha256(text);measurements={characters:text.length,textSha256:id};
+      resource='tts';const textSha256=sha256(text);id=m.additionalWindow?textSha256+':'+m.additionalWindow.streamRequestIdSha256:textSha256;measurements={characters:text.length,textSha256};
     }else if(u.origin==='https://api.runpod.ai'&&u.pathname.startsWith('/v2/'+endpointId+'/')){
       const route=u.pathname.slice(('/v2/'+endpointId+'/').length);
       if(route==='run'){
-        need(options.method==='POST','ai_qa_gpu_method');const body=JSON.parse(options.body);need(['session','lipsync'].includes(body?.input?.op)&&(!m.continuation||body.input.op==='session'),'ai_qa_gpu_op_denied');
-        resource='gpu';id=body.input.op;
+        need(options.method==='POST','ai_qa_gpu_method');const body=JSON.parse(options.body);need(['session','lipsync'].includes(body?.input?.op)&&(!streamWindow||body.input.op==='session'),'ai_qa_gpu_op_denied');
+        resource='gpu';id=m.additionalWindow?body.input.op+':'+m.additionalWindow.streamRequestIdSha256:body.input.op;
         measurements={requestBytes:Buffer.byteLength(options.body)};
       }else need(options.method==='GET'||options.method==='POST'&&route.startsWith('cancel/'),'ai_qa_provider_route_denied');
     }else need(false,'ai_qa_provider_host_denied');
@@ -167,7 +174,7 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     }catch(e){await budget.outcome(key,'uncertain',{elapsedMs:now()-started}).catch(()=>{});throw e;}
   };
   router.budget=budget;router.ownLinkedPlayerSha256=m.ownLinkedPlayerSha256;const validateFullfile=env=>{
-    if(m.continuation)return false;
+    if(streamWindow)return false;
     validateAiQaManifest(m,env);return env.RENDER_SERVICE_ID==='srv-datj7l893c1s73ar3u50'
       &&env.CROUPIER_CLOUD_DATA_ROOT==='/var/data/native-studio-qa/abc92154cb15'
       &&env.CROUPIER_STUDIO_ENVIRONMENT_ID==='qa_native_abc92154cb15'

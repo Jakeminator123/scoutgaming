@@ -4,7 +4,7 @@ import {readFile,lstat,mkdir,open,readdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_CONTINUATION_COUNTS,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_CONTINUATION_COUNTS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaWindowClosed,aiQaNextWindowCounts,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
 import {buildAiQaPrivateSnapshot} from '../web/native-ai-qa-private.mjs';
 import {AI_QA_SOURCE_PATHS} from '../web/native-ai-qa-runtime.mjs';
 import {NATIVE_P6_QA} from '../ops/cloud/config.mjs';
@@ -112,9 +112,9 @@ export async function installBoundedAiQa(input){
   }finally{await pool.end();}
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
-  if(['--install','--continue'].includes(process.argv.slice(2).join(' '))){
+  if(['--install','--continue','--additional'].includes(process.argv.slice(2).join(' '))){
     try{let raw='';for await(const c of process.stdin){raw+=c;need(raw.length<=65536,'ai_qa_install_input_size');}
-      const input=JSON.parse(raw),receipt=await (process.argv[2]==="--continue"?installBoundedAiQaContinuation(input):installBoundedAiQa(input));console.log(JSON.stringify(receipt));
+      const input=JSON.parse(raw),receipt=await (process.argv[2]==="--additional"?installBoundedAiQaAdditionalWindow(input):process.argv[2]==="--continue"?installBoundedAiQaContinuation(input):installBoundedAiQa(input));console.log(JSON.stringify(receipt));
     }catch(e){console.log(JSON.stringify({purpose:'bounded-native-ai-qa-install-denied-v1',code:e.safeCode??'ai_qa_install_failed',noRawError:true}));process.exitCode=1;}
   }else console.log(JSON.stringify({purpose:'bounded-native-ai-qa-installer-contract-v1',target:NATIVE_P6_QA,
     originalCampaignId:AI_QA_ORIGINAL.campaignId,limits:AI_QA_LIMITS,requires:'Explicit physical isolated-QA --install with current release SHA and existing operator/player',providerCalls:0}));
@@ -249,4 +249,119 @@ export async function installBoundedAiQaContinuation(input){
       automaticActivation:false,automaticRetry:false,fullP6Passed:false};
     await newFile(stateRoot+'/continuation-install-receipt.json',receipt);return receipt;
   }finally{input.providerReadApiKey='';await pool.end();}
+}
+
+// A new human-authorized window is a successor, never a reset of the closed campaign.
+export function validateAiQaAdditionalIntent(raw,pin,state){
+  need(typeof raw==='string'&&Buffer.byteLength(raw)<=32768&&sha256(raw)===pin,'ai_qa_additional_review_changed');
+  let i;try{i=JSON.parse(raw);}catch{need(false,'ai_qa_additional_intent_invalid');}
+  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),c=state.counts,w=state.activeWindow;
+  need(i.purpose==='bounded-native-ai-qa-additional-intent-v1'&&i.campaignId===AI_QA_ORIGINAL.campaignId
+    &&state.closed&&aiQaWindowClosed(state)&&state.unresolved===0&&state.records.length>=21
+    &&state.records[20].rawSha256===AI_QA_SIX_AUTHORIZATION.firstClosedJournalSha256&&state.closedWindows?.length>=1
+    &&state.dispatches.every(d=>d.outcome==='response-observed')&&c.generation>=2&&c.generation<6
+    &&i.predecessorRecordCount===state.records.length&&i.predecessorJournalSha256===state.previousSha256
+    &&i.previousRunId===w.runId&&i.previousManifestSha256===w.manifestSha256
+    &&i.previousAuthoritySourceSha256===w.authoritySourceSha256&&i.previousExpectedSha===w.expectedSha,
+    'ai_qa_additional_closed_history_changed');
+  need(same(i.humanAuthorization,AI_QA_SIX_AUTHORIZATION)&&same(i.limits,AI_QA_SIX_LIMITS)
+    &&same(i.previousCounts,c)&&same(i.limitCounts,aiQaNextWindowCounts(state))
+    &&i.globalRemainingGenerations===6-c.generation&&i.windowGenerations===1&&i.streamOnly===true
+    &&i.actualCostUsd===null&&i.extraReserveMicroUsd===0&&i.refundMicroUsd===0&&i.automaticRetry===false
+    &&/^[a-f0-9]{40}$/.test(i.expectedSha??'')&&/^dep-[a-z0-9]+$/.test(i.deploymentId??'')
+    &&/^[a-f0-9-]{36}$/.test(i.runId??'')&&i.runId!==w.runId&&typeof i.streamRequestId==='string'
+    &&i.streamRequestId.length<=128&&/^[a-f0-9]{64}$/.test(i.reviewPreflightSha256??''),
+    'ai_qa_additional_scope_changed');return i;
+}
+export async function readAiQaAdditionalPolicy({pool,operatorId,username,playerId,fullfile,now=Date.now}={}){
+  const c=await pool.connect();let began=false;
+  try{
+    await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
+    const physical=(await c.query('SELECT current_database() AS database,current_user AS role')).rows[0];
+    need(physical.database===NATIVE_P6_QA.database&&physical.role===NATIVE_P6_QA.database,'ai_qa_additional_physical_database');
+    const actor=(await c.query('SELECT id,username,role FROM croupier_auth.users WHERE id=$1 AND username=$2',[operatorId,username])).rows[0];
+    need(actor&&['admin','superadmin'].includes(actor.role),'ai_qa_additional_existing_operator');
+    const player=(await c.query('SELECT p.id FROM croupier_game.players p JOIN croupier_game.player_account_links l ON l.player_id=p.id WHERE p.id=$1 AND l.craig_user_id=$2',[playerId,operatorId])).rows[0];
+    need(player?.id===playerId,'ai_qa_additional_existing_player');
+    const time=Number((await c.query('SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint AS now_ms')).rows[0].now_ms);
+    need(Math.abs(time-now())<30000,'ai_qa_additional_clock');
+    const tables={};for(const name of ['speech_execution_leases','speech_requests','gpu_sessions','gpu_reservations','fullfile_reservations','gpu_budget_policies','fullfile_budget_policies','operator_qa_campaigns','operator_qa_gate']){
+      tables[name]=(await c.query('SELECT * FROM croupier_studio.'+name+' AS t WHERE environment_id=$1 ORDER BY to_jsonb(t)::text LIMIT 11',[NATIVE_P6_QA.environmentId])).rows;
+      need(tables[name].length<=10,'ai_qa_additional_bounded_rows');
+    }
+    need(tables.speech_execution_leases.every(r=>r.recovery_only===false&&Number(r.expires_at_ms)<=time)
+      &&tables.gpu_sessions.every(r=>r.state==='terminal'&&r.released_at_ms!==null&&['COMPLETED','CANCELLED','FAILED','TIMED_OUT'].includes(r.terminal_status)&&r.terminal_reason==='provider')
+      &&tables.speech_requests.every(r=>['completed','failed'].includes(r.state)),'ai_qa_additional_not_drained');
+    for(const name of ['operator_qa_campaigns','operator_qa_gate'])need(tables[name].length===1
+      &&tables[name][0].campaign_id===AI_QA_ORIGINAL.campaignId&&tables[name][0].source_sha256==='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e','ai_qa_additional_campaign_changed');
+    for(const name of ['gpu_budget_policies','fullfile_budget_policies'])need(tables[name].length===1
+      &&Number(tables[name][0].daily_budget_micro_usd)===AI_QA_ORIGINAL.remainingMicroUsd
+      &&Number(tables[name][0].version)===1,'ai_qa_additional_funding_policy_changed');
+    need(Number(tables.fullfile_budget_policies[0].reserve_micro_usd)===1000000
+      &&Number(tables.fullfile_budget_policies[0].reservation_window_ms)===720000,'ai_qa_additional_fullfile_policy_changed');
+    const saved=tables.speech_requests.find(r=>r.request_key===fullfile?.requestKey);
+    need(saved?.state==='completed'&&saved.capability==='fullfile'&&saved.package_id===fullfile.packageId
+      &&sha256(JSON.stringify(saved.package_metadata))===fullfile.packageMetadataSha256,'ai_qa_additional_fullfile_changed');
+    need(tables.fullfile_reservations.length===1&&tables.fullfile_reservations[0].request_key===fullfile.requestKey
+      &&Number(tables.fullfile_reservations[0].reserved_micro_usd)===1000000&&tables.gpu_sessions.length>=1
+      &&tables.gpu_reservations.length===tables.gpu_sessions.length&&tables.gpu_reservations.every(r=>Number(r.reserved_micro_usd)===1000000
+        &&tables.gpu_sessions.some(x=>x.session_id===r.session_id)),'ai_qa_additional_retained_reservation_binding');
+    const reserved=[...tables.gpu_reservations,...tables.fullfile_reservations].reduce((n,r)=>n+Number(r.reserved_micro_usd),0);
+    need(Number.isSafeInteger(reserved)&&reserved>=2000000&&reserved+1000000<=AI_QA_ORIGINAL.remainingMicroUsd,
+      'ai_qa_additional_retained_reservations_exhausted');
+    need((await c.query('COMMIT')).command==='COMMIT','ai_qa_additional_read_commit');began=false;
+    const proof={purpose:'bounded-native-ai-qa-additional-policy-read-v1',physical,observedAtMs:time,originalCampaignId:AI_QA_ORIGINAL.campaignId,
+      reservedSqlMicroUsd:reserved,nextWindowGpuReserveMicroUsd:1000000,qaReservedPoolMicroUsd:AI_QA_ORIGINAL.remainingMicroUsd,
+      fingerprints:Object.fromEntries(Object.entries(tables).map(([n,v])=>[n,{rows:v.length,sha256:sha256(JSON.stringify(v))}])),sqlMutations:0};
+    Object.defineProperty(proof,'knownJobIds',{value:tables.gpu_sessions.map(r=>r.job_id)});return proof;
+  }finally{if(began)await c.query('ROLLBACK').catch(()=>{});c.release();}
+}
+export async function installBoundedAiQaAdditionalWindow(input){
+  need(process.platform==='linux'&&process.getuid?.()===1000&&process.env.RENDER_SERVICE_ID===NATIVE_P6_QA.serviceId
+    &&process.env.RENDER_GIT_COMMIT===input.expectedSha&&process.env.CROUPIER_STUDIO_ENVIRONMENT_ID===NATIVE_P6_QA.environmentId
+    &&process.env.CROUPIER_STUDIO_WORKSPACE_ID===NATIVE_P6_QA.workspaceId,'ai_qa_additional_actual_off_service');
+  need(['CROUPIER_P6_QA_ROUTER','CROUPIER_P6_BOUNDED_TEST','CROUPIER_GENERATED_SPEECH_STREAMING'].every(k=>process.env[k]===undefined||process.env[k]==='0'),'ai_qa_additional_requires_off');
+  const previousRaw=await small(NATIVE_P6_QA.dataRoot+'/p6-sdk/'+input.previousRunId+'/bounded-manifest.json'),previous=JSON.parse(previousRaw);
+  const options={directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
+    anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json'};
+  const oldBudget=await createAiQaBudget({...options,manifest:previous,manifestRawSha256:sha256(previousRaw),authoritySourceSha256:previous.sources['web/native-ai-qa-budget.mjs']});
+  const before=await oldBudget.inspect(),intent=validateAiQaAdditionalIntent(input.intentRaw,input.approvedIntentSha256,before);
+  need(intent.expectedSha===input.expectedSha&&intent.runId===input.runId&&intent.deploymentId===input.deploymentId,'ai_qa_additional_live_binding');
+  const e=intent.endpointEvidence;need(e?.endpointId==='zsudl8tmzcmiv1'&&e.workersMax===1&&e.activeWorkersSetting===0&&e.gpuCount===1
+    &&Date.now()>=e.observedAtMs&&Date.now()-e.observedAtMs<300000,'ai_qa_additional_fresh_one_worker');
+  const db=new URL(process.env.CROUPIER_GAME_DATABASE_URL);need(db.pathname==='/'+NATIVE_P6_QA.database&&decodeURIComponent(db.username)===NATIVE_P6_QA.database&&db.searchParams.get('sslmode')==='require','ai_qa_additional_db_binding');
+  const{Pool}=createRequire(join(repo,'web/package.json'))('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
+  try{
+    const policy=await readAiQaAdditionalPolicy({...input,pool,fullfile:intent.fullfile});
+    need(JSON.stringify(policy.fingerprints)===JSON.stringify(intent.policyFingerprints),'ai_qa_additional_policy_cas_changed');
+    need(typeof input.providerReadApiKey==='string'&&input.providerReadApiKey.length>0,'ai_qa_additional_existing_read_key');
+    const base='https://api.runpod.ai/v2/zsudl8tmzcmiv1',get=async route=>{
+      const r=await fetch(base+'/'+route,{redirect:'error',headers:{authorization:'Bearer '+input.providerReadApiKey},signal:AbortSignal.timeout(10000)});
+      need(r.ok,'ai_qa_additional_provider_read');const raw=await r.text();need(raw.length<=8192,'ai_qa_additional_provider_read_size');return JSON.parse(raw);};
+    const health=await get('health');need(health.jobs?.inQueue===0&&health.jobs?.inProgress===0&&health.workers?.running===0,'ai_qa_additional_provider_not_drained');
+    const knownJobs=[];for(const id of policy.knownJobIds){need(/^[A-Za-z0-9_-]{1,128}$/.test(id??''),'ai_qa_additional_known_job_required');const j=await get('status/'+id);need(j.id===id&&['COMPLETED','CANCELLED','FAILED','TIMED_OUT'].includes(j.status),'ai_qa_additional_known_job_not_terminal');knownJobs.push({jobIdSha256:sha256(id),status:j.status});}
+    const names=(await readdir('/var/data/speech')).filter(n=>/^gpu-session-[a-f0-9]{32}\.reservation\.json$/.test(n));
+    need(names.length<=100,'ai_qa_additional_retained_inventory_size');let retained=null;
+    for(const name of names){const path='/var/data/speech/'+name,raw=await small(path);if(sha256(raw)==='8e8e8731e5e473fe6d0642ff8e4f313ba089336167aad54c1f9dd49daf885798'){
+      const stat=await lstat(path);need(!retained&&stat.size===209&&stat.mtimeMs===1790945260179.6155,'ai_qa_additional_old_reservation_changed');retained={sha256:sha256(raw),size:stat.size,mtimeMs:stat.mtimeMs};}}
+    need(retained,'ai_qa_additional_old_reservation_missing');
+    const manifest=await buildAiQaManifest({...input,ownLinkedPlayerSha256:sha256(input.playerId)});manifest.limits=AI_QA_SIX_LIMITS;
+    const preflight={purpose:'bounded-native-ai-qa-additional-preflight-v1',budget:before,policy,knownJobs,health,
+      retainedOriginalGpu:retained,providerJobPosts:0,sqlMutations:0};
+    manifest.additionalWindow={predecessorRecordCount:before.records.length,predecessorJournalSha256:before.previousSha256,
+      previousManifestSha256:sha256(previousRaw),previousAuthoritySourceSha256:previous.sources['web/native-ai-qa-budget.mjs'],previousRunId:previous.runId,previousExpectedSha:previous.expectedSha,
+      rootReviewedIntentSha256:input.approvedIntentSha256,preflightSha256:sha256(JSON.stringify(preflight)),streamRequestIdSha256:sha256(intent.streamRequestId),
+      humanAuthorization:AI_QA_SIX_AUTHORIZATION,previousCounts:before.counts,limitCounts:aiQaNextWindowCounts(before),globalRemainingGenerations:6-before.counts.generation,windowGenerations:1,streamOnly:true};
+    const pin=sha256(JSON.stringify(manifest)),stateRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/'+manifest.runId;await mkdir(stateRoot,{mode:0o700});
+    const snapshot=await buildAiQaPrivateSnapshot({directory:join(repo,'lab/data/platform-private'),pins:manifest.privateSources});need(sha256(snapshot)===manifest.privateSnapshotSha256,'ai_qa_additional_snapshot_changed');
+    const snapshotFile=await open(stateRoot+'/bounded-private-snapshot.json','wx',0o600);try{await snapshotFile.writeFile(snapshot);await snapshotFile.sync();}finally{await snapshotFile.close();}
+    await newFile(stateRoot+'/additional-intent.json',intent);await newFile(stateRoot+'/additional-preflight.json',preflight);await newFile(stateRoot+'/bounded-manifest.json',manifest);
+    for(const name of ['entry','router','worker','authority'])await newFile(stateRoot+'/'+name+'-context.json',{purpose:'bounded-native-ai-qa-'+name+'-context-v1',expectedSha:manifest.expectedSha,manifestRawSha256:pin,sources:manifest.sources,privateSources:manifest.privateSources,sdkPackageSha256:manifest.sdkPackageSha256,sdkClientSha256:manifest.sdkClientSha256,originalAnchorSha256:manifest.originalAnchorSha256,campaignId:manifest.campaignId,expiresAtMs:manifest.expiresAtMs,actualCostUsd:null});
+    const directory=await open(stateRoot,'r');try{await directory.sync();}finally{await directory.close();}
+    const budget=await createAiQaBudget({...options,manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
+    const after=await budget.openAdditionalWindow({approvedIntentSha256:input.approvedIntentSha256,preflightSha256:manifest.additionalWindow.preflightSha256});
+    const receipt={purpose:'bounded-native-ai-qa-additional-installed-v1',expectedSha:manifest.expectedSha,deploymentId:manifest.deploymentId,runId:manifest.runId,campaignId:manifest.campaignId,
+      manifestRawSha256:pin,manifest,budgetBefore:before,budgetAfter:after,preflight,providerJobPosts:0,sqlMutations:0,extraReserveMicroUsd:0,refundMicroUsd:0,actualCostUsd:null,installedSdkReused:true,originalJournalPreserved:true};
+    await newFile(stateRoot+'/additional-install-receipt.json',receipt);return receipt;
+  }finally{await pool.end();}
 }
