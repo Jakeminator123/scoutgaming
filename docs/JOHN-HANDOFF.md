@@ -3,6 +3,40 @@
 Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Studio-design — 5 oktober
+
+Dealer & klipp och Backoffice delar nu en dämpad gråblå palett. Deal och
+repliker har kompakta situationskort med Spela standard, Inställningar och
+utfällbar fillista. Sökning, radbrytning och flexibla kolumner håller långa
+filnamn och knappar inom korten. Idle visar en rad per variant; beskrivning,
+tider, fördelning, enminutsprov och uppspelningslogg öppnas vid behov.
+Probe och bakgrund använder samma ytor och knappar. Upprepad hjälp och
+teknisk behörighetstext har förenklats; saknade integrationer anges fortfarande.
+
+Mobile Phone Lanes originaluppspelning, sparning/revisioner, auth, media,
+talpar, frame-index och kalibrering är oförändrade. Befintlig avstängning
+ändrar policyn och behåller råfilen. Råfilsradering saknas i gränssnittet;
+MERGE är tillfrågad om separat upload/delete- och lane-verifiering.
+Inga produktionsfiler eller inställningar har muterats för designprovet.
+
+Verifierat: 77 riktade Studio/Idle/BO/navigation/draft-testfall PASS,
+TypeScript och produktionsbygge PASS. Synkaudit med --probe PASS för alla
+fyra dealeruppsättningar; den tidigare mänskliga medieacceptansluckan består.
+Offline-Studio svarar 503 studio_read_storage_unavailable efter Neon-cutover;
+ingen auth- eller lagringsfallback införs för QA. Den statiska layoutbilden
+är återkallad som bevis. Riktig Vercel-layout och responsiv kontroll görs
+efter designpubliceringen. Temporära HTML-filer är borttagna och det
+koordinerade offlineparet stoppat.
+
+Backoffice kunde öppnas autentiserat i drift. En observerad laddning tog
+cirka tio sekunder: fyra session-GET och tre administrations-GET. Klienten
+läser identitet först och igen för varje dataanrop, sedan väntar översikten
+på alla svar. BO kör på Vercel med Neon; vissa spelavläsningar går via Render.
+Det finns inget isolerat bevis för att Render ensam orsakar väntan.
+Denna leverans ändrar laddtexten men inte sessions-/dataflödet.
+GitGuardian på fryst remote f62d49b7: suite queued, inga synliga check-runs,
+incidentlistan not-read; ingen incidentfri status påstås.
+
 ## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
 
 **Levererad kod:** `5270c8ab93bf593512d0374cb9c36033e59dc103` efter

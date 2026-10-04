@@ -9,6 +9,14 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
+**Studio-design, 5 oktober:** kompakt klippöversikt, utfällbara Idle-inställningar
+och gemensam gråblå Studio/Backoffice-palett. 77 riktade tester, TypeScript,
+produktionsbygge och synkaudit --probe PASS. Mobile Phone Lanes uppspelning
+och medie-/dataägarskap består. Native Vercel-layout verifieras efter push;
+upload/delete och lane-synk saknar ännu separat driftkvitto. Backoffice-väntan
+är observerad i sessions-/datahämtning, utan isolerad Render-orsak.
+Detaljer och kvarstående acceptans finns i [JOHN-HANDOFF](JOHN-HANDOFF.md).
+
 **Efterfunna sluträttningar, 5 oktober:** `5270c8ab` rättar gateway/barn/GPU-
 shutdown, registrerad privat zonreferens och Studio→OpenClaw-navigering.
 Tre CI-jobb PASS; produkt-Render LIVE och två Vercelbyggen READY på denna SHA.

@@ -553,10 +553,9 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }
 
   return <div className={styles.administration} aria-busy={busy}>
-    <header className={styles.header}><div><h2>Backoffice</h2><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : 'Verifierar Studio-sessionen'}</p></div>
+    <header className={styles.header}><div><h2>Backoffice</h2><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Backoffice kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
       <button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>
     </header>
-    <p className={styles.notice}>UI-behörighet är en visningsregel. Servern kontrollerar session, aktuell roll, origin och varje ändring.</p>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">

@@ -27,6 +27,15 @@ klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
 tekniska detaljer är sekundära verktyg; avancerade regler och diagnostik
 ligger under Verktyg.
 
+Klippöversikten visar kompakta situationskort med **Spela standard** och
+**Inställningar**. Sök efter namn, replik eller plats; öppna **Filer** för
+enskilda filmer och mappinformation. Idle visar en rad per variant med
+användningen bredvid filnamnet. Öppna raden för beskrivning och tider;
+fördelning, enminutsprov och hjälp ligger i egna utfällbara avsnitt.
+Kategorierna och Backoffice delar samma lugna färger och knappar.
+Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
+**Stäng av** betyder att ändra policyn; råfilen finns kvar.
+
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
 de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
@@ -186,7 +195,7 @@ befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
 **Läs in nya filer**. Knappen skannar mapparna, uppdaterar manifestet och läser
 om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
 policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
-Detta läser lokala filer. I molnstudion används **Ladda upp & bibliotek** och
+Detta läser lokala filer. I molnstudion används **Ladda upp klipp** och
 **Läs in nya filer** läser serverbiblioteket; en lokal filändring publicerar
 inte filmens nya byteinnehåll till molnet.
 
@@ -216,7 +225,7 @@ en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide och Chatt &
 OpenClaw. Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
-Välj **Astrid → Vänteläge** för den förenklade idleeditorn. Den har tre delar:
+Välj **Astrid → Idle** för den förenklade idleeditorn. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
 `idle_glance`, `idle_insulted`, `idle_smile`, `idle_yawn` och
