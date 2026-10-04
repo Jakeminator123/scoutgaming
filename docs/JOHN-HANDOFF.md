@@ -53,6 +53,17 @@ Städarnas P8-borttagningar hålls separata till dess
 ersättningen är verifierad aktiv. Slutacceptans kräver faktisk provider-,
 spel- och produktionsdrift.
 
+Main är pushad och återläst som `849bc9558348c9f42e6ee7c2fa6bc030c8339864`.
+GitHub-run `37164559559`: GPU-workerjobb success, Studio och dealer-regression
+failure i respektive färskt Lab-bygge. En statisk import från fullfilstjänsten
+drog in SDK-runtime i webbbygget; den tidigare lokala Studio-körningen täckte
+inte denna ändrade importkedja. Importfixen är lokalt integrerad som
+`d8bbb8cd`, från `a00a2d34`; övriga källfiler är identiska med workerleveransen
+utanför de två root-trackerfilerna. Färskt Next-bygge med fyra workers och
+tracekontroll, typkontroll, 47 riktade tester och fullhook: 1 268 PASS,
+5 SKIP, 0 FAIL. Nästa publicerade SHA får egen CI-verifiering. QA står kvar på e461ef07,
+utan nya providerjobb, budgetaktivering eller produktionsimport.
+
 ## P6: parallellt QA-pass och avgränsade kostnadsgap — 4 oktober
 
 Fryst källversion är `e461ef073b63b2d1c937454bbfa31289774fcb8f` på main.

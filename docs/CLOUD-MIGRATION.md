@@ -39,6 +39,17 @@ med identiskt Git-träd och fullhook 1 268 PASS, 5 SKIP, 0 FAIL. Den binder
 fullfilsreservation under streaming till verifierad bounded-QA-transport och
 Neon-journal samt återställer fyra checksumförseglade privata SDK-filer före
 Web-start. Docker förbereder endast de två privata katalogernas ägare/rättigheter.
+Main är publicerad som `849bc9558348c9f42e6ee7c2fa6bc030c8339864`.
+CI:s GPU-workerjobb passerade, men båda färska Lab-byggena stoppade på en
+serverruntime-import från fullfilstjänsten. Den tidigare lokala Lab-körningen
+föregick denna importändring och räcker inte för att godkänna den nya bygggrafen.
+Rättningen är lokalt integrerad som `d8bbb8cd`, från workercommit `a00a2d34`.
+Den interna transportregistreringen ligger i den delade fullfilstjänsten;
+SDK-runtime registrerar sin verifieringscallback. Färskt Next-bygge med fyra
+workers, tracekontroll, typkontroll, 47 riktade tester och fullhook passerade:
+1 268 PASS, 5 SKIP, 0 FAIL. Alla källfiler utom de två root-trackerfilerna är
+identiska med workerleveransen. Nästa publicerade SHA kräver egen CI. QA är kvar
+på e461ef07; inga nya providerjobb eller produktionsimporter har körts.
 Faktisk QA-aktivering återstår.
 Produktionsförberedelsen har 80 PASS utan SKIP samt 87 importguards PASS;
 förberedda adaptrar gör ingen import utan aktuella faktiska AI-/routekvitton,
