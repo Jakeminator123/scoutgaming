@@ -108,12 +108,18 @@ dashboard/proxy/workspace53/53, shutdown-Windows71PASS/3LinuxSKIP samt
 Linuxprocesskedja4/4PASS. Oberoende granskningens shared-lease-P2 är stängd;
 close-regression38/38 och Linux4/4 passerar efter fixen. Faktiskt Studio-
 bygge/traces och fyrdealer-synkaudit PASS. Produktens Render-gräns90s är
-applicerad/GET-verifierad med oförändrade51envvärden. Driftsatt bild/export,
-native OpenClaw-klick/anslutning och slutversion följer nu enligt plan07.
+applicerad/GET-verifierad med oförändrade51envvärden. Slutkod5270c8ab är
+LIVE på produkt-Render och READY i båda Vercelbyggena; CI3/3 PASS.
+Director96020c04 är LIVE. Autentiserad referensbild1080×1920 och faktisk
+PNG-export290×104, pixelidentisk med det registrerade utsnittet, PASS.
+Verkligt Studio-klick/native Agents med befintlig Owner-anslutning PASS;
+anonym bildåtkomst401. Ingen produktionsdata eller zonrevision ändrad.
+Linuxprovet täcker processkedjan med aktiv worker och långsamt provideravslut;
+det är inte ett nytt betalt produktionsjobb eller godkännande av hela P6.
 
-- [ ] A, B och C rättade och riktat verifierade.
-- [ ] Obligatoriska checks enligt aktuell repositorypolicy passerar.
-- [ ] Oberoende granskare har kontrollerat just ändringarna och testernas relevans.
-- [ ] Rätt tjänster är driftsatta; version och ändrade flöden är verifierade.
+- [x] A, B och C rättade och riktat verifierade.
+- [x] Obligatoriska checks enligt aktuell repositorypolicy passerar.
+- [x] Oberoende granskare har kontrollerat just ändringarna och testernas relevans.
+- [x] Rätt tjänster är driftsatta; version och ändrade flöden är verifierade.
 
 Inga nya priser, konto-/datamigreringar, arkitekturer eller UI-system ingår.

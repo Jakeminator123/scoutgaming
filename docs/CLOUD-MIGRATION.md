@@ -9,13 +9,16 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
-**Efterfunna sluträttningar, 5 oktober:** källpaketet rättar gateway/barn/GPU-
+**Efterfunna sluträttningar, 5 oktober:** `5270c8ab` rättar gateway/barn/GPU-
 shutdown, registrerad privat zonreferens och Studio→OpenClaw-navigering.
-Lokala regressionsprov, Linuxprocesskedjan och oberoende shared-lease-P2-
-closure är verifierade. Produktens Render `maxShutdownDelaySeconds=90`
-är applicerad och GET-läst; 51 envvärden identiska, inga köade/pågående
-GPU-jobb. Ny deployment krävs för den inställningen. Faktisk driftsacceptans
-och slut-SHA redovisas i [JOHN-HANDOFF](JOHN-HANDOFF.md).
+Tre CI-jobb PASS; produkt-Render LIVE och två Vercelbyggen READY på denna SHA.
+Director LIVE på 96020c04, med samma proxykod. Linuxprocesskedjan och oberoende
+shared-lease-P2-closure är verifierade. Render `maxShutdownDelaySeconds=90`
+är applicerad, omdeployad och GET-läst; envändringen bevarade 51 värden.
+Autentiserad bild/korrekt PNG-export och native dashboardanslutning PASS;
+anonym bildåtkomst401 och spelredirect303. Inga nya betalda GPU-prov.
+P6-medieacceptans, observerad idle-varning, produktionsmail och incidentlista
+redovisas separat i [JOHN-HANDOFF](JOHN-HANDOFF.md), tillsammans med drift-ID:n.
 QA AI/GPU är fortsatt OFF. Ingen omimport, data-/budgetreset, nytt betalt
 providerjobb eller prisutredning ingår i rättningen.
 
