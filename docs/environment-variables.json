@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "Production now uses shared Neon/Blob without a persistent product disk. CROUPIER_CLOUD_DATA_ROOT is conditional for retained mounted QA and must be absent in mountless production. Legacy names remain inventoried where guards reject them; no new environment names, budgets or reservations are introduced.",
+  "revisionNote": "Production uses shared Neon/Blob. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Environment values never belong in this registry.",
   "services": {
     "render-game": {
       "sources": [
@@ -206,7 +206,8 @@
     },
     "render-openclaw-director": {
       "sources": [
-        "open-claw/lab/deploy/start-director.mjs"
+        "open-claw/lab/deploy/start-director.mjs",
+        "open-claw/lab/src/gateway-rpc.mjs"
       ],
       "blueprint": {
         "path": "open-claw/lab/render.yaml",
@@ -231,7 +232,8 @@
         "OPENCLAW_DASHBOARD_ENABLED",
         "OPENCLAW_SPEECH_ROUTING",
         "OPENCLAW_SPEECH_DEEP_MODEL",
-        "OPENCLAW_SPEECH_TIMEOUT_MS"
+        "OPENCLAW_SPEECH_TIMEOUT_MS",
+        "OPENCLAW_STUDIO_ADMIN_DEVICE_KEY"
       ],
       "managed": [],
       "blocked": []
@@ -333,7 +335,8 @@
         "lab/lib/studio-game-authority.mjs",
         "lab/lib/neon-video-registry.mjs",
         "lab/lib/voice-preview.mjs",
-        "lab/lib/studio-voice-lines.mjs"
+        "lab/lib/studio-voice-lines.mjs",
+        "lab/lib/openclaw-admin.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -360,7 +363,8 @@
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
-        "LAB_STUDIO_DATA_DIR"
+        "LAB_STUDIO_DATA_DIR",
+        "OPENCLAWAPI_KEY"
       ],
       "managed": [],
       "blocked": [

@@ -12,6 +12,7 @@ import { normalizeSocialInput, socialChat, validateSocialReply } from './social.
 import { createCompanionService, normalizeCompanionRequest } from './companion.mjs';
 import { createProductSpeechService, PRODUCT_SPEECH_AGENT, PRODUCT_SPEECH_PATH } from './product-speech.mjs';
 import { createProductProbeService, PRODUCT_PROBE_PATH } from './product-probe.mjs';
+import { createStudioOpenClawAdmin, STUDIO_OPENCLAW_ADMIN_PATH } from './studio-admin.mjs';
 
 const SOURCE_TYPES = ['speak', 'deal', 'reveal', 'settle', 'turn', 'idle'];
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
@@ -73,6 +74,7 @@ async function relay(path, method, body, settings, fetchImpl) {
 
 export async function createLabServer({ settings: settingsProvider = readSettings, fetchImpl = fetch, root = LAB_ROOT, batchBudgetMs = 25000,
   onSpeechRouting = entry => console.info(JSON.stringify({ event: 'product_speech_route', ...entry })),
+  studioAdmin = createStudioOpenClawAdmin(),
 } = {}) {
   const initial = { ...settingsProvider() };
   if (!isLoopback(initial.host) && !initial.apiToken) throw new Error('LAB_API_TOKEN is required when HOST is not loopback.');
@@ -140,7 +142,14 @@ export async function createLabServer({ settings: settingsProvider = readSetting
       if (path === '/healthz' && req.method === 'GET') return respond(res, 200, { ok: true, service: 'croupier-openclaw-lab' });
       // Auth follows the actual listener, even when .env changes before a restart.
       const settings = { ...settingsProvider(), host: initial.host };
-      guard(req, settings, path === PRODUCT_SPEECH_PATH || path === PRODUCT_PROBE_PATH
+      if (path === STUDIO_OPENCLAW_ADMIN_PATH) {
+        // Ordinary runtime/catalog tokens must never inherit Gateway administration.
+        if (typeof settings.gatewayKey !== 'string' || !settings.gatewayKey.trim() || /[\r\n]/.test(settings.gatewayKey)
+          || equal(settings.gatewayKey.trim(), (settings.apiToken || '').trim())) throw new GatewayError('openclaw_admin_not_configured', 503);
+        const password = settings.gatewayKey.trim();
+        if (!equal(req.headers.authorization || '', `Bearer ${password}`)) throw new GatewayError('unauthorized', 401);
+        guard(req, settings, { token:password });
+      } else guard(req, settings, path === PRODUCT_SPEECH_PATH || path === PRODUCT_PROBE_PATH
         ? { token: settings.speechToken, productSpeech: true } : undefined);
       if (path.startsWith('/api/')) {
         const rateKey = req.socket.remoteAddress;
@@ -157,10 +166,15 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/studio/companion': ['POST'],
           [PRODUCT_SPEECH_PATH]: ['POST'],
           [PRODUCT_PROBE_PATH]: ['POST'], '/api/studio/probe': ['POST'],
+          [STUDIO_OPENCLAW_ADMIN_PATH]: ['GET', 'PATCH'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
-        let body = ['POST', 'PUT'].includes(req.method) ? await bodyJson(req) : undefined;
+        let body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await bodyJson(req) : undefined;
+        if (path === STUDIO_OPENCLAW_ADMIN_PATH) {
+          if (settings.remoteUrl) throw new GatewayError('openclaw_admin_not_configured', 503);
+          return respond(res, 200, req.method === 'GET' ? await studioAdmin.get(settings) : await studioAdmin.patch(body, settings));
+        }
         if (path === PRODUCT_PROBE_PATH || path === '/api/studio/probe') {
           if (settings.remoteUrl) throw new GatewayError('probe_relay_not_supported',503);
           return respond(res,200,await productProbe.handle(body));

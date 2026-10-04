@@ -24,6 +24,21 @@ QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
 
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
+Studio-flikens modellinställningar använder den inloggade administratörens
+vanliga Studio-session. `OPENCLAWAPI_KEY` finns server-only i Vercel-projektet
+`croupier-lab-ui`, endast production, och måste motsvara Directors befintliga
+Gateway-lösenord. Nyckeln får inte skickas till webbläsaren eller till spelets
+frontend. Det vanliga `LAB_API_TOKEN` ger ingen rätt att administrera Gateway.
+De avvecklade `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` behöver inte återaktiveras.
+
+På `croupier-lab-director` används dessutom
+`OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`: en privat Ed25519-nyckel i base64-kodad
+PKCS8. Den signerade serveridentiteten paras uttryckligen i befintlig Gateway
+med `operator.read` och `operator.admin`. Nyckeln hör inte hemma i Studio,
+frontend, QA eller Git. Ingen autentiseringsspärr stängs av. Det avgränsade
+API:t tillåter endast modellval för befintliga Croupier-agenter; verktyg,
+leverantörshemligheter och nätverksinställningar ändras inte där.
+
 `BO_URL` anger publik origin för auth/handoff och `CROUPIER_GAME_ORIGIN`
 används lokalt. Aktiva klippval och administration läses nu från gemensamma
 Neon-revisioner. `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,

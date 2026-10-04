@@ -9,6 +9,13 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
+**Studio-rättning och OpenClaw-admin, 5 oktober, leverans pågår:** Idle-knappen
+läser nu det gemensamma medieregistret i stället för avvecklad diskskanning.
+OpenClaw-modellval får en avgränsad serverväg från befintlig Studio-adminsession
+till Director och native Gateway. Server-only hemligheter är konfigurerade;
+exakt device-pairing och driftkontroll återstår efter koddeploy. Se John-handoff
+för tester och privat nyckelbackup. Inga nya betalda providerjobb eller QA-flaggor.
+
 **Lane-register/rensning, 5 oktober, pågående:** Mobile är enda förvalda lane;
 admin kan skapa och ta bort sparade lane-definitioner med revisionskontroll.
 Gemensam kortgrund ligger i `web/public/card-presentation`. 2 410 gamla
