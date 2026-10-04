@@ -25,7 +25,72 @@ Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstest
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
-**Aktuellt verifierat läge, 4 oktober 13:41 UTC:** publicerad main och samtliga
+**Aktuell checkpoint, 4 oktober 17:14 UTC:** main är publicerad på
+`b0bc581442641d0fc9c1c161de029a60adb52929`; CI `37210290007` har tre PASS.
+Normal GPU-stängning väntar nu högst 15 sekunder på samma jobbs naturliga
+slutstatus före eventuell engångscancel. Riktade 30/30 och full regression PASS.
+Alla tre QA-tjänster kör nu exakt b0bc: Render LIVE
+`dep-db16i5favr4c73agms1g`, frontend/Studio READY och alias återbundna.
+10/10 bevarandekontroller, faktisk Linux-källa/SDK och OFF42 verifierade;
+three-ready SHA256 `b2ade7330fdf2d026c3cba6be1174c9dd89dc171ed44b9b54e9420624a4704af`.
+Inget nytt genereringsfönster öppnas.
+
+P7:s faktiska admission är sparad/granskad som SHA256
+`77eccc3a1ca99bca328f2abec8e11d4d37ec62b3797a2a7b25aea1c616b751c1`;
+cloudplan `25fe34d42251b1f57de6ff0ae7505459c0448c6d0ba500646aa7281a9115c59d`
+och BEFORE är verkliga. Underhållsdeployment `dep-db16rv0u01pc73d442p0` är
+LIVE och verifierad childless efter en verifierad Docker-default-CMD-rättning
+i privat hjälpare. Endpointen är tillfälligt Max 0/Active 0/FlashBoot OFF och
+faktisk avläsning visar alla worker- och jobbfält 0. Ursprungligt Max 1 och
+FlashBoot ON återställs före provideraktivering. Fryst export och oberoende
+GET-dränering och slutvalidering PASS. Rootgranskad importplan `94a458599f0c77ca8aaf468feccf4cc7d5e1e050f2f31662be8740796cde7442`
+är slutförd: importkvitto `0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`,
+Studio 001–004, tre dokument, sex behållna medieposter, 18 aktiva medier och
+talhistorik. Alla 32 befintliga konto-/speltabeller är exakt oförändrade.
+Faktisk fristående runtimeparitet är PASS: 32 skyddade tabeller, 11
+kostnadstabeller, tre dokument och 18 aktiva plus sex behållna medieposter.
+Gemensam Neon-runtime är LIVE på Render `dep-db17ojvavr4c73alutjg`, exakt b0bc.
+Produktionsalias är faktiskt omkopplade och samtliga 17 granskade/historiska
+pekare kontrollerade; historiska mål, domäninställningar och SSO bevarade.
+GPU är återställd/återavläst till Max 1/Active 0/FlashBoot ON. Färsk
+konto-/kostnadsavläsning PASS 17:09 UTC; produktens tre providerflaggor är
+återställda ON och deployment dep-db18gfh42hec73eh9a60 skickad. Faktisk
+LIVE/providerreadback PASS 17:12 UTC med health200 och gemensam Studio-policy. QA:s AI förblir OFF; fem gamla QA-sökvägar är borttagna
+med exakt bevarade övriga 37 värden/disk/SDK/journaler.
+Städreleasen `a43c0229` har passerat obligatoriska slutkontroller på lokal
+releasebranch; P7:s providerreadback är PASS; nästa är publicering av städreleasen.
+Ingen gammal resurs har raderats. Aliasoperatörens avgränsade återgång fortsatte
+efter det ursprungliga femminuterskvittots giltighet; tiderna har inte skrivits
+om och kontinuerlig TTL-acceptans påstås inte. Befintlig färsk konto-/kostnads-
+och adoptionsavläsning före provideraktivering kvarstår.
+Alla 206 gamla diskfiler är
+säkerhetskopierade externt med full hash-/inventerings-/läsbarhetsverifiering,
+kvitto `12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9`.
+Ingen ny generering är gjord; providerstatus har lästs med GET.
+
+cc77-fönstret `75eaf797-9342-4e2c-8995-f3c759fade75` gav synlig/hörbar
+uppspelning till spelkö-END och därefter avläst provider HTTP200 CANCELLED.
+Det är inget COMPLETED-providerkvitto. Agenternas tidigare krav på just den
+statusen var tillagt utöver Jakobs krav på avslutad speluppspelning. Snäv
+funktionell admission återanvänder verklig END, exakt completed SQL-request,
+explicit browsercleanup efter END, terminal/released-jobb och OFF med oförändrade playback-/route-
+bytes i b0bc samt riktade retirementprov. Naturligt b0bc-COMPLETED är fortfarande
+inte liveverifierat och exakt provider-transitiontid saknas; faktisk ALL0-drain/
+paritet före import består. Append-only
+closed39/head `8e7f3e2ee1a31e03291da5b59c40b7d695d4a40b156170e909853c5a1c9f03a6`,
+usage4/5/2/4, unresolved0, refund0/USDnull. Två generationer återstår av sex.
+Den gamla reservationspolicyn rymmer inte ytterligare1USD inom4.748848USD;
+tak, reservationer och journal ändras därför inte. QA OFF verifierad på
+`dep-db1687s9v7es73e56rv0`/cc77, exakt42 miljönycklar,
+router404/health200 och lease0. Gamla journaler/reservationer/SDK bevaras.
+P7:s import/policybyte och aliasbyte är genomförda; provideraktivering och
+P8:s publicering/avveckling återstår. Egen Cartesia-nyckel finns i ignorerad rot-.env och autentiserar
+HTTP200 med exakt Victoria-röst. Labs ignorerade `.env.local` har nu samma
+egna nyckel med privat backup av föregående fil; övriga rader är bevarade.
+Driftens nyckel är ännu inte bytt.
+GitGuardian b0bc: commitmetadata komplett, suite queued/no run, incidents ej lästa.
+
+**Tidigare verifierat läge, 4 oktober 13:41 UTC:** publicerad main och samtliga
 tre QA-tjänster kör `c8747adca8c6fdff57a82946c0211585490e2ab2`. Produktens
 Render-backend har autodeployerats till samma källa, men dataimport,
 Studio-schema 001–004 och gemensamt policybyte är inte genomförda. Senaste
@@ -998,8 +1063,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     matcha exakt levererad main-SHA; aktuell mängd är 132 filer.
     87 importguards/36 paritetskontroller samt 19 fasguards/13 runtimeprov PASS.
     Faserna kräver alla fyra aktuella SQL-checksummor och elva kostnadstabeller.
-    Separat nonempty-policyadoption är förberedd och har elva obetalda guards;
-    verklig adapter och godkänd deltaacceptans återstår, ingen policy är antagen.
+    Separat nonempty-policyadoption är genomförd med ett additivt INSERT för
+    production/version 1. Oförändrad konto-/kostnadshistorik, originalimport
+    och numeriska reservationer är verifierade; faktiskt USD är fortsatt okänt.
     Alla 18 aktiva videobindningar ska
     fullåterläsas från Blob innan skrivning. Skarpa QA-läsaren har nu
     fullverifierat alla 18 inklusive sex original från tom OS-cache,
@@ -1009,16 +1075,21 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Oförändrad originalimport kan återvalideras med ett separat läskvitto,
     full byte-/dokument-/register-/kostnads-/kontoparitet och fem minuters
     giltighet, utan återimport eller omskrivna originaltider.
-    Faktisk providerhealth har inga köade/pågående jobb men en idle/ready
-    worker; färsk dränering återstår. Keys kan enligt Jakob tillhöra Emil;
+    Faktisk ALL0-dränering är genomförd före importen. Endpointens ursprungliga
+    Max 1/Active 0/FlashBoot ON är därefter återställd. Keys kan enligt Jakob tillhöra Emil;
     inga kontoövergripande providerinställningar ändras. Verklig Resend-sändare
     och integrationsnyckel är verifierade i enbart egen QA Studio; produktens
     mejlkonfiguration och full invitation/reset-acceptans återstår.
-    Ingen produktionsimport eller aktivering är gjord.
+    Produktionsimport, fristående runtimeparitet och faktiska aliasbyten är
+    genomförda på b0bc. Permanent provideraktivering och faktisk readback PASS på b0bc före P8.
 - [ ] **P8 — faktisk avveckling:** gamla BO/Lab-UI och ersatta Render-API/skrivare
   borttagna, inga permanenta diskfallbacks. Gamla Blob-alias tas bort efter
-  verifierad referensmigrering. Onödiga env och produkt/QA-disk tas bort endast
-  när samtliga beständiga beroenden är ersatta; aktiv OpenClaw-disk består.
+  verifierad referensmigrering. Onödiga env och produktdisk tas bort endast
+  när samtliga beständiga beroenden är ersatta och befintlig slutkontroll PASS.
+  QA, dess disk/SDK/journaler och AI-flaggor OFF bevaras; aktiv OpenClaw-disk består.
+  Jakobs förtydligande 4 oktober: fryst omfattning och inga nya kontrollpaket.
+  Behåll backup och gamla resurser tills slutkontrollen passerat; integrera
+  de redan förberedda borttagningarna i befintlig releaseordning.
   Bevis: kod-/referenssökning, levande routing/konfiguration och restart efter
   borttagning, utan persistent produktmount. Neon/Blob-fel ska ge felstängning,
   inte fröprojekt/nollbudget/diskfallback. En ren Git-diff bevisar inte att en
@@ -1034,7 +1105,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   | Gamla BO-skrivare | `boLoad/boSave`, defaults och ersatta administrations-/konto-/partnerhandlers i `web/server.mjs`, samt `players/bo.json` efter exakt import | `/api/bo/config` är fortfarande spelkonsumentens Neon-projektion; Render äger spelkommandon, wallet, aktörskontroll, launch/handoff och verklig cancellation |
   | Studio på disk | Diskgrenarna i `lab/lib/studio-server.mjs`, äldre projekt/social-/historik-/profil-/videoindexskrivare när motsvarande sparade Neon-revisioner och privata Blob-bytes är verifierade | `StudioPage`/`Studio` används av tree, activity, events, guide, probe och videos; validering/konflikthantering och den avancerade editorn består |
   | Genererade paket/journaler | Äldre beständiga paket-/cachegrenar under `generations/`, `speech/`, `studio/voice-cache/` efter Blob/Neon-paritet, terminal-/dräneringsbevis och kallstart utan diskfallback | Förbrukade request-/kostnads-/GPU-/operatörskvitton, även originalets nya P6-budgetjournal och kvarhållna reservation; aktiva spelklipp/text/audio/video/index/kalibrering består |
-  | Legacy env och produkt/QA-mount | Diskkopplingar `LAB_STUDIO_DATA_DIR`, `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR`, `CROUPIER_GENERATED_SPEECH_DIR` när gamla läsare/skrivare och cloud-fabrikens child-config är ersatta; produkt/QA-mount först efter sista beständiga beroendet | `BO_URL` och aktuella origins används ännu för auth/handoff/ingress; Neon/Blob/provider-/streamnycklar och `/data/catalog`/`/data/openclaw` är aktiva, inte generella raderingsmål |
+  | Legacy env och produktmount | Diskkopplingar `LAB_STUDIO_DATA_DIR`, `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR`, `CROUPIER_GENERATED_SPEECH_DIR` när gamla läsare/skrivare och cloud-fabrikens child-config är ersatta; produktmount först efter sista beständiga beroendet och slutkontroll PASS | QA-disk/SDK/journaler består med AI OFF; `BO_URL` och aktuella origins används för auth/handoff/ingress; Neon/Blob/provider-/streamnycklar och `/data/catalog`/`/data/openclaw` är aktiva, inte generella raderingsmål |
 
   Avgränsad städning före P7 har tagit bort frontendens oroutade blackjack-demo,
   oanvänd UI-/tema-/hookscaffold och dess exklusiva beroenden, samt pensionerad

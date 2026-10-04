@@ -4,12 +4,44 @@ Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
-Aktuell migrationscheckpoint 4 oktober 13:41 UTC: QA är återställd till
-AI-/admin-/P6-flaggor OFF efter closed29, med router404, health200 och lease0.
+Aktuell migrationscheckpoint 4 oktober 17:14 UTC: main b0bc5814 är publicerad
+med grön CI. Alla tre QA-tjänster kör exakt b0bc med 10/10 bevarandekontroller,
+faktisk Linux-källa/SDK och oförändrat OFF42. QA är återställd till
+AI-/admin-/P6-flaggor OFF efter closed39
+på cc77/dep-db1687s9v7es73e56rv0, med router404, health200 och lease0.
+Senaste speluppspelningen nådde synlig/hörbar END men provider HTTP200
+CANCELLED avläst efter END. Funktionell admission kan återanvända den exakt
+matchande completed-request/END/browsercleanup-efter-END-kedjan för oförändrade
+playbackbytes. Exakt tid för providerstatusövergång finns inte i kvittot.
+b0bc:s naturliga provider-COMPLETED är lokalt testat, ännu inte liveverifierat.
+Ingen ytterligare generering eller budget-/reservationsändring görs.
+Egen Cartesia-nyckel i rotens ignorerade `.env` är även kopierad till Labs
+ignorerade `.env.local`; före-filen är privat säkerhetskopierad och alla andra
+miljörader bevarade. Driftens nyckel byts separat efter dataomkopplingen.
 Manifest, SDK, append-only-journaler och reservationer ska bevaras. Ett nytt
 fönster får inte återanvända eller skriva om tidigare poster; partial failure
 ska stängas explicit innan någon produktionsimport. Produktionens data och
-Studio-policy är ännu inte omkopplade. Kör därför ingen gammal diskrestore eller
+Studio-policy är importerade och faktisk driftparitet PASS. P7-admission/cloudplan/BEFORE är sparade
+och importens underhållsdeployment `dep-db16rv0u01pc73d442p0` var LIVE/childless med
+0 barnprocesser, skrivare och providerprocesser. Endpointen är tillfälligt
+Max 0/Active 0/FlashBoot OFF under importens faktiska ALL0-avläsning. Den är nu
+sparad och återavläst som Max 1/Active 0/FlashBoot ON inför provideraktivering.
+Fryst export och GET-dränering finns;
+slutvalidering och faktisk produktionsimport PASS. Importkvitto SHA256
+`0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`
+visar exakt oförändrade 32 konto-/speltabeller. Fristående paritet och faktisk
+runtime-/aliasomkoppling är PASS; Render `dep-db17ojvavr4c73alutjg` är LIVE
+på b0bc med gemensam Neon-policy. Alla 17 aliaspekare är verifierade.
+Färsk konto-/kostnadsavläsning PASS 17:09 UTC. Produktens tre providerflaggor
+är återställda ON; dep-db18gfh42hec73eh9a60 är LIVE och faktisk readback PASS.
+QA förblir OFF med fem gamla lagringsvariabler borttagna och övriga 37 värden,
+disk, SDK, journaler och reservationer bevarade.
+Hela gamla /var/data är säkerhetskopierad externt:
+206 filer, 10 mappar, 125 745 905 källbyte; full inventering, oförändrade
+metadata, arkivläsbarhet och överförings-/arkivhash PASS. Privat backup finns i
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`,
+kvitto SHA256 `12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9`.
+Kör därför ingen gammal diskrestore eller
 fysisk P8-radering före verifierat P7-källbyte, aktuell backup/paritet och det
 gemensamma skrivfönstrets återgångspunkt. Faktisk providerkostnad är okänd/null.
 
