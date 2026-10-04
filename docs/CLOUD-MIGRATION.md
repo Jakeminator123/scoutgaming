@@ -22,6 +22,14 @@ befintliga numeriska reservationer och dispatchgränser. Okänd USD är aldrig
 noll eller verifierad. Ingen ny budget, återbetalning eller journalreset;
 ägar-, idempotens-, lease-, cancel-/terminal- och dubbeljobbsskydd består.
 Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstester.
+
+**P8, 4 oktober 17:26 UTC:** `1fb2307` är publicerad med tre CI PASS och
+Vercels frontend/Studio READY. Produkt och QA behåller b0bc efter misslyckad
+containerstart. Befintliga tal-QA-handlaren bevisar anonym HTTP403; de två
+startproven krävde felaktigt 401. Förväntningarna rättas och det befintliga
+launch-testet använder den verkliga handlaren, 10/10 PASS. Ingen auth-, data-
+eller providerpolicy ändras. Produktdisken och tolv gamla Blob-objekt behålls
+tills rättad release faktiskt är LIVE och slutkontrollerna passerat. QA OFF.
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 

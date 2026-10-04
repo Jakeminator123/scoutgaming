@@ -4,6 +4,13 @@ Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
+P8 4 oktober 17:26 UTC: product/QA-containerstart på `1fb2307` misslyckades
+på fel förväntad HTTP-status i startprovet (401 i stället för den verifierade
+anonyma tal-QA-routens 403). b0bc är fortsatt LIVE; auth rättas inte eller
+öppnas. Endast provets kontrakt rättas, med verklig handler i befintligt test.
+Produktdisken och tolv ersatta Blob-alias är kvar. Extern fullständig backup
+behålls under och efter nästa release; ingen omimport eller journalreset.
+
 Aktuell migrationscheckpoint 4 oktober 17:14 UTC: main b0bc5814 är publicerad
 med grön CI. Alla tre QA-tjänster kör exakt b0bc med 10/10 bevarandekontroller,
 faktisk Linux-källa/SDK och oförändrat OFF42. QA är återställd till

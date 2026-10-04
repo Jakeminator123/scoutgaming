@@ -3,6 +3,19 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+P8, 4 oktober 17:26 UTC: städreleasen är publicerad som `1fb2307` och
+samtliga tre CI-jobb PASS. Frontend och Studio är READY på denna källa.
+Produktens `dep-db18lg3tqb8s73934ijg` och QA:s `dep-db18m5ugekts73cnbujg`
+kunde inte starta; tidigare b0bc åter är LIVE. Orsaken är ett verifierat
+kontraktsfel i startprovet: anonym tal-QA svarar 403 medan provet krävde 401.
+De två förväntade statusarna rättas utan ändrad autentisering. Befintligt
+launch-test använder nu den verkliga tal-QA-handlaren; 10/10 PASS.
+Produktdisk och alla tolv gamla Blob-objekt är kvar tills rättad drift passerar.
+`LAB_VIDEO_ARCHIVE` och två tomma produktionsposter för storage-export-secret
+är avvecklade med faktisk avläsning; QA är fortsatt OFF och inga providerjobb
+har startats. Nästa steg är rättad release, monterad kontroll, diskfri kontroll
+och därefter faktisk resursavveckling. Ingen import körs om.
+
 ## Senast verifierade checkpoint — 4 oktober 17:14 UTC
 
 Produktionsimporten är avslutad och efterföljande paritetskontroller PASS: alla 32

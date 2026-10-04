@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { verifyCloudAccess, probeStatus } from '../access-check.mjs';
 import { createCloudGateway } from '../gateway.mjs';
 import { openCheckedGateway } from '../start.mjs';
+import { createOperatorSpeechQa } from '../../../web/operator-speech-qa.mjs';
 
 const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
   labOrigin: 'https://lab.example.test', publicPort: 0, streaming: false };
@@ -23,7 +24,11 @@ async function close(server) {
 
 async function fixture(change = {}, layout = config) {
   // Fake child APIs only: no game/Lab product processes or real databases.
-  const web = createServer((request, response) => {
+  const speechQa = createOperatorSpeechQa({ origin: layout.boOrigin, authenticate: async () => null,
+    gateStore: { state() { throw new Error('Anonymous probe must not read the QA journal.'); } } });
+  const web = createServer(async (request, response) => {
+    if (!Object.hasOwn(change, request.url)
+      && await speechQa.handle(request, response, request.url)) return;
     response.writeHead(change[request.url] ?? 401);
     response.end();
   });
