@@ -1,0 +1,562 @@
+{
+  "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+  "evidence": "code-inspected",
+  "evidenceLabel": "Kodläst katalog; inga nya runtimeprov",
+  "runtimeVerified": false,
+  "documentedPublicOrigin": "https://www.scoutgaming.tech",
+  "documentedLocalOrigins": {
+    "game": "http://127.0.0.1:4200",
+    "studio": "http://127.0.0.1:4201"
+  },
+  "originSources": [
+    "docs/LOCAL-PRESENTATION-RUNTIME.md:6",
+    "lab/docs/README.md:4"
+  ],
+  "rolePolicy": {
+    "studio": ["admin"],
+    "legacyAdministratorAlias": "superadmin",
+    "gameOnlyStoredRoles": ["reader", "staff", "player"],
+    "studioAdmission": "Live account, role, password fingerprint and authentication epoch are revalidated. Partner identities are denied Studio.",
+    "sources": [
+      "web/account-role.mjs:1",
+      "lab/lib/studio-access-policy.mjs:9",
+      "lab/lib/studio-native-auth.mjs:42"
+    ],
+    "tests": [
+      "lab/test/studio-access-policy.test.mjs",
+      "lab/test/studio-native-auth.test.mjs",
+      "lab/test/studio-document-api.test.mjs"
+    ]
+  },
+  "pages": [
+    {
+      "id": "public-site",
+      "paths": ["/", "/demo", "/about"],
+      "label": "Startsida, demo och företagsinformation",
+      "serving": "Vercel frontend / Next pages",
+      "access": "Public",
+      "sources": [
+        "apps/croupier-frontend/app/page.tsx:9",
+        "apps/croupier-frontend/app/demo/page.tsx:13",
+        "apps/croupier-frontend/app/about/page.tsx:26"
+      ],
+      "note": "Demo uses gameUrl(); platform mode links to /blackjack, otherwise configured CROUPIER_GAME_URL or the documented Render fallback.",
+      "supportingSources": ["apps/croupier-frontend/lib/game-url.ts:3"]
+    },
+    {
+      "id": "game-entry",
+      "paths": ["/blackjack"],
+      "label": "Blackjack",
+      "serving": "Vercel frontend GET/HEAD route -> platformUiDocument -> prepared game.html from web/public/index.html",
+      "access": "With CROUPIER_STUDIO_NEON_POLICY=1, requires authenticated player session before serving the game shell.",
+      "behavior": "Reads /api/auth/session then saved /api/bo/config. Anonymous -> 303 /player-login. Unavailable session or policy -> 503. Signed partner launch is sent to Render before a clean canonical redirect.",
+      "sources": [
+        "apps/croupier-frontend/app/blackjack/route.ts:4",
+        "apps/croupier-frontend/lib/server-ui.mjs:44",
+        "apps/croupier-frontend/lib/platform-routing.mjs:75",
+        "web/server.mjs:652",
+        "web/server.mjs:681"
+      ],
+      "tests": [
+        "apps/croupier-frontend/test/game-entry.mjs",
+        "test/game-entry-contract.mjs",
+        "test/game-entry-partner.mjs",
+        "test/game-entry-auth.mjs"
+      ]
+    },
+    {
+      "id": "player-login",
+      "paths": ["/player-login"],
+      "label": "Spelarinloggning",
+      "serving": "Vercel frontend GET/HEAD -> prepared blackjack-entry.html and blackjack-entry.mjs",
+      "access": "Public credential entry; valid existing session returns directly to the game.",
+      "behavior": "Capability GET /api/auth/session selects shared login /api/auth/login or enabled legacy player login /api/auth/player/login. Success returns to canonical /blackjack with allowlisted presentation selectors.",
+      "sources": [
+        "apps/croupier-frontend/app/player-login/route.ts:4",
+        "apps/croupier-frontend/lib/server-ui.mjs:38",
+        "web/public/blackjack-entry.mjs:20",
+        "web/public/blackjack-entry.mjs:37"
+      ],
+      "tests": [
+        "apps/croupier-frontend/test/game-entry.mjs",
+        "test/player-auth.mjs",
+        "test/player-auth-limiter.mjs"
+      ]
+    },
+    {
+      "id": "studio",
+      "paths": ["/studio"],
+      "localPath": "/",
+      "label": "Dealer & klipp",
+      "serving": "Vercel Lab Next page -> LabStudio",
+      "access": "Native mode: admin, with legacy superadmin normalized to admin. Anonymous -> Studio login. Local non-native mode has loopback guard.",
+      "sources": [
+        "lab/app/page.tsx:6",
+        "lab/lib/ui-server.ts:9",
+        "lab/components/lab-studio.tsx:59"
+      ],
+      "tests": [
+        "lab/test/studio-navigation.test.mjs",
+        "lab/test/dealer-workspace.test.mjs",
+        "lab/test/studio-document-api.test.mjs"
+      ]
+    },
+    {
+      "id": "studio-administration",
+      "paths": ["/studio/administration"],
+      "localPath": "/administration",
+      "label": "Backoffice",
+      "serving": "Lab Next page -> NativeAdministration -> StudioAdministration",
+      "access": "Native live admin authorization; action availability also depends on registered handlers and explicit gates.",
+      "groups": [
+        "Drift & spelintegritet",
+        "Spel, lanes & bord",
+        "Konton",
+        "Partner",
+        "Betalningar & journal",
+        "Mediegranskning"
+      ],
+      "sources": [
+        "lab/app/administration/page.tsx:11",
+        "lab/components/native-administration.tsx:6",
+        "lab/components/studio-administration.tsx:198",
+        "lab/lib/backoffice-navigation.mjs:22"
+      ],
+      "note": "Sections are UI state within this page. studioAdminSectionPath() descriptors do not establish real /administration/:section pages.",
+      "tests": [
+        "lab/test/studio-admin-contract.test.mjs",
+        "lab/test/studio-admin-api.test.mjs",
+        "lab/test/studio-admin-data.test.mjs"
+      ]
+    },
+    {
+      "id": "studio-auth-pages",
+      "paths": ["/studio/login", "/studio/set-password"],
+      "label": "Studio-inloggning och lösenordsval",
+      "serving": "Lab Next pages -> StudioLogin",
+      "access": "Public entry in enabled native mode; actual login only admits administrator credentials. Password selection requires a validated single-use token.",
+      "sources": [
+        "lab/app/login/page.tsx:9",
+        "lab/app/set-password/page.tsx:9",
+        "lab/lib/studio-native-auth-actions.mjs:144"
+      ],
+      "tests": [
+        "lab/test/studio-login-form.test.mjs",
+        "lab/test/studio-login-client.test.mjs",
+        "test/studio-native-auth-actions.mjs"
+      ]
+    },
+    {
+      "id": "studio-tools",
+      "paths": [
+        "/studio/videos",
+        "/studio/tree",
+        "/studio/activity",
+        "/studio/events",
+        "/studio/probe",
+        "/studio/guide"
+      ],
+      "labels": [
+        "Klippbibliotek",
+        "Avancerade regler",
+        "Uppspelningsdiagnostik",
+        "Event och regler",
+        "Probe",
+        "Guide"
+      ],
+      "serving": "Lab Next pages -> StudioPage -> Studio with initialView",
+      "access": "Same studioUiInitialData authorization as Studio home",
+      "sources": [
+        "lab/app/studio-page.tsx:6",
+        "lab/app/videos/page.tsx:4",
+        "lab/app/tree/page.tsx:6",
+        "lab/app/activity/page.tsx:4",
+        "lab/app/events/page.tsx:4",
+        "lab/app/probe/page.tsx:2",
+        "lab/app/guide/page.tsx:4",
+        "lab/lib/studio-navigation.mjs:10"
+      ],
+      "tests": [
+        "lab/test/studio-navigation.test.mjs",
+        "lab/test/activity-log.test.mjs",
+        "lab/test/native-observation.test.mjs"
+      ]
+    },
+    {
+      "id": "background-zones",
+      "paths": ["/studio/zones"],
+      "localPath": "/zones",
+      "label": "Astrids bakgrundszoner",
+      "serving": "Lab Next page -> BackgroundZones",
+      "access": "Studio authorization; cloud APIs retain the Lab request boundary.",
+      "sources": [
+        "lab/app/zones/page.tsx:9",
+        "lab/lib/zone-cloud-store.mjs:62",
+        "lab/docs/README.md:80"
+      ],
+      "limitation": "Browser/cloud zone save is an editor feature; current guide explicitly says zones do not yet control the game player.",
+      "tests": ["lab/test/zone-cloud-store.test.mjs"]
+    },
+    {
+      "id": "openclaw-entry",
+      "paths": ["/studio/openclaw"],
+      "localPath": "/openclaw",
+      "label": "OpenClaw",
+      "serving": "Authorized Lab page -> OpenClawWorkspace link",
+      "access": "Studio authorization for the entry page; destination retains OpenClaw's own login protection.",
+      "destination": "https://croupier-lab-director.onrender.com/openclaw/",
+      "sources": [
+        "lab/app/openclaw/page.tsx:8",
+        "lab/components/openclaw-workspace.tsx:4",
+        "lab/lib/openclaw-dashboard.mjs:1"
+      ],
+      "tests": ["lab/test/openclaw-dashboard.test.mjs"]
+    }
+  ],
+  "apiGroups": [
+    {
+      "id": "game-auth",
+      "paths": [
+        "GET /api/auth/session",
+        "POST /api/auth/login",
+        "POST /api/auth/logout",
+        "POST /api/auth/player/login",
+        "POST /api/auth/player/register"
+      ],
+      "serving": "Vercel middleware allowlist -> Render product server and selected player-auth implementation",
+      "access": "Public session capability and credential entry; mutation Origin validation, rate limits and enabled-account gates. Player session cookie is HTTP-only.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:38",
+        "web/storage/async-player-auth.mjs:104",
+        "web/player-auth.mjs:84",
+        "web/server.mjs:688"
+      ],
+      "tests": ["test/player-auth.mjs", "test/player-auth-limiter.mjs"]
+    },
+    {
+      "id": "studio-native-auth",
+      "paths": [
+        "GET /studio/api/auth/session",
+        "POST /studio/api/auth/login",
+        "POST /studio/api/auth/logout",
+        "POST /studio/api/auth/reset-request",
+        "POST /studio/api/auth/set-password"
+      ],
+      "serving": "Vercel Lab route handlers -> native auth runtime -> existing Neon account/session authority",
+      "access": "Exact configured host/origin, same-origin mutation, live admin checks. Reset availability depends on mail/limiter configuration.",
+      "sources": [
+        "lab/app/api/auth/session/route.ts:5",
+        "lab/app/api/auth/[action]/route.ts:5",
+        "lab/lib/studio-native-runtime.mjs:124",
+        "lab/lib/studio-native-auth-actions.mjs:131"
+      ],
+      "tests": [
+        "test/studio-native-auth-actions.mjs",
+        "lab/test/studio-native-auth.test.mjs",
+        "lab/test/studio-native-request.test.mjs"
+      ]
+    },
+    {
+      "id": "studio-native-admin",
+      "pattern": "/studio/api/admin/{registered-action}",
+      "serving": "Vercel Lab catch-all -> createStudioAdminApi -> native handlers or signed Render game authority",
+      "access": "Admin only; exact endpoint/method, live session/scope, same-origin mutations, strict JSON, revision/CAS where required, action-specific lifecycle/operator gates.",
+      "readGroups": [
+        "overview", "config", "voicelines", "clips", "generations", "gen-verdicts",
+        "apikeys", "users", "players", "transactions", "emails", "shoes"
+      ],
+      "writeGroups": [
+        "game-lane", "room", "tier", "pitboss", "tournament", "voiceline-review",
+        "clip-landing", "clip-never", "gen-landing", "gen-verdict",
+        "players/*", "users/*", "apikeys/*"
+      ],
+      "operatorRoute": "GET/POST/DELETE speech-qa additionally requires the operator speech-QA gate",
+      "sources": [
+        "lab/app/api/admin/[...action]/route.ts:5",
+        "lab/lib/studio-admin-contract.mjs:31",
+        "lab/lib/studio-admin-api.mjs:64",
+        "lab/lib/studio-access-policy.mjs:33"
+      ],
+      "tests": [
+        "lab/test/studio-admin-api.test.mjs",
+        "lab/test/studio-admin-data.test.mjs",
+        "test/studio-game-authority.mjs",
+        "test/studio-game-commands.mjs"
+      ]
+    },
+    {
+      "id": "studio-saved-documents",
+      "paths": [
+        "GET/PUT /studio/api/project",
+        "GET/PUT /studio/api/social"
+      ],
+      "serving": "Native platform routing exception -> Vercel Lab -> shared Neon repository/game-policy store",
+      "access": "Live admin and matching environment/workspace; PUT requires exact origin, JSON and expectedRevision; actor is server-derived.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:79",
+        "lab/app/api/project/route.ts:7",
+        "lab/lib/studio-document-api.mjs:43"
+      ],
+      "tests": [
+        "lab/test/studio-document-api.test.mjs",
+        "test/studio-game-policy.mjs",
+        "test/studio-repository.mjs"
+      ]
+    },
+    {
+      "id": "studio-media",
+      "paths": [
+        "GET /studio/api/videos",
+        "GET/HEAD /studio/api/videos/{uuid}",
+        "POST /studio/api/videos/upload",
+        "POST /studio/api/videos/classify",
+        "GET /studio/api/clip-controls"
+      ],
+      "serving": "Native platform routing exception -> Vercel Lab media runtime -> metadata/private Blob",
+      "access": "Admin and scoped live authorization; uploads use prepare/commit; classification binds exact bytes and metadata revision.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:79",
+        "lab/lib/studio-media-api.mjs:8",
+        "lab/app/api/videos/upload/route.ts:4",
+        "lab/app/api/clip-controls/route.ts:8"
+      ],
+      "limitation": "POST base video/rescan routes are not the native upload path and fail unavailable. Render Studio policy/media writes are retired with 410.",
+      "tests": [
+        "lab/test/studio-media-api.test.mjs",
+        "lab/test/studio-upload-service.test.mjs",
+        "lab/test/studio-clip-controls-api.test.mjs",
+        "lab/test/studio-render-persistence.test.mjs"
+      ]
+    },
+    {
+      "id": "studio-render-tools",
+      "pattern": "/studio/api/{voice|inputs|chat|presentation|social-subroutes|probe|simulate|zones|original-media|generated-speech}/...",
+      "serving": "Explicit frontend allowlist -> protected Render Lab transport/handlers",
+      "access": "Render Lab authenticated request boundary; mutations and paid/provider work retain endpoint-specific gates.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:46",
+        "apps/croupier-frontend/lib/platform-routing.mjs:51",
+        "lab/lib/http-guard.mjs:18",
+        "lab/app/api",
+        "lab/lib/studio-render-persistence.mjs:11"
+      ],
+      "tests": [
+        "lab/test/http-guard-cloud.test.mjs",
+        "lab/test/partner-observer.test.mjs",
+        "lab/test/social.test.mjs",
+        "lab/test/zone-cloud-store.test.mjs"
+      ]
+    },
+    {
+      "id": "authoritative-game",
+      "paths": [
+        "POST /api/player",
+        "POST /api/table",
+        "POST /api/deposit",
+        "POST /api/balance",
+        "POST /api/currency",
+        "POST /chat"
+      ],
+      "serving": "Vercel middleware -> Render product server",
+      "access": "Server-resolved player/session, Origin gate; local guest preview is a separate configured exception.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:42",
+        "web/server.mjs:209",
+        "web/server.mjs:689",
+        "web/server.mjs:1010"
+      ],
+      "tests": ["test/table-http.mjs", "test/product-chat-http.mjs"]
+    },
+    {
+      "id": "presentation-and-observation",
+      "patterns": [
+        "/api/presentation/{config|select|idle-advice|legacy-config|videos/{id}}",
+        "/api/probe/...",
+        "/api/chat/memory/...",
+        "/api/astrid/{observation|transcription}",
+        "/api/generated-speech/..."
+      ],
+      "serving": "Allowlisted Render product endpoints",
+      "access": "Player/session and endpoint-specific owner, feature, paid-work and method validation",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:44",
+        "apps/croupier-frontend/lib/platform-routing.mjs:51",
+        "web/server.mjs:699",
+        "web/server.mjs:758",
+        "web/server.mjs:785",
+        "web/server.mjs:810"
+      ],
+      "tests": [
+        "test/native-observation.mjs",
+        "test/local-presentation.mjs",
+        "test/generated-speech-stream-http.mjs"
+      ]
+    },
+    {
+      "id": "partner-and-handoffs",
+      "patterns": [
+        "/api/v1/{events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit}/...",
+        "/api/auth/bo/{start|callback}",
+        "/api/auth/lab/{start|callback}",
+        "/api/bo/{game-login|lab-login}"
+      ],
+      "serving": "Render partner and BO handoff implementations",
+      "access": "Partner authentication or bounded one-use handoff state/code; Lab handoff admits administrators; game handoff yields ordinary player session.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:39",
+        "apps/croupier-frontend/lib/platform-routing.mjs:57",
+        "web/storage/async-bo-game-auth.mjs:28",
+        "web/storage/async-bo-lab-auth.mjs:94",
+        "web/server.mjs:675"
+      ],
+      "tests": [
+        "test/partner-launch-route.mjs",
+        "test/game-entry-partner.mjs",
+        "test/bo-game-auth.mjs",
+        "test/bo-lab-auth.mjs"
+      ]
+    },
+    {
+      "id": "game-policy-projection",
+      "path": "GET /api/bo/config",
+      "serving": "Render -> shared saved Studio game-policy projection",
+      "access": "Read-only projection, handled separately from administrative write endpoints. Do not describe this as the native admin config API.",
+      "sources": [
+        "web/server.mjs:858",
+        "web/storage/studio-game-policy.mjs:145"
+      ],
+      "tests": ["test/studio-game-policy.mjs"]
+    },
+    {
+      "id": "native-websockets",
+      "paths": ["/speech-stream", "/lipsync-worker"],
+      "serving": "Vercel native Node upgrade -> Render upstream",
+      "access": "Speech uses browser cookie/ticket validation; worker uses bearer and worker ID. Internal rewritten endpoints are rejected as direct public routes.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:3",
+        "apps/croupier-frontend/lib/platform-routing.mjs:71",
+        "apps/croupier-frontend/lib/platform-websocket.mjs:52",
+        "apps/croupier-frontend/lib/platform-native-websocket.mjs:30"
+      ],
+      "tests": [
+        "apps/croupier-frontend/test/platform-native-websocket.mjs",
+        "apps/croupier-frontend/test/platform-websocket.mjs"
+      ]
+    }
+  ],
+  "lanes": [
+    {
+      "id": "original",
+      "label": "Kevin Lane",
+      "cleanEntryFallback": {"dealer": "vera", "presentation": "original"},
+      "note": "Explicit valid dealer/presentation selectors retain their exact renderer."
+    },
+    {
+      "id": "mobile-phone",
+      "label": "Mobile Phone Lane",
+      "selection": {"dealer": "astrid", "presentation": "local"}
+    }
+  ],
+  "laneSources": [
+    "web/public/game-lanes.mjs:2",
+    "web/public/game-lanes.mjs:8"
+  ],
+  "laneTests": [
+    "test/game-lanes.mjs",
+    "lab/test/studio-admin-data.test.mjs",
+    "apps/croupier-frontend/test/game-entry.mjs"
+  ],
+  "flows": [
+    {
+      "id": "project-save",
+      "steps": [
+        "Dealer & klipp edits an unsaved browser draft",
+        "PUT /studio/api/project with project and expectedRevision",
+        "Live admin and scope validation, media-binding validation, transaction and CAS",
+        "Saved Neon revision and history become the shared game-policy source",
+        "Deal/reply choices apply at the next decision; idle/original choices require game reload between hands"
+      ],
+      "sources": [
+        "lab/components/lab-studio.tsx:59",
+        "lab/lib/studio-document-api.mjs:59",
+        "web/storage/studio-game-policy.mjs:127"
+      ]
+    },
+    {
+      "id": "lane-save-and-entry",
+      "steps": [
+        "Studio -> Backoffice -> Spel, lanes & bord",
+        "POST /studio/api/admin/game-lane with lane and expectedRevision",
+        "Admin handler validates lane and saves administration.gameLane with CAS",
+        "Clean /blackjack checks player session and reads saved /api/bo/config",
+        "gameLaneSelection resolves saved lane or explicit allowed legacy selectors",
+        "Game HTML receives data-game-lane, data-game-dealer and data-game-presentation"
+      ],
+      "sources": [
+        "lab/components/studio-administration.tsx:268",
+        "lab/lib/studio-admin-data.mjs:39",
+        "lab/lib/studio-admin-data.mjs:51",
+        "apps/croupier-frontend/lib/server-ui.mjs:44",
+        "web/public/game-lanes.mjs:8",
+        "web/public/game-entry-contract.mjs:57"
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "from": ["/game", "/game/", "/?approved-game-selector"],
+      "to": "/blackjack",
+      "status": 307,
+      "gate": "Canonical game policy enabled",
+      "queryPolicy": "Only valid, single-valued public selectors survive. Login return excludes launch.",
+      "sources": ["web/public/game-entry-contract.mjs:45"]
+    },
+    {
+      "from": ["/bo", "/bo/", "/bo/index.html"],
+      "to": "/studio/administration",
+      "status": 308,
+      "sources": ["apps/croupier-frontend/lib/server-ui.mjs:13", "web/server.mjs:389"]
+    },
+    {
+      "from": ["/bo/login.html", "/bo/set-password.html"],
+      "to": ["/studio/login", "/studio/set-password"],
+      "status": 308,
+      "note": "Only exact allowed returnTo and bounded valid password-token syntax are retained.",
+      "sources": ["apps/croupier-frontend/lib/server-ui.mjs:13"]
+    },
+    {
+      "from": ["/lab", "/labb", "/studio-astrid", "/studio-lissabon", "/labb-lissabon"],
+      "to": "/studio",
+      "status": "Temporary redirect in platform mode",
+      "sources": ["apps/croupier-frontend/next.config.mjs:21"]
+    },
+    {
+      "from": ["/labb/filmer", "/labb/zoner", "/labb/guide"],
+      "to": ["/studio/videos", "/studio/zones", "/studio/guide"],
+      "sources": ["apps/croupier-frontend/next.config.mjs:21"]
+    },
+    {
+      "from": "/studio/lissabon",
+      "to": "Studio home",
+      "sources": ["lab/app/lissabon/page.tsx:2"]
+    },
+    {
+      "from": ["/v2", "/casino.html"],
+      "behavior": "Existing GET/HEAD prepared HTML routes remain. /v2 is not generally canonicalized by gameEntryRedirect.",
+      "sources": [
+        "apps/croupier-frontend/app/v2/route.ts:3",
+        "apps/croupier-frontend/app/casino.html/route.ts:3",
+        "apps/croupier-frontend/lib/server-ui.mjs:7"
+      ]
+    }
+  ],
+  "importantUnknowns": [
+    "No live routes, deployment flags, current saved lane, login, media playback or save operations were verified during this task.",
+    "Configured origins are environment-dependent; public/local origins above are documentation references.",
+    "Tests listed are existing source references, not test-run results from this task.",
+    "Native admin endpoint descriptors only become available when their handler and every extra gate are registered.",
+    "Current code has 15 admin sections including lanes; guide text still describes 14 existing functions.",
+    "Background-zone editor/cloud save does not establish game integration.",
+    "Exact Render gateway internals and every API/provider gate were not exhaustively mapped."
+  ]
+}

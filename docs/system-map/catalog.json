@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "title": "Croupier — systemkarta",
+  "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+  "inspectionDate": "2026-10-04",
+  "scope": "Första läsande kartan. Källor, ägare och befintliga tester; inga nya driftprov eller administrativa funktioner.",
+  "runtimeEvidence": {
+    "sha": "3da83bf84187431d704086461782cae7986169a2",
+    "observedAt": "2026-10-04T20:38:00Z",
+    "summary": "Render LIVE, två Vercelbyggen READY, autentiserad spel-/Studioåtkomst, sparad Mobile Phone Lane och observation/transkription verifierade. Fysisk mikrofon/kamera och full P6 är separata öppna acceptanser.",
+    "source": "docs/JOHN-HANDOFF.md:6"
+  },
+  "services": [
+    {
+      "id": "frontend", "label": "Publik webb och spel", "environment": "production", "host": "Vercel",
+      "url": "https://www.scoutgaming.tech", "purpose": "Startsida, spelarinloggning och /blackjack. Förmedlar tillåten HTTP/WebSocket-trafik till Render; spelregler och saldo ägs av servern.",
+      "status": "live-verified", "sources": ["apps/croupier-frontend/next.config.mjs", "apps/croupier-frontend/lib/platform-routing.mjs", "apps/croupier-frontend/lib/server-ui.mjs"],
+      "tests": ["apps/croupier-frontend/test/game-entry.mjs", "apps/croupier-frontend/test/platform-native-websocket.mjs"]
+    },
+    {
+      "id": "studio", "label": "Croupier Studio", "environment": "production", "host": "Vercel",
+      "url": "https://www.scoutgaming.tech/studio", "purpose": "Dealer & klipp, Backoffice och OpenClaw-ingång. Sparar gemensam policy och mediemetadata i Neon. Administrativa spelkommandon går till Render.",
+      "status": "live-verified", "sources": ["lab/app/page.tsx", "lab/lib/studio-native-runtime.mjs", "lab/lib/studio-document-api.mjs"],
+      "tests": ["lab/test/studio-document-api.test.mjs", "lab/test/studio-admin-api.test.mjs"]
+    },
+    {
+      "id": "render-game", "label": "croupier-v2", "environment": "production", "host": "Render",
+      "url": "https://croupier-v2.onrender.com", "purpose": "Produktionsserver: spelregler, RNG, kort, saldo, rundor, auth och AI-/videotransport. Render-projektkortet croupier-v2 är en gruppering runt tjänsten.",
+      "status": "live-verified", "sources": ["ops/cloud/start.mjs", "ops/cloud/gateway.mjs", "web/server.mjs", "ops/cloud/Dockerfile"],
+      "tests": ["test/table-http.mjs", "test/postgres-native-table.mjs", "test/cloud-readiness.mjs"]
+    },
+    {
+      "id": "director", "label": "croupier-lab-director", "environment": "production", "host": "Render · publik",
+      "url": "https://croupier-lab-director.onrender.com/openclaw/", "purpose": "Förmedlar presentation/chat/tal till rätt OpenClaw-agent och är dashboardens publika ingång. Director-policy är skild från spelauktoritet.",
+      "status": "known-issue", "sources": ["open-claw/lab/src/dashboard-proxy.mjs", "open-claw/lab/Dockerfile", "lab/lib/openclaw-dashboard.mjs"],
+      "tests": ["lab/test/openclaw-dashboard.test.mjs"], "note": "Direkt dashboard-GET gav 200; navigering från Studio gav 403. Plan 01 beskriver den ännu öppna rättningen."
+    },
+    {
+      "id": "gateway", "label": "croupier-lab-openclaw", "environment": "production", "host": "Render · privat",
+      "purpose": "OpenClaw 2026.9.5: agentroller, modeller, sessioner och konfiguration. Privat Gateway nås genom Director, med egen autentisering och browser-pairing.",
+      "status": "code-inspected", "sources": ["open-claw/lab/deploy/Dockerfile.gateway", "open-claw/lab/docs/README.md"], "tests": []
+    },
+    {
+      "id": "cartesia", "label": "Cartesia", "environment": "production", "host": "Talprovider",
+      "purpose": "Exakt text blir ljud. Produktionen har en serverägd provideranslutning; Jakobs nya lokala API-nyckel bevisar inget byte av produktionskonto. Faktisk kostnad är okänd.",
+      "status": "code-inspected", "sources": ["web/generated-speech.mjs", "docs/ENVIRONMENT-VARIABLES.md"], "tests": ["test/generated-speech.mjs"]
+    },
+    {
+      "id": "runpod", "label": "RunPod GPU", "environment": "production", "host": "Läppsynkprovider",
+      "purpose": "Ljud och registrerad videokälla blir GPU-läppsynk. Worker, transport, journaler, reservation och cancellation har separata ägare och terminalhändelser.",
+      "status": "code-inspected", "sources": ["web/speech-journal-runtime.mjs", "web/postgres-speech-journal.mjs"], "tests": ["test/speech-journal-runtime.mjs"]
+    },
+    {
+      "id": "qa", "label": "croupier-vercel-preview-qa", "environment": "qa", "host": "Render + egna Vercel-/Neon-scopes",
+      "url": "https://croupier-vercel-preview-qa.onrender.com", "purpose": "Isolerad testserver på 7c4c1cc3. AI/tal/GPU/kamera fortsatt OFF; Cartesia-/RunPod-nycklar saknas. Den kvarvarande QA-disken är avsiktlig.",
+      "status": "documented", "sources": ["docs/JOHN-HANDOFF.md", "docs/CLOUD-MIGRATION.md"], "tests": []
+    },
+    {
+      "id": "spelsajt", "label": "spelsajt-game-server", "environment": "other-project", "host": "Render",
+      "url": "https://spelsajt-game-server.onrender.com", "purpose": "Server från separat repo Jakeminator123/spelsajt. Croupiers nuvarande /blackjack använder croupier-v2.",
+      "status": "documented", "sources": ["docs/JOHN-HANDOFF.md"], "tests": []
+    },
+    {
+      "id": "sajtagenten", "label": "openclaw-sajtagenten", "environment": "other-project", "host": "Render",
+      "url": "https://openclaw-sajtagenten.onrender.com", "purpose": "Separat OpenClaw-tjänst från Jakeminator123/sajtmaskin. Ingen del av Croupiers aktuella spelkedja.",
+      "status": "documented", "sources": ["docs/JOHN-HANDOFF.md"], "tests": []
+    }
+  ],
+  "connections": [
+    {"from":"frontend","to":"render-game","label":"session · spelaction · presentation · WebSocket"},
+    {"from":"studio","to":"render-game","label":"signerade administrativa spelkommandon"},
+    {"from":"render-game","to":"director","label":"kontext / tillåten presentation / chat / tal"},
+    {"from":"studio","to":"director","label":"dashboardlänk — känt 403"},
+    {"from":"director","to":"gateway","label":"rätt agent och modell · privat Gateway"},
+    {"from":"render-game","to":"cartesia","label":"exakt text → ljud"},
+    {"from":"render-game","to":"runpod","label":"ljud + videokälla → worker / ström"},
+    {"from":"runpod","to":"frontend","label":"autentiserad transport → spelarens kö → END"}
+  ],
+  "issues": [
+    {"id":"shutdown","label":"GPU-avslut vid omstart","status":"known-issue","purpose":"Öppen WebSocket kan hindra att spelprocessens cleanup startar. Barnets 10 s är kortare än GPU:s 15 s plus cancellation/journal. Rättningen och integrationstestet återstår.","sources":["ops/cloud/start.mjs:91","ops/cloud/process-group.mjs:40","web/speech-journal-runtime.mjs","planes/01-slutratningar/PLAN.md"]},
+    {"id":"zone-reference","label":"Bakgrundszonens referensbild","status":"known-issue","purpose":"Routen läser en avvecklad Emil-path trots registrerad ersättningsbild. Referensbild och zonexport behöver rättas med bibehållen autentisering.","sources":["lab/app/api/zones/reference/route.ts:8","planes/01-slutratningar/PLAN.md"]},
+    {"id":"dashboard","label":"OpenClaw från Studio","status":"known-issue","purpose":"Cross-site-navigering nekas med 403. Gatewayens inloggning och pairing ska bevaras när proxyn rättas.","sources":["open-claw/lab/src/dashboard-proxy.mjs","planes/01-slutratningar/PLAN.md"]},
+    {"id":"acceptance","label":"Återstående driftacceptans","status":"unknown","purpose":"Fysisk mikrofon/kamera, P6-medieacceptans, produktionsmail och full GitGuardian-incidentlista är separata öppna kontroller. Prisunderlag är backlog; kostnad okänd.","sources":["docs/JOHN-HANDOFF.md","planes/07-produktionsacceptans/PLAN.md"]}
+  ],
+  "plans": [
+    {"label":"Systemkarta och nästa etapp","path":"planes/02-systemkarta/PLAN.md"},
+    {"label":"Konton och nyckelplacering","path":"planes/03-konton-och-nycklar/PLAN.md"},
+    {"label":"Testkoppling och granskning","path":"planes/04-tester-och-granskning/PLAN.md"},
+    {"label":"Sluträttningar","path":"planes/01-slutratningar/PLAN.md"}
+  ]
+}

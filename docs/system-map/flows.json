@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+  "inspection": {
+    "kind": "code-inspected",
+    "scope": "Spelauktoritet, presentation, röst/kamera, OpenClaw, genererat tal och GPU-livscykel",
+    "testsRun": false,
+    "liveCallsMade": false,
+    "note": "Källkod och befintliga testfall är lästa. Dokumenterade tidigare driftbevis anges separat; inga nya runtimeprov utfördes för kartan."
+  },
+  "flows": [
+    {
+      "id": "authoritative-game-presentation",
+      "title": "Inloggning → spelhandling → presentation → befintligt klipp",
+      "summary": "Servern bestämmer kort, regler, saldo och utfall. Presentationen väljer och spelar ett registrerat klipp; den bestämmer inte spelresultatet och skapar inte en ny film för varje kort.",
+      "steps": [
+        {
+          "id": "player-login",
+          "title": "Verifiera spelarsession",
+          "detail": "En oinloggad /blackjack-begäran går till den kanoniska inloggningen. Player-sessionens cookie, expiry, kontostämpel och återkallelse kontrolleras på servern. API-åtkomst kräver giltig session och POST kräver tillåtet origin.",
+          "events": ["GET /blackjack", "GET /api/auth/session", "POST /api/auth/login"],
+          "sources": [{"path":"web/server.mjs","line":679,"label":"Spelarsession och inloggningsredirect"},{"path":"web/storage/async-player-auth.mjs","line":51,"label":"Postgres-session och kontostämpel"}],
+          "tests": [{"path":"test/game-entry-auth.mjs","line":7,"label":"BO-handoff och kanonisk callback"},{"path":"test/game-entry-contract.mjs","line":6,"label":"Kanonisk speladress och offentliga väljare"},{"path":"test/player-auth.mjs","line":1,"label":"Spelarsession"}]
+        },
+        {
+          "id": "authoritative-command",
+          "title": "Lås spelaren och utför tillåten handling",
+          "detail": "POST /api/table väljer Postgres-adaptern i Neon-miljön. Spelarraden låses med FOR UPDATE. op är state/start/act/insurance/collect, act är hit/stand/double/split. requestId och version förhindrar omskrivna retries, dubbla insatser och dubbla utbetalningar.",
+          "events": ["POST /api/table", "state", "start", "act", "insurance", "collect"],
+          "sources": [{"path":"web/server.mjs","line":229,"label":"Val av auktoritativ tabelladapter"},{"path":"web/postgres-native-table.mjs","line":14,"label":"BEGIN och spelarradslås"},{"path":"web/shoe-game.mjs","line":37,"label":"Kommandon, version och idempotens"}],
+          "tests": [{"path":"test/postgres-native-table.mjs","line":47,"label":"Gemensam commit och idempotent replay"},{"path":"test/postgres-native-table.mjs","line":69,"label":"Rollback utan publicering"},{"path":"test/postgres-native-table.mjs","line":82,"label":"Stale begäran kan inte debitera igen"},{"path":"test/shoe-game.mjs","line":1,"label":"Sko och kommandokontrakt"}]
+        },
+        {
+          "id": "rng-round",
+          "title": "Dra ur serverns sko och tillämpa Round",
+          "detail": "freshShoe använder Fisher–Yates med crypto.getRandomValues och rejection sampling. Servern behåller åttalekssko, bränt kort, dragordning och dolt hålkort. Round tillämpar reglerna. Public view lämnar inte ut framtida sko eller dolt hålkort.",
+          "events": ["round.dealt", "insurance.offered", "dealer.peek", "dealer.blackjack", "hand.thinking", "card.dealt", "hand.split", "dealer.reveal", "dealer.draw", "round.settled"],
+          "sources": [{"path":"web/public/blackjack.mjs","line":13,"label":"Shuffle utan modulo-bias"},{"path":"web/public/blackjack.mjs","line":77,"label":"Round och interna regelhändelser"},{"path":"web/shoe-game.mjs","line":3,"label":"Sko och offentlig projektion"}],
+          "tests": [{"path":"test/shoe-game.mjs","line":1,"label":"Serverägd sko"},{"path":"test/fuzz-blackjack.mjs","line":1,"label":"Befintliga regel- och rundinvarianter"}]
+        },
+        {
+          "id": "commit-presentation",
+          "title": "Spara saldo, sko, journal och offentlig presentation",
+          "detail": "Sko, saldo, transaktionsjournal och native_presentations sparas i samma SQL-transaktion. Observationen publiceras först efter COMMIT. presentationEvents översätter regelresultatet till sex offentliga instruktionstyper och behåller kortordning och dolt hålkort.",
+          "events": ["speak", "deal", "reveal", "settle", "turn", "idle"],
+          "sources": [{"path":"web/postgres-native-table.mjs","line":27,"label":"Spelkommando och gemensam persistence"},{"path":"web/postgres-native-table.mjs","line":53,"label":"COMMIT före observation"},{"path":"web/partner-presentation.mjs","line":38,"label":"Sex offentliga presentationstyper"}],
+          "tests": [{"path":"test/postgres-native-table.mjs","line":47,"label":"Saldo/sko/ledger/presentation är atomiska"},{"path":"test/local-presentation.mjs","line":160,"label":"Klienten kan inte ändra kort, hand eller dolt läge"}]
+        },
+        {
+          "id": "select-saved-clip",
+          "title": "Välj exakt tillåten filmfamilj",
+          "detail": "I lokala presentationsläget läser /api/presentation/select den publicerade native_presentations-raden för aktuell spelare/version. Sparad Studio-policy, exakt situation och registrerade kompatibla filmer ger kandidater. Director får endast välja bland dessa; standard/regler/slump/frekvens kan välja utan modell.",
+          "events": ["GET /api/presentation/config", "POST /api/presentation/select", "selected", "fallback"],
+          "sources": [{"path":"web/presentation-api.mjs","line":107,"label":"Återläsning av serverns presentationskvitto"},{"path":"presentation-runtime/selection.mjs","line":56,"label":"Gemensam urvalsimplementation för Web och Lab"},{"path":"web/public/local-presentation.mjs","line":105,"label":"Klienten begär och korrelerar urval"}],
+          "tests": [{"path":"test/local-presentation.mjs","line":93,"label":"Ägd Director med sparad policy och serverkort"},{"path":"test/local-presentation.mjs","line":171,"label":"Exakt familj, ägare och version"},{"path":"test/local-presentation.mjs","line":255,"label":"Sparade frekvenser och ny revision utan omstart"}]
+        },
+        {
+          "id": "shared-player",
+          "title": "Spela i den gemensamma spelarens ägda yta",
+          "detail": "Mobile Phone Lane använder hashverifierade MP4-filer via PerformancePlayer.playLocalClip. Originalvägen använder DealerEngine, exakta frameindex och kalibrerade talpaket för alla fyra dealers. start eller selected räknas inte som färdigt klipp: riktig visad bild och mediaavslut behövs. Kortkontakt och uppspelning följer faktiskt presenterade frames.",
+          "events": ["selected", "start", "presented", "end", "interrupted", "fallback"],
+          "sources": [{"path":"web/public/app.mjs","line":498,"label":"Gemensam PerformancePlayer och local presentation"},{"path":"web/public/performance-player.mjs","line":21,"label":"playLocalClip"},{"path":"web/public/local-presentation.mjs","line":60,"label":"Exakt film och uppspelningskvitton"},{"path":"web/public/dealer-engine.mjs","line":172,"label":"Originalspelarens clip-gräns och frameindex"}],
+          "tests": [{"path":"test/local-presentation.mjs","line":311,"label":"Färdigt först efter verklig bild och ended"},{"path":"test/local-presentation.mjs","line":319,"label":"Avbruten ägare och sena callbacks"},{"path":"test/speech-playback.mjs","line":1,"label":"Gemensamt inspelat tal"},{"path":"test/dealer-sync-audit.mjs","line":1,"label":"Synk- och assetkontrakt; inte visuell approval"}]
+        }
+      ],
+      "decisions": ["Giltig spelarsession? Annars inloggning/401.","Samma requestId och innehåll? Återanvänd accepterat resultat; annars konflikt.","Aktuell version och publicerad instruktion? Annars avvisa stale urval.","Exakt kompatibel film tillgänglig? Spela den, annars märkt standard/reserv; låna inte annan situation."],
+      "gaps": ["Hashar, regeltester och start/end-kvitton är inte mänskligt godkänd läppsynk.","En mobil visningsram i Lab ändrar inte spelklientens layout eller bevisar fysisk mobil/Safari."]
+    },
+    {
+      "id": "voice-camera-chat",
+      "title": "Mikrofon/kamera → OpenAI-översättning → chatt",
+      "summary": "Spelaren väljer röst uttryckligen. Lokal wake-word eller godkänd engångsinspelning skickar en avgränsad RAM-buffert till OpenAI för engelsk text; texten går sedan genom spelets vanliga OpenClaw-chatt.",
+      "steps": [
+        {
+          "id": "voice-consent",
+          "title": "Läs policy och begär spelarens samtycke",
+          "detail": "Röst är av vid sidladdning. /api/astrid/observation ger aktuell profilrevision, transkriptionsstöd och modellens bildstöd. Astrid och ljud på krävs. Samtycket beskriver lokal wake-word, kort preroll, högst 30 sekunder ljud och högst två frivilliga bilder. Om lokal wake-word saknas kräver engångsläget egen klickad aktivering.",
+          "events": ["GET /api/astrid/observation", "Astrid wake word", "manual one-shot"],
+          "sources": [{"path":"web/public/astrid-camera-control.mjs","line":39,"label":"Samtycke och av vid start"},{"path":"web/public/astrid-camera-control.mjs","line":103,"label":"Aktuell observationspolicy"},{"path":"web/server.mjs","line":699,"label":"Modellens bildstöd och profilrevision"}],
+          "tests": [{"path":"test/astrid-camera-control.mjs","line":101,"label":"Av vid start och uttryckligt samtycke"},{"path":"test/astrid-camera-control.mjs","line":307,"label":"Manual fallback kräver val"},{"path":"test/astrid-camera-control.mjs","line":238,"label":"Ljudmodell kan inte öppna kamera"}]
+        },
+        {
+          "id": "bounded-capture",
+          "title": "Samla en tur i RAM",
+          "detail": "AudioWorklet och sessionens RAM-buffert avslutar vid 1 150 ms tystnad eller maxgränsen. Kamerabilder tas endast med samtycke och modellstöd. Mute, dold sida, navigering eller identitetsbyte stoppar och kastar gamla data; råljudet sparas inte i Croupier.",
+          "events": ["capture", "silence 1150ms", "stop", "discard"],
+          "sources": [{"path":"web/public/astrid-camera-audio.mjs","line":1,"label":"PCM i RAM"},{"path":"web/public/astrid-camera-session.mjs","line":1,"label":"Avgränsad inspelning och bildurval"},{"path":"web/public/astrid-camera-control.mjs","line":312,"label":"Avsluta tur och återkontrollera profil"}],
+          "tests": [{"path":"test/astrid-camera-control.mjs","line":198,"label":"En sändning efter tystnad och återarmering"},{"path":"test/astrid-camera-control.mjs","line":158,"label":"Mute stoppar sen autosändning"},{"path":"test/astrid-camera-control.mjs","line":483,"label":"Synlighet, navigering och identitet kastar data"}]
+        },
+        {
+          "id": "openai-transcription",
+          "title": "Översätt ljudet till engelsk text",
+          "detail": "POST /api/astrid/transcription validerar origin, WAV, ägare, Astrid, profilrevision och runda. Servern skickar ljudet till OpenAI /v1/audio/translations med whisper-1 och får engelsk text. En tur får inte skapa automatisk betalretry. Kontext kontrolleras även efter providersvaret.",
+          "events": ["POST /api/astrid/transcription", "POST https://api.openai.com/v1/audio/translations"],
+          "sources": [{"path":"web/public/astrid-camera-control.mjs","line":335,"label":"Transkription och autosändning"},{"path":"web/astrid-transcription.mjs","line":96,"label":"Ägd transkriptions-API"},{"path":"web/astrid-transcription.mjs","line":127,"label":"Fast OpenAI translations-modell"}],
+          "tests": [{"path":"test/astrid-transcription.mjs","line":27,"label":"RAM-bundet WAV och fast engelsk translations utan retry"},{"path":"test/astrid-transcription.mjs","line":104,"label":"Ändrad kontext under provideranrop"},{"path":"test/astrid-transcription.mjs","line":141,"label":"Single-flight och disconnect"}]
+        },
+        {
+          "id": "chat-model-choice",
+          "title": "Skicka text och eventuella bilder till spelets chatt",
+          "detail": "Den engelska texten autosänds genom sendChat till /chat med requestId och aktuell profil. OpenClaw speech får bara offentlig spelprojektion och validerade text/bilddata. Svaret måste vara recordedLine, generatedText eller silence och echo:a request/dealer/session/round; modellen äger inte sko, wallet, spelhandling eller uppspelningskö.",
+          "events": ["POST /chat", "recordedLine", "generatedText", "silence"],
+          "sources": [{"path":"web/public/astrid-camera-control.mjs","line":350,"label":"En autosänd chattur"},{"path":"web/public/app.mjs","line":2393,"label":"sendChat och ägarskap"},{"path":"web/openclaw-chat.mjs","line":124,"label":"Offentlig spelprojektion"},{"path":"open-claw/lab/src/product-speech.mjs","line":8,"label":"croupier-speech och resultatkontrakt"}],
+          "tests": [{"path":"test/openclaw-chat-contract.mjs","line":53,"label":"Inga pengar, framtida sko eller dolt hålkort till modellen"},{"path":"test/openclaw-chat-contract.mjs","line":175,"label":"URL/timing/playNow/okända repliker/stale revision avvisas"},{"path":"open-claw/lab/test/product-speech.test.mjs","line":1,"label":"Befintligt speech-rollkontrakt"}]
+        }
+      ],
+      "decisions": ["Spelaren har aktiverat röst och aktuell policy tillåter den? Annars ingen capture.","Aktuell modell får bilder och spelaren har samtyckt? Annars endast ljud/text.","Samma ägare/profil/runda efter capture och provider? Annars kasta resultat.","Validerat speech-svar? recordedLine till exakt inspelat paket; generatedText till talflödet; silence utan ljud."],
+      "gaps": ["Syntetiskt OpenAI-anrop och webviewns API-tillgång är dokumenterat; fysisk mikrofon/kamera, riktig wake-word och naturliga bildturer är ännu inte provade i den dokumenterade leveransen.","Leverantörernas faktiska kostnad är okänd i dokumenterad acceptans; kartan gör ingen prisutredning."]
+    },
+    {
+      "id": "generated-speech-gpu",
+      "title": "Modelltext → Cartesia → RunPod → uppspelning END → journal/stängning",
+      "summary": "Strömadmissionen är obetald. Först när en giltig ägd spelkö öppnar WebSocket börjar TTS/GPU-flödet. Exakt text blir PCM, GPU-ström och en hörbar video. Browser-END och providerjobbets terminalstatus hålls isär.",
+      "steps": [
+        {
+          "id": "speech-admission",
+          "title": "Förbered paket och vänta på en giltig spelägare",
+          "detail": "generated-speech-chat kontrollerar ägare/runda före och efter modellsvaret. Stream prepare reserverar identitet och ger en signerad descriptor; inga Cartesia-byte skapas där. Speech queue/pose-gate kräver samma request/dealer/session/round, synlig sida, ljud på och ledig ägd yta före socket och första play.",
+          "events": ["text", "voice", "video-submit", "video-queue", "video-render", "media", "ready"],
+          "sources": [{"path":"web/generated-speech-chat.mjs","line":1,"label":"Chattsvar, streamval och freshness"},{"path":"web/generated-speech-stream.mjs","line":244,"label":"Obetald prepare"},{"path":"web/public/app.mjs","line":2243,"label":"Pose och identitet före streamuppspelning"},{"path":"web/public/chat-response.mjs","line":3,"label":"Faktiska chattssteg"}],
+          "tests": [{"path":"test/generated-speech-stream.mjs","line":30,"label":"prepare är obetald och cookie/ticket-ägd"},{"path":"test/generated-speech-stream.mjs","line":46,"label":"Främmande/stale ägare får ingen betald källa"},{"path":"test/speech-pose-gate.mjs","line":1,"label":"Ägd kö och visad idle-pose"}]
+        },
+        {
+          "id": "cartesia-pcm",
+          "title": "Journalför betald början och skapa exakt tal",
+          "detail": "Efter ägd /speech-stream-admission skrivs markRequestSubmissionStarted före Cartesia. /tts/bytes får hela den validerade texten och sparad röst/modell. Servern strömmar PCM s16le 24 kHz till worker; inga providernycklar lämnas till browsern och inga osäkra omförsök sker.",
+          "events": ["/speech-stream", "source_opened", "tts_source_before", "POST https://api.cartesia.ai/tts/bytes", "t:start", "binary PCM"],
+          "sources": [{"path":"web/generated-speech-stream.mjs","line":179,"label":"Journal före TTS och PCM-källa"},{"path":"services/astrid-gpu-worker/gateway/cartesia-source.mjs","line":25,"label":"Cartesia bytes API"},{"path":"services/astrid-gpu-worker/gateway/relay.mjs","line":107,"label":"Start av worker-protokoll"}],
+          "tests": [{"path":"services/astrid-gpu-worker/gateway/test/cartesia-source.test.mjs","line":1,"label":"Exakt text, PCM och avbrott"},{"path":"test/generated-speech-stream.mjs","line":129,"label":"Reservation före worker och TTS först efter socket"}]
+        },
+        {
+          "id": "gpu-stream",
+          "title": "RunPod omvandlar ljudet till H264/AAC-ström",
+          "detail": "SQL-journalen äger sessionlease, jobb-ID och reservation; uncertain submit blockerar ett andra jobb. Relay wire använder fältet t: ready/start/stream/end/done/error/abort. TTS EOF skickar t:end till worker och completeRequest till SQL. Det är inte browser-END. Worker skickar strömmens mime och fMP4-byte, därefter done eller error.",
+          "events": ["IN_QUEUE", "IN_PROGRESS", "t:ready", "t:start", "t:stream", "t:end", "t:done", "t:error", "t:abort"],
+          "sources": [{"path":"web/speech-journal-runtime.mjs","line":49,"label":"SQL-ägd idempotens och reservation"},{"path":"web/generated-speech-stream.mjs","line":194,"label":"TTS EOF och requestjournal"},{"path":"services/astrid-gpu-worker/gateway/relay.mjs","line":73,"label":"Stream/done/error och release"}],
+          "tests": [{"path":"test/speech-journal-runtime.mjs","line":140,"label":"Förlorad paid ack får inte skapa andra POST"},{"path":"test/generated-speech-stream.mjs","line":183,"label":"Lease består genom EOF till wireterminal"},{"path":"services/astrid-gpu-worker/gateway/test/relay.test.mjs","line":1,"label":"Relay-kontrakt"},{"path":"services/astrid-gpu-worker/tests/test_stream_session.py","line":1,"label":"GPU-session och stream"}]
+        },
+        {
+          "id": "browser-playback-end",
+          "title": "Visa och spela en hörbar video till riktigt ended",
+          "detail": "SpeechStreamClient matar en enda hörbar H264/AAC-video via MediaSource. done måste ha mottagits och alla byte matats; video.ended krävs för att player.done ska resolve:a. generated-speech-player skickar start/end/interrupted-kvitton till den ägda spelkön; onFirstFrame och first_visible_frame_ms ger separat bildbevis. Preview-status är fortsatt pending; visad/hörd END är inte mänsklig läppsynkapproval.",
+          "events": ["start", "ended", "end", "interrupted"],
+          "sources": [{"path":"web/public/speech-stream-client.mjs","line":36,"label":"Riktigt ended efter DONE och komplett input"},{"path":"web/public/speech-stream-client.mjs","line":86,"label":"Wire-DONE är inte playback-END"},{"path":"web/public/generated-speech-player.mjs","line":74,"label":"Vänta på faktisk videofärdighet"},{"path":"web/public/app.mjs","line":2264,"label":"Speech-kvitto till native observation"}],
+          "tests": [{"path":"test/generated-speech-stream-player.mjs","line":96,"label":"En hörbar video, gates, bild och verkligt avslut"},{"path":"test/generated-speech-stream-player.mjs","line":144,"label":"Abort får inte ge sen END"},{"path":"test/generated-speech-stream-player.mjs","line":170,"label":"Autoplay-avslag städar resurser"}]
+        },
+        {
+          "id": "journal-retirement",
+          "title": "Stäng streamen och återläs exakt providerjobb",
+          "detail": "Wire done/error frigör relaysessionen. SQL-sessionens retirement försöker låta idle-jobbet avsluta under högst 15 sekunder och verifierar providerterminal plus noll worker/busy/available. Annars används cancel för det redan kända jobb-ID:t. COMPLETED/FAILED/CANCELLED/TIMED_OUT är terminala; osäker cancellation behåller reservationen. Browser-END kan följas av CANCELLED vid lifecycle-städning utan att END ogiltigförklaras.",
+          "events": ["COMPLETED", "FAILED", "CANCELLED", "TIMED_OUT", "cancel/{jobId}", "released"],
+          "sources": [{"path":"web/speech-journal-runtime.mjs","line":5,"label":"Providerterminaler"},{"path":"web/speech-journal-runtime.mjs","line":132,"label":"Cancellation av känt jobb"},{"path":"web/speech-journal-runtime.mjs","line":142,"label":"Idle-retirement och drain"}],
+          "tests": [{"path":"test/speech-journal-runtime.mjs","line":90,"label":"Normal idle close utan cancel eller andra jobb"},{"path":"test/speech-journal-runtime.mjs","line":238,"label":"Close väntar på cancelterminal och drain"},{"path":"test/generated-speech-stream.mjs","line":206,"label":"QA abort-reservation till cancellation slutförts"}]
+        },
+        {
+          "id": "fullfile-saved-package",
+          "title": "Separat fullfilsväg sparar ett hashbundet talpaket",
+          "detail": "När fullfilsvägen uttryckligen används sparar artifacts.save exakt audio/video i privat Blob och completeRequest binds till paketmetadata i SQL. /api/generated-speech/{id}/audio|video kräver ägd completed metadata och hashreadback. Den vanliga strömmen sparar inte automatiskt ett färdigt Studio-klipp; streamprovenance och journal är andra artefakter. Streamfel får ingen tyst betald fullfilsfallback.",
+          "events": ["artifacts.save", "completeRequest", "GET /api/generated-speech/{id}/audio", "GET /api/generated-speech/{id}/video"],
+          "sources": [{"path":"web/generated-speech.mjs","line":184,"label":"Exakt text och audio/video-hashpaket med pending review"},{"path":"web/generated-speech.mjs","line":271,"label":"Spara artefakter före completed metadata"},{"path":"web/speech-blob-artifacts.mjs","line":73,"label":"Privat immutable Blob och ägarbinding"},{"path":"web/public/generated-speech-player.mjs","line":14,"label":"Strömmens preview-provenance"}],
+          "tests": [{"path":"test/speech-blob-artifacts.mjs","line":59,"label":"Privata exakta filer och readback före metadata"},{"path":"test/speech-blob-artifacts.mjs","line":76,"label":"Ägd completed metadata och verifierade byte"},{"path":"test/speech-blob-artifacts.mjs","line":87,"label":"Dubblett får inte skriva över färdigt paket"}]
+        }
+      ],
+      "decisions": ["Stream aktiverad och request/pose fortfarande giltig? Annars ingen paid stream.","Reservation/jobb saknas eller är uncertain? Respektera journalen; skapa inte automatiskt en andra submit.","TTS EOF? Skicka input end och journalför request; vänta fortfarande på GPU-DONE och browser-ended.","Browser END? Slutför spelkvitto; providerterminal läses separat.","Idle-jobb avslutar och relay är tom? Frigör. Annars cancel exakt känt jobb och bevara osäker reservation."],
+      "gaps": ["Naturlig provider-COMPLETED för hela oförändrade acceptanskedjan är inte dokumenterat livebevis; normal retirement är kod- och testläst.","Kallstartens bidrag till latens och mänsklig läppsynkacceptans är fortsatt öppna.","Dokumenterade shutdown-gap: upgraded socket kan hålla gateway-processen öppen och barnets 10 sekunder är kortare än GPU:s 15 sekunder plus journal-close."]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "speech-versus-director",
+      "title": "Speech och Director har olika mandat",
+      "detail": "croupier-speech väljer recordedLine/generatedText/silence och exact-echo:ar request/dealer/session/round. croupier-director väljer endast variantId ur en redan kompatibilitetsfiltrerad katalog och echo:ar requestId/catalogRevision. Ingendera äger RNG, saldo, regler, kortdestination eller spelkö. Det gemensamma urvalet ligger i presentation-runtime/selection.mjs; Lab beslutscache är processlokal och är inte distribuerad produktionsexklusivitet.",
+      "sources": [{"path":"open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md","line":1,"label":"Speech-roll"},{"path":"open-claw/lab/deploy/runtime-bundle/roles/croupier-director.md","line":1,"label":"Director-roll"},{"path":"open-claw/lab/src/engine.mjs","line":276,"label":"Förbered tillåtna kandidater"},{"path":"lab/lib/presentation-director.mjs","line":30,"label":"Lab-beslut äger varken spelkommandon eller playback"}],
+      "tests": [{"path":"open-claw/lab/test/engine.test.mjs","line":1,"label":"Director event/variant gate"},{"path":"lab/test/presentation-director.test.mjs","line":61,"label":"Fallback, rules och shadow har sanningsenligt ägarskap"}]
+    },
+    {
+      "id": "lanes",
+      "title": "Kevin Lane och Mobile Phone Lane",
+      "detail": "Kevin Lane har id original och använder originalpresentationen, normalt Vera. Mobile Phone Lane har id mobile-phone och väljer Astrid plus presentation local. En ren /blackjack använder administration.gameLane i den gemensamma Studio-policyn; äldre explicita dealer/presentation/rehearsal-länkar behåller sitt avsedda renderer-val. Båda lanes använder samma inloggning, spelarkonto, blackjackmotor och wallet. Lane är här ett presentationsval, inte en publiceringspipeline för nya dealers/spel och inte en ändring av RNG.",
+      "sources": [{"path":"web/public/game-lanes.mjs","line":2,"label":"Två konkreta lane-ID:n och val"},{"path":"docs/JOHN-HANDOFF.md","line":64,"label":"Dokumenterad lane-policy"},{"path":"docs/JOHN-HANDOFF.md","line":387,"label":"Lab-lanes som avsikt; nya dealers/spel ännu inte byggda"},{"path":"lab/components/presentation-frame.tsx","line":14,"label":"Mobilram är visningshjälp, inte fysisk mobilacceptans"}],
+      "tests": [{"path":"test/game-lanes.mjs","line":7,"label":"Ren URL följer sparad lane; fyra dealer-länkar bevaras"},{"path":"test/game-lanes.mjs","line":19,"label":"Lane ger inte redirect/HTML/behörighet"}]
+    },
+    {
+      "id": "preview-versus-runtime",
+      "title": "Historisk BO-preview, Lab-preview och riktigt spel är olika bevis",
+      "detail": "Historiska tysta /bo/gen/*.mp4 var preview och avvecklades med äldre BO, inte en aktiv lipsynkväg. Nuvarande FileVideo-preview startar muted och lämnar egna started/completed-kvitton. OriginalMediaPlayer kan i stället använda det exakta gemensamma originalmediepaketet. Studio följer spelets native-kvitton utan parallell Lab-film; en separat Lab-preview kräver uttryckligt val och räknas aldrig som uppspelad i spelfliken. Inget av dessa preview-avslut är mänskligt godkänd läppsynk.",
+      "sources": [{"path":"docs/JOHN-HANDOFF.md","line":381,"label":"Historiskt read-only-bevis för tyst BO-preview"},{"path":"web/server.mjs","line":1037,"label":"Aktuell /bo/gen-generationkatalog svarar 410"},{"path":"lab/components/file-video.tsx","line":55,"label":"Dagens filpreview är muted från start"},{"path":"lab/components/original-media-player.tsx","line":62,"label":"Exakt originalspelare i separat frame"},{"path":"lab/components/activity-log.tsx","line":187,"label":"Web äger playback; separat preview är uttryckligt val"}],
+      "tests": [{"path":"lab/test/activity-presentation-owner.test.mjs","line":14,"label":"Web-ägande förhindrar en andra spelare"},{"path":"lab/components/original-media-player.test.mjs","line":53,"label":"Inget autoplay vid val och inga stale kvitton"},{"path":"lab/components/video-workflow.test.mjs","line":116,"label":"Bindning väljs utan autoplay"}]
+    },
+    {
+      "id": "four-completions",
+      "title": "Fyra separata färdigmarkeringar",
+      "detail": "1: TTS EOF / t:end / SQL completeRequest betyder att ljudkällan har producerat färdigt. 2: GPU t:done betyder att wire-strömmen är färdig. 3: video ended / spelkön end betyder faktisk färdig uppspelning. 4: RunPod COMPLETED/FAILED/CANCELLED/TIMED_OUT plus tom relay och journalrelease betyder avslutat providerjobb. Kartan slår inte samman dem till ett enda grönt kvitto.",
+      "sources": [{"path":"web/generated-speech-stream.mjs","line":194,"label":"Input EOF och SQL request"},{"path":"services/astrid-gpu-worker/gateway/relay.mjs","line":78,"label":"Wireterminal"},{"path":"web/public/speech-stream-client.mjs","line":36,"label":"Playback ended"},{"path":"web/speech-journal-runtime.mjs","line":156,"label":"Providerterminal och tom relay"}],
+      "tests": [{"path":"test/generated-speech-stream.mjs","line":183,"label":"Lease genom EOF"},{"path":"test/generated-speech-stream-player.mjs","line":96,"label":"Vänta på playback"},{"path":"test/speech-journal-runtime.mjs","line":238,"label":"Vänta på provider/drain"}]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "code-inspection",
+      "kind": "code-inspected",
+      "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+      "summary": "Flöden och testreferenser ovan är lästa i denna kartläggning. Testreferens är inte ett nytt PASS-resultat."
+    },
+    {
+      "id": "documented-voice-lane-live",
+      "kind": "documented-runtime",
+      "sourceSha": "3da83bf84187431d704086461782cae7986169a2",
+      "summary": "JOHN-HANDOFF beskriver Render LIVE, frontend/Studio READY och CI3/3 vid cirka 20:38 UTC 4 oktober. Authenticated observation200 med vision/transcription true och Terra; ett verkligt translations-anrop med syntetiskt WAV gav korrekt text200. Fysisk mikrofon/kamera spelades inte in. Ingen ny betald generation/GPU startades av den leveransen och faktisk kostnad är okänd.",
+      "sources": [{"path":"docs/JOHN-HANDOFF.md","line":18,"label":"Syntetiskt translations-anrop och fysisk lucka"},{"path":"docs/JOHN-HANDOFF.md","line":27,"label":"Faktiskt dokumenterad deployment och observation"}]
+    },
+    {
+      "id": "documented-mobile-runtime",
+      "kind": "documented-runtime",
+      "sourceSha": "0b45cba61639f93186100acfd591d58913acb0f7",
+      "summary": "Handoff beskriver att Mobile Phone Lane sparades via riktig Studio-admin och att ren /blackjack använde Astrid/local med samma konto/hand, readyState4 och pågående uppspelning. Detta är tidigare dokumenterad driftavläsning, inte nytt fysiskt mobilprov i kartuppgiften.",
+      "sources": [{"path":"docs/JOHN-HANDOFF.md","line":76,"label":"Lane-leverans och driftavläsning"}]
+    },
+    {
+      "id": "documented-stream-end",
+      "kind": "documented-runtime",
+      "summary": "Läsning av Jakobs pågående spel cirka 21:34 svensk tid dokumenterar genererat strömsvar: ready4,524s, start9,803s, första synliga bild9,809s och END12,703s. Ett äldre cc77-prov hade också hörbart/synligt spelkö-END och provider-CANCELLED efteråt. Naturlig provider-COMPLETED och mänsklig ny lipsynkapproval påstås inte.",
+      "sources": [{"path":"docs/JOHN-HANDOFF.md","line":108,"label":"Spelarens faktiska streamtimings"},{"path":"docs/JOHN-HANDOFF.md","line":255,"label":"Tidigare QA-END och separat providerstatus"},{"path":"docs/JOHN-HANDOFF.md","line":149,"label":"Kvarstående P6/provider/visuell acceptansgräns"}]
+    }
+  ]
+}

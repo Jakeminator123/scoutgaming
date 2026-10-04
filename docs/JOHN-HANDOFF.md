@@ -3,6 +3,53 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Systemkarta och lokal städning — 4 oktober, efter d3fd13d3
+
+Jakob beställde uttryckligen en mapp för dokumentation/HTML/testkoppling och
+borttagning av överflödiga syskonmappar. Tre läsande arbetsagenter kartlade
+routes/auth, databas/lagring och spel-/talflöden. Merge-agenten sammanställde
+[`docs/system-map/index.html`](system-map/index.html) med JSON-underlag och
+offlinegenerator. Det är vanlig fristående HTML, ingen Codex-canvas.
+9 sidgrupper, 11 API-grupper, 7 alias, 2 lanes, 4 scheman/49 tabeller och
+3 spel-/talflöden med 16 steg finns med. Nyckelnamnen hämtas direkt ur befintligt
+`environment-variables.json`; inga hemliga värden eller produktionsrader finns i kartan.
+Källinventeringen gäller `d3fd13d3`; tidigare avgränsade driftbevis gäller
+`3da83bf8` med datum. Inga nya live-/providerprov eller prisutredningar ingår.
+
+Tjänsternas metadata avlästes i föregående uppgift: `croupier-v2` äger produkten,
+`croupier-vercel-preview-qa` är separat QA, `croupier-lab-director` ger publika
+Director/dashboardingången och `croupier-lab-openclaw` är privat Gateway.
+`spelsajt-game-server` tillhör `Jakeminator123/spelsajt` och
+`openclaw-sajtagenten` tillhör `Jakeminator123/sajtmaskin`; inga resurser i
+de projekten har avvecklats. Render-kortet `croupier-v2` är en projektgruppering.
+
+`C:/Users/jakem/Projects/croupier-frontend`, `animation-events-v1`,
+`croupier-migration-workers` (sju registrerade worktrees) och den gamla
+`croupier-stream-integration.patch` är borttagna. Originalcheckouten är kvar
+på main. 214 käll-/tillståndsfiler, inklusive den ändrade `s00-helheten.md`,
+bevarades med SHA256-kontroller; två separata repo-historiker har verifierade
+Git-bundlar och alla sju workerbranchers commits är kvar i huvudrepot.
+Privat backup och manifest ligger i
+`C:/Users/jakem/CroupierBackups/local-project-cleanup-20261004T210828Z`.
+Återskapbara dependency/buildcacher kopierades inte. Tidigare produktionsbackup
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004` är orörd.
+De två fristående misslyckade Codex-worktrees under `.codex/worktrees` ligger
+utanför de beställda syskonmapparna och är inte borttagna i denna leverans.
+
+238 unika käll-/testvägar, JSON/JS och HTML-navigation/sök/filter/detaljer
+PASS. Browsern visade 27 routegrupper, 57 databas-/lagringsposter, korrekt
+QA-filter, 206 envnamnsposter från 10 befintliga tjänsteregister och 80
+befintliga testfiler. Hela obligatoriska pre-commit-sviten PASS; testlänkar
+är referenser, inte nya live-PASS för runtime. GitGuardian: komplett
+GitHub-avläsning för d3fd13d3, svit queued och incidentlista not-read;
+tidigare känd incident 37830671 är inte avskriven.
+Fullständig kolumn/FK-/routeinventering och
+CI-resultat per kontrakt är nästa karta-etapp enligt [plan 02](../planes/02-systemkarta/PLAN.md).
+Plan 01:s tre funktionsfel, P6, fysisk mic/kamera, produktionsmail och
+GitGuardian-incidenttäckning är fortsatt öppna. QA AI/GPU förblir OFF.
+Publicering sker med `[skip render]` för att bevara verifierad runtime;
+obligatoriska hooks/CI ska passera som vanligt.
+
 ## Kevin Lane och röst/kamera — 4 oktober, efter cfdcb2c7
 
 Jakob beställer namnbytet från Original Lane till **Kevin Lane** samt att

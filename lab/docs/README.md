@@ -34,7 +34,7 @@ exakt tal, medan Probe kan skapa ett nytt tal-/videopaket när spelaren är
 inaktiv. Ett syntetiskt Probe-textprov är inte en skapad eller spelad film.
 Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
-Backoffice grupperar alla 14 befintliga funktioner under drift/spelintegritet,
+Backoffice grupperar alla 15 befintliga sektioner, inklusive lane-val, under drift/spelintegritet,
 bord/personal, konton, partner, betalningar/journal och mediegranskning.
 Native Studio/Backoffice använder de befintliga kontonas rollkontroller och
 den gemensamma Neon-källan. En Studio-inloggning ger inga nya administrativa
@@ -64,6 +64,9 @@ Ett administratörskonto som också spelar använder sitt administratörslöseno
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 [driftkartan](../../docs/CLOUD-MIGRATION.md).
+Den nya [systemkartan](../../docs/system-map/index.html) visar tjänster, sidor,
+databas/lagring, spel-/talflöden, nyckelnamn och befintliga tester. Den är en
+fristående HTML-fil; kodinventering och tidigare driftbevis anges separat.
 OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
 Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av
 den nya menyn. Vanliga sparade klippval kräver ingen Render-omstart;
