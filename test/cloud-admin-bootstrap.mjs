@@ -132,9 +132,6 @@ test('cloud creates one operator without logging the secret and preserves CRAIG 
     CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: password });
   assert.ok(!first.output().includes(password), 'bootstrap secret reached child output');
   assert.ok(!first.output().includes('password:'), 'cloud bootstrap logged a password');
-  const login = await request(f, bo, '/api/bo/login', { user: username, pass: password });
-  assert.equal(login.status, 200);
-  assert.match(login.headers['set-cookie']?.[0] ?? '', /^bo_jwt=/);
   await stop(first.child);
 
   const db = new DatabaseSync(join(f.dataDir, 'craig.db'));

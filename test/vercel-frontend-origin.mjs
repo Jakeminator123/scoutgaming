@@ -99,7 +99,7 @@ test('opt-in Vercel Origin permits player POSTs with the observed Preview Host a
   assert.equal((await post('/api/table',{op:'state'},{cookie,host:new URL(frontend).host})).status,200);
   assert.equal((await post('/api/table',{op:'state'},{cookie,host:'attacker.invalid'})).status,403);
   assert.equal((await post('/api/bo/login',{user:'pilot-reader',pass:password})).status,403,
-    'Vercel player trust never reaches BO login');
+    'trusted Vercel player origin never crosses the stricter BO POST origin gate');
   const boStart=await f.request('/api/auth/bo/start?next=%2F',{host:new URL(game).host});
   assert.equal(boStart.status,303);
   assert.match(boStart.headers.location??'',new RegExp(`^${game}/api/bo/game-login\\?state=`));

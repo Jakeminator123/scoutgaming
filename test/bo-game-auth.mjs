@@ -8,21 +8,20 @@ import {createServer} from 'node:net';
 import {request as httpRequest} from 'node:http';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
-import {scryptSync,createHmac,randomUUID,randomBytes} from 'node:crypto';
+import {scryptSync,createHmac,createHash,randomUUID} from 'node:crypto';
 import {copyOpenClawRuntime} from './fixtures/copy-openclaw-runtime.mjs';
 const dir=await mkdtemp(join(tmpdir(),'bo-game-auth-')),web=new URL('../web/',import.meta.url);
 const webDir=join(dir,'web');
 const socket=createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const game=`http://game.localhost:${port}`,bo=`http://bo.localhost:${port}`,password='Isolated-Auth-QA-Only';
 let server,db,craig;
-const request=async(url,{cookie='',body,headers={},omitOrigin=false,method=body?'POST':'GET',holdBody}={})=>{
+const request=async(url,{cookie='',body,headers={},omitOrigin=false,method=body?'POST':'GET'}={})=>{
   const u=new URL(url);assert.ok([game,bo].includes(u.origin));
   return new Promise((resolve,reject)=>{
     const req=httpRequest(`http://127.0.0.1:${port}${u.pathname}${u.search}`,{method,headers:{Host:u.host,Cookie:cookie,...(body?{'Content-Type':'application/json',...(!omitOrigin?{Origin:u.origin}:{})}:{}),...headers}},res=>{
       const chunks=[];res.on('data',c=>chunks.push(c));res.on('end',()=>{const h=new Headers();for(let i=0;i<res.rawHeaders.length;i+=2)h.append(res.rawHeaders[i],res.rawHeaders[i+1]);resolve(new Response(Buffer.concat(chunks),{status:res.statusCode,headers:h}));});
     });req.on('error',reject);
-    if(holdBody){const raw=JSON.stringify(body);req.write(raw.slice(0,-1),()=>{Promise.resolve().then(holdBody).then(()=>req.end(raw.slice(-1)),error=>{req.destroy();reject(error);});});}
-    else req.end(body?JSON.stringify(body):undefined);
+    req.end(body?JSON.stringify(body):undefined);
   });
 };
 const cookies=response=>response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');
@@ -41,6 +40,12 @@ const sign=claims=>{
   const message=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url')+'.'+Buffer.from(JSON.stringify(claims)).toString('base64url');
   return message+'.'+createHmac('sha256',secret).update(message).digest('base64url');
 };
+const administratorCookie=()=>{
+  const account=craig.prepare('SELECT id,username,salt,hash,role FROM users WHERE id=1').get();
+  const epoch=craig.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(account.id)?.epoch??0;
+  const source_stamp=createHash('sha256').update(`${account.salt}:${account.hash}`).digest('hex');
+  return 'bo_jwt='+sign({sub:account.username,role:account.role,aud:'backoffice',source_stamp,auth_epoch:epoch,exp:Date.now()/1000+3600});
+};
 try {
   await mkdir(webDir);await copyOpenClawRuntime(dir);
   for(const file of await readdir(web))if(file.endsWith('.mjs'))await copyFile(new URL(file,web),join(webDir,file));
@@ -58,56 +63,33 @@ try {
   assert.equal((await request(game+'/api/auth/access',{headers:{'X-Forwarded-Uri':'/api/table','X-Forwarded-Method':'POST'}})).status,401);
   assert.equal((await request(game+'/api/table',{body:{op:'state'}})).status,401);
   const initial=await begin();
-  const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/bo\/login.html\?returnTo=/);
-  const loginPage=await request(bo+location(loggedOut));assert.equal(loginPage.status,200);assert.match(await loginPage.text(),/game-login/);
-  assert.equal((await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password},headers:{Origin:'https://evil.invalid'}})).status,403);
-  const login=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});assert.equal(login.status,200);let boCookie=cookies(login);
-  const emailLogin=await request(bo+'/api/bo/login',{body:{user:'demo@example.invalid',pass:password}});
-  assert.equal(emailLogin.status,200);
-  assert.deepEqual(await(await request(bo+'/api/bo/me',{cookie:cookies(emailLogin)})).json(),{user:'demo-reviewer',role:'admin'},'email login uses canonical CRAIG identity');
-  const boShell=await request(bo+'/bo/',{cookie:boCookie});assert.equal(boShell.status,200);assert.match(await boShell.text(),/id="content"/);
-  const boShort=await request(bo+'/bo',{cookie:boCookie});assert.equal(boShort.status,303);assert.equal(location(boShort),'/bo/');
+  const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/studio\/login\?returnTo=%2Fapi%2Fbo%2Fgame-login%3Fstate%3D[a-f0-9]{64}$/);
+  const aliasState='a'.repeat(64),token='b'.repeat(43);
+  for(const [path,destination] of [['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
+    ['/bo/login.html','/studio/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/studio/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
+    [`/bo/set-password.html?t=${token}`,`/studio/set-password?t=${token}`]]){
+    const response=await request(bo+path);assert.equal(response.status,308,path);assert.equal(location(response),destination,path);
+  }
+  assert.equal(location(await request(bo+'/bo/login.html?returnTo=https://attacker.invalid')),'/studio/login');
+  assert.equal(location(await request(bo+'/bo/set-password.html?t=private.bad')),'/studio/set-password');
+  assert.equal((await request(bo+'/api/bo/config')).status,503,'legacy disk defaults cannot answer the public game projection');
+  for(const [path,options] of [['/api/bo/me',{}],['/api/bo/players',{}],['/api/bo/login',{body:{user:'demo-reviewer',pass:password}}],
+    ['/api/bo/users/remove',{body:{username:'demo-reviewer'}}]])assert.equal((await request(bo+path,options)).status,404,path);
+  let boCookie=administratorCookie();
+  const speechQa=await request(bo+'/bo/speech-qa.html',{cookie:boCookie});assert.equal(speechQa.status,200);assert.match(await speechQa.text(),/speech-qa\.mjs/);
+  const protectedMedia=await request(bo+'/bo/media-preview.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/studio/login');
   const boClaims=JSON.parse(Buffer.from(boCookie.split('.')[1],'base64url').toString());
-  const boPlayers=bo+'/api/bo/players';
-  assert.equal((await request(boPlayers,{cookie:boCookie})).status,200,'current administrator can read BO data');
-  const adminUsers=await request(bo+'/api/bo/users',{cookie:boCookie});assert.equal(adminUsers.status,200,'admin has the highest users administration access');
-  assert.equal((await adminUsers.json()).users.find(row=>row.username==='demo-reviewer').role,'admin');
   const launchCookie='bo_jwt='+sign({sub:'partner-player',partner:'partner-key',exp:boClaims.exp});
-  assert.equal((await request(boPlayers,{cookie:launchCookie})).status,401,'Partner launch JWT is not a BO session');
-  assert.equal((await request(bo+'/api/bo/me',{cookie:launchCookie})).status,200);
-  assert.deepEqual(await(await request(bo+'/api/bo/me',{cookie:launchCookie})).json(),{},'Partner token reveals no BO identity');
+  assert.equal(location(await request((await begin()).authorize,{cookie:launchCookie})).startsWith('/studio/login'),true,'Partner launch JWT is not a BO session');
   for(const claims of [
     {...boClaims,aud:'partner'},
     {...boClaims,partner:'partner-key'},
     {...boClaims,source_stamp:'stale'},
     {...boClaims,role:'superadmin'},
-  ])assert.equal((await request(boPlayers,{cookie:'bo_jwt='+sign(claims)})).status,401,'wrong audience, partner, fingerprint or role is rejected');
+  ])assert.equal(location(await request((await begin()).authorize,{cookie:'bo_jwt='+sign(claims)})).startsWith('/studio/login'),true,'wrong audience, partner, fingerprint or role is rejected');
   craig.prepare("UPDATE users SET role='superadmin' WHERE id=1").run();
-  assert.equal((await request(boPlayers,{cookie:boCookie})).status,401,'role change revokes old BO cookie');
-  const adminLogin=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});
-  assert.equal(adminLogin.status,200);const adminCookie=cookies(adminLogin);
-  const room=bo+'/api/bo/room',roomUpdate={id:'darkhall',state:'live'};
-  const roomState=async()=>((await(await request(bo+'/api/bo/config')).json()).rooms.find(entry=>entry.id==='darkhall').state);
-  assert.equal(await roomState(),'preview');
-  for(const options of [
-    {headers:{Origin:game}},
-    {headers:{Origin:'https://'+new URL(bo).host}},
-    {headers:{Origin:bo+'/bo/'}},
-    {headers:{Origin:'null'}},
-    {omitOrigin:true},
-    {headers:{'Sec-Fetch-Site':'same-site'}},
-    {headers:{'Sec-Fetch-Site':'cross-site'}},
-  ])assert.equal((await request(room,{cookie:adminCookie,body:roomUpdate,...options})).status,403,'BO mutation requires exact same origin');
-  assert.equal(await roomState(),'preview','blocked requests did not change BO config');
-  assert.equal((await request(room,{cookie:adminCookie,body:roomUpdate,headers:{'Sec-Fetch-Site':'same-origin'}})).status,200);
-  assert.equal(await roomState(),'live','same-origin BO mutation still works');
-  assert.equal((await request(bo+'/api/bo/reset-request',{body:{user:'missing'},headers:{Origin:game}})).status,403,'public reset endpoint also rejects sibling origin');
-  craig.prepare("UPDATE users SET role='reader' WHERE id=1").run();
-  assert.equal((await request(boPlayers,{cookie:boCookie})).status,401,'old BO cookie cannot revive when role is restored');
-  assert.equal((await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}})).status,401,'legacy reader cannot log into Backoffice');
-  craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
-  const renewedAdministrator=await request(bo+'/api/bo/login',{body:{user:'demo-reviewer',pass:password}});
-  assert.equal(renewedAdministrator.status,200);boCookie=cookies(renewedAdministrator);
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'role change revokes old BO cookie');
+  boCookie=administratorCookie();
   const continued=await request(initial.authorize,{cookie:boCookie});assert.equal(continued.status,303);
   const callback=location(continued);
   assert.equal((await request(callback)).status,400,'browser state required');
@@ -116,7 +98,7 @@ try {
   assert.equal((await request(callback,{cookie:initial.stateCookie})).status,400,'code single use');
   assert.equal((await request(game+'/api/auth/access',{cookie:playerCookie})).status,200);
   assert.deepEqual(await(await request(game+'/api/auth/session',{cookie:playerCookie})).json(),{authenticated:true,guest:false,sharedCredentials:true});
-  assert.equal((await request(game+'/api/bo/users',{cookie:playerCookie})).status,401,'game session cannot grant BO roles');
+  assert.equal((await request(game+'/bo/speech-qa.html',{cookie:playerCookie})).status,302,'game session cannot grant BO roles');
   const player=await(await request(game+'/api/player',{cookie:playerCookie,body:{}})).json();
   let state=await(await request(game+'/api/table',{cookie:playerCookie,body:{op:'state'}})).json();
   const command=async(op,extra={})=>{const r=await request(game+'/api/table',{cookie:playerCookie,body:{op,version:state.version,requestId:randomUUID(),...extra}});assert.equal(r.status,200);state=await r.json();assert.ok(!state.error);};
@@ -136,22 +118,20 @@ try {
   }
   const expired=await authorize(boCookie);db.prepare('UPDATE bo_game_handoffs SET expires=0').run();assert.equal((await request(expired.callback,{cookie:expired.stateCookie})).status,400);
   const oldBoCookie='bo_jwt='+sign({sub:'demo-reviewer',role:'reader',exp:Date.now()/1000+300});
-  assert.match(location(await request((await begin()).authorize,{cookie:oldBoCookie})),/^\/bo\/login.html/,'legacy cookie without BO audience must re-login');
+  assert.match(location(await request((await begin()).authorize,{cookie:oldBoCookie})),/^\/studio\/login/,'legacy cookie without BO audience must re-login');
   for(const claims of [{sub:'demo-reviewer',role:'reader',exp:1},{sub:'missing',role:'reader',exp:Date.now()/1000+60},{sub:'demo-reviewer',role:'reader',partner:'operator',exp:Date.now()/1000+60}]) {
-    const flow=await begin(),r=await request(flow.authorize,{cookie:'bo_jwt='+sign(claims)});assert.match(location(r),/^\/bo\/login.html/);
+    const flow=await begin(),r=await request(flow.authorize,{cookie:'bo_jwt='+sign(claims)});assert.match(location(r),/^\/studio\/login/);
   }
   const signatureAt=boCookie.lastIndexOf('.')+1;
   const wrongCookie=boCookie.slice(0,signatureAt)+(boCookie[signatureAt]==='a'?'b':'a')+boCookie.slice(signatureAt+1);
-  assert.match(location(await request((await begin()).authorize,{cookie:wrongCookie})),/^\/bo\/login.html/);
+  assert.match(location(await request((await begin()).authorize,{cookie:wrongCookie})),/^\/studio\/login/);
   const pending=await authorize(boCookie);
   craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Different-password','test-salt',64).toString('hex'));
-  assert.equal((await request(boPlayers,{cookie:boCookie})).status,401,'password change revokes BO data access');
   assert.equal((await request(pending.callback,{cookie:pending.stateCookie})).status,401,'password reset while handoff pending');
   assert.equal((await request(game+'/api/auth/access',{cookie:playerCookie,headers:{'X-Forwarded-Uri':'/api/table'}})).status,401);
-  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/bo\/login.html/,'stamped BO cookie revoked on reset');
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'stamped BO cookie revoked on reset');
   craig.prepare('DELETE FROM users WHERE id=1').run();
-  assert.equal((await request(boPlayers,{cookie:boCookie})).status,401,'deleted account cannot read BO data');
-  assert.match(location(await request((await begin()).authorize,{cookie:oldBoCookie})),/^\/bo\/login.html/);
+  assert.match(location(await request((await begin()).authorize,{cookie:boCookie})),/^\/studio\/login/,'deleted account cannot authorize a handoff');
   const launch=sign({sub:player.id,partner:'isolated',exp:Date.now()/1000+60});
   for(const path of ['/','/v2/']) {
     const observer='&labObserverOrigin=http%3A%2F%2F127.0.0.1%3A4192&labObserverChannel=isolated-comparison';
@@ -163,42 +143,7 @@ try {
     assert.equal((await request(game+'/api/auth/session',{cookie:cookies(r)})).status,200);
     assert.equal((await(await request(game+'/api/auth/session',{cookie:cookies(r)})).json()).authenticated,false);
   }
-  // Only disposable users in this fixture: exercise final authorization after
-  // a streamed body and simultaneous administrators changing one another.
-  const fixtureAdmin=async username=>{
-    const secret=randomBytes(24).toString('base64url'),salt=randomBytes(16).toString('hex');
-    craig.prepare('INSERT INTO users(username,email,salt,hash,role,created_at) VALUES(?,?,?,?,?,?)')
-      .run(username,`${username}@example.invalid`,salt,scryptSync(secret,salt,64).toString('hex'),'admin',new Date().toISOString());
-    const login=await request(bo+'/api/bo/login',{body:{user:username,pass:secret}});assert.equal(login.status,200);
-    return{username,cookie:cookies(login)};
-  };
-  const primary=await fixtureAdmin('legacy-primary'),secondary=await fixtureAdmin('legacy-secondary'),third=await fixtureAdmin('legacy-third');
-  const delayed=request(bo+'/api/bo/users/remove',{cookie:secondary.cookie,body:{username:primary.username},holdBody:async()=>{
-    await new Promise(resolve=>setTimeout(resolve,50));
-    assert.equal((await request(bo+'/api/bo/users/role',{cookie:primary.cookie,body:{username:secondary.username,role:'reader'}})).status,200);
-  }});
-  assert.equal((await delayed).status,403,'actor demoted after headers cannot use its captured authorization when the body completes');
-  assert.ok(craig.prepare('SELECT id FROM users WHERE username=?').get(primary.username));
-  assert.equal((await request(bo+'/api/bo/users/remove',{cookie:secondary.cookie,body:{username:third.username}})).status,401,'old actor session cannot perform the next change');
-  assert.equal((await request(bo+'/api/bo/users/remove',{cookie:primary.cookie,body:{username:third.username}})).status,200,'admin can remove another administrator');
-  assert.equal((await request(boPlayers,{cookie:third.cookie})).status,401,'removed administrator session is revoked');
-  for(const [username,email,hash,role] of [['unknown-role','unknown-role@example.invalid',null,'unknown'],['bad-email','invalid-email',null,'admin'],['bad-hash','bad-hash@example.invalid','invalid-hash','admin']]){
-    craig.prepare('INSERT INTO users(username,email,salt,hash,role,created_at) VALUES(?,?,?,?,?,?)').run(username,email,'fixture-salt',hash,role,new Date().toISOString());
-    assert.equal((await request(bo+'/api/bo/users/remove',{cookie:primary.cookie,body:{username}})).status,409,'unknown credential metadata fails closed');
-  }
-  assert.equal((await request(bo+'/api/bo/users/role',{cookie:primary.cookie,body:{username:secondary.username,role:'unknown'}})).status,400);
-  assert.equal((await request(bo+'/api/bo/users/remove',{cookie:primary.cookie,body:{username:primary.username+'@example.invalid'}})).status,403,'self is the stored identity even when addressed through its email');
-  for(const action of ['role','remove']){
-    craig.exec('DELETE FROM users');
-    const a=await fixtureAdmin('concurrent-alpha'),b=await fixtureAdmin('concurrent-beta');
-    const mutate=(actor,target)=>request(bo+'/api/bo/users/'+action,{cookie:actor.cookie,body:{username:target.username,...(action==='role'?{role:'reader'}:{})}});
-    const results=await Promise.all([mutate(a,b),mutate(b,a)]);
-    assert.equal(results.filter(row=>row.status===200).length,1);assert.equal(results.filter(row=>[401,403].includes(row.status)).length,1,'concurrent cross changes cannot retain a revoked actor');
-    assert.equal(craig.prepare("SELECT count(*) n FROM users WHERE role IN ('admin','superadmin') AND hash IS NOT NULL").get().n,1,'one active administrator survives');
-    const survivor=craig.prepare("SELECT username FROM users WHERE role='admin'").get(),actor=survivor.username===a.username?a:b;
-    assert.equal((await mutate(actor,actor)).status,403,'last active administrator cannot remove or demote itself');
-  }
-  console.log('BO/game auth passed: BO audience and current identity/role, rejected Partner JWT as BO cookie, exact-origin BO POSTs, browser-bound single-use exchange, normal/V2 wallet continuity, complete demo round, normal password login, bad/expired/reset/deleted sessions, open redirects, role separation, root/V2 launch tokens and logout.');
+  console.log('BO/game auth passed: retired BO routes stay absent, native Studio aliases are bounded, BO audience and current identity/role guard one-use handoff, normal/V2 wallet continuity, complete demo round, password login, revocation, launch tokens and logout.');
 } finally {
   if(server&&server.exitCode===null){const stopped=once(server,'exit');server.kill();await stopped;}
   db?.close();craig?.close();await rm(dir,{recursive:true,force:true});

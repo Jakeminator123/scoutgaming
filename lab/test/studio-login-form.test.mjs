@@ -185,14 +185,6 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
           publicUrl:publicOrigin,boUrl:publicOrigin,labPublicUrl:publicOrigin,singleOrigin:true});
         const actions = createStudioNativeAuthActions({boDb,gameDb:adapter(game),scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
           rateLimit:()=>true,clientAddress:()=> 'isolated-browser',mail:{send:()=>assert.fail('no external mail')}});
-        for (const returnTo of ['//attacker.invalid', '/api/bo/game-login?state=' + 'a'.repeat(63),
-          '/api/bo/lab-login?state=' + 'a'.repeat(64) + '&next=/studio', ['a'.repeat(64)]]) {
-          const rejected = await actions.handle(new Request(publicOrigin + '/studio/api/auth/login', {
-            method:'POST',headers:{origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
-            body:JSON.stringify({user:'operator',pass,returnTo}),
-          }));
-          assert.equal(rejected.status,400);assert.equal(rejected.headers.has('set-cookie'),false);
-        }
         const seen = [], failures = [], callbacks = [];
         await context.route('**/*',async route => {
           try {
@@ -242,12 +234,6 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
               const output = Object.fromEntries(Object.entries(responseHeaders).map(([key,value])=>[key.toLowerCase(),Array.isArray(value)?value.join('\n'):String(value)]));
               return fulfill({status,headers:output,body});
             }
-            if (url.pathname === '/bo/login.html') {
-              // The main release retains its legacy login entry. Issue and
-              // validate that unchanged flow before choosing the native form.
-              assert.equal(url.origin,publicOrigin);
-              return fulfill({contentType:'text/html',body:'<h1>Legacy login remains available</h1>'});
-            }
             const target = kind === 'game' ? '/blackjack' : '/studio/administration';
             assert.equal(url.origin,publicOrigin);assert.equal(url.pathname,target);
             if (kind === 'game') assert.equal(auth.user({headers:{cookie:rawHeaders.cookie || ''}}),'fixture-player');
@@ -259,9 +245,8 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
         const target = kind === 'game' ? '/blackjack?dealer=astrid&rehearsal=1' : '/studio/administration';
         try { await page.goto(publicOrigin + '/api/auth/' + (kind === 'game' ? 'bo' : 'lab') + '/start?next=' + encodeURIComponent(target)); } catch(error) { throw Error('Fixture start failed; intercepted=' + JSON.stringify(seen) + '; errors=' + failures.map(e=>e.message).join('|')); }
         if(failures.length) throw failures[0];
-        await page.waitForURL(url=>url.origin === publicOrigin && url.pathname === '/bo/login.html');
+        await page.waitForURL(url=>url.origin === publicOrigin && url.pathname === '/studio/login');
         if(failures.length) throw failures[0];
-        assert.ok(seen.some(item=>item.origin === publicOrigin && item.path === '/bo/login.html'));
         const returnTo = new URL(page.url()).searchParams.get('returnTo');
         assert.match(returnTo,new RegExp('^/api/bo/' + kind + '-login\\?state=[a-f0-9]{64}$'));
         await page.goto(labOrigin + entry + '?returnTo=' + encodeURIComponent(returnTo));

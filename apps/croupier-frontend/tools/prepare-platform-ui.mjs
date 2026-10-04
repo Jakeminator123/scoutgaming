@@ -57,15 +57,8 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
     await writeFile(join(output, 'public', entry.name), await readFile(join(repo, 'web/public', entry.name)));
     if (!files.includes('/' + entry.name)) files.push('/' + entry.name);
   }
-  for (const [target, source] of [['game.html', 'index.html'], ['blackjack.html', 'blackjack-entry.html'], ['casino.html', 'casino.html'],
-    ['bo.html', 'bo/index.html'], ['bo-login.html', 'bo/login.html'], ['bo-password.html', 'bo/set-password.html']]) {
+  for (const [target, source] of [['game.html', 'index.html'], ['blackjack.html', 'blackjack-entry.html'], ['casino.html', 'casino.html']]) {
     await writeFile(join(runtime, target), await readFile(join(repo, 'web/public', source)));
-  }
-  for (const entry of await readdir(join(repo, 'web/public/bo'), {withFileTypes: true})) {
-    if (!entry.isFile() || !/\.(?:mjs|js|css)$/.test(entry.name)) continue;
-    await mkdir(join(output, 'public/bo'), {recursive: true});
-    await writeFile(join(output, 'public/bo', entry.name), await readFile(join(repo, 'web/public/bo', entry.name)));
-    files.push('/bo/' + entry.name);
   }
   await writeFile(join(runtime, 'manifest.json'), JSON.stringify({files: [...new Set(files)].sort(), mediaCopied: false, actualPlayback: false}, null, 2));
   return {enabled: true, files};
@@ -73,5 +66,5 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = await preparePlatformUi();
-  console.log(result.enabled ? 'Vercel player and BO text UI prepared; all runtime data remains on the backend.' : 'Existing landing-only build retained.');
+  console.log(result.enabled ? 'Vercel player UI prepared; native administration remains in Studio.' : 'Existing landing-only build retained.');
 }

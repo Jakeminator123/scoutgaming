@@ -21,7 +21,7 @@ test('real entry serves login and preserves account/table identity across a serv
   const start=async()=>{
     const env=Object.fromEntries(['PATH','Path','SystemRoot','SYSTEMROOT','TEMP','TMP'].filter(key=>process.env[key]).map(key=>[key,process.env[key]]));
     Object.assign(env,{HOST:'127.0.0.1',PORT:String(port),NODE_ENV:'production',CROUPIER_DATA_DIR:join(directory,'players'),
-      CROUPIER_PRESENTATION_STUDIO_DIR:join(directory,'studio'),CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
+      CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
       CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'Synthetic-Operator-Test-Password',
       DEMO_GUEST_ACCESS:'',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',
       CROUPIER_STREAM_LANE:'lissabon-stream-lane',PUBLIC_URL:'https://game.example.invalid'});
@@ -58,8 +58,8 @@ test('real entry serves login and preserves account/table identity across a serv
     const player=await(await post('/api/player',{id:'forged-player'})).json();
     assert.ok(player.id);assert.notEqual(player.id,'forged-player');assert.equal(player.name,'fixture-player');
     const table=await(await post('/api/table',{op:'state'})).json();assert.equal(table.error,undefined);
-    assert.deepEqual(await(await fetch(origin+'/api/bo/me',{headers:{cookie}})).json(),{});
-    assert.equal((await fetch(origin+'/api/bo/users',{headers:{cookie}})).status,401);
+    assert.equal((await fetch(origin+'/api/bo/me',{headers:{cookie}})).status,404);
+    assert.equal((await fetch(origin+'/api/bo/users',{headers:{cookie}})).status,404);
     await stop();await start();
     const restored=await(await post('/api/player',{})).json();assert.equal(restored.id,player.id);assert.equal(restored.balance,player.balance);
     const restoredTable=await(await post('/api/table',{op:'state'})).json();assert.deepEqual(restoredTable,table);

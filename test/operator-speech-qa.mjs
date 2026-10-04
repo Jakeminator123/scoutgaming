@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { createServer } from 'node:http';
 import { mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { createOperatorSpeechQa } from '../web/operator-speech-qa.mjs';
+import { createOperatorSpeechQa, isRetiredBackofficePost } from '../web/operator-speech-qa.mjs';
 
 const ORIGIN = 'https://game.example.test';
 const PATH = '/api/bo/speech-qa';
@@ -90,6 +91,33 @@ test('default off; GET never reserves, invokes a model or starts the shared serv
   assert.equal((await f.call()).code, 503);
   assert.equal(f.modelCalls, 0); assert.equal(f.seen.length, 0); assert.deepEqual(await readdir(f.directory), []);
   assert.equal((await f.call('GET', { pathname: '/api/bo/unrelated' })).handled, false);
+});
+
+test('native policy retires legacy BO posts but dispatches exact speech QA through its protected HTTP handler', async t => {
+  const f = await fixture(t);
+  const server = createServer(async (req, res) => {
+    const pathname = new URL(req.url, 'http://local').pathname;
+    if (isRetiredBackofficePost({ studioPolicyActive: true, method: req.method, pathname })) {
+      res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end('{"error":"legacy_administration_retired"}'); return;
+    }
+    if (await f.controller.handle(req, res, pathname)) return;
+    res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { if (server.listening) await new Promise(resolve => server.close(resolve)); });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const protectedResponse = await fetch(base + PATH, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"turn":1}',
+  });
+  assert.equal(protectedResponse.status, 403);
+  assert.notEqual(protectedResponse.status, 410);
+  const retiredResponse = await fetch(base + '/api/bo/legacy-action', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+  });
+  assert.equal(retiredResponse.status, 410);
+  assert.equal(f.modelCalls, 0);
+  assert.equal(f.seen.length, 0, 'protected rejection cannot reserve or reach a provider');
 });
 
 test('model receives the actual ephemeral owner and live gate callbacks through a trusted context',async t=>{

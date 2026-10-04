@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { runInNewContext } from 'node:vm';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,17 +47,6 @@ test('disabled active route does not instantiate DB or acknowledge a mutation', 
     assert.equal(response.headers.get('cache-control'), 'private, no-store');
   } finally {
     if (previous === undefined) delete process.env.CROUPIER_STUDIO_NATIVE_ADMIN; else process.env.CROUPIER_STUDIO_NATIVE_ADMIN = previous;
-  }
-});
-test('existing BO login returns only to native administration or exact one-use handoff', async () => {
-  const html = await readFile(new URL('../../web/public/bo/login.html', import.meta.url), 'utf8');
-  const statement = html.split(/\r?\n/).find(line => line.includes('location.href ='));
-  const target = next => { const location = {}; runInNewContext(statement, { next, location }); return location.href; };
-  assert.equal(target('/studio/administration'), '/studio/administration');
-  const handoff = `/api/bo/lab-login?state=${'a'.repeat(64)}`;
-  assert.equal(target(handoff), handoff);
-  for (const next of ['https://evil.invalid', '//evil.invalid', '/studio/api/admin/users', '/studio/administration?secret=1', '/studio/administration#extra', '/studio/administration/../api', undefined]) {
-    assert.equal(target(next), '/bo/');
   }
 });
 test('bundled source paths load all four migrations without asset URLs', async () => {

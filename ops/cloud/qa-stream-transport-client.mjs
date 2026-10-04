@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {QA_PUBLIC_ORIGIN, verifyUnpaidWssTransport} from './qa-stream-transport-preload.mjs';
 
 const CREDENTIALS = new URL('../../lab/data/platform-private/qa-operator.json', import.meta.url);
-const PATHS = new Set(['/api/bo/login', '/api/bo/me', '/api/bo/speech-qa']);
+const PATHS = new Set(['/studio/api/auth/login', '/api/bo/speech-qa']);
 const SAFE_NETWORK_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EPROTO', 'ERR_TLS_CERT_ALTNAME_INVALID', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE']);
 const SAFE_TRANSPORT_GATES = new Set(['client_timeout', 'client_upgrade', 'client_socket', 'client_binary', 'client_protocol', 'client_terminal']);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -54,14 +54,13 @@ export async function runUnpaidWssGate({credentials, fetchImpl = fetch, verifyTr
     return {response, value};
   }
   async function login(gate) {
-    const {response, value} = await request('/api/bo/login', {method: 'POST', body: {user: username, pass: password}, gate});
+    const {response, value} = await request('/studio/api/auth/login', {method: 'POST', body: {user: username, pass: password}, gate});
     const values = response.headers.getSetCookie?.() ?? [response.headers.get('set-cookie') ?? ''];
     const sessions = values.filter(value => value.startsWith('bo_jwt='));
     if (value.ok !== true || sessions.length !== 1 || !/^bo_jwt=[A-Za-z0-9_.-]{1,8192};/.test(sessions[0])) fail(gate, {statusCode: response.status, failure: 'session_cookie_missing'});
     const cookie = sessions[0].split(';')[0];
-    const {value: identity} = await request('/api/bo/me', {cookie, gate: `${gate}_current_role`});
-    if (!['admin', 'superadmin'].includes(identity.role)) fail(`${gate}_current_role`, {statusCode: 200, failure: 'operator_role_required'});
-    completed.push({gate, statusCode: 200, currentRole: identity.role});
+    if (!['admin', 'superadmin'].includes(value.role)) fail(`${gate}_current_role`, {statusCode: 200, failure: 'operator_role_required'});
+    completed.push({gate, statusCode: 200, currentRole: value.role});
     return cookie;
   }
   async function prepare(turn, gate) {

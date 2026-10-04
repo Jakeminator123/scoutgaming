@@ -22,11 +22,22 @@ test('native Studio routes use the Vercel data writer while game commands stay o
   assert.equal(backendPlatformPath('/api/studio-game/commands'),false);
 });
 
+test('platform tracing keeps player documents without retired BO HTML', async () => {
+  const source = await readFile(new URL('../next.config.mjs', import.meta.url), 'utf8');
+  assert.match(source, /'\/game': \['\.\/runtime-ui\/game\.html'\]/);
+  assert.match(source, /'\/player-login': \['\.\/runtime-ui\/blackjack\.html'\]/);
+  assert.doesNotMatch(source, /runtime-ui\/bo|\/bo\/\[\[\.\.\.path\]\]/);
+});
+
 test('platform routes preserve exact backend boundaries, public origin and query correlation', () => {
   assert.equal(platformConfiguration({}), null);
   assert.throws(() => platformConfiguration({...env, CROUPIER_BACKEND_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN}));
-  for (const path of ['/api/table', '/api/bo/users/role', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
+  for (const path of ['/api/table', '/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa', '/studio/api/videos/id', '/api/presentation/videos/abc']) {
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
+  }
+  for (const kind of ['game','lab']) {
+    const path = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
+    assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'backend',destination:config.backendOrigin+path});
   }
   for (const path of ['/speech-stream', '/lipsync-worker']) {
     const route = platformRoute(new URL(path, config.publicOrigin), config);
@@ -34,7 +45,7 @@ test('platform routes preserve exact backend boundaries, public origin and query
     assert.equal(route.destination, config.publicOrigin + PLATFORM_SOCKET_ENDPOINTS[path]);
     assert.equal(platformRoute(new URL(PLATFORM_SOCKET_ENDPOINTS[path], config.publicOrigin), config).kind, 'reject');
   }
-  for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
+  for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/api/bo/login', '/api/bo/users', '/api/bo/users/role', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
   assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'lab');
   assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'frontend');
   assert.equal(platformRoute(new URL('/game?launch=one-use', config.publicOrigin), config).kind, 'backend');
@@ -58,13 +69,12 @@ test('cookie-owned P6 playback context has one exact backend route without a pre
   }
 });
 
-test('prepared player uses the actual shared player and keeps BO HTML behind live identity checks', async () => {
+test('prepared player uses the actual shared player and redirects retired BO documents to native Studio', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-vercel-ui-'));
   try {
     const prepared = await preparePlatformUi({env, output: directory});
     assert.ok(prepared.files.includes('/app.mjs'));
-    assert.ok(prepared.files.includes('/bo/bo.mjs'));
-    assert.ok(prepared.files.includes('/bo/player-admin.mjs'));
+    assert.ok(prepared.files.every(path => !path.startsWith('/bo/')));
     assert.ok(prepared.files.includes('/casino.mjs'));
     assert.ok(prepared.files.includes('/vendor/three/GLTFLoader.js'));
     assert.ok(prepared.files.every(path => !/\.(mp4|webm|png|jpg|wav|mp3)$/.test(path)));
@@ -73,20 +83,16 @@ test('prepared player uses the actual shared player and keeps BO HTML behind liv
     assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
     assert.match(game.headers.get('cache-control'), /no-store/);
     for (const path of ['/v2', '/casino.html']) assert.equal((await platformUiDocument(new Request(config.publicOrigin + path), {env, directory: join(directory, 'runtime-ui')})).status, 200);
-    const bo = new Request(config.publicOrigin + '/bo/', {headers: {cookie: 'bo_jwt=isolated'}});
-    let calls = 0;
-    const fetchImpl = async (url, options) => {
-      calls++; assert.equal(url, config.backendOrigin + '/api/bo/me');
-      assert.equal(options.headers.get('cookie'), 'bo_jwt=isolated');
-      assert.equal(options.headers.get('x-croupier-vercel-secret'), config.secret);
-      return Response.json(calls === 1 ? {user: 'reader', role: 'reader'} : {});
-    };
-    const accepted = await platformUiDocument(bo, {env, fetchImpl, directory: join(directory, 'runtime-ui')});
-    assert.equal(accepted.status, 200); assert.match(await accepted.text(), /bo.mjs/);
-    const revoked = await platformUiDocument(bo, {env, fetchImpl, directory: join(directory, 'runtime-ui')});
-    assert.equal(revoked.status, 302); assert.equal(revoked.headers.get('location'), '/bo/login.html');
-    assert.equal(await revoked.text(), '');
-    assert.equal((await platformUiDocument(bo, {env, fetchImpl: async () => {throw Error('offline');}, directory})).status, 503);
+    const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64), token = 'b'.repeat(43);
+    for (const [path,location] of [['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
+      ['/bo/login.html','/studio/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,`/studio/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`],
+      [`/bo/set-password.html?t=${token}`,`/studio/set-password?t=${token}`]]) {
+      const response = await platformUiDocument(new Request(config.publicOrigin + path),{env,directory:runtime});
+      assert.equal(response.status,308,path); assert.equal(response.headers.get('location'),location,path);
+    }
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/login.html?returnTo=https://attacker.invalid'),{env,directory:runtime})).headers.get('location'),'/studio/login');
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/set-password.html?t=private.bad'),{env,directory:runtime})).headers.get('location'),'/studio/set-password');
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo',{method:'POST'}),{env,directory:runtime})).status,405);
     assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/generations.json'), {env, directory})).status, 404);
   } finally {await rm(directory, {recursive: true, force: true});}
 });
@@ -101,7 +107,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
   try {
-    for (const path of ['/api/bo/me', '/studio/api/project', '/studio/activity', '/api/presentation/native-p6-playback-context']) {
+    for (const path of ['/api/bo/config', '/studio/api/project', '/studio/activity', '/api/presentation/native-p6-playback-context']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);

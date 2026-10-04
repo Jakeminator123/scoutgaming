@@ -149,7 +149,6 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   env.CROUPIER_PRESENTATION_STUDIO_DIR = env.LAB_STUDIO_DATA_DIR;
   env.CROUPIER_STREAM_LANE = streamLane;
   if (generationDirectory) env.LAB_VIDEO_ARCHIVE = generationDirectory;
-  env.CROUPIER_GENERATIONS_DIR = generationDirectory || env.LAB_VIDEO_ARCHIVE;
   let gameChild, labChild, stopped = false, stopping, labStarting = null;
   let credentials;
   const stop = () => stopping ??= (async () => {
