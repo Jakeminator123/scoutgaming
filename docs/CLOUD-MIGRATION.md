@@ -25,8 +25,8 @@ Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstest
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
-**Pågående integration:** Studio-/Git-rättningen är lokalt integrerad som
-`438a824b` från workercommit `c40503af`; ännu inte publicerad. Studio följer
+**Pågående integration:** Studio-/Git-rättningen integrerades som
+`438a824b` från workercommit `c40503af` och ingår i levererad `5fca8983`. Studio följer
 den konfigurerade speloriginens `/player-login` efter lösenordsreset och den
 gemensamma speladresspolicyn vid partneröppning. Git-fixturer isolerar hookens
 ärvda repo-/indexvariabler; huvudhooken läser fortfarande sitt riktiga
@@ -48,14 +48,105 @@ Den interna transportregistreringen ligger i den delade fullfilstjänsten;
 SDK-runtime registrerar sin verifieringscallback. Färskt Next-bygge med fyra
 workers, tracekontroll, typkontroll, 47 riktade tester och fullhook passerade:
 1 268 PASS, 5 SKIP, 0 FAIL. Alla källfiler utom de två root-trackerfilerna är
-identiska med workerleveransen. Nästa publicerade SHA kräver egen CI. QA är kvar
-på e461ef07; inga nya providerjobb eller produktionsimporter har körts.
-Faktisk QA-aktivering återstår.
+identiska med workerleveransen. Levererad main är nu
+`5fca8983df75f2d6307473e20543b372c24bcfd9`, med GitHub-run `37165257568`
+completed/success för alla tre jobb. Render-QA är LIVE och båda Vercel-QA
+READY på samma SHA; befintliga alias är faktiskt bundna och återlästa.
+Faktisk Linux-källa, 17 privata SDK-källfiler och SDK 7.12.1 är verifierade.
+Alla tio före/efter-kontroller för miljö, disk, QA-volym, medier, journaler,
+konton/saldo och kostnadstabeller passerade. Rootkvittot finns i befintlig
+`lab/data/platform-private/native-p6-qa-release-e461ef07/`, namn
+`migration-5fca8983df75f2d6307473e20543b372c24bcfd9-three-ready-receipt.json`,
+SHA256 `0e03cf6bd5ddb8c8ffa7156fda22df99a165b8c2428c843aebef5d285e6abfe3`.
+Produktionens tre tjänster kör också 5fca8983 med oförändrad gammal policy;
+import/Neon-omkoppling återstår. AI-installern stoppade före budgettimer,
+SQL/journaländring och provider-POST på saknade talnycklar i vald källa.
+Automatisk approvalreview avvisade produktcredentials till QA utan specifikt
+människogodkännande. Jakob har därefter direkt godkänt befintliga Cartesia-/
+RunPod-nycklar för det tillfälliga isolerade QA-provet, högst två genereringar,
+oförändrad produktenv och exakt QA-miljöåterställning. QA:s env-bärande deploy
+`dep-db0qcnhsrm7s738o9ggg` är faktiskt LIVE med rätt 5fca-källa/manifest och
+ursprunglig budgetchain. Förkontrollen hade noll generationer/SDK/TTS/GPU;
+originaltimern löpte ut 4 oktober 01:28:59 UTC. En exponerad egen QA-session är
+återkallad med riktad auth_epoch-CAS och exakt player-sessionborttagning;
+övriga nio, kontodata/saldo och budget/journaler är bevarade. Helperns första
+obetalt authprov stoppade före WebSocket-nätverk på lokal dependency-resolution,
+inte ett verifierat produktfel. Korrigerat authprov passerade faktisk 401 för
+ogiltig ticket med fortsatt noll generationer/SDK/TTS/GPU. P7 väntar faktisk
+streamacceptans och dränering; faktisk fullfilsgenerering beskrivs nedan.
+Lokala `.env` och `lab/.env.local` är också rättade enligt Jakob, med ursprunglig
+Cartesia bevarad och rätt RunPod-/modellinställningar; endast privat lokal
+konfiguration ändrades, ingen moln-/providerändring eller serverstart.
 Produktionsförberedelsen har 80 PASS utan SKIP samt 87 importguards PASS;
 förberedda adaptrar gör ingen import utan aktuella faktiska AI-/routekvitton,
 fryst export, verklig workerdränering och verifierad kontoparitet.
-AI/GPU-aktivering, produktionsomkoppling och avveckling återstår;
-borttagningar integreras efter verifierad ersättning.
+AI/GPU är funktionellt delprovat i QA. Produktionsomkoppling och avveckling
+återstår; borttagningar integreras efter verifierad ersättning.
+
+**Faktiskt betalt delprov 4 oktober 01:21–01:23 UTC:** Director och talmodell
+svarade; Cartesia gav ljud och RunPod ett färdigt fullfilspaket
+`generated-bd1123e6caec51e8a232036547b0f8fc`. Kumulativ runtime/journal visar
+1 generation, 2 SDK-anrop, 1 TTS och 1 GPU-submit, inga osäkra utfall och
+ingen automatisk retry. Samma paket spelades klart två gånger enligt den
+checksumfrysta helperns passerade game-queue-/audio-ended-kontroller. Exakta
+per-play bildruteräknare och observationsrader hann inte sparas; de är okända
+och påstås inte verifierade. Härlett bevis finns i befintlig
+`verify-final-qa/fullfile-two-play-derived-attestation-8712e00b.json`.
+Streamsteget stoppade före sitt andra `/chat`: den egna QA-launcherns privata
+`nativeP6GamePlayback`-flagga filtrerades bort av ordinarie speladresspolicy.
+Detta bevisar ett fel i QA-launchern, inte att produktens normala streamflöde
+är trasigt. Ingen separat stream är ännu verifierad. Okänd faktisk USD är null;
+ursprunglig budget/journal och reservationer består. Efter timer-expiry återför
+AI-agenten exakt de 42 föregående QA-env-variablerna och gör en env-bärande
+OFF-deploy. `dep-db0qr6favr4c738uuf0g` är LIVE på samma 5fca-källa:
+UID 1000/Web-process, alla flaggor av, faktisk router 404 och health 200.
+Originalmanifest och installerat SDK är bevarade, budget-close är inte skrivet.
+Privat OFF-kvitto `ai-gpu-activation/off-read-8712e00b-7c9f-40c5-88f3-55f31d2b8b9a-1791077962974.json`,
+SHA256 `bc9f0fe1c498af6e4d5c325f50a8ce83904443bdf5503f34ad6e56c3a26953b1`.
+Providerkön/jobben är noll, men idle/ready-worker finns; ALL0-drain påstås inte.
+Merge-agenten har granskat en minimal lokal kodrättning för ett enda manuellt
+fortsättningsfönster för den återstående streamen inom samma ursprungliga
+2 generationer/3 SDK/2 TTS/2 GPU och kvarhållna reservationer. Gamla manifest,
+auktoriteter och journalbytes förblir oförändrade; ny auktoritet kräver ett
+explicit append-only-event och föregående journalhash. Ingen live-fortsättning
+eller ny timer är ännu öppnad. Automatisk förlängning/retry och extra budget
+är förbjudna. Det utgångna fönstret återstartas inte.
+
+**Ny lokal sammanhållen leverans:** main `637c6445` innehåller Studio-fix
+`e6c32aab` och AI-fortsättning från `1aa0d94e`. Studio: 48 riktade auth-/
+browserprov, färskt bygge med fyra workers, typkontroll och fullhook
+1 276 PASS/4 SKIP/0 FAIL. AI: 36 riktade guards och fullhook
+1 292 PASS/5 SKIP/0 FAIL. Samlad rootkontroll: 1 298 PASS/6 SKIP/0 FAIL;
+färskt fyrworkerbygge, 50 sanerade traces och typkontroll PASS. Root-hookens
+två browser-SKIP täcks av Studio-workerens separata faktiska browserprov;
+övriga isolerade SQL-/Linux-SKIP kvarstår. Push och ny QA-version återstår;
+faktisk drift är fortsatt 5fca8983 och QA är av. Äldre P8-baserad Studio
+`a8b3d21e` bevaras men dupliceras inte vid städintegration. Den nya koden
+öppnar inget provfönster vid boot och gör ingen automatisk aktivering.
+
+**Funktionell beviskedja för den beställda omkopplingen:** merge-agenten har
+efter separat käll-/admissiongranskning fastställt ett uttryckligt sammansatt
+v2-bevis: de två härledda verkliga fullfilsuppspelningarnas hash/canplay/audio/
+queue-ended, återbruk av byteidentisk godkänd e461-spelarkod och ett nytt
+faktiskt streamvarv med avkodad synlig/hörbar media, progression, rätt owner/
+session/runda/pose, ended och accepterad ACK. Ett andra nytt streamjobb krävs
+inte av Jakobs slutmål och får inte överskrida hans totalt två genereringar.
+Fullfilens synliga bildrutor/owner-observationsrader och mänsklig läppsynk-
+acceptans förblir okända; nya medier är pending approval och full P6 bockas
+inte av. Befintliga FAIL-kvitton och originaltider bevaras. V2-valideraren
+ska fortsatt neka tills det faktiska streambeviset, cancel/terminal/drain,
+exakt QA-återställning och aktuell route-/source-/deploybindning finns.
+Produktionsfönstrets egen färska paritet och ALL6-worker-/job-dränering består.
+
+**Lokalt färdig P8/P2-kod, ännu inte avvecklad drift:** städbranchens
+`0dfd307a` och `8589fa2c` har riktad runtime-/shutdown-/speech-QA-verifiering.
+`d089cda4` återför exakt de tre senare AI-filer som en äldre städbas annars
+förlorade; 15/15 och fullhook passerar utan tillfällig källfilslåning.
+Studio `a8b3d21e` rättar fristående login/reset till den gemensamma publika
+hosten före autentisering, så host-only cookies gäller för spel/Lab-handoff.
+29 riktade browser-/kontraktsprov, fyra Next-aliasprov, typkontroll, färskt
+bygge och fullhook (1 271 PASS, 6 SKIP, 0 FAIL) passerar. Actual alias och
+fysisk avveckling verifieras efter integration/produktionsomkoppling.
 
 ## Fem dokument i docs
 
