@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 import { normalizeSpeechPackage } from './public/speech-package.mjs';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
+import {boundedAiQaAllowsFullfile} from './native-ai-qa-runtime.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -60,7 +61,8 @@ function configuration(env) {
   // Managed cloud conversations must use the session cost ledger. A legacy
   // client or Probe may not bypass it by asking for an unbudgeted file job.
   const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
-  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview) && !managedStreaming;
+  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview)
+    && (!managedStreaming || (boundedAiQaAllowsFullfile(speechProviderFetch,env)&&speechJournal));
   const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,

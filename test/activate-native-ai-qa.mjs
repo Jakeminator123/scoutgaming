@@ -105,3 +105,77 @@ test('policy installation preserves original campaign and requires existing acco
   counts.sessions=1;calls.length=0;await assert.rejects(()=>installAiQaPolicy(args),/ai_qa_install_nonempty_policy_or_jobs/);
   assert.equal(calls.filter(c=>c.sql.startsWith('INSERT')).length,0);assert.ok(calls.some(c=>c.sql==='ROLLBACK'));
 });
+
+test('persistent private closure rehydrates a fresh image, preserves existing bytes, and rejects a changed source',async t=>{
+  const {AI_QA_PRIVATE_NAMES,buildAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot,initializeAiQaPrivateBootstrap}=await import('../web/native-ai-qa-private.mjs');
+  const base=await mkdtemp(join(tmpdir(),'bounded-private-bootstrap-'));t.after(()=>rm(base,{recursive:true,force:true}));
+  const original=join(base,'original'),repository=join(base,'image');const {mkdir}=await import('node:fs/promises');await mkdir(original);await mkdir(repository);
+  const pins={};for(const name of AI_QA_PRIVATE_NAMES){const bytes=Buffer.from('Synthetic source '+name);pins[name]=sha256(bytes);await writeFile(join(original,name),bytes);}
+  const raw=await buildAiQaPrivateSnapshot({directory:original,pins}),manifest={privateSources:pins,privateSnapshotSha256:sha256(raw)};
+  const first=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(first.written,4);assert.equal(first.providerCalls,0);assert.equal(first.budgetWrites,0);
+  const second=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(second.written,0);assert.equal(second.retained,4);
+  const path=join(repository,'lab/data/platform-private',AI_QA_PRIVATE_NAMES[0]);await writeFile(path,'Different existing bytes');
+  await assert.rejects(()=>restoreAiQaPrivateSnapshot({repository,manifest,raw}),/ai_qa_private_snapshot_target_changed/);
+  assert.equal(await readFile(path,'utf8'),'Different existing bytes');assert.equal(await initializeAiQaPrivateBootstrap({CROUPIER_P6_BOUNDED_TEST:'0'}),null);
+});
+
+test('private closure snapshot rejects extra paths and tampering before creating a target',async t=>{
+  const {AI_QA_PRIVATE_NAMES,decodeAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot}=await import('../web/native-ai-qa-private.mjs');
+  const files=Object.fromEntries(AI_QA_PRIVATE_NAMES.map(name=>{const bytes=Buffer.from('Fixture '+name);return[name,{sha256:sha256(bytes),bytesBase64:bytes.toString('base64')}];}));
+  const pins=Object.fromEntries(Object.entries(files).map(([n,f])=>[n,f.sha256]));files['../credentials.json']={sha256:'0'.repeat(64),bytesBase64:'YQ=='};
+  const raw=Buffer.from(JSON.stringify({purpose:'bounded-native-ai-qa-private-snapshot-v1',files}));assert.throws(()=>decodeAiQaPrivateSnapshot(raw,pins),/ai_qa_private_snapshot_paths/);
+  const directory=await mkdtemp(join(tmpdir(),'bounded-private-denied-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  await assert.rejects(()=>restoreAiQaPrivateSnapshot({repository:directory,manifest:{privateSources:pins,privateSnapshotSha256:'0'.repeat(64)},raw}),/ai_qa_private_snapshot_changed/);
+  const {readdir}=await import('node:fs/promises');assert.deepEqual(await readdir(directory),[]);
+});
+
+test('one bounded QA boot passes fullfile policy to Web; registered transport and Neon reservation are required before SDK/provider',async t=>{
+  const {randomUUID}=await import('node:crypto');const {NATIVE_P6_QA:QA,validateCloudConfig,childSpecifications}=await import('../ops/cloud/config.mjs');
+  const {AI_QA_SOURCE_PATHS,boundedAiQaAllowsFullfile}=await import('../web/native-ai-qa-runtime.mjs');
+  const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../web/generated-speech.mjs');
+  const {createSpeechJournal}=await import('../web/postgres-speech-journal.mjs');const {speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs');
+  const runId=randomUUID(),env={NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
+    CROUPIER_CLOUD_DATA_ROOT:QA.dataRoot,RENDER_SERVICE_ID:QA.serviceId,RENDER_EXTERNAL_URL:QA.origin,RENDER_GIT_COMMIT:'a'.repeat(40),
+    CROUPIER_STREAM_LANE:'lissabon-stream-lane',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:QA.environmentId,CROUPIER_STUDIO_WORKSPACE_ID:QA.workspaceId,
+    CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:`postgresql://${QA.database}:synthetic@qa.neon.tech/${QA.database}?sslmode=require`,
+    PUBLIC_URL:QA.frontendOrigin,BO_URL:QA.frontendOrigin,LAB_PUBLIC_URL:QA.frontendOrigin,CROUPIER_GAME_ORIGIN:QA.frontendOrigin,BETTALOTTO_PARTNER_BASE_URL:QA.frontendOrigin,
+    OPENCLAW_PRODUCT_SPEECH_URL:QA.origin,CROUPIER_PRESENTATION_DIRECTOR_URL:QA.origin,
+    CROUPIER_P6_QA_ROUTER:'1',CROUPIER_P6_QA_ROUTER_SOURCE_SHA256:'b'.repeat(64),CROUPIER_P6_SDK_RUN_ID:runId,CROUPIER_P6_SDK_DEPLOYMENT_ID:'dep-synthetic',
+    OPENCLAW_PRODUCT_SPEECH_TOKEN:'speech-'.repeat(8),CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'director-'.repeat(8),CROUPIER_P6_SDK_WORKER_TOKEN:'worker-'.repeat(8),
+    CROUPIER_P6_SDK_READBACK_TOKEN:'readback-'.repeat(8),CROUPIER_P6_SDK_TICKET_SECRET:'tickets-'.repeat(8),CROUPIER_P6_BOUNDED_TEST:'1',CROUPIER_P6_BOUNDED_MANIFEST_SHA256:'c'.repeat(64),
+    CROUPIER_P6_SDK_OPENAI_API_KEY:'synthetic',CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',CROUPIER_GENERATED_SPEECH_STREAMING:'1',
+    CROUPIER_SPEECH_STREAM_WORKER_SECRET:'streamworker-'.repeat(8),CROUPIER_SPEECH_STREAM_TICKET_SECRET:'streamticket-'.repeat(8),
+    CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD:'1',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'1',CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'4.748848',
+    CARTESIA_API_KEY:'synthetic',RUNPOD_API_KEY:'synthetic',CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture-endpoint'};
+  const config=validateCloudConfig(env),specs=childSpecifications(config,env,{labInternalSecret:'internal-'.repeat(8)});
+  assert.deepEqual(config.fullfileBudget,{reserveUsd:'1',dailyBudgetUsd:'4.748848'});assert.equal(specs.web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,'1');
+  assert.equal(specs.web.env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,'4.748848');assert.equal(specs.lab.env.CROUPIER_P6_SDK_OPENAI_API_KEY,undefined);
+  assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_FULLFILE_RESERVE_USD:undefined}),/FULLFILE_RESERVE/);
+  const standard={...env,CROUPIER_P6_QA_ROUTER:'0',CROUPIER_P6_BOUNDED_TEST:'0'};assert.equal(validateCloudConfig(standard).fullfileBudget,null);
+  const directory=await mkdtemp(join(tmpdir(),'bounded-file-chain-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  const webEnv={...specs.web.env,CROUPIER_GENERATED_SPEECH_DIR:directory};const saved=Object.fromEntries(Object.keys(webEnv).map(k=>[k,process.env[k]]));Object.assign(process.env,webEnv);
+  t.after(()=>{configureGeneratedSpeechJournal(null);for(const[k,v]of Object.entries(saved)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+  let paid=0;const manifest={purpose:'bounded-native-ai-qa-activation-v1',campaignId:AI_QA_ORIGINAL.campaignId,expectedSha:env.RENDER_GIT_COMMIT,runId,deploymentId:env.CROUPIER_P6_SDK_DEPLOYMENT_ID,
+    limits:AI_QA_LIMITS,originalAnchorSha256:AI_QA_ORIGINAL.anchorSha256,actualCostUsd:null,privateSnapshotSha256:'d'.repeat(64),createdAtMs:Date.now()-1,expiresAtMs:Date.now()+60000,
+    ownLinkedPlayerSha256:sha256('player'),sources:Object.fromEntries(AI_QA_SOURCE_PATHS.map(p=>[p,'e'.repeat(64)])),privateWorkerSha256:'f'.repeat(64),sdkVersion:'7.12.1',
+    sdkRoot:QA.dataRoot+'/p6-sdk/cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2/node_modules/openai'};
+  const router=createBoundedAiQaRouter({manifest,budget:{},client:{},worker:{},endpointId:'fixture-endpoint',fetchImpl:()=>{paid++;throw Error('no paid fixture request');}});
+  const pool=speechMemoryPool(),journal=await createSpeechJournal({pool,environmentId:QA.environmentId});const artifacts={save(){},get(){}};
+  configureGeneratedSpeechJournal(journal,{artifacts,providerFetch:async()=>{paid++;}});assert.equal(getGeneratedSpeechService(),null,'an arbitrary function cannot open fullfile');
+  configureGeneratedSpeechJournal(journal,{artifacts,providerFetch:router.providerFetch});assert.equal(boundedAiQaAllowsFullfile(router.providerFetch,process.env),true);
+  assert.equal(generatedSpeechStatus().configured,true);const service=getGeneratedSpeechService();assert.ok(service);
+  await assert.rejects(()=>service.generate({owner:'fixture-owner',requestId:'policy-absent',dealerId:'astrid',text:'Short fixture.'}),{code:'generated_speech_fullfile_budget_policy_missing'});
+  assert.equal(paid,0);assert.equal(pool.state.requests.size,0);
+  process.env.CROUPIER_P6_BOUNDED_TEST='0';assert.equal(getGeneratedSpeechService(),null,'ordinary managed streaming remains closed');
+});
+
+test('fresh cloud image prepares only private bootstrap parents for UID1000 before activation',async()=>{
+  const docker=await readFile(new URL('../ops/cloud/Dockerfile',import.meta.url),'utf8');
+  const prepare='mkdir -p /app/lab/data/platform-private',own='chown node:node /app/lab/data /app/lab/data/platform-private',mode='chmod 700 /app/lab/data /app/lab/data/platform-private';
+  assert.ok(docker.indexOf('COPY . .')<docker.indexOf(prepare));
+  assert.ok(docker.indexOf(prepare)<docker.indexOf(own));assert.ok(docker.indexOf(own)<docker.indexOf(mode));
+  assert.ok(docker.indexOf(mode)<docker.indexOf('CMD ['));
+  assert.ok(!docker.includes('chown -R node:node /app/lab/data'));
+  const {AI_QA_SOURCE_PATHS}=await import('../web/native-ai-qa-runtime.mjs');assert.ok(AI_QA_SOURCE_PATHS.includes('ops/cloud/Dockerfile'));
+  const bootstrap=await readFile(new URL('../web/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
+});
