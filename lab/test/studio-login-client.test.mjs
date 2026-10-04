@@ -2,9 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginReturnTo, studioLoginDestination, studioPasswordToken } from '../lib/studio-login-client.mjs';
 
-test('native login returnTo is exactly the two Studio pages with explicit standalone mapping', () => {
+test('native login returnTo is exactly the two Studio pages or one-use BO handoff without a cross-host cookie handoff', () => {
   for (const value of ['/studio','/studio/administration']) assert.equal(studioLoginReturnTo(value),value);
-  for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',null,[],{}]) assert.equal(studioLoginReturnTo(value),'/studio');
+  for (const kind of ['game','lab']) {
+    const value = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
+    assert.equal(studioLoginReturnTo(value),value);
+    assert.equal(studioLoginDestination(value,'/api/auth'),'/', 'standalone login cannot forward a host-only cookie');
+    assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
+  }
+  for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',
+    `/api/bo/game-login?state=${'a'.repeat(63)}`,`/api/bo/lab-login?state=${'A'.repeat(64)}`,
+    `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/studio');
   assert.equal(studioLoginDestination('/studio','/api/auth'),'/');
   assert.equal(studioLoginDestination('/studio/administration','/api/auth'),'/administration');
   assert.equal(studioLoginDestination('/studio/administration','/studio/api/auth'),'/studio/administration');
