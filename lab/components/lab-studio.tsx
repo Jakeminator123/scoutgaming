@@ -71,7 +71,10 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
   }
   async function refresh() {
     setRefreshing(true); setError('');
-    try { setVideos(await requestJson<VideoInventory>(videos.summary?.archiveSource === 'emil-default' ? '/api/videos/rescan' : '/api/videos', videos.summary?.archiveSource === 'emil-default' ? { method: 'POST' } : undefined)); }
+    // Imported inventory keeps its historical source label. Cloud Studio must
+    // reread the shared registry, never infer a local disk scan from that label.
+    const rescan = !cloudStudio && videos.summary?.archiveSource === 'emil-default';
+    try { setVideos(await requestJson<VideoInventory>(rescan ? '/api/videos/rescan' : '/api/videos', rescan ? { method: 'POST' } : undefined)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Kunde inte läsa klippen.'); }
     finally { setRefreshing(false); }
   }

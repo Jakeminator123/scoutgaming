@@ -9,7 +9,7 @@ export const LAB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_ENV_FILES = basename(dirname(resolve(LAB_ROOT))) === 'open-claw'
   ? [resolve(LAB_ROOT, '../../.env'), resolve(LAB_ROOT, '.env')] : [resolve(LAB_ROOT, '.env')];
 const KEYS = ['HOST', 'PORT', 'LAB_API_TOKEN', 'LAB_DATA_DIR', 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
-  'OPENCLAW_BASE_URL', 'OPENCLAW_HOSTPORT', 'OPENCLAWAPI_KEY', 'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_TIMEOUT_MS',
+  'OPENCLAW_BASE_URL', 'OPENCLAW_HOSTPORT', 'OPENCLAWAPI_KEY', 'OPENCLAW_STUDIO_ADMIN_DEVICE_KEY', 'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_TIMEOUT_MS',
   'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL', 'OPENCLAW_SPEECH_TIMEOUT_MS',
   'OPENCLAW_DASHBOARD_ENABLED', 'OPENCLAW_DASHBOARD_ORIGIN', 'OPENCLAW_DASHBOARD_ALLOW_LOOPBACK', 'RENDER_EXTERNAL_URL',
@@ -32,7 +32,7 @@ export function readSettings({ env = process.env, envFiles = DEFAULT_ENV_FILES }
     apiToken: values.LAB_API_TOKEN || '', dataDir: resolve(values.LAB_DATA_DIR || resolve(LAB_ROOT, 'data')),
     remoteUrl: values.LAB_REMOTE_URL || '', remoteToken: values.LAB_REMOTE_TOKEN || '',
     baseUrl: values.OPENCLAW_BASE_URL || (values.OPENCLAW_HOSTPORT ? `http://${values.OPENCLAW_HOSTPORT}` : ''),
-    gatewayKey: values.OPENCLAWAPI_KEY || '', agent: values.OPENCLAW_AGENT || 'openclaw/croupier-director',
+    gatewayKey: values.OPENCLAWAPI_KEY || '', adminDeviceKey: values.OPENCLAW_STUDIO_ADMIN_DEVICE_KEY || '', agent: values.OPENCLAW_AGENT || 'openclaw/croupier-director',
     chatAgent: values.OPENCLAW_CHAT_AGENT || 'openclaw/croupier-chat',
     speechAgent: values.OPENCLAW_SPEECH_AGENT || 'openclaw/croupier-speech',
     speechUrl: values.OPENCLAW_PRODUCT_SPEECH_URL || '', speechToken: values.OPENCLAW_PRODUCT_SPEECH_TOKEN || '',

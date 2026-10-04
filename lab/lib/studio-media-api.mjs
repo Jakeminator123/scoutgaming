@@ -26,7 +26,12 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         if (current.user !== principal.user || current.role !== principal.role) fail('studio_request_rejected',403);
         return true;
       };
-      if (path === base && request.method === 'GET') {
+      const legacyRefresh = path === `${base}/rescan` && request.method === 'POST';
+      // Older Studio tabs still POST /rescan for imported inventories. In the
+      // native runtime this is a fresh registry read, with no disk import/write.
+      if (legacyRefresh && (request.headers.get('origin') !== new URL(request.url).origin
+        || !['same-origin','none'].includes(request.headers.get('sec-fetch-site')))) fail('studio_request_rejected',403);
+      if (path === base && request.method === 'GET' || legacyRefresh) {
         if (typeof videoRegistry !== 'function') fail('studio_media_registry_unavailable');
         return json({...await videoRegistry(),...(uploads ? {uploadMode:'private-client-blob'} : {})});
       }
@@ -65,7 +70,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         });
         return json(await videoRegistry());
       }
-      if (request.method === 'POST' && [base,`${base}/rescan`].includes(path)) fail('studio_media_upload_not_ready');
+      if (request.method === 'POST' && path === base) fail('studio_media_upload_not_ready');
       const id = path.startsWith(`${base}/`) ? path.slice(base.length+1) : null;
       if (id && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id) && ['GET','HEAD'].includes(request.method)) {
         if (typeof videoResponse !== 'function') fail('studio_media_registry_unavailable');

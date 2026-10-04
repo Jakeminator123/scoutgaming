@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const empty = () => null;
 const marker = name => props => React.createElement('div', { 'data-component': name, 'data-dealer': props.dealerId });
-function harness(file, initialStates = []) {
+function harness(file, initialStates = [], overrides = {}) {
   const values = [...initialStates]; let cursor = 0;
   const fakeReact = { ...React, useEffect() {}, useCallback: callback => callback,
     useState(initial) {
@@ -31,6 +31,7 @@ function harness(file, initialStates = []) {
     './media-family-editor': { MediaFamilyEditor: empty },
     './probe-editor': { ProbeEditor: empty }, './project-conflict': { ProjectConflict: empty },
     './studio-types': { requestJson() { throw new Error('Unexpected request'); } },
+    ...overrides,
   };
   const module = { exports: {} };
   vm.runInNewContext(output.code, { module, exports: module.exports, structuredClone,
@@ -45,6 +46,22 @@ function nodes(node, predicate) {
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
 const props = () => ({ initialProject: createSeedProject(), initialVideos: { videos: [] }, connectedLane: true });
+
+test('cloud idle refresh reads the shared registry even when imported media has an old archive label', async () => {
+  const calls = [], refreshed = { videos: [{ id:'new-idle-variant' }] };
+  const h = harness('./lab-studio.tsx', [], {
+    '../lib/lab-url.mjs': { labBasePath: () => '/studio', labUrl: path => `/studio${path}` },
+    './studio-types': { async requestJson(...args) { calls.push(args); return refreshed; } },
+  });
+  const p = props(); p.initialVideos.summary = { archiveSource:'emil-default' };
+  const tree = h.render(p);
+  const refresh = nodes(tree, node => node.type === 'button' && node.props.children === 'Läs in nya idle-klipp')[0];
+  refresh.props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls,[['/api/videos',undefined]]);
+  assert.equal(h.values[2],refreshed);
+  assert.equal(h.values[0],p.initialProject,'loading clips preserves the project draft');
+});
 
 test('focused workspace has one dealer selector, five categories and no duplicate OpenClaw navigation', () => {
   const h = harness('./lab-studio.tsx'); const tree = h.render(props());

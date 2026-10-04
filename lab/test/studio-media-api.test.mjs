@@ -68,15 +68,34 @@ test('two native classification writers have one winner; failed audit rolls back
   const response = await api.handle(request('/studio/api/videos/classify','POST',{id:record.id,sha256:record.sha256,previous:current.classification,metadata:{...current.classification,label:'Must rollback'}}));
   assert.equal(response.status,503); assert.deepEqual(pool.snapshot(),before);
 });
-test('native upload/rescan cannot execute old disk writes and cross-site metadata is rejected',async () => {
+test('native raw upload cannot execute old disk writes and cross-site metadata is rejected',async () => {
   const {api,record,pool} = await fixture();
-  for (const path of ['/studio/api/videos','/studio/api/videos/rescan']) assert.equal((await api.handle(request(path,'POST',{}))).status,503);
+  assert.equal((await api.handle(request('/studio/api/videos','POST',{}))).status,503);
   const body = {id:record.id,sha256:record.sha256,previous:record.classification,metadata:record.classification};
   for (const headers of [{origin:'https://evil.invalid'},{'sec-fetch-site':'same-site'},{'sec-fetch-site':'cross-site'}]) {
     assert.equal((await api.handle(request('/studio/api/videos/classify','POST',body,headers))).status,403);
   }
   assert.equal((await api.handle(request('/studio/api/videos/classify','POST',{...body,actor:'forged'}))).status,400);
   assert.equal(pool.snapshot().audits.length,1);
+});
+
+test('old idle refresh rereads newly registered clips without changing data and keeps native authorization',async () => {
+  const {api,record,repository,pool} = await fixture();
+  const first = await (await api.handle(request('/studio/api/videos/rescan','POST',{}))).json();
+  assert.equal(first.videos.length,1);
+  const id = '00000000-0000-4000-8000-000000000002';
+  await repository.registerMedia({...record,id,pathname:record.pathname.replace(record.id,id)},{actor:'Uploader'});
+  const before = pool.snapshot();
+  const response = await api.handle(request('/studio/api/videos/rescan','POST',{}));
+  assert.equal(response.status,200);
+  assert.equal(response.headers.get('cache-control'),'private, no-store');
+  assert.equal((await response.json()).videos.length,2);
+  assert.deepEqual(pool.snapshot(),before,'refresh does not import, rewrite or audit a mutation');
+  for (const headers of [{origin:'https://evil.invalid'},{'sec-fetch-site':'same-site'},{'sec-fetch-site':'cross-site'}]) {
+    assert.equal((await api.handle(request('/studio/api/videos/rescan','POST',{},headers))).status,403);
+  }
+  const {api:reader} = await fixture({authorize:async () => ({user:'Reader',role:'reader',scope})});
+  assert.equal((await reader.handle(request('/studio/api/videos/rescan','POST',{}))).status,403);
 });
 
 test('native client upload dispatch refreshes live authorization before prepare and after Blob verification',async () => {

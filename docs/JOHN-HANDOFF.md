@@ -3,6 +3,32 @@
 Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Studio: idle-omläsning och OpenClaw-modellval — 5 oktober
+
+Produktionsfelet `studio_native_unavailable` är återskapat via **Läs in nya
+idle-klipp**: importerade poster hade kvar `archiveSource=emil-default`, vilket
+UI tolkade som en order att köra den avvecklade diskskanningen. Cloud Studio
+läser nu videobanken med GET. Äldre öppna flikars POST `/videos/rescan` gör
+endast en autentiserad, färsk registerläsning utan diskimport eller mutation.
+26 riktade UI-/API-/uploadtester PASS; ingen användarfilm har skrivits över.
+
+OpenClaw-fliken får läsa och spara huvudmodell för fem befintliga Croupier-
+agenter genom Studio-adminsessionen. Fallbackordning bevaras, versionkonflikt
+behåller utkastet och sparning bekräftas först efter faktiskt kvitto och
+återläsning. Director tillåter endast denna modelländring med native CAS.
+Det vanliga runtime-tokenet får inte administrera Gateway. Serveridentiteten
+använder OpenClaw 2026.9.5/protokoll 4 och signerad device-pairing; inga
+auth-/verktygs-/providerinställningar exponeras i klienten.
+
+28 riktade backendprov och 16 UI-prov PASS; TypeScript och syntax PASS.
+Vercel Studio har server-only `OPENCLAWAPI_KEY` för production; Director har
+`OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`. Privat återställningsfil:
+`C:/Users/jakem/CroupierBackups/openclaw-studio-admin-device-20261005.json`.
+Värden visas inte i repot. Deployment, exakt pairing och autentiserad
+produktionskontroll återstår när denna kod committas. QA AI/GPU fortsatt OFF.
+Systemkartans graf/faktabindning integreras separat efter denna appversion.
+GitGuardian på `8f265831`: suite queued, incidentlista not-read.
+
 ## Lane-register och medierensning — 5 oktober, pågående leverans
 
 Jakob har beställt en kvarvarande Mobile Phone Lane, tillägg/borttagning av
