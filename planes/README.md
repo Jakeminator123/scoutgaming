@@ -19,9 +19,9 @@ start och gröna tester bevisade inte de tre flöden som nu visar fel.
 
 | Ordning | Plan | Syfte och resultat | Status |
 | --- | --- | --- | --- |
-| 1 | [Sluträttningar](01-slutratningar/PLAN.md) | Rätta GPU-shutdown, zonbild/export och OpenClaw-navigering | Fel verifierade; rättningar öppna |
-| 2 | [Produktionsacceptans](07-produktionsacceptans/PLAN.md) | Kort autentiserat prov och verifierat GPU-avslut på rätt leverans | Planerad efter rättning |
-| 3 | [Systemkarta](02-systemkarta/PLAN.md) | Vanlig HTML-sida med adresser, lagring, databaser och spelflöden | Första HTML-kartan i docs/system-map, 49 tabeller och käll-/testlänkar; full detalj-/driftinventering återstår |
+| 1 | [Sluträttningar](01-slutratningar/PLAN.md) | Rätta GPU-shutdown, zonbild/export och OpenClaw-navigering | Levererade på 5270c8ab; CI, drift, bild/export och dashboard verifierade |
+| 2 | [Produktionsacceptans](07-produktionsacceptans/PLAN.md) | Kort autentiserat prov och verifierat GPU-avslut på rätt leverans | Avgränsat sluträttningsprov klart; full P6 och övriga separata luckor kvar |
+| 3 | [Systemkarta](02-systemkarta/PLAN.md) | Vanlig HTML-sida med adresser, lagring, databaser och spelflöden | HTML med 49 tabeller/299 kolumner/22 FK, 56 exakta Next-filer och käll-/testlänkar; kvarvarande Web-handlers och driftinventering är avgränsade |
 | 3 | [Konton och nycklar](03-konton-och-nycklar/PLAN.md) | Förstå roller, inloggning och varje nyckels rätta placering | Utgår från befintliga register |
 | 4 | [Tester och granskning](04-tester-och-granskning/PLAN.md) | Koppla kartans delar till befintliga tester och begränsad oberoende granskning | Planerad stegvis |
 | Parallellt | [Historik och arkiv](05-historik-och-arkiv/PLAN.md) | Sammanfatta arbetets faser och besluta om loggars bevarande | Startpunkter verifierade i Git |
@@ -72,5 +72,6 @@ tre läsande kartläggningsagenter för den första systemkartan; deras underlag
 - Inga hemliga värden, kund-/spelaruppgifter, privata chattutskrifter eller
   autentiseringscookies i planer eller framtida HTML. Inga prisutredningar.
 - Planleveransen ändrar ingen runtime eller molnkonfiguration. Publicering
-  ska samordnas med sluträttningen: main har automatisk Render-deploy och
-  den kända shutdown-bristen bör beaktas före nästa omstart.
+  ska samordnas med sluträttningen: main har automatisk Render-deploy.
+  Shutdown-rättningen är pushad på 96020c04; aktuell driftacceptans och
+  tidsgränser finns i handoffen och plan 01.

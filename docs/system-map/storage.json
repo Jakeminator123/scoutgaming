@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+  "sourceSha": "5270c8ab93bf593512d0374cb9c36033e59dc103",
   "evidence": {
     "kind": "Kodläst katalog",
     "liveSchemaRead": false,
@@ -8,7 +8,7 @@
     "providerConfigurationRead": false,
     "envFilesRead": false,
     "testsRun": false,
-    "statement": "Tabellnamn och kontrakt är lästa i källkod. Aktuellt installerat live-schema, datarader, grants och providerinställningar är inte avlästa här."
+    "statement": "Samtliga tabellkolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är lästa i sex SQL-källor. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
   },
   "summary": {
     "schemaCount": 4,
@@ -224,48 +224,237 @@
       "schema": "croupier_game",
       "name": "players",
       "purpose": "Spelaridentitet, demo-wallet och kontolivscykel",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "name",
-        "currency",
-        "balance",
-        "created_at",
-        "status",
-        "account_epoch",
-        "closed_at"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 5
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "currency",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "balance",
+          "dataType": "numeric",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "account_epoch",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "closed_at",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 9
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 6
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "transactions",
       "purpose": "Historik för wallet-transaktioner",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "player_id",
-        "type",
-        "amount",
-        "currency",
-        "meta",
-        "at"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 11
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "type",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "amount",
+          "dataType": "numeric",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "currency",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "meta",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 12
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 12
+            }
+          ]
         }
       ]
     },
@@ -273,18 +462,67 @@
       "schema": "croupier_game",
       "name": "blackjack_tables",
       "purpose": "Beständigt auktoritativt blackjack-tillstånd",
-      "keys": [
-        "player_id"
-      ],
-      "fields": [
-        "state"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 16
+        }
+      ],
+      "columns": [
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "state",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "player_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 16
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 16
+            }
+          ]
         }
       ]
     },
@@ -292,20 +530,89 @@
       "schema": "croupier_game",
       "name": "native_presentations",
       "purpose": "Senaste sparade presentationskvitto för spelaren",
-      "keys": [
-        "player_id"
-      ],
-      "fields": [
-        "request_id",
-        "version",
-        "payload"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 17
+        }
+      ],
+      "columns": [
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "payload",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 17
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "player_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 17
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 17
+            }
+          ]
         }
       ]
     },
@@ -313,68 +620,261 @@
       "schema": "croupier_game",
       "name": "player_accounts",
       "purpose": "Inloggningsmappning och lösenordshash",
-      "keys": [
-        "email"
-      ],
-      "fields": [
-        "player_id",
-        "salt",
-        "hash"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 18
         }
       ],
-      "sensitiveFields": [
-        "salt",
-        "hash"
+      "columns": [
+        {
+          "name": "email",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "salt",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 18
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "hash",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 18
+            }
+          ],
+          "sensitive": true
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "email"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 18
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 18
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_game",
       "name": "player_sessions",
       "purpose": "Spelarens sessioner och auth-källstämpel",
-      "keys": [
-        "digest"
-      ],
-      "fields": [
-        "player_id",
-        "expires",
-        "source_stamp",
-        "display_name"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 19
         }
       ],
-      "sensitiveFields": [
-        "digest"
+      "columns": [
+        {
+          "name": "digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "source_stamp",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "display_name",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 19
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 19
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_game",
       "name": "craig_player_links",
       "purpose": "Länk mellan CRAIG-konto och spelaridentitet",
-      "keys": [
-        "craig_user_id"
-      ],
-      "fields": [
-        "player_id"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 21
+        }
+      ],
+      "columns": [
+        {
+          "name": "craig_user_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 21
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 21
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "craig_user_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 21
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 21
+            }
+          ]
         }
       ]
     },
@@ -382,70 +882,264 @@
       "schema": "croupier_game",
       "name": "bo_game_handoffs",
       "purpose": "Engångsövergång från Backoffice till spel",
-      "keys": [
-        "state_digest"
-      ],
-      "fields": [
-        "next_path",
-        "expires",
-        "code_digest",
-        "craig_user_id",
-        "username",
-        "source_stamp",
-        "session_until"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 22
         }
       ],
-      "sensitiveFields": [
-        "state_digest",
-        "code_digest"
-      ]
+      "columns": [
+        {
+          "name": "state_digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "next_path",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "code_digest",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "craig_user_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "username",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "source_stamp",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "session_until",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "state_digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 22
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "preview_sessions",
       "purpose": "Avgränsade förhandsvisningssessioner",
-      "keys": [
-        "digest"
-      ],
-      "fields": [
-        "player_id",
-        "expires"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 23
         }
       ],
-      "sensitiveFields": [
-        "digest"
+      "columns": [
+        {
+          "name": "digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 23
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 23
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 23
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_game",
       "name": "lissabon_profiles",
       "purpose": "Beständig Lissabon-profilkoppling",
-      "keys": [
-        "player_id"
-      ],
-      "fields": [
-        "name_key"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 24
+        }
+      ],
+      "columns": [
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 24
+            }
+          ]
+        },
+        {
+          "name": "name_key",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 24
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "player_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 24
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 24
+            }
+          ]
         }
       ]
     },
@@ -453,57 +1147,135 @@
       "schema": "croupier_game",
       "name": "lissabon_profile_sessions",
       "purpose": "Lissabon-profilsessioner",
-      "keys": [
-        "digest"
-      ],
-      "fields": [
-        "player_id",
-        "expires"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 25
         }
       ],
-      "sensitiveFields": [
-        "digest"
+      "columns": [
+        {
+          "name": "digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 25
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 25
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 25
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 25
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_game",
       "name": "player_chat_memory_meta",
       "purpose": "Versions-/metanycklar för spelarens chattminne",
-      "keys": [
-        "key"
-      ],
-      "fields": [
-        "value"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 26
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "key",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "name": "value",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 26
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "key"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 26
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_chat_memory_profiles",
       "purpose": "Dealerbundet chattminne och revisionshistorik",
-      "keys": [
-        "player_ref",
-        "dealer_id"
-      ],
-      "fields": [
-        "history",
-        "revision",
-        "touched"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + player_ref/dealer_id",
       "sources": [
@@ -511,26 +1283,82 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 27
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "player_ref",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "dealer_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "history",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "touched",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 27
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "player_ref",
+          "dealer_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 27
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_chat_memory_requests",
       "purpose": "Beständig chattrequest, reservation och revisions-CAS",
-      "keys": [
-        "player_ref",
-        "dealer_id",
-        "request_ref"
-      ],
-      "fields": [
-        "fingerprint",
-        "reservation",
-        "profile_revision",
-        "state",
-        "started",
-        "result_fingerprint",
-        "committed_revision"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + player_ref/dealer_id/request_ref",
       "sources": [
@@ -538,25 +1366,138 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 28
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "player_ref",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "dealer_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "request_ref",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "fingerprint",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "reservation",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "profile_revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "state",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "started",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "result_fingerprint",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "committed_revision",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "player_ref",
+          "dealer_id",
+          "request_ref"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 28
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_profiles",
       "purpose": "Aktiv observationsscope, generation och policyläge",
-      "keys": [
-        "scope"
-      ],
-      "fields": [
-        "epoch",
-        "generation",
-        "activity",
-        "sampled",
-        "policy",
-        "reason",
-        "messages",
-        "extraction_at"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope",
       "sources": [
@@ -564,21 +1505,125 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 30
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "epoch",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "generation",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "activity",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "sampled",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "policy",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "reason",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "messages",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "extraction_at",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 30
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 30
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_sessions",
       "purpose": "Ephemär session-/fliknärvaro för observation",
-      "keys": [
-        "scope",
-        "session",
-        "tab"
-      ],
-      "fields": [
-        "seen",
-        "flags"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope/session/tab",
       "sources": [
@@ -586,31 +1631,83 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 31
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "session",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "tab",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "seen",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "flags",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 31
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope",
+          "session",
+          "tab"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 31
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_attempts",
       "purpose": "Observationsförsök, minnesrevision och bevis",
-      "keys": [
-        "scope",
-        "id"
-      ],
-      "fields": [
-        "epoch",
-        "generation",
-        "session",
-        "tab",
-        "policy",
-        "started",
-        "state",
-        "text",
-        "topic",
-        "memories",
-        "played",
-        "memory_revision",
-        "evidence"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope",
       "sources": [
@@ -618,20 +1715,192 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 32
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "epoch",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "generation",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "session",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "tab",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "policy",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "started",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "state",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "text",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "topic",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "memories",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "played",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "memory_revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "evidence",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 32
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope",
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 32
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_sources",
       "purpose": "Källmeddelanden till observation/minnesextraktion",
-      "keys": [
-        "scope",
-        "id"
-      ],
-      "fields": [
-        "text",
-        "created"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope",
       "sources": [
@@ -639,25 +1908,71 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 34
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 34
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 34
+            }
+          ]
+        },
+        {
+          "name": "text",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 34
+            }
+          ]
+        },
+        {
+          "name": "created",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 34
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope",
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 34
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_facts",
       "purpose": "Extraherade fakta med giltighetsfönster",
-      "keys": [
-        "scope",
-        "id"
-      ],
-      "fields": [
-        "topic",
-        "type",
-        "content",
-        "source",
-        "created",
-        "expires",
-        "not_before"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope",
       "sources": [
@@ -665,21 +1980,126 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 35
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "topic",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "type",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "content",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "source",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "created",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "not_before",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope",
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 35
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_probe_rounds",
       "purpose": "Observerade avslutade rundor och handkvitton",
-      "keys": [
-        "scope",
-        "id"
-      ],
-      "fields": [
-        "sequence",
-        "hands",
-        "completed"
-      ],
       "owner": "Render produktserver",
       "scope": "Spelardatabas + observationsscope",
       "sources": [
@@ -687,35 +2107,264 @@
           "path": "ops/neon-game/product-schema.sql",
           "line": 36
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "scope",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "name": "sequence",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "name": "hands",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "name": "completed",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 36
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "scope",
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 36
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "partner_rounds",
       "purpose": "Partnerns rund-/wallet-audit",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "key_id",
-        "player_id",
-        "partner_player",
-        "table_version",
-        "shoe_id",
-        "op",
-        "request_id",
-        "stake",
-        "delta",
-        "currency",
-        "view",
-        "at"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 37
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "key_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "partner_player",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "table_version",
+          "dataType": "integer",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "shoe_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "op",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "stake",
+          "dataType": "numeric",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "delta",
+          "dataType": "numeric",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "currency",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "view",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 37
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 37
+            }
+          ]
         }
       ]
     },
@@ -723,19 +2372,79 @@
       "schema": "croupier_game",
       "name": "partner_players",
       "purpose": "Partnernyckelns externa spelarmappning",
-      "keys": [
-        "key_id",
-        "partner_player"
-      ],
-      "fields": [
-        "player_id"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 38
+        }
+      ],
+      "columns": [
+        {
+          "name": "key_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 38
+            }
+          ]
+        },
+        {
+          "name": "partner_player",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 38
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 38
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "key_id",
+          "partner_player"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 38
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 38
+            }
+          ]
         }
       ]
     },
@@ -743,44 +2452,194 @@
       "schema": "croupier_game",
       "name": "partner_idem",
       "purpose": "Beständiga idempotenta partnersvar",
-      "keys": [
-        "key_id",
-        "request_id"
-      ],
-      "fields": [
-        "response"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 39
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "key_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 39
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 39
+            }
+          ]
+        },
+        {
+          "name": "response",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 39
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "key_id",
+          "request_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 39
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_game",
       "name": "player_admin_events",
       "purpose": "Audit av administrerad spelarkontolivscykel",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "player_id",
-        "actor",
-        "action",
-        "reason",
-        "previous_status",
-        "status",
-        "at"
-      ],
       "owner": "Render produktserver",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 40
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "player_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "actor",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "action",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "reason",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "previous_status",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 40
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "player_id"
+          ],
+          "references": {
+            "schema": "croupier_game",
+            "table": "players",
+            "columns": [
+              "id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 40
+            }
+          ]
         }
       ]
     },
@@ -788,216 +2647,726 @@
       "schema": "croupier_game",
       "name": "storage_migrations",
       "purpose": "Installerad product-v1-migrationsledger",
-      "keys": [
-        "version"
-      ],
-      "fields": [
-        "checksum",
-        "source_hashes",
-        "applied_at"
-      ],
       "owner": "Explicit game-migrationsverktyg; runtime verifierar ledgern",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 59
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "version",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 59
+            }
+          ]
+        },
+        {
+          "name": "checksum",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 59
+            }
+          ]
+        },
+        {
+          "name": "source_hashes",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 59
+            }
+          ]
+        },
+        {
+          "name": "applied_at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 59
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "version"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 59
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "users",
       "purpose": "CRAIG-/Backoffice-konton, roller och lösenordshash",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "username",
-        "email",
-        "salt",
-        "hash",
-        "role",
-        "created_at"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 41
         }
       ],
-      "sensitiveFields": [
-        "salt",
-        "hash"
-      ]
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ]
+        },
+        {
+          "name": "username",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ]
+        },
+        {
+          "name": "email",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ]
+        },
+        {
+          "name": "salt",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "hash",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "role",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 41
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 41
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "tokens",
       "purpose": "Invite-/reset-tokenlookup",
-      "keys": [
-        "token"
-      ],
-      "fields": [
-        "username",
-        "kind",
-        "exp"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 42
         }
       ],
-      "sensitiveFields": [
-        "token"
-      ]
+      "columns": [
+        {
+          "name": "token",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 42
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "username",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "name": "kind",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "name": "exp",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 42
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "token"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 42
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "meta",
       "purpose": "Authinställningar, signeringsmaterial och loginbegränsning",
-      "keys": [
-        "k"
-      ],
-      "fields": [
-        "v"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 43
         }
       ],
-      "sensitiveFields": [
-        "v"
-      ]
+      "columns": [
+        {
+          "name": "k",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 43
+            }
+          ]
+        },
+        {
+          "name": "v",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 43
+            }
+          ],
+          "sensitive": true
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "k"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 43
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "bo_auth_epochs",
       "purpose": "Auth-epoch för revokering efter kontoändring",
-      "keys": [
-        "user_id"
-      ],
-      "fields": [
-        "epoch"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 44
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 44
+            }
+          ]
+        },
+        {
+          "name": "epoch",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 44
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "user_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 44
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "bo_lab_handoffs",
       "purpose": "Engångsövergång till autentiserat Lab/Studio",
-      "keys": [
-        "state_digest"
-      ],
-      "fields": [
-        "next_path",
-        "expires",
-        "code_digest",
-        "craig_user_id",
-        "role",
-        "source_stamp",
-        "auth_epoch",
-        "session_until"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 45
         }
       ],
-      "sensitiveFields": [
-        "state_digest",
-        "code_digest"
-      ]
+      "columns": [
+        {
+          "name": "state_digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "next_path",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "code_digest",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "craig_user_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "role",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "source_stamp",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "auth_epoch",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "session_until",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 45
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "state_digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 45
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "lab_sessions",
       "purpose": "Autentiserade native Studio-sessioner",
-      "keys": [
-        "token_digest"
-      ],
-      "fields": [
-        "craig_user_id",
-        "role",
-        "source_stamp",
-        "auth_epoch",
-        "expires"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 46
         }
       ],
-      "sensitiveFields": [
-        "token_digest"
-      ]
+      "columns": [
+        {
+          "name": "token_digest",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "craig_user_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "role",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "source_stamp",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "auth_epoch",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "expires",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 46
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "token_digest"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 46
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_auth",
       "name": "api_keys",
       "purpose": "Partnercredentials, scopes och nyckellivscykel",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "name",
-        "key",
-        "secret",
-        "scopes",
-        "wallet_url",
-        "ip_allow",
-        "created_by",
-        "created_at",
-        "last_used",
-        "revoked_at"
-      ],
       "owner": "Render auth och native Studio-server",
-      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
         {
           "path": "ops/neon-game/product-schema.sql",
           "line": 47
         }
       ],
-      "sensitiveFields": [
-        "key",
-        "secret"
-      ]
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "key",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "secret",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ],
+          "sensitive": true
+        },
+        {
+          "name": "scopes",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "wallet_url",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "ip_allow",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "created_by",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "last_used",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "revoked_at",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-game/product-schema.sql",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-game/product-schema.sql",
+            "line": 47
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "storage_migrations",
       "purpose": "Immutable käll- och strukturchchecksumledger",
-      "keys": [
-        "version"
-      ],
-      "fields": [
-        "checksum",
-        "structure_checksum",
-        "applied_at"
-      ],
       "owner": "Explicit Studio-migrationsrunner; runtime verifierar",
       "scope": "Databasschema, inte enskilt workspace",
       "sources": [
@@ -1005,22 +3374,70 @@
           "path": "ops/neon-studio/001-studio-metadata.sql",
           "line": 6
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "version",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "checksum",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "structure_checksum",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "applied_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 10
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "version"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/001-studio-metadata.sql",
+            "line": 7
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "documents",
       "purpose": "Aktuella sparade projekt-, social-policy- och administrationsdokument",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "kind"
-      ],
-      "fields": [
-        "revision",
-        "value",
-        "updated_at"
-      ],
       "owner": "Native Studio; Render läser sparad gemensam policy",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1028,25 +3445,94 @@
           "path": "ops/neon-studio/001-studio-metadata.sql",
           "line": 13
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "kind",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "value",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 19
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "kind"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/001-studio-metadata.sql",
+            "line": 21
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "document_history",
       "purpose": "Tidigare sparade dokumentrevisioner",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "kind",
-        "revision"
-      ],
-      "fields": [
-        "value",
-        "original_updated_at",
-        "replaced_at",
-        "replaced_by",
-        "actor"
-      ],
       "owner": "Studio-repository skriver i samma transaktion som CAS-save",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1054,24 +3540,155 @@
           "path": "ops/neon-studio/001-studio-metadata.sql",
           "line": 24
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "name": "kind",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "value",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "name": "original_updated_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "replaced_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "replaced_by",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "actor",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 33
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "kind",
+          "revision"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/001-studio-metadata.sql",
+            "line": 34
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "kind"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "documents",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "kind"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 35
+            },
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 36
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "audit_events",
       "purpose": "Audit av initialize/save/import/register/classify",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "event_id"
-      ],
-      "fields": [
-        "action",
-        "subject",
-        "revision",
-        "actor",
-        "at"
-      ],
       "owner": "Studio-repository",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1079,22 +3696,116 @@
           "path": "ops/neon-studio/001-studio-metadata.sql",
           "line": 39
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 41
+            }
+          ]
+        },
+        {
+          "name": "event_id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "name": "action",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 43
+            }
+          ]
+        },
+        {
+          "name": "subject",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 44
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "actor",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "event_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/001-studio-metadata.sql",
+            "line": 48
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "media_records",
       "purpose": "Exakt medieidentitet och klassificering; inga binärbytes",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "id"
-      ],
-      "fields": [
-        "revision",
-        "record",
-        "updated_at"
-      ],
       "owner": "Native Studio registrerar/klassificerar; native mediaväg läser",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1102,22 +3813,94 @@
           "path": "ops/neon-studio/001-studio-metadata.sql",
           "line": 51
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 52
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 54
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 55
+            }
+          ]
+        },
+        {
+          "name": "record",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 56
+            }
+          ]
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/001-studio-metadata.sql",
+              "line": 58
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/001-studio-metadata.sql",
+            "line": 59
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "speech_execution_leases",
       "purpose": "Fenced ägarskap för fullfil, streamsession och operatörs-QA",
-      "keys": [
-        "environment_id",
-        "resource"
-      ],
-      "fields": [
-        "holder_id",
-        "fence",
-        "expires_at_ms",
-        "recovery_only"
-      ],
       "owner": "Render speech-/QA-journaladaptrar",
       "scope": "Serverägd miljö + resurs",
       "sources": [
@@ -1125,31 +3908,93 @@
           "path": "ops/neon-studio/002-generation-journals.sql",
           "line": 2
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 3
+            }
+          ]
+        },
+        {
+          "name": "resource",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": "holder_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 5
+            }
+          ]
+        },
+        {
+          "name": "fence",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "expires_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "recovery_only",
+          "dataType": "boolean",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 8
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "resource"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/002-generation-journals.sql",
+            "line": 9
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "speech_requests",
       "purpose": "Beständig ägarbunden request och färdig paketmetadata",
-      "keys": [
-        "environment_id",
-        "request_key"
-      ],
-      "fields": [
-        "owner_hash",
-        "request_id",
-        "fingerprint",
-        "capability",
-        "state",
-        "lease_resource",
-        "holder_id",
-        "lease_fence",
-        "package_id",
-        "package_metadata",
-        "safe_error",
-        "created_at_ms",
-        "updated_at_ms"
-      ],
       "owner": "Render speech-journal",
       "scope": "Serverägd miljö + owner_hash/request_id; unik ägarrequest",
       "sources": [
@@ -1157,20 +4002,213 @@
           "path": "ops/neon-studio/002-generation-journals.sql",
           "line": 11
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "request_key",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "owner_hash",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "fingerprint",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "capability",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "state",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "lease_resource",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "holder_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 20
+            }
+          ]
+        },
+        {
+          "name": "lease_fence",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 21
+            }
+          ]
+        },
+        {
+          "name": "package_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "package_metadata",
+          "dataType": "jsonb",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "safe_error",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 24
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "name": "updated_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 26
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "request_key"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/002-generation-journals.sql",
+            "line": 27
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "lease_resource"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "speech_execution_leases",
+            "columns": [
+              "environment_id",
+              "resource"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 29
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "gpu_budget_policies",
       "purpose": "Explicit beständigt dagligt GPU-kostnadstak",
-      "keys": [
-        "environment_id"
-      ],
-      "fields": [
-        "version",
-        "daily_budget_micro_usd",
-        "created_at_ms"
-      ],
       "owner": "Explicit verifierad bootstrap/import; Render journal läser",
       "scope": "Serverägd miljö",
       "sources": [
@@ -1178,27 +4216,70 @@
           "path": "ops/neon-studio/002-generation-journals.sql",
           "line": 35
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 37
+            }
+          ]
+        },
+        {
+          "name": "daily_budget_micro_usd",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 38
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 39
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/002-generation-journals.sql",
+            "line": 36
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "gpu_sessions",
       "purpose": "Beständig GPU-submission, cancellation och terminalkvitto",
-      "keys": [
-        "environment_id",
-        "session_id"
-      ],
-      "fields": [
-        "endpoint_id",
-        "worker_id",
-        "holder_id",
-        "lease_fence",
-        "state",
-        "job_id",
-        "terminal_status",
-        "terminal_reason",
-        "released_at_ms"
-      ],
       "owner": "Render speech-journal",
       "scope": "Serverägd miljö + session",
       "sources": [
@@ -1206,20 +4287,202 @@
           "path": "ops/neon-studio/002-generation-journals.sql",
           "line": 41
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "name": "session_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 43
+            }
+          ]
+        },
+        {
+          "name": "endpoint_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 44
+            }
+          ]
+        },
+        {
+          "name": "worker_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "holder_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "lease_resource",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "lease_fence",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "name": "state",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 49
+            }
+          ]
+        },
+        {
+          "name": "job_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 50
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 51
+            }
+          ]
+        },
+        {
+          "name": "cancel_requested_at_ms",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 52
+            }
+          ]
+        },
+        {
+          "name": "terminal_status",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "name": "terminal_reason",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 54
+            }
+          ]
+        },
+        {
+          "name": "released_at_ms",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 55
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "session_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/002-generation-journals.sql",
+            "line": 56
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "lease_resource"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "speech_execution_leases",
+            "columns": [
+              "environment_id",
+              "resource"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 58
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "gpu_reservations",
       "purpose": "Append-only sessionsreservation per UTC-dygn",
-      "keys": [
-        "environment_id",
-        "session_id",
-        "day"
-      ],
-      "fields": [
-        "reserved_micro_usd"
-      ],
       "owner": "Render speech-journal; ingen runtime-refund/reset",
       "scope": "Serverägd miljö + session/dygn",
       "sources": [
@@ -1227,22 +4490,111 @@
           "path": "ops/neon-studio/002-generation-journals.sql",
           "line": 67
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 68
+            }
+          ]
+        },
+        {
+          "name": "session_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 69
+            }
+          ]
+        },
+        {
+          "name": "day",
+          "dataType": "date",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 70
+            }
+          ]
+        },
+        {
+          "name": "reserved_micro_usd",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 71
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "session_id",
+          "day"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/002-generation-journals.sql",
+            "line": 72
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "session_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "gpu_sessions",
+            "columns": [
+              "environment_id",
+              "session_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 73
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "gpu_budget_policies",
+            "columns": [
+              "environment_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/002-generation-journals.sql",
+              "line": 74
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "operator_qa_campaigns",
       "purpose": "Fryst avgränsad operatörs-QA-kampanj",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "campaign_id"
-      ],
-      "fields": [
-        "created_at_ms",
-        "expires_at_ms",
-        "source_sha256"
-      ],
       "owner": "Explicit fryst QA-import; runtime läser",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1250,28 +4602,208 @@
           "path": "ops/neon-studio/003-operator-speech-qa.sql",
           "line": 3
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 5
+            }
+          ]
+        },
+        {
+          "name": "campaign_id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "expires_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "source_sha256",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 9
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "campaign_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/003-operator-speech-qa.sql",
+            "line": 10
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_studio",
       "name": "operator_qa_gate",
       "purpose": "Vald QA-kampanj/gate; runtime kan inte aktivera eller resetta",
-      "keys": [
-        "environment_id",
-        "workspace_id"
-      ],
-      "fields": [
-        "campaign_id",
-        "created_at_ms",
-        "expires_at_ms",
-        "source_sha256"
-      ],
       "owner": "Explicit fryst QA-import; runtime läser",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
         {
           "path": "ops/neon-studio/003-operator-speech-qa.sql",
           "line": 12
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "campaign_id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "expires_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "source_sha256",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 18
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/003-operator-speech-qa.sql",
+            "line": 19
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "campaign_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_qa_campaigns",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "campaign_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 20
+            },
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 21
+            }
+          ]
         }
       ]
     },
@@ -1279,18 +4811,6 @@
       "schema": "croupier_studio",
       "name": "operator_qa_attempts",
       "purpose": "Beständiga reserverade operatörs-QA-försök",
-      "keys": [
-        "environment_id",
-        "workspace_id",
-        "campaign_id",
-        "attempt"
-      ],
-      "fields": [
-        "turn",
-        "reserved_at_ms",
-        "actor",
-        "source_sha256"
-      ],
       "owner": "Render operator-QA-adapter",
       "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
       "sources": [
@@ -1298,21 +4818,144 @@
           "path": "ops/neon-studio/003-operator-speech-qa.sql",
           "line": 23
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 24
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "name": "campaign_id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "name": "attempt",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "turn",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "reserved_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "name": "actor",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "source_sha256",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 31
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "campaign_id",
+          "attempt"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/003-operator-speech-qa.sql",
+            "line": 33
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "campaign_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_qa_campaigns",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "campaign_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 34
+            },
+            {
+              "path": "ops/neon-studio/003-operator-speech-qa.sql",
+              "line": 35
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "fullfile_budget_policies",
       "purpose": "Explicit fullfilsreservation inom gemensamt GPU-dygnstak",
-      "keys": [
-        "environment_id"
-      ],
-      "fields": [
-        "version",
-        "reserve_micro_usd",
-        "reservation_window_ms",
-        "created_at_ms"
-      ],
       "owner": "Explicit verifierad bootstrap/import; Render journal läser",
       "scope": "Serverägd miljö",
       "sources": [
@@ -1320,21 +4963,100 @@
           "path": "ops/neon-studio/004-fullfile-reservations.sql",
           "line": 3
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "name": "version",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 5
+            }
+          ]
+        },
+        {
+          "name": "reserve_micro_usd",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "reservation_window_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 8
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/004-fullfile-reservations.sql",
+            "line": 4
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "gpu_budget_policies",
+            "columns": [
+              "environment_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 9
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_studio",
       "name": "fullfile_reservations",
       "purpose": "Requestägd fullfilsreservation per UTC-dygn",
-      "keys": [
-        "environment_id",
-        "request_key",
-        "day"
-      ],
-      "fields": [
-        "reserved_micro_usd",
-        "reserved_at_ms"
-      ],
       "owner": "Render speech-journal; ingen runtime-refund/reset",
       "scope": "Serverägd miljö + request/dygn",
       "sources": [
@@ -1342,21 +5064,122 @@
           "path": "ops/neon-studio/004-fullfile-reservations.sql",
           "line": 11
         }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "request_key",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "day",
+          "dataType": "date",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "reserved_micro_usd",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "reserved_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "request_key",
+          "day"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/004-fullfile-reservations.sql",
+            "line": 17
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "request_key"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "speech_requests",
+            "columns": [
+              "environment_id",
+              "request_key"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "fullfile_budget_policies",
+            "columns": [
+              "environment_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/004-fullfile-reservations.sql",
+              "line": 19
+            }
+          ]
+        }
       ]
     },
     {
       "schema": "croupier_zones",
       "name": "clips",
       "purpose": "Uppladdade zonklipps exakta mått och privata mediareferens",
-      "keys": [
-        "id"
-      ],
-      "fields": [
-        "width",
-        "height",
-        "media",
-        "created_at"
-      ],
       "owner": "Labs zonlagring",
       "scope": "Separat zondatabas",
       "sources": [
@@ -1364,20 +5187,81 @@
           "path": "lab/lib/zone-cloud-schema.sql",
           "line": 5
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "width",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "height",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "media",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 10
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "sources": [
+          {
+            "path": "lab/lib/zone-cloud-schema.sql",
+            "line": 6
+          }
+        ]
+      },
+      "foreignKeys": []
     },
     {
       "schema": "croupier_zones",
       "name": "documents",
       "purpose": "Sparad bakgrundsgeometri med revisions-CAS",
-      "keys": [
-        "dealer"
-      ],
-      "fields": [
-        "revision",
-        "zones",
-        "updated_at"
-      ],
       "owner": "Labs zonlagring",
       "scope": "Separat zondatabas; CHECK dealer='astrid'",
       "sources": [
@@ -1385,7 +5269,65 @@
           "path": "lab/lib/zone-cloud-schema.sql",
           "line": 12
         }
-      ]
+      ],
+      "columns": [
+        {
+          "name": "dealer",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "integer",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "zones",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "lab/lib/zone-cloud-schema.sql",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "dealer"
+        ],
+        "sources": [
+          {
+            "path": "lab/lib/zone-cloud-schema.sql",
+            "line": 13
+          }
+        ]
+      },
+      "foreignKeys": []
     }
   ],
   "storageLayers": [
@@ -1607,7 +5549,7 @@
     }
   ],
   "caveats": [
-    "Detta är första katalogsteget med representativa fält, inte en fullständig kolumndatadictionary eller live-schemaattestering.",
+    "Kolumnkatalogen omfattar alla 49 SQL-tabeller i sex befintliga källor. Index, alla CHECK-/UNIQUE-uttryck, triggers och live-grants är inte en full driftinventering; relevanta SQL-källrader är länkade.",
     "Installerat live-schema, grants, riktiga rader, faktiska miljövärden och providerresurser är inte avlästa här.",
     "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
     "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
@@ -1617,5 +5559,65 @@
     "Versionschecksum, mediahash och testpass bevisar inte visuell lipsyncacceptans.",
     "Gamla Lissabon/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift.",
     "Befintliga testfiler är inventerade, inte körda som del av denna kataloguppgift."
-  ]
+  ],
+  "sqlContractCatalog": {
+    "complete": true,
+    "scope": "Samtliga 49 CREATE TABLE-kontrakt i de sex befintliga SQL-källorna; inga live-schema/grants/rader avlästa.",
+    "sourceCount": 6,
+    "tableCount": 49,
+    "columnCount": 299,
+    "primaryKeyCount": 49,
+    "foreignKeyCount": 22,
+    "columnCountBySchema": {
+      "croupier_game": 143,
+      "croupier_auth": 41,
+      "croupier_studio": 106,
+      "croupier_zones": 9
+    },
+    "nullableCountBySchema": {
+      "croupier_game": 22,
+      "croupier_auth": 15,
+      "croupier_studio": 10,
+      "croupier_zones": 0
+    },
+    "dataTypes": [
+      "bigint",
+      "boolean",
+      "date",
+      "integer",
+      "jsonb",
+      "numeric",
+      "text",
+      "timestamptz",
+      "uuid"
+    ],
+    "nullabilityRule": "nullable avser SQL-deklarerad NOT NULL samt PRIMARY KEY:s implicita NOT NULL. Villkorade CHECK-krav är inte en annan generell nullability; deras fulla uttryck läses via källraden.",
+    "relationRule": "Endast uttryckliga FOREIGN KEY/REFERENCES är katalogiserade; namnlikhet innebär ingen gissad relation.",
+    "sources": [
+      {
+        "path": "ops/neon-game/product-schema.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/001-studio-metadata.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/002-generation-journals.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/003-operator-speech-qa.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/004-fullfile-reservations.sql",
+        "line": 1
+      },
+      {
+        "path": "lab/lib/zone-cloud-schema.sql",
+        "line": 1
+      }
+    ]
+  }
 }

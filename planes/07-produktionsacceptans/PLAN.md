@@ -8,6 +8,17 @@ Studio, zonexport, OpenClaw-navigering och shutdown behöver egna aktuella bevis
 
 ## Förutsättningar
 
+**Avgränsat prov levererat 5 oktober:** källkod5270c8ab, CI3/3 PASS,
+produkt-Render LIVE och två Vercelbyggen READY; Director96020c04 LIVE.
+Studio-bild1080×1920, faktisk PNG-zonexport290×104 med identiska pixlar,
+native OpenClaw-klick/Owner-anslutning, anonym bild401 och loginredirect303
+är verifierade. Zonrevision1 bevarad, inga konto-/spel-/saldomutationer.
+Linuxprocesskedjan4/4 med verkliga barn/worker-WebSocket och isolerad långsam
+provider passerar naturlig terminal, cancellation och timeout. Render90 är
+driftsatt; GPU0 köade/pågående, QA AI/GPU OFF. Inget nytt betalt GPU-prov.
+Aktuell spelfliks idle-varning, full P6, fysiska enheter, produktionsmail och
+full incidentlista är separata öppna kontroller; se John-handoffens driftbevis.
+
 - [Sluträttningarna](../01-slutratningar/PLAN.md) är genomförda, riktade
   integrationsprov passerar och obligatoriska repositorychecks är gröna.
 - En oberoende, avgränsad granskning har hanterat bevisade fel i paketet.
@@ -58,7 +69,7 @@ Prisunderlag ska inte starta en ny utredningsrunda.
 | Del | Hantering |
 | --- | --- |
 | P7/P8: import, gemensam policy, fysisk avveckling | Genomförda; referera befintliga bevis, gör inte om flytten |
-| Tre efterfunna funktionsfel | Öppna till rättning och verifiering enligt plan 01 |
+| Tre efterfunna funktionsfel | Rättade, driftsatta och avgränsat verifierade enligt plan 01 på 5270c8ab |
 | Utökad P6/naturlig provideravslutning/mänsklig medieacceptans | Redovisa exakt vad det nya provet täcker; bocka inte av hela P6 genom ett delprov |
 | Produktionsmail/invite/reset | Separat flöde; tidigare QA-levererat mail bevisar inte hela produktionsflödet |
 | GitGuardian | Senaste läsning: commitmetadata komplett, suite queued, inga synliga check-runs; incidentlista not-read, tidigare känd incident 37830671 |

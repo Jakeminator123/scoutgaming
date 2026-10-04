@@ -5,13 +5,20 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 ## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
 
-Första paketet är pushat som `96020c04fd2fbcbd333ce07e54fa9fb57694693a`.
-CI hittade därefter `Promise<Response | null>` för zonens GET: JavaScript-
-hjälparens kastande funktion gav inte TypeScript tillräcklig narrowing.
-Felsituationen kastar nu direkt före Response-användningen. Returtypen
-är kontrollerad utan inkrementell cache (`tsc --incremental false`), PASS;
-zonens 12 riktade testfall PASS. Director är LIVE på 96020c04;
-produktens automatiska deploy väntar på den rättade versionens gröna CI.
+**Levererad kod:** `5270c8ab93bf593512d0374cb9c36033e59dc103` efter
+första paketet `96020c04fd2fbcbd333ce07e54fa9fb57694693a`.
+Tre GitHub-jobb PASS på 5270c8ab. Produktens Render är LIVE,
+`dep-db1d59g473hc739001u0`; frontend `dpl_Fer8ecvTRv5bhjLtC9G7CtWJUgLe`
+och Studio `dpl_J9xFyB5FTSDctzRmvV6MbVg4T2UG` är READY på samma SHA.
+Director är LIVE på 96020c04, `dep-db1cvhe0tbcc73ajk4j0`; dess fixade
+proxyfil är oförändrad i följdcommiten. Privat Gateway ligger kvar på
+15bd1541 och har inte behövt omdeployas.
+
+CI fann `Promise<Response | null>` för zonens GET efter första pushen;
+det lokala bygget hade missat detta. JavaScript-hjälparens indirekta kast
+gav inte TypeScript tillräcklig narrowing. Felsituationen kastar nu direkt
+före Response-användningen. `tsc --incremental false`, de 12 zonfallen och
+följdcommitens obligatoriska fullhook PASS; sedan passerade CI:s färska bygge.
 
 Jakob beställer uttryckligen rättning, stage/commit/push och parallell
 komplettering av den befintliga HTML-kartan. GPU-processens cleanup börjar
@@ -44,16 +51,37 @@ lease release0 före båda flusharna/release1 efter. Efter rättningen close-
 regression 38/38 och Linuxkedjan 4/4 PASS. Nya regressionsprov är anslutna
 till befintlig fullhook/CI, ingen separat kontrollmotor.
 
-Driftpublicering och autentiserad zonbild/export/OpenClaw-klick återstår
-i denna källleverans. RunPod-health 21:52 UTC: completed6/failed0,
-inProgress0/inQueue0, workers running0/idle1/ready1. Inget betalt AI/TTS/GPU-jobb
-har skapats av buggrättningen; QA AI/GPU är återavläst OFF 22:03 UTC, 37 envposter
-och inga Cartesia-/RunPodnycklar. Render90 applicerad och GET-verifierad
-22:05 UTC, samtliga 51 produkt-envvärden identiska; GPU0 köade/pågående.
-Inställningen behöver den kommande deploymenten för att träda i kraft.
-Kartunderlaget samlas direkt i befintliga JSON-filer,
-utan nya researchrapporter. Backup, P7/P8, konto-/speldata och tidigare
-journaler/reservationer är bevarade.
+**Faktiskt driftprov 22:20–22:38 UTC den 4 oktober:** klick från Studio
+nådde native OpenClaw och Agents-vyn med befintlig Owner-anslutning, utan
+modelljobb eller ändrad pairing. Studio avkodade zonreferensen till 1080×1920.
+Chrome exporterade den redan befintliga zonen (696,269,290,104): PNG
+48 513 byte, 290×104, pixel för pixel identisk med det registrerade utsnittet.
+Molnets zonrevision1 och båda webbläsarprofilerna bevarades; ingen save/delete
+eller konto-/saldo-/spelmutation gjordes. Anonym bildåtkomst gav 401;
+anonym `/blackjack` gav 303 till `/player-login`. Befintlig autentiserad
+Mobile Phone Lane-spelflik och Studio var åtkomliga. Render-health200.
+
+Render90 är applicerad, omdeployad och GET-verifierad. Vid ändringen
+22:05 UTC var alla 51 produkt-envvärden identiska. Efter leveransen
+22:38 UTC: 51 envposter och RunPod completed6/failed0, inProgress0/inQueue0,
+workers running0/idle1/ready1. Inget nytt betalt AI/TTS/GPU-jobb skapades av
+buggrättningen. QA37 envposter, AI/GPU/kamera OFF och inga Cartesia-/RunPodnycklar.
+Processavslut med aktiv worker och långsam provider är bevisat i den isolerade
+Linuxkedjan, inklusive naturligt avslut/cancellation/timeout; inget nytt betalt
+produktionsjobb eller full P6-acceptans påstås. Spelfliken visade vid den
+läsande efterkontrollen `Idle: Film ended without a presented frame`.
+Den observationen är en separat medie-/P6-lucka, inte ett godkänt playbackprov.
+Fysiska mikrofon-/kamera-/mobilprov, produktionsmail och GitGuardian-
+incidentlistan är fortsatt öppna; full commitmetadata läst, GitGuardian queued,
+incidentlista not-read, känd incident37830671 inte avskriven. Prisunderlag backlog.
+
+Kartunderlaget är införlivat direkt i befintliga JSON-filer/HTML: 49 tabeller,
+299 kolumner med datatyp/nullbarhet, 49 PK/22 explicita FK samt 56 Next-filer
+med 61 uttryckliga HTTP-exporter. 284 unika källvägar och HTML/JS kontrollerade;
+browserprov av sök/filter, SQL-detaljer och routeadress PASS. Installerade
+live-grants, återstående detaljerade Web-handlers och automatisk kontrakts-
+driftmarkering är avgränsade nästa etapper. Inga nya researchrapporter.
+Backup, P7/P8, konto-/speldata och tidigare journaler/reservationer är bevarade.
 
 ## Systemkarta och lokal städning — 4 oktober, efter d3fd13d3
 
