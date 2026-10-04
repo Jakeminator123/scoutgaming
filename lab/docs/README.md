@@ -45,6 +45,17 @@ Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
 Backoffice grupperar alla 15 befintliga sektioner, inklusive lane-val, under drift/spelintegritet,
 bord/personal, konton, partner, betalningar/journal och mediegranskning.
+
+**Lanes:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
+presentationskoden visar kort och spelar media. En lane väljer vilken
+presentation och mediesamling som används. Mobile Phone Lane är enda
+standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Backoffice →
+Spel, lanes & bord kan en admin lägga till porträttlanes, välja aktiv lane
+och ta bort lanes. De nya porträttlanerna delar Astrids bank och inställningar.
+Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
+Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
+kräver en separat kontroll av återstående användning, inklusive QA.
+
 Native Studio/Backoffice använder de befintliga kontonas rollkontroller och
 den gemensamma Neon-källan. En Studio-inloggning ger inga nya administrativa
 rättigheter.

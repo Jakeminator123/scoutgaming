@@ -1,11 +1,11 @@
 export type StudioRole = 'admin' | 'superadmin';
 /** Only admin is issued; superadmin is accepted for legacy stored identities. */
 export function normalizeStudioRole(value: unknown): 'admin' | null;
-export type StudioAdminSectionId = 'ops' | 'voice' | 'clips' | 'gens' | 'apikeys'
+export type StudioAdminSectionId = 'ops' | 'lanes' | 'voice' | 'clips' | 'gens' | 'apikeys'
   | 'emails' | 'users' | 'rooms' | 'dealers' | 'pit' | 'tours' | 'players' | 'pay' | 'shoes';
 export type StudioAdminActionId = 'overview' | 'config' | 'voicelines' | 'clips'
   | 'generations' | 'gen-verdicts' | 'apikeys' | 'users' | 'players' | 'transactions' | 'emails' | 'shoes'
-  | 'voiceline-review' | 'tournament' | 'pitboss' | 'tier' | 'room' | 'clip-landing'
+  | 'voiceline-review' | 'tournament' | 'pitboss' | 'tier' | 'room' | 'clip-landing' | 'game-lane' | 'game-lanes/create' | 'game-lanes/remove'
   | 'clip-never' | 'gen-landing' | 'gen-verdict' | 'players/create' | 'players/status' | 'players/password'
   | 'users/invite' | 'users/resend' | 'users/role' | 'users/remove' | 'apikeys/create'
   | 'apikeys/revoke' | 'apikeys/rotate' | 'apikeys/launch' | 'apikeys/credit' | 'speech-qa';

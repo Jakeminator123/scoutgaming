@@ -25,7 +25,7 @@ function adminEndpoint(method, action) {
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
   ...['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts',
     'apikeys', 'users', 'players', 'transactions','emails','shoes'].map(action => adminEndpoint('GET', action)),
-  ...['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'clip-landing',
+  ...['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
+import { GAME_LANES } from '../../web/public/game-lanes.mjs';
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
 const voiceIdentity = { audioSha256: 'a'.repeat(64), videoSha256: 'b'.repeat(64), previewSha256: 'c'.repeat(64),
@@ -39,9 +40,32 @@ test('active lane requires admin and a current revision; it preserves the other 
   assert.equal(f.state.writes.length,0);
   const before=structuredClone(f.state.document.value);
   assert.deepEqual(await f.call('POST','game-lane',body),{ok:true,revision:'studio-new'});
-  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone'});
+  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone',gameLanes:GAME_LANES});
   await assert.rejects(f.call('POST','game-lane',{...body,lane:'original'}),error=>error.statusCode===409);
   assert.equal(f.state.document.value.gameLane,'mobile-phone');
+});
+
+test('lane creation and removal enforce role, CAS, replacement and preserve shared state', async () => {
+  const f = fixture(), definition = { ...GAME_LANES[0], id: 'mobile-two', label: 'Second mobile' };
+  const body = { definition, expectedRevision: 'studio-original' };
+  for (const action of ['game-lanes/create', 'game-lanes/remove']) {
+    await assert.rejects(f.data.handlers.get(`POST /studio/api/admin/${action}`)({ ...f.context(body), actor: { user: 'viewer', role: 'reader' } }), e => e.statusCode === 403);
+  }
+  await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'stale' }), e => e.statusCode === 409);
+  await f.call('POST', 'game-lanes/create', body);
+  assert.deepEqual(f.state.document.value.gameLanes, [...GAME_LANES, definition]);
+  assert.equal(f.state.document.value.gameLane, 'mobile-phone');
+  await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'studio-new' }));
+  await assert.rejects(f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: null, expectedRevision: 'studio-new' }));
+  await f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: 'mobile-two', expectedRevision: 'studio-new' });
+  assert.equal(f.state.document.value.gameLane, 'mobile-two');
+  assert.deepEqual(f.state.document.value.rooms, [{ id: 'one', state: 'preview' }]);
+  await f.call('POST', 'game-lanes/remove', { lane: 'mobile-two', replacementLane: null, expectedRevision: 'studio-new' });
+  assert.deepEqual(f.state.document.value.gameLanes, []);
+  assert.equal(f.state.document.value.gameLane, null);
+  await f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'studio-new' });
+  assert.equal(f.state.document.value.gameLane, 'mobile-two');
+  assert.ok(f.state.writes.every(write => write.kind === 'administration'));
 });
 
 test('voice readouts preserve four dealers but only bind human reviews to the exact complete media/text/index/calibration identity', async () => {

@@ -9,6 +9,15 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
+**Lane-register/rensning, 5 oktober, pågående:** Mobile är enda förvalda lane;
+admin kan skapa och ta bort sparade lane-definitioner med revisionskontroll.
+Gemensam kortgrund ligger i `web/public/card-presentation`. 2 410 gamla
+source/staging-binära filer (2,13 GB) har tagits bort lokalt med verifierade
+hashar. Blob-purge och full rensning av äldre runtime/dubbletter återstår;
+QA delar Blob och dess aktiva beroenden skyddas. Se aktuell John-handoff
+för exakta mängder och verifieringsstatus. Lane-borttagning är inte i sig
+en automatisk radering av delade medier.
+
 **Studio-design, 5 oktober, `7d7814db`:** kompakt klippöversikt, utfällbara Idle-inställningar
 och gemensam gråblå Studio/Backoffice-palett. 77 riktade tester, TypeScript,
 produktionsbygge, fullhook, tre CI-jobb och synkaudit --probe PASS. Frontend/Studio

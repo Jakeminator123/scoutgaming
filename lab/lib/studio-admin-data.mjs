@@ -3,7 +3,7 @@ import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
 import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
-import { isGameLane } from '../../web/public/game-lanes.mjs';
+import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../web/public/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
@@ -47,10 +47,30 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
       return { ok: true, revision: saved.revision };
     });
   }
-  register('GET', 'config', async () => { const saved = await config(); return { ...saved.value, revision: saved.revision }; });
+  register('GET', 'config', async () => { const saved = await config(); return { ...saved.value, ...gameLaneConfiguration(saved.value), revision: saved.revision }; });
   change('game-lane', ['lane'], (value, body) => {
-    if (!isGameLane(body.lane)) fail();
+    const lanes = gameLaneConfiguration(value);
+    if (!isGameLane(body.lane, lanes.gameLanes)) fail();
+    value.gameLanes = lanes.gameLanes;
     value.gameLane = body.lane;
+  });
+  change('game-lanes/create', ['definition'], (value, body) => {
+    const lanes = gameLaneConfiguration(value);
+    let next;
+    try { next = validateGameLanes([...lanes.gameLanes, body.definition]); } catch { fail(); }
+    value.gameLanes = next;
+    value.gameLane = lanes.gameLane ?? body.definition.id;
+  });
+  change('game-lanes/remove', ['lane', 'replacementLane'], (value, body) => {
+    const lanes = gameLaneConfiguration(value);
+    if (!isGameLane(body.lane, lanes.gameLanes)) fail(404);
+    const remaining = lanes.gameLanes.filter(lane => lane.id !== body.lane);
+    const active = lanes.gameLane === body.lane ? body.replacementLane : lanes.gameLane;
+    if (remaining.length ? !isGameLane(active, remaining) : active !== null) fail(409);
+    // Collections can have multiple lane owners. Removing a catalogue entry
+    // never grants authority to delete shared media or historical job artifacts.
+    value.gameLanes = remaining;
+    value.gameLane = active;
   });
   register('GET', 'voicelines', async () => {
     const [saved, registry] = await Promise.all([config(), voiceLines()]);

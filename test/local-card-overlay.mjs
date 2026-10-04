@@ -1,11 +1,11 @@
-// Renderer regression cases adapted from Kevin review commit 0d12b7a559d328a333598b7e583b980e88d7925c; see kevin-cards/README.md.
+// Renderer regression cases adapted from Kevin review commit 0d12b7a559d328a333598b7e583b980e88d7925c; see card-presentation/README.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { calibration } from '../web/public/kevin-cards/calibration.mjs';
+import { calibration } from '../web/public/card-presentation/calibration.mjs';
 import { createCardCursor } from '../web/public/local-card-overlay.mjs';
-import { firstFaceTime } from '../web/public/kevin-cards/card-face-projection.js';
+import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
   assert.equal(calibration.videos.length, 10);
@@ -68,9 +68,9 @@ test('a retried film hides its half-presented incoming face and ignores the old 
   cursor.frame(retry, 2); assert.ok(draw(svg, 1));
   assert.equal(cursor.finish(first, 1, true), false); assert.equal(cursor.finish(retry, 1, true), true);
 });
-import { createGameCards } from '../web/public/kevin-cards/game-cards.js';
-import { DEAL_CONTACT } from '../web/public/kevin-cards/card-table-layout.js';
-import { dealerHandClip } from '../web/public/kevin-cards/dealer-hand-occlusion.js';
+import { createGameCards } from '../web/public/card-presentation/game-cards.js';
+import { DEAL_CONTACT } from '../web/public/card-presentation/card-table-layout.js';
+import { dealerHandClip } from '../web/public/card-presentation/dealer-hand-occlusion.js';
 
 // Minimal SVG tree: records removals, including re-appending an existing node.
 // This tests renderer lifetime/occlusion, not browser paint or video decoding.
@@ -146,7 +146,7 @@ test('hidden card matches the filmed opaque Scout back, without exposing its val
   assert.equal(face.children[0].attrs.fill,'#050404');
   assert.equal(face.children[0].attrs.width,'63');assert.equal(face.children[0].attrs.height,'85');
   assert.equal(face.children[1].tag,'image');
-  assert.equal(face.children[1].attrs.href,'/kevin-cards/back-scout.png');
+  assert.equal(face.children[1].attrs.href,'/media/game/runtime/cards/back-scout.png');
   assert.ok(!all(hole).some(n=>n.tag==='text'));
 });
 

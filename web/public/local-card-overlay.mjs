@@ -1,8 +1,8 @@
-import { createGameCards } from './kevin-cards/game-cards.js';
-import { firstFaceTime } from './kevin-cards/card-face-projection.js';
-import { DEAL_CONTACT } from './kevin-cards/card-table-layout.js';
-import { calibration } from './kevin-cards/calibration.mjs';
-import { svgNode } from './kevin-cards/renderer-support.js';
+import { createGameCards } from './card-presentation/game-cards.js';
+import { firstFaceTime } from './card-presentation/card-face-projection.js';
+import { DEAL_CONTACT } from './card-presentation/card-table-layout.js';
+import { calibration } from './card-presentation/calibration.mjs';
+import { svgNode } from './card-presentation/renderer-support.js';
 
 // Render only server-issued cards. Visibility is a separate presentation cursor:
 // a committed round may already contain cards that have not been dealt on screen.

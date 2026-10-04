@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
+import { gameLaneConfiguration } from '../public/game-lanes.mjs';
 import {
   StudioStorageError, studioStorageFailure, validateStudioScope, validateRevision,
   validateActor, validateDocumentValue, canonicalStudioJson,
@@ -95,7 +96,10 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const project = validateDocumentValue('project', projectDocument.value, validateRevision(projectDocument.revision));
       const administration = validateStudioGameAdministration(administrationDocument.value);
       validateRevision(administrationDocument.revision);
-      for (const dealerId of new Set(Object.values(administration.tiers))) {
+      // Old tier names do not make retired indexed assets dependencies of a
+      // portrait lane. Indexed adapters keep their exact availability checks.
+      const indexed = gameLaneConfiguration(administration).gameLanes.filter(lane => lane.renderer === 'indexed-video');
+      for (const dealerId of new Set(indexed.length ? [...Object.values(administration.tiers), ...indexed.map(lane => lane.dealer)] : [])) {
         if (idle.get(dealerId) !== true) fail('studio_game_dealer_unavailable', write ? 409 : 503);
       }
       return { project, administration };
@@ -146,7 +150,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const saved = await readSaved();
       // Review verdicts and other administration-only metadata stay private.
       return freeze({ tiers: saved.administration.tiers, rooms: saved.administration.rooms,
-        gameLane: saved.administration.gameLane ?? 'original',
+        ...gameLaneConfiguration(saved.administration),
         pitboss: saved.administration.pitboss, tournaments: saved.administration.tournaments,
         revision: saved.revision, projectRevision: saved.projectRevision,
         administrationRevision: saved.administrationRevision, configurationSource: saved.configurationSource });
