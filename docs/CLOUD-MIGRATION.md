@@ -9,11 +9,13 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
-**Studio-design, 5 oktober:** kompakt klippöversikt, utfällbara Idle-inställningar
+**Studio-design, 5 oktober, `7d7814db`:** kompakt klippöversikt, utfällbara Idle-inställningar
 och gemensam gråblå Studio/Backoffice-palett. 77 riktade tester, TypeScript,
-produktionsbygge och synkaudit --probe PASS. Mobile Phone Lanes uppspelning
-och medie-/dataägarskap består. Native Vercel-layout verifieras efter push;
-upload/delete och lane-synk saknar ännu separat driftkvitto. Backoffice-väntan
+produktionsbygge, fullhook, tre CI-jobb och synkaudit --probe PASS. Frontend/Studio
+READY på denna SHA. Native Vercel-layout PASS vid 1285/390 px, inklusive öppna
+inställningar och standardpreview; BO laddar utan fel. Mobile Phone Lanes
+uppspelning och medie-/dataägarskap består. Upload/delete och lane-synk
+saknar ännu separat driftkvitto. Backoffice-väntan
 är observerad i sessions-/datahämtning, utan isolerad Render-orsak.
 Detaljer och kvarstående acceptans finns i [JOHN-HANDOFF](JOHN-HANDOFF.md).
 

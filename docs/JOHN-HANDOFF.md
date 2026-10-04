@@ -19,14 +19,23 @@ talpar, frame-index och kalibrering är oförändrade. Befintlig avstängning
 MERGE är tillfrågad om separat upload/delete- och lane-verifiering.
 Inga produktionsfiler eller inställningar har muterats för designprovet.
 
-Verifierat: 77 riktade Studio/Idle/BO/navigation/draft-testfall PASS,
-TypeScript och produktionsbygge PASS. Synkaudit med --probe PASS för alla
-fyra dealeruppsättningar; den tidigare mänskliga medieacceptansluckan består.
+Levererad kod: `7d7814db0da0b5418a3965a8342d8a4c4db9b086`. Obligatorisk
+fullhook och tre GitHub CI-jobb PASS; frontend och Studio är READY på denna
+SHA. 77 riktade Studio/Idle/BO/navigation/draft-testfall, TypeScript och
+produktionsbygge PASS. Synkaudit med --probe PASS för alla fyra dealeruppsättningar;
+den tidigare mänskliga medieacceptansluckan består.
 Offline-Studio svarar 503 studio_read_storage_unavailable efter Neon-cutover;
 ingen auth- eller lagringsfallback införs för QA. Den statiska layoutbilden
-är återkallad som bevis. Riktig Vercel-layout och responsiv kontroll görs
-efter designpubliceringen. Temporära HTML-filer är borttagna och det
-koordinerade offlineparet stoppat.
+är återkallad som bevis. Riktig autentiserad Vercel-layout PASS vid 1285 och
+390 px: 17 replik- och 10 dealkort, inga överlappningar, inga synliga knappar
+utanför korten eller horisontell scroll. Öppna fil-/Idle-/Probe-avsnitt och
+deal-/replikinställningar ryms. Idle-sökning ger rätt rad. Vera, Amira och Mei
+visar sina befintliga Idle-vyer utan layoutfel på mobilbredd. Backoffice laddar
+med den nya paletten och utan fel. Standardpreview av blackjack.mp4 spelade
+till slut, 4,5 s, readyState4 och video.error=null; detta är klippgranskning,
+inte full spel-/lane-acceptans. Spara-knappen var fortsatt inaktiv under hela
+provet. Inget nytt AI-/GPU-jobb, sparning, upload eller delete utfördes.
+Temporära HTML-filer är borttagna och det koordinerade offlineparet stoppat.
 
 Backoffice kunde öppnas autentiserat i drift. En observerad laddning tog
 cirka tio sekunder: fyra session-GET och tre administrations-GET. Klienten
@@ -34,7 +43,7 @@ läser identitet först och igen för varje dataanrop, sedan väntar översikten
 på alla svar. BO kör på Vercel med Neon; vissa spelavläsningar går via Render.
 Det finns inget isolerat bevis för att Render ensam orsakar väntan.
 Denna leverans ändrar laddtexten men inte sessions-/dataflödet.
-GitGuardian på fryst remote f62d49b7: suite queued, inga synliga check-runs,
+GitGuardian på levererad kod 7d7814db: suite queued, inga synliga check-runs,
 incidentlistan not-read; ingen incidentfri status påstås.
 
 ## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
