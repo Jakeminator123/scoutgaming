@@ -3,6 +3,56 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Senast verifierade driftläge — 4 oktober 03:00 UTC
+
+Main `11734dfd344d5601d22926746392eea0b6b2c1be` är pushad och återläst.
+Den innehåller appkoden från `637c6445`; samlad fullhook 1 298 PASS,
+6 SKIP, 0 FAIL, färskt fyrworkerbygge, tracekontroll och typkontroll PASS.
+GitHub-run `37170148712` har tre success-jobb. Samtliga tre QA-tjänster och
+produktens tre tjänster har verifierad 117-källa. QA:s befintliga alias är
+bundna och tio bevarandekontroller passerar. Produktionsdata, dess 44
+miljönycklar och gamla Studio-policy är oförändrade; P7 är inte genomfört.
+
+Det enda manuella fortsättningsfönstret `8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3`
+bevarade originalets tretton journalposter och alla reservationer. Faktisk
+Studio-login, resetlänk, administration och signerad spelöverlämning passerade.
+Ett separat obetalt prov visade QA-serverns klocka 108 ms före testdatorn;
+QA-wrapperns strikta klockkontroll avvisade då korrekt context. Den efterföljande
+isolerade browserkalibreringen var dokumenterad och ändrade ingen serverstämpel,
+expiry, publik källa eller budget. Den är inte ett normalt browser-PASS.
+
+Det betalda streamprovet skapade exakt en descriptor men avvisades före
+transport/uppspelning: den privata helpern skickade sex ägarfält, inklusive
+`observedAtMs`, till ett API som kräver exakt fem. Descriptor→fel tog 20 ms.
+Nytt bild-/ljud-/queue-END-bevis saknas. Servern avbröt det kända GPU-jobbet;
+sessionen är terminal/released/CANCELLED och streamrequesten failed utan paket.
+Kumulativt: 2 generationer, 3 SDK, 1 TTS, 2 GPU, tjugo journalposter,
+inga osäkra dispatchutfall eller automatiska retries. Ingen ytterligare
+generation/GPU-submit ryms i Jakobs två-generationersprov. USD är null,
+reservationerna består och ingen återbetalning gjordes. Bevisen finns under
+befintlig `verify-final-qa/8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3-stream-clock-delayed*`.
+
+QA är återställd och faktiskt OFF på `dep-db0rv0vavr4c73936640`: exakt 42
+tidigare miljönycklar, UID 1000/Web-PID 18, alla flaggor av, router 404,
+health 200 och bevarat manifest/SDK. OFF-kvitto SHA256
+`9b3a214f364a1ea501faff1081a428cf42fa0a801c6fea5c8af1c827db47497c`.
+Efter faktisk DB-expiry 03:03:02 UTC är samtliga leases inaktiva; ingen SQL-lease
+ändrades manuellt. Den bevarade cancellation-helpern stängde därefter journalen
+append-only som post 21, counts 2/3/1/2 och refund0. Cleanup-kvitto SHA256
+`d28a7f06f50c5ae77e6dcdccf3424c9d719d88e001e0d2b4450e49bccbad0bed`
+är en stängd misslyckad körning, ingen acceptans. Providerjobb/kö är noll,
+men varm idle/ready-worker är inte ALL0-drain. Natural-close, full P6,
+produktionsadmission/import/omkoppling och fysisk
+avveckling är därför inte godkända. Städkoden hålls på egna lokala brancher.
+Den privata femfältsrättningen är syntaxgranskad utan ny betald körning.
+Publik bounded-klockrättning `ed5f74f2` är integrerad lokalt som `f8300c51`:
+29 riktade tester och workerfullhook 1 288 PASS/4 SKIP/0 FAIL, med oförändrade
+mediebytes. Rootfullhook passerade 1 310 PASS/6 SKIP/0 FAIL; oförändrad
+bygggraf återanvänder det godkända färska 637-bygget. Publicering återstår;
+faktisk drift är ännu 117. Nytt betalt spelprov behöver ett uttryckligt
+beslut om utökad testkvot; tidigare ja till nycklar gäller fortsatt.
+Äldre versionsstycken nedan beskriver tidigare bevis och ersätter inte detta läge.
+
 ## Beställd slutföring och avgränsat prisundantag — 4 oktober
 
 Jakob har uttryckligen beställt AI/tal/GPU-aktivering, produktionsimport och

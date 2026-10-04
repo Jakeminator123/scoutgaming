@@ -25,6 +25,45 @@ Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstest
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
+**Aktuellt verifierat läge, 4 oktober 03:00 UTC:** publicerad main är
+`11734dfd344d5601d22926746392eea0b6b2c1be`, med samlad fullhook
+1 298 PASS/6 SKIP/0 FAIL, färskt fyrworkerbygge/tracekontroll/typkontroll
+PASS och GitHub-run `37170148712` success för alla tre jobb. QA:s tre
+tjänster och produktens tre tjänster har faktisk 117-källa; QA-alias och
+tio bevarandekontroller passerar. Produktens gamla Studio-policy/data och
+44 miljönycklar består. Produktionsimport, omkoppling och fysisk P8 återstår.
+
+Manuellt fortsättningsfönster `8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3`
+bevarar originalets tretton poster och reservationer. Faktisk Studio/reset/
+administration/spelöverlämning passerade. Den obetalda QA-klockdiagnosen
+visade +108 ms serverklocka; dokumenterad privat browserkalibrering är inte
+normal-browseracceptans och ändrade inga serverstämplar/expiry/källor.
+Det enda betalda streamprovet fick descriptor men den privata helperns extra
+`observedAtMs` bröt API:ts exakta femfältskontrakt före transport, efter 20 ms.
+Inga nya uppspelnings-/END-bevis finns. Sessionen är terminal/released/CANCELLED,
+requesten failed/paket null. Faktisk kumulativ usage är 2 generationer,
+3 SDK, 1 TTS och 2 GPU; tjugo journalposter, osäkra dispatchutfall noll,
+ingen retry/reset/refund och USD null. Ingen ny gen/GPU ryms i godkänd kvot.
+
+Exakt QA-baseline är återställd och fysiskt OFF på
+`dep-db0rv0vavr4c73936640`, med 42 nycklar, UID 1000/Web-PID 18,
+flaggor av, router 404, health 200 och bevarat SDK/manifest. OFF-kvitto
+SHA256 `9b3a214f364a1ea501faff1081a428cf42fa0a801c6fea5c8af1c827db47497c`.
+Efter faktisk lease-expiry 03:03:02 UTC lästes lease0 utan SQL-manipulation.
+Cancellation-helpern stängde journalen append-only som post 21, counts2/3/1/2,
+refund0/USDnull; råkvitto SHA256
+`d28a7f06f50c5ae77e6dcdccf3424c9d719d88e001e0d2b4450e49bccbad0bed`.
+Det är cleanup av ett misslyckat prov, ingen acceptans. Providerjobb/kö noll
+och varm idle/ready-worker är inte ALL0. Full P6/natural-close/P7-admission och
+fysisk avveckling förblir spärrade. Privat femfältsfix är granskad offline;
+publik bounded-klockfix `ed5f74f2` är lokalt integrerad som `f8300c51`, med
+29 riktade PASS och workerfullhook 1 288 PASS/4 SKIP/0 FAIL. Samlad rootfullhook
+1 310 PASS/6 SKIP/0 FAIL, med återbruk av oförändrat godkänt bygge. Push
+återstår medan verklig drift fortfarande är 117. Ett ytterligare betalt
+spelprov kräver utökad explicit testkvot; nyckelgodkännandet består. Lokala P8-commits
+`c158a0be` och `f3f561d3` är bevarade utan integration/liveborttagning.
+Äldre versionsstycken nedan är historiska bevis, inte senare driftstatus.
+
 **Pågående integration:** Studio-/Git-rättningen integrerades som
 `438a824b` från workercommit `c40503af` och ingår i levererad `5fca8983`. Studio följer
 den konfigurerade speloriginens `/player-login` efter lösenordsreset och den
