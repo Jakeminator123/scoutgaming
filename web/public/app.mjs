@@ -9,7 +9,7 @@ import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } fr
 import { playGeneratedSpeech, loadGeneratedSpeech } from './generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
-import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
+import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
@@ -2781,12 +2781,14 @@ if (DEALER.key === 'astrid') {
 // user before an API is exposed; ordinary dealer launches perform no QA IO.
 if (location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
   && new URLSearchParams(location.search).get('nativeP6GamePlayback') === '1') {
-  const quietForNativeP6 = () => {
+  const readNativeP6Availability = () => {
     const state = speechPoseGate.state;
-    return !busy && !round && !chatBusy && !speaking && !voice.muted && !document.hidden
-      && speechQueue.pending === 0 && speechPoseGate.pendingCount === 0 && state.actionOwner === 'none'
-      && state.speechOwner === 'none' && state.dealerPose === 'standard-idle' && state.idlePresented !== null;
+    return {busy:Boolean(busy),hasRound:Boolean(round),chatBusy:Boolean(chatBusy),speaking:Boolean(speaking),
+      muted:Boolean(voice.muted),hidden:Boolean(document.hidden),queuePending:speechQueue.pending,
+      posePending:speechPoseGate.pendingCount,actionNone:state.actionOwner==='none',speechNone:state.speechOwner==='none',
+      standardIdle:state.dealerPose==='standard-idle',idlePresented:state.idlePresented!==null};
   };
+  const quietForNativeP6 = () => nativeP6GameAvailability(readNativeP6Availability()).quiet;
   let nativeP6WasDisabled;
   const deliverNativeP6=createNativeP6GameQueueDelivery({identity:poseIdentity,isAvailable:quietForNativeP6,
     gate:speechPoseGate,pending:pendingChatReplies,pendingFields:()=>({correlation:nativeObservation.context()}),
@@ -2796,7 +2798,7 @@ if (location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
       if(!pendingChatReplies.size)localPresentation?.state({ready:false});},
   });
   void installNativeP6GamePlayback({href:location.href,identity:poseIdentity,isAvailable:quietForNativeP6,
-    mount:$('#scene'),deliver:deliverNativeP6}).then(api => {
+    readAvailability:readNativeP6Availability,mount:$('#scene'),deliver:deliverNativeP6}).then(api => {
     if (!api) return;
     Object.defineProperty(window, 'croupierNativeP6GamePlayback', { value: api, configurable: true });
     window.addEventListener('pagehide', () => { api.close(); delete window.croupierNativeP6GamePlayback; }, { once: true });

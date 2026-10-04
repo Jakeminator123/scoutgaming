@@ -20,6 +20,18 @@ const need=(v,code)=>{if(!v)throw Error(code);};
 const sha=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
 const ownerValid=v=>exact(v,ownerKeys)&&hash(v.actorSha256)&&hash(v.ownerSessionSha256)&&hash(v.policySha256)
   &&v.sessionRevision===v.ownerSessionSha256&&id(v.roundRevision);
+// Safe ownQA diagnostics and admission share this exact predicate. No owner
+// identifiers, text, DOM nodes or mutable product state leave the callback.
+export function nativeP6GameAvailability(components){
+  const booleans=['busy','hasRound','chatBusy','speaking','muted','hidden','actionNone','speechNone','standardIdle','idlePresented'];
+  const counts=['queuePending','posePending'];
+  need(exact(components,[...booleans,...counts])&&booleans.every(key=>typeof components[key]==='boolean')
+    &&counts.every(key=>Number.isSafeInteger(components[key])&&components[key]>=0),'native_p6_game_availability_invalid');
+  const quiet=!components.busy&&!components.hasRound&&!components.chatBusy&&!components.speaking&&!components.muted
+    &&!components.hidden&&components.queuePending===0&&components.posePending===0&&components.actionNone
+    &&components.speechNone&&components.standardIdle&&components.idlePresented;
+  return Object.freeze({...components,quiet});
+}
 async function bytesOf(response,max){
   const reader=response.body?.getReader();need(reader,'native_p6_game_readback_unavailable');let size=0;const parts=[];
   try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;
@@ -75,18 +87,23 @@ export function createNativeP6GameQueueDelivery({identity,isAvailable,gate,pendi
 
 /** App-owned callbacks close over the actual queue, pose gate and scene. No
  * player/owner/renderer revisions or URLs are accepted from another window. */
-export async function installNativeP6GamePlayback({href,identity,isAvailable,deliver,mount,fetchImpl=fetch,now=Date.now}={}){
+export async function installNativeP6GamePlayback({href,identity,isAvailable,readAvailability,deliver,mount,fetchImpl=fetch,now=Date.now}={}){
   let url;try{url=new URL(href);}catch{return null;}
   if(url.origin!==NATIVE_P6_GAME_ORIGIN||url.searchParams.get('nativeP6GamePlayback')!=='1'
     ||url.searchParams.get('dealer')!=='astrid'||url.searchParams.get('presentation')!=='local')return null;
   if(globalThis.location?.origin!==NATIVE_P6_GAME_ORIGIN)return null;
-  need(typeof identity==='function'&&typeof isAvailable==='function'&&typeof deliver==='function'&&mount?.isConnected,
+  need(typeof identity==='function'&&typeof isAvailable==='function'&&typeof readAvailability==='function'
+    &&typeof deliver==='function'&&mount?.isConnected,
     'native_p6_game_actual_callbacks_required');
   const initial=await ownedContext(fetchImpl,undefined,now);
   const renderer=identity();need(renderer.dealerId==='astrid'&&uuid(renderer.sessionRevision)&&renderer.roundRevision===initial.roundRevision,
     'native_p6_game_initial_renderer_mismatch');
   let current=null,closed=false,campaign=null;const seen=new Set();
   const close=()=>{closed=true;current?.abort();};
+  const availability=()=>{
+    const snapshot=nativeP6GameAvailability(readAvailability());
+    return Object.freeze({...snapshot,currentRun:current!==null,closed,quiet:snapshot.quiet&&!current&&!closed});
+  };
   async function run(input){
     need(globalThis.location?.origin===NATIVE_P6_GAME_ORIGIN&&!closed&&!current&&exact(input,['runId','expectedSha','attempt','descriptor','expectedOwnedState','sourceHashes',
       'sessionObserverSourceSha256',...(Object.hasOwn(input??{},'signal')?['signal']:[])])&&uuid(input.runId)
@@ -175,5 +192,5 @@ export async function installNativeP6GamePlayback({href,identity,isAvailable,del
     }finally{clearTimeout(timer);own.abort();input.signal?.removeEventListener('abort',abort);
       if(frameHandle!=null)video?.cancelVideoFrameCallback(frameHandle);chunks.length=0;current=null;}
   }
-  return Object.freeze({run,close});
+  return Object.freeze({run,close,availability});
 }
