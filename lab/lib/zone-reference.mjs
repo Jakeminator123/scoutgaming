@@ -29,7 +29,7 @@ export async function zoneReferenceResponse(request, options = {}) {
       const response = await getIndexedMediaBlobResponse(ZONE_REFERENCE_PATH,
         { access: 'source', sha256: entry.sha256, size: entry.size, contentType: 'image/png' }, request,
         { ...options, repositoryRoot, trustedProxyOrigin: process.env.LAB_PUBLIC_URL });
-      if (!response) unavailable();
+      if (!response) throw new StudioError('Zonernas referensbild är inte tillgänglig.', 503);
       if (response.ok || response.status === 304) response.headers.set('Cache-Control', headers['Cache-Control']);
       return response;
     }

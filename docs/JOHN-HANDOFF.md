@@ -5,6 +5,14 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 ## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
 
+Första paketet är pushat som `96020c04fd2fbcbd333ce07e54fa9fb57694693a`.
+CI hittade därefter `Promise<Response | null>` för zonens GET: JavaScript-
+hjälparens kastande funktion gav inte TypeScript tillräcklig narrowing.
+Felsituationen kastar nu direkt före Response-användningen. Returtypen
+är kontrollerad utan inkrementell cache (`tsc --incremental false`), PASS;
+zonens 12 riktade testfall PASS. Director är LIVE på 96020c04;
+produktens automatiska deploy väntar på den rättade versionens gröna CI.
+
 Jakob beställer uttryckligen rättning, stage/commit/push och parallell
 komplettering av den befintliga HTML-kartan. GPU-processens cleanup börjar
 nu före gatewayväntan, båda barnen signaleras parallellt och uppgraderade
