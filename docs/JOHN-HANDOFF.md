@@ -3,6 +3,31 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Efterarbete beställt av Jakob — 4 oktober, efter bee4e04a
+
+Jakob har uttryckligen beställt en separat planmapp
+[`planes/`](../planes/README.md), med arbetsblock som andra agenter kan ta.
+Denna leverans är planering och faktakontroll; inga runtime-, provider- eller
+databasrättningar ingår. De tidigare hjälpagenterna har arkiverats av Jakob.
+
+Tre öppna funktionsfel är nu underbyggda: gatewayens shutdown fastnar i ett
+isolerat prov med uppgraderad anslutning; barnets 10 s är kortare än GPU:s
+15 s plus cancellation/journal; zonreferensen läser en borttagen Emil-path
+trots registrerad ersättningsbild; OpenClaw ger 200 vid direkt GET men 403
+med Studio-länkens cross-site-navigeringsmetadata. Coachens uppgift om sex
+zon-500 är inte självständigt loggavläst här. Rättningar och efterföljande
+autentiserad acceptans är öppna; P7/P8:s dataflytt och avveckling görs inte om.
+
+Ny faktisk Render-avläsning: produktionens tre tal-/streamflaggor är ON,
+kameraflaggan OFF, Neon-policy ON och native-admin OFF. QA har 37 miljövärden,
+tal/stream/kamera/native-admin OFF, Neon-policy ON och saknar Cartesia-/RunPod-
+nycklar; P6-router är unset på båda. OFF37 betyder inte 37 avstängda funktioner.
+Planerna skiljer detta från äldre Kevin-/Emil-proveniens och framtida lanes.
+
+Tidigare ”0 % kvar” avsåg den avgränsade migrationen och var för kategoriskt
+som helhetsbesked. De nya fynden gör de berörda funktionsgodkännandena öppna.
+Ingen ny generering, livekontoändring, ny arkitektur eller prisutredning har gjorts.
+
 Verifierad slutkod 18:16 UTC: P7:s produktionsimport, gemensamma Neon-policy,
 aliasbyte och provideraktivering samt fysisk P8 är genomförda på `9ba2fd05`.
 Startfel från mejlets `1fb2307` är rättat. Full pre-commit och tre CI-jobb
