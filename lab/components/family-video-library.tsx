@@ -48,18 +48,24 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
   const selectedVideo = videosById.get(previewId);
   const preview = selectedVideo?.available ? selectedVideo : undefined;
   const previewName = preview?.classification?.label || preview?.fileName;
-  return <section aria-label="Videomappar"><div className="event-heading"><div><span className="eyebrow">VIDEOBANKEN</span><h1>{familyType === 'deal' ? 'Utdelning till sju platser och croupiern' : familyType === 'speak' ? 'Repliker och varianter' : 'Dina videomappar'}</h1><p>Samma standardfiler och varianter som används i Eventstudion och native-följningen.</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>Läs in nya filer</button></div>
+  return <section aria-label="Videomappar"><div className={styles.libraryHeader}><div><h2>{familyType === 'deal' ? 'Kort & deal' : familyType === 'speak' ? 'Fasta repliker / ljud' : 'Dina videomappar'}</h2><p className={styles.count}>{families.length} situationer · välj klipp eller inställningar</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Läser…' : 'Läs in nya filer'}</button></div>
     <details className={styles.situation}><summary>Lägg till eller stäng av klipp</summary>
-      <p>Välj <strong>Ladda upp &amp; bibliotek</strong> för att skicka en MP4 direkt till rätt familj. Lokala mappfiler kan också läsas in från <code>variant/</code>. Öppna sedan familjen och välj hur den nya varianten får användas. En ny idlefilm behöver också läggas till i Idle-policyn.</p>
+      <p>Välj <strong>Ladda upp klipp</strong> för att lägga till en MP4 eller WebM i rätt familj. Öppna sedan Inställningar för att aktivera varianten. Idleklipp läggs till i Idle-policyn.</p>
       <p>I Deal anger du frekvens per variant i procent. Resten använder standardklippet. Sätt <strong>0 %</strong> för att stänga av varianten. I Idle väljer du <strong>Manuell</strong>; i Repliker stänger du av alla variantval. Spara inställningarna. Klippet finns kvar för förhandsvisning.</p>
       <p>Gränssnittet kan inte radera råfiler eller flytta dem mellan familjer. Mappen avgör vilken plats eller replik filmen hör till.</p>
     </details>
-    <label className="field">Hitta klipp eller mapp<input value={filter} onChange={event => setFilter(event.target.value)} placeholder="deal_pos3, goodluck, idle…" /></label>
+    <label className={styles.search}>Hitta klipp eller mapp<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Sök namn, replik eller plats…" /></label>
     {preview ? <div className={styles.situation}><strong>{previewName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${previewName}`} /><button className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
-    <div className={familyType ? styles.libraryGrid : undefined}>{families.map(family => <article key={family.id} className={styles.situation}><strong>{familyLabel(family)}</strong><code>media/dealers/astrid/runtime/presentation/{mediaFamilyFolder(family)}/</code>
-      {[...family.standardIds, ...family.variantIds].map(id => { const video = videosById.get(id); return <button key={id} type="button" className="text-button" disabled={!video?.available} onClick={() => setPreviewId(id)}>{video?.classification?.label || video?.fileName || id} · {family.standardIds.includes(id) ? 'standard' : video?.source === 'upload' ? 'uppladdad variant' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
-      <small>{family.variantIds.length ? `${family.variantIds.length} varianter i variant/` : '0 varianter — standard används'}</small><button className="primary-button" onClick={() => onOpen(family.eventId, family.situation)}>{family.eventId.startsWith('deal.') ? 'Ställ in frekvenser →' : 'Öppna klipp och inställningar →'}</button>
-    </article>)}</div>
+    <div className={styles.libraryGrid}>{families.map(family => {
+      const standardId = family.standardIds.find(id => videosById.get(id)?.available);
+      return <article key={family.id} className={styles.situation}>
+        <header className={styles.cardHeader}><h3>{familyLabel(family)}</h3><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></header>
+        <div className={styles.cardActions}><button type="button" disabled={!standardId} aria-label={`Spela standard · ${familyLabel(family)}`} onClick={() => standardId && setPreviewId(standardId)}>Spela standard</button><button type="button" aria-label={`Inställningar · ${familyLabel(family)}`} onClick={() => onOpen(family.eventId, family.situation)}>Inställningar</button></div>
+        <details className={styles.files}><summary>Filer · {family.standardIds.length + family.variantIds.length}</summary><code>{mediaFamilyFolder(family)}/</code>
+          {[...family.standardIds, ...family.variantIds].map(id => { const video = videosById.get(id); return <button key={id} type="button" className="text-button" disabled={!video?.available} onClick={() => setPreviewId(id)}>{video?.classification?.label || video?.fileName || id} · {family.standardIds.includes(id) ? 'standard' : video?.source === 'upload' ? 'uppladdad variant' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
+        </details>
+      </article>;
+    })}</div>
     {!families.length ? <p>Inga mappar matchar sökningen.</p> : null}
   </section>;
 }

@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { StudioAdministration, StudioAdminUiError, type StudioAdminApiBase } from './studio-administration';
 import { createStudioLoginClient, StudioLoginUiError } from '../lib/studio-login-client.mjs';
+import styles from './studio-administration.module.css';
 
 export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {apiBase: StudioAdminApiBase; availableActions: string[];gameOrigin?:string}) {
   const [epoch,setEpoch] = useState(0), [busy,setBusy] = useState(false), [error,setError] = useState('');
@@ -21,6 +22,6 @@ export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {
     catch (error) { setError(error instanceof StudioLoginUiError ? error.message : 'Utloggningen kunde inte bekräftas.'); }
     finally { writing.current = false; setBusy(false); }
   }
-  return <><button type="button" disabled={busy} onClick={() => void logout()}>Logga ut</button>{error && <p role="alert">{error}</p>}
-    {!busy && <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} />}</>;
+  return <main className={styles.shell}><div className={styles.sessionActions}><button type="button" disabled={busy} onClick={() => void logout()}>Logga ut</button></div>{error && <p role="alert">{error}</p>}
+    {!busy && <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} />}</main>;
 }
