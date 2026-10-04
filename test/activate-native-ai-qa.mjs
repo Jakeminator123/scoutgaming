@@ -13,6 +13,14 @@ function assertPlayerLinkQuery(sql){
   const queriedTable=/\bJOIN croupier_game\.([a-z_]+)\b/.exec(sql)?.[1];
   assert.equal(queriedTable,canonicalPlayerLink,'QA ownership query must use the relation defined by the product schema');
 }
+const fullfileSchema=await readFile(new URL('../ops/neon-studio/004-fullfile-reservations.sql',import.meta.url),'utf8');
+const fullfilePolicyDefinition=/CREATE TABLE croupier_studio\.fullfile_budget_policies \(\r?\n([\s\S]*?)\r?\n\);/.exec(fullfileSchema)?.[1];
+assert.ok(fullfilePolicyDefinition,'migration 004 must declare the fullfile policy');
+const fullfilePolicyColumns=new Set([...fullfilePolicyDefinition.matchAll(/^\s{2}([a-z_]+)\s+(?:text|integer|bigint)\b/gm)].map(m=>m[1]));
+function assertFullfilePolicyColumns(rows){
+  for(const row of rows)for(const column of Object.keys(row))assert.ok(fullfilePolicyColumns.has(column),
+    'fullfile policy fixture column must exist in migration 004: '+column);
+}
 
 async function fixture(t){
   const directory=await mkdtemp(join(tmpdir(),'bounded-ai-qa-'));
@@ -321,7 +329,9 @@ function continuationPolicyFixture(){
       assert.deepEqual(values,['player','7']);return{rows:[{id:'player'}]};
     }
     if(sql.includes('AS now_ms'))return{rows:[{now_ms:'20000'}]};
-    const table=/SELECT \* FROM croupier_studio\.([a-z_]+)/.exec(sql)?.[1];if(table)return{rows:structuredClone(tables[table])};
+    const table=/SELECT \* FROM croupier_studio\.([a-z_]+)/.exec(sql)?.[1];if(table){
+      if(table==='fullfile_budget_policies')assertFullfilePolicyColumns(tables[table]);return{rows:structuredClone(tables[table])};
+    }
     return{command:sql==='COMMIT'?'COMMIT':undefined,rows:[]};}};
   return{calls,tables,args:{pool:{connect:async()=>client},previousManifest,previousManifestRawSha256:pin,fullfile,operatorId:'7',username:'existing-qa',playerId:'player',now:()=>20000}};
 }
@@ -438,11 +448,22 @@ test('each later window requires new explicit CAS and global six cannot be exten
     for(const resource of ['generation','sdk','tts','gpu']){const k=await next.budget.dispatch(resource,resource+'-'+n);await next.budget.outcome(k,'response-observed');}state=await next.budget.close();}
   assert.deepEqual(state.counts,{generation:6,sdk:7,tts:5,gpu:6});const seventh=await successorBudget(f,state,7);await assert.rejects(()=>seventh.budget.openAdditionalWindow(seventh.approve),/ai_qa_additional_predecessor_not_closed/);
 });
+test('fullfile policy fixture follows migration 004 without borrowing the GPU daily-budget column',()=>{
+  const f=continuationPolicyFixture();assert.equal(fullfilePolicyColumns.has('daily_budget_micro_usd'),false);
+  assertFullfilePolicyColumns(f.tables.fullfile_budget_policies);
+  assert.equal(Object.hasOwn(f.tables.fullfile_budget_policies[0],'daily_budget_micro_usd'),false);
+  assert.throws(()=>assertFullfilePolicyColumns([{...f.tables.fullfile_budget_policies[0],daily_budget_micro_usd:'4748848'}]),/fixture column must exist in migration 004/);
+});
+
 test('additional reservation read preserves history and refuses an unfunded reservation or nonterminal/active owner',async t=>{
   const {readAiQaAdditionalPolicy}=await import('../tools/activate-native-ai-qa.mjs');
-  for(const change of ['none','funds','lease','job','file'])await t.test(change,async()=>{const f=continuationPolicyFixture();
-    f.tables.fullfile_budget_policies[0].daily_budget_micro_usd='4748848';for(const n of ['operator_qa_campaigns','operator_qa_gate'])f.tables[n][0].source_sha256='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e';
+  for(const change of ['none','funds','lease','job','file','gpu-budget','gpu-version','file-version','file-reserve','file-window','missing-gpu-policy','missing-file-policy','duplicate-gpu-policy','duplicate-file-policy'])await t.test(change,async()=>{const f=continuationPolicyFixture();
+    for(const n of ['operator_qa_campaigns','operator_qa_gate'])f.tables[n][0].source_sha256='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e';
     f.tables.gpu_sessions=[{session_id:'session',job_id:'known',state:'terminal',released_at_ms:'100',terminal_status:'CANCELLED',terminal_reason:'provider'}];f.tables.gpu_reservations=[{session_id:'session',reserved_micro_usd:'1000000'}];
+    if(change==='gpu-budget')f.tables.gpu_budget_policies[0].daily_budget_micro_usd='5000000';if(change==='gpu-version')f.tables.gpu_budget_policies[0].version=2;
+    if(change==='file-version')f.tables.fullfile_budget_policies[0].version=2;if(change==='file-reserve')f.tables.fullfile_budget_policies[0].reserve_micro_usd='0';if(change==='file-window')f.tables.fullfile_budget_policies[0].reservation_window_ms='719999';
+    if(change==='missing-gpu-policy')f.tables.gpu_budget_policies=[];if(change==='missing-file-policy')f.tables.fullfile_budget_policies=[];
+    if(change==='duplicate-gpu-policy')f.tables.gpu_budget_policies.push({...f.tables.gpu_budget_policies[0]});if(change==='duplicate-file-policy')f.tables.fullfile_budget_policies.push({...f.tables.fullfile_budget_policies[0]});
     if(change==='funds')for(const id of ['session2','session3']){f.tables.gpu_sessions.push({...f.tables.gpu_sessions[0],session_id:id});f.tables.gpu_reservations.push({session_id:id,reserved_micro_usd:'1000000'});}if(change==='lease')f.tables.speech_execution_leases[0].expires_at_ms='20001';if(change==='job')f.tables.gpu_sessions[0].released_at_ms=null;if(change==='file')f.tables.speech_requests[0].state='failed';
     const before=JSON.stringify(f.tables);if(change==='none'){const r=await readAiQaAdditionalPolicy(f.args);assert.equal(r.reservedSqlMicroUsd,2000000);assert.equal(r.nextWindowGpuReserveMicroUsd,1000000);assert.equal(JSON.stringify(r).includes('known'),false);}
     else await assert.rejects(()=>readAiQaAdditionalPolicy(f.args),/ai_qa_additional_/);assert.equal(JSON.stringify(f.tables),before);assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE)/.test(c.sql)),false);

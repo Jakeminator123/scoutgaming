@@ -294,11 +294,11 @@ export async function readAiQaAdditionalPolicy({pool,operatorId,username,playerI
       &&tables.speech_requests.every(r=>['completed','failed'].includes(r.state)),'ai_qa_additional_not_drained');
     for(const name of ['operator_qa_campaigns','operator_qa_gate'])need(tables[name].length===1
       &&tables[name][0].campaign_id===AI_QA_ORIGINAL.campaignId&&tables[name][0].source_sha256==='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e','ai_qa_additional_campaign_changed');
-    for(const name of ['gpu_budget_policies','fullfile_budget_policies'])need(tables[name].length===1
-      &&Number(tables[name][0].daily_budget_micro_usd)===AI_QA_ORIGINAL.remainingMicroUsd
-      &&Number(tables[name][0].version)===1,'ai_qa_additional_funding_policy_changed');
-    need(Number(tables.fullfile_budget_policies[0].reserve_micro_usd)===1000000
-      &&Number(tables.fullfile_budget_policies[0].reservation_window_ms)===720000,'ai_qa_additional_fullfile_policy_changed');
+    const gpu=tables.gpu_budget_policies[0],file=tables.fullfile_budget_policies[0];
+    need(tables.gpu_budget_policies.length===1&&Number(gpu.version)===1
+      &&Number(gpu.daily_budget_micro_usd)===AI_QA_ORIGINAL.remainingMicroUsd,'ai_qa_additional_funding_policy_changed');
+    need(tables.fullfile_budget_policies.length===1&&Number(file.version)===1
+      &&Number(file.reserve_micro_usd)===1000000&&Number(file.reservation_window_ms)===720000,'ai_qa_additional_fullfile_policy_changed');
     const saved=tables.speech_requests.find(r=>r.request_key===fullfile?.requestKey);
     need(saved?.state==='completed'&&saved.capability==='fullfile'&&saved.package_id===fullfile.packageId
       &&sha256(JSON.stringify(saved.package_metadata))===fullfile.packageMetadataSha256,'ai_qa_additional_fullfile_changed');
