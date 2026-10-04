@@ -17,6 +17,14 @@ native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
 Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
 
+QA kör nu c874 med AI-flaggorna åter OFF efter ett säkert stängt closed29-
+försök. Försöket nådde descriptor och GPU-submit men inte TTS eller faktisk
+speluppspelning; det är därför inte ett godkänt AI→tal→GPU→END-bevis. Lokal
+main `573b7aee` har en exakt read-only availability-spärr som väntar på
+publicering och tre QA-deployer. Nästa manuella prov startas först när den
+append-only privata successorkedjan och dess partial-failure-close är
+peergranskade. Kumulativ usage är 3/4/1/3 och faktisk kostnad är okänd/null.
+
 ## Lokal byggcache och runtime
 
 Next skriver byggutdata under respektive apps `.next` och disponibel byggcache

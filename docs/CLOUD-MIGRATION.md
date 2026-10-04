@@ -25,7 +25,35 @@ Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstest
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
-**Aktuellt verifierat läge, 4 oktober 10:25 UTC:** publicerad main och QA:s
+**Aktuellt verifierat läge, 4 oktober 13:41 UTC:** publicerad main och samtliga
+tre QA-tjänster kör `c8747adca8c6fdff57a82946c0211585490e2ab2`. Produktens
+Render-backend har autodeployerats till samma källa, men dataimport,
+Studio-schema 001–004 och gemensamt policybyte är inte genomförda. Senaste
+produktionsläsning visar samma 44 miljönyckelnamn och 132 källposter.
+
+QA-fönster `ae25eaaa-0220-4d64-b9be-3a072f7feade` är säkert stängt som
+record29/head `65751b1c4e321ed8a649cc3e7118f57fbae69431b09c363317349c61d933f2a8`.
+Kumulativ usage är 3 generationer/4 SDK/1 TTS/3 GPU, refund0 och okänd/null
+kostnad. Descriptor skapades, men bordets quiet-tillstånd ändrades under
+AI-förberedelsen; GPU-jobbet avslutades CANCELLED före TTS och faktiskt
+spel-END. QA är åter OFF, lease0, router404 och health200. Gamla journalposter,
+reservationer, manifest och SDK är bevarade.
+
+Lokal main `573b7aee` lägger till ett exakt read-only availability-kvitto och
+använder samma predikat vid admission. 42 riktade prov, fyrdealer-audit och
+obligatorisk fullhook passerar. Publicering och tre QA-deployer återstår innan
+ett manuellt prov utan retry. Den privata closed29→nästa-success-kedjan är HOLD
+tills fel installfil, partial-failure-close och exakta jobb-/session-/SQL-/
+reservationsguards är rättade och peergranskade.
+
+P7-paketet är offlineinstallerat med 60 PASS; receptets 32 pinnar är
+peergranskade men livekörning är BLOCK tills ett nytt COMPLETED jobb med
+synlig bild, hörbart ljud, spelkö-END och QA OFF finns. Efter det genomförs
+drain/import/policybyte i ett 45–75 minuters skrivfönster. P8 `c158a0be` följt
+av `f3f561d3` integreras först efter aktiv ersättning. GitGuardian har komplett
+commitmetadata för c874, men suite är queued utan run och incident-API ej läst.
+
+**Tidigare verifierat läge, 4 oktober 10:25 UTC:** publicerad main och QA:s
 tre tjänster har faktisk `a0c6460560dd99da7bc33feba7efbef0d6de0fce`.
 Klockrättning `f8300c51`, samlad hook 1 310 PASS/6 SKIP/0 FAIL och 29 riktade
 PASS; oförändrat godkänt bygge återanvänt. CI `37173118418`: tre success-jobb.

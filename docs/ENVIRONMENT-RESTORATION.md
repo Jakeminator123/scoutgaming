@@ -4,6 +4,15 @@ Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
+Aktuell migrationscheckpoint 4 oktober 13:41 UTC: QA är återställd till
+AI-/admin-/P6-flaggor OFF efter closed29, med router404, health200 och lease0.
+Manifest, SDK, append-only-journaler och reservationer ska bevaras. Ett nytt
+fönster får inte återanvända eller skriva om tidigare poster; partial failure
+ska stängas explicit innan någon produktionsimport. Produktionens data och
+Studio-policy är ännu inte omkopplade. Kör därför ingen gammal diskrestore eller
+fysisk P8-radering före verifierat P7-källbyte, aktuell backup/paritet och det
+gemensamma skrivfönstrets återgångspunkt. Faktisk providerkostnad är okänd/null.
+
 ## Lokal miljö
 
 Använd koordinerad startare enligt [labbguiden](../lab/docs/README.md).
