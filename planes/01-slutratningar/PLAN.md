@@ -103,6 +103,14 @@ det är inte en levererad rättning av knappen.
 
 ## Leveransgräns
 
+**Källrättning 5 oktober:** A/B/C är implementerade. Zonprov50/50,
+dashboard/proxy/workspace53/53, shutdown-Windows71PASS/3LinuxSKIP samt
+Linuxprocesskedja4/4PASS. Oberoende granskningens shared-lease-P2 är stängd;
+close-regression38/38 och Linux4/4 passerar efter fixen. Faktiskt Studio-
+bygge/traces och fyrdealer-synkaudit PASS. Produktens Render-gräns90s är
+applicerad/GET-verifierad med oförändrade51envvärden. Driftsatt bild/export,
+native OpenClaw-klick/anslutning och slutversion följer nu enligt plan07.
+
 - [ ] A, B och C rättade och riktat verifierade.
 - [ ] Obligatoriska checks enligt aktuell repositorypolicy passerar.
 - [ ] Oberoende granskare har kontrollerat just ändringarna och testernas relevans.

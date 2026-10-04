@@ -76,6 +76,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   if (journal && suppliedSessionManager) fail('generated_speech_journal_unavailable');
   const ownership = journal ? createSpeechJournalLease({ journal, resource:'stream-session' }) : null;
   const journalTasks = new Set();
+  let serviceClosing = false, closePromise;
   const track = task => { journalTasks.add(task); task.finally(() => journalTasks.delete(task)).catch(() => {}); return task; };
   if ((!journal && !privateDirectory(configuration?.directory)) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
   const [{ issueTicket, ticketAuthenticator }, { createCartesiaSource }] = await Promise.all([
@@ -176,7 +177,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         let firstAudio = true;
         unpaidTrace('tts_source_before');
         if (journal) {
-          await journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() });
+          await track((async () => journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() }))());
           await fresh(record);
         }
         for await (const pcm of source({ text: record.input.text, signal, beforeCostly: async () => {
@@ -193,7 +194,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         mark(record, 'tts_complete_ms', Math.round(performance.now() - ttsStartedAt));
         await fresh(record); record.handle.end();
         if (journal) {
-          await journal.completeRequest({ key:record.journalClaim.key, lease:await ownership.get() });
+          await track((async () => journal.completeRequest({ key:record.journalClaim.key, lease:await ownership.get() }))());
           record.journalSettled = true;
         }
         // Keep freshness monitoring through the final encoded fragment, even
@@ -242,12 +243,15 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       return () => { if (exclusive === lease) releaseOwner(owner); };
     },
     async prepare(input) {
+      if (serviceClosing) fail('generated_speech_stream_cancelled', 499);
       if (!input || !identifier(input.requestId) || input.dealerId !== 'astrid' || typeof input.owner !== 'string' || !input.owner || input.owner.length > 512
         || typeof input.text !== 'string' || !input.text.trim() || input.text !== input.text.trim() || input.text.length > 500
         || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(input.text) || typeof input.beforeCostly !== 'function') fail('invalid_generated_speech_stream_request', 400);
       if (exclusive && (exclusive.owner !== input.owner || exclusive.releasing)) fail('generated_speech_stream_busy', 429);
       if (!preparations.has(input.owner) && !owners.has(input.owner) && records.size + preparations.size >= 32) fail('generated_speech_stream_busy', 429);
       const preparation = { playerId: input.playerId, owner: input.owner };
+      let settled;
+      preparation.done = new Promise(resolve => { settled = resolve; });
       preparations.set(input.owner, preparation);
       inFlight.add(preparation);
       const current = () => { input.signal?.throwIfAborted(); if (preparations.get(input.owner) !== preparation) fail('generated_speech_stream_cancelled', 499); };
@@ -286,16 +290,38 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       } finally {
         if (preparations.get(input.owner) === preparation) preparations.delete(input.owner);
         inFlight.delete(preparation); settleExclusive();
+        settled();
       }
     },
     cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
     cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
-    async close() { preparations.clear(); for (const record of [...records.values()]) cancel(record);
-      try { await Promise.allSettled([...journalTasks]); await sessionManager?.close(); }
-      finally {
-        relay.close();
-        if (ownership) { try { await ownership.release(); } catch {} }
-      }
+    close(options) {
+      if (closePromise) return closePromise;
+      serviceClosing = true;
+      const preparing = [...inFlight].map(preparation => preparation.done);
+      preparations.clear(); for (const record of [...records.values()]) cancel(record);
+      // Provider retirement and cancelled-request journal flushing share the
+      // same runtime window. Do not delay worker cleanup behind a SQL wait.
+      const managerClose = sessionManager?.close(options);
+      closePromise = (async () => {
+        try {
+          const flushRequests = (async () => {
+            await Promise.all(preparing);
+            let failed = false;
+            while (journalTasks.size) {
+              const outcomes = await Promise.allSettled([...journalTasks]);
+              failed ||= outcomes.some(outcome => outcome.status === 'rejected');
+            }
+            if (failed) fail('generated_speech_stream_shutdown_incomplete');
+          })();
+          const outcomes = await Promise.allSettled([flushRequests, managerClose]);
+          if (outcomes.some(outcome => outcome.status === 'rejected')) fail('generated_speech_stream_shutdown_incomplete');
+        } finally {
+          relay.close();
+          if (ownership && !options?.signal?.aborted) { try { await ownership.release(); } catch {} }
+        }
+      })();
+      return closePromise;
     },
   };
 }

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
+import { connect } from 'node:net';
+import { once } from 'node:events';
 import { installGracefulShutdown } from '../web/graceful-shutdown.mjs';
 
 class FakeServer extends EventEmitter {
@@ -53,6 +55,7 @@ test('natural server close runs runtime cleanup once without waiting for a signa
   await shutdown.closeStorage();
   await shutdown.closeRuntime();
   await shutdown.closeStorage();
+  await shutdown.stop();
   assert.equal(closes, 1);
   assert.equal(storageCloses, 1);
   assert.equal(processTarget.listenerCount('SIGINT'), 0);
@@ -115,4 +118,43 @@ test('SIGTERM cancels a pending real HTTP response before drain and closes stora
   await shutdown.stop();
   assert.deepEqual(activity, ['runtime:cancel', 'journal:terminal', 'response:end', 'http:drained', 'storage:close']);
   assert.equal(processTarget.exitCode, undefined);
+});
+
+test('an upgraded socket stays available to runtime cleanup and closes before storage', async t => {
+  const server = createServer(), processTarget = new EventEmitter(), activity = [];
+  let peer;
+  server.on('upgrade', (_req, socket) => {
+    peer = socket; socket.write('HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  });
+  const shutdown = installGracefulShutdown({ server, processTarget, httpTimeoutMs: 15,
+    closeRuntime: async () => {
+      activity.push('runtime:start');
+      await new Promise(resolve => setTimeout(resolve, 45));
+      assert.equal(peer.destroyed, false, 'do not destroy the worker before provider cleanup');
+      activity.push('journal:terminal');
+    }, closeStorage: async () => { assert.equal(peer.destroyed, true); activity.push('storage:close'); } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const client = connect(server.address().port, '127.0.0.1');
+  t.after(() => { client.destroy(); peer?.destroy(); server.close(); });
+  await once(client, 'connect');
+  client.write('GET /fixture HTTP/1.1\r\nHost: fixture.invalid\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  await once(client, 'data');
+  processTarget.emit('SIGTERM'); processTarget.emit('SIGTERM');
+  await shutdown.stop();
+  assert.deepEqual(activity, ['runtime:start', 'journal:terminal', 'storage:close']);
+  assert.equal(processTarget.exitCode, undefined);
+});
+
+test('runtime deadline marks failure and preserves storage for unfinished journal writes', async () => {
+  const server = new FakeServer(), processTarget = new EventEmitter();
+  let signal, release, storageCloses = 0;
+  const pending = new Promise(resolve => { release = resolve; });
+  const shutdown = installGracefulShutdown({ server, processTarget, runtimeTimeoutMs: 30,
+    closeRuntime: async context => { signal = context.signal; await pending; },
+    closeStorage: async () => { storageCloses++; } });
+  await shutdown.stop();
+  assert.equal(signal.aborted, true);
+  assert.equal(processTarget.exitCode, 1);
+  assert.equal(storageCloses, 0, 'never close the journal pool while its writes are still running');
+  release(); await shutdown.closeRuntime();
 });

@@ -23,7 +23,7 @@ export default {
   // local config, QA evidence and old writable state must never be bundled.
   outputFileTracingExcludes: { '/*': ['../.env*', './.env*', './data/**', '../web/data/**',
     '../open-claw/lab/data/**', '../open-claw/lab/runtime/**', '../agent-talk/**', '../.croupier-inbox/**'] },
-  outputFileTracingIncludes: Object.fromEntries(['/', '/administration', '/login', '/set-password', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**']
+  outputFileTracingIncludes: Object.fromEntries(['/', '/administration', '/login', '/set-password', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**', '/api/zones/reference']
     .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql',
       '../media/layout.json', '../media/blob-index.json', '../media/dealers/*/runtime/**/index.json',
       '../media/dealers/*/runtime/**/audio/en/bank.json', '../media/dealers/*/runtime/**/performance/manifest.json',

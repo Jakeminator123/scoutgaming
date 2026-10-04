@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
+import { SHUTDOWN_BUDGET } from './graceful-shutdown.mjs';
 
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const jobId = /^[A-Za-z0-9_-]{1,128}$/;
@@ -58,14 +59,16 @@ export function createJournalSpeechSessionManager(configuration, {
   const { apiKey, endpointId, workerSecret, origin } = configuration;
   const originUrl = new URL(origin), base = `https://api.runpod.ai/v2/${endpointId}`;
   const shutdown = new AbortController();
+  const cleanupAbort = new AbortController();
   let pending = null, active = null, idleTimer = null, closing = false;
+  let closePromise;
   const lifecycleTasks = new Map();
 
   async function call(route, { signal, body } = {}) {
     const response = await fetchImpl(`${base}/${route}`, { method: body ? 'POST' : 'GET', redirect: 'error',
       headers: { authorization: `Bearer ${apiKey}`, ...(body ? { 'content-type': 'application/json' } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) });
+      signal: AbortSignal.any([cleanupAbort.signal, ...(signal ? [signal] : []), AbortSignal.timeout(SHUTDOWN_BUDGET.providerRequestMs)]) });
     if (!response.ok) {
       await response.body?.cancel();
       fail(`generated_speech_session_provider_${({ 401:'unauthorized', 403:'forbidden', 404:'not_found', 429:'rate_limited' })[response.status] ?? 'http_failed'}`);
@@ -111,7 +114,7 @@ export function createJournalSpeechSessionManager(configuration, {
     if (lifecycleTasks.has(job.jobId)) return lifecycleTasks.get(job.jobId);
     const task = operation(job);
     lifecycleTasks.set(job.jobId, task);
-    void task.finally(() => lifecycleTasks.delete(job.jobId));
+    void task.finally(() => lifecycleTasks.delete(job.jobId)).catch(() => {});
     return task;
   }
   const cancel = job => lifecycle(job, cancelOnce);
@@ -125,17 +128,28 @@ export function createJournalSpeechSessionManager(configuration, {
         const observed = proof(job);
         if (observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
           Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }));
+          return;
         }
-        return;
       }
       stopWorker(job.workerId);
-      const response = await call(`cancel/${job.jobId}`, { body: {} });
-      if (response?.id === job.jobId && terminal.has(response.status)) {
-        Object.assign(job, await journal.recordProviderStatus({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId, status: response.status }));
-        const observed = proof(job);
-        if (observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
-          Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }));
+      const started = now(), deadlineMs = SHUTDOWN_BUDGET.providerRequestMs;
+      const signal = AbortSignal.timeout(deadlineMs);
+      if (!terminal.has(job.terminalStatus)) {
+        const response = await call(`cancel/${job.jobId}`, { body: {}, signal });
+        if (response?.id === job.jobId && terminal.has(response.status)) {
+          Object.assign(job, await journal.recordProviderStatus({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId, status: response.status }));
         }
+      }
+      // A terminal provider response alone does not prove the worker socket
+      // drained. Poll this same job within the remaining cancellation window.
+      for (;;) {
+        const observed = proof(job);
+        if (terminal.has(job.terminalStatus) && observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
+          Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed })); return;
+        }
+        if (cleanupAbort.signal.aborted || signal.aborted || now() - started >= deadlineMs) return;
+        await sleep(Math.min(pollMs, deadlineMs - (now() - started)), AbortSignal.any([signal, cleanupAbort.signal]));
+        if (!terminal.has(job.terminalStatus)) await inspect(job, signal);
       }
     } catch { /* Known job/lease/reservation remain recoverable; no refund. */ }
   }
@@ -145,20 +159,21 @@ export function createJournalSpeechSessionManager(configuration, {
     // A normal idle/shutdown path lets the exact reverse worker return from its
     // RunPod handler. Keep the SQL session open and fall back to cancellation
     // only when that bounded, same-job observation fails.
-    const started = now(), deadlineMs = Math.min(readyTimeoutMs, 15000);
+    const started = now(), deadlineMs = Math.min(readyTimeoutMs, SHUTDOWN_BUDGET.naturalWorkerMs);
+    const signal = AbortSignal.timeout(deadlineMs);
     let stopRequested = false;
     try {
       for (;;) {
         const before = proof(job);
         if (!stopRequested && before.busy === 0) stopRequested = stopWorker(job.workerId);
-        const status = job.terminalStatus ?? await inspect(job);
+        const status = job.terminalStatus ?? await inspect(job, signal);
         const observed = proof(job);
         if (terminal.has(status) && observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
           Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }));
           return;
         }
-        if (now() - started >= deadlineMs) break;
-        await sleep(pollMs);
+        if (signal.aborted || cleanupAbort.signal.aborted || now() - started >= deadlineMs) break;
+        await sleep(Math.min(pollMs, deadlineMs - (now() - started)), AbortSignal.any([signal, cleanupAbort.signal]));
       }
     } catch { /* A bounded graceful stop falls back to exact known-job cancellation. */ }
     await cancelOnce(job);
@@ -255,13 +270,26 @@ export function createJournalSpeechSessionManager(configuration, {
       if (pending) return pending.then(async result => { input.signal?.throwIfAborted(); await input.beforeCostly(); touch(); return result; });
       pending = ensure(input).finally(() => { pending = null; if (active && !closing) touch(); }); return pending;
     },
-    async close() {
+    close({ signal = AbortSignal.timeout(SHUTDOWN_BUDGET.runtimeMs) } = {}) {
+      if (closePromise) return closePromise;
       closing = true; clearTimeout(idleTimer); shutdown.abort();
-      if (pending) { try { await pending; } catch {} }
-      await retire(active);
-      while (lifecycleTasks.size) await Promise.all([...lifecycleTasks.values()]);
-      active = null;
-      try { await ownership.release(); } catch {}
+      const abortCleanup = () => cleanupAbort.abort();
+      signal.addEventListener('abort', abortCleanup, { once: true });
+      if (signal.aborted) abortCleanup();
+      closePromise = (async () => {
+        if (pending) { try { await pending; } catch {} }
+        const job = active;
+        await retire(job);
+        while (lifecycleTasks.size) await Promise.all([...lifecycleTasks.values()]);
+        active = null;
+        // Do not invent terminal status or release a failed/unknown session.
+        if (cleanupAbort.signal.aborted || job && job.releasedAt === null
+          || (await journal.listRecoverableSessions()).length) fail('generated_speech_session_shutdown_incomplete');
+        // The stream service owns a supplied fence until its request writes
+        // finish. Standalone session managers release their own lease here.
+        if (!leaseManager) { try { await ownership.release(); } catch {} }
+      })().finally(() => signal.removeEventListener('abort', abortCleanup));
+      return closePromise;
     },
   });
 }

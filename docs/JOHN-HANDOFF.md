@@ -1,7 +1,51 @@
 # Aktuell handoff — Croupier
 
-Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
+Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
+
+## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
+
+Jakob beställer uttryckligen rättning, stage/commit/push och parallell
+komplettering av den befintliga HTML-kartan. GPU-processens cleanup börjar
+nu före gatewayväntan, båda barnen signaleras parallellt och uppgraderade
+anslutningar har en ägare. Samma budget används i processen: 15 s naturligt
+provideravslut, 15 s cancellation och 30 s journalmarginal; därefter högst
+5 s HTTP-dränering och 10 s lagring. Barnets tvångsgräns är 80 s; Render
+behöver 90 s. Timeout behåller återhämtningsbar journal/reservation och
+öppen lagring för pågående skrivningar, med felstatus i processen.
+
+Zonreferensen använder nu den registrerade privata Blob-källan, exakt PNG
+1080×1920, 1 628 428 byte, SHA256
+`eda87f9e877b00dbd2f02479db44ae5f41e2f182563825304906880ceee0088a`.
+Autentiseringen och privat caching består; en saknad/felaktig molnkälla
+ger 503 utan lokal fallback. Zonrutten har de registrerade metadatafilerna
+i det faktiska Next-bygget. OpenClaw-proxyn tillåter endast avsedd aktiverad
+toppnavigering från Studio till exakt `/openclaw` eller `/openclaw/`.
+API/fetch/iframe/mutation/WS, Origin/Host, native auth och pairing behåller
+sina separata kontroller.
+
+50 zon-/medie-/guard-/tracingprov och 53 dashboard-/proxy-/workspaceprov
+PASS. Studio build/typecheck och metadata-tracing PASS; inga envfiler eller
+retirerade Emil-paths i zonens trace. Synkaudit med `--probe` PASS för alla
+fyra oförändrade dealeruppsättningar; tidigare mänsklig acceptanslucka består.
+Shutdowns Windowsomgång 71 PASS/3 Linux-SKIP och Linuxkedjan 4/4 PASS.
+Den oberoende granskningen fann för tidig shared-lease-release under
+request-journalflush. Fyndet är rättat och stängt med ett verkligt delat
+minnes-SQL-journalprov: providerstopp börjar medan skrivningarna hålls,
+lease release0 före båda flusharna/release1 efter. Efter rättningen close-
+regression 38/38 och Linuxkedjan 4/4 PASS. Nya regressionsprov är anslutna
+till befintlig fullhook/CI, ingen separat kontrollmotor.
+
+Driftpublicering och autentiserad zonbild/export/OpenClaw-klick återstår
+i denna källleverans. RunPod-health 21:52 UTC: completed6/failed0,
+inProgress0/inQueue0, workers running0/idle1/ready1. Inget betalt AI/TTS/GPU-jobb
+har skapats av buggrättningen; QA AI/GPU är återavläst OFF 22:03 UTC, 37 envposter
+och inga Cartesia-/RunPodnycklar. Render90 applicerad och GET-verifierad
+22:05 UTC, samtliga 51 produkt-envvärden identiska; GPU0 köade/pågående.
+Inställningen behöver den kommande deploymenten för att träda i kraft.
+Kartunderlaget samlas direkt i befintliga JSON-filer,
+utan nya researchrapporter. Backup, P7/P8, konto-/speldata och tidigare
+journaler/reservationer är bevarade.
 
 ## Systemkarta och lokal städning — 4 oktober, efter d3fd13d3
 
