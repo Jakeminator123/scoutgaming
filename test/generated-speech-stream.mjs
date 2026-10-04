@@ -22,7 +22,7 @@ async function fixture(t, options = {}) {
   service = await construct();
   const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
   const request = (d, who = owner) => ({ owner: who, headers: { 'sec-websocket-protocol': `astrid-v2, ticket.${d.ticket}` } });
-  t.after(async () => { services.forEach(s => s.close()); assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-test-/); await rm(directory, { recursive: true, force: true }); });
+  t.after(async () => { await Promise.allSettled(services.map(s => s.close())); assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-test-/); await rm(directory, { recursive: true, force: true }); });
   return { config, directory, service, construct, input, request, get relayOptions() { return relayOptions; },
     get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; }, setAvailable(value) { available = value; } };
 }
@@ -124,6 +124,28 @@ test('service closes the session manager before terminating the relay', async t 
   });
   await f.service.close();
   assert.deepEqual(order, ['manager', 'relay']);
+});
+
+test('close starts provider cleanup immediately, is idempotent and awaits a stale preparation even if manager fails', async t => {
+  const activity = []; let release, entered;
+  const held = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  const f = await fixture(t, { sessionManager: {
+    ensure: async () => {}, close: async () => { activity.push('manager:close'); throw Error('fixture incomplete provider'); },
+  }, onRelayClose: () => activity.push('relay:close') });
+  const preparing = f.service.prepare({ ...f.input(), beforeCostly: async () => { entered(); await held; } });
+  await started;
+  const controller = new AbortController(), closing = f.service.close({ signal: controller.signal });
+  assert.equal(f.service.close({ signal: controller.signal }), closing);
+  let settled = false;
+  const observedClose = closing.catch(error => { assert.equal(error.code, 'generated_speech_stream_shutdown_incomplete'); settled = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(activity, ['manager:close']); assert.equal(settled, false);
+  await assert.rejects(f.service.prepare(f.input('after-close')), { code: 'generated_speech_stream_cancelled' });
+  release();
+  await assert.rejects(preparing, { code: 'generated_speech_stream_cancelled' });
+  await observedClose;
+  assert.deepEqual(activity, ['manager:close', 'relay:close']);
 });
 
 test('verified request reserves identity before starting/reusing worker; TTS waits for socket admission', async t => {

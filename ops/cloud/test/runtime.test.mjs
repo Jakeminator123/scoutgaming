@@ -519,7 +519,7 @@ test('explicit child stdout observer handles chunks and drops oversized incomple
   stream.end(); throwing.end();
 });
 
-test('process group starts Web then Lab and stops Lab then Web without real servers', async () => {
+test('process group starts Web then Lab and signals both before waiting, once even on repeated shutdown', async () => {
   const activity = [];
   class FakeChild extends EventEmitter {
     pid = 123;
@@ -528,21 +528,27 @@ test('process group starts Web then Lab and stops Lab then Web without real serv
     constructor(name) { super(); this.name = name; }
     kill(signal) {
       activity.push(`stop:${this.name}:${signal}`);
-      queueMicrotask(() => { this.signalCode = signal; this.emit('close', 0, signal); });
+      if (this.name === 'web') queueMicrotask(() => {
+        this.signalCode = signal; this.emit('close', 0, signal);
+        lab.signalCode = signal; lab.emit('close', 0, signal);
+      });
       return true;
     }
   }
+  let lab;
   const specs = childSpecifications(validateCloudConfig(fixture()), fixture(), { labInternalSecret: LAB_SECRET });
   const group = await startChildren(specs, {
     spawnProcess: (_command, _args, options) => {
       assert.equal(options.stdio, 'ignore');
       const name = options.cwd.endsWith('lab') ? 'lab' : 'web';
       activity.push(`start:${name}`);
-      return new FakeChild(name);
+      const child = new FakeChild(name);
+      if (name === 'lab') lab = child;
+      return child;
     },
     wait: async () => {},
     portCheck: async () => {},
   });
-  await group.stop();
+  await Promise.all([group.stop(), group.stop()]);
   assert.deepEqual(activity, ['start:web', 'start:lab', 'stop:lab:SIGTERM', 'stop:web:SIGTERM']);
 });

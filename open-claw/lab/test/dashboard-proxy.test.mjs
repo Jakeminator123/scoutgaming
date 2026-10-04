@@ -4,11 +4,16 @@ import { createServer, request } from 'node:http';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { createDashboardProxy } from '../src/dashboard-proxy.mjs';
+import { openClawDashboardUrl } from '../../../lab/lib/openclaw-dashboard.mjs';
 
 const ORIGIN = 'https://dashboard.example.test';
 const HOST = 'dashboard.example.test';
 const WS_KEY = 'dGhlIHNhbXBsZSBub25jZQ==';
 const WS_ACCEPT = createHash('sha1').update(`${WS_KEY}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+const ENTRY_NAVIGATION = Object.freeze({
+  'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate',
+  'sec-fetch-dest': 'document', 'sec-fetch-user': '?1',
+});
 
 async function listen(server) {
   server.listen(0, '127.0.0.1');
@@ -42,7 +47,7 @@ function upgrade(port, { path = '/openclaw', headers = {} } = {}) {
   });
 }
 
-async function fixture(t, options = {}) {
+async function fixture(t, { httpResponses = {}, ...options } = {}) {
   const received = [], upgraded = [], gatewaySockets = new Set();
   const gateway = createServer((req, res) => {
     received.push({ path: req.url, method: req.method, headers: req.headers });
@@ -51,6 +56,14 @@ async function fixture(t, options = {}) {
     if (req.url === '/openclaw/redirect-out') { res.writeHead(302, { location: 'https://attacker.invalid/steal' }); res.end(); return; }
     if (req.url === '/openclaw/redirect-in') { res.writeHead(302, { location: `http://127.0.0.1:${gateway.address().port}/openclaw/chat` }); res.end(); return; }
     if (req.url === '/openclaw/control-ui-config.json' && !req.headers.authorization) { res.writeHead(401); res.end('native auth required'); return; }
+    const resource = httpResponses[req.url];
+    if (resource) {
+      res.writeHead(resource.status ?? 200, {
+        'content-security-policy': "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
+        ...resource.headers,
+      });
+      res.end(resource.body ?? ''); return;
+    }
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
     req.on('end', () => {
@@ -123,6 +136,99 @@ test('HTTP preserves /openclaw assets, SPA and exact native resources with nativ
   }
   const head = await get(port, '/openclaw/assets/index-123.js', {}, 'HEAD');
   assert.equal(head.status, 200); assert.equal(head.body, '');
+});
+
+test('activated Studio entry reaches the document and its same-origin native resource/auth/WS sequence', async t => {
+  // Route-shape fixture for the pinned native UI; live rendering/pairing still
+  // needs the deployed Director and actual Gateway. Do not invent an auth shim.
+  const { port, received, upgraded } = await fixture(t, {
+    gatewayKey: 'SERVER-GATEWAY-SECRET',
+    httpResponses: {
+      '/openclaw': { status: 302, headers: { location: '/openclaw/' } },
+      '/openclaw/': { headers: { 'content-type': 'text/html' },
+        body: '<!doctype html><title>OpenClaw Control</title><link rel="stylesheet" href="/openclaw/assets/index-native.css"><script type="module" src="/openclaw/assets/index-native.js"></script><openclaw-app></openclaw-app>' },
+      '/openclaw/assets/index-native.css': { headers: { 'content-type': 'text/css' }, body: 'openclaw-app{display:block}' },
+      '/openclaw/assets/index-native.js': { headers: { 'content-type': 'application/javascript' }, body: '/* isolated native-route fixture */' },
+    },
+  });
+  const entry = new URL(openClawDashboardUrl()).pathname;
+  assert.equal(entry, '/openclaw/');
+  const redirected = await get(port, '/openclaw', ENTRY_NAVIGATION);
+  assert.equal(redirected.status, 302); assert.equal(redirected.headers.location, entry);
+  const page = await get(port, entry, ENTRY_NAVIGATION);
+  assert.equal(page.status, 200); assert.equal(page.headers['content-type'], 'text/html');
+  assert(page.body.includes('<openclaw-app>'));
+  assert.equal(page.headers['content-security-policy'], "default-src 'self'; frame-ancestors 'none'; object-src 'none'");
+  assert.equal(received.at(-1).headers.origin, undefined);
+  assert.equal(received.at(-1).headers.authorization, undefined);
+  const sameOrigin = { 'sec-fetch-site': 'same-origin' };
+  for (const [path, mode, dest, type] of [
+    ['/openclaw/assets/index-native.js', 'cors', 'script', 'application/javascript'],
+    ['/openclaw/assets/index-native.css', 'no-cors', 'style', 'text/css'],
+  ]) {
+    assert(page.body.includes(path));
+    const asset = await get(port, path, { ...sameOrigin, origin: ORIGIN, 'sec-fetch-mode': mode, 'sec-fetch-dest': dest });
+    assert.equal(asset.status, 200, path); assert.equal(asset.headers['content-type'], type);
+  }
+  const nativeFetch = { ...sameOrigin, origin: ORIGIN, 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty' };
+  assert.equal((await get(port, '/openclaw/control-ui-config.json', nativeFetch)).status, 401);
+  const caller = { ...nativeFetch, authorization: 'Bearer caller-device-token', 'x-openclaw-scopes': 'operator.read' };
+  assert.equal((await get(port, '/openclaw/control-ui-config.json', caller)).status, 200);
+  assert.equal((await get(port, '/openclaw/.well-known/openclaw/browser-bootstrap', caller)).status, 200);
+  const tunnel = await upgrade(port, { headers: { ...caller, 'sec-fetch-mode': 'websocket' } });
+  assert.equal(tunnel.status, 101);
+  assert.equal(upgraded[0].headers.origin, ORIGIN);
+  assert.equal(upgraded[0].headers.authorization, caller.authorization);
+  assert.equal(upgraded[0].headers['x-openclaw-scopes'], 'operator.read');
+  tunnel.socket.destroy();
+  assert(!JSON.stringify({ received, upgraded }).includes('SERVER-GATEWAY-SECRET'));
+});
+
+test('same-site activated document navigation is limited to either exact dashboard entry', async t => {
+  const { port } = await fixture(t);
+  for (const path of ['/openclaw', '/openclaw/']) {
+    assert.equal((await get(port, path, { ...ENTRY_NAVIGATION, 'sec-fetch-site': 'same-site' })).status, 200);
+  }
+});
+
+test('entry navigation exception rejects fetch, iframe, automatic navigation, mutations and non-entry routes', async t => {
+  const { port, received, upgraded } = await fixture(t);
+  const cases = [
+    ['/openclaw/', { 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty' }],
+    ['/openclaw/', { 'sec-fetch-mode': 'no-cors', 'sec-fetch-dest': 'empty' }],
+    ['/openclaw/', { 'sec-fetch-dest': 'iframe' }],
+    ['/openclaw/', { 'sec-fetch-dest': 'frame' }],
+    ['/openclaw/', { 'sec-fetch-user': undefined }],
+    ['/openclaw/', { 'sec-fetch-user': '?0' }],
+    ['/openclaw/', { 'sec-fetch-mode': undefined }],
+    ['/openclaw/', { 'sec-fetch-dest': undefined }],
+    ['/openclaw/', { 'sec-fetch-site': 'invalid-site' }],
+    ['/openclaw/', { 'sec-fetch-user': ['?1', '?1'] }],
+    ['/openclaw/', { origin: 'https://studio.example.test' }],
+    ['/openclaw/', { origin: ORIGIN }],
+    ['/openclaw/', { origin: 'null' }],
+    ['/openclaw/', { host: 'evil.test', 'x-forwarded-host': HOST }],
+    ['/openclaw/', { authorization: ['Bearer first-caller', 'Bearer second-caller'] }],
+    ['/openclaw/', { connection: 'x-openclaw-scopes', 'x-openclaw-scopes': 'operator.read' }],
+    ['/openclaw/', {}, 'HEAD'],
+    ['/openclaw/', {}, 'POST'],
+    ['/openclaw/', {}, 'PUT'],
+    ['/openclaw/assets/index-native.js', {}],
+    ['/openclaw/chat/session-1', {}],
+    ['/openclaw/control-ui-config.json', {}],
+    ['/openclaw/.well-known/openclaw/browser-bootstrap', {}],
+    ['/openclaw/api/users/profile-1/avatar', {}],
+    ['/openclaw/__openclaw__/assistant-media', {}, 'POST'],
+    ['/openclaw/?tab=chat', {}],
+  ];
+  for (const [path, overrides, method = 'GET'] of cases) {
+    const headers = { ...ENTRY_NAVIGATION, ...overrides };
+    for (const name of Object.keys(headers)) if (headers[name] === undefined) delete headers[name];
+    assert.equal((await get(port, path, headers, method)).status, 403, `${method} ${path} ${JSON.stringify(overrides)}`);
+  }
+  assert.equal((await get(port, '/openclaw/', { ...ENTRY_NAVIGATION, 'content-length': '1' }, 'GET', 'x')).status, 400);
+  assert.equal((await upgrade(port, { headers: ENTRY_NAVIGATION })).status, 403);
+  assert.equal(received.length, 0); assert.equal(upgraded.length, 0);
 });
 
 test('native HTTP auth remains native and only caller credentials/scopes reach Gateway', async t => {

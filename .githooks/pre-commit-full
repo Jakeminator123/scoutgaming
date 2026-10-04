@@ -18,6 +18,7 @@ node --test $test_worker_limit test/game-lanes.mjs test/game-entry-contract.mjs 
 node --test $test_worker_limit lab/test/neon-project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
 node --test $test_worker_limit lab/test/studio-render-persistence.test.mjs lab/test/studio-clip-controls-api.test.mjs lab/test/studio-social-status.test.mjs lab/test/studio-companion-cookie.test.mjs lab/test/check-build-traces.test.mjs
 node --test $test_worker_limit lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs
+node --test $test_worker_limit lab/test/zone-reference.test.mjs open-claw/lab/test/dashboard-proxy.test.mjs
 node --test $test_worker_limit test/bo-lab-auth.mjs
 node --test $test_worker_limit test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
 node --test $test_worker_limit ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs
@@ -27,7 +28,7 @@ node --test $test_worker_limit test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
 node --test $test_worker_limit test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
-node --test $test_worker_limit ops/cloud/test/runtime.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs ops/vercel-entry/test/preview-routes.mjs
+node --test $test_worker_limit ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs ops/vercel-entry/test/preview-routes.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs

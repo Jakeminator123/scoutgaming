@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
+import { connect } from 'node:net';
 import { test } from 'node:test';
 import { verifyCloudAccess, probeStatus } from '../access-check.mjs';
 import { createCloudGateway } from '../gateway.mjs';
 import { openCheckedGateway } from '../start.mjs';
+import { closeGateway } from '../process-group.mjs';
 import { createOperatorSpeechQa } from '../../../web/operator-speech-qa.mjs';
 
 const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
@@ -109,4 +111,25 @@ test('probe has a bounded deadline and does not reveal response contents', async
     await assert.rejects(probeStatus({ port, host: 'game.example.test', path: '/', timeoutMs: 50 }),
       error => /Cloud access probe failed/.test(error.message) && !error.message.includes('private-fixture-data'));
   } finally { await close(server); }
+});
+
+test('an upgraded gateway connection cannot hold shutdown beyond the socket deadline', async t => {
+  const gateway = createServer();
+  let upgraded;
+  gateway.on('upgrade', (_request, socket) => {
+    upgraded = socket;
+    socket.write('HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  });
+  await openCheckedGateway(gateway, config, { checkAccess: async () => {} });
+  const client = connect(gateway.address().port, '127.0.0.1');
+  t.after(() => { client.destroy(); upgraded?.destroy(); gateway.closeAllConnections(); gateway.close(); });
+  await once(client, 'connect');
+  client.write('GET /fixture HTTP/1.1\r\nHost: game.example.test\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n');
+  await once(client, 'data');
+  const clientClosed = once(client, 'close');
+  const started = performance.now();
+  await closeGateway(gateway, 40);
+  await clientClosed;
+  assert.ok(performance.now() - started < 1000, 'upgraded sockets must actually close, not just HTTP keep-alives');
+  assert.equal(upgraded.destroyed, true);
 });

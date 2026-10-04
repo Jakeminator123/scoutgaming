@@ -8,6 +8,7 @@ import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
 import { createStorageExportServer } from './storage-export.mjs';
+import { SHUTDOWN_BUDGET, trackServerConnections } from '../../web/graceful-shutdown.mjs';
 
 // Deliberate pilot opt-in is not a claim of production acceptance.
 export function assertCloudAccessReady(env = process.env) {
@@ -27,6 +28,7 @@ function listen(server, port, host) {
 }
 
 export async function openCheckedGateway(gateway, config, { checkAccess = verifyCloudAccess, signal } = {}) {
+  trackServerConnections(gateway);
   try {
     // No externally reachable listener until actual local access checks pass.
     await listen(gateway, 0, '127.0.0.1');
@@ -38,6 +40,13 @@ export async function openCheckedGateway(gateway, config, { checkAccess = verify
     await closeGateway(gateway);
     throw error;
   }
+}
+
+export async function stopCloudRuntime(gateway, children) {
+  // Worker upgrades can be needed by the child's provider retirement. Signal
+  // both children before any gateway wait, then drain these paths in parallel.
+  const childStop = children?.stop();
+  await Promise.all([childStop, closeGateway(gateway, SHUTDOWN_BUDGET.childMs)]);
 }
 
 async function preflight(env) {
@@ -65,12 +74,13 @@ export async function main(args = process.argv.slice(2), env = process.env,
   const labInternalSecret = randomBytes(32).toString('hex');
   const abort = new AbortController();
   const stop = () => abort.abort();
-  process.once('SIGINT', stop);
-  process.once('SIGTERM', stop);
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
   let children, gateway;
   try {
     if (config.storageExport) {
       gateway = createStorageExportServer(config, config.storageExport, { childlessStartup: true });
+      trackServerConnections(gateway);
       await listen(gateway, config.publicPort, '0.0.0.0');
       console.log('Storage maintenance active; no product or Lab writers started.');
       await new Promise(done => { abort.signal.addEventListener('abort', done, { once: true }); if (abort.signal.aborted) done(); });
@@ -89,13 +99,10 @@ export async function main(args = process.argv.slice(2), env = process.env,
     if (reason !== 'signal') throw new Error('A cloud child exited unexpectedly.');
     return 0;
   } finally {
-    try { await closeGateway(gateway); }
+    try { await stopCloudRuntime(gateway, children); }
     finally {
-      try { await children?.stop(); }
-      finally {
-        process.off('SIGINT', stop);
-        process.off('SIGTERM', stop);
-      }
+      process.off('SIGINT', stop);
+      process.off('SIGTERM', stop);
     }
   }
 }

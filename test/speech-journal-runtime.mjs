@@ -95,7 +95,7 @@ test('normal close lets the exact idle worker complete without cancellation inte
     stopped.push(workerId);
     f.deps.stopWorker(workerId); f.jobs.set('synthetic-job-1', 'COMPLETED'); return true;
   } });
-  await manager.ensure(input()); await manager.close();
+  await manager.ensure(input()); await Promise.all([manager.close(), manager.close()]);
   const session = [...f.pool.state.sessions.values()][0];
   assert.equal(session.terminal_status, 'COMPLETED');
   assert.equal(session.cancel_requested_at_ms, null);
@@ -257,4 +257,60 @@ test('Neon close waits for pending idle cancellation, terminal and drain before 
   assert.equal(f.calls.filter(c => c.url.includes('/cancel/')).length, 1);
   assert.equal(f.starts(), 1);
   assert.equal(f.pool.state.reservations.size, 2, 'all day reservations retained');
+});
+
+test('stream shutdown retains its shared SQL fence until preparation and cancelled request writes finish', async t => {
+  const pool = speechMemoryPool(Date.now);
+  const actual = await createSpeechJournal({ pool, environmentId:'isolated-shutdown-fence', now:Date.now });
+  await actual.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+  let releaseWrites, releasePreparation, connected = false, providerState = 'IN_PROGRESS', releases = 0, paidRuns = 0, paidTts = 0;
+  const writesGate = new Promise(resolve => { releaseWrites = resolve; });
+  const preparationGate = new Promise(resolve => { releasePreparation = resolve; });
+  const order = [];
+  const journal = { ...actual,
+    async failRequest(value) { order.push('request:waiting'); await writesGate; const result = await actual.failRequest(value); order.push('request:flushed'); return result; },
+    async releaseLease(value) { releases++; await actual.releaseLease(value); order.push('lease:released'); },
+  };
+  const relay = {
+    status:() => ({ workers:Number(connected), available:Number(connected), busy:0 }),
+    workerStatus:() => ({ workers:Number(connected), available:Number(connected), busy:0 }),
+    stopWorker() { order.push('worker:stop'); connected = false; providerState = 'COMPLETED'; return true; },
+    close() { order.push('relay:close'); },
+  };
+  const service = await createGeneratedSpeechStreamService({}, {
+    workerSecret:'isolated-shutdown-worker-secret-at-least-32-characters', ticketSecret:'isolated-shutdown-ticket-secret-at-least-32-characters',
+    origin:'https://shutdown-fixture.invalid', voiceId:'fixture-voice', modelId:'fixture-model',
+    session:{ apiKey:'fixture-only', endpointId:'fixture-endpoint', reserveUsd:'0.20', dailyBudgetUsd:'1' },
+  }, {
+    journal, journalRequired:true, resolveOwner:async () => input().owner, attachRelay:() => relay,
+    pcmSource:async function*() { paidTts++; },
+    fetchImpl:async url => { if (url.endsWith('/run')) { paidRuns++; connected = true; }
+      assert.ok(url.endsWith('/run') || url.includes('/status/'), 'natural retirement never submits cancellation');
+      return response({ id:'fixture-job', status:providerState }); },
+  });
+  t.after(async () => { releasePreparation(); releaseWrites(); await Promise.allSettled([service.close()]); });
+  await service.prepare(input());
+  let freshChecks = 0;
+  const preparing = service.prepare(input({ owner:'isolated-second-owner', requestId:'second-request',
+    beforeCostly:async () => { if (++freshChecks === 2) await preparationGate; } }));
+  const preparationOutcome = assert.rejects(preparing, { code:'generated_speech_stream_cancelled' });
+  await t.waitFor(() => assert.equal(freshChecks, 2), { interval:5, timeout:1000 });
+  const closing = service.close();
+  assert.equal(service.close(), closing);
+  let closed = false;
+  const observedClose = closing.then(() => { closed = true; });
+  observedClose.catch(() => {});
+  await t.waitFor(() => assert.notEqual([...pool.state.sessions.values()][0].released_at_ms, null), { interval:5, timeout:1000 });
+  assert.ok(order.includes('worker:stop'), 'worker retirement starts despite blocked request writes');
+  assert.equal(releases, 0); assert.equal(closed, false);
+  releasePreparation();
+  await t.waitFor(() => assert.equal(order.filter(value => value === 'request:waiting').length, 2), { interval:5, timeout:1000 });
+  assert.equal(releases, 0, 'request transactions still own the original fence');
+  releaseWrites(); await preparationOutcome; await observedClose;
+  assert.equal(releases, 1);
+  assert.deepEqual([...pool.state.requests.values()].map(value => value.state), ['failed', 'failed']);
+  assert.ok(order.lastIndexOf('request:flushed') < order.indexOf('lease:released'));
+  assert.equal([...pool.state.sessions.values()][0].terminal_status, 'COMPLETED');
+  assert.equal(paidRuns, 1); assert.equal(paidTts, 0);
+  assert.ok(pool.state.reservations.size > 0, 'shutdown preserves reservations');
 });

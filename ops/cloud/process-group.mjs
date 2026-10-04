@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { LAB_PORT, WEB_PORT } from './config.mjs';
+import { SHUTDOWN_BUDGET, trackServerConnections } from '../../web/graceful-shutdown.mjs';
 
 // An explicit diagnostic subscriber receives bounded complete lines. Ordinary
 // children keep their discarded output; no stderr is exposed by this option.
@@ -37,7 +38,14 @@ export async function assertChildPortsFree(ports = [WEB_PORT, LAB_PORT]) {
   }
 }
 
-export async function terminateChild(child, timeoutMs = 10000) {
+const terminations = new WeakMap();
+export function terminateChild(child, timeoutMs = SHUTDOWN_BUDGET.childMs) {
+  if (child && terminations.has(child)) return terminations.get(child);
+  const pending = terminateOnce(child, timeoutMs);
+  if (child) terminations.set(child, pending);
+  return pending;
+}
+async function terminateOnce(child, timeoutMs) {
   if (!child?.pid || child.exitCode !== null || child.signalCode !== null) return;
   const exited = new Promise(resolve => child.once('close', resolve));
   child.kill('SIGTERM');
@@ -46,13 +54,14 @@ export async function terminateChild(child, timeoutMs = 10000) {
   try { await exited; } finally { clearTimeout(force); }
 }
 
-export async function closeGateway(server, timeoutMs = 5000) {
-  if (!server?.listening) return;
-  const closed = new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+export async function closeGateway(server, timeoutMs = SHUTDOWN_BUDGET.httpMs) {
+  if (!server) return;
+  const sockets = trackServerConnections(server);
+  if (!server.listening && !sockets.sockets.size) return;
+  const closed = !server.listening ? Promise.resolve() : new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   server.closeIdleConnections?.();
-  const force = setTimeout(() => server.closeAllConnections?.(), timeoutMs);
-  force.unref?.();
-  try { await closed; } finally { clearTimeout(force); }
+  const force = setTimeout(() => { server.closeAllConnections?.(); sockets.destroy(); }, timeoutMs);
+  try { await Promise.all([closed, sockets.waitForEmpty()]); } finally { clearTimeout(force); }
 }
 
 export async function waitForChild(child, url, acceptable, timeoutMs = 30000, signal) {
@@ -73,10 +82,8 @@ export async function waitForChild(child, url, acceptable, timeoutMs = 30000, si
 export async function startChildren(specs, { spawnProcess = spawn, wait = waitForChild,
   portCheck = assertChildPortsFree, signal } = {}) {
   let web, lab, webExit, labExit;
-  const stop = async () => {
-    await terminateChild(lab);
-    await terminateChild(web);
-  };
+  let stopPromise;
+  const stop = () => stopPromise ??= Promise.all([terminateChild(lab), terminateChild(web)]);
   try {
     if (signal?.aborted) throw new Error('Cloud start was interrupted.');
     await portCheck();

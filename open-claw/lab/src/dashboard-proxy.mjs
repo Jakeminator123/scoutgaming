@@ -65,7 +65,14 @@ function requestRoute(req, config, websocket) {
   if (['host', 'origin', 'authorization', 'cookie', 'x-openclaw-scopes'].some(name => nominatedHopHeaders.includes(name))) return { error: 403 };
   const origin = req.headers.origin;
   if ((origin !== undefined && origin !== config.publicUrl.origin) || (websocket && origin !== config.publicUrl.origin)) return { error: 403 };
-  if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(req.headers['sec-fetch-site'])) return { error: 403 };
+  // Studio's external link opens only the native entry document. Its assets,
+  // fetches and WS then use the Director origin and keep the existing guards.
+  const fetchSite = req.headers['sec-fetch-site'];
+  const entryNavigation = !websocket && req.method === 'GET' && origin === undefined && !parsed.search
+    && [DASHBOARD_BASE_PATH, `${DASHBOARD_BASE_PATH}/`].includes(path)
+    && ['cross-site', 'same-site'].includes(fetchSite) && req.headers['sec-fetch-mode'] === 'navigate'
+    && req.headers['sec-fetch-dest'] === 'document' && req.headers['sec-fetch-user'] === '?1';
+  if (fetchSite && !['same-origin', 'none'].includes(fetchSite) && !entryNavigation) return { error: 403 };
   const relative = decoded.slice(DASHBOARD_BASE_PATH.length);
   // Reserved Gateway APIs must never become aliases beneath the UI mount.
   if (/^\/(?:v1|hooks|oauth)(?:\/|$)/.test(relative) || /^\/tools\/invoke(?:\/|$)/.test(relative) || /^\/desktop\/(?:observe|attach)(?:\/|$)/.test(relative)) return { error: 404 };

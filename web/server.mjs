@@ -1135,7 +1135,7 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
   });
 }
-installGracefulShutdown({ server, closeRuntime: async () => {
+installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   // Persist cancellation/terminal receipts while the journal connection is open.
   const probeCancellations = [];
   for (const [key, controller] of activePlayerChats) {
@@ -1145,7 +1145,7 @@ installGracefulShutdown({ server, closeRuntime: async () => {
       if (dealerId === 'astrid') probeCancellations.push(probeRuntime.cancel({ playerId, dealerId }, 'server_shutdown'));
     } catch { /* An invalid internal key cannot delay the remaining cancellations. */ }
   }
-  const outcomes = await Promise.allSettled([speechStreamService?.close(), ...probeCancellations]);
+  const outcomes = await Promise.allSettled([speechStreamService?.close({ signal }), ...probeCancellations]);
   if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
 }, closeStorage: async () => {
   try { if (storage) await storage.close(); }
