@@ -1,6 +1,6 @@
 // Public presentation choices. They never change game rules or grant access.
 export const GAME_LANES = Object.freeze([
-  Object.freeze({ id: 'original', label: 'Original Lane' }),
+  Object.freeze({ id: 'original', label: 'Kevin Lane' }),
   Object.freeze({ id: 'mobile-phone', label: 'Mobile Phone Lane' }),
 ]);
 export const isGameLane = value => GAME_LANES.some(lane => lane.id === value);
