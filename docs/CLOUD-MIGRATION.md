@@ -23,7 +23,28 @@ noll eller verifierad. Ingen ny budget, återbetalning eller journalreset;
 ägar-, idempotens-, lease-, cancel-/terminal- och dubbeljobbsskydd består.
 Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstester.
 
-**P8, 4 oktober 17:26 UTC:** `1fb2307` är publicerad med tre CI PASS och
+**Verifierad slutkod 18:16 UTC:** P7 och fysisk P8 är genomförda på `9ba2fd05`,
+med full pre-commit och tre CI PASS. Frontend/Studio READY och samtliga 17 alias
+kontrollerade; projektinställningar och historiska mål är bevarade. Render
+`dep-db198qrm8hqs73dpj27g` är LIVE utan CROOT med befintlig TLS verify-full.
+Slutparitet PASS: 32 konto-/speltabeller, elva journaler, tre dokument,
+18 aktiva plus sex behållna medieposter och gamla Blob-referenser0.
+Produktdisk DELETE204/GET404 och service.disk saknas. Tolv ersatta Blob-objekt
+är borttagna: faktisk gamla-lista0 och ersättningar12. Explicit restart200 gav
+verifierad ny appprocess, 160 källhashar, åtta avvecklade runtimefiler,
+AI3/Neon ON, health200 och ingen `/var/data` eller persistent produktmount.
+Backupen bevaras. QA:s tre tjänster kör `7c4c1cc`, faktiska
+LIVE/READY, SDK/källa och aktuella 10/10 bevarande PASS med OFF37.
+Äldre 42→37-övergångs ephemära närvarorader 19→18 är en dokumenterad
+bevislucka; originalets compose=false består. Inga nya providerjobb.
+Kvitton: diskfri runtime `6cf5030f…`, data/HTTP `4615366b…`, faktisk postdelete-
+omstart `bf582b0b…`, i befintliga privata P8-kvitton och operatörsjournal.
+Parentens processmiljö är direkt oläsbar (Linux EACCES efter UID-byte);
+konfigurationen binds i stället av faktisk barnprocess/källa och stabila
+deploy-/envavläsningar. Ingen direkt parent-envavläsning påstås.
+Efterföljande guide-/namnregisterleverans ändrar inga runtimebytes eller driftvärden.
+
+**Historisk P8-checkpoint, 4 oktober 17:26 UTC:** `1fb2307` är publicerad med tre CI PASS och
 Vercels frontend/Studio READY. Produkt och QA behåller b0bc efter misslyckad
 containerstart. Befintliga tal-QA-handlaren bevisar anonym HTTP403; de två
 startproven krävde felaktigt 401. Förväntningarna rättas och det befintliga
@@ -33,7 +54,7 @@ tills rättad release faktiskt är LIVE och slutkontrollerna passerat. QA OFF.
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
-**P8 uppföljning 17:49 UTC:** `7c4c1cc` har tre CI PASS och är faktiskt LIVE
+**Historisk P8-checkpoint 17:49 UTC:** `7c4c1cc` har tre CI PASS och är faktiskt LIVE
 på produktens Render med käll-/AI-/Neon-/healthkontroll PASS. Vercel är READY
 och alla 17 granskade/historiska alias PASS. Första start utan gammal diskväg
 misslyckades på entrypointens för snäva TLS-villkor: originalanslutningen är
@@ -516,25 +537,17 @@ vanliga API-anrop. Verifiera aktuell plattform vid implementation:
 
 Bocka av endast efter angivet acceptansbevis. Planering är inte implementation;
 källinventering är inte en live-fillista eller bevisad borttagning.
-Procent i chatten är en grov bedömning av **den nya Studio-sammanslagningen**,
-inte filantal eller den tidigare frontendflytten. Startläge efter kontraktsgrunden:
-cirka 10 %. Efter kontrakt, isolerade oaktiverade lagringsutkast och den
-publicerade UI-förenklingen 3 oktober: cirka 30 %. Efter levererbar Neon-/journalgrund
-och native BO-UI/API bakom avstängd aktivering: cirka 40 %.
-Gemensam policy, konto-/partner-/authfunktioner, isolerad SQL/HTTPS/restart och
-aktuell `190399`-molnacceptans ger grovt **80 % klart / 20 % kvar**.
-Riktig produktionsimport, full P6-helhetsacceptans och P7/P8-avveckling återstår.
-Övertagandets aktuella startpunkt, faktiska åtkomstgap och stoppad QA-invitation
-står överst i `JOHN-HANDOFF.md`. 80 % är ingen acceptansgrind; alla öppna
-P6/P7/P8-villkor gäller fortsatt, även efter Resends delivered-kvittens.
-Viktning: kontrakt/åtkomst
-10, beständig Studio-state 20, enkel native
-UI/auth 20, API-/spelintegration 20, säkra jobbjournaler 10, QA 10, avveckling/docs 10.
-Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
+P7:s produktionsimport, gemensamma policy, aliasbyte och provideraktivering är
+verifierade. P8-koden `9ba2fd05` är faktiskt LIVE och diskfri slutkontroll,
+produktdisk-/tolv Blob-borttagningar samt verklig omstart har passerat.
+P9 dokumenterar verifierad slutkod och faktisk avveckling i befintliga filer.
+Detta ersätter den äldre uppskattningen 80/20. Full P6, naturlig providerstatus
+COMPLETED och ny mänsklig take-approval påstås inte. Ingen 100 %-rapport före
+verifierad integration och faktisk avveckling.
 
 - [x] **P0 — målbild:** en Studio, en privat Blob, Neon för beständig struktur,
   Render/OpenClaw/RunPod behålls för sina aktiva ansvar; obligatorisk slutstädning.
-- [ ] **P1 — kontrakt och inventering:** lås API/datakontrakt, käll-/mål-/ägarmapp
+- [x] **P1 — kontrakt och inventering:** lås API/datakontrakt, käll-/mål-/ägarmapp
   och exklusiva filanspråk. Läs uppdragets förväntade resultat och acceptansvillkor
   före implementation. GitHub hanterar källa/leverans/checks; denna checklista
   hanterar status. Jira och gamla GitLab-flöden används inte. Inventera molnstate
@@ -546,7 +559,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   - [x] Första kodpaketet: fristående Studio-sektions-/behörighets-/APIkontrakt;
     11 isolerade tester PASS, inklusive negativa fall. Inga aktiva route-, cookie-
     eller lagringsbyten. Detta bockar inte av hela P1/P4 eller live-acceptans.
-  - [ ] Full molndiskinventering och återstående lagrings-/journal-/transportkontrakt
+  - [x] Full molndiskinventering och återstående lagrings-/journal-/transportkontrakt
     låsta före migreringsintegration och radering. Render-SSH är nu verifierad
     efter godkänd registrering av befintlig publik nyckel. Den ofrysta läsexporten
     visar 129 journalfiler: 18 terminala GPU-jobb, 46 streamrequestkvitton,
@@ -563,9 +576,12 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     PASS. Privat `retained-bank-blob-receipt.json` har `blobReadbackVerified:true`.
     Sex exakta retained-mediarader är registrerade enbart i nya isolerade QA
     med sex auditposter och noll nya rader vid exakt återkörning. Ingen sådan
-    produktionsimport är genomförd; detta är inte visuell approval.
-    P1 är därför inte helt klart.
-- [ ] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
+    produktionsimport var genomförd vid detta historiska QA-kvitto. Nu finns
+    sex retained-rader även i produktion efter verifierad import och paritet;
+    detta är inte visuell approval. Hela produktdisken är senare fryst och
+    inventerad: 206 filer/10 mappar, full extern backup och arkivhash PASS,
+    backupkvitto `12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9`.
+- [x] **P2 — Neon-state:** projekt/revision/historik/profiler, videoregister/
   klassificering och beständig BO-konfiguration har en gemensam databasadapter.
   Bevis: schema-migration, importparitet, samtidiga sparningar/rollback och
   restart-prov i isolerad databas. Konton och saldo får inte återställas/resetas.
@@ -577,8 +593,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     fixturtester PASS. Inget fröprojekt eller diskfallback. Ett tidigare isolerat
     PostgreSQL-/omstartsprov gav 15 PASS; senaste paketets SQL/HTTPS/restartkvitto
     redovisas under P6.
-  - [ ] Verifierad aktuell import och aktiv gemensam källa för Studio/Render.
-  - Pågående nästa integrationssteg: `studio-game-policy` läser projekt och
+  - [x] Verifierad aktuell import och aktiv gemensam källa för Studio/Render.
+    P7:s importkvitto `0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`
+    och fristående runtimeparitet verifierar 32 skyddade konto-/speltabeller,
+    tre dokument och 18 aktiva plus sex behållna medieposter.
+  - Integrerad `studio-game-policy` läser projekt och
     administration i en gemensam repeatable-read-transaktion, returnerar en
     oföränderlig scopebunden spelrevision och bevarar båda källrevisionerna.
     Studio-/Render-adaptrar sparar med CAS/historik/audit. Exakt tier/idle-
@@ -586,9 +605,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     12 riktade policyprov och 17 repositoryprov PASS, inklusive samtidiga
     sparningar, blandad revisionsrace, rollback och scopegränser. `listMedia`
     läser endast avsedd Neon-scope och nekar ofullständig lista. Detta är
-    fixturbevis kompletterade av P6:s SQL/restartprov; aktuell produktionsimport
-    och produktionsacceptans är fortfarande öppna.
-- [ ] **P3 — Blob och jobbstate:** beständiga generationer/talpaket ligger i
+    fixturbevis kompletterade av P6:s SQL/restartprov och P7:s faktiska
+    produktionsimport och runtimeparitet.
+- [x] **P3 — Blob och jobbstate:** beständiga generationer/talpaket ligger i
   samma privata Blob; request-idempotens, sessionägarskap, kostnadsreservationer,
   job recovery och budgetledger är beständiga i Neon. Bevis: hash/HEAD/Range,
   fel-/retry-/avbrottsprov och restart utan dubbeljobb eller budgetnollställning.
@@ -601,7 +620,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     återläses med exakt paket-/ägarmetadata, hash och storlek. Beständig disk-
     artifact-/budgetfallback saknas i detta läge; endast städad OS-temp används.
     Isolerade byte-/retry-/ägarprov passerar utan betalda provideranrop.
-  - [ ] Fullfilernas monetära reservation före TTS/GPU: det tidigare request-
+  - [x] Fullfilernas monetära reservation före TTS/GPU: det tidigare request-
     journalprovet täckte inte beloppsreservationen. Additiv 004 och gemensam
     stream-/fullfilsdygnssumma är implementerade med explicit fullfilsbelopp,
     beständig requestägare, lease-/tidsfence och ingen budgetnollställning.
@@ -614,7 +633,9 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     består och separat städkontroll fann noll egna fixturkataloger.
     Originalets totaltak 10 USD är godkänt; endast det lilla SDK-textprovet nedan
     är kvitterat. Migration/import seedar ingen fullfilspolicy i äldre
-    förbrukad produktionsjournal; separat verifierad adoption krävs.
+    förbrukad produktionsjournal. Separat production/version 1-adoption är nu
+    verifierad med ett enda additivt INSERT; historik och numeriska tak är
+    bevarade. Faktisk USD är fortsatt okänd enligt acceptansundantaget.
   - [x] Rent förberedelsekontrakt för fryst legacy-policy och kostnadsjournal:
     exakta källhashar, scope, budgetversion, förbrukade requests/reservationer
     och stoppade/dränerade skrivare krävs. Osäkra jobb får inte återbetalas eller
@@ -628,17 +649,16 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     med rå källhash; historiska actors fabriceras inte och saknad grind förblir
     avstängd. Färdiga paket blockerar utan exakt privat Blob-/byteverifiering.
     85 fokuserade prov och verkligt SQL-/restartprov PASS; ingen liveimport.
-  - [ ] Aktuell komplett drift-export, journalimport och paritetsprov före
+  - [x] Aktuell komplett drift-export, journalimport och paritetsprov före
     flaggbyte. Render-API, Neon och SSH till produkttjänsten nås. Datorns
     befintliga publika SSH-nyckel är registrerad efter uttryckligt godkännande;
-    ingen privat nyckel överfördes. Den privata 129-filers exporten är ännu
-    ofryst och är inte ett godkänt importunderlag. PostgreSQL-underhållsläget
-    `studio-export` är implementerat men inte aktiverat: policy/tal/streaming
-    explicit av, inga Web-/Lab-barn eller DB-anslutningar, endast health och
-    övriga routes 503. Privata SSH-bytes och verifierad extern GPU-dränering
-    krävs fortfarande. Full fryst export, exakta
-    spelmediereferenser och paritet återstår; ingen schema-/journalimport i drift.
-- [ ] **P4 — en Studio:** native administration ersätter iframe; navigation,
+    ingen privat nyckel överfördes. Första 129-filers exporten var ofryst;
+    senare fryst export, childless underhållsdrift och faktisk extern ALL0-
+    GPU-dränering verifierades före importen. Studio 001–004 och skyddad
+    journalimport är genomförda; faktisk paritet för 32 konto-/speltabeller,
+    elva kostnadstabeller och exakta mediereferenser PASS. Ursprungliga
+    kvitton och reservationer är bevarade, ingen omimport eller återbetalning.
+- [x] **P4 — en Studio:** native administration ersätter iframe; navigation,
   rollstyrd kontohantering (lägg till/spärra/ta bort enligt nuvarande livscykel)
   och speladresser är integrerade. Bevis: login, callback/launch, alla roller,
   nekad spelaranvändare/anonym, reviderade adresser och bevarade utkast. Alla
@@ -653,7 +673,8 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     normal pre-commit och alla tre CI-jobb PASS; frontend och Studio på Vercel
     READY för samma kod-SHA. Anonyma entréer kräver fortsatt inloggning.
     Webview-kontrollen kunde inte starta; visuell livegranskning kvarstår.
-    Befintlig backend/iframe består. Detta är inte P4/P5-klart.
+    Vid denna historiska UI-leverans bestod äldre backend/iframe. Nu är
+    ersättningen aktiv i native Studio; P8 har tagit bort gamla UI-/iframevägar.
   - [x] Native administrationskomponent skriven: sex lokala grupper, rollstyrda
     formulär, serverannonserade aktiva actions, strängrevision/CAS och bevarade
     formulärutkast. Inga iframe- eller parallella gamla menyer inuti komponenten.
@@ -662,13 +683,13 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     resultatvy och tas bort vid omladdning, gruppbyte, behörighetsändring eller
     logout; partnerlistan behåller bara godkänd metadata. Native login och
     lösenordsval finns på `/studio/login` respektive `/studio/set-password`.
-    Drift använder ännu den tidigare ytan. Native exakta röstpar/review/CAS,
+    Drift använder nu native-ytan. Native exakta röstpar/review/CAS,
     fyra lokala mejlpreviewer och sparade skoregler/räknare är nu implementerade.
     Kortordning, hålkort och spelare lämnar inte sko-API:n; korrupt JSON nekas,
     högst 500 tabeller samplas och delresultat markeras. Direkta gamla betalda
     röstpreviewn stoppas före disk/provider i gemensamt/native läge. 52 kombinerade
     fokuserade BO-/röst-/readout-/UI-prov PASS, utan ny visuell approval.
-- [ ] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
+- [x] **P5 — API på Vercel:** Studio/admin använder P2/P3 utan beständig lokal
   disk. Render-spelet läser samma policy och får erforderlig spelkonfigprojektion.
   Bevis: sparning från Studio följs av spelets kvitterade revision, utan iframe,
   gammal adminbackend, splittrade register eller kontroller på enbart klienten.
@@ -696,16 +717,20 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     Senare kommandorättningen nekar också fördröjd signerad body efter
     nonce-städning och signatur som gått ut under auth/låsväntan. Ursprungligt
     obetalt repro ger nu 403/en originalkreditering; sex kommandoprov PASS.
-  - [ ] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
+  - [x] Verifiera aktuell inkoppling av native konto-/partner-/authfunktioner och
     spelarstatus inklusive Render-runtime cancellation; medie-review,
     gemensam spelprojektion och diskfri Studio-start. Exakt tier/idle-validering
     och konto-/auth-/Render-kommandogräns är implementerade och verifierade
     i det aktuella isolerade SQL-/HTTPS-/restartprovet.
     Spelkonsumenter läser samma sparade projektrevision; Render behåller kort,
-    wallet och runtimeauktoritet. Gamla BO-konfigskrivare måste spärras vid
-    Neon-källbyte så att bo.json inte blir en andra writer. Produktdriften har
-    ännu inte bytt källa. Båda native-/policyflaggorna förblir av tills aktuell
-    import, verkliga handlers och isolerad SQL/HTTPS/restartacceptans verifierats.
+    wallet och runtimeauktoritet. Gamla BO-konfigskrivare är avvecklade;
+    `bo.json` är ingen aktiv andra writer. Produktion har bytt till Neon;
+    native administration är aktiverad i Vercel-Studio och gemensam policy
+    på berörda tjänster. Godkänd auth/roller/sparning/kommandogräns återanvänds
+    från oförändrade QA-flöden, kompletterat med riktade städprov och faktisk
+    routing/policy-/data-/restartavläsning. Ingen ny autentiserad
+    produktionsinloggning eller syntetisk kontomutation påstås. Produktens
+    fulla invitation/reset-mailacceptans kvarstår separat.
 - [ ] **P6 — helhets-QA:** isolerad backend/databas/hostname, ett koordinerat
   serverpar. Fyra dealers med två faktiska plays, sparade revisioner/native-kvitton,
   auth/revoke, privata media och strömtransport. OpenClaw-roller, bild/transkriberat
@@ -1073,7 +1098,8 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     scoped konto-/kostnadsinventering är historiska, oförändrade kvitton.
     Aktuell körning använder endast syntetisk QA-identitet; egen browser är
     stängd, inga mejl/provideranrop eller produktion/äldre-QA-anslutningar.
-- [ ] **P7 — samordnad aktivering:** efter verifierad P2–P6 och ett uttryckligt
+- [x] **P7 — samordnad aktivering:** efter verifierad aktiv ersättning,
+  dokumenterad avgränsad funktionell admission och ett uttryckligt
   genomförandeuppdrag. Frys aktuella skrivare där det behövs, importera endast
   den aktuella beständiga datan, kontrollera paritet, byt källa en gång och
   verifiera riktig HTTPS-adress, sparning, spel, auth och återstart.
@@ -1100,7 +1126,7 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     mejlkonfiguration och full invitation/reset-acceptans återstår.
     Produktionsimport, fristående runtimeparitet och faktiska aliasbyten är
     genomförda på b0bc. Permanent provideraktivering och faktisk readback PASS på b0bc före P8.
-- [ ] **P8 — faktisk avveckling:** gamla BO/Lab-UI och ersatta Render-API/skrivare
+- [x] **P8 — faktisk avveckling:** gamla BO/Lab-UI och ersatta Render-API/skrivare
   borttagna, inga permanenta diskfallbacks. Gamla Blob-alias tas bort efter
   verifierad referensmigrering. Onödiga env och produktdisk tas bort endast
   när samtliga beständiga beroenden är ersatta och befintlig slutkontroll PASS.
@@ -1113,9 +1139,11 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
   inte fröprojekt/nollbudget/diskfallback. En ren Git-diff bevisar inte att en
   molnresurs är borta. Äldre 12 `croupier/videos`-alias kräver referensprov i
   både aktuellt uppladdningsregister och historik före borttagning.
-  Riktad källkontroll 3 oktober ger följande konkreta ersättningsmapp.
-  Dessa mål är fortfarande aktiva i flagga-av-läget och raderas först efter P7
-  och respektive referens-/restartprov, inte genom en generell katalogrensning.
+  Slutbevis: disk DELETE204/GET404/service.disk saknas; gammal Blob-lista0,
+  ersättningar12; actual postdelete `bf582b0b…` visar ny process, rätt källa,
+  health200 och ingen `/var/data`/persistent mount. Backup och QA består.
+  Källkontrollen 3 oktober gav följande konkreta ersättningsmapp. Dess ersatta
+  mål är nu avvecklade efter P7 och referens-/restartprov; aktiva ansvar behålls.
 
   | Del | Ta bort när ersättningen är verifierad | Bevara aktivt ansvar |
   | --- | --- | --- |
@@ -1140,9 +1168,17 @@ Ingen 100 %-rapport före verifierad integration och faktisk avveckling.
     `tools`/`web` är separata repo-rootmappar, som i Jakobs bild; rotens `test/`
     är en syskonmapp till `services/`. Dessa och `pipeline/`/`open-claw/`/aktiva
     medier/konton/kostnadsjournaler behålls. Inget verifierat obsolete mål raderas.
-- [ ] **P9 — slutleverans:** fem docs uppdaterade, en John-handoff, aktuella
+- [x] **P9 — slutleverans:** fem docs uppdaterade, en John-handoff, aktuella
   miljönamn/guide, endast taskägda commits på main, CI och avsedd drift-SHA
   kontrollerade. Kvarvarande mänsklig acceptans/blockerare uttryckligen öppna.
+  - Slutkod `9ba2fd05`: full hook och CI `37222438373`, tre success;
+    faktisk Render/Vercel och postdelete-omstart PASS. Befintliga fem docs,
+    labbguide och miljönamnsregistret beskriver aktiv Neon/Blob/native Studio.
+    Efterföljande dokument-/namnregistercommit ändrar inga runtimebytes;
+    leveransens aktuella Git-/CI-/deployidentitet binds i befintlig P8-journal.
+    P6:s residualer, okänd USD, produktionsmail, QA:s äldre ephemära närvarogap
+    och parent-envs direkta läsgap är uttryckligen kvar. GitGuardian har komplett
+    commitmetadata men pending suite; incident-API är not-read, ingen clear-claim.
   - Kod [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
     på GitHub main har alla tre CI-jobb PASS och Vercel-frontend READY.
     Verifierad QA-runtimeleverans `190399386d93a02882d9b18a5ce5af53bb91fe23`
@@ -1164,30 +1200,36 @@ sekventiellt. P8 är en obligatorisk del av leveransen, inte ett möjligt senare
 
 ## Ytor och datalagring — produktion och nya QA
 
-Källleveransen med gemensamma credentials är `e461ef07`. Alla tre nya
-QA-tjänster är installerade och återlästa på den versionen 4 oktober.
+Godkänd källleverans med gemensamma credentials är `e461ef07`.
+QA:s tre tjänster kör nu städversionen `7c4c1cc`, faktiskt LIVE/READY,
+med verifierade alias, SDK/källa, tio aktuella bevarandekontroller och OFF37.
+Den äldre 42→37-jämförelsen har ett bevarat ephemärt närvarogap:
+`player_probe_sessions` 19→18. Övriga 31 kontotabeller matchar; 24h TTL är
+möjlig förklaring, men äldre radmetadata saknas. Det äldre compose-kvittot
+förblir false och ersätts inte med ett fabricerat full-PASS-kvitto.
 Senaste fyrdealer-rehearsal och shared-credential-HTTP/DOM gäller `e461ef07`;
 det fulla native90-kvittot gäller äldre `190399`.
 Källkod, publicerad runtime och acceptansbevis har därför separata revisioner.
-Full AI/GPU-acceptans inklusive dess cookie/loader-bevis och produktionsbytet
-är fortfarande öppna.
+Verifierad synlig/hörbar AI→tal→GPU→spel-END från cc77 återanvänds för
+oförändrade uppspelningsbytes enligt den dokumenterade funktionella admissionen.
+Produktionsbytet är genomfört. Full P6 och dess separata residualer förblir öppna.
 
-| Ansvar | Nuvarande produktion | Ny isolerad native-QA / mål efter P7 |
+| Ansvar | Aktuell produktion | Bevarad isolerad native-QA |
 | --- | --- | --- |
-| Publik webb och spel-UI | Vercel `apps/croupier-frontend`, `/game`; `/blackjack` är spelarentré | Samma routekontrakt; nya adressbytet ligger bakom gemensam policyflagga |
-| Croupier Studio | Separat Vercelbygge `lab` under `/studio`; äldre BO/admin via Render | Native Studio/admin/auth-API på Vercel; samma serverkontroller och roller |
+| Publik webb och spel-UI | Vercel `apps/croupier-frontend`, `/blackjack` | Samma spelväg på separat QA-hostname |
+| Croupier Studio | Native Studio/admin/auth-API i Vercelbygget `lab` under `/studio`; befintliga roller | Samma native Studio på separat QA-hostname och scope |
 | Auktoritativt spel | Render: slump, shoe, wallet, rundor, kommandon, cancellation och live-transport | Samma Render-ansvar; Studio får aldrig äga spelresultat |
 | Konton och speldata | Neon `croupier_game`/`croupier_auth`; zoner i separat `croupier_zones` | Separat QA-databas och explicit miljö/workspace; inga produktionskonton återställs |
-| Studio-policy, historik, BO och medieregister | Beständig Render-disk `/var/data/studio` och äldre BO-källa | Revisionsstyrd Neon `croupier_studio`, CAS/historik/audit och en sparad spelpolicy |
-| Mediefiler och färdiga paket | Privat Blob `croupier-media-private`; äldre alias och diskgrenar kvar där de används | Samma privata Blob, exakta objekt/hashar; Neon håller metadata och bindningar |
-| AI/GPU-jobb och kostnader | Render/RunPod/OpenClaw samt befintliga skyddade journaler | Neon-journaler och oförändrade reservations-/ägargates; P6-budget och kvitton bevaras |
+| Studio-policy, historik, BO och medieregister | Revisionsstyrd Neon `croupier_studio`, CAS/historik/audit och gemensam spelpolicy | Separat Neon-scope; installerade SDK-/QA-kvitton bevaras |
+| Mediefiler och färdiga paket | Privat Blob `croupier-media-private`; Neon håller exakta metadata och bindningar | Samma privata Blob med isolerade ägar-/miljögränser |
+| AI/GPU-jobb och kostnader | Render/RunPod/OpenClaw, beständiga Neon-journaler och reservations-/ägargates | AI OFF; budgetjournal, historik och reservationer bevaras |
 | Director/Gateway | Egna aktiva tjänster, `/data/catalog` och `/data/openclaw` | Behålls; Studio länkar till befintlig native dashboard |
 | Lokal utveckling | Koordinerat produkt-/labbpar; sparad data i `lab/data` | Samma sessionsvakt; byggcache är disponibel, men Lab-integrationstestet använder färdig runtime |
 
-Ny QA bevisar ersättningen i en separat miljö. P7 byter produktionskälla efter
-verifierad paritet och dränering; P8 tar därefter bort gamla BO-/diskgrenar,
-env och mount efter referens-/restartprov. Att rensa oanvänd frontendkod eller
-lokal byggcache genomför inte det produktionsbytet.
+QA bevisar ersättningen i en separat miljö. P7 har bytt produktionskälla efter
+verifierad paritet och dränering; P8-koden har avvecklat ersatta BO-/diskgrenar.
+Gamla fysiska produktresurser är avvecklade efter diskfri slutkontroll,
+med faktisk resursavläsning och omstart. Backupen bevaras.
 
 ### Blob är ett gemensamt filarkiv, inte två tjänster
 
@@ -1201,32 +1243,33 @@ Det är filnamnsgrupper i samma Blob, inte separata Vercel-appar eller Render-di
 Den gamla roten `astrid/` konsoliderades den 2 oktober: ett äldre zonklipp
 flyttades med identisk SHA-256 till `croupier/media/dealers/astrid/source/background-zones/`.
 Det lades inte till i det aktiva spelindexet. Tolv äldre `croupier/videos/`
-adresser behålls för kompatibilitet med Render-uppladdningsindex/historik;
-deras nya runtime-kopior är hashverifierade. Radera inte dessa adresser innan
-alla diskreferenser inventerats och migrerats. Historiska QA-kvitton skrivs inte om.
+adresser är avvecklade efter verifierad referensmigrering: aktuella Neon-media,
+dokument och historik har noll gamla referenser. Faktisk Blob-lista0 och
+tolv hash-/storleksverifierade ersättningar finns kvar. Historiska QA-kvitton
+och den fullständiga diskbackupen skrivs inte om.
 
 ### Vad ligger kvar på Render-diskarna?
 
 **Studio-projekt** betyder sparade presentationsinställningar: val av
 dealerklipp, event-/idle-bindningar och regler för när de används. Det är
-`studio/project.json` och dess versionshistorik, inte en extra app eller en
+revisionsstyrda dokument i Neon och deras versionshistorik, inte en extra app eller en
 samling spelarkonton. "Lab-projekt" syftar här på samma sparade inställningar,
 inte ytterligare ett projekt. Lab är arbetsmiljön; Studio är editorn i den.
 Ett **Vercel-projekt** är däremot en webbpublicering, ett helt annat begrepp.
 
 | Tjänst | Monterad disk | Kvarvarande ansvar |
 | --- | --- | --- |
-| Produktion `croupier-v2` | `/var/data`, 5 GB | Studio-projekt, historik, profiler och uppladdnings-/familjeindex; BO-konfiguration; generationer/tal och mediacache; historiska SQLite-filer |
+| Produktion `croupier-v2` | Gamla 5 GB-disken avvecklad; ingen `/var/data` mount | Aktiv Studio/journal i Neon och beständig media i privat Blob; full extern historisk backup bevaras |
 | Isolerad QA `croupier-vercel-preview-qa` | `/var/data`, 1 GB | QA:s separata Studio-/arbetsdata och cache; inte produktionskonton |
 | Director `croupier-lab-director` | `/data/catalog`, 1 GB | Katalog, historik och Companion-databas |
 | Gateway `croupier-lab-openclaw` | `/data/openclaw`, 1 GB | OpenClaw-konfiguration, agentfiler, sessioner och sökdatabas |
 
 Diskarnas montering/storlek och produktens Blob/Postgres-konfiguration är
-kontrollerade live. Innehållstyperna ovan följer sparvägarna och backupkontraktet;
-det är inte en fullständig live-fillista. Konton, spelar-ID:n, saldo och rundor
-har Neon som aktiv källa. Blob innehåller mediefiler, inte dessa konton.
-Render-diskarna behövs därför fortfarande och får inte tömmas. De ersätter
-inte en extern verifierad backup; full Studio-/Director-/Gateway-backup återstår.
+kontrollerade live. Produktens fullständiga inventering och externa backup
+är verifierade: 206 filer/10 mappar. Konton, spelar-ID:n, saldo, rundor och
+Studio-state har Neon som aktiv källa. Blob innehåller mediefiler.
+QA-, Director- och Gateway-diskarna behålls; de är inte P8-raderingsmål.
+Full extern Director-/Gateway-backup är ett separat kvarvarande ansvar.
 
 `croupier-player-preview-qa` bär lagringskopplingar och är ingen dubblett.
 Testbackenden `croupier-vercel-preview-qa` startas bara på begäran.
