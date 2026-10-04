@@ -19,7 +19,7 @@ behövs. Namnet innebär inte godkänd fysisk mobil-/Safari-acceptans.
 | --- | --- |
 | Hemsidans Blackjack-knapp och ren `/blackjack` | Öppnar lanen som är sparad i Studio |
 | Mobile Phone Lane | Astrid med befintlig `presentation=local`, chatt, tal och läppsynk |
-| Original Lane | Befintlig originalspelare med Vera som standard |
+| Kevin Lane | Befintlig originalspelare med Vera som standard; sparat ID `original` |
 | Utloggad/utgången session | 303 till `/player-login`, tillbaka till `/blackjack` efter lyckad login |
 | Redan inloggad | Samma befintliga konto används direkt |
 | Gammal `?dealer=astrid&presentation=local` | Fortsätter öppna Mobile Phone Lane |
@@ -30,7 +30,7 @@ Studio-valet finns under **Backoffice → Spel, lanes & bord → Spel och lanes*
 Administratören väljer och trycker **Spara aktiv lane**. En vanlig spelare
 kan inte ändra den globala inställningen. Den befintliga revisionen krävs;
 en samtidig inaktuell skrivning avvisas. Ingen inställning sparas vid vanlig
-visning. Saknat `gameLane` behåller Original Lane tills ett uttryckligt save.
+visning. Saknat `gameLane` behåller Kevin Lane tills ett uttryckligt save.
 
 Ren login följer det senast sparade valet när spelet öppnas. Explicita
 lane-/dealerlänkar behåller sitt val genom login. Det är ett medvetet enkelt

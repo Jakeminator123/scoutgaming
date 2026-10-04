@@ -3,6 +3,27 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Kevin Lane och röst/kamera — 4 oktober, efter cfdcb2c7
+
+Jakob beställer namnbytet från Original Lane till **Kevin Lane** samt att
+Mobile Phone Lanes röst/kamera ska fungera. Endast visningsnamnet ändras;
+sparat lane-ID `original`, befintliga konton och vald `mobile-phone` bevaras.
+Den reproducerade UI-varningen beror på att produktionsflaggan
+`CROUPIER_ASTRID_CAMERA` var `0`. Befintlig separat translationsnyckel finns
+och GET OpenAI `/v1/models/whisper-1` gav HTTP200. Flaggan är nu sparad som `1`
+på produktionens Render-tjänst, övriga miljövärden identiska; nästa deployment
+måste läsas tillbaka innan funktionen räknas som live. QA ska fortsatt vara OFF.
+Ingen ny nyckel, provider, datamigration eller prisutredning behövs.
+
+82 befintliga riktade lane-/kamera-/röst-/transkriptionsprov PASS. GPU-avläsning
+före omstart: completed6/failed0/inProgress0/inQueue0. Ingen betald generering
+har startats av denna uppgift. Spelarens mikrofon/kamera kräver fortfarande
+eget val i samtyckesdialogen och webbläsarbehörighet; inspelning är OFF vid
+sidöppning. Bilder kräver vald Luna/Terra; manuell engångsinspelning finns
+om lokal wake-word-igenkänning saknas. Fysisk mikrofon/kamera är ännu inte provad.
+GitGuardian: GitHub-avläsning komplett för cfdcb2c7, svit queued,
+incidentlista not-read; tidigare känd incident 37830671 kvarstår som täckningslucka.
+
 ## Efterarbete beställt av Jakob — 4 oktober, efter bee4e04a
 
 Jakob har uttryckligen beställt en separat planmapp
@@ -19,7 +40,7 @@ med Studio-länkens cross-site-navigeringsmetadata. Coachens uppgift om sex
 zon-500 är inte självständigt loggavläst här. Rättningar och efterföljande
 autentiserad acceptans är öppna; P7/P8:s dataflytt och avveckling görs inte om.
 
-Ny faktisk Render-avläsning: produktionens tre tal-/streamflaggor är ON,
+Avläsningen före röst-/kamerabeställningen ovan: produktionens tre tal-/streamflaggor är ON,
 kameraflaggan OFF, Neon-policy ON och native-admin OFF. QA har 37 miljövärden,
 tal/stream/kamera/native-admin OFF, Neon-policy ON och saknar Cartesia-/RunPod-
 nycklar; P6-router är unset på båda. OFF37 betyder inte 37 avstängda funktioner.

@@ -343,11 +343,16 @@ Render-spelets villkorliga grupper:
   `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `LAB_REMOTE_URL` +
   `LAB_REMOTE_TOKEN`. Varje par sätts tillsammans. `OPENCLAW_TIMEOUT_MS`
   är valfri tidsgräns.
-- Kamera: `CROUPIER_ASTRID_CAMERA=1` kräver
-  `CROUPIER_ASTRID_TRANSLATION_KEY`. Båda är verifierade i Render-runtime
-  2026-09-29 cirka 09:26 CEST. En läsande modellkontroll med nyckeln gav
-  HTTP 200 för `whisper-1`; det bevisar inte en genomförd mikrofoninspelning.
-  Webbspelaren kräver fortfarande spelarens val och enhetsbehörighet.
+- Röst och kamera: `CROUPIER_ASTRID_CAMERA=1` kräver
+  `CROUPIER_ASTRID_TRANSLATION_KEY` och `CROUPIER_STREAM_LANE=lissabon-stream-lane`.
+  Flaggan var OFF efter migrationen och sätts åter till ON i produktion på
+  Jakobs beställning 4 oktober; QA förblir OFF. Nyckelns läsande modellkontroll
+  gav åter HTTP 200 för `whisper-1` samma dag. Detta bevisar inte en genomförd
+  mikrofoninspelning. Rösten översätts av OpenAI; Astrids svar använder fortsatt
+  Cartesia. Bilder kräver vald `gpt-6-luna` eller `gpt-5.6-terra`.
+  Webbspelaren kräver spelarens val och enhetsbehörighet. Inspelning börjar
+  aldrig automatiskt vid sidladdning; manuellt engångsmeddelande finns när
+  webbläsaren saknar lokal wake-word-igenkänning. Se aktuell driftavläsning i handoff.
 - Genererat tal/video: `CROUPIER_GENERATED_SPEECH=1` och
   `CROUPIER_CLOUD_GENERATED_SPEECH=1` kräver `CARTESIA_API_KEY`,
   `RUNPOD_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Streaming
