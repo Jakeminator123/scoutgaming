@@ -9,8 +9,8 @@ import { resolveMediaPath } from '../../tools/media-layout.mjs';
 import { StudioError } from './project-store.mjs';
 
 export const renderStudioPolicyEnabled = (env = process.env) => env.CROUPIER_STUDIO_NEON_POLICY === '1';
-export function assertRenderStudioWritable(env = process.env) {
-  if (renderStudioPolicyEnabled(env)) throw new StudioError('studio_writes_moved_to_native',410);
+export function assertRenderStudioWritable() {
+  throw new StudioError('studio_writes_moved_to_native',410);
 }
 const readonly = store => Object.freeze({load: () => store.load(),save: async () => {throw new StudioError('studio_writes_moved_to_native',410);}});
 
@@ -22,7 +22,7 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
   mediaFactory = createStudioMediaRuntime,schemaCheck = planStudioMigrations,readText = readFile,
   repositoryRoot = resolve(process.cwd(),basename(process.cwd()) === 'lab' ? '..' : '.'),
 } = {}) {
-  if (!renderStudioPolicyEnabled(env)) return null;
+  if (!renderStudioPolicyEnabled(env)) throw new StudioError('studio_read_storage_unavailable',503);
   env = Object.freeze({...env});
   let connectionString;
   try {
@@ -56,7 +56,7 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
 
 let persistence;
 export async function studioRenderPersistence() {
-  if (!renderStudioPolicyEnabled()) return null;
+  if (!renderStudioPolicyEnabled()) throw new StudioError('studio_read_storage_unavailable',503);
   persistence ??= createStudioRenderPersistence().catch(error => {persistence = undefined;throw error;});
   return persistence;
 }

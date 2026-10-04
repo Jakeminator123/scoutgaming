@@ -43,7 +43,8 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
     } catch {}
   }
   const enabled = env.CROUPIER_GENERATED_SPEECH_STREAMING === '1' && env.CROUPIER_GENERATED_SPEECH === '1' && (local || cloud);
-  const configuration = { directory: env.CROUPIER_GENERATED_SPEECH_DIR, origin,
+  const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
+  const configuration = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR, origin,
     workerSecret: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, ticketSecret: env.CROUPIER_SPEECH_STREAM_TICKET_SECRET,
     apiKey: env.CARTESIA_API_KEY, voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId };
   if (cloud) configuration.session = {
@@ -56,7 +57,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
     && !/\s/.test(configuration.session.apiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(configuration.session.endpointId ?? '')
     && sessionReserveMicroUsd(configuration.session.reserveUsd) !== null && sessionReserveMicroUsd(configuration.session.dailyBudgetUsd) !== null
     && sessionReserveMicroUsd(configuration.session.reserveUsd) <= sessionReserveMicroUsd(configuration.session.dailyBudgetUsd));
-  const configured = enabled && privateDirectory(configuration.directory) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
+  const configured = enabled && (journaled || privateDirectory(configuration.directory)) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
     && configuration.workerSecret !== configuration.ticketSecret
     && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey) && sessionConfigured;
   return { enabled, configured, configuration };
@@ -76,7 +77,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const ownership = journal ? createSpeechJournalLease({ journal, resource:'stream-session' }) : null;
   const journalTasks = new Set();
   const track = task => { journalTasks.add(task); task.finally(() => journalTasks.delete(task)).catch(() => {}); return task; };
-  if (!privateDirectory(configuration?.directory) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
+  if ((!journal && !privateDirectory(configuration?.directory)) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
   const [{ issueTicket, ticketAuthenticator }, { createCartesiaSource }] = await Promise.all([
     import('../services/astrid-gpu-worker/gateway/auth.mjs'),
     import('../services/astrid-gpu-worker/gateway/cartesia-source.mjs'),

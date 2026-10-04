@@ -9,6 +9,6 @@ export interface StudioReadPersistence {
   scope: Readonly<{environment: string; workspaceId: string}>;
 }
 export function renderStudioPolicyEnabled(env?: Record<string,string | undefined>): boolean;
-export function assertRenderStudioWritable(env?: Record<string,string | undefined>): void;
-export function createStudioRenderPersistence(options?: any): Promise<StudioReadPersistence | null>;
-export function studioRenderPersistence(): Promise<StudioReadPersistence | null>;
+export function assertRenderStudioWritable(env?: Record<string,string | undefined>): never;
+export function createStudioRenderPersistence(options?: any): Promise<StudioReadPersistence>;
+export function studioRenderPersistence(): Promise<StudioReadPersistence>;

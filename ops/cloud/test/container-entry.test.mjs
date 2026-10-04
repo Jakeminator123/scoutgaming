@@ -25,6 +25,25 @@ test('container changes only its exact disk root, then drops all supplementary g
   await assert.rejects(prepareContainerUser({ CROUPIER_CLOUD_DATA_ROOT: '/var/data' }, { fs: { ...fs, realpath: async () => '/other' }, proc }));
 });
 
+test('mountless Postgres, Neon and private Blob startup drops root without touching a filesystem', async () => {
+  const calls=[];let uid=0,gid=0;
+  const proc={getuid:()=>uid,getgid:()=>gid,setgroups:value=>calls.push(['groups',value]),
+    setgid:value=>{gid=value;calls.push(['gid',value]);},setuid:value=>{uid=value;calls.push(['uid',value]);}};
+  const fs=new Proxy({}, {get:()=>async()=>assert.fail('Mountless startup must not touch a disk path.')});
+  const env={CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_MEDIA_STORAGE:'blob',
+    BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
+    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=require'};
+  await prepareContainerUser(env,{fs,proc});
+  assert.deepEqual(calls,[['groups',[]],['gid',1000],['uid',1000]]);
+  calls.length=0;await prepareContainerUser(env,{fs,proc});assert.deepEqual(calls,[]);
+  for(const change of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
+    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATA_DIR:'/var/data/players'},
+    {CROUPIER_GENERATED_SPEECH_DIR:'/var/data/speech'},
+    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@other.example/game?sslmode=require'}]) {
+    await assert.rejects(prepareContainerUser({...env,...change},{fs,proc}));
+  }
+});
+
 const qaEnv={CROUPIER_CLOUD_DATA_ROOT:'/var/data/native-studio-qa/abc92154cb15',CROUPIER_DATABASE:'postgres',
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'qa_native_abc92154cb15',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:'postgresql://croupier_studio_qa_abc92154cb15:fixture@fixture.neon.tech/croupier_studio_qa_abc92154cb15?sslmode=require'};

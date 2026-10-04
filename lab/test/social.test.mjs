@@ -184,7 +184,7 @@ test('saving standard audio uses saved exact text and revision, not client overr
   await assert.rejects(service.voice({ policyRevision: createSocialPolicy().revision, text: 'injected' }));
 });
 
-test('HTTP endpoints expose no credentials and reject foreign origin', async t => {
+test('HTTP endpoints expose no credentials, reject foreign origin and retire disk policy writes', async t => {
   const { store } = await fixture(t);
   const options = { store, settings, voiceSettings: { key: 'voice-private', mismatch: false }, service: { chat: noCall, voice: noCall } };
   const result = await socialEndpoint(request('/api/social', 'GET'), options);
@@ -194,7 +194,9 @@ test('HTTP endpoints expose no credentials and reject foreign origin', async t =
   const foreign = await socialEndpoint(request('/api/social/chat', 'POST', input(), { Origin: 'https://foreign.test' }), options);
   assert.equal(foreign.status, 403);
   const save = await socialEndpoint(request('/api/social', 'PUT', { policy: body.policy, expectedRevision: body.policy.revision }), options);
-  assert.equal(save.status, 200); assert.notEqual((await save.json()).policy.revision, body.policy.revision);
+  assert.equal(save.status, 410);
+  assert.deepEqual(await save.json(), { error: 'studio_writes_moved_to_native' });
+  assert.equal((await store.load()).revision, body.policy.revision);
 });
 
 test('generated speech receipts bind browser owner as well as conversation/request IDs', async t => {

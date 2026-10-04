@@ -3,7 +3,6 @@ import { stripLabBasePath } from "./lab-url.mjs";
 import { createHash } from 'node:crypto';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { normalizeSocialInput, socialChat, validateSocialReply } from '../../open-claw/lab/src/social.mjs';
-import { createSocialStore } from './social-store.mjs';
 import { remoteRequest, connectionStatus } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { generateVoicePreview, voicePreviewStatus } from './voice-preview.mjs';
@@ -15,14 +14,8 @@ import { studioRenderPersistence, assertRenderStudioWritable } from './studio-re
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 const settingsNow = () => readSettings({ envFiles: [resolve(LAB_DIR, '../.env'), resolve(LAB_DIR, '.env.local')] });
 export const socialStore = () => ({
-  async load() {
-    const shared = await studioRenderPersistence();
-    return shared ? shared.socialStore.load() : createSocialStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR,'data')).load();
-  },
-  async save(next,revision) {
-    assertRenderStudioWritable();
-    return createSocialStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR,'data')).save(next,revision);
-  },
+  async load() { return (await studioRenderPersistence()).socialStore.load(); },
+  async save() { assertRenderStudioWritable(); },
 });
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 

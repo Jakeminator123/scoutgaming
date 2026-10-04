@@ -389,9 +389,8 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
       command: process.execPath, args: [join(configuration.repoRoot, 'web', 'server.mjs')], cwd: runDir,
       readyText: 'croupier demo on', dataDir: productData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
-        CROUPIER_DATA_DIR: productData, CROUPIER_GENERATIONS_DIR: join(runDir, 'generations'), DEMO_GUEST_ACCESS: '1',
+        CROUPIER_DATA_DIR: productData, DEMO_GUEST_ACCESS: '1',
         PUBLIC_URL: productUrl, BO_URL: productUrl, LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
-        CROUPIER_PRESENTATION_STUDIO_DIR: labData,
         CROUPIER_STREAM_LANE: streamLane,
         CROUPIER_LISSABON_PROFILES: persistentProfiles ? '1' : '',
         CROUPIER_ASTRID_CAMERA: astridCamera ? '1' : '',
@@ -416,7 +415,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_DATA_DIR: productData,
         CROUPIER_ZONES_DATABASE_URL: configuration.zonesDatabaseUrl || '',
         CROUPIER_LAB_DIST_DIR: labDistDir,
-        LAB_STUDIO_DATA_DIR: labData, LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
+        LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,
         OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
@@ -531,7 +530,7 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
     const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });
     specs.product.env = session.environment(specs.product.env);
     specs.lab.env = session.environment(specs.lab.env);
-    await Promise.all([specs.product.dataDir, specs.lab.dataDir, join(runDir, 'generations'),
+    await Promise.all([specs.product.dataDir, specs.lab.dataDir,
       ...(generatedSpeech ? [specs.product.env.CROUPIER_GENERATED_SPEECH_DIR, specs.lab.env.CROUPIER_GENERATED_SPEECH_DIR] : []),
     ].map(directory => fsPromises.mkdir(directory, { recursive: true })));
     product = await startChild(specs.product, session.trackChild);

@@ -2,23 +2,20 @@ import { resolve, basename } from 'node:path';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { chatWithDirector } from '../../open-claw/lab/src/openclaw.mjs';
 import { validateProject } from './studio-model.mjs';
-import { createProjectStore, StudioError } from './project-store.mjs';
-import { loadVideoRegistry } from './video-registry.mjs';
+import { StudioError } from './project-store.mjs';
 import { selectPresentation, remoteRequest } from '../../presentation-runtime/selection.mjs';
 import { buildOperatorCatalog } from './operator-catalog.mjs';
 import { studioRenderPersistence, assertRenderStudioWritable } from './studio-render-persistence.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export function studioStore() {
-  const legacy = () => createProjectStore(process.env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR,'data'));
   return {
-    async load() {const shared = await studioRenderPersistence();return shared ? shared.projectStore.load() : legacy().load();},
-    async save(next,revision) {assertRenderStudioWritable();return legacy().save(next,revision);},
+    async load() { return (await studioRenderPersistence()).projectStore.load(); },
+    async save() { assertRenderStudioWritable(); },
   };
 }
 export async function studioVideoRegistry() {
-  const shared = await studioRenderPersistence();
-  return shared ? shared.videoRegistry() : loadVideoRegistry();
+  return (await studioRenderPersistence()).videoRegistry();
 }
 const settingsNow = () => readSettings({ envFiles: [resolve(LAB_DIR, '../.env'), resolve(LAB_DIR, '.env.local')] });
 

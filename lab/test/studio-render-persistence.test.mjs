@@ -41,9 +41,11 @@ test('protected Render reads same committed project/social revisions, with no wr
   await assert.rejects(reader.projectStore.load(),error => error.statusCode === 503);
   assert.deepEqual(pool.snapshot(),before);
 });
-test('disabled gate does not initialize storage; invalid DB/schema cannot choose old disk state',async () => {
-  assert.equal(await createStudioRenderPersistence({env:{},poolFactory:()=> {throw new Error('must not connect');}}),null);
-  assert.doesNotThrow(() => assertRenderStudioWritable({}));
+test('disabled gate fails closed without initializing storage; invalid DB/schema cannot choose old disk state',async () => {
+  let connects = 0;
+  await assert.rejects(createStudioRenderPersistence({env:{},poolFactory:()=> {connects++;throw new Error('must not connect');}}),error => error.statusCode === 503);
+  assert.equal(connects,0);
+  assert.throws(() => assertRenderStudioWritable({}),error => error.statusCode === 410);
   assert.throws(() => assertRenderStudioWritable(env),error => error.statusCode === 410);
   for (const changed of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_GAME_DATABASE_URL:'postgresql://u:p@other.example/game?sslmode=require'},
     {CROUPIER_ZONES_DATABASE_URL:env.CROUPIER_GAME_DATABASE_URL}]) {

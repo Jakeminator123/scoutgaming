@@ -8,6 +8,12 @@ import { fileURLToPath } from 'node:url';
 import { normalizePresentationArchive } from './media-layout.mjs';
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const RETIRED_DISK_ENVIRONMENT = [
+  'LAB_STUDIO_DATA_DIR',
+  'CROUPIER_PRESENTATION_STUDIO_DIR',
+  'CROUPIER_GENERATIONS_DIR',
+  'CROUPIER_GENERATED_SPEECH_DIR',
+];
 export const SOURCE_FILES = [
   'web/server.mjs', 'web/shoe-game.mjs', 'web/native-table.mjs',
   'web/partner-presentation.mjs', 'web/partner-api.mjs',
@@ -18,18 +24,18 @@ export const SOURCE_FILES = [
   'lab/start.mjs', 'lab/policies/project.seed.json', 'lab/package-lock.json',
 ];
 export const ARCHITECTURE_BLOCKERS = [
-  { id: 'durable-state', files: ['web/server.mjs', 'lab/lib/project-store.mjs'],
-    requirement: 'Provide durable SQLite and a shared writable project/history directory; deployment checkout or function temporary storage is insufficient.' },
+  { id: 'durable-state', files: ['web/storage/neon-studio-repository.mjs', 'lab/lib/studio-render-persistence.mjs'],
+    requirement: 'Verify exact project, social, history and audit parity in Neon plus restart reads; retired disk variables must stay cleared and storage failures must fail closed.' },
   { id: 'studio-access', files: ['lab/lib/http-guard.mjs'],
     requirement: 'BO-to-Lab admin handoff and per-request identity checks exist in the gated cloud scaffold; verify real HTTPS routing, cookies, denial paths and session expiry before launch.' },
   { id: 'partner-origin', files: ['lab/lib/partner-observer.mjs'],
     requirement: 'Set BETTALOTTO_PARTNER_BASE_URL and CROUPIER_GAME_ORIGIN to the same exact HTTPS game origin, then verify the authenticated observer.' },
   { id: 'profile-access', files: ['web/lissabon-profiles.mjs', 'web/server.mjs'],
     requirement: 'Use authenticated cloud identity or a protected demo. Local passwordless profile switching is loopback-only and disabled in production.' },
-  { id: 'speech-activation', files: ['web/generated-speech.mjs'],
-    requirement: 'Configure CROUPIER_CLOUD_GENERATED_SPEECH with production HTTPS origin, private speech store and provider credentials; verify authenticated paid speech flow.' },
-  { id: 'media-location', files: ['web/presentation-api.mjs', 'lab/lib/video-registry.mjs'],
-    requirement: 'Mount one durable LAB_VIDEO_ARCHIVE containing the exact manifest and media for product and Lab, and verify hashes and Range responses.' },
+  { id: 'speech-activation', files: ['web/generated-speech.mjs', 'web/speech-journal-runtime.mjs'],
+    requirement: 'Verify the Neon journal, private Blob artifacts, provider credentials, original cost journal and retained reservation through authenticated paid-speech restart and drain.' },
+  { id: 'media-location', files: ['lab/lib/media-blob-index.mjs', 'lab/lib/neon-video-registry.mjs'],
+    requirement: 'Verify exact private Blob paths, metadata, hashes and Range responses through the Neon media registry with no permanent local-archive fallback.' },
   { id: 'process-state', files: ['web/partner-api.mjs', 'web/server.mjs'],
     requirement: 'Keep one long-lived product replica initially. SSE subscribers and active chat/Probe state are process-local; scaling needs durable coordination.' },
   { id: 'deployment-verification', files: ['docs/CLOUD-MIGRATION.md'],
@@ -98,8 +104,7 @@ async function mediaReport(root, env) {
 export async function collectCloudReadiness({ root = repository, env = process.env } = {}) {
   root = resolve(root);
   const sources = await Promise.all(SOURCE_FILES.map(async file => ({ file, status: await kind(join(root, file)) })));
-  const directories = await Promise.all(['CROUPIER_DATA_DIR', 'LAB_STUDIO_DATA_DIR',
-    'CROUPIER_PRESENTATION_STUDIO_DIR', 'CROUPIER_GENERATED_SPEECH_DIR'].map(async name => {
+  const directories = await Promise.all(['CROUPIER_DATA_DIR'].map(async name => {
     const configured = present(env[name]);
     const absolute = configured && isAbsolute(env[name]);
     const path = absolute ? resolve(env[name]) : null;
@@ -107,7 +112,11 @@ export async function collectCloudReadiness({ root = repository, env = process.e
       status: path ? await kind(path) : configured ? 'relative-path' : 'not-configured',
       durableMountVerified: false };
   }));
-  const shared = ['LAB_STUDIO_DATA_DIR', 'CROUPIER_PRESENTATION_STUDIO_DIR'].every(name => present(env[name]) && isAbsolute(env[name]));
+  const retiredDiskEnvironment = RETIRED_DISK_ENVIRONMENT.map(name => ({
+    name,
+    configured: present(env[name]),
+    cleared: !present(env[name]),
+  }));
   const urls = ['PUBLIC_URL', 'BO_URL', 'LAB_REMOTE_URL', 'OPENCLAW_PRODUCT_SPEECH_URL', 'CROUPIER_PRESENTATION_DIRECTOR_URL']
     .map(name => ({ name, status: secureUrl(env[name]) }));
   const credentials = ['LAB_REMOTE_TOKEN', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN',
@@ -116,8 +125,7 @@ export async function collectCloudReadiness({ root = repository, env = process.e
     schemaVersion: 1, ready: false, status: 'migration-required',
     scope: 'Read-only local evidence and supplied process environment; no .env values, database contents, media bytes or network requests.',
     sources, media: await mediaReport(root, env),
-    configuration: { directories,
-      sharedStudioDirectory: shared ? resolve(env.LAB_STUDIO_DATA_DIR) === resolve(env.CROUPIER_PRESENTATION_STUDIO_DIR) : null,
+    configuration: { directories, retiredDiskEnvironment,
       urls, credentials,
       mediaArchive: { configured: Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE'),
         absolute: isAbsolute(env.LAB_VIDEO_ARCHIVE ?? ''),

@@ -40,7 +40,7 @@ export function createSpeechSessionManager(configuration, {
   const dailyBudgetMicroUsd = sessionReserveMicroUsd(dailyBudgetUsd);
   let url;
   try { url = new URL(origin); } catch {}
-  if (!isAbsolute(directory ?? '') || !token(apiKey) || !jobIdPattern.test(endpointId ?? '')
+  if ((!journal && !isAbsolute(directory ?? '')) || !token(apiKey) || !jobIdPattern.test(endpointId ?? '')
     || !token(workerSecret) || workerSecret.length < 32 || !reserveMicroUsd || !dailyBudgetMicroUsd
     || reserveMicroUsd > dailyBudgetMicroUsd || !workerState
     || url?.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {

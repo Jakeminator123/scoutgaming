@@ -52,8 +52,8 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
 
   const { configuration } = loadPrivateConnection({ envFiles: [], env: {} });
   const specs = childSpecifications(configuration, join(dir, 'disposable'), { productPort: 4200, labPort: 4201, studioDataDir: data, streamLane: 'lissabon-stream-lane' });
-  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, data);
-  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, data);
+  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
+  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
   assert.equal(specs.lab.env.CROUPIER_GAME_ORIGIN, 'http://127.0.0.1:4200');
   assert.notEqual(specs.product.dataDir, data);
   assert.equal(specs.product.dataDir, join(data, 'players'));

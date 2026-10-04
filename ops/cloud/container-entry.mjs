@@ -8,22 +8,36 @@ import { fileURLToPath } from 'node:url';
 export async function prepareContainerUser(env = process.env, { fs = { chown, chmod, lstat, realpath, mkdir }, proc = process } = {}) {
   const dataRoot=env.CROUPIER_CLOUD_DATA_ROOT;
   const qa=/^\/var\/data\/native-studio-qa\/([a-f0-9]{12})$/.exec(dataRoot??'');
+  let gameDatabase;try{gameDatabase=new URL(env.CROUPIER_GAME_DATABASE_URL);}catch{}
+  const retiredDiskKeys=['CROUPIER_DATA_DIR','LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR',
+    'CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR','LAB_VIDEO_ARCHIVE'];
+  const mountless=dataRoot===undefined&&env.CROUPIER_DATABASE==='postgres'&&env.CROUPIER_STUDIO_NEON_POLICY==='1'
+    &&env.CROUPIER_MEDIA_STORAGE==='blob'&&typeof env.BLOB_READ_WRITE_TOKEN==='string'&&env.BLOB_READ_WRITE_TOKEN.length>0
+    &&gameDatabase&&['postgres:','postgresql:'].includes(gameDatabase.protocol)&&gameDatabase.hostname.endsWith('.neon.tech')
+    &&Boolean(gameDatabase.username)&&Boolean(gameDatabase.password)&&gameDatabase.searchParams.get('sslmode')==='require'
+    &&retiredDiskKeys.every(name=>env[name]===undefined);
+  if(dataRoot===undefined&&!mountless) {
+    throw new Error('Mountless container requires Postgres, Neon policy and private Blob with no retired disk configuration.');
+  }
   if(dataRoot!=='/var/data') {
-    let url;try{url=new URL(env.CROUPIER_GAME_DATABASE_URL);}catch{}
-    if(!qa || env.CROUPIER_DATABASE!=='postgres' || env.CROUPIER_STUDIO_NEON_POLICY!=='1'
+    if(!mountless&&(!qa || env.CROUPIER_DATABASE!=='postgres' || env.CROUPIER_STUDIO_NEON_POLICY!=='1'
       || env.CROUPIER_STUDIO_ENVIRONMENT_ID!==`qa_native_${qa[1]}` || env.CROUPIER_STUDIO_WORKSPACE_ID!=='croupier'
-      || !url || !['postgres:','postgresql:'].includes(url.protocol) || !url.hostname.endsWith('.neon.tech')
-      || url.username!==`croupier_studio_qa_${qa[1]}` || url.pathname!==`/croupier_studio_qa_${qa[1]}`) {
+      || !gameDatabase || !['postgres:','postgresql:'].includes(gameDatabase.protocol) || !gameDatabase.hostname.endsWith('.neon.tech')
+      || gameDatabase.username!==`croupier_studio_qa_${qa[1]}` || gameDatabase.pathname!==`/croupier_studio_qa_${qa[1]}`)) {
       throw new Error('Container requires the persistent mount or an exactly scoped isolated QA directory.');
     }
   }
-  const info = await fs.lstat('/var/data');
-  if (!info.isDirectory() || info.isSymbolicLink() || await fs.realpath('/var/data') !== '/var/data') {
-    throw new Error('Container data mount must be a real directory.');
+  if(!mountless) {
+    const info = await fs.lstat('/var/data');
+    if (!info.isDirectory() || info.isSymbolicLink() || await fs.realpath('/var/data') !== '/var/data') {
+      throw new Error('Container data mount must be a real directory.');
+    }
   }
   if (proc.getuid() === 0) {
-    await fs.chown('/var/data', 1000, 1000);
-    await fs.chmod('/var/data', 0o700);
+    if(!mountless) {
+      await fs.chown('/var/data', 1000, 1000);
+      await fs.chmod('/var/data', 0o700);
+    }
     proc.setgroups([]);
     proc.setgid(1000);
     proc.setuid(1000);

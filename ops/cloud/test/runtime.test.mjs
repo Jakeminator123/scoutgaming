@@ -113,7 +113,10 @@ test('three exact public origins share one port and two loopback children', () =
   assert.equal(specs.web.env.PUBLIC_URL, config.gameOrigin);
   assert.equal(specs.web.env.BO_URL, config.boOrigin);
   assert.equal(specs.web.env.LAB_PUBLIC_URL, config.labOrigin);
-  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, specs.web.env.CROUPIER_PRESENTATION_STUDIO_DIR);
+  for (const name of ['LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
+    assert.equal(specs.web.env[name], undefined);
+    assert.equal(specs.lab.env[name], undefined);
+  }
   assert.equal(specs.web.env.CROUPIER_DATA_DIR, join(config.dataRoot, 'players'));
   assert.equal(specs.lab.env.CROUPIER_DATA_DIR, specs.web.env.CROUPIER_DATA_DIR);
   assert.equal(specs.lab.env.BO_URL, config.boOrigin);
@@ -146,9 +149,34 @@ test('configuration rejects local or ambiguous exposure and conflicting storage'
     { OPENCLAW_TIMEOUT_MS: '100' },
     { CROUPIER_GENERATED_SPEECH_STREAMING: '1' },
     { LAB_STUDIO_DATA_DIR: join(tmpdir(), 'unrelated-studio') },
+    { CROUPIER_PRESENTATION_STUDIO_DIR: join(tmpdir(), 'unrelated-studio') },
+    { CROUPIER_GENERATIONS_DIR: join(tmpdir(), 'generations') },
+    { CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'speech') },
     { CROUPIER_CLOUD_DATA_ROOT: '.' },
   ]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change }));
+  }
+});
+
+test('Postgres, Neon and private Blob can start without a persistent product mount', async () => {
+  const env = { ...fixture(), CROUPIER_DATABASE:'postgres',
+    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+    CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
+    CROUPIER_MEDIA_BLOB_INDEX:join(resolve('.'),'media','blob-index.json') };
+  delete env.CROUPIER_CLOUD_DATA_ROOT;
+  const config = validateCloudConfig(env);
+  assert.equal(config.dataRoot, null); assert.deepEqual(config.paths, {});
+  await assert.doesNotReject(inspectCloudDisk(config));
+  const specs = childSpecifications(config, env, { labInternalSecret:LAB_SECRET });
+  for (const name of ['CROUPIER_DATA_DIR','LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
+    assert.equal(specs.web.env[name], undefined); assert.equal(specs.lab.env[name], undefined);
+  }
+  assert.equal(specs.web.env.BO_URL, config.boOrigin);
+  assert.equal(specs.lab.env.CROUPIER_GAME_ORIGIN, config.gameOrigin);
+  for (const patch of [{CROUPIER_MEDIA_STORAGE:'disk'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
+    {CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'retired-media-blob-index.json')},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
+    assert.throws(() => validateCloudConfig({...env,...patch}));
   }
 });
 
