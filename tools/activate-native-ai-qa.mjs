@@ -281,7 +281,7 @@ export async function readAiQaAdditionalPolicy({pool,operatorId,username,playerI
     need(physical.database===NATIVE_P6_QA.database&&physical.role===NATIVE_P6_QA.database,'ai_qa_additional_physical_database');
     const actor=(await c.query('SELECT id,username,role FROM croupier_auth.users WHERE id=$1 AND username=$2',[operatorId,username])).rows[0];
     need(actor&&['admin','superadmin'].includes(actor.role),'ai_qa_additional_existing_operator');
-    const player=(await c.query('SELECT p.id FROM croupier_game.players p JOIN croupier_game.player_account_links l ON l.player_id=p.id WHERE p.id=$1 AND l.craig_user_id=$2',[playerId,operatorId])).rows[0];
+    const player=(await c.query('SELECT p.id FROM croupier_game.players p JOIN croupier_game.craig_player_links l ON l.player_id=p.id WHERE p.id=$1 AND l.craig_user_id=$2',[playerId,operatorId])).rows[0];
     need(player?.id===playerId,'ai_qa_additional_existing_player');
     const time=Number((await c.query('SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint AS now_ms')).rows[0].now_ms);
     need(Math.abs(time-now())<30000,'ai_qa_additional_clock');
