@@ -100,10 +100,10 @@ export async function nativeP6OwnedPlaybackContext(router,args){
 // Used only at the trusted existing /chat and operator decision call sites.
 // readStatus/readOwner remain the existing live authority and cancellation checks.
 export function nativeP6OwnedSpeechFetch(router,{request,status,playerId,owner,readStatus,readOwner,signal,model='gateway-default',
-  operatorAttempt,operatorCampaignId}){
+  operatorAttempt,operatorCampaignId,streamRequested=false}){
   if(!router)return null;
   need(typeof readStatus==='function'&&typeof readOwner==='function','native_p6_qa_actual_owner_callbacks_required');
-  return router.fetchForOwnedRequest({playerId,owner,readOwner,signal,
+  return router.fetchForOwnedRequest({playerId,owner,readOwner,signal,streamRequested:streamRequested===true,
     ...(operatorAttempt===undefined?{}:{operatorAttempt,operatorCampaignId}),
     readEnvelope:async()=>{
       const current=await readStatus();

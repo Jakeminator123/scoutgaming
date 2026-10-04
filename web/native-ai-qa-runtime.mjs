@@ -26,6 +26,12 @@ export function validateAiQaManifest(m,env,now=Date.now()){
     &&/^[a-f0-9]{64}$/.test(m.privateWorkerSha256??'')&&m.sdkVersion==='7.12.1'
     &&m.sdkRoot==='/var/data/native-studio-qa/abc92154cb15/p6-sdk/cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2/node_modules/openai',
     'ai_qa_source_and_installed_sdk_required');
+  if(m.continuation){const c=m.continuation;
+    need(c.predecessorRecordCount===13&&['predecessorJournalSha256','previousManifestSha256','previousAuthoritySourceSha256',
+      'rootReviewedIntentSha256','preflightSha256','streamRequestIdSha256'].every(k=>/^[a-f0-9]{64}$/.test(c[k]??''))
+      &&/^[a-f0-9-]{36}$/.test(c.previousRunId??'')&&/^[a-f0-9]{40}$/.test(c.previousExpectedSha??'')
+      &&c.previousRunId!==m.runId,'ai_qa_continuation_manifest_required');
+  }
   return m;
 }
 async function bytes(path,{privateFile=false}={}){
@@ -63,6 +69,8 @@ export async function initializeBoundedAiQa(qa,env){
   // Activation exception is installed beforehand by the operator. A web boot
   // cannot seed policy, reservation or a fresh campaign.
   const current=await budget.inspect();need(current.exception&&!current.closed,'ai_qa_installed_exception_required');
+  need(Boolean(current.continuation)===Boolean(m.continuation)&&(!m.continuation||current.continuation.rootReviewedIntentSha256===m.continuation.rootReviewedIntentSha256),
+    'ai_qa_manual_continuation_not_installed');
   const client=new OpenAI({apiKey:env.CROUPIER_P6_SDK_OPENAI_API_KEY,maxRetries:0,timeout:30000,
     fetch:async(url,options)=>{
       need(String(url)==='https://api.openai.com/v1/responses'&&options.method==='POST'
@@ -103,11 +111,14 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
       res.writeHead(403,{'Cache-Control':'no-store'});res.end();return true;}
     const s=await budget.inspect();res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
     res.end(JSON.stringify({purpose:'bounded-native-ai-qa-runtime-readback-v1',expectedSha:m.expectedSha,
-      deploymentId:m.deploymentId,campaignId:m.campaignId,manifestSha256:s.exception.manifestSha256,
+      deploymentId:m.deploymentId,campaignId:m.campaignId,manifestSha256:s.activeWindow.manifestSha256,originalManifestSha256:s.exception.manifestSha256,
       pid:process.pid,observedAtMs:now(),limits:m.limits,busy,budget:s,actualCostUsd:null}));return true;
   };
   router.fetchForOwnedRequest=args=>async(_url,options={})=>serial(async()=>{
-    await owned(args);const envelope=await args.readEnvelope();
+    await owned(args);need(!m.continuation||args.streamRequested===true,'ai_qa_continuation_stream_required');
+    const envelope=await args.readEnvelope();
+    need(!m.continuation||sha256(envelope.request.requestId)===m.continuation.streamRequestIdSha256,
+      'ai_qa_continuation_request_required');
     need(envelope.status.dealerId==='astrid'&&!envelope.request.observation,'ai_qa_short_text_only');
     const gen=await budget.dispatch('generation',envelope.request.requestId);
     const state=await budget.inspect(),stage=state.counts.generation===1?'fullfile':'stream-1';
@@ -124,6 +135,7 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     }catch(e){await budget.outcome(gen,'uncertain').catch(()=>{});throw e;}
   });
   router.fetchForOwnedDirectorRequest=args=>async(_url,options={})=>serial(async()=>{
+    need(!m.continuation,'ai_qa_continuation_director_denied');
     await owned(args);const project=await args.readProject(),status=await args.readStatus();
     need(equal(project,args.project)&&status.dealerId==='astrid','ai_qa_current_director_policy');
     const envelope=worker.normalizeNativeP6DirectorEnvelope(JSON.parse(options.body));
@@ -143,7 +155,7 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     }else if(u.origin==='https://api.runpod.ai'&&u.pathname.startsWith('/v2/'+endpointId+'/')){
       const route=u.pathname.slice(('/v2/'+endpointId+'/').length);
       if(route==='run'){
-        need(options.method==='POST','ai_qa_gpu_method');const body=JSON.parse(options.body);need(['session','lipsync'].includes(body?.input?.op),'ai_qa_gpu_op_denied');
+        need(options.method==='POST','ai_qa_gpu_method');const body=JSON.parse(options.body);need(['session','lipsync'].includes(body?.input?.op)&&(!m.continuation||body.input.op==='session'),'ai_qa_gpu_op_denied');
         resource='gpu';id=body.input.op;
         measurements={requestBytes:Buffer.byteLength(options.body)};
       }else need(options.method==='GET'||options.method==='POST'&&route.startsWith('cancel/'),'ai_qa_provider_route_denied');
@@ -155,6 +167,7 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
     }catch(e){await budget.outcome(key,'uncertain',{elapsedMs:now()-started}).catch(()=>{});throw e;}
   };
   router.budget=budget;router.ownLinkedPlayerSha256=m.ownLinkedPlayerSha256;const validateFullfile=env=>{
+    if(m.continuation)return false;
     validateAiQaManifest(m,env);return env.RENDER_SERVICE_ID==='srv-datj7l893c1s73ar3u50'
       &&env.CROUPIER_CLOUD_DATA_ROOT==='/var/data/native-studio-qa/abc92154cb15'
       &&env.CROUPIER_STUDIO_ENVIRONMENT_ID==='qa_native_abc92154cb15'

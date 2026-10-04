@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {readFile,lstat,readdir,open,mkdir,rmdir,realpath} from 'node:fs/promises';
-import {join,dirname,resolve} from 'node:path';
+import {join,resolve} from 'node:path';
 
 export const AI_QA_ORIGINAL=Object.freeze({
   campaignId:'f2c28b62-9ae7-4cd6-abcd-e2137f2206d6',
@@ -13,17 +13,21 @@ export const AI_QA_ORIGINAL=Object.freeze({
 });
 export const AI_QA_LIMITS=Object.freeze({generations:2,sdkCalls:3,ttsCalls:2,gpuSubmissions:2,
   gpuWorkers:1,textChars:120,outputTokens:512,requestBytes:32768,lifetimeMs:1800000,automaticRetry:false});
+export const AI_QA_CONTINUATION_COUNTS=Object.freeze({generation:1,sdk:2,tts:1,gpu:1});
+export const AI_QA_CONTINUATION_REMAINING=Object.freeze({generation:1,sdk:1,tts:1,gpu:1});
 export const sha256=v=>createHash('sha256').update(v).digest('hex');
 export const aiQaNeed=(v,code)=>{if(!v)throw Object.assign(Error(code),{code,safeCode:code,statusCode:503});};
 const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const int=v=>Number.isSafeInteger(v)&&v>=0;
+const sameCounts=(a,b)=>a&&Object.keys(b).every(k=>a[k]===b[k])&&Object.keys(a).length===Object.keys(b).length;
+const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const prefix='bounded-ai-qa-';
 
-// Reducer shares the original append-only chain. Historical bytes and the
-// retained reservation are never converted, released, replaced or repriced.
+// Historical bytes, their authority and reservation are immutable. A manually
+// approved continuation adds one window while retaining all cumulative counters.
 export function inspectAiQaRecords(raws,{original=AI_QA_ORIGINAL}={}){
   aiQaNeed(Array.isArray(raws)&&raws.length>=2&&raws.length<=1000,'ai_qa_original_journal_required');
-  let previous=null,at=0,exception=null,closed=false;
+  let previous=null,at=0,exception=null,activeWindow=null,continuation=null,closed=false;
   const dispatches=new Map(),counts={generation:0,sdk:0,tts:0,gpu:0};
   const records=raws.map((bytes,sequence)=>{
     let r;try{r=JSON.parse(bytes);}catch{aiQaNeed(false,'ai_qa_journal_invalid');}
@@ -46,16 +50,33 @@ export function inspectAiQaRecords(raws,{original=AI_QA_ORIGINAL}={}){
           &&int(e.expiresAtMs)&&e.expiresAtMs>r.atMs&&e.expiresAtMs-r.atMs<=AI_QA_LIMITS.lifetimeMs,
           'ai_qa_exception_invalid');
         exception={...e,authoritySourceSha256:r.authoritySourceSha256};
+        activeWindow={...exception,continuation:false};
+      }else if(e.kind===prefix+'continuation'){
+        aiQaNeed(exception&&!continuation&&!closed&&r.atMs>=activeWindow.expiresAtMs
+          &&sameCounts(counts,AI_QA_CONTINUATION_COUNTS)
+          &&[...dispatches.values()].every(d=>d.outcome==='response-observed'),'ai_qa_continuation_not_drained');
+        aiQaNeed(e.predecessorRecordCount===sequence&&e.predecessorJournalSha256===r.previousSha256
+          &&e.previousManifestSha256===activeWindow.manifestSha256
+          &&e.previousAuthoritySourceSha256===activeWindow.authoritySourceSha256
+          &&e.previousRunId===activeWindow.runId&&e.previousExpectedSha===activeWindow.expectedSha
+          &&e.manifestSha256!==activeWindow.manifestSha256&&hash(e.rootReviewedIntentSha256)&&hash(e.preflightSha256)
+          &&hash(e.streamRequestIdSha256)&&/^[a-f0-9]{40}$/.test(e.expectedSha??'')
+          &&/^[a-f0-9-]{36}$/.test(e.runId??'')&&e.runId!==activeWindow.runId
+          &&int(e.expiresAtMs)&&e.expiresAtMs>r.atMs&&e.expiresAtMs-r.atMs<=AI_QA_LIMITS.lifetimeMs
+          &&equal(e.limits,AI_QA_LIMITS)&&sameCounts(e.remaining,AI_QA_CONTINUATION_REMAINING)
+          &&e.automaticRetry===false&&e.extraReserveMicroUsd===0&&e.refundMicroUsd===0&&e.actualCostUsd===null,
+          'ai_qa_continuation_binding_changed');
+        continuation={...e,authoritySourceSha256:r.authoritySourceSha256};
+        activeWindow={...continuation,continuation:true};
       }else{
-        aiQaNeed(exception&&e.manifestSha256===exception.manifestSha256&&r.authoritySourceSha256===exception.authoritySourceSha256,
+        aiQaNeed(exception&&e.manifestSha256===activeWindow.manifestSha256&&r.authoritySourceSha256===activeWindow.authoritySourceSha256,
           'ai_qa_extension_binding_changed');
         if(e.kind===prefix+'dispatch'){
-          aiQaNeed(!closed&&r.atMs<exception.expiresAtMs&&Object.hasOwn(counts,e.resource)
+          aiQaNeed(!closed&&r.atMs<activeWindow.expiresAtMs&&Object.hasOwn(counts,e.resource)
             &&hash(e.operationSha256)&&!dispatches.has(e.operationSha256),'ai_qa_retry_or_expired');
           counts[e.resource]++;
           const max={generation:2,sdk:3,tts:2,gpu:2};
           aiQaNeed(counts[e.resource]<=max[e.resource],'ai_qa_dispatch_limit');
-          // A lost SDK/provider result fences every subsequent paid dispatch.
           aiQaNeed(![...dispatches.values()].some(x=>x.resource!=='generation'&&!x.outcome),'ai_qa_pending_dispatch');
           dispatches.set(e.operationSha256,{...e,outcome:null});
         }else if(e.kind===prefix+'outcome'){
@@ -71,19 +92,18 @@ export function inspectAiQaRecords(raws,{original=AI_QA_ORIGINAL}={}){
     }
     return{sequence,rawSha256:digest,kind:r.event.kind};
   });
-  return{records,previousSha256:previous,lastAtMs:at,exception,closed,counts,
+  return{records,previousSha256:previous,lastAtMs:at,exception,activeWindow,continuation,closed,counts,
     unresolved:[...dispatches.values()].filter(x=>x.resource!=='generation'&&!x.outcome).length,
     dispatches:[...dispatches.values()],capMicroUsd:original.capMicroUsd,
     retainedMicroUsd:original.retainedMicroUsd,totalEncumberedMicroUsd:exception?original.capMicroUsd:original.retainedMicroUsd,
     unencumberedMicroUsd:exception?0:original.remainingMicroUsd,refundMicroUsd:0,actualCostUsd:null};
 }
 export async function createAiQaBudget({directory,anchorPath,manifest,manifestRawSha256,
-  authoritySourceSha256,now=Date.now,original=AI_QA_ORIGINAL}={}){
+  authoritySourceSha256,now=Date.now,original=AI_QA_ORIGINAL,appendOpen=open}={}){
   aiQaNeed(hash(manifestRawSha256)&&hash(authoritySourceSha256)&&manifest.campaignId===original.campaignId,
     'ai_qa_budget_binding_required');
-  const anchor=await readFile(anchorPath);
-  aiQaNeed(sha256(anchor)===original.anchorSha256,'ai_qa_original_anchor_changed');
-  async function transaction(work){
+  aiQaNeed(sha256(await readFile(anchorPath))===original.anchorSha256,'ai_qa_original_anchor_changed');
+  async function transaction(work,{allowContinuation=false}={}){
     const info=await lstat(directory);
     aiQaNeed(info.isDirectory()&&!info.isSymbolicLink()&&(process.platform==='win32'?resolve(await realpath(directory)).toLowerCase()===resolve(directory).toLowerCase():await realpath(directory)===directory),'ai_qa_original_directory_required');
     const lock=join(directory,'write.lock');
@@ -95,17 +115,16 @@ export async function createAiQaBudget({directory,anchorPath,manifest,manifestRa
       aiQaNeed(names.every((n,i)=>n===String(i).padStart(6,'0')+'.json'),'ai_qa_journal_sequence');
       const raws=await Promise.all(names.map(n=>readFile(join(directory,n))));
       let state=inspectAiQaRecords(raws,{original});
-      if(state.exception)aiQaNeed(state.exception.manifestSha256===manifestRawSha256
-        &&state.exception.authoritySourceSha256===authoritySourceSha256,'ai_qa_existing_run_changed');
+      if(state.exception&&!allowContinuation)aiQaNeed(state.activeWindow.manifestSha256===manifestRawSha256
+        &&state.activeWindow.authoritySourceSha256===authoritySourceSha256,'ai_qa_existing_run_changed');
       async function append(event){
         const atMs=now();aiQaNeed(int(atMs)&&atMs>=state.lastAtMs,'ai_qa_clock_regressed');
         const record={format:'native-p6-total-budget-event-v1',sequence:state.records.length,previousSha256:state.previousSha256,
           approvalRawSha256:original.anchorSha256,authoritySourceSha256,atMs,
           event:{...event,campaignId:original.campaignId,manifestSha256:manifestRawSha256}};
-        const bytes=JSON.stringify(record);
-        const next=inspectAiQaRecords([...raws,bytes],{original});
+        const bytes=JSON.stringify(record),next=inspectAiQaRecords([...raws,bytes],{original});
         certain=false;
-        const f=await open(join(directory,String(record.sequence).padStart(6,'0')+'.json'),'wx',0o600);
+        const f=await appendOpen(join(directory,String(record.sequence).padStart(6,'0')+'.json'),'wx',0o600);
         try{await f.writeFile(bytes);await f.sync();}finally{await f.close();}
         if(process.platform==='linux'){const d=await open(directory,'r');try{await d.sync();}finally{await d.close();}}
         certain=true;raws.push(bytes);state=next;return state;
@@ -113,20 +132,30 @@ export async function createAiQaBudget({directory,anchorPath,manifest,manifestRa
       return await work(state,append);
     }finally{if(certain)await rmdir(lock);}
   }
-  const operationHash=(resource,id)=>sha256(JSON.stringify([manifestRawSha256,resource,id]));
   return Object.freeze({
     inspect:()=>transaction(s=>s),
     activate:()=>transaction(async(s,append)=>{
-      aiQaNeed(now()<manifest.expiresAtMs&&!s.closed,'ai_qa_manifest_expired');
+      aiQaNeed(!manifest.continuation&&now()<manifest.expiresAtMs&&!s.closed,'ai_qa_manifest_expired');
       if(s.exception)return s;
       return append({kind:prefix+'tariff-exception',reserveMicroUsd:original.remainingMicroUsd,
         originalRetainedMicroUsd:original.retainedMicroUsd,actualCostUsd:null,priceEvidence:'account-tariffs-backlog',
         authority:'direct-human-bounded-functional-test',generations:2,gpuWorkers:1,automaticRetry:false,
         expiresAtMs:manifest.expiresAtMs,expectedSha:manifest.expectedSha,runId:manifest.runId});
     }),
+    continueOnce:({approvedIntentSha256,preflightSha256}={})=>transaction((s,append)=>{
+      const c=manifest.continuation;
+      aiQaNeed(c&&hash(approvedIntentSha256)&&c.rootReviewedIntentSha256===approvedIntentSha256
+        &&hash(preflightSha256)&&c.preflightSha256===preflightSha256,'ai_qa_manual_continuation_required');
+      aiQaNeed(s.previousSha256===c.predecessorJournalSha256&&s.records.length===c.predecessorRecordCount,
+        'ai_qa_continuation_cas_changed');
+      return append({...c,kind:prefix+'continuation',expectedSha:manifest.expectedSha,runId:manifest.runId,
+        expiresAtMs:manifest.expiresAtMs,limits:AI_QA_LIMITS,remaining:AI_QA_CONTINUATION_REMAINING,
+        automaticRetry:false,extraReserveMicroUsd:0,refundMicroUsd:0,actualCostUsd:null});
+    },{allowContinuation:true}),
     dispatch:(resource,id,measurements={})=>transaction(async(s,append)=>{
       aiQaNeed(s.exception&&!s.closed&&now()<manifest.expiresAtMs,'ai_qa_active_exception_required');
-      const operationSha256=operationHash(resource,id);
+      // Original operation namespace survives authority/manifest changes.
+      const operationSha256=sha256(JSON.stringify([s.exception.manifestSha256,resource,id]));
       await append({kind:prefix+'dispatch',resource,operationSha256,measurements,actualCostUsd:null});
       return operationSha256;
     }),

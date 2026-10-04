@@ -4,7 +4,7 @@ import {readFile,lstat,mkdir,open,readdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_CONTINUATION_COUNTS,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
 import {buildAiQaPrivateSnapshot} from '../web/native-ai-qa-private.mjs';
 import {AI_QA_SOURCE_PATHS} from '../web/native-ai-qa-runtime.mjs';
 import {NATIVE_P6_QA} from '../ops/cloud/config.mjs';
@@ -112,10 +112,141 @@ export async function installBoundedAiQa(input){
   }finally{await pool.end();}
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
-  if(process.argv.slice(2).join(' ')==='--install'){
-    try{let raw='';for await(const c of process.stdin){raw+=c;need(raw.length<=16384,'ai_qa_install_input_size');}
-      const receipt=await installBoundedAiQa(JSON.parse(raw));console.log(JSON.stringify(receipt));
+  if(['--install','--continue'].includes(process.argv.slice(2).join(' '))){
+    try{let raw='';for await(const c of process.stdin){raw+=c;need(raw.length<=65536,'ai_qa_install_input_size');}
+      const input=JSON.parse(raw),receipt=await (process.argv[2]==="--continue"?installBoundedAiQaContinuation(input):installBoundedAiQa(input));console.log(JSON.stringify(receipt));
     }catch(e){console.log(JSON.stringify({purpose:'bounded-native-ai-qa-install-denied-v1',code:e.safeCode??'ai_qa_install_failed',noRawError:true}));process.exitCode=1;}
   }else console.log(JSON.stringify({purpose:'bounded-native-ai-qa-installer-contract-v1',target:NATIVE_P6_QA,
     originalCampaignId:AI_QA_ORIGINAL.campaignId,limits:AI_QA_LIMITS,requires:'Explicit physical isolated-QA --install with current release SHA and existing operator/player',providerCalls:0}));
+}
+
+// Read existing policies/jobs only. Expired operator gates remain historical;
+// ordinary /chat uses cookie ownership, its execution lease and the runtime quota.
+export async function readAiQaContinuationPolicy({pool,previousManifest,previousManifestRawSha256,fullfile,operatorId,username,playerId,now=Date.now}={}){
+  const c=await pool.connect();let began=false;
+  try{
+    await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
+    await c.query("SET LOCAL statement_timeout='5000ms'; SET LOCAL idle_in_transaction_session_timeout='10000ms'");
+    const physical=(await c.query('SELECT current_database() AS database,current_user AS role')).rows[0];
+    need(physical.database===NATIVE_P6_QA.database&&physical.role===NATIVE_P6_QA.database,'ai_qa_continuation_physical_database');
+    const operator=(await c.query('SELECT id::text AS id,username,role FROM croupier_auth.users WHERE id::text=$1',[operatorId])).rows[0];
+    need(operator?.id===operatorId&&operator.username===username&&['admin','superadmin'].includes(operator.role),'ai_qa_existing_operator_required');
+    const player=(await c.query('SELECT p.id FROM croupier_game.players p JOIN croupier_game.craig_player_links l ON l.player_id=p.id WHERE p.id=$1 AND l.craig_user_id=$2',[playerId,operatorId])).rows[0];
+    need(player?.id===playerId&&sha256(playerId)===previousManifest.ownLinkedPlayerSha256,'ai_qa_existing_linked_player_required');
+    const clock=Number((await c.query('SELECT (extract(epoch FROM clock_timestamp())*1000)::bigint AS now_ms')).rows[0].now_ms);
+    need(Math.abs(clock-now())<30000&&clock>=previousManifest.expiresAtMs,'ai_qa_continuation_clock_or_old_window_active');
+    const tables={};for(const table of ['gpu_budget_policies','fullfile_budget_policies','operator_qa_campaigns','operator_qa_gate','operator_qa_attempts',
+      'speech_requests','gpu_sessions','gpu_reservations','fullfile_reservations','speech_execution_leases']){
+      tables[table]=(await c.query('SELECT * FROM croupier_studio.'+table+' WHERE environment_id=$1 ORDER BY to_jsonb('+table+')::text LIMIT 11',[NATIVE_P6_QA.environmentId])).rows;
+      need(tables[table].length<=10,'ai_qa_continuation_bounded_sql_rows');
+    }
+    for(const name of ['operator_qa_campaigns','operator_qa_gate']){const rows=tables[name],r=rows[0];
+      need(rows.length===1&&r.campaign_id===AI_QA_ORIGINAL.campaignId&&r.workspace_id===NATIVE_P6_QA.workspaceId
+        &&Number(r.created_at_ms)===previousManifest.createdAtMs&&Number(r.expires_at_ms)===previousManifest.expiresAtMs
+        &&r.source_sha256===previousManifestRawSha256,'ai_qa_continuation_original_campaign_changed');}
+    const gpu=tables.gpu_budget_policies[0],file=tables.fullfile_budget_policies[0];
+    need(tables.gpu_budget_policies.length===1&&Number(gpu.version)===1&&Number(gpu.daily_budget_micro_usd)===AI_QA_ORIGINAL.remainingMicroUsd
+      &&tables.fullfile_budget_policies.length===1&&Number(file.version)===1&&Number(file.reserve_micro_usd)===1000000
+      &&Number(file.reservation_window_ms)===720000,'ai_qa_continuation_original_policy_changed');
+    const requests=tables.speech_requests,request=requests[0];
+    need(requests.length===1&&request.capability==='fullfile'&&request.state==='completed'&&request.request_key===fullfile.requestKey
+      &&request.package_id===fullfile.packageId&&sha256(JSON.stringify(request.package_metadata))===fullfile.packageMetadataSha256,
+      'ai_qa_continuation_fullfile_not_completed');
+    const reservations=tables.fullfile_reservations;
+    need(reservations.length===1&&reservations[0].request_key===request.request_key&&Number(reservations[0].reserved_micro_usd)===1000000,
+      'ai_qa_continuation_retained_fullfile_reservation_changed');
+    need(tables.operator_qa_attempts.length===0&&tables.gpu_sessions.length===0&&tables.gpu_reservations.length===0
+      &&tables.speech_execution_leases.every(r=>r.recovery_only===false&&Number(r.expires_at_ms)<=clock),'ai_qa_continuation_not_drained');
+    need((await c.query('COMMIT')).command==='COMMIT','ai_qa_continuation_read_commit_unavailable');began=false;
+    return{purpose:'bounded-native-ai-qa-continuation-policy-read-v1',physical,observedAtMs:clock,originalCampaignId:AI_QA_ORIGINAL.campaignId,
+      expiredOperatorGateRetained:true,operatorAttempts:0,activeLeases:0,sessions:0,fullfile,
+      fingerprints:Object.fromEntries(Object.entries(tables).map(([name,rows])=>[name,{rows:rows.length,sha256:sha256(JSON.stringify(rows))}])),sqlMutations:0};
+  }finally{if(began)await c.query('ROLLBACK').catch(()=>{});c.release();}
+}
+
+export function validateAiQaContinuationIntent({raw,approvedIntentSha256,previousManifest,previousManifestRawSha256,state,expectedSha,deploymentId,runId}={}){
+  need(typeof raw==='string'&&Buffer.byteLength(raw)<=32768&&sha256(raw)===approvedIntentSha256,'ai_qa_continuation_reviewed_intent_changed');
+  let i;try{i=JSON.parse(raw);}catch{need(false,'ai_qa_continuation_intent_invalid');}
+  need(i.purpose==='bounded-native-ai-qa-continuation-intent-v1'&&i.campaignId===AI_QA_ORIGINAL.campaignId
+    &&i.expectedSha===expectedSha&&i.deploymentId===deploymentId&&i.runId===runId
+    &&i.previousManifestSha256===previousManifestRawSha256&&i.previousAuthoritySourceSha256===previousManifest.sources['web/native-ai-qa-budget.mjs']
+    &&i.previousRunId===previousManifest.runId&&i.previousExpectedSha===previousManifest.expectedSha
+    &&i.predecessorRecordCount===13&&state.records.length===13&&i.predecessorJournalSha256===state.previousSha256
+    &&JSON.stringify(state.counts)===JSON.stringify(AI_QA_CONTINUATION_COUNTS)&&!state.closed&&!state.continuation
+    &&state.dispatches.every(d=>d.outcome==='response-observed')&&state.unresolved===0,
+    'ai_qa_continuation_predecessor_changed');
+  need(JSON.stringify(i.limits)===JSON.stringify(AI_QA_LIMITS)&&i.actualCostUsd===null&&i.extraReserveMicroUsd===0&&i.refundMicroUsd===0
+    &&typeof i.streamRequestId==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(i.streamRequestId)
+    &&/^[a-f0-9]{64}$/.test(i.fullfile?.requestKey??'')&&/^generated-[a-f0-9]{32}$/.test(i.fullfile?.packageId??'')
+    &&/^[a-f0-9]{64}$/.test(i.fullfile?.packageMetadataSha256??''),'ai_qa_continuation_caps_or_package_changed');
+  return i;
+}
+
+export async function installBoundedAiQaContinuation(input){
+  need(process.platform==='linux'&&process.getuid?.()===1000&&process.getgid?.()===1000&&repo==='/app'
+    &&process.env.RENDER_SERVICE_ID===NATIVE_P6_QA.serviceId&&process.env.RENDER_GIT_COMMIT===input.expectedSha
+    &&process.env.CROUPIER_CLOUD_DATA_ROOT===NATIVE_P6_QA.dataRoot
+    &&process.env.CROUPIER_STUDIO_ENVIRONMENT_ID===NATIVE_P6_QA.environmentId&&process.env.CROUPIER_STUDIO_WORKSPACE_ID===NATIVE_P6_QA.workspaceId,
+    'ai_qa_continuation_exact_physical_service');
+  need(['CROUPIER_P6_QA_ROUTER','CROUPIER_P6_BOUNDED_TEST','CROUPIER_GENERATED_SPEECH','CROUPIER_GENERATED_SPEECH_STREAMING']
+    .every(k=>process.env[k]===undefined||process.env[k]==='0'),'ai_qa_continuation_requires_off_process');
+  const db=new URL(process.env.CROUPIER_GAME_DATABASE_URL);
+  need(db.hostname.endsWith('.neon.tech')&&db.username===NATIVE_P6_QA.database&&db.pathname==='/'+NATIVE_P6_QA.database&&db.searchParams.get('sslmode')==='require',
+    'ai_qa_continuation_database_binding');
+  need(/^[a-f0-9-]{36}$/.test(input.previousRunId??''),'ai_qa_continuation_previous_run_required');
+  const previousRaw=await small(NATIVE_P6_QA.dataRoot+'/p6-sdk/'+input.previousRunId+'/bounded-manifest.json'),previousManifest=JSON.parse(previousRaw),previousPin=sha256(previousRaw);
+  need(previousManifest.runId===input.previousRunId&&previousManifest.campaignId===AI_QA_ORIGINAL.campaignId
+    &&Date.now()>=previousManifest.expiresAtMs,'ai_qa_continuation_previous_manifest_required');
+  const oldBudget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
+    anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest:previousManifest,manifestRawSha256:previousPin,
+    authoritySourceSha256:previousManifest.sources['web/native-ai-qa-budget.mjs']});
+  const before=await oldBudget.inspect(),intent=validateAiQaContinuationIntent({raw:input.intentRaw,approvedIntentSha256:input.approvedIntentSha256,
+    ...input,previousManifest,previousManifestRawSha256:previousPin,state:before});
+  const endpoint=intent.endpointEvidence;
+  need(endpoint?.endpointId==='zsudl8tmzcmiv1'&&endpoint.workersMax===1&&endpoint.activeWorkersSetting===0&&endpoint.gpuCount===1
+    &&Number.isSafeInteger(endpoint.observedAtMs)&&Date.now()-endpoint.observedAtMs>=0&&Date.now()-endpoint.observedAtMs<300000,
+    'ai_qa_continuation_fresh_one_worker_evidence');
+  need(typeof input.providerReadApiKey==='string'&&input.providerReadApiKey.length>0&&!/\s/.test(input.providerReadApiKey),'ai_qa_continuation_existing_provider_read_key');
+  const {Pool}=createRequire('/app/web/package.json')('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
+  try{
+    const policy=await readAiQaContinuationPolicy({pool,previousManifest,previousManifestRawSha256:previousPin,fullfile:intent.fullfile,
+      operatorId:input.operatorId,username:input.username,playerId:input.playerId});
+    const response=await fetch('https://api.runpod.ai/v2/zsudl8tmzcmiv1/health',{method:'GET',headers:{authorization:'Bearer '+input.providerReadApiKey},redirect:'error',signal:AbortSignal.timeout(15000)});
+    need(response.ok,'ai_qa_continuation_provider_read_unavailable');const rawHealth=await response.text();need(rawHealth.length<=8192,'ai_qa_continuation_provider_read_size');const health=JSON.parse(rawHealth);
+    need(health.jobs?.inQueue===0&&health.jobs?.inProgress===0&&health.workers?.running===0,'ai_qa_continuation_provider_not_drained');
+    let retained=null;for(const name of(await readdir('/var/data/speech')).filter(n=>/^gpu-session-[a-f0-9]{32}\.reservation\.json$/.test(n))){const path='/var/data/speech/'+name,info=await lstat(path);
+      if(info.isFile()&&!info.isSymbolicLink()&&info.size===209&&sha256(await readFile(path))==='8e8e8731e5e473fe6d0642ff8e4f313ba089336167aad54c1f9dd49daf885798')retained={sha256:sha256(await readFile(path)),size:209,mtimeMs:info.mtimeMs};}
+    need(retained?.mtimeMs===1790945260179.6155,'ai_qa_continuation_original_gpu_changed');
+    const manifest=await buildAiQaManifest({...input,ownLinkedPlayerSha256:sha256(input.playerId)});
+    const preflight={purpose:'bounded-native-ai-qa-continuation-preflight-v1',originalRecords:before.records,counts:before.counts,policy,
+      endpointEvidence:endpoint,provider:{httpStatus:response.status,jobs:health.jobs,workers:health.workers},retainedOriginalGpu:retained,
+      previousManifestSha256:previousPin,installedSdkPackageSha256:manifest.sdkPackageSha256,installedSdkClientSha256:manifest.sdkClientSha256};
+    const preflightSha256=sha256(JSON.stringify(preflight));
+    manifest.continuation={predecessorRecordCount:13,predecessorJournalSha256:before.previousSha256,previousManifestSha256:previousPin,
+      previousAuthoritySourceSha256:previousManifest.sources['web/native-ai-qa-budget.mjs'],previousRunId:previousManifest.runId,
+      previousExpectedSha:previousManifest.expectedSha,rootReviewedIntentSha256:input.approvedIntentSha256,preflightSha256,
+      streamRequestIdSha256:sha256(intent.streamRequestId)};
+    const pin=sha256(JSON.stringify(manifest)),stateRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/'+manifest.runId;
+    await mkdir(stateRoot,{mode:0o700});
+    const snapshot=await buildAiQaPrivateSnapshot({directory:join(repo,'lab/data/platform-private'),pins:manifest.privateSources});
+    need(sha256(snapshot)===manifest.privateSnapshotSha256,'ai_qa_continuation_snapshot_changed');
+    const snapshotFile=await open(stateRoot+'/bounded-private-snapshot.json','wx',0o600);try{await snapshotFile.writeFile(snapshot);await snapshotFile.sync();}finally{await snapshotFile.close();}
+    const reviewed=await open(stateRoot+'/continuation-intent.json','wx',0o600);try{await reviewed.writeFile(input.intentRaw);await reviewed.sync();}finally{await reviewed.close();}
+    await newFile(stateRoot+'/continuation-preflight.json',preflight);await newFile(stateRoot+'/bounded-manifest.json',manifest);
+    for(const name of ['worker','router','entry','authority'])await newFile(stateRoot+'/'+name+'-context.json',{
+      purpose:'bounded-native-ai-qa-'+name+'-context-v1',expectedSha:manifest.expectedSha,manifestRawSha256:pin,sources:manifest.sources,
+      privateSources:manifest.privateSources,sdkPackageSha256:manifest.sdkPackageSha256,sdkClientSha256:manifest.sdkClientSha256,
+      originalAnchorSha256:manifest.originalAnchorSha256,campaignId:manifest.campaignId,expiresAtMs:manifest.expiresAtMs,
+      predecessorManifestSha256:previousPin,rootReviewedIntentSha256:input.approvedIntentSha256,actualCostUsd:null});
+    const d=await open(stateRoot,'r');try{await d.sync();}finally{await d.close();}
+    const budget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
+      anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
+    const after=await budget.continueOnce({approvedIntentSha256:input.approvedIntentSha256,preflightSha256});
+    const receipt={purpose:'bounded-native-ai-qa-continuation-installed-v1',expectedSha:manifest.expectedSha,deploymentId:manifest.deploymentId,
+      runId:manifest.runId,campaignId:manifest.campaignId,manifestRawSha256:pin,manifest,previousManifestSha256:previousPin,
+      preflightSha256,budgetBefore:before,budgetAfter:after,policy,providerJobPosts:0,providerReads:1,sqlMutations:0,
+      extraReserveMicroUsd:0,refundMicroUsd:0,actualCostUsd:null,installedSdkReused:true,originalJournalPreserved:true,
+      automaticActivation:false,automaticRetry:false,fullP6Passed:false};
+    await newFile(stateRoot+'/continuation-install-receipt.json',receipt);return receipt;
+  }finally{input.providerReadApiKey='';await pool.end();}
 }
