@@ -2,12 +2,49 @@
 
 Arbeta i `C:\Users\jakem\Projects\croupier`, på `main` i det privata
 [Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).
-`main` är enda lokala/GitHub-branch och standardbranch sedan 2 oktober 2026.
+`main` är enda leveransbranch på GitHub och standardbranch sedan 2 oktober 2026.
 Vercels produktionsbranch och fyra befintliga Render-kopplingar är `main`.
 Produktens Render-autodeploy är `checksPass`; övriga tre är fortsatt `off`.
 GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
+
+**Aktuellt genomförandeuppdrag, 4 oktober:** Jakob har uttryckligen beställt
+slutföring inklusive AI/GPU, produktionsdataflytt/omkoppling och avveckling,
+med QA bevarad. Lokala taskbrancher/worktrees är nu tillåtna för de sex
+arbetsområdena; originalcheckouten behåller main och endast merge-agenten
+integrerar och pushar main via `tools/push-github-work.mjs`. Detta supersederar
+äldre branchförbud och villkor om ett ännu saknat genomförandeuppdrag här.
+
+**Avgränsat acceptansundantag:** exakta Cartesia-/counting-priser är backlog.
+Funktionstest får använda dokumenterat okänd kostnad och mätt usage inom
+befintliga numeriska reservationer och dispatchgränser. Okänd USD är aldrig
+noll eller verifierad. Ingen ny budget, återbetalning eller journalreset;
+ägar-, idempotens-, lease-, cancel-/terminal- och dubbeljobbsskydd består.
+Tidigare tariffstopp nedan gäller därför inte dessa avgränsade funktionstester.
+Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
+runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
+
+**Pågående integration:** Studio-/Git-rättningen är lokalt integrerad som
+`438a824b` från workercommit `c40503af`; ännu inte publicerad. Studio följer
+den konfigurerade speloriginens `/player-login` efter lösenordsreset och den
+gemensamma speladresspolicyn vid partneröppning. Git-fixturer isolerar hookens
+ärvda repo-/indexvariabler; huvudhooken läser fortfarande sitt riktiga
+commit-index. Färskt worktree-Labbygge och obligatorisk fullhook passerade:
+1 254 PASS, 5 SKIP, 0 FAIL. Första AI-paketet är lokalt integrerat som
+`9ea65dba` från `123d3f1f`, med exakt samma Git-träd och fullhook 1 264 PASS,
+5 SKIP, 0 FAIL. Det bevarar ursprunglig budget/journal och avgränsar provider-
+dispatch. Följdfixen är nu lokalt integrerad som `1af6d491` från `7cf88ba6`,
+med identiskt Git-träd och fullhook 1 268 PASS, 5 SKIP, 0 FAIL. Den binder
+fullfilsreservation under streaming till verifierad bounded-QA-transport och
+Neon-journal samt återställer fyra checksumförseglade privata SDK-filer före
+Web-start. Docker förbereder endast de två privata katalogernas ägare/rättigheter.
+Faktisk QA-aktivering återstår.
+Produktionsförberedelsen har 80 PASS utan SKIP samt 87 importguards PASS;
+förberedda adaptrar gör ingen import utan aktuella faktiska AI-/routekvitton,
+fryst export, verklig workerdränering och verifierad kontoparitet.
+AI/GPU-aktivering, produktionsomkoppling och avveckling återstår;
+borttagningar integreras efter verifierad ersättning.
 
 ## Fem dokument i docs
 
