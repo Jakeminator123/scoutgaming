@@ -3,7 +3,105 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
-## Senast verifierade driftläge — 4 oktober 13:41 UTC
+## Senast verifierade checkpoint — 4 oktober 17:14 UTC
+
+Produktionsimporten är avslutad och efterföljande paritetskontroller PASS: alla 32
+konton-/speltabeller, tidigare kostnadsjournaler och reservationer är bevarade.
+Fullfile-policy production/version 1 är adopterad via ett enda additivt INSERT;
+dagstak och historik är oförändrade. Faktisk leverantörskostnad är fortsatt okänd.
+Båda Vercel-kandidaterna är READY och deras produktionsalias faktiskt omkopplade
+till exakt b0bc. Alla 17 granskade/historiska aliaspekare är kontrollerade;
+historiska pekare, domäninställningar och SSO är bevarade. Render-deployment
+`dep-db17ojvavr4c73alutjg` är LIVE på b0bc med gemensam Neon-policy och health200.
+Faktisk runtimeparitet PASS: 32 skyddade tabeller, 11 kostnadstabeller,
+tre dokument och 18 aktiva plus sex behållna medieposter.
+GPU-endpointen är sparad och återavläst med Max 1/Active 0/FlashBoot ON.
+Färsk konto-/kostnadsavläsning PASS 17:09 UTC. Produktens tre providerflaggor
+är återställda till ON och exakt b0bc-deployment `dep-db18gfh42hec73eh9a60`
+är LIVE och faktisk providerreadback PASS med health200 och gemensam
+Studio-policy. QA förblir OFF. Inga nya genereringar eller providerjobb är startade.
+Ingen gammal resurs är raderad. Städreleasen `a43c0229` är integrerad på lokal
+releasebranch och har passerat byggen, typkontroller, full regression och dealer-audit;
+P7:s providerreadback har passerat; nästa är publicering av städreleasen.
+
+Vercels bodyless promote-svar och `created`-objekt för env-POST hade konkreta
+transportformat som den privata hjälparen feltolkade. Aliasbytet slutfördes
+med avgränsade operatörsanrop och faktiska GET-avläsningar. Det ursprungliga
+femminuterskvittot löpte ut under denna aliasåtergång; dess tider har inte
+ändrats och kontinuerlig TTL-acceptans påstås inte. Befintlig färsk konto-/kostnads-
+och adoptionsavläsning PASS före provideraktivering. Miljöpersistensen är
+slutförd med 43 Lab- och 31 frontendoperationer och previewvärden bevarade.
+Första write-only-posten återbekräftades via samma värde på samma ID; ingen
+extra POST eller dubblett skapades och originalkvittots tider är oförändrade.
+
+GitHub-main är `b0bc581442641d0fc9c1c161de029a60adb52929`, publicerad; dessa kontinuitetsdokument uppdateras lokalt.
+GitHub-run `37210290007` har samtliga tre jobb PASS. Committen rättar normal
+GPU-stängning: samma idle-jobb får avsluta normalt under högst 15 sekunder;
+timeout/fel använder befintlig exakt engångscancel. Riktade 30/30 prov och
+obligatorisk full regression passerar. Alla tre QA-tjänster är verifierade
+på b0bc: Render LIVE `dep-db16i5favr4c73agms1g`, frontend/Studio READY och
+alias återbundna. Faktiska Linux-källor och SDK matchar; 10/10
+bevarandekontroller PASS och OFF42 oförändrat. Three-ready-kvittots SHA256 är
+`b2ade7330fdf2d026c3cba6be1174c9dd89dc171ed44b9b54e9420624a4704af`.
+
+Faktisk P7-admission är sparad och oberoende granskad, SHA256
+`77eccc3a1ca99bca328f2abec8e11d4d37ec62b3797a2a7b25aea1c616b751c1`.
+Färsk cloudplan `25fe34d42251b1f57de6ff0ae7505459c0448c6d0ba500646aa7281a9115c59d`
+och BEFORE-kvitto `0555b7988d5f686d4b918a966bd82d1865a9a83d22c805a076e6f46df648ccb2`
+är skapade. Nedan följer det verifierade importförloppet. Första underhållsanropet stoppade före mutation eftersom hjälparen
+felaktigt krävde en Render-commandoverride. Den privata rättningen accepterar
+Dockerfilens startkommando endast via exakt byggkontext, Dockerfile och
+observerad live-commits Git-bytes; 2/2 prov och peer PASS.
+Underhållsdeployment `dep-db16rv0u01pc73d442p0` var LIVE och verifierad childless:
+0 barnprocesser, skrivare och providerprocesser. Endpointen har tillfälligt
+Max workers 0, Active workers 0 och FlashBoot OFF; faktisk autentiserad
+avläsning visar samtliga sex workerfält och båda jobbfälten 0. Ursprunglig
+kapacitet Max 1/Active 0/FlashBoot ON återställs före provideraktivering.
+Fryst export och oberoende GET-dränering finns; ett fel i lokal healthtransport
+är rättat till samma verifierade backend via HTTPS. Slutvalidering PASS och
+den verkliga produktionsimporten är slutförd. Ingen ny generering är utförd. Hela gamla
+produktionsdisken är nu säkerhetskopierad externt: 206 filer, 10 mappar,
+125 745 905 källbyte. Arkivläsbarhet, full inventering, oförändrade källmetadata
+och remote/lokal/arkivhash PASS. Kvitto SHA256
+`12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9` finns
+i privat `C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
+Importplan `94a458599f0c77ca8aaf468feccf4cc7d5e1e050f2f31662be8740796cde7442`
+är rootgranskad. Avslutat importkvitto SHA256
+`0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`
+visar additiva Studio 001–004, tre dokument, sex behållna medieposter,
+18 aktiva medier och talhistoriken. Alla 32 befintliga konto-/speltabeller har
+exakt oförändrade fingeravtryck. Fristående paritet och faktisk runtime-/aliasomkoppling är nu verifierade.
+
+Det föregående cc77-provet `75eaf797-9342-4e2c-8995-f3c759fade75` nådde
+6 562 941 streambyte, synlig bild, hörbart ljud och spelköns `end`/completed.
+Provideravläsningen efter uppspelningen gav HTTP 200 `CANCELLED`, vilket inte
+uppfyller det tidigare agenttillagda kravet på providerstatus `COMPLETED`.
+Det är inte Jakobs krav på avslutad speluppspelning. Journalen är stängd som post 39,
+head `8e7f3e2ee1a31e03291da5b59c40b7d695d4a40b156170e909853c5a1c9f03a6`.
+Usage är 4 generationer/5 SDK/2 TTS/4 GPU; två av sex generationer återstår,
+refund0, faktisk kostnad okänd/null och unresolved0.
+
+QA är verifierat OFF på cc77 via `dep-db1687s9v7es73e56rv0`: generated speech,
+cloud generated speech och streaming är 0; P6-router och bounded-test är unset.
+Router404/health200, lease0 och terminal/released-jobb. Gamla manifest, SDK,
+journaler och reservationer är bevarade. Produktionsdata och gemensam Studio-policy är nu importerade och driftparitet verifierad. Den snäva funktionella P7-admissionen
+återanvänder cc77:s verkliga END, exakt matchande completed SQL-request,
+explicit browsercleanup efter END, terminal/released-provider, lease0/uncertain0
+och OFF. Exakt tid för providerns statusövergång finns inte i kvittot.
+Playback-/routebytes är oförändrade i b0bc; dess retirementfix har riktade prov.
+Naturlig b0bc-providerstatus COMPLETED är inte liveverifierad och kvarstår som
+uttrycklig residual, utan ny generering eller ändrad reservation. Faktisk ALL0-
+dränering och produktionsparitet krävs före P7; P8 c158/f3 följer aktiv ersättning.
+
+Jakobs egen Cartesia-nyckel ligger i rotens ignorerade `.env`. Ett enda
+icke-genererande GET gav HTTP 200 och exakt Victoria-röst är tillgänglig.
+Samma nyckel är kopierad till Labs ignorerade `.env.local`; tidigare fil är
+privat säkerhetskopierad och övriga miljörader oförändrade. Driftens nyckel är
+ännu inte bytt. Inget nyckelvärde eller råsvar publiceras.
+GitGuardian för b0bc har komplett commitmetadata, queued suite/no visible run
+och incident list not-read; den täckningsluckan är fortsatt öppen.
+
+## Tidigare verifierade driftläge — 4 oktober 13:41 UTC
 
 GitHub-main och de tre QA-tjänsterna kör
 `c8747adca8c6fdff57a82946c0211585490e2ab2`. Produktens Render-backend har
