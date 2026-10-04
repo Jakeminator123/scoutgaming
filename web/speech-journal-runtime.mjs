@@ -59,7 +59,7 @@ export function createJournalSpeechSessionManager(configuration, {
   const originUrl = new URL(origin), base = `https://api.runpod.ai/v2/${endpointId}`;
   const shutdown = new AbortController();
   let pending = null, active = null, idleTimer = null, closing = false;
-  const cancellations = new Map();
+  const lifecycleTasks = new Map();
 
   async function call(route, { signal, body } = {}) {
     const response = await fetchImpl(`${base}/${route}`, { method: body ? 'POST' : 'GET', redirect: 'error',
@@ -106,19 +106,28 @@ export function createJournalSpeechSessionManager(configuration, {
     const saved = await journal.recordProviderStatus({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId, status: response.status });
     Object.assign(job, saved); return response.status;
   }
-  function cancel(job) {
+  function lifecycle(job, operation) {
     if (!job?.jobId) return Promise.resolve();
-    if (cancellations.has(job.jobId)) return cancellations.get(job.jobId);
-    const task = cancelOnce(job);
-    cancellations.set(job.jobId, task);
-    void task.finally(() => cancellations.delete(job.jobId));
+    if (lifecycleTasks.has(job.jobId)) return lifecycleTasks.get(job.jobId);
+    const task = operation(job);
+    lifecycleTasks.set(job.jobId, task);
+    void task.finally(() => lifecycleTasks.delete(job.jobId));
     return task;
   }
+  const cancel = job => lifecycle(job, cancelOnce);
+  const retire = job => lifecycle(job, retireOnce);
   async function cancelOnce(job) {
     if (!job?.jobId) return;
     if (active?.sessionId === job.sessionId) { active = null; clearTimeout(idleTimer); }
     try {
-      await journal.requestCancel({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId });
+      Object.assign(job, await journal.requestCancel({ sessionId: job.sessionId, lease: await ownership.get(), jobId: job.jobId }));
+      if (terminal.has(job.terminalStatus)) {
+        const observed = proof(job);
+        if (observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
+          Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }));
+        }
+        return;
+      }
       stopWorker(job.workerId);
       const response = await call(`cancel/${job.jobId}`, { body: {} });
       if (response?.id === job.jobId && terminal.has(response.status)) {
@@ -129,6 +138,30 @@ export function createJournalSpeechSessionManager(configuration, {
         }
       }
     } catch { /* Known job/lease/reservation remain recoverable; no refund. */ }
+  }
+  async function retireOnce(job) {
+    if (!job?.jobId) return;
+    if (active?.sessionId === job.sessionId) { active = null; clearTimeout(idleTimer); }
+    // A normal idle/shutdown path lets the exact reverse worker return from its
+    // RunPod handler. Keep the SQL session open and fall back to cancellation
+    // only when that bounded, same-job observation fails.
+    const started = now(), deadlineMs = Math.min(readyTimeoutMs, 15000);
+    let stopRequested = false;
+    try {
+      for (;;) {
+        const before = proof(job);
+        if (!stopRequested && before.busy === 0) stopRequested = stopWorker(job.workerId);
+        const status = job.terminalStatus ?? await inspect(job);
+        const observed = proof(job);
+        if (terminal.has(status) && observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
+          Object.assign(job, await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }));
+          return;
+        }
+        if (now() - started >= deadlineMs) break;
+        await sleep(pollMs);
+      }
+    } catch { /* A bounded graceful stop falls back to exact known-job cancellation. */ }
+    await cancelOnce(job);
   }
   async function waitUntilStopped(job, signal, fresh) {
     const started = now();
@@ -148,7 +181,7 @@ export function createJournalSpeechSessionManager(configuration, {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       if (workerState().busy > 0) { touch(); return; }
-      const job = active; active = null; void cancel(job);
+      const job = active; active = null; void retire(job);
     }, idleTimeoutMs); idleTimer.unref?.();
   }
   async function ensure(input) {
@@ -157,6 +190,7 @@ export function createJournalSpeechSessionManager(configuration, {
     let job;
     try {
       await fresh(); clearTimeout(idleTimer); idleTimer = null;
+      if (lifecycleTasks.size) fail('generated_speech_session_stopping', 429);
       let lease = await ownership.get({ recover: true });
       await journal.getBudgetPolicy({ currentBudgetMicroUsd: dailyBudgetMicroUsd });
       const open = await journal.listRecoverableSessions();
@@ -168,7 +202,9 @@ export function createJournalSpeechSessionManager(configuration, {
         if (lease.recoveryOnly || terminal.has(status) || job.cancelRequestedAt !== null
           || now() + policy.admissionWindowMs >= job.createdAt + policy.seconds * 1000) {
           if (workerState(job.workerId).busy > 0) fail('generated_speech_stream_busy', 429);
-          if (!terminal.has(status)) await cancel(job); else stopWorker(job.workerId);
+          if (!terminal.has(status)) {
+            if (job.cancelRequestedAt !== null) await cancel(job); else await retire(job);
+          } else stopWorker(job.workerId);
           await waitUntilStopped(job, signal, fresh); job = null;
           if (lease.recoveryOnly) { await ownership.release(); fail('generated_speech_recovery_required', 409); }
         }
@@ -222,8 +258,8 @@ export function createJournalSpeechSessionManager(configuration, {
     async close() {
       closing = true; clearTimeout(idleTimer); shutdown.abort();
       if (pending) { try { await pending; } catch {} }
-      await cancel(active);
-      while (cancellations.size) await Promise.all([...cancellations.values()]);
+      await retire(active);
+      while (lifecycleTasks.size) await Promise.all([...lifecycleTasks.values()]);
       active = null;
       try { await ownership.release(); } catch {}
     },

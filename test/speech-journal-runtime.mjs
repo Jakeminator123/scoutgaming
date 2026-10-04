@@ -87,6 +87,56 @@ test('actual session caller reserves both UTC days, shares one submit and persis
   assert.equal(f.pool.state.reservations.size, 2, 'no refund on cancel');
 });
 
+test('normal close lets the exact idle worker complete without cancellation intent or a second job', async t => {
+  const f = await fixture(t);
+  const stopped = [];
+  const manager = f.manager({ stopWorker: workerId => {
+    assert.match(workerId, /^croupier-[a-f0-9]{32}$/);
+    stopped.push(workerId);
+    f.deps.stopWorker(workerId); f.jobs.set('synthetic-job-1', 'COMPLETED'); return true;
+  } });
+  await manager.ensure(input()); await manager.close();
+  const session = [...f.pool.state.sessions.values()][0];
+  assert.equal(session.terminal_status, 'COMPLETED');
+  assert.equal(session.cancel_requested_at_ms, null);
+  assert.notEqual(session.released_at_ms, null);
+  assert.equal(f.calls.filter(call => call.url.includes('/cancel/')).length, 0);
+  assert.deepEqual(stopped, [session.worker_id]);
+  assert.equal(f.starts(), 1);
+  assert.equal(f.pool.state.reservations.size, 2, 'graceful completion never refunds its reservation');
+});
+
+test('new demand cannot reuse or replace a worker while its graceful retirement is pending', async t => {
+  const f = await fixture(t);
+  let releaseSleep, stopped;
+  const held = new Promise(resolve => { releaseSleep = resolve; });
+  const stopping = new Promise(resolve => { stopped = resolve; });
+  let holdRetirement = false, firstSleep = true;
+  const manager = f.manager({ idleTimeoutMs:10,
+    stopWorker: workerId => { f.deps.stopWorker(workerId); stopped(); return true; },
+    sleep: async ms => { f.setTime(f.getTime() + ms); if (holdRetirement && firstSleep) { firstSleep = false; await held; } },
+  });
+  await manager.ensure(input()); holdRetirement = true;
+  let waitTimer;
+  try {
+    await Promise.race([
+      stopping,
+      new Promise((_, reject) => { waitTimer = setTimeout(() => reject(Error('idle retirement did not start')), 1_000); }),
+    ]);
+  } finally { clearTimeout(waitTimer); }
+  await assert.rejects(manager.ensure(input({ requestId:'during-graceful-stop' })), { code:'generated_speech_session_stopping' });
+  assert.equal(f.starts(), 1);
+  releaseSleep();
+  const deadline = Date.now() + 1_000;
+  while ([...f.pool.state.sessions.values()][0].released_at_ms === null) {
+    if (Date.now() >= deadline) assert.fail('fallback cancellation did not finish');
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+  assert.equal(f.calls.filter(call => call.url.includes('/cancel/')).length, 1);
+  await manager.close();
+  assert.equal(f.starts(), 1);
+});
+
 test('lost paid submit response remains uncertain through restart and prevents second provider POST', async t => {
   const f = await fixture(t, { submit:async () => { throw Error('synthetic lost response'); } });
   await assert.rejects(f.manager().ensure(input()), { code:'generated_speech_session_unavailable' });
@@ -202,6 +252,7 @@ test('Neon close waits for pending idle cancellation, terminal and drain before 
   releaseCancel(); await closing;
   const session = [...f.pool.state.sessions.values()][0];
   assert.equal(session.terminal_status, 'CANCELLED');
+  assert.notEqual(session.cancel_requested_at_ms, null);
   assert.notEqual(session.released_at_ms, null);
   assert.equal(f.calls.filter(c => c.url.includes('/cancel/')).length, 1);
   assert.equal(f.starts(), 1);
