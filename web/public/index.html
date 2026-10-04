@@ -32,7 +32,7 @@
     </svg>
     <!-- the floor supervisor is a transparent cutout layered over the scene, so
          the dealer's own clips are never regenerated or swapped out -->
-    <video id="supervisor" playsinline muted preload="auto" src="dealer/supervisor.webm"></video>
+    <video id="supervisor" playsinline muted preload="none"></video>
 
     <header id="hud-top">
       <div id="game-title">
@@ -54,9 +54,9 @@
 
     <!-- the whole table: screen-space perspective art matched to the ER -->
     <div id="table2d">
-      <img id="tableimg" src="assets/table.png" alt="" />
+      <img id="tableimg" alt="" />
       <div id="felt-brand"><svg class="scout-mark" viewBox="0 0 100 100" aria-label="Scout"><path d="M8 22 V8 H22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M78 8 H92 V22" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M92 78 V92 H78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M22 92 H8 V78" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="square"/><path d="M68 36 C68 28, 60 24, 50 24 C40 24, 32 28, 32 36 C32 50, 68 50, 68 64 C68 72, 60 76, 50 76 C40 76, 32 72, 32 64" fill="none" stroke="currentColor" stroke-width="9.5" stroke-linecap="square"/><circle cx="50" cy="50" r="7" fill="#D6FF3A"/></svg></div>
-      <div id="shoe2d"><img src="assets/shoe.png" alt=""></div>
+      <div id="shoe2d"><img alt=""></div>
       <div id="dealer-cards" class="cards"></div>
       <div id="seats"></div>
     </div>

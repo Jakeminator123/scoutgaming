@@ -16,17 +16,19 @@ const administration = () => ({
   voiceReview: { privateReview: true }, genVerdicts: {}, genLandings: {},
 });
 const rejected = (code, status = 503) => error => error instanceof StudioStorageError && error.code === code && error.statusCode === status;
-async function fixture({ dealerIdle = idle, fixtureScope = scope } = {}) {
+async function fixture({ dealerIdle = idle, fixtureScope = scope, indexed = false } = {}) {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope: fixtureScope });
   await repository.initializeDocument('project', { value: createSeedProject(), revision: 'project-original', actor: 'import' });
-  await repository.initializeDocument('administration', { value: administration(), revision: 'admin-original', actor: 'import' });
+  const admin = administration();
+  if (indexed) Object.assign(admin,{gameLane:'fixture-indexed',gameLanes:[{schemaVersion:1,id:'fixture-indexed',label:'Fixture',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'}]});
+  await repository.initializeDocument('administration', { value: admin, revision: 'admin-original', actor: 'import' });
   return { pool, repository, policy: createStudioGamePolicy({ repository, scope: fixtureScope, dealerIdle }) };
 }
 
 test('saved lane is shared across policy instances with CAS and preserves every unrelated setting',async () => {
   const {policy,repository}=await fixture();
   const before=await policy.readAdministration();
-  assert.equal((await policy.readGameConfiguration()).gameLane,'original');
+  assert.equal((await policy.readGameConfiguration()).gameLane,'mobile-phone');
   await policy.saveAdministration({...before.value,gameLane:'mobile-phone'},before.revision,{actor:'operator'});
   const second=createStudioGamePolicy({repository,scope,dealerIdle:idle});
   assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
@@ -133,7 +135,7 @@ test('tier assignments require the exact registered dealer idle and do not accep
   for (const record of [null, true, { ...idle('vera'), dealerId: 'amira' }, { ...idle('vera'), engineKey: 'idle-2/idle/idle', durationMs: 3000 },
     { ...idle('vera'), engineKey: 'idle-1/idle/idle-base1' }, { ...idle('vera'), available: false }]) assert.equal(exactRegisteredDealerIdle(record, 'vera'), false);
   assert.equal(exactRegisteredDealerIdle(idle('vera'), 'vera'), true);
-  const { repository, pool } = await fixture();
+  const { repository, pool } = await fixture({indexed:true});
   const policy = createStudioGamePolicy({ repository, scope, dealerIdle: dealerId => dealerId === 'mei' ? null : idle(dealerId) });
   assert.equal(await policy.canAssignDealer('mei'), false); assert.equal(await policy.canAssignDealer('vera'), true); assert.equal(await policy.canAssignDealer('__proto__'), false);
   const saved = await policy.readSaved(), proposed = structuredClone(saved.administration); proposed.tiers.vip = 'mei';
@@ -142,7 +144,7 @@ test('tier assignments require the exact registered dealer idle and do not accep
 });
 
 test('missing registered idle for an active tier rejects reads and never borrows another dealer', async () => {
-  const { policy } = await fixture({ dealerIdle: dealerId => dealerId === 'astrid' ? idle('vera') : idle(dealerId) });
+  const { policy } = await fixture({ indexed:true, dealerIdle: dealerId => dealerId === 'astrid' ? idle('vera') : idle(dealerId) });
   await assert.rejects(policy.readSaved(), rejected('studio_game_dealer_unavailable'));
   await assert.rejects(policy.readGameConfiguration(), rejected('studio_game_dealer_unavailable'));
 });

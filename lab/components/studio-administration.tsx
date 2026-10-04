@@ -29,7 +29,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
   operations: ['overview', 'config','shoes'], tables: ['overview', 'config'], accounts: ['players', 'users'],
   partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
@@ -200,6 +200,8 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   const selected = BACKOFFICE_GROUPS.find(item => item.id === group);
   if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
   const config = resources.config?.payload;
+  const lanes = rows(config?.gameLanes ?? GAME_LANES);
+  const activeLane = config?.gameLane === 'original' || config?.gameLane === undefined ? 'mobile-phone' : config.gameLane;
   const revision = config?.revision;
   function mayWrite(action: string, needsRevision = false) {
     const descriptor = studioAdminEndpoint('POST', `/studio/api/admin/${action}`);
@@ -268,12 +270,27 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('game-lane')}
         <p>Valet styr vilket spel som öppnas från hemsidans Blackjack-knapp. Spelare loggar in före start. Pågående spel fortsätter i sin valda lane.</p>
         {config && <>
-          <p>Aktiv lane: <strong>{GAME_LANES.find(lane => lane.id === (config.gameLane ?? 'original'))?.label ?? 'Okänd'}</strong></p>
-          {mayWrite('game-lane', true) && <form method="post" onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
-            <label>Lane för Blackjack<select name="lane" defaultValue={label(config.gameLane, 'original')} disabled={busy}>{GAME_LANES.map(lane => <option key={lane.id} value={lane.id}>{lane.label}</option>)}</select></label>
+          <p>Aktiv lane: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
+          {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
+            <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          <p>Mobile Phone Lane använder Astrids video, chatt, genererade tal och läppsynk.</p>
+          <p>Lanes delar spelmotor och kortvisning. Porträttvideo använder Astrids filmbank, chatt, tal och läppsynk.</p>
+          {mayWrite('game-lanes/create', true) && <form method="post" onSubmit={submit('game-lanes/create', form => ({ definition: {
+            ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'),
+          } }), true)}>
+            <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
+            <label>Lane-ID<input name="id" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} placeholder="min-lane" disabled={busy} /></label>
+            <button disabled={busy}>Lägg till lane med porträttvideo</button>
+          </form>}
+          {mayWrite('game-lanes/remove', true) && lanes.map(lane => <form key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
+            lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,
+          }), true)}>
+            <span>{label(lane.label)}</span>
+            {lane.id === activeLane && lanes.length > 1 && <label>Ny aktiv lane<select name="replacement" required disabled={busy}>{lanes.filter(other => other.id !== lane.id).map(other => <option key={label(other.id)} value={label(other.id)}>{label(other.label)}</option>)}</select></label>}
+            <button disabled={busy}>Ta bort {label(lane.label)}</button>
+          </form>)}
+          <p>Delad media behålls. Om sista lanen tas bort kan Blackjack öppnas igen när en ny lane har lagts till.</p>
           <a href="/blackjack" target="_blank" rel="noopener">Öppna Blackjack ↗</a>
         </>}
       </>}

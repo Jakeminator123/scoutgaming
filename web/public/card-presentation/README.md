@@ -1,4 +1,8 @@
-# Recorded-card renderer provenance
+# Shared recorded-card presentation
+
+This is shared presentation infrastructure, independent of a lane's identity.
+Mobile Phone Lane uses it to project server-owned cards onto measured film.
+Adding or removing a lane must not delete these modules or shared calibration.
 
 Imported selectively from `scout-gg/croupier`, branch `codex/astrid-languages`,
 commit `0d12b7a559d328a333598b7e583b980e88d7925c` (Kevin review delivery).
@@ -19,8 +23,7 @@ The product adapter is `../local-card-overlay.mjs`; it uses server snapshots
 and `requestVideoFrameCallback` media time from the existing PerformancePlayer.
 Unknown hashes, seat mismatches and unmeasured variants use a static completion
 fallback. These must not be reported as calibrated hand contact. No filmed
-collection/pickup integration is claimed. Four dealer routing
-and existing media are retained. Visual approval requires browser review;
+collection/pickup integration is claimed. Visual approval requires browser review;
 passing these tests alone does not establish that approval.
 
 ## Hole/flip and preparation — 2026-09-29

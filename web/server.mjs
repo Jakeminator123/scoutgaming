@@ -1089,7 +1089,7 @@ const server = createServer(async (req, res) => {
       try {
         const { gameLaneSelection } = await import('./public/game-lanes.mjs');
         const policy = await studioPolicyRuntime.policy.readGameConfiguration();
-        selection = gameLaneSelection(url.searchParams,policy.gameLane);
+        selection = gameLaneSelection(url.searchParams,policy.gameLane,policy.gameLanes);
       } catch { res.writeHead(503,{'Cache-Control':'no-store'});res.end('Game entry unavailable');return; }
     }
     const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);

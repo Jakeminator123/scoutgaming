@@ -3,6 +3,46 @@
 Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+## Lane-register och medierensning — 5 oktober, pågående leverans
+
+Jakob har beställt en kvarvarande Mobile Phone Lane, tillägg/borttagning av
+lanes och rensning av oanvända Kevin-relaterade medier. Gemensam spelauktoritet,
+kortprojektion, tal- och uppspelningslogik ska bevaras. `web/public/kevin-cards`
+heter nu `web/public/card-presentation`; källproveniens och kalibrering består.
+
+`game-lanes.mjs` validerar versionerade definitioner med ID, namn, renderer,
+dealer och mediesamling. Sparad administration får `gameLanes` och `gameLane`.
+Äldre `original`/saknat val migreras vid läsning till Mobile. Serverns val
+binds i HTML; gamla queryparametrar kan inte återaktivera Kevin. Studio har
+revisionsstyrda adminåtgärder `game-lanes/create` och `game-lanes/remove`.
+Aktiv lane kräver en ersättare, eller `null` när sista lanen tas bort; då
+stängs ny Blackjack-start tills en lane läggs till. Nya porträttlanes delar
+Astrids befintliga bank och policy. Separata nya renderertyper/mediebanker
+kräver en implementerad adapter och verifierade media; godtyckliga URL:er
+accepteras inte. Att ta bort en lane raderar inte dess delade mediesamling.
+
+**Utförd lokal rensning:** 2 410 binära source/staging-filer, exakt
+2 133 120 568 byte, borttagna efter kontroll av samtliga faktiska filhashar
+och säkra sökvägar. Layout och Blob-index är uppdaterade. Mobile-bankens
+filmer/metadata, zonreferens, kortbild, runtime och all kod/kalibrering består.
+Registrerad lokal mediamängd är nu 778 332 363 byte. Git-historiken omskrivs inte.
+
+**Blob återstår:** full paginerad inventering gav 4 171 objekt / 2 914 460 723 byte.
+2 313 separata objekt / 2 131 771 483 byte motsvarar den första rensningen.
+Produktion och QA delar Blob; QA `srv-datj7l893c1s73ar3u50` är på `7c4c1cc3`
+och har separat gameDB. Studio-dokument, historik, mediarecords och speech-
+referenser har lästs i båda databaserna, plus produktionszoner. Sparade
+klipp/GPU-resultat/journaler och objekt utanför raderingslistan bevaras.
+Ignorerade privata underlag/filkvitto finns i `lab/data/lane-media-audit/`.
+Runtime-media och återstående dubbletter är inte färdigrensade; QA:s befintliga
+manifest och de historiska spelartesterna använder fortfarande delar av dem.
+
+Kontroller: riktade lane/CRUD/kort/policy/start-tester PASS, TypeScript PASS,
+fullhook före och efter rensning PASS (efter: 1 418 godkända, 9 uttryckliga
+skip, 0 fel), dealer-sync `--probe` efter rensning PASS för alla fyra historiska
+dealerpaket. Molnleverans pågår. Detta är ingen ny visuell eller läppsynksacceptans.
+GitGuardian på `91d93285`: suite queued, incidentlista not-read; inte klartecken.
+
 ## Studio-design — 5 oktober
 
 Dealer & klipp och Backoffice delar nu en dämpad gråblå palett. Deal och

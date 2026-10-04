@@ -12,7 +12,7 @@ import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
-import { gameLaneSelection } from './game-lanes.mjs';
+import { gameLaneFromDocument } from './game-lanes.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { handValue } from './blackjack.mjs';
@@ -57,7 +57,7 @@ const DEALERS = {
             scene: 'dealers/mei/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/mei/table.png' },
 };
-const entrySelection = gameLaneSelection(location.search, document.documentElement.dataset.gameLane ?? 'original');
+const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
 const DEALER = DEALERS[entrySelection.dealer];
 const localPresentationEnabled = DEALER.key === 'astrid' && entrySelection.presentation === 'local';
 if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
@@ -85,13 +85,17 @@ if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVe
   document.documentElement.dataset.dealer = DEALER.key;
   const rs = document.documentElement.style;
   rs.setProperty('--rail-anchor', DEALER.anchor);
-  if (DEALER.scene) {
+  if (!localPresentationEnabled && DEALER.scene) {
     rs.setProperty('--scene-url', `url('${DEALER.scene}')`);
     rs.setProperty('--room-plate', `url('${DEALER.scene}')`);
     rs.setProperty('--scene-w-k', DEALER.sceneWK);
     rs.setProperty('--scene-h-k', DEALER.sceneHK);
   }
-  if (DEALER.table) $('#tableimg')?.setAttribute('src', DEALER.table);
+  if (!localPresentationEnabled) {
+    $('#tableimg')?.setAttribute('src', DEALER.table || 'assets/table.png');
+    $('#shoe2d img')?.setAttribute('src', 'assets/shoe.png');
+    $('#supervisor')?.setAttribute('src', 'dealer/supervisor.webm');
+  }
   $('#chat-input')?.setAttribute('placeholder', `Talk to ${DEALER.name}…`);
   const disclosure = document.querySelector('#gate-panel p');
   if (disclosure) disclosure.textContent = disclosure.textContent.replace('Vera', DEALER.name);
@@ -2070,7 +2074,7 @@ function chatLog(role, text, pending = false) {
 
 const VERA_BANK_URL = `${DEALER.base}/audio/en`;
 let veraBank = {};
-const bankReady = fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {}).then(b => {
+const bankReady = (localPresentationEnabled ? Promise.resolve({}) : fetch(`${VERA_BANK_URL}/bank.json`).then(r => r.ok ? r.json() : {})).then(b => {
   delete b.rules_decks; delete b.fair_rng;
   veraBank = b;
   // the caption must show what THIS dealer actually says

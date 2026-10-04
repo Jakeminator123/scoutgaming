@@ -29,7 +29,7 @@ test('Blackjack requires the live session then loads the saved lane, including e
   response=await platformUiDocument(request('/blackjack'),options);
   assert.equal(response.status,200);assert.match(await response.text(),/data-game-lane="mobile-phone" data-game-dealer="astrid" data-game-presentation="local"/);
   lane='original';response=await platformUiDocument(request('/blackjack'),options);
-  assert.match(await response.text(),/data-game-lane="original" data-game-dealer="vera"/);
+  assert.match(await response.text(),/data-game-lane="mobile-phone" data-game-dealer="astrid"/);
   response=await platformUiDocument(request('/blackjack?dealer=astrid&presentation=local'),options);
   assert.match(await response.text(),/data-game-lane="mobile-phone"/);
   authenticated=false;response=await platformUiDocument(request('/blackjack'),options);

@@ -57,7 +57,7 @@ export async function platformUiDocument(request, {env = process.env, directory 
       if (typeof session?.authenticated !== 'boolean') throw Error('Invalid session');
       if (!session.authenticated) return new Response(null,{status:303,headers:{...headers,Location:playerLoginDestination(url)}});
       const policy = await read('/api/bo/config');
-      selection = gameLaneSelection(url.searchParams,policy?.gameLane ?? 'original');
+      selection = gameLaneSelection(url.searchParams,policy?.gameLane === undefined ? 'mobile-phone' : policy.gameLane,policy?.gameLanes);
     } catch {
       return new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
         {status:503,headers:{...headers,'Content-Type':'text/plain; charset=utf-8'}});
