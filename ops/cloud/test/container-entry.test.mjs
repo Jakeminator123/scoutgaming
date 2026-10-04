@@ -32,14 +32,20 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
   const fs=new Proxy({}, {get:()=>async()=>assert.fail('Mountless startup must not touch a disk path.')});
   const env={CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_MEDIA_STORAGE:'blob',
     BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
-    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=require'};
+    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=verify-full&channel_binding=require'};
   await prepareContainerUser(env,{fs,proc});
   assert.deepEqual(calls,[['groups',[]],['gid',1000],['uid',1000]]);
   calls.length=0;await prepareContainerUser(env,{fs,proc});assert.deepEqual(calls,[]);
+  for(const mode of ['require','verify-ca']) {
+    await prepareContainerUser({...env,CROUPIER_GAME_DATABASE_URL:env.CROUPIER_GAME_DATABASE_URL.replace('verify-full',mode)},{fs,proc});
+    assert.deepEqual(calls,[]);
+  }
   for(const change of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
     {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATA_DIR:'/var/data/players'},
     {CROUPIER_GENERATED_SPEECH_DIR:'/var/data/speech'},
-    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@other.example/game?sslmode=require'}]) {
+    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@other.example/game?sslmode=require'},
+    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=disable'},
+    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=prefer'}]) {
     await assert.rejects(prepareContainerUser({...env,...change},{fs,proc}));
   }
 });

@@ -33,7 +33,17 @@ tills rättad release faktiskt är LIVE och slutkontrollerna passerat. QA OFF.
 Undantaget ger inte allmän kostnadsapproval och ersätter inte aktuell
 runtime-/AI-/GPU-/playbackacceptans, paritet eller verklig workerdränering.
 
-**Aktuell checkpoint, 4 oktober 17:14 UTC:** main är publicerad på
+**P8 uppföljning 17:49 UTC:** `7c4c1cc` har tre CI PASS och är faktiskt LIVE
+på produktens Render med käll-/AI-/Neon-/healthkontroll PASS. Vercel är READY
+och alla 17 granskade/historiska alias PASS. Första start utan gammal diskväg
+misslyckades på entrypointens för snäva TLS-villkor: originalanslutningen är
+`verify-full`, villkoret accepterade bara `require`. Koden rättas till samma
+säkra lägen som Postgres-valideraren; anslutning/nycklar försvagas inte.
+51 produkt-envvärden bevaras efter borttagen CROOT. Produktdisk och tolv gamla
+Blob-objekt finns kvar; full extern arkivhash PASS. QA Render/source/SDK och
+10/10 bevarandekontroller PASS på `7c4c1cc` med OFF37.
+
+Historisk checkpoint 17:14 UTC: main var publicerad på
 `b0bc581442641d0fc9c1c161de029a60adb52929`; CI `37210290007` har tre PASS.
 Normal GPU-stängning väntar nu högst 15 sekunder på samma jobbs naturliga
 slutstatus före eventuell engångscancel. Riktade 30/30 och full regression PASS.

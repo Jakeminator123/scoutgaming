@@ -11,7 +11,15 @@ anonyma tal-QA-routens 403). b0bc är fortsatt LIVE; auth rättas inte eller
 Produktdisken och tolv ersatta Blob-alias är kvar. Extern fullständig backup
 behålls under och efter nästa release; ingen omimport eller journalreset.
 
-Aktuell migrationscheckpoint 4 oktober 17:14 UTC: main b0bc5814 är publicerad
+Uppföljning 17:49 UTC: monterad produktion `7c4c1cc` är faktiskt LIVE med
+käll-/AI-/Neon-/healthkontroll PASS. Första diskfria start misslyckades eftersom
+entrypointens nya villkor inte godtog den befintliga TLS-inställningen
+`verify-full`; villkoret rättas, befintlig anslutning och alla nycklar bevaras.
+Produkt-env är 51 efter enbart borttagen CROOT. Gamla disk och tolv Blobobjekt
+behålls tills slutkontrollen PASS. Backupens hela arkivhash återverifierad.
+QA Render `7c4c1cc` med SDK/källa och 10/10 dataskydd PASS, OFF37.
+
+Historisk migrationscheckpoint 17:14 UTC: main b0bc5814 var publicerad
 med grön CI. Alla tre QA-tjänster kör exakt b0bc med 10/10 bevarandekontroller,
 faktisk Linux-källa/SDK och oförändrat OFF42. QA är återställd till
 AI-/admin-/P6-flaggor OFF efter closed39
