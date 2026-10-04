@@ -5,7 +5,50 @@
 Skapa en vanlig HTML-sida i repot som Jakob och nästa utvecklare kan öppna
 utan Codex-/Cursor-canvas. Den ska förklara systemet från grunddata till
 synlig uppspelning och länka till källa, test och aktuellt verifieringsläge.
-Det här är kravbilden; HTML-sidan är ännu inte byggd.
+Första läsande versionen finns nu i
+[`docs/system-map/index.html`](../../docs/system-map/index.html). Källorna är
+inventerade på `d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4`; tidigare avgränsade
+driftbevis på `3da83bf8` visas med eget datum. En inventering är inget nytt liveprov.
+
+## Levererad grund — 4 oktober 2026
+
+Tre arbetsagenter kartlade routes/inloggning, databas/lagring och spel-/talflöde.
+Merge-agenten kontrollerade och sammanställde underlaget. Mappen innehåller:
+
+| Fil | Ansvar |
+| --- | --- |
+| `catalog.json` | Tjänster, samband, dokumenterat driftbevis och öppna fel |
+| `routes.json` | 9 sidgrupper, 11 API-grupper, 7 alias, 2 lanes samt login/save |
+| `storage.json` | 4 scheman, 49 källkodstabeller, lagringslager och befintliga tester |
+| `flows.json` | 3 spel-/talflöden med 16 steg, faktiska events och testkopplingar |
+| `build.mjs` | Läser katalogerna och befintligt envnamnsregister; bygger HTML offline |
+| `index.html` | Fristående HTML med sök/filter, överblick och klickbara käll-/testdetaljer |
+
+Öppna `index.html` direkt i en vanlig webbläsare. Den behöver ingen server,
+databas eller Codex-canvas. Vid ändrat underlag, kör från aktuell checkout:
+`node docs/system-map/build.mjs`. Generatorn läser nyckelnamn direkt från
+`docs/environment-variables.json`; det finns ingen konkurrerande nyckellista.
+Den kontrollerar filreferenser och samma käll-SHA, inte drift eller testresultat.
+Kodlänkar och radbundna dokumentbevis pekar på inventerad SHA;
+arbetsdokument utan radankare pekar på `main`.
+
+Browserkontrollen omfattar navigation, sökning/filter, tabellfält, käll-/testlänkar
+och GPU-flödets sex steg. JSON/JavaScript och 238 unika referensvägar är kontrollerade.
+Inga nya providerjobb eller driftändringar ingår.
+
+## Föreslagen fortsättning
+
+1. Rätta de tre verifierade felen i [plan 01](../01-slutratningar/PLAN.md)
+   och bind deras faktiska acceptans till de befintliga testerna.
+2. Komplettera kartan med fullständig route- och kolumn-/FK-inventering för
+   vald kodversion. Nuvarande fältlistor är översikter; installerat live-schema,
+   grants och fysiska mikrofon-/kamera-/mobilprov är separat verifiering.
+3. Visa resultat från befintlig CI per definierat kontrakt enligt
+   [plan 04](../04-tester-och-granskning/PLAN.md). Lägg driftvarning först;
+   en avsiktlig kolumnändring ska inte automatiskt göra kartan eller en push felaktig.
+
+Detta är en gemensam dokumentations- och granskningsyta som utökas stegvis.
+Den inför ingen andra testmotor eller generella nya merge-/pushspärrar.
 
 ## Första leveransen: karta som går att lita på
 

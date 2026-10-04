@@ -1,0 +1,1621 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "d3fd13d3cb0b9a1131ac1c002d3d9af237ecdee4",
+  "evidence": {
+    "kind": "Kodläst katalog",
+    "liveSchemaRead": false,
+    "liveRowsRead": false,
+    "providerConfigurationRead": false,
+    "envFilesRead": false,
+    "testsRun": false,
+    "statement": "Tabellnamn och kontrakt är lästa i källkod. Aktuellt installerat live-schema, datarader, grants och providerinställningar är inte avlästa här."
+  },
+  "summary": {
+    "schemaCount": 4,
+    "tableCount": 49,
+    "tableCountBySchema": {
+      "croupier_game": 25,
+      "croupier_auth": 7,
+      "croupier_studio": 15,
+      "croupier_zones": 2
+    }
+  },
+  "db": [
+    {
+      "id": "game-auth-studio-neon",
+      "name": "Separat game/auth/Studio-Neon",
+      "schemas": [
+        "croupier_game",
+        "croupier_auth",
+        "croupier_studio"
+      ],
+      "configuration": "Dedikerad TLS-skyddad gameanslutning; får inte adressera zondatabasen.",
+      "scope": "Fysisk miljödatabas för game/auth; ytterligare serverägda environment/workspace-nycklar i Studio.",
+      "readers": [
+        "Render produktserver",
+        "Vercel native Studio-server"
+      ],
+      "writers": [
+        "Render äger RNG, shoe, wallet, rundor, spelkommandon och cancellation.",
+        "Native Studio skriver sparad policy, medieregister och tillåtna auth-/adminposter.",
+        "Spelarpassword/status och partnerrevoke/rotate/launch/credit går genom signerad Render-authority."
+      ],
+      "startupContract": [
+        "product-v1-källchecksum måste matcha game-ledgern.",
+        "Studio 001–004 måste vara verifierat installerade utan pending versioner.",
+        "Saknad sparad policy/schema ger fel; ingen flagga migrerar, seedar eller aktiverar diskfallback."
+      ],
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 3
+        },
+        {
+          "path": "web/storage/postgres-store.mjs",
+          "line": 15
+        },
+        {
+          "path": "web/storage/postgres-store.mjs",
+          "line": 122
+        },
+        {
+          "path": "web/storage/studio-runtime.mjs",
+          "line": 7
+        },
+        {
+          "path": "lab/lib/studio-native-runtime.mjs",
+          "line": 68
+        },
+        {
+          "path": "lab/lib/studio-admin-accounts.mjs",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "id": "zones-neon",
+      "name": "Separat zon-Neon",
+      "schemas": [
+        "croupier_zones"
+      ],
+      "configuration": "Dedikerad TLS-skyddad zonanslutning tillsammans med explicit privat Blob.",
+      "scope": "Zondatabas separat från konton/wallet; sparade dokument är Astrid-bundna.",
+      "readers": [
+        "Labs autentiserade/gatewaykontrollerade load/stream-handlers"
+      ],
+      "writers": [
+        "Labs save/upload-handlers med geometri- och revisionskontroll"
+      ],
+      "startupContract": [
+        "Explicit schemainstallation.",
+        "Ingen generell DB-URL-fallback.",
+        "Zonanslutningen skickas till Lab-child; native Vercel-Lab listar zonnyckeln som blockerad."
+      ],
+      "sources": [
+        {
+          "path": "lab/lib/zone-cloud-schema.sql",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/zone-cloud-store.mjs",
+          "line": 55
+        },
+        {
+          "path": "docs/environment-variables.json",
+          "line": 366
+        }
+      ]
+    }
+  ],
+  "schemas": [
+    {
+      "name": "croupier_game",
+      "databaseId": "game-auth-studio-neon",
+      "tableCount": 25,
+      "purpose": "Auktoritativt spel, spelarkonton, sessioner, rundor, wallet, partner och spelarminne.",
+      "scope": "Miljödatabasen samt spelare/dealer/observationsscope/partnernyckel enligt respektive tabell.",
+      "writer": "Render produktserver",
+      "installation": "product-v1 med verifierad migrationschecksum; ingen runtime-DDL",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 3
+        },
+        {
+          "path": "web/storage/postgres-store.mjs",
+          "line": 122
+        }
+      ]
+    },
+    {
+      "name": "croupier_auth",
+      "databaseId": "game-auth-studio-neon",
+      "tableCount": 7,
+      "purpose": "Gemensam CRAIG/Backoffice/Studio-identitet, auth-epochs, sessioner och API-credentials.",
+      "scope": "Ingen environment_id/workspace_id-kolumn; miljöisolering genom separat databas.",
+      "writer": "Render auth och native Studio-server beroende på handling.",
+      "installation": "Del av product-v1; käll-SQL har auth-epoch-triggers för roll/passwordändring och kontodeletion.",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 41
+        },
+        {
+          "path": "lab/lib/studio-native-auth-actions.mjs",
+          "line": 27
+        },
+        {
+          "path": "lab/lib/studio-admin-accounts.mjs",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "name": "croupier_studio",
+      "databaseId": "game-auth-studio-neon",
+      "tableCount": 15,
+      "purpose": "Gemensam sparad presentationspolicy, historik/audit, mediaidentiteter och beständiga tal/GPU/QA-journaler.",
+      "scope": "Serverägd environment; workspace för dokument/media/operatörs-QA; owner_hash/request/session för journaler.",
+      "writer": "Native Studio för dokument/media; Render journaladaptrar för tal/GPU/QA.",
+      "migrationVersions": [
+        "001",
+        "002",
+        "003",
+        "004"
+      ],
+      "installation": "Explicit immutable runner; kontrollerar käll- och strukturchecksum. Migrationer seedar inte policy eller kostnadsrätt.",
+      "documentKinds": [
+        "project",
+        "social-policy",
+        "administration"
+      ],
+      "documentContract": "Save = revisions-CAS, tidigare revision i historik och audit i en transaktion. Autentiserad actor krävs av editoradaptern. Render/Studio läser sparat projekt och administration tillsammans.",
+      "mediaContract": "Exakt id/pathname/sha256/size/contentType/classification. Nya reviewposter i Neon; privat Blob håller bytes. Sex explicit bevarade original har bunden proveniens.",
+      "sources": [
+        {
+          "path": "ops/neon-studio/migrations.mjs",
+          "line": 10
+        },
+        {
+          "path": "web/storage/studio-contract.mjs",
+          "line": 6
+        },
+        {
+          "path": "web/storage/studio-repository.mjs",
+          "line": 20
+        },
+        {
+          "path": "lab/lib/neon-project-store.mjs",
+          "line": 6
+        },
+        {
+          "path": "web/postgres-speech-journal.mjs",
+          "line": 83
+        },
+        {
+          "path": "web/postgres-operator-speech-qa.mjs",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "name": "croupier_zones",
+      "databaseId": "zones-neon",
+      "tableCount": 2,
+      "purpose": "Astrids bakgrundszoners geometri, revisioner och privata klippmetadata.",
+      "scope": "Separat DB; dealer='astrid' i dokumentkontraktet.",
+      "writer": "Lab zone-cloud-service",
+      "installation": "Explicit separat schema; inga game/auth-tabeller eller generell DB-fallback.",
+      "documentContract": "CAS-save; klippmått måste exakt matcha zonen. Misslyckad ny metadata-insert städar enbart nytt orefat uploadobjekt.",
+      "sources": [
+        {
+          "path": "lab/lib/zone-cloud-schema.sql",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/zone-cloud-store.mjs",
+          "line": 55
+        }
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "schema": "croupier_game",
+      "name": "players",
+      "purpose": "Spelaridentitet, demo-wallet och kontolivscykel",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "name",
+        "currency",
+        "balance",
+        "created_at",
+        "status",
+        "account_epoch",
+        "closed_at"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "transactions",
+      "purpose": "Historik för wallet-transaktioner",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "player_id",
+        "type",
+        "amount",
+        "currency",
+        "meta",
+        "at"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "blackjack_tables",
+      "purpose": "Beständigt auktoritativt blackjack-tillstånd",
+      "keys": [
+        "player_id"
+      ],
+      "fields": [
+        "state"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "native_presentations",
+      "purpose": "Senaste sparade presentationskvitto för spelaren",
+      "keys": [
+        "player_id"
+      ],
+      "fields": [
+        "request_id",
+        "version",
+        "payload"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_accounts",
+      "purpose": "Inloggningsmappning och lösenordshash",
+      "keys": [
+        "email"
+      ],
+      "fields": [
+        "player_id",
+        "salt",
+        "hash"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 18
+        }
+      ],
+      "sensitiveFields": [
+        "salt",
+        "hash"
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_sessions",
+      "purpose": "Spelarens sessioner och auth-källstämpel",
+      "keys": [
+        "digest"
+      ],
+      "fields": [
+        "player_id",
+        "expires",
+        "source_stamp",
+        "display_name"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 19
+        }
+      ],
+      "sensitiveFields": [
+        "digest"
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "craig_player_links",
+      "purpose": "Länk mellan CRAIG-konto och spelaridentitet",
+      "keys": [
+        "craig_user_id"
+      ],
+      "fields": [
+        "player_id"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "bo_game_handoffs",
+      "purpose": "Engångsövergång från Backoffice till spel",
+      "keys": [
+        "state_digest"
+      ],
+      "fields": [
+        "next_path",
+        "expires",
+        "code_digest",
+        "craig_user_id",
+        "username",
+        "source_stamp",
+        "session_until"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 22
+        }
+      ],
+      "sensitiveFields": [
+        "state_digest",
+        "code_digest"
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "preview_sessions",
+      "purpose": "Avgränsade förhandsvisningssessioner",
+      "keys": [
+        "digest"
+      ],
+      "fields": [
+        "player_id",
+        "expires"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 23
+        }
+      ],
+      "sensitiveFields": [
+        "digest"
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "lissabon_profiles",
+      "purpose": "Beständig Lissabon-profilkoppling",
+      "keys": [
+        "player_id"
+      ],
+      "fields": [
+        "name_key"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "lissabon_profile_sessions",
+      "purpose": "Lissabon-profilsessioner",
+      "keys": [
+        "digest"
+      ],
+      "fields": [
+        "player_id",
+        "expires"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 25
+        }
+      ],
+      "sensitiveFields": [
+        "digest"
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_chat_memory_meta",
+      "purpose": "Versions-/metanycklar för spelarens chattminne",
+      "keys": [
+        "key"
+      ],
+      "fields": [
+        "value"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_chat_memory_profiles",
+      "purpose": "Dealerbundet chattminne och revisionshistorik",
+      "keys": [
+        "player_ref",
+        "dealer_id"
+      ],
+      "fields": [
+        "history",
+        "revision",
+        "touched"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + player_ref/dealer_id",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_chat_memory_requests",
+      "purpose": "Beständig chattrequest, reservation och revisions-CAS",
+      "keys": [
+        "player_ref",
+        "dealer_id",
+        "request_ref"
+      ],
+      "fields": [
+        "fingerprint",
+        "reservation",
+        "profile_revision",
+        "state",
+        "started",
+        "result_fingerprint",
+        "committed_revision"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + player_ref/dealer_id/request_ref",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_profiles",
+      "purpose": "Aktiv observationsscope, generation och policyläge",
+      "keys": [
+        "scope"
+      ],
+      "fields": [
+        "epoch",
+        "generation",
+        "activity",
+        "sampled",
+        "policy",
+        "reason",
+        "messages",
+        "extraction_at"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 30
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_sessions",
+      "purpose": "Ephemär session-/fliknärvaro för observation",
+      "keys": [
+        "scope",
+        "session",
+        "tab"
+      ],
+      "fields": [
+        "seen",
+        "flags"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope/session/tab",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_attempts",
+      "purpose": "Observationsförsök, minnesrevision och bevis",
+      "keys": [
+        "scope",
+        "id"
+      ],
+      "fields": [
+        "epoch",
+        "generation",
+        "session",
+        "tab",
+        "policy",
+        "started",
+        "state",
+        "text",
+        "topic",
+        "memories",
+        "played",
+        "memory_revision",
+        "evidence"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_sources",
+      "purpose": "Källmeddelanden till observation/minnesextraktion",
+      "keys": [
+        "scope",
+        "id"
+      ],
+      "fields": [
+        "text",
+        "created"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_facts",
+      "purpose": "Extraherade fakta med giltighetsfönster",
+      "keys": [
+        "scope",
+        "id"
+      ],
+      "fields": [
+        "topic",
+        "type",
+        "content",
+        "source",
+        "created",
+        "expires",
+        "not_before"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_probe_rounds",
+      "purpose": "Observerade avslutade rundor och handkvitton",
+      "keys": [
+        "scope",
+        "id"
+      ],
+      "fields": [
+        "sequence",
+        "hands",
+        "completed"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Spelardatabas + observationsscope",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "partner_rounds",
+      "purpose": "Partnerns rund-/wallet-audit",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "key_id",
+        "player_id",
+        "partner_player",
+        "table_version",
+        "shoe_id",
+        "op",
+        "request_id",
+        "stake",
+        "delta",
+        "currency",
+        "view",
+        "at"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "partner_players",
+      "purpose": "Partnernyckelns externa spelarmappning",
+      "keys": [
+        "key_id",
+        "partner_player"
+      ],
+      "fields": [
+        "player_id"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "partner_idem",
+      "purpose": "Beständiga idempotenta partnersvar",
+      "keys": [
+        "key_id",
+        "request_id"
+      ],
+      "fields": [
+        "response"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "player_admin_events",
+      "purpose": "Audit av administrerad spelarkontolivscykel",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "player_id",
+        "actor",
+        "action",
+        "reason",
+        "previous_status",
+        "status",
+        "at"
+      ],
+      "owner": "Render produktserver",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "schema": "croupier_game",
+      "name": "storage_migrations",
+      "purpose": "Installerad product-v1-migrationsledger",
+      "keys": [
+        "version"
+      ],
+      "fields": [
+        "checksum",
+        "source_hashes",
+        "applied_at"
+      ],
+      "owner": "Explicit game-migrationsverktyg; runtime verifierar ledgern",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "users",
+      "purpose": "CRAIG-/Backoffice-konton, roller och lösenordshash",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "username",
+        "email",
+        "salt",
+        "hash",
+        "role",
+        "created_at"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 41
+        }
+      ],
+      "sensitiveFields": [
+        "salt",
+        "hash"
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "tokens",
+      "purpose": "Invite-/reset-tokenlookup",
+      "keys": [
+        "token"
+      ],
+      "fields": [
+        "username",
+        "kind",
+        "exp"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 42
+        }
+      ],
+      "sensitiveFields": [
+        "token"
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "meta",
+      "purpose": "Authinställningar, signeringsmaterial och loginbegränsning",
+      "keys": [
+        "k"
+      ],
+      "fields": [
+        "v"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 43
+        }
+      ],
+      "sensitiveFields": [
+        "v"
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "bo_auth_epochs",
+      "purpose": "Auth-epoch för revokering efter kontoändring",
+      "keys": [
+        "user_id"
+      ],
+      "fields": [
+        "epoch"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "bo_lab_handoffs",
+      "purpose": "Engångsövergång till autentiserat Lab/Studio",
+      "keys": [
+        "state_digest"
+      ],
+      "fields": [
+        "next_path",
+        "expires",
+        "code_digest",
+        "craig_user_id",
+        "role",
+        "source_stamp",
+        "auth_epoch",
+        "session_until"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 45
+        }
+      ],
+      "sensitiveFields": [
+        "state_digest",
+        "code_digest"
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "lab_sessions",
+      "purpose": "Autentiserade native Studio-sessioner",
+      "keys": [
+        "token_digest"
+      ],
+      "fields": [
+        "craig_user_id",
+        "role",
+        "source_stamp",
+        "auth_epoch",
+        "expires"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 46
+        }
+      ],
+      "sensitiveFields": [
+        "token_digest"
+      ]
+    },
+    {
+      "schema": "croupier_auth",
+      "name": "api_keys",
+      "purpose": "Partnercredentials, scopes och nyckellivscykel",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "name",
+        "key",
+        "secret",
+        "scopes",
+        "wallet_url",
+        "ip_allow",
+        "created_by",
+        "created_at",
+        "last_used",
+        "revoked_at"
+      ],
+      "owner": "Render auth och native Studio-server",
+      "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt keys",
+      "sources": [
+        {
+          "path": "ops/neon-game/product-schema.sql",
+          "line": 47
+        }
+      ],
+      "sensitiveFields": [
+        "key",
+        "secret"
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "storage_migrations",
+      "purpose": "Immutable käll- och strukturchchecksumledger",
+      "keys": [
+        "version"
+      ],
+      "fields": [
+        "checksum",
+        "structure_checksum",
+        "applied_at"
+      ],
+      "owner": "Explicit Studio-migrationsrunner; runtime verifierar",
+      "scope": "Databasschema, inte enskilt workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/001-studio-metadata.sql",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "documents",
+      "purpose": "Aktuella sparade projekt-, social-policy- och administrationsdokument",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "kind"
+      ],
+      "fields": [
+        "revision",
+        "value",
+        "updated_at"
+      ],
+      "owner": "Native Studio; Render läser sparad gemensam policy",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/001-studio-metadata.sql",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "document_history",
+      "purpose": "Tidigare sparade dokumentrevisioner",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "kind",
+        "revision"
+      ],
+      "fields": [
+        "value",
+        "original_updated_at",
+        "replaced_at",
+        "replaced_by",
+        "actor"
+      ],
+      "owner": "Studio-repository skriver i samma transaktion som CAS-save",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/001-studio-metadata.sql",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "audit_events",
+      "purpose": "Audit av initialize/save/import/register/classify",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "event_id"
+      ],
+      "fields": [
+        "action",
+        "subject",
+        "revision",
+        "actor",
+        "at"
+      ],
+      "owner": "Studio-repository",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/001-studio-metadata.sql",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "media_records",
+      "purpose": "Exakt medieidentitet och klassificering; inga binärbytes",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "id"
+      ],
+      "fields": [
+        "revision",
+        "record",
+        "updated_at"
+      ],
+      "owner": "Native Studio registrerar/klassificerar; native mediaväg läser",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/001-studio-metadata.sql",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "speech_execution_leases",
+      "purpose": "Fenced ägarskap för fullfil, streamsession och operatörs-QA",
+      "keys": [
+        "environment_id",
+        "resource"
+      ],
+      "fields": [
+        "holder_id",
+        "fence",
+        "expires_at_ms",
+        "recovery_only"
+      ],
+      "owner": "Render speech-/QA-journaladaptrar",
+      "scope": "Serverägd miljö + resurs",
+      "sources": [
+        {
+          "path": "ops/neon-studio/002-generation-journals.sql",
+          "line": 2
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "speech_requests",
+      "purpose": "Beständig ägarbunden request och färdig paketmetadata",
+      "keys": [
+        "environment_id",
+        "request_key"
+      ],
+      "fields": [
+        "owner_hash",
+        "request_id",
+        "fingerprint",
+        "capability",
+        "state",
+        "lease_resource",
+        "holder_id",
+        "lease_fence",
+        "package_id",
+        "package_metadata",
+        "safe_error",
+        "created_at_ms",
+        "updated_at_ms"
+      ],
+      "owner": "Render speech-journal",
+      "scope": "Serverägd miljö + owner_hash/request_id; unik ägarrequest",
+      "sources": [
+        {
+          "path": "ops/neon-studio/002-generation-journals.sql",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "gpu_budget_policies",
+      "purpose": "Explicit beständigt dagligt GPU-kostnadstak",
+      "keys": [
+        "environment_id"
+      ],
+      "fields": [
+        "version",
+        "daily_budget_micro_usd",
+        "created_at_ms"
+      ],
+      "owner": "Explicit verifierad bootstrap/import; Render journal läser",
+      "scope": "Serverägd miljö",
+      "sources": [
+        {
+          "path": "ops/neon-studio/002-generation-journals.sql",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "gpu_sessions",
+      "purpose": "Beständig GPU-submission, cancellation och terminalkvitto",
+      "keys": [
+        "environment_id",
+        "session_id"
+      ],
+      "fields": [
+        "endpoint_id",
+        "worker_id",
+        "holder_id",
+        "lease_fence",
+        "state",
+        "job_id",
+        "terminal_status",
+        "terminal_reason",
+        "released_at_ms"
+      ],
+      "owner": "Render speech-journal",
+      "scope": "Serverägd miljö + session",
+      "sources": [
+        {
+          "path": "ops/neon-studio/002-generation-journals.sql",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "gpu_reservations",
+      "purpose": "Append-only sessionsreservation per UTC-dygn",
+      "keys": [
+        "environment_id",
+        "session_id",
+        "day"
+      ],
+      "fields": [
+        "reserved_micro_usd"
+      ],
+      "owner": "Render speech-journal; ingen runtime-refund/reset",
+      "scope": "Serverägd miljö + session/dygn",
+      "sources": [
+        {
+          "path": "ops/neon-studio/002-generation-journals.sql",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_qa_campaigns",
+      "purpose": "Fryst avgränsad operatörs-QA-kampanj",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "campaign_id"
+      ],
+      "fields": [
+        "created_at_ms",
+        "expires_at_ms",
+        "source_sha256"
+      ],
+      "owner": "Explicit fryst QA-import; runtime läser",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/003-operator-speech-qa.sql",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_qa_gate",
+      "purpose": "Vald QA-kampanj/gate; runtime kan inte aktivera eller resetta",
+      "keys": [
+        "environment_id",
+        "workspace_id"
+      ],
+      "fields": [
+        "campaign_id",
+        "created_at_ms",
+        "expires_at_ms",
+        "source_sha256"
+      ],
+      "owner": "Explicit fryst QA-import; runtime läser",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/003-operator-speech-qa.sql",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_qa_attempts",
+      "purpose": "Beständiga reserverade operatörs-QA-försök",
+      "keys": [
+        "environment_id",
+        "workspace_id",
+        "campaign_id",
+        "attempt"
+      ],
+      "fields": [
+        "turn",
+        "reserved_at_ms",
+        "actor",
+        "source_sha256"
+      ],
+      "owner": "Render operator-QA-adapter",
+      "scope": "Serverägd miljö och, för dokument/media/QA, workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/003-operator-speech-qa.sql",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "fullfile_budget_policies",
+      "purpose": "Explicit fullfilsreservation inom gemensamt GPU-dygnstak",
+      "keys": [
+        "environment_id"
+      ],
+      "fields": [
+        "version",
+        "reserve_micro_usd",
+        "reservation_window_ms",
+        "created_at_ms"
+      ],
+      "owner": "Explicit verifierad bootstrap/import; Render journal läser",
+      "scope": "Serverägd miljö",
+      "sources": [
+        {
+          "path": "ops/neon-studio/004-fullfile-reservations.sql",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "fullfile_reservations",
+      "purpose": "Requestägd fullfilsreservation per UTC-dygn",
+      "keys": [
+        "environment_id",
+        "request_key",
+        "day"
+      ],
+      "fields": [
+        "reserved_micro_usd",
+        "reserved_at_ms"
+      ],
+      "owner": "Render speech-journal; ingen runtime-refund/reset",
+      "scope": "Serverägd miljö + request/dygn",
+      "sources": [
+        {
+          "path": "ops/neon-studio/004-fullfile-reservations.sql",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "schema": "croupier_zones",
+      "name": "clips",
+      "purpose": "Uppladdade zonklipps exakta mått och privata mediareferens",
+      "keys": [
+        "id"
+      ],
+      "fields": [
+        "width",
+        "height",
+        "media",
+        "created_at"
+      ],
+      "owner": "Labs zonlagring",
+      "scope": "Separat zondatabas",
+      "sources": [
+        {
+          "path": "lab/lib/zone-cloud-schema.sql",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "schema": "croupier_zones",
+      "name": "documents",
+      "purpose": "Sparad bakgrundsgeometri med revisions-CAS",
+      "keys": [
+        "dealer"
+      ],
+      "fields": [
+        "revision",
+        "zones",
+        "updated_at"
+      ],
+      "owner": "Labs zonlagring",
+      "scope": "Separat zondatabas; CHECK dealer='astrid'",
+      "sources": [
+        {
+          "path": "lab/lib/zone-cloud-schema.sql",
+          "line": 12
+        }
+      ]
+    }
+  ],
+  "storageLayers": [
+    {
+      "id": "private-blob",
+      "name": "Privat Blob",
+      "evidence": "Kodkontrakt; providerinventering ej avläst",
+      "durable": true,
+      "authoritativeFor": "Mediebytes och färdiga audio/video-artefakter; Neon äger metadata och bindningar.",
+      "root": "croupier/media/",
+      "groups": [
+        "dealers/astrid",
+        "dealers/vera",
+        "dealers/amira",
+        "dealers/mei",
+        "game",
+        "site"
+      ],
+      "stages": [
+        "source",
+        "runtime",
+        "review",
+        "staging"
+      ],
+      "delivery": "Serverbehöriga GET/HEAD/Range; inga lagringskeys eller privata provider-URL:er till frontend.",
+      "integrity": "Immutable exakt path + hash/storlek/type; allowOverwrite=false och verifierad readback.",
+      "generatedSpeech": "Ägarbundna WAV-/MP4-paths; färdiga referenser publiceras i ägarbunden Neon-requestjournal.",
+      "sources": [
+        {
+          "path": "lab/lib/cloud-media-store.mjs",
+          "line": 17
+        },
+        {
+          "path": "lab/lib/cloud-media-store.mjs",
+          "line": 147
+        },
+        {
+          "path": "web/speech-blob-artifacts.mjs",
+          "line": 25
+        },
+        {
+          "path": "docs/CLOUD-MIGRATION.md",
+          "line": 1234
+        }
+      ]
+    },
+    {
+      "id": "runtime-temp",
+      "name": "Disponibel runtime-temp",
+      "evidence": "Kodkontrakt",
+      "durable": false,
+      "authoritativeFor": "Ingen beständig policy/metadata; verifierad bytescache och probe-/uploadscratch.",
+      "paths": [
+        "tmpdir()/croupier-private-media",
+        "tmpdir()/croupier-speech-blob-*",
+        "tmpdir()/croupier-zone-*"
+      ],
+      "lifecycle": "Speech/probe skapar separat temp och städar operationens egna filer. Media-cache kräver fortsatt exact-byte-verifiering.",
+      "sources": [
+        {
+          "path": "lab/lib/cloud-media-store.mjs",
+          "line": 58
+        },
+        {
+          "path": "web/speech-blob-artifacts.mjs",
+          "line": 56
+        },
+        {
+          "path": "lab/lib/zone-cloud-store.mjs",
+          "line": 107
+        }
+      ]
+    },
+    {
+      "id": "render-production",
+      "name": "Render produktion",
+      "evidence": "Aktuell repodokumentation; ej live-avläst i kartuppgiften",
+      "durable": false,
+      "documentedMount": "Ingen /var/data-mount; äldre 5 GB produktdisk avvecklad.",
+      "authoritativeFor": "Aktiv Studio/journal i Neon, beständig media i privat Blob. Extern historisk backup bevaras.",
+      "guard": "Mountless start kräver Postgres, gemensam Neon-policy, privat Blob och frånvaro av avvecklad diskkonfiguration.",
+      "sources": [
+        {
+          "path": "docs/CLOUD-MIGRATION.md",
+          "line": 1262
+        },
+        {
+          "path": "ops/cloud/container-entry.mjs",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "id": "render-qa",
+      "name": "Isolerad Render-QA",
+      "evidence": "Aktuell repodokumentation; ej live-avläst i kartuppgiften",
+      "durable": true,
+      "documentedMount": "/var/data",
+      "documentedSize": "1 GB",
+      "authoritativeFor": "QA:s separata arbetsdata/cache, installerad privat SDK och bevarade historiska journaler/reservationer.",
+      "state": "AI dokumenterat OFF; ingen produktionskontotestkälla.",
+      "sources": [
+        {
+          "path": "docs/CLOUD-MIGRATION.md",
+          "line": 1263
+        }
+      ]
+    },
+    {
+      "id": "render-director",
+      "name": "Render Director",
+      "evidence": "Aktuell repodokumentation; ej live-avläst i kartuppgiften",
+      "durable": true,
+      "documentedMount": "/data/catalog",
+      "documentedSize": "1 GB",
+      "authoritativeFor": "Katalog, historik och Companion-databas.",
+      "sources": [
+        {
+          "path": "docs/CLOUD-MIGRATION.md",
+          "line": 1264
+        }
+      ]
+    },
+    {
+      "id": "render-gateway",
+      "name": "Render OpenClaw Gateway",
+      "evidence": "Aktuell repodokumentation; ej live-avläst i kartuppgiften",
+      "durable": true,
+      "documentedMount": "/data/openclaw",
+      "documentedSize": "1 GB",
+      "authoritativeFor": "OpenClaw-konfiguration, agentfiler, sessioner och sökdatabas.",
+      "sources": [
+        {
+          "path": "docs/CLOUD-MIGRATION.md",
+          "line": 1265
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "game-persistence",
+      "files": [
+        "test/postgres-persistence.mjs",
+        "test/postgres-native-table.mjs",
+        "test/sqlite-postgres-migration.mjs"
+      ],
+      "coverage": "SQL-fasad/atomiska kommandon, auth-epoch och kontolivscykel, spelpersistens och migreringsparitet.",
+      "liveOptIn": "Verkliga DB-prov kräver explicit separat QA-konfiguration."
+    },
+    {
+      "id": "studio-migrations",
+      "files": [
+        "test/studio-migrations.mjs"
+      ],
+      "coverage": "Read-only plan, käll-/strukturchecksum, bevarad ledger, drift refusal, DDL/ledgerrollback och samtidig explicit apply.",
+      "liveOptIn": false
+    },
+    {
+      "id": "studio-cas",
+      "files": [
+        "test/studio-repository.mjs",
+        "lab/test/neon-project-store.test.mjs"
+      ],
+      "coverage": "Serverägd scope, en CAS-vinnare, history/auditrollback, snapshots, inga implicitdefaults eller andra diskskrivare.",
+      "liveOptIn": false
+    },
+    {
+      "id": "studio-media-registry",
+      "files": [
+        "lab/test/neon-video-registry.test.mjs",
+        "test/studio-retained-bank.mjs"
+      ],
+      "coverage": "Exakt bankretention, scoped Neon-register, privat Blob HEAD/Range och avsaknad av gammal indexfallback.",
+      "liveOptIn": false
+    },
+    {
+      "id": "speech-journals",
+      "files": [
+        "test/postgres-speech-journal.mjs",
+        "test/postgres-operator-speech-qa.mjs",
+        "test/speech-ledger-import.mjs"
+      ],
+      "coverage": "Beständigt ägarskap/idempotens, lease/fence, restart/recovery, kostnadsreservation utan refund/reset och fryst QA-import.",
+      "liveOptIn": false
+    },
+    {
+      "id": "private-blob-integrity",
+      "files": [
+        "test/speech-blob-artifacts.mjs",
+        "lab/test/cloud-media-store.test.mjs"
+      ],
+      "coverage": "Immutable privat upload, exact readback, ägarbundna artefakter, tempcache-integritet och endast egen failed-upload-cleanup.",
+      "liveOptIn": false
+    },
+    {
+      "id": "zone-storage",
+      "files": [
+        "lab/test/zone-cloud-store.test.mjs"
+      ],
+      "coverage": "Separat DB/Blob, authguard, exakt klippgeometri, stale CAS-avslag, uploadrollback och disponibla ffprobe-fixtures.",
+      "liveOptIn": false
+    },
+    {
+      "id": "studio-postgres-integration",
+      "files": [
+        "test/studio-postgres-integration.mjs"
+      ],
+      "coverage": "Verklig isolerad PostgreSQL för Studio CAS, migrationer och taljournaler.",
+      "liveOptIn": "Skip utan explicit CROUPIER_POSTGRES_QA_CONFIG."
+    },
+    {
+      "id": "environment-name-registry",
+      "files": [
+        "test/check-environment-variables.mjs"
+      ],
+      "coverage": "Names-only-parser, obligatoriska/olistade namn, dubbletter och serviceuppdelning.",
+      "liveOptIn": false
+    }
+  ],
+  "caveats": [
+    "Detta är första katalogsteget med representativa fält, inte en fullständig kolumndatadictionary eller live-schemaattestering.",
+    "Installerat live-schema, grants, riktiga rader, faktiska miljövärden och providerresurser är inte avlästa här.",
+    "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
+    "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
+    "Aktuella repoavsnitt beskriver genomförd produktionsmigration/diskavveckling; historiska avsnitt beskriver äldre mellanlägen. Aktuellt lagringsunderlag: CLOUD-MIGRATION.md:1217–1272 och ENVIRONMENT-VARIABLES.md:18–33.",
+    "ENVIRONMENT-VARIABLES.md:314 säger fortfarande att videos/index.json ligger på beständig Render-disk. Det står i konflikt med nyare diskfri produktionsbeskrivning och ska inte presenteras som ett bekräftat aktivt produktberoende.",
+    "Full extern Director-/Gateway-backup är dokumenterat ett separat kvarvarande ansvar.",
+    "Versionschecksum, mediahash och testpass bevisar inte visuell lipsyncacceptans.",
+    "Gamla Lissabon/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift.",
+    "Befintliga testfiler är inventerade, inte körda som del av denna kataloguppgift."
+  ]
+}

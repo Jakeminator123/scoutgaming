@@ -21,7 +21,7 @@ start och gröna tester bevisade inte de tre flöden som nu visar fel.
 | --- | --- | --- | --- |
 | 1 | [Sluträttningar](01-slutratningar/PLAN.md) | Rätta GPU-shutdown, zonbild/export och OpenClaw-navigering | Fel verifierade; rättningar öppna |
 | 2 | [Produktionsacceptans](07-produktionsacceptans/PLAN.md) | Kort autentiserat prov och verifierat GPU-avslut på rätt leverans | Planerad efter rättning |
-| 3 | [Systemkarta](02-systemkarta/PLAN.md) | Vanlig HTML-sida med adresser, lagring, databaser och spelflöden | Krav och källor samlade |
+| 3 | [Systemkarta](02-systemkarta/PLAN.md) | Vanlig HTML-sida med adresser, lagring, databaser och spelflöden | Första HTML-kartan i docs/system-map, 49 tabeller och käll-/testlänkar; full detalj-/driftinventering återstår |
 | 3 | [Konton och nycklar](03-konton-och-nycklar/PLAN.md) | Förstå roller, inloggning och varje nyckels rätta placering | Utgår från befintliga register |
 | 4 | [Tester och granskning](04-tester-och-granskning/PLAN.md) | Koppla kartans delar till befintliga tester och begränsad oberoende granskning | Planerad stegvis |
 | Parallellt | [Historik och arkiv](05-historik-och-arkiv/PLAN.md) | Sammanfatta arbetets faser och besluta om loggars bevarande | Startpunkter verifierade i Git |
@@ -30,7 +30,8 @@ start och gröna tester bevisade inte de tre flöden som nu visar fel.
 
 ”Parallellt” betyder att läsning och dokumentation kan göras oberoende. Det
 innebär inte att nya agenter, tjänster eller providerjobb ska startas automatiskt.
-Jakob har arkiverat de tidigare hjälpagenterna.
+Jakob har arkiverat de tidigare hjälpagenterna. Han beställde därefter uttryckligen
+tre läsande kartläggningsagenter för den första systemkartan; deras underlag är integrerat.
 
 ## Bedömning av förslagen
 
