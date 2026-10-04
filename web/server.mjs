@@ -57,7 +57,7 @@ const storage = postgres ? createPostgresStore({ connectionString: process.env.C
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
-const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml } = neonStudioEnabled
+const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = neonStudioEnabled
   ? await import('./public/game-entry-contract.mjs') : {};
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy, createRegisteredDealerIdle } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
@@ -678,6 +678,10 @@ const server = createServer(async (req, res) => {
   const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
   if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   let authenticated=(await playerSession(req))?.playerId ?? null;
+  if (neonStudioEnabled && ['/blackjack','/blackjack/'].includes(pathname) && !authenticated && ['GET','HEAD'].includes(req.method)) {
+    res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+    res.end(); return;
+  }
   const guest=guestPreview && !authenticated && !backoffice && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
@@ -1080,7 +1084,15 @@ const server = createServer(async (req, res) => {
   const size = statSync(file).size;
   const type = MIME[extname(file)] ?? 'application/octet-stream';
   if (neonStudioEnabled && type === 'text/html') {
-    const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env);
+    let selection;
+    if (['/blackjack','/blackjack/'].includes(pathname)) {
+      try {
+        const { gameLaneSelection } = await import('./public/game-lanes.mjs');
+        const policy = await studioPolicyRuntime.policy.readGameConfiguration();
+        selection = gameLaneSelection(url.searchParams,policy.gameLane);
+      } catch { res.writeHead(503,{'Cache-Control':'no-store'});res.end('Game entry unavailable');return; }
+    }
+    const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }

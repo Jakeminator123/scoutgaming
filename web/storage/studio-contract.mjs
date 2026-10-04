@@ -12,7 +12,7 @@ const safeCode = /^(?:studio_|generated_speech_|operator_speech_|invalid_generat
 const id = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const sha = /^[a-f0-9]{64}$/;
-const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview']);
+const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview', 'gameLane']);
 
 // Public failures contain a fixed code only, never a database/provider message.
 export class StudioStorageError extends Error {
@@ -104,6 +104,7 @@ export function validateDocumentValue(kind, value, revision, { allowLegacyRead =
     if (kind === 'project') return validateProject({ ...copy, revision }, { allowIncompatibleAnimations: allowLegacyRead });
     if (kind === 'social-policy') return validateSocialPolicy({ ...copy, revision });
     if (Object.keys(copy).some(key => !adminKeys.has(key))) throw new Error('unsupported administration field');
+    if (Object.hasOwn(copy, 'gameLane') && !['original', 'mobile-phone'].includes(copy.gameLane)) throw new Error('unsupported game lane');
     return copy;
   } catch { throw new StudioStorageError('studio_invalid_document', 422); }
 }

@@ -3,6 +3,7 @@ import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
 import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
+import { isGameLane } from '../../web/public/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
@@ -47,6 +48,10 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     });
   }
   register('GET', 'config', async () => { const saved = await config(); return { ...saved.value, revision: saved.revision }; });
+  change('game-lane', ['lane'], (value, body) => {
+    if (!isGameLane(body.lane)) fail();
+    value.gameLane = body.lane;
+  });
   register('GET', 'voicelines', async () => {
     const [saved, registry] = await Promise.all([config(), voiceLines()]);
     return { ...registry, revision: saved.revision, dealers: registry.dealers.map(dealer => ({ ...dealer,

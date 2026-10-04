@@ -10,9 +10,9 @@ import {
 test('administrator is the only Studio role and owns every existing section/action', () => {
   assert.deepEqual(STUDIO_ROLES, ['admin']);
   assert.deepEqual(STUDIO_ADMIN_SECTIONS.map(section => section.id), BACKOFFICE_SECTIONS.map(section => section.id));
-  assert.equal(STUDIO_ADMIN_SECTIONS.length, 14);
-  assert.equal(STUDIO_ADMIN_ACTIONS.length, 34);
-  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 34);
+  assert.equal(STUDIO_ADMIN_SECTIONS.length, 15);
+  assert.equal(STUDIO_ADMIN_ACTIONS.length, 35);
+  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 35);
   for (const role of ['admin','superadmin']) {
     assert.equal(normalizeStudioRole(role), 'admin');
     assert.equal(isStudioRole(role), true);

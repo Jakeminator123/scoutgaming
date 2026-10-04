@@ -146,6 +146,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const saved = await readSaved();
       // Review verdicts and other administration-only metadata stay private.
       return freeze({ tiers: saved.administration.tiers, rooms: saved.administration.rooms,
+        gameLane: saved.administration.gameLane ?? 'original',
         pitboss: saved.administration.pitboss, tournaments: saved.administration.tournaments,
         revision: saved.revision, projectRevision: saved.projectRevision,
         administrationRevision: saved.administrationRevision, configurationSource: saved.configurationSource });

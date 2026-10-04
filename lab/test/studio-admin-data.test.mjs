@@ -31,6 +31,19 @@ test('configuration reads are saved revision only; missing data never seeds', as
   assert.deepEqual(f.state.writes, []);
 });
 
+test('active lane requires admin and a current revision; it preserves the other administration data',async () => {
+  const f=fixture(),body={lane:'mobile-phone',expectedRevision:'studio-original'};
+  const handler=f.data.handlers.get('POST /studio/api/admin/game-lane');
+  await assert.rejects(handler({...f.context(body),actor:{user:'player',role:'player'}}),error=>error.statusCode===403);
+  await assert.rejects(f.call('POST','game-lane',{...body,lane:'unknown'}));
+  assert.equal(f.state.writes.length,0);
+  const before=structuredClone(f.state.document.value);
+  assert.deepEqual(await f.call('POST','game-lane',body),{ok:true,revision:'studio-new'});
+  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone'});
+  await assert.rejects(f.call('POST','game-lane',{...body,lane:'original'}),error=>error.statusCode===409);
+  assert.equal(f.state.document.value.gameLane,'mobile-phone');
+});
+
 test('voice readouts preserve four dealers but only bind human reviews to the exact complete media/text/index/calibration identity', async () => {
   const f = fixture();
   f.state.document.value.voiceReview = { astrid: { goodluck: 'approved' } };

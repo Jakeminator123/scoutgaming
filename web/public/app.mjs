@@ -12,6 +12,7 @@ import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
+import { gameLaneSelection } from './game-lanes.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { handValue } from './blackjack.mjs';
@@ -56,8 +57,10 @@ const DEALERS = {
             scene: 'dealers/mei/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/mei/table.png' },
 };
-const DEALER = DEALERS[new URLSearchParams(location.search).get('dealer')] ?? DEALERS.vera;
-const localPresentationEnabled = DEALER.key === 'astrid' && new URLSearchParams(location.search).get('presentation') === 'local';
+const entrySelection = gameLaneSelection(location.search, document.documentElement.dataset.gameLane ?? 'original');
+const DEALER = DEALERS[entrySelection.dealer];
+const localPresentationEnabled = DEALER.key === 'astrid' && entrySelection.presentation === 'local';
+if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;
 if (localPresentationEnabled) {

@@ -11,6 +11,7 @@ export const normalizeStudioRole = value => isAdministratorRole(value) ? 'admin'
 
 export const STUDIO_ADMIN_SECTIONS = Object.freeze([
   ['ops', 'Driftöversikt', 'admin'],
+  ['lanes', 'Spel och lanes', 'admin'],
   ['voice', 'Tal och synkgranskning', 'admin'],
   ['clips', 'Klipp och granskning', 'admin'],
   ['gens', 'Genererat material', 'admin'],
@@ -33,7 +34,7 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys', 'admin'], ['users', 'admin'], ['players', 'admin'],
   ['transactions', 'admin'], ['emails', 'admin'], ['shoes', 'admin'],
   ['voiceline-review', 'admin'], ['tournament', 'admin'],
-  ['pitboss', 'admin'], ['tier', 'admin'], ['room', 'admin'],
+  ['pitboss', 'admin'], ['tier', 'admin'], ['room', 'admin'], ['game-lane', 'admin'],
   ['clip-landing', 'admin'], ['clip-never', 'admin'],
   ['gen-landing', 'admin'], ['gen-verdict', 'admin'],
   ['players/create', 'admin', ['player-lifecycle-and-ledger']],
