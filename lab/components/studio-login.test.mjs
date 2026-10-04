@@ -53,6 +53,18 @@ test('login sends one event only, clears password DOM immediately and navigates 
   assert.doesNotMatch(renderToStaticMarkup(tree),/PRIVATE-PASSWORD|SERVER_SECRET/);h.unmount();
 });
 
+test('a standalone client never forwards its host-only cookie to another handoff host',async()=>{
+  for(const kind of ['game','lab']){
+    const h=harness(),state='a'.repeat(64),returnTo=`/api/bo/${kind}-login?state=${state}`;
+    const props={authBase:'/api/auth',gameOrigin:'https://game.fixture.invalid',returnTo,fetchImpl:async()=>Response.json({ok:true})};
+    let tree=h.render(props);h.effects();tree=h.render(props);
+    forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'private-pass'})});
+    await flush();
+    assert.deepEqual(h.destinations,['/']);
+    h.unmount();
+  }
+});
+
 test('password token is removed from URL, stays outside DOM/state and survives strict effect replay',async()=>{
   const h=harness(),token='b'.repeat(43),writes=[];
   const props={authBase:'/studio/api/auth',mode:'set-password',token,fetchImpl:async(url,init)=>{writes.push({url,body:JSON.parse(init.body)});return Response.json({ok:true});}};
@@ -104,7 +116,7 @@ test('password reset success offers canonical game and admin login paths without
     let tree=h.render(props);h.effects();tree=h.render(props);
     forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({pass:'new-private-pass',confirm:'new-private-pass'})});
     await flush();tree=h.render(props);
-    assert.deepEqual(nodes(tree,node=>node.type==='a').map(node=>node.props.href),[gameOrigin?`${gameOrigin}/player-login`:'/player-login',authBase==='/studio/api/auth'?'/studio/login':'/login']);
+    assert.deepEqual(nodes(tree,node=>node.type==='a').map(node=>node.props.href),[gameOrigin?`${gameOrigin}/player-login`:'/player-login',gameOrigin ? gameOrigin + '/studio/login' : authBase==='/studio/api/auth'?'/studio/login':'/login']);
     assert.match(renderToStaticMarkup(tree),/Logga in i spelet/);assert.match(renderToStaticMarkup(tree),/Administratör/);
     assert.doesNotMatch(renderToStaticMarkup(tree),/untrusted|new-private-pass|bbbbbbbb/);
     assert.deepEqual(h.destinations,[]);assert.equal(forms(tree).length,0);h.unmount();
@@ -120,11 +132,32 @@ test('native password page binds the player entrance to configured game origin a
       '@/components/studio-login':{StudioLogin:()=>null},
       '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
       '@/lib/studio-login-client.mjs':loginClient,
-      'next/navigation':{notFound(){assert.fail('native page is enabled');}},
+      'next/headers':{headers:async()=>new Headers({host:'game.fixture.invalid'})},
+      '@/lib/next-page-navigation.mjs':{nextStudioAuthEntryRedirect:()=>null},
+      'next/navigation':{notFound(){assert.fail('native page is enabled');},redirect(){assert.fail('public form must not redirect');}},
     };
-    vm.runInNewContext(pageCode,{module:page,exports:page.exports,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)});
+    vm.runInNewContext(pageCode,{module:page,exports:page.exports,Request,Headers,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)});
     const tree=await page.exports.default({searchParams:Promise.resolve({t:'b'.repeat(43),gameOrigin:'https://untrusted.example.test',returnTo:'//untrusted.example.test'})});
     assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);
     assert.equal(tree.props.token,'b'.repeat(43));assert.equal(tree.props.returnTo,undefined);
+  }
+});
+
+test('native login page binds handoff completion to configured game origin',async()=>{
+  const pageSource=readFileSync(new URL('../app/login/page.tsx',import.meta.url),'utf8');
+  const pageCode=transformSync(pageSource,{filename:'page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
+  for(const authBase of ['/studio/api/auth','/api/auth']){
+    const gameOrigin='https://game.fixture.invalid',page={exports:{}},returnTo=`/api/bo/game-login?state=${'a'.repeat(64)}`;
+    const overrides={
+      '@/components/studio-login':{StudioLogin:()=>null},
+      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
+      '@/lib/studio-login-client.mjs':loginClient,
+      'next/headers':{headers:async()=>new Headers({host:'game.fixture.invalid'})},
+      '@/lib/next-page-navigation.mjs':{nextStudioAuthEntryRedirect:()=>null},
+      'next/navigation':{notFound(){assert.fail('native page is enabled');},redirect(){assert.fail('public form must not redirect');}},
+    };
+    vm.runInNewContext(pageCode,{module:page,exports:page.exports,Request,Headers,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name),process:{env:{}}});
+    const tree=await page.exports.default({searchParams:Promise.resolve({returnTo})});
+    assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);assert.equal(tree.props.returnTo,returnTo);
   }
 });

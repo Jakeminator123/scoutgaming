@@ -1,4 +1,5 @@
-export function studioLoginReturnTo(value:unknown):'/studio'|'/studio/administration';
+export type StudioLoginReturnTo = '/studio'|'/studio/administration'|`/api/bo/game-login?state=${string}`|`/api/bo/lab-login?state=${string}`;
+export function studioLoginReturnTo(value:unknown):StudioLoginReturnTo;
 export function studioLoginDestination(value:unknown,authBase?:'/studio/api/auth'|'/api/auth'):string;
 export function studioPasswordToken(value:unknown):string|null;
 export class StudioLoginUiError extends Error { status:number; constructor(status?:number); }

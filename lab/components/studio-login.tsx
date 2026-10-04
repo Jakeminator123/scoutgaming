@@ -8,7 +8,7 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
   const client = useMemo(() => createStudioLoginClient({authBase,fetchImpl}),[authBase,fetchImpl]);
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [notice,setNotice] = useState(''), [complete,setComplete] = useState(false);
   const writing = useRef(false), alive = useRef(false), passwordToken = useRef(studioPasswordToken(token));
-  const loginPath = authBase === '/studio/api/auth' ? '/studio/login' : '/login';
+  const loginPath = gameOrigin ? new URL('/studio/login',gameOrigin).href : authBase === '/studio/api/auth' ? '/studio/login' : '/login';
   // Native auth is enabled with the canonical game policy. The game may have
   // a different public origin from standalone Studio, especially in QA.
   const gameLoginPath = gameOrigin ? new URL('/player-login',gameOrigin).href : '/player-login';

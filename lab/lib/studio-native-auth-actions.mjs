@@ -5,6 +5,7 @@ import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { isStudioRole } from './studio-access-policy.mjs';
 import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
 import { effectiveAccountRole } from '../../web/account-role.mjs';
+import { studioLoginReturnTo } from './studio-login-client.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_auth_request_rejected'), { statusCode }); };
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -143,7 +144,7 @@ export function createStudioNativeAuthActions({ boDb,gameDb,scope,authorize,mail
       if (action === 'login') {
         keys(body,['user','pass','returnTo'],['user','pass']);
         if (!text(body.user,254) || !body.user.trim() || !text(body.pass,256)
-          || body.returnTo !== undefined && !['/studio','/studio/administration'].includes(body.returnTo)) fail();
+          || body.returnTo !== undefined && studioLoginReturnTo(body.returnTo) !== body.returnTo) fail();
         const login = body.user.trim().toLowerCase();
         if (!credentials) fail(503);
         await limit(request,await credentials.keyFor(login),action);

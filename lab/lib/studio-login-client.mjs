@@ -1,8 +1,14 @@
 const returns = new Set(['/studio','/studio/administration']);
-export function studioLoginReturnTo(value) { return typeof value === 'string' && returns.has(value) ? value : '/studio'; }
+const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
+export function studioLoginReturnTo(value) {
+  return typeof value === 'string' && (returns.has(value) || handoff.test(value)) ? value : '/studio';
+}
 export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   const target = studioLoginReturnTo(value);
-  return authBase === '/api/auth' ? target.slice('/studio'.length) || '/' : target;
+  if (authBase !== '/api/auth') return target;
+  if (returns.has(target)) return target.slice('/studio'.length) || '/';
+  // Host-only authentication must not be forwarded to a different origin.
+  return '/';
 }
 export function studioPasswordToken(value) { return typeof value === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(value) ? value : null; }
 export class StudioLoginUiError extends Error {

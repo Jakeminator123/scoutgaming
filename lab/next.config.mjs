@@ -8,6 +8,15 @@ export default {
   distDir: process.env.CROUPIER_LAB_DIST_DIR || '.next',
   typescript: { tsconfigPath: process.env.CROUPIER_LAB_TSCONFIG || 'tsconfig.json' },
   poweredByHeader: false,
+  async redirects() {
+    if (process.env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1') return [];
+    const mounted = process.env.CROUPIER_LAB_BASE_PATH === '/studio';
+    return ['login', 'set-password'].map(mode => ({
+      source: (mounted ? '/' : '/studio/') + mode,
+      destination: (mounted ? '/studio/' : '/') + mode,
+      permanent: false, basePath: false,
+    }));
+  },
   reactStrictMode: true,
   outputFileTracingRoot: resolve(root, '..'),
   // Production obtains credentials/state from scoped env and Neon. Private
