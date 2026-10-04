@@ -12,6 +12,7 @@
         "web/operator-speech-qa.mjs",
         "web/native-p6-qa-hook.mjs",
         "web/native-ai-qa-runtime.mjs",
+        "web/native-ai-qa-private.mjs",
         "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"

@@ -127,7 +127,8 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(sessionReserveUsd)
     || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) fail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
   const dailyBudgetUsd = env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD || '';
-  const fullfileBudgetRequired = generatedSpeech && !streaming && env.CROUPIER_STUDIO_NEON_POLICY === '1';
+  const boundedQaFullfile = Boolean(nativeP6QaRouter && env.CROUPIER_P6_BOUNDED_TEST === '1');
+  const fullfileBudgetRequired = generatedSpeech && (!streaming || boundedQaFullfile) && env.CROUPIER_STUDIO_NEON_POLICY === '1';
   const fullfileReserveUsd = env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD || '';
   if (fullfileBudgetRequired && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(fullfileReserveUsd)
     || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) fail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');

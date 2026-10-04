@@ -5,6 +5,7 @@ import {join,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {AI_QA_ORIGINAL,AI_QA_LIMITS,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
+import {buildAiQaPrivateSnapshot} from '../web/native-ai-qa-private.mjs';
 import {AI_QA_SOURCE_PATHS} from '../web/native-ai-qa-runtime.mjs';
 import {NATIVE_P6_QA} from '../ops/cloud/config.mjs';
 const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
@@ -23,7 +24,8 @@ export async function buildAiQaManifest({expectedSha,deploymentId,runId,ownLinke
   const sdk=await worker.readNativeP6SdkWorkerStagedSdk({runId:'cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2'});
   need(sdk.sdk.treeSha256==='ebbb70cbf3b784adcee13323880215dc360ac0e1c5d78891f9813368e6c3da0a'&&sdk.sdk.files===2962,'ai_qa_original_sdk_tree_changed');
   const pkg=await small(sdkRoot+'/package.json');need(JSON.parse(pkg).version==='7.12.1','ai_qa_installed_sdk_version');
-  return{purpose:'bounded-native-ai-qa-activation-v1',runId,campaignId:AI_QA_ORIGINAL.campaignId,expectedSha,deploymentId,
+  const snapshot=await buildAiQaPrivateSnapshot({directory:join(repo,'lab/data/platform-private'),pins:privateSources});
+  return{privateSnapshotSha256:sha256(snapshot),purpose:'bounded-native-ai-qa-activation-v1',runId,campaignId:AI_QA_ORIGINAL.campaignId,expectedSha,deploymentId,
     ownLinkedPlayerSha256,workerSourceContext,createdAtMs:now,expiresAtMs:now+AI_QA_LIMITS.lifetimeMs,limits:AI_QA_LIMITS,sources,privateSources,
     privateWorkerSha256:privateSources['native-p6-sdk-worker.mjs'],sdkVersion:'7.12.1',sdkRoot,sdkPackageSha256:sha256(pkg),
     sdkClientSha256:sha256(await small(sdkRoot+'/client.js')),sdkTreeSha256:sdk.sdk.treeSha256,sdkFiles:sdk.sdk.files,originalAnchorSha256:AI_QA_ORIGINAL.anchorSha256,
@@ -80,12 +82,17 @@ export async function installBoundedAiQa(input){
   const manifest=await buildAiQaManifest({...input,ownLinkedPlayerSha256:sha256(input.playerId)}),raw=JSON.stringify(manifest),pin=sha256(raw);
   const stateRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/'+manifest.runId;
   await mkdir(stateRoot,{mode:0o700});
+  const snapshot=await buildAiQaPrivateSnapshot({directory:join(repo,'lab/data/platform-private'),pins:manifest.privateSources});
+  need(sha256(snapshot)===manifest.privateSnapshotSha256,'ai_qa_install_private_snapshot_changed');
+  const snapshotFile=await open(stateRoot+'/bounded-private-snapshot.json','wx',0o600);
+  try{await snapshotFile.writeFile(snapshot);await snapshotFile.sync();}finally{await snapshotFile.close();}
   await newFile(stateRoot+'/bounded-manifest.json',manifest);
   for(const name of ['worker','router','entry','authority'])await newFile(stateRoot+'/'+name+'-context.json',{
     purpose:'bounded-native-ai-qa-'+name+'-context-v1',expectedSha:manifest.expectedSha,manifestRawSha256:pin,
     sources:manifest.sources,privateSources:manifest.privateSources,sdkPackageSha256:manifest.sdkPackageSha256,
     sdkClientSha256:manifest.sdkClientSha256,originalAnchorSha256:manifest.originalAnchorSha256,
     campaignId:manifest.campaignId,expiresAtMs:manifest.expiresAtMs,actualCostUsd:null});
+  const stagedDirectory=await open(stateRoot,'r');try{await stagedDirectory.sync();}finally{await stagedDirectory.close();}
   const budget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
     anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest,manifestRawSha256:pin,
     authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
