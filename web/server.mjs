@@ -1441,7 +1441,7 @@ const server = createServer(async (req, res) => {
             const model = probeConfig?.policy.model ?? 'gateway-default';
             const ownedFetch = nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
               playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
-              readStatus, signal: controller.signal, model });
+              readStatus, signal: controller.signal, model, streamRequested: incoming.acceptsSpeechStream === true });
             return openClawChat(value, state, { model, fetchImpl: ownedFetch ?? ((url, options = {}) => fetch(url, {
               ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
             })) });

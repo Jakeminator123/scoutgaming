@@ -20,7 +20,7 @@ async function fixture(t){
   const anchorPath=join(directory,'..',directory.split(/[\\/]/).at(-1)+'-anchor');
   await writeFile(anchorPath,anchor);t.after(()=>rm(anchorPath,{force:true}));
   let time=100;
-  const manifest={campaignId:original.campaignId,runId:'test-run',expiresAtMs:10000,limits:AI_QA_LIMITS,ownLinkedPlayerSha256:sha256('player')};
+  const manifest={campaignId:original.campaignId,runId:'11111111-1111-4111-8111-111111111111',expectedSha:'a'.repeat(40),createdAtMs:100,expiresAtMs:10000,limits:AI_QA_LIMITS,ownLinkedPlayerSha256:sha256('player'),sources:{'web/native-ai-qa-budget.mjs':authoritySourceSha256}};
   const options={directory,anchorPath,manifest,manifestRawSha256:'2'.repeat(64),authoritySourceSha256,original,now:()=>time};
   const budget=await createAiQaBudget(options);await budget.activate();
   return{budget,options,legacy,manifest,setTime:n=>{time=n;}};
@@ -178,4 +178,203 @@ test('fresh cloud image prepares only private bootstrap parents for UID1000 befo
   assert.ok(!docker.includes('chown -R node:node /app/lab/data'));
   const {AI_QA_SOURCE_PATHS}=await import('../web/native-ai-qa-runtime.mjs');assert.ok(AI_QA_SOURCE_PATHS.includes('ops/cloud/Dockerfile'));
   const bootstrap=await readFile(new URL('../web/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
+});
+
+async function continuationFixture(t,{install=true}={}){
+  const f=await fixture(t);
+  for(const[resource,id]of[['sdk','director-old'],['generation','generation-old'],['sdk','speech-old'],['tts','tts-old'],['gpu','lipsync']]){
+    const key=await f.budget.dispatch(resource,id);await f.budget.outcome(key,'response-observed');
+  }
+  const before=await f.budget.inspect();assert.equal(before.records.length,13);
+  const c={predecessorRecordCount:13,predecessorJournalSha256:before.previousSha256,previousManifestSha256:f.options.manifestRawSha256,
+    previousAuthoritySourceSha256:f.options.authoritySourceSha256,previousRunId:f.manifest.runId,previousExpectedSha:f.manifest.expectedSha,
+    rootReviewedIntentSha256:'3'.repeat(64),preflightSha256:'4'.repeat(64),streamRequestIdSha256:sha256('stream-one')};
+  const manifest={...f.manifest,runId:'22222222-2222-4222-8222-222222222222',expectedSha:'b'.repeat(40),createdAtMs:10000,expiresAtMs:20000,continuation:c};
+  f.setTime(10000);const options={...f.options,manifest,manifestRawSha256:'5'.repeat(64),authoritySourceSha256:'6'.repeat(64)};
+  const budget=await createAiQaBudget(options),approve={approvedIntentSha256:c.rootReviewedIntentSha256,preflightSha256:c.preflightSha256};
+  if(install)await budget.continueOnce(approve);
+  return{...f,before,continuationBudget:budget,continuationManifest:manifest,continuationOptions:options,approve};
+}
+
+test('one explicit continuation keeps thirteen historical bytes and cumulative accounting through restart',async t=>{
+  const f=await continuationFixture(t,{install:false});
+  const bytes=await Promise.all(f.before.records.map(r=>readFile(join(f.options.directory,String(r.sequence).padStart(6,'0')+'.json'))));
+  await assert.rejects(()=>f.continuationBudget.inspect(),/ai_qa_existing_run_changed/);
+  assert.equal((await f.budget.inspect()).records.length,13,'construction cannot extend the timer');
+  const next=await f.continuationBudget.continueOnce(f.approve);
+  assert.deepEqual(next.counts,{generation:1,sdk:2,tts:1,gpu:1});assert.equal(next.exception.expiresAtMs,10000);
+  assert.equal(next.activeWindow.expiresAtMs,20000);assert.equal(next.exception.authoritySourceSha256,f.options.authoritySourceSha256);
+  assert.equal(next.continuation.authoritySourceSha256,f.continuationOptions.authoritySourceSha256);
+  for(let i=0;i<13;i++)assert.deepEqual(await readFile(join(f.options.directory,String(i).padStart(6,'0')+'.json')),bytes[i]);
+  const restarted=await createAiQaBudget(f.continuationOptions);
+  await assert.rejects(()=>restarted.continueOnce(f.approve),/ai_qa_continuation_cas_changed/);
+  await assert.rejects(()=>restarted.activate(),/ai_qa_manifest_expired/);
+  await assert.rejects(()=>restarted.dispatch('sdk','speech-old'),/ai_qa_retry_or_expired/,'old operation dedupe survives a new manifest');
+  for(const[resource,id]of[['generation','stream-one'],['sdk','stream-sdk'],['tts','stream-tts'],['gpu','session']]){
+    const key=await restarted.dispatch(resource,id);await restarted.outcome(key,'response-observed');
+  }
+  const after=await restarted.inspect();assert.deepEqual(after.counts,{generation:2,sdk:3,tts:2,gpu:2});
+  assert.equal(after.totalEncumberedMicroUsd,10000000);assert.equal(after.retainedMicroUsd,5251152);
+  assert.equal(after.unencumberedMicroUsd,0);assert.equal(after.refundMicroUsd,0);assert.equal(after.actualCostUsd,null);
+  await assert.rejects(()=>restarted.dispatch('generation','third'),/ai_qa_dispatch_limit/);
+  f.setTime(20000);await assert.rejects(()=>restarted.dispatch('sdk','late'),/ai_qa_active_exception_required/);
+});
+
+test('manual continuation rejects an active old window, wrong review/predecessor/authority and a longer window',async t=>{
+  for(const name of ['active','review','head','authority','long','expired'])await t.test(name,async t=>{
+    const f=await continuationFixture(t,{install:false});
+    if(name==='active')f.setTime(9999);
+    if(name==='review')f.approve.approvedIntentSha256='f'.repeat(64);
+    if(name==='head')f.continuationManifest.continuation.predecessorJournalSha256='f'.repeat(64);
+    if(name==='authority')f.continuationManifest.continuation.previousAuthoritySourceSha256='f'.repeat(64);
+    if(name==='long')f.continuationManifest.expiresAtMs=10000+AI_QA_LIMITS.lifetimeMs+1;
+    if(name==='expired')f.setTime(20000);
+    await assert.rejects(()=>f.continuationBudget.continueOnce(f.approve),/ai_qa_/);
+    assert.equal((await f.budget.inspect()).records.length,13);
+  });
+});
+
+test('closed, unresolved and uncertain original runs cannot be continued or refunded',async t=>{
+  for(const reason of ['closed','pending','uncertain'])await t.test(reason,async t=>{
+    const f=await continuationFixture(t,{install:false});f.setTime(9999);
+    if(reason==='closed')await f.budget.close();
+    else{const key=await f.budget.dispatch('sdk','unobserved');if(reason==='uncertain')await f.budget.outcome(key,'uncertain');}
+    f.setTime(10000);const current=await f.budget.inspect();
+    Object.assign(f.continuationManifest.continuation,{predecessorJournalSha256:current.previousSha256,predecessorRecordCount:current.records.length});
+    await assert.rejects(()=>f.continuationBudget.continueOnce(f.approve),/ai_qa_continuation_not_drained/);
+    assert.equal((await f.budget.inspect()).refundMicroUsd,0);
+  });
+});
+
+test('a lost append acknowledgement retains its lock and fences restart without replaying or removing history',async t=>{
+  const f=await continuationFixture(t,{install:false}),{open,lstat}=await import('node:fs/promises');
+  const budget=await createAiQaBudget({...f.continuationOptions,appendOpen:async(...args)=>{
+    const file=await open(...args);return{writeFile:bytes=>file.writeFile(bytes),close:()=>file.close(),sync:async()=>{throw Error('synthetic lost fsync acknowledgement');}};
+  }});
+  await assert.rejects(()=>budget.continueOnce(f.approve),/synthetic lost fsync/);
+  assert.equal((await lstat(join(f.options.directory,'write.lock'))).isDirectory(),true);
+  const restarted=await createAiQaBudget(f.continuationOptions);
+  await assert.rejects(()=>restarted.inspect(),/ai_qa_budget_locked/);
+  for(const record of f.before.records)assert.equal(sha256(await readFile(join(f.options.directory,String(record.sequence).padStart(6,'0')+'.json'))),record.rawSha256);
+});
+
+test('continuation rejects Director, default/false stream and wrong request before any append or paid call',async t=>{
+  const f=await continuationFixture(t);let paid=0;
+  const router=createBoundedAiQaRouter({manifest:f.continuationManifest,budget:f.continuationBudget,worker:{},client:{},endpointId:'endpoint',now:()=>10000,fetchImpl:()=>{paid++;}});
+  const args={playerId:'player',owner:'owner',readOwner:async()=> 'owner',readEnvelope:async()=>({status:{dealerId:'astrid'},request:{requestId:'stream-one'}})};
+  const before=await f.continuationBudget.inspect();
+  for(const flag of [undefined,false,'true'])await assert.rejects(()=>router.fetchForOwnedRequest({...args,streamRequested:flag})(''),/ai_qa_continuation_stream_required/);
+  await assert.rejects(()=>router.fetchForOwnedRequest({...args,streamRequested:true,readEnvelope:async()=>({request:{requestId:'wrong'}})})(''),/ai_qa_continuation_request_required/);
+  await assert.rejects(()=>router.fetchForOwnedDirectorRequest({})(''),/ai_qa_continuation_director_denied/);
+  await assert.rejects(()=>router.providerFetch('https://api.runpod.ai/v2/endpoint/run',{method:'POST',body:JSON.stringify({input:{op:'lipsync'}})}),/ai_qa_gpu_op_denied/);
+  assert.equal(paid,0);assert.equal((await f.continuationBudget.inspect()).previousSha256,before.previousSha256);
+  const {nativeP6OwnedSpeechFetch}=await import('../web/native-p6-qa-hook.mjs');let captured;
+  const capture={fetchForOwnedRequest:args=>{captured=args;return 'trusted-transport';}};
+  const hookArgs={readStatus:()=>{},readOwner:()=>{}};
+  nativeP6OwnedSpeechFetch(capture,hookArgs);assert.equal(captured.streamRequested,false);
+  nativeP6OwnedSpeechFetch(capture,{...hookArgs,streamRequested:true});assert.equal(captured.streamRequested,true);
+  nativeP6OwnedSpeechFetch(capture,{...hookArgs,streamRequested:'true'});assert.equal(captured.streamRequested,false);
+});
+
+test('continuation admits precisely one normal stream SDK/TTS/session sequence and permits known cancel reads after expiry',async t=>{
+  const f=await continuationFixture(t);let sdk=0,tts=0,gpu=0,cancel=0,clock=10000;
+  const worker={runNativeP6ProductSpeech:async({responsesCreate,ticket})=>{
+    assert.equal(ticket.stage,'stream-1');const r=await responsesCreate({logicalCallId:'stream-sdk',body:{model:'gpt-5.6-terra',stream:false,store:false,max_output_tokens:64}});
+    return{kind:'generatedText',text:r.output_text};}};
+  const router=createBoundedAiQaRouter({manifest:f.continuationManifest,budget:f.continuationBudget,worker,now:()=>clock,endpointId:'endpoint',
+    client:{responses:{create:async()=>{sdk++;return{status:'completed',output_text:'Remaining stream.',usage:{input_tokens:9,output_tokens:3}};}}},
+    fetchImpl:async(url)=>{if(url.includes('cartesia'))tts++;else if(url.includes('/cancel/'))cancel++;else gpu++;return Response.json({id:'known-job',status:'IN_QUEUE'});}});
+  const args={streamRequested:true,playerId:'player',owner:'owner',readOwner:async()=> 'owner',readEnvelope:async()=>({status:{dealerId:'astrid'},request:{requestId:'stream-one'}})};
+  const choice=await(await router.fetchForOwnedRequest(args)('')).json();
+  await router.providerFetch('https://api.cartesia.ai/tts/bytes',{method:'POST',body:JSON.stringify({transcript:choice.text})});
+  await router.providerFetch('https://api.runpod.ai/v2/endpoint/run',{method:'POST',body:JSON.stringify({input:{op:'session'}})});
+  await assert.rejects(()=>router.fetchForOwnedRequest(args)(''),/ai_qa_retry_or_expired/);
+  clock=20000;f.setTime(20000);await router.providerFetch('https://api.runpod.ai/v2/endpoint/cancel/known-job',{method:'POST'});
+  assert.deepEqual({sdk,tts,gpu,cancel},{sdk:1,tts:1,gpu:1,cancel:1});
+  assert.deepEqual((await f.continuationBudget.inspect()).counts,{generation:2,sdk:3,tts:2,gpu:2});
+});
+
+function continuationPolicyFixture(){
+  const calls=[],metadata={kind:'synthetic-package'},previousManifest={campaignId:AI_QA_ORIGINAL.campaignId,createdAtMs:100,expiresAtMs:10000,ownLinkedPlayerSha256:sha256('player')},pin='7'.repeat(64);
+  const fullfile={requestKey:'8'.repeat(64),packageId:'generated-'+'9'.repeat(32),packageMetadataSha256:sha256(JSON.stringify(metadata))};
+  const campaign={campaign_id:AI_QA_ORIGINAL.campaignId,workspace_id:'croupier',created_at_ms:'100',expires_at_ms:'10000',source_sha256:pin};
+  const tables={gpu_budget_policies:[{version:1,daily_budget_micro_usd:'4748848'}],fullfile_budget_policies:[{version:1,reserve_micro_usd:'1000000',reservation_window_ms:'720000'}],
+    operator_qa_campaigns:[campaign],operator_qa_gate:[structuredClone(campaign)],operator_qa_attempts:[],
+    speech_requests:[{request_key:fullfile.requestKey,capability:'fullfile',state:'completed',package_id:fullfile.packageId,package_metadata:metadata}],
+    gpu_sessions:[],gpu_reservations:[],fullfile_reservations:[{request_key:fullfile.requestKey,reserved_micro_usd:'1000000'}],
+    speech_execution_leases:[{resource:'operator-qa',expires_at_ms:'0',recovery_only:false}]};
+  const client={release(){},query:async(sql,values)=>{calls.push({sql,values});
+    if(sql.includes('current_database'))return{rows:[{database:'croupier_studio_qa_abc92154cb15',role:'croupier_studio_qa_abc92154cb15'}]};
+    if(sql.includes('FROM croupier_auth.users'))return{rows:[{id:'7',username:'existing-qa',role:'admin'}]};
+    if(sql.includes('FROM croupier_game.players'))return{rows:[{id:'player'}]};
+    if(sql.includes('AS now_ms'))return{rows:[{now_ms:'20000'}]};
+    const table=/SELECT \* FROM croupier_studio\.([a-z_]+)/.exec(sql)?.[1];if(table)return{rows:structuredClone(tables[table])};
+    return{command:sql==='COMMIT'?'COMMIT':undefined,rows:[]};}};
+  return{calls,tables,args:{pool:{connect:async()=>client},previousManifest,previousManifestRawSha256:pin,fullfile,operatorId:'7',username:'existing-qa',playerId:'player',now:()=>20000}};
+}
+
+test('continuation reads the expired original operator gate and retained policies without updating campaign or reservations',async()=>{
+  const {readAiQaContinuationPolicy}=await import('../tools/activate-native-ai-qa.mjs'),f=continuationPolicyFixture(),before=JSON.stringify(f.tables);
+  const result=await readAiQaContinuationPolicy(f.args);assert.equal(result.expiredOperatorGateRetained,true);assert.equal(result.sqlMutations,0);
+  assert.equal(JSON.stringify(f.tables),before);assert.ok(f.calls[0].sql.endsWith('READ ONLY'));
+  assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE|ALTER|CREATE)|FOR UPDATE|pg_advisory/.test(c.sql)),false);
+  assert.ok(f.calls.filter(c=>c.sql.includes('FROM croupier_studio.')).every(c=>c.values[0]==='qa_native_abc92154cb15'));
+  f.tables.operator_qa_gate[0].expires_at_ms='30000';await assert.rejects(()=>readAiQaContinuationPolicy(f.args),/ai_qa_continuation_original_campaign_changed/);
+});
+
+test('continuation refuses modified fullfile/policy/lease/session state without a data mutation',async t=>{
+  const {readAiQaContinuationPolicy}=await import('../tools/activate-native-ai-qa.mjs');
+  for(const change of ['file','budget','reservation','lease','session'])await t.test(change,async()=>{
+    const f=continuationPolicyFixture();
+    if(change==='file')f.tables.speech_requests[0].state='submission_uncertain';
+    if(change==='budget')f.tables.gpu_budget_policies[0].daily_budget_micro_usd='5000000';
+    if(change==='reservation')f.tables.fullfile_reservations[0].reserved_micro_usd='0';
+    if(change==='lease')f.tables.speech_execution_leases[0].recovery_only=true;
+    if(change==='session')f.tables.gpu_sessions.push({state:'active'});
+    const before=JSON.stringify(f.tables);await assert.rejects(()=>readAiQaContinuationPolicy(f.args),/ai_qa_continuation_/);
+    assert.equal(JSON.stringify(f.tables),before);assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE)/.test(c.sql)),false);
+  });
+});
+
+test('reviewed continuation intent binds exact predecessor, current release, one stream request and unchanged cap',async t=>{
+  const f=await continuationFixture(t,{install:false}),{validateAiQaContinuationIntent}=await import('../tools/activate-native-ai-qa.mjs');
+  const c=f.continuationManifest.continuation,base={purpose:'bounded-native-ai-qa-continuation-intent-v1',campaignId:AI_QA_ORIGINAL.campaignId,
+    expectedSha:f.continuationManifest.expectedSha,deploymentId:'dep-current',runId:f.continuationManifest.runId,
+    ...c,streamRequestId:'stream-one',limits:AI_QA_LIMITS,actualCostUsd:null,extraReserveMicroUsd:0,refundMicroUsd:0,
+    fullfile:{requestKey:'8'.repeat(64),packageId:'generated-'+'9'.repeat(32),packageMetadataSha256:'a'.repeat(64)}};
+  const args={previousManifest:f.manifest,previousManifestRawSha256:f.options.manifestRawSha256,state:f.before,
+    expectedSha:base.expectedSha,deploymentId:base.deploymentId,runId:base.runId};
+  const raw=JSON.stringify(base);assert.equal(validateAiQaContinuationIntent({...args,raw,approvedIntentSha256:sha256(raw)}).streamRequestId,'stream-one');
+  await assert.rejects(async()=>validateAiQaContinuationIntent({...args,raw:raw+' ',approvedIntentSha256:sha256(raw)}),/ai_qa_continuation_reviewed_intent_changed/);
+  for(const patch of [{expectedSha:'c'.repeat(40)},{previousAuthoritySourceSha256:'c'.repeat(64)},{extraReserveMicroUsd:1},{actualCostUsd:0},{limits:{...AI_QA_LIMITS,generations:3}}]){
+    const changed=JSON.stringify({...base,...patch});assert.throws(()=>validateAiQaContinuationIntent({...args,raw:changed,approvedIntentSha256:sha256(changed)}),/ai_qa_continuation_/);
+  }
+});
+
+test('normal stream factory reserves one Neon session with continuation transport and no operator-gate extension or fullfile job',async t=>{
+  const f=await continuationFixture(t),{createSpeechJournal}=await import('../web/postgres-speech-journal.mjs'),{speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs'),
+    {createGeneratedSpeechStreamService}=await import('../web/generated-speech-stream.mjs');
+  const directory=await mkdtemp(join(tmpdir(),'continuation-stream-factory-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  const pool=speechMemoryPool(),journal=await createSpeechJournal({pool,environmentId:'qa_native_abc92154cb15'});
+  await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:4748848,confirmation:'verified-new-empty-cost-journal'});
+  let available=0,jobPosts=0,cancels=0;const ops=[];
+  const relay={status:()=>({workers:available,busy:0,available}),workerStatus:id=>({workerId:id,workers:available,busy:0,available}),stopWorker(){available=0;},close(){available=0;}};
+  const worker={runNativeP6ProductSpeech:async({responsesCreate})=>{await responsesCreate({logicalCallId:'stream-sdk',body:{model:'gpt-5.6-terra',stream:false,store:false,max_output_tokens:32}});return{kind:'generatedText',text:'One normal stream.'};}};
+  const router=createBoundedAiQaRouter({manifest:f.continuationManifest,budget:f.continuationBudget,worker,now:()=>10000,endpointId:'endpoint',
+    client:{responses:{create:async()=>({status:'completed',usage:{input_tokens:9,output_tokens:3}})}},fetchImpl:async(url,options)=>{
+      if(url.endsWith('/run')){jobPosts++;ops.push(JSON.parse(options.body).input.op);available=1;return Response.json({id:'factory-job',status:'IN_PROGRESS'});}
+      if(url.includes('/cancel/')){cancels++;return Response.json({id:'factory-job',status:'CANCELLED'});}
+      return Response.json({id:'factory-job',status:'IN_PROGRESS'});
+    }});
+  const choice=await(await router.fetchForOwnedRequest({streamRequested:true,playerId:'player',owner:'owner',readOwner:async()=> 'owner',
+    readEnvelope:async()=>({status:{dealerId:'astrid'},request:{requestId:'stream-one'}})})('')).json();
+  const service=await createGeneratedSpeechStreamService({}, {directory,origin:'https://qa.example.test',workerSecret:'worker'.repeat(8),ticketSecret:'ticket'.repeat(8),apiKey:'synthetic',voiceId:'voice',modelId:'model',
+    session:{apiKey:'synthetic',endpointId:'endpoint',reserveUsd:'1',dailyBudgetUsd:'4.748848'}},
+    {resolveOwner:()=> 'owner',attachRelay:()=>relay,fetchImpl:router.providerFetch,journal,journalRequired:true});
+  t.after(()=>service.close());
+  const descriptor=await service.prepare({requestId:'stream-one',text:choice.text,dealerId:'astrid',owner:'owner',playerId:'player',beforeCostly:async()=>{}});
+  assert.equal(descriptor.kind,'generated-speech-stream');assert.deepEqual(ops,['session']);assert.equal(jobPosts,1);
+  assert.equal(pool.state.sessions.size,1);assert.equal([...pool.state.reservations.values()][0].reserved_micro_usd,'1000000');
+  assert.equal(pool.state.fileReservations.size,0);assert.equal((await f.continuationBudget.inspect()).counts.tts,1,'prepare does not start the second TTS before attachment');
+  await service.close();assert.equal(cancels,1);assert.equal([...pool.state.sessions.values()][0].state,'terminal');
 });
