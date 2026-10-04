@@ -7,8 +7,9 @@ Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
 Jakob har uttryckligen beställt en separat planmapp
 [`planes/`](../planes/README.md), med arbetsblock som andra agenter kan ta.
-Denna leverans är planering och faktakontroll; inga runtime-, provider- eller
-databasrättningar ingår. De tidigare hjälpagenterna har arkiverats av Jakob.
+Plan 01–07 är planering och faktakontroll. Jakob beställde därefter uttryckligen
+implementation av Mobile Phone Lane (plan 08), redovisad nedan. De tidigare
+hjälpagenterna har arkiverats av Jakob.
 
 Tre öppna funktionsfel är nu underbyggda: gatewayens shutdown fastnar i ett
 isolerat prov med uppgraderad anslutning; barnets 10 s är kortare än GPU:s
@@ -23,6 +24,33 @@ kameraflaggan OFF, Neon-policy ON och native-admin OFF. QA har 37 miljövärden,
 tal/stream/kamera/native-admin OFF, Neon-policy ON och saknar Cartesia-/RunPod-
 nycklar; P6-router är unset på båda. OFF37 betyder inte 37 avstängda funktioner.
 Planerna skiljer detta från äldre Kevin-/Emil-proveniens och framtida lanes.
+
+Jakob har därefter uttryckligen beställt implementation av **Mobile Phone Lane**
+på den rena adressen **`/blackjack`**. [Plan 08](../planes/08-mobile-phone-lane/PLAN.md)
+beskriver den implementerade lösningen: Studio → Backoffice → Spel, lanes & bord
+sparar `administration.gameLane` med befintlig behörighet/revision. Frontend och
+Render läser samma policy, kräver giltig spelsession och leder annars till
+`/player-login`. Lyckad login återgår till rätt speladress med befintligt konto.
+Gamla dealer-/presentation-länkar fungerar; dealerbyte bevarar rätt spelare
+också från ren URL. Det interna `lissabon-stream-lane` och tal-/GPU-kedjan
+bevaras. Ingen kontomigration eller betald provgenerering ingår.
+
+Lokalt: riktade routing/login/policy/UI-prov PASS, frontend- och Studio-byggen
+PASS, byggspår innehåller spel/login/lane och syncaudit `--probe` PASS för alla
+fyra dealers. Full pre-commit-regression PASS; faktisk driftavläsning görs efter
+publicering. GPU GET-health 19:57 UTC visade kö0/pågående0/running0, idle1,
+completed6/failed0. Plan 01:s shutdown-/zon-/OpenClaw-fel är separat öppna;
+denna routeleverans tillför ingen GPU-aktivering. Aktivera det nya Studio-valet
+först efter att både Render och Vercel faktiskt kör den nya koden.
+
+Läsning av Jakobs pågående spel cirka 21:34 svensk tid visade ett faktiskt
+avslutat genererat strömsvar: `ready` 4,524 s, uppspelningsstart 9,803 s,
+första synliga bild 9,809 s och END 12,703 s. Tidigare 52,3 s till `ready`
+är möjlig kallstart, inte fastställd providerorsak. [Plan 06](../planes/06-driftlagen-och-lanes/PLAN.md)
+skiljer varm latens från uppstart och mikrofon/kamera från Astrids utgående
+tal. Produktionsnyckeln är inte Jakobs nya lokala Cartesia-nyckel; röstprofil,
+Cartesia-källa och strömklient är oförändrade från `95c2f046`. Inget nytt
+meddelande/providerjobb skickades av agenten under denna avläsning.
 
 Tidigare ”0 % kvar” avsåg den avgränsade migrationen och var för kategoriskt
 som helhetsbesked. De nya fynden gör de berörda funktionsgodkännandena öppna.

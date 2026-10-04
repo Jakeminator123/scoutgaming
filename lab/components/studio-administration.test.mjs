@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
+import * as gameLanes from '../../web/public/game-lanes.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -72,7 +73,8 @@ function harness() {
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
-            : name === '../lib/backoffice-navigation.mjs' ? navigation : require(name),
+            : name === '../lib/backoffice-navigation.mjs' ? navigation
+              : name === '../../web/public/game-lanes.mjs' ? gameLanes : require(name),
   });
   return {
     ...module.exports, listeners, window,
@@ -121,7 +123,7 @@ function resources() {
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
-test('render never mutates or requests providers/accounts; only six existing local groups and 14 sections', () => {
+test('render never mutates or requests providers/accounts; only six existing local groups and 15 sections', () => {
   const h = harness(); let calls = 0;
   const props = { apiBase: '/studio/api/admin', availableActions: allActions, session: async () => { ++calls; return actor('superadmin'); }, fetchImpl: async () => { ++calls; throw new Error('no'); } };
   const html = renderToStaticMarkup(h.render(props));
@@ -132,7 +134,7 @@ test('render never mutates or requests providers/accounts; only six existing loc
     const tree = h.StudioAdministrationView(viewProps('superadmin', group.id));
     return nodes(tree, node => node.props?.['data-admin-section']).map(node => node.props['data-admin-section']);
   });
-  assert.equal(sections.length, 14); assert.equal(new Set(sections).size, 14);
+  assert.equal(sections.length, 15); assert.equal(new Set(sections).size, 15);
   assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).sort());
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
@@ -330,6 +332,8 @@ test('forms emit established payloads, string CAS, cap and cleared password inpu
   assert.equal(calls.length, 4); assert.ok(calls.every(call => call.body.expectedRevision === 'studio-v1'));
   assert.deepEqual(JSON.parse(JSON.stringify(calls[2].body)), { payout10x: true, streak5: false, randomWalkMin: 30, expectedRevision: 'studio-v1' });
   assert.deepEqual(JSON.parse(JSON.stringify(calls[3].body)), { name: 'New', format: 'Elimination', buyin: 1, pool: 2, cap: 10, starts: 'TBD', expectedRevision: 'studio-v1' });
+  formFor('Spara aktiv lane').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ lane: 'mobile-phone' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { action: 'game-lane', body: { lane: 'mobile-phone', expectedRevision: 'studio-v1' } });
   tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
   const playerForm = new Form({ username: 'test-one', name: 'Tester', password: 'temporary-password', currency: 'SEK', reason: 'Demo' });
   formFor('Skapa spelarkonto').props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
@@ -403,7 +407,7 @@ test('unmount aborts read transaction before fetch; no background mutation or la
 test('draft guard survives reload/conflict, protects native unload and cancelled local group change', async () => {
   const h = harness(); const props = { apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async (url, init) => init.method === 'POST' ? reply({ error: 'conflict' }, 409) : reply(url.endsWith('/config') ? config() : resources().overview.payload) };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Bord & personal')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const nativeView = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const firstForm = new Form({ state: 'live' }); nativeView().props.onDirty(firstForm);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
@@ -442,7 +446,7 @@ test('reload cannot silently rebase an edited config form; only confirmed discar
     return reply(url.endsWith('/config') ? { ...config(), revision } : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Bord & personal')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const draft = new Form({ state: 'live' }); native().props.onDirty(draft); tree = h.render(props);
   const oldKey = native().key;
@@ -464,7 +468,7 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
     return reply(url.endsWith('/config') ? config() : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Bord & personal')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0]; const form = new Form({ state: 'live' });
   native.props.onDirty(form); native.props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);

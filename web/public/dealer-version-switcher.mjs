@@ -5,6 +5,11 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   const key = ['vera', 'astrid', 'amira', 'mei'].includes(dealer) ? dealer : 'vera';
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
+  // The clean Blackjack URL carries its saved presentation in the document.
+  // An explicit dealer change must not keep a lane override that forces Astrid.
+  if (!previous.has('presentation') && (previous.get('lane') === 'mobile-phone'
+    || globalThis.document?.documentElement?.dataset.gamePresentation === 'local')) previous.set('presentation','local');
+  previous.delete('lane');
   for(const name of ['labObserverOrigin','labObserverChannel']){
     const value=previous.get(name);if(value)query.set(name,value);
   }
@@ -22,7 +27,9 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
 }
 
 export function installDealerVersionSwitcher({ dealer, version, isBusy }) {
-  if(version === 'original' && new URLSearchParams(location.search).get('presentation') === 'local')return;
+  if(version === 'original' && (new URLSearchParams(location.search).get('presentation') === 'local'
+    || new URLSearchParams(location.search).get('lane') === 'mobile-phone'
+    || document.documentElement?.dataset.gamePresentation === 'local'))return;
   const picker = document.querySelector('#dealer-picker');
   if (!picker || picker.dataset.versions) return;
   picker.dataset.versions = version;

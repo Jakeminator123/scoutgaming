@@ -8,7 +8,7 @@ const help = document.querySelector('#login-help');
 const administratorEntry = document.querySelector('#legacy-admin');
 const destination = '/?dealer=astrid&presentation=local';
 const gameDestination = document.documentElement.dataset.gamePath === '/blackjack'
-  ? canonicalGameDestination(new URL(location.search ? location.href : '/player-login?dealer=astrid&presentation=local',location.origin),{includeLaunch:false}) : destination;
+  ? canonicalGameDestination(new URL(location.href,location.origin),{includeLaunch:false}) : destination;
 let busy = false, loginEndpoint = null, localLogin = false;
 submit.disabled = true;
 function loginError(code) {

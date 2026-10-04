@@ -23,6 +23,19 @@ async function fixture({ dealerIdle = idle, fixtureScope = scope } = {}) {
   return { pool, repository, policy: createStudioGamePolicy({ repository, scope: fixtureScope, dealerIdle }) };
 }
 
+test('saved lane is shared across policy instances with CAS and preserves every unrelated setting',async () => {
+  const {policy,repository}=await fixture();
+  const before=await policy.readAdministration();
+  assert.equal((await policy.readGameConfiguration()).gameLane,'original');
+  await policy.saveAdministration({...before.value,gameLane:'mobile-phone'},before.revision,{actor:'operator'});
+  const second=createStudioGamePolicy({repository,scope,dealerIdle:idle});
+  assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
+  const saved=await second.readAdministration();const {gameLane,...unchanged}=saved.value;
+  assert.deepEqual(unchanged,before.value);
+  await assert.rejects(policy.saveAdministration({...before.value,gameLane:'original'},before.revision,{actor:'other'}),rejected('studio_conflict',409));
+  assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
+});
+
 test('shared configuration is explicitly enabled, Neon-scoped, inert and never substitutes zones or defaults', () => {
   assert.equal(studioGamePolicyConfiguration({}), null);
   const env = { CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',

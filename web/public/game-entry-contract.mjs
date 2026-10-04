@@ -1,3 +1,4 @@
+import { isGameLane } from './game-lanes.mjs';
 const dealers = new Set(['vera','astrid','amira','mei']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
@@ -15,7 +16,7 @@ export function approvedGameQuery(input,{origin,includeLaunch = true} = {}) {
   const source = input instanceof URLSearchParams ? input : new URLSearchParams(input);
   const result = new URLSearchParams();
   const one = key => source.getAll(key).length === 1 ? source.get(key) : null;
-  const values = {dealer:value => dealers.has(value),presentation:value => ['local','original'].includes(value),
+  const values = {dealer:value => dealers.has(value),presentation:value => ['local','original'].includes(value),lane:isGameLane,
     performance:value => value === 'staged',motion:value => value === 'smooth60',rehearsal:value => value === '1',
     table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)};
   for (const [key,valid] of Object.entries(values)) {const value = one(key);if (valid(value)) result.set(key,value);}
@@ -40,9 +41,19 @@ export function canonicalGameDestination(input,options = {}) {
 export function gameEntryRedirect(url,env) {
   if (!gameEntryEnabled(env)) return null;
   if (['/game','/game/'].includes(url.pathname)
-    || url.pathname === '/' && ['dealer','presentation','performance','motion','rehearsal','table','launch','labObserverOrigin','labObserverChannel'].some(key => url.searchParams.has(key))) return canonicalGameDestination(url);
+    || url.pathname === '/' && ['dealer','presentation','lane','performance','motion','rehearsal','table','launch','labObserverOrigin','labObserverChannel'].some(key => url.searchParams.has(key))) return canonicalGameDestination(url);
   return null;
 }
-export function decorateGameEntryHtml(html,env) {
-  return gameEntryEnabled(env) ? html.replace(/<html(?=[\s>])/i,'<html data-game-path="/blackjack"') : html;
+export function playerLoginDestination(url) {
+  const query = approvedGameQuery(url.searchParams, { origin: url.origin, includeLaunch: false }).toString();
+  return '/player-login' + (query ? `?${query}` : '');
+}
+export function decorateGameEntryHtml(html,env,selection) {
+  if (!gameEntryEnabled(env)) return html;
+  let attributes = ' data-game-path="/blackjack"';
+  if (selection) {
+    if (!isGameLane(selection.lane) || !dealers.has(selection.dealer) || !['local','original'].includes(selection.presentation)) throw Error('Invalid game presentation');
+    attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
+  }
+  return html.replace(/<html(?=[\s>])/i,'<html'+attributes);
 }

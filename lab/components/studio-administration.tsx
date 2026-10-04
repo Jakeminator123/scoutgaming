@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
+import { GAME_LANES } from '../../web/public/game-lanes.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import styles from './studio-administration.module.css';
 
@@ -28,7 +29,7 @@ export type StudioPartnerResult =
   | { kind: 'launch'; url: string; playerRef: string }
   | { kind: 'credit'; playerId: string; balance: number; currency: string };
 
-const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
+const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
   operations: ['overview', 'config','shoes'], tables: ['overview', 'config'], accounts: ['players', 'users'],
   partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
@@ -261,6 +262,19 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </dl><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
           <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
           <p>Certifieringsunderlag: saknas.</p>
+        </>}
+      </>}
+      {section === 'lanes' && <>
+        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('game-lane')}
+        <p>Valet styr vilket spel som öppnas från hemsidans Blackjack-knapp. Spelare loggar in före start. Pågående spel fortsätter i sin valda lane.</p>
+        {config && <>
+          <p>Aktiv lane: <strong>{GAME_LANES.find(lane => lane.id === (config.gameLane ?? 'original'))?.label ?? 'Okänd'}</strong></p>
+          {mayWrite('game-lane', true) && <form method="post" onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
+            <label>Lane för Blackjack<select name="lane" defaultValue={label(config.gameLane, 'original')} disabled={busy}>{GAME_LANES.map(lane => <option key={lane.id} value={lane.id}>{lane.label}</option>)}</select></label>
+            <button disabled={busy}>Spara aktiv lane</button>
+          </form>}
+          <p>Mobile Phone Lane använder Astrids video, chatt, genererade tal och läppsynk.</p>
+          <a href="/blackjack" target="_blank" rel="noopener">Öppna Blackjack ↗</a>
         </>}
       </>}
       {section === 'rooms' && <>

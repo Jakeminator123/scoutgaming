@@ -45,6 +45,24 @@ test('shared presentation keeps the normal dealer picker without adding V2 contr
 });
 
 const appSource=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+test('clean Mobile Phone Lane keeps local presentation when changing dealers and never pins them to Astrid',t=>{
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
+  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local'}},
+    querySelector(){assert.fail('Mobile Phone Lane must keep normal dealer handlers');}},configurable:true});
+  const oldLocation=Object.getOwnPropertyDescriptor(globalThis,'location');
+  Object.defineProperty(globalThis,'location',{value:{search:''},configurable:true});
+  t.after(()=>{for(const [key,value] of [['document',previous],['location',oldLocation]]){
+    if(value)Object.defineProperty(globalThis,key,value);else delete globalThis[key];
+  }});
+  installDealerVersionSwitcher({dealer:'astrid',version:'original',isBusy:()=>false});
+  for(const search of ['', '?lane=mobile-phone']){
+    const away=new URL(dealerVersionPath('mei','original',search),'https://game.invalid');
+    assert.equal(away.pathname,'/blackjack');assert.equal(away.searchParams.get('dealer'),'mei');
+    assert.equal(away.searchParams.get('presentation'),'local');assert.equal(away.searchParams.has('lane'),false);
+    const back=new URL(dealerVersionPath('astrid','original',away.search),'https://game.invalid');
+    assert.equal(back.searchParams.get('presentation'),'local');assert.equal(back.searchParams.get('dealer'),'astrid');
+  }
+});
 const rehearsalSource=appSource.slice(appSource.indexOf('// Optional rehearsal'));
 test('the rehearsal selector preserves shared presentation and explicit V2 review routes',()=>{
   const handler=rehearsalSource.match(/dealerSelect\.onchange = \(\) => \{[^\n]+\};/)?.[0];

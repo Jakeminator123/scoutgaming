@@ -68,6 +68,56 @@ bevisar inte en färdig generell lane-marknadsplats eller stöd för ett nytt sp
 Ett nytt spel kräver även spelregler, serverauktoritet och egna acceptansfall;
 det kan inte godkännas enbart genom att nya klipp visas rätt.
 
+## Konkret nästa lane: Mobile Phone Lane
+
+Jakob har nu valt namnet **Mobile Phone Lane** för den befintliga
+Astrid/Lissabon-vägen. Han vill välja aktiv lane i Studio och låta hemsidans
+Blackjack-knapp följa det valet, med inloggning före spel och en ny publik
+adress. Det avgränsade genomförandet beskrivs i
+[plan 08](../08-mobile-phone-lane/PLAN.md). Namnbytet är ännu inte implementerat.
+
+## Talets väntetid: observation den 4 oktober, cirka 21:34 svensk tid
+
+Avläst från Jakobs redan pågående spel på produktionsversion `bee4e04a`.
+Agenten skickade inget nytt chattmeddelande och startade inget providerjobb.
+Den befintliga DOM-kvittensen för det senast lästa svaret anger genererad
+talström, `state=ended` och `completed=true`. Detta bevisar spelarens avslut,
+inte mänskligt godkänd läppsynk eller providerns terminalstatus.
+
+| Händelse i samma svar | Tid från skickad fråga |
+| --- | --- |
+| Tänksteget rapporteras | 0,613 s |
+| Tal-/GPU-förberedelsen påbörjas | 2,719 s |
+| Descriptor/förberedelse klar (`ready`) | 4,524 s |
+| Ljud/video börjar spela | 9,803 s |
+| Första synliga bild | 9,809 s |
+| Uppspelningen avslutad | 12,703 s |
+
+En tidigare fråga nådde `ready` efter 52,3 s och följande efter 4,7 s.
+Kallstart är en möjlig förklaring till den första väntan; den är inte
+providerverifierad. `ready` betyder inte att allt ljud eller hela videon är
+genererad, och inte att spelaren redan har börjat tala. Cirka 8–10 sekunder
+för ett varmt svar ska därför bedömas separat från första uppstarten.
+
+Produktionens Cartesia-nyckel jämfördes utan att skriva ut värden och är
+**inte** Jakobs nya nyckel i den lokala `.env`. Victoria-profilen (`sonic-3.5`),
+Cartesia-källan och strömklienten är oförändrade mellan `95c2f046` och
+`bee4e04a`. Det finns inget belägg här för att bytet till Jakobs konto orsakat
+väntan; det kontobytet är inte genomfört i produktionen. Detta utesluter inte
+variationer hos Cartesia eller andra delar av kedjan.
+
+Nästa avgränsade latensarbete ska återanvända befintliga tidsfält och
+`astrid_speech_timing`, jämföra samma fasgränser och skilja AI, sessions-/
+policykontroller, TTS, GPU, transport och spelarstart. Den individuella
+TTS-/GPU-fördelningen kunde inte fastställas i denna avläsning. Kontrollera
+även upprepade databasresor efter Neon-omkopplingen; ta inte bort journaler,
+reservationer eller ägarskapskontroller för att få ett bättre mätvärde.
+Ingen ny mätplattform, prisinventering eller generell cache behövs som första steg.
+
+Texten "Voice and camera are disabled on this server" gäller spelarens
+mikrofon och kamera. Astrids utgående tal är separat aktiverat. Förtydliga
+den skillnaden i UI; att byta namn på lanen aktiverar inte mikrofon/kamera.
+
 ## Färdigt när
 
 Kartan visar varför en funktion är OFF och vem som äger dess aktivering.

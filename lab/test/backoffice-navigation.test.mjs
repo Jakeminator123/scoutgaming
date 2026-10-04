@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminSectionPath } from '../lib/studio-admin-contract.mjs';
 
-test('all fourteen Backoffice surfaces keep their native administration destination', () => {
-  assert.deepEqual(BACKOFFICE_SECTIONS.map(section => section.id), ['ops','voice','clips','gens','apikeys','emails','users','rooms','dealers','pit','tours','players','pay','shoes']);
+test('all Backoffice surfaces keep their native administration destination', () => {
+  assert.deepEqual(BACKOFFICE_SECTIONS.map(section => section.id), ['ops','lanes','voice','clips','gens','apikeys','emails','users','rooms','dealers','pit','tours','players','pay','shoes']);
   for (const section of BACKOFFICE_SECTIONS) {
     assert.equal(studioAdminSectionPath(section.id), `/studio/administration/${section.id}`);
   }

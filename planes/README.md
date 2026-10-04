@@ -1,8 +1,9 @@
 # Efterarbete för Croupier
 
-Beställt av Jakob den 4 oktober 2026. Detta är en **planleverans** för andra
-agenter att genomföra. Ingen av rättningarna nedan är genomförd genom att
-den här mappen finns. Faktakontrollen utgår från `bee4e04ae148bfef781a878672f535f7f3643063`.
+Beställt av Jakob den 4 oktober 2026. Plan 01–07 är en **planleverans** för
+andra agenter. Jakob beställde därefter uttryckligen implementation av plan 08.
+Faktakontrollen av efterarbetet utgår från `bee4e04ae148bfef781a878672f535f7f3643063`;
+aktuell leveransstatus finns i respektive plan och handoffen.
 
 ## Min bedömning och föreslagen ordning
 
@@ -25,6 +26,7 @@ start och gröna tester bevisade inte de tre flöden som nu visar fel.
 | 4 | [Tester och granskning](04-tester-och-granskning/PLAN.md) | Koppla kartans delar till befintliga tester och begränsad oberoende granskning | Planerad stegvis |
 | Parallellt | [Historik och arkiv](05-historik-och-arkiv/PLAN.md) | Sammanfatta arbetets faser och besluta om loggars bevarande | Startpunkter verifierade i Git |
 | Parallellt | [Driftlägen och lanes](06-driftlagen-och-lanes/PLAN.md) | Förklara OFF, produktion/QA och vägen från provad lane till produktion | Render-flaggor avlästa |
+| Beställd implementation | [Mobile Phone Lane](08-mobile-phone-lane/PLAN.md) | Befintlig Astrid/Lissabon-lane på `/blackjack`, aktivt Studio-val och inloggning | Implementerad; faktisk leveransstatus i handoffen |
 
 ”Parallellt” betyder att läsning och dokumentation kan göras oberoende. Det
 innebär inte att nya agenter, tjänster eller providerjobb ska startas automatiskt.
@@ -52,6 +54,8 @@ Jakob har arkiverat de tidigare hjälpagenterna.
 4. Arkiverade agenter, nästa steg och OpenClaw: plan 01 och 05.
 5. Handoffhistorik, arkivering och den stora loggen: plan 05.
 6. OFF och möjligt äldre Kevin-arbete: plan 06.
+7. Mobile Phone Lane, ny adress, Studio-val och hemsidans Blackjack-knapp:
+   plan 08. Faktiskt observerad väntan på tal och läppsynk finns i plan 06.
 
 ## Arbetsregler för nästa agent
 
