@@ -6,6 +6,14 @@ import {join} from 'node:path';
 import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaNextWindowCounts,sha256,inspectAiQaRecords,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
 import {createBoundedAiQaRouter} from '../web/native-ai-qa-runtime.mjs';
 
+const productSchema=await readFile(new URL('../ops/neon-game/product-schema.sql',import.meta.url),'utf8');
+const canonicalPlayerLink=/CREATE TABLE croupier_game\.([a-z_]+) \(craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL REFERENCES croupier_game\.players\(id\)\)/.exec(productSchema)?.[1];
+assert.ok(canonicalPlayerLink,'the product schema must declare the Craig-to-player ownership relation');
+function assertPlayerLinkQuery(sql){
+  const queriedTable=/\bJOIN croupier_game\.([a-z_]+)\b/.exec(sql)?.[1];
+  assert.equal(queriedTable,canonicalPlayerLink,'QA ownership query must use the relation defined by the product schema');
+}
+
 async function fixture(t){
   const directory=await mkdtemp(join(tmpdir(),'bounded-ai-qa-'));
   t.after(()=>rm(directory,{recursive:true,force:true}));
@@ -92,6 +100,7 @@ test('policy installation preserves original campaign and requires existing acco
     if(sql.includes('current_database'))return{rows:[{database:'croupier_studio_qa_abc92154cb15',role:'croupier_studio_qa_abc92154cb15'}]};
     if(sql.includes('FROM croupier_auth.users'))return{rows:[{id:7,username:'existing-qa',role:'superadmin'}]};
     if(sql.includes('FROM croupier_game.players')){
+      assertPlayerLinkQuery(sql);
       assert.match(sql,/WHERE p\.id=\$1 AND l\.craig_user_id=\$2/);assert.deepEqual(values,['player',7]);return{rows:[{id:'player'}]};}
     if(sql.includes('AS gpu_policy'))return{rows:[counts]};
     if(sql.includes('AS now_ms'))return{rows:[{now_ms:100}]};
@@ -306,12 +315,21 @@ function continuationPolicyFixture(){
   const client={release(){},query:async(sql,values)=>{calls.push({sql,values});
     if(sql.includes('current_database'))return{rows:[{database:'croupier_studio_qa_abc92154cb15',role:'croupier_studio_qa_abc92154cb15'}]};
     if(sql.includes('FROM croupier_auth.users'))return{rows:[{id:'7',username:'existing-qa',role:'admin'}]};
-    if(sql.includes('FROM croupier_game.players'))return{rows:[{id:'player'}]};
+    if(sql.includes('FROM croupier_game.players')){
+      assertPlayerLinkQuery(sql);
+      assert.doesNotMatch(sql,/\bplayer_account_links\b/,'the unavailable player-account table must never be queried');
+      assert.deepEqual(values,['player','7']);return{rows:[{id:'player'}]};
+    }
     if(sql.includes('AS now_ms'))return{rows:[{now_ms:'20000'}]};
     const table=/SELECT \* FROM croupier_studio\.([a-z_]+)/.exec(sql)?.[1];if(table)return{rows:structuredClone(tables[table])};
     return{command:sql==='COMMIT'?'COMMIT':undefined,rows:[]};}};
   return{calls,tables,args:{pool:{connect:async()=>client},previousManifest,previousManifestRawSha256:pin,fullfile,operatorId:'7',username:'existing-qa',playerId:'player',now:()=>20000}};
 }
+
+test('ownership relation fixture rejects the unavailable table and detects divergence from the actual product schema',()=>{
+  assert.throws(()=>assertPlayerLinkQuery('SELECT p.id FROM croupier_game.players p JOIN croupier_game.player_account_links l ON l.player_id=p.id'),/QA ownership query must use/);
+  assert.doesNotThrow(()=>assertPlayerLinkQuery(`SELECT p.id FROM croupier_game.players p JOIN croupier_game.${canonicalPlayerLink} l ON l.player_id=p.id`));
+});
 
 test('continuation reads the expired original operator gate and retained policies without updating campaign or reservations',async()=>{
   const {readAiQaContinuationPolicy}=await import('../tools/activate-native-ai-qa.mjs'),f=continuationPolicyFixture(),before=JSON.stringify(f.tables);
