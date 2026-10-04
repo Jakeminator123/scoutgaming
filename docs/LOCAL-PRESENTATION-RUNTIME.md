@@ -6,24 +6,23 @@ Astrids lokala läge finns i det riktiga spelet:
 <http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
-I molnet finns [spelet](https://www.scoutgaming.tech/game) och
+I molnet finns [spelet](https://www.scoutgaming.tech/blackjack) och
 [Backoffice/Lab](https://www.scoutgaming.tech/studio) på samma exakta origin.
 Vercel visar gränssnitten; Render äger auktoritativ spelmotor och live-transport.
-I produktion finns äldre Studio/BO-API och projekt ännu på Render. Nya isolerade
-native-QA har Studio/admin-API på Vercel och sparad policy/metadata/journaler i
-Neon. Produktionsbytet är ännu inte genomfört; se [driftkartan](CLOUD-MIGRATION.md).
+Produktion och isolerad native-QA har Studio/admin-API på Vercel och sparad
+policy/metadata/journaler i Neon, med separata scopes. Medier ligger i privat
+Blob. Produktionsimport och policybyte är genomförda; aktuell driftversion
+och avvecklingsstatus finns i [driftkartan](CLOUD-MIGRATION.md).
 **Anslut & följ spelet** använder BO-inloggning och den faktiska spelflikens
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
 Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
 
-QA kör nu c874 med AI-flaggorna åter OFF efter ett säkert stängt closed29-
-försök. Försöket nådde descriptor och GPU-submit men inte TTS eller faktisk
-speluppspelning; det är därför inte ett godkänt AI→tal→GPU→END-bevis. Lokal
-main `573b7aee` har en exakt read-only availability-spärr som väntar på
-publicering och tre QA-deployer. Nästa manuella prov startas först när den
-append-only privata successorkedjan och dess partial-failure-close är
-peergranskade. Kumulativ usage är 3/4/1/3 och faktisk kostnad är okänd/null.
+Historiskt c874/closed29-försök nådde descriptor och GPU-submit men inte TTS
+eller faktisk speluppspelning; dess oföränderliga kvitto är inget godkänt
+AI→tal→GPU→END-bevis. Senare verifierad uppspelning och aktuell QA-version
+redovisas i driftkartan. QA:s AI-flaggor är OFF; tidigare journaler och
+reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Lokal byggcache och runtime
 
@@ -101,10 +100,10 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 ## Sparad policy och chatt
 
-Backoffice/Lab är den gemensamma arbetsytan. Administration återanvänder
-befintliga BO-funktioner och deras rollkontroller. **Ladda upp & bibliotek**
-visar exakta klippflöden för alla fyra dealers; **Event och regler** behåller
-Studiofamiljerna. BO:s äldre tilldelningar är inaktiva och skrivskyddade.
+Studio/Backoffice är den gemensamma arbetsytan. Native administration använder
+befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
+klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
+BO-tilldelningar är historik och används inte som parallell policykälla.
 Endast en exakt match i dealer, situation/destination och registrerad fil
 kan importeras uttryckligen till Lab-utkastet. Osäkra tal-/stagedkopplingar
 finns kvar för granskning och lånas aldrig till en annan replik/plats.
@@ -113,9 +112,9 @@ finns kvar för granskning och lånas aldrig till en annan replik/plats.
 verifierade staged-destinationer. Dessa läses vid sidstart; ladda om mellan
 händer efter sparning. Inspelat tal följer sitt befintliga exakta audio/video-par.
 Astrids `presentation=local` använder fortsatt `mediaPolicy`/`idlePolicy`.
-Projekt, versioner och historik sparas i samma Lab-projekt; lokalt `lab/data`,
-i nuvarande produktion `/var/data/studio`; nya native-QA använder revisionsstyrd
-Neon-lagring. Det är två uttryckliga miljöer, inte parallella policykällor i samma spel.
+Projekt, versioner och historik använder revisionsstyrd Neon-lagring i både
+produktion och isolerad native-QA. Äldre `lab/data` bevaras som lokal historik;
+`/var/data/studio` är ingen aktiv produktionspolicykälla.
 Medieregistren återanvänds med bevarade fil-ID och bytes.
 
 Helpern ger Web och Lab samma isolerade projektkatalog. Spara ändringar i

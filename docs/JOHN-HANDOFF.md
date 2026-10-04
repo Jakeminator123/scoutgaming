@@ -16,7 +16,23 @@ Produktdisk och alla tolv gamla Blob-objekt är kvar tills rättad drift passera
 har startats. Nästa steg är rättad release, monterad kontroll, diskfri kontroll
 och därefter faktisk resursavveckling. Ingen import körs om.
 
-## Senast verifierade checkpoint — 4 oktober 17:14 UTC
+## Verifierad drift 17:49 UTC och historiska checkpoints
+
+Uppföljning 17:49 UTC: rättad `7c4c1cc` är LIVE på produktens Render
+`dep-db18udoae00c73f9nph0`; faktisk Linux-källa (160 filer), fem borttagna
+runtimefiler, tre AI-flaggor ON, Neon-policy och health200 PASS. Alla 17
+Vercel-alias är kontrollerade; fyra tekniska alias uppdaterades, historiska
+mål och projektens access-/Git-inställningar bevarades. Efter enbart borttagen
+`CROUPIER_CLOUD_DATA_ROOT` (52 till 51 env, alla övriga värden oförändrade)
+misslyckades `dep-db190rh42hec73ejf3p0`: entrypointens diskfria villkor krävde
+TLS `require` medan den befintliga produktionen använder `verify-full`.
+Den starkare anslutningen bevaras; villkoret rättas till samma säkra TLS-lägen
+som den befintliga Postgres-valideraren. Gamla produktdisken och tolv Blob-
+objekt behålls. Backupens fullständiga arkivhash är återkontrollerad PASS.
+QA Render är LIVE på `7c4c1cc`, faktisk SDK/källa och 10/10 bevarandekontroller
+PASS, OFF37; två QA-Vercelbyggen slutförs. Ingen ny generering eller omimport.
+
+### Historisk checkpoint 17:14 UTC
 
 Produktionsimporten är avslutad och efterföljande paritetskontroller PASS: alla 32
 konton-/speltabeller, tidigare kostnadsjournaler och reservationer är bevarade.

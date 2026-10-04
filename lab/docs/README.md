@@ -2,8 +2,8 @@
 
 **En arbetsyta: Croupier Studio.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
-spelmotorn och live-transporten. Produktionsprojekt sparas fortfarande på
-Render; nya native-QA använder Neon för policy och administrationsmetadata.
+spelmotorn och live-transporten. Produktion och isolerad native-QA använder
+Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
 Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
 **Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
@@ -15,8 +15,8 @@ ingen separat spelström.
 för spelets presentation: exempelvis vilka dealerklipp som används och när
 de spelas. "Lab-projekt" är inget separat projekt; det syftar på samma
 sparning. Lab är arbetsmiljön, Studio är editorn. Inställningarna och äldre
-versioner sparas på Render-disken i nuvarande produktion och i Neon i den
-nya isolerade native-QA-miljön. Själva mediefilerna finns i privat Vercel
+versioner sparas i Neon i både produktion och den isolerade native-QA-miljön.
+Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med Studios sparknapp att göra.
 
@@ -36,14 +36,14 @@ Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
 Backoffice grupperar alla 14 befintliga funktioner under drift/spelintegritet,
 bord/personal, konton, partner, betalningar/journal och mediegranskning.
-Den befintliga Backoffice-backenden och dess rollkontroller används tills
-den native ersättningen och API-/lagringsflytten är verifierade. En Studio-
-inloggning ger inga nya administrativa rättigheter.
+Native Studio/Backoffice använder de befintliga kontonas rollkontroller och
+den gemensamma Neon-källan. En Studio-inloggning ger inga nya administrativa
+rättigheter.
 
-Den nya administrationen provas i en separat molnmiljö med egen databas.
-Den använder samma sparade revisionskälla som spelmotorn och bevarar osparade
-utkast vid en sparningskonflikt. Den är ännu inte aktiverad på den vanliga
-Studio-adressen. QA:s mejlkoppling och ett levererat invitationsmejl är
+Native administration är aktiverad på den vanliga Studio-adressen och har
+även en separat QA-miljö med egen databas. Den använder samma sparade
+revisionskälla som spelmotorn och bevarar osparade utkast vid en sparningskonflikt.
+QA:s mejlkoppling och ett levererat invitationsmejl är
 verifierade; full invitation/reset-acceptans och produktionskopplingen återstår.
 Befintliga konton
 och saldo flyttas eller återställs inte för provet.
@@ -62,9 +62,8 @@ Stängda konton har inget lösenordsbyte. Administratörers invitationer,
 aktivering och återställningslänkar hanteras i samma Backoffice.
 Ett administratörskonto som också spelar använder sitt administratörslösenord.
 
-Förenklingen finns i den nya koden. Native-QA måste installeras från samma
-källversion och provas igen före produktionsbyte; äldre livekvitton visar
-inte att detta nya kontoflöde har aktiverats där.
+Aktuell driftversion, QA-bevis och återstående begränsningar finns i
+[driftkartan](../../docs/CLOUD-MIGRATION.md).
 OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
 Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av
 den nya menyn. Vanliga sparade klippval kräver ingen Render-omstart;
@@ -74,7 +73,8 @@ Under klippens uppladdning väljer du exakt familj och originalklipp.
 Spara med projektets vanliga knapp och ladda om originalspelaren mellan händer.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
-Lissabon-katalogen är avvecklad; sparade lokala data finns i `lab/data`.
+Lissabon-katalogen är avvecklad; äldre lokala data i `lab/data` bevaras som
+historik och är inte produktionspolicy.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
