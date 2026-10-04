@@ -289,9 +289,12 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     },
     cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
     cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
-    async close() { preparations.clear(); for (const record of [...records.values()]) cancel(record); relay.close();
-      await Promise.allSettled([...journalTasks]); await sessionManager?.close();
-      if (ownership) { try { await ownership.release(); } catch {} }
+    async close() { preparations.clear(); for (const record of [...records.values()]) cancel(record);
+      try { await Promise.allSettled([...journalTasks]); await sessionManager?.close(); }
+      finally {
+        relay.close();
+        if (ownership) { try { await ownership.release(); } catch {} }
+      }
     },
   };
 }

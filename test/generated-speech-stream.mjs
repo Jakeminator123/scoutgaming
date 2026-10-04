@@ -12,7 +12,7 @@ async function fixture(t, options = {}) {
   let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0, available = options.initialAvailable ?? 1;
   const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model' };
   const services = [];
-  const relay = { status: () => ({ available }), close() {}, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
+  const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
   const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
     resolveOwner: req => req.owner,
     attachRelay: (_, value) => { relayOptions = value; return relay; },
@@ -112,6 +112,16 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10.01' }, { RUNPOD_API_KEY: '' }]) {
     assert.equal(generatedSpeechStreamConfiguration({ ...cloud, ...patch }).configured, false);
   }
+});
+
+test('service closes the session manager before terminating the relay', async t => {
+  const order = [];
+  const f = await fixture(t, {
+    onRelayClose: () => order.push('relay'),
+    sessionManager: { close: async () => { order.push('manager'); } },
+  });
+  await f.service.close();
+  assert.deepEqual(order, ['manager', 'relay']);
 });
 
 test('verified request reserves identity before starting/reusing worker; TTS waits for socket admission', async t => {
