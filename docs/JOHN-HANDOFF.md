@@ -3,7 +3,46 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
-## Senast verifierade driftläge — 4 oktober 10:25 UTC
+## Senast verifierade driftläge — 4 oktober 13:41 UTC
+
+GitHub-main och de tre QA-tjänsterna kör
+`c8747adca8c6fdff57a82946c0211585490e2ab2`. Produktens Render-backend har
+också autodeployerats till c874, men produktionsdata, Studio-schema och den
+gemensamma Studio-policyn är fortfarande inte omkopplade. Produktionsmiljöns
+44 nyckelnamn och de 132 inventerade källposterna är oförändrade.
+
+Det senaste manuella QA-fönstret `ae25eaaa-0220-4d64-b9be-3a072f7feade`
+gav en descriptor men stoppade före TTS och speluppspelning när bordet inte
+längre var exakt stilla efter AI-förberedelsen. Fönstret är append-only-stängt
+som post 29/head `65751b1c4e321ed8a649cc3e7118f57fbae69431b09c363317349c61d933f2a8`.
+QA är åter OFF med router404/health200, inga aktiva leases och bevarade gamla
+journalposter. Kumulativ usage är 3 generationer/4 SDK/1 TTS/3 GPU; tre av
+Jakobs sex generationer återstår. Refund är 0 och faktisk kostnad är okänd/null.
+Det nya GPU-jobbet är CANCELLED/released. Det finns ännu inget nytt faktiskt
+AI→tal→GPU→synlig bild/hörbart ljud→spelkö-END-kvitto.
+
+En exakt availability-spärr är lokalt integrerad på main som `573b7aee`.
+Den använder samma rena predikat för diagnostik och admission och läcker inga
+ägarfält eller text. Riktad kontroll är 42 PASS, fyrdealer-audit matchar
+baslinjen och obligatorisk fullhook passerar. Den måste nu publiceras och
+driftsättas på alla tre QA-ytor innan nästa enda manuella försök. Två privata
+append-only-successorer byggs parallellt och ska peergranskas före livekörning;
+första utkastet är HOLD tills installfil, partial-failure-close samt exakta
+jobb-/session-/SQL-/reservationskontroller är rättade.
+
+Det offlineförberedda P7-paketet har 60 PASS och dess 32 kommandon/pinnar är
+peergranskade, men faktiskt P7 är BLOCK tills nästa verkliga streamprov lyckas
+och acceptanshasharna binds om från closed29. Därefter följer det redan
+beställda 45–75 minuters skrivfönstret för drain, import och policybyte. P8-
+commits `c158a0be` och `f3f561d3` hålls tills ersättningen är aktiv. De
+avvecklar ersatt BO-/disk-/env-/lagring; BO:s historiska tysta videopreviews
+är inte lipsynkacceptans och återinförs inte som en separat spelväg.
+
+GitGuardian för c874 har komplett GitHub-commitmetadata men en queued suite
+utan synlig run; incident-API:t är inte läst. Detta är en täckningslucka, inte
+ett påstående om noll incidenter.
+
+## Tidigare verifierat driftläge — 4 oktober 10:25 UTC
 
 Publicerad main och samtliga tre QA-tjänster kör
 `a0c6460560dd99da7bc33feba7efbef0d6de0fce`, med klockrättningen `f8300c51`
