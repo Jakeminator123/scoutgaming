@@ -2,15 +2,8 @@ import {readFile,lstat,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {AI_QA_ORIGINAL,AI_QA_LIMITS,sha256,aiQaNeed as need,createAiQaBudget} from './native-ai-qa-budget.mjs';
-const fullfileAuthorities=new WeakMap();
-export function boundedAiQaAllowsFullfile(router,env=process.env){
-  const m=fullfileAuthorities.get(router);if(!m)return false;
-  try{validateAiQaManifest(m,env);return env.RENDER_SERVICE_ID==='srv-datj7l893c1s73ar3u50'
-    &&env.CROUPIER_CLOUD_DATA_ROOT==='/var/data/native-studio-qa/abc92154cb15'
-    &&env.CROUPIER_STUDIO_ENVIRONMENT_ID==='qa_native_abc92154cb15'
-    &&env.CROUPIER_STUDIO_WORKSPACE_ID==='croupier'&&env.CROUPIER_STUDIO_NEON_POLICY==='1'
-    &&env.CROUPIER_P6_QA_ROUTER==='1'&&env.CROUPIER_P6_BOUNDED_TEST==='1';}catch{return false;}
-}
+import {registerBoundedAiQaFullfileAuthority} from './generated-speech.mjs';
+export {boundedAiQaAllowsFullfile} from './generated-speech.mjs';
 const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const safeError=e=>/^ai_qa_[a-z0-9_]+$/.test(e?.code??'')?e.code:'ai_qa_operation_failed';
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -161,5 +154,12 @@ export function createBoundedAiQaRouter({manifest:m,budget,client,worker,speechR
       await budget.outcome(key,response.ok?'response-observed':'uncertain',{...measurements,status:response.status,elapsedMs:now()-started});return response;
     }catch(e){await budget.outcome(key,'uncertain',{elapsedMs:now()-started}).catch(()=>{});throw e;}
   };
-  router.budget=budget;router.ownLinkedPlayerSha256=m.ownLinkedPlayerSha256;fullfileAuthorities.set(router,m);fullfileAuthorities.set(router.providerFetch,m);return router;
+  router.budget=budget;router.ownLinkedPlayerSha256=m.ownLinkedPlayerSha256;const validateFullfile=env=>{
+    validateAiQaManifest(m,env);return env.RENDER_SERVICE_ID==='srv-datj7l893c1s73ar3u50'
+      &&env.CROUPIER_CLOUD_DATA_ROOT==='/var/data/native-studio-qa/abc92154cb15'
+      &&env.CROUPIER_STUDIO_ENVIRONMENT_ID==='qa_native_abc92154cb15'
+      &&env.CROUPIER_STUDIO_WORKSPACE_ID==='croupier'&&env.CROUPIER_STUDIO_NEON_POLICY==='1'
+      &&env.CROUPIER_P6_QA_ROUTER==='1'&&env.CROUPIER_P6_BOUNDED_TEST==='1';
+  };
+  registerBoundedAiQaFullfileAuthority(router,validateFullfile);registerBoundedAiQaFullfileAuthority(router.providerFetch,validateFullfile);return router;
 }

@@ -8,8 +8,20 @@ import { fileURLToPath } from 'node:url';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 import { normalizeSpeechPackage } from './public/speech-package.mjs';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
-import {boundedAiQaAllowsFullfile} from './native-ai-qa-runtime.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
+
+// Trusted server runtime registers its already validated provider function.
+// Keep the SDK runtime out of this module's shared Lab build dependency graph.
+const boundedFullfileAuthorities=new WeakMap();
+export function registerBoundedAiQaFullfileAuthority(providerFetch,validate){
+  if(typeof providerFetch!=='function'||typeof validate!=='function'||boundedFullfileAuthorities.has(providerFetch))
+    throw new Error('generated_speech_bounded_authority_invalid');
+  boundedFullfileAuthorities.set(providerFetch,validate);
+}
+export function boundedAiQaAllowsFullfile(providerFetch,env=process.env){
+  const validate=boundedFullfileAuthorities.get(providerFetch);if(!validate)return false;
+  try{return validate(env)===true;}catch{return false;}
+}
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const PROFILE = ASTRID_VOICE_PROFILE.profileRevision;
