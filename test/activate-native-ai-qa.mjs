@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,sha256,inspectAiQaRecords,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaNextWindowCounts,sha256,inspectAiQaRecords,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
 import {createBoundedAiQaRouter} from '../web/native-ai-qa-runtime.mjs';
 
 async function fixture(t){
@@ -180,9 +180,9 @@ test('fresh cloud image prepares only private bootstrap parents for UID1000 befo
   const bootstrap=await readFile(new URL('../web/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
 });
 
-async function continuationFixture(t,{install=true}={}){
+async function continuationFixture(t,{install=true,oldTtsId='tts-old'}={}){
   const f=await fixture(t);
-  for(const[resource,id]of[['sdk','director-old'],['generation','generation-old'],['sdk','speech-old'],['tts','tts-old'],['gpu','lipsync']]){
+  for(const[resource,id]of[['sdk','director-old'],['generation','generation-old'],['sdk','speech-old'],['tts',oldTtsId],['gpu','lipsync']]){
     const key=await f.budget.dispatch(resource,id);await f.budget.outcome(key,'response-observed');
   }
   const before=await f.budget.inspect();assert.equal(before.records.length,13);
@@ -377,4 +377,56 @@ test('normal stream factory reserves one Neon session with continuation transpor
   assert.equal(pool.state.sessions.size,1);assert.equal([...pool.state.reservations.values()][0].reserved_micro_usd,'1000000');
   assert.equal(pool.state.fileReservations.size,0);assert.equal((await f.continuationBudget.inspect()).counts.tts,1,'prepare does not start the second TTS before attachment');
   await service.close();assert.equal(cancels,1);assert.equal([...pool.state.sessions.values()][0].state,'terminal');
+});
+
+async function closedSuccessorFixture(t){
+  const f=await continuationFixture(t,{oldTtsId:sha256('Fresh stream.')});
+  for(const [resource,id]of[['generation','stream-one'],['sdk','stream-sdk'],['gpu','session']]){const k=await f.continuationBudget.dispatch(resource,id);await f.continuationBudget.outcome(k,'response-observed');}
+  const before=await f.continuationBudget.close();assert.equal(before.records.length,21);f.setTime(20000);
+  return{...f,before,original:{...f.options.original,closedJournalSha256:before.previousSha256}};
+}
+async function successorBudget(f,before,ordinal=3){
+  const runId=String(ordinal).repeat(8)+'-'+String(ordinal).repeat(4)+'-4'+String(ordinal).repeat(3)+'-8'+String(ordinal).repeat(3)+'-'+String(ordinal).repeat(12);
+  const c={predecessorRecordCount:before.records.length,predecessorJournalSha256:before.previousSha256,
+    previousManifestSha256:before.activeWindow.manifestSha256,previousAuthoritySourceSha256:before.activeWindow.authoritySourceSha256,
+    previousRunId:before.activeWindow.runId,previousExpectedSha:before.activeWindow.expectedSha,
+    rootReviewedIntentSha256:'a'.repeat(64),preflightSha256:'b'.repeat(64),streamRequestIdSha256:sha256('stream-'+ordinal),humanAuthorization:AI_QA_SIX_AUTHORIZATION,
+    previousCounts:before.counts,limitCounts:aiQaNextWindowCounts(before),globalRemainingGenerations:6-before.counts.generation,windowGenerations:1,streamOnly:true};
+  const manifest={...f.manifest,runId,expectedSha:'c'.repeat(40),createdAtMs:ordinal*10000,expiresAtMs:(ordinal+1)*10000,limits:AI_QA_SIX_LIMITS,additionalWindow:c};
+  f.setTime(ordinal*10000);const options={...f.options,original:f.original,manifest,manifestRawSha256:sha256(runId),authoritySourceSha256:'d'.repeat(64)};
+  const budget=await createAiQaBudget(options);return{budget,manifest,options,approve:{approvedIntentSha256:c.rootReviewedIntentSha256,preflightSha256:c.preflightSha256}};
+}
+test('additional window retains original closed21 bytes and charges one fresh stream without reopening old authority',async t=>{
+  const f=await closedSuccessorFixture(t),next=await successorBudget(f,f.before),oldBytes=await Promise.all(f.before.records.map(r=>readFile(join(f.options.directory,String(r.sequence).padStart(6,'0')+'.json'))));
+  await assert.rejects(()=>next.budget.inspect(),/ai_qa_existing_run_changed/);let state=await next.budget.openAdditionalWindow(next.approve);
+  assert.equal(state.closed,true);assert.equal(state.windowClosed,false);assert.equal(state.closedWindows[0].runId,f.continuationManifest.runId);assert.deepEqual(state.counts,{generation:2,sdk:3,tts:1,gpu:2});
+  await assert.rejects(()=>next.budget.openAdditionalWindow(next.approve),/ai_qa_additional_cas_changed/);
+  await assert.rejects(()=>f.continuationBudget.dispatch('sdk','old-reopened'),/ai_qa_/);
+  let sdk=0,provider=0;const router=createBoundedAiQaRouter({manifest:next.manifest,budget:next.budget,now:()=>30000,endpointId:'endpoint',worker:{runNativeP6ProductSpeech:async({responsesCreate})=>{await responsesCreate({logicalCallId:'sdk-new',body:{model:'gpt-5.6-terra',stream:false,store:false,max_output_tokens:32}});return{kind:'generatedText',text:'Fresh stream.'};}},client:{responses:{create:async()=>{sdk++;return{status:'completed',usage:{total_tokens:7}};}}},fetchImpl:async()=>{provider++;return Response.json({id:'one'});}});
+  const args={playerId:'player',owner:'owner',readOwner:async()=> 'owner',readEnvelope:async()=>({status:{dealerId:'astrid'},request:{requestId:'stream-3'}})};
+  await assert.rejects(()=>router.fetchForOwnedRequest(args)(''),/ai_qa_continuation_stream_required/);await assert.rejects(()=>router.fetchForOwnedDirectorRequest({})(''),/ai_qa_continuation_director_denied/);
+  await router.fetchForOwnedRequest({...args,streamRequested:true})('');await router.providerFetch('https://api.cartesia.ai/tts/bytes',{method:'POST',body:JSON.stringify({transcript:'Fresh stream.'})});
+  await assert.rejects(()=>router.providerFetch('https://api.cartesia.ai/tts/bytes',{method:'POST',body:JSON.stringify({transcript:'Fresh stream.'})}),/ai_qa_retry_or_expired/);
+  await router.providerFetch('https://api.runpod.ai/v2/endpoint/run',{method:'POST',body:JSON.stringify({input:{op:'session'}})});
+  await assert.rejects(()=>router.providerFetch('https://api.runpod.ai/v2/endpoint/run',{method:'POST',body:JSON.stringify({input:{op:'session'}})}),/ai_qa_retry_or_expired/);
+  await assert.rejects(()=>next.budget.dispatch('sdk','more-sdk'),/ai_qa_dispatch_limit/);assert.deepEqual({sdk,provider},{sdk:1,provider:2});
+  const restarted=await createAiQaBudget(next.options);state=await restarted.close();assert.deepEqual(state.counts,{generation:3,sdk:4,tts:2,gpu:3});assert.equal(state.records.length,31);assert.equal(state.windowClosed,true);
+  assert.equal(state.refundMicroUsd,0);assert.equal(state.totalEncumberedMicroUsd,10000000);assert.equal(state.actualCostUsd,null);
+  for(let i=0;i<21;i++)assert.deepEqual(await readFile(join(f.options.directory,String(i).padStart(6,'0')+'.json')),oldBytes[i]);
+});
+test('each later window requires new explicit CAS and global six cannot be extended; uncertain work stays closed',async t=>{
+  const f=await closedSuccessorFixture(t);let state=f.before;
+  for(let n=3;n<=6;n++){const next=await successorBudget(f,state,n);state=await next.budget.openAdditionalWindow(next.approve);
+    for(const resource of ['generation','sdk','tts','gpu']){const k=await next.budget.dispatch(resource,resource+'-'+n);await next.budget.outcome(k,'response-observed');}state=await next.budget.close();}
+  assert.deepEqual(state.counts,{generation:6,sdk:7,tts:5,gpu:6});const seventh=await successorBudget(f,state,7);await assert.rejects(()=>seventh.budget.openAdditionalWindow(seventh.approve),/ai_qa_additional_predecessor_not_closed/);
+});
+test('additional reservation read preserves history and refuses an unfunded reservation or nonterminal/active owner',async t=>{
+  const {readAiQaAdditionalPolicy}=await import('../tools/activate-native-ai-qa.mjs');
+  for(const change of ['none','funds','lease','job','file'])await t.test(change,async()=>{const f=continuationPolicyFixture();
+    f.tables.fullfile_budget_policies[0].daily_budget_micro_usd='4748848';for(const n of ['operator_qa_campaigns','operator_qa_gate'])f.tables[n][0].source_sha256='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e';
+    f.tables.gpu_sessions=[{session_id:'session',job_id:'known',state:'terminal',released_at_ms:'100',terminal_status:'CANCELLED',terminal_reason:'provider'}];f.tables.gpu_reservations=[{session_id:'session',reserved_micro_usd:'1000000'}];
+    if(change==='funds')for(const id of ['session2','session3']){f.tables.gpu_sessions.push({...f.tables.gpu_sessions[0],session_id:id});f.tables.gpu_reservations.push({session_id:id,reserved_micro_usd:'1000000'});}if(change==='lease')f.tables.speech_execution_leases[0].expires_at_ms='20001';if(change==='job')f.tables.gpu_sessions[0].released_at_ms=null;if(change==='file')f.tables.speech_requests[0].state='failed';
+    const before=JSON.stringify(f.tables);if(change==='none'){const r=await readAiQaAdditionalPolicy(f.args);assert.equal(r.reservedSqlMicroUsd,2000000);assert.equal(r.nextWindowGpuReserveMicroUsd,1000000);assert.equal(JSON.stringify(r).includes('known'),false);}
+    else await assert.rejects(()=>readAiQaAdditionalPolicy(f.args),/ai_qa_additional_/);assert.equal(JSON.stringify(f.tables),before);assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE)/.test(c.sql)),false);
+  });
 });

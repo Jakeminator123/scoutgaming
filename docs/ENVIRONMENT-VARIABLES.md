@@ -10,6 +10,9 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Aktuell källa: `Jakeminator123/github-work` på `main`.
+Det manuella bounded-QA-provets efterföljande fönster med sex genereringar totalt
+återanvänder de redan listade QA-router-, stream- och SDK-variablerna; inga nya
+miljövariabelnamn införs. Tidigare förbrukning och reservationer bevaras.
 Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
