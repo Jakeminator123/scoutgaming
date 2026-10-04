@@ -144,6 +144,13 @@ Efter UID-byte och före Web-start återställs endast saknade, manifestbundna
 filer. Ändrade befintliga bytes stoppar starten; originaljournaler, SDK och
 budget berörs inte av återställningen. Avstängd boundedflagga gör ingen fil-I/O.
 
+Fullfilstjänsten håller en intern registrering av transportens verifierings-
+callback; SDK-runtime registrerar den efter sin manifestkontroll. Detta håller
+Studios gemensamma bygggraf fri från SDK-runtime och dess privata imports.
+`HOST` och `CROUPIER_CLOUD_RUNTIME` är redan härledda interna Web-värden från
+molnstarten och ingår nu i namninventeringens kontrollerade källor. De är inga
+nya provider- eller Vercel-nycklar; den befintliga QA-scopekontrollen består.
+
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
 `BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.

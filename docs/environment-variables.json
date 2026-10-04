@@ -13,6 +13,7 @@
         "web/native-p6-qa-hook.mjs",
         "web/native-ai-qa-runtime.mjs",
         "web/native-ai-qa-private.mjs",
+        "web/generated-speech.mjs",
         "web/storage/studio-runtime.mjs",
         "web/storage/studio-game-policy.mjs",
         "web/studio-game-commands.mjs"
@@ -94,6 +95,8 @@
         "CROUPIER_P6_SDK_OPENAI_API_KEY"
       ],
       "managed": [
+        "HOST",
+        "CROUPIER_CLOUD_RUNTIME",
         "PORT",
         "RENDER_EXTERNAL_URL",
         "RENDER_SERVICE_ID",
