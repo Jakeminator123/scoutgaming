@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
-import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,NATIVE_P6_GAME_ORIGIN,
+import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,nativeP6GameAvailability,NATIVE_P6_GAME_ORIGIN,
   NATIVE_P6_GAME_CONTEXT_PATH,NATIVE_P6_GAME_SOURCE_PATHS} from '../web/public/native-p6-game-playback.mjs';
 import {createSpeechQueue} from '../web/public/speech-queue.mjs';
 import {createSpeechPoseGate} from '../web/public/speech-pose-gate.mjs';
@@ -84,10 +84,14 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
     const i=paths.findIndex(p=>'/'+p.replace('web/public/','')===path);assert.notEqual(i,-1,'no generation or unknown URL');
     const r=new Response(changedSource?'changed':sources[i],{headers:{'content-type':'text/javascript'}});
     Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;};
-  const available=()=>quiet&&queue.pending===0&&gate.pendingCount===0&&gate.state.actionOwner==='none';
+  const availabilityState={busy:!quiet,hasRound:false,chatBusy:false,speaking:false,muted:false};
+  const readAvailability=()=>({...availabilityState,hidden:document.hidden,queuePending:queue.pending,posePending:gate.pendingCount,
+    actionNone:gate.state.actionOwner==='none',speechNone:gate.state.speechOwner==='none',
+    standardIdle:gate.state.dealerPose==='standard-idle',idlePresented:gate.state.idlePresented!==null});
+  const available=()=>nativeP6GameAvailability(readAvailability()).quiet;
   const deliver=createNativeP6GameQueueDelivery({identity:()=>({...renderer}),isAvailable:available,gate,pending,
     onAcquire:()=>acquired++,onRelease:()=>released++});
-  const start=()=>installNativeP6GamePlayback({href,identity:()=>({...renderer}),isAvailable:available,deliver,mount,fetchImpl,now});
+  const start=()=>installNativeP6GamePlayback({href,identity:()=>({...renderer}),isAvailable:available,readAvailability,deliver,mount,fetchImpl,now});
   const input=()=>({runId:randomUUID(),expectedSha:'1'.repeat(40),attempt:1,descriptor:descriptor(),expectedOwnedState:{...owned},sourceHashes,
     sessionObserverSourceSha256:'5'.repeat(64)});
   const feed=()=>{sockets[0].message({t:'ready',protocol:2,id:wireId});sockets[0].message({t:'stream',id:wireId,mime});sockets[0].message(new Uint8Array([1,2,3,4]).buffer);};
@@ -95,13 +99,49 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
   const end=async()=>{present();sockets[0].message({t:'done',id:wireId,frames:12});await new Promise(r=>setTimeout(r,5));
     media[0].ended=true;media[0].dispatchEvent(new Event('ended'));};
   return{start,input,feed,end,renderer,gate,queue,pending,mount,original,sockets,media,fetches,frames,
-    counts:()=>({acquired,released,reads})};
+    availabilityState,counts:()=>({acquired,released,reads})};
 }
 async function until(fn){for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,1));}assert.fail('fixture lifecycle timeout');}
+const quietComponents={busy:false,hasRound:false,chatBusy:false,speaking:false,muted:false,hidden:false,
+  queuePending:0,posePending:0,actionNone:true,speechNone:true,standardIdle:true,idlePresented:true};
+test('exact safe availability identifies every quiet blocker and rejects nonnumeric counts or extra data',()=>{
+  const snapshot=nativeP6GameAvailability(quietComponents);assert.equal(snapshot.quiet,true);assert.equal(Object.isFrozen(snapshot),true);
+  for(const [key,value]of Object.entries(quietComponents)){
+    const blocked={...quietComponents,[key]:typeof value==='number'?1:!value};
+    assert.equal(nativeP6GameAvailability(blocked).quiet,false,key);
+  }
+  for(const invalid of [{...quietComponents,queuePending:'0'},{...quietComponents,posePending:-1},
+    {...quietComponents,posePending:NaN},{...quietComponents,busy:0},{...quietComponents,exactText:'private'},
+    {...quietComponents,actionNone:undefined}])assert.throws(()=>nativeP6GameAvailability(invalid),/availability_invalid/);
+});
+test('availability is fresh and read-only and inactive/closed API cannot report quiet',async t=>{
+  const f=fixture(t),api=await f.start();assert.equal(api.availability().quiet,true);
+  assert.equal(Object.isFrozen(api.availability()),true);assert.equal(f.fetches.length,1);
+  f.availabilityState.chatBusy=true;assert.equal(api.availability().chatBusy,true);assert.equal(api.availability().quiet,false);
+  await assert.rejects(api.run(f.input()),/native_p6_game_not_quiet/);
+  assert.equal(f.fetches.length,1);assert.equal(f.sockets.length,0);assert.equal(f.counts().acquired,0);
+  f.availabilityState.chatBusy=false;const input=f.input(),pending=api.run(input);void pending.catch(()=>{});
+  assert.equal(api.availability().currentRun,true);assert.equal(api.availability().quiet,false);
+  api.close();assert.equal(api.availability().closed,true);assert.equal(api.availability().quiet,false);
+  await assert.rejects(pending);assert.equal(api.availability().currentRun,false);
+});
+test('actual blocked app and pose components reject run before authority/source or paid stream IO',async t=>{
+  const blockers=[...['busy','hasRound','chatBusy','speaking','muted'].map(key=>[key,f=>{f.availabilityState[key]=true;}]),
+    ['hidden',()=>{document.hidden=true;}],['actionNone',f=>{f.gate.updateRendererState({actionOwner:'dealing'});}],
+    ['speechNone',f=>{f.gate.updateRendererState({speechOwner:'other'});}],
+    ['standardIdle',f=>{f.gate.updateRendererState({dealerPose:'action'});}],
+    ['idlePresented',f=>{f.gate.updateRendererState({idlePresented:null});}]];
+  for(const [key,block]of blockers)await t.test(key,async t=>{
+    const f=fixture(t),api=await f.start();block(f);assert.equal(api.availability().quiet,false);
+    await assert.rejects(api.run(f.input()),/native_p6_game_not_quiet/);
+    assert.equal(f.fetches.length,1);assert.equal(f.counts().acquired,0);assert.equal(f.sockets.length,0);
+  });
+});
 test('default-off and other dealer/host launches do no QA IO or queue work',async()=>{
   for(const url of [NATIVE_P6_GAME_ORIGIN+'/?dealer=astrid&presentation=local',href.replace('astrid','vera'),href.replace('astrid','amira'),
     href.replace('astrid','mei'),href.replace(NATIVE_P6_GAME_ORIGIN,'https://other.example')]){
-    assert.equal(await installNativeP6GamePlayback({href:url,fetchImpl:()=>assert.fail('default-off must not fetch')}),null);
+    assert.equal(await installNativeP6GamePlayback({href:url,fetchImpl:()=>assert.fail('default-off must not fetch'),
+      readAvailability:()=>assert.fail('default-off must not read availability')}),null);
   }
 });
 test('cookie authorization and fresh renderer round required before exposing any API',async t=>{
@@ -136,11 +176,12 @@ test('changed source and changed renderer round are denied before queue mutation
 test('stale cookie context does not expose API',async t=>{
   const f=fixture(t,{stale:true});await assert.rejects(f.start(),/owned_state_changed/);assert.equal(f.counts().acquired,0);
 });
-test('actual gate with no presented idle proof holds outside the queue and cancellation opens no socket',async t=>{
+test('actual gate with no presented idle proof denies admission before any queue or socket',async t=>{
   const f=fixture(t),api=await f.start(),controller=new AbortController();f.gate.updateRendererState({idlePresented:null});
-  const pending=api.run({...f.input(),signal:controller.signal});void pending.catch(()=>{});
-  await until(()=>f.gate.pendingCount===1);assert.equal(f.queue.pending,0);assert.equal(f.sockets.length,0);
-  assert.equal(f.gate.trace.some(v=>v.stage==='standard-idle-presented'),false);controller.abort();await assert.rejects(pending);
+  await assert.rejects(api.run({...f.input(),signal:controller.signal}),/native_p6_game_not_quiet/);
+  assert.equal(api.availability().idlePresented,false);assert.equal(api.availability().quiet,false);
+  assert.equal(f.queue.pending,0);assert.equal(f.sockets.length,0);
+  assert.equal(f.gate.trace.some(v=>v.stage==='standard-idle-presented'),false);assert.equal(controller.signal.aborted,false);
   assert.equal(f.pending.size,0);assert.equal(f.gate.pendingCount,0);assert.equal(f.sockets.length,0);
 });
 test('parallel requests and close cannot open a second stream',async t=>{
