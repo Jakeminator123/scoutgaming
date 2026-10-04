@@ -9,6 +9,7 @@ export const NATIVE_P6_GAME_SOURCE_PATHS=Object.freeze(['web/public/app.mjs','we
   'web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs','web/public/speech-package.mjs',
   'web/public/astrid-voice-profile.mjs']);
 const ownerKeys=['actorSha256','ownerSessionSha256','sessionRevision','roundRevision','policySha256'];
+const clockToleranceMs=5000;
 const stages=['chat-received','response-ready','held-for-pose','action-completed','standard-idle-presented',
   'chat-displayed','speech-started','speech-completed'];
 const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
@@ -34,7 +35,7 @@ async function ownedContext(fetchImpl,signal,now){
   catch{throw Error('native_p6_game_cookie_context_unavailable');}
   const receivedAtMs=now();need(exact(value,[...ownerKeys,'observedAtMs'])
     &&ownerValid(Object.fromEntries(ownerKeys.map(k=>[k,value[k]])))&&Number.isSafeInteger(value.observedAtMs)
-    &&value.observedAtMs<=receivedAtMs&&receivedAtMs-value.observedAtMs<=5000,'native_p6_game_owned_state_changed');
+    &&Number.isSafeInteger(receivedAtMs)&&Math.abs(receivedAtMs-value.observedAtMs)<=clockToleranceMs,'native_p6_game_owned_state_changed');
   return{...value,receivedAtMs};
 }
 function frameVisible(video,surface,mount){
@@ -98,13 +99,13 @@ export async function installNativeP6GamePlayback({href,identity,isAvailable,del
       expectedSha=input.expectedSha,attempt=input.attempt,observerSha=input.sessionObserverSourceSha256;
     const own=new AbortController();current=own;const abort=()=>own.abort();input.signal?.addEventListener('abort',abort,{once:true});
     const timer=setTimeout(abort,45000),startedAtMs=now();let player,video,surface,frameHandle,ended=false,start,end,frame;
-    const chunks=[],observations=[];let binaryBytes=0;
+    const chunks=[],observations=[];let binaryBytes=0,runObservedAtMs;
     const rendererIdentity=Object.freeze(structuredClone(identity()));
     const checkRenderer=()=>{const value=identity();need(value.dealerId==='astrid'&&value.sessionRevision===rendererIdentity.sessionRevision
       &&value.roundRevision===rendererIdentity.roundRevision&&value.roundRevision===expected.roundRevision,'native_p6_game_stale_renderer');};
     const observe=async phase=>{own.signal.throwIfAborted();const state=await ownedContext(fetchImpl,own.signal,now);
       need(ownerKeys.every(k=>state[k]===expected[k])&&state.actorSha256===initial.actorSha256&&state.ownerSessionSha256===initial.ownerSessionSha256
-        &&state.observedAtMs>=startedAtMs,'native_p6_game_owned_state_changed');checkRenderer();own.signal.throwIfAborted();
+        &&Number.isSafeInteger(runObservedAtMs)&&state.observedAtMs>=runObservedAtMs,'native_p6_game_owned_state_changed');checkRenderer();own.signal.throwIfAborted();
       observations.push({phase,...state});};
     try{
       checkRenderer();need(isAvailable(),'native_p6_game_not_quiet');
@@ -116,6 +117,9 @@ export async function installNativeP6GamePlayback({href,identity,isAvailable,del
       const beforeQueue=await ownedContext(fetchImpl,own.signal,now);
       need(ownerKeys.every(k=>beforeQueue[k]===expected[k])&&beforeQueue.actorSha256===initial.actorSha256
         &&beforeQueue.ownerSessionSha256===initial.ownerSessionSha256,'native_p6_game_owned_state_changed');checkRenderer();
+      // Compare subsequent authority reads with this fresh server timestamp.
+      // Browser and server wall clocks may differ within the bounded tolerance.
+      runObservedAtMs=beforeQueue.observedAtMs;
       for(const path of NATIVE_P6_GAME_SOURCE_PATHS){
         const response=await fetchImpl('/'+path.replace('web/public/',''),{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',signal:own.signal});
         need(response.ok&&response.url===NATIVE_P6_GAME_ORIGIN+'/'+path.replace('web/public/','')
@@ -124,7 +128,7 @@ export async function installNativeP6GamePlayback({href,identity,isAvailable,del
       }
       // Source reads may be slow. Revalidate ownership again before enqueue.
       const atQueue=await ownedContext(fetchImpl,own.signal,now);
-      need(ownerKeys.every(k=>atQueue[k]===expected[k]),'native_p6_game_owned_state_changed');checkRenderer();
+      need(ownerKeys.every(k=>atQueue[k]===expected[k])&&atQueue.observedAtMs>=runObservedAtMs,'native_p6_game_owned_state_changed');checkRenderer();
       need(isAvailable()&&!own.signal.aborted&&descriptor.expiresAt>now(),'native_p6_game_not_quiet');
       seen.add(descriptor.requestId);campaign??={runId,expectedSha};
       const event=()=>({requestId:descriptor.requestId,streamId:descriptor.id,reviewStatus:'pending',atMs:now()});

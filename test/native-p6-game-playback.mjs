@@ -20,7 +20,7 @@ function descriptor(){const id='a'.repeat(32),expiresAt=Date.now()+30000,exactTe
   return{schemaVersion:1,kind:'generated-speech-stream',id,requestId:'qa-game-'+randomUUID(),dealerId:'astrid',exactText,
     textSha256:hash(exactText),reviewStatus:'pending',url:'/speech-stream',expiresAt,
     ticket:Buffer.from(JSON.stringify({sessionId:id,exp:expiresAt})).toString('base64url')+'.'+'x'.repeat(43)};}
-function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=false,changedSource=false,poseChangeAt=0,quiet=true}={}){
+function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=false,changedSource=false,poseChangeAt=0,quiet=true,serverSkewMs=0,serverRollbackAt=0,now=Date.now}={}){
   const media=[],sockets=[],frames=new Map(),fetches=[],pending=new Map();let frameId=0,reads=0,acquired=0,released=0;
   const renderer={dealerId:'astrid',sessionRevision:randomUUID(),roundRevision:'0'},wireId=randomUUID();
   const install=(key,value)=>{const prior=Object.getOwnPropertyDescriptor(globalThis,key);
@@ -77,7 +77,7 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
     }});
   const fetchImpl=async(path,options)=>{fetches.push(path);assert.equal(options.method,'GET');assert.equal(options.credentials,'same-origin');
     assert.equal(options.redirect,'error');assert.equal(options.cache,'no-store');assert.equal(Object.hasOwn(options,'body'),false);
-    if(path===NATIVE_P6_GAME_CONTEXT_PATH){reads++;const value={...owned,observedAtMs:Date.now()-(stale?6000:0)};
+    if(path===NATIVE_P6_GAME_CONTEXT_PATH){reads++;const value={...owned,observedAtMs:now()+serverSkewMs-(stale?6000:0)-(reads===serverRollbackAt?1:0)};
       if(reads===ownerChangeAt)value[ownerKey]='6'.repeat(64);if(reads===poseChangeAt)gate.updateRendererState({actionOwner:'dealing'});
       const r=new Response(JSON.stringify(value),{status:deny?404:200,headers:{'content-type':'application/json'}});
       Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;}
@@ -87,7 +87,7 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
   const available=()=>quiet&&queue.pending===0&&gate.pendingCount===0&&gate.state.actionOwner==='none';
   const deliver=createNativeP6GameQueueDelivery({identity:()=>({...renderer}),isAvailable:available,gate,pending,
     onAcquire:()=>acquired++,onRelease:()=>released++});
-  const start=()=>installNativeP6GamePlayback({href,identity:()=>({...renderer}),isAvailable:available,deliver,mount,fetchImpl});
+  const start=()=>installNativeP6GamePlayback({href,identity:()=>({...renderer}),isAvailable:available,deliver,mount,fetchImpl,now});
   const input=()=>({runId:randomUUID(),expectedSha:'1'.repeat(40),attempt:1,descriptor:descriptor(),expectedOwnedState:{...owned},sourceHashes,
     sessionObserverSourceSha256:'5'.repeat(64)});
   const feed=()=>{sockets[0].message({t:'ready',protocol:2,id:wireId});sockets[0].message({t:'stream',id:wireId,mime});sockets[0].message(new Uint8Array([1,2,3,4]).buffer);};
@@ -174,4 +174,41 @@ test('cancel during decode closes actual queue/player and consumes attempt witho
   await assert.rejects(pending);assert.equal(f.sockets[0].readyState,3);assert.equal(f.pending.size,0);assert.equal(f.frames.size,0);
   await f.queue.idle;
   await assert.rejects(api.run({...input,signal:new AbortController().signal}),/attempt_consumed/);assert.equal(f.sockets.length,1);
+});
+
+test('bounded server/browser clock skew preserves the actual queue lifecycle in either direction',async t=>{
+  for(const serverSkewMs of [-5000,-108,108,5000])await t.test(String(serverSkewMs),async t=>{
+    let clientNow=Date.now();const f=fixture(t,{serverSkewMs,now:()=>clientNow}),api=await f.start(),input=f.input(),pending=api.run(input);
+    void pending.catch(()=>{});await until(()=>f.sockets.length===1);f.feed();await until(()=>f.media[0].paused===false);
+    clientNow+=10;await f.end();const result=await pending;
+    assert.equal(result.playback.queueReceipt.status,'completed');assert.equal(result.transportCompleted,true);
+    assert.equal(f.sockets.length,1);assert.equal(f.pending.size,0);
+    assert.deepEqual(result.playback.sessionObserver.observations.map(v=>v.phase),['before-connect','before-play','after-end']);
+    for(const observation of result.playback.sessionObserver.observations)assert.equal(observation.observedAtMs-observation.receivedAtMs,serverSkewMs);
+    if(serverSkewMs<0)assert.ok(result.playback.sessionObserver.observations[0].observedAtMs<result.playback.startedAtMs,
+      'server authority is compared in its own time domain');
+  });
+});
+
+test('context beyond either five-second boundary exposes no capability or stream',async t=>{
+  for(const serverSkewMs of [-5001,5001])await t.test(String(serverSkewMs),async t=>{
+    const fixedNow=Date.now(),f=fixture(t,{serverSkewMs,now:()=>fixedNow});
+    await assert.rejects(f.start(),/owned_state_changed/);
+    assert.equal(f.counts().acquired,0);assert.equal(f.queue.pending,0);assert.equal(f.sockets.length,0);
+  });
+});
+
+test('regressed server authority is rejected before enqueue or transport despite bounded browser skew',async t=>{
+  for(const serverRollbackAt of [3,4])await t.test(String(serverRollbackAt),async t=>{
+    const fixedNow=Date.now(),f=fixture(t,{serverSkewMs:-108,serverRollbackAt,now:()=>fixedNow}),api=await f.start();
+    await assert.rejects(api.run(f.input()),/owned_state_changed|queue_completion_required/);
+    assert.equal(f.counts().acquired,serverRollbackAt===3?0:1);assert.equal(f.sockets.length,0);
+    assert.equal(f.pending.size,0);assert.equal(f.queue.pending,0);
+  });
+});
+
+test('context diagnostic timestamp is never accepted as a sixth expected owner key',async t=>{
+  const f=fixture(t),api=await f.start(),input=f.input();input.expectedOwnedState.observedAtMs=Date.now();
+  await assert.rejects(api.run(input),/exact_request_required/);
+  assert.equal(f.counts().reads,1);assert.equal(f.counts().acquired,0);assert.equal(f.sockets.length,0);
 });
