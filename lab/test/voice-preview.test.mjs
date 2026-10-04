@@ -33,6 +33,8 @@ test('Cartesia credential is required and never appears in status', () => {
   assert.ok(!JSON.stringify(voicePreviewStatus(settings)).includes('a-secret'));
   assert.equal(voicePreviewStatus(readVoiceSettings({ env: { ELEVENLABS_API_KEY: 'old-provider' }, envFiles: [] })).configured, false);
   assert.equal(voicePreviewStatus(readVoiceSettings({ env: {}, envFiles: [] })).configured, false);
+  assert.equal(readVoiceSettings({ env: { LAB_STUDIO_DATA_DIR: 'retired-storage' }, envFiles: [] }).cacheDir,
+    readVoiceSettings({ env: {}, envFiles: [] }).cacheDir);
 });
 
 test('shared Neon and native Studio fail before secret/cache/provider access even with caller settings', async t => {

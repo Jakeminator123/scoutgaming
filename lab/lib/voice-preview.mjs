@@ -42,7 +42,7 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
   return {
     key: values.CARTESIA_API_KEY?.trim() || '',
     mismatch: false,
-    cacheDir: resolve(env.LAB_STUDIO_DATA_DIR || resolve(LAB_DIR, 'data'), 'voice-cache'),
+    cacheDir: resolve(LAB_DIR, 'data', 'voice-cache'),
   };
 }
 

@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { mkdir, lstat, realpath, open, rename, unlink } from 'node:fs/promises';
-import { basename, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { StudioError } from './project-store.mjs';
 
@@ -55,9 +56,7 @@ function privateResult(result, record) {
   }
 }
 function cacheDirectory(options) {
-  const env = options.env ?? process.env;
-  const lab = basename(process.cwd()) === 'lab' ? process.cwd() : join(process.cwd(), 'lab');
-  return resolve(options.cacheDir ?? join(env.LAB_STUDIO_DATA_DIR || env.CROUPIER_PRESENTATION_STUDIO_DIR || join(lab, 'data'), '.blob-cache'));
+  return resolve(options.cacheDir ?? join(tmpdir(), 'croupier-private-media'));
 }
 async function safeDirectory(dir) {
   await mkdir(dir, { recursive: true });

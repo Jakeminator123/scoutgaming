@@ -189,20 +189,21 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (env.CROUPIER_STREAM_LANE !== 'lissabon-stream-lane') fail('CROUPIER_STREAM_LANE');
   const publicPort = port(env.PORT);
   const disk = env.CROUPIER_CLOUD_DATA_ROOT;
-  if (typeof disk !== 'string' || !isAbsolute(disk)) fail('CROUPIER_CLOUD_DATA_ROOT');
-  const dataRoot = resolve(disk);
-  if (dataRoot === parse(dataRoot).root || !outside(resolve(repository), dataRoot)) fail('CROUPIER_CLOUD_DATA_ROOT');
-  const paths = {
-    players: join(dataRoot, 'players'), studio: join(dataRoot, 'studio'),
-    generations: join(dataRoot, 'generations'), speech: join(dataRoot, 'speech'),
-  };
+  const diskRequired = database === 'sqlite' || Boolean(storageExport) || Boolean(nativeP6QaRouter);
+  if (disk === undefined && diskRequired) fail('CROUPIER_CLOUD_DATA_ROOT');
+  if (disk !== undefined && (typeof disk !== 'string' || !isAbsolute(disk))) fail('CROUPIER_CLOUD_DATA_ROOT');
+  const dataRoot = disk === undefined ? null : resolve(disk);
+  if (dataRoot && (dataRoot === parse(dataRoot).root || !outside(resolve(repository), dataRoot))) fail('CROUPIER_CLOUD_DATA_ROOT');
+  if (!dataRoot && (mediaStorage !== 'blob' || env.CROUPIER_STUDIO_NEON_POLICY !== '1')) fail('CROUPIER_CLOUD_DATA_ROOT');
+  const paths = dataRoot && (database === 'sqlite' || storageExport) ? { players: join(dataRoot, 'players') } : {};
   const mediaBlobIndex = env.CROUPIER_MEDIA_BLOB_INDEX || '';
   if (mediaBlobIndex && (mediaStorage !== 'blob' || !isAbsolute(mediaBlobIndex)
-    || ![join(repository,'media/blob-index.json'),join(paths.studio,'media-blob-index.json')].some(path => samePath(path,mediaBlobIndex)))) fail('CROUPIER_MEDIA_BLOB_INDEX');
-  for (const [name, path] of Object.entries({ CROUPIER_DATA_DIR: paths.players,
-    LAB_STUDIO_DATA_DIR: paths.studio, CROUPIER_PRESENTATION_STUDIO_DIR: paths.studio,
-    CROUPIER_GENERATIONS_DIR: paths.generations, CROUPIER_GENERATED_SPEECH_DIR: paths.speech })) {
-    if (env[name] && resolve(env[name]) !== path) fail(name);
+    || !samePath(join(repository,'media/blob-index.json'),mediaBlobIndex))) fail('CROUPIER_MEDIA_BLOB_INDEX');
+  if (!dataRoot && !mediaBlobIndex) fail('CROUPIER_MEDIA_BLOB_INDEX');
+  if (env.CROUPIER_DATA_DIR !== undefined
+    && (!paths.players || resolve(env.CROUPIER_DATA_DIR) !== paths.players)) fail('CROUPIER_DATA_DIR');
+  for (const name of ['LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
+    if (env[name] !== undefined) fail(name);
   }
   let videoArchive;
   if (env.LAB_VIDEO_ARCHIVE !== undefined) {
@@ -238,6 +239,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
 
 // Read-only check. Filesystem existence cannot prove that a mount is durable.
 export async function inspectCloudDisk(config) {
+  if (!config.dataRoot) return;
   const info = await lstat(config.dataRoot).catch(() => null);
   const canonical = await realpath(config.dataRoot).catch(() => null);
   if (!info?.isDirectory() || info.isSymbolicLink()
@@ -327,8 +329,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
           CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD: config.bootstrapAdmin.password,
         } : {}),
         DEMO_GUEST_ACCESS: '', CROUPIER_LISSABON_PROFILES: '',
-        CROUPIER_DATA_DIR: config.paths.players, CROUPIER_PRESENTATION_STUDIO_DIR: config.paths.studio,
-        CROUPIER_GENERATIONS_DIR: config.paths.generations, CROUPIER_GENERATED_SPEECH_DIR: config.paths.speech,
+        ...(config.database === 'sqlite' ? { CROUPIER_DATA_DIR: config.paths.players } : {}),
         CROUPIER_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_CLOUD_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_GENERATED_SPEECH_STREAMING: config.streaming ? '1' : '',
@@ -363,7 +364,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
           CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),
         LAB_PUBLIC_URL: config.labOrigin, CROUPIER_LAB_INTERNAL_SECRET: labInternalSecret,
         CROUPIER_LAB_BASE_PATH: config.labBasePath,
-        LAB_STUDIO_DATA_DIR: config.paths.studio, CROUPIER_DATA_DIR: config.paths.players,
+        ...(config.database === 'sqlite' ? { CROUPIER_DATA_DIR: config.paths.players } : {}),
         BO_URL: config.boOrigin, CROUPIER_GAME_ORIGIN: config.gameOrigin,
         ...(config.zonesDatabaseUrl ? { CROUPIER_ZONES_DATABASE_URL: config.zonesDatabaseUrl } : {}),
         BETTALOTTO_PARTNER_BASE_URL: config.gameOrigin,

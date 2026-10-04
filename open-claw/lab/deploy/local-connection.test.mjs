@@ -140,7 +140,9 @@ test('child environments separate credentials, empty provider settings and use d
   assert.equal(specs.product.env.PUBLIC_URL, specs.urls.product);
   assert.equal(specs.product.env.BO_URL, specs.urls.product);
   assert.equal(specs.product.env.CROUPIER_DATA_DIR, join(directory, 'product'));
-  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, join(directory, 'next-studio'));
+  assert.equal(specs.product.env.CROUPIER_GENERATIONS_DIR, undefined);
+  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
+  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
   assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'lab'));
   assert.match(specs.lab.args.join(' '), /next.* start .*--port 4197/);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, 'fixture-gateway-only');
@@ -169,8 +171,8 @@ test('Lissabon can share its saved project while keeping QA players and browser 
     browserHostname: 'localhost', labDistDir: '.next-probe',
   });
   for (const specs of [normal, qa]) {
-    assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, studioDataDir);
-    assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, studioDataDir);
+    assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
+    assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
     assert.equal(specs.lab.dataDir, studioDataDir);
     assert.equal(specs.product.env.CROUPIER_LISSABON_PROFILES, '1');
     assert.equal(specs.product.env.HOST, '127.0.0.1');
@@ -231,7 +233,8 @@ test('isolated product keeps speech and presentation credentials separate withou
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_URL, 'https://director.example.test');
   assert.equal(specs.product.env.OPENCLAW_PRODUCT_SPEECH_TOKEN, productSpeechSecret);
   assert.equal(specs.product.env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN, 'fixture-lab-director-only');
-  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, specs.lab.env.LAB_STUDIO_DATA_DIR);
+  assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
+  assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
   assert.equal(specs.product.env.OPENCLAW_BASE_URL, '');
   assert.deepEqual(JSON.parse(specs.product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS), ['https://director.example.test']);
@@ -282,7 +285,7 @@ test('read-only probes distinguish configured, reachable and model-not-run state
   assert.ok(!JSON.stringify(result).includes(directorSecret));
 });
 
-test('launcher starts isolated native and the real Next Eventstudio without using real databases', async t => {
+test('launcher starts isolated native and the real Next Eventstudio without reviving disk-backed Studio state', async t => {
   const gatewaySecret = 'fixture-gateway-launch';
   const directorSecret = 'fixture-director-launch';
   const gateway = await httpFixture(t, (_request, response) => { response.writeHead(200, { 'Content-Type': 'application/json' }); response.end('{"data":[]}'); });
@@ -302,8 +305,8 @@ test('launcher starts isolated native and the real Next Eventstudio without usin
   assert.equal(studioHealth.status, 200);
   assert.deepEqual(await studioHealth.json(), { ok: true, service: 'croupier-next-studio', localOnly: true, streamLane: null });
   const project = await fetch(fixture.urls.lab + '/api/project');
-  assert.equal(project.status, 200);
-  assert.equal((await project.json()).status.provider, 'render-relay');
+  assert.equal(project.status, 503);
+  assert.deepEqual(await project.json(), { error: 'studio_read_storage_unavailable' });
   const reference = await fetch(fixture.urls.lab + '/api/inputs/reference');
   assert.equal(reference.status, 200);
   const referenceStatus = await reference.json();

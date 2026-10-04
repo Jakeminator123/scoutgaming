@@ -80,7 +80,7 @@ function isolatedEnv(runDir, ports) {
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', RENDER_EXTERNAL_URL: '',
     LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',
     ELEVENLABS_API_KEY: '', ELEVENLABS_OC_API: '',
-    LAB_STUDIO_DATA_DIR: join(runDir, 'studio'), LAB_DATA_DIR: join(runDir, 'director'),
+    LAB_DATA_DIR: join(runDir, 'director'),
     LAB_VIDEO_ARCHIVE: join(runDir, 'archive'),
   });
 }
@@ -141,12 +141,12 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
     runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-comparison-'));
   } catch (error) { await session.release(); throw error; }
   const dataDir = join(runDir, 'game');
+  const studioDir = join(runDir, 'studio');
   const gameUrl = `http://localhost:${gamePort}`, labUrl = `http://127.0.0.1:${labPort}`;
   const urls = Object.freeze({ game: gameUrl, original: `${gameUrl}/?dealer=astrid`, v2: `${gameUrl}/v2/?dealer=astrid`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
   const password = randomBytes(24).toString('base64url'), username = 'comparison-qa', email = 'comparison@example.invalid';
   const readToken = randomBytes(32).toString('base64url');
   const env = session.environment(isolatedEnv(runDir, [gamePort, labPort]));
-  env.CROUPIER_PRESENTATION_STUDIO_DIR = env.LAB_STUDIO_DATA_DIR;
   env.CROUPIER_STREAM_LANE = streamLane;
   if (generationDirectory) env.LAB_VIDEO_ARCHIVE = generationDirectory;
   let gameChild, labChild, stopped = false, stopping, labStarting = null;
@@ -182,8 +182,8 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
     try { return await labStarting; } catch (error) { labChild = null; throw error; } finally { labStarting = null; }
   };
   try {
-    await Promise.all([dataDir, env.LAB_STUDIO_DATA_DIR, env.LAB_DATA_DIR, ...(!generationDirectory ? [env.LAB_VIDEO_ARCHIVE] : [])].map(dir => fsPromises.mkdir(dir, { recursive: true })));
-    await prepareStudio?.(env.LAB_STUDIO_DATA_DIR);
+    await Promise.all([dataDir, studioDir, env.LAB_DATA_DIR, ...(!generationDirectory ? [env.LAB_VIDEO_ARCHIVE] : [])].map(dir => fsPromises.mkdir(dir, { recursive: true })));
+    await prepareStudio?.(studioDir);
     await prepare?.(session);
     const seed = new DatabaseSync(join(dataDir, 'craig.db'));
     try {

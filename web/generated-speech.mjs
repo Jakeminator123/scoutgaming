@@ -75,14 +75,15 @@ function configuration(env) {
   const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
   const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview)
     && (!managedStreaming || (boundedAiQaAllowsFullfile(speechProviderFetch,env)&&speechJournal));
-  const value = { directory: env.CROUPIER_GENERATED_SPEECH_DIR,
+  const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
+  const value = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR,
     cartesiaApiKey: env.CARTESIA_API_KEY,
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
     voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId,
     reserveMicroUsd: budgetAmount(env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD),
     dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD) };
   const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
-  const configured = enabled && privateDirectory(value.directory)
+  const configured = enabled && (journaled || privateDirectory(value.directory))
     && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
   return { enabled, configured, value };
 }
@@ -125,8 +126,8 @@ export function createGeneratedSpeechService(config, { provider = null, journal 
   if (journalRequired || journal) requireSpeechJournal(journal);
   if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
   if (journal) requireArtifacts(artifacts);
-  if (!config || !privateDirectory(config.directory)) fail('generated_speech_invalid_directory');
-  const directory = resolve(config.directory);
+  if (!config || (!journal && !privateDirectory(config.directory))) fail('generated_speech_invalid_directory');
+  const directory = journal ? null : resolve(config.directory);
   const voiceId = config.voiceId ?? GENERATED_SPEECH_DEFAULTS.voiceId;
   const modelId = config.modelId ?? GENERATED_SPEECH_DEFAULTS.modelId;
   if (voiceId !== GENERATED_SPEECH_DEFAULTS.voiceId || modelId !== GENERATED_SPEECH_DEFAULTS.modelId) fail('generated_speech_unknown_profile');

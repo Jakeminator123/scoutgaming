@@ -10,7 +10,7 @@ const MAX_INDEX_BYTES = 8 * 1024 * 1024;
 
 export function uploadDirectory(options = {}) {
   const lab = basename(process.cwd()) === 'lab' ? process.cwd() : join(process.cwd(), 'lab');
-  return resolve(options.uploadDir ?? join((options.env ?? process.env).LAB_STUDIO_DATA_DIR || join(lab, 'data'), 'videos'));
+  return resolve(options.uploadDir ?? join(lab, 'data', 'videos'));
 }
 export async function safeDirectory(dir, create = false) {
   if (create) await mkdir(dir, { recursive: true });

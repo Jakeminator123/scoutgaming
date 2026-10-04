@@ -30,16 +30,18 @@ test('configuration and present media never bypass known cloud migration blocker
     CROUPIER_ASTRID_TRANSLATION_KEY: 'private-translation-key-never-print',
     LAB_REMOTE_URL: 'https://director.example.invalid/private?token=hidden-value',
     LAB_STUDIO_DATA_DIR: state, CROUPIER_PRESENTATION_STUDIO_DIR: state,
-    CROUPIER_GENERATED_SPEECH_DIR: state, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'endpoint_123',
+    CROUPIER_GENERATIONS_DIR: state, CROUPIER_GENERATED_SPEECH_DIR: state,
+    CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'endpoint_123',
     HOST: '0.0.0.0', CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1',
   };
   const report = await collectCloudReadiness({ root, env });
   assert.equal(report.ready, false);
   assert.equal(report.configuration.credentials.find(item => item.name === 'CROUPIER_ASTRID_TRANSLATION_KEY').configured, true);
   assert.equal(report.media.status, 'metadata-present');
-  assert.equal(report.configuration.sharedStudioDirectory, true);
+  assert.ok(report.configuration.retiredDiskEnvironment.every(item => item.configured && !item.cleared));
   assert.equal(report.configuration.currentSpeechHostGateSatisfied, false);
-  assert.equal(report.configuration.directories.find(item => item.name === 'CROUPIER_GENERATED_SPEECH_DIR').outsideCheckout, false);
+  assert.equal(report.configuration.directories.length, 1);
+  assert.equal(report.configuration.directories[0].name, 'CROUPIER_DATA_DIR');
   assert.equal(report.configuration.urls.find(item => item.name === 'PUBLIC_URL').status, 'invalid-cloud-url');
   assert.equal(report.configuration.urls.find(item => item.name === 'LAB_REMOTE_URL').status, 'invalid-cloud-url');
   assert.equal(report.configuration.partnerOrigin, 'not-configured-or-mismatch');
@@ -91,7 +93,7 @@ test('media inventory rejects traversal, reports missing and changed sizes witho
   assert.equal(report.media.invalid, 1);
   assert.equal(report.media.missing, 1);
   assert.equal(report.media.sizeMismatch, 1);
-  assert.equal(report.configuration.sharedStudioDirectory, null);
+  assert.ok(report.configuration.retiredDiskEnvironment.every(item => !item.configured && item.cleared));
   assert.ok(report.configuration.credentials.every(item => !item.configured));
 });
 
@@ -102,7 +104,10 @@ test('mismatched storage, relative paths and local cloud URLs are reported witho
     LAB_STUDIO_DATA_DIR: join(root, 'one'), CROUPIER_PRESENTATION_STUDIO_DIR: join(root, 'two'),
     CROUPIER_DATA_DIR: './data', PUBLIC_URL: 'https://localhost',
   } });
-  assert.equal(report.configuration.sharedStudioDirectory, false);
+  assert.equal(report.configuration.retiredDiskEnvironment.find(item => item.name === 'LAB_STUDIO_DATA_DIR').cleared, false);
+  assert.equal(report.configuration.retiredDiskEnvironment.find(item => item.name === 'CROUPIER_PRESENTATION_STUDIO_DIR').cleared, false);
+  assert.equal(report.configuration.retiredDiskEnvironment.find(item => item.name === 'CROUPIER_GENERATIONS_DIR').cleared, true);
+  assert.equal(report.configuration.retiredDiskEnvironment.find(item => item.name === 'CROUPIER_GENERATED_SPEECH_DIR').cleared, true);
   assert.equal(report.configuration.directories[0].status, 'relative-path');
   assert.equal(report.configuration.urls[0].status, 'invalid-cloud-url');
   assert.equal(report.configuration.credentials[0].configured, false);

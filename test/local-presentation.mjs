@@ -230,7 +230,7 @@ test('product selection and Lab inventory use the same configured Astrid archive
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, media);
   await writeFile(join(archiveDir, 'lab-video-manifest.json'), JSON.stringify(manifest));
-  const env = { LAB_VIDEO_ARCHIVE: archiveDir, CROUPIER_PRESENTATION_STUDIO_DIR: join(directory, 'studio') };
+  const env = { LAB_VIDEO_ARCHIVE: archiveDir };
   const inventory = await loadVideoRegistry({ env, repositoryRoot: directory, uploadDir: join(directory, 'studio', 'videos') });
   assert.equal(inventory.videos.find(video => video.id === entry.id)?.available, true);
 

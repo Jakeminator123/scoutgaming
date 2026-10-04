@@ -1,8 +1,5 @@
-import { studioStore, connectionStatus, validateVideoBindings } from '@/lib/studio-server.mjs';
-import { validateProject } from '@/lib/studio-model.mjs';
-import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from '@/lib/http-guard.mjs';
-import { legacyClipControls } from '@/lib/legacy-clip-inventory.mjs';
-import { StudioError } from '@/lib/project-store.mjs';
+import { studioStore, connectionStatus } from '@/lib/studio-server.mjs';
+import { assertLocalRequest, jsonResponse, errorResponse } from '@/lib/http-guard.mjs';
 import { nativeStudioAdminEnabled } from '@/lib/studio-native-runtime.mjs';
 import { handleNativeStudioDocument } from '@/lib/studio-document-api.mjs';
 import { assertRenderStudioWritable } from '@/lib/studio-render-persistence.mjs';
@@ -15,15 +12,8 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   if (nativeStudioAdminEnabled()) return handleNativeStudioDocument(request);
   try {
-    assertLocalRequest(request); assertRenderStudioWritable();
-    const body = await readLocalJson(request);
-    validateProject(body?.project);
-    await validateVideoBindings(body.project);
-    if (body.project.legacyClipPolicy?.length) {
-      const clips = await legacyClipControls(body.project);
-      if (clips.runtime.conflicts.length) throw new StudioError('En klippkoppling saknar exakt dealer/situation eller tillgänglig fil. Granska klippbiblioteket i Lab.');
-    }
-    return jsonResponse({ project: await studioStore().save(body.project, body?.expectedRevision) });
+    assertLocalRequest(request);
+    assertRenderStudioWritable();
   }
   catch (error) { return errorResponse(error); }
 }

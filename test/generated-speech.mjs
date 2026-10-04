@@ -71,6 +71,8 @@ test('production speech needs an explicit cloud opt-in, HTTPS origin and authent
     CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret',
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.equal(generatedSpeechStatus(env).configured, true);
+  assert.equal(generatedSpeechStatus({ ...env, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
+    'Neon journal plus private Blob artifacts replaces the cloud speech directory');
   assert.equal(generatedSpeechStatus({ ...env, HOST: '127.0.0.1', CROUPIER_CLOUD_RUNTIME: '1' }).configured, true,
     'a guarded cloud Web child can use loopback behind the HTTPS gateway');
   assert.equal(generatedSpeechStatus({ ...env, CROUPIER_GENERATED_SPEECH_STREAMING: '1' }).enabled, false,

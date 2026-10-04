@@ -5,7 +5,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { uploadVideo, readUploads } from '../lib/video-uploads.mjs';
+import { uploadDirectory, uploadVideo, readUploads } from '../lib/video-uploads.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../lib/video-intake.mjs';
 import { validateProject, addVariant, buildRuntimeCatalog } from '../lib/studio-model.mjs';
@@ -24,6 +24,10 @@ async function fixture(t) {
   t.after(() => rm(root, { recursive: true, force: true }));
   return { uploadDir: join(root, 'uploads'), snapshotPath: join(root, 'missing.json'), archiveDir: null };
 }
+
+test('retired shared Studio directory cannot redirect the local upload fixture', () => {
+  assert.equal(uploadDirectory({ env: { LAB_STUDIO_DATA_DIR: 'retired-storage' } }), uploadDirectory({ env: {} }));
+});
 
 test('upload persists exact bytes and classification, deduplicates retry, survives reload and serves ranges without original archive', async t => {
   const options = await fixture(t);

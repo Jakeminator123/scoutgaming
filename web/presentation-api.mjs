@@ -32,8 +32,8 @@ export function presentationInput(event, published) {
   fail('Unsupported presentation request');
 }
 
-export function createPresentationApi({ db, env = process.env, store = createProjectStore(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data')),
-  registryOptions = { env, repositoryRoot: root, uploadDir: join(env.CROUPIER_PRESENTATION_STUDIO_DIR || join(root, 'lab/data'), 'videos') },
+export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
+  registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
   const decisions = new Map();

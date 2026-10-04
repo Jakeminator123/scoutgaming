@@ -1,5 +1,4 @@
-import { rescanVideoRegistry } from '@/lib/video-registry.mjs';
-import { assertLocalRequest, jsonResponse, errorResponse } from '@/lib/http-guard.mjs';
+import { assertLocalRequest, errorResponse } from '@/lib/http-guard.mjs';
 import { nativeStudioAdminEnabled } from '@/lib/studio-native-runtime.mjs';
 import { handleNativeStudioMedia } from '@/lib/studio-media-api.mjs';
 import { assertRenderStudioWritable } from '@/lib/studio-render-persistence.mjs';
@@ -11,6 +10,5 @@ export async function POST(request: Request) {
   try {
     assertLocalRequest(request);
     assertRenderStudioWritable();
-    return jsonResponse(await rescanVideoRegistry());
   } catch (error) { return errorResponse(error); }
 }

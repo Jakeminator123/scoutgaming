@@ -29,7 +29,7 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
     await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
     await journal.initializeFullfileBudgetPolicy({ reserveMicroUsd:200000,currentBudgetMicroUsd:1000000,confirmation:'verified-new-empty-cost-journal' });
   }
-  const config = { directory, apiKey:'synthetic-private-key', endpointId:'runtime-fixture',
+  const config = { apiKey:'synthetic-private-key', endpointId:'runtime-fixture',
     workerSecret:'worker-fixture-secret-at-least-32-characters', origin:'https://render.croupier-qa.invalid', reserveUsd:'0.20', dailyBudgetUsd:'1' };
   const calls = [], managers = [], services = [], jobs = new Map();
   const savedArtifacts = new Map(); let artifactReads = 0;
@@ -62,9 +62,9 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
 
 test('Neon opt-in without journal fails before disk, relay or provider; no policy auto bootstrap', async t => {
   const f = await fixture(t, { initialPolicy:false }); let relay = 0;
-  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });
   assert.throws(() => createSpeechSessionManager(f.config, { ...f.deps, journal:null }), { code:'generated_speech_journal_unavailable' });
-  await assert.rejects(createGeneratedSpeechStreamService({}, { directory:f.directory }, { journalRequired:true, resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
+  await assert.rejects(createGeneratedSpeechStreamService({}, {}, { journalRequired:true, resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
   assert.equal(relay, 0); assert.equal(f.calls.length, 0); assert.deepEqual(await readdir(f.directory), []);
   await assert.rejects(f.manager().ensure(input()), { code:'generated_speech_budget_policy_missing' });
   assert.equal(f.pool.state.policies.size, 0); assert.equal(f.pool.state.sessions.size, 0); assert.equal(f.starts(), 0);
@@ -155,7 +155,7 @@ test('failed durable submit marker never reaches the provider and keeps reservat
 
 test('fullfile caller caches SQL identity on restart, preserves owned bytes and blocks capability replay', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true, artifacts:f.artifacts,
+  const construct = () => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true, artifacts:f.artifacts,
     provider:{ generate:async ({ text, beforeCostly }) => { await beforeCostly(); paid++; return generated(text); } } });
   const service = construct(), packageValue = await service.generate(input());
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'completed');
@@ -214,7 +214,7 @@ test('stream prepare remains unpaid, paid source uses SQL identity and cancellat
   const relay = { status:() => ({ workers:1, available:1, busy:0 }), close() {},
     openSource:() => ({ writePCM:async () => {}, end() {}, abort() {} }) };
   const construct = async () => {
-    const service = await createGeneratedSpeechStreamService({}, { directory:f.directory, workerSecret:f.config.workerSecret,
+  const service = await createGeneratedSpeechStreamService({}, { workerSecret:f.config.workerSecret,
       ticketSecret:f.config.workerSecret, origin:f.config.origin, voiceId:'fixture-voice', modelId:'fixture-model' }, {
       journal:f.journal, journalRequired:true, resolveOwner:async request => request.owner,
       attachRelay:(_, options) => { relayOptions = options; return relay; },
