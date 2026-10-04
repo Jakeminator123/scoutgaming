@@ -12,6 +12,7 @@ const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const sdkRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2/node_modules/openai';
 const privateDependencies=['native-cloud-browser-qa.mjs','native-p6-sdk-worker.mjs','native-p6-sdk-admission.mjs',
   'native-p6-upstream-bounds-final.json'];
+const additionalPolicyJobs=new WeakMap();
 async function small(path){const s=await lstat(path);need(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1&&s.size<=1048576,'ai_qa_install_source_file');return readFile(path);}
 async function newFile(path,value){const f=await open(path,'wx',0o600);try{await f.writeFile(JSON.stringify(value));await f.sync();}finally{await f.close();}}
 export async function buildAiQaManifest({expectedSha,deploymentId,runId,ownLinkedPlayerSha256,now=Date.now()}={}){
@@ -313,8 +314,33 @@ export async function readAiQaAdditionalPolicy({pool,operatorId,username,playerI
     const proof={purpose:'bounded-native-ai-qa-additional-policy-read-v1',physical,observedAtMs:time,originalCampaignId:AI_QA_ORIGINAL.campaignId,
       reservedSqlMicroUsd:reserved,nextWindowGpuReserveMicroUsd:1000000,qaReservedPoolMicroUsd:AI_QA_ORIGINAL.remainingMicroUsd,
       fingerprints:Object.fromEntries(Object.entries(tables).map(([n,v])=>[n,{rows:v.length,sha256:sha256(JSON.stringify(v))}])),sqlMutations:0};
-    Object.defineProperty(proof,'knownJobIds',{value:tables.gpu_sessions.map(r=>r.job_id)});return proof;
+    Object.defineProperty(proof,'knownJobIds',{value:tables.gpu_sessions.map(r=>r.job_id)});
+    additionalPolicyJobs.set(proof,tables.gpu_sessions.map(r=>({...r})));return proof;
   }finally{if(began)await c.query('ROLLBACK').catch(()=>{});c.release();}
+}
+export async function readAiQaAdditionalProvider({policy,providerReadApiKey,fetchImpl=fetch}={}){
+  const sessions=additionalPolicyJobs.get(policy);need(sessions,'ai_qa_additional_verified_policy_required');
+  need(typeof providerReadApiKey==='string'&&providerReadApiKey.length>0,'ai_qa_additional_existing_read_key');
+  const base='https://api.runpod.ai/v2/zsudl8tmzcmiv1',get=route=>fetchImpl(base+'/'+route,
+    {method:'GET',redirect:'error',headers:{authorization:'Bearer '+providerReadApiKey},signal:AbortSignal.timeout(10000)});
+  const read=async r=>{need(r.ok,'ai_qa_additional_provider_read');const raw=await r.text();need(raw.length<=8192,'ai_qa_additional_provider_read_size');return JSON.parse(raw);};
+  const response=await get('health');need(response.status===200,'ai_qa_additional_provider_read');
+  const health=await read(response);need(health.jobs?.inQueue===0&&health.jobs?.inProgress===0&&health.workers?.running===0,'ai_qa_additional_provider_not_drained');
+  const knownJobs=[];for(const session of sessions){
+    const id=session.job_id;need(/^[A-Za-z0-9_-]{1,128}$/.test(id??''),'ai_qa_additional_known_job_required');
+    const r=await get('status/'+id);
+    if(r.status===404){
+      // RunPod may expire status records. This proves only retained database terminality, never a new provider acknowledgement.
+      need(session.state==='terminal'&&session.released_at_ms!==null&&Number.isSafeInteger(Number(session.released_at_ms))
+        &&Number(session.released_at_ms)>=0&&Number(session.released_at_ms)<=policy.observedAtMs
+        &&['COMPLETED','CANCELLED','FAILED','TIMED_OUT'].includes(session.terminal_status)&&session.terminal_reason==='provider',
+        'ai_qa_additional_known_job_not_terminal');
+      knownJobs.push({jobIdSha256:sha256(id),status:session.terminal_status,statusSource:'retained-database',providerStatusHttp:404});continue;
+    }
+    const j=await read(r);need(j.id===id&&['COMPLETED','CANCELLED','FAILED','TIMED_OUT'].includes(j.status),'ai_qa_additional_known_job_not_terminal');
+    knownJobs.push({jobIdSha256:sha256(id),status:j.status});
+  }
+  return{health,knownJobs};
 }
 export async function installBoundedAiQaAdditionalWindow(input){
   need(process.platform==='linux'&&process.getuid?.()===1000&&process.env.RENDER_SERVICE_ID===NATIVE_P6_QA.serviceId
@@ -334,12 +360,7 @@ export async function installBoundedAiQaAdditionalWindow(input){
   try{
     const policy=await readAiQaAdditionalPolicy({...input,pool,fullfile:intent.fullfile});
     need(JSON.stringify(policy.fingerprints)===JSON.stringify(intent.policyFingerprints),'ai_qa_additional_policy_cas_changed');
-    need(typeof input.providerReadApiKey==='string'&&input.providerReadApiKey.length>0,'ai_qa_additional_existing_read_key');
-    const base='https://api.runpod.ai/v2/zsudl8tmzcmiv1',get=async route=>{
-      const r=await fetch(base+'/'+route,{redirect:'error',headers:{authorization:'Bearer '+input.providerReadApiKey},signal:AbortSignal.timeout(10000)});
-      need(r.ok,'ai_qa_additional_provider_read');const raw=await r.text();need(raw.length<=8192,'ai_qa_additional_provider_read_size');return JSON.parse(raw);};
-    const health=await get('health');need(health.jobs?.inQueue===0&&health.jobs?.inProgress===0&&health.workers?.running===0,'ai_qa_additional_provider_not_drained');
-    const knownJobs=[];for(const id of policy.knownJobIds){need(/^[A-Za-z0-9_-]{1,128}$/.test(id??''),'ai_qa_additional_known_job_required');const j=await get('status/'+id);need(j.id===id&&['COMPLETED','CANCELLED','FAILED','TIMED_OUT'].includes(j.status),'ai_qa_additional_known_job_not_terminal');knownJobs.push({jobIdSha256:sha256(id),status:j.status});}
+    const {health,knownJobs}=await readAiQaAdditionalProvider({policy,providerReadApiKey:input.providerReadApiKey});
     const names=(await readdir('/var/data/speech')).filter(n=>/^gpu-session-[a-f0-9]{32}\.reservation\.json$/.test(n));
     need(names.length<=100,'ai_qa_additional_retained_inventory_size');let retained=null;
     for(const name of names){const path='/var/data/speech/'+name,raw=await small(path);if(sha256(raw)==='8e8e8731e5e473fe6d0642ff8e4f313ba089336167aad54c1f9dd49daf885798'){

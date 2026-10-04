@@ -455,11 +455,15 @@ test('fullfile policy fixture follows migration 004 without borrowing the GPU da
   assert.throws(()=>assertFullfilePolicyColumns([{...f.tables.fullfile_budget_policies[0],daily_budget_micro_usd:'4748848'}]),/fixture column must exist in migration 004/);
 });
 
+function additionalPolicyFixture(){
+  const f=continuationPolicyFixture();
+  for(const n of ['operator_qa_campaigns','operator_qa_gate'])f.tables[n][0].source_sha256='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e';
+  f.tables.gpu_sessions=[{session_id:'session',job_id:'known',state:'terminal',released_at_ms:'100',terminal_status:'CANCELLED',terminal_reason:'provider'}];
+  f.tables.gpu_reservations=[{session_id:'session',reserved_micro_usd:'1000000'}];return f;
+}
 test('additional reservation read preserves history and refuses an unfunded reservation or nonterminal/active owner',async t=>{
   const {readAiQaAdditionalPolicy}=await import('../tools/activate-native-ai-qa.mjs');
-  for(const change of ['none','funds','lease','job','file','gpu-budget','gpu-version','file-version','file-reserve','file-window','missing-gpu-policy','missing-file-policy','duplicate-gpu-policy','duplicate-file-policy'])await t.test(change,async()=>{const f=continuationPolicyFixture();
-    for(const n of ['operator_qa_campaigns','operator_qa_gate'])f.tables[n][0].source_sha256='f5687e76c2611fb664937ff1b7076e0aef368d488be163294eb43cd3c7912c1e';
-    f.tables.gpu_sessions=[{session_id:'session',job_id:'known',state:'terminal',released_at_ms:'100',terminal_status:'CANCELLED',terminal_reason:'provider'}];f.tables.gpu_reservations=[{session_id:'session',reserved_micro_usd:'1000000'}];
+  for(const change of ['none','funds','lease','job','file','gpu-budget','gpu-version','file-version','file-reserve','file-window','missing-gpu-policy','missing-file-policy','duplicate-gpu-policy','duplicate-file-policy'])await t.test(change,async()=>{const f=additionalPolicyFixture();
     if(change==='gpu-budget')f.tables.gpu_budget_policies[0].daily_budget_micro_usd='5000000';if(change==='gpu-version')f.tables.gpu_budget_policies[0].version=2;
     if(change==='file-version')f.tables.fullfile_budget_policies[0].version=2;if(change==='file-reserve')f.tables.fullfile_budget_policies[0].reserve_micro_usd='0';if(change==='file-window')f.tables.fullfile_budget_policies[0].reservation_window_ms='719999';
     if(change==='missing-gpu-policy')f.tables.gpu_budget_policies=[];if(change==='missing-file-policy')f.tables.fullfile_budget_policies=[];
@@ -467,5 +471,68 @@ test('additional reservation read preserves history and refuses an unfunded rese
     if(change==='funds')for(const id of ['session2','session3']){f.tables.gpu_sessions.push({...f.tables.gpu_sessions[0],session_id:id});f.tables.gpu_reservations.push({session_id:id,reserved_micro_usd:'1000000'});}if(change==='lease')f.tables.speech_execution_leases[0].expires_at_ms='20001';if(change==='job')f.tables.gpu_sessions[0].released_at_ms=null;if(change==='file')f.tables.speech_requests[0].state='failed';
     const before=JSON.stringify(f.tables);if(change==='none'){const r=await readAiQaAdditionalPolicy(f.args);assert.equal(r.reservedSqlMicroUsd,2000000);assert.equal(r.nextWindowGpuReserveMicroUsd,1000000);assert.equal(JSON.stringify(r).includes('known'),false);}
     else await assert.rejects(()=>readAiQaAdditionalPolicy(f.args),/ai_qa_additional_/);assert.equal(JSON.stringify(f.tables),before);assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE)/.test(c.sql)),false);
+  });
+});
+
+const drainedProviderHealth={jobs:{inQueue:0,inProgress:0},workers:{running:0,idle:1}};
+test('additional provider preflight retains aged-out terminal database evidence after drained health, without reading a 404 body',async t=>{
+  const {readAiQaAdditionalPolicy,readAiQaAdditionalProvider}=await import('../tools/activate-native-ai-qa.mjs');
+  for(const status of ['COMPLETED','CANCELLED','FAILED','TIMED_OUT'])await t.test(status,async()=>{
+    const f=additionalPolicyFixture(),calls=[];f.tables.gpu_sessions[0].terminal_status=status;const before=JSON.stringify(f.tables);
+    const policy=await readAiQaAdditionalPolicy(f.args),result=await readAiQaAdditionalProvider({policy,providerReadApiKey:'synthetic',fetchImpl:async(url,options)=>{
+      calls.push({url,method:options.method});assert.equal(options.redirect,'error');
+      if(url.endsWith('/health'))return Response.json(drainedProviderHealth);
+      return{status:404,ok:false,text:async()=>{assert.fail('an expired status error body must not be read');}};
+    }});
+    assert.deepEqual(calls.map(c=>new URL(c.url).pathname),['/v2/zsudl8tmzcmiv1/health','/v2/zsudl8tmzcmiv1/status/known']);
+    assert.ok(calls.every(c=>c.method==='GET'));assert.deepEqual(result.health,drainedProviderHealth);
+    assert.deepEqual(result.knownJobs,[{jobIdSha256:sha256('known'),status,statusSource:'retained-database',providerStatusHttp:404}]);
+    assert.equal(JSON.stringify(result).includes('"known"'),false);assert.equal(JSON.stringify(f.tables),before);
+    assert.equal(f.calls.some(c=>/^(INSERT|UPDATE|DELETE)/.test(c.sql)),false);assert.equal(policy.reservedSqlMicroUsd,2000000);
+  });
+});
+test('additional provider preflight keeps a present terminal API result and refuses copied or unverified policy evidence',async()=>{
+  const {readAiQaAdditionalPolicy,readAiQaAdditionalProvider}=await import('../tools/activate-native-ai-qa.mjs'),f=additionalPolicyFixture();
+  const policy=await readAiQaAdditionalPolicy(f.args);let calls=0;
+  const fetchImpl=async(url,options)=>{calls++;assert.equal(options.method,'GET');return Response.json(url.endsWith('/health')?drainedProviderHealth:{id:'known',status:'CANCELLED'});};
+  assert.deepEqual((await readAiQaAdditionalProvider({policy,providerReadApiKey:'synthetic',fetchImpl})).knownJobs,[{jobIdSha256:sha256('known'),status:'CANCELLED'}]);
+  for(const unverified of [JSON.parse(JSON.stringify(policy)),{...policy,knownJobIds:['unknown']},undefined])
+    await assert.rejects(()=>readAiQaAdditionalProvider({policy:unverified,providerReadApiKey:'synthetic',fetchImpl}),/ai_qa_additional_verified_policy_required/);
+  assert.equal(calls,2,'unverified policy must perform no provider reads');
+});
+test('additional provider preflight refuses status expiry without terminal released provider-owned database state',async t=>{
+  const {readAiQaAdditionalPolicy,readAiQaAdditionalProvider}=await import('../tools/activate-native-ai-qa.mjs');
+  for(const patch of [{state:'active'},{released_at_ms:null},{released_at_ms:undefined},{released_at_ms:'not-a-time'},{released_at_ms:'20001'},
+    {terminal_status:'IN_PROGRESS'},{terminal_reason:'expired'},{job_id:null},{job_id:'../unknown'}])await t.test(JSON.stringify(patch),async()=>{
+    const f=additionalPolicyFixture();Object.assign(f.tables.gpu_sessions[0],patch);let calls=0;
+    await assert.rejects(async()=>{const policy=await readAiQaAdditionalPolicy(f.args);return readAiQaAdditionalProvider({policy,providerReadApiKey:'synthetic',fetchImpl:async(url)=>{
+      calls++;return url.endsWith('/health')?Response.json(drainedProviderHealth):new Response(null,{status:404});
+    }});},/ai_qa_additional_/);
+    if(patch.state||patch.released_at_ms===null||patch.terminal_status||patch.terminal_reason)assert.equal(calls,0);
+  });
+});
+test('additional provider preflight refuses busy, incomplete or failed health before consulting historical status',async t=>{
+  const {readAiQaAdditionalPolicy,readAiQaAdditionalProvider}=await import('../tools/activate-native-ai-qa.mjs');
+  const cases=[['queued',{...drainedProviderHealth,jobs:{inQueue:1,inProgress:0}}],['in-progress',{...drainedProviderHealth,jobs:{inQueue:0,inProgress:1}}],
+    ['running',{...drainedProviderHealth,workers:{running:1}}],['missing-workers',{jobs:{inQueue:0,inProgress:0}}],['string-count',{...drainedProviderHealth,jobs:{inQueue:'0',inProgress:0}}],
+    ['health404',drainedProviderHealth,404],['health500',drainedProviderHealth,500],['health201',drainedProviderHealth,201]];
+  for(const [name,health,http=200]of cases)await t.test(name,async()=>{
+    const f=additionalPolicyFixture(),policy=await readAiQaAdditionalPolicy(f.args);let calls=0;
+    await assert.rejects(()=>readAiQaAdditionalProvider({policy,providerReadApiKey:'synthetic',fetchImpl:async(url)=>{
+      calls++;assert.ok(url.endsWith('/health'));return Response.json(health,{status:http});
+    }}),/ai_qa_additional_provider_/);assert.equal(calls,1);
+  });
+});
+test('additional provider preflight refuses other status errors, unknown identities and nonterminal provider replies',async t=>{
+  const {readAiQaAdditionalPolicy,readAiQaAdditionalProvider}=await import('../tools/activate-native-ai-qa.mjs');
+  const replies=[...([400,401,403,410,429,500,502].map(http=>[String(http),()=>new Response(null,{status:http})])),
+    ['queued',()=>Response.json({id:'known',status:'IN_QUEUE'})],['running',()=>Response.json({id:'known',status:'IN_PROGRESS'})],
+    ['unknown',()=>Response.json({id:'unknown',status:'CANCELLED'})],['invalid-json',()=>new Response('{')],['oversize',()=>new Response(' '.repeat(8193))],
+    ['network',()=>{throw new Error('synthetic-network');}]];
+  for(const [name,reply]of replies)await t.test(name,async()=>{
+    const f=additionalPolicyFixture(),policy=await readAiQaAdditionalPolicy(f.args),calls=[];
+    await assert.rejects(()=>readAiQaAdditionalProvider({policy,providerReadApiKey:'synthetic',fetchImpl:async(url,options)=>{
+      calls.push(options.method);return url.endsWith('/health')?Response.json(drainedProviderHealth):reply();
+    }}));assert.deepEqual(calls,['GET','GET']);
   });
 });
