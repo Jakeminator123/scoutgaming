@@ -32,8 +32,6 @@ test('comparison seeds isolated BO/Partner data and leaves only local disposable
     assert.ok(fixture.labUrl.startsWith('http://127.0.0.1:'));
     assert.equal((await fetch(fixture.urls.original)).status, 200);
     assert.equal((await fetch(fixture.urls.v2)).status, 200);
-    const login = await post('/api/bo/login', { user: fixture.bo.username, pass: fixture.bo.password });
-    assert.equal(login.status, 200);
     const partner = fixture.credentials.partner;
     const ts = String(Math.floor(Date.now() / 1000)), body = '{}', path = '/api/v1/ping';
     const response = await post(path, {}, {

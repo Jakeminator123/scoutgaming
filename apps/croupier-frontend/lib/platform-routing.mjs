@@ -40,6 +40,7 @@ const AUTH = new Set([
   '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
 const PLAYER = new Set(['/api/player', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/chat']);
+const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
@@ -52,7 +53,7 @@ export function backendPlatformPath(value) {
   if (!path) return false;
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path)
     || path === '/api/studio-game/command'
-    || /^\/api\/bo\/[a-z0-9][a-z0-9/-]*$/.test(path)
+    || BACKOFFICE.has(path)
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/(?:probe|chat\/memory|astrid\/(?:observation|transcription)|generated-speech)(?:\/|$)/.test(path)
     || /^\/api\/presentation\/videos\/[a-zA-Z0-9_-]+$/.test(path)

@@ -94,7 +94,6 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       OPENCLAW_BASE_URL: poisonOrigin, OPENCLAWAPI_KEY: 'poison-gateway-key',
       OPENCLAW_MODEL_API_KEY: 'poison-provider-key', OPENCLAW_MODEL_BASE_URL: poisonOrigin,
     }, { HOST: '127.0.0.1', PORT: String(appPort), CROUPIER_DATA_DIR: directory, NODE_ENV: 'development',
-      CROUPIER_PRESENTATION_STUDIO_DIR: join(directory,'studio'),
       CROUPIER_STREAM_LANE: lissabon ? 'lissabon-stream-lane' : '', CROUPIER_LISSABON_PROFILES: lissabon ? '1' : '',
       CROUPIER_ASTRID_CAMERA: lissabon ? '1' : '',
       CROUPIER_ASTRID_TRANSLATION_KEY: 'isolated-fixture-not-a-live-key',

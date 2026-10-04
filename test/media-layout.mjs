@@ -22,9 +22,9 @@ test('only the exact retired archive location normalizes; explicit roots and rel
 });
 test('partial media roots preserve renderer and admin code in the existing application',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-partial-media-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  for(const [file,body]of [['web/public/kevin-cards/back.png','card bytes'],['web/public/kevin-cards/calibration.mjs','export const calibration={};'],['web/public/bo/img/logo.png','logo bytes'],['web/public/bo/login.html','<form>Admin</form>']]){await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),body);}
+  for(const [file,body]of [['web/public/kevin-cards/back.png','card bytes'],['web/public/kevin-cards/calibration.mjs','export const calibration={};'],['web/public/bo/img/logo.png','logo bytes'],['web/public/bo/speech-qa.html','<main>Operator QA</main>']]){await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),body);}
   await applyMediaMigration({root,scope:'all'});
-  for(const file of ['web/public/kevin-cards/calibration.mjs','web/public/bo/login.html'])assert.equal(resolveMediaPath(file,{repositoryRoot:root}),join(root,file));
+  for(const file of ['web/public/kevin-cards/calibration.mjs','web/public/bo/speech-qa.html'])assert.equal(resolveMediaPath(file,{repositoryRoot:root}),join(root,file));
   assert.equal(resolveMediaPath('web/public/kevin-cards/back.png',{repositoryRoot:root}),join(root,'media/game/runtime/cards/back.png'));
   assert.ok(!Object.hasOwn(readMediaLayout(root).roots,'web/public/bo'));
 });

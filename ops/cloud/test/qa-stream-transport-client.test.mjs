@@ -18,12 +18,11 @@ function scenario({role = 'admin', verify, foreignResponse = false} = {}) {
     assert.equal(init.headers['Sec-Fetch-Site'], 'same-origin');
     requests.push({path: new URL(url).pathname, method: init.method, cookie: init.headers.Cookie,
       body: init.body && JSON.parse(init.body)});
-    if (foreignResponse) return {url: 'https://scoutgaming.tech/api/bo/login', redirected: false};
+    if (foreignResponse) return {url: 'https://scoutgaming.tech/studio/api/auth/login', redirected: false};
     if (url.endsWith('/login')) {
       assert.deepEqual(JSON.parse(init.body), {user: credentials.username, pass: credentials.password});
-      return Response.json({ok: true}, {headers: {'Set-Cookie': `${++logins === 1 ? ownerCookie : foreignCookie}; Path=/; HttpOnly; Secure; SameSite=Lax`}});
+      return Response.json({ok: true, role}, {headers: {'Set-Cookie': `${++logins === 1 ? ownerCookie : foreignCookie}; Path=/; HttpOnly; Secure; SameSite=Lax`}});
     }
-    if (url.endsWith('/me')) return Response.json({user: credentials.username, role});
     if (init.method === 'POST') {
       assert.equal(init.headers.Cookie, ownerCookie);
       return Response.json({attempt: ++prepares, decision: {speechStream: descriptor(prepares)}});

@@ -17,10 +17,10 @@ node --test $test_worker_limit test/speech-journal-runtime.mjs test/speech-ledge
 node --test $test_worker_limit test/game-entry-contract.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs apps/croupier-frontend/test/game-entry.mjs
 node --test $test_worker_limit lab/test/neon-project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
 node --test $test_worker_limit lab/test/studio-render-persistence.test.mjs lab/test/studio-clip-controls-api.test.mjs lab/test/studio-social-status.test.mjs lab/test/studio-companion-cookie.test.mjs lab/test/check-build-traces.test.mjs
-node --test $test_worker_limit lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/backoffice-panel.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs
+node --test $test_worker_limit lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs
 node --test $test_worker_limit test/bo-lab-auth.mjs
 node --test $test_worker_limit test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
-node --test $test_worker_limit ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/player-admin.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs
+node --test $test_worker_limit ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs
 node --test $test_worker_limit test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs
 node tools/check-environment-variables.mjs
 node --test $test_worker_limit test/check-environment-variables.mjs
@@ -37,7 +37,7 @@ node --test $test_worker_limit test/build-index.mjs test/dealer-sync-audit.mjs t
 node --test $test_worker_limit test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
 node --test $test_worker_limit test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs
 node --test $test_worker_limit test/activate-native-ai-qa.mjs test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs
-node --test $test_worker_limit test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs
+node --test $test_worker_limit test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 node --test $test_worker_limit test/player-probe.mjs
 node --test $test_worker_limit test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
 node --test $test_worker_limit test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs

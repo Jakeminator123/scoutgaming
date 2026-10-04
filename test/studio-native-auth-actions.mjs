@@ -80,6 +80,17 @@ test('native login reuses existing identity and signer; resulting cookie validat
   await assert.rejects(f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),status(401));
 });
 
+test('native login accepts only exact one-use game and Lab handoff destinations', async () => {
+  for (const kind of ['game','lab']) {
+    const f = fixture(), returnTo = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
+    assert.equal((await f.call('login',{user:'operator',pass:password,returnTo})).status,200);
+  }
+  for (const returnTo of [`/api/bo/game-login?state=${'a'.repeat(63)}`,
+    `/api/bo/lab-login?state=${'a'.repeat(64)}&token=secret`, '/api/bo/users', '//attacker.invalid']) {
+    const f = fixture(); assert.equal((await f.call('login',{user:'operator',pass:password,returnTo})).status,400);
+  }
+});
+
 test('login refuses wrong passwords, ambiguous identities, invalid role, incomplete account and missing existing signer', async () => {
   for (const [alter,pass] of [[f => {},'wrong-password'],[f => f.state.users.push({...f.state.users[0],id:'8'}),password],
     ...['reader','staff','player','unknown'].map(role=>[f => f.state.users[0].role=role,password]),[f => f.state.users[0].hash=null,password],

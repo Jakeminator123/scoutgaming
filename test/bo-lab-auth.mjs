@@ -42,13 +42,6 @@ const request = async (url, { cookie = '', body, headers = {}, method = body ? '
 };
 const location = response => response.headers.get('location');
 const cookies = response => response.headers.getSetCookie().map(value => value.split(';')[0]);
-const login = async () => {
-  const result = await request(bo + '/api/bo/login', { body: { user: 'lab-admin', pass: password } });
-  assert.equal(result.status, 200);
-  assert.match(result.headers.getSetCookie()[0], /^bo_jwt=/);
-  assert.ok(!result.headers.getSetCookie()[0].includes('Domain='), 'BO cookie stays on its host');
-  return cookies(result)[0];
-};
 const start = async (next = '/') => {
   const result = await request(lab + '/api/auth/lab/start?next=' + encodeURIComponent(next));
   assert.equal(result.status, 303);
@@ -69,6 +62,12 @@ const sign = claims => {
   const message = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url') + '.' +
     Buffer.from(JSON.stringify(claims)).toString('base64url');
   return message + '.' + createHmac('sha256', secret).update(message).digest('base64url');
+};
+const administratorCookie = () => {
+  const account = craig.prepare('SELECT id,username,salt,hash,role FROM users WHERE id=1').get();
+  const epoch = craig.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(account.id)?.epoch ?? 0;
+  const source_stamp = createHash('sha256').update(`${account.salt}:${account.hash}`).digest('hex');
+  return `bo_jwt=${sign({sub:account.username,role:account.role,aud:'backoffice',source_stamp,auth_epoch:epoch,exp:Date.now()/1000+3600})}`;
 };
 
 try {
@@ -107,19 +106,16 @@ try {
   const anonymous = await start();
   const loginRedirect = await request(anonymous.authorize);
   assert.equal(loginRedirect.status, 303);
-  assert.match(location(loginRedirect), /^\/bo\/login\.html\?returnTo=%2Fapi%2Fbo%2Flab-login%3Fstate%3D[a-f0-9]{64}$/);
-  const loginPage = await request(bo + location(loginRedirect));
-  assert.equal(loginPage.status, 200); assert.match(await loginPage.text(), /game-login\|lab-login/);
+  assert.match(location(loginRedirect), /^\/studio\/login\?returnTo=%2Fapi%2Fbo%2Flab-login%3Fstate%3D[a-f0-9]{64}$/);
 
-  const readerLogin = await request(bo + '/api/bo/login', { body: { user: 'lab-admin', pass: password } });
-  assert.equal(readerLogin.status, 401, 'reader cannot receive a Backoffice session');
-  assert.equal(readerLogin.headers.getSetCookie().length, 0, 'rejected reader cannot mint a Lab code');
+  const readerRedirect = await request(anonymous.authorize, { cookie: administratorCookie() });
+  assert.match(location(readerRedirect), /^\/studio\/login/, 'reader cannot authorize a Lab handoff');
   const partner = sign({ sub: 'partner-player', partner: 'partner-key', exp: Date.now() / 1000 + 60 });
   const partnerRedirect = await request(anonymous.authorize, { cookie: `bo_jwt=${partner}` });
-  assert.match(location(partnerRedirect), /^\/bo\/login\.html/, 'Partner JWT is not a BO admin session');
+  assert.match(location(partnerRedirect), /^\/studio\/login/, 'Partner JWT is not a BO admin session');
 
   craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
-  const adminCookie = await login();
+  const adminCookie = administratorCookie();
   const flow = await authorize(adminCookie);
   assert.equal((await request(lab + new URL(flow.authorize).pathname + new URL(flow.authorize).search, { cookie: adminCookie })).status, 403);
   assert.equal((await request(bo + new URL(flow.callback).pathname + new URL(flow.callback).search, { cookie: flow.stateCookie })).status, 403);
@@ -151,7 +147,7 @@ try {
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie, headers: { Origin: bo } })).status, 401);
   assert.equal((await request(bo + '/api/auth/lab/check', { cookie: labCookie })).status, 401);
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: adminCookie })).status, 401);
-  assert.equal((await request(bo + '/api/bo/users', { cookie: labCookie })).status, 401, 'Lab bearer grants no BO role');
+  assert.equal((await request(bo + '/bo/speech-qa.html', { cookie: labCookie })).status, 302, 'Lab bearer grants no BO role');
   const reused = await request(flow.callback, { cookie: flow.stateCookie });
   assert.equal(reused.status, 410, 'single-use code receives the expired-handoff response on reuse');
   assert.match(reused.headers.get('content-security-policy'), /frame-ancestors 'none'/);
@@ -175,8 +171,8 @@ try {
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'role downgrade revokes Lab session');
   craig.prepare("UPDATE users SET role='admin' WHERE id=1").run();
   assert.equal((await request(lab + '/api/auth/lab/check', { cookie: labCookie })).status, 401, 'old Lab session never revives');
-  assert.equal((await request(bo + '/api/bo/players', { cookie: adminCookie })).status, 401, 'old BO cookie never revives');
-  const freshAdmin = await login();
+  assert.match(location(await request((await start()).authorize, { cookie: adminCookie })), /^\/studio\/login/, 'old BO cookie never revives');
+  const freshAdmin = administratorCookie();
   const beforePassword = await authorize(freshAdmin);
   craig.prepare('UPDATE users SET hash=? WHERE id=1').run(scryptSync('Changed-password', 'test-salt', 64).toString('hex'));
   assert.equal((await request(beforePassword.callback, { cookie: beforePassword.stateCookie })).status, 401, 'password change revokes pending code');

@@ -91,9 +91,6 @@ test('actual administration page uses Next-local login with the exact public ret
     const page = load('../app/administration/page.tsx', {
       'next/navigation': navigation,
       'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
-      '@/lib/ui-server': { authorizeUiPage: () => assert.fail('no old auth fallback') },
-      '@/lib/backoffice-navigation.mjs': {},
-      '@/components/backoffice-panel': {},
       '@/components/native-administration': {},
       '@/lib/studio-native-runtime.mjs': nativeOverrides(status),
       '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
@@ -105,6 +102,25 @@ test('actual administration page uses Next-local login with the exact public ret
       return true;
     });
   }
+});
+
+test('administration without native configuration fails before runtime initialization', async () => {
+  const page = load('../app/administration/page.tsx', {
+    'next/navigation': navigation,
+    'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
+    '@/components/native-administration': {},
+    '@/lib/studio-native-runtime.mjs': {
+      nativeStudioAdminConfiguration: () => null,
+      assertNativeStudioRequest: () => assert.fail('missing configuration cannot authorize'),
+      studioNativeRuntime: () => assert.fail('missing configuration cannot initialize runtime'),
+    },
+    '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: (_request, config) => {
+      assert.equal(config, null);
+      throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 });
+    } },
+    '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
+  });
+  await assert.rejects(page.default(), error => error.statusCode === 503);
 });
 
 test('actual retired Lissabon page redirects to the app root with one mounted prefix', () => {

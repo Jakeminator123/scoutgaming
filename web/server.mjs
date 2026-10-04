@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createAccountCredentialResolver, isAdministratorRole } from './account-credentials.mjs';
+import { isAdministratorRole } from './account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
@@ -15,15 +15,14 @@ import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
-import { createOperatorSpeechQa } from './operator-speech-qa.mjs';
+import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
-import { openGenerationMedia, serveGenerationMedia } from './generation-media.mjs';
+import { serveGenerationMedia } from './generation-media.mjs';
 import { clipMapping } from './clip-mapping.mjs';
-import { loginLimiter } from './login-limiter.mjs';
-const boLogins = loginLimiter();
+import { installGracefulShutdown } from './graceful-shutdown.mjs';
 const persistenceFailure = error => Boolean(error?.severity)
   || /^[0-9A-Z]{5}$/.test(error?.code || '')
   || ['ERR_SQLITE_ERROR','ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EAI_AGAIN','EPIPE'].includes(error?.code)
@@ -80,13 +79,11 @@ const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGa
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
   ['craig-identity', 'bo-auth-epoch', 'player-auth', 'bo-game-auth', 'bo-lab-auth', 'player-results',
     'player-chat-memory', 'player-probe-store', 'partner-api'].map(domain));
-const generationDirectory = process.env.CROUPIER_GENERATIONS_DIR ? resolve(process.env.CROUPIER_GENERATIONS_DIR) : publicAssetPath('bo/gen');
-
 // ---------- player database (demo money only) ----------
 // An explicit directory lets local QA exercise the real player/server without
 // opening the operator's databases. Production keeps its existing default.
-const dataDir = process.env.CROUPIER_DATA_DIR ? resolve(process.env.CROUPIER_DATA_DIR) : join(fileURLToPath(new URL('.', import.meta.url)), 'data');
-mkdirSync(dataDir, { recursive: true });
+const dataDir = postgres ? null : resolve(process.env.CROUPIER_DATA_DIR ?? join(fileURLToPath(new URL('.', import.meta.url)), 'data'));
+if (dataDir) mkdirSync(dataDir, { recursive: true });
 const db = storage?.db ?? new DatabaseSync(join(dataDir, 'croupier.db'));
 const playerChatMemory = (await createPlayerChatMemory(db));
 let presentationApi;
@@ -98,8 +95,11 @@ async function loadProbeRuntime() {
   if(!activeProbeRuntime){
     const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
       domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+    const projectStore = studioPolicyRuntime?.policy.projectStore()
+      ?? (!postgres && dataDir ? createProjectStore(join(dataDir, 'studio')) : null);
+    if (!projectStore) throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 });
     activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
-      projectStore:studioPolicyRuntime?.policy.projectStore() || createProjectStore(process.env.CROUPIER_PRESENTATION_STUDIO_DIR || resolve(root,'../../lab/data')),
+      projectStore,
       settingsProvider:readSettings,serviceProvider:getGeneratedSpeechService,
       chatBusy:playerId=>activePlayerChats.has(JSON.stringify([playerId,'astrid']))});
   }
@@ -230,66 +230,12 @@ API['/api/table'] = postgres ? createPostgresNativeTableCommand({ ...nativeOptio
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
-const generationsApi = installGenerationsApi({ catalogPath: publicAssetPath('bo/generations.json'), genDir: generationDirectory,
-  verdicts: () => boLoad().genVerdicts ?? {}, tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
-  publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se',
-  mapping: () => clipMapping({ root, bo: boLoad(), publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
+const generationsApi = installGenerationsApi({
+  tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
+  mapping: () => clipMapping({ root, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root }); }
 
-// ---------- backoffice (BO) ----------
-// Real data where it exists (players/transactions from SQLite, dealer assets
-// scanned from disk); a JSON store for what has no engine yet (tournaments,
-// pit-boss triggers, tier->dealer assignment - the last one steers the game).
-import { readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-const BO_PATH = join(dataDir, 'bo.json');
-const BO_DEFAULTS = {
-  tiers: { classic: 'vera', high: 'vera', vip: 'vera' },
-  rooms: [
-    { id: 'prive', name: 'Mahogany Privé', scene: 'Warm mahogany · sconces', felt: 'Green', dealer: 'vera', state: 'live' },
-    { id: 'darkhall', name: 'Dark Hall', scene: 'Graphite · pendant bars', felt: 'Graphite', dealer: 'astrid', state: 'preview' },
-    { id: 'goldensalon', name: 'Golden Salon', scene: 'Amber salon · tan felt', felt: 'Tan', dealer: 'amira', state: 'pending' },
-    { id: 'azure', name: 'Azure Venue', scene: 'Curved white · cyan glow', felt: 'Petrol', dealer: 'mei', state: 'pending' },
-  ],
-  pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
-  clipAssignments: {},
-  neverAgain: {},
-  clipLandings: {},
-  genLandings: {},
-  tournaments: [
-    { id: 't1', name: 'Midnight Privé Open', format: 'Elimination · 20 rounds', buyin: 100, pool: 25000, entries: 184, cap: 250, starts: 'Tonight 00:00', state: 'registering' },
-    { id: 't2', name: 'High Roller Sprint', format: 'Points race · 1 hour', buyin: 1000, pool: 50000, entries: 31, cap: 64, starts: 'Fri 21:00', state: 'registering' },
-    { id: 't3', name: 'Weekly Leaderboard #34', format: 'Cumulative points', buyin: 0, pool: 5000, entries: 1212, cap: 0, starts: 'Ends Sunday', state: 'live' },
-  ],
-};
-function boLoad() {
-  if (studioPolicyRuntime) throw Object.assign(new Error('Legacy BO configuration is retired'), { statusCode: 503 });
-  try { return { ...BO_DEFAULTS, ...JSON.parse(readSync(BO_PATH, 'utf8')) }; }
-  catch { return structuredClone(BO_DEFAULTS); }
-}
-function boSave(cfg) { writeSync(BO_PATH, JSON.stringify(cfg, null, 1)); }
-function dealerScan() {
-  const out = [];
-  const spec = [
-    { key: 'vera', name: 'Vera', base: 'dealer', room: 'Mahogany Privé', voice: 'Vera (ElevenLabs)' },
-    { key: 'astrid', name: 'Astrid', base: 'dealers/astrid', room: 'Dark Hall', voice: 'Victoria (Cartesia)' },
-    { key: 'amira', name: 'Amira', base: 'dealers/amira', room: 'Golden Salon', voice: 'Soraya (ElevenLabs)' },
-    { key: 'mei', name: 'Mei', base: 'dealers/mei', room: 'Azure Venue', voice: 'Kaia (ElevenLabs)' },
-  ];
-  for (const d of spec) {
-    let clips = 0, speak = 0, stills = false;
-    try {
-      const idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8'));
-      clips = Object.keys(idx.clips).length;
-      speak = Object.keys(idx.clips).filter(k => k.includes('/speak/')).length;
-    } catch { /* no assets yet */ }
-    try { stills = existsSync(mediaLayout
-      ? mediaLayout.resolveMediaPath(`content/persona/roster/${d.key}-canonical.png`, { repositoryRoot: mediaRepository })
-      : join(root, '..', '..', 'content/persona/roster', d.key + '-canonical.png')) || d.key === 'vera'; } catch {}
-    out.push({ ...d, clips, speak, stills });
-  }
-  return out;
-}
+// ---------- native Studio identity and retained BO handoff/session ----------
 // ---------- BO auth: JWT + craig (the auth DB) ----------
 // Backoffice users live in CRAIG - their own SQLite DB (data/craig.db),
 // separate from the players DB. Auth is a stateless HS256 JWT in an HttpOnly
@@ -386,10 +332,6 @@ if (!(await boDb.prepare('SELECT COUNT(*) n FROM users').get()).n) {
   }
 }
 if (cloudRuntime) delete process.env.CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD;
-async function boCheckLogin(user, pass) {
-  const account = await accountCredentials.authenticate(user,pass);
-  return account?.kind === 'craig' && account.role === 'admin' ? {...account,role:account.accountRole} : null;
-}
 async function administratorGameSession(req,account) {
   const current=await scoutIdentity.find(account.name);
   const role=(await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role;
@@ -415,9 +357,8 @@ async function boSessionOk(req) {
   return { ...claims, sub: account.name };
 }
 
-// ---------- brand emails (per design-kit/ScoutBrand.dc.html) ----------
-// Secrets live outside the repo. Look in the service env file, then a per-user
-// file, then the legacy desktop path, so the same build works on the box and locally.
+// Retained read-only token source for the generations API. Native Studio owns
+// administrator email, password and invitation flows.
 const SECRET_FILES = [process.env.CROUPIER_ENV_FILE, '/etc/croupier/agent.env',
   join(process.env.HOME ?? '', '.config/croupier/agent.env'),
   join(process.env.HOME ?? '', 'Desktop/Axelio-Platform/.env')].filter(Boolean);
@@ -426,45 +367,6 @@ function secretFromFiles(name) {
     try { const v = readSync(file, 'utf8').match(new RegExp(`^${name}=(.+)$`, 'm'))?.[1]?.trim(); if (v) return v.replace(/^["']|["']$/g, ''); } catch { /* next */ }
   }
   return '';
-}
-const MAIL_FROM = 'Scout Backoffice <bo@axelio.io>';
-let RESEND_KEY = process.env.RESEND_API_KEY ?? '';
-if (!RESEND_KEY) {
-  RESEND_KEY = secretFromFiles('RESEND_API_KEY');
-}
-function brandEmail({ preheader, headline, intro, rows = [], cta, ctaUrl, footer }) {
-  const kv = rows.length ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px">' + rows.map(([k, v]) =>
-    `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(242,241,237,0.08);font-family:'JetBrains Mono','Courier New',monospace;font-size:10px;letter-spacing:2.5px;color:rgba(242,241,237,0.55)">${k.toUpperCase()}</td>` +
-    `<td align="right" style="padding:9px 0;border-bottom:1px solid rgba(242,241,237,0.08);font-family:'Space Grotesk',Arial,sans-serif;font-size:14px;color:#F2F1ED">${v}</td></tr>`).join('') + '</table>' : '';
-  const btn = cta ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 4px"><tr><td style="background:#D6FF3A;border-radius:22px;box-shadow:0 6px 22px rgba(214,255,58,0.25)"><a href="${ctaUrl}" style="display:inline-block;padding:13px 38px;font-family:'Space Grotesk',Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:1.2px;color:#0A0B0D;text-decoration:none">${cta}</a></td></tr></table>` : '';
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"><title>Scout</title></head>
-<body style="margin:0;padding:0;background:#0A0B0D">
-<div style="display:none;max-height:0;overflow:hidden">${preheader}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0B0D"><tr><td align="center" style="padding:40px 16px">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-<tr><td style="padding:0 6px 10px;font-family:'JetBrains Mono','Courier New',monospace;font-size:11px;letter-spacing:3px;color:rgba(242,241,237,0.55)">SCOUT &middot; LIVE CASINO</td></tr>
-<tr><td style="padding:0 6px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="padding-right:11px"><img src="https://backoffice.bettalotto.se/bo/img/scout-mark.png" width="26" height="26" alt="" style="display:block"></td>
-<td style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.5px;color:#F2F1ED">scout<span style="color:#D6FF3A">/</span>gaming</td></tr></table></td></tr>
-<tr><td style="background:#101214;border:1px solid rgba(242,241,237,0.10);border-radius:14px;padding:36px 34px">
-<div style="font-family:'Space Grotesk',Arial,sans-serif;font-weight:600;font-size:26px;letter-spacing:-1px;line-height:1.2;color:#F2F1ED;margin:0 0 14px">${headline}</div>
-<div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:15px;line-height:1.65;color:#9a9aa2;margin:0 0 18px">${intro}</div>
-${kv}${btn}
-${footer ? `<div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:12px;line-height:1.6;color:#9a9aa2;margin-top:16px">${footer}</div>` : ''}
-</td></tr>
-<tr><td style="padding:22px 6px;font-family:'JetBrains Mono','Courier New',monospace;font-size:9px;letter-spacing:2.5px;color:rgba(242,241,237,0.4)">18+ &middot; PLAY RESPONSIBLY &middot; SCOUT GAMING</td></tr>
-</table></td></tr></table></body></html>`;
-}
-async function sendMail(to, subject, html) {
-  if (!RESEND_KEY) return { sent: false, reason: 'no mail key on this host' };
-  try {
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: MAIL_FROM, to: [to], subject, html }),
-    });
-    return r.ok ? { sent: true } : { sent: false, reason: `resend ${r.status}` };
-  } catch (e) { return { sent: false, reason: e.message }; }
 }
 const BO_URL = process.env.BO_URL ?? 'https://backoffice.bettalotto.se';
 const BO_ORIGIN = new URL(BO_URL);
@@ -484,360 +386,29 @@ function boPostOriginOk(req) {
   const fetchSite = req.headers['sec-fetch-site'];
   return origin === expected && (!fetchSite || fetchSite === 'same-origin');
 }
-async function mintToken(username, kind, hours) {
-  const t = randomBytes(24).toString('base64url');
-  (await boDb.prepare('INSERT INTO tokens (token, username, kind, exp) VALUES (?,?,?,?)')
-    .run(t, username, kind, Math.floor(Date.now() / 1000) + hours * 3600));
-  return t;
-}
-
-
-// ---------- dealing clip library (BO) ----------
-export const CLIP_PARTS = ['box0','box1','box2','box3','box4','box5','box6','dealer-up','dealer-hole','return','idle'];
-const probeCache = new Map();
-function probeVideo(rel) {
-  if (probeCache.has(rel)) return probeCache.get(rel);
-  let out = null;
-  try {
-    const abs = publicAssetPath(rel);
-    const txt = execFileSync('ffprobe', ['-v','error','-select_streams','v:0','-show_entries','stream=width,height,nb_frames,r_frame_rate','-of','csv=p=0', abs], { encoding: 'utf8', timeout: 4000 }).trim();
-    const [w, h, fps, n] = txt.split(',');
-    out = { width: +w, height: +h, frames: +n || null, fps: fps?.includes('/') ? Math.round(+fps.split('/')[0] / +fps.split('/')[1]) : +fps };
-  } catch { out = null; }
-  probeCache.set(rel, out); return out;
-}
-// Integration routes living under public/astrid-* (isolated 4190 runtime only).
-const ROUTE_CLIPS = [
-  { id: 'astrid-single-seat-v6', dealer: 'astrid', name: 'Box 0 first card (v6 masks)', src: 'astrid-single-seat/actor-gray-v6.mp4', part: 'box0', transparent: true, layout: 'packed gray atlas (RGB + person + card masks)', route: 'astridBox0=review&astridVariant=v6', kind: 'route' },
-  { id: 'astrid-single-seat-v2', dealer: 'astrid', name: 'Box 0 first card (v2 masks)', src: 'astrid-single-seat/actor-gray.mp4', part: 'box0', transparent: true, layout: 'packed gray atlas', route: 'astridBox0=review', kind: 'route' },
-  { id: 'astrid-box1', dealer: 'astrid', name: 'Box 1 first card', src: 'astrid-box1/actor-gray.mp4', part: 'box1', transparent: true, layout: 'packed gray atlas', route: 'astridBox0=review (box1 auto)', kind: 'route' },
-  { id: 'astrid-box3', dealer: 'astrid', name: 'Box 3 centre first card', src: 'astrid-box3/actor-gray.mp4', part: 'box3', transparent: true, layout: 'packed gray atlas + shoe mask', route: 'astridBox0=review (box3 auto, 1091x837)', kind: 'route' },
-  { id: 'astrid-dealer-up', dealer: 'astrid', name: 'Dealer upcard', src: 'astrid-dealer-up/actor-gray.mp4', part: 'dealer-up', transparent: true, layout: 'packed gray atlas + shoe mask', route: 'astridBox0=review (dealer auto)', kind: 'route' },
-  { id: 'astrid-continuous', dealer: 'astrid', name: 'Continuous 4-card opening (boxes 2-4 film)', src: 'astrid-continuous/actor.mp4', part: 'box2', transparent: true, layout: 'RGB + mask (1280x1440)', route: 'default on 4190; astridContinuous=off', kind: 'route' },
-  { id: 'astrid-return-bridge', dealer: 'astrid', name: 'Empty-hand return to idle', src: 'astrid-continuous/return-bridge.mp4', part: 'return', transparent: true, layout: 'RGB + mask (1920x2160)', route: 'after full 4-card group', kind: 'route' },
-  { id: 'astrid-seven-box0', dealer: 'astrid', name: 'Box 0 reach (Kling, full scene)', src: 'astrid-seven/box0.mp4', part: 'box0', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 4.0 },
-  { id: 'astrid-seven-box1', dealer: 'astrid', name: 'Box 1 reach (Kling, full scene)', src: 'astrid-seven/box1.mp4', part: 'box1', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 3.7 },
-  { id: 'astrid-seven-box2', dealer: 'astrid', name: 'Box 2 reach (Kling, full scene)', src: 'astrid-seven/box2.mp4', part: 'box2', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
-  { id: 'astrid-seven-box3', dealer: 'astrid', name: 'Box 3 reach (Kling, full scene)', src: 'astrid-seven/box3.mp4', part: 'box3', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
-  { id: 'astrid-seven-box4', dealer: 'astrid', name: 'Box 4 reach (Kling, full scene)', src: 'astrid-seven/box4.mp4', part: 'box4', transparent: false, layout: 'full-scene video', route: 'astridSeven=review', kind: 'route', landAt: 2.3 },
-];
-const ACTION_PART = { 'deal-left': 'box1', 'deal-centre': 'box3', 'deal-right': 'box5', 'deal-dealer': 'dealer-up', 'return': 'return', 'hit-left': 'box1', 'hit-centre': 'box3', 'hit-right': 'box5' };
-function clipScan() {
-  const clips = [];
-  for (const d of dealerScan()) {
-    // 1. performance takes (staged player): packed RGB-over-mask atlases
-    try {
-      const m = JSON.parse(readSync(publicAssetPath(d.base, 'performance/manifest.json'), 'utf8'));
-      for (const t of [...(m.takes ?? []), ...(m.reviewCandidates ?? []), ...(m.continuations ?? [])]) {
-        if (!t?.media?.src) continue;
-        const layout = t.media.layout ?? '';
-        clips.push({ id: t.id, dealer: d.key, name: t.id, src: t.media.src, part: ACTION_PART[t.action] ?? null, action: t.action, status: t.status,
-          transparent: /mask|matte|alpha/i.test(layout), layout, width: t.media.width, height: t.media.height, frames: t.media.frames, fps: t.media.fps, events: t.events ?? null, kind: 'performance' });
-      }
-    } catch {}
-    // 2. engine streams (idle/actions/speak); previews exist only for speech lines
-    try {
-      const idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8'));
-      const hands = existsSync(publicAssetPath(d.base === 'dealer' ? 'dealer' : d.base + '-hands', 'streams/index.json'));
-      let bank = {}; try { bank = JSON.parse(readSync(publicAssetPath(d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
-      for (const [k, c] of Object.entries(idx.clips)) {
-        const key = k.split('/').pop();
-        const preview = existsSync(publicAssetPath(d.base, 'preview', key + '.mp4')) ? `${d.base}/preview/${key}.mp4` : null;
-        clips.push({ id: `${d.key}:${k}`, dealer: d.key, name: k, src: preview, stream: `${d.base}/streams/${c.file}`, part: k.includes('/actions/action-deal') ? 'box3' : k.includes('/idle/') ? 'idle' : k.includes('action-return') ? 'return' : null,
-          text: bank[key]?.text ?? null, audio: existsSync(publicAssetPath(d.base, 'audio/en', key + '.mp3')) ? `${d.base}/audio/en/${key}.mp3` : null, transparent: hands, layout: hands ? 'engine clip + hands matte (person-only band over felt)' : 'engine clip, baked over scene crop', width: idx.width, height: idx.height, frames: c.frameCount, fps: c.fps, kind: 'engine' });
-      }
-    } catch {}
-  }
-  for (const r of ROUTE_CLIPS) if (existsSync(publicAssetPath(r.src))) clips.push({ ...r, ...(probeVideo(r.src) ?? {}) });
-  for (const c of clips) if (c.src && c.width == null) Object.assign(c, probeVideo(c.src) ?? {});
-  return clips;
-}
-async function boApi(url) {
-  if (studioPolicyRuntime && url === '/api/bo/config') return studioPolicyRuntime.policy.readGameConfiguration();
-  const cfg = studioPolicyRuntime ? (await studioPolicyRuntime.policy.readSaved()).administration : boLoad();
-  if (url === '/api/bo/overview') {
-    const day = new Date().toISOString().slice(0, 10);
-    // game rounds arrive as balance syncs whose meta names the reason
-    const tx = (await db.prepare("SELECT CASE WHEN type='sync' THEN meta ELSE type END AS type, COUNT(*) n, SUM(amount) sum FROM transactions WHERE at >= ? GROUP BY 1").all(day));
-    const players = (await db.prepare('SELECT COUNT(*) n FROM players').get());
-    return { tiers: cfg.tiers, rooms: cfg.rooms, tx, players: players.n, dealers: dealerScan() };
-  }
-  if (url === '/api/bo/players') {
-    return { players: (await db.prepare(`SELECT id, name, currency, balance, created_at${postgres ? ', status, closed_at, EXISTS (SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed' : ''} FROM players ORDER BY created_at DESC LIMIT 500`).all()),
-      administration: Boolean(playerAdministration), storage: databaseBackend };
-  }
-  if (url === '/api/bo/transactions') {
-    return { tx: (await db.prepare('SELECT player_id, type, amount, currency, meta, at FROM transactions ORDER BY id DESC LIMIT 100').all()) };
-  }
-  if (url === '/api/bo/config') return cfg;
-  if (url === '/api/bo/apikeys') return { keys: (await (await partner()).keys.list()), scopes: (await partner()).SCOPES, docs: '/docs/partner-api.html' };
-  if (url === '/api/bo/gen-verdicts') return { genVerdicts: cfg.genVerdicts ?? {}, genLandings: cfg.genLandings ?? {}, parts: CLIP_PARTS };
-  if (url === '/api/bo/clips') return { parts: CLIP_PARTS, dealers: dealerScan().map(d => ({ key: d.key, name: d.name })), clips: clipScan(), assignments: cfg.clipAssignments ?? {}, neverAgain: cfg.neverAgain ?? {}, landings: cfg.clipLandings ?? {}, assignmentsReadOnly: true, assignmentSource: 'legacy-review-only', activeEditor: 'Backoffice/Lab', actualPlayback: false };
-  if (url === '/api/bo/users') {
-    return { users: (await boDb.prepare('SELECT username, email, role, created_at, hash IS NOT NULL AS active FROM users ORDER BY id').all()) };
-  }
-  if (url === '/api/bo/voicelines') {
-    const out = [];
-    for (const d of dealerScan()) {
-      let idx = {}, bank = {};
-      try { idx = JSON.parse(readSync(publicAssetPath(d.base, 'streams/index.json'), 'utf8')).clips; } catch {}
-      try { bank = JSON.parse(readSync(publicAssetPath(d.base, 'audio/en/bank.json'), 'utf8')); } catch {}
-      const lines = [];
-      const audioDir = publicAssetPath(d.base, 'audio/en');
-      let mp3s = [];
-      try { mp3s = readdirSync(audioDir).filter(f => f.endsWith('.mp3')); } catch {}
-      for (const f of mp3s) {
-        const k = f.replace('.mp3', '');
-        const clip = idx['idle-1/speak/' + k];
-        const preview = existsSync(publicAssetPath(d.base, 'preview', k + '.mp4'));
-        lines.push({ key: k, text: bank[k]?.text ?? '', clip: !!clip, delay: clip?.audioDelayMs ?? null,
-                     preview: preview ? `/${d.base}/preview/${k}.mp4` : null,
-                     audio: `/${d.base}/audio/en/${k}.mp3` });
-      }
-      lines.sort((a, b) => a.key.localeCompare(b.key));
-      const review = (cfg.voiceReview ?? {})[d.key] ?? {};
-      for (const l of lines) l.review = review[l.key] ?? null;
-      out.push({ dealer: d.key, name: d.name, lines });
+const LEGACY_STUDIO_RETURNS = new Set(['/studio', '/studio/administration']);
+const LEGACY_STUDIO_HANDOFF = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
+const LEGACY_STUDIO_TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
+function legacyBackofficeRedirect(req, pathname) {
+  let destination = null;
+  if (pathname === '/bo' || pathname === '/bo/' || pathname === '/bo/index.html') {
+    destination = '/studio/administration';
+  } else if (pathname === '/bo/login.html') {
+    const returnTo = new URL(req.url, 'http://local').searchParams.get('returnTo');
+    destination = '/studio/login';
+    if (returnTo && (LEGACY_STUDIO_RETURNS.has(returnTo) || LEGACY_STUDIO_HANDOFF.test(returnTo))) {
+      destination += `?returnTo=${encodeURIComponent(returnTo)}`;
     }
-    return { dealers: out };
+  } else if (pathname === '/bo/set-password.html') {
+    const token = new URL(req.url, 'http://local').searchParams.get('t');
+    destination = '/studio/set-password';
+    if (token && LEGACY_STUDIO_TOKEN.test(token)) destination += `?t=${encodeURIComponent(token)}`;
   }
-  return null;
-}
-// Recheck the actor after the request body arrives, under the same lock as the
-// target change. In SQLite the entire final read/write section stays synchronous.
-async function boChangeUser(body, who, remove) {
-  const reject=statusCode=>{throw Object.assign(Error('User administration rejected'),{statusCode});};
-  const text=value=>typeof value==='string'&&value.trim().length>0&&value.length<=254&&!/[\u0000-\u001f\u007f-\u009f]/u.test(value);
-  const known=user=>user&&text(user.username)&&['reader','staff','admin','superadmin'].includes(user.role)
-    && (user.email===null||user.email===undefined||text(user.email)&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email))
-    && (user.hash===null||user.hash===undefined||typeof user.hash==='string'&&/^[a-f0-9]{128}$/i.test(user.hash)&&text(user.salt));
-  const active=user=>known(user)&&typeof user.hash==='string'&&isAdministratorRole(user.role);
-  try {
-    if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).sort().join(',')!==(remove?'username':'role,username')
-      ||!text(body.username)||!remove&&!['reader','staff','admin','superadmin'].includes(body.role))reject(400);
-    if(!who||!text(who.sub)||!isAdministratorRole(who.role)||who.aud!=='backoffice'||who.partner
-      ||typeof who.source_stamp!=='string'||!Number.isSafeInteger(who.auth_epoch))reject(403);
-    const columns='id,username,email,role,salt,hash';
-    const administratorsSql=`SELECT ${columns} FROM users WHERE role IN ('admin','superadmin') ORDER BY id`;
-    const userSql=`SELECT ${columns} FROM users WHERE lower(username)=? OR lower(email)=?`;
-    const targetKey=body.username.trim().toLowerCase(),actorKey=who.sub.trim().toLowerCase();
-    const checked=(administrators,actors,targets,epoch)=>{
-      const actor=actors.length===1?actors[0]:null,target=targets.length===1?targets[0]:null;
-      if(!active(actor)||actor.username!==who.sub||actor.role!==who.role
-        ||createHash('sha256').update(`${actor.salt}:${actor.hash}`).digest('hex')!==who.source_stamp
-        ||Number(epoch)!==who.auth_epoch||!Number.isFinite(who.exp)||who.exp<=Date.now()/1000)reject(403);
-      if(!targets.length)reject(404);
-      if(!known(target))reject(409);
-      if(String(target.id)===String(actor.id))reject(403);
-      if(active(target)&&(remove||!isAdministratorRole(body.role))&&administrators.filter(active).length<=1)reject(409);
-      return target;
-    };
-    if(postgres)return await boDb.transaction(async()=>{
-      const administrators=await boDb.prepare(administratorsSql+' FOR UPDATE').all();
-      const actors=await boDb.prepare(userSql+' FOR UPDATE').all(actorKey,actorKey);
-      const targets=await boDb.prepare(userSql+' FOR UPDATE').all(targetKey,targetKey);
-      const epoch=actors.length===1?(await boDb.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(actors[0].id))?.epoch??0:0;
-      const target=checked(administrators,actors,targets,epoch);
-      if(remove){await boDb.prepare('DELETE FROM tokens WHERE username=?').run(target.username);await boDb.prepare('DELETE FROM users WHERE id=?').run(target.id);}
-      else await boDb.prepare('UPDATE users SET role=? WHERE id=?').run(body.role,target.id);
-      return{ok:true};
-    });
-    boDb.exec('BEGIN IMMEDIATE');
-    try {
-      const administrators=boDb.prepare(administratorsSql).all(),actors=boDb.prepare(userSql).all(actorKey,actorKey),targets=boDb.prepare(userSql).all(targetKey,targetKey);
-      const epoch=actors.length===1?boDb.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(actors[0].id)?.epoch??0:0;
-      const target=checked(administrators,actors,targets,epoch);
-      if(remove){boDb.prepare('DELETE FROM tokens WHERE username=?').run(target.username);boDb.prepare('DELETE FROM users WHERE id=?').run(target.id);}
-      else boDb.prepare('UPDATE users SET role=? WHERE id=?').run(body.role,target.id);
-      boDb.exec('COMMIT');return{ok:true};
-    }catch(error){boDb.exec('ROLLBACK');throw error;}
-  }catch(error){return{error:'User administration rejected',statusCode:[400,403,404,409].includes(error?.statusCode)?error.statusCode:503};}
-}
-
-async function boPost(url, body, who) {
-  if (studioPolicyRuntime) return { error: 'Use the native Studio command', statusCode: 410 };
-  if (url === '/api/bo/players/create' || url === '/api/bo/players/status') {
-    if (!who || !['admin', 'superadmin'].includes(who.role)) return { error: 'admin role required', statusCode: 403 };
-    if (!playerAdministration) return { error: 'Player administration requires PostgreSQL storage', statusCode: 503 };
-    try {
-      if (url.endsWith('/create')) return { ok: true, player: await playerAdministration.create({ ...body, actor: who.sub }) };
-      const changed = await playerAdministration.setStatus({ ...body, actor: who.sub });
-      if (changed.changed || changed.status !== 'active') {
-        speechStreamService?.cancelPlayer(changed.id);
-        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([changed.id, dealerId]))?.abort('player_account_changed');
-        await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
-      }
-      return { ok: true, ...changed };
-    } catch (error) { return error.code === '23505'
-      ? {error:'Player account already exists',statusCode:400} : publicFailure(error,error.statusCode || 400); }
+  if (!destination) return false;
+  if (!['GET', 'HEAD'].includes(req.method)) {
+    return { status: 405, headers: { Allow: 'GET, HEAD', 'Cache-Control': 'no-store' } };
   }
-  if (url === '/api/bo/users/invite') {
-    const { email, role } = body;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email ?? '')) return { error: 'bad email' };
-    if (!['reader', 'staff', 'admin', 'superadmin'].includes(role)) return { error: 'bad role' };
-    if ((await boDb.prepare('SELECT 1 FROM users WHERE username = ? OR email = ?').get(email, email))) return { error: 'user exists' };
-    (await boDb.prepare('INSERT INTO users (username, email, role, created_at) VALUES (?,?,?,?)')
-      .run(email, email, role, new Date().toISOString()));
-    const t = (await mintToken(email, 'invite', 72));
-    const link = `${BO_URL}/bo/set-password.html?t=${t}`;
-    const mail = await sendMail(email, 'You are invited to the Scout backoffice', brandEmail({
-      preheader: 'Choose your password to activate your account.',
-      headline: 'You have a seat in the backoffice.',
-      intro: `An account has been created for you on the Scout Live Casino backoffice with the <span style="color:#D6FF3A">${role.toUpperCase()}</span> role. Choose your own password to activate it. The link is valid for 72 hours.`,
-      cta: 'CHOOSE PASSWORD', ctaUrl: link,
-      footer: 'If you were not expecting this invitation, ignore this email and nothing happens.',
-    }));
-    return { ok: true, emailSent: mail.sent, reason: mail.reason, link };
-  }
-  if (url === '/api/bo/users/resend') {
-    const { username } = body;
-    const u = (await boDb.prepare('SELECT username, email, role, hash FROM users WHERE username = ?').get(username ?? ''));
-    if (!u) return { error: 'no such user' };
-    if (!u.email) return { error: 'user has no email on file' };
-    (await boDb.prepare("DELETE FROM tokens WHERE username = ?").run(u.username));
-    if (!u.hash) {
-      const t = (await mintToken(u.username, 'invite', 72));
-      const mail = await sendMail(u.email, 'You are invited to the Scout backoffice', brandEmail({
-        preheader: 'Choose your password to activate your account.',
-        headline: 'You have a seat in the backoffice.',
-        intro: `Your invitation to the Scout Live Casino backoffice (<span style="color:#D6FF3A">${u.role.toUpperCase()}</span> role) has been renewed. Choose your password to activate. The link is valid for 72 hours.`,
-        cta: 'CHOOSE PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
-        footer: 'If you were not expecting this invitation, ignore this email and nothing happens.',
-      }));
-      return { ok: true, kind: 'invite', emailSent: mail.sent, reason: mail.reason };
-    }
-    const t = (await mintToken(u.username, 'reset', 2));
-    const mail = await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
-      preheader: 'Password reset for your backoffice account.',
-      headline: 'Reset your password.',
-      intro: 'A password reset was issued for your Scout backoffice account by an administrator. The link is valid for 2 hours.',
-      cta: 'SET NEW PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
-      footer: 'If this was not you, ignore this email - your password stays unchanged.',
-    }));
-    return { ok: true, kind: 'reset', emailSent: mail.sent, reason: mail.reason };
-  }
-  if (url === '/api/bo/users/role' || url === '/api/bo/users/remove') return boChangeUser(body,who,url.endsWith('/remove'));
-  if (url === '/api/bo/reset-request') {
-    const { user } = body;
-    const u = (await boDb.prepare('SELECT username, email FROM users WHERE username = ? OR email = ?').get(user ?? '', user ?? ''));
-    if (u && u.email) {
-      const t = (await mintToken(u.username, 'reset', 2));
-      await sendMail(u.email, 'Reset your Scout backoffice password', brandEmail({
-        preheader: 'Password reset for your backoffice account.',
-        headline: 'Reset your password.',
-        intro: 'A password reset was requested for your Scout backoffice account. The link is valid for 2 hours.',
-        cta: 'SET NEW PASSWORD', ctaUrl: `${BO_URL}/bo/set-password.html?t=${t}`,
-        footer: 'If this was not you, ignore this email - your password stays unchanged.',
-      }));
-    }
-    return { ok: true };   // never reveal whether the account exists
-  }
-  if (url === '/api/bo/set-password') {
-    const { token, pass } = body;
-    if (!pass || String(pass).length < 8) return { error: 'password must be at least 8 characters' };
-    if (postgres) {
-      const salt = randomBytes(16).toString('hex');
-      const hash = scryptSync(String(pass), salt, 64).toString('hex');
-      return boDb.transaction(async () => {
-        const row = await boDb.prepare('DELETE FROM tokens WHERE token=? AND exp>=? RETURNING username').get(token ?? '',Math.floor(Date.now()/1000));
-        if (!row) return { error: 'invalid or expired link' };
-        const changed = await boDb.prepare('UPDATE users SET salt=?,hash=? WHERE username=?').run(salt,hash,row.username);
-        await boDb.prepare('DELETE FROM tokens WHERE username=?').run(row.username);
-        return changed.changes ? { ok:true } : { error:'invalid or expired link' };
-      });
-    }
-    const row = boDb.prepare('SELECT username, kind, exp FROM tokens WHERE token = ?').get(token ?? '');
-    if (!row || row.exp < Date.now() / 1000) return { error: 'invalid or expired link' };
-    const salt = randomBytes(16).toString('hex');
-    const hash = scryptSync(String(pass), salt, 64).toString('hex');
-    boDb.prepare('UPDATE users SET salt = ?, hash = ? WHERE username = ?').run(salt, hash, row.username);
-    boDb.prepare('DELETE FROM tokens WHERE username = ?').run(row.username);
-    return { ok: true };
-  }
-  const cfg = boLoad();
-  if (url === '/api/bo/tier') {
-    const { tier, dealer } = body;
-    if (!cfg.tiers[tier] || !['vera', 'astrid', 'amira', 'mei'].includes(dealer)) return { error: 'bad tier/dealer' };
-    // a dealer with no playable clips cannot hold a live tier
-    const base = dealer === 'vera' ? 'dealer' : 'dealers/' + dealer;
-    try {
-      const idx = JSON.parse(readSync(publicAssetPath(base, 'streams/index.json'), 'utf8'));
-      if (!idx.clips['idle-1/idle/idle']) return { error: dealer + ' has no idle clip yet' };
-    } catch { return { error: dealer + ' has no clips yet' }; }
-    cfg.tiers[tier] = dealer; boSave(cfg);
-    return { ok: true, tiers: cfg.tiers };
-  }
-  if (url === '/api/bo/room') {
-    const { id, state } = body;
-    const room = cfg.rooms.find(r => r.id === id);
-    if (!room || !['live', 'preview', 'pending'].includes(state)) return { error: 'bad room/state' };
-    room.state = state; boSave(cfg);
-    return { ok: true, rooms: cfg.rooms };
-  }
-  if (url === '/api/bo/voiceline-review') {
-    const { dealer, line, verdict } = body;
-    if (!dealer || !line || !['approved', 'rejected', null].includes(verdict)) return { error: 'bad review' };
-    cfg.voiceReview = cfg.voiceReview ?? {};
-    cfg.voiceReview[dealer] = cfg.voiceReview[dealer] ?? {};
-    if (verdict === null) delete cfg.voiceReview[dealer][line];
-    else cfg.voiceReview[dealer][line] = verdict;
-    boSave(cfg);
-    return { ok: true };
-  }
-  if (url === '/api/bo/apikeys/create') { try { return { ok: true, key: (await (await partner()).keys.create(body, who?.sub ?? who ?? null)) }; } catch (e) { return publicFailure(e); } }
-  if (url === '/api/bo/apikeys/revoke') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return (await (await partner()).keys.revoke(body.id)); }
-  if (url === '/api/bo/apikeys/launch') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...(await (await partner()).keys.mintLaunch(body.id, body)) }; } catch (e) { return publicFailure(e); } }
-  if (url === '/api/bo/apikeys/credit') { if (typeof body?.id !== 'string') return { error: 'bad id' }; try { return { ok: true, ...(await (await partner()).keys.credit(body.id, body)) }; } catch (e) { return publicFailure(e); } }
-  if (url === '/api/bo/apikeys/rotate') { if (typeof body?.id !== 'string') return { error: 'bad id' }; return { ok: true, ...(await (await partner()).keys.rotate(body.id)) }; }
-  if (url === '/api/bo/clip-landing') {
-    // Human-verified observation: which table part the card in this clip actually went to. Separate from assignment.
-    const { clip, part, note } = body ?? {};
-    if (typeof clip !== 'string' || !clip) return { error: 'bad clip' };
-    cfg.clipLandings ??= {};
-    if (!part) delete cfg.clipLandings[clip];
-    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.clipLandings[clip] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
-    boSave(cfg); return { ok: true, landings: cfg.clipLandings };
-  }
-  if (url === '/api/bo/clip-never') {
-    // "Never again": awful takes / failed prompts go to a bin so nobody re-reviews or re-assigns them.
-    const { clip, reason, undo } = body ?? {};
-    if (typeof clip !== 'string' || !clip) return { error: 'bad clip' };
-    cfg.neverAgain ??= {};
-    if (undo) delete cfg.neverAgain[clip];
-    else {
-      cfg.neverAgain[clip] = { reason: String(reason ?? '').slice(0, 300), by: who?.sub ?? who ?? null, at: new Date().toISOString() };
-      for (const d of Object.values(cfg.clipAssignments ?? {})) for (const [part, a] of Object.entries(d)) if (a?.clip === clip) delete d[part];
-    }
-    boSave(cfg); return { ok: true, neverAgain: cfg.neverAgain, assignments: cfg.clipAssignments ?? {} };
-  }
-  if (url === '/api/bo/gen-landing') {
-    // Generations page: which table part the card in this video actually went to, marked by a human.
-    const { id, part, note } = body ?? {};
-    if (typeof id !== 'string' || !id) return { error: 'bad id' };
-    cfg.genLandings ??= {};
-    if (!part) delete cfg.genLandings[id];
-    else { if (!CLIP_PARTS.includes(part)) return { error: 'bad part' }; cfg.genLandings[id] = { part, note: String(note ?? '').slice(0, 200), by: who?.sub ?? who ?? null, at: new Date().toISOString() }; }
-    boSave(cfg); return { ok: true, genLandings: cfg.genLandings };
-  }
-  if (url === '/api/bo/gen-verdict') {
-    // Generations page: want / don't want per Higgsfield video, so nobody re-reviews the same output.
-    const { id, verdict, reason } = body ?? {};
-    if (typeof id !== 'string' || !id) return { error: 'bad id' };
-    cfg.genVerdicts ??= {};
-    if (!verdict) delete cfg.genVerdicts[id];
-    else if (verdict === 'want' || verdict === 'no') cfg.genVerdicts[id] = { verdict, reason: String(reason ?? '').slice(0, 300), by: who?.sub ?? who ?? null, at: new Date().toISOString() };
-    else return { error: 'bad verdict' };
-    boSave(cfg); return { ok: true, genVerdicts: cfg.genVerdicts };
-  }
-  if (url === '/api/bo/clip-assign') {
-    return { error: 'Aktiva klippval redigeras i Backoffice/Lab. Äldre BO-val är endast granskningsdata.', statusCode: 410, editor: 'Backoffice/Lab' };
-  }
-  if (url === '/api/bo/pitboss') { cfg.pitboss = { ...cfg.pitboss, ...body }; boSave(cfg); return { ok: true, pitboss: cfg.pitboss }; }
-  if (url === '/api/bo/tournament') {
-    const t = { id: 't' + Date.now(), state: 'draft', entries: 0, ...body };
-    cfg.tournaments.unshift(t); boSave(cfg); return { ok: true, tournaments: cfg.tournaments };
-  }
-  return null;
+  return { status: 308, headers: { Location: destination, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } };
 }
 const port = Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
@@ -955,7 +526,6 @@ function buildCalibrationCss({ root: rootVars = {}, boxes = {} } = {}) {
 
 const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
-const accountCredentials=createAccountCredentialResolver({identity:scoutIdentity,playerDb:db,playerAccounts});
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,
@@ -1000,7 +570,7 @@ async function chatSessionOwner(req, playerId) {
 // Opt-in operator rehearsal shares the real relay and its budget, but never
 // calls player APIs or persists synthetic conversations in either database.
 const operatorSpeechQa = createOperatorSpeechQa({
-  directory: process.env.CROUPIER_GENERATED_SPEECH_DIR,
+  directory: studioPolicyRuntime ? undefined : process.env.CROUPIER_GENERATED_SPEECH_DIR,
   journalRequired: Boolean(studioPolicyRuntime),
   gateStore: studioPolicyRuntime
     ? (await import('./postgres-operator-speech-qa.mjs')).createPostgresOperatorSpeechQa({pool:storage.pool,scope:studioPolicyRuntime.scope})
@@ -1068,7 +638,7 @@ const server = createServer(async (req, res) => {
     const result = await studioGameCommand(request);
     res.writeHead(result.status, Object.fromEntries(result.headers)); res.end(await result.text()); return;
   }
-  if (studioPolicyRuntime && pathname.startsWith('/api/bo/') && req.method === 'POST') {
+  if (isRetiredBackofficePost({ studioPolicyActive: Boolean(studioPolicyRuntime), method: req.method, pathname })) {
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"legacy_administration_retired"}'); return;
   }
@@ -1096,6 +666,11 @@ const server = createServer(async (req, res) => {
     }
   } catch { if(!res.headersSent){res.writeHead(400);res.end('Invalid request');}return; }
   if(pathname==='/login.html'){res.writeHead(303,{Location:'/'});res.end();return;}
+  const legacyBoRedirect = legacyBackofficeRedirect(req, pathname);
+  if (legacyBoRedirect) {
+    res.writeHead(legacyBoRedirect.status, legacyBoRedirect.headers);
+    res.end(); return;
+  }
   if(pathname.startsWith('/api/v1/generations')&&await generationsApi(req,res,pathname))return;
   if(pathname==='/api/v1/events'&&req.method==='GET'){ (await (await partner()).handleEvents(req,res,new URL(req.url,'http://local'))); return; }
   if(pathname.startsWith('/api/v1/')){ if(req.method!=='POST'){res.writeHead(405,{'Content-Type':'application/json'});res.end('{"error":"POST only"}');return;} await (await partner()).handle(req,res,pathname); return; }
@@ -1275,82 +850,29 @@ const server = createServer(async (req, res) => {
     res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"Invalid origin"}'); return;
   }
-  if (req.method === 'POST' && req.url === '/api/bo/login') {
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 10000) req.destroy(); });
-    req.on('end', async () => {
-      try {
-      let who = null, uname = '';
-      try { uname = JSON.parse(body || '{}').user; } catch {}
-      if (boLogins.blocked(req, uname)) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '900' }); res.end('{"error":"too many login attempts, try again in 15 minutes"}'); return; }
-      try { const { user, pass } = JSON.parse(body || '{}'); who = (await boCheckLogin(user, pass)); } catch (error) { if (persistenceFailure(error)) throw error; }
-      if (!who) { boLogins.fail(req, uname); console.warn('[bo] failed login', uname, boLogins.ipOf(req)); res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"wrong login"}'); return; }
-      boLogins.ok(req, uname);
-      const tok = jwtSign({ sub: who.name, role: who.role, aud:'backoffice', source_stamp:who.stamp,
-        auth_epoch:(await boAuthEpoch(who.id)), exp: Math.floor(Date.now() / 1000) + 7 * 86400 });
-      const secure=(req.socket.encrypted||process.env.NODE_ENV==='production')?'; Secure':'';
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control':'no-store', 'Set-Cookie': `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}` });
-      res.end('{"ok":true}');
-      } catch {
-        if (res.destroyed || res.writableEnded) return;
-        if (res.headersSent) { res.destroy(); return; }
-        res.writeHead(503, {'Content-Type':'application/json','Cache-Control':'no-store'});
-        res.end('{"error":"Service temporarily unavailable"}');
-      }
-    });
-    return;
-  }
-  // the game itself reads tier config; login, password flows and /me stay
-  // reachable without a session; everything else in the BO needs one
-  const boOpen = (req.method === 'GET' && (req.url === '/api/bo/config' || req.url === '/api/bo/me'))
-    || (req.method === 'POST' && ['/api/bo/reset-request', '/api/bo/set-password'].includes(req.url))
-    || pathname === '/bo/login.html' || req.url.startsWith('/bo/set-password.html');
-  if ((req.url.startsWith('/api/bo/') || req.url === '/bo' || req.url.startsWith('/bo/')) && !boOpen
-      && !(await boSessionOk(req))) {
-    if (req.url.startsWith('/api/')) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"login required"}'); }
-    else { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); }
-    return;
-  }
   if (await operatorSpeechQa.handle(req, res, pathname)) return;
-  if (req.method === 'GET' && req.url.startsWith('/api/bo/')) {
-    const who = (await boSessionOk(req));
-    if (req.url === '/api/bo/me') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(who ? { user: who.sub, role: who.role } : {}));
-      return;
+  if (req.method === 'GET' && pathname === '/api/bo/config') {
+    if (!studioPolicyRuntime) {
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end('{"error":"Game configuration unavailable"}'); return;
     }
-    if (req.url === '/api/bo/users' && !isAdministratorRole(who?.role)) {
-      res.writeHead(403, { 'Content-Type': 'application/json' }); res.end('{"error":"admin only"}'); return;
+    try {
+      const projection = await studioPolicyRuntime.policy.readGameConfiguration();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(projection));
+    } catch {
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end('{"error":"Game configuration unavailable"}');
     }
-    const out = (await boApi(req.url));
-    res.writeHead(out ? 200 : 404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(out ?? { error: 'not found' }));
     return;
   }
-  if (req.method === 'POST' && req.url.startsWith('/api/bo/')) {
-    // least role that may perform each action
-    const NEED = { '/api/bo/voiceline-review': 'staff', '/api/bo/tournament': 'staff',
-                   '/api/bo/pitboss': 'admin', '/api/bo/tier': 'admin', '/api/bo/room': 'admin',
-                   '/api/bo/users/invite': 'superadmin', '/api/bo/apikeys/create': 'superadmin', '/api/bo/apikeys/launch': 'admin', '/api/bo/apikeys/credit': 'admin', '/api/bo/apikeys/revoke': 'superadmin', '/api/bo/apikeys/rotate': 'superadmin', '/api/bo/users/role': 'superadmin', '/api/bo/users/remove': 'superadmin', '/api/bo/users/resend': 'superadmin' };
-    const PUBLIC = ['/api/bo/reset-request', '/api/bo/set-password'];
-    const who = (await boSessionOk(req));
-    if (!PUBLIC.includes(req.url)) {
-      const need = NEED[req.url] ?? 'admin';
-      if (!who || (ROLE_RANK[who.role] ?? -1) < ROLE_RANK[need]) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: `${need} role required` }));
-        return;
-      }
-    }
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 100000) req.destroy(); });
-    req.on('end', async () => {
-      let out = null;
-      try { out = await boPost(req.url, JSON.parse(body || '{}'), who); } catch (e) { out = persistenceFailure(e) ? publicFailure(e) : {error:'bad request'}; }
-      res.writeHead(out?.statusCode ?? (out ? 200 : 404), { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(out ?? { error: 'not found' }));
-    });
-    return;
+  if (pathname.startsWith('/api/bo/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end('{"error":"not found"}'); return;
+  }
+  if (pathname.startsWith('/bo/') && !(await boSessionOk(req))) {
+    res.writeHead(302, { Location: '/studio/login', 'Cache-Control': 'no-store' });
+    res.end(); return;
   }
   if (req.method === 'POST' && req.url === '/chat') {
     const controller = new AbortController();
@@ -1506,20 +1028,17 @@ const server = createServer(async (req, res) => {
   let decoded;
   try { decoded = decodeURIComponent(url.pathname); }
   catch { res.writeHead(400); res.end('bad request'); return; }
-  if (decoded === '/bo') { res.writeHead(303, { Location: '/bo/' + url.search }); res.end(); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
-  const generationPrefix = /^\/bo[ .]*\/gen[ .]*\//i.exec(generationPath);
-  if (generationPrefix) {
+  const retiredGenerationPath = /^\/bo[ .]*\/(?:gen[ .]*(?:\/|$)|generations[ .]*\.json[ .]*$)/i.test(generationPath);
+  if (retiredGenerationPath) {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
     // the ordinary BO gate above. Windows also ignores directory casing and
     // trailing dots/spaces. None of these aliases may fall through to static files.
-    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/bo/login.html' }); res.end(); return; }
+    if (!(await boSessionOk(req))) { res.writeHead(302, { Location: '/studio/login' }); res.end(); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); res.end(); return; }
-    let catalog; try { catalog = JSON.parse(readSync(publicAssetPath('bo/generations.json'), 'utf8')); } catch { catalog = []; }
-    const media = openGenerationMedia({ directory: generationDirectory, catalog, fileName: generationPath.slice(generationPrefix[0].length) });
-    if (!media) { res.writeHead(404, { 'Cache-Control': 'no-store' }); res.end('not found'); return; }
-    serveGenerationMedia(req, res, media); return;
+    res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(req.method === 'HEAD' ? undefined : '{"error":"legacy generation catalog retired"}'); return;
   }
   if (mediaLayout) {
     if (publicBlobMedia) {
@@ -1604,10 +1123,20 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
   });
 }
-server.once('close', async () => {
+installGracefulShutdown({ server, closeRuntime: async () => {
   // Persist cancellation/terminal receipts while the journal connection is open.
-  try { await speechStreamService?.close(); }
-  catch { console.error('generated_speech_shutdown_failed'); }
-  finally { if (storage) await storage.close().catch(() => console.error('storage_shutdown_failed')); }
-});
+  const probeCancellations = [];
+  for (const [key, controller] of activePlayerChats) {
+    controller.abort('server_shutdown');
+    try {
+      const [playerId, dealerId] = JSON.parse(key);
+      if (dealerId === 'astrid') probeCancellations.push(probeRuntime.cancel({ playerId, dealerId }, 'server_shutdown'));
+    } catch { /* An invalid internal key cannot delay the remaining cancellations. */ }
+  }
+  const outcomes = await Promise.allSettled([speechStreamService?.close(), ...probeCancellations]);
+  if (outcomes.some(outcome => outcome.status === 'rejected')) throw new Error('runtime_shutdown_failed');
+}, closeStorage: async () => {
+  try { if (storage) await storage.close(); }
+  catch { throw new Error('storage_shutdown_failed'); }
+} });
 server.listen(port, host, () => console.log(`croupier demo on http://${host}:${port}`));

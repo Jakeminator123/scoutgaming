@@ -54,7 +54,7 @@ test('access probes also enforce BO and mounted Lab authentication on one origin
 
 for (const [name, change] of [
   ['player authentication', { '/api/table': 200 }],
-  ['BO authentication', { '/api/bo/users': 200 }],
+  ['BO speech QA authentication', { '/api/bo/speech-qa': 200 }],
   ['Lab forged session', { '/api/auth/lab/check': 200 }],
   ['Lab direct access', { labDirect: 200 }],
 ]) test(`access probes fail closed if ${name} is broken`, async () => {

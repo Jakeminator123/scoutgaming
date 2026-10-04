@@ -22,6 +22,10 @@ const exact = (value, keys) => value && typeof value === 'object' && !Array.isAr
 const samePath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 const fail = (code, statusCode = 503) => { throw Object.assign(new Error(code), { code, statusCode }); };
 
+export function isRetiredBackofficePost({ studioPolicyActive, method, pathname } = {}) {
+  return studioPolicyActive === true && method === 'POST' && pathname.startsWith('/api/bo/') && pathname !== PATH;
+}
+
 /** An opt-in operator test inside the existing Web process. It owns no player
  * database or provider. All paid work uses the supplied product stream service,
  * including its immutable reservations, worker admission and budget policy. */
