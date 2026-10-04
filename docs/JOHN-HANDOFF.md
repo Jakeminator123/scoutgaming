@@ -35,13 +35,38 @@ Gamla dealer-/presentation-länkar fungerar; dealerbyte bevarar rätt spelare
 också från ren URL. Det interna `lissabon-stream-lane` och tal-/GPU-kedjan
 bevaras. Ingen kontomigration eller betald provgenerering ingår.
 
-Lokalt: riktade routing/login/policy/UI-prov PASS, frontend- och Studio-byggen
-PASS, byggspår innehåller spel/login/lane och syncaudit `--probe` PASS för alla
-fyra dealers. Full pre-commit-regression PASS; faktisk driftavläsning görs efter
-publicering. GPU GET-health 19:57 UTC visade kö0/pågående0/running0, idle1,
-completed6/failed0. Plan 01:s shutdown-/zon-/OpenClaw-fel är separat öppna;
-denna routeleverans tillför ingen GPU-aktivering. Aktivera det nya Studio-valet
-först efter att både Render och Vercel faktiskt kör den nya koden.
+**Mobile Phone Lane levererad 20:12 UTC:** funktionscommit
+`0b45cba61639f93186100acfd591d58913acb0f7` är pushad på main. Full pre-commit,
+39 frontendprov, riktade routing/login/policy/UI-prov, båda produktionsbyggena
+och syncaudit `--probe` för fyra dealers PASS. Samtliga tre CI-jobb PASS i
+`37230512403`. Render `dep-db1b3ntckfvc73dimuhg` är LIVE; frontend
+`dpl_UZKL6rCb4Euj7KeHW44kFZFfW9Uz` och Studio `dpl_5vz3wtij7g13oM6QyhH5Zck8nM8y`
+är READY på samma fulla SHA. Byggspåren innehåller spel/login/lane.
+Den efterföljande handoffcommiten ändrar endast denna fil och använder
+Render-stödda `[skip render]` ([dokumentation](https://render.com/docs/deploys#skipping-an-auto-deploy))
+för att behålla den verifierade spelservern utan en dokumentationsomstart.
+Ingen testhook eller CI-kontroll stängs av; runtimekoden är identisk.
+
+Efter att samtliga tjänster var klara sparades **Mobile Phone Lane** genom
+Studios verkliga administratörsformulär med Jakobs befintliga session. UI
+bekräftade save och omläst serverdata. Publik policy GET200 återläser
+`gameLane=mobile-phone` (revision `studio-game-4a37098d048ad3173da294370086eaf64780a9cbbc11ea34679e267df3043798`).
+Ren `/blackjack` är faktiskt öppnad i webview med `dealer=astrid`,
+`presentation=local`, videons readyState4/playing/inga mediafel och
+OpenClaw-klippval. Samma sparade hand/kort och konto återladdades; inga insatser,
+konton, saldon eller spelutfall ändrades för test. `/player-login` med befintlig
+session återgick till rena `/blackjack`. Separata cookiefria HTTP-prov gav
+303 till login, login200 och kompatibel gammal Astrid-query/`/game`-redirect.
+
+Godkänd tidigare tal-/GPU-/medieacceptans återanvänds för oförändrade delar;
+ingen ny betald generering eller mänsklig läppsynkapproval påstås. GPU GET-health
+19:57 och 20:00 UTC visade kö0/pågående0/running0, idle1, completed6/failed0.
+QA är kvar på `7c4c1cc`, autoDeploy=no, 37 env, genererat tal/stream/kamera/admin
+OFF och Cartesia-/RunPod-nycklar frånvarande. Backupen nedan består.
+GitGuardian på levererad commit är queued/inga synliga runs, incidentlista
+not-read; ingen befintlig GitGuardian-flik hittades. Känd incident 37830671 är
+inte avskriven. Plan 01:s shutdown-/zon-/OpenClaw-fel, P6, produktionsmail och
+latens är separat efterarbete; denna routeleverans godkänner inte dessa flöden.
 
 Läsning av Jakobs pågående spel cirka 21:34 svensk tid visade ett faktiskt
 avslutat genererat strömsvar: `ready` 4,524 s, uppspelningsstart 9,803 s,
