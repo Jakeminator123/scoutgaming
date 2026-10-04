@@ -3,7 +3,42 @@
 Uppdaterad 4 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
-P8, 4 oktober 17:26 UTC: städreleasen är publicerad som `1fb2307` och
+Verifierad slutkod 18:16 UTC: P7:s produktionsimport, gemensamma Neon-policy,
+aliasbyte och provideraktivering samt fysisk P8 är genomförda på `9ba2fd05`.
+Startfel från mejlets `1fb2307` är rättat. Full pre-commit och tre CI-jobb
+PASS; frontend/Studio READY, samtliga 17 alias kontrollerade med historiska
+mål och projektinställningar bevarade. Render `dep-db198qrm8hqs73dpj27g`
+är LIVE utan CROOT och med originalets TLS verify-full. Slutparitet PASS för
+32 skyddade konto-/speltabeller, elva journaler, tre dokument och 18 aktiva
+plus sex behållna medieposter. Gamla mediereferenser0, routing och HEAD/Range PASS.
+Produktdisk DELETE204/GET404 och service.disk saknas. Tolv gamla Blobobjekt
+är borttagna: gamla-lista0/ersättningar12. Explicit restart200 gav en faktisk
+ny appprocess med 160 rätta källhashar, åtta avvecklade runtimefiler,
+AI3/Neon ON, health200, ingen `/var/data` eller persistent produktmount.
+Backupen är fullständigt verifierad och bevaras i
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
+Actualkvitton: diskfri `6cf5030f…`, data/HTTP `4615366b…`, postdelete `bf582b0b…`.
+Godkänd oförändrad QA/auth/mediaacceptans återanvänds; produktions-HTTP gäller
+anonyma GET/redirects, ingen ny autentiserad produktionskontomutation påstås.
+Parent-env är direkt oläsbar (Linux EACCES efter UID-byte); faktisk barnprocess,
+Linux-källa och stabila deploy-/envavläsningar binder konfigurationen.
+Lokal TCP-läsanslutning bröts; befintlig installerad Neon-Pool användes
+processlokalt med oförändrad URL, read-only SQL-guard och helperbytes.
+QA:s tre tjänster kör `7c4c1cc` med verifierade alias, SDK/källa, aktuella
+10/10 bevarandekontroller och OFF37. Äldre 42→37-övergång har en bevarad
+bevislucka: ephemära `player_probe_sessions` 19→18, övriga31 kontotabeller
+matchar. 24h TTL är möjlig förklaring, äldre radmetadata saknas; originalets
+compose=false skrivs inte om. Ingen generering eller omimport.
+Efterföljande guide-/namnregisterleverans ändrar inga runtimebytes eller
+driftvärden; aktuell leveransidentitet binds i befintliga privata P8-journalen.
+Full P6/naturlig provider-COMPLETED/ny mänsklig take-approval påstås inte;
+faktisk USD är okänd. Produktionsmail/invitation/reset är separat residual.
+GitGuardian: commitmetadata komplett, suite pending/no run; incident-API
+not-read och tidigare känd incident37830671, ingen clear-claim.
+
+### Historisk checkpoint 17:26 UTC
+
+Städreleasen är publicerad som `1fb2307` och
 samtliga tre CI-jobb PASS. Frontend och Studio är READY på denna källa.
 Produktens `dep-db18lg3tqb8s73934ijg` och QA:s `dep-db18m5ugekts73cnbujg`
 kunde inte starta; tidigare b0bc åter är LIVE. Orsaken är ett verifierat
@@ -16,7 +51,7 @@ Produktdisk och alla tolv gamla Blob-objekt är kvar tills rättad drift passera
 har startats. Nästa steg är rättad release, monterad kontroll, diskfri kontroll
 och därefter faktisk resursavveckling. Ingen import körs om.
 
-## Verifierad drift 17:49 UTC och historiska checkpoints
+### Historisk checkpoint 17:49 UTC
 
 Uppföljning 17:49 UTC: rättad `7c4c1cc` är LIVE på produktens Render
 `dep-db18udoae00c73f9nph0`; faktisk Linux-källa (160 filer), fem borttagna

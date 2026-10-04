@@ -4,7 +4,22 @@ Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
-P8 4 oktober 17:26 UTC: product/QA-containerstart på `1fb2307` misslyckades
+Verifierad slutkod 18:16 UTC: produktionens data och gemensamma Neon-policy är
+importerade, konto-/spel-/journalparitet PASS. `9ba2fd05` har full pre-commit
+och tre CI PASS samt faktisk diskfri Render-drift. Originalets TLS verify-full
+och övriga 51 miljövärden är bevarade. Produktdisken är avvecklad med
+DELETE204/GET404/service.disk saknas; tolv ersatta Blobobjekt är borttagna,
+gamla-lista0/ersättningar12. Explicit restart200 och actual `bf582b0b…` visar
+ny appprocess, rätt källa/AI/Neon, health200 och ingen `/var/data`/persistent
+produktmount. Extern fullbackup finns i
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004` och
+behålls efter avveckling. QA:s tre tjänster är LIVE/READY på `7c4c1cc`,
+aktuella10/10 bevarande PASS och OFF37. Äldre närvarogap19→18 vid 42→37
+förblir en redovisad bevislucka; konton/saldo och journaler återställs inte.
+Parentens processmiljö är direkt oläsbar efter UID-byte; barnprocess/källa och
+stabila deploy-/envavläsningar binder konfigurationen, ingen direkt read-claim.
+
+Historisk P8-checkpoint 4 oktober 17:26 UTC: product/QA-containerstart på `1fb2307` misslyckades
 på fel förväntad HTTP-status i startprovet (401 i stället för den verifierade
 anonyma tal-QA-routens 403). b0bc är fortsatt LIVE; auth rättas inte eller
 öppnas. Endast provets kontrakt rättas, med verklig handler i befintligt test.
@@ -87,24 +102,28 @@ separat och kopiera den verifierade backupens `lissabon/data` till en tom
 
 ## Beständig molndata
 
-Tabellen beskriver nuvarande produktionslagring. Nya isolerade native-QA
-använder Neon för Studio-policy, metadata och kostnads-/jobbjournaler samt privat
-Blob för beständiga paket. QA:s installerade SDK, sourcepins, budgetjournal och
-kvitton behövs fortfarande för P6 och är inte disponibel cache. Produktionsdisk
-och gamla läsare/skrivare avvecklas först efter verifierat P7-källbyte och P8-prov.
+Produktionen använder nu Neon för Studio-policy, metadata och kostnads-/
+jobbjournaler samt privat Blob för beständiga paket. Konton och spel är bevarade
+i sina befintliga Neon-databaser. Isolerad native-QA har separat scope;
+dess disk, installerade SDK, sourcepins, budgetjournal och kvitton bevaras.
+Tabellens produktdisk beskriver den historiska källan som nu är avvecklad
+efter diskfri P8-slutkontroll; backupen får aldrig startas som en andra aktiv datakälla.
 
 | Tjänst | Datarot | Bevara tillsammans |
 | --- | --- | --- |
-| Produkt/BO/Studio | `/var/data` | `players/croupier.db`, `players/craig.db`, `players/bo.json`, hela `studio/`, använda `generations/` och `speech/` |
+| Historisk produktdisk/extern backup | Tidigare `/var/data` | Hela frysta diskarkivet, inklusive äldre SQLite/BO/Studio och journaler; ingen blind restore över den aktiva Neon-källan |
 | Director | `/data/catalog` | `catalog.json`, `history/`, använt `companion.sqlite` |
 | Gateway | `/data/openclaw` | `openclaw.json`, agentfiler/sessioner, `companion-search.sqlite` |
 
 Game/auth-Neon är konto-/speldatabasen sedan 2 oktober; zonmetadata har sin
 egen databas. SQLite-filerna på disken är bevarade historiska källor.
 Git och Blob-upload säkerhetskopierar inte Studio-index, konton eller saldo.
-Behåll diskdata tills extern verifierad backup och isolerat återgångsprov finns.
+Produktens fullständiga externa backup är verifierad och behålls efter P8:
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
 
 `tools/backup-render-state.mjs` har profilerna `product`, `director`, `gateway`.
+Produktprofilens exempel nedan beskriver den historiska diskvägen; kör dem
+inte som backup/restore av den nya Neon-/Blob-produktionen.
 Stoppa/frys alla skrivare på respektive tjänst före backup; produktprofilen
 kräver både Web och Lab stoppade. `--quiesced yes` är operatörens försäkran,
 ingen automatisk kontroll. Maintenance Mode bevisar inte att bakgrundsskrivare
@@ -122,8 +141,9 @@ nycklar samt verifierar filhashar. Exportera hela snapshoten privat utanför
 Render och kör `verify` där. `/tmp` är flyktig. Enskilda DB-kontroller bevisar
 inte konsistens mellan olika databaser.
 
-Återställ med alla skrivare stoppade till en **tom, monterad datarot** med rätt
-profil. Bevara nuvarande data separat; verktyget skriver inte över.
+Historisk diskåterställning kräver alla skrivare stoppade och en **tom, monterad
+datarot** med rätt profil. Exemplet återställer inte aktuell Neon/Blob och får
+inte återaktivera gamla produktionsskrivare. Bevara nuvarande data separat.
 
 ```sh
 node tools/backup-render-state.mjs restore --profile product --snapshot /tmp/product-snapshot --destination /var/data --quiesced yes

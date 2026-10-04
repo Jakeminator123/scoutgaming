@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "The manual bounded-QA successor with six generations total reuses the listed QA router, stream and SDK environment names; it adds no environment variable names and preserves prior consumption and reservations.",
+  "revisionNote": "Production now uses shared Neon/Blob without a persistent product disk. CROUPIER_CLOUD_DATA_ROOT is conditional for retained mounted QA and must be absent in mountless production. Legacy names remain inventoried where guards reject them; no new environment names, budgets or reservations are introduced.",
   "services": {
     "render-game": {
       "sources": [
@@ -24,7 +24,6 @@
         "CROUPIER_CLOUD_LAUNCH",
         "CROUPIER_CLOUD_LAYOUT",
         "CROUPIER_LAB_BASE_PATH",
-        "CROUPIER_CLOUD_DATA_ROOT",
         "CROUPIER_STREAM_LANE",
         "OPENCLAW_PRODUCT_SPEECH_URL",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN"
@@ -34,6 +33,7 @@
         "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD"
       ],
       "conditional": [
+        "CROUPIER_CLOUD_DATA_ROOT",
         "CROUPIER_MEDIA_STORAGE",
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",

@@ -16,14 +16,22 @@ miljövariabelnamn införs. Tidigare förbrukning och reservationer bevaras.
 Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
+Verifierad produktion 4 oktober: gemensam Neon-policy och native Studio är
+aktiva. Render kör utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
+`CROUPIER_MEDIA_BLOB_INDEX=/app/media/blob-index.json` och disponibel OS-temp
+ersätter gamla diskvägar. Tre tal-/streamflaggor är ON i produktion, OFF i QA.
+QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
+
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
-Backoffice/Lab vidarebefordrar
-`CROUPIER_DATA_DIR` till Lab för läsning av samma äldre BO-granskningsdata,
-`BO_URL` i molnet för administration och `CROUPIER_GAME_ORIGIN` lokalt.
-I dagens ännu oflyttade drift sparas aktiva klippval i `LAB_STUDIO_DATA_DIR`;
-Web läser samma projekt via `CROUPIER_PRESENTATION_STUDIO_DIR`. Dessa sökvägar
-är inte reservkällor när den nya gemensamma Neon-policyn är aktiverad.
+`BO_URL` anger publik origin för auth/handoff och `CROUPIER_GAME_ORIGIN`
+används lokalt. Aktiva klippval och administration läses nu från gemensamma
+Neon-revisioner. `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,
+`CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR`,
+`CROUPIER_GENERATED_SPEECH_DIR`, `LAB_VIDEO_ARCHIVE` och lagringsexportens
+två variabler är avvecklade i produktion och får inte återinföras som fallback.
+Namnregistret behåller namn som fortfarande läses av nekande guards eller
+historiska exportkontrakt; listning betyder inte att de ska sättas i produktion.
 Inga credentials skickas i navigationen.
 
 Gemensam inloggning använder de befintliga game-/CRAIG-kontona och två
@@ -47,18 +55,23 @@ Containern kräver då postgres och gemensam policyflagga, exakt matchande
 databasen/rollen `croupier_studio_qa_<suffix>`. Skrivbara QA-kataloger skapas
 efter att rootprivilegier släppts. Den befintliga diskens övriga data bevaras.
 
+Diskfri produktion kräver i stället postgres, gemensam Neon-policy, privat Blob,
+en explicit TLS-skyddad Neon-URL och frånvaro av gamla diskvariabler.
+TLS `require`, `verify-ca` och `verify-full` accepteras; befintlig produktion
+behåller `verify-full`. CROOT ska vara **unset**, inte en tom sträng.
+
 Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN` och serverhemligheten
 `CROUPIER_VERCEL_INGRESS_SECRET`. `CROUPIER_GAME_URL` bevaras för äldre
-flagga-av-kompatibilitet. Inga DB-, Blob- eller talleverantörsnycklar behövs här.
+flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
+policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
 Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`
-och `BO_URL` till publik origin. Serverrendering läser autentiserad revision
-från Render; den får inte falla tillbaka till ett nytt lokalt seed-projekt.
+och `BO_URL` till publik origin. Native serverrendering läser samma autentiserade
+Neon-revision som Render; ingen lokal seed- eller diskfallback finns.
 
-Gemensam sparad policy är aktiverad i den nya isolerade native-QA-miljön;
-**produktion är ännu inte omkopplad**:
+Gemensam sparad policy är aktiverad i produktion och i isolerad native-QA:
 `CROUPIER_STUDIO_NEON_POLICY=1` på Render och båda Vercel-byggena kräver samma
 `CROUPIER_GAME_DATABASE_URL` till befintliga game/auth-Neon, installerat
 checksumverifierat product-v1 samt Studio-migrationerna 001, 002, 003 och 004. Samma
@@ -73,10 +86,11 @@ Native administration kräver **både** `CROUPIER_STUDIO_NATIVE_ADMIN=1` och
 den gemensamma policyflaggan. `CROUPIER_STUDIO_ENVIRONMENT_ID` och
 `CROUPIER_STUDIO_WORKSPACE_ID` är explicita serverägda scopes; de läses aldrig
 från klienten. De två tekniska UI-origins består bakom samma publika adress.
-Flaggan migrerar/initialiserar ingenting och får inte slås på före verifierad
-import och kompletterad administration/spelprojektion. Avstängd flagga behåller
-dagens BO; fel med påslagen flagga ger felstängning, inte iframe/diskfallback.
-Produktionsprojekten har ännu inte bytt källa. Den separata native-QA-miljön
+Flaggan migrerar/initialiserar ingenting. Produktionsimport och gemensam
+spelprojektion är verifierade; native administration är på i Vercel-Studio.
+Render har native-adminflaggan avsiktligt OFF och behåller spelauktoritet och
+signerade kommandon, medan Neon-policyn är ON. Avstängd administration ger
+ingen gammal BO-/iframefallback. Den separata native-QA-miljön
 har egen Neon-databas, scope och datarot samt två egna Vercelprojekt; dess
 uppgifter får inte användas som produktionskonfiguration. Konto-/partnerhandlers
 är inkopplade bakom flaggorna; endast verkligt inkopplade actions annonseras.
@@ -84,9 +98,9 @@ Spelarstatus och partner-
 launch/credit/revoke går genom signerad Render-kommandogräns med aktuell
 Neon-identitet och engångsnonce, aldrig en lokal Vercel-walletmutation.
 Den använder befintliga `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`
-och `CROUPIER_VERCEL_INGRESS_SECRET`. Verifierad import, auth/HTTPS- och
-restartacceptans i drift återstår före aktivering; det isolerade SQL-/HTTPS-/
-restartprovet är godkänt. En koddeploy är inte källbytet.
+och `CROUPIER_VERCEL_INGRESS_SECRET`. Isolerad auth/SQL/HTTPS/restart är
+godkänd; faktisk produktionsimport, policy-/aliasbyte och diskfri omstart är
+verifierade. Produktionskonton har inte använts för nya syntetiska authprov.
 `RESEND_API_KEY` och `CROUPIER_STUDIO_MAIL_FROM` på Vercel-Studio krävs tillsammans
 för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
@@ -124,7 +138,8 @@ också. Web får endast de explicita QA-variablerna, inga talleverantörsnycklar
 Lab får inga nya QA-nycklar. Opt-in nekar `NODE_OPTIONS`, `NODE_PATH`,
 `LD_PRELOAD`, `NODE_EXTRA_CA_CERTS` och `NODE_TLS_REJECT_UNAUTHORIZED`.
 En saknad, ändrad eller osäkert lagrad privat adapter stoppar uppstarten.
-Kopplingen är ännu inte installerad eller aktiverad i QA eller produktion.
+Kopplingen användes i avgränsad QA och är nu avstängd. Originalets installation,
+journaler och reservationer bevaras; inget nytt prov öppnas av koddeploy.
 
 Det avgränsade funktionstestet använder dessutom `CROUPIER_P6_BOUNDED_TEST=1`,
 `CROUPIER_P6_BOUNDED_MANIFEST_SHA256` och `CROUPIER_P6_SDK_OPENAI_API_KEY`.
@@ -133,9 +148,11 @@ full käll-SHA, befintlig operatör/spelarlänk och ett privat manifest med
 högst 30 minuters giltighet. Lab får inga nya QA-nycklar. SDK-nyckeln hör
 till den installerade OpenAI-klienten; ordinarie talnycklar fortsätter följa
 den explicita befintliga providerkopplingen. Ursprunglig journal och redan
-förbrukade reservationer bevaras. Högst två generationer, tre SDK-anrop,
-två TTS-anrop, två GPU-submissioner och en worker tillåts utan automatisk
-omkörning. Exakta Cartesia-/counting-priser är backlog; faktisk USD-kostnad
+förbrukade reservationer bevaras. Jakob har höjt den sammanlagda testkvoten
+till sex generationer; kumulativt 4 generationer/5 SDK/2 TTS/4 GPU är journalfört,
+utan automatisk omkörning. Befintliga monetära reservationer/tak består;
+återstående två generationer öppnar inte ett nytt betalt fönster automatiskt.
+Exakta Cartesia-/counting-priser är backlog; faktisk USD-kostnad
 är okänd och ingen återbetalning eller nollkostnad antas.
 
 Samma avgränsade QA-runtime får med streaming på använda fullfilstal enbart
@@ -157,8 +174,7 @@ nya provider- eller Vercel-nycklar; den befintliga QA-scopekontrollen består.
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
 `BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.
-Idag gäller `CROUPIER_PUBLIC_GAME_PATH=/game`. Vid det samordnade Neon-bytet väljer
-policyflaggan i stället `/blackjack` som speladress, `/game` som filtrerad
+Aktiv gemensam Neon-policy väljer `/blackjack` som speladress, `/game` som filtrerad
 omdirigering och `/player-login` som spelarentré. Launch/callback använder
 samma effektiva adress; nativeflaggan ensam byter ingen speladress.
 `CROUPIER_VERCEL_TRANSPORT_ORIGIN` anger
@@ -172,10 +188,11 @@ privata bankklipp kräver autentisering och exakt familj, roll, fil-ID, hash,
 storlek och Blob-path. Originalpreview har dessutom inventory-allowlist.
 Källa/review/staging blir inte allmänt publik genom indexet. Aktivt indexläge
 ger 503 vid saknad eller felaktig källa, utan lokal bytesfallback.
-Gamla explicita `LAB_VIDEO_ARCHIVE=/app/emil/dealklipp-v1` normaliseras till
-`/app/media/dealers/astrid/runtime/presentation`; andra overrides bevaras.
+`LAB_VIDEO_ARCHIVE` är avvecklad i gemensamt Neon-läge; gammal archiveväg
+normaliseras inte till en aktiv reservkälla.
 
-Tillfällig SQLite-export: `CROUPIER_STORAGE_MAINTENANCE=export` och separat
+Historiskt exportkontrakt, inte aktuell produktionsstart:
+`CROUPIER_STORAGE_MAINTENANCE=export` och separat
 `CROUPIER_STORAGE_EXPORT_SECRET` startar en exporttjänst med noll Web/Lab-
 skrivare. Normalt spel ger 503; endast hemlighetsskyddad POST kan hämta backup
 inklusive committad WAL. Flaggan får inte kombineras med postgres. Ta bort
@@ -184,8 +201,7 @@ båda efter migrering. Aktuellt verifieringsläge står i handoffen.
 Native talgranskning använder samma privata Blobindex och exakta registrerade
 audio-/video-/text-/indexhashar. Det äldre fristående röstprovet stoppas före
 cache-/inställningsläsning och Cartesia-anrop när Neon- eller nativeflaggan är på.
-`LAB_STUDIO_DATA_DIR` är bara en kvarvarande lokal legacy-consumer; det ger
-inte Vercel en beständig talcache.
+`LAB_STUDIO_DATA_DIR` får inte återinföras i aktiv gemensam Neon-drift.
 
 Fullfilsvägen med Neon kräver separat explicit `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`
 och `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` samt motsvarande redan verifierad
@@ -194,9 +210,12 @@ beständig policy. Värdena skickas endast till Web när fullfilsvägen uttryckl
 i samma dygnstak. Belopp accepterar högst sex decimaler och 1–10 000 000
 mikro-USD. Migration 004 skapar ingen policy och återbetalar eller nollställer
 ingen historisk kostnad. Den gamla streamreservationen bevisar inte rätt
-fullfilspris; detta måste bestämmas mot avsedda providerkonton innan liveprov.
+fullfilspris. Production/version 1-policy är adopterad inom bevarade tak;
+avgränsade funktionstest får använda dokumenterat okänd USD enligt det
+uttryckliga acceptansundantaget. Exakta tariffer förblir backlog.
 
-Fryst export av äldre Studio-/taljournalfiler på befintlig PostgreSQL-drift:
+Historiskt P7-exportkontrakt, redan genomfört; använd inte för att återaktivera
+gamla produktionsskrivare. Fryst export av äldre Studio-/taljournalfiler:
 `CROUPIER_STORAGE_MAINTENANCE=studio-export`, `CROUPIER_DATABASE=postgres`,
 `CROUPIER_STUDIO_NEON_POLICY=0` samt `CROUPIER_GENERATED_SPEECH=0`,
 `CROUPIER_CLOUD_GENERATED_SPEECH=0` och `CROUPIER_GENERATED_SPEECH_STREAMING=0`
@@ -207,13 +226,13 @@ PostgreSQL eller bootstrappar konton. Inga Web-/Lab-barn startas; exakt GET
 Alla andra anrop ger 503, även den äldre export-API:n med korrekt hemlighet.
 Frysta bytes hämtas separat privat via SSH. Hälsokontrollen bevisar inte att
 tidigare externa GPU-jobb har dränerats; detta måste verifieras före import.
-Kod och isolerade tester är förberedelse, inte genomfört produktionsbyte.
+Faktisk fryst export, ALL0-dränering, import och produktionsbyte är genomförda.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
-| Render: spel + BO + Lab (`/studio`) | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_CLOUD_DATA_ROOT`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER` + `CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD` på tom databas | Se grupper nedan | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
-| Vercel: spel/BO (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet; UI behöver inga modell-/DB-/Blob-nycklar | – |
-| Vercel: Lab UI (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Dagens SSR läser Render; nytt native-läge kräver gemensam `CROUPIER_STUDIO_NEON_POLICY`, explicit scope/game-Neon och alla fyra migrationsversionerna ovan | – |
+| Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` |
+| Vercel: spel/Studio-ingång (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
+| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–004; SSR läser Neon | – |
 | Vercel: äldre statisk ingång (`ops/vercel-entry`, inte längre publicerad) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | Historiskt byggkontrakt | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
