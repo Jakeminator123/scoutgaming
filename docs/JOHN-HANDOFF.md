@@ -10,18 +10,34 @@ Mobile Phone Lanes röst/kamera ska fungera. Endast visningsnamnet ändras;
 sparat lane-ID `original`, befintliga konton och vald `mobile-phone` bevaras.
 Den reproducerade UI-varningen beror på att produktionsflaggan
 `CROUPIER_ASTRID_CAMERA` var `0`. Befintlig separat translationsnyckel finns
-och GET OpenAI `/v1/models/whisper-1` gav HTTP200. Flaggan är nu sparad som `1`
-på produktionens Render-tjänst, övriga miljövärden identiska; nästa deployment
-måste läsas tillbaka innan funktionen räknas som live. QA ska fortsatt vara OFF.
+och GET OpenAI `/v1/models/whisper-1` gav HTTP200. Flaggan är nu `1`
+på produktionens Render-tjänst, övriga miljövärden identiska. QA är fortsatt OFF.
 Ingen ny nyckel, provider, datamigration eller prisutredning behövs.
 
-82 befintliga riktade lane-/kamera-/röst-/transkriptionsprov PASS. GPU-avläsning
-före omstart: completed6/failed0/inProgress0/inQueue0. Ingen betald generering
-har startats av denna uppgift. Spelarens mikrofon/kamera kräver fortfarande
+82 befintliga riktade lane-/kamera-/röst-/transkriptionsprov och hela obligatoriska
+pre-commit-sviten PASS. Funktionscommit `3da83bf84187431d704086461782cae7986169a2`
+är pushad. Ett avgränsat verkligt OpenAI translations-anrop med lokalt syntetiskt
+ljud gav HTTP200 och förväntad fras, ingen retry; kostnad okänd. Ingen användares
+ljud spelades in. GPU-avläsning före omstart: completed6/failed0/inProgress0/inQueue0;
+inget nytt TTS-/GPU-jobb har startats av denna uppgift. Spelarens mikrofon/kamera kräver fortfarande
 eget val i samtyckesdialogen och webbläsarbehörighet; inspelning är OFF vid
 sidöppning. Bilder kräver vald Luna/Terra; manuell engångsinspelning finns
 om lokal wake-word-igenkänning saknas. Fysisk mikrofon/kamera är ännu inte provad.
-GitGuardian: GitHub-avläsning komplett för cfdcb2c7, svit queued,
+
+**Driftverifierat 4 oktober cirka 20:38 UTC:** `3da83bf8` är LIVE på Render
+`dep-db1bga0ae00c73fcmnrg`, READY på frontend `dpl_2pFBhRtxiqZJp27jhcTSkjcA9Fvd`
+och Studio `dpl_GV1KUnZ9uvGr3P8uDDt1YjMXtgju`. CI `37232269006` har tre gröna jobb.
+Studios verkliga lane-väljare visar Kevin Lane (`original`) och Mobile Phone Lane
+(`mobile-phone`), med Mobile fortsatt sparad. Autentiserad `/blackjack` efter
+omladdning ger GET `/api/astrid/observation` HTTP200 med `enabled=true`,
+`vision.enabled=true`, `transcription.enabled=true`, `reason=null`, modell
+`gpt-5.6-terra`. Felvarningen är borta och inspelningsknappen öppnar samtyckesdialogen.
+Webviewns mikrofon-API, AudioWorklet, lokal wake-word-API och kamera-/mikrofonpolicy
+är tillgängliga. Mikrofon/kamera startades inte; dialogen lämnades öppen åt Jakob.
+Denna efterföljande dokumentationscommit använder `[skip render]` eftersom
+runtimekoden redan är verifierad; inga hooks/CI hoppas över.
+
+GitGuardian: GitHub-avläsning komplett för 3da83bf8, svit queued,
 incidentlista not-read; tidigare känd incident 37830671 kvarstår som täckningslucka.
 
 ## Efterarbete beställt av Jakob — 4 oktober, efter bee4e04a
