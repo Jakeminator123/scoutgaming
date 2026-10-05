@@ -6,6 +6,30 @@ Låta den visuella kartan visa vilket bevis som finns för varje kontrakt och
 var en ändring behöver följas upp. Återanvänd befintliga tester och CI.
 Kartan ska inte bli en andra testmotor eller ett allmänt kontrollsystem.
 
+## Implementerad koppling — 5 oktober 2026
+
+`docs/system-map/contracts.json` registrerar 23 kontrakt med källor, befintliga
+testfiler och berörda kartrutor. `verify.mjs` läser arbetsfiler eller frysta
+Git-objekt med `--ref SHA`. Routes, SQL-kolumner/nycklar, envnamn och utvalda
+events jämförs mot katalogen. En ny baslinje fångar källhashar och godkänner
+inte några tester.
+
+`tools/system-map-evidence.mjs` är en passiv Node-reporter i den befintliga
+fullhooken. Den sparar fil/resultat och källbindning, inte testmeddelanden,
+credentials eller providerdata. Skippade, avbrutna, ofullständiga eller gamla
+prov kan inte göra ett kontrakt grönt. Testanropen dubbleras inte.
+
+Commit-hooken kontrollerar katalogens struktur. Push-hooken läser exakt
+den överförda commitens filer. Det befintliga CI-jobbet dealer-regression
+publicerar HTML, maskerat testkvitto och status-JSON som en artifact med
+commitens SHA i namnet, sparad i 30 dagar. Ett aktuellt testfel ger röd karta
+och misslyckad kontroll; den giltiga röda kartan kan fortfarande inspekteras.
+Trasiga inventeringsdata stoppar bygget. Källdrift utan bevisat fel är gul.
+
+Detta ger lokal leveranskontroll och synlig CI-status. Serverns branch
+protection är inte ändrad. Live-schema, fysisk uppspelning och providers
+kräver sina separata befintliga acceptansprov.
+
 ## Min bedömning
 
 En extra granskning är motiverad eftersom tre missade användarflöden nu är

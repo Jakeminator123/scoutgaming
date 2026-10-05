@@ -61,12 +61,18 @@ export function createStudioOpenClawAdmin({ rpc = withGatewayAdminRpc, now = Dat
             raw:JSON.stringify({ agents:{ entries:{ [patch.agentId]:{ model:patch.model } } } }),
             replacePaths:[`agents.entries.${patch.agentId}.model.fallbacks`], note:'Croupier Studio model selection',
           });
-          if (acknowledged?.ok !== true || !validAdminHash(acknowledged.hash)) fail('openclaw_admin_save_uncertain', 503);
+          const noop = acknowledged?.noop === true;
+          if (acknowledged?.ok !== true || !noop && !validAdminHash(acknowledged.hash)) fail('openclaw_admin_save_uncertain', 503);
+          // v2026.9.5 respondConfigPatchNoop returns config/changedPaths without
+          // hash or restart. Its successful CAS preserves the requested revision.
+          if (noop && (!Array.isArray(acknowledged.changedPaths) || acknowledged.changedPaths.length
+            || JSON.stringify(before.agents.find(agent => agent.id === patch.agentId).model) !== JSON.stringify(patch.model)
+            || acknowledged.hash !== undefined && acknowledged.hash !== before.baseHash)) fail('openclaw_admin_save_uncertain', 503);
           const saved = acknowledged.config?.agents?.entries?.[patch.agentId]?.model;
           let observed; try { observed = model(saved); } catch { fail('openclaw_admin_save_uncertain', 503); }
           if (JSON.stringify(observed) !== JSON.stringify(patch.model)) fail('openclaw_admin_save_uncertain', 503);
-          return { saved:true, baseHash:acknowledged.hash, agentId:patch.agentId, model:patch.model,
-            restartScheduled:acknowledged.restart?.ok === true, verifiedAt:new Date(now()).toISOString() };
+          return { saved:true, baseHash:noop ? before.baseHash : acknowledged.hash, agentId:patch.agentId, model:patch.model,
+            restartScheduled:!noop && acknowledged.restart?.ok === true, verifiedAt:new Date(now()).toISOString() };
         });
       } finally { writing = false; }
     },

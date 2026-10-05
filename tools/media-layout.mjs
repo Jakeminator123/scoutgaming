@@ -31,7 +31,18 @@ export function readMediaLayout(root = repositoryRoot) {
     if (row.publicUrl !== undefined && (row.access !== 'public' || urls.has(row.publicUrl) || !row.publicUrl.startsWith('/') || row.publicUrl.includes('\\') || !safe(row.publicUrl.slice(1)))) throw new Error('Invalid public alias.');
     if(row.publicUrl)urls.add(row.publicUrl);
   }
-  index(layout);cache.set(file,{key,layout}); return layout;
+  validateMediaAliases(layout);index(layout);cache.set(file,{key,layout}); return layout;
+}
+/** Aliases retain their own access policy; their target supplies only bytes. */
+export function validateMediaAliases(layout) {
+  const rows = new Map(layout.files.map(row => [row.path,row]));
+  for (const row of layout.files) if (row.canonicalPath !== undefined) {
+    const target = rows.get(row.canonicalPath);
+    if (!safe(row.canonicalPath) || !target || target === row || target.canonicalPath !== undefined
+      || target.sha256 !== row.sha256 || target.size !== row.size || extname(target.path) !== extname(row.path))
+      throw new Error(`Invalid canonical media alias: ${row.path}`);
+  }
+  return layout;
 }
 function index(layout){if(!indexes.has(layout))indexes.set(layout,{files:new Map(layout.files.flatMap(row=>[[row.legacyPath,row],['media/'+row.path,row]])),public:new Map(layout.files.filter(row=>row.access==='public').flatMap(row=>[[row.publicUrl,row],['/media/'+row.path,row]])),roots:Object.keys(layout.roots).sort((a,b)=>b.length-a.length)});return indexes.get(layout);}
 /** Only explicit former roots are mapped; unknown repository paths stay put. */
@@ -39,7 +50,7 @@ export function resolveMediaPath(legacyPath, { repositoryRoot: root = repository
   if (!safe(legacyPath)) throw new Error('Unsafe media path.');
   if(!layout)try{layout=readMediaLayout(root);}catch(error){if(error.code!=='ENOENT')throw error;return join(root,legacyPath);}
   const direct = index(layout).files.get(legacyPath);
-  if (direct) return join(root, 'media', direct.path);
+  if (direct) { validateMediaAliases(layout); return join(root, 'media', direct.canonicalPath ?? direct.path); }
   // A partially moved directory can still own renderer/admin code. Never
   // reinterpret an existing unregistered regular code file as a media asset.
   try{const current=lstatSync(join(root,legacyPath));if(current.isFile()&&!current.isSymbolicLink())return join(root,legacyPath);}catch(error){if(error.code!=='ENOENT'&&error.code!=='ENOTDIR')throw error;}
@@ -47,7 +58,9 @@ export function resolveMediaPath(legacyPath, { repositoryRoot: root = repository
   if (!prefix) return join(root, legacyPath);
   const mapped = layout.roots[prefix];
   if (!safe(mapped)) throw new Error('Unsafe media root.');
-  return join(root, mapped, legacyPath.slice(prefix.length));
+  const next = mapped + legacyPath.slice(prefix.length), row = index(layout).files.get(next);
+  if(row) { validateMediaAliases(layout); return join(root,'media',row.canonicalPath ?? row.path); }
+  return join(root, next);
 }
 export function resolvePublicMedia(requestPath, { repositoryRoot: root = repositoryRoot, layout } = {}) {
   let path;
@@ -55,7 +68,8 @@ export function resolvePublicMedia(requestPath, { repositoryRoot: root = reposit
   if (!path.startsWith('/') || !safe(path.slice(1)) || path.includes('?') || path.includes('#')) return null;
   layout ??= readMediaLayout(root);
   const entry = index(layout).public.get(path);
-  return entry ? { ...entry, file: join(root, 'media', entry.path), logicalPath: entry.path } : null;
+  if(entry)validateMediaAliases(layout);
+  return entry ? { ...entry, file: join(root, 'media', entry.canonicalPath ?? entry.path), logicalPath: entry.path } : null;
 }
 function assertParents(file, root) {
   const distance = relative(root,file);

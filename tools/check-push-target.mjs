@@ -23,10 +23,21 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor) {
   }
 }
 
+export function verifyPushMaps(updates, run = spawnSync) {
+  const commits = new Set(updates.trim().split(/\r?\n/).filter(Boolean).map(line => line.split(/\s+/)[1]));
+  for (const sha of commits) {
+    if (!/^[a-f0-9]{40,64}$/.test(sha || '') || /^0+$/.test(sha)) throw new Error('Invalid push commit.');
+    const result = run(process.execPath, ['docs/system-map/verify.mjs', '--check', '--ref', sha], { stdio:'inherit' });
+    if (result.error || result.status !== 0) throw new Error('System map contains invalid references or verified failures for the pushed commit.');
+  }
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const policy = JSON.parse(readFileSync(new URL('./repository-policy.json', import.meta.url), 'utf8'));
-    validatePush(process.argv[3], readFileSync(0, 'utf8'), policy);
+    const updates = readFileSync(0, 'utf8');
+    validatePush(process.argv[3], updates, policy);
+    verifyPushMaps(updates);
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

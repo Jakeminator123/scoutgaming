@@ -22,6 +22,20 @@ källregistret där information saknas och låt kartan visa samma uppgifter.
 
 ## A. Behörighetsmatris
 
+OpenClaws vanliga modellval finns nu under `/studio/openclaw`. En inloggad
+Studio-admin får läsa och spara huvudmodell för de fem befintliga agenterna;
+spelarkonton får inte det. Servern kontrollerar färsk roll/session och samma
+origin vid sparning. Ändringen går via en avgränsad Director-route och
+Gatewayens revisionskontroll. Användaren behöver inte skriva ett delat
+OpenClaw-lösenord här.
+
+`OPENCLAWAPI_KEY` ligger server-only i Vercel Studio och Director; Directors
+signeringsnyckel `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` identifierar dess parade
+serveranslutning. Inga värden skickas till webbläsaren. Den avancerade native
+dashboarden har fortsatt sin separata OpenClaw-inloggning och device-policy.
+Den kan öppnas från samma flik; Studio ger inte generell tillgång till alla
+Gateway-, verktygs- eller autentiseringsinställningar.
+
 Dokumentera konto-/credentialkälla, effektiv roll, sida/action, API-kontroll,
 sessionens livslängd, utloggning, återkallelse och lösenordsflöde.
 

@@ -43,6 +43,33 @@ test('PATCH sends only one existing agent model plus exact fallback replacement 
   assert.deepEqual(result, { saved:true, baseHash:'hmac-sha256:v1:after', agentId:patch.agentId, model:patch.model, restartScheduled:true, verifiedAt:'1970-01-01T00:00:00.001Z' });
 });
 
+test('native v2026.9.5 no-op acknowledgement preserves the CAS hash without scheduling a restart', async () => {
+  const input = { ...patch, model };
+  // Exact shape of official respondConfigPatchNoop: no hash or restart field.
+  const acknowledge = { ok:true, noop:true, changedPaths:[], path:'/synthetic/openclaw.json', config:source().config };
+  const f = fixture({ acknowledge }), result = await f.service.patch(input, {});
+  assert.deepEqual(result, { saved:true, baseHash:input.baseHash, agentId:input.agentId, model,
+    restartScheduled:false, verifiedAt:'1970-01-01T00:00:00.001Z' });
+  assert.deepEqual(f.calls.map(value => value.method), ['config.get', 'config.patch']);
+  assert.equal(f.calls[1].params.baseHash, input.baseHash);
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE|password|apiKey|openclaw\.json/);
+});
+
+test('only a consistent native no-op may omit the acknowledgement hash', async () => {
+  const input = { ...patch, model }, config = source().config;
+  for (const acknowledge of [{ ok:true, config }, { ok:true, noop:true, config },
+    { ok:true, noop:true, changedPaths:['agents.entries.croupier-director.model'], config },
+    { ok:true, noop:true, changedPaths:[], hash:'unexpected-revision', config },
+    { ok:true, noop:true, changedPaths:[], config:{ agents:{ entries:{ [input.agentId]:{ model:patch.model } } } } }]) {
+    const f = fixture({ acknowledge });
+    await assert.rejects(f.service.patch(input, {}), { code:'openclaw_admin_save_uncertain', statusCode:503 });
+    assert.deepEqual(f.calls.map(value => value.method), ['config.get', 'config.patch']);
+  }
+  const f = fixture({ acknowledge:{ ok:true, noop:true, changedPaths:[], config:{ agents:{ entries:{ [patch.agentId]:{ model:patch.model } } } } } });
+  await assert.rejects(f.service.patch(patch, {}), { code:'openclaw_admin_save_uncertain', statusCode:503 });
+  assert.deepEqual(f.calls.map(value => value.method), ['config.get', 'config.patch']);
+});
+
 test('stale revisions, absent agents and unconfigured models never reach config.patch', async () => {
   for (const [value, code] of [[{ ...patch, baseHash:'stale' }, 'openclaw_admin_conflict'], [{ ...patch, agentId:'croupier-chat' }, 'openclaw_admin_invalid_request'],
     [{ ...patch, model:{ primary:'unconfigured/model', fallbacks:[] } }, 'openclaw_admin_model_unavailable']]) {

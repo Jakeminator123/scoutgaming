@@ -7,8 +7,8 @@ utan Codex-/Cursor-canvas. Den ska förklara systemet från grunddata till
 synlig uppspelning och länka till källa, test och aktuellt verifieringsläge.
 Första läsande versionen finns nu i
 [`docs/system-map/index.html`](../../docs/system-map/index.html). Källorna är
-inventerade på `5270c8ab93bf593512d0374cb9c36033e59dc103`; tidigare avgränsade
-driftbevis på `3da83bf8` visas med eget datum. En inventering är inget nytt liveprov.
+inventerade på `77a7cb49db4847f143574714e879bc87b3778f1f`; avgränsade
+driftbevis visas med egen version och eget datum. En inventering är inget nytt liveprov.
 
 ## Levererad grund — 4 oktober 2026
 
@@ -18,23 +18,26 @@ Merge-agenten kontrollerade och sammanställde underlaget. Mappen innehåller:
 | Fil | Ansvar |
 | --- | --- |
 | `catalog.json` | Tjänster, samband, dokumenterat driftbevis och öppna fel |
-| `routes.json` | 9 sidgrupper, 11 API-grupper, 7 alias, 2 lanes samt login/save; 56 exakta Next-filer med 61 uttryckliga HTTP-exporter |
+| `routes.json` | Sidor, API, alias och login/save; 57 exakta Next-filer med 63 uttryckliga HTTP-exporter; Mobile aktiv, Kevin historisk |
 | `storage.json` | 4 scheman, 49 källkodstabeller, 299 kolumner med datatyp/nullbarhet, 49 primärnycklar, 22 explicita FK, lagringslager och befintliga tester |
 | `flows.json` | 3 spel-/talflöden med 16 steg, faktiska events och testkopplingar |
-| `build.mjs` | Läser katalogerna och befintligt envnamnsregister; bygger HTML offline |
-| `index.html` | Fristående HTML med sök/filter, överblick och klickbara käll-/testdetaljer |
+| `contracts.json` och `verify.mjs` | 23 avgränsade kontrakt, källhashar, inventeringskontroller och verkliga testbevis |
+| `build.mjs` | Bygger HTML offline från katalogerna, befintligt envnamnsregister och verifieringsresultat |
+| `index.html` | Fristående HTML med tre grafvyer, klickbara rutor/pilar, zoom/pan, sök/filter och käll-/testdetaljer |
 
 Öppna `index.html` direkt i en vanlig webbläsare. Den behöver ingen server,
 databas eller Codex-canvas. Vid ändrat underlag, kör från aktuell checkout:
 `node docs/system-map/build.mjs`. Generatorn läser nyckelnamn direkt från
 `docs/environment-variables.json`; det finns ingen konkurrerande nyckellista.
-Den kontrollerar filreferenser och samma käll-SHA, inte drift eller testresultat.
+Utan ett aktuellt testkvitto markeras teststatus som okänd. Med `--ref SHA`
+läser verifieraren de faktiska Git-objekten för den versionen. Med `--evidence`
+kan HTML visa resultat från samma versions befintliga Node-tester.
 Kodlänkar och radbundna dokumentbevis pekar på inventerad SHA;
 arbetsdokument utan radankare pekar på `main`.
 
-Browserkontrollen omfattar navigation, sökning/filter, tabellfält, käll-/testlänkar
-och GPU-flödets sex steg. JSON/JavaScript och 284 unika referensvägar är kontrollerade.
-Inga nya providerjobb eller driftändringar ingår.
+Kontrollera navigation, grafens rutor/pilar, sökning/filter, tabellfält,
+käll-/testlänkar och GPU-flödets sex steg efter ändringar. Inga nya
+providerjobb ingår. Grön teststatus gäller källkontraktet, inte aktuell drift.
 
 Den 5 oktober är de insamlade SQL- och Next-underlagen införlivade direkt i
 katalogerna och HTML-detaljerna. De är inga separata researchrapporter.
@@ -49,12 +52,14 @@ och uttryckliga verb; övergripande Web-/gateway-grupper återstår att detaljer
 2. Detaljera återstående Web-/gateway-handlers för vald kodversion.
    SQL-kolumner/FK och Next-filrutter är införlivade. Installerat live-schema,
    grants och fysiska mikrofon-/kamera-/mobilprov är separat verifiering.
-3. Visa resultat från befintlig CI per definierat kontrakt enligt
-   [plan 04](../04-tester-och-granskning/PLAN.md). Lägg driftvarning först;
-   en avsiktlig kolumnändring ska inte automatiskt göra kartan eller en push felaktig.
+3. Använd CI:s kartartifact enligt [plan 04](../04-tester-och-granskning/PLAN.md).
+   Den befintliga fullhooken producerar testbevis utan en andra testkörning.
+   Avsiktligt ändrad källa blir gul tills inventering och relevanta prov stämmer.
 
 Detta är en gemensam dokumentations- och granskningsyta som utökas stegvis.
-Den inför ingen andra testmotor eller generella nya merge-/pushspärrar.
+Den inför ingen andra testmotor. Lokal commit/push och CI stoppar konkreta
+struktur-/referensfel; källdrift varnar. Den lokala pushkontrollen granskar
+just den SHA som överförs. Detta är inte ett påstående om GitHub branch protection.
 
 ## Första leveransen: karta som går att lita på
 

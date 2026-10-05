@@ -325,8 +325,11 @@ Render-spelets villkorliga grupper:
   `BLOB_READ_WRITE_TOKEN`. Båda skickas till Web och Lab eftersom Lab laddar
   upp och spelservern levererar valda familjeklipp. Filerna är privata;
   behöriga API-routes hanterar GET, HEAD och Range utan publik Blob-URL.
-  Standard utan flagga är disk. Familjeregistrets `videos/index.json`
-  ligger fortsatt på den beständiga Render-disken och måste säkerhetskopieras.
+  Lokal standard utan flagga är disk. Migrerad produktion kräver uttrycklig
+  Blob-konfiguration; familjeregistret ligger i scoped Neon Studio och
+  ersätter produktens gamla `videos/index.json` på Render-disk. Den gamla
+  produktdisken är avvecklad och dess externa backup bevaras. QA:s separata
+  disk och lokala filprofiler har egna livscykler.
 - Bakgrundszoner: `CROUPIER_ZONES_DATABASE_URL` kräver aktiv privat media
   och en separat TLS-skyddad Postgres-anslutning. Den skickas endast till
   Lab. Schemat i `lab/lib/zone-cloud-schema.sql` installeras uttryckligen;

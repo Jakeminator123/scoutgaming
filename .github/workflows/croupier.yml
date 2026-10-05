@@ -56,8 +56,40 @@ jobs:
           version: 10.33.2
           run_install: false
       - run: pnpm --dir apps/croupier-frontend install --frozen-lockfile
+      - name: Check system map against this commit and capture test inputs
+        run: |
+          mkdir -p "$RUNNER_TEMP/system-map-evidence"
+          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
+          node tools/system-map-evidence.mjs --capture --ref "$GITHUB_SHA" --output "$RUNNER_TEMP/system-map-inputs.json"
       - name: Shared pre-commit regression suite
+        env:
+          CROUPIER_SYSTEM_MAP_EVIDENCE_DIR: ${{ runner.temp }}/system-map-evidence
         run: sh .githooks/pre-commit --full
+      - name: Build system map with the existing regression results
+        if: always()
+        run: |
+          if [ ! -f "$RUNNER_TEMP/system-map-inputs.json" ]; then exit 1; fi
+          set --
+          for report in "$RUNNER_TEMP/system-map-evidence"/*.jsonl; do
+            if [ -f "$report" ]; then set -- "$@" --report "$report"; fi
+          done
+          node tools/system-map-evidence.mjs --snapshot "$RUNNER_TEMP/system-map-inputs.json" "$@" --ci-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output "$RUNNER_TEMP/system-map-evidence.json"
+          map_status=0
+          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA" --evidence "$RUNNER_TEMP/system-map-evidence.json" --json "$RUNNER_TEMP/system-map-status.json" || map_status=$?
+          cp docs/system-map/index.html "$RUNNER_TEMP/croupier-system-map.html"
+          node docs/system-map/build.mjs --ref "$GITHUB_SHA" --evidence "$RUNNER_TEMP/system-map-evidence.json" --output "$RUNNER_TEMP/croupier-system-map.html"
+          exit "$map_status"
+      - name: Save version-bound map and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: croupier-system-map-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/croupier-system-map.html
+            ${{ runner.temp }}/system-map-evidence.json
+            ${{ runner.temp }}/system-map-status.json
       - run: node pipeline/audit-dealer-sync.mjs --probe
       - run: node pipeline/audit-performance.mjs --probe
       - run: node pipeline/audit-astrid-actor.mjs --probe

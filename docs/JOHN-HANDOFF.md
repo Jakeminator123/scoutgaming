@@ -24,12 +24,42 @@ auth-/verktygs-/providerinställningar exponeras i klienten.
 Vercel Studio har server-only `OPENCLAWAPI_KEY` för production; Director har
 `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`. Privat återställningsfil:
 `C:/Users/jakem/CroupierBackups/openclaw-studio-admin-device-20261005.json`.
-Värden visas inte i repot. Deployment, exakt pairing och autentiserad
-produktionskontroll återstår när denna kod committas. QA AI/GPU fortsatt OFF.
-Systemkartans graf/faktabindning integreras separat efter denna appversion.
-GitGuardian på `8f265831`: suite queued, incidentlista not-read.
+Värden visas inte i repot. Appversion `77a7cb49db4847f143574714e879bc87b3778f1f`
+är pushad: fullhook 1 460 PASS / 9 befintliga skip / 0 fel och tre CI-jobb PASS
+(körning `37245089710`). Produkt-Render `dep-db1ed6g473hc73915k10` och Director
+`dep-db1ebp5g1s2s739pt5bg` är LIVE; Studio `dpl_ErmcveQZgdwVtxUSN5tyth5okDST`
+är READY på samma SHA. Endast den avsedda signerade serveridentiteten har
+godkänts i Gateway 2026.9.5. Autentiserad Studio-GET visar fem agenter och
+`applied=true`. Idle-knappen läser om banken utan 503. Ingen användarfilm
+har laddats upp eller ändrats i detta driftprov.
 
-## Lane-register och medierensning — 5 oktober, pågående leverans
+Ett no-op-save av operatörens befintliga modell gav 503: native OpenClaws
+`noop:true`-svar saknar `hash`, medan adapterkoden krävde det. Den snäva rättningen
+godtar bara konsekvent oförändrad modell och tom changedPaths-lista; övriga
+kvitton måste fortsatt ha hash. 19 riktade backend/transportprov PASS.
+Färsk readback visar samtliga modeller oförändrade;
+inget automatiskt andra skrivförsök eller providerjobb. QA AI/GPU fortsatt OFF.
+GitGuardian på `77a7cb49`: suite queued, incidentlista not-read.
+
+## Interaktiv systemkarta och testkoppling — 5 oktober
+
+`docs/system-map/index.html` har tre grafvyer med klickbara rutor/pilar,
+zoom/pan, filter och käll-/testdetaljer. JSON-katalogerna beskriver appkälla
+`77a7cb49`, 57 Next-filer, 49 tabeller och 299 kolumner. Historiska driftprov
+har egna datum. `contracts.json` registrerar 23 kontrakt; `verify.mjs`
+kontrollerar avgränsade routes/SQL/env/events och faktiskt Gitträd med `--ref`.
+
+En passiv reporter i befintlig fullhook skapar maskerade testbevis utan
+omkörning. CI bygger HTML/status/kvitto för faktisk SHA, med 30 dagars
+artifactlagring. Commit/push stoppar konkreta katalogfel; källdrift varnar.
+Gul/grå status blir inte grön utan aktuella relevanta prov. Detta ändrar inte
+GitHub branch protection och verifierar inte databaser eller providers live.
+23 riktade tester PASS och separat läsgranskning utan konkreta fynd.
+UI:s syntetiska pekar-/färg-/modellprov PASS. Lokal HTML är öppnad i Codex;
+automatiserad browserkontroll av fil-URL blockerades av browserpolicyn och
+har därför inte markerats genomförd. Inga alternativa browseromvägar användes.
+
+## Lane-register och medierensning — 5 oktober
 
 Jakob har beställt en kvarvarande Mobile Phone Lane, tillägg/borttagning av
 lanes och rensning av oanvända Kevin-relaterade medier. Gemensam spelauktoritet,
@@ -53,21 +83,39 @@ och säkra sökvägar. Layout och Blob-index är uppdaterade. Mobile-bankens
 filmer/metadata, zonreferens, kortbild, runtime och all kod/kalibrering består.
 Registrerad lokal mediamängd är nu 778 332 363 byte. Git-historiken omskrivs inte.
 
-**Blob återstår:** full paginerad inventering gav 4 171 objekt / 2 914 460 723 byte.
-2 313 separata objekt / 2 131 771 483 byte motsvarar den första rensningen.
+**Blob-rensning utförd:** 2 313 source/staging-objekt / 2 131 771 483 byte
+borttagna efter `8f265831` LIVE/READY och färsk referensläsning. Komplett
+paginerad efterlista bekräftar att just målen är borta och alla andra tidigare
+objekt har samma sökväg/storlek. Kvar: 1 858 objekt / 782 689 240 byte.
+Bevarad kortbild, zonreferens och dealfilm har fungerande HEAD-läsningar.
 Produktion och QA delar Blob; QA `srv-datj7l893c1s73ar3u50` är på `7c4c1cc3`
 och har separat gameDB. Studio-dokument, historik, mediarecords och speech-
 referenser har lästs i båda databaserna, plus produktionszoner. Sparade
 klipp/GPU-resultat/journaler och objekt utanför raderingslistan bevaras.
 Ignorerade privata underlag/filkvitto finns i `lab/data/lane-media-audit/`.
-Runtime-media och återstående dubbletter är inte färdigrensade; QA:s befintliga
-manifest och de historiska spelartesterna använder fortfarande delar av dem.
+Kvitton: `blob-purge-receipt.json`, `blob-after-purge.json` och `kept-readback.json`
+i samma privata mapp. Runtime-media och återstående dubbletter är inte
+färdigrensade; QA:s befintliga manifest och historiska spelartester använder
+fortfarande delar av dem. Lane-agenten förbereder separat deduplicering med
+bevarade logiska alias. Det är inte en generell radering av återstående media.
+
+**Deduplicering, lokalt klar:** ytterligare 64 byteidentiska kopior /
+14 216 404 byte borttagna. Alla 2 514 logiska poster, ID:n, hashvärden, URL:er
+och åtkomstgränser består; 2 450 fysiska filer / 764 115 959 byte återstår.
+Valfritt `canonicalPath` i layout v1 går direkt till registrerad huvudkopia
+med samma hash/storlek/filändelse. Blobindex delar fysisk lagring utan att
+ändra logiska identiteter. 35 riktade prov, hela fysiska bankens hashkontroll
+och fyra dealers sync `--probe` PASS. Ingen ny visuell acceptans påstås.
+58 överflödiga Blobobjekt / 12 787 392 byte får tas bort först efter denna
+versions produktions- och QA-deploy med QA AI/GPU OFF och färska referens-/HEAD-prov.
+Privata `dedup-plan.json` och `dedup-local-receipt.json` ligger i samma kvittomapp.
 
 Kontroller: riktade lane/CRUD/kort/policy/start-tester PASS, TypeScript PASS,
 fullhook före och efter rensning PASS (efter: 1 418 godkända, 9 uttryckliga
 skip, 0 fel), dealer-sync `--probe` efter rensning PASS för alla fyra historiska
-dealerpaket. Molnleverans pågår. Detta är ingen ny visuell eller läppsynksacceptans.
-GitGuardian på `91d93285`: suite queued, incidentlista not-read; inte klartecken.
+dealerpaket. `8f265831` har tre CI-jobb PASS, produkt-Render LIVE och två
+Vercelbyggen READY. Detta är ingen ny visuell eller läppsynksacceptans.
+GitGuardian: suite queued, incidentlista not-read; inte klartecken.
 
 ## Studio-design — 5 oktober
 

@@ -4,7 +4,7 @@ import { readdir, lstat, realpath, readlink, mkdir, copyFile, readFile, writeFil
 import { join, resolve, relative, dirname, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { repositoryRoot, PRESENTATION_BANK } from './media-layout.mjs';
+import { repositoryRoot, PRESENTATION_BANK, readMediaLayout } from './media-layout.mjs';
 const MEDIA=/\.(mp4|mov|webm|mkv|mp3|wav|ogg|flac|png|jpe?g|webp|gif|svg|ico|glb|gltf|blend|fbx|obj|stl|usdz|bin|h264|webpseq|zip|7z)$/i;
 const owners=new Set(['astrid','vera','amira','mei']);
 const normalize=value=>value.split(sep).join('/');
@@ -92,7 +92,7 @@ export async function applyMediaMigration(options={}) {
   const ledgerFile=join(root,'media/.migration',`migration-${new Date().toISOString().replaceAll(':','-')}-${randomUUID()}.json`);
   const ledger={schemaVersion:1,root,scope:options.scope??'all',state:'copying',previousLayout:before,files:layout.files};await atomic(ledgerFile,ledger,root);
   for(const row of layout.files){
-    const source=inside(root,row.copySource??row.legacyPath),destination=inside(root,'media/'+row.path);
+    const source=inside(root,row.copySource??row.legacyPath),destination=inside(root,'media/'+(row.canonicalPath??row.path));
     await safeParents(root,source);await safeParents(root,destination,{create:true});const src=await exists(source),dest=await exists(destination);
     if(dest){if(dest.isSymbolicLink()||!dest.isFile()||dest.size!==row.size||await hashFile(destination)!==row.sha256)throw new Error(`Target conflict: ${row.path}`);continue;}
     if(!src||src.isSymbolicLink()||!src.isFile())throw new Error(`Source unavailable: ${row.legacyPath}`);
@@ -119,7 +119,18 @@ export async function rollbackMediaMigration(ledgerFile,{root=repositoryRoot}={}
   }
   return {restored:ledger.files.length,canonicalCopiesRetained:true};
 }
-export async function verifyMediaLayout({root=repositoryRoot}={}){const layout=await oldLayout(root),errors=[];for(const row of layout.files){const file=inside(root,'media/'+row.path),info=await exists(file);if(!info||!info.isFile()||info.isSymbolicLink()||info.size!==row.size||await hashFile(file)!==row.sha256)errors.push(row.path);}return{files:layout.files.length,bytes:layout.files.reduce((n,row)=>n+row.size,0),errors};}
+export async function verifyMediaLayout({root=repositoryRoot}={}){
+  const layout=readMediaLayout(root),errors=[],checked=new Map();
+  for(const row of layout.files){
+    const path=row.canonicalPath??row.path,file=inside(root,'media/'+path);
+    if(!checked.has(path)){
+      await safeParents(resolve(root),file);const info=await exists(file);
+      checked.set(path,{size:row.size,ok:!!info&&info.isFile()&&!info.isSymbolicLink()&&info.size===row.size&&await hashFile(file)===row.sha256});
+    }
+    if(!checked.get(path).ok)errors.push(row.path);
+  }
+  return{files:layout.files.length,physicalFiles:checked.size,bytes:[...checked.values()].reduce((n,row)=>n+row.size,0),errors};
+}
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){const args=process.argv.slice(2),value=key=>args[args.indexOf(key)+1],root=args.includes('--root')?value('--root'):repositoryRoot;
   if(args.includes('--rollback')){if(!args.includes('--apply'))throw new Error('Rollback requires --apply.');console.log(JSON.stringify(await rollbackMediaMigration(value('--rollback'),{root})));}
   else if(args.includes('--verify')){const result=await verifyMediaLayout({root});console.log(JSON.stringify(result));if(result.errors.length)process.exitCode=1;}
