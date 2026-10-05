@@ -25,21 +25,25 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   behöver invitation/aktivering via e-post; produktionsmail är punkt F.
   Klart när det avsedda administratörskontot når `/studio`, med rätt behörighet,
   och spelarkonton fortfarande nekas. Kontodata ändras först utifrån belagd orsak.
-- [ ] **B. Backoffice går rimligt snabbt att navigera i.** BO-prestandaagenten
-  utreder de långsamma klick-/navigationsflödena. Mät auth/session, sidbyte och
-  dataanrop i samma flöde före/efter en riktad rättning. Klart när förbättringen
-  är mätt och bekräftad i användarflödet, med bevarad revoke/behörighet och rätt
-  data. Aktuell produktionsbaseline på `3e613186`: fyra menybyten 4,859–10,018 s;
-  huvudsaklig väntan ligger före API-svar. Lokal authrättning grupperar fyra
-  färska identitetsläsningar i en transaktion: 12→6 databasfrågor, utan cache.
-  59 riktade tester passerade. Omprov efter leverans krävs innan punkten stängs.
-- [ ] **C. Sammanhängande `/studio` för Lab och Backoffice.** Gemensam Studio är
-  införd i kod; kvarvarande användbarhet och full acceptans är öppna. Kontrollera
-  entré, dealer/klipp, administration och OpenClaw samt desktop/mobil navigation.
-  Klart när de avsedda arbetsflödena fungerar från samma yta och aktuella prov
-  visar det. Konkreta glapp: OpenClaw direktlänk/reload och intern navigation
-  visar olika ytor på samma URL; login tappar målroute. Snäva routingrättningar
-  pågår. Ingen ny paket-/arkitekturmigration.
+- [ ] **B. Backoffice går rimligt snabbt att navigera i.** Föreprov på
+  `3e613186` gav fyra gruppbyten 7,468 / 4,944 / 4,859 / 10,018 s.
+  Authrättningen grupperar fyra färska identitetsläsningar i en transaktion
+  (12→6 databasfrågor, utan cache). Produktionsomprov på `ba0cb7ee` gav
+  7,195 / 3,325 / 5,937 / 2,913 s: varierande väntan kvarstår och 18 GET
+  var oförändrat. Nästa riktade rättning tar bort sju extra sessionanrop:
+  varje native data-GET lämnar identiteten från sin färska behörighetskontroll,
+  och klienten avvisar identitetsbyte, saknade headers och revoke före visning.
+  81 riktade tester passerar; legacy- och skrivkontroller kvarstår. Klart när
+  faktiskt publicerat flöde är ommätt med rätt data och bevarad behörighet.
+- [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
+  `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
+  navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
+  samt spelarkonto/adminförtydligandet är verifierade i publicerad `ba0cb7ee`.
+  Native/Neon spärrar det äldre fristående röstprovet; UI ska visa detta och
+  göra noll röst-GET/POST, med serverns spärrar kvar. Neutrala miljö-/spartexter
+  och denna UIrättning har 65 riktade PASS och kräver publicerat omprov.
+  Klart när menyrutter/direktlänkar/login fungerar ihop, utkast bevaras och
+  kvarvarande desktop-/mobil- och användarflöden faktiskt är verifierade.
 - [x] **D. P6:s isolerade SQL/HTTPS-prov — verifierat lokalt 5 oktober.** Huvudagenten har rättat testfixturens
   saknade `gameDb` i både auth- och kontofabriken samt äldre reader/staff-
   antaganden. Osäker talleverantörssubmission ska förbli spärrad vid shutdown,
@@ -50,23 +54,34 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   retained-bank-kontroller. Verklig SQL/HTTPS/omstart och cleanup passerade;
   versionskvitto har stabila inputbytes. Körning 1–2 FAIL är bevarade. Detta
   stänger den isolerade deluppgiften, inte återstående mänsklig/live-P6 i H.
-- [ ] **E. Systemkartan visar faktiskt provutfall.** Systemkartagenten kopplar
-  befintligt SQL-prov till den gemensamma resultatvägen. Klart när relevant
-  failure visas som failure, saknat/skippat prov aldrig är grönt och exporter
-  visar rätt SHA/datum. Adapter och failure-/skip-/versionsprov passerar lokalt;
-  exakt leveranscommit kör samma motor i CI. Ny CI-export återstår innan rutan
-  stängs. Nedladdad HTML förblir en fryst ögonblicksbild.
+- [ ] **E. Systemkartan visar faktiskt provutfall.** Samma isolerade SQL-motor
+  används i CI. `ba0cb7ee`, CI `37300874695`, failed före databasstart när
+  runnerns installerade PGDG-libpq saknade nedladdningskälla. Exporten är
+  korrekt röd för `studio.sql-restart-https`, med exakt SHA och observationstid.
+  Failure-exporten bevaras privat; ny grön CI/export behövs efter APT-rättningen.
+  Rättningen använder egen tom paketstatus och installerar/ändrar inget på
+  värdsystemet. Klart när ett faktiskt SQL-prov och exporter visar rätt
+  resultat/SHA/datum; saknat eller skippat prov får aldrig bli grönt.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
   belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
   QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
   produktionskoppling och ett uttryckligt avgränsat prov med utsedd mottagare.
+  Jakob avsåg Gmailadressen som avsändare, inte mottagare. Resend kräver en
+  verifierad ägd domän; använd exempelvis `no-reply@scoutgaming.tech` efter
+  verifiering. Befintlig admin bjuder in ny admin; inget extra mejlgodkännande
+  av superadmin finns. Ingen ny provmottagare är utsedd.
   Klart när faktisk produktionskonfiguration är återläst och provet fungerar
   hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
-- [ ] **G. GitGuardian-fynd utredda och hanterade.** Säkerhetsagenten har läst
-  avsedd repo/source: sex öppna fynd, varav tre belagda testvärden och två
-  belagda källhashar; ett saknar filposition. Snävt fixturförtydligande är gjort
-  lokalt. Klart när varje fynd har belagd klassning och konkret hantering.
-  Alla sex är fortsatt öppna i GitGuardian; ingen automatisk ignore/resolve.
+- [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
+  workspace795524/source30689542: 10 öppna och fem ignorerade, komplett
+  incidentlista (1 incident-/15 locationsidor). Sex öppna positionerade fynd
+  i `docs/system-map/contracts.json` matchar källfilernas LF-normaliserade
+  SHA256 på exakt `ba0cb7ee`. Tre äldre öppna har historiskt belagda
+  testfixtures; dagens positionsmetadata saknas för dem och ytterligare ett
+  öppet oklassificerat fynd. Totalt sju positionsluckor, varav fyra öppna.
+  Klart när varje fynd har aktuell belagd klassning och konkret hantering.
+  Alla tio är fortsatt öppna; ingen automatisk ignore/resolve eller breda
+  filundantag. GitHub queued/missing GitGuardianrun betyder inte incidentfrihet.
 - [ ] **H. Återstående spel-, media- och enhetsacceptans.** Fyra dealers/två
   faktiska plays, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/
   omstart och naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk,
@@ -81,7 +96,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
 Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
 Avslutade migrationssteg och deras historiska bevis står kvar nedan.
 
-## Aktuell källa och drift
+## Källa och historiska driftkvitton
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i det privata
 [Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).

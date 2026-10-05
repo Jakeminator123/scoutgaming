@@ -17,6 +17,8 @@ export type StudioAdministrationProps = {
   session: () => Promise<unknown>;
   /** Exact activated handler keys, for example "GET players". Descriptors alone are not activation. */
   availableActions?: readonly string[];
+  /** Explicit native response capability. Legacy/local adapters retain preflight. */
+  readIdentity?: 'session-preflight' | 'response-headers-v1';
   fetchImpl?: typeof fetch;
   /** Explicit public game origin from server configuration, never request JSON. */
   gameOrigin?: string;
@@ -79,7 +81,7 @@ function uiError(error: unknown): StudioAdminUiError { return error instanceof S
 function aborted(signal?: AbortSignal) { if (signal?.aborted) throw new DOMException('Aborted', 'AbortError'); }
 
 /** UI transport, NOT session/Origin/CSRF/CAS authorization. No route is activated by this helper. */
-export function createStudioAdminClient({ apiBase, session, availableActions = EMPTY_ACTIONS, fetchImpl = fetch, gameOrigin }: StudioAdministrationProps) {
+export function createStudioAdminClient({ apiBase, session, availableActions = EMPTY_ACTIONS, fetchImpl = fetch, gameOrigin, readIdentity = 'session-preflight' }: StudioAdministrationProps) {
   const baseIsValid = apiBase === '/studio/api/admin' || apiBase === '/api/admin';
   const activated = new Set(availableActions);
   async function identity(): Promise<StudioAdminActor> {
@@ -92,18 +94,31 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
   function available(method: unknown, action: unknown) {
     return baseIsValid && typeof action === 'string' && Boolean(studioAdminEndpoint(method, `/studio/api/admin/${action}`)) && activated.has(`${method} ${action}`);
   }
-  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal) {
+  function responseActor(response: Response): StudioAdminActor {
+    const encoded = response.headers.get('X-Croupier-Studio-Actor'), role = response.headers.get('X-Croupier-Studio-Role');
+    let username: string;
+    try {
+      if (!encoded || encoded.length > 254 * 12) throw new Error();
+      username = decodeURIComponent(encoded);
+      if (encodeURIComponent(username) !== encoded) throw new Error();
+    } catch { throw new StudioAdminUiError(403); }
+    const actor = studioAdminActor({ username, role });
+    if (!actor || role !== actor.role) throw new StudioAdminUiError(403);
+    return actor;
+  }
+  async function request(method: Method, action: string, body?: JsonObject, signal?: AbortSignal, expectedReadActor?: StudioAdminActor) {
     const descriptor = typeof action === 'string' ? studioAdminEndpoint(method, `/studio/api/admin/${action}`) : null;
-    if (!baseIsValid || !descriptor || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
+    if (!baseIsValid || !descriptor || !['session-preflight', 'response-headers-v1'].includes(readIdentity) || (method !== 'GET' && method !== 'POST') || (method === 'GET' && body !== undefined)) throw new StudioAdminUiError(400);
     if (!available(method, action)) throw new StudioAdminUiError(501);
     aborted(signal);
-    const actor = await identity();
+    const preflightActor = method === 'GET' && readIdentity === 'response-headers-v1' ? null : await identity();
     aborted(signal);
-    if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)) throw new StudioAdminUiError(403);
+    if (preflightActor && !studioRoleMeetsMinimum(preflightActor.role, descriptor.minimumRole)) throw new StudioAdminUiError(403);
     if (method === 'POST') {
+      if (!preflightActor) throw new StudioAdminUiError(401);
       if (!object(body)) throw new StudioAdminUiError(400);
       if (CONFIG_COMMANDS.has(action) && !validRevision(body?.expectedRevision)) throw new StudioAdminUiError(409);
-      if ((action === 'users/remove' || action === 'users/role') && sameIdentity(body?.username, actor.username)) throw new StudioAdminUiError(403);
+      if ((action === 'users/remove' || action === 'users/role') && sameIdentity(body?.username, preflightActor.username)) throw new StudioAdminUiError(403);
       if (action === 'users/role' && !isStudioRole(body?.role)) throw new StudioAdminUiError(400);
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
       if (action === 'speech-qa') throw new StudioAdminUiError(501);
@@ -118,6 +133,9 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     } catch (error) { aborted(signal); throw uiError(error); }
     aborted(signal);
     if (!response.ok) throw new StudioAdminUiError(response.status);
+    const actor = preflightActor ?? responseActor(response);
+    if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
+      || (method === 'GET' && expectedReadActor && (actor.username !== expectedReadActor.username || actor.role !== expectedReadActor.role))) throw new StudioAdminUiError(403);
     let payload: JsonObject | null;
     try { payload = object(await response.json()); } catch { throw new StudioAdminUiError(503); }
     aborted(signal);
@@ -430,7 +448,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
 }
 
 export function StudioAdministration(props: StudioAdministrationProps) {
-  const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin]);
+  const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin, props.readIdentity]);
   const [group, setGroup] = useState('operations');
   const [actor, setActor] = useState<StudioAdminActor | null>(null);
   const [resources, setResources] = useState<Resources>({});
@@ -470,7 +488,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         const descriptor = studioAdminEndpoint('GET', `/studio/api/admin/${action}`);
         return descriptor && studioRoleMeetsMinimum(initialActor.role, descriptor.minimumRole);
       }).map(async action => {
-        try { const result = await client.request('GET', action, undefined, controller.signal); return { action, ...result }; }
+        try { const result = await client.request('GET', action, undefined, controller.signal, initialActor); return { action, ...result }; }
         catch (error) { aborted(controller.signal); const failure = uiError(error); if (failure.status === 401 || failure.status === 403) throw failure; return { action, actor: initialActor, error: failure }; }
       }));
       if (!alive.current || ticket !== sequence.current) return false;

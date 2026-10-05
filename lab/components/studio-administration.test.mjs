@@ -3,12 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
 import * as gameLanes from '../../web/public/game-lanes.mjs';
+import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -122,6 +125,149 @@ function resources() {
 }
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
+
+// Real native authorization + admin response boundary over isolated in-memory
+// rows. This never opens a database connection or mutates a real account.
+function nativeReadFixture() {
+  const origin = 'https://studio.fixture.invalid', scope = { environment: 'fixture', workspaceId: 'qa' };
+  const clock = 2_000_000, bearer = 'b'.repeat(64);
+  const user = { id: '7', username: actor('admin').username, role: 'admin', salt: 'fixture-salt', hash: 'c'.repeat(128) };
+  const state = { user, epoch: 2, queries: 0, reads: 0, sessions: 0, invoked: 0 };
+  const labSession = { craig_user_id: user.id, role: 'admin', source_stamp: createHash('sha256').update(`${user.salt}:${user.hash}`).digest('hex'), auth_epoch: 2, expires: clock + 60_000 };
+  const boDb = {
+    transaction: work => work(),
+    prepare(sql) {
+      async function rows(...args) {
+        state.queries++;
+        if (sql.includes('FROM lab_sessions')) return args[0] === createHash('sha256').update(bearer).digest('hex') && args[1] === clock ? [labSession] : [];
+        if (sql.includes('FROM bo_auth_epochs')) return [{ epoch: state.epoch }];
+        if (sql.includes('FROM users')) return state.user && String(args[0]) === user.id ? [state.user] : [];
+        assert.fail('Unexpected native read fixture query');
+      }
+      return { all: rows, get: async (...args) => (await rows(...args))[0], run: () => assert.fail('Read transport cannot write') };
+    },
+  };
+  const authorize = createStudioNativeAuth({ boDb, scope, now: () => clock });
+  const data = resources(), handlers = new Map(Object.keys(data).map(action => [`GET /studio/api/admin/${action}`, () => { state.invoked++; return data[action].payload; }]));
+  const server = createStudioAdminApi({ authorize, handlers, allowedOrigins: [origin], publicHosts: [new URL(origin).host] });
+  const request = path => new Request(origin + path, { headers: { cookie: `lab_session=${bearer}` } });
+  const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+    session: async () => { state.sessions++; const current = await authorize(request('/studio/api/auth/session')); return { username: current.user, role: current.role }; },
+    fetchImpl: async (url, init) => { state.reads++; assert.equal(init.method, 'GET'); return server.handle(request(url)); },
+  };
+  return { state, props };
+}
+
+test('native read capability uses seven fresh admin GETs plus four group preflights instead of eighteen GETs', async () => {
+  for (const [readIdentity, expectedSessionCount] of [['session-preflight', 11], ['response-headers-v1', 4]]) {
+    const h = harness(), f = nativeReadFixture(), props = { ...f.props, readIdentity };
+    h.render(props); h.effects(); await flush(); let tree = h.render(props);
+    f.state.reads = 0; f.state.sessions = 0;
+    for (const menu of ['Spel, lanes & bord', 'Konton', 'Partner', 'Talgranskning']) {
+      buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+      const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+      assert.ok(view && Object.values(view.props.resources).every(resource => resource.payload), menu);
+      assert.equal(view.props.actor.role, 'admin');
+    }
+    assert.equal(f.state.reads, 7);
+    assert.equal(f.state.sessions, expectedSessionCount);
+    assert.equal(f.state.reads + f.state.sessions, readIdentity === 'response-headers-v1' ? 11 : 18);
+    h.unmount();
+  }
+  const nativeSource = readFileSync(new URL('./native-administration.tsx', import.meta.url), 'utf8');
+  assert.match(nativeSource, /<StudioAdministration\b[^>]*readIdentity="response-headers-v1"/);
+});
+
+test('response identity is checked before body hydration; missing/malformed/different actors fail closed without session fallback', async () => {
+  const h = harness();
+  for (const headers of [
+    {}, { 'X-Croupier-Studio-Actor': encodeURIComponent(actor('admin').username) },
+    { 'X-Croupier-Studio-Actor': '%', 'X-Croupier-Studio-Role': 'admin' },
+    { 'X-Croupier-Studio-Actor': 'x%0Ay', 'X-Croupier-Studio-Role': 'admin' },
+    { 'X-Croupier-Studio-Actor': 'x'.repeat(255), 'X-Croupier-Studio-Role': 'admin' },
+    { 'X-Croupier-Studio-Actor': 'owner@example.test', 'X-Croupier-Studio-Role': 'admin' },
+    { 'X-Croupier-Studio-Actor': 'owner%40example.test', 'X-Croupier-Studio-Role': 'superadmin' },
+    { 'X-Croupier-Studio-Actor': 'owner%40example.test', 'X-Croupier-Studio-Role': 'reader' },
+    { 'X-Croupier-Studio-Actor': 'other%40example.test', 'X-Croupier-Studio-Role': 'admin' },
+  ]) {
+    let sessions = 0, bodies = 0;
+    const response = new Response('{}', { headers }); response.json = async () => { bodies++; return resources().overview.payload; };
+    const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: async () => { sessions++; return actor('admin'); }, fetchImpl: async () => response });
+    await assert.rejects(client.request('GET', 'overview', undefined, undefined, actor('admin')), status(403));
+    assert.equal(sessions, 0); assert.equal(bodies, 0);
+  }
+  const unknown = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'unknown', availableActions: allActions,
+    session: () => assert.fail('No guessed capability'), fetchImpl: () => assert.fail('No guessed capability') });
+  await assert.rejects(unknown.request('GET', 'overview'), status(400));
+});
+
+test('two native server GETs reread role and epoch; revocation never leaks the second payload or promotes a player', async () => {
+  for (const [revoke, expectedRole] of [[state => { state.epoch++; }, 'admin'], [state => { state.user.role = 'reader'; }, 'reader']]) {
+    const h = harness(), f = nativeReadFixture(), client = h.createStudioAdminClient(f.props);
+    const first = await client.request('GET', 'overview', undefined, undefined, actor('admin'));
+    assert.equal(first.actor.username, actor('admin').username); assert.equal(first.actor.role, 'admin'); assert.ok(first.payload.players);
+    const queries = f.state.queries;
+    revoke(f.state);
+    await assert.rejects(client.request('GET', 'overview', undefined, undefined, actor('admin')), status(401));
+    assert.ok(f.state.queries > queries, 'the second GET must reauthorize from current rows');
+    assert.equal(f.state.invoked, 1, 'revoked request never reaches its data handler');
+    assert.equal(f.state.reads, 2); assert.equal(f.state.sessions, 0);
+    assert.equal(f.state.user.role, expectedRole, 'no automatic promotion on denial');
+  }
+});
+
+test('a server rejection after group preflight clears previously displayed native data and controls', async () => {
+  for (const [statusCode, notice] of [[401, /Sessionen är avslutad/], [403, /Behörigheten saknas eller har ändrats/]]) {
+    const h = harness(), f = nativeReadFixture(); let rejectReads = false;
+    const props = { ...f.props, fetchImpl: async (url, init) => rejectReads ? reply({ error: 'private provider detail' }, statusCode) : f.props.fetchImpl(url, init) };
+    h.render(props); h.effects(); await flush(); let tree = h.render(props);
+    assert.match(renderToStaticMarkup(tree), /owner@example.test/);
+    rejectReads = true;
+    buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+    const html = renderToStaticMarkup(tree);
+    assert.match(html, notice); assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|private provider detail/);
+    assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
+    h.unmount();
+  }
+});
+
+test('native identity change or revocation between concurrent reads discards the entire group', async () => {
+  for (const [change, notice] of [
+    [state => { state.user.username = 'other@example.test'; }, /Behörigheten saknas eller har ändrats/],
+    [state => { state.user.role = 'reader'; }, /Sessionen är avslutad/],
+    [state => { state.epoch++; }, /Sessionen är avslutad/],
+  ]) {
+    const h = harness(), f = nativeReadFixture(); let release;
+    const firstDone = new Promise(resolve => { release = resolve; });
+    const props = { ...f.props, fetchImpl: async (url, init) => {
+      if (url.endsWith('/shoes')) await firstDone;
+      const response = await f.props.fetchImpl(url, init);
+      if (url.endsWith('/overview')) { change(f.state); release(); }
+      return response;
+    } };
+    h.render(props); h.effects(); await flush();
+    const tree = h.render(props), html = renderToStaticMarkup(tree);
+    assert.match(html, notice);
+    assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|other@example.test/);
+    assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
+    assert.equal(f.state.sessions, 1); assert.equal(f.state.reads, 2);
+    h.unmount();
+  }
+});
+
+test('native read capability keeps write preflight, self-protection and revision checks intact', async () => {
+  const h = harness(); let current = actor('admin'), sessions = 0, writes = 0;
+  const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+    session: async () => { sessions++; return current; }, fetchImpl: async () => { writes++; return reply({ ok: true }); } });
+  await client.request('POST', 'room', { expectedRevision: 'studio-v1' });
+  await assert.rejects(client.request('POST', 'room', {}), status(409));
+  await assert.rejects(client.request('POST', 'users/remove', { username: current.username }), status(403));
+  await assert.rejects(client.request('POST', 'users/role', { username: current.username, role: 'admin' }), status(403));
+  current = null;
+  await assert.rejects(client.request('POST', 'room', { expectedRevision: 'studio-v1' }), status(401));
+  assert.equal(sessions, 5); assert.equal(writes, 1);
+});
 
 test('render never mutates or requests providers/accounts; six groups expose eleven implemented sections', () => {
   const h = harness(); let calls = 0;

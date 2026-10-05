@@ -25,6 +25,43 @@ test('local API base only replaces the exact canonical prefix', async () => {
   assert.throws(() => api({ apiBase: '/anything' }), /Invalid admin API base/);
 });
 
+test('successful reads publish only their freshly authorized encoded username and canonical role in private headers', async () => {
+  let current = { ...session, user: 'Jåкob+qa@example.test' }, checks = 0;
+  const configured = api({ authorize: () => { checks++; return current; } });
+  for (const username of [current.user, 'other@example.test']) {
+    current = { ...current, user: username };
+    const response = await configured.handle(new Request(origin + path('players')));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Croupier-Studio-Actor'), encodeURIComponent(username));
+    assert.equal(response.headers.get('X-Croupier-Studio-Role'), 'admin');
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    assert.deepEqual(await response.json(), { players: [] }, 'identity metadata never widens the data payload');
+  }
+  assert.equal(checks, 2, 'every read authorizes afresh');
+  const post = await configured.handle(request());
+  assert.equal(post.status, 200);
+  assert.equal(post.headers.get('X-Croupier-Studio-Actor'), null);
+  assert.equal(post.headers.get('X-Croupier-Studio-Role'), null);
+  current = { ...current, role: 'reader' };
+  const denied = await configured.handle(new Request(origin + path('players')));
+  assert.equal(denied.status, 403);
+  assert.equal(denied.headers.get('X-Croupier-Studio-Actor'), null);
+  assert.equal(denied.headers.get('X-Croupier-Studio-Role'), null);
+  assert.equal(current.role, 'reader', 'metadata cannot promote a stored legacy role');
+});
+
+test('unsafe read identity cannot invoke a handler or produce metadata', async () => {
+  for (const user of ['x'.repeat(255), 'user\nname', 'user\u0085name', '\ud800']) {
+    let invoked = 0;
+    const configured = api({ authorize: () => ({ ...session, user }), handlers: new Map([['GET ' + path('players'), () => { invoked++; return { players: [] }; }]]) });
+    const response = await configured.handle(new Request(origin + path('players')));
+    assert.equal(response.status, 403);
+    assert.equal(invoked, 0);
+    assert.equal(response.headers.get('X-Croupier-Studio-Actor'), null);
+    assert.equal(response.headers.get('X-Croupier-Studio-Role'), null);
+  }
+});
+
 test('live authorization and explicit role floor deny players and reader writes', async () => {
   for (const principal of [null, { user: '', role: 'admin' }]) assert.equal((await api({ authorize: () => principal }).handle(request())).status, 401);
   const reader = api({ authorize: () => ({ user: 'r', role: 'reader', scope: session.scope }) });
