@@ -98,6 +98,11 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   9befintligaskip/0fel/cancel. De två persistencekontrakten behåller
   GREY: deras riktiga concurrency/persistenceprov kräver isolerad
   croupier_game_qa och kördes inte. Separat Studio-SQL-PASS ersätter det inte.
+  Efterföljande dokumentcommit04baf354, CI37309484604, stoppades före första
+  steg i alla tre jobb. GitHub anger betalningsfel eller Actionsgräns utan att
+  särskilja orsakerna. Ingen ny kodprovning utfördes. Kontoägaren behöver
+  kontrollera Billing and usage; inga budget-/betalningsändringar eller blinda
+  omprov görs. Funktionsbeviset på e49 och privata failurekvitton bevaras.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
   belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
   QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
