@@ -344,8 +344,8 @@ test('card motion receives each presented media frame and stops at cancellation'
 
 async function controllerFixture(t) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
-  const inventory = await loadVideoRegistry(), jobs = [], receipts = [];
-  const element = () => ({ style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) });
+  const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [];
+  const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json' }
@@ -358,7 +358,7 @@ async function controllerFixture(t) {
   const controller = await createLocalPresentation({ player, host: element(), dealerId: 'astrid', version: () => 2,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, get proofs() { return proofs; } };
+  return { controller, jobs, receipts, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
 }
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
@@ -413,6 +413,41 @@ test('deal interrupts idle; neither selection nor a stale idle frame opens the s
   controller.state({ action: false }); assert.equal(jobs.length, 3); assert.equal(fixture.proofs, 0);
   jobs[2].options.onReceipt({ state: 'presented' }); assert.equal(fixture.proofs, 1);
 });
+test('an idle warning survives selection and start, then clears on the current presented frame', async t => {
+  const { controller, jobs, status } = await controllerFixture(t);
+  controller.start(); jobs[0].reject(new Error('Film ended without a presented frame'));
+  await new Promise(resolve => setImmediate(resolve));
+  const warning = 'Idle: Film ended without a presented frame';
+  assert.equal(jobs.length, 2); assert.equal(status.textContent, warning);
+  jobs[1].options.onReceipt({ state: 'start' }); assert.equal(status.textContent, warning);
+  jobs[1].options.onReceipt({ state: 'presented' }); assert.equal(status.textContent, '');
+});
+
+test('stale idle frames cannot clear a warning across ownership changes or closure', async t => {
+  const { controller, jobs, status } = await controllerFixture(t);
+  controller.start(); jobs[0].reject(new Error('idle unavailable'));
+  await new Promise(resolve => setImmediate(resolve));
+  const warning = status.textContent, stale = jobs[1].options.onReceipt;
+  controller.state({ action: true }); stale({ state: 'presented' });
+  assert.equal(status.textContent, warning);
+  controller.state({ action: false });
+  const current = jobs[2].options.onReceipt;
+  stale({ state: 'presented' }); assert.equal(status.textContent, warning);
+  controller.close(); current({ state: 'presented' }); assert.equal(status.textContent, warning);
+});
+
+test('a recovered idle frame preserves a newer action error on the shared status surface', async t => {
+  const { controller, jobs, status } = await controllerFixture(t);
+  controller.start(); jobs[0].reject(new Error('idle unavailable'));
+  await new Promise(resolve => setImmediate(resolve));
+  controller.state({ action: true });
+  const action = controller.present(source); await new Promise(resolve => setImmediate(resolve));
+  jobs[2].reject(new Error('Action clip unavailable')); assert.equal(await action, false);
+  const warning = 'Action clip unavailable · 2D-reserv'; assert.equal(status.textContent, warning);
+  controller.state({ action: false });
+  jobs[3].options.onReceipt({ state: 'presented' }); assert.equal(status.textContent, warning);
+});
+
 test('a shared media download cancelled by the old owner does not poison the new owner', async t => {
   const { PerformancePlayer } = await import('../web/public/performance-player.mjs');
   const previousFetch = globalThis.fetch;

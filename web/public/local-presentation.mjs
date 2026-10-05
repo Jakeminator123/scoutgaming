@@ -64,7 +64,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
-  let idleRun = 0;
+  let idleRun = 0, idleError = null;
   function resumeIdle() {
     if (closed || action || speech || document.hidden) return;
     const clip = idle.snapshot().clip;
@@ -74,10 +74,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const video = config.inventory.videos.find(item => item.id === clip.videoId);
     if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
     void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
-      onFrame: () => { if (epoch !== serial) return; idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
+      onFrame: () => { if (epoch !== serial || closed) return;
+        if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
+        idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
-      .catch(error => { if (epoch !== serial || closed) return; status.textContent = `Idle: ${error.message}`; idle.failed(clip.playId); resumeIdle(); });
+      .catch(error => { if (epoch !== serial || closed) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; idle.failed(clip.playId); resumeIdle(); });
   }
   function state(patch) {
     if (Object.hasOwn(patch, 'action')) action = patch.action;

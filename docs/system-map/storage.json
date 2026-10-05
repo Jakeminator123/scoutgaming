@@ -5567,7 +5567,7 @@
     "Installerat live-schema, grants, riktiga rader, faktiska miljövärden och providerresurser är inte avlästa här.",
     "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
     "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
-    "Aktuella repoavsnitt beskriver genomförd produktionsmigration/diskavveckling; historiska avsnitt beskriver äldre mellanlägen. Aktuellt lagringsunderlag: CLOUD-MIGRATION.md:1217–1272 och ENVIRONMENT-VARIABLES.md:18–33.",
+    "Aktuellt lagringsunderlag: docs/CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa och docs/ENVIRONMENT-VARIABLES.md. Historiska checkpoints är bevarade i Git; använd inte äldre mellanlägen som driftkonfiguration.",
     "Full extern Director-/Gateway-backup är dokumenterat ett separat kvarvarande ansvar.",
     "Versionschecksum, mediahash och testpass bevisar inte visuell lipsyncacceptans.",
     "Gamla Lissabon/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift.",

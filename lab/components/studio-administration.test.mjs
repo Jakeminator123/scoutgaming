@@ -174,6 +174,38 @@ test('same-origin transport validates exact API base, method/action and explicit
   }
 });
 
+test('menu changes fetch only displayed resources and keep a live identity check for every read', async () => {
+  const h = harness(); const requests = []; let identities = 0;
+  const data = resources();
+  const props = { apiBase: '/studio/api/admin', availableActions: allActions,
+    session: async () => { ++identities; return actor('admin'); },
+    fetchImpl: async (url, init) => {
+      requests.push({ url, method: init.method });
+      return reply(data[url.slice('/studio/api/admin/'.length)]?.payload);
+    } };
+  h.render(props); h.effects(); await flush(); let tree = h.render(props);
+  for (const [group, menu, reads] of [
+    ['operations', 'Drift & spelintegritet', ['overview', 'shoes']],
+    ['tables', 'Spel, lanes & bord', ['config']],
+    ['accounts', 'Konton', ['players', 'users']],
+    ['partners', 'Partner', ['apikeys', 'emails']],
+    ['finance', 'Betalningar & journal', ['transactions']],
+    ['media-review', 'Talgranskning', ['config', 'voicelines']],
+  ]) {
+    if (group !== 'operations') {
+      requests.length = 0; identities = 0;
+      buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    }
+    assert.deepEqual(requests, reads.map(action => ({ url: `/studio/api/admin/${action}`, method: 'GET' })), group);
+    assert.equal(identities, reads.length + 1, group);
+    const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+    assert.equal(view.props.group, group);
+    assert.deepEqual(Object.keys(view.props.resources), reads, group);
+    assert.ok(reads.every(action => view.props.resources[action].payload), group);
+  }
+  h.unmount();
+});
+
 test('each request checks live identity, role floors and self-role/self-removal before a write', async () => {
   const h = harness(); let current = actor('superadmin'); let fetches = 0;
   const client = h.createStudioAdminClient({ apiBase: '/api/admin', availableActions: allActions, session: async () => current, fetchImpl: async () => { ++fetches; return reply({ ok: true }); } });
@@ -389,7 +421,8 @@ test('native mail previews escape content, render placeholders and never send or
 
 test('revoked session clears old account data/controls, and explicit reload recovers without a local fallback', async () => {
   const h = harness(); let current = actor('admin'); let count = 0;
-  const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET config'], session: async () => current, fetchImpl: async url => { ++count; return reply(url.endsWith('/config') ? config() : resources().overview.payload); } };
+  const data = resources();
+  const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET shoes'], session: async () => current, fetchImpl: async url => { ++count; return reply(data[url.slice('/api/admin/'.length)].payload); } };
   h.render(props); h.effects(); await flush();
   let tree = h.render(props); assert.match(renderToStaticMarkup(tree), /owner@example.test/); assert.equal(count, 2);
   current = null;
@@ -400,12 +433,19 @@ test('revoked session clears old account data/controls, and explicit reload reco
   assert.match(renderToStaticMarkup(h.render(props)), /owner@example.test · Administratör/); assert.equal(count, 4); h.unmount();
 });
 
-test('a lower role mid-load fails closed instead of retaining stale higher-role controls', async () => {
-  const h = harness(); let identities = 0;
-  const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET config'], session: async () => actor(++identities === 1 ? 'superadmin' : 'reader'), fetchImpl: async url => reply(url.endsWith('/config') ? config() : resources().overview.payload) };
-  h.render(props); h.effects(); await flush();
-  const html = renderToStaticMarkup(h.render(props));
-  assert.match(html, /Sessionen är avslutad/); assert.doesNotMatch(html, /Backoffice-grupper|superadmin/); h.unmount();
+test('a lower role or different identity mid-load fails closed instead of retaining stale controls', async () => {
+  for (const [changedActor, notice] of [
+    [actor('reader'), /Sessionen är avslutad/],
+    [{ username: 'other@example.test', role: 'admin' }, /Behörigheten saknas eller har ändrats/],
+  ]) {
+    const h = harness(); let identities = 0; const data = resources();
+    const props = { apiBase: '/api/admin', availableActions: ['GET overview', 'GET shoes'],
+      session: async () => ++identities === 1 ? actor('superadmin') : changedActor,
+      fetchImpl: async url => reply(data[url.slice('/api/admin/'.length)].payload) };
+    h.render(props); h.effects(); await flush();
+    const html = renderToStaticMarkup(h.render(props));
+    assert.match(html, notice); assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|other@example.test|superadmin/); h.unmount();
+  }
 });
 
 test('unmount aborts read transaction before fetch; no background mutation or late UI result', async () => {

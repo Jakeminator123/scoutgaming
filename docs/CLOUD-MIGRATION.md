@@ -17,12 +17,12 @@ och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
 `Jakobs-v1` på `600093e4522efc57bd82979cff65492a528ffeb7` bevarar commitad v1,
 inte ignorerade privata profiler/data.
 
-MERGE har återläst `91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`:
-CI `37249938482` completed/success, tre jobb; fullhook 1 491 PASS/9 befintliga skip/0 fel.
-Produkt-Render `dep-db1fhi8jo6nc73ai2n1g` LIVE, finished
-`2026-10-05T01:11:39.900705Z`; frontend `dpl_6uxWLomRgt38pDZnAh6VcNUCoQnU` och
-Studio `dpl_DiKezicRyo9Xmwg616arHhfYLtyS` READY på samma SHA.
-App/UI/medieläsare är byteidentiska mot `ebbbeb764aa9b42613596049887c178e5a9c1818`.
+MERGE har återläst `6b9dad55ced03ee0573e24b472b4dcbba2b97776` före slutpaketet nedan:
+CI `37252007240` completed/success, tre jobb; föregående fullhook 1 491 PASS/9 skip/0 fel.
+Produkt-Render `dep-db1fvkuq1p3s73f9gla0` LIVE, finished
+`2026-10-05T01:40:59.149237Z`; frontend `dpl_7X9A5Gq5Kjs2CVAcbijrUr6bgfGk` och
+Studio `dpl_GgTwovLAM42B3v8cWVJK1mETPbNt` READY på samma SHA.
+App/UI/medieläsare fram till denna version är byteidentiska mot `ebbbeb764aa9b42613596049887c178e5a9c1818`.
 Director och QA behåller `ee0608044f7c78b80c4f46023cd67a7b391e17f0`.
 QA:s 37 envvärden är oförändrade. Genererat tal/streaming/preview/cloud-tal,
 kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
@@ -31,7 +31,9 @@ kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
 fysisk avveckling är utförda. Detta är inte full mänsklig medieacceptans,
 fysisk mic/kamera/mobil/Safari, full invitation/reset eller incidentfrihet.
 [JOHN-HANDOFF](JOHN-HANDOFF.md) har aktuella drift-ID:n, kvittoplatser och öppna fynd.
-Den här komprimeringen gör inga nya kod-/drift-/provider-/prisprov.
+Slutpaketet rensar referenslösa dokument och rättar två UI-flöden; inga nya providerjobb
+eller prisprov. Slutversion/CI/driftkvitto binds vid leverans i
+`lab/data/platform-private/docs-cleanup-final-20261005.json`.
 
 ## Fem dokument i docs
 
@@ -47,6 +49,12 @@ sprintarkiv. [Labbguiden](../lab/docs/README.md) och
 JSON-register/systemkarta, media/baseline och privata QA-kvitton bevaras.
 Tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1` är borttagna i 91;
 take/preview/tillgänglighetsregler finns i guiden, aktiva launchers består.
+Nästa gallring tar bort fem historiska V3-kartfiler under `docs/animation-events/`,
+en ersatt releaseinventering och två Polarlotto-filer om andra operatörer:
+åtta filer/1 143 070 byte. De har inga aktiva konsumenter och finns i Git `6b9dad55`.
+Två QA-kvitton med öppna takebeslut och alla aktiva miljö-/baseline-/kartregister behålls.
+De tekniska guiderna kortas; inaktuella produktdiskkommandon ersätts av aktuella
+Neon-/Blobregler. Inga `.env`-filer, providerinställningar eller databasvärden ändras.
 
 ## Masterplan: en Croupier Studio
 
@@ -447,18 +455,25 @@ Jakeminator123/github-work bundna. Lista: 1 incidentsida/11 locationsidor,
 Inte verifierade falsklarm: scanner-match/secrets har inte lästs,
 37862641 saknar filmetadata. Ingen resolve/ignore/accessändring utförd.
 Safe kvitto `lab/data/platform-private/gitguardian-read-20261005.json`.
-GitHubGG queued/no runs på 91 består; grön CI/neutral/skipped är inte incidentfrihet.
+GitHubGG queued/no runs på 6b9 består; grön CI/neutral/skipped är inte incidentfrihet.
+De tre locationsluckorna är HTTP200/tom lista/ingen nästa sida även vid direktläsning.
 Historiska 5 IGNORED/0 OPEN är daterad triage, inte dagens status.
 Följ AGENTS metadataredaktion/avsedd workspace, inga nya scopes automatiskt.
 
 Öppna restpunkter: full P6/ny take/läppsynk/kortkontakt, fysisk mic/kamera/
-mobil/Safari, idle-varningen ”Film ended without a presented frame”, menyfördröjning,
+mobil/Safari, ursprunget till ”Film ended without a presented frame”, kvarvarande menyfördröjning,
 full zonlagringsacceptans/startsidesflimmer/extern Director/Gatewaybackup och
 produktionsmail/invitation/reset. Auth/session-GET200 observerades 1,3–6,45 s,
 static mest 0–15 ms; ingen totalmätning eller isolerad rotorsak/freeplan-/providerförklaring.
-Ingen prestandakampanj ingår i detta paket.
+Två begränsade rättningar ingår: oanvända BO-anrop tas bort utan ändrat authskydd,
+och gammal idle-feltext rensas först vid aktuell faktiskt visad bild. Rotorsaken till
+den historiska frame-varningen och authlatensen är fortfarande okänd.
 QA Resend Free/delivered→Skräppost/testkontocleanup är avgränsat historiskt,
 inte användbar invitation/reset i produktion; nya mejl/konton följer inte automatiskt.
+Färsk läsning visar tom produktions-`RESEND_API_KEY` och saknad
+`CROUPIER_STUDIO_MAIL_FROM`; befintlig QA-nyckel gav401 på Resends domänläsning.
+Giltig produktionsanslutning/avsändare behöver därför fastställas före konfigurering
+och ett uttryckligt beställt invite-/resetprov. Inga hemligheter kopieras på chans.
 GPUshutdown/privat zonbild/OpenClawnavigation är rättade och verifierade avgränsat,
 inte kvarstående obehandlade funktionsfel; detaljer/shutdownbudget i JOHN.
 

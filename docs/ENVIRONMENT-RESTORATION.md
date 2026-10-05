@@ -4,76 +4,23 @@ Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
-Verifierad slutkod 18:16 UTC: produktionens data och gemensamma Neon-policy är
-importerade, konto-/spel-/journalparitet PASS. `9ba2fd05` har full pre-commit
-och tre CI PASS samt faktisk diskfri Render-drift. Originalets TLS verify-full
-och övriga 51 miljövärden är bevarade. Produktdisken är avvecklad med
-DELETE204/GET404/service.disk saknas; tolv ersatta Blobobjekt är borttagna,
-gamla-lista0/ersättningar12. Explicit restart200 och actual `bf582b0b…` visar
-ny appprocess, rätt källa/AI/Neon, health200 och ingen `/var/data`/persistent
-produktmount. Extern fullbackup finns i
-`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004` och
-behålls efter avveckling. QA:s tre tjänster är LIVE/READY på `7c4c1cc`,
-aktuella10/10 bevarande PASS och OFF37. Äldre närvarogap19→18 vid 42→37
-förblir en redovisad bevislucka; konton/saldo och journaler återställs inte.
-Parentens processmiljö är direkt oläsbar efter UID-byte; barnprocess/källa och
-stabila deploy-/envavläsningar binder konfigurationen, ingen direkt read-claim.
+Produktionens gemensamma Neon-policy, dataimport och diskfria drift är verifierade.
+Den tidigare produktdisken och tolv ersatta Blobobjekt är avvecklade. Aktuella
+versioner, paritetskvitton och kvarvarande acceptans finns i [JOHN-HANDOFF](JOHN-HANDOFF.md).
+QA:s separata data, SDK och journaler bevaras med AI/GPU OFF.
 
-Historisk P8-checkpoint 4 oktober 17:26 UTC: product/QA-containerstart på `1fb2307` misslyckades
-på fel förväntad HTTP-status i startprovet (401 i stället för den verifierade
-anonyma tal-QA-routens 403). b0bc är fortsatt LIVE; auth rättas inte eller
-öppnas. Endast provets kontrakt rättas, med verklig handler i befintligt test.
-Produktdisken och tolv ersatta Blob-alias är kvar. Extern fullständig backup
-behålls under och efter nästa release; ingen omimport eller journalreset.
+Full extern produktdiskbackup finns i
+`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`:
+206 filer, 10 mappar, 125 745 905 källbyte; inventering, arkivläsbarhet och
+remote/lokal/arkivhash verifierade. Kvittots SHA256:
+`12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9`.
+Den är en historisk återställningskälla, aldrig en andra aktiv writer.
 
-Uppföljning 17:49 UTC: monterad produktion `7c4c1cc` är faktiskt LIVE med
-käll-/AI-/Neon-/healthkontroll PASS. Första diskfria start misslyckades eftersom
-entrypointens nya villkor inte godtog den befintliga TLS-inställningen
-`verify-full`; villkoret rättas, befintlig anslutning och alla nycklar bevaras.
-Produkt-env är 51 efter enbart borttagen CROOT. Gamla disk och tolv Blobobjekt
-behålls tills slutkontrollen PASS. Backupens hela arkivhash återverifierad.
-QA Render `7c4c1cc` med SDK/källa och 10/10 dataskydd PASS, OFF37.
-
-Historisk migrationscheckpoint 17:14 UTC: main b0bc5814 var publicerad
-med grön CI. Alla tre QA-tjänster kör exakt b0bc med 10/10 bevarandekontroller,
-faktisk Linux-källa/SDK och oförändrat OFF42. QA är återställd till
-AI-/admin-/P6-flaggor OFF efter closed39
-på cc77/dep-db1687s9v7es73e56rv0, med router404, health200 och lease0.
-Senaste speluppspelningen nådde synlig/hörbar END men provider HTTP200
-CANCELLED avläst efter END. Funktionell admission kan återanvända den exakt
-matchande completed-request/END/browsercleanup-efter-END-kedjan för oförändrade
-playbackbytes. Exakt tid för providerstatusövergång finns inte i kvittot.
-b0bc:s naturliga provider-COMPLETED är lokalt testat, ännu inte liveverifierat.
-Ingen ytterligare generering eller budget-/reservationsändring görs.
-Egen Cartesia-nyckel i rotens ignorerade `.env` är även kopierad till Labs
-ignorerade `.env.local`; före-filen är privat säkerhetskopierad och alla andra
-miljörader bevarade. Driftens nyckel byts separat efter dataomkopplingen.
-Manifest, SDK, append-only-journaler och reservationer ska bevaras. Ett nytt
-fönster får inte återanvända eller skriva om tidigare poster; partial failure
-ska stängas explicit innan någon produktionsimport. Produktionens data och
-Studio-policy är importerade och faktisk driftparitet PASS. P7-admission/cloudplan/BEFORE är sparade
-och importens underhållsdeployment `dep-db16rv0u01pc73d442p0` var LIVE/childless med
-0 barnprocesser, skrivare och providerprocesser. Endpointen är tillfälligt
-Max 0/Active 0/FlashBoot OFF under importens faktiska ALL0-avläsning. Den är nu
-sparad och återavläst som Max 1/Active 0/FlashBoot ON inför provideraktivering.
-Fryst export och GET-dränering finns;
-slutvalidering och faktisk produktionsimport PASS. Importkvitto SHA256
-`0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`
-visar exakt oförändrade 32 konto-/speltabeller. Fristående paritet och faktisk
-runtime-/aliasomkoppling är PASS; Render `dep-db17ojvavr4c73alutjg` är LIVE
-på b0bc med gemensam Neon-policy. Alla 17 aliaspekare är verifierade.
-Färsk konto-/kostnadsavläsning PASS 17:09 UTC. Produktens tre providerflaggor
-är återställda ON; dep-db18gfh42hec73eh9a60 är LIVE och faktisk readback PASS.
-QA förblir OFF med fem gamla lagringsvariabler borttagna och övriga 37 värden,
-disk, SDK, journaler och reservationer bevarade.
-Hela gamla /var/data är säkerhetskopierad externt:
-206 filer, 10 mappar, 125 745 905 källbyte; full inventering, oförändrade
-metadata, arkivläsbarhet och överförings-/arkivhash PASS. Privat backup finns i
-`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`,
-kvitto SHA256 `12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9`.
-Kör därför ingen gammal diskrestore eller
-fysisk P8-radering före verifierat P7-källbyte, aktuell backup/paritet och det
-gemensamma skrivfönstrets återgångspunkt. Faktisk providerkostnad är okänd/null.
+Det här dokumentet är en procedurguide. Det laddas inte som processmiljö.
+Ignorerade `.env`-filer och leverantörernas hemlighetslager har en annan roll;
+ändra dem inte som del av dokumentstädning. Namn och ansvar beskrivs i
+[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
+Äldre checkpoints finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-RESTORATION.md).
 
 ## Lokal miljö
 
@@ -122,39 +69,27 @@ Produktens fullständiga externa backup är verifierad och behålls efter P8:
 `C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
 
 `tools/backup-render-state.mjs` har profilerna `product`, `director`, `gateway`.
-Produktprofilens exempel nedan beskriver den historiska diskvägen; kör dem
-inte som backup/restore av den nya Neon-/Blob-produktionen.
-Stoppa/frys alla skrivare på respektive tjänst före backup; produktprofilen
-kräver både Web och Lab stoppade. `--quiesced yes` är operatörens försäkran,
-ingen automatisk kontroll. Maintenance Mode bevisar inte att bakgrundsskrivare
-är stoppade. Samordna snapshots för en gemensam återställning.
+Product-profilen gäller den pensionerade diskvägen; den säkerhetskopierar inte
+aktuell Neon/Blob. Använd inte gamla produktdiskkommandon mot den nya driften.
+För de aktiva Director-/Gatewaydiskarna krävs stoppade/frysta skrivare och en
+separat privat destination utanför Git och dataroten. `--quiesced yes` är en
+operatörsförsäkran, inte mätt writerdränering. Maintenance Mode räcker inte.
 
-```sh
-node tools/backup-render-state.mjs backup --profile product --source /var/data --destination /tmp/product-snapshot --quiesced yes
-node tools/backup-render-state.mjs verify --snapshot /tmp/product-snapshot
-```
-
-Kör varje profil i tjänsten som äger disken; välj ny privat destination utanför
-dataroten och Git. Verktyget vägrar länkar/specialfiler, exporterar SQLite med
-backup-API inklusive committad WAL, kontrollerar integritet och främmande
-nycklar samt verifierar filhashar. Exportera hela snapshoten privat utanför
-Render och kör `verify` där. `/tmp` är flyktig. Enskilda DB-kontroller bevisar
-inte konsistens mellan olika databaser.
-
-Historisk diskåterställning kräver alla skrivare stoppade och en **tom, monterad
-datarot** med rätt profil. Exemplet återställer inte aktuell Neon/Blob och får
-inte återaktivera gamla produktionsskrivare. Bevara nuvarande data separat.
-
-```sh
-node tools/backup-render-state.mjs restore --profile product --snapshot /tmp/product-snapshot --destination /var/data --quiesced yes
-```
+Verktyget vägrar länkar/specialfiler, exporterar SQLite inklusive committad WAL,
+kontrollerar integritet/främmande nycklar och verifierar filhashar. Exportera
+hela snapshoten privat utanför Render och verifiera kopian där; `/tmp` är flyktig.
+Samordna snapshots eftersom separata DB-kontroller inte bevisar gemensam konsistens.
+Restore kräver stoppade skrivare, verifierat snapshot, rätt profil och tom monterad
+målrot. Bevara senaste Neon/ledger separat och verifiera schema, scope, media och
+aktuell paritet. Äldre SQLite får inte aktiveras efter nya Neon-skrivningar utan
+samordnad datatillbakaföring; inga parallella writers eller automatiska fallbacks.
 
 Director återställs till `/data/catalog`, Gateway till `/data/openclaw`.
 Verifiera inloggning, saldo/shoe, BO-roller, Studio-projekt och historik efter
 start och ytterligare omstart. Blanda inte äldre CRAIG med nyare speldata.
 Efter avbruten restore: håll tjänsten stoppad och granska dataroten.
-Backup/restore är provat med syntetiska filer; extern produktionsbackup och
-full återläsning av hela diskprofilen är ännu inte slutverifierade.
+Produktens externa fullbackup är verifierad enligt ovan. Externa fullbackuper
+av de aktiva Director-/Gatewaydiskarna är ett separat kvarvarande ansvar.
 
 Produktionsdatabaserna har separat verifierad extern backup i
 `C:\Users\jakem\CroupierBackups\neon-game-20261002-132437`: två orörda
@@ -183,16 +118,20 @@ Media lagras nu i `media/dealers/<dealer>/{runtime,source,review,staging}`,
 `media/game` och `media/site`. `media/layout.json` binder exakt gamla paths,
 publika URL:er, storlek och hash till nya filer. Originalnamn och historisk
 Emil-/Kevin-proveniens bevaras i metadata; `v1` är ingen gemensam rotversion.
-4 924 kopior kontrollerades före källradering. Privata rollback-ledgers ligger
+Historiska migrationskontroller och senare rensningskvitton finns i handoffen.
+Privata rollback-ledgers ligger
 i ignorerade `media/.migration`; `migrate-media-layout.mjs --rollback <ledger>`
 vägrar överskrivning och behåller den kanoniska kopian. Kör med stoppade skrivare.
 
 `docs/reference` har flyttats till `media/dealers/astrid/source/reference`.
 Kalibreringsverktyg använder samma resolver. Privat Blob-export använder
 `croupier/media/<samma-logiska-katalog>/<id>/<sha256>.<ext>`; indexet publiceras
-efter återläsningshash. `media/blob-index.json` är aktivt i molnet; 4 265 filer
-har verifierad återläsningshash. Äldre privata `croupier/videos`/`zones`-objekt
-behålls tills alla projektlänkar är verifierade.
+efter återläsningshash. `media/blob-index.json` är aktivt i molnet. Tolv ersatta `croupier/videos`-alias
+är avvecklade; aktuella zon-/mediereferenser består. Efter den verifierade
+source/staging-rensningen och dedupliceringen finns 2 514 logiska poster och
+2 450 fysiska filer. `canonicalPath` bevarar ID/URL/hash och åtkomstgränser.
+Tidigare kopior återinförs inte från gamla manifest; använd aktuell layout och
+de bevarade privata kvittona i `lab/data/lane-media-audit/`.
 
 Neon-verktyg: `tools/migrate-sqlite-postgres.mjs` installerar/importerar till
 tom, separat game-databas; `tools/postgres-backup-restore.mjs` verifierar full

@@ -459,7 +459,7 @@
       ],
       "expectedHashes": {
         "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
+        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
         "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
         "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a"
       }
@@ -493,7 +493,7 @@
       ],
       "expectedHashes": {
         "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
+        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
         "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
         "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a",
         "test/studio-native-auth-actions.mjs": "71f49ac749b2f7a3e1ffa3830d1e910233ed8f20ffe3e18435ea4495d665a28c"
@@ -528,7 +528,7 @@
       ],
       "expectedHashes": {
         "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
+        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
         "ops/neon-studio/001-studio-metadata.sql": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
         "ops/neon-studio/002-generation-journals.sql": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
         "ops/neon-studio/003-operator-speech-qa.sql": "0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae",
@@ -566,7 +566,7 @@
       ],
       "expectedHashes": {
         "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
+        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
         "lab/lib/zone-cloud-schema.sql": "8807c7824192a3e837f778bcee39fb2fff8a383538af295f955c0f2388e6de96",
         "lab/test/zone-cloud-store.test.mjs": "c6477d704d567d72d81a4c992b43da8eaf9636f1ef6d4b74f2142f8efb4e2184"
       }
