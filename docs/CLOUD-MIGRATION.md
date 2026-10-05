@@ -17,12 +17,13 @@ och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
 `Jakobs-v1` på `600093e4522efc57bd82979cff65492a528ffeb7` bevarar commitad v1,
 inte ignorerade privata profiler/data.
 
-MERGE har återläst `6b9dad55ced03ee0573e24b472b4dcbba2b97776` före slutpaketet nedan:
-CI `37252007240` completed/success, tre jobb; föregående fullhook 1 491 PASS/9 skip/0 fel.
-Produkt-Render `dep-db1fvkuq1p3s73f9gla0` LIVE, finished
-`2026-10-05T01:40:59.149237Z`; frontend `dpl_7X9A5Gq5Kjs2CVAcbijrUr6bgfGk` och
-Studio `dpl_GgTwovLAM42B3v8cWVJK1mETPbNt` READY på samma SHA.
-App/UI/medieläsare fram till denna version är byteidentiska mot `ebbbeb764aa9b42613596049887c178e5a9c1818`.
+Senaste verifierade funktionsversion är `6ced437eb50637c0d8445c6d1d3c60348170c550`:
+CI `37254441092` completed/success, tre jobb; fullhook 1 495 PASS/9 skip/0 fel.
+Produkt-Render `dep-db1ggutckfvc73dnp5q0` LIVE, finished
+`2026-10-05T02:18:51.251466Z`; frontend `dpl_DWszpEvfBcN1V4T7GbCdEF9hkLme` och
+Studio `dpl_AstvxoUUAA5HasMhiAYjaDuPqa8b` READY på samma SHA.
+Paketet rensade åtta dokument och rättade BO-anrop samt kvarliggande idle-feltext.
+Den efterföljande slutöverlämningen ändrar enbart dokumentation och lokala arbetsytor.
 Director och QA behåller `ee0608044f7c78b80c4f46023cd67a7b391e17f0`.
 QA:s 37 envvärden är oförändrade. Genererat tal/streaming/preview/cloud-tal,
 kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
@@ -31,9 +32,19 @@ kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
 fysisk avveckling är utförda. Detta är inte full mänsklig medieacceptans,
 fysisk mic/kamera/mobil/Safari, full invitation/reset eller incidentfrihet.
 [JOHN-HANDOFF](JOHN-HANDOFF.md) har aktuella drift-ID:n, kvittoplatser och öppna fynd.
-Slutpaketet rensar referenslösa dokument och rättar två UI-flöden; inga nya providerjobb
-eller prisprov. Slutversion/CI/driftkvitto binds vid leverans i
+Slutpaketet startade inga nya providerjobb eller prisprov. Slutversion/CI/driftkvitto finns i
 `lab/data/platform-private/docs-cleanup-final-20261005.json`.
+Samlad agentöverlämning, testernas gränser och Git-städning finns i
+[JOHN-HANDOFF](JOHN-HANDOFF.md#samlad-överlämning-från-alla-arbetsagenter).
+Inga PR:er finns i repoavläsningen; leveranserna gjordes direkt på main.
+Efter verifierad privat Gitbundle-backup finns bara main och huvudcheckouten kvar.
+Tre färdiga agentworktrees är återställningsbart arkiverade, två rena initieringsrester
+och elva migrationsbrancher borttagna. Tre appskapade tillfälliga handoffbrancher är också borta.
+
+QA är en separat Croupier-testinstallation, inte Kevin Lane eller enbart OpenClaw.
+QA:s OFF-flaggor hindrar dess AI-/tal-/GPU-prov; produktions-Mobiles lane är aktiv.
+Att ta bort en sparad lane ändrar spelvalet, inte tjänster, databaser eller journaler.
+QA avvecklas därför inte som bieffekt av lokal Git-/lane-städning.
 
 ## Fem dokument i docs
 
@@ -49,7 +60,7 @@ sprintarkiv. [Labbguiden](../lab/docs/README.md) och
 JSON-register/systemkarta, media/baseline och privata QA-kvitton bevaras.
 Tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1` är borttagna i 91;
 take/preview/tillgänglighetsregler finns i guiden, aktiva launchers består.
-Nästa gallring tar bort fem historiska V3-kartfiler under `docs/animation-events/`,
+Gallringen i `6ced437e` tog bort fem historiska V3-kartfiler under `docs/animation-events/`,
 en ersatt releaseinventering och två Polarlotto-filer om andra operatörer:
 åtta filer/1 143 070 byte. De har inga aktiva konsumenter och finns i Git `6b9dad55`.
 Två QA-kvitton med öppna takebeslut och alla aktiva miljö-/baseline-/kartregister behålls.
@@ -235,7 +246,7 @@ Checklistan är statuskällan; äldre snapshots/procenttal är historik.
   Inget generellt mandat att radera tools/fixtures/pipeline/media/OpenClaw.
 - [x] **P9 — slutleverans:** fem docs/guide/envregister/en handoff uppdaterade;
   taskägda mainleveranser/CI/drift-SHA bundna. P7/P8-kvitton finns privat och
-  residualer är öppna. Senast 91d0c4d9 CI 3 PASS/LIVE/READY, appbytes mot ebbbeb
+  residualer är öppna. Senast 6ced437e CI 3 PASS/LIVE/READY; tidigare appbytes mot ebbbeb
   oförändrade; inga nya mänskliga approvals/providerjobb.
   Rootdokumentkomprimeringen ändrar läsbarhet, inte acceptansstatus.
 
