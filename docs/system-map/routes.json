@@ -134,7 +134,7 @@
         "Konton",
         "Partner",
         "Betalningar & journal",
-        "Mediegranskning"
+        "Talgranskning"
       ],
       "sources": [
         "lab/app/administration/page.tsx:11",

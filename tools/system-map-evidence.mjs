@@ -14,6 +14,7 @@ export async function* reportTestFiles(events, { repositoryRoot = process.env.GI
   args = [...process.execArgv, ...process.argv] } = {}) {
   const root = resolve(repositoryRoot);
   const filtered = args.some(arg => /^--test-(?:name-pattern|skip-pattern|only|shard)(?:=|$)/.test(arg));
+  const untypedFailures = [];
   yield JSON.stringify({ type: 'meta', schemaVersion: 1, selection: filtered ? 'filtered' : 'full-files', platform: process.platform }) + '\n';
   for await (const event of events) {
     const data = event.data || {};
@@ -21,13 +22,27 @@ export async function* reportTestFiles(events, { repositoryRoot = process.env.GI
     const path = typeof source === 'string' ? relative(root, resolve(source)).replace(/\\/g, '/') : null;
     const allowed = path && safePath(path) && /\.(?:mjs|cjs|js|ts)$/.test(path);
     if (['test:pass', 'test:fail'].includes(event.type)) {
+      // Explicit AbortSignal errors can lose their type during Node's error
+      // serialization. Only the same file's completed summary can disambiguate.
+      if (event.type === 'test:fail' && data.details?.error?.failureType == null) {
+        untypedFailures.push(allowed ? path : null); continue;
+      }
       const result = event.type === 'test:fail' ? data.details?.error?.failureType === 'cancelledByParent' ? 'cancelled' : 'failed'
         : data.skip || data.todo ? 'skipped' : 'passed';
       yield JSON.stringify({ type: 'test-file', path: allowed ? path : null, result }) + '\n';
     } else if (event.type === 'test:summary') {
+      const fileSummary = typeof data.file === 'string';
+      for (let i = 0; i < untypedFailures.length;) {
+        if (!fileSummary || (allowed && untypedFailures[i] === path)) {
+          const aborted = fileSummary && allowed && data.counts?.failed === 0
+            && Number.isSafeInteger(data.counts?.cancelled) && data.counts.cancelled > 0;
+          yield JSON.stringify({ type: 'test-file', path: untypedFailures.splice(i, 1)[0], result: aborted ? 'cancelled' : 'failed' }) + '\n';
+        } else i++;
+      }
       yield JSON.stringify({ type: 'summary', path: allowed ? path : null, counts: counts(data.counts) }) + '\n';
     }
   }
+  for (const path of untypedFailures) yield JSON.stringify({ type: 'test-file', path, result: 'failed' }) + '\n';
 }
 export default reportTestFiles;
 

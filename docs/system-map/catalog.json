@@ -5,9 +5,9 @@
   "inspectionDate": "2026-10-05",
   "scope": "Faktabunden systemkarta med graf, Next-rutter, SQL-kolumner och befintliga testkopplingar. Kodinventering och daterade driftbevis redovisas separat; inga provideranrop från kartan.",
   "runtimeEvidence": {
-    "sha": "77a7cb49db4847f143574714e879bc87b3778f1f",
-    "observedAt": "2026-10-04T23:58:17.201Z",
-    "summary": "Tre CI-jobb PASS, produkt-Render och Director LIVE, Studio Vercel READY på77a7cb49. Autentiserad idle-registeromläsning utan503 och OpenClaw GET med fem agenter/appliedtrue verifierade. Ett oförändrat modell-save returnerade503 och utreds; ingen ny modellgenerering. Tidigare zon/shutdownprov är daterade separat i handoff. QA AI/GPU OFF; P6 och övriga luckor separat.",
+    "sha": "ee0608044f7c78b80c4f46023cd67a7b391e17f0",
+    "observedAt": "2026-10-05T00:14:58.183Z",
+    "summary": "Avgränsad ee060804-avläsning: frontend/Studio Vercel READY, Director och QA-Render LIVE. OpenClaw no-op-save savedtrue, revision och fem modeller oförändrade, restartfalse och färsk GET appliedtrue. QA har oförändrade37env, inga Cartesia-/RunPod-nycklar och AI/tal/GPU/kameraOFF. Produkt-Render var då77a7cb49; ee060804-CI stoppades senare av ett hängande cancellation-fixture i Node24. Detta är daterade driftbevis, inte ett påstående om att alla tjänster kör kartans aktuella kod-SHA. Tidigare idle/zon/shutdownprov och P6-luckor redovisas separat i handoff.",
     "source": "docs/JOHN-HANDOFF.md"
   },
   "services": [
@@ -16,6 +16,7 @@
       "label": "Publik webb och spel",
       "environment": "production",
       "host": "Vercel",
+      "project": "croupier-frontend",
       "url": "https://www.scoutgaming.tech",
       "purpose": "Startsida, spelarinloggning och /blackjack. Förmedlar tillåten HTTP/WebSocket-trafik till Render; spelregler och saldo ägs av servern.",
       "status": "live-verified",
@@ -34,6 +35,7 @@
       "label": "Croupier Studio",
       "environment": "production",
       "host": "Vercel",
+      "project": "croupier-lab-ui",
       "url": "https://www.scoutgaming.tech/studio",
       "purpose": "Dealer & klipp, Backoffice och avgränsade OpenClaw-modellval. Gemensam policy och mediemetadata i Neon; spelkommandon till Render; modellinställningar via Director med serverhemlighet.",
       "status": "live-verified",
@@ -90,7 +92,7 @@
         "open-claw/lab/test/studio-admin.test.mjs",
         "open-claw/lab/test/gateway-rpc.test.mjs"
       ],
-      "note": "Director LIVE på 96020c04. Den 4 oktober 22:20 UTC gav verkligt klick från Studio native OpenClaw UI och Agents-vyn under befintlig Owner-anslutning. Auth/pairing och privata Gateway är oförändrade; inget modelljobb startades."
+      "note": "Director LIVE på ee060804 vid avläsning5oktober00:08UTC. Studios signerade serveridentitet är pairad för befintliga modellinställningar; autentiserad GET och no-op-save med readback verifierade. Native dashboard finns kvar för avancerad konfiguration. Inget modelljobb startades."
     },
     {
       "id": "gateway",
@@ -141,7 +143,7 @@
       "environment": "qa",
       "host": "Render + egna Vercel-/Neon-scopes",
       "url": "https://croupier-vercel-preview-qa.onrender.com",
-      "purpose": "Isolerad testserver på 7c4c1cc3. AI/tal/GPU/kamera fortsatt OFF; Cartesia-/RunPod-nycklar saknas. Den kvarvarande QA-disken är avsiktlig.",
+      "purpose": "Isolerad testserver, avläst LIVE på ee060804 5oktober00:14UTC. AI/tal/GPU/kamera fortsatt OFF; Cartesia-/RunPod-nycklar saknas. Native-QA har två Vercelbyggen: croupier-native-qa-abc92154cb15 och croupier-native-studio-qa-abc92154cb15. Den kvarvarande QA-disken är avsiktlig. Äldre croupier-player-preview-qa är en separat avvecklingskandidat med anslutna lagringsintegrationer; se CLOUD-MIGRATION.",
       "status": "documented",
       "sources": [
         "docs/JOHN-HANDOFF.md",

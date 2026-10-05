@@ -15,7 +15,9 @@ OpenClaw-modellval får en avgränsad serverväg från befintlig Studio-adminses
 till Director och native Gateway. Server-only hemligheter är konfigurerade;
 exakt serverpairing och autentiserad GET med fem modeller/applied=true är
 verifierade. Studio READY, produkt/Director LIVE, fullhook och tre CI-jobb PASS.
-Ett no-op-save blottade en snäv skillnad i OpenClaws svar; rättning integreras.
+Ett no-op-save blottade en snäv skillnad i OpenClaws svar; rättningen är
+levererad i `ee060804` och verifierad med faktiskt save-kvitto och oförändrad
+readback. Director LIVE, frontend/Studio READY; fullhook 1 488 PASS/9 skip/0 fel.
 Se John-handoff för kvitton och privat nyckelbackup. Inga nya betalda providerjobb.
 
 **Systemkarta, 5 oktober:** fristående HTML-graf och JSON-register med 23
@@ -1319,8 +1321,39 @@ Studio-state har Neon som aktiv källa. Blob innehåller mediefiler.
 QA-, Director- och Gateway-diskarna behålls; de är inte P8-raderingsmål.
 Full extern Director-/Gateway-backup är ett separat kvarvarande ansvar.
 
-`croupier-player-preview-qa` bär lagringskopplingar och är ingen dubblett.
-Testbackenden `croupier-vercel-preview-qa` startas bara på begäran.
+### Varför fem Croupier-projekt i Vercel? — avläst 5 oktober
+
+Det finns ett aktivt GitHub-repo, `Jakeminator123/github-work`, och en publik
+produktsajt, `www.scoutgaming.tech`. Vercel har separata byggen för två appar
+i samma repo. De tre QA-projekten nedan skapades för migrationsprov; de är
+inte tre ytterligare produktionssajter. `Connect Git Repository` på dem
+betyder att automatisk Git-koppling saknas, inte att de har egna GitHub-repon.
+De aktuella native-QA-byggena publiceras med samma repos uttryckliga commit.
+
+| Vercel-projekt | Faktisk roll |
+| --- | --- |
+| `croupier-frontend` | Hemsida och spelingång; repo-rot `apps/croupier-frontend`, Git-kopplat till samma main |
+| `croupier-lab-ui` | Studio-appen från `lab`, nås via samma publika sajts `/studio`, Git-kopplat till samma main |
+| `croupier-native-qa-abc92154cb15` | Isolerad frontend för migrations-/regressionsprov |
+| `croupier-native-studio-qa-abc92154cb15` | Tillhörande isolerad Studio för samma QA-miljö |
+| `croupier-player-preview-qa` | Äldre testfront med kvarvarande Blob-/Neon-integrationer; avvecklingskandidat efter kontroll av lagringskopplingarna |
+
+Det äldre projektets alias är READY på `22dca5c4`, deployment
+`dpl_6ksHgAKr7NoW5NEAuP4xVcJucAok`. Dess aktuella projektrot är
+`apps/croupier-frontend`, inte den historiska statiska preview-roten.
+Källan proxyar media till backend och har ingen egen Blob-index-/tokenläsare.
+Aktuell konfiguration pekar på QA-Render; faktisk anonym session-GET ger
+HTTP 421 och `/studio` HTTP 500. Den fronten är alltså inte en fungerande
+alternativ spel-/Studio-ingång. Lagringsintegrationerna är fortfarande
+anslutna och får inte tas bort som en följd av appstädning utan att deras
+ägarskap och andra konsumenter först bevarats.
+
+De två aktiva native-QA-projekten och QA-Render är bevarade enligt
+migrationsmandatet. QA AI/GPU är OFF. Produktionssajten kräver inte dessa
+QA-fronter, men QA:s separata data och delade mediareferenser måste skyddas
+vid avveckling. Ett enda Vercel-projekt för båda produktionsapparna vore en
+separat bygg-/routingändring; det behövs inte för målet ett repo och en sajt.
+
 Frontend-Preview kan peka mot produktion; syntetiska konton/rundor kräver
 isolerad backend och annat hostname. Game-Neon är aktivt sedan 2 oktober
 efter verifierad produktionsimport och separat återläsningsprov. Spelklientens

@@ -1,4 +1,4 @@
-.situation { display: grid; min-width: 0; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); margin-bottom: 16px; }
+.situation { display: grid; min-width: 0; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); margin-bottom: 14px; }
 .situation p { margin: 0; }
 .situation small { color: var(--muted); }
 .situation pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
@@ -22,15 +22,15 @@
 .familyButton:hover { border-color: var(--teal); }
 .familyButton code { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .familyButton small { color: var(--muted); }
-.libraryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.libraryGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 10px; }
 .libraryGrid .situation { margin: 0; align-content: start; }
-.cardHeader { display: grid; gap: 6px; min-width: 0; }
+.cardHeader { display: grid; gap: 4px; min-width: 0; }
 .cardHeader h3 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
-.cardActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.cardActions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 3px; }
 .cardActions button { padding: 8px 11px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-soft); color: var(--text); white-space: normal; overflow-wrap: anywhere; cursor: pointer; }
 .cardActions button:hover:not(:disabled) { background: var(--panel-hover); border-color: var(--teal); }
 .cardActions button:disabled { opacity: .5; cursor: not-allowed; }
-.files { border-top: 1px solid var(--line-soft); padding-top: 10px; margin-top: 4px; font-size: 12px; }
+.files { border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: 2px; font-size: 12px; }
 .files[open] { display: grid; gap: 8px; }
 .files button { display: block; text-align: left; width: 100%; }
 .libraryHeader { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }

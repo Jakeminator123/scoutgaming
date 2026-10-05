@@ -4,8 +4,8 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "77a7cb49db4847f143574714e879bc87b3778f1f",
-    "capturedAt": "2026-10-05T00:02:32.847Z",
+    "observedCommit": "ee0608044f7c78b80c4f46023cd67a7b391e17f0",
+    "capturedAt": "2026-10-05T00:34:20.406Z",
     "hashAlgorithm": "sha256:utf8-lf",
     "note": "Input capture only; no tests or runtime are marked verified."
   },
@@ -27,10 +27,10 @@
       "checks": [],
       "expectedHashes": {
         "docs/system-map/build.mjs": "a0afd1be0116d384edb75d7ab20e2fcc2c050e5342211ddb02d529d9fe470adf",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/verify.mjs": "9f096186117d64b1f309e4839a9b6f6ff4a5d2e68fce82755f8815d40f3a46cb",
-        "test/system-map.mjs": "3559af8de1242b40994a40c74166078d15cabadd4e29a911fd93d571a6fe46a5",
-        "tools/system-map-evidence.mjs": "d9fe27c1604b2730680239f1f0f5dbde70d0f4507dc66585c8bd7c22dfa8a57e"
+        "test/system-map.mjs": "4e7c7a3a5077884403f54413db61dc0c516d814b39eb2c36ec4fef6415853618",
+        "tools/system-map-evidence.mjs": "bb5c0ead85cf626aa877b9591dd61cd35c1a80fd09d7adbc0117047b64129ff0"
       }
     },
     {
@@ -76,9 +76,9 @@
         "apps/croupier-frontend/middleware.ts": "33d31db7830d0314adb543f424a447b3841dd6bd422392c3f717af17a5b485b1",
         "apps/croupier-frontend/next.config.mjs": "9eabd82bfdc32884324ac8ac30bfc159f5cc8bbdb16f04d991a4e38389b1a644",
         "apps/croupier-frontend/test/game-entry.mjs": "8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
-        "docs/system-map/routes.json": "573e319cc45bee370d58b5a93fdd92d04010445bfce45a88538bc0f01737b8a9",
-        "test/system-map.mjs": "3559af8de1242b40994a40c74166078d15cabadd4e29a911fd93d571a6fe46a5"
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
+        "docs/system-map/routes.json": "64cec4b682aca99c24168f213534462f5f6bf2554602c479d864812face8ed0c",
+        "test/system-map.mjs": "4e7c7a3a5077884403f54413db61dc0c516d814b39eb2c36ec4fef6415853618"
       }
     },
     {
@@ -108,8 +108,8 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
-        "docs/system-map/routes.json": "573e319cc45bee370d58b5a93fdd92d04010445bfce45a88538bc0f01737b8a9",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
+        "docs/system-map/routes.json": "64cec4b682aca99c24168f213534462f5f6bf2554602c479d864812face8ed0c",
         "lab/app/activity/page.tsx": "8587aab06c2b77d96be4b64f9499f119f224c84b310f415e91f8adce5cfad6e5",
         "lab/app/administration/page.tsx": "eafcb863265a03fd4fd8466bf34d12998401df588d05fe15baf74c4e895f0c1e",
         "lab/app/api/admin/[...action]/route.ts": "f27c08cd75dc65bdf255c9e4f2bd5c7bf33caa38a025424af884580e1b92af05",
@@ -159,7 +159,7 @@
         "lab/app/zones/page.tsx": "536135b14902cda86181b41eff0c4e3b9292549616fb989cc52a2bf9e2872840",
         "lab/next.config.mjs": "6931a942fbcc406a202a3f40a8c3191209253a1b77d30641d53274851e0bd30e",
         "lab/test/next-page-navigation.test.mjs": "8a2b9998985938d8fa7c62bd61cf1d7dba5df8afbf6150fc83af1e50b032992e",
-        "test/system-map.mjs": "3559af8de1242b40994a40c74166078d15cabadd4e29a911fd93d571a6fe46a5"
+        "test/system-map.mjs": "4e7c7a3a5077884403f54413db61dc0c516d814b39eb2c36ec4fef6415853618"
       }
     },
     {
@@ -191,8 +191,8 @@
         "apps/croupier-frontend/app/blackjack/route.ts": "0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
         "apps/croupier-frontend/lib/server-ui.mjs": "a2a45cf0769b4eed17644e69bd6cc869c1040ef4cffd955c7def758bb1ec1944",
         "apps/croupier-frontend/test/game-entry.mjs": "8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
-        "docs/system-map/routes.json": "573e319cc45bee370d58b5a93fdd92d04010445bfce45a88538bc0f01737b8a9",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
+        "docs/system-map/routes.json": "64cec4b682aca99c24168f213534462f5f6bf2554602c479d864812face8ed0c",
         "test/game-entry-auth.mjs": "1fadb111a62fdb4343e1033944de7f272d071f5f8f4f50d12bdec36ebb96fd80",
         "test/game-entry-contract.mjs": "e88eb45b8f6068903c284e28c0dfaa3f062809bcd4ad86d313302e030d17ab3c",
         "web/public/game-entry-contract.mjs": "b5920e8001accf9572d72e4e5488de0d1e0009942d9edfd72e820f411d420b75"
@@ -240,11 +240,11 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
         "test/clip-mapping.mjs": "57f8dd369969798c69aadc42d94ab8ff52d5f2f6d90499783517a10f901380bc",
         "test/shoe-game.mjs": "670b4c893b37f446838286f68513a8ebfd69e45ccc146f2907ee11e8fe08c49f",
-        "test/system-map.mjs": "3559af8de1242b40994a40c74166078d15cabadd4e29a911fd93d571a6fe46a5",
+        "test/system-map.mjs": "4e7c7a3a5077884403f54413db61dc0c516d814b39eb2c36ec4fef6415853618",
         "web/clip-mapping.mjs": "09cd959bd2a5c6b067d4dedb88744f515639033d3d3b381ba4fe764f6e844f75",
         "web/public/blackjack.mjs": "5cdd479dc2b00693042bf6285cc9f01609b02f1e8bc48e86b20f260ddff53920",
         "web/shoe-game.mjs": "9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd"
@@ -279,7 +279,7 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
         "ops/cloud/process-group.mjs": "7216b4117b0d3286559f28c0d28c39b0b6689d45dacb0da7d8202c5dfe55c024",
         "ops/cloud/start.mjs": "57409218dc11b5ba833b6aa2f55118889861ceefbefe23a9d997d6bdad859c3c",
@@ -319,7 +319,7 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
         "test/postgres-speech-journal.mjs": "17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
         "test/speech-journal-runtime.mjs": "35192b7ef8327e82ddbacab65d8a55cd31a53c688577a6ceb3b9eb94a388a423",
@@ -364,8 +364,8 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
-        "docs/system-map/routes.json": "573e319cc45bee370d58b5a93fdd92d04010445bfce45a88538bc0f01737b8a9",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
+        "docs/system-map/routes.json": "64cec4b682aca99c24168f213534462f5f6bf2554602c479d864812face8ed0c",
         "lab/app/api/zones/reference/route.ts": "a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
         "lab/lib/media-blob-index.mjs": "3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
         "lab/lib/zone-reference.mjs": "db73abff9ace1751e4b157c2a6abd623f62455a48cde14c8afa255a06ac4c08c",
@@ -415,8 +415,8 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
-        "docs/system-map/routes.json": "573e319cc45bee370d58b5a93fdd92d04010445bfce45a88538bc0f01737b8a9",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
+        "docs/system-map/routes.json": "64cec4b682aca99c24168f213534462f5f6bf2554602c479d864812face8ed0c",
         "lab/app/api/openclaw/admin/route.ts": "b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
         "lab/components/openclaw-workspace.test.mjs": "90da50077119e0196c7842725c9ebfaa39b927dff411745a33e32b38ef719805",
         "lab/components/openclaw-workspace.tsx": "193a4e9c7e01622bf4f17c121188c6666d1958fae3e65ef20e78fc287ba3f142",
@@ -458,7 +458,7 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
         "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
         "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a"
@@ -492,7 +492,7 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
         "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
         "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a",
@@ -527,7 +527,7 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
         "ops/neon-studio/001-studio-metadata.sql": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
         "ops/neon-studio/002-generation-journals.sql": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
@@ -565,7 +565,7 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/storage.json": "8f1ee8222fce9fa2676a20e10c77e00a7c1b9f0155a8598bc69456656b322885",
         "lab/lib/zone-cloud-schema.sql": "8807c7824192a3e837f778bcee39fb2fff8a383538af295f955c0f2388e6de96",
         "lab/test/zone-cloud-store.test.mjs": "c6477d704d567d72d81a4c992b43da8eaf9636f1ef6d4b74f2142f8efb4e2184"
@@ -597,7 +597,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
@@ -630,7 +630,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "ops/cloud/config.mjs": "aa651cae09913f97525b460f0afc5da21bb925cd3ace70ad595df10751a4dd97",
         "ops/cloud/container-entry.mjs": "b3bd6141ddfd287a62d779216f33780f63399cba1e416e5c4217f24dccf56753",
         "ops/cloud/gateway.mjs": "1fd5112814b888b55ce4386a0e8a6d990495779375ae1c51bbb8e066a6f8f16a",
@@ -677,7 +677,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "services/astrid-gpu-worker/gateway/server.mjs": "c63a08ab842c6d1757dc764be8ce1d968a50dee42e9c7172bcf619eae09bb17b",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
@@ -711,7 +711,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "open-claw/lab/deploy/start-director.mjs": "5c4b6f6437ade8c030ca8d05167d8b98b0e2e915cd9095ce4bf6cc99bd33e4f2",
         "open-claw/lab/src/gateway-rpc.mjs": "b9d5804f0d986c219e773c78a71c8e7d65e84ca3ce32f3043aea898a2e01cdb6",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
@@ -746,7 +746,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "open-claw/lab/deploy/gateway-config.mjs": "b57abf18060eaf82433b05338cac3da0f3a50a18b4609bd7e79563b73d09882c",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
@@ -780,7 +780,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
@@ -811,7 +811,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "ops/vercel-entry/build.mjs": "490460ea55de9a7b1ce7cd5453ce0f4292637165c576b98f98b079d213049202",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
@@ -847,7 +847,7 @@
         "apps/croupier-frontend/lib/game-url.ts": "fe3eac0e8e668db747f39fda94a69dd2ab6db772241d9c467e0d89033488db3f",
         "apps/croupier-frontend/lib/platform-routing.mjs": "ad6ba61292e1e2bed4f77919744eb6431ba71cffa359341a233556fa19df7258",
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
@@ -880,7 +880,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "lab/lib/neon-video-registry.mjs": "5c9f50b0a723dda04746dc46a48da6aa2bd2019bf2cc7d2d7bc39c1b6306cd83",
         "lab/lib/openclaw-admin.mjs": "1bfaa4cc6df847afd5069546249a8e1d35913d8fe1635781e08e0bce67651d9a",
         "lab/lib/remote-ui.mjs": "76fc4185df4a99636b8e10dee2e9b2b6c798fb519b17c1e510c043e13466a080",
@@ -920,7 +920,7 @@
       ],
       "expectedHashes": {
         "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "05e9ffe8c8a42cc0f7444eb3ee24c84db8ee32ac0c976067f9a051e6ba0371db",
+        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
         "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }

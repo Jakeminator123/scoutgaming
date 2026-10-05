@@ -108,6 +108,22 @@ test('controlled legacy editor lists only selected dealer exact speech and no se
   assert.match(html, /vera exact text/); assert.doesNotMatch(html, /astrid exact text|<select/);
 });
 
+test('switching from Astrid Probe to another dealer shows that dealer idle tools and preserves the draft', () => {
+  const h = harness('./lab-studio.tsx'); const p = props();
+  let tree = h.render(p);
+  const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
+  nodes(tree, node => node.type === 'button' && node.props.children === 'Probe')[0].props.onClick();
+  tree = h.render(p);
+  nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer')[0].props.onChange({ target: { value: 'vera' } });
+  tree = h.render(p);
+  const nav = nodes(tree, node => node.type === 'nav')[0];
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
+  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Idle');
+  assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
+  assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
+  assert.equal(h.values[0], draft);
+});
+
 test('save still uses revisions and beforeunload; navigation does not replace project state', () => {
   const source = readFileSync(new URL('./lab-studio.tsx', import.meta.url), 'utf8');
   assert.match(source, /expectedRevision: submitted\.revision/);
