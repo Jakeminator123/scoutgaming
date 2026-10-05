@@ -125,7 +125,14 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Klart när varje fynd har aktuell belagd klassning och konkret hantering.
   Alla tolv är fortsatt öppna; ingen automatisk ignore/resolve eller breda
   filundantag. GitHub queued/missing GitGuardianrun betyder inte incidentfrihet.
-- [ ] **H. Återstående spel-, media- och enhetsacceptans.** Fyra dealers/två
+- [ ] **H. Återstående spel-, media- och enhetsacceptans.**
+  **Nytt bildfynd 5 oktober:** upload `kortflipp_kling_1080p.mp4` (8,29 MB)
+  visas sparad/återläst i ready med användning Idle, men Jakob kan inte
+  placera den som idle-variant; ”Välj hur klippet ska användas →” upplevs
+  inte reagera. Utred ready-listning, filtrering och knappens navigation/fokus.
+  Separat klartkrav: isolerad upload går att hitta, tilldela som idle-variant,
+  spara och återläsa efter omladdning. Rotorsak ännu inte reproducerad;
+  ingen ändring/aktivering av produktionsmedia utförd. Övriga krav: fyra dealers/två
   faktiska plays, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/
   omstart och naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk,
   kortkontakt och fysisk mic/kamera/mobil/Safari redovisas separat. Klart när

@@ -27,6 +27,17 @@ följer inte med Git. Kontrollera åtkomsten på den nya datorn innan dessa beh�
 bevara dem på denna dator eller överför särskilt utpekade underlag privat.
 Inga fortsatta writers, omprov eller mejlutskick ska startas under uppehållet.
 
+Sista bildfyndet före datorbytet: Jakob kan ladda upp en film, men får inte in
+den som exempelvis idle-variant. Bilden visar `kortflipp_kling_1080p.mp4`,
+8,29 MB, status ”sparat och återläst”/ready och valt ”Idle · vänteläge”.
+Knappen ”Välj hur klippet ska användas →” upplevs inte reagera. Under den
+visas ”Vänteläge och reaktioner”, grundloop och 14 korta variationer med
+sökfältet `kortf`. Detta är ett användarrapporterat fel, inte reproducerad
+rotorsak. Börja nästa pass med ready-klippets väg till valbar idle-variant,
+knappens navigation/fokus och påverkan av sökfilter. Klart först när en
+isolerad upload kan hittas, tilldelas, sparas och återläsas efter omladdning.
+Ingen aktivering eller ändring av Jakobs film/produktionsmedia är utförd.
+
 ## Börja här vid övertagande
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i `Jakeminator123/github-work`.
