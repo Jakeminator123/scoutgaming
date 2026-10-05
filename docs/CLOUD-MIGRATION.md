@@ -31,6 +31,11 @@ kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
 **P0–P5 och P7–P9 är verifierade; P6 är fortsatt öppet.** Dataimport/policybyte och
 fysisk avveckling är utförda. Detta är inte full mänsklig medieacceptans,
 fysisk mic/kamera/mobil/Safari, full invitation/reset eller incidentfrihet.
+För fortsatt arbete: följ [den prioriterade överlämningen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
+Den innehåller konkreta filer, beroenden och slutvillkor för P6-fixturen,
+kartans resultatkoppling, produktionsmail, GitGuardian, manuella prov och driftsrestpunkter.
+Senast återlästa driftversion är `bc0f3d79` (dokumentation efter funktionspaketet),
+CI37256695695 success och Render/Vercel LIVE/READY; inga produktkodändringar sedan6ced.
 [JOHN-HANDOFF](JOHN-HANDOFF.md) har aktuella drift-ID:n, kvittoplatser och öppna fynd.
 Slutpaketet startade inga nya providerjobb eller prisprov. Slutversion/CI/driftkvitto finns i
 `lab/data/platform-private/docs-cleanup-final-20261005.json`.
@@ -216,6 +221,12 @@ Checklistan är statuskällan; äldre snapshots/procenttal är historik.
     Inte full P6, två nya genererade streamplays eller nya takeapprovals.
   - [ ] Färsk full P6-installation/käll-/manifest-/SDK/envbindning och två-ACK-
     helhetsacceptans enligt nästa avsnitt; delbevis har egna SHAs.
+  - [ ] Rätta den äldre SQL/HTTPS-fixturen efter aktuell authpolicy och kör om.
+    Färskt försök på bc0f gav503 vid login; `gameDb` saknas och readeråtkomst är
+    ett pensionerat förväntat beteende. Det tidigare SQL-kvittot är historiskt.
+    Privat `p6-check-20261005.json` bevarar FAIL; separat shutdown/mail14PASS.
+  - [ ] Koppla det verkligt utförda SQL-resultatet till befintligt CI-/kartbevis.
+    Den frysta bc0f-exportens19gröna/4grå läser inte senare privata körningar automatiskt.
   - [ ] Ny mänsklig läppsynk/kortkontakt, fysisk mic/kamera/mobil/Safari,
     full invitation/reset i produktion och övriga medie-/zon-/latensluckor.
   - [ ] Färsk incidenttriage: sex TRIGGERED och tre locationluckor, inte clear.

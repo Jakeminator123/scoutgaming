@@ -24,10 +24,65 @@ Starta inga lokala servrar om start inte är begärd. Ett koordinerat produkt-/l
 Stoppade servrar förblir stoppade. Ordinarie sökningar följer `.ignore`.
 Det pensionerade privata personarkivet får inte läsas via sökning, Git eller backup.
 
+## Återstående arbete i utförandeordning
+
+Detta är den operativa överlämningen efter kontrollerna den 5 oktober, inte en
+ny migration eller en ny masterplan. P0–P5/P7–P9 är levererade enligt sina
+avgränsningar. **P6 (samlad slutprovning) och nedanstående restarbete är öppet.**
+Tidigare 1 495 PASS eller tre gröna CI-jobb ersätter inte de återstående proven.
+En övertagande huvudagent kan börja med punkt 1 utan att läsa chatthistoriken.
+
+| Ordning / status | Nästa konkreta arbete och berörda filer/ytor | Klart när |
+| --- | --- | --- |
+| 1. P6-testuppsättning — konkret fel | Rätta `test/studio-cutover-integration.mjs` efter nuvarande authkontrakt i `lab/lib/studio-native-auth-actions.mjs` och `studio-access-policy.mjs`. Fixturen saknar `gameDb` och förväntar fortfarande Studio-login/läsning för `reader`. Återinför inte den pensionerade behörigheten. Behåll negativa rolltester, riktiga SQL-transaktioner, session/revoke, reset och cleanup. | Befintliga `tools/studio-isolated-qa.mjs` passerar på aktuell källa i eget localhost-kluster, inklusive HTTPS/omstart och städning. Ingen riktig databas eller produktionsanvändare ändras. Redovisa alla nya fel; sänk inte assertions för att få grönt. |
+| 2. Koppla P6-resultatet till kartan — täckningsglapp | Granska befintlig reporter `tools/system-map-evidence.mjs`, `.github/workflows/croupier.yml` och `docs/system-map/{contracts.json,verify.mjs,build.mjs}`. Återanvänd den befintliga SQL-körningen/resultatvägen; skapa ingen andra testmotor. Senaste privata P6-felet är inte inläst i den äldre CI-exporten. | Ett verkligt utfört SQL-prov ger korrekt versionsbundet resultat; misslyckat relevant prov syns som fel och saknat/skippat prov blir aldrig grönt. Ny HTML-export visar rätt SHA/datum. En redan nedladdad fil är fortsatt en fryst ögonblicksbild. |
+| 3. Produktionsmail — konfiguration saknas | Vercel `croupier-lab-ui` är mål. `RESEND_API_KEY` är tom och `CROUPIER_STUDIO_MAIL_FROM` saknas. Befintlig Resend-integration/key/sender ligger på `croupier-native-studio-qa-abc92154cb15`; dess GET `/domains` gav401. Kontrollera befintligt konto, korrekt projektkoppling, giltig nyckel, avsändare `no-reply@scoutgaming.tech` och public origin enligt `lab/lib/studio-native-mail.mjs`. | Konfigurationen är återläst på faktisk produktionsdeployment och ett uttryckligt avgränsat invite/reset-prov är användbart hela vägen. Inga spontana mejl till befintliga användare, inga nycklar i chatten/Git; domänläsning401 bevisar inte ensam sändbehörigheten. Be Jakob om endast den uppgift/åtkomst som faktiskt saknas. |
+| 4. GitGuardian — sex öppna | Läs avsedd workspace795524/source30689542 via befintlig läsbrygga. Utred ID37862641, 37863164/65/66, 37867511/12 var för sig. De fem äldre ignorerades med `test_credential`, nu verifierat via API; det är inte godkännande för nya fynd. Se incidenttabellen längre ned. | Varje öppet fynd har belagd klassning och konkret åtgärd; riktiga credentials hanteras som sådana, fixtures/hashar får snäv motivering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
+| 5. Återstående P6-medie-/driftacceptans — delbevis finns | Följ befintligt P6-avsnitt: fyra dealers/två faktiska plays, auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/omstart samt naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk/kortkontakt och fysisk mic/kamera/mobil/Safari hålls explicit åtskilda från maskinprov. | Varje återstående krav har aktuellt bevis eller ett exakt kvarstående hinder. Inga nya takeapprovals från enbart hash/stillbild; budget/journal läses före betalda prov, inga automatiska retries och QA AI/GPU förblir OFF om inte Jakob uttryckligen ändrar detta. |
+| 6. Riktade driftsrestpunkter — ej rotorsaksbestämda | Utred kvarvarande auth/session-latens och ursprungligt `Film ended without a presented frame` med reproduktion/tidsmätning. Verifiera kvarvarande zonlagring och startsidesflimmer i det berörda flödet. Extern fullbackup av aktiva Director/Gateway-diskar görs enligt `ENVIRONMENT-RESTORATION.md`, med samordnade skrivare. | Rotorsak, avgränsad rättning och relevant omprov finns per fel; eller dokumenterat återstående hinder. Backup har extern kopia och verifierad återläsning. Befintliga produkt-/Neon-/Gitbackuper bevaras. |
+
+Punkt 1 och läsande utredning av punkt 3–4 kan göras parallellt med tydliga
+filägare. Punkt 2 använder utfallet från punkt 1. Huvudagenten integrerar och
+pushar; dela inte `.git` eller samma filer mellan samtidiga writers.
+Ändra inte arkitektur, priser, miljöregister eller mediebaseline som sidospår.
+Ytterligare kartdetaljer (Web-/gateway-rutter och live-schema/grants) finns i
+`planes/02-systemkarta/PLAN.md`; det är fortsatt vidareutveckling, inte levererat
+bara för att den interaktiva grundkartan finns.
+
+### Senaste avgränsade kontrollen och startpunkt
+
+Privat kvitto `lab/data/platform-private/p6-check-20261005.json` binder kontrollen
+till `bc0f3d797153803446bfc1ce0e14e34497bd0489`. SQL/HTTPS-körningen stoppade
+vid native Studio-login med503 i stället för200. Fixturbristerna i punkt1 är
+källverifierade; en rättad körning behövs innan hela felets omfattning är känd.
+Logg: `p6-check-20261005.log` i samma privata katalog. Linux Node22.22.0/WSL,
+eget tillfälligt Postgreskluster; klustret och temporära filer städades.
+Repro: kör `node tools/studio-isolated-qa.mjs --download-postgres` från repot i
+icke-root-Linux/WSL med kompatibel Node. Det hämtar paket till egen temporär
+katalog, installerar ingen systemtjänst och använder inga molndatabaser.
+
+Separat `node --test --test-concurrency=4 ops/cloud/test/shutdown.test.mjs
+test/server-shutdown.mjs lab/test/studio-native-mail.test.mjs` gav14PASS/0skip
+i Linux; logg `p6-shutdown-mail-20261005.log`. Autentiserad produktions-Studio
+och fem OpenClaw-modellval laddades. Astrids befintliga goodluck-video nådde
+ended/readyState4, 3,625s, 1080×1920, men var muted: ingen hörbar synkacceptans
+och inget bevis för två nya spelkö-plays. Inga mejl, providerjobb eller driftändringar.
+
+Privata kvitton, journaler, backup och skyddade anslutningar finns på denna dator
+och följer inte med Git. En agent på annan dator måste först kontrollera att
+nödvändigt underlag/åtkomst finns; återskapa inte saknade journaler eller nycklar.
+DESIGN, GAMMAL och Hantera olika game lanes har avslutat sina leveranser;
+de är integrerade och arbetsytorna arkiverade. Ingen ny arbetsagent är startad.
+En äldre stash `65c68925` är bevarad som tidigare arbete och får inte blindraderas.
+
 ## Verifierat nuläge och leverans
 
 Senaste verifierade funktionsversion är `6ced437e`. Efterföljande slutöverlämning
 uppdaterar dokumentationen och städar lokala arbetsytor, inte produktkod eller driftmiljö.
+Senast återlästa driftversion är dokumentationscommit `bc0f3d79`, CI37256695695
+tre jobb success, Render LIVE `dep-db1h0rmq1p3s73faduqg`, frontend READY
+`dpl_5pBv5oyBsjs53euCsi8J5h4ePqVo` och Studio READY
+`dpl_2TZXF1LKAFKsFcyHJd8a3Pbcbws2`. Tabellen nedan bevarar funktionspaketets kvitton.
 
 | Yta | Verifierad version / kvitto |
 | --- | --- |
@@ -218,11 +273,11 @@ kvitto för exakt SHA, artifactretention 30 dagar. Konkreta katalogfel stoppar c
 källdrift varnar. Grått/gult blir inte grönt utan relevanta aktuella prov.
 Detta ändrar inte branch protection eller verifierar providers/databaser live.
 
-`6ced437e`: 19 gröna, 0 röda/gula, 4 grå kontrakt, 0 errors/warnings.
+Senaste kontrollerade CI-export `bc0f3d79`: 19 gröna, 0 röda/gula, 4 grå kontrakt, 0 errors/warnings.
 Grått: saknat explicit reporterkvitto för game-events/zonprov respektive skippade
 verkliga Postgresprov; inte bevis för produktionsparitet. Privat:
-`lab/data/platform-private/ci-6ced437e-system-map-{status,evidence}.json`.
-HTML: `C:/Users/jakem/Downloads/Croupier-systemkarta-6ced437e.html`.
+`lab/data/platform-private/ci-bc0f3d79-system-map-{status,evidence}.json`.
+HTML: `C:/Users/jakem/Downloads/Croupier-systemkarta-bc0f3d79.html`.
 Exporten är en fryst versionsbild, inte en sida som uppdateras av sig själv.
 CI skapar en ny artifact per commit. Fyra grå kontrakt gäller game-events,
 game/auth-Postgres och zonlagring. Web-/gateway-rutter är delvis grupperade;
@@ -525,6 +580,9 @@ IGNORED men också sex nya öppna; äldre 0 OPEN är inte nuläge.
 | 37840514 | `ops/cloud/test/native-p6-router-hook.test.mjs` |
 
 Triagen märkte testcredentials, inte återkallade produktionsnycklar.
+Färsk API-läsning 5 oktober bekräftade `ignore_reason=test_credential` för samtliga
+fem ID:n ovan, utan att läsa/visa secretvärden eller ändra incidenter. Detta är
+GitGuardians registrerade skäl, inte en ny fullständig verifiering av varje match.
 Befintlig läsbrygga `tools/gitguardian-mcp.mjs`/`gitguardian-read.mjs` är GET/metadata/
 repo-låst; årsnyckel endast incidents:read/sources:read, Windows-DPAPI utanför Git:
 `C:/Users/jakem/.codex/private-connections/gitguardian-795524.dpapi`.
