@@ -94,6 +94,19 @@ function nodes(node, predicate) {
 }
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }
 function reply(payload, status = 200) { return new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json' } }); }
+function nativeReply(payload, code = 200, current = actor('admin')) {
+  const response = reply(payload, code);
+  if (response.ok) {
+    response.headers.set('X-Croupier-Studio-Actor', encodeURIComponent(current.username));
+    response.headers.set('X-Croupier-Studio-Role', current.role);
+  }
+  return response;
+}
+function deferred() {
+  let resolve;
+  const promise = new Promise(accept => { resolve = accept; });
+  return { promise, resolve };
+}
 function status(expected) { return error => error?.status === expected; }
 const actor = role => ({ username: 'owner@example.test', role });
 const allActions = contract.STUDIO_ADMIN_ENDPOINTS.map(endpoint => `${endpoint.method} ${endpoint.action}`);
@@ -159,8 +172,8 @@ function nativeReadFixture() {
   return { state, props };
 }
 
-test('native read capability uses seven fresh admin GETs plus four group preflights instead of eighteen GETs', async () => {
-  for (const [readIdentity, expectedSessionCount] of [['session-preflight', 11], ['response-headers-v1', 4]]) {
+test('native group headers use seven fresh admin GETs and no sessions while legacy keeps eighteen GETs', async () => {
+  for (const [readIdentity, expectedSessionCount] of [['session-preflight', 11], ['response-headers-v1', 0]]) {
     const h = harness(), f = nativeReadFixture(), props = { ...f.props, readIdentity };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
     f.state.reads = 0; f.state.sessions = 0;
@@ -172,7 +185,7 @@ test('native read capability uses seven fresh admin GETs plus four group preflig
     }
     assert.equal(f.state.reads, 7);
     assert.equal(f.state.sessions, expectedSessionCount);
-    assert.equal(f.state.reads + f.state.sessions, readIdentity === 'response-headers-v1' ? 11 : 18);
+    assert.equal(f.state.reads + f.state.sessions, readIdentity === 'response-headers-v1' ? 7 : 18);
     h.unmount();
   }
   const nativeSource = readFileSync(new URL('./native-administration.tsx', import.meta.url), 'utf8');
@@ -239,11 +252,12 @@ test('native identity change or revocation between concurrent reads discards the
     [state => { state.user.role = 'reader'; }, /Sessionen är avslutad/],
     [state => { state.epoch++; }, /Sessionen är avslutad/],
   ]) {
-    const h = harness(), f = nativeReadFixture(); let release;
+    const h = harness(), f = nativeReadFixture(); let release, bodies = 0;
     const firstDone = new Promise(resolve => { release = resolve; });
     const props = { ...f.props, fetchImpl: async (url, init) => {
       if (url.endsWith('/shoes')) await firstDone;
       const response = await f.props.fetchImpl(url, init);
+      const json = response.json.bind(response); response.json = () => { bodies++; return json(); };
       if (url.endsWith('/overview')) { change(f.state); release(); }
       return response;
     } };
@@ -252,7 +266,8 @@ test('native identity change or revocation between concurrent reads discards the
     assert.match(html, notice);
     assert.doesNotMatch(html, /Backoffice-grupper|owner@example.test|other@example.test/);
     assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView).length, 0);
-    assert.equal(f.state.sessions, 1); assert.equal(f.state.reads, 2);
+    assert.equal(f.state.sessions, 0); assert.equal(f.state.reads, 2);
+    assert.equal(bodies, 0, 'all response identities must agree before any body is read');
     h.unmount();
   }
 });
@@ -268,6 +283,87 @@ test('native read capability keeps write preflight, self-protection and revision
   current = null;
   await assert.rejects(client.request('POST', 'room', { expectedRevision: 'studio-v1' }), status(401));
   assert.equal(sessions, 5); assert.equal(writes, 1);
+});
+
+test('native group waits for every header in either arrival order before reading or projecting bodies', async () => {
+  for (const order of [['players', 'users'], ['users', 'players']]) {
+    const h = harness(), pending = { players: deferred(), users: deferred() }, calls = []; let bodies = 0;
+    const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: () => assert.fail('Native groups have no session preflight'), fetchImpl: async (url, init) => {
+        assert.equal(init.method, 'GET'); assert.equal(init.cache, 'no-store');
+        const action = url.split('/').at(-1); calls.push(action); return pending[action].promise;
+      } });
+    const response = action => {
+      const result = nativeReply(resources()[action].payload), json = result.json.bind(result);
+      result.json = () => { bodies++; return json(); }; return result;
+    };
+    const loading = client.readGroup(['players', 'users']);
+    assert.deepEqual(calls, ['players', 'users'], 'both reads start without waiting on identity or the first resource');
+    pending[order[0]].resolve(response(order[0])); await flush(); assert.equal(bodies, 0);
+    pending[order[1]].resolve(response(order[1]));
+    const result = await loading;
+    assert.deepEqual(JSON.parse(JSON.stringify(result.actor)), actor('admin'));
+    assert.equal(result.results.length, 2); assert.equal(bodies, 2);
+  }
+});
+
+test('any denied, malformed or mismatched native group response prevents every body read without fallback', async () => {
+  for (const bad of [
+    () => reply({ error: 'PRIVATE_ERROR_BODY' }, 401), () => reply({}, 403), () => reply({}, 404),
+    () => reply(resources().users.payload),
+    () => { const r = nativeReply(resources().users.payload); r.headers.set('X-Croupier-Studio-Actor', '%'); return r; },
+    () => nativeReply(resources().users.payload, 200, { username: 'other@example.test', role: 'admin' }),
+    () => nativeReply(resources().users.payload, 200, actor('reader')),
+    () => nativeReply(resources().users.payload, 200, actor('superadmin')),
+  ]) {
+    const h = harness(), waiting = deferred(); let bodies = 0;
+    const good = nativeReply(resources().players.payload), rejected = bad();
+    for (const response of [good, rejected]) { const json = response.json.bind(response); response.json = () => { bodies++; return json(); }; }
+    const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: () => assert.fail('No session fallback'), fetchImpl: url => url.endsWith('/players') ? Promise.resolve(good) : waiting.promise });
+    const loading = client.readGroup(['players', 'users']);
+    await flush(); assert.equal(bodies, 0);
+    const denied = assert.rejects(loading, error => [401, 403, 404].includes(error.status) && !error.message.includes('PRIVATE'));
+    waiting.resolve(rejected); await denied; assert.equal(bodies, 0);
+  }
+});
+
+test('native groups fail closed with no activated read or no usable payload, and safe errors require a fresh 2xx actor', async () => {
+  const h = harness(); let fetches = 0;
+  const unavailable = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: [],
+    session: () => assert.fail('No cached actor/session fallback'), fetchImpl: () => { fetches++; assert.fail('No inactive fetch'); } });
+  await assert.rejects(unavailable.readGroup(['players', 'users']), status(501)); assert.equal(fetches, 0);
+  for (const kind of ['status', 'body']) {
+    let bodies = 0;
+    const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: () => assert.fail('No actor fallback'), fetchImpl: async () => {
+        const response = kind === 'status' ? reply({ error: 'PRIVATE_DETAIL' }, 503) : nativeReply({});
+        const json = response.json.bind(response); response.json = () => { bodies++; return json(); }; return response;
+      } });
+    await assert.rejects(client.readGroup(['players', 'users']), status(503)); assert.equal(bodies, kind === 'status' ? 0 : 2);
+  }
+  for (const failure of [501, 503]) {
+    let errorBodies = 0;
+    const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: () => assert.fail('No actor fallback'), fetchImpl: async url => {
+        if (url.endsWith('/players')) return nativeReply(resources().players.payload);
+        const response = reply({ error: 'PRIVATE_DETAIL' }, failure); response.json = () => { errorBodies++; assert.fail('No error-body read'); }; return response;
+      } });
+    const result = await client.readGroup(['players', 'users']);
+    assert.deepEqual(JSON.parse(JSON.stringify(result.actor)), actor('admin'));
+    assert.equal(result.results.find(item => item.action === 'users').error.status, failure); assert.equal(errorBodies, 0);
+  }
+});
+
+test('native all-error reload clears previous actor, data and controls instead of rendering with a stale actor', async () => {
+  const h = harness(), f = nativeReadFixture(); let failed = false;
+  const props = { ...f.props, fetchImpl: (url, init) => failed ? Promise.resolve(reply({}, 503)) : f.props.fetchImpl(url, init) };
+  h.render(props); h.effects(); await flush(); let tree = h.render(props);
+  assert.match(renderToStaticMarkup(tree), /owner@example.test/);
+  failed = true; buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  assert.match(renderToStaticMarkup(tree), /tillfälligt otillgänglig/);
+  assert.doesNotMatch(renderToStaticMarkup(tree), /Backoffice-grupper|owner@example.test/);
+  assert.equal(f.state.sessions, 0); h.unmount();
 });
 
 test('render never mutates or requests providers/accounts; six groups expose eleven implemented sections', () => {
@@ -663,6 +759,106 @@ test('draft guard survives reload/conflict, protects native unload and cancelled
   assert.match(renderToStaticMarkup(tree), /Uppgifterna har ändrats|Osparade formulärfält/); assert.equal(firstForm.resets, 0);
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/); assert.equal(firstForm.resets, 0); h.unmount();
+});
+
+test('two quick group changes invalidate abort-ignoring late reads before effect cleanup without clearing the latest busy state', async () => {
+  for (const lateStatus of [200, 403]) {
+    const h = harness(), pending = []; let holding = false, bodies = 0;
+    const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: () => assert.fail('No GET session'), fetchImpl: async (url, init) => {
+        const action = url.split('/').at(-1);
+        if (!holding) return nativeReply(resources()[action].payload);
+        const waiting = deferred(); pending.push({ action, signal: init.signal, ...waiting }); return waiting.promise;
+      } };
+    const release = (entry, code = 200) => {
+      const response = nativeReply(code === 200 ? resources()[entry.action].payload : {}, code), json = response.json.bind(response);
+      response.json = () => { bodies++; return json(); }; entry.resolve(response);
+    };
+    h.render(props); h.effects(); await flush(); let tree = h.render(props); holding = true;
+    buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    assert.equal(pending.length, 1); assert.equal(tree.props['aria-busy'], true);
+    assert.equal(buttons(tree, 'Konton')[0].props.disabled, false);
+    buttons(tree, 'Konton')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
+    h.render(props); h.effects(); await flush(); tree = h.render(props); assert.equal(pending.length, 3);
+    buttons(tree, 'Partner')[0].props.onClick();
+    assert.ok(pending.slice(1).every(entry => entry.signal.aborted));
+    // Resolve stale reads in the click-to-effect window. These fetches ignore
+    // cancellation and include both successful data and an authorization error.
+    release(pending[0], lateStatus); release(pending[1]); release(pending[2]); await flush();
+    tree = h.render(props);
+    assert.equal(tree.props['aria-busy'], true, 'stale finally cannot finish the new group');
+    const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+    assert.equal(view.props.group, 'partners'); assert.equal(Object.keys(view.props.resources).length, 0);
+    assert.equal(nodes(tree, node => node.props?.role === 'alert').length, 0); assert.equal(bodies, 0);
+    h.effects(); await flush(); assert.equal(pending.length, 5);
+    release(pending[3]); release(pending[4]); await flush(); tree = h.render(props);
+    assert.equal(tree.props['aria-busy'], false); assert.equal(bodies, 2);
+    const current = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+    assert.equal(current.props.group, 'partners'); assert.ok(current.props.resources.apikeys.payload); h.unmount();
+  }
+});
+
+test('cancelled group change during a GET preserves its read, draft, unload guard and original revision', async () => {
+  const h = harness(), waiting = deferred(), writes = []; let holding = false, signal;
+  const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+    session: async () => actor('admin'), fetchImpl: async (url, init) => {
+      if (init.method === 'POST') { writes.push(JSON.parse(init.body)); return reply({}, 409); }
+      if (holding && url.endsWith('/config')) { signal = init.signal; return waiting.promise; }
+      return nativeReply(resources()[url.split('/').at(-1)].payload);
+    } };
+  h.render(props); h.effects(); await flush(); let tree = h.render(props);
+  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ state: 'live' });
+  const oldKey = view().key; view().props.onDirty(draft); tree = h.render(props); holding = true;
+  buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
+  h.window.confirm = () => false; buttons(tree, 'Konton')[0].props.onClick(); tree = h.render(props);
+  assert.equal(signal.aborted, false); assert.equal(view().props.group, 'tables'); assert.equal(view().key, oldKey);
+  let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
+  holding = false; waiting.resolve(nativeReply({ ...config(), revision: 'studio-v2' })); await flush(); tree = h.render(props);
+  assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  view().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v2' }, draft); await flush(); tree = h.render(props);
+  assert.equal(writes[0].expectedRevision, 'studio-v1'); assert.equal(draft.resets, 0);
+  h.window.confirm = () => true; buttons(tree, 'Konton')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  assert.equal(view().props.group, 'accounts'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, false); h.unmount();
+});
+
+test('POST and its reload block navigation and double writes; one-time results remain bound to the POST actor', async () => {
+  for (const mode of ['same', 'different', 'mismatched']) {
+    const h = harness(), posting = deferred(), pending = []; let written = false, writes = 0, sessions = 0, bodies = 0;
+    const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
+    const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+      session: async () => { sessions++; return actor('admin'); }, fetchImpl: async (url, init) => {
+        if (init.method === 'POST') { written = true; writes++; return posting.promise; }
+        const action = url.split('/').at(-1);
+        if (!written) return nativeReply(resources()[action].payload);
+        const waiting = deferred(); pending.push({ action, ...waiting }); return waiting.promise;
+      } };
+    h.render(props); h.effects(); await flush(); let tree = h.render(props);
+    buttons(tree, 'Partner')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
+    view().props.command('apikeys/create', { name: 'Fixture partner' });
+    const duplicate = { name: 'Duplicate', password: 'discarded-fixture-password' }; view().props.command('apikeys/create', duplicate);
+    await flush(); tree = h.render(props); assert.equal(writes, 1); assert.equal(Object.hasOwn(duplicate, 'password'), false);
+    assert.equal(buttons(tree, 'Konton')[0].props.disabled, true); buttons(tree, 'Konton')[0].props.onClick();
+    tree = h.render(props); assert.equal(view().props.group, 'partners');
+    let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
+    posting.resolve(reply({ ok: true, key: { id: 'partner-one', key, secret } })); await flush(); tree = h.render(props);
+    assert.equal(pending.length, 2); assert.equal(tree.props['aria-busy'], true); assert.equal(buttons(tree, 'Konton')[0].props.disabled, true);
+    buttons(tree, 'Konton')[0].props.onClick(); tree = h.render(props); assert.equal(view().props.group, 'partners');
+    for (const [index, entry] of pending.entries()) {
+      const username = mode === 'same' || mode === 'mismatched' && index === 0 ? actor('admin').username : 'other@example.test';
+      const response = nativeReply(resources()[entry.action].payload, 200, { username, role: 'admin' }), json = response.json.bind(response);
+      response.json = () => { bodies++; return json(); }; entry.resolve(response);
+    }
+    await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
+    assert.equal(writes, 1); assert.equal(sessions, 1, 'only the POST has a session preflight'); assert.equal(tree.props['aria-busy'], false);
+    if (mode === 'same') { assert.match(html, new RegExp(secret)); assert.equal(bodies, 2); }
+    else assert.doesNotMatch(html, new RegExp(secret));
+    if (mode === 'mismatched') { assert.equal(bodies, 0); assert.doesNotMatch(html, /Backoffice-grupper/); }
+    else { assert.equal(buttons(tree, 'Konton')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
+    h.unmount();
+  }
 });
 
 test('saving one form preserves other drafts; double command cannot send two writes and passwords are cleared', async () => {

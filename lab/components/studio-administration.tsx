@@ -123,6 +123,14 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       if (action === 'players/status' && !PLAYER_STATES.includes(String(body?.status))) throw new StudioAdminUiError(400);
       if (action === 'speech-qa') throw new StudioAdminUiError(501);
     }
+    const response = await send(method, action, body, signal);
+    if (!response.ok) throw new StudioAdminUiError(response.status);
+    const actor = preflightActor ?? responseActor(response);
+    if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
+      || (method === 'GET' && expectedReadActor && (actor.username !== expectedReadActor.username || actor.role !== expectedReadActor.role))) throw new StudioAdminUiError(403);
+    return readPayload(method, action, response, actor, signal);
+  }
+  async function send(method: Method, action: string, body?: JsonObject, signal?: AbortSignal) {
     let response: Response;
     try {
       response = await fetchImpl(`${apiBase}/${action}`, {
@@ -132,10 +140,10 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
       });
     } catch (error) { aborted(signal); throw uiError(error); }
     aborted(signal);
-    if (!response.ok) throw new StudioAdminUiError(response.status);
-    const actor = preflightActor ?? responseActor(response);
-    if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)
-      || (method === 'GET' && expectedReadActor && (actor.username !== expectedReadActor.username || actor.role !== expectedReadActor.role))) throw new StudioAdminUiError(403);
+    return response;
+  }
+  async function readPayload(method: Method, action: string, response: Response, actor: StudioAdminActor, signal?: AbortSignal) {
+    aborted(signal);
     let payload: JsonObject | null;
     try { payload = object(await response.json()); } catch { throw new StudioAdminUiError(503); }
     aborted(signal);
@@ -155,7 +163,48 @@ export function createStudioAdminClient({ apiBase, session, availableActions = E
     if (listField && !Array.isArray(payload[listField])) throw new StudioAdminUiError(503);
     return { actor, payload };
   }
-  return { identity, available, request };
+  async function readGroup(actions: readonly string[], signal?: AbortSignal) {
+    if (!baseIsValid || readIdentity !== 'response-headers-v1') throw new StudioAdminUiError(400);
+    // Fetch headers in parallel. No response body is read until every successful
+    // response identifies the same freshly authorized actor and role.
+    const responses = await Promise.all(actions.map(async action => {
+      try {
+        const descriptor = studioAdminEndpoint('GET', `/studio/api/admin/${action}`);
+        if (!descriptor) throw new StudioAdminUiError(400);
+        if (!available('GET', action)) throw new StudioAdminUiError(501);
+        aborted(signal);
+        const response = await send('GET', action, undefined, signal);
+        if (!response.ok) throw new StudioAdminUiError(response.status);
+        const actor = responseActor(response);
+        if (!studioRoleMeetsMinimum(actor.role, descriptor.minimumRole)) throw new StudioAdminUiError(403);
+        return { action, response, actor };
+      } catch (error) {
+        aborted(signal);
+        const failure = uiError(error);
+        if (failure.status !== 501 && failure.status !== 503) throw failure;
+        return { action, error: failure };
+      }
+    }));
+    aborted(signal);
+    const first = responses.find(result => 'actor' in result);
+    if (!first?.actor) throw responses.find(result => result.error)?.error ?? new StudioAdminUiError(503);
+    const actor = first.actor;
+    if (responses.some(result => result.actor && (result.actor.username !== actor.username || result.actor.role !== actor.role))) throw new StudioAdminUiError(403);
+    const results = await Promise.all(responses.map(async result => {
+      if (!result.response) return { action: result.action, error: result.error! };
+      try { return { action: result.action, ...await readPayload('GET', result.action, result.response, actor, signal) }; }
+      catch (error) {
+        aborted(signal);
+        const failure = uiError(error);
+        if (failure.status !== 501 && failure.status !== 503) throw failure;
+        return { action: result.action, error: failure };
+      }
+    }));
+    aborted(signal);
+    if (!results.some(result => 'payload' in result)) throw results.find(result => result.error)?.error ?? new StudioAdminUiError(503);
+    return { actor, results };
+  }
+  return { identity, available, request, readGroup };
 }
 
 export function studioPartnerResult(action: string, payload: JsonObject, gameOrigin?: string): StudioPartnerResult | null {
@@ -473,32 +522,39 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     return () => window.removeEventListener('beforeunload', guard);
   }, []);
 
-  async function load(target: string, preserveNotice = false, preserveOneTime = false): Promise<boolean> {
+  async function load(target: string, preserveNotice = false, preserveOneTimeActor?: StudioAdminActor): Promise<boolean> {
     const ticket = ++sequence.current;
     activeRead.current?.abort();
     const controller = new AbortController(); activeRead.current = controller;
-    if (alive.current) { setBusy(true); setFatal(null); if (!preserveNotice) setNotice(''); if (!preserveOneTime) setOneTime(null); }
+    if (alive.current) { setBusy(true); setFatal(null); if (!preserveNotice) setNotice(''); if (!preserveOneTimeActor) setOneTime(null); }
     try {
-      const initialActor = await client.identity();
-      aborted(controller.signal);
-      if (preserveOneTime && (!actor || initialActor.username !== actor.username || initialActor.role !== actor.role)) setOneTime(null);
       const reads = GROUP_READS[target];
       if (!reads) throw new StudioAdminUiError(400);
-      const results = await Promise.all(reads.filter(action => {
-        const descriptor = studioAdminEndpoint('GET', `/studio/api/admin/${action}`);
-        return descriptor && studioRoleMeetsMinimum(initialActor.role, descriptor.minimumRole);
-      }).map(async action => {
-        try { const result = await client.request('GET', action, undefined, controller.signal, initialActor); return { action, ...result }; }
-        catch (error) { aborted(controller.signal); const failure = uiError(error); if (failure.status === 401 || failure.status === 403) throw failure; return { action, actor: initialActor, error: failure }; }
-      }));
+      let initialActor: StudioAdminActor;
+      let results: { action: string; payload?: JsonObject; error?: StudioAdminUiError }[];
+      if (props.readIdentity === 'response-headers-v1') {
+        const current = await client.readGroup(reads, controller.signal);
+        initialActor = current.actor; results = current.results;
+      } else {
+        initialActor = await client.identity();
+        aborted(controller.signal);
+        const legacy = await Promise.all(reads.filter(action => {
+          const descriptor = studioAdminEndpoint('GET', `/studio/api/admin/${action}`);
+          return descriptor && studioRoleMeetsMinimum(initialActor.role, descriptor.minimumRole);
+        }).map(async action => {
+          try { const result = await client.request('GET', action, undefined, controller.signal, initialActor); return { action, ...result }; }
+          catch (error) { aborted(controller.signal); const failure = uiError(error); if (failure.status === 401 || failure.status === 403) throw failure; return { action, actor: initialActor, error: failure }; }
+        }));
+        if (legacy.some(result => result.actor.username !== initialActor.username || result.actor.role !== initialActor.role)) throw new StudioAdminUiError(403);
+        results = legacy;
+      }
       if (!alive.current || ticket !== sequence.current) return false;
-      // A change mid-load must not keep higher-role controls from the earlier result.
-      if (results.some(result => result.actor.username !== initialActor.username || result.actor.role !== initialActor.role)) throw new StudioAdminUiError(403);
+      if (preserveOneTimeActor && (initialActor.username !== preserveOneTimeActor.username || initialActor.role !== preserveOneTimeActor.role)) setOneTime(null);
       const next: Resources = {};
-      for (const result of results) next[result.action] = 'error' in result ? { error: result.error } : { payload: result.payload };
+      for (const result of results) next[result.action] = result.error ? { error: result.error } : { payload: result.payload };
       setActor(initialActor); setResources(next);
-      return results.some(result => 'payload' in result)
-        && results.every(result => 'payload' in result || result.error.status === 501);
+      return results.some(result => result.payload)
+        && results.every(result => result.payload || result.error?.status === 501);
     } catch (error) {
       if (!alive.current || ticket !== sequence.current || controller.signal.aborted) return false;
       setActor(null); setResources({}); setOneTime(null); setFatal(uiError(error)); return false;
@@ -514,8 +570,11 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }, [client, group]);
 
   function changeGroup(next: string) {
-    if (!BACKOFFICE_GROUPS.some(item => item.id === next) || busy || writing.current || next === group) return;
+    if (!BACKOFFICE_GROUPS.some(item => item.id === next) || writing.current || next === group) return;
     if (changed.current && !window.confirm('Lämna osparade formulärfält och byta administrationsgrupp?')) return;
+    // Invalidate before React's passive cleanup, including fetches that ignore
+    // cancellation. A cancelled draft confirmation leaves the current read intact.
+    ++sequence.current; activeRead.current?.abort(); setBusy(true);
     draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setOneTime(null); setResources({}); setGroup(next);
   }
 
@@ -535,7 +594,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       if (result.actor.username !== actor.username || result.actor.role !== actor.role) throw new StudioAdminUiError(403);
       setOneTime((result.payload.oneTime as StudioPartnerResult | undefined) || null);
       // The server is authoritative: no optimistic accounts, balances or role updates.
-      const reloaded = await load(group, true, true);
+      const reloaded = await load(group, true, result.actor);
       if (!alive.current) return;
       if (!reloaded) {
         setNotice('Servern bekräftade åtgärden, men serverdata kunde inte läsas om helt. Skicka inte samma åtgärd igen; ladda om och kontrollera resultatet först.');
@@ -574,7 +633,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <><nav className={styles.groups} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={busy} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
+    {actor && <><nav className={styles.groups} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
       <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;

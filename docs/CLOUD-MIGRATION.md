@@ -36,12 +36,17 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   81 riktade tester passerar; legacy- och skrivkontroller kvarstår. Klart när
   faktiskt publicerat flöde är ommätt med rätt data och bevarad behörighet.
   Publicerat `cb8e5254`: 11GET200, fyra fulla mätningar 2,553 / 4,834 /
-  6,653 / 2,682s. Anropsminskning bevisad, latenstoppar kvar. Agenten slår nu
-  samman färska authprojektioner (utan cache): två SELECT/fyra frågeanrop
+  6,653 / 2,682s. Anropsminskning bevisad, latenstoppar kvar. Publicerat cd9f5b21
+  sammanför färska authprojektioner (utan cache): två SELECT/fyra frågeanrop
   mot tidigare fyra/sex. 118 riktade PASS; signer/sessionförst, collision,
   roll/stamp/epoch och mutationslås bevarade. Numerisk Server-Timing skiljer
-  runtimeväntan från API/auth; 18 riktade PASS. Isolerat SQL8 och nytt CI/live
-  krävs. Punkten förblir öppen.
+  runtimeväntan från API/auth; 18 riktade PASS. SQL8 och CI37305177411 passerar.
+  Live cd9f5b21: 11GET200, 9,361 / 2,112 / 2,088 / 1,426s. Första bytet
+  innehöll 3,04 respektive 2,76s serverinitiering; senare initiering under1ms.
+  Ingen generell latensgaranti. Nästa snäva UIrättning tar bort fyra inledande
+  sessionGET och tillåter menybyte under läsning, med gemensam färsk identitet
+  kontrollerad före bodyläsning, sena svar avvisade och skriv-/utkastspärrar kvar.
+  Nytt publicerat omprov krävs; punkten förblir öppen.
 - [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
   `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
@@ -62,18 +67,22 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   retained-bank-kontroller. Verklig SQL/HTTPS/omstart och cleanup passerade;
   versionskvitto har stabila inputbytes. Körning 1–2 FAIL är bevarade. Detta
   stänger den isolerade deluppgiften, inte återstående mänsklig/live-P6 i H.
-- [ ] **E. Systemkartan visar faktiskt provutfall.** Samma isolerade SQL-motor
+- [x] **E. Systemkartan visar faktiskt provutfall — verifierat på cd9f5b21.** Samma isolerade SQL-motor
   används i CI. `ba0cb7ee`, CI `37300874695`, failed före databasstart när
   runnerns installerade PGDG-libpq saknade nedladdningskälla. Exporten är
   korrekt röd för `studio.sql-restart-https`, med exakt SHA och observationstid.
-  Failure-exporten bevaras privat; ny grön CI/export behövs efter APT-rättningen.
+  Failure-exporten bevaras privat.
   Rättningen använder egen tom paketstatus och installerar/ändrar inget på
   värdsystemet. Klart när ett faktiskt SQL-prov och exporter visar rätt
   resultat/SHA/datum; saknat eller skippat prov får aldrig bli grönt.
   Nästa `cb8e5254`-CI37303118034 stoppade efter databasstart vid delprovets
   resultatavläsning: CI använder Node24.21.0, lokal Node22.22.x. Runnern väljer
   nu uttryckligen TAP, som dess räknare läser, och CI=true lokal SQL7 passerar.
-  Även denna exakta failureexport är röd och bevarad; ny CI-PASS återstår.
+  Även denna exakta failureexport är röd och bevarad. CI37305177411 har tre
+  successjobb och faktiskt SQL PASS på exakt cd9f5b21, med observationstid.
+  Export: 19green/0red/5grey, inga valideringsfel; okända delar förblir grå.
+  routes.studio saknade ett befintligt event-treeprov i CI. Det läggs nu till
+  i fullhook; nytt CI måste verifiera även detta och ändrade UIbytes.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
   belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
   QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
@@ -85,14 +94,16 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Klart när faktisk produktionskonfiguration är återläst och provet fungerar
   hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
-  workspace795524/source30689542: 10 öppna och fem ignorerade, komplett
-  incidentlista (1 incident-/15 locationsidor). Sex öppna positionerade fynd
-  i `docs/system-map/contracts.json` matchar källfilernas LF-normaliserade
-  SHA256 på exakt `ba0cb7ee`. Tre äldre öppna har historiskt belagda
-  testfixtures; dagens positionsmetadata saknas för dem och ytterligare ett
-  öppet oklassificerat fynd. Totalt sju positionsluckor, varav fyra öppna.
+  workspace795524/source30689542, 11:53UTC: 12 öppna och fem ignorerade,
+  komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade
+  öppna fynd täcker sju källhashpositioner i `docs/system-map/contracts.json`,
+  verifierade mot exakt cd9f5b21. Två nya ID är 37880359/60. Äldre matchning
+  för 37867512/37879729 är fryst eftersom deras källfiler har ändrats och dagens
+  metadata saknar positioner. Även 37862641/37863164/65/66 saknar positioner.
+  Totalt nio positionsluckor, varav sex öppna. Historisk fixtureklassning är
+  inte ett nytt bevis för saknad metadata.
   Klart när varje fynd har aktuell belagd klassning och konkret hantering.
-  Alla tio är fortsatt öppna; ingen automatisk ignore/resolve eller breda
+  Alla tolv är fortsatt öppna; ingen automatisk ignore/resolve eller breda
   filundantag. GitHub queued/missing GitGuardianrun betyder inte incidentfrihet.
 - [ ] **H. Återstående spel-, media- och enhetsacceptans.** Fyra dealers/två
   faktiska plays, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/

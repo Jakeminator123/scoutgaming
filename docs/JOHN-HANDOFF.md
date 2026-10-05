@@ -10,7 +10,7 @@ Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i `Jakeminator123/github-work`.
 Läs `AGENTS.md`, `agent-talk/README.md` och
-[masterplanens aktuella checklista](CLOUD-MIGRATION.md#checklista-och-beroenden).
+[masterplanens aktuella checklista](CLOUD-MIGRATION.md#öppen-arbetschecklista-en-sammanhängande-studio).
 Läs [återställningsreglerna](ENVIRONMENT-RESTORATION.md) före spel-/mediaändring.
 Kontrollera Node/engines/pins; senast använd Node är 22.22.2, Lab kräver >=22.16.0.
 Använd den absoluta agent-talk-tavlan i huvudcheckouten; claim före edits.
@@ -27,126 +27,101 @@ Det pensionerade privata personarkivet får inte läsas via sökning, Git eller 
 
 ### Aktivt fortsatt arbete efter överlämningen
 
-Jakob har bett huvudagenten att samla tidigare Lab och Backoffice i `/studio`,
+Jakob har bett huvudagenten att samla tidigare Lab och Backoffice i /studio,
 förbättra långsam navigation och arbeta med parallella underagenter. Den enda
 [öppna checklistan](CLOUD-MIGRATION.md#öppen-arbetschecklista-en-sammanhängande-studio)
-finns i befintlig masterplan. MERGE fortsätter inga writers/integrationer.
+finns i befintlig masterplan. MERGE fortsätter inga ändringar eller integrationer.
 
-GitHub och Vercel är läsande återverifierade. `70a42730` och `ba0cb7ee` är
-pushade på main. Båda obligatoriska fullhooks gav 1 507 PASS/9 befintliga skip/
-0 fel/cancel; privata loggar `studio-integration-commit-20261005.log` och
-`studio-input-binding-commit-20261005.log` under `lab/data/platform-private/`.
-Båda Vercelprojekt READY på `ba0cb7ee`: Studio `dpl_F24VbVLs1888xviiXYC2sJpXaNok`,
-frontend `dpl_8QwtBrA3eF2Ug6Y4bZhTojgmNJUt`.
-CI `37300874695` är completed/failure: isolerat SQL stoppade före databasstart
-när GitHubrunnerns installerade PGDG-libpq18.6 saknade paketkälla. Kartans
-export är korrekt RED med exakt ba0cb7ee/observationstid och SQL-testfailed;
-privat `system-map-ba0cb7ee-ci37300874695/`, fel-logg
-`studio-ci-37300874695-failed.log`. Äldre gröna CI ersätter inte detta utfall.
-Ny rättning använder taskägd tom dpkgstatus så APT väljer hämtbara signerade
-paket; ingen systeminstallation, tjänst, sudo eller värdstatusändring.
+Senast verifierad funktionsversion är cd9f5b2109daa893b283e10bc204ae40219d6acf,
+pushad på main. GitHub CI37305177411: alla tre jobb success, med faktiskt
+isolerat SQL/HTTPS/omstartsprov PASS. Obligatorisk fullhook: 1 533 PASS,
+9 befintliga skip, 0 fel/cancel; privat studio-auth-timing-commit-20261005.log.
+Båda Vercel production READY på exakt SHA: Studio dpl_CXNeoWSoUPusNFv1LjV77L6s1hdn
+och frontend dpl_7o8vbBErY9mPg1CVpzT9xDoufdkV. Båda anger region iad1;
+DBregion är inte belagd. Ingen regionändring eller slutsats om avstånd/latens.
 
-`john.g` skapades av inloggade Jakob i Backoffice och är ett aktivt spelarkonto.
+Kartans privata CIexport: system-map-cd9f5b21-ci37305177411/. Exakt source/
+currentSha, observedAt 2026-10-05T11:51:14.036Z, 19 green/0 red/5 grey,
+errors[]. SQLentry: passed1/failed0/skipped0, observedAt 11:51:13.930Z;
+studio.sql-restart-https GREEN. Okända delar är fortfarande GREY. routes.studio
+saknade event-tree.test.mjs i CI; det befintliga provet har nu 14 lokala PASS
+och läggs till fullhook. Ändrade UIbytes kräver nytt CI och ny export.
+
+john.g skapades av inloggade Jakob i Backoffice och är ett aktivt spelarkonto.
 Ingen synlig Studio-användare med samma namn. Headerns Administratör gäller
-Jakob. Spelarkonton ger ingen Studioåtkomst. KontoUI skiljer detta från separat
-e-postaktiverad admininbjudan; john.g är inte promotat/ändrat. Produktionens
-Resendnyckel är tom, avsändare saknas och integrationen är endast QA-kopplad.
-Jakob avsåg Gmailadressen som avsändare, inte provmottagare. Resend behöver en
-verifierad ägd domän, exempelvis no-reply@scoutgaming.tech. Befintlig admin
-bjuder in ny admin; inget separat mejlgodkännande av superadmin finns. Nytt
-produktionsprov behöver giltig sändbehörighet och utsedd mottagare. Historisk
-QA-invitation/nyckel är inget nytt mandat; inga mejl/env/nyckelkopior gjorda.
+Jakob. KontoUI skiljer spelarkonto från separat e-postaktiverad admininbjudan;
+john.g är inte promotat eller ändrat. Resendnyckeln är tom i produktion och
+avsändare saknas; integrationen är endast QA-kopplad. Jakob avsåg Gmail som
+avsändare, inte mottagare. Resend behöver verifierad ägd domän, exempelvis
+no-reply@scoutgaming.tech. Befintlig admin bjuder in ny admin; inget separat
+mejlgodkännande av superadmin finns. Inloggad Resendåtkomst och utsedd ny
+provmottagare saknas. Historisk QA-invitation/nyckel ger inget nytt mandat.
+Inga mejl, konto-/env-/providerändringar eller nyckelkopior har gjorts.
 
-BO-baseline 3e613186 fyra gruppbyten: 7,468/4,944/4,859/10,018s. Privat kvitto
-`bo-navigation-baseline-3e613186-20261005.json`. Första authrättningen behåller
-fyra färska läsningar i en transaktion, 12→6 DBfrågor utan cache; 59 PASS.
-Liveomprov ba0cb7ee: 7,195/3,325/5,937/2,913s, 18GET200/11session/7admin.
-Kvitto `bo-navigation-after-ba0cb7ee-20261005.json`; första gruppens första
-54ms var utanför initial capture, övriga grupper fulla. Varierande latens kvar.
-Nästa snäva rättning ger nativeGET säkra actorheaders från samma färska
-authorize. Explicit klientcapability tar bort sju extra sessionanrop, 18→11GET
-i real-auth fixture; gruppidentitydrift/malformedheaders/revoke ger failclosed
-före hydration. Legacy- och POST/CAS/Origin/self/scope/lockkontroller kvar.
-81 riktade tester/typecheck PASS, oberoende review utan BO-blockerfynd.
+BO föreprov 3e613186: 7,468/4,944/4,859/10,018s för fyra gruppbyten; 18 GET.
+Efter cb8e5254: 11 GET200, 2,553/4,834/6,653/2,682s. Senaste liveprov cd9:
+9,361/2,112/2,088/1,426s, 11 GET200, full/drained/untruncated. Första sessions-
+anropets 3,724s innehöll runtime 3037,40ms/auth 375,92ms. Shoes 5,635s innehöll
+runtime 2759,07ms/API 676,63ms och cirka 2199ms utanför instrumenterade faser.
+Senare runtime 0,05–0,07ms. Ingen generell snabbhetsgaranti eller full förklaring
+av nätverksresten. Privata kvitton: bo-navigation-baseline-3e613186-20261005.json,
+bo-navigation-after-{ba0cb7ee,cb8e5254,cd9f5b21}-20261005.json. Konton/john.g-
+formulär och fokus återställda med noll ändrade fält, CDP av och inga POST.
 
-OpenClaws modellvy `/studio/openclaw` och operatörschatt
-`/studio/operator-chat` har entydiga rutter/direktlänkar/reload. Login bevarar
-exakt tillåten målroute; BOhandoff/utkastskydd kvar. Live ba0cb7ee verifierade
-båda vyer/reload, fem modellval och spelarkonto/mailblocktext. Ett äldre
-fristående voiceGET gav503 eftersom native/Neon avsiktligt spärrar endpointen.
-Ny serverägd UIboolean visar unavailable och skickar noll GET/POST; endpoint-
-guards orörda. Lokalt explicit röstprov kvar, neutrala Studio-/spartexter.
-65 riktade tester/typecheck PASS. Oberoende review fann busy-lås vid
-avstängning/återaktivering; snävt cleanupreset och utökat återaktiveringsprov
-är rättade, fyra voicekomponenttester PASS och ingår nu i fullhook.
-Publicerat prestanda-/voiceomprov krävs efter nästa leverans.
+Publicerad auth använder två färska SELECT/fyra frågeanrop/ett borrow-release,
+utan credentialcache. Signer/session först och users LEFT JOIN bo_auth_epochs
+bevarar roll/stamp/epoch/collisionkontroller samt mutationslås. 118 riktade PASS;
+fyra kritiska fixturefiler har tidigare assertions oförändrade. Numerisk
+Server-Timing skiljer runtime från API/auth: 18 riktade PASS och typecheck PASS,
+ingen extra SQL. Nu färdig tvåfilers UIrättning: gruppens dataGET startar
+parallellt och alla status/actorheaders/roller kontrolleras innan bodyläsning.
+Inga inledande sessionGET eller gamla actorfallbacks. 501/503 blir resursfel
+endast med gemensam färsk 2xxactor och användbar payload; annars spärras hela
+vyn. Engångsresultat vid omläsning binds till POSTactor.
 
-SQL-kvitton har exklusiva namn `p6-system-map-20261005-huvudagent-{1..6}.jsonl`
-och motsvarande `.log` under befintlig privata katalog. Körning1 saknade
-gameDb i kontofabriken; körning2 stoppade vid osäker provider-submission.
-Fixturen får inte frigöra okänd betald reservation. Båda FAIL bevaras.
-Körning3–5 PASS: 17 äldre+25 aktuella integrationchecks+fyra retained-bank-
-kontroller; verklig SQL/HTTPS/omstart/reset/revoke med fakeprovider och cleanup.
-Körning5 efter APT/APIrättning: inputsStabletrue, exit0, TAP11PASS/1 optional-
-skip medan själva isolerade motorn faktiskt kördes och passerade. Kvittot
-gäller testade arbetsbytes, inte rent ba0cb7ee. Körning6 efter sista UIbinding gav också exit0, inputsStabletrue och
-samma faktisk SQL/HTTPS/omstart PASS; cleanup återkontrolleras. Ny CI måste
-verifiera exakt leveranscommit. Full mänsklig/live-P6 öppen.
+Menybyte tillåts under GET; skrivlås gäller hela POST inklusive omläsning.
+Accepterat utkastbyte invaliderar sekvensen och aborterar gamla läsningar före
+Reactvybytet. Nekad bekräftelse bevarar utkast/revision/unload. Sena svar som
+ignorerar abort får inte hydrera, ge fel eller ändra den nya vyns busy. Legacy,
+POSTpreflight, CAS, Origin och självskydd kvar. 101 riktade PASS utan skip,
+typecheck/diff PASS och oberoende review PASS med egen 46-tests-körning.
+Fyra native gruppbyten kräver 7 dataGET/0 sessionGET i real-auth fixture;
+legacy behåller 18 GET. Obligatorisk fullhook/CI/produktionens omprov återstår.
 
-GG senast 11:20:21UTC: workspace795524/source30689542 återverifierad före
-komplett incidentlista, 1incident-/15locationsidor, 10TRIGGERED/5IGNORED.
-Sex öppna contracts-hashfynd matchar exakta ba0cb7ee-källbytes:37867511/12,
-37879729/30/31/32. Tre tidigare testfixturefynd har historisk klassning, men
-dagens metadata saknar deras positioner. Totalt sju positionsluckor, fyra
-öppna (37862641,37863164/65/66) och tre ignorerade. 37862641 oklassificerad.
-Alla tio fortsatt öppna; ingen ignore/resolve/credentialmutation. GitHubchecks
-för ba0cb7ee har komplett coverage men GitGuardian queued/missingrun; ingen
-claim om incidentfrihet. Äldre sexincidenttabell nedan är historisk snapshot.
-### Senaste leveransen cb8e5254 och aktuellt omprov
+OpenClaws modellvy /studio/openclaw och operatörschatt /studio/operator-chat
+har entydiga rutter/direktlänkar/reload; fem modellval bevaras. Login bevarar
+exakt tillåten målroute och BOhandoff/utkastskydd. Native/Neon visar otillgänglig-
+info för äldre fristående röstprov: noll kontroller/alerts/röstGET/POST/API503
+i live cb8/reload. Serverns spärrar kvar, lokalt explicit röstprov kvar.
+Fyra voicekomponentprov inklusive återaktivering ingår fullhook. Fysisk/mobile
+och mänsklig media-/helhetsacceptans kvarstår separat.
 
-`cb8e52549ba7c171f5cd0eadaafe51d5159f2f5f` är pushad på main. Obligatorisk
-fullhook gav1520PASS/9befintligaskip/0fel/cancel; privatlogg
-`studio-bo-voice-commit-20261005.log`. Båda productionREADY exaktSHA:
-Studio dpl_8mu8ed2GZswF4LvbWg7y5R6ivSwj/frontend dpl_5eth5vBxbqY22AHRtSAKs7DtzA6b.
-CI37303118034 completed/failure: APTfixen kom förbi paket/start men
-retained_contract_checks_missing stoppade delprovets resultatavläsning.
-Node är24.21.0 iCI och22.22.x lokalt; resultatparsningen kräverTAP, som nu
-väljs uttryckligen. SQL7 med CI=true gavexit0/verkligSQLPASS. Failedlogg
-`studio-ci-37303118034-failed.log`; röda exaktSHA-exporten bevarad i
-`system-map-cb8e5254-ci37303118034/` (18green/1red/5grey, SQLtestfailed).
-NyCI behövs efter detta formatfix och senaste auth-/timingrättning.
+Privata SQLkvitton: p6-system-map-20261005-huvudagent-{1..8}.jsonl och .log.
+1 FAIL saknad gameDb, 2 FAIL osäker providersubmission; båda bevaras.
+3–8 PASS: 17 äldre/25 aktuella checks/fyra retained-bank-kontroller,
+verklig SQL/HTTPS/omstart/reset/revoke/fakeprovider/cleanup. 7–8 med CI=true
+och explicit TAP. 8 har stabila arbetsbytes före cd9, inget rent cb8-bevis.
+Inga /tmp/croupier-studio-qa-* kluster kvar. MERGEs p6-check-20261005 bevaras.
 
-Livecb8 privatkvitto `bo-navigation-after-cb8e5254-20261005.json`: alla fyra
-captures full/drained/untruncated, 11GET200=4session+7admin jämfört18tidigare.
-Tider2,553/4,834/6,653/2,682s; allaadminactor/roleheaders synliga. Sessionspike
-3,529s och shoes5,867s visar att latenstoppar finns kvar. Inga generella
-snabbhetsgarantier. Båda OpenClaw-vyer/link/reload har dokument/api200, fem
-modellval, voiceinfo/0controls/0alerts/0voiceGET/POST/0API503. Konton/john.g-
-utkast/fokus återställda0changed/busyfalse; inga muterande APIanrop.
-GG11:33:51UTC: binding först och därefter komplettlista 10TRIGGERED/5IGNORED,
-1incident-/15locationsidor, 7positionsluckor varav4öppna. Sexhashfynd
-omverifierade påexaktcb8-källfiler, alla fortsattöppna/noignore/resolve.
+CI37300874695 på ba0cb7ee FAIL före DBstart: värdens PGDG-libpq saknade
+paketkälla. Taskägd tom dpkgstatus rättar detta utan installation/sudo/
+värdstatusändring. CI37303118034 på cb8e5254 FAIL efter DBstart:
+retained_contract_checks_missing då Node24.21.0 defaultreporter avvek från
+lokala Node22.22.x. Explicit TAP rättar. Båda röda exaktSHA-exporter/loggar
+bevaras: system-map-ba0cb7ee-ci37300874695/, system-map-cb8e5254-ci37303118034/
+och studio-ci-{37300874695,37303118034}-failed.log. Äldre fullhookloggar
+studio-integration-commit-20261005.log, studio-input-binding-commit-20261005.log
+(1 507 PASS/9 skip) och studio-bo-voice-commit-20261005.log (1 520 PASS/9 skip) kvar.
 
-Fördjupad källa visar cachad runtimePromise och återanvänd pool; ingen belagd
-ny pool/close peranrop. Varm auth har4serial SELECT+setup/commit=6queryanrop,
-shoes lägger3 till och haringen N+1/providerfetch. Authagenten slår nu ihop
-färska users/role/stamp/epochprojektioner, med samma säkerhetsprov. Runtime-
-agenten lägger enbart numerisk Server-Timing för runtimevsAPI/auth. Kall
-init har cirka22queryanrop innan auth; dagens spikar är ännu inte belagda
-som kallstart. Ingen authcache/schema/index/poolpolicyändring. Auth-/timingbytes är nu stabila: JWT och Labcookie använder två färska SELECT/
-fyra queryanrop/ett borrow-release, mot fyra/sex tidigare. Users LEFT JOIN
-bo_auth_epochs ger ett färskt statement för konto/stamp/råroll/epoch; signer/
-session är en separat färsk statement före det. Ingen ny snapshotisolerings-
-eller cacheclaim. 118 riktade PASS utan skip, sex auth-/fixturefiler. Lab-
-session med schemaogiltig null/malformedsource_stamp avvisas explicit;
-giltigt opaqueLabflöde behåller sin tidigare stampsemantik. Trusted numerisk
-wrapper skickar studio_runtime + studio_api/admin eller studio_auth/session;
-bara finit/icke-negativms, 18 riktade PASS utan skip och typecheckPASS.
-Tapfixen + senaste scopedhashbindings gavSQL8exit0, inputsStabletrue och
-verkligSQL/HTTPS/omstartPASS. Inga /tmp/croupier-studio-qa-* kluster kvar efter
-cleanupkontrollen. Oberoende slutreviewPASS: fyra kritiska fixturefiler har
-alla tidigare assertions oförändrade, endast JOINstödtillmock. Fullhook och
-nyCI/liveomprov återstår. SQL8 gäller arbetsbytes, inte rent cb8e5254.
+GG 11:53:02UTC: workspace795524/source30689542 verifierad före komplett lista,
+1 incident-/17 locationsidor, 12 TRIGGERED/5 IGNORED. Sex positionerade öppna
+fynd har sju källhashpositioner som matchar exakt cd9: 37867511, 37879730/31/32,
+37880359/60. De två sistnämnda är nya. Äldre 37867512/37879729 saknar nu
+position och källfilerna ändrades; cb8-klassningen är fryst. Även 37862641/
+37863164/65/66 saknar position. Totalt nio positionsluckor, sex öppna.
+37862641 är oklassificerad. Alla tolv fortsatt öppna; ingen ignore/resolve/
+credentialändring. GitHubcoverage komplett men GG queued/missingrun;
+incidentfrihet är inte belagd. Incidenttabellen längre ned är historisk.
 
 ### Läsutredda drift- och backuprester — fortfarande öppna
 
@@ -179,31 +154,31 @@ Detta är den operativa överlämningen efter kontrollerna den 5 oktober, inte e
 ny migration eller en ny masterplan. P0–P5/P7–P9 är levererade enligt sina
 avgränsningar. **P6 (samlad slutprovning) och nedanstående restarbete är öppet.**
 Tidigare 1 495 PASS eller tre gröna CI-jobb ersätter inte de återstående proven.
-En övertagande huvudagent kan börja med punkt 1 utan att läsa chatthistoriken.
+Isolerade punkt 1–2 är nu verifierade. Börja med första öppna punkt i checklistan.
 
 | Ordning / status | Nästa konkreta arbete och berörda filer/ytor | Klart när |
 | --- | --- | --- |
-| 1. P6-testuppsättning — isolerad del PASS lokalt | `test/studio-cutover-integration.mjs` har `gameDb` i auth och kontofabrik samt aktuella admin/negativa reader/staff/player-prov. Reset/revoke, faktisk SQL och osäker-submission-spärr är bevarade/fördjupade. Körning 3–6 gav exit0; körning 1–2 FAIL bevarade. | Lokal isolerad del är klar. CI ska köra samma `tools/studio-isolated-qa.mjs` på leveranscommit. Ingen riktig databas eller produktionsanvändare ändras; full P6 är separat punkt 5. |
-| 2. Koppla P6-resultatet till kartan — failureexport verifierad, nytt CI återstår | `tools/system-map-evidence.mjs` adapter återanvänder befintlig SQL-motor; CI kör den före import/export. Nytt `studio.sql-restart-https` kontrakt binder faktiskt testade källor. Failure-/skip-/versions-/datumprov PASS lokalt; dirty kvitto utges inte för rent SHA. UI-routing har eget inventerat kontrakt. | Ett verkligt utfört SQL-prov ger korrekt versionsbundet resultat; misslyckat relevant prov syns som fel och saknat/skippat prov blir aldrig grönt. ba0cb7ee failureexport visar rätt SHA/datum; ny PASS-export krävs efter APTfix. En redan nedladdad fil är fortsatt en fryst ögonblicksbild. |
+| 1. P6-testuppsättning — isolerad del PASS lokalt och i CI | `test/studio-cutover-integration.mjs` har `gameDb` i auth och kontofabrik samt aktuella admin/negativa rollprov. Reset/revoke, faktisk SQL och osäker-submission-spärr bevaras. Körning 3–8 passerade; 1–2 FAIL bevaras. Samma motor passerade faktiskt i CI37305177411 på cd9f5b21. | Den isolerade deluppgiften är klar på angiven version. Ny källa kräver nytt versionsbundet prov. Ingen riktig databas eller produktionsanvändare ändras; full P6 är separat punkt 5. |
+| 2. Koppla P6-resultatet till kartan — verifierad FAIL och PASS | `tools/system-map-evidence.mjs` återanvänder befintlig SQL-motor; CI kör den före import/export. `studio.sql-restart-https` binder faktiskt testade källor. Dirty kvitto utges inte för rent SHA. Båda äldre röda exporter och cd9f5b21 PASS med exakt SHA/datum bevaras. UI-routing har eget kontrakt; befintligt event-treeprov läggs nu till CI. | Resultatkopplingen är klar på cd9f5b21. Ny UIleverans kräver nytt CI/export. Saknat/skippat prov blir aldrig grönt; nedladdade filer är frysta ögonblicksbilder. |
 | 3. Produktionsmail — konfiguration saknas | Vercel `croupier-lab-ui` är mål. `RESEND_API_KEY` är tom och `CROUPIER_STUDIO_MAIL_FROM` saknas. Befintlig Resend-integration/key/sender ligger på `croupier-native-studio-qa-abc92154cb15`; dess GET `/domains` gav401. Kontrollera befintligt konto, korrekt projektkoppling, giltig nyckel, avsändare `no-reply@scoutgaming.tech` och public origin enligt `lab/lib/studio-native-mail.mjs`. | Konfigurationen är återläst på faktisk produktionsdeployment och ett uttryckligt avgränsat invite/reset-prov är användbart hela vägen. Inga spontana mejl till befintliga användare, inga nycklar i chatten/Git; domänläsning401 bevisar inte ensam sändbehörigheten. Be Jakob om endast den uppgift/åtkomst som faktiskt saknas. |
-| 4. GitGuardian — tio öppna, positionsluckor | Läs avsedd workspace795524/source30689542 via befintlig läsbrygga. Utred ID37862641, 37863164/65/66, 37867511/12 och 37879729/30/31/32 var för sig. De fem äldre ignorerades med `test_credential`, nu verifierat via API; det är inte godkännande för nya fynd. Se incidenttabellen längre ned. | Varje öppet fynd har belagd klassning och konkret åtgärd; riktiga credentials hanteras som sådana, fixtures/hashar får snäv motivering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
+| 4. GitGuardian — tolv öppna, sex öppna positionsluckor | Läs workspace795524/source30689542 via befintlig läsbrygga. Öppna ID: 37862641, 37863164/65/66, 37867511/12, 37879729/30/31/32, 37880359/60. Aktuell sexpositionerad källhashklassning gäller exakt cd9; äldre 37867512/37879729-klassning är fryst och deras positioner saknas nu. Incidenttabellen längre ned är historisk. | Varje fynd har aktuell belagd klassning och konkret hantering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
 | 5. Återstående P6-medie-/driftacceptans — delbevis finns | Följ befintligt P6-avsnitt: fyra dealers/två faktiska plays, auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/omstart samt naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk/kortkontakt och fysisk mic/kamera/mobil/Safari hålls explicit åtskilda från maskinprov. | Varje återstående krav har aktuellt bevis eller ett exakt kvarstående hinder. Inga nya takeapprovals från enbart hash/stillbild; budget/journal läses före betalda prov, inga automatiska retries och QA AI/GPU förblir OFF om inte Jakob uttryckligen ändrar detta. |
-| 6. Riktade driftsrestpunkter — ej rotorsaksbestämda | Utred kvarvarande auth/session-latens och ursprungligt `Film ended without a presented frame` med reproduktion/tidsmätning. Verifiera kvarvarande zonlagring och startsidesflimmer i det berörda flödet. Extern fullbackup av aktiva Director/Gateway-diskar görs enligt `ENVIRONMENT-RESTORATION.md`, med samordnade skrivare. | Rotorsak, avgränsad rättning och relevant omprov finns per fel; eller dokumenterat återstående hinder. Backup har extern kopia och verifierad återläsning. Befintliga produkt-/Neon-/Gitbackuper bevaras. |
+| 6. Riktad Studio- och driftacceptans — arbete pågår | Snäv UIrättning låter menybyten ske under GET och tar bort fyra seriella sessionGET, med headerbarriär före bodyläsning, sena svar avvisade och skriv-/utkastskydd kvar. 101 riktade PASS och typecheck; slutreview/fullhook/CI/liveomprov återstår. Separat: ursprunglig framevarning, zonroundtrip, startsidesflimmer och extern Director/Gateway-backup enligt återställningsreglerna. | Publicerad navigering är ommätt med bevarad behörighet och utkast. Varje separat driftfel har belagd rättning/omprov eller konkret hinder. Båda tjänster har extern fullbackup och verifierad återläsning. |
 
-Punkt 1 och läsande utredning av punkt 3–4 kan göras parallellt med tydliga
-filägare. Punkt 2 använder utfallet från punkt 1. Huvudagenten integrerar och
+Läsande utredning av punkt 3–4 och avgränsade UIarbeten kan göras parallellt
+med tydliga filägare. Punkt 2 använder utfallet från punkt 1. Huvudagenten integrerar och
 pushar; dela inte `.git` eller samma filer mellan samtidiga writers.
 Ändra inte arkitektur, priser, miljöregister eller mediebaseline som sidospår.
 Ytterligare kartdetaljer (Web-/gateway-rutter och live-schema/grants) finns i
 `planes/02-systemkarta/PLAN.md`; det är fortsatt vidareutveckling, inte levererat
 bara för att den interaktiva grundkartan finns.
 
-### Senaste avgränsade kontrollen och startpunkt
+### Historiskt startprov från MERGE — rättat i senare leveranser
 
 Privat kvitto `lab/data/platform-private/p6-check-20261005.json` binder kontrollen
 till `bc0f3d797153803446bfc1ce0e14e34497bd0489`. SQL/HTTPS-körningen stoppade
-vid native Studio-login med503 i stället för200. Fixturbristerna i punkt1 är
-källverifierade; en rättad körning behövs innan hela felets omfattning är känd.
+vid native Studio-login med503 i stället för200. Detta är det bevarade ursprungsfelet; rättade provutfall står i den aktiva
+överlämningen ovan.
 Logg: `p6-check-20261005.log` i samma privata katalog. Linux Node22.22.0/WSL,
 eget tillfälligt Postgreskluster; klustret och temporära filer städades.
 Repro: kör `node tools/studio-isolated-qa.mjs --download-postgres` från repot i
