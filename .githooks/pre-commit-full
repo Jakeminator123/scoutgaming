@@ -33,7 +33,7 @@ run_node_tests test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-
 run_node_tests lab/test/neon-project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
 run_node_tests lab/test/studio-render-persistence.test.mjs lab/test/studio-clip-controls-api.test.mjs lab/test/studio-social-status.test.mjs lab/test/studio-companion-cookie.test.mjs lab/test/check-build-traces.test.mjs
 run_node_tests lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs lab/components/voice-preview-panel.test.mjs lab/components/event-tree.test.mjs
-run_node_tests lab/test/zone-reference.test.mjs open-claw/lab/test/dashboard-proxy.test.mjs
+run_node_tests lab/test/zone-reference.test.mjs lab/test/zone-cloud-store.test.mjs open-claw/lab/test/dashboard-proxy.test.mjs
 run_node_tests lab/test/openclaw-admin.test.mjs open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
 run_node_tests test/bo-lab-auth.mjs
 run_node_tests test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
@@ -66,7 +66,7 @@ run_node_tests test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/r
 run_node_tests test/dealer-collection.mjs
 run_node_tests test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
 run_node_tests test/native-partner-events.mjs test/bo-media-preview.mjs
-run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
+run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests test/local-comparison-fixture.mjs test/generation-media.mjs
 run_node_tests test/local-presentation.mjs test/local-card-overlay.mjs test/verified-video-buffer.mjs lab/test/media-family-playback.test.mjs lab/test/retire-demo-examples.test.mjs
 run_node_tests test/lissabon-profiles.mjs test/player-results.mjs lab/test/local-start.test.mjs

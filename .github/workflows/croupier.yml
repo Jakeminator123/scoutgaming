@@ -98,7 +98,6 @@ jobs:
       - run: node pipeline/audit-dealer-sync.mjs --probe
       - run: node pipeline/audit-performance.mjs --probe
       - run: node pipeline/audit-astrid-actor.mjs --probe
-      - run: node test/shoe-game.mjs
       - run: node test/table-http.mjs
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-inbox.mjs test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs

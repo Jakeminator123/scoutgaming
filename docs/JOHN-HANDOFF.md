@@ -32,20 +32,40 @@ förbättra långsam navigation och arbeta med parallella underagenter. Den enda
 [öppna checklistan](CLOUD-MIGRATION.md#öppen-arbetschecklista-en-sammanhängande-studio)
 finns i befintlig masterplan. MERGE fortsätter inga ändringar eller integrationer.
 
-Senast verifierad funktionsversion är cd9f5b2109daa893b283e10bc204ae40219d6acf,
-pushad på main. GitHub CI37305177411: alla tre jobb success, med faktiskt
-isolerat SQL/HTTPS/omstartsprov PASS. Obligatorisk fullhook: 1 533 PASS,
-9 befintliga skip, 0 fel/cancel; privat studio-auth-timing-commit-20261005.log.
-Båda Vercel production READY på exakt SHA: Studio dpl_CXNeoWSoUPusNFv1LjV77L6s1hdn
-och frontend dpl_7o8vbBErY9mPg1CVpzT9xDoufdkV. Båda anger region iad1;
-DBregion är inte belagd. Ingen regionändring eller slutsats om avstånd/latens.
+Senast verifierad UIversion är 34f64e344d4885171f8a5f7e10c7644b33a6c96d,
+pushad på main. CI37307380711 har alla tre jobb success, inklusive faktiskt
+isolerat SQL/HTTPS/omstartsprov. Fullhook: 1 554 PASS/9 befintliga skip/0 fel/
+cancel; privat studio-bo-navigation-commit-20261005.log. Båda Vercel production
+READY exakt SHA: Studio dpl_GmXLUmZTc9gWbTgQF2Bq1rdFTcQA och frontend
+dpl_2udt1sMwseivhHuYQXhCzqYJyMch. Båda region iad1, DBregion ej belagd.
 
-Kartans privata CIexport: system-map-cd9f5b21-ci37305177411/. Exakt source/
-currentSha, observedAt 2026-10-05T11:51:14.036Z, 19 green/0 red/5 grey,
-errors[]. SQLentry: passed1/failed0/skipped0, observedAt 11:51:13.930Z;
-studio.sql-restart-https GREEN. Okända delar är fortfarande GREY. routes.studio
-saknade event-tree.test.mjs i CI; det befintliga provet har nu 14 lokala PASS
-och läggs till fullhook. Ändrade UIbytes kräver nytt CI och ny export.
+Privat export system-map-34f64e34-ci37307380711/: source/currentSha exakt34,
+observedAt 2026-10-05T12:11:12.742Z, 20 green/0 red/4 grey, errors[]. Faktisk
+SQLentry passed1/failed0/skipped0 (12:11:12.649Z); SQLkontrakt GREEN.
+Event-treeprov 14 PASS; routes.studio nu GREEN. Två andra bevisluckor rättas
+nu: befintligt shoe-prov flyttas från sen körning till fullhookens reporter
+utan dubbelkörning, befintligt zone-cloud-store-prov läggs till fullhook.
+15 riktade lokala PASS/0 skip, inga assertions eller testmotorer ändrade.
+Nytt CI måste verifiera just denna resultatkoppling. Två persistencekontrakt
+behåller GREY: det riktiga postgres-persistence-provet kräver isolerad
+croupier_game_qa och kördes inte; separat Studio-SQL-PASS ersätter det inte.
+
+Live34: 7 dataGET200/0 sessionGET/0 POST, fyra jämförelsebyten full/drained/
+untruncated. Drift 1,472s/Bord 5,544s/Drift igen 4,709s/Konton 1,181s.
+Spikar kvar: config runtime2634,84ms/API889,48ms/cirka2019,68ms utanför
+instrumenteringen; shoes runtime3700,51ms/API663,38ms/cirka345,11ms utanför.
+Separat snabbnav: byte Bord→Drift under busy och aktiverad meny, gammalt
+configGET avbröts och därefter rätt Driftsektioner utan fel. Sena svar som
+ignorerar abort producerades inte live; de är separat lokalt provade.
+Snabbnav/återställning hade fem GET (fyra200, ett avbrutet), inga POST.
+Konton/john.g-formulär/fokus återställda med noll ändrade fält och CDP av.
+Privat wx-kvitto bo-navigation-after-34f64e34-20261005.json är parsevaliderat.
+Anropsminskning och menybyte är bevisade; ingen generell latensgaranti.
+
+Föregående cd9f5b21/CI37305177411 hade tre successjobb och faktiskt SQL PASS,
+fullhook 1 533 PASS/9 skip. Kvitto studio-auth-timing-commit-20261005.log och
+system-map-cd9f5b21-ci37305177411/ (19 green/0 red/5 grey, rätt SHA/datum)
+bevaras. Region-/DBavstånd har inte utretts eller ändrats.
 
 john.g skapades av inloggade Jakob i Backoffice och är ett aktivt spelarkonto.
 Ingen synlig Studio-användare med samma namn. Headerns Administratör gäller
@@ -86,7 +106,8 @@ ignorerar abort får inte hydrera, ge fel eller ändra den nya vyns busy. Legacy
 POSTpreflight, CAS, Origin och självskydd kvar. 101 riktade PASS utan skip,
 typecheck/diff PASS och oberoende review PASS med egen 46-tests-körning.
 Fyra native gruppbyten kräver 7 dataGET/0 sessionGET i real-auth fixture;
-legacy behåller 18 GET. Obligatorisk fullhook/CI/produktionens omprov återstår.
+legacy behåller 18 GET. Fullhook/CI/produktionens omprov på34 är godkända
+enligt ovan; återstående väntespikar håller checklistans punkt B öppen.
 
 OpenClaws modellvy /studio/openclaw och operatörschatt /studio/operator-chat
 har entydiga rutter/direktlänkar/reload; fem modellval bevaras. Login bevarar
@@ -113,9 +134,9 @@ och studio-ci-{37300874695,37303118034}-failed.log. Äldre fullhookloggar
 studio-integration-commit-20261005.log, studio-input-binding-commit-20261005.log
 (1 507 PASS/9 skip) och studio-bo-voice-commit-20261005.log (1 520 PASS/9 skip) kvar.
 
-GG 11:53:02UTC: workspace795524/source30689542 verifierad före komplett lista,
+GG 12:09:03UTC: workspace795524/source30689542 verifierad före komplett lista,
 1 incident-/17 locationsidor, 12 TRIGGERED/5 IGNORED. Sex positionerade öppna
-fynd har sju källhashpositioner som matchar exakt cd9: 37867511, 37879730/31/32,
+fynd har sju källhashpositioner som matchar exakt34: 37867511, 37879730/31/32,
 37880359/60. De två sistnämnda är nya. Äldre 37867512/37879729 saknar nu
 position och källfilerna ändrades; cb8-klassningen är fryst. Även 37862641/
 37863164/65/66 saknar position. Totalt nio positionsluckor, sex öppna.
@@ -159,11 +180,11 @@ Isolerade punkt 1–2 är nu verifierade. Börja med första öppna punkt i chec
 | Ordning / status | Nästa konkreta arbete och berörda filer/ytor | Klart när |
 | --- | --- | --- |
 | 1. P6-testuppsättning — isolerad del PASS lokalt och i CI | `test/studio-cutover-integration.mjs` har `gameDb` i auth och kontofabrik samt aktuella admin/negativa rollprov. Reset/revoke, faktisk SQL och osäker-submission-spärr bevaras. Körning 3–8 passerade; 1–2 FAIL bevaras. Samma motor passerade faktiskt i CI37305177411 på cd9f5b21. | Den isolerade deluppgiften är klar på angiven version. Ny källa kräver nytt versionsbundet prov. Ingen riktig databas eller produktionsanvändare ändras; full P6 är separat punkt 5. |
-| 2. Koppla P6-resultatet till kartan — verifierad FAIL och PASS | `tools/system-map-evidence.mjs` återanvänder befintlig SQL-motor; CI kör den före import/export. `studio.sql-restart-https` binder faktiskt testade källor. Dirty kvitto utges inte för rent SHA. Båda äldre röda exporter och cd9f5b21 PASS med exakt SHA/datum bevaras. UI-routing har eget kontrakt; befintligt event-treeprov läggs nu till CI. | Resultatkopplingen är klar på cd9f5b21. Ny UIleverans kräver nytt CI/export. Saknat/skippat prov blir aldrig grönt; nedladdade filer är frysta ögonblicksbilder. |
+| 2. Koppla provresultaten till kartan — SQL/Studio-routing verifierade | CI37307380711 på34f64e34 visar faktiskt SQL PASS, routes.studio GREEN och20green/0red/4grey. Båda äldre röda exporter och nya PASS med exakt SHA/datum bevaras. Två små kopplingsluckor (shoe och zone) rättas nu genom samma reporter;15lokalaPASS. Två persistencekontrakt saknar fortfarande sitt riktiga isolerade prov. | SQL/Studio-koppling klar på34. Nytt CI måste verifiera shoe/zone-kvitton. Saknat/skippat prov blir aldrig grönt; nedladdade filer är frysta ögonblicksbilder. |
 | 3. Produktionsmail — konfiguration saknas | Vercel `croupier-lab-ui` är mål. `RESEND_API_KEY` är tom och `CROUPIER_STUDIO_MAIL_FROM` saknas. Befintlig Resend-integration/key/sender ligger på `croupier-native-studio-qa-abc92154cb15`; dess GET `/domains` gav401. Kontrollera befintligt konto, korrekt projektkoppling, giltig nyckel, avsändare `no-reply@scoutgaming.tech` och public origin enligt `lab/lib/studio-native-mail.mjs`. | Konfigurationen är återläst på faktisk produktionsdeployment och ett uttryckligt avgränsat invite/reset-prov är användbart hela vägen. Inga spontana mejl till befintliga användare, inga nycklar i chatten/Git; domänläsning401 bevisar inte ensam sändbehörigheten. Be Jakob om endast den uppgift/åtkomst som faktiskt saknas. |
 | 4. GitGuardian — tolv öppna, sex öppna positionsluckor | Läs workspace795524/source30689542 via befintlig läsbrygga. Öppna ID: 37862641, 37863164/65/66, 37867511/12, 37879729/30/31/32, 37880359/60. Aktuell sexpositionerad källhashklassning gäller exakt cd9; äldre 37867512/37879729-klassning är fryst och deras positioner saknas nu. Incidenttabellen längre ned är historisk. | Varje fynd har aktuell belagd klassning och konkret hantering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
 | 5. Återstående P6-medie-/driftacceptans — delbevis finns | Följ befintligt P6-avsnitt: fyra dealers/två faktiska plays, auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/omstart samt naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk/kortkontakt och fysisk mic/kamera/mobil/Safari hålls explicit åtskilda från maskinprov. | Varje återstående krav har aktuellt bevis eller ett exakt kvarstående hinder. Inga nya takeapprovals från enbart hash/stillbild; budget/journal läses före betalda prov, inga automatiska retries och QA AI/GPU förblir OFF om inte Jakob uttryckligen ändrar detta. |
-| 6. Riktad Studio- och driftacceptans — arbete pågår | Snäv UIrättning låter menybyten ske under GET och tar bort fyra seriella sessionGET, med headerbarriär före bodyläsning, sena svar avvisade och skriv-/utkastskydd kvar. 101 riktade PASS och typecheck; slutreview/fullhook/CI/liveomprov återstår. Separat: ursprunglig framevarning, zonroundtrip, startsidesflimmer och extern Director/Gateway-backup enligt återställningsreglerna. | Publicerad navigering är ommätt med bevarad behörighet och utkast. Varje separat driftfel har belagd rättning/omprov eller konkret hinder. Båda tjänster har extern fullbackup och verifierad återläsning. |
+| 6. Riktad Studio- och driftacceptans — menybyten rättade, väntespikar kvar | UI34 tillåter menybyte under GET och tar bort fyra seriella sessionGET.101riktadePASS/oberoende review/fullhook1554PASS/CI3PASS; faktiskt live7GET200/0session, avbruten gammal läsning och rätt vy utan fel. Initierings-/API-/nätverksväntan kvarstår. Separat: ursprunglig framevarning, zonroundtrip, startsidesflimmer och extern Director/Gateway-backup enligt återställningsreglerna. | Återstående serverväntan har belagd riktad rättning/omprov eller konkret hinder. Varje separat driftfel har motsvarande bevis. Båda tjänster har extern fullbackup och verifierad återläsning. |
 
 Läsande utredning av punkt 3–4 och avgränsade UIarbeten kan göras parallellt
 med tydliga filägare. Punkt 2 använder utfallet från punkt 1. Huvudagenten integrerar och
