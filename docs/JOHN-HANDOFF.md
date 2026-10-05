@@ -6,6 +6,27 @@ Detaljhistoriken finns oförändrad i Git-snapshot
 [`91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/JOHN-HANDOFF.md).
 Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
+### Kort notis inför datorbyte — 5 oktober 2026
+
+Jakob fortsätter från en annan dator om några timmar. Före denna notis var
+main ren och allt arbete pushat på `f89c8a55f3c9fe5b684650aef8cd307128f7aafd`.
+Funktionsleveransen `e49f6f36` har tre godkända CI-jobb, 1 569 lokala PASS/
+9 befintliga skip och systemkarta med 22 gröna/2 okända delar. Liveprovet på
+`34f64e34` verifierar sju dataanrop och menybyte under laddning; väntetoppar kvar.
+
+Fortsätt genom att hämta aktuell GitHub main och läsa `AGENTS.md`, denna handoff
+och den öppna checklistan i `CLOUD-MIGRATION.md`. Nästa hinder är GitHub Actions
+(start nekas med hänvisning till betalning eller Actionsgräns) och produktionsmail
+(Resendåtkomst, giltig sändnyckel och verifierad avsändare behövs). Gmail kan vara
+mottagare men inte Resendavsändare. `john.g` är ett spelarkonto; ny adminåtkomst
+behöver rätt administratörsflöde och utsedd mottagare. Tolv GitGuardianfynd,
+serverväntan, särskilda persistenceprov och manuell media-/enhetsacceptans är öppna.
+
+Privata kvitton i `lab/data/platform-private/`, nycklar och lokala anslutningar
+följer inte med Git. Kontrollera åtkomsten på den nya datorn innan dessa behövs;
+bevara dem på denna dator eller överför särskilt utpekade underlag privat.
+Inga fortsatta writers, omprov eller mejlutskick ska startas under uppehållet.
+
 ## Börja här vid övertagande
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i `Jakeminator123/github-work`.
