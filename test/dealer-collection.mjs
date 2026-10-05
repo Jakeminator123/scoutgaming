@@ -6,7 +6,7 @@ import {planCollection} from '../web/public/dealer-collection.mjs';
 import {riggedCardPose} from '../web/public/rigged-card-layout.mjs';
 import {loadRigGeometry} from '../pipeline/load-dealer-rig.mjs';
 import {poseCardAction} from '../web/public/dealer-rig.mjs';
-const profile=JSON.parse(fs.readFileSync(new URL('../media/game/source/3d/profile.json',import.meta.url)));
+const profile=JSON.parse(fs.readFileSync(new URL('../media/game/runtime/assets/blackjack-3d/profile.json',import.meta.url)));
 const folder=new URL('../media/dealers/astrid/runtime/indexed/rig/',import.meta.url);
 const {rig,root}=loadRigGeometry(new URL('astrid-rigged.glb',folder),JSON.parse(fs.readFileSync(new URL('profile.json',folder))));
 function cardsFor(seats=[0,1,2,3,4,5,6],hands=1){

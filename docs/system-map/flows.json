@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "5270c8ab93bf593512d0374cb9c36033e59dc103",
+  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
   "inspection": {
     "kind": "code-inspected",
     "scope": "Spelauktoritet, presentation, röst/kamera, OpenClaw, genererat tal och GPU-livscykel",
@@ -251,7 +251,6 @@
           "sources": [
             {
               "path": "web/public/app.mjs",
-              "line": 498,
               "label": "Gemensam PerformancePlayer och local presentation"
             },
             {
@@ -459,7 +458,6 @@
             },
             {
               "path": "web/public/app.mjs",
-              "line": 2393,
               "label": "sendChat och ägarskap"
             },
             {
@@ -533,7 +531,6 @@
             },
             {
               "path": "web/public/app.mjs",
-              "line": 2243,
               "label": "Pose och identitet före streamuppspelning"
             },
             {
@@ -677,7 +674,6 @@
             },
             {
               "path": "web/public/app.mjs",
-              "line": 2264,
               "label": "Speech-kvitto till native observation"
             }
           ],
@@ -863,22 +859,19 @@
     },
     {
       "id": "lanes",
-      "title": "Kevin Lane och Mobile Phone Lane",
-      "detail": "Kevin Lane har id original och använder originalpresentationen, normalt Vera. Mobile Phone Lane har id mobile-phone och väljer Astrid plus presentation local. En ren /blackjack använder administration.gameLane i den gemensamma Studio-policyn; äldre explicita dealer/presentation/rehearsal-länkar behåller sitt avsedda renderer-val. Båda lanes använder samma inloggning, spelarkonto, blackjackmotor och wallet. Lane är här ett presentationsval, inte en publiceringspipeline för nya dealers/spel och inte en ändring av RNG.",
+      "title": "Mobile Phone Lane och sparat lane-register",
+      "detail": "Mobile Phone Lane är förvald och servervalet i gemensam Studio-policy styr /blackjack. Admin kan skapa/ta bort versionerade porträttlanes med känd renderer, dealer och delad mediesamling. Sista borttagningen sätter gameLane=null och stänger ny spelstart. Kevin/original är avvecklad; gamla queryparametrar återaktiverar den inte. Kort, RNG, spelarkonto, wallet och kalibrerad kortprojektion är gemensamma och består. Nya renderertyper/banker kräver adapter och verifierade media.",
       "sources": [
         {
           "path": "web/public/game-lanes.mjs",
-          "line": 2,
-          "label": "Två konkreta lane-ID:n och val"
+          "label": "Versionerade lane-definitioner och serverval"
         },
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 64,
           "label": "Dokumenterad lane-policy"
         },
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 387,
           "label": "Lab-lanes som avsikt; nya dealers/spel ännu inte byggda"
         },
         {
@@ -890,13 +883,11 @@
       "tests": [
         {
           "path": "test/game-lanes.mjs",
-          "line": 7,
-          "label": "Ren URL följer sparad lane; fyra dealer-länkar bevaras"
+          "label": "Sparat register, gammal URL, tillägg/borttagning och tom lane"
         },
         {
           "path": "test/game-lanes.mjs",
-          "line": 19,
-          "label": "Lane ger inte redirect/HTML/behörighet"
+          "label": "Sparat register, gammal URL, tillägg/borttagning och tom lane"
         }
       ]
     },
@@ -907,7 +898,6 @@
       "sources": [
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 381,
           "label": "Historiskt read-only-bevis för tyst BO-preview"
         },
         {
@@ -1004,12 +994,10 @@
       "sources": [
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 18,
           "label": "Syntetiskt translations-anrop och fysisk lucka"
         },
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 27,
           "label": "Faktiskt dokumenterad deployment och observation"
         }
       ]
@@ -1022,7 +1010,6 @@
       "sources": [
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 76,
           "label": "Lane-leverans och driftavläsning"
         }
       ]
@@ -1034,17 +1021,14 @@
       "sources": [
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 108,
           "label": "Spelarens faktiska streamtimings"
         },
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 255,
           "label": "Tidigare QA-END och separat providerstatus"
         },
         {
           "path": "docs/JOHN-HANDOFF.md",
-          "line": 149,
           "label": "Kvarstående P6/provider/visuell acceptansgräns"
         }
       ]

@@ -9,19 +9,28 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
-**Studio-rättning och OpenClaw-admin, 5 oktober, leverans pågår:** Idle-knappen
+**Studio-rättning och OpenClaw-admin, 5 oktober, `77a7cb49`:** Idle-knappen
 läser nu det gemensamma medieregistret i stället för avvecklad diskskanning.
 OpenClaw-modellval får en avgränsad serverväg från befintlig Studio-adminsession
 till Director och native Gateway. Server-only hemligheter är konfigurerade;
-exakt device-pairing och driftkontroll återstår efter koddeploy. Se John-handoff
-för tester och privat nyckelbackup. Inga nya betalda providerjobb eller QA-flaggor.
+exakt serverpairing och autentiserad GET med fem modeller/applied=true är
+verifierade. Studio READY, produkt/Director LIVE, fullhook och tre CI-jobb PASS.
+Ett no-op-save blottade en snäv skillnad i OpenClaws svar; rättning integreras.
+Se John-handoff för kvitton och privat nyckelbackup. Inga nya betalda providerjobb.
+
+**Systemkarta, 5 oktober:** fristående HTML-graf och JSON-register med 23
+faktakontrakt, 57 Next-filer, 49 tabeller/299 kolumner. Passiv testreporter
+kopplas till befintlig CI; lokal push kontrollerar faktisk commit. Artefakten
+har versionsbundet testläge, inga hemligheter och inga liveprovideranrop.
+Detaljer, kontrollgränser och browserlucka finns i John-handoff/planes 02 och 04.
 
 **Lane-register/rensning, 5 oktober, pågående:** Mobile är enda förvalda lane;
 admin kan skapa och ta bort sparade lane-definitioner med revisionskontroll.
 Gemensam kortgrund ligger i `web/public/card-presentation`. 2 410 gamla
 source/staging-binära filer (2,13 GB) har tagits bort lokalt med verifierade
-hashar. Blob-purge och full rensning av äldre runtime/dubbletter återstår;
-QA delar Blob och dess aktiva beroenden skyddas. Se aktuell John-handoff
+hashar. Motsvarande 2 313 Blobobjekt / 2,13 GB är också raderade och den
+kompletta efterlistan verifierad. Äldre runtime och separat deduplicering
+återstår; QA delar Blob och dess aktiva beroenden skyddas. Se aktuell John-handoff
 för exakta mängder och verifieringsstatus. Lane-borttagning är inte i sig
 en automatisk radering av delade medier.
 

@@ -3,17 +3,18 @@ import {openAsBlob} from 'node:fs';
 import {dirname,join,resolve,extname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {randomUUID} from 'node:crypto';
-import {readMediaLayout,repositoryRoot,presentationBankRoot} from './media-layout.mjs';
+import {readMediaLayout,repositoryRoot,presentationBankRoot,resolveMediaPath,validateMediaAliases} from './media-layout.mjs';
 import {hashFile} from './migrate-media-layout.mjs';
 import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../lab/lib/cloud-media-store.mjs';
 const identity=hash=>`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
 /** Metadata-only dry run. UUIDs from the saved presentation registry stay exact. */
 export async function planBlobExport({root=repositoryRoot,includeSource=false,layout=readMediaLayout(root)}={}){
+  validateMediaAliases(layout);
   let bank;
   try{bank=JSON.parse(await readFile(join(presentationBankRoot(root),'lab-video-manifest.json'),'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
   const ids=new Map((bank?.items??[]).map(item=>['dealers/astrid/runtime/presentation/'+item.relativePath,item.id]));
   return {schemaVersion:1,namespace:'croupier/media',files:layout.files.filter(row=>(includeSource||row.access==='public'||row.path.startsWith('dealers/astrid/runtime/presentation/'))&&MEDIA_MIME[extname(row.path).slice(1)]&&row.size>0).map(row=>{
-    const extension=extname(row.path).slice(1),id=ids.get(row.path)??identity(row.sha256),pathname=mediaBlobPath(dirname(row.path).replaceAll('\\','/'),id,row.sha256,extension);
+    const canonical=row.canonicalPath??row.path,extension=extname(row.path).slice(1),id=ids.get(row.path)??identity(row.sha256),pathname=mediaBlobPath(dirname(canonical).replaceAll('\\','/'),ids.get(canonical)??identity(row.sha256),row.sha256,extension);
     return {logicalPath:row.path,id,sha256:row.sha256,size:row.size,access:row.access,legacyUrls:row.publicUrl?[row.publicUrl]:[],storage:{provider:'vercel-blob',pathname,sha256:row.sha256,size:row.size,contentType:MEDIA_MIME[extension]}};
   })};
 }
@@ -24,7 +25,7 @@ export async function syncBlobExport(plan,{root=repositoryRoot,concurrency=4,che
   const completed=new Map(),objects=new Map(),result={...plan,files:[]};let cursor=0,failure,writing=Promise.resolve();
   if(checkpoint)try{const info=await lstat(checkpoint);if(!info.isFile()||info.isSymbolicLink()||info.size>16*1024*1024)throw new Error('Unsafe export checkpoint.');const prior=JSON.parse(await readFile(checkpoint,'utf8'));if(prior.schemaVersion!==1||prior.namespace!==plan.namespace||!Array.isArray(prior.files))throw new Error('Invalid export checkpoint.');const expected=new Map(plan.files.map(row=>[row.logicalPath,JSON.stringify(row)]));if(prior.verification==='readback-sha256')for(const row of prior.files)if(expected.get(row.logicalPath)===JSON.stringify(row))completed.set(row.logicalPath,row);}catch(error){if(error.code!=='ENOENT')throw error;}
   async function worker(){while(!failure&&cursor<plan.files.length){const row=plan.files[cursor++];if(completed.has(row.logicalPath))continue;try{
-    const file=join(root,'media',row.logicalPath),info=await lstat(file);
+    const file=resolveMediaPath('media/'+row.logicalPath,{repositoryRoot:root}),info=await lstat(file);
     if(!info.isFile()||info.isSymbolicLink()||info.size!==row.size||await hashFile(file)!==row.sha256)throw new Error(`Media changed before export: ${row.logicalPath}`);
     // Distinct logical takes can have identical bytes and the same immutable
     // object key. Share one verification/upload rather than racing two puts.

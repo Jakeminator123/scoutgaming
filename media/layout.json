@@ -1462,7 +1462,8 @@
       "sha256": "e14804bd629e32112f2ac84d155c95a744a858d81816d72e0f62abc909599651",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/amira/streams/orig/idle-1_speak_farewell.h264"
+      "publicUrl": "/dealers/amira/streams/orig/idle-1_speak_farewell.h264",
+      "canonicalPath": "dealers/amira/runtime/indexed/streams/idle-1_speak_farewell.h264"
     },
     {
       "legacyPath": "web/public/dealers/amira/streams/orig/idle-1_speak_goodluck.h264",
@@ -1895,7 +1896,8 @@
       "size": 2780,
       "sha256": "ecbd84aec03f3631aa81af84a19afc05a06dbca22d3b011f37ac74afe4db3852",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/amira/runtime/composited/amira-green-waiting/idle.json"
     },
     {
       "legacyPath": "content/staging/2026-09-20/amira-table-waiting/README.md",
@@ -1951,7 +1953,8 @@
       "size": 55248,
       "sha256": "e91288feca56f5d1f12a7f7b01d6596494e476eff2bed6a44c8af86dada9f881",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/amira/runtime/composited/amira-green-speak/speak.json"
     },
     {
       "legacyPath": "content/staging/2026-09-20/amira-transitions/hair-final-regression.json",
@@ -2072,7 +2075,8 @@
       "sha256": "d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/review/2026-09-09/astrid-win.mp4"
+      "publicUrl": "/review/2026-09-09/astrid-win.mp4",
+      "canonicalPath": "dealers/astrid/runtime/indexed/speech/win.mp4"
     },
     {
       "legacyPath": "web/public/review/2026-09-09/mei-push.mp4",
@@ -3692,7 +3696,8 @@
       "sha256": "64f0402477a887c2ffc1b6ec7e79a82782927992b16ed62c23c5bb4cea99d3d3",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/review/astrid-table-v2/actor-packed.mp4"
+      "publicUrl": "/review/astrid-table-v2/actor-packed.mp4",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-elevated-table/actor-packed.mp4"
     },
     {
       "legacyPath": "web/public/review/astrid-table-v2/mask-manifest-box5.json",
@@ -4322,7 +4327,8 @@
       "sha256": "3dc353c62ab87a9a0b26b3b57af2761af8731a5f8d0f91ed31e6f34fdb5cf890",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/astrid/audio/en/orig/greeting.mp3"
+      "publicUrl": "/dealers/astrid/audio/en/orig/greeting.mp3",
+      "canonicalPath": "dealers/astrid/runtime/indexed/audio/en/dry/greeting.mp3"
     },
     {
       "legacyPath": "web/public/dealers/astrid/audio/en/orig/lose.mp3",
@@ -4358,7 +4364,8 @@
       "sha256": "224a0b2e339f61987f2653ae5e2ac30086246801f45e1f5086a16f9abffc1b0e",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/astrid/audio/en/orig/win.mp3"
+      "publicUrl": "/dealers/astrid/audio/en/orig/win.mp3",
+      "canonicalPath": "dealers/astrid/runtime/indexed/audio/en/dry/win.mp3"
     },
     {
       "legacyPath": "web/public/dealers/astrid/audio/en/peek.mp3",
@@ -5177,7 +5184,8 @@
       "sha256": "8c5aa0d2b038fc1ab00ef9fc5ff742d27650d7efd95a2447d84e644f9a806337",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/astrid/performance/rhythm/deal-dealer.mp4"
+      "publicUrl": "/dealers/astrid/performance/rhythm/deal-dealer.mp4",
+      "canonicalPath": "dealers/astrid/runtime/indexed/performance/rhythm/deal-centre.mp4"
     },
     {
       "legacyPath": "web/public/dealers/astrid/performance/rhythm/deal-left.mp4",
@@ -5429,7 +5437,8 @@
       "sha256": "b66b66a244a6fa892891801a79217d25bc0a78d6c759faf940ac4061e2d8b2be",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/astrid/performance/smooth60/deal-dealer-edge-v2.mp4"
+      "publicUrl": "/dealers/astrid/performance/smooth60/deal-dealer-edge-v2.mp4",
+      "canonicalPath": "dealers/astrid/runtime/indexed/performance/smooth60/deal-centre-edge-v2.mp4"
     },
     {
       "legacyPath": "web/public/dealers/astrid/performance/smooth60/deal-dealer.mp4",
@@ -5438,7 +5447,8 @@
       "sha256": "2ef8a8aa642150d908c526e8c88d46e7805d4ac808d24ef1ecd86ce0d4e2b471",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/astrid/performance/smooth60/deal-dealer.mp4"
+      "publicUrl": "/dealers/astrid/performance/smooth60/deal-dealer.mp4",
+      "canonicalPath": "dealers/astrid/runtime/indexed/performance/smooth60/deal-centre.mp4"
     },
     {
       "legacyPath": "web/public/dealers/astrid/performance/smooth60/deal-left-edge-v2.mp4",
@@ -6631,7 +6641,8 @@
       "size": 1338,
       "sha256": "02b92b5d0b05bd8fab54605171491953eb2380ff6449b3a94de92641654ead7b",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/indexed/audio/en/bank.json"
     },
     {
       "legacyPath": "emil/dealklipp-v1/repliker/blackjack/blackjack.mp4",
@@ -7015,7 +7026,8 @@
       "size": 1766,
       "sha256": "a0d0ee9000193ec31567ee81a4ee4381a1d28f4ee4264cb37db76fc0dd7885d7",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/indexed/rig/face-study/profile.json"
     },
     {
       "legacyPath": "assets/astrid-3d/anatomical/README.md",
@@ -7111,7 +7123,8 @@
       "size": 795,
       "sha256": "aaa981e9bd8e50abd69c2986f50204b14fc753416d15a3c0110c1d3eaf05cace",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/source/3d/anatomical/control-verification.json"
     },
     {
       "legacyPath": "assets/astrid-3d/export-verification.json",
@@ -7119,7 +7132,8 @@
       "size": 1975,
       "sha256": "dd7349d29dce9960943901366300ceeba3f0651ba6ad3668a6869fe1c6482b4e",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/source/3d/anatomical/export-verification.json"
     },
     {
       "legacyPath": "assets/astrid-3d/motion-metrics.json",
@@ -7127,7 +7141,8 @@
       "size": 3601,
       "sha256": "b342893c0d933f1f3b2c5ca514e49b99bb0637ffd9d14f91a81ee0018faf1bd6",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/source/3d/anatomical/motion-metrics.json"
     },
     {
       "legacyPath": "assets/astrid-3d/motion-samples.json",
@@ -7143,7 +7158,8 @@
       "size": 1371,
       "sha256": "04aa2699892108749ce5c9ebc967cef7b620038b64aedfce98b67a0d03dd0047",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/source/3d/anatomical/native-verification.json"
     },
     {
       "legacyPath": "assets/astrid-3d/pose-timing.json",
@@ -7159,7 +7175,8 @@
       "size": 1455,
       "sha256": "539666c84ee8d63c77fac93a7856a931d7971a01d477f58644e28127c3ba8658",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/indexed/rig/profile.json"
     },
     {
       "legacyPath": "assets/astrid-3d/source-inspection.json",
@@ -7183,7 +7200,8 @@
       "size": 1333,
       "sha256": "495ded2cb5b42f9f64d86f495493d2de15e6431b2fc16f4f240f3417fcd2e99b",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/indexed/performance/scene-acceptance/resize-delayed-after.json"
     },
     {
       "legacyPath": "docs/reference/astrid-capture-20260910/player-targets.json",
@@ -7439,7 +7457,8 @@
       "size": 626,
       "sha256": "bf5122706cc1ff3228565a1e42b61b96ed9bda3ee196a8ee24dd53401019d3aa",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-blue-box4/mask-manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-blue-box4/preview-track.json",
@@ -7759,7 +7778,8 @@
       "size": 26115,
       "sha256": "a763475788c591301eab0f6dc061f49221e6908ce32837aa11fcb1c16835fdfe",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-elevated-table/mask-manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-elevated-camera/mask-prep/video/verification.json",
@@ -7991,7 +8011,8 @@
       "size": 561,
       "sha256": "5e3c4ac4edb66fc6dcc6f8df171d99cd572ee11fa345c8e7abf6329a234b5e33",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-elevated-idle/idle.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-eye-contact-idle/submission.json",
@@ -8119,7 +8140,8 @@
       "size": 27198,
       "sha256": "e775e97af0cba78992cef27b1db6b3461e807d8d943db67e0ff532a2b791e464",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-table-v2/mask-manifest-box5.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-box-right/README.md",
@@ -8143,7 +8165,8 @@
       "size": 47860,
       "sha256": "a7439dbabd4d25862b173f9dcdb765d9df279a594747239fc702b40f5f424836",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-table-v2/take-box5.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-box-right/take-config.json",
@@ -8479,7 +8502,8 @@
       "size": 52424,
       "sha256": "25d7bbd56a04f4718829848ceac55a1ff3fdbe31cbe8b91b46e7e0249c9125be",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/blackjack/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/blackjack/registration/.gitignore",
@@ -8543,7 +8567,8 @@
       "size": 22686,
       "sha256": "d97444cb4eba96a08716d4a1c4db41c9368c4936c1adc8324e4ec6cde86941bb",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/registration/.gitignore",
@@ -8607,7 +8632,8 @@
       "size": 40412,
       "sha256": "0c58af213f5638b4ff95b329969a83be1b9ec92663a242bc22314b3ce8034a9c",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter1/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter1/registration/.gitignore",
@@ -8671,7 +8697,8 @@
       "size": 36251,
       "sha256": "c9be422612e587d0b808ed74b3536fe4b720aa904f5c4deb7cb8dbc637739c29",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter2/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter2/registration/.gitignore",
@@ -8735,7 +8762,8 @@
       "size": 30538,
       "sha256": "b45f18f1eb92d6ff7b5d82b0f6bb0b474ffe1ba5de1d9e428a65bcb0bde8b56b",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerblackjack/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerblackjack/registration/.gitignore",
@@ -8799,7 +8827,8 @@
       "size": 48234,
       "sha256": "d2f1996b0f207f670aff333cc9f1d6797d354768f427b1bf762367e20a50ff37",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/registration/.gitignore",
@@ -8863,7 +8892,8 @@
       "size": 30519,
       "sha256": "08e4be2240c4e5a1d91ae2b7779555a12e024de5a4f7050824ec83b854d76db7",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/double/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/double/registration/.gitignore",
@@ -8927,7 +8957,8 @@
       "size": 28428,
       "sha256": "67986c497066d1e54e35d5ab05d5a0a6cbaccdb76b1f5a387ddf3e6cafd4feac",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/farewell/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/farewell/registration/.gitignore",
@@ -8991,7 +9022,8 @@
       "size": 30513,
       "sha256": "c9ff4c6445f99329e07191c5b7275affd95e3b465b9b462942f057c6f32d4e7d",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/goodluck/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/goodluck/registration/.gitignore",
@@ -9055,7 +9087,8 @@
       "size": 30530,
       "sha256": "ed0b0e5513c1b6e6234d319d271eb2aa560bf71e98074c055737b50e65307f26",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/insurance/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/insurance/registration/.gitignore",
@@ -9119,7 +9152,8 @@
       "size": 24256,
       "sha256": "3ba9d3ee456a7ce747f907faf2a0fb0a528f328fc74e909276b311adfccfc85a",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/lose/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/lose/registration/.gitignore",
@@ -9183,7 +9217,8 @@
       "size": 38337,
       "sha256": "13718225b53c48f128211c0f93991a1e75519b215e2193ac746f9dd142f21862",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/peek/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/peek/registration/.gitignore",
@@ -9247,7 +9282,8 @@
       "size": 32598,
       "sha256": "6a200d89e81e7d22491f69e96aee180312829e9f96fe945af904c04c0bb58257",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/placebets/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/placebets/registration/.gitignore",
@@ -9311,7 +9347,8 @@
       "size": 28416,
       "sha256": "ee9c4a81bd4c06fc1af7bfd7aa9264bc2a151ed308137bfea16f01a774e8d436",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/push/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/push/registration/.gitignore",
@@ -9375,7 +9412,8 @@
       "size": 30520,
       "sha256": "928bbc440b4142310b8f43d87377a750e780b41fdf0ef9e86630a313696cd252",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/sidebet/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/sidebet/registration/.gitignore",
@@ -9439,7 +9477,8 @@
       "size": 50321,
       "sha256": "7339e5112dbe5f73e92e286a3b60c0e7c3eb479a4024885d95628bf4ac151436",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/win/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/win/registration/.gitignore",
@@ -9559,7 +9598,8 @@
       "size": 64375,
       "sha256": "664efe4e36cf5c4ddf19f5985fdc5d2648b54584d7e434a8760d7418603528ff",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/mask-face-repair/manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-speak-elevenlabs/README.md",
@@ -9935,7 +9975,8 @@
       "size": 33116,
       "sha256": "afda7e90beeaf3bc6349308d22cb3965de7be8c5b86bd1756ed1f4068fc2ab6a",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-green-waiting/mask-manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-green-waiting/motion/.gitignore",
@@ -10287,7 +10328,8 @@
       "size": 1658,
       "sha256": "dea3bcc1c908307d1987173d9ab2ba612971c386c7cb557e3de3f0428eb244f4",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-table-v2/registration.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-table-v2/export-table.py",
@@ -10359,7 +10401,8 @@
       "size": 27015,
       "sha256": "40846caa112e4334e9be4cbda73bd1da5de1744912263a4e091b87a3e591f9fa",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-table-v2/mask-manifest.json"
     },
     {
       "legacyPath": "content/staging/2026-09-19/astrid-table-v2/mask/README.md",
@@ -11015,7 +11058,8 @@
       "size": 6902,
       "sha256": "f38e15f8e329c294a149307e3125fcecdd81a7a13927f9e5ab475c2fafbdeb9b",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-green-waiting/idle.json"
     },
     {
       "legacyPath": "content/staging/2026-09-20/astrid-seam-repair/runtime/rest.json",
@@ -11031,7 +11075,8 @@
       "size": 66593,
       "sha256": "371e447428ad57f534b2117973236c2d5a54d383aa1e152ab00b550c2220fdcf",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/speak.json"
     },
     {
       "legacyPath": "web/public/lab/mei-atlas-sheet.png",
@@ -11976,7 +12021,8 @@
       "sha256": "277c924331b2bf3ebaf0de4200636168dddf118bb22b2300f3e54945e9632177",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealers/mei/streams/pre-trim/idle-1_speak_win.h264"
+      "publicUrl": "/dealers/mei/streams/pre-trim/idle-1_speak_win.h264",
+      "canonicalPath": "dealers/mei/runtime/indexed/streams/orig/idle-1_speak_win.h264"
     },
     {
       "legacyPath": "web/public/dealers/mei/table.png",
@@ -12894,7 +12940,8 @@
       "sha256": "d16fbba7c1be9fd1fd382b4efa37bc0a8daba0c55e2e46bb7a03c691a27db8a2",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/audio/en/orig/blackjack.mp3"
+      "publicUrl": "/dealer/audio/en/orig/blackjack.mp3",
+      "canonicalPath": "dealers/vera/runtime/indexed/audio/en/dry/blackjack.mp3"
     },
     {
       "legacyPath": "web/public/dealer/audio/en/orig/dealerbust.mp3",
@@ -12903,7 +12950,8 @@
       "sha256": "7ba71144fd6de7492c368e2ee234ca9670fdc676b3f8dc5b422cabe985b1d0d7",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/audio/en/orig/dealerbust.mp3"
+      "publicUrl": "/dealer/audio/en/orig/dealerbust.mp3",
+      "canonicalPath": "dealers/vera/runtime/indexed/audio/en/dry/dealerbust.mp3"
     },
     {
       "legacyPath": "web/public/dealer/audio/en/orig/fair_rng.mp3",
@@ -12957,7 +13005,8 @@
       "sha256": "6e87cdc8e5c5286cc37dac4fbb7a7597f00f75a3e9e4b184da24af625d2027a9",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/audio/en/orig/insurance.mp3"
+      "publicUrl": "/dealer/audio/en/orig/insurance.mp3",
+      "canonicalPath": "dealers/vera/runtime/indexed/audio/en/dry/insurance.mp3"
     },
     {
       "legacyPath": "web/public/dealer/audio/en/orig/limits_table.mp3",
@@ -13011,7 +13060,8 @@
       "sha256": "8bfb93a5c25ad11770d719b10842dfeeb55859ff00b3fee6453e145cf5fcafe0",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/audio/en/orig/push.mp3"
+      "publicUrl": "/dealer/audio/en/orig/push.mp3",
+      "canonicalPath": "dealers/vera/runtime/indexed/audio/en/dry/push.mp3"
     },
     {
       "legacyPath": "web/public/dealer/audio/en/orig/rg_support.mp3",
@@ -13101,7 +13151,8 @@
       "sha256": "342f12b3ed1a16108fcb00ab50375e6f3a693b5de2d0e1bdc0a4d964d3915c20",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/audio/en/orig/win.mp3"
+      "publicUrl": "/dealer/audio/en/orig/win.mp3",
+      "canonicalPath": "dealers/vera/runtime/indexed/audio/en/dry/win.mp3"
     },
     {
       "legacyPath": "web/public/dealer/audio/en/peek.mp3",
@@ -13938,7 +13989,8 @@
       "sha256": "1b843dbd9cf02599f103be263b3c199346079d9cf39cf005e7359fade3770291",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_bust.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_bust.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_bust.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_chatter2.h264",
@@ -13947,7 +13999,8 @@
       "sha256": "c9bffcbb25eb0f7da2b5b316da74b98fccf5b1476039e6b25db497d2768d87de",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_chatter2.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_chatter2.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_chatter2.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_goodluck.h264",
@@ -13965,7 +14018,8 @@
       "sha256": "c32840dd62401b757c1dbfe4c67499cf9a59186ba5c3a34a3e78f043398dc649",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_peek.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_peek.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_peek.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_placebets.h264",
@@ -13974,7 +14028,8 @@
       "sha256": "f25b7903d9e40c06f0ddc0fc34207b637c05897ab753400521ccd8aca4295642",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_placebets.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_placebets.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_placebets.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_rules_bj_pays.h264",
@@ -13983,7 +14038,8 @@
       "sha256": "ca24cffd6f6fbc67c7e17a1f94f62790e73f096df3ec8982fc8327aa35b024bc",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_rules_bj_pays.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_rules_bj_pays.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_rules_bj_pays.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_rules_s17.h264",
@@ -13992,7 +14048,8 @@
       "sha256": "fe77be3ca8a70bff18bc9da8b802aece1bcb7bad1b69b52f2e6cb808948bd5e4",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_rules_s17.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_rules_s17.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_rules_s17.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_side_213.h264",
@@ -14001,7 +14058,8 @@
       "sha256": "36bcbf1984054ad99e750854661b354b0c35fbc65db7d34161f879cb4918e7e2",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_side_213.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_side_213.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_side_213.h264"
     },
     {
       "legacyPath": "web/public/dealer/streams/orig/idle-1_speak_win.h264",
@@ -14010,7 +14068,8 @@
       "sha256": "ec3f37e91d7cdc3769dd74409ac9a72e746479c726bc330d859534f658f6d6ce",
       "tracked": true,
       "access": "public",
-      "publicUrl": "/dealer/streams/orig/idle-1_speak_win.h264"
+      "publicUrl": "/dealer/streams/orig/idle-1_speak_win.h264",
+      "canonicalPath": "dealers/vera/runtime/indexed/streams/idle-1_speak_win.h264"
     },
     {
       "legacyPath": "web/public/dealer/supervisor.webm",
@@ -14212,7 +14271,8 @@
       "size": 1625,
       "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "game/runtime/assets/blackjack-3d/profile.json"
     },
     {
       "legacyPath": "assets/blackjack-3d/reference/provenance.json",
@@ -16652,7 +16712,8 @@
       "size": 13352,
       "sha256": "19c59b41917a91d6a3d9a1c30b50f94a1895f8c6f32877903727b4752904f505",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "game/staging/2026-09-13/shoe-pickup/low-turn/mattes/source/timestamps.json"
     },
     {
       "legacyPath": "content/staging/2026-09-13/shoe-pickup/low-turn/mattes/source/timestamps.json",
@@ -20916,7 +20977,8 @@
       "size": 564,
       "sha256": "bfda29f65657e6295fd2558b6b79812ab48ff825da2a5541c730d402f0d24113",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "game/staging/2026-09-17/seven-seat-reach/wait2-box0 ac2fa366-b9a1-4011-8e87-0476b369a9ba.json"
     },
     {
       "legacyPath": "content/staging/2026-09-17/seven-seat-reach/wait2-box1.json",
@@ -20940,7 +21002,8 @@
       "size": 564,
       "sha256": "bfda29f65657e6295fd2558b6b79812ab48ff825da2a5541c730d402f0d24113",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "game/staging/2026-09-17/seven-seat-reach/wait2-box0 ac2fa366-b9a1-4011-8e87-0476b369a9ba.json"
     },
     {
       "legacyPath": "content/staging/2026-09-17/seven-seat-reach/wait2-box5.json",
@@ -20964,7 +21027,8 @@
       "size": 564,
       "sha256": "bfda29f65657e6295fd2558b6b79812ab48ff825da2a5541c730d402f0d24113",
       "tracked": true,
-      "access": "source"
+      "access": "source",
+      "canonicalPath": "game/staging/2026-09-17/seven-seat-reach/wait2-box0 ac2fa366-b9a1-4011-8e87-0476b369a9ba.json"
     },
     {
       "legacyPath": "content/staging/2026-09-17/seven-seat-reach/wait2-box6.json",

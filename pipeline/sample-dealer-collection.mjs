@@ -10,7 +10,7 @@ fs.mkdirSync(output,{recursive:true});
 const folder=new URL('../media/dealers/astrid/runtime/indexed/rig/face-study/',import.meta.url);
 const model=new URL('astrid-rigged.glb',folder),profile=JSON.parse(fs.readFileSync(new URL('profile.json',folder)));
 const {rig}=loadRigGeometry(model,profile),rest=Object.fromEntries([...rig.bones].map(([name,b])=>[name,b.matrixWorld.toArray()]));
-const table=JSON.parse(fs.readFileSync(new URL('../media/game/source/3d/profile.json',import.meta.url))),cards=[];
+const table=JSON.parse(fs.readFileSync(new URL('../media/game/runtime/assets/blackjack-3d/profile.json',import.meta.url))),cards=[];
 for(let seat=0;seat<7;seat++)for(let cardIndex=0;cardIndex<2;cardIndex++)cards.push({id:cards.length,group:`${seat}:0`,...riggedCardPose({profile:table,seat,cardIndex,cardCount:2})});
 for(let cardIndex=0;cardIndex<2;cardIndex++)cards.push({id:cards.length,group:'dealer',...riggedCardPose({profile:table,cardIndex,cardCount:2})});
 const landing=[-.91,.920,.25],plan=planCollection(cards,{landing}),samples=[],last=Math.ceil(plan.duration*30);

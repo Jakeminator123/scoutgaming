@@ -2546,7 +2546,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/runtime/indexed/streams/orig/e14804bd-629e-3211-2f2a-c84d155c95a7/e14804bd629e32112f2ac84d155c95a744a858d81816d72e0f62abc909599651.h264",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/streams/e14804bd-629e-3211-2f2a-c84d155c95a7/e14804bd629e32112f2ac84d155c95a744a858d81816d72e0f62abc909599651.h264",
         "sha256": "e14804bd629e32112f2ac84d155c95a744a858d81816d72e0f62abc909599651",
         "size": 508901,
         "contentType": "application/octet-stream"
@@ -3181,7 +3181,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/staging/2026-09-20/amira-table-waiting/ecbd84ae-c03f-3631-aa81-af84a19afc05/ecbd84aec03f3631aa81af84a19afc05a06dbca22d3b011f37ac74afe4db3852.json",
+        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-green-waiting/ecbd84ae-c03f-3631-aa81-af84a19afc05/ecbd84aec03f3631aa81af84a19afc05a06dbca22d3b011f37ac74afe4db3852.json",
         "sha256": "ecbd84aec03f3631aa81af84a19afc05a06dbca22d3b011f37ac74afe4db3852",
         "size": 2780,
         "contentType": "application/json"
@@ -3256,7 +3256,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/staging/2026-09-20/amira-transitions/e91288fe-ca56-f5d1-f12a-7f7b01d65964/e91288feca56f5d1f12a7f7b01d6596494e476eff2bed6a44c8af86dada9f881.json",
+        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-green-speak/e91288fe-ca56-f5d1-f12a-7f7b01d65964/e91288feca56f5d1f12a7f7b01d6596494e476eff2bed6a44c8af86dada9f881.json",
         "sha256": "e91288feca56f5d1f12a7f7b01d6596494e476eff2bed6a44c8af86dada9f881",
         "size": 55248,
         "contentType": "application/json"
@@ -3467,7 +3467,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/2026-09-09/d6b1c106-a86f-3378-50ae-2541686c6176/d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301.mp4",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/speech/d6b1c106-a86f-3378-50ae-2541686c6176/d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301.mp4",
         "sha256": "d6b1c106a86f337850ae2541686c6176e59dff8fa67dc36e7a8a5ee7cf2f0301",
         "size": 1981785,
         "contentType": "video/mp4"
@@ -6527,7 +6527,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-table-v2/64f04024-77a8-87c2-ffc1-b6ec7e79a827/64f0402477a887c2ffc1b6ec7e79a82782927992b16ed62c23c5bb4cea99d3d3.mp4",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-elevated-table/64f04024-77a8-87c2-ffc1-b6ec7e79a827/64f0402477a887c2ffc1b6ec7e79a82782927992b16ed62c23c5bb4cea99d3d3.mp4",
         "sha256": "64f0402477a887c2ffc1b6ec7e79a82782927992b16ed62c23c5bb4cea99d3d3",
         "size": 1763365,
         "contentType": "video/mp4"
@@ -7717,7 +7717,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/orig/3dc353c6-2ab8-7a9a-0b26-b3b57af2761a/3dc353c62ab87a9a0b26b3b57af2761af8731a5f8d0f91ed31e6f34fdb5cf890.mp3",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/dry/3dc353c6-2ab8-7a9a-0b26-b3b57af2761a/3dc353c62ab87a9a0b26b3b57af2761af8731a5f8d0f91ed31e6f34fdb5cf890.mp3",
         "sha256": "3dc353c62ab87a9a0b26b3b57af2761af8731a5f8d0f91ed31e6f34fdb5cf890",
         "size": 75276,
         "contentType": "audio/mpeg"
@@ -7785,7 +7785,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/orig/224a0b2e-339f-6198-7f26-53ae5e2ac300/224a0b2e339f61987f2653ae5e2ac30086246801f45e1f5086a16f9abffc1b0e.mp3",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/dry/224a0b2e-339f-6198-7f26-53ae5e2ac300/224a0b2e339f61987f2653ae5e2ac30086246801f45e1f5086a16f9abffc1b0e.mp3",
         "sha256": "224a0b2e339f61987f2653ae5e2ac30086246801f45e1f5086a16f9abffc1b0e",
         "size": 57304,
         "contentType": "audio/mpeg"
@@ -11908,7 +11908,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/presentation/repliker/02b92b5d-0b05-bd8f-ab54-605171491953/02b92b5d0b05bd8fab54605171491953eb2380ff6449b3a94de92641654ead7b.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/02b92b5d-0b05-bd8f-ab54-605171491953/02b92b5d0b05bd8fab54605171491953eb2380ff6449b3a94de92641654ead7b.json",
         "sha256": "02b92b5d0b05bd8fab54605171491953eb2380ff6449b3a94de92641654ead7b",
         "size": 1338,
         "contentType": "application/json"
@@ -12343,7 +12343,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/anatomical/a0d0ee90-0019-3ec3-1567-ee81a4ee4381/a0d0ee9000193ec31567ee81a4ee4381a1d28f4ee4264cb37db76fc0dd7885d7.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/rig/face-study/a0d0ee90-0019-3ec3-1567-ee81a4ee4381/a0d0ee9000193ec31567ee81a4ee4381a1d28f4ee4264cb37db76fc0dd7885d7.json",
         "sha256": "a0d0ee9000193ec31567ee81a4ee4381a1d28f4ee4264cb37db76fc0dd7885d7",
         "size": 1766,
         "contentType": "application/json"
@@ -12493,7 +12493,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/aaa981e9-bd8e-50ab-d69c-2986f50204b1/aaa981e9bd8e50abd69c2986f50204b14fc753416d15a3c0110c1d3eaf05cace.json",
+        "pathname": "croupier/media/dealers/astrid/source/3d/anatomical/aaa981e9-bd8e-50ab-d69c-2986f50204b1/aaa981e9bd8e50abd69c2986f50204b14fc753416d15a3c0110c1d3eaf05cace.json",
         "sha256": "aaa981e9bd8e50abd69c2986f50204b14fc753416d15a3c0110c1d3eaf05cace",
         "size": 795,
         "contentType": "application/json"
@@ -12508,7 +12508,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/dd7349d2-9dce-9960-9439-01366300ceeb/dd7349d29dce9960943901366300ceeba3f0651ba6ad3668a6869fe1c6482b4e.json",
+        "pathname": "croupier/media/dealers/astrid/source/3d/anatomical/dd7349d2-9dce-9960-9439-01366300ceeb/dd7349d29dce9960943901366300ceeba3f0651ba6ad3668a6869fe1c6482b4e.json",
         "sha256": "dd7349d29dce9960943901366300ceeba3f0651ba6ad3668a6869fe1c6482b4e",
         "size": 1975,
         "contentType": "application/json"
@@ -12523,7 +12523,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/b342893c-0d93-3f1f-3b2c-5ca514e49b99/b342893c0d933f1f3b2c5ca514e49b99bb0637ffd9d14f91a81ee0018faf1bd6.json",
+        "pathname": "croupier/media/dealers/astrid/source/3d/anatomical/b342893c-0d93-3f1f-3b2c-5ca514e49b99/b342893c0d933f1f3b2c5ca514e49b99bb0637ffd9d14f91a81ee0018faf1bd6.json",
         "sha256": "b342893c0d933f1f3b2c5ca514e49b99bb0637ffd9d14f91a81ee0018faf1bd6",
         "size": 3601,
         "contentType": "application/json"
@@ -12553,7 +12553,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/04aa2699-8921-0874-9ce5-c9ebc967cef7/04aa2699892108749ce5c9ebc967cef7b620038b64aedfce98b67a0d03dd0047.json",
+        "pathname": "croupier/media/dealers/astrid/source/3d/anatomical/04aa2699-8921-0874-9ce5-c9ebc967cef7/04aa2699892108749ce5c9ebc967cef7b620038b64aedfce98b67a0d03dd0047.json",
         "sha256": "04aa2699892108749ce5c9ebc967cef7b620038b64aedfce98b67a0d03dd0047",
         "size": 1371,
         "contentType": "application/json"
@@ -12583,7 +12583,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/3d/539666c8-4ee8-d63c-77fa-c93a7856a931/539666c84ee8d63c77fac93a7856a931d7971a01d477f58644e28127c3ba8658.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/rig/539666c8-4ee8-d63c-77fa-c93a7856a931/539666c84ee8d63c77fac93a7856a931d7971a01d477f58644e28127c3ba8658.json",
         "sha256": "539666c84ee8d63c77fac93a7856a931d7971a01d477f58644e28127c3ba8658",
         "size": 1455,
         "contentType": "application/json"
@@ -12613,7 +12613,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/source/reference/astrid-capture-20260910/495ded2c-b5b4-2f9f-64d8-6f495493d2de/495ded2cb5b42f9f64d86f495493d2de15e6431b2fc16f4f240f3417fcd2e99b.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/performance/scene-acceptance/495ded2c-b5b4-2f9f-64d8-6f495493d2de/495ded2cb5b42f9f64d86f495493d2de15e6431b2fc16f4f240f3417fcd2e99b.json",
         "sha256": "495ded2cb5b42f9f64d86f495493d2de15e6431b2fc16f4f240f3417fcd2e99b",
         "size": 1333,
         "contentType": "application/json"
@@ -12943,7 +12943,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-blue-box4/preview-mask/bf512270-6cc1-ff32-2856-5a1e42b61b96/bf5122706cc1ff3228565a1e42b61b96ed9bda3ee196a8ee24dd53401019d3aa.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-blue-box4/bf512270-6cc1-ff32-2856-5a1e42b61b96/bf5122706cc1ff3228565a1e42b61b96ed9bda3ee196a8ee24dd53401019d3aa.json",
         "sha256": "bf5122706cc1ff3228565a1e42b61b96ed9bda3ee196a8ee24dd53401019d3aa",
         "size": 626,
         "contentType": "application/json"
@@ -13288,7 +13288,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-elevated-camera/mask-prep/video/a7634757-88c5-9130-1eab-0f6dc061f492/a763475788c591301eab0f6dc061f49221e6908ce32837aa11fcb1c16835fdfe.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-elevated-table/a7634757-88c5-9130-1eab-0f6dc061f492/a763475788c591301eab0f6dc061f49221e6908ce32837aa11fcb1c16835fdfe.json",
         "sha256": "a763475788c591301eab0f6dc061f49221e6908ce32837aa11fcb1c16835fdfe",
         "size": 26115,
         "contentType": "application/json"
@@ -13573,7 +13573,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-eye-contact-idle/5e3c4ac4-edb6-6fc6-dcc6-f8df171d99cd/5e3c4ac4edb66fc6dcc6f8df171d99cd572ee11fa345c8e7abf6329a234b5e33.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-elevated-idle/5e3c4ac4-edb6-6fc6-dcc6-f8df171d99cd/5e3c4ac4edb66fc6dcc6f8df171d99cd572ee11fa345c8e7abf6329a234b5e33.json",
         "sha256": "5e3c4ac4edb66fc6dcc6f8df171d99cd572ee11fa345c8e7abf6329a234b5e33",
         "size": 561,
         "contentType": "application/json"
@@ -13648,7 +13648,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-box-right/mask/e775e97a-f0cb-a789-92ce-f27b1db6b346/e775e97af0cba78992cef27b1db6b3461e807d8d943db67e0ff532a2b791e464.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-table-v2/e775e97a-f0cb-a789-92ce-f27b1db6b346/e775e97af0cba78992cef27b1db6b3461e807d8d943db67e0ff532a2b791e464.json",
         "sha256": "e775e97af0cba78992cef27b1db6b3461e807d8d943db67e0ff532a2b791e464",
         "size": 27198,
         "contentType": "application/json"
@@ -13663,7 +13663,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-box-right/a7439dba-bd4d-2586-2b17-3f9dcdb765d9/a7439dbabd4d25862b173f9dcdb765d9df279a594747239fc702b40f5f424836.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-table-v2/a7439dba-bd4d-2586-2b17-3f9dcdb765d9/a7439dbabd4d25862b173f9dcdb765d9df279a594747239fc702b40f5f424836.json",
         "sha256": "a7439dbabd4d25862b173f9dcdb765d9df279a594747239fc702b40f5f424836",
         "size": 47860,
         "contentType": "application/json"
@@ -14098,7 +14098,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/blackjack/mask/25d7bbd5-6a04-f471-8829-848ceac55a1f/25d7bbd56a04f4718829848ceac55a1ff3fdbe31cbe8b91b46e7e0249c9125be.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/blackjack/mask-face-repair/25d7bbd5-6a04-f471-8829-848ceac55a1f/25d7bbd56a04f4718829848ceac55a1ff3fdbe31cbe8b91b46e7e0249c9125be.json",
         "sha256": "25d7bbd56a04f4718829848ceac55a1ff3fdbe31cbe8b91b46e7e0249c9125be",
         "size": 52424,
         "contentType": "application/json"
@@ -14173,7 +14173,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/mask/d97444cb-4eba-96a0-8716-d4a1c4db41c9/d97444cb4eba96a08716d4a1c4db41c9368c4936c1adc8324e4ec6cde86941bb.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/bust/mask-face-repair/d97444cb-4eba-96a0-8716-d4a1c4db41c9/d97444cb4eba96a08716d4a1c4db41c9368c4936c1adc8324e4ec6cde86941bb.json",
         "sha256": "d97444cb4eba96a08716d4a1c4db41c9368c4936c1adc8324e4ec6cde86941bb",
         "size": 22686,
         "contentType": "application/json"
@@ -14248,7 +14248,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter1/mask/0c58af21-3f56-38b4-ff95-b329969a83be/0c58af213f5638b4ff95b329969a83be1b9ec92663a242bc22314b3ce8034a9c.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter1/mask-face-repair/0c58af21-3f56-38b4-ff95-b329969a83be/0c58af213f5638b4ff95b329969a83be1b9ec92663a242bc22314b3ce8034a9c.json",
         "sha256": "0c58af213f5638b4ff95b329969a83be1b9ec92663a242bc22314b3ce8034a9c",
         "size": 40412,
         "contentType": "application/json"
@@ -14323,7 +14323,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter2/mask/c9be4226-12e5-87d0-b808-ed74b3536fe4/c9be422612e587d0b808ed74b3536fe4b720aa904f5c4deb7cb8dbc637739c29.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/chatter2/mask-face-repair/c9be4226-12e5-87d0-b808-ed74b3536fe4/c9be422612e587d0b808ed74b3536fe4b720aa904f5c4deb7cb8dbc637739c29.json",
         "sha256": "c9be422612e587d0b808ed74b3536fe4b720aa904f5c4deb7cb8dbc637739c29",
         "size": 36251,
         "contentType": "application/json"
@@ -14398,7 +14398,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerblackjack/mask/b45f18f1-eb92-d6ff-7b5d-82b0f6bb0b47/b45f18f1eb92d6ff7b5d82b0f6bb0b474ffe1ba5de1d9e428a65bcb0bde8b56b.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerblackjack/mask-face-repair/b45f18f1-eb92-d6ff-7b5d-82b0f6bb0b47/b45f18f1eb92d6ff7b5d82b0f6bb0b474ffe1ba5de1d9e428a65bcb0bde8b56b.json",
         "sha256": "b45f18f1eb92d6ff7b5d82b0f6bb0b474ffe1ba5de1d9e428a65bcb0bde8b56b",
         "size": 30538,
         "contentType": "application/json"
@@ -14473,7 +14473,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/mask/d2f1996b-0f20-7f67-0aff-333cc9f1d679/d2f1996b0f207f670aff333cc9f1d6797d354768f427b1bf762367e20a50ff37.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/dealerbust/mask-face-repair/d2f1996b-0f20-7f67-0aff-333cc9f1d679/d2f1996b0f207f670aff333cc9f1d6797d354768f427b1bf762367e20a50ff37.json",
         "sha256": "d2f1996b0f207f670aff333cc9f1d6797d354768f427b1bf762367e20a50ff37",
         "size": 48234,
         "contentType": "application/json"
@@ -14548,7 +14548,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/double/mask/08e4be22-40c4-e5a1-d91a-e2b7779555a1/08e4be2240c4e5a1d91ae2b7779555a12e024de5a4f7050824ec83b854d76db7.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/double/mask-face-repair/08e4be22-40c4-e5a1-d91a-e2b7779555a1/08e4be2240c4e5a1d91ae2b7779555a12e024de5a4f7050824ec83b854d76db7.json",
         "sha256": "08e4be2240c4e5a1d91ae2b7779555a12e024de5a4f7050824ec83b854d76db7",
         "size": 30519,
         "contentType": "application/json"
@@ -14623,7 +14623,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/farewell/mask/67986c49-7066-d1e5-4e35-d5ab05d5a0a6/67986c497066d1e54e35d5ab05d5a0a6cbaccdb76b1f5a387ddf3e6cafd4feac.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/farewell/mask-face-repair/67986c49-7066-d1e5-4e35-d5ab05d5a0a6/67986c497066d1e54e35d5ab05d5a0a6cbaccdb76b1f5a387ddf3e6cafd4feac.json",
         "sha256": "67986c497066d1e54e35d5ab05d5a0a6cbaccdb76b1f5a387ddf3e6cafd4feac",
         "size": 28428,
         "contentType": "application/json"
@@ -14698,7 +14698,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/goodluck/mask/c9ff4c64-45f9-9329-e071-91c5b7275aff/c9ff4c6445f99329e07191c5b7275affd95e3b465b9b462942f057c6f32d4e7d.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/goodluck/mask-face-repair/c9ff4c64-45f9-9329-e071-91c5b7275aff/c9ff4c6445f99329e07191c5b7275affd95e3b465b9b462942f057c6f32d4e7d.json",
         "sha256": "c9ff4c6445f99329e07191c5b7275affd95e3b465b9b462942f057c6f32d4e7d",
         "size": 30513,
         "contentType": "application/json"
@@ -14773,7 +14773,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/insurance/mask/ed0b0e55-13c1-b6e6-234d-319d271eb2aa/ed0b0e5513c1b6e6234d319d271eb2aa560bf71e98074c055737b50e65307f26.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/insurance/mask-face-repair/ed0b0e55-13c1-b6e6-234d-319d271eb2aa/ed0b0e5513c1b6e6234d319d271eb2aa560bf71e98074c055737b50e65307f26.json",
         "sha256": "ed0b0e5513c1b6e6234d319d271eb2aa560bf71e98074c055737b50e65307f26",
         "size": 30530,
         "contentType": "application/json"
@@ -14848,7 +14848,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/lose/mask/3ba9d3ee-456a-7ce7-47f9-07faf2a0fb0a/3ba9d3ee456a7ce747f907faf2a0fb0a528f328fc74e909276b311adfccfc85a.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/lose/mask-face-repair/3ba9d3ee-456a-7ce7-47f9-07faf2a0fb0a/3ba9d3ee456a7ce747f907faf2a0fb0a528f328fc74e909276b311adfccfc85a.json",
         "sha256": "3ba9d3ee456a7ce747f907faf2a0fb0a528f328fc74e909276b311adfccfc85a",
         "size": 24256,
         "contentType": "application/json"
@@ -14923,7 +14923,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/peek/mask/13718225-b53c-48f1-2821-1c0f93991a1e/13718225b53c48f128211c0f93991a1e75519b215e2193ac746f9dd142f21862.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/peek/mask-face-repair/13718225-b53c-48f1-2821-1c0f93991a1e/13718225b53c48f128211c0f93991a1e75519b215e2193ac746f9dd142f21862.json",
         "sha256": "13718225b53c48f128211c0f93991a1e75519b215e2193ac746f9dd142f21862",
         "size": 38337,
         "contentType": "application/json"
@@ -14998,7 +14998,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/placebets/mask/6a200d89-e81e-7d22-491f-69e96aee1803/6a200d89e81e7d22491f69e96aee180312829e9f96fe945af904c04c0bb58257.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/placebets/mask-face-repair/6a200d89-e81e-7d22-491f-69e96aee1803/6a200d89e81e7d22491f69e96aee180312829e9f96fe945af904c04c0bb58257.json",
         "sha256": "6a200d89e81e7d22491f69e96aee180312829e9f96fe945af904c04c0bb58257",
         "size": 32598,
         "contentType": "application/json"
@@ -15073,7 +15073,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/push/mask/ee9c4a81-bd4c-06fc-1af7-bfd7aa9264bc/ee9c4a81bd4c06fc1af7bfd7aa9264bc2a151ed308137bfea16f01a774e8d436.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/push/mask-face-repair/ee9c4a81-bd4c-06fc-1af7-bfd7aa9264bc/ee9c4a81bd4c06fc1af7bfd7aa9264bc2a151ed308137bfea16f01a774e8d436.json",
         "sha256": "ee9c4a81bd4c06fc1af7bfd7aa9264bc2a151ed308137bfea16f01a774e8d436",
         "size": 28416,
         "contentType": "application/json"
@@ -15148,7 +15148,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/sidebet/mask/928bbc44-0b41-4231-0b8f-43d87377a750/928bbc440b4142310b8f43d87377a750e780b41fdf0ef9e86630a313696cd252.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/sidebet/mask-face-repair/928bbc44-0b41-4231-0b8f-43d87377a750/928bbc440b4142310b8f43d87377a750e780b41fdf0ef9e86630a313696cd252.json",
         "sha256": "928bbc440b4142310b8f43d87377a750e780b41fdf0ef9e86630a313696cd252",
         "size": 30520,
         "contentType": "application/json"
@@ -15223,7 +15223,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/win/mask/7339e511-2dbe-5f73-e92e-286a3b60c0e7/7339e5112dbe5f73e92e286a3b60c0e7c3eb479a4024885d95628bf4ac151436.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/lines/win/mask-face-repair/7339e511-2dbe-5f73-e92e-286a3b60c0e7/7339e5112dbe5f73e92e286a3b60c0e7c3eb479a4024885d95628bf4ac151436.json",
         "sha256": "7339e5112dbe5f73e92e286a3b60c0e7c3eb479a4024885d95628bf4ac151436",
         "size": 50321,
         "contentType": "application/json"
@@ -15313,7 +15313,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/mask/664efe4e-36cf-5c4d-df19-f5985fdc5d26/664efe4e36cf5c4ddf19f5985fdc5d2648b54584d7e434a8760d7418603528ff.json",
+        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-speak-elevenlabs/mask-face-repair/664efe4e-36cf-5c4d-df19-f5985fdc5d26/664efe4e36cf5c4ddf19f5985fdc5d2648b54584d7e434a8760d7418603528ff.json",
         "sha256": "664efe4e36cf5c4ddf19f5985fdc5d2648b54584d7e434a8760d7418603528ff",
         "size": 64375,
         "contentType": "application/json"
@@ -15748,7 +15748,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-green-waiting/mask/afda7e90-beea-f3bc-6349-308d22cb3965/afda7e90beeaf3bc6349308d22cb3965de7be8c5b86bd1756ed1f4068fc2ab6a.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-waiting/afda7e90-beea-f3bc-6349-308d22cb3965/afda7e90beeaf3bc6349308d22cb3965de7be8c5b86bd1756ed1f4068fc2ab6a.json",
         "sha256": "afda7e90beeaf3bc6349308d22cb3965de7be8c5b86bd1756ed1f4068fc2ab6a",
         "size": 33116,
         "contentType": "application/json"
@@ -16153,7 +16153,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-table-v2/dea3bcc1-c908-307d-1987-173d9ab2ba61/dea3bcc1c908307d1987173d9ab2ba612971c386c7cb557e3de3f0428eb244f4.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-table-v2/dea3bcc1-c908-307d-1987-173d9ab2ba61/dea3bcc1c908307d1987173d9ab2ba612971c386c7cb557e3de3f0428eb244f4.json",
         "sha256": "dea3bcc1c908307d1987173d9ab2ba612971c386c7cb557e3de3f0428eb244f4",
         "size": 1658,
         "contentType": "application/json"
@@ -16213,7 +16213,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-19/astrid-table-v2/mask/40846caa-112e-4334-e9be-4cbda73bd1da/40846caa112e4334e9be4cbda73bd1da5de1744912263a4e091b87a3e591f9fa.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-table-v2/40846caa-112e-4334-e9be-4cbda73bd1da/40846caa112e4334e9be4cbda73bd1da5de1744912263a4e091b87a3e591f9fa.json",
         "sha256": "40846caa112e4334e9be4cbda73bd1da5de1744912263a4e091b87a3e591f9fa",
         "size": 27015,
         "contentType": "application/json"
@@ -16963,7 +16963,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-20/astrid-seam-repair/runtime/f38e15f8-e329-c294-a149-307e3125fcec/f38e15f8e329c294a149307e3125fcecdd81a7a13927f9e5ab475c2fafbdeb9b.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-waiting/f38e15f8-e329-c294-a149-307e3125fcec/f38e15f8e329c294a149307e3125fcecdd81a7a13927f9e5ab475c2fafbdeb9b.json",
         "sha256": "f38e15f8e329c294a149307e3125fcecdd81a7a13927f9e5ab475c2fafbdeb9b",
         "size": 6902,
         "contentType": "application/json"
@@ -16993,7 +16993,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/staging/2026-09-20/astrid-seam-repair/runtime/371e4474-28ad-57f5-34b2-117973236c2d/371e447428ad57f534b2117973236c2d5a54d383aa1e152ab00b550c2220fdcf.json",
+        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/371e4474-28ad-57f5-34b2-117973236c2d/371e447428ad57f534b2117973236c2d5a54d383aa1e152ab00b550c2220fdcf.json",
         "sha256": "371e447428ad57f534b2117973236c2d5a54d383aa1e152ab00b550c2220fdcf",
         "size": 66593,
         "contentType": "application/json"
@@ -18778,7 +18778,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/mei/runtime/indexed/streams/pre-trim/277c9243-31b2-bf3e-baf0-de4200636168/277c924331b2bf3ebaf0de4200636168dddf118bb22b2300f3e54945e9632177.h264",
+        "pathname": "croupier/media/dealers/mei/runtime/indexed/streams/orig/277c9243-31b2-bf3e-baf0-de4200636168/277c924331b2bf3ebaf0de4200636168dddf118bb22b2300f3e54945e9632177.h264",
         "sha256": "277c924331b2bf3ebaf0de4200636168dddf118bb22b2300f3e54945e9632177",
         "size": 616108,
         "contentType": "application/octet-stream"
@@ -20512,7 +20512,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/orig/d16fbba7-c1be-9fd1-fd38-2b4efa37bc0a/d16fbba7c1be9fd1fd382b4efa37bc0a8daba0c55e2e46bb7a03c691a27db8a2.mp3",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/dry/d16fbba7-c1be-9fd1-fd38-2b4efa37bc0a/d16fbba7c1be9fd1fd382b4efa37bc0a8daba0c55e2e46bb7a03c691a27db8a2.mp3",
         "sha256": "d16fbba7c1be9fd1fd382b4efa37bc0a8daba0c55e2e46bb7a03c691a27db8a2",
         "size": 71515,
         "contentType": "audio/mpeg"
@@ -20529,7 +20529,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/orig/7ba71144-fd6d-e749-2c36-8e2ee234ca96/7ba71144fd6de7492c368e2ee234ca9670fdc676b3f8dc5b422cabe985b1d0d7.mp3",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/dry/7ba71144-fd6d-e749-2c36-8e2ee234ca96/7ba71144fd6de7492c368e2ee234ca9670fdc676b3f8dc5b422cabe985b1d0d7.mp3",
         "sha256": "7ba71144fd6de7492c368e2ee234ca9670fdc676b3f8dc5b422cabe985b1d0d7",
         "size": 65245,
         "contentType": "audio/mpeg"
@@ -20631,7 +20631,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/orig/6e87cdc8-e5c5-286c-c37d-ac4fbb7a7597/6e87cdc8e5c5286cc37dac4fbb7a7597f00f75a3e9e4b184da24af625d2027a9.mp3",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/dry/6e87cdc8-e5c5-286c-c37d-ac4fbb7a7597/6e87cdc8e5c5286cc37dac4fbb7a7597f00f75a3e9e4b184da24af625d2027a9.mp3",
         "sha256": "6e87cdc8e5c5286cc37dac4fbb7a7597f00f75a3e9e4b184da24af625d2027a9",
         "size": 59812,
         "contentType": "audio/mpeg"
@@ -20733,7 +20733,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/orig/8bfb93a5-c25a-d117-70d7-19b10842dfee/8bfb93a5c25ad11770d719b10842dfeeb55859ff00b3fee6453e145cf5fcafe0.mp3",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/dry/8bfb93a5-c25a-d117-70d7-19b10842dfee/8bfb93a5c25ad11770d719b10842dfeeb55859ff00b3fee6453e145cf5fcafe0.mp3",
         "sha256": "8bfb93a5c25ad11770d719b10842dfeeb55859ff00b3fee6453e145cf5fcafe0",
         "size": 53542,
         "contentType": "audio/mpeg"
@@ -20903,7 +20903,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/orig/342f12b3-ed1a-1610-8fcb-00ab50375e6f/342f12b3ed1a16108fcb00ab50375e6f3a693b5de2d0e1bdc0a4d964d3915c20.mp3",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/audio/en/dry/342f12b3-ed1a-1610-8fcb-00ab50375e6f/342f12b3ed1a16108fcb00ab50375e6f3a693b5de2d0e1bdc0a4d964d3915c20.mp3",
         "sha256": "342f12b3ed1a16108fcb00ab50375e6f3a693b5de2d0e1bdc0a4d964d3915c20",
         "size": 46019,
         "contentType": "audio/mpeg"
@@ -22484,7 +22484,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/1b843dbd-9cf0-2599-f103-be263b3c1993/1b843dbd9cf02599f103be263b3c199346079d9cf39cf005e7359fade3770291.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/1b843dbd-9cf0-2599-f103-be263b3c1993/1b843dbd9cf02599f103be263b3c199346079d9cf39cf005e7359fade3770291.h264",
         "sha256": "1b843dbd9cf02599f103be263b3c199346079d9cf39cf005e7359fade3770291",
         "size": 681706,
         "contentType": "application/octet-stream"
@@ -22501,7 +22501,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/c9bffcbb-25eb-0f7d-a2b5-b316da74b98f/c9bffcbb25eb0f7da2b5b316da74b98fccf5b1476039e6b25db497d2768d87de.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/c9bffcbb-25eb-0f7d-a2b5-b316da74b98f/c9bffcbb25eb0f7da2b5b316da74b98fccf5b1476039e6b25db497d2768d87de.h264",
         "sha256": "c9bffcbb25eb0f7da2b5b316da74b98fccf5b1476039e6b25db497d2768d87de",
         "size": 681196,
         "contentType": "application/octet-stream"
@@ -22535,7 +22535,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/c32840dd-6240-1b75-7c1d-bfe4c67499cf/c32840dd62401b757c1dbfe4c67499cf9a59186ba5c3a34a3e78f043398dc649.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/c32840dd-6240-1b75-7c1d-bfe4c67499cf/c32840dd62401b757c1dbfe4c67499cf9a59186ba5c3a34a3e78f043398dc649.h264",
         "sha256": "c32840dd62401b757c1dbfe4c67499cf9a59186ba5c3a34a3e78f043398dc649",
         "size": 653369,
         "contentType": "application/octet-stream"
@@ -22552,7 +22552,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/f25b7903-d9e4-0c06-f0dd-c0fc34207b63/f25b7903d9e40c06f0ddc0fc34207b637c05897ab753400521ccd8aca4295642.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/f25b7903-d9e4-0c06-f0dd-c0fc34207b63/f25b7903d9e40c06f0ddc0fc34207b637c05897ab753400521ccd8aca4295642.h264",
         "sha256": "f25b7903d9e40c06f0ddc0fc34207b637c05897ab753400521ccd8aca4295642",
         "size": 641970,
         "contentType": "application/octet-stream"
@@ -22569,7 +22569,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/ca24cffd-6f6f-bc67-c7e1-7a1f94f62790/ca24cffd6f6fbc67c7e17a1f94f62790e73f096df3ec8982fc8327aa35b024bc.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/ca24cffd-6f6f-bc67-c7e1-7a1f94f62790/ca24cffd6f6fbc67c7e17a1f94f62790e73f096df3ec8982fc8327aa35b024bc.h264",
         "sha256": "ca24cffd6f6fbc67c7e17a1f94f62790e73f096df3ec8982fc8327aa35b024bc",
         "size": 868280,
         "contentType": "application/octet-stream"
@@ -22586,7 +22586,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/fe77be3c-a8a7-0bff-18bc-9da8b802aece/fe77be3ca8a70bff18bc9da8b802aece1bcb7bad1b69b52f2e6cb808948bd5e4.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/fe77be3c-a8a7-0bff-18bc-9da8b802aece/fe77be3ca8a70bff18bc9da8b802aece1bcb7bad1b69b52f2e6cb808948bd5e4.h264",
         "sha256": "fe77be3ca8a70bff18bc9da8b802aece1bcb7bad1b69b52f2e6cb808948bd5e4",
         "size": 1119713,
         "contentType": "application/octet-stream"
@@ -22603,7 +22603,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/36bcbf19-8405-4ad9-9e75-0854661b354b/36bcbf1984054ad99e750854661b354b0c35fbc65db7d34161f879cb4918e7e2.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/36bcbf19-8405-4ad9-9e75-0854661b354b/36bcbf1984054ad99e750854661b354b0c35fbc65db7d34161f879cb4918e7e2.h264",
         "sha256": "36bcbf1984054ad99e750854661b354b0c35fbc65db7d34161f879cb4918e7e2",
         "size": 1219693,
         "contentType": "application/octet-stream"
@@ -22620,7 +22620,7 @@
       ],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/orig/ec3f37e9-1d7c-dc37-69dd-74409ac9a72e/ec3f37e91d7cdc3769dd74409ac9a72e746479c726bc330d859534f658f6d6ce.h264",
+        "pathname": "croupier/media/dealers/vera/runtime/indexed/streams/ec3f37e9-1d7c-dc37-69dd-74409ac9a72e/ec3f37e91d7cdc3769dd74409ac9a72e746479c726bc330d859534f658f6d6ce.h264",
         "sha256": "ec3f37e91d7cdc3769dd74409ac9a72e746479c726bc330d859534f658f6d6ce",
         "size": 678952,
         "contentType": "application/octet-stream"
@@ -23001,7 +23001,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/game/source/3d/7920d9dc-2247-9baf-3145-cf1c6d193344/7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db.json",
+        "pathname": "croupier/media/game/runtime/assets/blackjack-3d/7920d9dc-2247-9baf-3145-cf1c6d193344/7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db.json",
         "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
         "size": 1625,
         "contentType": "application/json"
@@ -25266,7 +25266,7 @@
       "legacyUrls": [],
       "storage": {
         "provider": "vercel-blob",
-        "pathname": "croupier/media/game/staging/2026-09-13/shoe-pickup/low-turn/mattes/slide/19c59b41-917a-91d6-a3d9-a1c30b50f94a/19c59b41917a91d6a3d9a1c30b50f94a1895f8c6f32877903727b4752904f505.json",
+        "pathname": "croupier/media/game/staging/2026-09-13/shoe-pickup/low-turn/mattes/source/19c59b41-917a-91d6-a3d9-a1c30b50f94a/19c59b41917a91d6a3d9a1c30b50f94a1895f8c6f32877903727b4752904f505.json",
         "sha256": "19c59b41917a91d6a3d9a1c30b50f94a1895f8c6f32877903727b4752904f505",
         "size": 13352,
         "contentType": "application/json"

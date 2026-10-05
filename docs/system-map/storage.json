@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "5270c8ab93bf593512d0374cb9c36033e59dc103",
+  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
   "evidence": {
     "kind": "Kodläst katalog",
     "liveSchemaRead": false,
@@ -101,8 +101,7 @@
           "line": 55
         },
         {
-          "path": "docs/environment-variables.json",
-          "line": 366
+          "path": "docs/environment-variables.json"
         }
       ]
     }
@@ -177,8 +176,7 @@
           "line": 10
         },
         {
-          "path": "web/storage/studio-contract.mjs",
-          "line": 6
+          "path": "web/storage/studio-contract.mjs"
         },
         {
           "path": "web/storage/studio-repository.mjs",
@@ -5353,7 +5351,7 @@
         "staging"
       ],
       "delivery": "Serverbehöriga GET/HEAD/Range; inga lagringskeys eller privata provider-URL:er till frontend.",
-      "integrity": "Immutable exakt path + hash/storlek/type; allowOverwrite=false och verifierad readback.",
+      "integrity": "Immutable exakt hash/storlek/type; allowOverwrite=false och verifierad readback. Byteidentiska registrerade poster kan dela storage.pathname; logiskt ID och dess åtkomst består.",
       "generatedSpeech": "Ägarbundna WAV-/MP4-paths; färdiga referenser publiceras i ägarbunden Neon-requestjournal.",
       "sources": [
         {
@@ -5369,10 +5367,19 @@
           "line": 25
         },
         {
-          "path": "docs/CLOUD-MIGRATION.md",
-          "line": 1234
+          "path": "docs/CLOUD-MIGRATION.md"
+        },
+        {
+          "path": "tools/media-layout.mjs"
+        },
+        {
+          "path": "tools/export-media-blob.mjs"
+        },
+        {
+          "path": "tools/deduplicate-media.mjs"
         }
-      ]
+      ],
+      "aliases": "media/layout.json v1: optional canonicalPath pekar direkt till en registrerad icke-aliasrad med samma hash, storlek och filändelse. Ingen aliaskedja. Lokal fysisk fil är canonicalPath ?? path; behörighet följer efterfrågad logisk post."
     },
     {
       "id": "runtime-temp",
@@ -5411,8 +5418,7 @@
       "guard": "Mountless start kräver Postgres, gemensam Neon-policy, privat Blob och frånvaro av avvecklad diskkonfiguration.",
       "sources": [
         {
-          "path": "docs/CLOUD-MIGRATION.md",
-          "line": 1262
+          "path": "docs/CLOUD-MIGRATION.md"
         },
         {
           "path": "ops/cloud/container-entry.mjs",
@@ -5431,8 +5437,7 @@
       "state": "AI dokumenterat OFF; ingen produktionskontotestkälla.",
       "sources": [
         {
-          "path": "docs/CLOUD-MIGRATION.md",
-          "line": 1263
+          "path": "docs/CLOUD-MIGRATION.md"
         }
       ]
     },
@@ -5446,8 +5451,7 @@
       "authoritativeFor": "Katalog, historik och Companion-databas.",
       "sources": [
         {
-          "path": "docs/CLOUD-MIGRATION.md",
-          "line": 1264
+          "path": "docs/CLOUD-MIGRATION.md"
         }
       ]
     },
@@ -5461,8 +5465,7 @@
       "authoritativeFor": "OpenClaw-konfiguration, agentfiler, sessioner och sökdatabas.",
       "sources": [
         {
-          "path": "docs/CLOUD-MIGRATION.md",
-          "line": 1265
+          "path": "docs/CLOUD-MIGRATION.md"
         }
       ]
     }
@@ -5546,6 +5549,17 @@
       ],
       "coverage": "Names-only-parser, obligatoriska/olistade namn, dubbletter och serviceuppdelning.",
       "liveOptIn": false
+    },
+    {
+      "id": "media-physical-deduplication",
+      "files": [
+        "test/media-layout.mjs",
+        "test/media-migration.mjs",
+        "test/media-blob-export.mjs",
+        "test/media-deduplication.mjs"
+      ],
+      "coverage": "Direktalias med bibehållen logisk identitet, hash, storlek, URL och åtkomst; en fysisk fil och Blobnyckel för identiska bytes; referensskydd före radering.",
+      "liveOptIn": false
     }
   ],
   "caveats": [
@@ -5554,7 +5568,6 @@
     "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
     "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
     "Aktuella repoavsnitt beskriver genomförd produktionsmigration/diskavveckling; historiska avsnitt beskriver äldre mellanlägen. Aktuellt lagringsunderlag: CLOUD-MIGRATION.md:1217–1272 och ENVIRONMENT-VARIABLES.md:18–33.",
-    "ENVIRONMENT-VARIABLES.md:314 säger fortfarande att videos/index.json ligger på beständig Render-disk. Det står i konflikt med nyare diskfri produktionsbeskrivning och ska inte presenteras som ett bekräftat aktivt produktberoende.",
     "Full extern Director-/Gateway-backup är dokumenterat ett separat kvarvarande ansvar.",
     "Versionschecksum, mediahash och testpass bevisar inte visuell lipsyncacceptans.",
     "Gamla Lissabon/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift.",
