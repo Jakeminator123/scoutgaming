@@ -61,7 +61,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   otillgängliginfo, inga kontroller/alerts och noll röst-GET/POST/API503.
   Klart när menyrutter/direktlänkar/login fungerar ihop, utkast bevaras och
   kvarvarande desktop-/mobil- och användarflöden faktiskt är verifierade.
-- [x] **D. P6:s isolerade SQL/HTTPS-prov — verifierat lokalt 5 oktober.** Huvudagenten har rättat testfixturens
+- [x] **D. P6:s isolerade SQL/HTTPS-prov — verifierat lokalt och i CI 5 oktober.** Huvudagenten har rättat testfixturens
   saknade `gameDb` i både auth- och kontofabriken samt äldre reader/staff-
   antaganden. Osäker talleverantörssubmission ska förbli spärrad vid shutdown,
   inte förväntas vara rent avslutad. Behåll negativa rollprov,
@@ -71,7 +71,8 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   retained-bank-kontroller. Verklig SQL/HTTPS/omstart och cleanup passerade;
   versionskvitto har stabila inputbytes. Körning 1–2 FAIL är bevarade. Detta
   stänger den isolerade deluppgiften, inte återstående mänsklig/live-P6 i H.
-- [x] **E. Systemkartan visar faktiskt provutfall — verifierat på cd9f5b21.** Samma isolerade SQL-motor
+  Samma motor har nu faktiskt PASS i CI37308717362 på exakt e49f6f36.
+- [x] **E. Systemkartan visar faktiskt provutfall — verifierat på e49f6f36.** Samma isolerade SQL-motor
   används i CI. `ba0cb7ee`, CI `37300874695`, failed före databasstart när
   runnerns installerade PGDG-libpq saknade nedladdningskälla. Exporten är
   korrekt röd för `studio.sql-restart-https`, med exakt SHA och observationstid.
@@ -87,10 +88,14 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Export: 19green/0red/5grey, inga valideringsfel; okända delar förblir grå.
   routes.studio saknade ett befintligt event-treeprov i CI. CI37307380711 på
   exakt 34f64e34 kör det:14PASS, routekontrakt GREEN. Färsk export har20green/
-  0red/4grey och faktiskt SQL PASS. Två ytterligare kvittoluckor rättas nu:
-  befintligt shoe-prov flyttas före exporten/genom reportern utan dubbelkörning,
-  och befintligt zone-cloud-store-prov läggs till fullhook;15lokalaPASS/0skip.
-  Nytt CI måste verifiera kopplingen. De två persistencekontrakten behåller
+  0red/4grey och faktiskt SQL PASS. Två ytterligare kvittoluckor är rättade:
+  befintligt shoe-prov körs före exporten/genom reportern utan dubbelkörning,
+  och befintligt zone-cloud-store-prov ingår fullhook;15lokalaPASS/0skip.
+  CI37308717362 på exakt e49f6f36 har tre successjobb och export22green/0red/
+  2grey, errors[], observedAt2026-10-05T12:22:56.667Z. Faktisk SQLentry
+  passed1/failed0/skipped0; event-tree14PASS, zone14PASS och shoe1filPASS
+  med197internaassertions. Spel-/zonkontrakten är GREEN. Fullhook1569PASS/
+  9befintligaskip/0fel/cancel. De två persistencekontrakten behåller
   GREY: deras riktiga concurrency/persistenceprov kräver isolerad
   croupier_game_qa och kördes inte. Separat Studio-SQL-PASS ersätter det inte.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
@@ -104,10 +109,10 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Klart när faktisk produktionskonfiguration är återläst och provet fungerar
   hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
-  workspace795524/source30689542, 12:09UTC: 12 öppna och fem ignorerade,
+  workspace795524/source30689542, 12:20UTC: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade
   öppna fynd täcker sju källhashpositioner i `docs/system-map/contracts.json`,
-  verifierade mot exakt 34f64e34. Senaste nya ID är 37880359/60. Äldre matchning
+  verifierade mot exakt e49f6f36. Senaste nya ID är 37880359/60. Äldre matchning
   för 37867512/37879729 är fryst eftersom deras källfiler har ändrats och dagens
   metadata saknar positioner. Även 37862641/37863164/65/66 saknar positioner.
   Totalt nio positionsluckor, varav sex öppna. Historisk fixtureklassning är

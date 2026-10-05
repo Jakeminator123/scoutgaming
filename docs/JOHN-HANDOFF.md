@@ -32,23 +32,29 @@ förbättra långsam navigation och arbeta med parallella underagenter. Den enda
 [öppna checklistan](CLOUD-MIGRATION.md#öppen-arbetschecklista-en-sammanhängande-studio)
 finns i befintlig masterplan. MERGE fortsätter inga ändringar eller integrationer.
 
-Senast verifierad UIversion är 34f64e344d4885171f8a5f7e10c7644b33a6c96d,
-pushad på main. CI37307380711 har alla tre jobb success, inklusive faktiskt
-isolerat SQL/HTTPS/omstartsprov. Fullhook: 1 554 PASS/9 befintliga skip/0 fel/
-cancel; privat studio-bo-navigation-commit-20261005.log. Båda Vercel production
-READY exakt SHA: Studio dpl_GmXLUmZTc9gWbTgQF2Bq1rdFTcQA och frontend
-dpl_2udt1sMwseivhHuYQXhCzqYJyMch. Båda region iad1, DBregion ej belagd.
+Senaste funktions-/CIleverans är e49f6f36a9500761a0d65fe11c34b8777a45e369,
+pushad på main. CI37308717362 har alla tre jobb success. Fullhook: 1 569 PASS,
+9 befintliga skip, 0 fel/cancel; privat studio-map-reporter-commit-20261005.log.
+Båda Vercel production READY exakt SHA: Studio dpl_8eAosJB21Xhs4qgkYrSFMFXia5vX
+och frontend dpl_DFHjLNwRsP5MkrQQ6fQAh49CsccE. Båda region iad1, DBregion
+inte belagd. Sedan UIversion34 har bara provkvitton och dokument ändrats.
 
-Privat export system-map-34f64e34-ci37307380711/: source/currentSha exakt34,
-observedAt 2026-10-05T12:11:12.742Z, 20 green/0 red/4 grey, errors[]. Faktisk
-SQLentry passed1/failed0/skipped0 (12:11:12.649Z); SQLkontrakt GREEN.
-Event-treeprov 14 PASS; routes.studio nu GREEN. Två andra bevisluckor rättas
-nu: befintligt shoe-prov flyttas från sen körning till fullhookens reporter
-utan dubbelkörning, befintligt zone-cloud-store-prov läggs till fullhook.
-15 riktade lokala PASS/0 skip, inga assertions eller testmotorer ändrade.
-Nytt CI måste verifiera just denna resultatkoppling. Två persistencekontrakt
-behåller GREY: det riktiga postgres-persistence-provet kräver isolerad
-croupier_game_qa och kördes inte; separat Studio-SQL-PASS ersätter det inte.
+Privat export system-map-e49f6f36-ci37308717362/: source/currentSha exakte49,
+observedAt 2026-10-05T12:22:56.667Z, 22 green/0 red/2 grey, errors[]. Faktisk
+SQLentry passed1/failed0/skipped0 (12:22:56.570Z); SQLkontrakt GREEN.
+Event-tree14PASS, zone-cloud-store14PASS, shoe1filPASS med197internaassertions;
+routes.studio, game.events och schema.croupier_zones är GREEN. Befintliga shoe-
+och zone-prov går nu genom fullhookens reporter före export; shoe dubbelkörs
+inte. Inga assertions, testmotorer eller persistencekrav ändrade. Två kontrakt,
+schema.croupier_game/auth, behåller GREY: postgres-persistence har3PASS/1SKIP,
+och dess riktiga concurrency/persistenceprov kräver isolerad croupier_game_qa.
+Det provet kördes inte; separat Studio-SQL-PASS ersätter det inte.
+
+UIleverans34f64e344d4885171f8a5f7e10c7644b33a6c96d har CI37307380711 med tre
+successjobb, faktisk SQL PASS och fullhook1554PASS/9skip/0fel. Privat
+studio-bo-navigation-commit-20261005.log och system-map-34f64e34-ci37307380711/
+(20green/0red/4grey, exaktSHA/datum) bevaras. Nuvarande e49 har byteidentiska
+produkt-/UIkällor, men livemätningen nedan är uttryckligen fryst på34.
 
 Live34: 7 dataGET200/0 sessionGET/0 POST, fyra jämförelsebyten full/drained/
 untruncated. Drift 1,472s/Bord 5,544s/Drift igen 4,709s/Konton 1,181s.
@@ -134,9 +140,9 @@ och studio-ci-{37300874695,37303118034}-failed.log. Äldre fullhookloggar
 studio-integration-commit-20261005.log, studio-input-binding-commit-20261005.log
 (1 507 PASS/9 skip) och studio-bo-voice-commit-20261005.log (1 520 PASS/9 skip) kvar.
 
-GG 12:09:03UTC: workspace795524/source30689542 verifierad före komplett lista,
+GG 12:20:02UTC: workspace795524/source30689542 verifierad före komplett lista,
 1 incident-/17 locationsidor, 12 TRIGGERED/5 IGNORED. Sex positionerade öppna
-fynd har sju källhashpositioner som matchar exakt34: 37867511, 37879730/31/32,
+fynd har sju källhashpositioner som matchar exakt e49: 37867511, 37879730/31/32,
 37880359/60. De två sistnämnda är nya. Äldre 37867512/37879729 saknar nu
 position och källfilerna ändrades; cb8-klassningen är fryst. Även 37862641/
 37863164/65/66 saknar position. Totalt nio positionsluckor, sex öppna.
@@ -180,7 +186,7 @@ Isolerade punkt 1–2 är nu verifierade. Börja med första öppna punkt i chec
 | Ordning / status | Nästa konkreta arbete och berörda filer/ytor | Klart när |
 | --- | --- | --- |
 | 1. P6-testuppsättning — isolerad del PASS lokalt och i CI | `test/studio-cutover-integration.mjs` har `gameDb` i auth och kontofabrik samt aktuella admin/negativa rollprov. Reset/revoke, faktisk SQL och osäker-submission-spärr bevaras. Körning 3–8 passerade; 1–2 FAIL bevaras. Samma motor passerade faktiskt i CI37305177411 på cd9f5b21. | Den isolerade deluppgiften är klar på angiven version. Ny källa kräver nytt versionsbundet prov. Ingen riktig databas eller produktionsanvändare ändras; full P6 är separat punkt 5. |
-| 2. Koppla provresultaten till kartan — SQL/Studio-routing verifierade | CI37307380711 på34f64e34 visar faktiskt SQL PASS, routes.studio GREEN och20green/0red/4grey. Båda äldre röda exporter och nya PASS med exakt SHA/datum bevaras. Två små kopplingsluckor (shoe och zone) rättas nu genom samma reporter;15lokalaPASS. Två persistencekontrakt saknar fortfarande sitt riktiga isolerade prov. | SQL/Studio-koppling klar på34. Nytt CI måste verifiera shoe/zone-kvitton. Saknat/skippat prov blir aldrig grönt; nedladdade filer är frysta ögonblicksbilder. |
+| 2. Koppla provresultaten till kartan — verifierad FAIL och PASS | CI37308717362 på exakt e49f6f36 visar faktiskt SQL PASS, routing-/spel-/zonkontrakt GREEN och22green/0red/2grey. Båda äldre röda exporter och nya PASS med exakt SHA/datum bevaras. Shoe/zone går genom samma reporter utan dubbelkörning; inga tester försvagade. Två persistencekontrakt saknar fortfarande sitt riktiga isolerade prov. | Resultatkopplingen är klar på e49. Saknat/skippat prov blir aldrig grönt. Persistenceprov kräver isolerad croupier_game_qa; verkliga användardata används inte för test. Nedladdade filer är frysta ögonblicksbilder. |
 | 3. Produktionsmail — konfiguration saknas | Vercel `croupier-lab-ui` är mål. `RESEND_API_KEY` är tom och `CROUPIER_STUDIO_MAIL_FROM` saknas. Befintlig Resend-integration/key/sender ligger på `croupier-native-studio-qa-abc92154cb15`; dess GET `/domains` gav401. Kontrollera befintligt konto, korrekt projektkoppling, giltig nyckel, avsändare `no-reply@scoutgaming.tech` och public origin enligt `lab/lib/studio-native-mail.mjs`. | Konfigurationen är återläst på faktisk produktionsdeployment och ett uttryckligt avgränsat invite/reset-prov är användbart hela vägen. Inga spontana mejl till befintliga användare, inga nycklar i chatten/Git; domänläsning401 bevisar inte ensam sändbehörigheten. Be Jakob om endast den uppgift/åtkomst som faktiskt saknas. |
 | 4. GitGuardian — tolv öppna, sex öppna positionsluckor | Läs workspace795524/source30689542 via befintlig läsbrygga. Öppna ID: 37862641, 37863164/65/66, 37867511/12, 37879729/30/31/32, 37880359/60. Aktuell sexpositionerad källhashklassning gäller exakt cd9; äldre 37867512/37879729-klassning är fryst och deras positioner saknas nu. Incidenttabellen längre ned är historisk. | Varje fynd har aktuell belagd klassning och konkret hantering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
 | 5. Återstående P6-medie-/driftacceptans — delbevis finns | Följ befintligt P6-avsnitt: fyra dealers/två faktiska plays, auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/omstart samt naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk/kortkontakt och fysisk mic/kamera/mobil/Safari hålls explicit åtskilda från maskinprov. | Varje återstående krav har aktuellt bevis eller ett exakt kvarstående hinder. Inga nya takeapprovals från enbart hash/stillbild; budget/journal läses före betalda prov, inga automatiska retries och QA AI/GPU förblir OFF om inte Jakob uttryckligen ändrar detta. |
