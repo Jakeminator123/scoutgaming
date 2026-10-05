@@ -46,26 +46,36 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
   return async function authorize(request) {
     try {
       const token = cookie(request, 'bo_jwt', /^[A-Za-z0-9_.-]{1,8192}$/);
-      if (token) {
-        const secret = await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
-        if (!/^[a-f0-9]{64}$/i.test(secret?.v || '')) throw new NativeStudioAuthError();
-        const claims = claimsFor(token, Buffer.from(secret.v, 'hex'), now());
-        const account = await identity.find(claims.sub);
-        if (!account || account.stamp !== claims.source_stamp
-          || (await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role !== claims.role
-          || await authEpoch(account.id) !== claims.auth_epoch) denied();
-        return Object.freeze({ user: account.name, role: normalizeStudioRole(claims.role), scope });
-      }
-      // A present invalid BO cookie must not silently fall back to another session.
-      const bearer = cookie(request, 'lab_session', /^[a-f0-9]{64}$/);
-      if (!bearer) denied();
-      const digest = createHash('sha256').update(bearer).digest('hex');
-      const session = await boDb.prepare('SELECT * FROM lab_sessions WHERE token_digest=? AND expires>?').get(digest, now());
-      if (!session || !['admin', 'superadmin'].includes(session.role)) denied();
-      const account = await boDb.prepare('SELECT id,username,role FROM users WHERE id=?').get(session.craig_user_id);
-      if (!account || account.role !== session.role || await identity.stamp(account.id) !== session.source_stamp
-        || await authEpoch(account.id) !== session.auth_epoch) denied();
-      return Object.freeze({ user: account.username, role: normalizeStudioRole(account.role), scope });
+      // Reject missing/malformed cookies before borrowing a database connection.
+      // A present invalid BO cookie must not fall back to another session.
+      const bearer = token ? null : cookie(request, 'lab_session', /^[a-f0-9]{64}$/);
+      if (!token && !bearer) denied();
+      const readIdentity = async () => {
+        if (token) {
+          const secret = await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
+          if (!/^[a-f0-9]{64}$/i.test(secret?.v || '')) throw new NativeStudioAuthError();
+          const claims = claimsFor(token, Buffer.from(secret.v, 'hex'), now());
+          const account = await identity.find(claims.sub);
+          if (!account || account.stamp !== claims.source_stamp
+            || (await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role !== claims.role
+            || await authEpoch(account.id) !== claims.auth_epoch) denied();
+          return Object.freeze({ user: account.name, role: normalizeStudioRole(claims.role), scope });
+        }
+        const digest = createHash('sha256').update(bearer).digest('hex');
+        const session = await boDb.prepare('SELECT * FROM lab_sessions WHERE token_digest=? AND expires>?').get(digest, now());
+        if (!session || !['admin', 'superadmin'].includes(session.role)) denied();
+        const account = await boDb.prepare('SELECT id,username,role FROM users WHERE id=?').get(session.craig_user_id);
+        if (!account || account.role !== session.role || await identity.stamp(account.id) !== session.source_stamp
+          || await authEpoch(account.id) !== session.auth_epoch) denied();
+        return Object.freeze({ user: account.username, role: normalizeStudioRole(account.role), scope });
+      };
+      // The PostgreSQL adapter otherwise starts/commits a transaction for each
+      // SELECT. Reuse one connection for this authorization only: all identity,
+      // role, password stamp and epoch reads still run for every request. This
+      // does not take the product mutation lock; an existing mutation transaction
+      // retains its own lock and connection through the adapter's nested context.
+      return await (typeof boDb.transaction === 'function'
+        ? boDb.transaction(readIdentity, { serialize: false }) : readIdentity());
     } catch (error) {
       if (error instanceof NativeStudioAuthError) throw error;
       throw new NativeStudioAuthError();

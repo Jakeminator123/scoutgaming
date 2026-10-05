@@ -269,6 +269,7 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
     && typeof evidence.observedAt === 'string' && !Number.isNaN(Date.parse(evidence.observedAt)) && evidence.files && typeof evidence.files === 'object'
     && !Array.isArray(evidence.files) && Object.entries(evidence.files).every(([path, hash]) => safePath(path) && HASH.test(hash))
     && Array.isArray(evidence.tests) && evidence.tests.every(test => safePath(test.path) && ['passed', 'failed', 'skipped', 'cancelled'].includes(test.result))
+    && evidence.tests.every(test => test.observedAt === undefined || typeof test.observedAt === 'string' && !Number.isNaN(Date.parse(test.observedAt)))
     && !duplicates(evidence.tests || [], test => test.path).length;
   if (evidence && !evidenceValid) warning(assurance.warnings, 'evidence.unusable', 'Imported CI/test metadata is incomplete or ambiguous; no test result is accepted.');
   const records = new Map((evidenceValid ? evidence.tests : []).map(test => [test.path, test]));
@@ -346,7 +347,7 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
       const reported = records.get(path);
       const result = !reported ? 'not-read' : !versionMatches ? 'stale' : reported.result;
       return { path, result, verifiedSha: reported ? evidence.sourceSha : null,
-        verifiedAt: reported ? evidence.observedAt : null, ciUrl: reported ? safeCiUrl(evidence.ciUrl) : null };
+        verifiedAt: reported ? reported.observedAt || evidence.observedAt : null, ciUrl: reported ? safeCiUrl(evidence.ciUrl) : null };
     });
     if (tests.some(test => test.result === 'stale')) warning(warnings, 'evidence.stale', 'Relevant test evidence does not match the selected commit and input hashes.');
     for (const test of tests) if (test.result === 'failed') errors.push({ code: 'test.failed', message: 'A relevant test file failed for this exact source version.', path: test.path });
@@ -357,7 +358,8 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
       status, factsStatus, sources, tests, warnings, errors,
       verification: { kind: versionMatches && tests.some(test => test.result !== 'not-read') ? 'explicit-ci-test-files' : 'not-read',
         sha: versionMatches ? evidence.sourceSha : null, result: passed ? 'passed' : tests.some(test => test.result === 'failed') ? 'failed' : 'not-read',
-        verifiedAt: versionMatches ? evidence.observedAt : null, ciUrl: versionMatches ? safeCiUrl(evidence.ciUrl) : null } });
+        verifiedAt: versionMatches ? tests.map(test => test.verifiedAt).filter(Boolean).sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) || evidence.observedAt : null,
+        ciUrl: versionMatches ? safeCiUrl(evidence.ciUrl) : null } });
     assurance.counts[status]++;
   }
   assurance.files = [...fileMap.values()].sort((a, b) => a.path.localeCompare(b.path));

@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { prepareContainerUser } from '../container-entry.mjs';
 
+// Pure configuration fixtures: no database client, network or provider token is used.
+function fixtureGameDatabaseUrl(address, username = 'fixture-user') {
+  const url = new URL(address);
+  url.username = username;
+  url.password = 'fixture-password';
+  return url.href;
+}
+
 test('container changes only its exact disk root, then drops all supplementary groups and root', async () => {
   const calls = []; let uid = 0, gid = 0;
   const fs = {
@@ -31,8 +39,8 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
     setgid:value=>{gid=value;calls.push(['gid',value]);},setuid:value=>{uid=value;calls.push(['uid',value]);}};
   const fs=new Proxy({}, {get:()=>async()=>assert.fail('Mountless startup must not touch a disk path.')});
   const env={CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_MEDIA_STORAGE:'blob',
-    BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
-    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=verify-full&channel_binding=require'};
+    BLOB_READ_WRITE_TOKEN:'fixture-blob-token',
+    CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://game.neon.tech/game?sslmode=verify-full&channel_binding=require")};
   await prepareContainerUser(env,{fs,proc});
   assert.deepEqual(calls,[['groups',[]],['gid',1000],['uid',1000]]);
   calls.length=0;await prepareContainerUser(env,{fs,proc});assert.deepEqual(calls,[]);
@@ -43,16 +51,16 @@ test('mountless Postgres, Neon and private Blob startup drops root without touch
   for(const change of [{CROUPIER_DATABASE:'sqlite'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
     {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATA_DIR:'/var/data/players'},
     {CROUPIER_GENERATED_SPEECH_DIR:'/var/data/speech'},
-    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@other.example/game?sslmode=require'},
-    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=disable'},
-    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture@game.neon.tech/game?sslmode=prefer'}]) {
+    {CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://other.example/game?sslmode=require")},
+    {CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://game.neon.tech/game?sslmode=disable")},
+    {CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://game.neon.tech/game?sslmode=prefer")}]) {
     await assert.rejects(prepareContainerUser({...env,...change},{fs,proc}));
   }
 });
 
 const qaEnv={CROUPIER_CLOUD_DATA_ROOT:'/var/data/native-studio-qa/abc92154cb15',CROUPIER_DATABASE:'postgres',
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'qa_native_abc92154cb15',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_GAME_DATABASE_URL:'postgresql://croupier_studio_qa_abc92154cb15:fixture@fixture.neon.tech/croupier_studio_qa_abc92154cb15?sslmode=require'};
+  CROUPIER_GAME_DATABASE_URL:fixtureGameDatabaseUrl("postgresql://fixture.neon.tech/croupier_studio_qa_abc92154cb15?sslmode=require", "croupier_studio_qa_abc92154cb15")};
 test('QA scratch is bounded to its own database and created after privilege drop without changing old files',async()=>{
   let uid=0,gid=0;const calls=[];
   const proc={getuid:()=>uid,getgid:()=>gid,setgroups:()=>{},setuid:n=>{uid=n;},setgid:n=>{gid=n;}};

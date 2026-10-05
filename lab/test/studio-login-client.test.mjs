@@ -2,8 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginReturnTo, studioLoginDestination, studioPasswordToken } from '../lib/studio-login-client.mjs';
 
-test('native login returnTo is exactly the two Studio pages or one-use BO handoff without a cross-host cookie handoff', () => {
-  for (const value of ['/studio','/studio/administration']) assert.equal(studioLoginReturnTo(value),value);
+test('native login returnTo preserves current Studio views or one-use BO handoff without a cross-host cookie handoff', () => {
+  for (const value of ['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
+    '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']) {
+    assert.equal(studioLoginReturnTo(value),value);
+    assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
+    assert.equal(studioLoginDestination(value,'/api/auth'),value.slice('/studio'.length) || '/');
+  }
   for (const kind of ['game','lab']) {
     const value = `/api/bo/${kind}-login?state=${'a'.repeat(64)}`;
     assert.equal(studioLoginReturnTo(value),value);
@@ -11,6 +16,8 @@ test('native login returnTo is exactly the two Studio pages or one-use BO handof
     assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
   }
   for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',
+    '/studio/login','/studio/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
+    '/studio/tree/child','/studio/tree/','/studio/Tree','/studio/%74ree','/studio\\tree','/studio//tree','/tree',
     `/api/bo/game-login?state=${'a'.repeat(63)}`,`/api/bo/lab-login?state=${'A'.repeat(64)}`,
     `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/studio');
   assert.equal(studioLoginDestination('/studio','/api/auth'),'/');

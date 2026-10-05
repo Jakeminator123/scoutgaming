@@ -5,11 +5,14 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
+import { normalizeNativeStudioPageRequest } from '../lib/studio-native-request.mjs';
 
 const require = createRequire(import.meta.url);
 const navigation = require('next/dist/client/components/redirect.js');
 const { addPathPrefix } = require('next/dist/shared/lib/router/utils/add-path-prefix.js');
 const { transformSync } = require('next/dist/build/swc');
+const studioReturns = ['/studio', '/studio/administration', '/studio/openclaw', '/studio/operator-chat',
+  '/studio/tree', '/studio/activity', '/studio/guide', '/studio/zones', '/studio/videos', '/studio/events', '/studio/probe'];
 
 // These are the installed Next SSR error and path functions used by app-render,
 // rather than a replacement redirect implementation or a running devserver.
@@ -20,7 +23,7 @@ function locationFromNext(error, basePath) {
 
 test('Next SSR emits one basePath while public login returnTo survives unchanged', () => {
   for (const basePath of ['', '/studio']) {
-    for (const returnTo of ['/studio', '/studio/administration']) {
+    for (const returnTo of studioReturns) {
       let thrown;
       try { navigation.redirect(nextStudioLoginRedirect(returnTo)); } catch (error) { thrown = error; }
       const location = locationFromNext(thrown, basePath);
@@ -50,7 +53,7 @@ function load(file, overrides) {
     jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
     module: { type: 'commonjs' } });
   const module = { exports: {} }, localRequire = createRequire(url);
-  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, process: {env:{}},
+  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, URL, process: {env:{}},
     require: name => Object.hasOwn(overrides, name) ? overrides[name] : localRequire(name) }, { filename: file });
   return module.exports;
 }
@@ -83,6 +86,88 @@ test('actual Studio SSR guard reaches mounted login after 401 and preserves othe
       else assert.equal(error.statusCode, status);
       return true;
     });
+  }
+});
+
+test('actual native page guard returns every current view after public, standalone and rewritten document entry', async () => {
+  for (const basePath of ['', '/studio']) {
+    const config = { allowedOrigins: ['https://game.fixture.invalid', 'https://studio.fixture.invalid'],
+      publicHosts: ['game.fixture.invalid', 'studio.fixture.invalid'],
+      apiBase: basePath + '/api/admin', authBase: basePath + '/api/auth' };
+    const authorized = [];
+    const guard = load('../lib/ui-server.ts', {
+      'next/navigation': navigation,
+      './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
+      './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
+      './remote-ui.mjs': { remoteUiConfiguration: () => null },
+      './studio-native-runtime.mjs': { nativeStudioAdminEnabled: () => true, nativeStudioAdminConfiguration: () => config,
+        assertNativeStudioRequest: () => {}, studioNativeRuntime: async () => ({ authorize: async request => {
+          authorized.push(request.url); throw Object.assign(new Error('fixture authorization'), {statusCode: 401});
+        } }) },
+      './studio-native-request.mjs': { normalizeNativeStudioPageRequest },
+      './next-page-navigation.mjs': { nextStudioLoginRedirect },
+    });
+    for (const returnTo of studioReturns) {
+      const appPath = returnTo.slice('/studio'.length) || '/';
+      for (const [host, extra] of [['game.fixture.invalid', {}], ['studio.fixture.invalid', {}],
+        ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}]]) {
+        const request = new Request('http://' + host + appPath,
+          { headers: {host, 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', 'sec-fetch-site': 'cross-site', ...extra} });
+        await assert.rejects(guard.authorizeUiPage(request), error => {
+          const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
+          assert.equal(login.pathname, basePath + '/login');
+          assert.equal(login.searchParams.get('returnTo'), returnTo);
+          assert.equal(login.searchParams.size, 1);
+          return true;
+        });
+        const normalized = new URL(authorized.at(-1));
+        assert.equal(normalized.protocol, 'https:');
+        assert.equal(normalized.pathname, basePath + (appPath === '/' ? '' : appPath) || '/');
+        if (extra['x-forwarded-host']) assert.equal(normalized.host, 'game.fixture.invalid');
+      }
+    }
+  }
+});
+
+test('editor SSR authorization uses each real route and OpenClaw settings and chat reload render distinct surfaces', async () => {
+  const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+  try {
+    for (const basePath of ['', '/studio']) {
+      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
+      const routes = load('../components/studio-types.ts', {}), requests = [];
+      function Editor() { assert.fail('SSR delegates an element without invoking client work'); }
+      const page = load('../app/studio-page.tsx', {
+        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
+        '@/components/studio': {Studio: Editor}, '@/components/studio-types': routes,
+        '@/lib/ui-server': { studioUiInitialData: async request => {
+          requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
+        } },
+      });
+      const paths = { tree: '/tree', lab: '/events', videos: '/videos', activity: '/activity', openclaw: '/operator-chat', guide: '/guide', probe: '/probe' };
+      for (const [view, path] of Object.entries(paths)) {
+        const element = await page.StudioPage({view});
+        assert.equal(element.type, Editor); assert.equal(element.props.initialView, view);
+        assert.equal(requests.at(-1), 'http://game.fixture.invalid' + basePath + path);
+      }
+      const chatPage = load('../app/operator-chat/page.tsx', {'../studio-page': page});
+      const chat = chatPage.default();
+      assert.equal(chat.type, page.StudioPage); assert.equal(chat.props.view, 'openclaw');
+      const reloadedChat = await chat.type(chat.props);
+      assert.equal(reloadedChat.type, Editor); assert.equal(reloadedChat.props.initialView, 'openclaw');
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid' + basePath + '/operator-chat');
+
+      function Models() { assert.fail('SSR does not invoke model client work'); }
+      const models = load('../app/openclaw/page.tsx', {
+        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
+        '@/lib/ui-server': {authorizeUiPage: async request => requests.push(request.url)},
+        '@/components/openclaw-workspace': {OpenClawWorkspace: Models},
+      });
+      assert.equal((await models.default()).type, Models);
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/openclaw');
+    }
+  } finally {
+    if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
   }
 });
 

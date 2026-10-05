@@ -91,11 +91,14 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-export const viewPaths: Record<StudioView, string> = { tree: labUrl('/tree'), lab: labUrl('/events'), videos: labUrl('/videos'), activity: labUrl('/activity'), openclaw: labUrl('/openclaw'), guide: labUrl('/guide'), probe: labUrl('/probe') };
+// The editor's existing OpenClaw view is the operator chat. Model settings have
+// their own server-rendered /openclaw page and must never share its history URL.
+export const viewPaths: Record<StudioView, string> = { tree: labUrl('/tree'), lab: labUrl('/events'), videos: labUrl('/videos'), activity: labUrl('/activity'), openclaw: labUrl('/operator-chat'), guide: labUrl('/guide'), probe: labUrl('/probe') };
 
 export function studioViewForPath(path: string): StudioView {
   const segment = stripLabBasePath(path).split('/').filter(Boolean)[0];
-  return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'openclaw' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
+  if (segment === 'operator-chat') return 'openclaw';
+  return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
 }
 
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {

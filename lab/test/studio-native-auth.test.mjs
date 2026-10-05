@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
 import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
 
 const secret = 'a'.repeat(64), bearer = 'b'.repeat(64), clock = 2_000_000;
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
@@ -31,6 +32,37 @@ function fixture(role = 'admin') {
   return { state, authorize, token, request };
 }
 const code = expected => error => error.code === expected;
+
+// Exercise the real PostgreSQL adapter's connection/transaction boundary with
+// isolated rows. No network, installed schema or real identity is involved.
+function pooledFixture({ grouped = true, afterRead = () => {} } = {}) {
+  const f = fixture(), calls = [], connections = { borrowed: 0, released: 0 };
+  const pool = {
+    async query() { throw Error('Unexpected query outside the borrowed connection'); },
+    async connect() {
+      connections.borrowed++;
+      return {
+        async query(sql) {
+          calls.push(sql);
+          if (/^(?:BEGIN|COMMIT|ROLLBACK)/.test(sql)) return { rows: [], command: sql.startsWith('COMMIT') ? 'COMMIT' : 'BEGIN' };
+          if (f.state.offline) throw Error('PRIVATE DATABASE URL');
+          let rows;
+          if (sql.includes('FROM croupier_auth.meta')) rows = f.state.secret ? [{ v: f.state.secret }] : [];
+          else if (sql.includes('FROM croupier_auth.bo_auth_epochs')) rows = [{ epoch: f.state.epoch }];
+          else if (sql.includes('FROM croupier_auth.lab_sessions')) rows = f.state.lab ? [f.state.lab] : [];
+          else rows = f.state.user ? [f.state.user] : [];
+          const result = { rows: rows.map(row => ({ ...row })), fields: [] };
+          afterRead(sql, f.state);
+          return result;
+        },
+        release() { connections.released++; },
+      };
+    },
+  };
+  const { boDb } = createPostgresStore({ pool });
+  const authorize = createStudioNativeAuth({ boDb: grouped ? boDb : { ...boDb, transaction: undefined }, scope, now: () => clock });
+  return { ...f, authorize, boDb, calls, connections };
+}
 
 test('admin and stored superadmin use live identity with canonical admin privilege and no writes', async () => {
   for (const role of ['admin','superadmin']) {
@@ -77,4 +109,72 @@ test('missing signer and DB failures fail closed without exposing secrets or see
   f.state.offline = true;
   await assert.rejects(f.authorize(f.request()), error => error.statusCode === 503 && !error.message.includes('PRIVATE'));
   await assert.rejects(f.authorize(f.request('')), code('studio_login_required'));
+});
+
+test('PostgreSQL authorization keeps four live reads but uses one transaction instead of four', async () => {
+  for (const kind of ['jwt', 'lab']) {
+    const ungrouped = pooledFixture({ grouped: false }), grouped = pooledFixture();
+    for (const f of [ungrouped, grouped]) {
+      const request = kind === 'lab' ? f.request(`lab_session=${bearer}`) : f.request();
+      assert.deepEqual(await f.authorize(request), { user: 'operator', role: 'admin', scope });
+      assert.equal(f.calls.filter(sql => sql.startsWith('SELECT')).length, 4);
+      assert.equal(f.connections.borrowed, f.connections.released);
+    }
+    assert.equal(ungrouped.calls.length, 12);
+    assert.equal(ungrouped.connections.borrowed, 4);
+    assert.equal(grouped.calls.length, 6);
+    assert.equal(grouped.connections.borrowed, 1);
+    assert.doesNotMatch(grouped.calls[0], /pg_advisory_xact_lock/);
+  }
+});
+
+test('grouped authorization rereads every request and rolls back on password or epoch revocation', async () => {
+  for (const kind of ['jwt', 'lab']) {
+    for (const revoke of [state => state.epoch++, state => { state.user.hash = 'd'.repeat(128); }, state => { state.user.role = 'reader'; }]) {
+      const f = pooledFixture(), request = kind === 'lab' ? f.request(`lab_session=${bearer}`) : f.request();
+      await f.authorize(request);
+      revoke(f.state);
+      await assert.rejects(f.authorize(request), code('studio_login_required'));
+      assert.equal(f.connections.borrowed, 2);
+      assert.equal(f.connections.released, 2);
+      assert.equal(f.calls.at(-1), 'ROLLBACK');
+    }
+  }
+});
+
+test('a concurrent epoch change during grouped reads is still observed before authorization', async () => {
+  for (const kind of ['jwt', 'lab']) {
+    const f = pooledFixture({ afterRead(sql, state) {
+      if (kind === 'jwt' && sql.startsWith('SELECT role') || kind === 'lab' && sql.startsWith('SELECT salt,hash')) state.epoch++;
+    } });
+    const request = kind === 'lab' ? f.request(`lab_session=${bearer}`) : f.request();
+    await assert.rejects(f.authorize(request), code('studio_login_required'));
+    assert.equal(f.calls.at(-1), 'ROLLBACK');
+    assert.equal(f.connections.borrowed, 1);
+    assert.equal(f.connections.released, 1);
+  }
+});
+
+test('authorization inside an existing product mutation retains its transaction and advisory lock', async () => {
+  const f = pooledFixture();
+  await f.boDb.transaction(async () => {
+    assert.equal((await f.authorize(f.request())).user, 'operator');
+  });
+  assert.equal(f.calls.length, 6);
+  assert.equal(f.connections.borrowed, 1);
+  assert.equal(f.connections.released, 1);
+  assert.match(f.calls[0], /pg_advisory_xact_lock/);
+  assert.equal(f.calls.filter(sql => sql.startsWith('BEGIN')).length, 1);
+});
+
+test('grouped authorization rejects absent or duplicate cookies before borrowing and safely releases DB failures', async () => {
+  const f = pooledFixture();
+  await assert.rejects(f.authorize(f.request('')), code('studio_login_required'));
+  await assert.rejects(f.authorize(f.request(`bo_jwt=${f.token()}; bo_jwt=${f.token()}`)), code('studio_login_required'));
+  assert.equal(f.connections.borrowed, 0);
+  f.state.offline = true;
+  await assert.rejects(f.authorize(f.request()), error => error.statusCode === 503 && !error.message.includes('PRIVATE'));
+  assert.equal(f.calls.at(-1), 'ROLLBACK');
+  assert.equal(f.connections.borrowed, 1);
+  assert.equal(f.connections.released, 1);
 });

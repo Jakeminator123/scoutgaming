@@ -1,4 +1,4 @@
-export type StudioNavigationPath = '/' | '/tree' | '/administration' | '/openclaw' | '/activity' | '/guide';
+export type StudioNavigationPath = '/' | '/tree' | '/administration' | '/openclaw' | '/operator-chat' | '/activity' | '/guide';
 export interface StudioNavigationItem {
   readonly href: StudioNavigationPath;
   readonly label: string;

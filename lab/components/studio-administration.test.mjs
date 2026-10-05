@@ -336,12 +336,58 @@ test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmi
   }
   for (const role of ['admin','superadmin']) {
     const tree = h.StudioAdministrationView(viewProps(role,'accounts')),html=renderToStaticMarkup(tree);
-    assert.match(html,/Skapa spelarkonto|Bjud in administratör/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
+    assert.match(html,/Skapa spelarkonto|Bjud in Studio-administratör/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
     assert.equal(buttons(tree,'Spara roll').length,1);assert.equal(buttons(tree,'Ta bort konto').length,1);
     assert.doesNotMatch(html,/<option[^>]*>(reader|staff|superadmin)<\/option>/);
     assert.match(html,/Administratör/);assert.match(html,/Spelare/);
   }
   assert.equal(h.studioAdminActor(actor('superadmin')).role,'admin');
+});
+
+test('account creation distinguishes game-only players from emailed Studio administrator activation', () => {
+  const h = harness(), calls = [];
+  const tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
+  const playerDisclosure = nodes(tree, node => node.type === 'details' && buttons(node, 'Skapa spelarkonto').length)[0];
+  const invitationDisclosure = nodes(tree, node => node.type === 'details' && buttons(node, 'Skicka inbjudan').length)[0];
+  const playerHtml = renderToStaticMarkup(playerDisclosure), invitationHtml = renderToStaticMarkup(invitationDisclosure);
+  assert.match(playerHtml, /<summary>Skapa spelarkonto<\/summary>/);
+  assert.match(playerHtml, /ingen administratörsbehörighet eller Studioåtkomst/);
+  assert.match(invitationHtml, /<summary>Bjud in Studio-administratör<\/summary>/);
+  assert.match(invitationHtml, /e-postadress/); assert.match(invitationHtml, /aktiveras.*väljer lösenord via mejlet/);
+  assert.equal(nodes(invitationDisclosure, node => node.type === 'input' && node.props.name === 'email')[0].props.type, 'email');
+  assert.equal(calls.length, 0);
+  nodes(invitationDisclosure, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ email: 'new-admin@example.test', role: 'admin' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'users/invite', body: { email: 'new-admin@example.test', role: 'admin' } }]);
+});
+
+test('missing mail capability explains why Studio invitations are unavailable while player creation stays game-only', () => {
+  const h = harness(), props = viewProps('admin');
+  const tree = h.StudioAdministrationView({ ...props, available: (method, action) => available(method, action) && !['users/invite', 'users/resend'].includes(action) });
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas/);
+  assert.match(html, /Att skapa ett spelarkonto ger inte Studioåtkomst/);
+  assert.equal(buttons(tree, 'Skicka inbjudan').length, 0);
+  assert.equal(buttons(tree, 'Skicka nytt aktiverings-/återställningsmejl').length, 0);
+  assert.equal(buttons(tree, 'Skapa spelarkonto').length, 1);
+  assert.doesNotMatch(html, /users\/(invite|resend)|RESEND_API_KEY|CROUPIER_STUDIO_MAIL_FROM/);
+  assert.doesNotMatch(renderToStaticMarkup(h.StudioAdministrationView(props)), /E-post för Studio behöver konfigureras/);
+});
+
+test('stored game-only user roles require an explicit new role rather than displaying a selected administrator role', () => {
+  const h = harness();
+  for (const role of ['reader', 'staff', 'player', 'admin', 'superadmin']) {
+    const data = resources(), calls = [];
+    data.users.payload.users = [{ username: 'other@example.test', role, active: 1 }];
+    const tree = h.StudioAdministrationView({ ...viewProps('admin'), resources: data, command: (action, body) => calls.push({ action, body }) });
+    const form = nodes(tree, node => node.type === 'form' && buttons(node, 'Spara roll').length)[0];
+    const select = nodes(form, node => node.type === 'select' && node.props.name === 'role')[0];
+    const html = renderToStaticMarkup(select), administrator = ['admin', 'superadmin'].includes(role);
+    assert.match(html, /required=""/);
+    assert.match(html, administrator ? /<option value="admin" selected="">Administratör/ : /<option value="" disabled="" selected="">Välj ny roll/);
+    assert.equal(calls.length, 0); assert.equal(data.users.payload.users[0].role, role);
+    form.props.onSubmit({ preventDefault() {}, currentTarget: new Form({ role: 'admin' }) });
+    assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'users/role', body: { username: 'other@example.test', role: 'admin' } }]);
+  }
 });
 
 test('player lifecycle is create/status, never hard delete or reopening closed accounts; inactive action is explicit', () => {

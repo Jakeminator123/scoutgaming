@@ -6,7 +6,7 @@ import { dirname, resolve, relative, basename } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createSourceReader, verifySystemMap, refreshContracts, captureSystemMapInputs, isolatedGitEnvironment, hashText, summarizeAssurance, parseSqlTables } from '../docs/system-map/verify.mjs';
-import { importTestEvidence, reportTestFiles, captureEvidenceInputs } from '../tools/system-map-evidence.mjs';
+import { importTestEvidence, reportTestFiles, captureEvidenceInputs, collectIsolatedStudioQaReport } from '../tools/system-map-evidence.mjs';
 import { buildSystemMap } from '../docs/system-map/build.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -194,6 +194,52 @@ test('evidence importer cannot promote filtered or incomplete runs, or job succe
   assert.deepEqual(evidence.tests, []); assert.equal(f.check(evidence).status, 'grey');
   evidence = importTestEvidence({ snapshot, reports: [receipt('full-files')] });
   assert.equal(f.check(evidence).status, 'green'); assert.equal(JSON.stringify(evidence).includes('DO_NOT_PUBLISH_VALUE'), false);
+});
+test('isolated acceptance observes the existing runner, masks diagnostics, and binds pass or failure to actual inputs', async t => {
+  const f = fixture(t), path = 'tools/studio-isolated-qa.mjs';
+  f.put(path, '// Existing SQL runner source.\n');
+  const contracts = f.get('docs/system-map/contracts.json');
+  contracts.contracts.push({ id: 'sql-isolated', label: 'SQL acceptance', serviceIds: ['frontend'], sources: [sql], tests: [path], expectedHashes: {} });
+  f.put('docs/system-map/contracts.json', contracts); refreshContracts({ reader: f.reader() });
+  const capture = () => captureSystemMapInputs({ reader: f.frozen() });
+  let calls = 0;
+  const passed = await collectIsolatedStudioQaReport({ capture, qaOptions: { downloadPostgres: true }, runQa: async options => {
+    calls++; assert.equal(options.downloadPostgres, true);
+    return { legacyChecks: ['DO_NOT_PUBLISH_VALUE'], integrationChecks: ['DO_NOT_PUBLISH_VALUE'] };
+  } });
+  assert.equal(calls, 1); assert.equal(passed.result, 'passed'); assert.equal(passed.report.includes('DO_NOT_PUBLISH_VALUE'), false);
+  let evidence = importTestEvidence({ snapshot: capture(), reports: [passed.report] });
+  const row = f.check(evidence).contracts.find(row => row.id === 'sql-isolated');
+  assert.equal(row.status, 'green'); assert.equal(row.verification.verifiedAt, evidence.tests[0].observedAt);
+  const failed = await collectIsolatedStudioQaReport({ capture, runQa: async () => { throw Error('DO_NOT_PUBLISH_VALUE'); } });
+  assert.equal(failed.result, 'failed'); assert.equal(failed.report.includes('DO_NOT_PUBLISH_VALUE'), false);
+  evidence = importTestEvidence({ snapshot: capture(), reports: [passed.report, failed.report] });
+  assert.equal(f.check(evidence).contracts.find(row => row.id === 'sql-isolated').status, 'red');
+  const earlier = JSON.parse(passed.report.split('\n')[0]); earlier.observedAt = '2000-01-01T00:00:00.000Z';
+  const olderPass = passed.report.replace(passed.report.split('\n')[0], JSON.stringify(earlier));
+  const reverse = importTestEvidence({ snapshot: capture(), reports: [failed.report, olderPass] });
+  assert.equal(reverse.tests[0].observedAt, evidence.tests[0].observedAt, 'receipt ordering cannot move the run date backwards');
+  for (const receipt of [undefined, passed.report.split('\n').slice(0, 2).join('\n')]) {
+    evidence = importTestEvidence({ snapshot: capture(), reports: receipt ? [receipt] : [] });
+    assert.equal(f.check(evidence).contracts.find(row => row.id === 'sql-isolated').status, 'grey');
+  }
+  const ordinary = [ { type: 'meta', schemaVersion: 1, selection: 'full-files' },
+    { type: 'test-file', path, result: 'passed' }, { type: 'summary', counts: { passed: 1, tests: 1 } } ].map(JSON.stringify).join('\n');
+  assert.deepEqual(importTestEvidence({ snapshot: capture(), reports: [ordinary] }).tests, []);
+  const skipped = passed.report.replace('"selection":"full-files"', '"selection":"filtered"');
+  assert.equal(f.check(importTestEvidence({ snapshot: capture(), reports: [skipped] })).contracts.find(row => row.id === 'sql-isolated').status, 'grey');
+  const empty = await collectIsolatedStudioQaReport({ capture, runQa: async () => ({ legacyChecks: [], integrationChecks: [] }) });
+  assert.equal(empty.result, 'failed');
+  const before = capture();
+  const changed = await collectIsolatedStudioQaReport({ capture, runQa: async () => {
+    f.put(sql, 'CREATE TABLE croupier_studio.documents (id text PRIMARY KEY, revision bigint);\n');
+    return { legacyChecks: ['complete'], integrationChecks: ['complete'] };
+  } });
+  assert.equal(changed.result, 'failed');
+  assert.equal(importTestEvidence({ snapshot: before, reports: [changed.report] }).tests[0].result, 'failed');
+  assert.deepEqual(importTestEvidence({ snapshot: capture(), reports: [changed.report] }).tests, []);
+  const stale = JSON.parse(passed.report.trim().split('\n')[0]); stale.snapshot.sourceSha = B;
+  assert.deepEqual(importTestEvidence({ snapshot: before, reports: [passed.report.replace(passed.report.split('\n')[0], JSON.stringify(stale))] }).tests, []);
 });
 test('passive reporter masks names/errors and refuses files outside its source root', async () => {
   const events = [
