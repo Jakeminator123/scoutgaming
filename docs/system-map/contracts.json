@@ -4,10 +4,10 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "cd9f5b2109daa893b283e10bc204ae40219d6acf",
-    "capturedAt": "2026-10-05T12:02:36.079Z",
+    "observedCommit": "34f64e344d4885171f8a5f7e10c7644b33a6c96d",
+    "capturedAt": "2026-10-05T12:15:22.526Z",
     "hashAlgorithm": "sha256:utf8-lf",
-    "note": "Scoped binding of native group response header barrier, read-time navigation and existing component fixtures; input capture only, no runtime/test approval."
+    "note": "Scoped binding of existing shoe and zone test receipt integration in CI; input capture only, no runtime/test approval."
   },
   "contracts": [
     {
@@ -121,7 +121,7 @@
       "testType": "existing-isolated-sql-acceptance",
       "checks": [],
       "expectedHashes": {
-        ".github/workflows/croupier.yml": "51a364eb08aab9534cca97d89a9ad72a6ec7e24e101fe16e2ced8b63a49eb222",
+        ".github/workflows/croupier.yml": "3a6a62feda09bae2b6b1dc90d3ea470986883716d6a56371d4a15dd0f719552b",
         "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
         "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
         "lab/lib/cloud-media-store.mjs": "063f1a03730e7b7d52f7ce51bf4c9d99408b98b91c28881cde482f0f8ee9a77c",

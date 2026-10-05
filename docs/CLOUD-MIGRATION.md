@@ -43,10 +43,14 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   runtimeväntan från API/auth; 18 riktade PASS. SQL8 och CI37305177411 passerar.
   Live cd9f5b21: 11GET200, 9,361 / 2,112 / 2,088 / 1,426s. Första bytet
   innehöll 3,04 respektive 2,76s serverinitiering; senare initiering under1ms.
-  Ingen generell latensgaranti. Nästa snäva UIrättning tar bort fyra inledande
+  Ingen generell latensgaranti. Publicerat 34f64e34 tar bort fyra inledande
   sessionGET och tillåter menybyte under läsning, med gemensam färsk identitet
   kontrollerad före bodyläsning, sena svar avvisade och skriv-/utkastspärrar kvar.
-  Nytt publicerat omprov krävs; punkten förblir öppen.
+  101 riktade PASS, oberoende review och fullhook 1554PASS/9skip/0fel.
+  CI37307380711 har tre successjobb. Live:7dataGET200/0session/0POST,
+  1,472 / 5,544 / 4,709 / 1,181s. Byte under pågående läsning fungerade;
+  gammalt anrop avbröts och rätt vy visades utan fel. Latenstoppar i initiering
+  och dataläsning kvarstår; punkten förblir öppen för dem.
 - [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
   `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
@@ -81,8 +85,14 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Även denna exakta failureexport är röd och bevarad. CI37305177411 har tre
   successjobb och faktiskt SQL PASS på exakt cd9f5b21, med observationstid.
   Export: 19green/0red/5grey, inga valideringsfel; okända delar förblir grå.
-  routes.studio saknade ett befintligt event-treeprov i CI. Det läggs nu till
-  i fullhook; nytt CI måste verifiera även detta och ändrade UIbytes.
+  routes.studio saknade ett befintligt event-treeprov i CI. CI37307380711 på
+  exakt 34f64e34 kör det:14PASS, routekontrakt GREEN. Färsk export har20green/
+  0red/4grey och faktiskt SQL PASS. Två ytterligare kvittoluckor rättas nu:
+  befintligt shoe-prov flyttas före exporten/genom reportern utan dubbelkörning,
+  och befintligt zone-cloud-store-prov läggs till fullhook;15lokalaPASS/0skip.
+  Nytt CI måste verifiera kopplingen. De två persistencekontrakten behåller
+  GREY: deras riktiga concurrency/persistenceprov kräver isolerad
+  croupier_game_qa och kördes inte. Separat Studio-SQL-PASS ersätter det inte.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
   belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
   QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
@@ -94,10 +104,10 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Klart när faktisk produktionskonfiguration är återläst och provet fungerar
   hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
-  workspace795524/source30689542, 11:53UTC: 12 öppna och fem ignorerade,
+  workspace795524/source30689542, 12:09UTC: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade
   öppna fynd täcker sju källhashpositioner i `docs/system-map/contracts.json`,
-  verifierade mot exakt cd9f5b21. Två nya ID är 37880359/60. Äldre matchning
+  verifierade mot exakt 34f64e34. Senaste nya ID är 37880359/60. Äldre matchning
   för 37867512/37879729 är fryst eftersom deras källfiler har ändrats och dagens
   metadata saknar positioner. Även 37862641/37863164/65/66 saknar positioner.
   Totalt nio positionsluckor, varav sex öppna. Historisk fixtureklassning är
