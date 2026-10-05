@@ -3,6 +3,14 @@
 Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
 Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
 
+**Aktuell verifierad appversion:** `ebbbeb764aa9b42613596049887c178e5a9c1818`.
+GitHub-körning `37248248494`: tre jobb PASS. Produkt-Render
+`dep-db1f4k5ckfvc73dmjbb0` LIVE, frontend
+`dpl_4WBpfHX7xihN1bFpjVpz66Q6utKy` och Studio
+`dpl_FTMzJxwCFickwpsUqZd3j1fCHk8Y` READY på samma SHA. Fullhook:
+1 491 PASS, 9 befintliga skip, 0 fel. Director behåller byteidentisk
+administrationskod på `ee060804`; QA behåller `ee060804` med AI/GPU OFF.
+
 ## Studio: idle-omläsning och OpenClaw-modellval — 5 oktober
 
 Produktionsfelet `studio_native_unavailable` är återskapat via **Läs in nya
@@ -83,7 +91,24 @@ abort och fem sekunders yttre gräns. En otypad avbruten testhändelse kräver
 samma fils slutkvitto med failed0/cancelled>0; verkliga fel och timeouts
 förblir fel. Alla 23 prov med dubbla CI-reportrar PASS på både Node22.22.2
 och Node24.21.0, cirka sex sekunder vardera. Inga spel-/providerfel har
-härletts från teststoppet. Nytt CI-kvitto krävs efter denna fixture-rättning.
+härletts från teststoppet. Den rättade versionens tre CI-jobb PASS i
+`37248248494`. CI-artefakten binder kartan till `ebbbeb764aa9b42613596049887c178e5a9c1818`:
+19 gröna, 0 röda/gula och 4 grå kontrakt. Grått gäller saknat explicit
+reporterkvitto för game-events/zonprov respektive skip av verkliga Postgres-
+prov; det betyder inte verifierad produktionsparitet. Inga katalogfel eller
+källdrift finns i kvittot. HTML-kopia:
+`C:/Users/jakem/Downloads/Croupier-systemkarta-ebbbeb76.html`.
+
+## Avgränsad dokumentstädning — 5 oktober
+
+De ersatta `lab/docs/ARTIFACTS.md`, `DASHBOARD-DESIGN.md` och
+`OPENCLAW-SPEECH-OWNERSHIP.md` samt den redundanta `Start-Lissabon.ps1`
+tas bort. Giltiga take-/preview-/tillgänglighetsregler finns i `lab/docs/README.md`;
+schemaöversiktens länkar och dagens uppladdnings-/sparknappar är rättade.
+`Start-Lab.cmd`, `Start-Lissabon.cmd` och Start-Labb-paret består. Detta
+ändrar ingen spel-/providerkod eller data. Historiska checkpoints i rootens
+två handoff-/migrationsdokument behöver fortfarande komprimeras selektivt;
+acceptansbevis, systemregister och återställningsunderlag ska behållas.
 
 ## Lane-register och medierensning — 5 oktober
 
@@ -132,9 +157,17 @@ Valfritt `canonicalPath` i layout v1 går direkt till registrerad huvudkopia
 med samma hash/storlek/filändelse. Blobindex delar fysisk lagring utan att
 ändra logiska identiteter. 35 riktade prov, hela fysiska bankens hashkontroll
 och fyra dealers sync `--probe` PASS. Ingen ny visuell acceptans påstås.
-58 överflödiga Blobobjekt / 12 787 392 byte får tas bort först efter denna
-versions produktions- och QA-deploy med QA AI/GPU OFF och färska referens-/HEAD-prov.
-Privata `dedup-plan.json` och `dedup-local-receipt.json` ligger i samma kvittomapp.
+**Deduplicering, Blob klar:** 58 överflödiga objekt / 12 787 392 byte är
+borttagna efter faktisk produktversion `ebbbeb76`, QA `ee060804` och exakt
+ekvivalens av alla medieläsare. Färska databasreferenser och 62 bevarade
+huvudobjekt med HEAD och fullständig SHA-läsning PASS. Komplett efterlista:
+1 800 objekt / 769 901 848 byte; alla mål saknas och alla andra tidigare
+objekt har samma sökväg/storlek. 88 publika medieadresser, 44 produktion och
+44 QA, GET200 med exakt storlek och SHA PASS. QA:s miljövärden är oförändrade.
+Privata kvitton: `dedup-cloud-purge-receipt.json`, `dedup-blob-after.json` och
+`dedup-http-verification.json` i `lab/data/lane-media-audit/` tillsammans med
+plan/lokalkvitto. Kontrollens privata cachekopior är hashkontrollerat borttagna;
+journaler, kvitton, uploadfiler och övrig runtime-media bevaras.
 
 Kontroller: riktade lane/CRUD/kort/policy/start-tester PASS, TypeScript PASS,
 fullhook före och efter rensning PASS (efter: 1 418 godkända, 9 uttryckliga
@@ -145,15 +178,22 @@ GitGuardian: suite queued, incidentlista not-read; inte klartecken.
 
 ## Studio-design — 5 oktober
 
-**Ytterligare UI-pass, förberett för gemensam leverans:** DESIGN har lämnat
-över 14 frysta filer. Backoffice visar elva aktiva sektioner; de overifierade
+**Ytterligare UI-pass, levererat i `ebbbeb76`:** DESIGN har lämnat
+över 14 granskade filer. Backoffice visar elva aktiva sektioner; de overifierade
 pitboss-/turneringsformulären och två informationspaneler har tagits bort
 från menyn. Deras befintliga API, behörighetskatalog, schema och sparade data
 är bevarade. Lane-/konto-/nyckelåtgärder och talgranskning är utfällbara.
 Gemensam navigation och kompaktare Idle-/klippytor; byte från Astrids Probe
 till annan dealer visar den dealerns Idle och bevarar osparat projektutkast.
 53 riktade tester, TypeScript och Next-produktionsbygge PASS före överlämning.
-Faktisk ny desktop-/mobilverifiering återstår efter leverans.
+Faktisk autentiserad UI-kontroll på `ebbbeb76` PASS vid 1486/1265 px och
+390 px viewport: Idle, tio deal-/sjutton replikkort med öppna inställningar,
+Probe/dealerbyte, Backoffice-lanes/kontodisclosures och OpenClaws fem modeller.
+Ingen horisontell överrinning i kontrollerade vyer. Idle-listan minskade från
+1 094 till 663 px; preview readyState4. Ingen sparning/upload/delete/provider-
+mutation i UI-provet. Viewport återställd och Studio-flik bevarad. Privat
+`ui-final-pass-receipt.json` och bilder ligger under
+`C:/Users/jakem/.codex/visualizations/2026/10/04/01a108f1-324a-7c31-b5af-ad71943dada3/`.
 
 Dealer & klipp och Backoffice delar nu en dämpad gråblå palett. Deal och
 repliker har kompakta situationskort med Spela standard, Inställningar och

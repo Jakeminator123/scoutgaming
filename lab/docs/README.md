@@ -102,7 +102,10 @@ Vanliga sparade klippval kräver ingen Render-omstart;
 idleändringar kräver omladdning av spelfliken mellan händer.
 
 Under klippens uppladdning väljer du exakt familj och originalklipp.
-Spara med projektets vanliga knapp och ladda om originalspelaren mellan händer.
+**Ladda upp och spara klipp** lagrar filmen i videobanken. Välj sedan hur
+klippet får användas och tryck **Spara inställningar** för att behålla
+urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
+idlepolicy eller originalmotorns klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
 Lissabon-katalogen är avvecklad; äldre lokala data i `lab/data` bevaras som
@@ -151,7 +154,7 @@ inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
 
 Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
-[Dashboardens Scout-design, rörelse och lokala körning](DASHBOARD-DESIGN.md).
+[Schemaöversikt](../schemas/README.md).
 [Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Eventgrupperna ska överensstämma med projektets seed och motorns källkontrakt.
 Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
@@ -352,6 +355,40 @@ nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
 Aktuellt arbete och kvarvarande QA finns i [handoffen](../../docs/JOHN-HANDOFF.md). Nya sprintdokument är pausade.
 
-[Artefaktkarta: scheman, manifest och lagring](ARTIFACTS.md) ·
-[OpenClaw-talägarskap: implementationsbrief](OPENCLAW-SPEECH-OWNERSHIP.md) ·
-[Takepaket för Kevin/Emil](templates/media-take.md).
+## Material och granskningsregler
+
+Projekt-, video-, social- och idlescheman beskriver sparade inställningar och
+kategorisering; produktens kanoniska mediemanifest binder de faktiska klippen.
+Pose-spår är 2D-prov. Varken ett schema, en kategorisering eller en
+filregistrering godkänner dealeridentitet, läppsynk eller kortkontakt.
+Uppladdning och sparade urvalsregler är separata steg enligt flödet ovan;
+lokala filmer publiceras inte av en källkodspush.
+
+Använd [take-mallen](templates/media-take.md) vid medieöverlämning. Inspelat
+tal ska ha exakt replik/text, ljud- och videohash, frame-index, fps, audio delay,
+kalibrering, proveniens samt granskare och resultat för den aktuella revisionen.
+Ändrad text, ljud- eller videohash ogiltigförklarar tidigare visuell acceptans.
+Fri text får visas med neutral bild eller sitt eget matchande genererade paket,
+aldrig med en gammal inspelad talfilm. Modellens klippval måste valideras mot exakt
+registrerad dealer, familj/replik och revision; de får inte användas som fria
+filvägar, event-ID:n eller speldata. Spelmotorn äger kort, saldo och resultat.
+Native-eventrepliker behåller sin exakta mappning enligt chattavsnittet ovan.
+
+Vid ändringar i gränssnitt eller spelare gäller följande regressionskrav:
+behåll den gemensamma spelaren för alla fyra dealers och serialisera taljobben.
+Ny preview ska pausa och återställa föregående preview; navigation, unmount
+och pagehide ska släppa media. Återkomst från BFCache ska ge en användbar aktuell
+vy utan dold fortsatt uppspelning. Huvudbild och matte är ett synkat kompositpar.
+Avbrott, sena svar och dubbel leverans får inte starta ett jobb två gånger
+eller lämna ljud, video, decoder, Blob-URL, timer eller caption aktiva.
+Anslutning, urval och laddning ersätter inte spelarens faktiska start-/bild-/slutkvitton.
+Behåll tangentbordsflöden, synligt fokus och `prefers-reduced-motion`.
+Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
+
+Medie-/spelarändringar kräver dealer-audit `--probe`, de obligatoriska
+regressionerna och granskning av alla fyra dealers i faktisk rehearsal,
+inklusive två uppspelningar i följd, enligt [AGENTS.md](../../AGENTS.md).
+Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
+eller publika loggar. Aktuella runtimekontrakt finns i
+[presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
+OpenClaws versionsbundna källor nås via [dess källindex](../../open-claw/lab/docs/README.md).

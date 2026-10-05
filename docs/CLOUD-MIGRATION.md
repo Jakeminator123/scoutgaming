@@ -9,6 +9,18 @@ GitLab-inbox, wiki och spegelpush är pausade; återskapa inte gammal inbox.
 `Jakobs-v1` bevarar commit `600093e4522efc57bd82979cff65492a528ffeb7`.
 Ignorerade privata data ingår inte i Git-taggen.
 
+**Aktuell appversion, verifierad 5 oktober:** `ebbbeb764aa9b42613596049887c178e5a9c1818`.
+Tre CI-jobb PASS (`37248248494`), produkt-Render LIVE och båda Vercelbyggena
+READY på samma SHA. Fullhook 1 491 PASS/9 befintliga skip/0 fel. Director
+behåller samma administrationskod på `ee060804`; QA behåller `ee060804`,
+oförändrade 37 miljövärden och AI/GPU OFF. Drift-ID:n finns i John-handoff.
+Nedanstående daterade checkpoints är historik, inte den aktuella driftversionen.
+
+Första dokumentstädningen samlar tre ersatta Lab-dokument i den aktuella guiden
+och tar bort redundant `Start-Lissabon.ps1`. Aktiva launchers, acceptansbevis,
+systemregister och backups består. Rootdokumentens långa checkpoint-historik
+är ett kvarvarande selektivt städarbete, inte ett hinder för appens drift.
+
 **Studio-rättning och OpenClaw-admin, 5 oktober, `77a7cb49`:** Idle-knappen
 läser nu det gemensamma medieregistret i stället för avvecklad diskskanning.
 OpenClaw-modellval får en avgränsad serverväg från befintlig Studio-adminsession
@@ -31,8 +43,11 @@ admin kan skapa och ta bort sparade lane-definitioner med revisionskontroll.
 Gemensam kortgrund ligger i `web/public/card-presentation`. 2 410 gamla
 source/staging-binära filer (2,13 GB) har tagits bort lokalt med verifierade
 hashar. Motsvarande 2 313 Blobobjekt / 2,13 GB är också raderade och den
-kompletta efterlistan verifierad. Äldre runtime och separat deduplicering
-återstår; QA delar Blob och dess aktiva beroenden skyddas. Se aktuell John-handoff
+kompletta efterlistan verifierad. Ytterligare 64 byteidentiska kopior är
+deduplicerade lokalt; alla logiska ID:n/URL:er och hashvärden består. QA delar
+Blob och dess aktiva beroenden skyddas. De sista 58 Blobdubbletterna / 12,8 MB
+är nu borttagna efter färska referens-/hashkontroller. Samtliga 88 bevarade
+medieadresser i produktion/QA levererar exakt rätt fil. Se aktuell John-handoff
 för exakta mängder och verifieringsstatus. Lane-borttagning är inte i sig
 en automatisk radering av delade medier.
 
