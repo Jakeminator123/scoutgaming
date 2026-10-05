@@ -26,15 +26,16 @@ Det pensionerade privata personarkivet får inte läsas via sökning, Git eller 
 
 ## Verifierat nuläge och leverans
 
-MERGE har återläst följande 5 oktober före det avgränsade städ-/UI-slutpaketet.
+Senaste verifierade funktionsversion är `6ced437e`. Efterföljande slutöverlämning
+uppdaterar dokumentationen och städar lokala arbetsytor, inte produktkod eller driftmiljö.
 
 | Yta | Verifierad version / kvitto |
 | --- | --- |
-| GitHub main | `6b9dad55ced03ee0573e24b472b4dcbba2b97776`, pushad/remoteverifierad |
-| CI | `37252007240`: tre jobb success; senaste fullhook före detta paket 1 491 PASS/9 befintliga skip/0 fel |
-| Produkt-Render | LIVE `dep-db1fvkuq1p3s73f9gla0`, finished `2026-10-05T01:40:59.149237Z`, samma SHA |
-| Vercel frontend | READY `dpl_7X9A5Gq5Kjs2CVAcbijrUr6bgfGk`, samma SHA |
-| Vercel Studio | READY `dpl_GgTwovLAM42B3v8cWVJK1mETPbNt`, samma SHA |
+| GitHub funktionsversion | `6ced437eb50637c0d8445c6d1d3c60348170c550`, pushad/remoteverifierad |
+| CI | `37254441092`: tre jobb success; fullhook 1 495 PASS/9 befintliga skip/0 fel |
+| Produkt-Render | LIVE `dep-db1ggutckfvc73dnp5q0`, finished `2026-10-05T02:18:51.251466Z`, samma SHA |
+| Vercel frontend | READY `dpl_DWszpEvfBcN1V4T7GbCdEF9hkLme`, samma SHA |
+| Vercel Studio | READY `dpl_AstvxoUUAA5HasMhiAYjaDuPqa8b`, samma SHA |
 | Director | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, LIVE `dep-db1ek0navr4c73bi1log`; administrationskod oförändrad |
 | Bevarad QA | samma `ee060804`: Render LIVE `dep-db1em4ad0e5s73fcv3f0`, frontend/Studio READY, 37 envvärden oförändrade, AI/GPU OFF |
 
@@ -50,24 +51,100 @@ kvittona nedan gäller `ebbbeb76` och oförändrade bytes. Paketet nedan ändrar
 P0–P5 och P7–P9 är verifierade enligt checklistan; **full P6 är fortfarande öppet**.
 Tidigare 80/20 och ”0 % kvar” var grova/kategoriska migrationsbesked, inte helhetsacceptans.
 
+### Samlad överlämning från alla arbetsagenter
+
+| Arbete | Levererat och infört i main | Gräns / fortsatt ansvar |
+| --- | --- | --- |
+| AI/GPU och verklig spelström | AI→Cartesia→RunPod→spelad stream-END, beständiga journaler/reservationer; kontrollerad shutdown och cancellation | Full P6, naturligt live-COMPLETED och mänsklig takeacceptans är separata öppna krav; kostnad okänd |
+| Produktionsdata | Fryst export, backup, verifierad konto-/spel-/Studio-/journalparitet och gemensam Neon-policy; privat Blob för medier | Ingen gammal SQLite-writer får återaktiveras efter nya Neon-skrivningar |
+| Studio/OpenClaw | Gemensam inloggning/roller, native BO, upload/zonreferens, revisionsstyrd policy, fem modellval med autentiserad save/readback | Produktionsmail saknar fungerande konfiguration; fysisk mic/kamera är inte fullständigt accepterad |
+| DESIGN | Kompakt dealer-/BO-yta, tydliga klippkontroller, mobil layout, färre onödiga meny-GET | Kvarvarande authlatens är inte rotorsaksbestämd; nya layouter är inte ny medieapproval |
+| Hantera olika game lanes | Sparat serverägt lane-register/default, Mobile Phone Lane på `/blackjack`, create/remove, faktisk source/staging-/Blob-rensning och deduplicering; idle-textfix | Delade medier raderas separat efter referenskontroll; ny bank/renderer kräver implementation och acceptans |
+| GAMMAL och tidigare städare | Ersatt BO/UI/API/diskfallback, produktdisk, gamla alias och verifierat oanvänt dokument-/mediematerial avvecklat | Aktiva register, råmedia/kalibrering, återställning och QA-journaler bevaras |
+| Systemkarta och MERGE | En gemensam interaktiv HTML, käll-/SQL-/route-/envregister, versionsbundna CI-bevis och kontroller vid commit/push; samlad integration/driftverifiering | Källinventering och explicita prov är inte kontinuerlig liveövervakning eller fullständiga runtimebevis |
+
+DESIGN, GAMMAL och Hantera olika game lanes har var för sig bekräftat 5 oktober
+att inget färdigt arbete saknas i `6ced437e`. Inga ytterligare underagenter är aktiva.
+Det finns inga öppna eller historiska PR:er i detta GitHub-repo vid avläsningen;
+leveranserna har integrerats direkt på main enligt Jakobs beslut. Gamla taskbrancher
+kan därför vara cherry-pickade eller ersatta trots att Git inte kallar dem mergade.
+
+### QA, lane och produktion är olika saker
+
+QA betyder den separata Croupier-testmiljön: Render `croupier-vercel-preview-qa`,
+egna Vercel-testbyggen och separat Neon-scope/databas samt bevarad SDK/disk/journal.
+Den är inte Kevin Lane och inte enbart ett OpenClaw-prov. OFF betyder att dess
+genererade tal/streaming/preview/cloud-tal/kamera/Lissabonprofiler/native-admin
+och gästläge är avstängda; Cartesia-/RunPodnycklar saknas där. Det ändrar inte
+produktionens aktiva Mobile Phone Lane eller dess tal/GPU-funktioner.
+
+En lane är ett sparat spel-/presentationsval. Remove ändrar den revisionerade
+lane-konfigurationen; det tar inte bort Render/Vercel/Neon, SDK, journaler eller
+delade mediefiler. Den gamla `original`/Kevin-definitionen är inte längre standard
+i kodens register; äldre värden migreras till Mobile. En sparad extra lane kan tas
+bort i Studio, men om den sista tas bort saknar nya spel en startbar lane.
+Moln-QA behålls enligt Jakobs tidigare uttryckliga mandat och avvecklas inte som
+bieffekt av lane-/lokalworktree-städning.
+
+### Testernas roll när produkten förbättras
+
+1 495 är antalet godkända automatiska testfall i senaste lokala fullhooken,
+inte antalet nya tester i sista ändringen, funktioner eller betalda providerjobb.
+Sviten omfattar bland annat spelregler, auth, samtidighet, lagring, återställning,
+uppspelning och isolerade providerfel. Senaste UI-paketet ökade PASS från 1 491 till 1 495.
+Antalet bevisar varken full användbarhet eller att varje test är väl avgränsat.
+
+Tester av kontoskydd, serverägt saldo/kort, dataparitet, CAS och dubbeljobb skyddar
+beteenden. Källtext-/strukturtester finns också och kan bli överkänsliga när intern
+implementation eller avsiktlig UX ändras. Vid en godkänd förbättring ska berörda
+krav, kod, test och kartregister ändras tillsammans. Återinför inte gammalt beteende
+bara för att ett föråldrat test förväntar det; uppdatera eller ta bort det testet med
+motivering. Gör inte heller en blind hashomskrivning för att dölja verklig drift.
+Ingen bred testransonering eller ny testmotor ingår i denna överlämning.
+Ren dokumentändring använder redan kort lokal hook (20 testfall); full CI består.
+
+### Slutstädning och återställningsbar historik
+
+Efter avläsning/backup finns enbart `C:/Users/jakem/Projects/croupier` på `main`
+kvar i `git worktree list`; lokalt och på GitHub finns bara branch `main`.
+Elva gamla migrationsbrancher och tre automatiska tillfälliga handoffbrancher
+är borttagna. Huvudcheckoutens kod och privata data är bevarade.
+
+De rena agentcheckouterna `18a4`, `f7f0`, `f5eb` flyttades via appens handoff till
+huvudcheckouten och arkiverades sedan återställningsbart via `archive_worktree`.
+Chattarnas historik finns kvar. De rena, ägarlösa resterna `0375`/`ccc8` från
+misslyckad initiering hade inga ospårade/ignorerade filer, tillhörde exakt samma
+Git-repo och låg på en ancestor till main; de togs bort utan force.
+
+Privat verifierad backup före refstädning:
+`C:/Users/jakem/CroupierBackups/repository-housekeeping-20261005/`.
+`all-branches-before-cleanup.bundle` innehåller alla tolv dåvarande branchrefs,
+inklusive main; `git bundle verify` och exakt refmatchning PASS, 2 812 925 324 byte.
+SHA256 `eeaaeec8bb2f331a9a7ce17d5402a13e62c923dbac7559cf4477bd505896811c`.
+`receipt.json` listar borttagna refs/commit-ID:n och orphan-worktrees.
+DESIGN:s enda ignorerade statusfil bevarades separat i
+`C:/Users/jakem/CroupierBackups/design-worktree-f7f0-20261005-043315/`.
+Produktbackupen, privata QA-/rensningskvitton, `.env` och providerinställningar
+har inte raderats eller flyttats. Produkt-/QA-driftsmiljöerna städas inte via Git.
+
 ### Avgränsat slutpaket: dokumentstädning och två UI-rättningar
 
-Åtta referenskontrollerade gamla filer tas bort: fem under `docs/animation-events/`,
+Åtta referenskontrollerade gamla filer togs bort: fem under `docs/animation-events/`,
 den daterade `docs/releases/dealer-v2-2026-09-20.manifest.json` och Polarlotto-PDF/text
 om andra operatörer. De omfattade 1 143 070 byte och kan återfås ur Git `6b9dad55`.
 Inga aktiva videofiler/pipelines tas bort. Två `docs/qa`-kvitton med kvarvarande
 takeacceptans, `dealer-sync-baseline.json`, miljöregistret och systemkartan bevaras.
-De tre övriga tekniska guiderna kortas till aktuella regler; gamla produktdisk-
-återställningskommandon och ersatta QA-checkpoints tas bort. `.env`/providerinställningar
-ändras inte. Markdown/JSON är dokumentation och kontrollindata, inte processmiljö.
+De tre övriga tekniska guiderna kortades till aktuella regler; gamla produktdisk-
+återställningskommandon och ersatta QA-checkpoints togs bort. `.env`/providerinställningar
+ändrades inte. Markdown/JSON är dokumentation och kontrollindata, inte processmiljö.
 
 Backoffice slutar hämta oanvänd data: Drift behöver overview/shoes, Bord behöver config.
 Session- och behörighetskontroll behålls vid varje läsning. En gammal Idle-feltext rensas
 först när aktuell idlefilm faktiskt visar en bild; sena callbacks och nyare actionfel
 skyddas. Detta löser den kvarliggande texten, inte den historiska frame-varningens orsak.
 30 administrationsprov och sju riktade spelarprov, TypeScript och dealer-audit med
-`--probe` passerar. Obligatorisk fullhook/CI och faktisk slutversion redovisas vid leverans
-i befintliga privata `lab/data/platform-private/docs-cleanup-final-20261005.json`.
+`--probe` passerar. Fullhook 1 495 PASS/9 skip/0 fel, CI3PASS och faktisk LIVE/READY
+finns i `lab/data/platform-private/docs-cleanup-final-20261005.json`.
 Färskt isolerat browserprov: Astrid Mobile, `goodluck` två gånger i följd, 2/2 completed,
 video readyState4 och löpande media-tid; ingen idle-feltext. Den äldre SQLite-fixturen
 injicerar inte den serverägda lane-bindningen och väljer därför Astrid även med annan
@@ -141,11 +218,15 @@ kvitto för exakt SHA, artifactretention 30 dagar. Konkreta katalogfel stoppar c
 källdrift varnar. Grått/gult blir inte grönt utan relevanta aktuella prov.
 Detta ändrar inte branch protection eller verifierar providers/databaser live.
 
-`91d0c4d9`: 19 gröna, 0 röda/gula, 4 grå kontrakt, 0 errors/warnings.
+`6ced437e`: 19 gröna, 0 röda/gula, 4 grå kontrakt, 0 errors/warnings.
 Grått: saknat explicit reporterkvitto för game-events/zonprov respektive skippade
 verkliga Postgresprov; inte bevis för produktionsparitet. Privat:
-`lab/data/platform-private/ci-91d0c4d9-system-map-{status,evidence}.json`.
-HTML: `C:/Users/jakem/Downloads/Croupier-systemkarta-91d0c4d9.html`.
+`lab/data/platform-private/ci-6ced437e-system-map-{status,evidence}.json`.
+HTML: `C:/Users/jakem/Downloads/Croupier-systemkarta-6ced437e.html`.
+Exporten är en fryst versionsbild, inte en sida som uppdateras av sig själv.
+CI skapar en ny artifact per commit. Fyra grå kontrakt gäller game-events,
+game/auth-Postgres och zonlagring. Web-/gateway-rutter är delvis grupperade;
+hela den större framtidsidén i plan 02 är därför inte fullständigt genomförd.
 23 riktade prov och oberoende läsgranskning utan konkreta fynd. Node24 cancellation-
 fixturen är rättad med explicit abort/5 s yttre gräns; 23/23 PASS på Node22.22.2
 och Node24.21.0 med dubbla CI-reportrar. Verkliga fel/timeouts förblir fel.
@@ -159,8 +240,8 @@ Fortsatta faktakrav ligger i [plan 02](../planes/02-systemkarta/PLAN.md).
 Giltiga take/preview/tillgänglighetsregler och dagens upload/save-knappar finns i
 [guiden](../lab/docs/README.md#material-och-granskningsregler); schemaöversiktens länkar är lagade.
 26 lokala länkar PASS. `Start-Lab.cmd`, `Start-Lissabon.cmd` och Start-Labb-paret består.
-Den här tvåfilsomskrivningen komprimerar endast checkpoint-historik;
-kod, media, miljö, register och privata bevis ändras inte.
+Checkpoint-historiken komprimerades i `6b9dad55`; senare docs-gallring och två
+UI-rättningar levererades i `6ced437e`. Denna slutöverlämning ändrar inga appbytes.
 
 ## Lanes och faktisk medierensning
 
