@@ -10,6 +10,7 @@ att prova som original men inte klassificera vid upload. Detta är additivt:
 inga gamla projekt eller event-ID:n migreras. Exakt replik krävs fortfarande.
 En schemagiltig fil är inte bevis för dealeridentitet, codec eller läppsynk.
 
-[Artefaktkartan](../docs/ARTIFACTS.md) skiljer dessa format från produktens
-mediemanifest, 2D-rörelser och OpenClaws befintliga event-/katalogscheman.
-Planerade talbeslut i implementationsbriefen är inte ett redan aktivt API.
+[Guidens material- och granskningsregler](../docs/README.md#material-och-granskningsregler)
+skiljer dessa format från produktens kanoniska mediemanifest och 2D-prov.
+Aktuellt tal- och uppspelningsansvar beskrivs i
+[presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
