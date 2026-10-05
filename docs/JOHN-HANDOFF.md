@@ -1,2213 +1,435 @@
 # Aktuell handoff — Croupier
 
 Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
-Uppdatera de fem befintliga filerna i docs; skapa inga nya arbetsrapporter.
-
-**Aktuell verifierad appversion:** `ebbbeb764aa9b42613596049887c178e5a9c1818`.
-GitHub-körning `37248248494`: tre jobb PASS. Produkt-Render
-`dep-db1f4k5ckfvc73dmjbb0` LIVE, frontend
-`dpl_4WBpfHX7xihN1bFpjVpz66Q6utKy` och Studio
-`dpl_FTMzJxwCFickwpsUqZd3j1fCHk8Y` READY på samma SHA. Fullhook:
-1 491 PASS, 9 befintliga skip, 0 fel. Director behåller byteidentisk
-administrationskod på `ee060804`; QA behåller `ee060804` med AI/GPU OFF.
-
-## Studio: idle-omläsning och OpenClaw-modellval — 5 oktober
-
-Produktionsfelet `studio_native_unavailable` är återskapat via **Läs in nya
-idle-klipp**: importerade poster hade kvar `archiveSource=emil-default`, vilket
-UI tolkade som en order att köra den avvecklade diskskanningen. Cloud Studio
-läser nu videobanken med GET. Äldre öppna flikars POST `/videos/rescan` gör
-endast en autentiserad, färsk registerläsning utan diskimport eller mutation.
-26 riktade UI-/API-/uploadtester PASS; ingen användarfilm har skrivits över.
-
-OpenClaw-fliken får läsa och spara huvudmodell för fem befintliga Croupier-
-agenter genom Studio-adminsessionen. Fallbackordning bevaras, versionkonflikt
-behåller utkastet och sparning bekräftas först efter faktiskt kvitto och
-återläsning. Director tillåter endast denna modelländring med native CAS.
-Det vanliga runtime-tokenet får inte administrera Gateway. Serveridentiteten
-använder OpenClaw 2026.9.5/protokoll 4 och signerad device-pairing; inga
-auth-/verktygs-/providerinställningar exponeras i klienten.
-
-28 riktade backendprov och 16 UI-prov PASS; TypeScript och syntax PASS.
-Vercel Studio har server-only `OPENCLAWAPI_KEY` för production; Director har
-`OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`. Privat återställningsfil:
-`C:/Users/jakem/CroupierBackups/openclaw-studio-admin-device-20261005.json`.
-Värden visas inte i repot. Appversion `77a7cb49db4847f143574714e879bc87b3778f1f`
-är pushad: fullhook 1 460 PASS / 9 befintliga skip / 0 fel och tre CI-jobb PASS
-(körning `37245089710`). Produkt-Render `dep-db1ed6g473hc73915k10` och Director
-`dep-db1ebp5g1s2s739pt5bg` är LIVE; Studio `dpl_ErmcveQZgdwVtxUSN5tyth5okDST`
-är READY på samma SHA. Endast den avsedda signerade serveridentiteten har
-godkänts i Gateway 2026.9.5. Autentiserad Studio-GET visar fem agenter och
-`applied=true`. Idle-knappen läser om banken utan 503. Ingen användarfilm
-har laddats upp eller ändrats i detta driftprov.
-
-Ett no-op-save av operatörens befintliga modell gav 503: native OpenClaws
-`noop:true`-svar saknar `hash`, medan adapterkoden krävde det. Den snäva rättningen
-godtar bara konsekvent oförändrad modell och tom changedPaths-lista; övriga
-kvitton måste fortsatt ha hash. 19 riktade backend/transportprov PASS.
-Färsk readback visar samtliga modeller oförändrade;
-inget automatiskt andra skrivförsök eller providerjobb.
-
-**Levererad rättning `ee0608044f7c78b80c4f46023cd67a7b391e17f0`:** fullhook
-1 488 PASS / 9 befintliga skip / 0 fel. Director `dep-db1ek0navr4c73bi1log`
-LIVE; Studio `dpl_7YXkCP7srKzW7DiQdsfL8yWggosX` och frontend
-`dpl_1mtD82zJ5dY7QLAL8D759Fg1GuVy` READY. Avgränsat no-op-save efter deploy
-PASS: `saved=true`, oförändrad revision och alla fem agentmodeller,
-`restartScheduled=false`, färsk GET `applied=true`. Autentiserad Studio-flik
-återläst. Privat kvitto `lab/data/platform-private/openclaw-admin-noop-receipt-20261005.json`.
-QA AI/GPU fortsatt OFF. GitGuardian på `ee060804`: suite queued, incidentlista not-read.
-
-QA:s tre befintliga tjänster är nu också på `ee060804`: Render
-`dep-db1em4ad0e5s73fcv3f0`, frontend `dpl_8dp5dw8b38ubwLVCtJQT6mJvhDd1`
-och Studio `dpl_8fEjyiBqhGtx5ohPQKtkcmMvALGS`. Alias-CAS och färsk GET PASS.
-QA:s samtliga 37 miljövärden är oförändrade, health200; inga Cartesia-/RunPod-
-nycklar. Genererat tal, streaming, tal-preview, cloud-tal, kamera, Lissabon-
-profiler och native-admin är fortsatt OFF. Disk, data och journaler bevaras.
-De fem Vercel-projektens roller och den äldre testfrontens lagringskopplingar
-är dokumenterade i CLOUD-MIGRATION; inget Vercel-projekt har raderats.
-
-## Interaktiv systemkarta och testkoppling — 5 oktober
-
-`docs/system-map/index.html` har tre grafvyer med klickbara rutor/pilar,
-zoom/pan, filter och käll-/testdetaljer. JSON-katalogerna beskriver appkälla
-`77a7cb49`, 57 Next-filer, 49 tabeller och 299 kolumner. Historiska driftprov
-har egna datum. `contracts.json` registrerar 23 kontrakt; `verify.mjs`
-kontrollerar avgränsade routes/SQL/env/events och faktiskt Gitträd med `--ref`.
-
-En passiv reporter i befintlig fullhook skapar maskerade testbevis utan
-omkörning. CI bygger HTML/status/kvitto för faktisk SHA, med 30 dagars
-artifactlagring. Commit/push stoppar konkreta katalogfel; källdrift varnar.
-Gul/grå status blir inte grön utan aktuella relevanta prov. Detta ändrar inte
-GitHub branch protection och verifierar inte databaser eller providers live.
-23 riktade tester PASS och separat läsgranskning utan konkreta fynd.
-UI:s syntetiska pekar-/färg-/modellprov PASS. Lokal HTML är öppnad i Codex;
-automatiserad browserkontroll av fil-URL blockerades av browserpolicyn och
-har därför inte markerats genomförd. Inga alternativa browseromvägar användes.
-
-CI-körning `37246124351` avbröts efter att det nya cancellation-fixturen i
-`test/system-map.mjs` fastnat på Node24. Samma fixture gick igenom på Node22;
-felet är återskapat även utan customreporter. Fixturen använder nu explicit
-abort och fem sekunders yttre gräns. En otypad avbruten testhändelse kräver
-samma fils slutkvitto med failed0/cancelled>0; verkliga fel och timeouts
-förblir fel. Alla 23 prov med dubbla CI-reportrar PASS på både Node22.22.2
-och Node24.21.0, cirka sex sekunder vardera. Inga spel-/providerfel har
-härletts från teststoppet. Den rättade versionens tre CI-jobb PASS i
-`37248248494`. CI-artefakten binder kartan till `ebbbeb764aa9b42613596049887c178e5a9c1818`:
-19 gröna, 0 röda/gula och 4 grå kontrakt. Grått gäller saknat explicit
-reporterkvitto för game-events/zonprov respektive skip av verkliga Postgres-
-prov; det betyder inte verifierad produktionsparitet. Inga katalogfel eller
-källdrift finns i kvittot. HTML-kopia:
-`C:/Users/jakem/Downloads/Croupier-systemkarta-ebbbeb76.html`.
-
-## Avgränsad dokumentstädning — 5 oktober
-
-De ersatta `lab/docs/ARTIFACTS.md`, `DASHBOARD-DESIGN.md` och
-`OPENCLAW-SPEECH-OWNERSHIP.md` samt den redundanta `Start-Lissabon.ps1`
-tas bort. Giltiga take-/preview-/tillgänglighetsregler finns i `lab/docs/README.md`;
-schemaöversiktens länkar och dagens uppladdnings-/sparknappar är rättade.
-`Start-Lab.cmd`, `Start-Lissabon.cmd` och Start-Labb-paret består. Detta
-ändrar ingen spel-/providerkod eller data. Historiska checkpoints i rootens
-två handoff-/migrationsdokument behöver fortfarande komprimeras selektivt;
-acceptansbevis, systemregister och återställningsunderlag ska behållas.
-
-## Lane-register och medierensning — 5 oktober
-
-Jakob har beställt en kvarvarande Mobile Phone Lane, tillägg/borttagning av
-lanes och rensning av oanvända Kevin-relaterade medier. Gemensam spelauktoritet,
-kortprojektion, tal- och uppspelningslogik ska bevaras. `web/public/kevin-cards`
-heter nu `web/public/card-presentation`; källproveniens och kalibrering består.
-
-`game-lanes.mjs` validerar versionerade definitioner med ID, namn, renderer,
-dealer och mediesamling. Sparad administration får `gameLanes` och `gameLane`.
-Äldre `original`/saknat val migreras vid läsning till Mobile. Serverns val
-binds i HTML; gamla queryparametrar kan inte återaktivera Kevin. Studio har
-revisionsstyrda adminåtgärder `game-lanes/create` och `game-lanes/remove`.
-Aktiv lane kräver en ersättare, eller `null` när sista lanen tas bort; då
-stängs ny Blackjack-start tills en lane läggs till. Nya porträttlanes delar
-Astrids befintliga bank och policy. Separata nya renderertyper/mediebanker
-kräver en implementerad adapter och verifierade media; godtyckliga URL:er
-accepteras inte. Att ta bort en lane raderar inte dess delade mediesamling.
-
-**Utförd lokal rensning:** 2 410 binära source/staging-filer, exakt
-2 133 120 568 byte, borttagna efter kontroll av samtliga faktiska filhashar
-och säkra sökvägar. Layout och Blob-index är uppdaterade. Mobile-bankens
-filmer/metadata, zonreferens, kortbild, runtime och all kod/kalibrering består.
-Registrerad lokal mediamängd är nu 778 332 363 byte. Git-historiken omskrivs inte.
-
-**Blob-rensning utförd:** 2 313 source/staging-objekt / 2 131 771 483 byte
-borttagna efter `8f265831` LIVE/READY och färsk referensläsning. Komplett
-paginerad efterlista bekräftar att just målen är borta och alla andra tidigare
-objekt har samma sökväg/storlek. Kvar: 1 858 objekt / 782 689 240 byte.
-Bevarad kortbild, zonreferens och dealfilm har fungerande HEAD-läsningar.
-Produktion och QA delar Blob; QA `srv-datj7l893c1s73ar3u50` är på `7c4c1cc3`
-och har separat gameDB. Studio-dokument, historik, mediarecords och speech-
-referenser har lästs i båda databaserna, plus produktionszoner. Sparade
-klipp/GPU-resultat/journaler och objekt utanför raderingslistan bevaras.
-Ignorerade privata underlag/filkvitto finns i `lab/data/lane-media-audit/`.
-Kvitton: `blob-purge-receipt.json`, `blob-after-purge.json` och `kept-readback.json`
-i samma privata mapp. Runtime-media och återstående dubbletter är inte
-färdigrensade; QA:s befintliga manifest och historiska spelartester använder
-fortfarande delar av dem. Lane-agenten förbereder separat deduplicering med
-bevarade logiska alias. Det är inte en generell radering av återstående media.
-
-**Deduplicering, lokalt klar:** ytterligare 64 byteidentiska kopior /
-14 216 404 byte borttagna. Alla 2 514 logiska poster, ID:n, hashvärden, URL:er
-och åtkomstgränser består; 2 450 fysiska filer / 764 115 959 byte återstår.
-Valfritt `canonicalPath` i layout v1 går direkt till registrerad huvudkopia
-med samma hash/storlek/filändelse. Blobindex delar fysisk lagring utan att
-ändra logiska identiteter. 35 riktade prov, hela fysiska bankens hashkontroll
-och fyra dealers sync `--probe` PASS. Ingen ny visuell acceptans påstås.
-**Deduplicering, Blob klar:** 58 överflödiga objekt / 12 787 392 byte är
-borttagna efter faktisk produktversion `ebbbeb76`, QA `ee060804` och exakt
-ekvivalens av alla medieläsare. Färska databasreferenser och 62 bevarade
-huvudobjekt med HEAD och fullständig SHA-läsning PASS. Komplett efterlista:
-1 800 objekt / 769 901 848 byte; alla mål saknas och alla andra tidigare
-objekt har samma sökväg/storlek. 88 publika medieadresser, 44 produktion och
-44 QA, GET200 med exakt storlek och SHA PASS. QA:s miljövärden är oförändrade.
-Privata kvitton: `dedup-cloud-purge-receipt.json`, `dedup-blob-after.json` och
-`dedup-http-verification.json` i `lab/data/lane-media-audit/` tillsammans med
-plan/lokalkvitto. Kontrollens privata cachekopior är hashkontrollerat borttagna;
-journaler, kvitton, uploadfiler och övrig runtime-media bevaras.
-
-Kontroller: riktade lane/CRUD/kort/policy/start-tester PASS, TypeScript PASS,
-fullhook före och efter rensning PASS (efter: 1 418 godkända, 9 uttryckliga
-skip, 0 fel), dealer-sync `--probe` efter rensning PASS för alla fyra historiska
-dealerpaket. `8f265831` har tre CI-jobb PASS, produkt-Render LIVE och två
-Vercelbyggen READY. Detta är ingen ny visuell eller läppsynksacceptans.
-GitGuardian: suite queued, incidentlista not-read; inte klartecken.
-
-## Studio-design — 5 oktober
-
-**Ytterligare UI-pass, levererat i `ebbbeb76`:** DESIGN har lämnat
-över 14 granskade filer. Backoffice visar elva aktiva sektioner; de overifierade
-pitboss-/turneringsformulären och två informationspaneler har tagits bort
-från menyn. Deras befintliga API, behörighetskatalog, schema och sparade data
-är bevarade. Lane-/konto-/nyckelåtgärder och talgranskning är utfällbara.
-Gemensam navigation och kompaktare Idle-/klippytor; byte från Astrids Probe
-till annan dealer visar den dealerns Idle och bevarar osparat projektutkast.
-53 riktade tester, TypeScript och Next-produktionsbygge PASS före överlämning.
-Faktisk autentiserad UI-kontroll på `ebbbeb76` PASS vid 1486/1265 px och
-390 px viewport: Idle, tio deal-/sjutton replikkort med öppna inställningar,
-Probe/dealerbyte, Backoffice-lanes/kontodisclosures och OpenClaws fem modeller.
-Ingen horisontell överrinning i kontrollerade vyer. Idle-listan minskade från
-1 094 till 663 px; preview readyState4. Ingen sparning/upload/delete/provider-
-mutation i UI-provet. Viewport återställd och Studio-flik bevarad. Privat
-`ui-final-pass-receipt.json` och bilder ligger under
-`C:/Users/jakem/.codex/visualizations/2026/10/04/01a108f1-324a-7c31-b5af-ad71943dada3/`.
-
-Dealer & klipp och Backoffice delar nu en dämpad gråblå palett. Deal och
-repliker har kompakta situationskort med Spela standard, Inställningar och
-utfällbar fillista. Sökning, radbrytning och flexibla kolumner håller långa
-filnamn och knappar inom korten. Idle visar en rad per variant; beskrivning,
-tider, fördelning, enminutsprov och uppspelningslogg öppnas vid behov.
-Probe och bakgrund använder samma ytor och knappar. Upprepad hjälp och
-teknisk behörighetstext har förenklats; saknade integrationer anges fortfarande.
-
-Mobile Phone Lanes originaluppspelning, sparning/revisioner, auth, media,
-talpar, frame-index och kalibrering är oförändrade. Befintlig avstängning
-ändrar policyn och behåller råfilen. Råfilsradering saknas i gränssnittet;
-MERGE är tillfrågad om separat upload/delete- och lane-verifiering.
-Inga produktionsfiler eller inställningar har muterats för designprovet.
-
-Levererad kod: `7d7814db0da0b5418a3965a8342d8a4c4db9b086`. Obligatorisk
-fullhook och tre GitHub CI-jobb PASS; frontend och Studio är READY på denna
-SHA. 77 riktade Studio/Idle/BO/navigation/draft-testfall, TypeScript och
-produktionsbygge PASS. Synkaudit med --probe PASS för alla fyra dealeruppsättningar;
-den tidigare mänskliga medieacceptansluckan består.
-Offline-Studio svarar 503 studio_read_storage_unavailable efter Neon-cutover;
-ingen auth- eller lagringsfallback införs för QA. Den statiska layoutbilden
-är återkallad som bevis. Riktig autentiserad Vercel-layout PASS vid 1285 och
-390 px: 17 replik- och 10 dealkort, inga överlappningar, inga synliga knappar
-utanför korten eller horisontell scroll. Öppna fil-/Idle-/Probe-avsnitt och
-deal-/replikinställningar ryms. Idle-sökning ger rätt rad. Vera, Amira och Mei
-visar sina befintliga Idle-vyer utan layoutfel på mobilbredd. Backoffice laddar
-med den nya paletten och utan fel. Standardpreview av blackjack.mp4 spelade
-till slut, 4,5 s, readyState4 och video.error=null; detta är klippgranskning,
-inte full spel-/lane-acceptans. Spara-knappen var fortsatt inaktiv under hela
-provet. Inget nytt AI-/GPU-jobb, sparning, upload eller delete utfördes.
-Temporära HTML-filer är borttagna och det koordinerade offlineparet stoppat.
-
-Backoffice kunde öppnas autentiserat i drift. En observerad laddning tog
-cirka tio sekunder: fyra session-GET och tre administrations-GET. Klienten
-läser identitet först och igen för varje dataanrop, sedan väntar översikten
-på alla svar. BO kör på Vercel med Neon; vissa spelavläsningar går via Render.
-Det finns inget isolerat bevis för att Render ensam orsakar väntan.
-Denna leverans ändrar laddtexten men inte sessions-/dataflödet.
-GitGuardian på levererad kod 7d7814db: suite queued, inga synliga check-runs,
-incidentlistan not-read; ingen incidentfri status påstås.
-
-## Tre efterfunna sluträttningar — 4–5 oktober, efter 9297f814
-
-**Levererad kod:** `5270c8ab93bf593512d0374cb9c36033e59dc103` efter
-första paketet `96020c04fd2fbcbd333ce07e54fa9fb57694693a`.
-Tre GitHub-jobb PASS på 5270c8ab. Produktens Render är LIVE,
-`dep-db1d59g473hc739001u0`; frontend `dpl_Fer8ecvTRv5bhjLtC9G7CtWJUgLe`
-och Studio `dpl_J9xFyB5FTSDctzRmvV6MbVg4T2UG` är READY på samma SHA.
-Director är LIVE på 96020c04, `dep-db1cvhe0tbcc73ajk4j0`; dess fixade
-proxyfil är oförändrad i följdcommiten. Privat Gateway ligger kvar på
-15bd1541 och har inte behövt omdeployas.
-
-CI fann `Promise<Response | null>` för zonens GET efter första pushen;
-det lokala bygget hade missat detta. JavaScript-hjälparens indirekta kast
-gav inte TypeScript tillräcklig narrowing. Felsituationen kastar nu direkt
-före Response-användningen. `tsc --incremental false`, de 12 zonfallen och
-följdcommitens obligatoriska fullhook PASS; sedan passerade CI:s färska bygge.
-
-Jakob beställer uttryckligen rättning, stage/commit/push och parallell
-komplettering av den befintliga HTML-kartan. GPU-processens cleanup börjar
-nu före gatewayväntan, båda barnen signaleras parallellt och uppgraderade
-anslutningar har en ägare. Samma budget används i processen: 15 s naturligt
-provideravslut, 15 s cancellation och 30 s journalmarginal; därefter högst
-5 s HTTP-dränering och 10 s lagring. Barnets tvångsgräns är 80 s; Render
-behöver 90 s. Timeout behåller återhämtningsbar journal/reservation och
-öppen lagring för pågående skrivningar, med felstatus i processen.
-
-Zonreferensen använder nu den registrerade privata Blob-källan, exakt PNG
-1080×1920, 1 628 428 byte, SHA256
-`eda87f9e877b00dbd2f02479db44ae5f41e2f182563825304906880ceee0088a`.
-Autentiseringen och privat caching består; en saknad/felaktig molnkälla
-ger 503 utan lokal fallback. Zonrutten har de registrerade metadatafilerna
-i det faktiska Next-bygget. OpenClaw-proxyn tillåter endast avsedd aktiverad
-toppnavigering från Studio till exakt `/openclaw` eller `/openclaw/`.
-API/fetch/iframe/mutation/WS, Origin/Host, native auth och pairing behåller
-sina separata kontroller.
-
-50 zon-/medie-/guard-/tracingprov och 53 dashboard-/proxy-/workspaceprov
-PASS. Studio build/typecheck och metadata-tracing PASS; inga envfiler eller
-retirerade Emil-paths i zonens trace. Synkaudit med `--probe` PASS för alla
-fyra oförändrade dealeruppsättningar; tidigare mänsklig acceptanslucka består.
-Shutdowns Windowsomgång 71 PASS/3 Linux-SKIP och Linuxkedjan 4/4 PASS.
-Den oberoende granskningen fann för tidig shared-lease-release under
-request-journalflush. Fyndet är rättat och stängt med ett verkligt delat
-minnes-SQL-journalprov: providerstopp börjar medan skrivningarna hålls,
-lease release0 före båda flusharna/release1 efter. Efter rättningen close-
-regression 38/38 och Linuxkedjan 4/4 PASS. Nya regressionsprov är anslutna
-till befintlig fullhook/CI, ingen separat kontrollmotor.
-
-**Faktiskt driftprov 22:20–22:38 UTC den 4 oktober:** klick från Studio
-nådde native OpenClaw och Agents-vyn med befintlig Owner-anslutning, utan
-modelljobb eller ändrad pairing. Studio avkodade zonreferensen till 1080×1920.
-Chrome exporterade den redan befintliga zonen (696,269,290,104): PNG
-48 513 byte, 290×104, pixel för pixel identisk med det registrerade utsnittet.
-Molnets zonrevision1 och båda webbläsarprofilerna bevarades; ingen save/delete
-eller konto-/saldo-/spelmutation gjordes. Anonym bildåtkomst gav 401;
-anonym `/blackjack` gav 303 till `/player-login`. Befintlig autentiserad
-Mobile Phone Lane-spelflik och Studio var åtkomliga. Render-health200.
-
-Render90 är applicerad, omdeployad och GET-verifierad. Vid ändringen
-22:05 UTC var alla 51 produkt-envvärden identiska. Efter leveransen
-22:38 UTC: 51 envposter och RunPod completed6/failed0, inProgress0/inQueue0,
-workers running0/idle1/ready1. Inget nytt betalt AI/TTS/GPU-jobb skapades av
-buggrättningen. QA37 envposter, AI/GPU/kamera OFF och inga Cartesia-/RunPodnycklar.
-Processavslut med aktiv worker och långsam provider är bevisat i den isolerade
-Linuxkedjan, inklusive naturligt avslut/cancellation/timeout; inget nytt betalt
-produktionsjobb eller full P6-acceptans påstås. Spelfliken visade vid den
-läsande efterkontrollen `Idle: Film ended without a presented frame`.
-Den observationen är en separat medie-/P6-lucka, inte ett godkänt playbackprov.
-Fysiska mikrofon-/kamera-/mobilprov, produktionsmail och GitGuardian-
-incidentlistan är fortsatt öppna; full commitmetadata läst, GitGuardian queued,
-incidentlista not-read, känd incident37830671 inte avskriven. Prisunderlag backlog.
-
-Kartunderlaget är införlivat direkt i befintliga JSON-filer/HTML: 49 tabeller,
-299 kolumner med datatyp/nullbarhet, 49 PK/22 explicita FK samt 56 Next-filer
-med 61 uttryckliga HTTP-exporter. 284 unika källvägar och HTML/JS kontrollerade;
-browserprov av sök/filter, SQL-detaljer och routeadress PASS. Installerade
-live-grants, återstående detaljerade Web-handlers och automatisk kontrakts-
-driftmarkering är avgränsade nästa etapper. Inga nya researchrapporter.
-Backup, P7/P8, konto-/speldata och tidigare journaler/reservationer är bevarade.
-
-## Systemkarta och lokal städning — 4 oktober, efter d3fd13d3
-
-Jakob beställde uttryckligen en mapp för dokumentation/HTML/testkoppling och
-borttagning av överflödiga syskonmappar. Tre läsande arbetsagenter kartlade
-routes/auth, databas/lagring och spel-/talflöden. Merge-agenten sammanställde
-[`docs/system-map/index.html`](system-map/index.html) med JSON-underlag och
-offlinegenerator. Det är vanlig fristående HTML, ingen Codex-canvas.
-9 sidgrupper, 11 API-grupper, 7 alias, 2 lanes, 4 scheman/49 tabeller och
-3 spel-/talflöden med 16 steg finns med. Nyckelnamnen hämtas direkt ur befintligt
-`environment-variables.json`; inga hemliga värden eller produktionsrader finns i kartan.
-Källinventeringen gäller `d3fd13d3`; tidigare avgränsade driftbevis gäller
-`3da83bf8` med datum. Inga nya live-/providerprov eller prisutredningar ingår.
-
-Tjänsternas metadata avlästes i föregående uppgift: `croupier-v2` äger produkten,
-`croupier-vercel-preview-qa` är separat QA, `croupier-lab-director` ger publika
-Director/dashboardingången och `croupier-lab-openclaw` är privat Gateway.
-`spelsajt-game-server` tillhör `Jakeminator123/spelsajt` och
-`openclaw-sajtagenten` tillhör `Jakeminator123/sajtmaskin`; inga resurser i
-de projekten har avvecklats. Render-kortet `croupier-v2` är en projektgruppering.
-
-`C:/Users/jakem/Projects/croupier-frontend`, `animation-events-v1`,
-`croupier-migration-workers` (sju registrerade worktrees) och den gamla
-`croupier-stream-integration.patch` är borttagna. Originalcheckouten är kvar
-på main. 214 käll-/tillståndsfiler, inklusive den ändrade `s00-helheten.md`,
-bevarades med SHA256-kontroller; två separata repo-historiker har verifierade
-Git-bundlar och alla sju workerbranchers commits är kvar i huvudrepot.
-Privat backup och manifest ligger i
-`C:/Users/jakem/CroupierBackups/local-project-cleanup-20261004T210828Z`.
-Återskapbara dependency/buildcacher kopierades inte. Tidigare produktionsbackup
-`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004` är orörd.
-De två fristående misslyckade Codex-worktrees under `.codex/worktrees` ligger
-utanför de beställda syskonmapparna och är inte borttagna i denna leverans.
-
-238 unika käll-/testvägar, JSON/JS och HTML-navigation/sök/filter/detaljer
-PASS. Browsern visade 27 routegrupper, 57 databas-/lagringsposter, korrekt
-QA-filter, 206 envnamnsposter från 10 befintliga tjänsteregister och 80
-befintliga testfiler. Hela obligatoriska pre-commit-sviten PASS; testlänkar
-är referenser, inte nya live-PASS för runtime. GitGuardian: komplett
-GitHub-avläsning för d3fd13d3, svit queued och incidentlista not-read;
-tidigare känd incident 37830671 är inte avskriven.
-Fullständig kolumn/FK-/routeinventering och
-CI-resultat per kontrakt är nästa karta-etapp enligt [plan 02](../planes/02-systemkarta/PLAN.md).
-Plan 01:s tre funktionsfel, P6, fysisk mic/kamera, produktionsmail och
-GitGuardian-incidenttäckning är fortsatt öppna. QA AI/GPU förblir OFF.
-Publicering sker med `[skip render]` för att bevara verifierad runtime;
-obligatoriska hooks/CI ska passera som vanligt.
-
-## Kevin Lane och röst/kamera — 4 oktober, efter cfdcb2c7
-
-Jakob beställer namnbytet från Original Lane till **Kevin Lane** samt att
-Mobile Phone Lanes röst/kamera ska fungera. Endast visningsnamnet ändras;
-sparat lane-ID `original`, befintliga konton och vald `mobile-phone` bevaras.
-Den reproducerade UI-varningen beror på att produktionsflaggan
-`CROUPIER_ASTRID_CAMERA` var `0`. Befintlig separat translationsnyckel finns
-och GET OpenAI `/v1/models/whisper-1` gav HTTP200. Flaggan är nu `1`
-på produktionens Render-tjänst, övriga miljövärden identiska. QA är fortsatt OFF.
-Ingen ny nyckel, provider, datamigration eller prisutredning behövs.
-
-82 befintliga riktade lane-/kamera-/röst-/transkriptionsprov och hela obligatoriska
-pre-commit-sviten PASS. Funktionscommit `3da83bf84187431d704086461782cae7986169a2`
-är pushad. Ett avgränsat verkligt OpenAI translations-anrop med lokalt syntetiskt
-ljud gav HTTP200 och förväntad fras, ingen retry; kostnad okänd. Ingen användares
-ljud spelades in. GPU-avläsning före omstart: completed6/failed0/inProgress0/inQueue0;
-inget nytt TTS-/GPU-jobb har startats av denna uppgift. Spelarens mikrofon/kamera kräver fortfarande
-eget val i samtyckesdialogen och webbläsarbehörighet; inspelning är OFF vid
-sidöppning. Bilder kräver vald Luna/Terra; manuell engångsinspelning finns
-om lokal wake-word-igenkänning saknas. Fysisk mikrofon/kamera är ännu inte provad.
-
-**Driftverifierat 4 oktober cirka 20:38 UTC:** `3da83bf8` är LIVE på Render
-`dep-db1bga0ae00c73fcmnrg`, READY på frontend `dpl_2pFBhRtxiqZJp27jhcTSkjcA9Fvd`
-och Studio `dpl_GV1KUnZ9uvGr3P8uDDt1YjMXtgju`. CI `37232269006` har tre gröna jobb.
-Studios verkliga lane-väljare visar Kevin Lane (`original`) och Mobile Phone Lane
-(`mobile-phone`), med Mobile fortsatt sparad. Autentiserad `/blackjack` efter
-omladdning ger GET `/api/astrid/observation` HTTP200 med `enabled=true`,
-`vision.enabled=true`, `transcription.enabled=true`, `reason=null`, modell
-`gpt-5.6-terra`. Felvarningen är borta och inspelningsknappen öppnar samtyckesdialogen.
-Webviewns mikrofon-API, AudioWorklet, lokal wake-word-API och kamera-/mikrofonpolicy
-är tillgängliga. Mikrofon/kamera startades inte; dialogen lämnades öppen åt Jakob.
-Denna efterföljande dokumentationscommit använder `[skip render]` eftersom
-runtimekoden redan är verifierad; inga hooks/CI hoppas över.
-
-GitGuardian: GitHub-avläsning komplett för 3da83bf8, svit queued,
-incidentlista not-read; tidigare känd incident 37830671 kvarstår som täckningslucka.
-
-## Efterarbete beställt av Jakob — 4 oktober, efter bee4e04a
-
-Jakob har uttryckligen beställt en separat planmapp
-[`planes/`](../planes/README.md), med arbetsblock som andra agenter kan ta.
-Plan 01–07 är planering och faktakontroll. Jakob beställde därefter uttryckligen
-implementation av Mobile Phone Lane (plan 08), redovisad nedan. De tidigare
-hjälpagenterna har arkiverats av Jakob.
-
-Tre öppna funktionsfel är nu underbyggda: gatewayens shutdown fastnar i ett
-isolerat prov med uppgraderad anslutning; barnets 10 s är kortare än GPU:s
-15 s plus cancellation/journal; zonreferensen läser en borttagen Emil-path
-trots registrerad ersättningsbild; OpenClaw ger 200 vid direkt GET men 403
-med Studio-länkens cross-site-navigeringsmetadata. Coachens uppgift om sex
-zon-500 är inte självständigt loggavläst här. Rättningar och efterföljande
-autentiserad acceptans är öppna; P7/P8:s dataflytt och avveckling görs inte om.
-
-Avläsningen före röst-/kamerabeställningen ovan: produktionens tre tal-/streamflaggor är ON,
-kameraflaggan OFF, Neon-policy ON och native-admin OFF. QA har 37 miljövärden,
-tal/stream/kamera/native-admin OFF, Neon-policy ON och saknar Cartesia-/RunPod-
-nycklar; P6-router är unset på båda. OFF37 betyder inte 37 avstängda funktioner.
-Planerna skiljer detta från äldre Kevin-/Emil-proveniens och framtida lanes.
-
-Jakob har därefter uttryckligen beställt implementation av **Mobile Phone Lane**
-på den rena adressen **`/blackjack`**. [Plan 08](../planes/08-mobile-phone-lane/PLAN.md)
-beskriver den implementerade lösningen: Studio → Backoffice → Spel, lanes & bord
-sparar `administration.gameLane` med befintlig behörighet/revision. Frontend och
-Render läser samma policy, kräver giltig spelsession och leder annars till
-`/player-login`. Lyckad login återgår till rätt speladress med befintligt konto.
-Gamla dealer-/presentation-länkar fungerar; dealerbyte bevarar rätt spelare
-också från ren URL. Det interna `lissabon-stream-lane` och tal-/GPU-kedjan
-bevaras. Ingen kontomigration eller betald provgenerering ingår.
-
-**Mobile Phone Lane levererad 20:12 UTC:** funktionscommit
-`0b45cba61639f93186100acfd591d58913acb0f7` är pushad på main. Full pre-commit,
-39 frontendprov, riktade routing/login/policy/UI-prov, båda produktionsbyggena
-och syncaudit `--probe` för fyra dealers PASS. Samtliga tre CI-jobb PASS i
-`37230512403`. Render `dep-db1b3ntckfvc73dimuhg` är LIVE; frontend
-`dpl_UZKL6rCb4Euj7KeHW44kFZFfW9Uz` och Studio `dpl_5vz3wtij7g13oM6QyhH5Zck8nM8y`
-är READY på samma fulla SHA. Byggspåren innehåller spel/login/lane.
-Den efterföljande handoffcommiten ändrar endast denna fil och använder
-Render-stödda `[skip render]` ([dokumentation](https://render.com/docs/deploys#skipping-an-auto-deploy))
-för att behålla den verifierade spelservern utan en dokumentationsomstart.
-Ingen testhook eller CI-kontroll stängs av; runtimekoden är identisk.
-
-Efter att samtliga tjänster var klara sparades **Mobile Phone Lane** genom
-Studios verkliga administratörsformulär med Jakobs befintliga session. UI
-bekräftade save och omläst serverdata. Publik policy GET200 återläser
-`gameLane=mobile-phone` (revision `studio-game-4a37098d048ad3173da294370086eaf64780a9cbbc11ea34679e267df3043798`).
-Ren `/blackjack` är faktiskt öppnad i webview med `dealer=astrid`,
-`presentation=local`, videons readyState4/playing/inga mediafel och
-OpenClaw-klippval. Samma sparade hand/kort och konto återladdades; inga insatser,
-konton, saldon eller spelutfall ändrades för test. `/player-login` med befintlig
-session återgick till rena `/blackjack`. Separata cookiefria HTTP-prov gav
-303 till login, login200 och kompatibel gammal Astrid-query/`/game`-redirect.
-
-Godkänd tidigare tal-/GPU-/medieacceptans återanvänds för oförändrade delar;
-ingen ny betald generering eller mänsklig läppsynkapproval påstås. GPU GET-health
-19:57 och 20:00 UTC visade kö0/pågående0/running0, idle1, completed6/failed0.
-QA är kvar på `7c4c1cc`, autoDeploy=no, 37 env, genererat tal/stream/kamera/admin
-OFF och Cartesia-/RunPod-nycklar frånvarande. Backupen nedan består.
-GitGuardian på levererad commit är queued/inga synliga runs, incidentlista
-not-read; ingen befintlig GitGuardian-flik hittades. Känd incident 37830671 är
-inte avskriven. Plan 01:s shutdown-/zon-/OpenClaw-fel, P6, produktionsmail och
-latens är separat efterarbete; denna routeleverans godkänner inte dessa flöden.
-
-Läsning av Jakobs pågående spel cirka 21:34 svensk tid visade ett faktiskt
-avslutat genererat strömsvar: `ready` 4,524 s, uppspelningsstart 9,803 s,
-första synliga bild 9,809 s och END 12,703 s. Tidigare 52,3 s till `ready`
-är möjlig kallstart, inte fastställd providerorsak. [Plan 06](../planes/06-driftlagen-och-lanes/PLAN.md)
-skiljer varm latens från uppstart och mikrofon/kamera från Astrids utgående
-tal. Produktionsnyckeln är inte Jakobs nya lokala Cartesia-nyckel; röstprofil,
-Cartesia-källa och strömklient är oförändrade från `95c2f046`. Inget nytt
-meddelande/providerjobb skickades av agenten under denna avläsning.
-
-Tidigare ”0 % kvar” avsåg den avgränsade migrationen och var för kategoriskt
-som helhetsbesked. De nya fynden gör de berörda funktionsgodkännandena öppna.
-Ingen ny generering, livekontoändring, ny arkitektur eller prisutredning har gjorts.
-
-Verifierad slutkod 18:16 UTC: P7:s produktionsimport, gemensamma Neon-policy,
-aliasbyte och provideraktivering samt fysisk P8 är genomförda på `9ba2fd05`.
-Startfel från mejlets `1fb2307` är rättat. Full pre-commit och tre CI-jobb
-PASS; frontend/Studio READY, samtliga 17 alias kontrollerade med historiska
-mål och projektinställningar bevarade. Render `dep-db198qrm8hqs73dpj27g`
-är LIVE utan CROOT och med originalets TLS verify-full. Slutparitet PASS för
-32 skyddade konto-/speltabeller, elva journaler, tre dokument och 18 aktiva
-plus sex behållna medieposter. Gamla mediereferenser0, routing och HEAD/Range PASS.
-Produktdisk DELETE204/GET404 och service.disk saknas. Tolv gamla Blobobjekt
-är borttagna: gamla-lista0/ersättningar12. Explicit restart200 gav en faktisk
-ny appprocess med 160 rätta källhashar, åtta avvecklade runtimefiler,
-AI3/Neon ON, health200, ingen `/var/data` eller persistent produktmount.
-Backupen är fullständigt verifierad och bevaras i
-`C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
-Actualkvitton: diskfri `6cf5030f…`, data/HTTP `4615366b…`, postdelete `bf582b0b…`.
-Godkänd oförändrad QA/auth/mediaacceptans återanvänds; produktions-HTTP gäller
-anonyma GET/redirects, ingen ny autentiserad produktionskontomutation påstås.
-Parent-env är direkt oläsbar (Linux EACCES efter UID-byte); faktisk barnprocess,
-Linux-källa och stabila deploy-/envavläsningar binder konfigurationen.
-Lokal TCP-läsanslutning bröts; befintlig installerad Neon-Pool användes
-processlokalt med oförändrad URL, read-only SQL-guard och helperbytes.
-QA:s tre tjänster kör `7c4c1cc` med verifierade alias, SDK/källa, aktuella
-10/10 bevarandekontroller och OFF37. Äldre 42→37-övergång har en bevarad
-bevislucka: ephemära `player_probe_sessions` 19→18, övriga31 kontotabeller
-matchar. 24h TTL är möjlig förklaring, äldre radmetadata saknas; originalets
-compose=false skrivs inte om. Ingen generering eller omimport.
-Efterföljande guide-/namnregisterleverans ändrar inga runtimebytes eller
-driftvärden; aktuell leveransidentitet binds i befintliga privata P8-journalen.
-Full P6/naturlig provider-COMPLETED/ny mänsklig take-approval påstås inte;
-faktisk USD är okänd. Produktionsmail/invitation/reset är separat residual.
-GitGuardian: commitmetadata komplett, suite pending/no run; incident-API
-not-read och tidigare känd incident37830671, ingen clear-claim.
-
-### Historisk checkpoint 17:26 UTC
-
-Städreleasen är publicerad som `1fb2307` och
-samtliga tre CI-jobb PASS. Frontend och Studio är READY på denna källa.
-Produktens `dep-db18lg3tqb8s73934ijg` och QA:s `dep-db18m5ugekts73cnbujg`
-kunde inte starta; tidigare b0bc åter är LIVE. Orsaken är ett verifierat
-kontraktsfel i startprovet: anonym tal-QA svarar 403 medan provet krävde 401.
-De två förväntade statusarna rättas utan ändrad autentisering. Befintligt
-launch-test använder nu den verkliga tal-QA-handlaren; 10/10 PASS.
-Produktdisk och alla tolv gamla Blob-objekt är kvar tills rättad drift passerar.
-`LAB_VIDEO_ARCHIVE` och två tomma produktionsposter för storage-export-secret
-är avvecklade med faktisk avläsning; QA är fortsatt OFF och inga providerjobb
-har startats. Nästa steg är rättad release, monterad kontroll, diskfri kontroll
-och därefter faktisk resursavveckling. Ingen import körs om.
-
-### Historisk checkpoint 17:49 UTC
-
-Uppföljning 17:49 UTC: rättad `7c4c1cc` är LIVE på produktens Render
-`dep-db18udoae00c73f9nph0`; faktisk Linux-källa (160 filer), fem borttagna
-runtimefiler, tre AI-flaggor ON, Neon-policy och health200 PASS. Alla 17
-Vercel-alias är kontrollerade; fyra tekniska alias uppdaterades, historiska
-mål och projektens access-/Git-inställningar bevarades. Efter enbart borttagen
-`CROUPIER_CLOUD_DATA_ROOT` (52 till 51 env, alla övriga värden oförändrade)
-misslyckades `dep-db190rh42hec73ejf3p0`: entrypointens diskfria villkor krävde
-TLS `require` medan den befintliga produktionen använder `verify-full`.
-Den starkare anslutningen bevaras; villkoret rättas till samma säkra TLS-lägen
-som den befintliga Postgres-valideraren. Gamla produktdisken och tolv Blob-
-objekt behålls. Backupens fullständiga arkivhash är återkontrollerad PASS.
-QA Render är LIVE på `7c4c1cc`, faktisk SDK/källa och 10/10 bevarandekontroller
-PASS, OFF37; två QA-Vercelbyggen slutförs. Ingen ny generering eller omimport.
-
-### Historisk checkpoint 17:14 UTC
-
-Produktionsimporten är avslutad och efterföljande paritetskontroller PASS: alla 32
-konton-/speltabeller, tidigare kostnadsjournaler och reservationer är bevarade.
-Fullfile-policy production/version 1 är adopterad via ett enda additivt INSERT;
-dagstak och historik är oförändrade. Faktisk leverantörskostnad är fortsatt okänd.
-Båda Vercel-kandidaterna är READY och deras produktionsalias faktiskt omkopplade
-till exakt b0bc. Alla 17 granskade/historiska aliaspekare är kontrollerade;
-historiska pekare, domäninställningar och SSO är bevarade. Render-deployment
-`dep-db17ojvavr4c73alutjg` är LIVE på b0bc med gemensam Neon-policy och health200.
-Faktisk runtimeparitet PASS: 32 skyddade tabeller, 11 kostnadstabeller,
-tre dokument och 18 aktiva plus sex behållna medieposter.
-GPU-endpointen är sparad och återavläst med Max 1/Active 0/FlashBoot ON.
-Färsk konto-/kostnadsavläsning PASS 17:09 UTC. Produktens tre providerflaggor
-är återställda till ON och exakt b0bc-deployment `dep-db18gfh42hec73eh9a60`
-är LIVE och faktisk providerreadback PASS med health200 och gemensam
-Studio-policy. QA förblir OFF. Inga nya genereringar eller providerjobb är startade.
-Ingen gammal resurs är raderad. Städreleasen `a43c0229` är integrerad på lokal
-releasebranch och har passerat byggen, typkontroller, full regression och dealer-audit;
-P7:s providerreadback har passerat; nästa är publicering av städreleasen.
-
-Vercels bodyless promote-svar och `created`-objekt för env-POST hade konkreta
-transportformat som den privata hjälparen feltolkade. Aliasbytet slutfördes
-med avgränsade operatörsanrop och faktiska GET-avläsningar. Det ursprungliga
-femminuterskvittot löpte ut under denna aliasåtergång; dess tider har inte
-ändrats och kontinuerlig TTL-acceptans påstås inte. Befintlig färsk konto-/kostnads-
-och adoptionsavläsning PASS före provideraktivering. Miljöpersistensen är
-slutförd med 43 Lab- och 31 frontendoperationer och previewvärden bevarade.
-Första write-only-posten återbekräftades via samma värde på samma ID; ingen
-extra POST eller dubblett skapades och originalkvittots tider är oförändrade.
-
-GitHub-main är `b0bc581442641d0fc9c1c161de029a60adb52929`, publicerad; dessa kontinuitetsdokument uppdateras lokalt.
-GitHub-run `37210290007` har samtliga tre jobb PASS. Committen rättar normal
-GPU-stängning: samma idle-jobb får avsluta normalt under högst 15 sekunder;
-timeout/fel använder befintlig exakt engångscancel. Riktade 30/30 prov och
-obligatorisk full regression passerar. Alla tre QA-tjänster är verifierade
-på b0bc: Render LIVE `dep-db16i5favr4c73agms1g`, frontend/Studio READY och
-alias återbundna. Faktiska Linux-källor och SDK matchar; 10/10
-bevarandekontroller PASS och OFF42 oförändrat. Three-ready-kvittots SHA256 är
-`b2ade7330fdf2d026c3cba6be1174c9dd89dc171ed44b9b54e9420624a4704af`.
-
-Faktisk P7-admission är sparad och oberoende granskad, SHA256
-`77eccc3a1ca99bca328f2abec8e11d4d37ec62b3797a2a7b25aea1c616b751c1`.
-Färsk cloudplan `25fe34d42251b1f57de6ff0ae7505459c0448c6d0ba500646aa7281a9115c59d`
-och BEFORE-kvitto `0555b7988d5f686d4b918a966bd82d1865a9a83d22c805a076e6f46df648ccb2`
-är skapade. Nedan följer det verifierade importförloppet. Första underhållsanropet stoppade före mutation eftersom hjälparen
-felaktigt krävde en Render-commandoverride. Den privata rättningen accepterar
-Dockerfilens startkommando endast via exakt byggkontext, Dockerfile och
-observerad live-commits Git-bytes; 2/2 prov och peer PASS.
-Underhållsdeployment `dep-db16rv0u01pc73d442p0` var LIVE och verifierad childless:
-0 barnprocesser, skrivare och providerprocesser. Endpointen har tillfälligt
-Max workers 0, Active workers 0 och FlashBoot OFF; faktisk autentiserad
-avläsning visar samtliga sex workerfält och båda jobbfälten 0. Ursprunglig
-kapacitet Max 1/Active 0/FlashBoot ON återställs före provideraktivering.
-Fryst export och oberoende GET-dränering finns; ett fel i lokal healthtransport
-är rättat till samma verifierade backend via HTTPS. Slutvalidering PASS och
-den verkliga produktionsimporten är slutförd. Ingen ny generering är utförd. Hela gamla
-produktionsdisken är nu säkerhetskopierad externt: 206 filer, 10 mappar,
-125 745 905 källbyte. Arkivläsbarhet, full inventering, oförändrade källmetadata
-och remote/lokal/arkivhash PASS. Kvitto SHA256
-`12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9` finns
-i privat `C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`.
-Importplan `94a458599f0c77ca8aaf468feccf4cc7d5e1e050f2f31662be8740796cde7442`
-är rootgranskad. Avslutat importkvitto SHA256
-`0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d`
-visar additiva Studio 001–004, tre dokument, sex behållna medieposter,
-18 aktiva medier och talhistoriken. Alla 32 befintliga konto-/speltabeller har
-exakt oförändrade fingeravtryck. Fristående paritet och faktisk runtime-/aliasomkoppling är nu verifierade.
-
-Det föregående cc77-provet `75eaf797-9342-4e2c-8995-f3c759fade75` nådde
-6 562 941 streambyte, synlig bild, hörbart ljud och spelköns `end`/completed.
-Provideravläsningen efter uppspelningen gav HTTP 200 `CANCELLED`, vilket inte
-uppfyller det tidigare agenttillagda kravet på providerstatus `COMPLETED`.
-Det är inte Jakobs krav på avslutad speluppspelning. Journalen är stängd som post 39,
-head `8e7f3e2ee1a31e03291da5b59c40b7d695d4a40b156170e909853c5a1c9f03a6`.
-Usage är 4 generationer/5 SDK/2 TTS/4 GPU; två av sex generationer återstår,
-refund0, faktisk kostnad okänd/null och unresolved0.
-
-QA är verifierat OFF på cc77 via `dep-db1687s9v7es73e56rv0`: generated speech,
-cloud generated speech och streaming är 0; P6-router och bounded-test är unset.
-Router404/health200, lease0 och terminal/released-jobb. Gamla manifest, SDK,
-journaler och reservationer är bevarade. Produktionsdata och gemensam Studio-policy är nu importerade och driftparitet verifierad. Den snäva funktionella P7-admissionen
-återanvänder cc77:s verkliga END, exakt matchande completed SQL-request,
-explicit browsercleanup efter END, terminal/released-provider, lease0/uncertain0
-och OFF. Exakt tid för providerns statusövergång finns inte i kvittot.
-Playback-/routebytes är oförändrade i b0bc; dess retirementfix har riktade prov.
-Naturlig b0bc-providerstatus COMPLETED är inte liveverifierad och kvarstår som
-uttrycklig residual, utan ny generering eller ändrad reservation. Faktisk ALL0-
-dränering och produktionsparitet krävs före P7; P8 c158/f3 följer aktiv ersättning.
-
-Jakobs egen Cartesia-nyckel ligger i rotens ignorerade `.env`. Ett enda
-icke-genererande GET gav HTTP 200 och exakt Victoria-röst är tillgänglig.
-Samma nyckel är kopierad till Labs ignorerade `.env.local`; tidigare fil är
-privat säkerhetskopierad och övriga miljörader oförändrade. Driftens nyckel är
-ännu inte bytt. Inget nyckelvärde eller råsvar publiceras.
-GitGuardian för b0bc har komplett commitmetadata, queued suite/no visible run
-och incident list not-read; den täckningsluckan är fortsatt öppen.
-
-## Tidigare verifierade driftläge — 4 oktober 13:41 UTC
-
-GitHub-main och de tre QA-tjänsterna kör
-`c8747adca8c6fdff57a82946c0211585490e2ab2`. Produktens Render-backend har
-också autodeployerats till c874, men produktionsdata, Studio-schema och den
-gemensamma Studio-policyn är fortfarande inte omkopplade. Produktionsmiljöns
-44 nyckelnamn och de 132 inventerade källposterna är oförändrade.
-
-Det senaste manuella QA-fönstret `ae25eaaa-0220-4d64-b9be-3a072f7feade`
-gav en descriptor men stoppade före TTS och speluppspelning när bordet inte
-längre var exakt stilla efter AI-förberedelsen. Fönstret är append-only-stängt
-som post 29/head `65751b1c4e321ed8a649cc3e7118f57fbae69431b09c363317349c61d933f2a8`.
-QA är åter OFF med router404/health200, inga aktiva leases och bevarade gamla
-journalposter. Kumulativ usage är 3 generationer/4 SDK/1 TTS/3 GPU; tre av
-Jakobs sex generationer återstår. Refund är 0 och faktisk kostnad är okänd/null.
-Det nya GPU-jobbet är CANCELLED/released. Det finns ännu inget nytt faktiskt
-AI→tal→GPU→synlig bild/hörbart ljud→spelkö-END-kvitto.
-
-En exakt availability-spärr är lokalt integrerad på main som `573b7aee`.
-Den använder samma rena predikat för diagnostik och admission och läcker inga
-ägarfält eller text. Riktad kontroll är 42 PASS, fyrdealer-audit matchar
-baslinjen och obligatorisk fullhook passerar. Den måste nu publiceras och
-driftsättas på alla tre QA-ytor innan nästa enda manuella försök. Två privata
-append-only-successorer byggs parallellt och ska peergranskas före livekörning;
-första utkastet är HOLD tills installfil, partial-failure-close samt exakta
-jobb-/session-/SQL-/reservationskontroller är rättade.
-
-Det offlineförberedda P7-paketet har 60 PASS och dess 32 kommandon/pinnar är
-peergranskade, men faktiskt P7 är BLOCK tills nästa verkliga streamprov lyckas
-och acceptanshasharna binds om från closed29. Därefter följer det redan
-beställda 45–75 minuters skrivfönstret för drain, import och policybyte. P8-
-commits `c158a0be` och `f3f561d3` hålls tills ersättningen är aktiv. De
-avvecklar ersatt BO-/disk-/env-/lagring; BO:s historiska tysta videopreviews
-är inte lipsynkacceptans och återinförs inte som en separat spelväg.
-
-GitGuardian för c874 har komplett GitHub-commitmetadata men en queued suite
-utan synlig run; incident-API:t är inte läst. Detta är en täckningslucka, inte
-ett påstående om noll incidenter.
-
-## Tidigare verifierat driftläge — 4 oktober 10:25 UTC
-
-Publicerad main och samtliga tre QA-tjänster kör
-`a0c6460560dd99da7bc33feba7efbef0d6de0fce`, med klockrättningen `f8300c51`
-från `ed5f74f2`. Samlad fullhook: 1 310 PASS/6 SKIP/0 FAIL; 29 riktade
-klock-/ägarprov PASS. Oförändrad bygggraf återanvänder godkänt 637-bygge;
-GitHub-run `37173118418` har tre success-jobb. Inga mediebytes ändrades.
-
-QA-Render är faktiskt LIVE på `dep-db12cjvavr4c739uglug`; frontend
-`dpl_3JyHvKZKvE3YVvFaUsfrZywhDSpZ` och Studio
-`dpl_9YK14gYBvvY2PvoEwWoxBKpbwWmL` är READY och befintliga alias ombundna.
-Actual Linux-readback matchar nio publika spelmoduler, inklusive QA-wrappern.
-Sjutton privata testfiler återställda, SDK 7.12.1/2 962 filer oförändrat.
-QA har exakt 42 tidigare miljönycklar, alla AI/admin/P6-flaggor OFF och
-health 200. GET `/blackjack` ger 200; Studio/administration ger korrekt
-307 till `/studio/login`. Dessa GET är inget nytt inloggnings-/uppspelningsprov.
-
-Bevarandekontrollen är uttryckligen 9/10: endast QA-tabellen
-`croupier_game.player_probe_sessions` ändrades 17→15 rader. Samma kodblob
-`82c1e72a525d331b5edfb81d712964a5d73e746e` i e461/117/a0 rensar 24 timmar
-gamla närvarosessioner vid start. Skillnaden är förenlig med den rensningen,
-men borttagna raders tidigare `seen` saknas: orsaken är inte radvis bevisad.
-Övriga 31 kontotabeller, tolv kostnadstabeller, media, disk och journaler matchar.
-Det ursprungliga FALSE-kvittot bevaras; ingen återställning/SQL-skrivning gjordes
-för jämförelsen. Treversionskvittot `8b138acb5d912dd28d12a07fdea11f8be1c714f9d6eba968923808747278c850`
-har därför explicit bevislucka, inte full bevarande- eller P7-acceptans.
-
-Färsk produktionsläsning 10:14 UTC: `a0c64605`, Render
-`dep-db0s7u8ae00c73euejs0`, samma 44 miljönycklar och äldre Studio-policy.
-32 skyddade tabeller/75 rader och 18 historiska sessionskällor är oförändrade;
-produktchecksumma och källslutning 132 passerar. Studio-schema saknas ännu:
-001–004 väntar. Ingen produktionsimport, policyomkoppling eller fysisk P8.
-
-Det avslutade misslyckade fönstret `8ba758fc-bacd-4970-ab5d-3bec9ee1f6f3`
-gav descriptor men avvisades före transport: privata helpern skickade sex
-ägarfält där API:t kräver fem. Studio/reset/admin/signerad spelöverlämning
-passerade; nytt bild-/ljud-/queue-END-bevis saknas. Privat femfältsfix är
-offlinegranskad och publika klockfixen accepterar högst ±5 s med monotona
-serverstämplar. Ingen browserklockshim behövs i nästa prov.
-
-Originalets tretton poster och reservationer är bevarade. Cancellation stängde
-append-only som post 21/head `6cd7efa091f1769bec9034b37d14c4a396fb1ce85aa22c160502683d0b982e47`;
-kumulativ usage är 2 generationer/3 SDK/1 TTS/2 GPU, refund0/USDnull.
-Cleanup-kvitto `d28a7f06f50c5ae77e6dcdccf3424c9d719d88e001e0d2b4450e49bccbad0bed`
-är inte acceptans. Sessionen är terminal/released/CANCELLED, request failed utan
-paket, lease0 efter verklig expiry, inga osäkra utfall eller automatiska retries.
-Providerjobb/kö/running är noll; varm idle1/ready1 är inte ALL0-drain.
-
-Jakob har nu uttryckligen höjt testtaket från två till SEX genereringar totalt:
-två redan använda, högst fyra ytterligare. Detta supersederar gamla tvåtaket
-framåt, inte gammal journalhistorik. Root kör först ett manuellt omprov.
-Minimal kodutbyggnad för ett nytt länkat fönster efter closed21 är integrerad
-lokalt som `0750077c` från workercommit `8d97406c`. Riktad suite är
-44 PASS/0 FAIL; workerfullhook är 1 300 PASS/5 SKIP/0 FAIL. Ingen gammal
-window/journal öppnas om, kostnader återbetalas inte och tidigare reservationer
-består. Nuvarande QA på a0 har fortfarande det äldre kodtaket; `0750077c`
-måste publiceras och sättas på alla tre QA-tjänster före installation eller
-något nytt betalt anrop.
-
-Jakob förtydligade att BO:s historiska videoklipp inte används för lipsync.
-READONLY bekräftar tysta `/bo/gen/*.mp4`-förhandsvisningar och separata Studio-
-klippförhandsvisningar. Spelets aktiva AI använder `playGeneratedSpeech` med
-validerade stream-/audio-videopaket. Historikklipp är inget lipsyncacceptanskrav;
-BO:s uttryckliga speech-QA-inspelningar och aktiva talpaket bedöms i sitt eget prov.
-
-Jakobs avsikt med Lab är att prova lanes som senare kan användas i produktion,
-exempelvis för mobil, en dealer eller ett spel. Migrationen bevarar befintlig
-redigering, utkast, klippförhandsvisning, revisionsskyddad sparning och spelets
-gemensamma uppspelningsväg. BO är administration och inloggning, inte en separat
-spelström. Nuvarande schema stöder blackjack och fyra dealers; separat
-lane-publicering till produktion, nya dealers och nya spel är ännu inte byggda.
-Städgranskningen av c158/f3 fann inga borttagningar av den befintliga native-vägen.
-f3 avvecklar däremot lokal disksparning och kräver den avsedda Neon-miljön.
-
-Samtliga sex egna sibling-worktrees/brancher är bevarade och använder samma
-absoluta agent-talk. Originalcheckouten är main; core.bare=false och
-core.hooksPath=.githooks återlästa. P8-commits `c158a0be` och `f3f561d3` är
-lokala, ännu inte integrerade. Äldre misslyckade managed-worktrees är bevarade.
-GitGuardian source795524/30689542 är verifierad; en incident-/fem locationsidor:
-fem unika IGNORED/0 OPEN, locationsluckor 37828691/37830671. GitHub-sviten är
-queued utan run; hela workspace-API:t är inte bevisat. Ingen scannertext lästes.
-
-Återstår: publicering av nya källspärren, verklig AI→tal→GPU→spelkö-END, aktuell admission
-och gemensamt P7-skrivfönster/drain/import/omkoppling, därefter förberedd P8.
-Äldre versionsstycken nedan är historiska bevis och ersätter inte detta läge.
-
-## Beställd slutföring och avgränsat prisundantag — 4 oktober
-
-Jakob har uttryckligen beställt AI/tal/GPU-aktivering, produktionsimport och
-omkoppling, följd av faktisk avveckling med QA kvar. Egna lokala taskbrancher
-och worktrees är tillåtna för detta arbete; originalcheckouten stannar på
-main och endast merge-agenten integrerar/pushar via ordinarie helper.
-Jakob gav därefter uttryckligt mandat att slutföra detta med eget omdöme utan
-upprepade tillståndsfrågor. Tekniska Codex-/connectorgränser gäller separat.
-Startpunkten är återläst GitHub-main
-`95c2f046594292c9c4a27ba5c810a8715b06ba8d`; appkoden är oförändrad mot
-godkänd installerad QA `e461ef073b63b2d1c937454bbfa31289774fcb8f`.
-
-Exakta Cartesia-/counting-priser är backlog enligt det nya beslutet.
-Avgränsade funktionstester får därför genomföras med explicit dokumenterad
-okänd monetär kostnad och mätt usage, inom ursprungliga numeriska budget-
-och dispatchreservationer. Undantaget är inget nollpris, ingen verifierad
-faktura och ingen generell produktionskostnadsapproval. Journaler, redan
-förbrukade reservationer, ägarskap, idempotens, lease/cancel/terminal och
-skydd mot dubbeljobb består; okända belopp återbetalas inte. Tidigare krav
-nedan att först lösa Cartesia/counting-tariff gäller inte detta avgränsade
-funktionstest. Verklig workerdränering och källa/runtime/playback-bevis krävs
-fortfarande före produktionsomkoppling och borttagning.
-
-Arbetsområden: ai-gpu, prod-data, studio-ux, clean-bo, clean-storage och
-verify, med gemensam absolut agent-talk-tavla och konkreta filöverlämningar.
-Produktionsskrivningar samordnas i ett gemensamt skrivfönster. Checklistan
-bockas endast av med aktuella verifierade resultat; full migration återstår.
-
-Studio-/Git-rättningen integrerades i main som `438a824b`, från
-workercommit `c40503af`, och ingår i levererad `5fca8983`. Resetens
-spelentré använder konfigurerad game-origin och `/player-login`, partner-
-öppning följer gemensamma adresspolicyn. Hookens riktiga commit-index bevaras
-för egen inspektion, medan Git-fixturer och checkbarn får isolerad Git-miljö.
-Det förhindrar att en temporär testrepo ändrar gemensamma worktree-inställningar.
-`core.bare=false` och `core.hooksPath=.githooks` är återställda och återlästa.
-Färskt separat Nextbygge med fyra workers, typkontroll och obligatorisk
-fullhook: 1 254 PASS, 5 SKIP, 0 FAIL. Tidigare misslyckade QA-/hookkvitton
-bevaras. AI:s första paket är lokalt integrerat som `9ea65dba`, från
-`123d3f1f`; exakt samma Git-träd återanvänder dess fullhook med 1 264 PASS,
-5 SKIP och 0 FAIL. Paketet innehåller avgränsad ursprunglig budget/journal,
-providergränser och rättad disk-/Neon close/cancel-race. Ingen aktivering
-eller produktionsimport följde av detta första paket. Följdfixen är integrerad som
-`1af6d491`, från `7cf88ba6`, med identiskt Git-träd och fullhook 1 268 PASS,
-5 SKIP, 0 FAIL. Fullfilspolicyns reservation når Web även under streaming
-enbart för den verifierade bounded-QA-transporten med Neon-journal. Fyra
-privata SDK-källfiler sparas checksumförseglade före budgetaktivering och
-återställs före Web-start efter containerbyte; Dockerbygget förbereder endast
-de två nödvändiga privata katalogerna med UID 1000 och mode 700.
-Städarnas P8-borttagningar hålls separata till dess
-ersättningen är verifierad aktiv. Slutacceptans kräver faktisk provider-,
-spel- och produktionsdrift.
-
-Main är pushad och återläst som `849bc9558348c9f42e6ee7c2fa6bc030c8339864`.
-GitHub-run `37164559559`: GPU-workerjobb success, Studio och dealer-regression
-failure i respektive färskt Lab-bygge. En statisk import från fullfilstjänsten
-drog in SDK-runtime i webbbygget; den tidigare lokala Studio-körningen täckte
-inte denna ändrade importkedja. Importfixen är lokalt integrerad som
-`d8bbb8cd`, från `a00a2d34`; övriga källfiler är identiska med workerleveransen
-utanför de två root-trackerfilerna. Färskt Next-bygge med fyra workers och
-tracekontroll, typkontroll, 47 riktade tester och fullhook: 1 268 PASS,
-5 SKIP, 0 FAIL. Levererad main är nu
-`5fca8983df75f2d6307473e20543b372c24bcfd9`; GitHub-run `37165257568`
-har tre completed/success-jobb. Alla tre QA-tjänster är faktiskt LIVE/READY
-på samma SHA och deras befintliga alias är bundna och återlästa. De 17 privata
-SDK-källfilerna är återställda, faktisk Linux-källa och SDK 7.12.1 är återlästa.
-Samtliga tio bevarandekontroller passerade: miljöns 42 nycklar, diskidentitet,
-hela QA-volymen, medier, journaler, konton/saldo och kostnadstabeller är oförändrade.
-Kvitto: `lab/data/platform-private/native-p6-qa-release-e461ef07/`
-`migration-5fca8983df75f2d6307473e20543b372c24bcfd9-three-ready-receipt.json`,
-SHA256 `0e03cf6bd5ddb8c8ffa7156fda22df99a165b8c2428c843aebef5d285e6abfe3`.
-
-Produktens Render och båda Vercel-apparna kör också faktisk 5fca8983 med
-oförändrad gammal produktionspolicy och 44 miljönycklar; Studio-import och
-Neon/native-omkoppling har inte körts. AI-installern stoppade på saknade
-talnycklar i vald källa före SQL, budgettimer, journaländring och provider-POST.
-Automatisk approvalreview avvisade överföring av produktens talcredentials till
-QA utan uttryckligt tillstånd för den överföringen. Jakob har därefter direkt
-svarat ja till produktens befintliga Cartesia-/RunPod-nycklar för just detta
-QA-prov: högst två genereringar, oförändrad produktenv och exakt återställning
-av föregående QA-miljö. QA:s env-bärande deploy
-`dep-db0qcnhsrm7s738o9ggg` är faktiskt LIVE på 5fca8983: rätt process, manifest
-och ursprunglig installations-/budgetchain. Vid förkontrollen var generationer/
-SDK/TTS/GPU noll. Originaltimern löpte ut 4 oktober 01:28:59 UTC; inga nya
-betalda dispatch tillåts av den utgångna auktoriteten.
-Verifierarens tidigare cleanup skrev syntetiska QA-cookies
-(`bo_jwt`/`player_session`) i lokal verktygsutmatning. JWT-expiry är faktiskt
-11 oktober 00:52:50 UTC; stängd browsercontext spärrar inte tokenen. Riktad
-CAS-invalidation är nu genomförd och återläst: egen QA-aktor 1 auth_epoch 1→2,
-exakt en incidentkopplad player-session borttagen och övriga nio bevarade.
-Roll, lösenord, spelarlänk/saldo, journaler och budget är oförändrade.
-Resultat: `verify-final-qa/incident-session-revoke-result-1791076025462.json`.
-Helperns första obetalda authprov stoppade före WebSocket-nätverk på saknad
-lokal `ws`-modul; misslyckat kvitto bevaras. Korrigerat prov lånade redan
-installerad dependency och passerade faktisk HTTP 401 för ogiltig ticket,
-med samma playback-owner och generationer/SDK/TTS/GPU fortsatt noll.
-Kvitto SHA256 `87bbfbc96e5f97fabec8982d1736329be244c0f1c62b761df55baba5062a7dc7`.
-Full faktisk AI/GPU-/spelacceptans återstår.
-
-Första sammanhållna browserförsöket stoppade före Director/chat på råhash mellan
-Windows-checkoutens CRLF och driftsfilernas LF. Read-only bevis för `app.mjs`
-visar att faktisk QA-fil är byteidentisk med Git-blobben på 5fca8983; lokala
-radslut normaliseras endast för att bevisa arbetsfilens identitet med samma blob.
-Korrigerad helper jämförde driftsbytes exakt mot Git-blobbar, med oförändrat
-manifest, timer och budget. Det korrigerade betalda provet gick 01:21–01:23 UTC:
-Director/talmodell och Cartesia svarade, RunPod slutförde fullfilspaket
-`generated-bd1123e6caec51e8a232036547b0f8fc`. Runtime/journal visar exakt
-1 generation, 2 SDK, 1 TTS och 1 GPU-submit, inga osäkra utfall/automatiska retries.
-Den frysta helperns passerade kontrollflöde visar två avslutade game-queue-/
-audio-plays av samma paket; exakta per-play synliga bildrutor och observationsrader
-hann inte sparas och är okända. Härlett kvitto `verify-final-qa/`
-`fullfile-two-play-derived-attestation-8712e00b.json` skiljer bevis från luckor.
-Streamsteget stoppade före andra `/chat`, eftersom den egna QA-launcherns
-privata flagga filtrerades bort av ordinarie speladresspolicy. Normal produktstream
-är inte därmed bevisat trasig. Ingen separat streamacceptans finns ännu.
-Okänd USD är null och den gamla journalen/reservationerna bevaras. Efter
-timer-expiry är QA:s exakt 42 tidigare API-env-variabler återställda; sole OFF-deploy
-`dep-db0qr6favr4c738uuf0g` är faktiskt LIVE på samma 5fca-källa: UID 1000,
-alla flaggor av, router 404, health 200 och bevarat manifest/SDK. OFF-kvitto
-SHA256 `bc9f0fe1c498af6e4d5c325f50a8ce83904443bdf5503f34ad6e56c3a26953b1`.
-Merge-agenten har godkänt minimal lokal kod/test för ett explicit manuellt
-fortsättningsfönster för den enda återstående streamgenereringen. Alla
-kumulativa gränser/reservationer och gamla journalbytes består. Ingen ny
-timer/live-fortsättning, automatisk förlängning eller extra budget är godkänd.
-AI:s sexfilsleverans `1aa0d94e` är nu lokalt integrerad som `637c6445`, efter
-Studio-funktionsfix `e6c32aab` på samma main. AI-leveransens obligatoriska
-hook gav 1 292 PASS, 5 SKIP, 0 FAIL och 36 riktade guards PASS. Studio-fixen
-har 48 riktade auth-/browserprov, färskt fyrworkerbygge/typkontroll och fullhook
-1 276 PASS, 4 SKIP, 0 FAIL. Den rättar login/reset före auth på kanonisk
-spelhost, med strikt token/state/returnTo. Den äldre P8-baserade `a8b3d21e`
-bevaras och ska inte integreras igen. Samlad rootkontroll på `637c6445` gav
-1 298 PASS, 6 SKIP, 0 FAIL; färskt fyrworkerbygge, 50 sanerade traces och
-typkontroll passerade. Två browserprov som hoppades över i rootens hook har
-Studio-workerens separata verkliga browserbevis; isolerade SQL-/Linux-prov
-som kräver särskild miljö är fortsatt SKIP. Push och ny faktisk QA-drift
-återstår; molntjänsterna kör fortfarande 5fca8983 med QA avstängd.
-Funktionell v2-admission ska uttryckligen kombinera de två härledda verkliga
-fullfils-audio-/queue-uppspelningarna, byteidentisk godkänd e461-spelarkod
-och ett faktiskt synligt/hörbart/avslutat streamvarv med korrekt owner/ACK.
-Fullfilens synlighet/mänskliga läppsynk förblir okänd, nya medier pending
-approval och full P6 fortsatt öppet. Inget ytterligare betalt jobb tillåts
-för att skapa påhittade två-stream-bevis; totalt max två generationer består.
-
-P8-granskningen hittade också en oavsiktligt saknad QA-bootstrapfil i städgren
-8589fa2c. `container-entry` importerar den före Web-start även med flaggan av.
-Main/drift är opåverkad. Städagentens `d089cda4` återför exakt de tre senare
-main-blobbarna för private snapshot/installer/test; 15/15 samt obligatorisk
-fullhook passerar utan tillfällig källfil. Speech-QA-spärren är separat rättad
-i `8589fa2c`. Studio `a8b3d21e` rättar fristående login/reset till samma publika
-host före auth, med strikt state/token och host-only cookies för spel/Lab.
-29 riktade browser-/kontraktsprov, fyra Next-aliasprov, typkontroll/färskt bygge
-och fullhook (1 271 PASS, 6 SKIP, 0 FAIL) passerar. Kod är lokal på egna
-taskbrancher; actual alias/avveckling verifieras efter P7/integration.
-
-Jakob beställde också korrekta lokala `.env` och `lab/.env.local`. De är nu
-samordnade med befintliga avsedda produkt-/Directorinställningar: ursprunglig
-Cartesia-nyckel bevarad, tom sista RunPod-dublett borttagen och fel modellnyckel
-rättad. Övriga nycklar bevarades. Krypterad privat före-kopia finns i befintlig
-QA-kvittokatalog; båda env-filerna är Git-ignorerade. Ren konfigurationsläsning
-bekräftar talcredentials, scoped endpoint och relay/Director, utan nätverksanrop,
-molnändring eller serverstart. Detta är inget ytterligare provideracceptansprov.
-
-## P6: historisk QA-baslinje och avgränsade kostnadsgap — 4 oktober
-
-Fryst källversion är `e461ef073b63b2d1c937454bbfa31289774fcb8f` på main.
-Aktuell GitHub-återläsning: Actions-run `37155095975`, samtliga tre jobb
-completed/success och båda ordinarie Vercel-statusar success. GitGuardian-
-suite är queued utan run; den separat fullständigt paginerade incidentlistan
-för workspace `795524`/source `30689542` visar fem IGNORED och noll öppna.
-Fil/rad i API är fortsatt partial för två historiska ID:n; ingen incident ändrades.
-
-Tre befintliga isolerade QA-tjänster är installerade på exakt e461ef07;
-QA-alias är bundna och faktiskt återlästa 4 oktober 00:15:56 svensk tid.
-Render `dep-db0nq30u01pc73b6ep40` är LIVE med health 200, frontend
-`dpl_2tY7tigYk7ZDXoQGzfGC3ekvSnws` och Studio
-`dpl_CMoZh3VwNx8FVc17gF8iWjnbEN5K` är READY. Alla tio före/eftergrupper
-PASS: samma env/disk, konton/saldon, hela QA-volymen, råmedia och journaler.
-SDK 7.12.1 är faktiskt laddat och dess 2 962 filer bevarade; 17 privata
-flyktiga källfiler är återlagda, fyra kontexter och nio publika spelmoduler
-matchar faktisk Linux/Git-källa. `/api/auth/session` visar sharedCredentials.
-Privat kvitto: `native-p6-qa-release-e461ef07/ready.json`. Ingen QA-env,
-beständig plan/SDK, SQL, provider eller produktionsaktivering ändrades.
-
-QA-installation, riktad shared-credential-acceptans och AI/GPU-förberedelse
-delades mellan tre parallella agenter. Privat käll-overlay för exakt e461ef07
-omfattar 202 filer; 193 fokuserade offlineguards PASS, noll skip. Detta är
-förberedelse, inte installerad full AI/GPU-acceptans. SDK:s gamla cb9b6b53-
-plan är prepare-only med null budget/providerContext; den blir aldrig en
-full-run-admission genom att återanvända dess manifest.
-
-Riktad live authacceptans på denna SHA: 80/80 kontroller PASS över 68 riktiga
-HTTPS-anrop. Admin fick spel, `/studio`, native `/studio/administration`
-utan iframe och sessions-/konto-/overview-API på båda QA-origins. Spelare
-nekades native login/session/admin och gamla BO/Lab-cookies rensades.
-Native spelarpasswordbyte återkallade gammalt lösenord och cookie före OK;
-samma spelar-ID/saldo/transaktioner/historik/presentation bestod. Render skrev
-verklig cancellation-probe-epoch 1/reason inactive. Reader/staff förblev
-game-only efter verklig engångsreset utan mejl; adminreset återkallade gamla
-spel- och båda Studio-sessioner. Tre egna användare/fyra spelare städades;
-27 återläsningsgrupper PASS, noll egna rader kvar och övriga konton/saldo/
-historik/signer oförändrade. 14 riktade auth-/password-/authorityprov PASS.
-Privata HTTP- och städkvitton finns i
-`p6-shared-auth-evidence/157ef3e2-d91a-4ab9-89b1-515460988c5e/`.
-Verkligt pågående providerjobb är inte provat; väntan på pending cancellation
-är fortfarande isolerat testbevis. Inga mejl/provider-/produktionsanrop gjordes.
-
-Verkliga loginformulär i isolerad Chrome på samma QA: 18 UI-kontroller,
-två städ-/paritetskontroller och två laddade källmoduler PASS (22/22).
-Admin nådde Studio/native Konton med spelcookien; faktisk utloggning och
-spelarnekande verifierades. Egna fixtures är borttagna och användarens
-Chrome-profil/flikar bevarade. Provets första råkälljämförelse missade den
-avsiktliga tvåstegsbyggomskrivningen; originalkvittot är bevarat och separat
-återattest verifierar fångade bytes mot exakt e461-bygge utan ny loginrunda.
-Privat `p6-shared-auth-browser-evidence/1a6a69a9-a9b8-4a3c-94e7-79e67b9d182c/source-reattest.json`.
-
-Samordnande agenten verifierade Astrid/Vera/Amira/Mei var för sig i faktisk
-QA-rehearsal på e461: rätt greeting/matching clip och Play twice låst under
-sekvensen, återaktiverat efteråt, utan synligt fel. Kvittot
-`p6-browser-evidence-e461ef07/receipt.json` har inget explicit ended-tal,
-nytt mediehashbevis eller mänsklig läppsynkapproval. Detta bevisar befintliga
-klipps tvåspelskontroll; nytt AI→tal→GPU-paket och dess acceptans återstår.
-
-Färsk läsning på denna QA verifierar originalets två journalposter:
-10 USD totaltak, 5,251152 USD förbrukad/kvarhållen reservation och
-4,748848 USD oreserverat; ett SDK-anrop är förbrukat och nio återstår.
-Ingen återbetalning görs och äldre GPU-reservation är inte dränerad.
-Aktuell scoped QA har noll aktiva leases/osäkra anrop/request-/kostnadsrader,
-men saknar installerad GPU-/fullfilspolicy och operatörskampanj. Router/authority
-är inaktiv; full-run-admission och immutable basimage är inte verifierade.
-Privat beredskapskvitto `p6-ai-readiness-e461ef07/readiness.json` har exakta
-käll-, SDK-, budgetkvitton och avgränsade fortsättningskommandon.
-
-Den riktade offentliga prisåterläsningen ligger privat i
-`lab/data/platform-private/p6-cost-evidence-20261004.json`. Tre kontounderlag
-saknas fortfarande: Cartesia-nyckelägarens credit-/overagepris, uttryckligt
-counting-pris/gratisbevis samt Runpods totala workerstart/körning/idle/stopp
-och lagringstak. Se P6 i masterplanen för officiella källor. Utan nytt
-underlag behöver nästa agent inte upprepa samma dokumentationssökning.
-Ingen ny budget/journal, providerdispatch eller produktionsaktivering görs.
-Färska full-run worker/router/entry/authority-manifest och faktisk
-speluppspelning krävs fortsatt efter giltig admission.
-
-## Gemensamma credentials och två behörigheter — 3 oktober
-
-På Jakobs uppdrag används ett gemensamt användarnamn/e-post och lösenord,
-utan kontotypsval. **Admin** kommer in i spel, Studio och hela Backoffice;
-**spelare** kommer bara in i spelet. Befintlig `superadmin` är adminalias,
-medan äldre CRAIG `reader`/`staff` är game-only. Råroller, konton, kopplade
-player-ID:n, saldo och historik bevaras; inga livekonton eller DB-scheman
-ändrades av denna källleverans. En admin som spelar har samma lösenord.
-
-`web/account-credentials.mjs` läser båda befintliga credentialregistren före
-lösenordsprov. Exakt en kandidat krävs; kollision, pending invitation och
-fel lösenord ger generiskt avslag utan fallback eller klientvald roll.
-BO-cookies använder egen audience och live roll/fingerprint/auth_epoch.
-Spelarlogin rensar gamla BO/Lab-cookies. `/api/auth/session` annonserar
-`sharedCredentials:true` först från en backend med den nya resolvern.
-Frontend läser kapabiliteten före login och bevarar äldre entry-/modalroutes
-tills Render är uppgraderad. Ingen lösenords-/namespacefallback sker efter
-nekad POST. Misslyckad kapabilitetsläsning blockerar dispatch.
-Guestpolicyn för lokal utveckling
-är oförändrad.
-
-Native Backoffice → Konton kan skapa spelare och byta deras lösenord genom
-signerad Render-authority: `POST /studio/api/admin/players/password`.
-Formen kräver två lika lösenord och anledning, tömmer lösenordsfälten direkt
-och väntar på serverkvittot. Endast aktiva/blockerade konton med faktisk
-`player_accounts`-credential får formen (`passwordChangeAllowed`).
-CRAIG-kopplade spelare använder kontots befintliga invitation/resetväg;
-reader/staff återfår aldrig Studioåtkomst av en lösenordsåterställning.
-Bytet låser konto/spelare, ersätter salt/hash och återkallar gamla sessioner.
-Render väntar på runtimecancel före OK; lösenord lämnar inget svar/auditvärde.
-Saldo, transaktioner, rundor och kostnadsjournaler berörs inte.
-Adminborttagning skyddas mot att två samtidiga åtgärder tar bort sista admin.
-
-Källcommit `220d5dfa60e52e4426f572bc733d10a23b7d25ce` är verifierad:
-obligatorisk full commit-hook 1 251 PASS, 5 SKIP, 0 FAIL, inklusive fristående
-HTTP-fixtures och pipelineaudits. Lab 785 PASS/1 SKIP, frontend 40/40 PASS;
-båda explicita TypeScript-kontrollerna och produktionsbyggena PASS. Dealer-
-audit med `--probe` PASS. Skip täcker tre live PostgreSQL/Neon-fixtures,
-browser cold-submit och Linux-processfallet; dessa är inte livebevis. Ingen
-ny fyrdealer-/mänsklig läppsynkacceptans eller ny QA-installation hävdas.
-Den obligatoriska hooken/CI tar nu även nya resolver-, password- och native-
-credentialtester. Windows lokala test-/Next-workers begränsas till fyra;
-CI/publicering behåller sina tidigare workerinställningar.
-
-**Nästa driftprov:** installera samma nya källversion i alla tre QA-tjänster.
-Prova admin från spel till Studio, spelarnekande, gamla cookie-/lösenords-
-återkallelser, legacy game-only reset och saldo/historik före/efter. Använd
-syntetiska QA-konton. Detta är en del av P6:s återstående authacceptans,
-inte bevis på installerad QA eller färdigt produktionsbyte.
-
-## Nästa agent: slutför P6:s AI/GPU-acceptans — 3 oktober
-
-Städleveransen på main är `63d0e917c9828be82e25b0f039c4ef9a1c8f92f4`.
-Dess tre GitHub-CI-jobb och båda Vercel-publiceringar är verifierade success.
-Senaste dokumenterade installerade native-QA och fyrdealerprov gäller däremot
-`966991ef`; native90-kvittot gäller `190399`. Frys aktuell main och återläs de
-faktiska tre QA-publiceringarna före nästa prov. En senare källcommit gör inte
-äldre runtime-/browserkvitton aktuella.
-
-**Förväntat resultat:** ett verifierat verkligt AI/GPU-varv i isolerad QA,
-med giltig kostnadsadmission, rätt autentiserad spelägare och två avslutade
-uppspelningar genom samma produktspelare. Det visar att Director kan välja
-ett svar, SDK/modellen generera det, talmotorn skapa ljudet, GPU:n skapa den
-synkade videon och spelaren faktiskt visa och spela resultatet. SDK-import,
-inspelade greetings och enbart WebSocket-bytes täcker inte detta resultat.
-
-1. Läs `AGENTS.md`, `agent-talk/README.md`, denna handoff,
-   `ENVIRONMENT-RESTORATION.md` och P6-checklistan i `CLOUD-MIGRATION.md`.
-   Arbeta i befintliga `C:\Users\jakem\Projects\croupier` på main. Kontrollera
-   Node/engines och projektpins; Volta-resolverad Node är nu v22.22.2 och Lab
-   kräver >=22.16.0. Kör status/security och registrera faktiska ändringspaths.
-2. Återläs befintlig kampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`, budget,
-   reservationer, sourcepins och stageadmission. Senaste dokumenterade totaltak
-   är 10 USD, kvarhållen reservation 5,251152 USD och oreserverat 4,748848 USD;
-   ett av tio SDK-dispatches är förbrukat. Dessa siffror måste återläsas före
-   användning. Behåll originaljournalen och dess numeriska budgetankare.
-   Lös Cartesia USD/credit, counting-tariff eller uttryckligt gratisbevis och
-   RunPods hela startup/execution/idle-gräns. Cartesia-nyckeln är extern och
-   Jakob saknar kontoinloggning; begär inte en ny sådan. Mät usage separat från
-   dollarpris. Ingen påhittad nolltariff, ny journal eller återställd budget.
-3. Bygg färska full-run-manifest för exakt vald källa och immutable basimage,
-   inklusive entry-contexts `routerManifestSha256`. Återläs SDK, privata
-   contexts, faktisk child-env, authority/router och installerade spelmoduler.
-   Prepare-only/router-off ger avsiktligt 404 på playback-context och räknas
-   inte som acceptans. Normal QA-login finns redan; använd befintlig syntetisk
-   operatör. Befintlig operatör återskapas inte. Separata auth-/resetprov använder
-   bara ägda syntetiska QA-konton; inga produktionskonton eller mejlprov.
-4. Kör den verkliga ägda QA-kedjan: cookieautentiserad idle-advice/Director i
-   shadow, faktiskt SDK-svar, tal via avsedd Cartesia-konfiguration och GPU via
-   avsedd RunPod-endpoint. Bind sparad Neon-policy, serverägd session/runda,
-   request/job-ID, source/env/manifest och mediahashar till samma körning.
-   Använd redan utfärdad descriptor genom spelets faktiska posegrind/talkö och
-   `playGeneratedSpeech`; kvittot ska visa `decoded-product-game-queue`, faktisk
-   integration och laddad källa. Tre färska cookieägarkontroller, presenterade
-   avkodade bildrutor, hörbart ljud och två verkliga ended/playback-ACK krävs.
-5. Verifiera kostnadsjournal före/efter, cancel/terminal/drain, retry och restart
-   utan extra providerdispatch eller dubbeldebitering. Återanvänd samma ägda
-   spelare/WS/video. Full P6 omfattar även text/bild/STT, fullfil och stream,
-   SQL/HTTPS/restart samt auth/revoke och invitation/reset där de återstår.
-   Alla fyra dealers provas två gånger enligt checklistan. Fysisk kamera,
-   mikrofon, mobil/Safari och mänsklig läppsynk redovisas separat; ändra ingen
-   assetbaseline utifrån enbart hashar, automatiska tester eller stillbilder.
-6. Bevara privata receipts och FAIL-historik. Bocka bara av verifierade delmål
-   och sätt `fullP6Passed` först när hela kontraktet är uppfyllt. Leverera
-   taskägda ändringar och faktisk drift-SHA via ordinarie main-helper, med
-   uppdaterad handoff och säkerhetsstatus. Koordinera .git med andra agenter.
-
-AI/GPU är nästa stora acceptanspass. Produktionsbyte **P7** kräver därefter
-verifierad P2–P6 och ett uttryckligt genomförandeuppdrag; **P8** avvecklar sedan
-ersatta gamla UI/API-/disk-/envgrenar med referens-, paritets- och restartbevis.
-Det är därför inte färdig migration efter en lyckad GPU-render ensam.
-
-### GitGuardian efter den beställda triagen
-
-API/MCP fungerar med befintlig läsnyckel. Workspace `795524`, source `30689542`
-och repo `Jakeminator123/github-work` har verifierats både via API och webbfilter.
-På Jakobs uttryckliga uppdrag granskades fem öppna incidenter mot testkod och
-stängdes i webbgränssnittet med **These are test credentials**. API-återläsning
-bekräftar **IGNORED** för samtliga fem; ingen incident markerades som en verklig
-återkallad produktionsnyckel. Inga scopes, nycklar eller generella scanregler ändrades.
-
-| Incident | Verifierad fixtureplats | Status efter triage |
-| --- | --- | --- |
-| 37827237 | `lab/test/studio-native-runtime.test.mjs`, `lab/test/studio-native-request.test.mjs` | IGNORED |
-| 37828386 | `ops/cloud/test/container-entry.test.mjs:30` | IGNORED |
-| 37828691 | `ops/cloud/test/storage-export.test.mjs` (webbplatslista; API saknar location) | IGNORED |
-| 37830671 | `test/studio-cutover-integration.mjs` (två webbplatser; API saknar location) | IGNORED |
-| 37840514 | `ops/cloud/test/native-p6-router-hook.test.mjs` | IGNORED |
-
-Testvärdena är lokalt deklarerade fixtures. Exportprovet använder temporär
-SQLite/lokal server och städar efter sig; cutover-provet kontrollerar en ny
-ägd localhost-pool innan seedning, och URL-fixturen ansluter inte till Neon.
-Cutover-fixturens tidigare kodrättning i `bba3cc28` består. Rå scannerutdrag och
-credentialvärden är inte återgivna. Direkt efter triagen gav API:t temporärt
-`gg_read_incident_count_mismatch`. Ny full paginerad återläsning efter att
-källräknarna uppdaterats bekräftar hela källans fem IGNORED-ID:n och noll öppna.
-Incidenttäckning är `complete-for-source`; fil/rad-täckning är fortsatt partial
-för två i API:t, kompletterad med webbplatslistorna ovan. Detta är ingen grön
-GitGuardian-check på main. Läsnyckeln har fortsatt bara `incidents:read,sources:read`.
-
-## Städning och aktuell systemkarta — 3 oktober
-
-Städningen utgår från ren GitHub-main `b7940dd82078794d38ff9e2466e5aea615aae877`.
-Den tar bort 62 frontendfiler: oanvänd klientblackjack, UI-/tema-/hookscaffold
-och dubbla stylesheet, samt 41 exklusiva direktberoenden. Låsfilen regenererades
-offline utan nya versionsbindningar; fryst installation tog bort 134 lokala paket. Aktiv Button, landningssida,
-kortsymboler, serverägda spelrutter och fyrdealerspelaren behålls. Sista
-referensgranskningen tog även bort 13 oanvända klientspellogikexports från
-`lib/blackjack.ts`; bara oförändrade `Suit` och `SUIT_SYMBOL` har aktiva importörer.
-Pensionerad GitLab-GPU-CI och den gamla dubbla miljökartan tas bort;
-dokumentlänkar går till de befintliga fem docs och aktuell OpenClaw-guide.
-Duplicerade agentprompter i masterplanen ersätts av dess aktuella acceptanschecklista.
-
-Lokal Next-/TypeScript-cache rensas på exakta paths efter read-only kontroll:
-sessionsvakten har ingen sessionspost, inga lokala produkt-/labbportar lyssnar
-och de main-bundna Node-processerna är GitGuardian-MCP. Inga privata QA-bevis,
-SDK, sourcepins, kostnadsjournaler, konton, råmedia eller kalibreringar raderas.
-Labbets gamla hela `.next` rensades först. Full regression visade då ett enda
-fel: anslutningstestet kräver en verifierad Next-runtime. Den är återbyggd;
-första städleveransen behöll 8 211 983 byte Lab-runtime och frigjorde netto
-1 032 360 345 byte bygglagring (cirka 1,03 GB). Credentials-passens verifierade
-byggen återskapade cache; efter full hook rensades 292 363 385 byte på de två
-exakta `.next/cache`-paths och båda TypeScript-cachefilerna. Nu behålls färska
-runtimes: Lab 8 306 510 byte, frontend 3 503 289 byte. Den återskapade cachen
-räknas inte som ytterligare nettofrigjord lagring. Beständig data är bevarad.
-
-Den uppdaterade [systemkartan](CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa)
-skiljer produktion, nya QA och mål efter P7. Senaste QA-installation/fyrdealerprov
-gäller `966991ef`; native90 gäller äldre `190399`. Full AI/GPU,
-loader/cookie-bevis, produktionsimport, P7 och den större P8-avvecklingen återstår.
-
-GitHub-startstatus på `b7940dd8`: 3/3 CI success, båda Vercel-statusar success,
-GitGuardian-suite queued och ingen GG-run. Intended workspace/source är återläst
-med read-only MCP: fem TRIGGERED-ID:n `37827237`, `37828386`, `37828691`,
-`37830671`, `37840514`; en incidentsida/fem locationsidor, full incidenttäckning
-men partial fil/rad för två. Inga incidentstatusar ändras av städningen.
-Verifierat: frontend 32/32, explicit TypeScript och produktionsbygge PASS;
-Lab-produktionsbygge inklusive typkontroll och 50 sanerade buildtraces PASS;
-det isolerade native/Next-startprovet PASS efter återbygget. Labbets tsconfig
-utesluter nu privata `data/` ur app-typkontrollen, så SDK-källpaket inte kräver
-leverantörernas utvecklingsberoenden. 123 lokala dokumentlänkar och diffkontroll
-PASS. Den första fulla regressionen gav 1 216 PASS, fem skip och endast felet
-om saknad runtime ovan. Efter rättelsen är full obligatorisk commit-hook PASS:
-1 217 tester PASS, fem skip, noll fail. Kod- och dokumentstädningen är committad
-på `be204ed8719dcc9577f3118c7145caec12bfe1d7`, kompletterad med
-`d6e39a01427e7708999202580513d2e069122f26` för sista klientregelstädningen. Även den senare committens fulla
-hook gav 1 217 PASS/fem skip/noll fail, efter ny frontend 32/32, typkontroll
-och produktionsbygge PASS. Denna slutnotis ändrar bara docs.
-Kontrolloggar ligger privat i Windows temp som `croupier-housekeeping-*.log`.
-Push sker via ordinarie main-helper; slutlig SHA/checkstatus läses från GitHub,
-och detta arbete bockar inte av P6/P7/P8.
+Nuläge och kvarvarande krav står nedan; äldre checkpoints är inte aktuella instruktioner.
+Detaljhistoriken finns oförändrad i Git-snapshot
+[`91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/JOHN-HANDOFF.md).
+Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
 ## Börja här vid övertagande
 
-Arbeta i `C:\Users\jakem\Projects\croupier`, på `main` i
-`Jakeminator123/github-work`. Följ `agent-talk/README.md`, claim före ändring,
-och leverera med `node tools/push-github-work.mjs`. Ingen annan branch/worktree,
-Jira eller GitLab. Läs även `ENVIRONMENT-RESTORATION.md` före spel-/medieändring.
-Senaste fullständiga 90-checkars QA-acceptans är exakt `190399386d93a02882d9b18a5ce5af53bb91fe23`;
-de tre deployment-ID:na och 90-kvittot står nedan. Läs `git log -1` och GitHub
-main för slutlig källleverans: senare dokument-/testfixar gör inte automatiskt
-den frysta QA-koden nyare. **80 % är en grov arbetsbedömning, inte acceptans.**
+Arbeta i `C:/Users/jakem/Projects/croupier`, på main i `Jakeminator123/github-work`.
+Läs `AGENTS.md`, `agent-talk/README.md` och
+[masterplanens aktuella checklista](CLOUD-MIGRATION.md#checklista-och-beroenden).
+Läs [återställningsreglerna](ENVIRONMENT-RESTORATION.md) före spel-/mediaändring.
+Kontrollera Node/engines/pins; senast använd Node är 22.22.2, Lab kräver >=22.16.0.
+Använd den absoluta agent-talk-tavlan i huvudcheckouten; claim före edits.
+Endast MERGE integrerar och pushar via `tools/push-github-work.mjs`.
+Jakobs särskilda migrationsmandat tillät egna taskbrancher/worktrees;
+det är inte en generell instruktion att skapa fler. GitLab/Jira/CAC är pensionerade.
 
-Övertagandet 3 oktober fortsätter från ren GitHub-main
-`bba3cc281a31bffb27c1df8199f0e669a0103159`. Director använder nu faktisk
-`askDirector`, oförändrad rollprompt och SDK-översättning; Web binder anropet
-till verklig session, aktuell spelstatus och återläst sparad policy. Director
-och texttal delar samma beständiga text-slot. Idle-cache binds till ägare och
-policy. Starten binder råa router-/worker-manifest och verklig Web-child-env;
-full Render-env och SDK-child-env hålls separata. Detta är testad kod,
-inte installerad QA-runtime eller ny liveacceptans. Nya sourcepins/manifest
-måste byggas efter slutlig kod; gamla `minimum-proposal.json` är historisk
-utgångspunkt och dess gamla worker-/routerhashar får inte återanvändas.
-186 riktade worker/brygga/entry/router/runner/hook/idle/API-prov PASS i den
-sammanhållna återkörningen. Obligatorisk full hook och fyra-dealer-audit
-`--probe` PASS; befintliga saknade takes och mänsklig synkacceptans består.
-Loggar finns privat i `migration-root-{directed,full}-check.log` och
-`migration-root-dealer-probe.log`. Inget nytt SQL-/HTTPS-/restart-livekvitto
-eller fyra-dealer-native90-kvitto hävdas för denna senare källkod.
-Nästa obetalda kodpaket binder en opt-in GET
-`/api/presentation/native-p6-playback-context` till den verkliga auth-cookien,
-exakt egen länkad QA-spelare, serverägd session/runda och återläst sparat projekt.
-Den är avstängd som standard, skapar ingen gäst och tar inga klientrevisioner.
-Den privata `native-p6-product-playback.mjs` kör nu själva hashbundna
-`playGeneratedSpeech`-wrappern och dess tre produktberoenden: en video/WS,
-samma mottagna bytes, presenterad rVFC-bildruta och video-ended. Tre färska
-cookieägda GET-kontroller krävs före connect, före play och efter slut.
-25 collector-, 21 runner- och 32 produktströmprov PASS. Importen gör inga
-liveanrop; fixturprov bevisar inte faktisk cookie-/browser-/CSP-acceptans.
-Kvittot anger `decoded-product-wrapper-qa-mount`, `productWrapperExecuted:true`,
-`gameWrapperIntegrated:false`; verklig spelkö, wire-/descriptor-/GPU-korrelation
-och liveacceptans återstår. `fullP6Passed` är fortsatt false.
-Spelkopplingen har därefter implementerats i själva `app.mjs`: exakt egen
-QA-origin, Astrid/local, explicit `nativeP6GamePlayback=1` och lyckat cookieägt
-GET krävs innan `window.croupierNativeP6GamePlayback.run(...)` exponeras.
-Den tar redan utfärdad descriptor genom befintlig posegrind/talkö och ordinarie
-`playChatDecision`/`playGeneratedSpeech`; inget nytt `/chat`, provideranrop,
-extra WS/video eller Blob-importerad ersättningswrapper. Per-play-observation
-får en kopia av accepterade decoderbytes och verklig frame-/ended-lifecycle.
-Renderer-sessionens klient-UUID hålls separat från serverns cookieägarhash,
-men båda binds till samma aktuella runda. De tre ägarkontrollerna och verkligt
-köslut/idle-stages krävs. 85 riktade offlineprov och fyra-dealer-audit PASS;
-mänsklig synkacceptans återstår. Senare inspelade live-rehearsals redovisas
-nedan; ingen ny AI/GPU-körning eller full P6-acceptans hävdas.
-Nytt kvittoscope är `decoded-product-game-queue`, `gameQueueExecuted:true`;
-`gameWrapperIntegrated:false`, `liveIntegrationVerified:false` och
-`sourceVerification: same-origin-source-readback-loaded-module-unverified`
-redovisar kvarvarande installation/browserbevis. Runner får inte förväxla
-detta kod-/fixturbevis med full liveacceptans eller godkänna ett äldre mountkvitto
-som verklig spelkö. De nya funktionstesterna ingår nu i obligatorisk hook.
-`migration-root-source-readiness-20261003.json` är historisk privat metadata
-för den tidigare källversionen; dess gamla privata hashvärden får inte återbrukas.
-Full obligatorisk hook och fyra-dealer-audit `--probe` PASS för endpointpaketet;
-loggar är `migration-root-resume-{full-check,dealer-probe}.log`.
+Uppdatera de fem befintliga docs och labbguiden, inte nya sprint-/statusrapporter.
+Starta inga lokala servrar om start inte är begärd. Ett koordinerat produkt-/labbpar,
+`--no-open` från Codex, samma spel-/Studioflik och bevarade utkast/spel gäller.
+Stoppade servrar förblir stoppade. Ordinarie sökningar följer `.ignore`.
+Det pensionerade privata personarkivet får inte läsas via sökning, Git eller backup.
 
-Senaste spelkopplingen är levererad som
-`5b51af0ecf850a329f46ac4da00cec02340100ca`; full obligatorisk commit-hook PASS.
-Den privata source-overlayn `native-p6-runtime-artifacts/source-5b51af0e/`
-omfattar 200 filer/401 importrelationer, descriptor-råhash
-`11abe4e774b1326d85149563bc45cfafbd646410ef1dcfd0d415a0fa961ca312`.
-9/9 stagingprov PASS. Egen Render-QA-deploy `dep-db0k7j7avr4c7383kheg` är
-live på samma SHA, med oförändrad env och utan cachetömning. SDK 7.12.1 är
-nu faktiskt installerat som UID/GID 1000 på QA:s beständiga disk: 2 962 filer,
-worker-trädfingerprint `ebbb70cbf3b784adcee13323880215dc360ac0e1c5d78891f9813368e6c3da0a`.
-Separat SSH-återläsning verifierar SDK, fyra privata source-contexts och nio
-spelkällor; de nio matchar exakt denna commits Linux/Git-bytes. Inga provider-
-anrop eller journalhändelser. Prepare-only run `cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2`
-hör till befintlig kampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`; budgeten
-är oförändrad. Detta är paket-/källinstallation, inte körande workeracceptans.
-Privata kvitton: `native-p6-qa-release-5b51af0e/{actual-install-receipt,actual-linux-readback}.json`.
-Frontendens exakta allowlist saknade också playback-context-GET. Den routen
-är levererad i `966991ef4e4ad4a4ca9f446216c71d14a5d92841`; nio routing/
-middleware/entry-prov, full obligatorisk hook och 3/3 GitHub-CI PASS.
-Render-QA är live på denna SHA som `dep-db0kostg1s2s73eh0uk0`. Alla 17 privata
-källfiler är återlagda efter containerbytet, med oförändrad beständig plan
-och SDK-trädhash. Oberoende SSH-återläsning som UID 1000 verifierar åter nio
-spelblobs mot Git och laddar faktiskt SDK-modulen/constructor utan klient,
-provideranrop, tjänstestart eller journaländring. Kvitton finns privat i
-`native-p6-qa-release-5b51af0e/{rehydrate-966991ef-receipt,actual-linux-readback-966991ef}.json`.
-Vercel-QA:s första 5b51-publicering tappade tidigare per-deployment env/build
-overrides: READY bevisade inte fungerande UI. Korrigerade byggen på 966991ef
-använder exakt tidigare accepterade QA-overrides; ingen ny tariff,
-produktionsenv eller nyckel. Båda korrigerade Vercel-byggen är READY och
-QA-alias är faktiskt bundna/återlästa på samma SHA: frontend
-`dpl_8Bsu9hFD7U7c7wqDTbBcXBC77aZB`, Studio `dpl_PLfAczMttfMAUx3HcwgiPN6bDj8w`.
-Frontendens nio spelmoduler ger HTTP200 och exakt samma SHA256 som Git;
-kvitto `vercel-source-hash-proof-966991ef.json` i samma privata releasekatalog.
-Unauth BO/API returnerar 401/403 och router-off-context404 enligt gränserna.
-Den befintliga syntetiska QA-operatören är live-verifierad med read-only SQL
-och normal Studio-login/BO→spel-handoff genomfördes därefter i IAB. Ingen ny
-användare, inbjudan eller mejlleverans. Astrid greeting i delad Studio-spelare
-visar faktiskt `2/2 completed`; bild `qa-astrid-local-966991ef.jpg`. Detta är
-inspelad uppspelning med giltig QA-cookie, inte betald AI/GPU-acceptans.
-Browsern kan nu öppna spelet; tidigare browser-blockering är inte aktuell på
-den korrigerade publiceringen. En separat CDP-källkontroll fastnade länge och
-gav ingen full huvudram/context-bindning; loaded-module-bevis hävdas inte.
-Alla fyra greeting-rehearsals är därefter faktiskt begärda med Play twice
-på korrekt dealer-URL i samma QA-spelflik. Vera, Amira och Mei återgår med
-aktiva kontroller, matching clip och utan Playback failed; deras gamla UI
-har ingen explicit sluträknare. Astrid/local visar explicit 2/2. Detta är
-funktionell observation, inte nytt läppsynkgodkännande eller assetbaseline.
-Den separata QA-labbdomänens normala login är också faktiskt genomförd:
-AstridStudio visas och Spara är disabled; inga projektinställningar ändrades.
-Sammanhållet privat UI-kvitto: `live-qa-ui-966991ef.json` i releasekatalogen.
-Browsertransporten stängdes efter kontrollerna; slutstädning av agentens två
-QA-flikar kan därför inte bekräftas. RunPod-fliken och andra användarflikar
-är inte stängda av agenten.
-QA-bilder finns i samma privata releasekatalog som
-`qa-{vera,amira,mei}-default-966991ef.jpg` och Astrid/local-bilden ovan.
+## Verifierat nuläge och leverans
 
-Nästa obetalda gräns är faktiskt kontrollerad: SDK-importen ovan fungerar, men
-cookie-endpointen registreras först efter initierad P6-router/authority-brygga.
-Prepare-only plan och avstängda router/providerflaggor ger därför avsiktligt
-404, inte ett godkänt spelkvitto. För start krävs fulla färska manifest,
-ursprunglig giltig initialAdmission och befintlig numerisk budgetjournal;
-entry kräver också tariff/counting-underlag. Skapa inte påhittad admission,
-ny budget eller ersättningsjournal för att kringgå denna gräns.
+MERGE har återläst följande 5 oktober; denna dokumentkomprimering gör inga nya driftprov.
 
-GitGuardian: remote `966991ef4e4ad4a4ca9f446216c71d14a5d92841` är återläst med
-alla check-runs/check-suites/status: 3/3 CI och båda Vercel-statusar success;
-ingen GG-run, GG-suite queued. Detta visar inte en tom incidentlista.
-Jakob godkände separat två lässcope och därefter ett års giltighet. Årsnyckeln
-för workspace `795524` är Active, endast `incidents:read,sources:read`, och
-lagras Windows-DPAPI CurrentUser-krypterad utanför Git i
-`~/.codex/private-connections/gitguardian-795524.dpapi`. Den egna oanvända
-sjudagarsnyckeln är återkallad. Inga incidenter eller övriga rättigheter ändrades.
-Den lokala Codex-MCP:n `gitguardian` använder `tools/gitguardian-mcp.mjs` med
-bara `read_source_binding` och `read_repo_incidents`. Bryggan är låst till
-`Jakeminator123/github-work`/source `30689542`, GET och metadata; ingen scan,
-scannertext, secret reveal eller write. Inga nyckelvärden finns i konfigurationen.
-Hosted OAuth stoppades av Cloudflare; den lokala stdio-anslutningen är faktiskt
-verifierad genom initialize, tools/list och båda autentiserade läsverktygen.
-Verktygen har också laddats i Codex och `read_source_binding` är återläst där.
-Manuell läsning:
-`node tools/gitguardian-read.mjs --source` eller `--incidents`.
-API-incidentlistan är nu fullständigt läst för denna källa: en incidentsida och
-fem locationsidor, fem TRIGGERED-ID:n `37827237`, `37828386`, `37828691`,
-`37830671`, `37840514`. Filpositioner finns för tre: `lab/test/studio-native-`
-`{runtime,request}.test.mjs`, `ops/cloud/test/container-entry.test.mjs` och
-`ops/cloud/test/native-p6-router-hook.test.mjs`. ID `37828691` och `37830671`
-saknar locations i API:t; fil/rad-täckningen är därför partial. Läsning av de
-tre lokaliserade incidenternas aktuella källrader visar isolerade testfixtures
-med uttryckliga fixturelösenord eller syntetiska testvärden. Det bevisar inte
-historiska incidentsnippets eller rensade incidenter; de två övriga är okända.
-Rå incidenttext eller sekretessvärden är inte lästa. Alla fem är fortsatt TRIGGERED.
-Privat metadata och stdio-kvitto: `migration-root-gitguardian-mcp-verified-20261003.json`;
-15 riktade redaktions-/paginering-/behörighetsprov PASS.
-
-Fortsätt i denna ordning:
-
-1. **P6: installera och återläs den verkliga egna QA-kedjan.** Core-hookar är
-   fortsatt opt-in och avstängda. Kodkopplingen ovan använder signerad
-   stage-ticket samt färsk PID/source/nonce/env. Bygg samstämmiga nya privata
-   manifest, inklusive entry-contexts obligatoriska `routerManifestSha256`,
-   och verifiera faktisk installation/readback. Använd inte shared OpenClaw
-   som QA-runtime eller deterministisk baseline som providerbevis.
-   `native-p6-runtime-stage.mjs --stage <full-HEAD> source-<kort-SHA>` bygger
-   endast en privat käll-overlay och en derivative Docker-recipe. Offentliga
-   filer måste matcha HEAD:s Git-blobs; privata filer och image-bytes hashbinds.
-   `QA_BASE_IMAGE` måste vara en immutable digest för samma källa. Inga manifest,
-   secrets, journaler, SDK-downloads eller aktiverande env skickas med. SDK
-   `openai@7.12.1` är nu faktiskt installerat och återläst enligt ovan; aktiverad
-   worker, färska full-run-manifest och betald admission återstår. En source-
-   artifact ensam är inte bevis för något av detta.
-   Staging omfattar nu även transitiva literal-relative imports och de nio
-   faktiska spelkällorna (200 filer/401 relationer vid kodgranskningen).
-   Externa paket och fem beräknade importkällor redovisas som uttryckliga
-   installationsgap; immutable basimage, byggd frontend och runtimepaket är
-   inte verifierade av källkopieringen. Gamla source-artifacts överlagras aldrig.
-   Officiellt npm-paket `openai@7.12.1` är hämtat och separat återläst privat i
-   `native-p6-sdk-source-20261003/verified-source`: 2 962 filer, 15 733 385 bytes;
-   npm-integritet samt oförändrade package/client-pins matchar exakt.
-   Arkiv-SHA256 `8b70fcbcee7ee7398edf93ed729d2b77ea3b08e65df16d1237cbff6f71968d55`;
-   source-tree `6b2d24b71e129725534d85b5b2197f70d6091c29a899d67ca64fdd31ff3695fa`.
-   4/4 separata parser-/återläsningsprov PASS. Inga lifecycle-skript, imports,
-   SDK-runtimeinstallationer eller provideranrop gjordes. Worker-readerns
-   annorlunda trädfingerprint är `ebbb70cbf3b784adcee13323880215dc360ac0e1c5d78891f9813368e6c3da0a`;
-   jämför samma format, inte dessa två olika fingerprintformat med varandra.
-   Första source-only-artifact för `8da9d636` finns privat i
-   `native-p6-runtime-artifacts/source-8da9d636/`: 59 filer, descriptor-råhash
-   `5c8125f7b6328324a97c2796b585d868a4ee97a245d2da1a77ce905d60177c45`.
-   Den är historisk efter senare källändringar; ingen build/install/aktivering
-   gjordes. 107 riktade offlineprov PASS i
-   `migration-root-annual-directed-check-2.log`; full hook PASS under commit
-   i `migration-root-annual-commit-check.log`. Ursprunglig testkörning saknade
-   egen TEMP-katalog; katalogen skapades och alla prov återkördes utan kodundantag.
-2. **Lös bara de konkreta återstående åtkomst-/kostnadsgapen.** Den senaste
-   läsningen saknar counting-tariff/explicit gratisbevis, Cartesia-kontots
-   USD/credit (`/usage/credits` gav 401) och RunPods avsedda endpoints faktiska
-   GPU-/idle-/storage-/rabattgräns (adminläsning 403; health 200 är inte pris).
-   Läsande fortsättning har nu verifierat avsedd RunPod-UI i konto
-   `Jakeminator123`: endpoint `zsudl8tmzcmiv1`, RTX 4090 ×1, max workers 1,
-   active workers 0, idle timeout 5 s, execution timeout 600 s, 20 GB disk,
-   ingen network volume; UI visar 1,10 USD/h. Kontorabatt och maximal
-   kallstartstid är inte verifierade. Ny läsning av Jakobs inloggade RunPod-webview
-   bekräftar samma endpoint, RTX 4090/24 GB Pro, 1,10 USD/h och ovanstående
-   gränser. FlashBoot är Standard/enabled; ingen inställning eller worker ändrades.
-   UI säger millisekunddebitering medan aktuell officiell pricing-doc säger
-   uppåtrundning till sekunder. Använd den konservativa sekundgränsen tills
-   avvikelsen klarlagts. Ingen network volume; container disk är 20 GB,
-   med dokumenterat ungefärligt pris 0,10 USD/GB/månad i femminutersintervall.
-   Billing räknar start/execution/idle
-   tills worker helt stannat, uppåt till hela sekunder; execution timeout
-   ensam begränsar inte all kallstart. Detta är härledd UI-metadata, inte
-   ett immutable råkvitto eller aktuell full kostnadsadmission. Jakob har
-   klargjort att Cartesia-nyckeln är extern och att han saknar kontoinloggning;
-   inga fler inloggningsförsök begärs. Public counting/pricing gav inget
-   uttryckligt tariff-/gratisbevis. Dessa kvarvarande gap får inte döljas
-   genom att sätta nollkostnad eller blanda in en annan kontoägares åtkomst.
-   **Prisbacklog enligt Jakob:** usage kan mätas utan en verifierad dollaravgift
-   (input/output-tokens, talets tecken/credits, GPU start/execution/idle-tid).
-   De så kallade pristesterna är budget-/admissionskontroller för betalda prov:
-   de binder rätt konto, modell, tariff, maxförbrukning och journal innan dispatch,
-   och testar även restart/retry/parallellitet så kostnad inte räknas bort.
-   De testar inte spelkvalitet. Kontoägarens Cartesia USD/credit/plan, officiellt
-   counting-tariff-/gratisunderlag och RunPods totala GPU-/startup-/idlekostnadsgräns
-   är återstående underlag. Dokumentera usage och prisosäkerhet separat; detta
-   stoppar nya betalda prov men inte obetald kod, source-staging eller fixtur-QA.
-   Nya QA:s GPU-/fullfilspolicy och operatörskampanj är ännu inte installerade;
-   regelbunden SDK-runtime/readback saknas. Privata faktakällor:
-   `native-p6-readonly-phase/{host-actual.json,remote-actual-final-2.jsonl,minimum-proposal.json}`.
-   Förslaget är inte genomförande- eller utgiftstillstånd; räkna om dess
-   råhashar mot aktuella filer före användning och gör ingen ny bred förstudie.
-3. **Verifiera därefter full P6**, inklusive text/bild/STT, faktisk Director,
-   en fullfil, en ägd streamsession med två playback-ACK, cancel/terminal/drain,
-   kostnadsadmission och isolerat SQL-/HTTPS-/restartprov. Behåll originalets
-   totaltak 10 USD, budgetankare, numeriska källa och journal; reservation
-   5,251152 USD står kvar, oreserverat 4,748848 USD. Ett SDK-dispatch är redan
-   förbrukat: högst nio återstår av befintliga tio. Ny runner använder verklig
-   cookieautentiserad `/api/presentation/idle-advice` i shadow som text-stage:
-   en Director-Terra plus högst fyra Terra/Deep-par = nio nya dispatches.
-   Sparad Neon-policy och tillgängliga modellcandidates måste återläsas före
-   betald submission. WS-done/binary bevisar inte två avkodade playback-ACK;
-   faktisk produktspelar-/browseracceptans är fortsatt ett separat krav.
-4. **P7 först efter verifierad ersättning:** frys verkliga skrivare, verifiera
-   GPU-drain, importera aktuell policy/media/kostnadsstate med paritet och byt
-   källa en gång. Produktion är inte omkopplad; produktens mejlkonfiguration
-   och full invitation/reset-acceptans återstår.
-5. **P8 efter P7:** radera faktiskt ersatta iframe/UI/API-/disk-/envgrenar
-   enligt den konkreta tabellen i `CLOUD-MIGRATION.md`. Behåll aktiva
-   `test/fixtures`, `tools`, `web`, `pipeline`, spelklipp/kalibrering,
-   konton/saldo, förbrukade journaler/reservationer och OpenClaws state.
-
-Starta ingen devserver. Inga ytterligare betalda provideranrop, kontomejl eller
-återskapande av testkontot görs under denna överlämning. Arbeta vidare med
-koden och lyft bara saknad avsedd åtkomst eller ett konkret beslut som hindrar
-nästa steg; ny livekampanj måste ha verklig färsk budget-/stageadmission.
-
-**Mejl och testkonto:** ett godkänt native QA-invite gav HTTP 200/
-`emailSent:true` 3 oktober 15:31:35 UTC. Resend-email
-`01a10264-60cd-7c83-9d28-e3c30bae8644` visar `delivered`. Läsande kontroll i
-Jakobs rätta Gmailkonto hittade avsändare/ämne i **Skräppost**, daterat
-3 oktober 17:31 svensk tid. Body/token är inte öppnade, ingen mailbox ändrad.
-Den disponibla inaktiva QA-readern raderades via ett kvitterat
-`users/remove` före den senare STOP-instruktionen. GET 15:47:37 UTC bekräftade
-frånvaro och oförändrad kvarvarande identitet; samma transaktion raderar
-kontots tokens, så den gamla invitationen ska inte användas. Ingen recreate,
-resend eller nyinvite är gjord/beställd. Privata send-/cleanupkvitton anges
-i mejlstatusen nedan. Detta var endast QA, inte Jakobs produktkonto.
-
-## Pågående uppdrag: en Studio — inte genomförd migrering
-
-Pågående fortsättning 3 oktober: gemensam Neon-policy mellan Studio/Render,
-native konto-/partner-/authhandlers och tillhörande formulär är implementerade
-på main. Grovt cirka **80 % klart / 20 % kvar** av sammanslagningen;
-full helhetsacceptans, produktionskällbyte och faktisk avveckling återstår.
-P6/P7/P8 är fortsatt öppna. Verifierad QA-runtimeleverans är nu
-`190399386d93a02882d9b18a5ce5af53bb91fe23`, pushad på GitHub main efter
-full obligatorisk hook och fyra-dealer-audit `--probe` PASS. Samtliga tre
-[GitHub-CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37129420281)
-PASS för samma SHA. Produktion är inte omkopplad.
-
-| Egen isolerad QA | Faktisk publicering på `190399` |
+| Yta | Verifierad version / kvitto |
 | --- | --- |
-| Render `srv-datj7l893c1s73ar3u50` | LIVE `dep-db0h5vu0tbcc73fr4220`, HTTPS-health 200; env-fingerprint oförändrad |
-| Vercel `croupier-native-qa-abc92154cb15` | READY `dpl_7ct3jqmAUdD4bxRvmaXaeDhYB3yr`, befintligt QA-alias återläst |
-| Vercel `croupier-native-studio-qa-abc92154cb15` | READY `dpl_HBNwDkdV4W6xHM9wFrpv9cnJn1yP`, befintligt QA-alias återläst och godkänd mejlkonfiguration ärvd |
+| GitHub main | `91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`, pushad/remoteverifierad |
+| CI | `37249938482`: tre jobb success; fullhook 1 491 PASS, 9 befintliga skip, 0 fel |
+| Produkt-Render | LIVE `dep-db1fhi8jo6nc73ai2n1g`, finished `2026-10-05T01:11:39.900705Z`, samma SHA |
+| Vercel frontend | READY `dpl_6uxWLomRgt38pDZnAh6VcNUCoQnU`, samma SHA |
+| Vercel Studio | READY `dpl_DiKezicRyo9Xmwg616arHhfYLtyS`, samma SHA |
+| Director | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, LIVE `dep-db1ek0navr4c73bi1log`; administrationskod oförändrad |
+| Bevarad QA | samma `ee060804`: Render LIVE `dep-db1em4ad0e5s73fcv3f0`, frontend/Studio READY, 37 envvärden oförändrade, AI/GPU OFF |
 
-Neon-QA är `croupier_studio_qa_abc92154cb15`, scope
-`qa_native_abc92154cb15/croupier`, datarot
-`/var/data/native-studio-qa/abc92154cb15`. Additiv 004:s tidigare installation
-bevarade 45 befintliga QA-tabeller och 32 tabeller vardera i produktion/äldre QA;
-ingen budget/grind seedades. Aktuell kod har 41 isolerade SQL-/HTTPS-/restartgrupper,
-fyra retained-guards och 46 oförändrade källhashar PASS.
-Render-deployens före-/efterbevis verifierade konton, råmedia, schema och äldre
-journaler. Senare egna `p6-*`-prefix innehåller avsiktligt nya prov-/budgetfiler;
-hela volymen påstås därför inte vara oförändrad efter dessa prov. Äldre öppen
-GPU-reservation har bevarad hash/mtime och påstås inte vara dränerad.
+QA:s Vercelkvitton: `dpl_8dp5dw8b38ubwLVCtJQT6mJvhDd1` och
+`dpl_8fEjyiBqhGtx5ohPQKtkcmMvALGS`; alias-CAS/färsk GET och health200 PASS.
+Genererat tal, streaming, tal-preview, cloud-tal, kamera, Lissabon-profiler och
+native-admin är OFF; inga Cartesia-/RunPodnycklar finns i QA. Disk/SDK/data/journaler består.
+QA behöver inte nydeployas för byteidentiska app-/medieläsare i dokumentleveransen.
 
-Senaste obetalda native-molnprov är **90/90 PASS** i
-`7bf33ee7-35a2-470c-a202-c00299af4443`, 3 oktober 15:14:38–15:17:50 UTC,
-på de tre faktiska `190399`-publiceringarna ovan. Privat immutable receipt:
-`native-cloud-browser-evidence/7bf33ee7-35a2-470c-a202-c00299af4443/receipt.json`,
-SHA256 `dd67c29f73c24db234f4d079a5e5a241e43e39590eeefb95c2e40fa52faf4e20`.
-Vera, Amira, Mei och Astrid kvitterade samma sparade Neon-revision
-`studio-ed573eba-18f9-42ed-8b16-b07ec2fb62d4` och två verkliga avkodade,
-hörbara, avslutade plays vardera. Tre exakta Astrid-heartbeats gav 200/JSON/off;
-blockerade, mejl- och betalda endpointanrop var noll i denna körning.
-Testetikett och Probe-mode ändrades endast i eget QA-projekt med CAS.
-Ägd CDP-spärr och route-drain kvitterades före återställning; projekt/pit har
-identiska innehållshashar före/efter och originalets `automatic`-mode består.
-Browser/context är stängda och separat faktisk resultatvalidator PASS.
-14 färska bootkontroller och 41 riktade guardprov PASS. Loginprovet är skopat
-till loginformuläret eftersom den nya resetformen har samma användarnamnslabel.
-Alla åtta första-/andra-play-bildrutor är granskade för dealer/layout;
-statiska rutor ger ingen ny läppsynk-/take-approval. Äldre `4d84bffc`-kvitton,
-inklusive tidigare FAIL, består som historik och är inte aktuell `190399`-acceptans.
+App/UI/medieläsarbytes i `91d0c4d9` är oförändrade mot
+`ebbbeb764aa9b42613596049887c178e5a9c1818`. De autentiserade UI- och media-
+kvittona nedan gäller `ebbbeb76` och oförändrade bytes, inte nya prov på `91`.
+P0–P5 och P7–P9 är verifierade enligt checklistan; **full P6 är fortfarande öppet**.
+Tidigare 80/20 och ”0 % kvar” var grova/kategoriska migrationsbesked, inte helhetsacceptans.
 
-Privat P6-körförberedelse har 28 offlineprov och tre isoleringsguards PASS.
-Sju faktiska PostgreSQL-/restartgrupper binder 38 oförändrade källhashar:
-aktuella 001–004, låst auth-epok, tappad COMMIT-kvittens utan återförsök,
-befintlig grind/stale JWT, verklig memory-HMAC och ägarbundet färdigt paket,
-förbrukad nyckel/cache efter omstart samt elva läsande kostnadsfingerprints.
-Den fysiska 004-kolumnen `reserved_at_ms` och den faktiska
-`web/generated-speech-chat.mjs` är rättade i P6-kontraktet. Ett fake-provideranrop
-användes; nätverksanrop till providers och skrivningar till befintliga databaser
-var noll. Eget kluster/process städades. Den privata STT-fixturen är 2,03 s WAV
-från exakt befintligt Astrid-goodluck-ljud/text/baseline; originalet är oförändrat
-och detta ger ingen ny mänsklig eller visuell approval.
-Gatewayens observerade retryräknare kan minskas och är ingen absolut gräns
-för betalda dispatches eller input-tokenmängd. Jakob har nu uttryckligen godkänt
-**totalt högst 10 USD för den avgränsade livekampanjen, inklusive alla försök**.
-Det oföränderliga privata budgetankaret har SHA256
+## Studio, OpenClaw och systemkarta
+
+### Aktiva Studioflöden
+
+Tre huvuddelar: Dealer & klipp, Backoffice och OpenClaw. Dealerarbetsytorna använder
+egna exakta register; Astrids policy kopieras inte till andra dealers.
+Backoffice visar elva aktiva sektioner. Overifierade pitboss-/turneringsformulär och
+två informationspaneler är borttagna ur menyn, inte ur API/schema/behörigheter/data.
+Lane-/konto-/nyckelåtgärder och talgranskning är utfällbara; utkast/revisionsskydd består.
+
+Idle-felet `studio_native_unavailable` kom från den avvecklade diskskanningen.
+`archiveSource=emil-default` får inte initiera den. Cloud Studio läser banken med GET;
+äldre POST `/videos/rescan` är en autentiserad färsk registerläsning utan import/mutation.
+26 riktade UI/API/uploadprov PASS; ingen användarfilm skrevs över i driftprovet.
+
+OpenClaw-fliken läser/sparar huvudmodell för fem befintliga agenter med Studio-
+adminsession, signerad serveridentitet och native CAS. Fallbackordning bevaras;
+versionskonflikt behåller utkast och save kräver faktiskt kvitto/readback.
+Runtime-tokenet administrerar inte Gateway. OpenClaw 2026.9.5/protokoll 4 och
+device-pairing gäller; auth/verktygs/providerinställningar exponeras inte i klienten.
+Server-only production `OPENCLAWAPI_KEY` ligger i Vercel Studio;
+Director använder `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`. Privat återställningsfil:
+`C:/Users/jakem/CroupierBackups/openclaw-studio-admin-device-20261005.json`.
+
+No-op-save-rättningen i `ee060804` godtar hashfritt `noop:true` bara för konsekvent
+oförändrad modell och tom changedPaths. Övriga kvitton kräver hash.
+19 backend/transportprov PASS. Faktiskt save/readback PASS: `saved=true`,
+oförändrad revision/alla fem modeller, `restartScheduled=false`, GET `applied=true`.
+Ingen automatisk andra skrivning, omstart eller providerdispatch.
+Privat `lab/data/platform-private/openclaw-admin-noop-receipt-20261005.json`.
+
+### Verifierad layout och kontrollgränser
+
+På `ebbbeb76`: autentiserad UI PASS vid 1486/1265 px och 390 px viewport:
+Idle, tio deal-/sjutton replikkort med öppna inställningar, Probe/dealerbyte,
+Backoffice-lane/kontodisclosures och fem OpenClaw-modeller. Ingen observerad
+horisontell överrinning; Idle-listan 1 094→663 px, preview readyState4.
+53 riktade prov/TypeScript/Nextbygge PASS före integration.
+Privat `ui-final-pass-receipt.json` och bilder:
+`C:/Users/jakem/.codex/visualizations/2026/10/04/01a108f1-324a-7c31-b5af-ad71943dada3/`.
+Viewport återställd, utkast/flik bevarade; inga save/upload/delete/providerjobb i provet.
+
+Tidigare `7d7814db0da0b5418a3965a8342d8a4c4db9b086` hade 77 riktade prov
+och riktig Vercel-layout vid 1285/390 px. Standardpreview blackjack.mp4 gick
+till slut, 4,5 s/readyState4/video.error=null. Det är klippgranskning, inte
+full spel-/lane-acceptans. Den statiska offline-layoutbilden är återkallad som bevis.
+Råfilsradering saknas i UI; avstängning ändrar policy och behåller råfil.
+Separat faktisk upload/delete-/lane-acceptans får inte härledas ur layoutproven.
+
+Menyfördröjning är en olöst rest: enskilda auth/session-GET200 observerades
+1,3–6,45 s, statiska anrop mest 0–15 ms. En äldre BO-laddning var cirka tio
+sekunder med fyra sessions- och tre administrations-GET. Ingen isolerad rotorsak
+eller aktuell totalmätning; inget bevis för freeplan-, Render- eller providerorsak.
+
+### Systemkarta
+
+[Fristående HTML](system-map/index.html) har klickbara rutor/pilar, tre grafvyer,
+zoom/pan/filter och käll-/testdetaljer. JSON registrerar 23 kontrakt, 57 Nextfiler,
+49 tabeller/299 kolumner, 49 PK/22 explicita FK. Faktiskt Gitträd binds med `--ref`.
+Passiv fullhookreporter ger maskerade bevis utan omkörning. CI producerar HTML/status/
+kvitto för exakt SHA, artifactretention 30 dagar. Konkreta katalogfel stoppar commit/push;
+källdrift varnar. Grått/gult blir inte grönt utan relevanta aktuella prov.
+Detta ändrar inte branch protection eller verifierar providers/databaser live.
+
+`91d0c4d9`: 19 gröna, 0 röda/gula, 4 grå kontrakt, 0 errors/warnings.
+Grått: saknat explicit reporterkvitto för game-events/zonprov respektive skippade
+verkliga Postgresprov; inte bevis för produktionsparitet. Privat:
+`lab/data/platform-private/ci-91d0c4d9-system-map-{status,evidence}.json`.
+HTML: `C:/Users/jakem/Downloads/Croupier-systemkarta-91d0c4d9.html`.
+23 riktade prov och oberoende läsgranskning utan konkreta fynd. Node24 cancellation-
+fixturen är rättad med explicit abort/5 s yttre gräns; 23/23 PASS på Node22.22.2
+och Node24.21.0 med dubbla CI-reportrar. Verkliga fel/timeouts förblir fel.
+Syntetiska UI-prov PASS; automatiserat fil-URL-browserprov blockerades av policy,
+inte genomfört. Inga alternativa omvägar eller nytt runtimebevis påstås.
+Fortsatta faktakrav ligger i [plan 02](../planes/02-systemkarta/PLAN.md).
+
+### Dokumentstädning
+
+`91d0c4d9` tar bort tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1`.
+Giltiga take/preview/tillgänglighetsregler och dagens upload/save-knappar finns i
+[guiden](../lab/docs/README.md#material-och-granskningsregler); schemaöversiktens länkar är lagade.
+26 lokala länkar PASS. `Start-Lab.cmd`, `Start-Lissabon.cmd` och Start-Labb-paret består.
+Den här tvåfilsomskrivningen komprimerar endast checkpoint-historik;
+kod, media, miljö, register och privata bevis ändras inte.
+
+## Lanes och faktisk medierensning
+
+Mobile Phone Lane är sparat förval. Versionerade lane-definitioner har ID/namn/
+renderer/dealer/mediesamling i `gameLanes`/`gameLane`. Saknat/äldre `original`
+migreras vid läsning till Mobile; HTML binds till serverns val och gamla queryparametrar
+kan inte återaktivera Kevin. `web/public/card-presentation` ersätter `kevin-cards`;
+kortgrund, källproveniens och kalibrering består.
+
+Admin create/remove är revisionsstyrda. Aktiv lane kräver ersättare eller `null`
+för sista lane; då stoppas ny Blackjack-start tills lane läggs till. Nya porträttlanes
+delar Astrids bank/policy. Ny renderer/mediebank behöver adapter/verifierad media;
+fria URL:er nekas. Lane-borttagning raderar inte delade medier.
+Separat lane-publicering, nya dealers/spel och granskad svarskatalog är inte därmed byggda.
+
+| Utförd åtgärd | Exakt omfattning / slutbevis |
+| --- | --- |
+| Lokal source/staging-rensning | 2 410 binära filer, 2 133 120 568 byte; faktiska hashar/säkra paths kontrollerade |
+| Motsvarande Blob-rensning | 2 313 objekt, 2 131 771 483 byte efter `8f265831` LIVE/READY; komplett paginerad efterlista |
+| Lokal deduplicering | 64 byteidentiska kopior, 14 216 404 byte; kvar 2 450 fysiska filer/764 115 959 byte |
+| Blob-deduplicering | 58 objekt, 12 787 392 byte efter produkt `ebbbeb76`/QA `ee060804` och exakt medieläsarekvivalens |
+| Slutlista Blob | 1 800 objekt/769 901 848 byte; just målen saknas, alla andra gamla paths/storlekar oförändrade |
+| Bevarade publika adresser | 88 GET200/fullhash/storlek PASS: 44 produktion + 44 QA; dessutom 62 huvudobjekt HEAD/full SHA PASS |
+
+Alla 2 514 logiska poster/ID/hashar/URL/åtkomstgränser består. Layout v1:s
+`canonicalPath` pekar direkt på registrerad huvudkopia med samma hash/storlek/ändelse.
+Mobile-media, zonreferens, kortbild, runtime/kod/kalibrering, uploadfiler, GPU-resultat,
+speechreferenser, journaler och övriga objekt består. Produktion/QA delar Blob;
+deras Studio-dokument/historik/mediarecords/speechreferenser och produktzoner
+lästes före radering. Ingen ny visuell approval och ingen omskriven Git-historik.
+
+Privata underlag i `lab/data/lane-media-audit/`:
+`blob-purge-receipt.json`, `blob-after-purge.json`, `kept-readback.json`,
+`dedup-cloud-purge-receipt.json`, `dedup-blob-after.json`,
+`dedup-http-verification.json`, plan och lokalkvitto.
+35 dedup-prov, hela fysiska bankens hashar och fyra dealer-sync `--probe` PASS.
+Lane/CRUD/kort/policy/startprov och TypeScript PASS; äldre fullhook 1 418 PASS/9 skip.
+Kontrollens privata cachekopior är hashkontrollerat borttagna; receipts består.
+
+## Produktionsimport, avveckling och återställning
+
+P7 är utförd på b0bc efter fryst export, oberoende admission och faktisk ALL0-drain.
+Underhåll `dep-db16rv0u01pc73d442p0` var LIVE/childless: inga barn/skrivare/providers.
+RunPod var tillfälligt Max 0/Active 0/FlashBoot OFF och alla sex workerfält/båda jobbfält 0.
+Efter import återställdes Max 1/Active 0/FlashBoot ON före provideraktivering.
+Gemensam Neon-policy är aktiv; produktens tre tal-/streamflaggor ON, kamera ON.
+QA är kvar OFF. Aktiveringen är inte en generell kostnads-/mänsklig acceptans.
+
+Studio 001–004, tre dokument, talhistorik, 18 aktiva och sex retained-mediaposter
+är importerade. Sex original (8 262 169 byte) återfanns i `365f283b` och
+fullhashades privat; liknande filnamn/familj får aldrig automappas till nya bytes.
+Production/version1 fullfilspolicy adopterades via ett additivt INSERT;
+numeriska tak/historik/reservationer ändrades inte.
+Paritet PASS: 32 skyddade konto-/speltabeller, elva kostnadstabeller och exakta
+dokument/media. Alla 17 alias återlästes med historiska mål/domäninställningar/SSO bevarade.
+Den avslutade importen körs inte om; nya läskvitton får inte skriva om originaltider.
+
+P8:s slutkod `9ba2fd05`/CI `37222438373` tre success verifierade diskfri drift.
+Produktdisk DELETE204/GET404/`service.disk` saknas; tolv äldre Blobalias borta,
+gamla-lista0/ersättningar12 och noll gamla Neon-dokument-/historikreferenser.
+Explicit restart200: faktisk ny process, 160 rätta källhashar, åtta avvecklade
+runtimefiler, AI3/Neon ON/health200 och ingen `/var/data`/persistent produktmount.
+TLS `verify-full` bevarades; 51 övriga produkt-envvärden kontrollerades oförändrade.
+Parent-env var direkt oläsbar efter UID-byte (EACCES); barnprocess/källa och
+stabila deploy-/envavläsningar ger bindningen, inte en påstådd direkt parentläsning.
+
+Privat `C:/Users/jakem/CroupierBackups/production-disk-retirement-20261004`:
+206 filer/10 mappar/125 745 905 källbyte; full inventering, oförändrad källmetadata,
+arkivläsbarhet och remote/lokal/arkivhash PASS. Behåll backupen efter avveckling.
+Befintliga privata P8-journal/kvitton: diskfri `6cf5030f…`, data/HTTP `4615366b…`,
+postdelete `bf582b0b…`; fulla pinnar finns i snapshotens importförlopp.
+
+| Verifierat privat kvitto | SHA256 |
+| --- | --- |
+| P7 admission | `77eccc3a1ca99bca328f2abec8e11d4d37ec62b3797a2a7b25aea1c616b751c1` |
+| Cloudplan | `25fe34d42251b1f57de6ff0ae7505459c0448c6d0ba500646aa7281a9115c59d` |
+| BEFORE | `0555b7988d5f686d4b918a966bd82d1865a9a83d22c805a076e6f46df648ccb2` |
+| Importplan | `94a458599f0c77ca8aaf468feccf4cc7d5e1e050f2f31662be8740796cde7442` |
+| Avslutad import | `0f6907e41944f8c142381ffc2e02f218aeda53ea345dfcc38067a5245879b58d` |
+| Full diskbackup | `12e99320409fab6b0dc9f3e475d06b4d9aa950d3f87d31cae0b3bf22530596b9` |
+
+Återställning är en samordnad återgång, aldrig en andra writer eller automatisk fallback.
+Frys alla skrivare, bevara senaste Neon/ledger separat och verifiera rätt scope,
+schema/checksummor, aktuell paritet, media och rollbackpunkt före operation.
+Gamla SQLite-/diskbytes får inte aktiveras efter nya Neon-skrivningar utan datatillbakaföring.
+Gamebackup: `C:/Users/jakem/CroupierBackups/neon-game-20261002-132437`
+(24 källtabeller/102 rader; 32 Postgrestabeller med rad-/sekvensparitet).
+Lissabonbackup: `C:/Users/jakem/CroupierBackups/lab-consolidation-20261002`;
+lokal syskonstädning: `C:/Users/jakem/CroupierBackups/local-project-cleanup-20261004T210828Z`
+(214 bevarade filer, två verifierade Gitbundlar, workercommits kvar).
+Återställningsprocedurer: [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).
+QA-, Director-/Gatewaydiskar är aktiva/bevarade, inte P8-mål; extern Director/
+Gatewaybackup är fortfarande separat kvarvarande ansvar.
+
+## P6: delbevis, numeriska skydd och kvarvarande acceptans
+
+### Verifierade delbevis — inte full P6
+
+Historiskt native90/90 på `190399386d93a02882d9b18a5ce5af53bb91fe23`:
+alla fyra dealers, två avkodade/hörbara/avslutade plays, samma sparade Neonrevision,
+CAS/utkast/privata medier/native administration utan iframe. Projekt/pit återställda
+med identiska hashar; browser/route-drain städade; inga mejl/betalda anrop.
+Privat `lab/data/platform-private/native-cloud-browser-evidence/7bf33ee7-35a2-470c-a202-c00299af4443/receipt.json`,
+SHA `dd67c29f73c24db234f4d079a5e5a241e43e39590eeefb95c2e40fa52faf4e20`.
+Åtta layoutbildrutor godkänner inte läppsynk. Äldre FAIL-kvitton består.
+
+På `e461ef073b63b2d1c937454bbfa31289774fcb8f`: 80/80 authkontroller över
+68 HTTPS-anrop, 22/22 verkliga login-/städ-/källkontroller och 27 städgrupper PASS.
+Admin når spel/Studio/BO, spelare nekas Studio, reader/staff-reset behåller game-only,
+lösenord/epoch återkallar gamla sessioner, saldo/historik/paritet består.
+Pending provider-cancellation är inte liveprovat av detta authprov.
+Privat `p6-shared-auth-evidence/157ef3e2-d91a-4ab9-89b1-515460988c5e/` och
+`p6-shared-auth-browser-evidence/1a6a69a9-a9b8-4a3c-94e7-79e67b9d182c/source-reattest.json`
+under `lab/data/platform-private/`; egna fixtures borttagna.
+Greeting-rehearsal på e461 har matching clip/återaktiverade tvåspelskontroller,
+men saknar explicit ended-räknare/nya hashbevis/ny mänsklig approval:
+`p6-browser-evidence-e461ef07/receipt.json`.
+
+Faktisk isolerad SQL/HTTPS/restart: 41 grupper, fyra retained-guards och 46
+oförändrade källhashar PASS. Täcker CAS/rollback/token/epoch/roller, signerad
+actor/scope, walletnonce utan dubbelkreditering, journalimport och kostnads-/QA-rollback,
+review exakt talpar/revision/roll, privat media, lokal mailpreview och kortsekretess.
+Fixturer/processer städade, inga riktiga konton/molndatabaser/mejl/betalda jobb.
+
+Fullfil `generated-bd1123e6caec51e8a232036547b0f8fc` fick Director/SDK-svar,
+Cartesia-ljud och färdigt RunPod-paket. Två game-queue/audio-ended härledda plays;
+per-play synliga frame-/ownerobservationer hann inte sparas och är okända.
+Privat `verify-final-qa/fullfile-two-play-derived-attestation-8712e00b.json`.
+cc77-run `75eaf797-9342-4e2c-8995-f3c759fade75`: 6 562 941 streambyte,
+synlig bild, hörbart ljud, faktisk spelkö-END/completed SQL-request och browsercleanup.
+Efter END avlästes provider HTTP200 CANCELLED, terminal/released/lease0/uncertain0/OFF.
+Det är avslutad speluppspelning enligt Jakobs krav, inte ett naturligt provider-
+COMPLETED-kvitto. Exakt tid för providertransition saknas; b0bc:s naturliga COMPLETED
+är bara lokalt testat. Sammansatt snäv P7-admission återanvänder dessa delbevis och
+oförändrade godkända e461-playbackbytes; full P6 och nya take-approvals förblir öppna.
+
+QA:s äldre närvarogap består: `player_probe_sessions` 17→15 på a0 och 19→18
+vid 42→37-övergången. Övriga 31 kontotabeller matchar; 24h TTL är möjlig orsak,
+men tidigare radmetadata saknas. Original FALSE/compose=false skrivs inte om.
+Senare aktuella 10/10-bevarandekvitton gör inte dessa äldre jämförelser full-PASS.
+
+### Budget och framtida prov
+
+Exakta Cartesia-/counting-priser är backlog enligt Jakob. Avgränsade funktionstester
+kan använda dokumenterat okänd USD/null och mätt usage inom ursprunglig numerisk
+budget/reservation/dispatchauktoritet. Detta är inget nollpris, verifierad faktura,
+extra testfönster eller generell produktionskostnadsapproval.
+Upprepa ingen prisinventering utan nytt konto-/tariffunderlag; extern Cartesia-
+nyckelägare saknar tillgänglig egen kontoinloggning. Privat `p6-cost-evidence-20261004.json`.
+
+Originalkampanj `f2c28b62-9ae7-4cd6-abcd-e2137f2206d6`, totaltak 10 USD inklusive
+alla försök, budgetankare
 `d1a8f8fedb96008369a9ec87091744718d03f2678a465a80d147101271f6c523`.
-Beloppet är ett totaltak, inte en tillåtelse att återställa förbrukning eller
-öka budgeten per omstart/dygn. Ett avgränsat verkligt SDK-textprov är nu utfört
-under detta originalankare: HTTP 200, `gpt-5.6-terra`, 11 input-/5 outputtokens,
-ett dispatch och ingen retry. Run `6841477f-3370-4684-93b3-69a51fc6b3fb` har
-privat actual-/kostnadskvitto i `native-p6-short-text-execute/`.
-Providerkostnaden uppskattas till **0,000082 USD** från usage/pris;
-faktura är inte verifierad. Den konservativa reservationen **5,251152 USD**
-ligger kvar; **4,748848 USD** är ännu oreserverade inom totaltaket.
-Journalen återbetalas/nollställs inte. Pending/uncertain är noll och provbarnet
-är avslutat. Detta är ett fristående SDK-diagnostikprov, inte full P6 eller
-produktens spel-/tal-/GPU-kedja.
-Separat beständig numerisk admission samt SDK-/Render-fasadaptrar har nu
-36/44/27 offlineprov PASS, inklusive faktisk SDK 7.12.1 mot simulerad HTTP.
-Root har granskat exakta filhashar och återkört 106 PASS/1 SKIP; det överhoppade
-provet använder underagentens redan verifierade och borttagna SDK-fixtur.
-Separat fasattestering och opt-in SDK-worker har dessutom 21/22 offlineprov
-PASS, återkörda av root. Workern använder faktisk product-speech/adaptive-
-kod och exakt rollprompt, signerade stage-tickets och bundna process-/SDK-
-fakta. Fasattesteringen ändrar inte ursprunglig plan, budget eller TTL.
-Isolerat SDK-källpaket och originalets privata numeriska budgetjournal är nu
-installerade för det enda textprovet. Faktiskt ägd SDK-worker/routing med
-input-/dispatch-/retry- och prisgräns samt kopplade färska fasobservationer
-återstår för produktkedjan. Adapterprov och fristående SDK-svar ersätter inte
-full P6; den betalda helhetskampanjen och produktionen är fortsatt oaktiverade.
+Historiskt reservation 5,251152/oreserverat 4,748848 USD; inget refund/reset.
+Jakob höjde testtaket från två till sex genereringar totalt, inte per omstart.
+Senaste closed39: usage 4 generationer/5 SDK/2 TTS/4 GPU, unresolved 0/refund 0/USD null,
+head `8e7f3e2ee1a31e03291da5b59c40b7d695d4a40b156170e909853c5a1c9f03a6`.
+Två av sex generationer var kvar; detta är inte ny färsk dispatchauktoritet.
+Den gamla reservationspolicyn rymde inte ytterligare 1 USD inom oreserverat 4,748848.
+Återläs faktisk journal före nytt prov; förbrukat/pending/uncertain är aldrig ”nytt”.
 
-Den avstängda QA-kopplingen går nu genom verkliga serveranrop: exakt tre
-privata routes före Vercel-ingress på enbart den separata Render-QA-tjänsten,
-aktuell spelar-/sessionsägare, färsk spelstatus och operatörens verkliga
-kampanj. Web/SDK/Render-miljöer binds separat. Director returnerar 503 om dess
-verkliga adapter saknas. 55 riktade core-prov PASS och ett Windows-symlinkprov
-SKIP; privata routerprov 35/35, senaste SDK/fas/transportprov 115 och
-budget/brygga 61 PASS. En separat QA-startfil har 15 offlineprov PASS.
-Obligatorisk regression hittade en statisk cloud-import i det avstängda
-läget; importen sker nu först efter opt-in. Det riktiga isolerade BO/Lab-
-authprovet och alla åtta nya route-/ägartester passerar efter rättningen.
-Dealer-audit med `--probe` passerar för alla fyra befintliga tillgångsset.
-Historisk läsande SSH-kontroll 3 oktober 13:26:40 UTC verifierade
-runtime `4d84bffc`, samma PID/startidentitet, exakt QA-scope och fyra avstängda
-providerflaggor. Privat råkvitto finns i `native-p6-runtime-recheck-20261003.json`;
-det är historiskt observationsbevis, inte nytt utgiftstillstånd.
-SDK-provkällor och den privata budgetjournalen finns nu i egna P6-prefix;
-faktisk helhetskörning återstår. Senaste fasläsar-/attesteringspaketet har
-38 riktade guards PASS. Faktisk SSH-/Render-/SQL-läsning på `190399` verifierar
-originalbudgetens två journalposter och äldre reservation utan skrivningar.
-QA:s kostnads-/requesttabeller är tomma, budgetpolicy saknas och kampanjlistan
-är tom; audit/schema är egna bevarade tabeller, inte nollade journaler.
-Regelbunden SDK-root/readback saknas. Moln-/providerläsare finns, men den
-fulla fasattesteringen stoppas av ovanstående faktiska runtime-/tariffgap.
-QA-tjänstens tal-/stream-/kameraflaggor är fortfarande av; det enda SDK-provet
-fick sin nyckel i RAM. Ingen full P6 eller produktionsaktivering.
+Fullfilsadmission kräver explicit belopp/policy före TTS/GPU; stream/fullfil delar
+UTC-dygnssumma. Originalets 12 min/krav 8 min kvar, klientdeadline 300 s och separat
+RunPod-TTL 180 s får inte förlängas tyst. Utgångna fönster återöppnas inte.
+Successor är append-only med föregående journalhash; inga automatiska retries,
+budgetrefunds eller nytt providerjobb vid reconnect. Gamla FAIL/manifest/tider bevaras.
+SDK-import/prepare-only/router404/WS-binary/deterministisk baseline är inte acceptans.
 
-Adresskontraktet är också implementerat bakom gemensamma policyflaggan:
-`/blackjack` visar spelet, `/game` omdirigerar med godkända query-parametrar
-och `/player-login` visar spelarentrén. BO/partner launch och callback följer
-den nya effektiva adressen. Dagens flagga-av-adresser består tills bytet.
-Spelarstatus, partner rotate/revoke/launch/credit kräver den signerade
-Render-kommandogränsen; Vercel får inte skriva saldo eller ersätta runtime-
-cancellation med en no-op. Invite/resend och nyckelskapande använder den
-befintliga Neon-identiteten. Native login/lösenordsval finns på `/studio/login`
-och `/studio/set-password`, med exakt returnTo för Studio/administration.
-Nya lösenordstokens lagras hashade och förbrukas atomiskt; äldre utestående
-råtokens kan fortfarande användas en gång. Login läser befintlig signer/roll/
-fingerprint/epoch och använder en gemensam beständig begränsning av försök.
-Logout/lösenordsbyte återkallar Lab-sessioner/handoffs. Mejl annonseras bara
-med serverkonfigurerad sändare; återställning avslöjar inte kontots existens.
-Partnercredentials och spellänk visas i en tillfällig separat resultatvy,
-aldrig listmetadata/storage, och rensas vid omladdning/gruppbyte/logout.
+Nytt liveprov kräver aktuell källa/Gitblobs, immutable basimage, färska worker/router/
+entry-manifest, faktisk SDK 7.12.1/readback och separata Render/Web-child/SDK-envbindningar.
+Exakt serverägd session/runda/sparad Neonpolicy, request/job/mediahashar och ägargates
+måste avse samma körning. Tre cookieägda kontroller före connect/play/efter END;
+en produktspelare/WS/video genom posegrind/talkö, presenterade frames/hörbart ljud
+och två verkliga playback-ACK. `decoded-product-game-queue`, faktisk integration/
+laddad källa och cleanup/cancel/terminal/drain krävs; inga ersättningswrappers.
+Full P6 omfattar också text/bild/STT, fullfil/stream, SQL/HTTPS/restart, auth/revoke
+och verklig invitation/reset där de återstår. `fullP6Passed` får inte sättas true tidigt.
 
-57 riktade konto-/auth-/partner-/UI-prov samt Lab-TypeScript PASS.
-Aktuellt verkligt isolerat PostgreSQL-/HTTPS-/restartprov PASS: 41
-acceptansgrupper och 46 oförändrade källhashar, plus runnerguard. Fyra rena
-retained-media-guards PASS. 85 riktade
-tal-/journal-/Blob-/import-/operatörsprov PASS. SQL-provet täcker sparad revision/CAS,
-konkurrens/rollback, native login/invite/resend/engångslösenord, logout/roll-
-revoke, signerad actor/scope och walletnonce utan dubbel kreditering.
-Fixtureprocesser, certifikat och databas städades. Inga riktiga konton,
-providermejl, molndatabaser eller betalda jobb användes.
+### Kända öppna kvalitetsfrågor
 
-Native röstgranskning binder nu exakt text/audio/video/preview/index och
-kalibrering till sparad CAS-revision och aktuell granskarroll. Äldre obundna
-eller ändrade medier får ingen automatisk approval. Fyra mejlmallar visas
-lokalt utan iframe eller mejlanrop. Skoöversikten visar endast SQL-projicerade
-regler/räknare, aldrig kortordning, hålkort eller spelaruppgifter; korrupt
-JSON stoppas och högst 500 tabeller visas med explicit delresultat. Dessa
-flöden inklusive negativa roller, ändrat mediepar och restart PASS i verklig
-isolerad SQL/HTTPS. Den äldre direkta betalda röstpreviewn stoppas före
-disk/provider i gemensamt/native läge. 52 kombinerade fokuserade BO-/röst-/
-readout-/UI-prov PASS; detta är inte mänsklig läppsynkacceptans.
+- Ny mänsklig läppsynk-/takeacceptans, råfilmernas kortkontakt
+  (`calibratedContact` kan vara false), full P6 och naturligt live-provider-COMPLETED.
+  Idle-observation `Film ended without a presented frame` är en olöst medie-/P6-lucka.
+- Fysisk mikrofon/kamera, mobil/Safari och riktig mikrofon→svar. Kameraflaggan är
+  ON i produktion; observation/transcription/vision gav200/enabled och ett syntetiskt
+  translationsprov gav förväntat svar, kostnad okänd. Det är inte fysisk acceptans.
+  Inspelning är OFF vid sidöppning; samtycke/behörighet krävs, bilder kräver Luna/Terra.
+- Latens/kallstart: historisk varm stream ready 4,524/start 9,803/första bild 9,809/END 12,703 s;
+  tidigare ready 52,3 s är möjlig kallstart, inte fastställd providerorsak.
+  BO/sessionfördröjningen ovan är separat, utan rotorsaksbevis.
+- Produktionsmail och full användbar invitation/reset. Ett enda godkänt QA-invite
+  3 oktober 15:31:35 UTC gav emailSent/delivered men hamnade i Skräppost.
+  QA-testkontot/tokens raderades före STOP; invitationen får inte användas.
+  Ingen recreate/resend/nyinvite följer automatiskt. Resend Free/domänverifiering
+  och QA-only sender/key-konfiguration är inte produktionsacceptans.
+  Privata `mail-resend-qa-connect/` och `mail-resend-qa-cleanup-confirmed-result.json`;
+  cleanup-SHA `1f3978ba4e58bab9e22e75e32fe8357911ba34c2b17b2e97809c6a9bbcabeb23`.
+- Historisk Next.js-byggvarning GHSA-vcvr-r3jv-pc5j noterades; ingen användarstyrd
+  next/og-SVG-route hittades då. Aktuell beroende-/advisorystatus är inte omverifierad;
+  ingen automatisk audit fix eller beroendeändring ingår här.
+- Full zonlagringsacceptans, startsidesflimmer och extern Director/Gatewaybackup
+  kvarstår där de inte täcks av avgränsade prov. Datorintro cleanup är verifierad;
+  mobil/surfplatta laddar inte introvideor. GitGuardian har sex öppna incidenter och tre locationluckor.
 
-Talets aktiva fullfil-/stream-/sessionscallers är kopplade till Neon-journalen
-under gemensamma policyflaggan. Nya fullfilspaket använder befintlig privat
-Blob, exakta text-/audio-/video-hashar och ägarbunden färdig SQL-metadata.
-Enbart egen temporär OS-cache används och städas; detta läge läser/skriver
-inte beständiga paket- eller budgetfiler på disk. Saknad journal eller
-Blobadapter stoppar jobbet. Den befintliga budgetpolicyn måste redan vara
-installerad/importerad, aldrig seedas med noll förbrukning. Nedstängning sparar
-stream-cancellation innan journalens databasanslutning stängs.
+## Funktionella regler som aldrig får komprimeras bort
 
-Förberedelseverktygen kräver frysta exakta källbytes/hashar för Studio/BO-
-policy och gamla kostnadsjournaler, stoppade skrivare och dränerad worker.
-Osäkra/förbrukade jobb bevaras och får inte återbetalas eller skickas om.
-Separat additiv `003-operator-speech-qa.sql` bevarar operatörens kampanjer,
-grind och förbrukade försök; 001/002 och product-v1 är oförändrade. Den explicita
-frysta journalimporten binder scope/källchecksumma och en atomisk SQL-receipt.
-Den bevarar budget, UTC-dygnsreservationer, opaka requestnycklar och gamla
-försök med rå källhash och utan påhittad actor. Saknad aktiv grind förblir
-avstängd. Exakt återkörning skapar inga dubletter; senare förbrukning eller
-ändrad lease blockerar import. Ett fel vid sista receipt rullar tillbaka alla
-kostnads- och operatörsrader. Färdiga paket kräver separat exakt privat
-Blob-metadata och verifierade bytes; inga publika metadata fabriceras.
+Render äger kort/shoe/slump/wallet/rundor/resultat, sessionägarskap och cancellation.
+Studio/Vercel sparar revisionsstyrd Neonpolicy, inte osparade utkast eller saldo.
+En kandidat vid credentialresolver; collision/pending/fel lösenord ger generiskt
+avslag utan fallback/klientroll. Admin får spel+Studio; superadmin är alias,
+reader/staff är game-only. Playerlogin rensar gamla BO/Labcookies.
+BO-audience/live roll/fingerprint/epoch och Origin/Host/JSON/CAS/audit består.
+CRAIG-reset och native playerpasswordbyte behåller rätt identitet/saldo/historik;
+Rendercancel kvitteras före OK. Självrollbyte/radering och sista-admin-race skyddas.
+Engångstokens förbrukas atomiskt; hemliga partnerresultat är tillfälliga, inte listmetadata.
 
-Read-only Neon-kontroll visar att 001/002 saknas i drift; även 003/004 krävs före
-aktivering. Ingen Studio-migration eller fryst dataimport är genomförd i drift.
-Render-API och SSH fungerar nu: Jakob godkände
-registrering av datorns befintliga publika Ed25519-nyckel på sitt Render-konto.
-Ingen privat nyckel har överförts, ändrats eller skapats. Read-only pwd på
-produkten PASS. Läsande export finns, men är uttryckligen **ofryst**: 129
-journalfiler, 18 terminala GPU-jobb, 46 streamrequestkvitton samt
-tre operatörskampanjer med sju försök och ingen aktiv grind. Rå BO- och
-socialpolicyfil saknas; effektiva standardvärden har separat proveniens och
-får inte presenteras som exporterade sparade filer. Importen kräver fryst
-fullständighet och verifierade källor före byte och avveckling.
+Alla fyra dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
+kalibrering/acceptans; ändrad audio-/videohash ogiltigförklarar visuell approval.
+Ingen approximate-duration-match, gammal talvideo till ny text eller munoverlay.
+Audit `pipeline/audit-dealer-sync.mjs --probe`, obligatoriska regressioner och
+två rehearsalplays per dealer krävs för media/spelarändring, inte bara hashar.
+Gamla BO-videopreviews är tysta historikklipp, inte lipsyncmaterial.
+Observation följer faktisk spelflik utan andra playback; valt/laddat ≠ spelat.
+Originalpolicy `legacyClipPolicy` och Astrid `mediaPolicy/idlePolicy` består;
+gammal BO-tilldelning är read-only410 och import kräver explicit exakt match.
+Privata chattar, secrets och signerade medielänkar hör inte hemma i publika logs/takes.
+Neon/Blob-fel stänger med fel, aldrig diskfallback/fröprojekt/nollbudget.
+Aktiva tools/test/fixtures/pipeline/web/media/kalibreringar/OpenClaw-state består.
+Svarskatalog/automatiska spelararkiv är inte infört; kostnadsjournaler gallras inte.
 
-PostgreSQL-underhållsläget `studio-export` är implementerat och isolerat
-verifierat men inte aktiverat i drift. Det kräver explicit avstängd gemensam
-policy och fullfils-/streamtal, startar inga Web-/Lab-barn och ansluter inte
-till databasen. Exakt health visar läge/noll barn/skrivare/provideranrop;
-övriga routes ger 503. Frysta bytes hämtas privat via SSH och extern
-GPU-dränering måste verifieras separat. Äldre SQLite-export består.
+GPU-shutdownrättningen börjar cleanup före gatewayväntan och signalerar båda barnen.
+15 s naturligt provideravslut +15 s cancel +30 s journalmarginal, sedan högst 5 s HTTP
+och 10 s lagring; barnets tvångsgräns 80 s/Render 90 s. Timeout lämnar återhämtningsbar
+journal/reservation och felstatus, inte för tidigt släppt shared lease.
+Isolerad Linuxkedja 4/4 och close 38/38 PASS, inklusive lease 0 före båda flushar/1 efter.
+Zonbilden är registrerad privat PNG 1080×1920/1 628 428 byte,
+SHA `eda87f9e877b00dbd2f02479db44ae5f41e2f182563825304906880ceee0088a`;
+fel molnkälla ger 503 utan lokal fallback. Export 290×104 var pixelidentisk med befintlig zon.
+OpenClawproxy tillåter endast avsedd toppnavigation till exakt /openclaw[/];
+API/fetch/iframe/mutation/WS/Origin/Host/auth/pairing behåller separata kontroller.
+Dessa prov ändrade ingen zonrevision, pairing, speldata eller betaldispatch.
 
-Det sparade projektet har 18 aktiva bindningar. Tolv matchar exakt dagens
-lokala och inventerade Render-register. Sex bundna UUID saknas i båda:
-`891c432a` den 29 september ersatte klipp med samma filnamn/familj/roll men
-andra bytes, hash och storlek. Det sparade projektet behåller de äldre
-referenserna. De sex exakta originalvideorna är nu återfunna i `365f283b`:
-6/6 matchar originalhash/storlek och har inget ljud. Detta är identitetsbevis,
-inte ny visuell acceptans. Kodgrunden för bevarande i privat Blob/Neon och
-en strikt resolver för de sex oförändrade bindningarna är verifierad i riktig
-isolerad PostgreSQL/HTTPS/restart: scope, oföränderlighet, exakt återkörning,
-nekad korrupt tuple och beständighet efter omstart PASS. Alla sex original är
-nu uppladdade som nya immutabla privata Blobobjekt: totalt 8 262 169 bytes,
-full återläsning/hashkontroll PASS. Det privata kvittot
-`retained-bank-blob-receipt.json` har `blobReadbackVerified:true`.
-Ingen retained-media-SQL/import i drift är ännu genomförd.
-Liknande filnamn får inte automappas till ersättningsbytes.
+## GitGuardian — nuläge och historisk triage
 
-Den äldre Neon-QA-databasen har 25 befintliga konton och ska inte återanvändas
-för ett tomt importprov. En separat QA-databas och begränsad roll är nu
-skapade. Den nya databasen är nu initierad med checksumverifierad product-v1,
-Studio 001/002/003, en syntetisk administratör och tre neutrala dokument.
-Spelar-/kostnadsstate är tomma. De sex originalens exakta mediemetadata är
-nu registrerade enbart i nya QA med sex auditposter; exakt återkörning skrev
-noll rader. Den aktuella projektkopian med alla 18 verifierade bindningar är
-sparad där via explicit CAS, med oförändrad neutral BO-/socialpolicy. Privat
-`native-qa-project-replica-imported.json` är kvitto för QA-kopian, inte fryst
-produktionsimport. Produktions- och äldre QA-rader är oförändrade.
-Render-QA är återstartad på exakt `ae54a61b`, nya databasen/scope och separat
-datarot. Faktisk health/konfiguration PASS; gamla QA-filer och en gammal öppen
-reservation har samma hash och mtime efter återstart. Tal-/stream-/kamera-
-providers är avstängda. Två separata Vercel-QA-projekt är READY på samma SHA.
-Den exakta Lab-QA-domänen behövde registreras som projektets produktionsdomän
-eftersom Vercel förkortade standardnamnet; native login ger nu 200 och auth-
-methodkontrollen 405. Standard-SSO och befintliga projekt/domäner består.
-Bankprovet är separat från aktuell native-browseracceptans (90/90 ovan);
-full P6 och produktionsaktivering återstår.
+Färsk läsning via befintlig MCP, återgiven av MERGE 5 oktober: avsedd workspace
+795524/source 30689542/repo `Jakeminator123/github-work` verifierad.
+Komplett incidentlista: en incidentsida/elva locationsidor, fem IGNORED och sex
+TRIGGERED. Locationtäckning partial för 37828691/37830671/37862641.
+Safe kvitto: `lab/data/platform-private/gitguardian-read-20261005.json`.
+GitHub check-runs/suites/status på 91d0c4d9 är komplett; GG-suite queued/inga runs.
+Grön vanlig CI/queued/neutral/skipped är inte incidentfrihet.
 
-Den första riktiga native-API-kontrollen hittade stripad Next-basePath och
-olika transport-/publik host genom frontendens Vercel-rewrite. En gemensam
-serveradapter återställer bara exakt konfigurerade Studio-namespaces/origins
-för auth, administration, projekt, socialpolicy, video och clip-controls samt
-SSR-sidor. Cookie, body, Origin, roller, CAS och transaktionskontroller består;
-främmande/mixade hosts, protokoll och actions nekas. 63 relevanta prov och
-Lab-TypeScript PASS; två oberoende läsgranskningar har inga kvarvarande
-materiella fynd. Rättningen är levererad i `6efb50ee` efter full obligatorisk
-hook och alla tre GitHub-kontroller PASS. Det sista riktiga isolerade SQL-/
-HTTPS-/restartprovet passerade åter alla 40 grupper och fyra retained-kontroller;
-44 källhashar består och separat städkontroll fann noll fixturkataloger/processer.
-Nya QA-molnbyggen på samma SHA är READY/LIVE. Login-boot och session/overview
-ger förväntade 200/401 på båda canonicaldomänerna. Full browseracceptans
-stoppades efter fyra lyckade åtkomstkontroller: Nexts SSR-redirect dubblerar
-basePath till `/studio/studio/login` och ger 404. Inget login-
-POST, projekt-/pitbyte eller provideranrop gjordes i det stoppade provet.
-SSR-rättningen använder nu apprelativ `/login` och behåller publik `returnTo`;
-även Lissabons gamla redirect ger ett enda prefix. 24 fokuserade prov, inklusive
-fem som kör de verkliga SSR-sidorna/guards genom installerad Next/SWC, samt
-Lab-TypeScript PASS. API- och klientnavigeringens fulla adresser består.
-SSR-rättningen är pushad i `7fe032a8` efter obligatorisk full regression;
-alla tre GitHub-kontroller PASS. Båda nya Vercel-QA och Render-QA är READY/LIVE
-på samma SHA. Alla 14 verkliga bootkontroller PASS, inklusive exakt enkel
-loginredirect och följd login-GET på båda origins. Nästa fullprov stoppades
-åter efter fyra godkända åtkomstkontroller: formuläret kunde skickas före
-React-hydration som browserns vanliga GET. Ett separat anonymt browserprov
-bekräftar kall GET och `user`/`pass` som FormData-namn, medan JS senare kopplas
-in utan fel; inga nya credentials skickades i diagnosen. Den tidigare
-requestens query är redigerad ur underlaget och kan inte rekonstrueras.
-
-Authformulären använder nu explicit intern POST, initialt spärrade fält/knappar,
-laddningsstatus och noscript-information. Fallback nekas med 415 före auth/mejl;
-alla 12 native administrationsformulär använder också POST. 38 riktade prov
-PASS, inklusive installerad React/SWC-SSR och faktisk headless React-hydration,
-kall Enter/submit samt JSON-POST efter hydration. Lab-TypeScript PASS.
-Enbart den nya QA:s syntetiska operatör har fått bytt lösenord och epoch+1;
-egna sessions-/handoff-/lösenordstokens är återkallade, signer och övriga
-identiteter består. Rättningen är levererad i `b5c0ddc7` efter full obligatorisk
-hook och alla tre GitHub-kontroller PASS. Render och båda nya Vercel-QA är
-LIVE/READY på samma SHA; alla 14 bootkontroller och faktisk kall/hydrerad
-formulärkontroll på båda origins PASS utan credential-submit.
-Två fullprov passerade 76 kontroller: login, sex administrationsgrupper,
-14 sektioner, åtta readouts, utkast/CAS-konflikt, fyra Render-revisionskvitton
-och privata originalklipps HEAD/Range/fullhash. Båda stoppades därefter i
-Vera-rehearsal. Första provets för snäva nätverksguard blockerade det egna
-spelaruppslaget och de aktiva typsnitten; andra provet hade noll blockerade
-anrop men saknade förväntat konfigurationskvitto. Ett avgränsat faktiskt
-molnprov bekräftade samma sparade Neon-revision på båda API-vägar, men gamla
-`lab/project.json` i legacy-kvittot. Native-adaptern anger nu korrekt källa;
-23 fokuserade prov PASS, nytt fullprov kräver den nya leveransen.
-Projekt-/pitinnehåll återlästes efter exakt CAS-återställning
-i båda proven; providers användes inte. Oföränderliga FAIL-kvitton består.
-Ingen komplett browseracceptans eller produktionsaktivering är verifierad.
-
-Fullfilsvägen hade ett separat kostnadsgap: request-/submitjournalen skapade
-ingen monetär reservation före TTS/GPU. Additiv 004 och en requestägd,
-beständig reservation är implementerade; beloppet ska anges explicit och
-delas i dygnssumman med streamkostnader. Tidigare kostnader bevaras och inga
-legacy-fullfilsrequests får fabricerade nollkostnader eller återbetalningar.
-83 fokuserade journal-/service-/provider-/molnprov PASS. Faktisk separat lokal
-PostgreSQL/restart gav 15/15 grupper plus tre isoleringsguards PASS: båda
-admissionsordningarna/samtidighet, UTC-dygn, minskat tak, oföränderlig policy,
-tappad faktisk COMMIT-kvittens, gamla oreserverade nycklar och fenced ägare.
-Verkliga serviceanrop nekas före provider vid saknat belopp/policy/budget
-eller försenad ny auth. Åtta minuter måste återstå av ursprungliga tolv;
-300 sekunders maximal klientdeadline och 180 sekunders separat RunPod-TTL
-täcks även vid osäker POST. Alla 13 källhashar består; egen databas/process
-är städade. Det breda uppdaterade SQL-/HTTPS-/restartprovet gav 41/41
-grupper samt fyra retained-kontraktsprov PASS. Alla 46 källhashar är
-oförändrade; separat kontroll bekräftar noll egna fixturkataloger.
-Totaltak 10 USD är godkänt och ett litet SDK-prov är kvitterat enligt ovan;
-full tal-/GPU-/restartacceptans och produktionsaktivering återstår.
-Migration/import seedar ingen fullfilspolicy i den äldre förbrukade
-produktionsjournalen; en explicit verifierad policyadoption krävs där.
-
-Native mejladaptern kräver nu både Resend-nyckel och explicit
-`CROUPIER_STUDIO_MAIL_FROM`; den tidigare hårdkodade avsändaren är borttagen.
-Fyra obetalda adapterprov PASS, med exakt mottagare/tokenorigin och nekad
-osäker leverans utan automatisk retry. Egen sändardomän, QA-nyckelkoppling och
-ett native invite med Resend-status delivered/Skräppost är verifierade nedan;
-användbar invitation efter cleanup och full reset-acceptans återstår.
-Aktuellt Lab-produktionsbygge/TypeScript PASS med 50 sanerade traces och
-noll kvarvarande privata referenser. Administration/authspår innehåller alla
-fyra SQL-versionerna. Dealer-audit --probe PASS mot oförändrad baseline;
-befintliga mänskliga läppsynkgap kvarstår.
-
-Den privata produktionsimporten kräver normaliserade hashkontroller för
-kritiska beroenden/SQL/aktiva manifest och Blob-index mot levererad main-SHA.
-Den aktuella kritiska källmängden är 132 filer; gamla planer ska inte återbrukas.
-87 privata importguards och 36 paritetskontroller PASS utan anslutningar.
-Bytesverktyget kräver alla fyra aktuella SQL-checksummor och elva kostnadstabeller;
-19 fasguards och 13 runtimeparitetsprov PASS. Planberedningen kräver explicit
-main-SHA och gör inget vid import. Den nya policyn för en redan förbrukad
-journal har en separat preparer och avgränsad injicerad executor med elva
-obetalda guards. Den ändrar endast en ny policy, aldrig gamla kostnadsrader,
-och saknar ännu verklig fas-/anslutningsadapter. Alla produktionsskrivande
-molnfaser är fortsatt spärrade tills full faktisk P6-acceptans finns.
-Alla 18 aktiva videobindningar ska fullåterläsas/hashas före SQL-skrivning.
-Samma skarpa läsare har nu fullverifierat alla 18 i nya QA mot Blob med
-tom egen OS-cache, inklusive sex original; noll SQL-/provider-skrivningar.
-Efter import krävs exakt sex-medieparitet, oförändrade konton/spelrader och
-en andra kostnadsimport som skriver noll rader. 86 privata spärrprov PASS
-utan anslutning eller skrivning. Återupptagning binder originalpayloaden och
-separata färska driftbevis; originalreceipt, källtid och kostnader skrivs inte om.
-En fullbordad import kan endast återkontrolleras med läsanslutning och ett nytt
-oföränderligt paritetskvitto för tre dokument, sex registerposter, 18 mediefiler,
-kostnads-/operatörstabeller och skyddade spel-/kontorader. De nya privata
-paritetskraven omfattar även 004:s båda fullfilstabeller; äldre kvitton gäller
-sin tidigare schema- och källversion. Sex tidsgränsprov
-nekar även bevis som hinner gå ut under ett awaitat driftsanrop; 17 ytterligare
-freeze-/recovery-/providerprov PASS. Ingen importplan/apply har körts mot drift.
-Den privata readonly-kontrollen efter driftstart binder separat oföränderlig
-runtime-anchor och observerad aktuell journal, två databasjämförelser och
-faktisk fullavläsning av 18 klipp mellan dem. 13 offlineprov PASS; den förnyar
-inget childless-/frysningsbevis. Produktionsdriverns mutationer är uttryckligen
-blockerade tills verklig full P6-acceptans finns, inklusive mejl och AI/ström.
-
-RunPods faktiska endpoint-health visar kö/pågående jobb 0/0, men idle/ready 1/1.
-Den befintliga konsolen visar samma Croupier-endpoint under Jakobs profil,
-min workers 0, max 1, idle timeout 5 s och en individuell idle worker.
-Detta är inte ett dräneringsbevis. Jakob uppger att befintliga nycklar kan
-tillhöra Emil; inga nycklar eller kontoövergripande inställningar ändras.
-Färsk endpoint-/processkontroll krävs vid frysningen. Jakob har valt sitt
-befintliga **Resend Free**-team; ingen betald mejlplan är aktiverad.
-`scoutgaming.tech` är verifierad i Resend, region Irland. Resend visar **Verified**
-3 oktober 14:11 svensk tid, kontrollerat i dashboarden 14:19.
-Exakt tre DNS-poster är tillagda: DKIM TXT `resend._domainkey`, MX `send`
-med prioritet 10 och SPF TXT `send`. Alla fem ursprungliga zonposter är
-hashverifierat oförändrade; de nya värdena är också återlästa i publik DNS.
-Första DNS-kvittot stannade på MX-adressens kanoniska slutpunkt; läsande
-kontroll bekräftade rätt värde och en separat fortsättning lade endast till
-saknad SPF, utan återförsök av redan skapade poster. Privat slutkvitto
-`mail-resend-dns-finish-result-20261003.json` har status `three-records-verified`.
-Färsk OAuth/callback är färdig och integrationen är installerad **endast** i
-QA Studio `prj_aPooGMUUKTGbyKlp0yEZUrEZtUmh`, configuration
-`icfg_33VhY6BuYW1NJHPZFxLYATRl`. Actual readback 14:57:48 UTC verifierar
-integrationsägd krypterad `RESEND_API_KEY` och explicit
-`CROUPIER_STUDIO_MAIL_FROM=no-reply@scoutgaming.tech`; värden/nycklar sparas
-inte i Git. QA:s Vercel-targetnamn `production` avser det isolerade QA-projektet,
-inte produktens drift. Den nya Studio-deployen ovan ärver konfigurationen.
-Privat `mail-resend-qa-connect/sender-result.json` är konfigurationskvitto.
-Jakobs uttryckligen godkända **enda** testmejl skickades genom native
-`POST /studio/api/admin/users/invite`: 3 oktober 15:31:35 UTC, HTTP 200,
-`emailSent:true`, ny inaktiv reader efter verifierad frånvaro före testet.
-`mail-resend-qa-connect/mail-test-{intent,result}.json` binder det faktiska anropet;
-initialt result anger ännu ingen leveransbekräftelse. Separat Resend-dashboard-
-kontroll visar email `01a10264-60cd-7c83-9d28-e3c30bae8644` som **delivered**.
-Snäv sökning i rätt inloggat Gmailkonto hittade exakt avsändare/ämne i
-**Skräppost**, daterat 3 oktober 17:31 svensk tid (=15:31 UTC). Body/token
-öppnades inte och inga mailboxändringar gjordes.
-Den tidigare beställda QA-cleanupen hann klart före STOP: ett `users/remove`,
-HTTP 200/ok, GET 15:47:37 UTC saknat konto och samma hash för enda kvarvarande
-QA-identitet. API:s `active:0` är `(hash IS NOT NULL)::integer`, alltså inaktivt;
-den atomiska raderingsvägen tar även bort identity-tokens/sessioner/handoffs.
-Privat `mail-resend-qa-cleanup-confirmed-result.json`, SHA256
-`1f3978ba4e58bab9e22e75e32fe8357911ba34c2b17b2e97809c6a9bbcabeb23`, är cleanupkvitto;
-första preflighten nekade boolformatet utan removeförsök och är också bevarad.
-Den skickade invitationens token ska därför inte användas. Ingen återskapning,
-resend eller nyinvite efter STOP; full invitation/reset-acceptans är fortsatt öppen.
-Produktion/Render har inte fått mejlnyckeln. Inga fler betalda prov eller
-budgetåterställningar följer automatiskt av mejlkonfigurationen/SDK-textprovet.
-
-Kodleverans [58536d63](https://github.com/Jakeminator123/github-work/commit/58536d63cc82d2c17936437aa784b2310b599a86)
-är pushad på GitHub main och alla tre CI-jobb PASS. Vercel-frontend är READY.
-Tidigare [c667aa22](https://github.com/Jakeminator123/github-work/commit/c667aa22205fba9e872e744cfe1aba2add3adf84)
-är pushad på main efter full hook och alla tre CI-jobb PASS. Vercel-Lab är
-nu READY för denna leverans; lokal traceguard/build PASS med 50 sanerade
-traces. Tidigare [3a5f0517](https://github.com/Jakeminator123/github-work/commit/3a5f0517db5f7f74d494e742f6a0401ed551bb8a)
-är pushad efter full hook med de 40 SQL-/HTTPS-/restartgrupperna ovan,
-röstgranskning, mejl-/skoöversikt och childless PostgreSQL-underhållsläge.
-Alla tre CI-jobb och båda Vercelbyggen för leveransen PASS/READY.
-Ett kandidatbygge hittade en legacy-middleware-fixture som ärvde
-nativeflaggan. Testmiljön anger nu båda flaggorna explicit av; alla 31
-frontendtester PASS även när omgivande native-/Neonflaggor är på. Rättningen
-är levererad i `ae54a61b` efter full obligatorisk hook och alla tre CI-jobb PASS.
-Den publicerade flagga-av-koden är inte ett produktionskällbyte.
-Lab-TypeScript samt lokala Lab-/frontend-produktionsbyggen PASS. Privata env,
-lokala databaser, QA-underlag och agentstate har noll referenser i de 50
-kontrollerade lokala traces. Spelmediers aktiva
-index/bank/speech-metadata är fortsatt inkluderade. Dealer-audit med --probe
-PASS för baselinen; detta är inte mänsklig läppsynkacceptans.
-
-Riktad städningskontroll: iframe/`BackofficePanel` och gamla BO-routes är
-fortfarande aktiva när nativeflaggan är av; de raderas efter verifierat
-källbyte. `StudioPage`/`Studio` används av sex äldre/avancerade routes,
-inklusive tree; hela komponenten är därför inget bevisat oanvänt raderingsmål.
-Ingen ny integration refererar GitLab, Jira eller Supabase. Aktiva spelklipp,
-konton/saldo, kostnadsjournaler och OpenClaw-state har inte rensats. Ingen
-devserver har startats; SQL/HTTPS-provet var en kortlivad isolerad fixture.
-
-Jakobs extra städfråga: `services/test` och `services/test/fixtures` finns inte.
-De faktiska mapparna `services/astrid-gpu-worker/gateway/test` och
-`services/astrid-gpu-worker/tests` används av CI/testskript och manuella
-browser-/benchmarkverktyg. Fyra Node- och fyra Python-filers syntax PASS.
-Rootens `test/fixtures` har sex spårade filer: fem JavaScript-fixtures används
-av auth/server/SQL/stream/camera-/Lab-tester; HTML-filen är manuell syntetisk
-QA utan verifierad ersättare. `test/tools`, `test/ttols`, `test/web` och motsvarande
-vägar under `services/test` finns inte. `tools` och `web` är separata mappar i
-repo-roten, inte under `test`. Inget obsolet raderingsmål hittades; allt behålls.
-
-Jakobs nästa önskemål är en granskad svarskatalog: frågor/text och valda bild-/
-ljudbilagor kopplas till exakt svarstext/audio/video och kategorier som
-hälsning, komplimang, spelregler och tid. Rekommenderad minsta utbyggnad är
-explicit sparning av en Studio-/QA-kandidat, först från färdiga fullfilspaket:
-bytes i samma privata Blob; sökbar text, scope/ägare, ursprung/request, exakt
-paketrevision/hashar, kategori, kontext och granskningsstatus i Neon.
-Återanvändning kräver godkänt biblioteksexemplar och aktuell spelpolicy;
-namn, aktuellt klockslag, rundor och saldo får inte återanvändas globalt.
-Streaming har ännu inget färdigt AV-arkiv och kräver senare exakt capture,
-aldrig betald fullfilsfallback. Ingen automatisk inspelning av alla spelare
-eller ny katalogimplementation är införd. Avvisade/retired biblioteksbytes
-kan tas bort efter referensprov; kostnads-/requestjournaler ska alltid bestå.
-
-Läsgranskningen fann ett återspelningsfel när en signerad body fördröjdes
-förbi nonce-städningen. Rättningen återkontrollerar signaturens tidsfönster
-efter body, auth, låsväntan och SQL före mutation. Samma obetalda repro ger
-nu 403 och en enda originalkreditering; sex riktade kommandoprov PASS.
-Rättningen ingår i leverans `c667aa22` ovan.
-
-Föregående grundkodsteg 3 oktober: Neon-/jobbjournalgrund samt native BO bakom
-**avstängd** `CROUPIER_STUDIO_NATIVE_ADMIN`. Då var läget cirka 40 % av den nya
-sammanslagningen, inte live-cutover. Tre agentdelar integrerades på main:
-`web/storage/studio-{contract,repository}.mjs`, `ops/neon-studio/001/002` och
-migrationsrunner; `web/postgres-speech-journal.mjs`; native komponent och
-`lab/lib/studio-{admin-api,admin-data,native-auth,native-runtime}.mjs`.
-Native routes finns för admin och auth/session; flagga-av ansluter aldrig DB
-eller skriver något. Påslagen flagga kräver explicit miljö/workspace, verifierat
-product-v1 och båda Studio-migrationerna. Saknad sparad administration/fel DB
-ger fel, aldrig seed, iframe eller diskfallback i native-läget.
-Samma BO JWT/opaque Lab-session används med live roll, passwordfingerprint och
-auth_epoch; inga nya lösenord/OAuth/konton har skapats i drift. Reader/staff får
-endast sina BO-rättigheter, inte därigenom Studio-projekt-/medieskrivning.
-Exakt login-returnTo `/studio/administration` är tillagt utan generell URL-allowlist.
-UI återvaliderar sessionen, använder endast annonserade handlers, sparar med
-strängrevision/CAS och kastar inte äldre formulärutkast tyst efter omladdning.
-API-grunden har säkra errors, Origin/Host/JSON-gräns, explicita specialgates och
-serverägd actor/scope. Partnerlistan väljer inte credential-kolumner.
-
-Produktionsaktivering kräver fortfarande hela återstående P2–P6: aktuell
-fryst import/paritet, exakta aktiva mediereferenser och riktig transport-/
-dealeracceptans. Aktiva journalcallers är verifierade isolerat, inte i drift.
-Nuvarande produktdrift använder
-fortfarande bo.json/Studio-disk tills det samordnade källbytet genomförs.
-Den aktuella isolerade SQL/HTTPS-verifieringen ovan ska inte upprepas som
-förstudie eller förväxlas med produktions-/GPU-/mänsklig acceptans. Byt
-källa samordnat och ta sedan faktiskt bort ersatta kodvägar/diskberoenden.
-Förbrukade kostnadsjournaler
-ska importeras, aldrig återinitialiseras. Ingen live-migration, moln-env-ändring,
-disk-/Blob-radering eller betald provkampanj har gjorts i detta kodsteg.
-
-Verifiering av föregående grund: 90 riktade prov PASS (44 lagring/journal och
-46 native API/auth/data/runtime/UI), TypeScript och Next-produktionsbygge PASS.
-En tidig serverbundlingskrasch reparerades: pg-loadern är lazy och native
-schema-check läser uttryckligt spårade SQL-källfiler, inte webpack asset-URL:er.
-Byggkvitto visar product-v1 samt 001/002 i native admin-routens file trace.
-Det tidigare PostgreSQL-/restartprovet (15 PASS) är äldre; aktuell
-SQL-/restart-/HTTPS-verifiering för fortsättningssteget anges ovan.
-Ordinarie full hook PASS och omfattar nu även de nya testerna. Kodleverans
-`1efcbb9c011893ae9aad03bd317cd33833655e5d` är verifierad på GitHub main.
-Vid leveranskontrollen var två av tre [CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37080063154)
-gröna och dealer-regression fortfarande igång; frontend var READY och
-`croupier-lab-ui` BUILDING för samma SHA. Kontrollera aktuella slutstatusar innan
-nästa driftsteg. Native-flaggan är fortsatt avstängd; publicerad kod är inte
-live-cutover och ingen produktionseffekt ska härledas från enbart fixturprov.
-Jakob bad att stänga Backoffice-webview och eventuell devserver: CUA kunde inte
-starta (kernel-sökväg), så flikstängningen är inte bekräftad. Read-only kontroll
-visade även efter testerna inga Croupier-nodeprocesser eller lyssnare på
-4173/4179/4188/4190/4191. Ingen
-ny devserver startas; andra projekts/verktygens processer lämnas ifred.
-`test/` och `pipeline/` är inte raderingsmål i sin helhet: vid inventeringen
-fanns 107 respektive 119 spårade filer, med många aktiva CI-/mediaanrop. Ingen
-av dem har blindrensats. Befintlig John-handoff räcker för sömlös fortsättning.
-
-Jakob har nu preciserat UI:t: Dealer & klipp, Backoffice och OpenClaw som tre
-huvuddelar. Den faktiska startsidan använder `LabStudio`; dess Astrid-menyer
-var kvar även efter föregående städning av den andra `Studio`-komponenten.
-Fokuserat dealerskal är ombyggt; gamla event-/simulatorvyer flyttas inte in.
-Astrids idle/familjer/Probe består; andra dealers får sina egna exakta register
-och ärver ingen Astrid-policy. Probe-textprov, genererad film och faktiskt
-spelad film ska skiljas åt. Bakgrundszonernas preview är inte spelintegration.
-Den lokala Backoffice-menyn återställs i sex grupper med alla 14 funktioner;
-dess befintliga backend/iframe består till native API-/lagringsersättningen.
-OpenClaw blir en fokuserad autentiserad portal till den befintliga dashboarden.
-Ingen devserver, modell-/GPU-ändring eller generell Render-omstart aktiveras.
-Dealer-UI och OpenClaw har byggts parallellt; navigation, Backoffice-gruppering,
-guide och docs är integrerade. Läsgranskningens observationsfel är rättade:
-panelen behåller sin monterade observation och frysta dealer; befintlig
-molnspelflik med fel/saknad/tvetydig dealer nekas utan att navigeras eller stängas.
-Kodleverans `d8b1b928d3feef9f4004ea6ee26697af2613a10f`: 43 riktade
-UI-/navigationstester, Lab-TypeScript och normal pre-commit PASS. Alla tre
-[CI-jobb](https://github.com/Jakeminator123/github-work/actions/runs/37077434621)
-är gröna; frontend och `croupier-lab-ui` är READY på Vercel för samma kod-SHA.
-Anonym åtkomst till Studio, Backoffice och OpenClaw-portalen kräver fortsatt
-inloggning. De nya testerna ingår i normal pre-commit och Lab-CI. Automatisk
-webview-kontroll kunde inte starta; visuell livegranskning kvarstår. Detta är
-inte ny gameplay-/läppsynk-/GPU-acceptans eller native API-cutover.
-Ingen Croupier-devserver är kvar på de vanliga lokala portarna efter testernas
-isolerade fixtures. Inga andra projekts servrar har stoppats i detta UI-steg.
-
-Byggloggen rapporterar en befintlig kritisk Next.js-varning
-[GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
-Den gäller Node-baserad `next/og` med användarstyrt SVG-innehåll; ingen sådan
-route hittades i Lab/app eller frontend/app. Beroendeuppdatering återstår;
-ingen automatisk `audit fix --force` har körts och inga paket har ändrats.
-
-[Masterplan och återanvändbara agentprompter](CLOUD-MIGRATION.md#masterplan-en-croupier-studio)
-är införda i befintlig migrationsguide. Jakob har godkänt målbilden och vill
-att ersatta delar faktiskt avvecklas, inte sparas som parallella legacy-system.
-Tre underagenter har gjort avgränsad läsanalys av UI/auth, lagring och OpenClaw/GPU;
-orchestratorn äger checklistan, gemensamma kontrakt, docs och senare integration.
-Första fristående kodpaketet för sektioner/behörigheter/API är skrivet; inga aktiva
-routes använde det då. Neon-schema/adaptrar och fenced jobbjournaler ingår nu
-i det avstängda integrationspaketet ovan; tidigare 15 isolerade PostgreSQL-prov och 47
-fixturprov passerade på äldre arbetsversion. Det är inte produktionsmigrering. Ingen kontoförändring,
-mediaregenerering, disk-/objektradering eller betald provkampanj har gjorts.
-Aktuell driftskarta nedan gäller fortfarande.
-
-Senaste uppdraget: fortsätt faktisk implementation, ge grova procentuppdateringar
-för hela den nya Studio-sammanslagningen och förenkla överlappande menyer.
-Gamla Studio-granskningsklipp/generationer/cache behöver inte migreras; Jakob kan
-ladda upp nytt manuellt. Ingen ny arkiv-/backupkampanj för bortvalt medieslask.
-Aktiva spelklipp, konton/saldo och OpenClaw påverkas inte av det bortvalet.
-Request-/GPU-kostnadsjournaler måste bestå så att tidigare försök inte debiteras igen.
-Tre implementationer körs på exklusiva filer: dokument/CAS/migration, fenced
-request-/budgetjournal och aktiv förenkling av Studio-navigationen. Gemensamma
-runtimecallers och driftkällor byts inte förrän delarna verifierats/integrerats.
-Efter kontrakt, isolerade lagringsutkast och publicerat UI-steg var läget cirka 30 %;
-native integrationsgrund gav då grovt cirka 40 %; aktuell fortsättning är
-cirka 80 % klart / 20 % kvar enligt statusen överst.
-Detta är en grov omfattningsbedömning, inte uppmätt tidsåtgång eller ett tidslöfte.
-Äldre GitHub-/Vercel-kvitton gäller sina angivna SHA, inte automatiskt senaste kodsteget.
-
-Adressprecisering: idag är `/blackjack` spelarens inloggningsentré och `/game`
-spelet. Målbilden är `/blackjack` som spel och `/game` som redirect; launch,
-callback, returnTo och partner-allowlists måste följa samma samordnade ändring.
-BO:s `/api/bo/config` används fortfarande av spelet och kan inte blindraderas.
-Render-disken har även jobbidempotens och RunPod-reservations-/budgetjournaler;
-beständigt Blob-media ersätter inte dessa. Bevara checksumlåst product-v1,
-befintliga auth-/spelarroller och OpenClaw/GPU-funktioner. Director/Gateway-
-diskar är aktiv systemlagring, inte avvecklingsmål för den här flytten.
-Planen har sakgranskats av alla tre underagenter. Miljövariabelregistret och
-17 lokala dokumentations-/leverans-/hooktester: PASS. Detta är inte ny
-spel-/media-/GPU-acceptans eller en full liveinventering. docs har fortsatt
-exakt fem Markdown-filer.
-
-Jakobs senaste beslut: Jira/CAC och gamla GitLab-trackerflöden ska inte
-användas. Kravet är borttaget ur AGENTS.md, chef-instruktionen och masterplanens
-prompter. GitHub plus den befintliga checklistan är arbetsflödet; ingen ny tracker.
-Läsande startkontroll: GitHub-repo har admin/push-åtkomst; main är synkad,
-tre CI-jobb och båda Vercel-publiceringarna på `cd4d8480` är gröna. Vercel-CLI
-är autentiserad och når rätt frontend-/Studio-projekt. Detaljverktyget i
-Vercel-kopplingen har ett parameterfel; CLI fungerar som verifierad reservväg.
-Render API och Director health/status svarar; befintliga rollnycklar matchar.
-Neon game/auth och zones anslöts i READ ONLY-transaktion med SELECT/schema-
-metadata; rätt scheman och schema-create-privilegium finns. Inga kontorader
-lästes och ingen DDL/live-migrering kördes. Full diskinventering kvarstår i P1.
-
-Kodpaket `studio-native-admin-contract-v1`: två nya MJS-moduler med
-TypeScript-deklarationer i lab/lib och två tester i lab/test. Bevarar 14 sektioner,
-31 explicita actionregler, fem auth-adresser och nuvarande rollgolv; nekar
-okända/spelarroller, prototypnycklar, fel metod och icke-exakta paths.
-11 riktade tester och sex befintliga navigationstester PASS; Lab-TypeScript PASS.
-Full lokal pre-commit-regression PASS, med miljöbundna prov skippade där avsedd
-isolerad Neon/Linux-miljö saknas. Det är inte ny live-/media-/GPU-acceptans.
-De nya testerna ingår i den fulla pre-commit-hooken och Lab-CI.
-Rollhelpers är inte sessions-/Origin-/CAS-/providerauktorisering. Self-role/remove,
-spelarstatusens runtime-cancellation och speech-QA-gate är uttryckliga framtida
-handlerkrav, inte genomförda i dessa helpers. Ingen UI-/API-aktivering ingår.
-
-## Drift och ansvar
-
-- [Startsida](https://www.scoutgaming.tech/), [spel](https://www.scoutgaming.tech/game)
-  och [Backoffice/Lab](https://www.scoutgaming.tech/studio) visas på Vercel.
-  BO-inloggning och den befintliga projektrevisionen är verifierade på den riktiga adressen.
-- Render äger slump, kort, shoe, regler, saldo, resultat, API/SSE och sparade Lab-projekt.
-  Native Node-ingress på Vercel vidarebefordrar speech-stream och lipsync-worker
-  efter Render-auth; gränserna är 300 respektive 600 sekunder.
-- Game/auth ligger i separat Neon, skild från zonernas databas. Befintlig
-  superadmin och båda spelarna är verifierade; inga produktionskonton eller rundor skapades för QA.
-- Privat Blob använder det aktiva gemensamma media/blob-index.json.
-  Studio-projekt, historik och familjeindex ligger fortfarande på beständig Render-disk.
-  Director/Gateway behåller sina befintliga tjänster och diskar.
-
-Dessa produktionsflyttkvitton gäller `22dca5c4` och dokument-/guideleveransen
-`fb3c0860` från 2 oktober. Frontend och Lab är aktiverade på de kanoniska
-Vercel-adresserna från main. Senare native-QA-kod, installation och städning
-har separata revisioner och bevis överst; dessa äldre kvitton är inte en
-aktuell P6-acceptans.
-
-## Verifierat
-
-- Blob-städning 2 oktober: samma privata Stockholm-lager döpt till
-  `croupier-media-private`. Den fristående `astrid/`-roten är borta; zonklippet
-  (67 342 byte, SHA `022ad98b747149501b014f1bd04f4251808f9332e4f1e69b4ab605f250b4b668`)
-  bevaras oförändrat under `croupier/media/dealers/astrid/source/background-zones/`.
-  Återställning av gamla adressen kan göras från denna verifierade kopia.
-  Tolv äldre uppladdningsadresser behålls tills diskindex/historik kan inventeras;
-  samtliga tolv runtime-dubbletter återlästa med identisk storlek och SHA.
-  Aktivt Blob-index, media-ID:n, kalibrering och spelval är oförändrade.
-  Produktions-BO, Studio-projekt och videoregister lästes utan ändring;
-  zonernas molnregister innehöll inga klippreferenser. Detta är inte ny visuell acceptans.
-  QA:s bootstrap-lösenord gav HTTP 401; inga konton eller lösenord ändrades.
-  Render-diskarnas ansvar och live-konfiguration är tydliggjorda i driftskartan;
-  direkt full diskinventering/extern backup återstår.
-  Dealer-audit med ffprobe: PASS mot oförändrad fyrdealerbaseline. Dokumentations-
-  och leveranskontroller: 17 tester PASS. Inga nya visuella speltester behövdes
-  för namnbytet/arkivflytten; aktiv presentation och medias bytes är oförändrade.
-
-- Produktionsimport: noll Web/Lab-skrivare, hashverifierade SQLite-backuper
-  utanför Git, 24 källtabeller/102 rader och full backup/restore-paritet för
-  32 PostgreSQL-tabeller inklusive radhasher och sekvenser. Inga aktiva externa wallet-kopplingar.
-  Återaktivera aldrig gammal SQLite efter nya Neon-skrivningar.
-- Riktig isolerad Neon QA: samtidiga native-starts med ett avdrag,
-  transaktionsrollback, CRAIG-epoch, block/revoke/reactivate, kontoavslut,
-  chat-forget-race och beständig runda med saldo/ledger-paritet.
-- Native WebSocket-molnprov på exakt 22dca5c4: klient och worker 101,
-  faktisk serverkod och syntetisk worker, exakt mediehash/32 byte och terminal 1000.
-  Fel användare, återanvänd biljett och fel worker-token nekas.
-  Detta är transportprov, inte mänskligt godkänd talfilm.
-- Isolerat Blob-browserprov på samma revision: alla fyra originaldealers,
-  Astrids Studio-väg och Astrid/Amira V2, två verkliga uppspelningar per väg
-  (14 starter/14 avslut), ljud- och bildframsteg samt native-kvitton i Lab.
-  Sex filer verifierade med full SHA, HEAD och Range; fem privata käll-/layoutadresser nekade.
-  Inga JS-fel/HTTP 500, inga projektändringar eller betalda provideranrop.
-  HEAD-storleksprov använder identity eftersom Vercels Brotli-svar saknar Content-Length.
-- På riktig scoutgaming.tech: befintlig BO-login, Lab SSR/projektrevision,
-  privata Blob-bytes och hash, nekad anonym administration och oförändrat projekt.
-- Native 4/4, frontend 26/26, Next-produktionsbygge, installerad Node-byggare,
-  TypeScript, obligatorisk full hook och fyrdealerprobe godkända.
-  Samtliga tre GitHub CI-jobb på 22dca5c4 är gröna.
-
-## Backoffice/Lab och media
-
-Före: separat BO-navigation och klippval, Studio-projekt samt privata Lissabon-profiler.
-Efter: gemensam meny med Studio, klippbibliotek, Event, zoner, OpenClaw,
-uppspelningsspår och befintlig BO-administration (14 sektioner).
-BO:s rollkontroller finns kvar; Lab ger inga extra administratörsrättigheter.
-
-Originalmotorerna läser legacyClipPolicy; Astrids presentation=local läser
-mediaPolicy/idlePolicy. Allt redigeras och versionssparas i samma Lab-projekt.
-Äldre BO-tilldelningar är bevarade men inaktiva/skrivskyddade (skrivendpoint 410).
-Import kräver uttrycklig exakt match i dealer, situation, destination och fil.
-Observation följer en faktisk spelflik och startar ingen andra uppspelning.
-Registrerat, valt eller nedladdat betyder aldrig spelat utan spelarens kvitto.
-Partner-SSE och genererat tal visas separat. Återanslutning återspelar ingen gammal kö.
-
-Hela lissabon/ är borttagen. 39 privata datafiler (4 568 960 byte) flyttades
-utan överskrivning till lab/data; 42 originalfiler har hashverifierad extern backup.
-Startare och sessionsvakt återskapar inte Lissabon; äldre länkar är kompatibilitetsalias.
-Se ENVIRONMENT-RESTORATION.md för backup och återställning.
-
-Media ligger i media/dealers/<dealer>/{runtime,source,review,staging} samt
-media/game och media/site. 4 924 filer/2 911 452 931 byte verifierades före källradering.
-ID, bytes, kalibrering, Emil/Kevin-proveniens och explicita URL-kopplingar bevaras.
-Blob: 4 265 filer/2 907 216 339 byte, 4 162 unika objekt, verifierad återläsningshash.
-Saknad/felaktig aktiv källa ger 503 utan diskfallback. Äldre Blob-objekt bevaras.
-Runtime är en användning, inte ett visuellt godkännande.
-
-## Städning
-
-main är enda lokal/GitHub-branch i Jakeminator123/github-work; gammal ren worktree borttagen.
-GitLab är pausat. docs har minskats från 99 till exakt fem Markdown-filer.
-Obsoleta random-stuff-jakob, GitLab-wikihelper, ändringslogg och tomma mappar är rensade.
-test och pipeline används av CI/mediebygge och behålls. Värdefullt reference/content/Emil-material
-är flyttat till media med oförändrade bytes. Personarkivets läsgräns gäller.
-Ignorefiler utesluter beroenden, byggcache, binär media och privat data från sökning/index.
-
-Tidigare QA-städning tog bort sitt testkonto/lösenordsfil. Den nya separata native-QA
-är nu LIVE med sin syntetiska operatör och länkade spelare; den är inte suspenderad.
-Databas, media, backuper och förbrukningsjournaler bevaras. Oanvända provider-/integrationsnycklar
-rensades från Vercels frontend; nödvändiga backend-, databas- och lagringsnycklar behålls.
-Inga lokala produkt-/labbservrar eller egna QA-browserprocesser lämnas igång.
-
-Nästa P8-radering är villkorad av verifierat P7-källbyte: `BackofficePanel`/CSS,
-iframe-/legacy-navigationshelpers och ersatta BO-HTML/skrivare ska bort.
-Native-UI använder fortfarande Backoffice-gruppkonstanterna; spelmotorn använder
-`/api/bo/config` som Neon-projektion och Render äger auth/handoff/spelkommandon.
-`StudioPage`/`Studio` har sex aktiva routes och får inte raderas som helhet.
-Diskens projekt/historik/index/bo.json och gamla talpaket kan avvecklas först när
-exakt Neon/Blob-motsvarighet, journalparitet och restart utan diskfallback är bevisade.
-Konkreta käll-/env-/diskmål finns i [P8](CLOUD-MIGRATION.md#checklista-och-beroenden).
-Aktiva `test/fixtures`, `tools/`, `web/`, `pipeline/`, medier/kalibreringar,
-konton/saldo, kostnadsjournaler och Director/Gateway/OpenClaw-state behålls.
-De större legacy-/diskmålen kan inte raderas före detta byte; den avgränsade
-frontend-, dokumentations- och cachestädningen redovisas överst.
-
-## Kända öppna kvalitetsfrågor
-
-- Exakt läppsynk, lång GPU-kallstart, riktig mikrofon-till-svar och fysisk mobil/Safari
-  är ännu inte slutgodkända. Hashar, transportprov och bildframsteg ersätter inte mänsklig granskning.
-- Startsidesdarr/flimmer är undersökt men inte ändrat; perspektivgolv/parallax/kortjolt
-  är möjliga orsaker. Datorintrot är live och rensar overlay/videonoder efter avslut;
-  mobil/surfplatta laddar inte introfilmer.
-- Råfilmernas kortkontakt är inte kalibrerad; calibratedContact kan vara false.
-  Publik lösenordsåterställning och full zonlagringsacceptans återstår.
-- Full extern diskbackup för Studio/Director/Gateway återstår. Diskarna är bevarade;
-  game/auth-databasens externa backup och återläsning är verifierade.
-
-Senaste riktiga röstprov 1 oktober: två svar utan 404/Voice off, färgfix och två
-CANCELLED-sessioner verifierade. Total/ första bild: 104,803/99,917 s och 14,187/7,723 s.
-Det bevisar inte exakt fonemsynk. Privata inspelningar i Downloads:
-
-| Fil | SHA-256 |
+| Öppna incident-ID:n | Lästa metadata, inte verifierat falsklarm |
 | --- | --- |
-| astrid-qa-turn-1 (2).webm | 2c12ff37bdc4491e1944e000e00de498cab6f3a8e29250ea6b96d2b2d7bd5987 |
-| astrid-qa-turn-2 (1).webm | b091dff159deab06e17e89548840077043473f890e77e6dc0de1882e7e7a69f1 |
+| 37862641 | Filmetadata saknas |
+| 37863164, 37863165, 37863166 | `ops/cloud/test/container-entry.test.mjs`, positioner 34/35/46/47/48/55 sammantaget |
+| 37867511, 37867512 | `docs/system-map/contracts.json`, positioner 196/499; aktuell kod där är SHA256-indatahashar |
 
-Budgetjournaler bevarade: USD 3,00 reserverat (ingen uppmätt faktura), dygnstak 9,94,
-sessionsreserv 0,50, worker min 0/max 1. Ingen ny automatisk betald provkampanj startad.
+Scanner-match/secretvärden har inte lästs; inga incidenter resolve/ignored eller
+skrivrättigheter skapades. Alla sex ska redovisas som öppna, inte automatiska fixtures.
+Fil/rad-luckorna består även när hela incidentlistan är komplett.
 
-Uppmätt lokal tröghet: cirka 46 GiB ledigt RAM, CPU 0–14 %, ingen diskkö;
-Git-status 84–124 ms. Långa modell-/browser-/molnbyggen dominerade väntan.
-Docs har nu snabba hooks; kod/media kör full regression. Rensningen minskar sökbrus
-men bevisar inte att Codex har en bakgrundsindexerare. OpenClaw får begränsad publik
-spelar-/samtalskontext och ingen direkt saldoåtkomst.
+Historiskt efter Jakobs uttryckliga triageuppdrag 3–4 oktober: fem testcredentials
+IGNORED/0 OPEN med en incidentsida/fem locationsidor. Dagens lista bekräftar dessa fem
+IGNORED men också sex nya öppna; äldre 0 OPEN är inte nuläge.
+
+| Historiskt IGNORED-ID | Verifierad fixtureplats |
+| --- | --- |
+| 37827237 | `lab/test/studio-native-{runtime,request}.test.mjs` |
+| 37828386 | `ops/cloud/test/container-entry.test.mjs:30` |
+| 37828691 | `ops/cloud/test/storage-export.test.mjs`; API-location saknades |
+| 37830671 | `test/studio-cutover-integration.mjs`; två webbplatser, API-location saknades |
+| 37840514 | `ops/cloud/test/native-p6-router-hook.test.mjs` |
+
+Triagen märkte testcredentials, inte återkallade produktionsnycklar.
+Befintlig läsbrygga `tools/gitguardian-mcp.mjs`/`gitguardian-read.mjs` är GET/metadata/
+repo-låst; årsnyckel endast incidents:read/sources:read, Windows-DPAPI utanför Git:
+`C:/Users/jakem/.codex/private-connections/gitguardian-795524.dpapi`.
+Privat `migration-root-gitguardian-mcp-verified-20261003.json` är historiskt kvitto.
+Bind avsedd repo/workspace/source varje gång. Exponera bara app/name/status/conclusion,
+numeriska incidentlänkar och repo-relativ fil/rad/tid, aldrig scannertext/secrets/
+rå annotationsmeddelanden/tokens. Ingen ny scope/token/scan/write automatiskt.
+
+## Kort tidslinje — historik, inte nya order
+
+| Datum / källa | Bevarat resultat och avgränsning |
+| --- | --- |
+| 2 oktober, `22dca5c4` | Neon game/auth och privat Blob/transport infört; 14/14 inspelade plays, inte mänsklig syncapproval |
+| 3 oktober, `190399` | native90/90 och SQL41/retained4; betald helhetsacceptans saknades |
+| 3–4 oktober, `e461ef07` | gemensamma credentials/auth och SDK 7.12.1 installerat; specifika browser/readbackkvitton |
+| 4 oktober, `5fca8983`→cc77→b0bc | fullfilsdelprov, misslyckade fönster append-only stängda, faktisk stream-END; kostnad okänd |
+| 4 oktober, b0bc→`9ba2fd05` | samordnad import/policy/alias/provideraktivering, backup och fysisk P8 efter ALL0/paritet |
+| 4–5 oktober, `3da83bf8`/`5270c8ab` | fysisk mic/kamera ej provad; route/kamera-config, shutdown/zon/OpenClaw-rättningar verifierade avgränsat |
+| 5 oktober, `8f265831`→`ee060804`→`ebbbeb76` | Mobile/lane-register, source/staging/dedup, no-op-save, UI/karta; inga nya take-approvals |
+| 5 oktober, `91d0c4d9` | sexfilsdokumentstädning/slutkvitton, CI3PASS och faktisk LIVE/READY; appbytes oförändrade |
+
+Alla tidigare intentions-/FAIL-/cleanupkvitton, gamla deployment-ID:n, sourcepins,
+budgetposter och privata röstinspelningars hashar kan följas i snapshoten ovan.
+De är provenance, inte förnyad budget, runtimeidentitet eller order att läsa personarkivet.
