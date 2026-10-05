@@ -104,7 +104,9 @@ test('history route mapping includes tree without matching unrelated prefixes', 
   assert.equal(studioViewForPath('/tree'), 'tree');
   assert.equal(studioViewForPath('/tree/'), 'tree');
   assert.equal(studioViewForPath('/videos'), 'videos');
-  assert.equal(studioViewForPath('/openclaw'), 'openclaw');
+  assert.equal(viewPaths.openclaw, '/operator-chat');
+  assert.equal(studioViewForPath('/operator-chat'), 'openclaw');
+  assert.equal(studioViewForPath('/openclaw'), 'lab', 'model settings are a separate document page');
   assert.equal(studioViewForPath('/'), 'lab');
   assert.equal(studioViewForPath('/treehouse'), 'lab');
 });

@@ -65,6 +65,11 @@ jobs:
         env:
           CROUPIER_SYSTEM_MAP_EVIDENCE_DIR: ${{ runner.temp }}/system-map-evidence
         run: sh .githooks/pre-commit --full
+      - name: Existing isolated Studio SQL, restart and HTTPS acceptance
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/system-map-evidence"
+          node tools/system-map-evidence.mjs --run-isolated-qa --download-postgres --report-output "$RUNNER_TEMP/system-map-evidence/studio-isolated-qa.jsonl"
       - name: Build system map with the existing regression results
         if: always()
         run: |

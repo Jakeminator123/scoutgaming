@@ -16,7 +16,9 @@ async function nativeUi(request: Request) {
   try { session = await native.authorize(normalized); }
   catch (error) {
     if ((error as {statusCode?:number})?.statusCode === 401) {
-      redirect(nextStudioLoginRedirect('/studio'));
+      const path = new URL(normalized.url).pathname;
+      const returnTo = path === '/studio' || path.startsWith('/studio/') ? path : `/studio${path === '/' ? '' : path}`;
+      redirect(nextStudioLoginRedirect(returnTo));
     }
     throw error;
   }

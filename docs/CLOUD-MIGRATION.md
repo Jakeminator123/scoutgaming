@@ -7,6 +7,80 @@ Privata kvitton, FAIL-historik, journaler och backups ligger kvar på befintliga
 Källkod/publicerad runtime/acceptans har egna revisioner; senare SHA uppgraderar inte
 ett äldre prov automatiskt.
 
+## Öppen arbetschecklista: en sammanhängande Studio
+
+Målet är att `/studio` fungerar som en gemensam arbetsyta för tidigare Lab och
+Backoffice: samma inloggning, begriplig navigation och fungerande dealer-, klipp-,
+administrations- och OpenClawflöden. Detta är den öppna arbetslistan för fortsatt
+arbete, inte en ny migrationsplan. Huvudagenten samordnar och uppdaterar den.
+En ruta kryssas först när resultatet nedan har verifierats; äldre PASS räcker
+inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
+
+- [ ] **A. Administratör kan logga in till Studio.** Jakob har bekräftat att han
+  skapade `john.g` i Backoffice från det inloggade kontot `Jakob`. `john.g`
+  fungerar som blackjackspelare. Synlig kontometadata bekräftar aktivt
+  spelarkonto, ingen synlig Studio-användare med samma namn. Spelarkonton har
+  enligt nuvarande kontrakt ingen Studioåtkomst; headerns Administratör gäller
+  inloggade Jakob. Kontoformulären förtydligas. Ett separat administratörskonto
+  behöver invitation/aktivering via e-post; produktionsmail är punkt F.
+  Klart när det avsedda administratörskontot når `/studio`, med rätt behörighet,
+  och spelarkonton fortfarande nekas. Kontodata ändras först utifrån belagd orsak.
+- [ ] **B. Backoffice går rimligt snabbt att navigera i.** BO-prestandaagenten
+  utreder de långsamma klick-/navigationsflödena. Mät auth/session, sidbyte och
+  dataanrop i samma flöde före/efter en riktad rättning. Klart när förbättringen
+  är mätt och bekräftad i användarflödet, med bevarad revoke/behörighet och rätt
+  data. Aktuell produktionsbaseline på `3e613186`: fyra menybyten 4,859–10,018 s;
+  huvudsaklig väntan ligger före API-svar. Lokal authrättning grupperar fyra
+  färska identitetsläsningar i en transaktion: 12→6 databasfrågor, utan cache.
+  59 riktade tester passerade. Omprov efter leverans krävs innan punkten stängs.
+- [ ] **C. Sammanhängande `/studio` för Lab och Backoffice.** Gemensam Studio är
+  införd i kod; kvarvarande användbarhet och full acceptans är öppna. Kontrollera
+  entré, dealer/klipp, administration och OpenClaw samt desktop/mobil navigation.
+  Klart när de avsedda arbetsflödena fungerar från samma yta och aktuella prov
+  visar det. Konkreta glapp: OpenClaw direktlänk/reload och intern navigation
+  visar olika ytor på samma URL; login tappar målroute. Snäva routingrättningar
+  pågår. Ingen ny paket-/arkitekturmigration.
+- [x] **D. P6:s isolerade SQL/HTTPS-prov — verifierat lokalt 5 oktober.** Huvudagenten har rättat testfixturens
+  saknade `gameDb` i både auth- och kontofabriken samt äldre reader/staff-
+  antaganden. Osäker talleverantörssubmission ska förbli spärrad vid shutdown,
+  inte förväntas vara rent avslutad. Behåll negativa rollprov,
+  verkliga SQL-transaktioner, reset/revoke, omstart och cleanup. Klart när samma
+  befintliga provmotor passerar på aktuell källa i eget tillfälligt kluster.
+  Körning 3: exit0, 17 äldre och 25 aktuella integrationschecks samt fyra
+  retained-bank-kontroller. Verklig SQL/HTTPS/omstart och cleanup passerade;
+  versionskvitto har stabila inputbytes. Körning 1–2 FAIL är bevarade. Detta
+  stänger den isolerade deluppgiften, inte återstående mänsklig/live-P6 i H.
+- [ ] **E. Systemkartan visar faktiskt provutfall.** Systemkartagenten kopplar
+  befintligt SQL-prov till den gemensamma resultatvägen. Klart när relevant
+  failure visas som failure, saknat/skippat prov aldrig är grönt och exporter
+  visar rätt SHA/datum. Adapter och failure-/skip-/versionsprov passerar lokalt;
+  exakt leveranscommit kör samma motor i CI. Ny CI-export återstår innan rutan
+  stängs. Nedladdad HTML förblir en fryst ögonblicksbild.
+- [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
+  belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
+  QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
+  produktionskoppling och ett uttryckligt avgränsat prov med utsedd mottagare.
+  Klart när faktisk produktionskonfiguration är återläst och provet fungerar
+  hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
+- [ ] **G. GitGuardian-fynd utredda och hanterade.** Säkerhetsagenten har läst
+  avsedd repo/source: sex öppna fynd, varav tre belagda testvärden och två
+  belagda källhashar; ett saknar filposition. Snävt fixturförtydligande är gjort
+  lokalt. Klart när varje fynd har belagd klassning och konkret hantering.
+  Alla sex är fortsatt öppna i GitGuardian; ingen automatisk ignore/resolve.
+- [ ] **H. Återstående spel-, media- och enhetsacceptans.** Fyra dealers/två
+  faktiska plays, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/
+  omstart och naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk,
+  kortkontakt och fysisk mic/kamera/mobil/Safari redovisas separat. Klart när
+  varje krav har aktuellt bevis eller ett exakt kvarstående hinder. QA AI/GPU
+  förblir OFF; betalda prov kräver färsk avgränsad auktoritet.
+- [ ] **I. Resterande drift och backup.** Utred frame-varningen, zonlagring och
+  startsidesflimmer i berörda flöden; extern Director/Gatewaybackup följer
+  återställningsreglerna. Klart när relevant rättning/omprov eller konkret
+  hinder finns per punkt och backupen har extern kopia/verifierad återläsning.
+
+Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
+Avslutade migrationssteg och deras historiska bevis står kvar nedan.
+
 ## Aktuell källa och drift
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i det privata

@@ -5,8 +5,39 @@ import { captureSystemMapInputs, createSourceReader, hashText, safeCiUrl, safePa
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SHA = /^[a-f0-9]{40}$/, HASH = /^[a-f0-9]{64}$/;
+const ISOLATED_KIND = 'isolated-studio-sql-restart-https';
+const ISOLATED_PATH = 'tools/studio-isolated-qa.mjs';
 const json = path => JSON.parse(readFileSync(resolve(path), 'utf8').replace(/^\uFEFF/, ''));
 const counts = source => Object.fromEntries(['passed', 'failed', 'cancelled', 'skipped', 'tests'].map(key => [key, Number.isSafeInteger(source?.[key]) && source[key] >= 0 ? source[key] : 0]));
+const validSnapshot = snapshot => snapshot?.schemaVersion === 1 && SHA.test(snapshot.sourceSha || '')
+  && snapshot.hashAlgorithm === 'sha256:utf8-lf' && snapshot.files && typeof snapshot.files === 'object'
+  && !Array.isArray(snapshot.files) && Object.entries(snapshot.files).every(([path, hash]) => safePath(path) && HASH.test(hash));
+const sameInputs = (left, right) => validSnapshot(left) && validSnapshot(right) && left.sourceSha === right.sourceSha
+  && Object.keys(left.files).length === Object.keys(right.files).length
+  && Object.entries(left.files).every(([path, hash]) => right.files[path] === hash);
+
+// Observe the existing isolated runner, including its own cleanup. This adds
+// no SQL checks or second engine; names, errors and raw runner output never
+// enter the portable receipt. Failed or changing input runs cannot pass.
+export async function collectIsolatedStudioQaReport({ repositoryRoot = ROOT, ref, qaOptions = {},
+  capture = () => captureEvidenceInputs({ repositoryRoot, ref }),
+  runQa = async options => (await import('./studio-isolated-qa.mjs')).runIsolatedStudioQa(options) } = {}) {
+  const snapshot = capture();
+  if (!validSnapshot(snapshot) || !snapshot.files[ISOLATED_PATH]) throw Error('A complete isolated QA input snapshot is required.');
+  let error, output;
+  try { output = await runQa(qaOptions); } catch (caught) { error = caught; }
+  const completed = !error && Array.isArray(output?.legacyChecks) && output.legacyChecks.length > 0
+    && Array.isArray(output?.integrationChecks) && output.integrationChecks.length > 0;
+  const inputsStable = sameInputs(snapshot, capture());
+  const result = completed && inputsStable ? 'passed' : 'failed';
+  const observedAt = new Date().toISOString();
+  const report = [
+    { type: 'meta', schemaVersion: 1, kind: ISOLATED_KIND, selection: 'full-files', snapshot, observedAt, inputsStable },
+    { type: 'test-file', path: ISOLATED_PATH, result },
+    { type: 'summary', counts: { passed: result === 'passed' ? 1 : 0, failed: result === 'failed' ? 1 : 0, tests: 1 } },
+  ].map(JSON.stringify).join('\n') + '\n';
+  return { report, result, error };
+}
 
 // Passive Node --test reporter. It executes no test and emits no test names,
 // exception messages, logs, provider receipts, identities, or environment values.
@@ -62,8 +93,7 @@ export function captureEvidenceInputs({ repositoryRoot = ROOT, ref } = {}) {
 }
 
 export function importTestEvidence({ snapshot, reports = [], ciUrl, jobs } = {}) {
-  if (snapshot?.schemaVersion !== 1 || !SHA.test(snapshot.sourceSha || '') || snapshot.hashAlgorithm !== 'sha256:utf8-lf'
-    || !snapshot.files || Object.entries(snapshot.files).some(([path, hash]) => !safePath(path) || !HASH.test(hash))) {
+  if (!validSnapshot(snapshot)) {
     throw Error('A complete version-bound input snapshot is required.');
   }
   const found = new Map(), notes = [];
@@ -72,17 +102,26 @@ export function importTestEvidence({ snapshot, reports = [], ciUrl, jobs } = {})
     const meta = events.find(event => event.type === 'meta' && event.schemaVersion === 1);
     const summaries = events.filter(event => event.type === 'summary');
     if (!meta || !summaries.some(event => event.path == null)) { notes.push('An incomplete reporter receipt was ignored.'); continue; }
+    const isolated = meta.kind === ISOLATED_KIND;
+    if (isolated && (!sameInputs(snapshot, meta.snapshot) || typeof meta.inputsStable !== 'boolean'
+      || typeof meta.observedAt !== 'string' || Number.isNaN(Date.parse(meta.observedAt)))) {
+      notes.push('An isolated SQL receipt did not match the captured source inputs.'); continue;
+    }
     const failureKnown = events.some(event => event.type === 'test-file' && event.path && event.result === 'failed');
     const unboundFailure = summaries.some(event => counts(event.counts).failed > 0) && !failureKnown;
     const cancelled = summaries.some(event => counts(event.counts).cancelled > 0);
     for (const event of events) {
       if (event.type !== 'test-file' || !safePath(event.path) || !snapshot.files[event.path] || !['passed', 'failed', 'skipped', 'cancelled'].includes(event.result)) continue;
+      // Ordinary Node file tests cannot stand in for the real SQL acceptance.
+      if ((event.path === ISOLATED_PATH && !isolated) || (isolated && event.path !== ISOLATED_PATH)) continue;
       const value = found.get(event.path) || { path: event.path, passed: 0, failed: 0, skipped: 0, cancelled: 0 };
       // A cancelled run cannot prove that files with earlier passing subtests
       // finished. Keep this conservative even when cancellation lacks a file.
-      if (event.result === 'passed' && cancelled) value.cancelled++;
+      if (event.result === 'passed' && isolated && !meta.inputsStable) value.failed++;
+      else if (event.result === 'passed' && cancelled) value.cancelled++;
       else if (event.result === 'passed' && (meta.selection !== 'full-files' || unboundFailure)) value.skipped++;
       else value[event.result]++;
+      if (isolated && (!value.observedAt || Date.parse(meta.observedAt) > Date.parse(value.observedAt))) value.observedAt = meta.observedAt;
       found.set(event.path, value);
     }
     if (meta.selection !== 'full-files') notes.push('Filtered runs cannot verify complete test files.');
@@ -108,15 +147,30 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const args = process.argv.slice(2), options = { reports: [] };
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--capture') options.capture = true;
+      else if (args[i] === '--run-isolated-qa') options.isolated = true;
+      else if (args[i] === '--download-postgres') options.downloadPostgres = true;
       else if (args[i] === '--report' && args[i + 1]) options.reports.push(args[++i]);
-      else if (['--ref', '--snapshot', '--output', '--ci-url', '--jobs'].includes(args[i]) && args[i + 1]) options[args[i].slice(2)] = args[++i];
+      else if (['--ref', '--snapshot', '--output', '--ci-url', '--jobs', '--report-output', '--postgres-bin'].includes(args[i]) && args[i + 1]) options[args[i].slice(2)] = args[++i];
       else throw Error('Invalid evidence options.');
     }
-    const result = options.capture ? captureEvidenceInputs({ ref: options.ref }) : importTestEvidence({
-      snapshot: json(options.snapshot), reports: options.reports.map(path => readFileSync(resolve(path), 'utf8')),
-      ciUrl: options['ci-url'], jobs: options.jobs ? json(options.jobs) : undefined,
-    });
-    if (options.output) writeFileSync(resolve(options.output), JSON.stringify(result, null, 2) + '\n');
-    else console.log(JSON.stringify(result));
+    if (options.isolated) {
+      if (!options['report-output'] || options.capture || options.snapshot || options.reports.length || options.output
+        || options.downloadPostgres === Boolean(options['postgres-bin'])) throw Error('Invalid isolated QA options.');
+      const result = await collectIsolatedStudioQaReport({ ref: options.ref,
+        qaOptions: { downloadPostgres: options.downloadPostgres, postgresBin: options['postgres-bin'] } });
+      writeFileSync(resolve(options['report-output']), result.report, { flag: 'wx' });
+      // Keep the existing runner's diagnostic separate from sanitized evidence.
+      if (result.error) console.error(result.error.message);
+      console.log(JSON.stringify({ acceptance: ISOLATED_KIND, result: result.result }));
+      process.exitCode = result.result === 'passed' ? 0 : 1;
+    } else {
+      if (options.downloadPostgres || options['postgres-bin'] || options['report-output']) throw Error('Invalid evidence options.');
+      const result = options.capture ? captureEvidenceInputs({ ref: options.ref }) : importTestEvidence({
+        snapshot: json(options.snapshot), reports: options.reports.map(path => readFileSync(resolve(path), 'utf8')),
+        ciUrl: options['ci-url'], jobs: options.jobs ? json(options.jobs) : undefined,
+      });
+      if (options.output) writeFileSync(resolve(options.output), JSON.stringify(result, null, 2) + '\n');
+      else console.log(JSON.stringify(result));
+    }
   } catch { console.error('System map evidence import needs a valid input snapshot and completed, sanitized reporter receipts.'); process.exitCode = 1; }
 }

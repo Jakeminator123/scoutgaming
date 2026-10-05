@@ -8,6 +8,7 @@ export const STUDIO_PRIMARY_NAVIGATION = Object.freeze([
 ]);
 
 export const STUDIO_TOOL_NAVIGATION = Object.freeze([
+  Object.freeze({ href: '/operator-chat', label: 'Operatörschatt' }),
   Object.freeze({ href: '/tree', label: 'Avancerade regler' }),
   Object.freeze({ href: '/activity', label: 'Uppspelningsdiagnostik' }),
   Object.freeze({ href: '/guide', label: 'Guide' }),
@@ -24,4 +25,3 @@ export function studioNavigationItem(pathname, basePath = labBasePath()) {
     : basePath && pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length) : pathname;
   return dealerPaths.has(path) ? STUDIO_PRIMARY_NAVIGATION[0] : items.find(item => item.href === path) ?? null;
 }
-

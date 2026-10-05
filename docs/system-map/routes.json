@@ -245,6 +245,29 @@
         "lab/test/openclaw-admin.test.mjs",
         "lab/components/openclaw-workspace.test.mjs"
       ]
+    },
+    {
+      "id": "operator-chat",
+      "paths": [
+        "/studio/operator-chat"
+      ],
+      "localPath": "/operator-chat",
+      "label": "Operatörschatt",
+      "serving": "Authorized Studio advanced view -> existing GatewayPanel operator chat",
+      "access": "Live Studio admin page guard; existing Gateway connection and chat protections remain.",
+      "sources": [
+        "lab/app/operator-chat/page.tsx",
+        "lab/app/studio-page.tsx",
+        "lab/components/studio-types.ts",
+        "lab/components/studio.tsx",
+        "lab/components/gateway-panel.tsx",
+        "lab/lib/ui-server.ts"
+      ],
+      "tests": [
+        "lab/test/next-page-navigation.test.mjs",
+        "lab/test/studio-navigation.test.mjs",
+        "lab/test/studio-login-client.test.mjs"
+      ]
     }
   ],
   "apiGroups": [
@@ -3162,6 +3185,39 @@
         {
           "path": "lab/lib/http-guard.mjs",
           "line": 79
+        }
+      ]
+    },
+    {
+      "id": "studio-operator-chat",
+      "path": "/operator-chat",
+      "publicPath": "/studio/operator-chat",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/operator-chat/page.tsx",
+      "serving": "Authorized Studio advanced view -> existing GatewayPanel operator chat",
+      "access": "Live Studio admin page guard; existing Gateway connection and chat protections remain.",
+      "boundary": "StudioPage uses this exact view route for login return; internal navigation and direct reload retain GatewayPanel. OpenClaw model settings remain on /studio/openclaw.",
+      "groupId": "operator-chat",
+      "sources": [
+        {
+          "path": "lab/app/operator-chat/page.tsx"
+        },
+        {
+          "path": "lab/app/studio-page.tsx"
+        },
+        {
+          "path": "lab/components/studio-types.ts"
+        },
+        {
+          "path": "lab/components/studio.tsx"
+        },
+        {
+          "path": "lab/components/gateway-panel.tsx"
+        },
+        {
+          "path": "lab/lib/ui-server.ts"
         }
       ]
     },

@@ -14,7 +14,8 @@ Läs `AGENTS.md`, `agent-talk/README.md` och
 Läs [återställningsreglerna](ENVIRONMENT-RESTORATION.md) före spel-/mediaändring.
 Kontrollera Node/engines/pins; senast använd Node är 22.22.2, Lab kräver >=22.16.0.
 Använd den absoluta agent-talk-tavlan i huvudcheckouten; claim före edits.
-Endast MERGE integrerar och pushar via `tools/push-github-work.mjs`.
+Den aktuella huvudagenten integrerar och pushar via `tools/push-github-work.mjs`.
+MERGE har lämnat över och fortsätter inga ändringar eller integrationer.
 Jakobs särskilda migrationsmandat tillät egna taskbrancher/worktrees;
 det är inte en generell instruktion att skapa fler. GitLab/Jira/CAC är pensionerade.
 
@@ -23,6 +24,58 @@ Starta inga lokala servrar om start inte är begärd. Ett koordinerat produkt-/l
 `--no-open` från Codex, samma spel-/Studioflik och bevarade utkast/spel gäller.
 Stoppade servrar förblir stoppade. Ordinarie sökningar följer `.ignore`.
 Det pensionerade privata personarkivet får inte läsas via sökning, Git eller backup.
+
+### Aktivt fortsatt arbete efter överlämningen
+
+Jakob har den 5 oktober bett om parallella underagenter och en öppen checklista
+för en sammanhängande `/studio` som samlar tidigare Lab och Backoffice.
+[Den aktiva checklistan finns i samma masterplan](CLOUD-MIGRATION.md#öppen-arbetschecklista-en-sammanhängande-studio);
+detta är fortsatt arbete efter migrationen, inte en ny migration eller tracker.
+Ny prioritet är långsam Backoffice-navigation och kontot `john.g`. Jakob har
+bekräftat att han skapade det från Backoffice som inloggad `Jakob` och att det
+fungerar för blackjack. Synlig metadata visar aktivt spelarkonto, ingen synlig
+Studio-användare med samma namn. Headerns Administratör gäller Jakob. Spelarkonto
+ger enligt nuvarande kontrakt ingen Studioåtkomst. Ingen kontoförändring gjord;
+separat admininbjudan/aktivering kräver fungerande produktionsmail.
+
+Huvudagenten äger P6-fixturen och dokumentationen. Separata underagenter arbetar
+med kartans provkoppling, kontodiagnos och BO-prestanda. Mail-/GitGuardian-
+utredningarna har levererat sina läsande fynd: produktionens Resendnyckel är tom,
+avsändare saknas och integrationen är kopplad till QA; giltig avgränsad
+sändbehörighet och nytt produktionsprov återstår. Sex GitGuardian-fynd är fortsatt
+öppna: tre belagda syntetiska testvärden, två belagda källhashar och ett utan
+position. Snävt förtydligande av containerfixtures är gjort lokalt utan
+incidentmutation. BO-baseline på `3e613186` visar fyra gruppbyten 4,859–10,018 s
+och huvudsaklig väntan före API-svar; privat kvitto
+`lab/data/platform-private/bo-navigation-baseline-3e613186-20261005.json`.
+Lokal rättning behåller färska identitetsläsningar men grupperar dem i en
+transaktion, 12→6 databasfrågor. 59 riktade tester passerade; efterleveransmätning
+återstår. Routingagenten rättar OpenClaws dubbla URL-betydelse och tappad login-
+målroute; kontoagenten förtydligar spelarkonto kontra administratörsinbjudan.
+Routing- och kontoändringarna är stabila: 73 respektive 33 riktade tester PASS,
+utan skip, samt TypeScriptkontroller PASS. `/studio/openclaw` behåller modellval;
+befintlig operatörschatt har entydig `/studio/operator-chat`, inklusive intern
+navigation och reload. Login tillåter exakt de elva befintliga Studio-vyerna
+och bevarar destinationen, med bevarat BO-handoff och utkastskydd. KontoUI skiljer
+spelarkonto från e-postaktiverad Studio-admin och visar saknad mailkonfiguration.
+Spelarkonto `john.g` har inte promotats eller ändrats. Samlad hook/CI och
+publicerat browser-/prestandaomprov återstår inför slutlig leverans.
+
+Nya SQL-kvitton sparas med exklusiva namn
+`lab/data/platform-private/p6-system-map-20261005-huvudagent-{1,2}.jsonl` och
+motsvarande `.log`. Körning 1 passerade auth men stoppade vid kontofabrikens
+saknade `gameDb`. Körning 2 passerade 18 SQL/HTTPS-checks inklusive invite/reset,
+nonce, omstart och revoke; talblocket stoppade vid
+`generated_speech_session_shutdown_incomplete`. Fixturens osäkra submission får
+inte förväntas frigöra en okänd betald reservation. Båda FAIL-kvitton bevaras.
+Adapter/CI återanvänder samma SQL-prov och rapporterar dessa fel utan hemligheter.
+Körning 3 med samma exklusiva namnserie passerade: exit0, 17 äldre och 25
+aktuella SQL-integrationchecks samt fyra retained-bank-kontroller. Inputbytes
+var stabila; verklig omstart, HTTPS, reset/revoke och osäker tal-submission
+verifierades utan riktiga providerjobb. `/tmp/croupier-studio-qa-*` var tomt
+efteråt. JSONL-kvittot gäller testade arbetsbytes, inte bevis för rent `3e613186`.
+Nya routing-/katalogbytes versionsbinds separat; CI kör om mot leveranscommit.
+Hela P6 är fortsatt öppet för avgränsningarna i punkt 5 nedan.
 
 ## Återstående arbete i utförandeordning
 
@@ -34,8 +87,8 @@ En övertagande huvudagent kan börja med punkt 1 utan att läsa chatthistoriken
 
 | Ordning / status | Nästa konkreta arbete och berörda filer/ytor | Klart när |
 | --- | --- | --- |
-| 1. P6-testuppsättning — konkret fel | Rätta `test/studio-cutover-integration.mjs` efter nuvarande authkontrakt i `lab/lib/studio-native-auth-actions.mjs` och `studio-access-policy.mjs`. Fixturen saknar `gameDb` och förväntar fortfarande Studio-login/läsning för `reader`. Återinför inte den pensionerade behörigheten. Behåll negativa rolltester, riktiga SQL-transaktioner, session/revoke, reset och cleanup. | Befintliga `tools/studio-isolated-qa.mjs` passerar på aktuell källa i eget localhost-kluster, inklusive HTTPS/omstart och städning. Ingen riktig databas eller produktionsanvändare ändras. Redovisa alla nya fel; sänk inte assertions för att få grönt. |
-| 2. Koppla P6-resultatet till kartan — täckningsglapp | Granska befintlig reporter `tools/system-map-evidence.mjs`, `.github/workflows/croupier.yml` och `docs/system-map/{contracts.json,verify.mjs,build.mjs}`. Återanvänd den befintliga SQL-körningen/resultatvägen; skapa ingen andra testmotor. Senaste privata P6-felet är inte inläst i den äldre CI-exporten. | Ett verkligt utfört SQL-prov ger korrekt versionsbundet resultat; misslyckat relevant prov syns som fel och saknat/skippat prov blir aldrig grönt. Ny HTML-export visar rätt SHA/datum. En redan nedladdad fil är fortsatt en fryst ögonblicksbild. |
+| 1. P6-testuppsättning — isolerad del PASS lokalt | `test/studio-cutover-integration.mjs` har `gameDb` i auth och kontofabrik samt aktuella admin/negativa reader/staff/player-prov. Reset/revoke, faktisk SQL och osäker-submission-spärr är bevarade/fördjupade. Körning 3 gav exit0; körning 1–2 FAIL bevarade. | Lokal isolerad del är klar. CI ska köra samma `tools/studio-isolated-qa.mjs` på leveranscommit. Ingen riktig databas eller produktionsanvändare ändras; full P6 är separat punkt 5. |
+| 2. Koppla P6-resultatet till kartan — implementerat, CI-export återstår | `tools/system-map-evidence.mjs` adapter återanvänder befintlig SQL-motor; CI kör den före import/export. Nytt `studio.sql-restart-https` kontrakt binder faktiskt testade källor. Failure-/skip-/versions-/datumprov PASS lokalt; dirty kvitto utges inte för rent SHA. UI-routing har eget inventerat kontrakt. | Ett verkligt utfört SQL-prov ger korrekt versionsbundet resultat; misslyckat relevant prov syns som fel och saknat/skippat prov blir aldrig grönt. Ny HTML-export visar rätt SHA/datum. En redan nedladdad fil är fortsatt en fryst ögonblicksbild. |
 | 3. Produktionsmail — konfiguration saknas | Vercel `croupier-lab-ui` är mål. `RESEND_API_KEY` är tom och `CROUPIER_STUDIO_MAIL_FROM` saknas. Befintlig Resend-integration/key/sender ligger på `croupier-native-studio-qa-abc92154cb15`; dess GET `/domains` gav401. Kontrollera befintligt konto, korrekt projektkoppling, giltig nyckel, avsändare `no-reply@scoutgaming.tech` och public origin enligt `lab/lib/studio-native-mail.mjs`. | Konfigurationen är återläst på faktisk produktionsdeployment och ett uttryckligt avgränsat invite/reset-prov är användbart hela vägen. Inga spontana mejl till befintliga användare, inga nycklar i chatten/Git; domänläsning401 bevisar inte ensam sändbehörigheten. Be Jakob om endast den uppgift/åtkomst som faktiskt saknas. |
 | 4. GitGuardian — sex öppna | Läs avsedd workspace795524/source30689542 via befintlig läsbrygga. Utred ID37862641, 37863164/65/66, 37867511/12 var för sig. De fem äldre ignorerades med `test_credential`, nu verifierat via API; det är inte godkännande för nya fynd. Se incidenttabellen längre ned. | Varje öppet fynd har belagd klassning och konkret åtgärd; riktiga credentials hanteras som sådana, fixtures/hashar får snäv motivering. Saknad position redovisas som lucka. Inga breda filundantag eller automatisk ignore/resolve; anslutningen är läsande. |
 | 5. Återstående P6-medie-/driftacceptans — delbevis finns | Följ befintligt P6-avsnitt: fyra dealers/två faktiska plays, auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/omstart samt naturligt provider-COMPLETED där det saknas. Mänsklig läppsynk/kortkontakt och fysisk mic/kamera/mobil/Safari hålls explicit åtskilda från maskinprov. | Varje återstående krav har aktuellt bevis eller ett exakt kvarstående hinder. Inga nya takeapprovals från enbart hash/stillbild; budget/journal läses före betalda prov, inga automatiska retries och QA AI/GPU förblir OFF om inte Jakob uttryckligen ändrar detta. |

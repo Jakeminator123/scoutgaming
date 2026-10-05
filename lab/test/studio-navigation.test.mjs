@@ -17,8 +17,8 @@ test('Studio has three main areas without a second global clip library or backgr
   assert.deepEqual(STUDIO_PRIMARY_NAVIGATION.map(item => [item.href, item.label]), [
     ['/', 'Dealer & klipp'], ['/administration', 'Backoffice'], ['/openclaw', 'OpenClaw'],
   ]);
-  assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/tree', '/activity', '/guide']);
-  assert.equal(new Set(items.map(item => item.href)).size, 6);
+  assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/operator-chat', '/tree', '/activity', '/guide']);
+  assert.equal(new Set(items.map(item => item.href)).size, 7);
   for (const item of items) {
     assert.equal(Object.isFrozen(item), true);
     const page = item.href === '/' ? 'page.tsx' : `${item.href.slice(1)}/page.tsx`;
@@ -114,6 +114,37 @@ function visit(node, callback) {
   callback(node);
   visit(node.props?.children, callback);
 }
+
+test('actual editor shortcut uses the operator chat route and keeps the existing Gateway panel and project context', () => {
+  const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+  try {
+    for (const basePath of ['', '/studio']) {
+      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
+      const paths = [], project = createSeedProject();
+      const browser = {history: {pushState: (_state, _title, path) => paths.push(path)}};
+      const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
+        useEffect: () => {}, useRef: current => ({current}), useMemo: fn => fn(), useCallback: fn => fn};
+      function GatewayPanel() { return null; }
+      const {Studio} = loadComponent('studio.tsx', {react: hooks, './gateway-panel': {GatewayPanel}}, browser);
+      const props = {initialProject: project, initialVideos: {videos: []}, initialStatus: {configured: false}};
+      const tree = Studio(props);
+      let shortcut;
+      visit(tree, node => { if (node.type === 'button' && node.props.children === 'Fråga OpenClaw om labbet →') shortcut = node; });
+      assert.ok(shortcut); shortcut.props.onClick();
+      assert.deepEqual(paths, [basePath + '/operator-chat']);
+      const routes = loadComponent('studio-types.ts');
+      assert.equal(routes.studioViewForPath(paths[0]), 'openclaw');
+      let panel;
+      visit(Studio({...props, initialView: 'openclaw'}), node => {if (node.type === GatewayPanel) panel = node;});
+      assert.ok(panel); assert.equal(panel.props.dealerId, 'astrid');
+      assert.equal(panel.props.dirty, false); assert.equal(panel.props.status, props.initialStatus);
+      assert.equal(typeof panel.props.onModeChange, 'function'); assert.equal(typeof panel.props.onPlayerChat, 'function');
+    }
+  } finally {
+    if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
+  }
+});
 
 test('both real page guards protect dirty project drafts on native leave and clean up without mutating them', () => {
   for (const [file, name] of [['lab-studio.tsx', 'LabStudio'], ['studio.tsx', 'Studio']]) {
