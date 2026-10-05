@@ -26,15 +26,15 @@ Det pensionerade privata personarkivet får inte läsas via sökning, Git eller 
 
 ## Verifierat nuläge och leverans
 
-MERGE har återläst följande 5 oktober; denna dokumentkomprimering gör inga nya driftprov.
+MERGE har återläst följande 5 oktober före det avgränsade städ-/UI-slutpaketet.
 
 | Yta | Verifierad version / kvitto |
 | --- | --- |
-| GitHub main | `91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`, pushad/remoteverifierad |
-| CI | `37249938482`: tre jobb success; fullhook 1 491 PASS, 9 befintliga skip, 0 fel |
-| Produkt-Render | LIVE `dep-db1fhi8jo6nc73ai2n1g`, finished `2026-10-05T01:11:39.900705Z`, samma SHA |
-| Vercel frontend | READY `dpl_6uxWLomRgt38pDZnAh6VcNUCoQnU`, samma SHA |
-| Vercel Studio | READY `dpl_DiKezicRyo9Xmwg616arHhfYLtyS`, samma SHA |
+| GitHub main | `6b9dad55ced03ee0573e24b472b4dcbba2b97776`, pushad/remoteverifierad |
+| CI | `37252007240`: tre jobb success; senaste fullhook före detta paket 1 491 PASS/9 befintliga skip/0 fel |
+| Produkt-Render | LIVE `dep-db1fvkuq1p3s73f9gla0`, finished `2026-10-05T01:40:59.149237Z`, samma SHA |
+| Vercel frontend | READY `dpl_7X9A5Gq5Kjs2CVAcbijrUr6bgfGk`, samma SHA |
+| Vercel Studio | READY `dpl_GgTwovLAM42B3v8cWVJK1mETPbNt`, samma SHA |
 | Director | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, LIVE `dep-db1ek0navr4c73bi1log`; administrationskod oförändrad |
 | Bevarad QA | samma `ee060804`: Render LIVE `dep-db1em4ad0e5s73fcv3f0`, frontend/Studio READY, 37 envvärden oförändrade, AI/GPU OFF |
 
@@ -42,13 +42,37 @@ QA:s Vercelkvitton: `dpl_8dp5dw8b38ubwLVCtJQT6mJvhDd1` och
 `dpl_8fEjyiBqhGtx5ohPQKtkcmMvALGS`; alias-CAS/färsk GET och health200 PASS.
 Genererat tal, streaming, tal-preview, cloud-tal, kamera, Lissabon-profiler och
 native-admin är OFF; inga Cartesia-/RunPodnycklar finns i QA. Disk/SDK/data/journaler består.
-QA behöver inte nydeployas för byteidentiska app-/medieläsare i dokumentleveransen.
+QA behålls OFF; inga nycklar, provjobb eller QA-deployer ingår i detta slutpaket.
 
-App/UI/medieläsarbytes i `91d0c4d9` är oförändrade mot
+App/UI/medieläsarbytes till och med `6b9dad55` är oförändrade mot
 `ebbbeb764aa9b42613596049887c178e5a9c1818`. De autentiserade UI- och media-
-kvittona nedan gäller `ebbbeb76` och oförändrade bytes, inte nya prov på `91`.
+kvittona nedan gäller `ebbbeb76` och oförändrade bytes. Paketet nedan ändrar två UI-flöden.
 P0–P5 och P7–P9 är verifierade enligt checklistan; **full P6 är fortfarande öppet**.
 Tidigare 80/20 och ”0 % kvar” var grova/kategoriska migrationsbesked, inte helhetsacceptans.
+
+### Avgränsat slutpaket: dokumentstädning och två UI-rättningar
+
+Åtta referenskontrollerade gamla filer tas bort: fem under `docs/animation-events/`,
+den daterade `docs/releases/dealer-v2-2026-09-20.manifest.json` och Polarlotto-PDF/text
+om andra operatörer. De omfattade 1 143 070 byte och kan återfås ur Git `6b9dad55`.
+Inga aktiva videofiler/pipelines tas bort. Två `docs/qa`-kvitton med kvarvarande
+takeacceptans, `dealer-sync-baseline.json`, miljöregistret och systemkartan bevaras.
+De tre övriga tekniska guiderna kortas till aktuella regler; gamla produktdisk-
+återställningskommandon och ersatta QA-checkpoints tas bort. `.env`/providerinställningar
+ändras inte. Markdown/JSON är dokumentation och kontrollindata, inte processmiljö.
+
+Backoffice slutar hämta oanvänd data: Drift behöver overview/shoes, Bord behöver config.
+Session- och behörighetskontroll behålls vid varje läsning. En gammal Idle-feltext rensas
+först när aktuell idlefilm faktiskt visar en bild; sena callbacks och nyare actionfel
+skyddas. Detta löser den kvarliggande texten, inte den historiska frame-varningens orsak.
+30 administrationsprov och sju riktade spelarprov, TypeScript och dealer-audit med
+`--probe` passerar. Obligatorisk fullhook/CI och faktisk slutversion redovisas vid leverans
+i befintliga privata `lab/data/platform-private/docs-cleanup-final-20261005.json`.
+Färskt isolerat browserprov: Astrid Mobile, `goodluck` två gånger i följd, 2/2 completed,
+video readyState4 och löpande media-tid; ingen idle-feltext. Den äldre SQLite-fixturen
+injicerar inte den serverägda lane-bindningen och väljer därför Astrid även med annan
+dealerquery. Övriga tre har inte fått ett nytt browsergodkännande här. Provfliken och
+testservern är stängda, sessionsguard/listeners fria; ingen databas/provider i drift berördes.
 
 ## Studio, OpenClaw och systemkarta
 
@@ -99,7 +123,10 @@ full spel-/lane-acceptans. Den statiska offline-layoutbilden är återkallad som
 Råfilsradering saknas i UI; avstängning ändrar policy och behåller råfil.
 Separat faktisk upload/delete-/lane-acceptans får inte härledas ur layoutproven.
 
-Menyfördröjning är en olöst rest: enskilda auth/session-GET200 observerades
+Menyfördröjning är delvis åtgärdad: oanvända GET tas bort i slutpaketet ovan.
+Drift går från fyra till tre sessions-GET och tre till två administrations-GET;
+Bord från tre till två respektive två till ett. Ingen authcache införs.
+Kvarvarande enskilda auth/session-GET200 observerades historiskt
 1,3–6,45 s, statiska anrop mest 0–15 ms. En äldre BO-laddning var cirka tio
 sekunder med fyra sessions- och tre administrations-GET. Ingen isolerad rotorsak
 eller aktuell totalmätning; inget bevis för freeplan-, Render- eller providerorsak.
@@ -316,7 +343,8 @@ och verklig invitation/reset där de återstår. `fullP6Passed` får inte sätta
 
 - Ny mänsklig läppsynk-/takeacceptans, råfilmernas kortkontakt
   (`calibratedContact` kan vara false), full P6 och naturligt live-provider-COMPLETED.
-  Idle-observation `Film ended without a presented frame` är en olöst medie-/P6-lucka.
+  Orsaken till idle-observationen `Film ended without a presented frame` är okänd;
+  den kvarliggande feltexten efter fungerande idle är rättad separat ovan.
 - Fysisk mikrofon/kamera, mobil/Safari och riktig mikrofon→svar. Kameraflaggan är
   ON i produktion; observation/transcription/vision gav200/enabled och ett syntetiskt
   translationsprov gav förväntat svar, kostnad okänd. Det är inte fysisk acceptans.
@@ -331,6 +359,12 @@ och verklig invitation/reset där de återstår. `fullP6Passed` får inte sätta
   och QA-only sender/key-konfiguration är inte produktionsacceptans.
   Privata `mail-resend-qa-connect/` och `mail-resend-qa-cleanup-confirmed-result.json`;
   cleanup-SHA `1f3978ba4e58bab9e22e75e32fe8357911ba34c2b17b2e97809c6a9bbcabeb23`.
+  Färsk Vercelläsning 5 oktober: produktions-Studio har tom `RESEND_API_KEY` och
+  saknar `CROUPIER_STUDIO_MAIL_FROM`. QA:s befintliga nyckel gav HTTP401 vid GET
+  `/domains` hos Resend. Det fastställer inte nyckelns rätt att skicka, men verifierar
+  heller ingen produktionsavsändare. Ingen nyckel kopieras eller något mejl skickas.
+  Nästa steg är en giltig Resend-anslutning för `no-reply@scoutgaming.tech`, därefter
+  konfigurering/readback och ett uttryckligt beställt användbart invite-/resetprov.
 - Historisk Next.js-byggvarning GHSA-vcvr-r3jv-pc5j noterades; ingen användarstyrd
   next/og-SVG-route hittades då. Aktuell beroende-/advisorystatus är inte omverifierad;
   ingen automatisk audit fix eller beroendeändring ingår här.
@@ -383,7 +417,7 @@ Färsk läsning via befintlig MCP, återgiven av MERGE 5 oktober: avsedd workspa
 Komplett incidentlista: en incidentsida/elva locationsidor, fem IGNORED och sex
 TRIGGERED. Locationtäckning partial för 37828691/37830671/37862641.
 Safe kvitto: `lab/data/platform-private/gitguardian-read-20261005.json`.
-GitHub check-runs/suites/status på 91d0c4d9 är komplett; GG-suite queued/inga runs.
+GitHub check-runs/suites/status på 6b9dad55 är komplett; GG-suite queued/inga runs.
 Grön vanlig CI/queued/neutral/skipped är inte incidentfrihet.
 
 | Öppna incident-ID:n | Lästa metadata, inte verifierat falsklarm |
@@ -394,7 +428,8 @@ Grön vanlig CI/queued/neutral/skipped är inte incidentfrihet.
 
 Scanner-match/secretvärden har inte lästs; inga incidenter resolve/ignored eller
 skrivrättigheter skapades. Alla sex ska redovisas som öppna, inte automatiska fixtures.
-Fil/rad-luckorna består även när hela incidentlistan är komplett.
+Fil/rad-luckorna består även när hela incidentlistan är komplett. Direkt avläsning av
+de tre locationsvaren gav HTTP200 med tom lista och ingen nästa sida, inte parserfel.
 
 Historiskt efter Jakobs uttryckliga triageuppdrag 3–4 oktober: fem testcredentials
 IGNORED/0 OPEN med en incidentsida/fem locationsidor. Dagens lista bekräftar dessa fem

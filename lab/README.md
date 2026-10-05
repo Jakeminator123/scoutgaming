@@ -447,28 +447,30 @@ Generations-API använder katalogen med sina egna authkrav. Endast kända
 katalog-UUID:er och tillåtna filnamn kan öppnas; symlänkar och vägar utanför
 den verkliga katalogen avvisas. Byte-range och HEAD stöds för videopreview.
 
-Originalregistret läses från den befintliga
-[V3-snapshoten](../docs/animation-events/v3-video-map/snapshot.json).
-På Jakobs Windows hittas originalarkivet automatiskt; annars anges
-`LAB_VIDEO_ARCHIVE` i `lab/.env.local`. Inga videor flyttas eller läggs i Git.
-Egna uppladdningar läses dessutom från `data/videos/index.json`; filer sparas
-byte för byte i samma Git-ignorerade mapp. Servern tillåter bara registrerade
-video-ID:n och kontrollerar storlek och
-SHA-256 före uppspelning. `want` är intake, inte visuell acceptans.
+För aktiv native-produktion gäller [Lab-guiden](docs/README.md): projektpolicy
+och mediemetadata sparas revisionsstyrt i Neon inom rätt miljö-/arbetsytescope,
+medan filmbytes lagras i privat Blob. Den bevarade videobanken har ett kanoniskt
+`lab-video-manifest.json`; egna uppladdningar registreras i Neon först efter
+verifierad Blob-lagring. Uppladdning och sparade urvalsregler är separata steg.
+Servern använder registrerade video-ID:n och verifierar typ, storlek och SHA-256.
+Saknad Neon-/Blob-lagring ger fel, inte automatisk diskfallback.
 
-Registret är lokal filmetadata, inte AI-indexering av filmernas innehåll.
-Att söka, koppla och spela video gör inga modell-/ElevenLabs-anrop.
-Saknad eller ospelbar fil ger en märkt 2D-reserv. Filmer spelas till sitt eget
-slut, inte animationens testlängd, och loopas inte. Inga 16 filmer väljs
-automatiskt: exakt situation, dealer, riktning och eventuell talrad måste matcha.
+Endast det uttryckliga lokala legacy-/fixturlägets diskadapter läser
+`data/videos/index.json` och Git-ignorerade filer. Det är inte den aktiva
+produktionens uppladdningsregister eller en reservväg för native-läget.
 
-Bestående spelarminne, produktens spelarchatt/moderering och en gemensam talägare
-återstår. Labbets originalförval återanvänder nu produktens mediespelarmoduler. Astrids separata idle-chattprov
-använder verkliga modellsvar; det manuella eventtestets kontext är fortfarande
-simulerad medan livejämförelsen använder begränsade observerade fakta.
-IDE-agenternas GitLab-inbox hör inte hit. Videor måste granskas per take
-med text/ljud, hash och kalibrering innan de aktiveras i spelet. Nodträdet
-grupperar efter presentationssätt utan att ändra motorns kontrakt.
+Registret är metadata, inte AI-indexering av filmernas innehåll. Att söka,
+koppla och förhandsvisa redan registrerade klipp startar inga modell-, tal-
+eller GPU-jobb. `want` är intake, inte visuell acceptans. Dealer, situation,
+riktning och eventuell exakt talrad måste matcha; text/ljud, hash och kalibrering
+granskas per take före aktivering. Engångsprov spelar filmen till dess eget slut,
+inte animationens testlängd, och loopar inte. Nodträdet ändrar inte motorns kontrakt.
+
+Ansluten chatt går via originalets autentiserade produktchatt och serverbundna
+konversationsminne. Spelfliken äger uppspelningen och Lab följer dess kvitton;
+originalförvalen återanvänder produktens mediespelarmoduler. Fristående event-
+och chattprov har separat provkontext. Detta innebär inte att full P6-acceptans
+eller mänsklig take-/läppsynkgranskning är klar; se [handoffen](../docs/JOHN-HANDOFF.md).
 
 ### Samstämmighet med Croupier
 
@@ -481,7 +483,8 @@ godkänd talvideo. En labbrörelse byter inte språk eller inspelat ljud.
 Labbets JSON-animation får inte ändra delningsriktning eller ta bort en
 kortvändning. En videoreferens kontrolleras mot registret men är fortfarande
 en **ogranskad labbpreview**, inte automatiskt rätt dealer/action/talrad.
-Produktionskopplingen måste granskas separat tillsammans med Kevin.
+Nya produktionskopplingar och takes kräver separat acceptans;
+aktuella luckor finns i [handoffen](../docs/JOHN-HANDOFF.md).
 
 ## Kontroller
 

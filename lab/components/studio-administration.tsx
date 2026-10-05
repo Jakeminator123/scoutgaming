@@ -32,7 +32,7 @@ export type StudioPartnerResult =
 
 const CONFIG_COMMANDS = new Set(['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict']);
 const GROUP_READS: Record<string, readonly string[]> = {
-  operations: ['overview', 'config','shoes'], tables: ['overview', 'config'], accounts: ['players', 'users'],
+  operations: ['overview', 'shoes'], tables: ['config'], accounts: ['players', 'users'],
   partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
 };
 const CURRENCIES = ['USD', 'EUR', 'SEK'];

@@ -1,7 +1,10 @@
 # Miljövariabler per tjänst
 
-Detta är nyckelnamnsförteckningen, inte en hemlighetsfil. Den maskinläsbara
-listan finns i [`environment-variables.json`](environment-variables.json).
+Detta är den läsbara nyckelnamnsförteckningen. Den maskinläsbara listan finns i
+[`environment-variables.json`](environment-variables.json) och används av CI
+och systemkartan. Båda är aktiva referenser; ingen av dem laddas som processmiljö.
+De innehåller inga hemliga värden. Ignorerade `.env`/`.env.local` och tjänsternas
+miljöinställningar är separata och ska inte raderas vid dokumentstädning.
 Ändra båda när en variabel läggs till, tas bort eller byter betydelse.
 `node tools/check-environment-variables.mjs` körs i Git-hook och CI och
 kontrollerar namn som läses av molnstart, Vercelbygge och GPU-relä.
@@ -10,9 +13,6 @@ i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Aktuell källa: `Jakeminator123/github-work` på `main`.
-Det manuella bounded-QA-provets efterföljande fönster med sex genereringar totalt
-återanvänder de redan listade QA-router-, stream- och SDK-variablerna; inga nya
-miljövariabelnamn införs. Tidigare förbrukning och reservationer bevaras.
 Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
@@ -56,7 +56,7 @@ administration; `CROUPIER_STUDIO_NATIVE_ADMIN` och Neon-policyn ovan styr
 runtimevalet. Ingen ny roll-, lösenords- eller inloggningsvariabel införs.
 Kontoroller och lösenord ändras i Backoffice, aldrig genom klientens env.
 
-### Ny plattform: explicit opt-in
+### Aktiv molnkonfiguration
 
 Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
 en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
@@ -121,13 +121,16 @@ för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
 Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
-Resend Free och avsändardomänen `scoutgaming.tech` är verifierade och kopplade
-till det separata QA-Studio. Ett godkänt invitationsmejl skickades genom den
+Resend Free och avsändardomänen `scoutgaming.tech` verifierades och kopplades
+till det separata QA-Studio den 3 oktober. Ett godkänt invitationsmejl skickades genom den
 verkliga Studio-handlaren 2026-10-03; Resend bekräftar `delivered` och mejlet
 hittades i mottagarens Gmail-skräppost kl. 17:31 svensk tid. QA-testkontot och
 dess tokens städades bort efter provet,
 så mejlets länk är nu ogiltig. Ett separat verkligt resetmejl har inte skickats.
 Ingen betald plan eller produktionsaktivering har gjorts.
+Vid läsning 5 oktober är produktionsnyckeln tom och avsändaren saknas;
+QA-nyckeln gav HTTP401 vid Resends domänläsning. Tidigare leverans är inte ett
+aktuellt credentialsbevis. En giltig avsändaranslutning behöver bekräftas före aktivering.
 För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
 nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,
@@ -138,53 +141,26 @@ kodändringen. Nya reviewposter/klassificeringar läses ur Neon, utan gamla
 uploads-/klassificeringsfiler. Aktiva bankklipp och deras exakta ID/hash består.
 Tillfällig hashverifierad bytescache är disponibel scratch, inte beständig metadata.
 
-Det separata betalda QA-provet har en avstängd koppling:
-`CROUPIER_P6_QA_ROUTER=1` accepteras endast på Render-tjänsten
-`srv-datj7l893c1s73ar3u50`, med dess exakta QA-origin, Neon-databas, scope och
-datarot. Saknad eller `0` flagga importerar inga privata QA-adaptrar.
-`CROUPIER_P6_QA_ROUTER_SOURCE_SHA256`, `CROUPIER_P6_SDK_RUN_ID` och
-`CROUPIER_P6_SDK_DEPLOYMENT_ID` binder den granskade, separat installerade
-kopplingen till körningen. `CROUPIER_P6_SDK_WORKER_TOKEN`,
-`CROUPIER_P6_SDK_READBACK_TOKEN` och `CROUPIER_P6_SDK_TICKET_SECRET` är
-separata privata nycklar för worker, läsande processkvitto och engångsbiljetter.
-De ger ingen automatisk kostnadsreservation eller rätt att starta ett nytt
-försök. Plattformens `RENDER_SERVICE_ID` och `RENDER_GIT_COMMIT` kontrolleras
-också. Web får endast de explicita QA-variablerna, inga talleverantörsnycklar;
-Lab får inga nya QA-nycklar. Opt-in nekar `NODE_OPTIONS`, `NODE_PATH`,
-`LD_PRELOAD`, `NODE_EXTRA_CA_CERTS` och `NODE_TLS_REJECT_UNAUTHORIZED`.
-En saknad, ändrad eller osäkert lagrad privat adapter stoppar uppstarten.
-Kopplingen användes i avgränsad QA och är nu avstängd. Originalets installation,
-journaler och reservationer bevaras; inget nytt prov öppnas av koddeploy.
+### Bevarad QA
 
-Det avgränsade funktionstestet använder dessutom `CROUPIER_P6_BOUNDED_TEST=1`,
-`CROUPIER_P6_BOUNDED_MANIFEST_SHA256` och `CROUPIER_P6_SDK_OPENAI_API_KEY`.
-Dessa får endast nå Web i den ovan namngivna isolerade QA-tjänsten, med
-full käll-SHA, befintlig operatör/spelarlänk och ett privat manifest med
-högst 30 minuters giltighet. Lab får inga nya QA-nycklar. SDK-nyckeln hör
-till den installerade OpenAI-klienten; ordinarie talnycklar fortsätter följa
-den explicita befintliga providerkopplingen. Ursprunglig journal och redan
-förbrukade reservationer bevaras. Jakob har höjt den sammanlagda testkvoten
-till sex generationer; kumulativt 4 generationer/5 SDK/2 TTS/4 GPU är journalfört,
-utan automatisk omkörning. Befintliga monetära reservationer/tak består;
-återstående två generationer öppnar inte ett nytt betalt fönster automatiskt.
-Exakta Cartesia-/counting-priser är backlog; faktisk USD-kostnad
-är okänd och ingen återbetalning eller nollkostnad antas.
+Den isolerade native-QA-miljön har egen backend, databas, scope och hostname.
+AI/GPU/kamera och native-admin är OFF; Cartesia-/RunPodnycklar finns inte där.
+SDK, sourcepins, ursprungliga manifest, journaler och förbrukade reservationer
+bevaras. Varken koddeploy eller återstående generationskvot öppnar ett nytt prov.
 
-Samma avgränsade QA-runtime får med streaming på använda fullfilstal enbart
-genom sin verifierade interna router och Neon-journal. Molnstarten skickar
-då även den installerade fullfilspolicyns reservation och dagsgräns till Web;
-en envflagga ensam öppnar inte fullfilstjänsten. Före containerbyte sparas
-exakt fyra privata SDK-källfiler checksumförseglade i samma beständiga run-dir.
-Efter UID-byte och före Web-start återställs endast saknade, manifestbundna
-filer. Ändrade befintliga bytes stoppar starten; originaljournaler, SDK och
-budget berörs inte av återställningen. Avstängd boundedflagga gör ingen fil-I/O.
+Namnregistret behåller de källlästa `CROUPIER_P6_QA_ROUTER`-, SDK- och bounded-
+variablerna. Den avstängda routern laddar inga privata adaptrar. När en sådan
+koppling uttryckligen används kräver koden exakt QA-tjänst/origin/databas/scope,
+manifest- och källhashar, avgränsad giltighet och separata worker/readback/ticket-
+nycklar. Lab får inga QA-nycklar. Processinjektion via NODE_OPTIONS/NODE_PATH/
+LD_PRELOAD eller ändrad TLS-tillit nekas. Ursprungliga tider/poster skrivs inte om.
+Fullfils- och streamkostnader går genom samma beständiga budgetskydd.
 
-Fullfilstjänsten håller en intern registrering av transportens verifierings-
-callback; SDK-runtime registrerar den efter sin manifestkontroll. Detta håller
-Studios gemensamma bygggraf fri från SDK-runtime och dess privata imports.
-`HOST` och `CROUPIER_CLOUD_RUNTIME` är redan härledda interna Web-värden från
-molnstarten och ingår nu i namninventeringens kontrollerade källor. De är inga
-nya provider- eller Vercel-nycklar; den befintliga QA-scopekontrollen består.
+Aktuell usage, testtak, okänd kostnad och öppen acceptans finns i
+[handoffen](JOHN-HANDOFF.md#budget-och-framtida-prov). Äldre installationsdetaljer
+finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
+
+### Origins och privata medier
 
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
@@ -206,12 +182,9 @@ ger 503 vid saknad eller felaktig källa, utan lokal bytesfallback.
 `LAB_VIDEO_ARCHIVE` är avvecklad i gemensamt Neon-läge; gammal archiveväg
 normaliseras inte till en aktiv reservkälla.
 
-Historiskt exportkontrakt, inte aktuell produktionsstart:
-`CROUPIER_STORAGE_MAINTENANCE=export` och separat
-`CROUPIER_STORAGE_EXPORT_SECRET` startar en exporttjänst med noll Web/Lab-
-skrivare. Normalt spel ger 503; endast hemlighetsskyddad POST kan hämta backup
-inklusive committad WAL. Flaggan får inte kombineras med postgres. Ta bort
-båda efter migrering. Aktuellt verifieringsläge står i handoffen.
+`CROUPIER_STORAGE_MAINTENANCE` och `CROUPIER_STORAGE_EXPORT_SECRET` gäller
+historiska exportlägen. De ska vara borttagna i migrerad produktion;
+återaktivera inte gamla disk-/exportsättare från en äldre konfigurationsbeskrivning.
 
 Native talgranskning använder samma privata Blobindex och exakta registrerade
 audio-/video-/text-/indexhashar. Det äldre fristående röstprovet stoppas före
@@ -229,19 +202,11 @@ fullfilspris. Production/version 1-policy är adopterad inom bevarade tak;
 avgränsade funktionstest får använda dokumenterat okänd USD enligt det
 uttryckliga acceptansundantaget. Exakta tariffer förblir backlog.
 
-Historiskt P7-exportkontrakt, redan genomfört; använd inte för att återaktivera
-gamla produktionsskrivare. Fryst export av äldre Studio-/taljournalfiler:
-`CROUPIER_STORAGE_MAINTENANCE=studio-export`, `CROUPIER_DATABASE=postgres`,
-`CROUPIER_STUDIO_NEON_POLICY=0` samt `CROUPIER_GENERATED_SPEECH=0`,
-`CROUPIER_CLOUD_GENERATED_SPEECH=0` och `CROUPIER_GENERATED_SPEECH_STREAMING=0`
-måste anges uttryckligen. En separat `CROUPIER_STORAGE_EXPORT_SECRET` med minst
-32 byte krävs. Starten behåller disk-/byggkontroller men ansluter inte till
-PostgreSQL eller bootstrappar konton. Inga Web-/Lab-barn startas; exakt GET
-`/__cloud/health` bekräftar läget och noll barn, skrivare och provideranrop.
-Alla andra anrop ger 503, även den äldre export-API:n med korrekt hemlighet.
-Frysta bytes hämtas separat privat via SSH. Hälsokontrollen bevisar inte att
-tidigare externa GPU-jobb har dränerats; detta måste verifieras före import.
-Faktisk fryst export, ALL0-dränering, import och produktionsbyte är genomförda.
+### Tjänsteansvar
+
+Import/ALL0 och produktionsbyte är avslutade. Originalkvitton och återställningsregler
+finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md).
+Återanvänd inte historiska exportflaggor som normal driftkonfiguration.
 
 | Tjänst | Krävs | Vid första start | Villkorligt/valfritt | Värdhanterat |
 | --- | --- | --- | --- | --- |
@@ -255,40 +220,34 @@ Faktisk fryst export, ALL0-dränering, import och produktionsbyte är genomförd
 | RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 
-Äldre statisk kompatibilitet: `node build.mjs --frontend-preview` använder samma
-`CROUPIER_GAME_ORIGIN` som standardbygget och inför **ingen ny env-nyckel**.
-Next-landningens `CROUPIER_GAME_URL` används bara med UI-flaggan av.
-Den aktiva UI-vägen använder exakt publik/backend/Lab-origin och privat
-ingressnyckel. Huvudprojektets Preview pekar mot produktion; syntetisk QA
-kräver `croupier-player-preview-qa` och den isolerade Render-backenden med
-egen game-Neon och privata ingressnycklar. QA innehåller separat zon-Neon
-och Blob-integration; UI vidarebefordrar lagringsanrop till backend.
-Lab-serverns zonlagring läser nu enbart `CROUPIER_ZONES_DATABASE_URL`;
-de andra är alternativa leverantörsformat och styr inte zonflödet.
-`BLOB_READ_WRITE_TOKEN` finns för Production/Preview/Development och är en
-serverhemlighet. Render-tjänsternas Gateway-, Lab- och speech-tokenpar
-verifierades samtidigt; de behöver inte kopieras till Vercels startsidor.
-Se [live-kvittot](../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+Huvudprojektets Preview kan peka mot produktion. Syntetiska spel-/kontoprov
+kräver den separata native-QA-backenden och dess egen databas/hostname.
+De aktuella QA-fronterna heter `croupier-native-qa-abc92154cb15` och
+`croupier-native-studio-qa-abc92154cb15`. Den äldre `croupier-player-preview-qa`
+är en avvecklingskandidat, inte rekommenderad testentré; delade integrations-
+resurser måste kontrolleras före projektradering. Se [driftskartan](CLOUD-MIGRATION.md).
 
-### Sparade talnycklar och första adminkontot
+Lab läser bara `CROUPIER_ZONES_DATABASE_URL` för zoner. Generella DATABASE_URL/
+POSTGRES_URL är inte reserv för detta. Vercel-konfiguration kopieras inte
+automatiskt till Render. Produkt-, Lab- och Gateway-token har olika roller.
 
-På Render `croupier-v2` finns nu `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och
-`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=zsudl8tmzcmiv1`. Namn/närvaro är
-kontrollerade. Den 29 september aktiverades `CROUPIER_GENERATED_SPEECH=1`,
-`CROUPIER_CLOUD_GENERATED_SPEECH=1` och `CROUPIER_GENERATED_SPEECH_STREAMING=1`
-genom env-deploy `dep-datnfph7lnhs73e2c670`. Två riktiga strömmar gav första
-videobild; följdsvar och visuell läppsynk är ännu inte godkända. Sessionens
-reservation är 0,50 USD och dagens konservativa budget 9,94 USD. Se
-[talets driftskvitto](JOHN-HANDOFF.md).
+### Talnycklar och sparade modeller
+
+På Render `croupier-v2` finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
+`RUNPOD_API_KEY` och `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Produktens tre
+aktiveringsflaggor är ON. Aktuell verifiering och kostnadsgränser finns i
+[handoffen](JOHN-HANDOFF.md); gamla deploy-ID:n och gamla budgetbelopp är inte
+instruktioner för att ersätta dagens konfiguration. Lokala nycklar kan höra
+till annat konto och ersätter inte driftens nycklar automatiskt.
 
 Gatewayns nya kod-, Compose- och Blueprint-standard för `OPENCLAW_MODEL_ID`
 är `gpt-5.6-terra`. En befintlig `/data/openclaw/openclaw.json` bevaras vid
 omstart och kräver ett uttryckligt byte av sparade rollmodeller; ett env-byte
 ensamt bevisar inte att Gatewayns primärmodell har ändrats.
 
-Den 1 oktober återlästes både processmiljön och fem sparade rollmodeller som
-Terra efter en riktig env-deploy; vanlig Restart service hade behållit den
-gamla miljöbilden. Se [driftkvittot](JOHN-HANDOFF.md).
+Sparade modeller visas och ändras genom Studios avgränsade OpenClaw-flik.
+En miljöändring eller omstart bevisar inte ett lyckat modellbyte; läs tillbaka
+Gatewayns verkliga sparade konfiguration.
 
 ### Adaptiv chatt genom samma OpenClaw
 
@@ -341,11 +300,11 @@ Render-spelets villkorliga grupper:
   Flaggan är opt-in. Nycklarna begränsas till avsedda serverprocesser och
   nätåtkomst till lagringens exakta ursprung. Render kräver motsvarande
   server-env och en deploy; Vercel-projektets värden kopieras inte automatiskt.
-- Konto/data: `CROUPIER_PLAYER_ACCOUNTS`, `LAB_VIDEO_ARCHIVE`. Spelar- och
-  Lab-datakataloger härleds från `CROUPIER_CLOUD_DATA_ROOT`; manuella
-  `CROUPIER_DATA_DIR`, `LAB_STUDIO_DATA_DIR`,
-  `CROUPIER_PRESENTATION_STUDIO_DIR`, `CROUPIER_GENERATIONS_DIR` och
-  `CROUPIER_GENERATED_SPEECH_DIR` får bara ange exakt samma härledda sökvägar.
+- Konto/data: `CROUPIER_PLAYER_ACCOUNTS` styr kontofunktionen. Migrerad
+  produktion har separat game/auth-Neon och ingen CROOT/diskfallback.
+  Endast isolerad monterad QA får använda den validerade CROOT-katalogen
+  och dess exakt härledda datavägar; gamla LAB_VIDEO_ARCHIVE/diskvariabler
+  ska inte kopieras till produktion.
 - Vercel-spelarproxy: `CROUPIER_VERCEL_FRONTEND_ORIGIN` är valfri och av som
   standard. Ange endast den förhandsversionens exakta HTTPS-origin utan path,
   wildcard eller avslutande snedstreck. Den tillåter spelarens POST-anrop med

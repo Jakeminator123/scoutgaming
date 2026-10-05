@@ -1,9 +1,9 @@
-# Gemensam lokal presentation
+# Gemensam presentationsruntime
 
 Arbetsrepo: `C:\Users\jakem\Projects\croupier`, branch `main`.
 Starta med [anslutningshelpern](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
-Astrids lokala läge finns i det riktiga spelet:
-<http://127.0.0.1:4200/?dealer=astrid&presentation=local>.
+Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
+<http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
 I molnet finns [spelet](https://www.scoutgaming.tech/blackjack) och
@@ -18,31 +18,16 @@ native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
 Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
 
-Historiskt c874/closed29-försök nådde descriptor och GPU-submit men inte TTS
-eller faktisk speluppspelning; dess oföränderliga kvitto är inget godkänt
-AI→tal→GPU→END-bevis. Senare verifierad uppspelning och aktuell QA-version
-redovisas i driftkartan. QA:s AI-flaggor är OFF; tidigare journaler och
+Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
+[handoffen](JOHN-HANDOFF.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Lokal byggcache och runtime
 
 Next skriver byggutdata under respektive apps `.next` och disponibel byggcache
-under `.next/cache`. TypeScript kan dessutom skriva `tsconfig.tsbuildinfo`.
-I den aktiva checkouten ligger de alltså under `C:\Users\jakem\Projects\croupier`:
-
-| Lokal path | Verifierat efter städningen 3 oktober |
-| --- | --- |
-| `lab/.next/cache` | Borttagen; återskapas vid nästa bygge |
-| `apps/croupier-frontend/.next/cache` | Borttagen efter senaste verifierade bygge; återskapas vid nästa bygge |
-| `lab/tsconfig.tsbuildinfo`, `apps/croupier-frontend/tsconfig.tsbuildinfo` | Borttagna; kan återskapas av TypeScript |
-| `lab/.next` utan cache | 8 306 510 byte färdig runtime behålls för anslutningstestet |
-| `apps/croupier-frontend/.next` utan cache | 3 503 289 byte färdig runtime behålls |
-
-Första städleveransen frigjorde netto 1 032 360 345 byte bygglagring, utöver
-borttagna beroenden. Efter credentials-passens nya byggen rensades 292 363 385
-byte återskapad cache igen; den räknas inte dubbelt som nettofrigjord lagring.
-Cache är knuten till den checkout där bygget körs. Vercel har också
-egen deployment-/byggcache i molnet; den här lokala rensningen tömmer inte den.
+under `.next/cache`. TypeScript kan skriva `tsconfig.tsbuildinfo`.
+Lab-regressionen använder byggd runtime; cache och runtime är olika saker.
+Cache hör till den checkout där bygget körs. Vercels byggcache hanteras separat.
 `lab/data/platform-private`, SDK/sourcepins, QA-receipts, kostnadsjournaler,
 konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
 Om hela Lab-runtime behöver byggas om används `npm --prefix lab run build` med
@@ -165,9 +150,12 @@ Inspelade fria chattsvar är text-only när deras exakta text/video-paket inte
 inbäddat ljud. Genererad läppsynk kräver fortsatt mänsklig granskning.
 Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 
-Originalvägen utan `presentation=local` finns kvar för regression/jämförelse;
-den är inte en automatisk videofallback inuti det lokala läget. Vera, Amira
-och Mei använder sin befintliga gemensamma spelare.
+Sparade `gameLanes`/`gameLane` styr renderer, dealer och mediesamling.
+Mobile Phone Lane är förval. Äldre `original` migreras vid läsning till Mobile;
+gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
+En uttryckligen registrerad `indexed-video`-lane kan använda den gemensamma
+indexspelaren för dealerbanken. Ingen automatisk videofallback införs.
+Källkontrakt: `web/public/game-lanes.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
 [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
