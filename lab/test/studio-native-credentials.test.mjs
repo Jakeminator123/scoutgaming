@@ -22,6 +22,8 @@ function loginFixture(role='admin') {
     async function all(...args) {
       if(sql.includes('FROM meta'))return [{v:signer}];
       if(sql.includes('FROM bo_auth_epochs'))return [{epoch:0}];
+      if(sql.includes('LEFT JOIN bo_auth_epochs'))return state.users.filter(row=>sql.includes('lower(u.username)')
+        ? row.username.toLowerCase()===args[0]||row.email?.toLowerCase()===args[1] : String(row.id)===String(args[0])).map(row=>({...row,epoch:0}));
       if(sql.includes('FROM users')) {
         if(sql.includes('lower(username)'))return state.users.filter(row=>row.username.toLowerCase()===args[0]||row.email.toLowerCase()===args[0]);
         if(sql.includes('username=?'))return state.users.filter(row=>row.username===args[0]);

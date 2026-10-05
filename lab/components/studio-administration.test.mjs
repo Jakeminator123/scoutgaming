@@ -141,6 +141,7 @@ function nativeReadFixture() {
         state.queries++;
         if (sql.includes('FROM lab_sessions')) return args[0] === createHash('sha256').update(bearer).digest('hex') && args[1] === clock ? [labSession] : [];
         if (sql.includes('FROM bo_auth_epochs')) return [{ epoch: state.epoch }];
+        if (sql.includes('LEFT JOIN bo_auth_epochs')) return state.user && String(args[0]) === user.id ? [{ ...state.user, epoch: state.epoch }] : [];
         if (sql.includes('FROM users')) return state.user && String(args[0]) === user.id ? [state.user] : [];
         assert.fail('Unexpected native read fixture query');
       }

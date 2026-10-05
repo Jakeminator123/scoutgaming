@@ -19,6 +19,7 @@ import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 
 const unavailable = () => { throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 }); };
 const denied = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
@@ -141,20 +142,49 @@ export function nativeStudioErrorResponse(error) {
     { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 }
 
-export async function handleNativeAdmin(request) {
-  try {
-    const config = nativeStudioAdminConfiguration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
-    return (await studioNativeRuntime()).api.handle(request);
-  } catch (error) { return nativeStudioErrorResponse(error); }
+// Test dependencies are trusted server-side functions, never request metadata.
+// Keep Next's exported route handlers below as one-argument functions.
+export function createNativeStudioRequestHandlers({ configuration = nativeStudioAdminConfiguration,
+  runtime = studioNativeRuntime, clock = () => performance.now() } = {}) {
+  async function handle(request, phase, work) {
+    const times = { studio_runtime: 0, [phase]: 0 };
+    const measure = async (name, action) => {
+      const start = clock();
+      try { return await action(); }
+      finally {
+        const elapsed = clock() - start;
+        times[name] = Number.isFinite(elapsed) ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, elapsed)) : 0;
+      }
+    };
+    let response;
+    try {
+      const config = configuration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
+      response = await work(request, config, measure);
+    } catch (error) { response = nativeStudioErrorResponse(error); }
+    const headers = new Headers(response.headers);
+    // Constant phase names and finite nonnegative milliseconds only. Preserve
+    // response body, status, cookies and cache/security headers without reading it.
+    headers.set('Server-Timing', `studio_runtime;dur=${times.studio_runtime.toFixed(2)}, ${phase};dur=${times[phase].toFixed(2)}`);
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+  return Object.freeze({
+    handleNativeAdmin: request => handle(request, 'studio_api', async (current, _config, measure) => {
+      const native = await measure('studio_runtime', runtime);
+      return measure('studio_api', () => native.api.handle(current));
+    }),
+    handleNativeSession: request => handle(request, 'studio_auth', async (current, config, measure) => {
+      if (current.method !== 'GET' || new URL(current.url).pathname !== `${config.authBase}/session`) {
+        return new Response(null, { status: 405, headers: { Allow: 'GET', 'Cache-Control': 'private, no-store' } });
+      }
+      const native = await measure('studio_runtime', runtime);
+      return measure('studio_auth', async () => {
+        const session = await native.authorize(current);
+        return Response.json({ username: session.user, role: session.role, availableActions: native.api.availableActions(session) },
+          { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
+      });
+    }),
+  });
 }
-export async function handleNativeSession(request) {
-  try {
-    const config = nativeStudioAdminConfiguration(); request = normalizeNativeStudioRequest(request, config); assertNativeStudioRequest(request, config);
-    if (request.method !== 'GET' || new URL(request.url).pathname !== `${config.authBase}/session`) {
-      return new Response(null, { status: 405, headers: { Allow: 'GET', 'Cache-Control': 'private, no-store' } });
-    }
-    const runtime = await studioNativeRuntime(), session = await runtime.authorize(request);
-    return Response.json({ username: session.user, role: session.role, availableActions: runtime.api.availableActions(session) },
-      { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
-  } catch (error) { return nativeStudioErrorResponse(error); }
-}
+const nativeRequestHandlers = createNativeStudioRequestHandlers();
+export async function handleNativeAdmin(request) { return nativeRequestHandlers.handleNativeAdmin(request); }
+export async function handleNativeSession(request) { return nativeRequestHandlers.handleNativeSession(request); }

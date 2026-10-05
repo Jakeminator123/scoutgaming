@@ -35,13 +35,21 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   och klienten avvisar identitetsbyte, saknade headers och revoke före visning.
   81 riktade tester passerar; legacy- och skrivkontroller kvarstår. Klart när
   faktiskt publicerat flöde är ommätt med rätt data och bevarad behörighet.
+  Publicerat `cb8e5254`: 11GET200, fyra fulla mätningar 2,553 / 4,834 /
+  6,653 / 2,682s. Anropsminskning bevisad, latenstoppar kvar. Agenten slår nu
+  samman färska authprojektioner (utan cache): två SELECT/fyra frågeanrop
+  mot tidigare fyra/sex. 118 riktade PASS; signer/sessionförst, collision,
+  roll/stamp/epoch och mutationslås bevarade. Numerisk Server-Timing skiljer
+  runtimeväntan från API/auth; 18 riktade PASS. Isolerat SQL8 och nytt CI/live
+  krävs. Punkten förblir öppen.
 - [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
   `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
   samt spelarkonto/adminförtydligandet är verifierade i publicerad `ba0cb7ee`.
   Native/Neon spärrar det äldre fristående röstprovet; UI ska visa detta och
   göra noll röst-GET/POST, med serverns spärrar kvar. Neutrala miljö-/spartexter
-  och denna UIrättning har 65 riktade PASS och kräver publicerat omprov.
+  och denna UIrättning har 65 riktade PASS. Publicerat cb8e5254/reload visar
+  otillgängliginfo, inga kontroller/alerts och noll röst-GET/POST/API503.
   Klart när menyrutter/direktlänkar/login fungerar ihop, utkast bevaras och
   kvarvarande desktop-/mobil- och användarflöden faktiskt är verifierade.
 - [x] **D. P6:s isolerade SQL/HTTPS-prov — verifierat lokalt 5 oktober.** Huvudagenten har rättat testfixturens
@@ -62,6 +70,10 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Rättningen använder egen tom paketstatus och installerar/ändrar inget på
   värdsystemet. Klart när ett faktiskt SQL-prov och exporter visar rätt
   resultat/SHA/datum; saknat eller skippat prov får aldrig bli grönt.
+  Nästa `cb8e5254`-CI37303118034 stoppade efter databasstart vid delprovets
+  resultatavläsning: CI använder Node24.21.0, lokal Node22.22.x. Runnern väljer
+  nu uttryckligen TAP, som dess räknare läser, och CI=true lokal SQL7 passerar.
+  Även denna exakta failureexport är röd och bevarad; ny CI-PASS återstår.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
   belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
   QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
@@ -88,11 +100,20 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   kortkontakt och fysisk mic/kamera/mobil/Safari redovisas separat. Klart när
   varje krav har aktuellt bevis eller ett exakt kvarstående hinder. QA AI/GPU
   förblir OFF; betalda prov kräver färsk avgränsad auktoritet.
-- [ ] **I. Resterande drift och backup.** Utred frame-varningen, zonlagring och
-  startsidesflimmer i berörda flöden; extern Director/Gatewaybackup följer
-  återställningsreglerna. Klart när relevant rättning/omprov eller konkret
-  hinder finns per punkt och backupen har extern kopia/verifierad återläsning.
-
+- [ ] **I. Resterande drift och backup.** Läsutredningen skiljer följande krav:
+  frame-varningen täcker saknad uppspelningsstart, presenterad bildruta eller
+  avslut; ursprungskvittot saknar flaggorna. Nästa steg är snäv diagnostik
+  och reproduktion med exakt idlefilm, med bildrutespärren kvar. Zoner har
+  separat editorlagring/versionsskydd och styr ännu inte spelet; full isolerad
+  spar-/återläsnings-/omstartsacceptans saknas. Startsidan byter asynkront
+  hero-layout och introoverlay; möjlig flimmermekanism kräver faktisk bildserie
+  och laddningsmätning innan rotorsak/rättning hävdas. Extern produktbackup har
+  matchande verifierat kvitto, men Director/Gateway saknar angivna fullbackup-
+  och återläsningskvitton. Nästa steg är samordnad faktisk skrivarfrysning,
+  export av `/data/catalog` respektive `/data/openclaw`, extern kopia och
+  hash-/SQLitekontroller enligt återställningsreglerna. Exportåtkomst är inte
+  prövad. Klart när omprov/fix eller exakt kvarstående hinder är belagt per
+  driftfel, och båda tjänster har verifierad extern fullbackup.
 Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
 Avslutade migrationssteg och deras historiska bevis står kvar nedan.
 

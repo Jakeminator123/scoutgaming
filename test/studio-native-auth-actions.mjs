@@ -24,6 +24,9 @@ function fixture(overrides = {}) {
       if (sql === "SELECT v FROM meta WHERE k='jwt_secret'") return state.meta.jwt_secret ? [{v:state.meta.jwt_secret}] : [];
       if (sql === 'SELECT v FROM meta WHERE k=? FOR UPDATE') return state.meta[args[0]] === undefined ? [] : [{v:state.meta[args[0]]}];
       if (sql.startsWith('INSERT INTO meta')) { state.meta[args[0]] = args[1]; return []; }
+      if (sql.includes('LEFT JOIN bo_auth_epochs')) return state.users.filter(user => sql.includes('lower(u.username)')
+        ? user.username.toLowerCase() === args[0] || user.email?.toLowerCase() === args[1] : user.id === String(args[0]))
+        .map(user => ({ ...user, epoch: state.epochs[user.id] ?? 0 }));
       if (sql.includes('FROM users WHERE lower(username)=? OR lower(email)=?')) return state.users.filter(user => user.username.toLowerCase() === args[0] || user.email?.toLowerCase() === args[1]);
       if (sql === 'SELECT id FROM users WHERE username=? FOR UPDATE' || sql === 'SELECT id,role FROM users WHERE username=? FOR UPDATE') return state.users.filter(user => user.username === args[0]);
       if (sql === 'SELECT role FROM users WHERE id=?' || sql === 'SELECT salt,hash FROM users WHERE id=?') return state.users.filter(user => user.id === String(args[0]));
