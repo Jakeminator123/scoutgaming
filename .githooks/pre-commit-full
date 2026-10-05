@@ -32,7 +32,7 @@ run_node_tests test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs t
 run_node_tests test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs apps/croupier-frontend/test/game-entry.mjs
 run_node_tests lab/test/neon-project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
 run_node_tests lab/test/studio-render-persistence.test.mjs lab/test/studio-clip-controls-api.test.mjs lab/test/studio-social-status.test.mjs lab/test/studio-companion-cookie.test.mjs lab/test/check-build-traces.test.mjs
-run_node_tests lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs lab/components/voice-preview-panel.test.mjs
+run_node_tests lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs lab/components/voice-preview-panel.test.mjs lab/components/event-tree.test.mjs
 run_node_tests lab/test/zone-reference.test.mjs open-claw/lab/test/dashboard-proxy.test.mjs
 run_node_tests lab/test/openclaw-admin.test.mjs open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
 run_node_tests test/bo-lab-auth.mjs

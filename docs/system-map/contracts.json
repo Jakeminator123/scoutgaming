@@ -4,10 +4,10 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "cb8e52549ba7c171f5cd0eadaafe51d5159f2f5f",
-    "capturedAt": "2026-10-05T11:42:18.588Z",
+    "observedCommit": "cd9f5b2109daa893b283e10bc204ae40219d6acf",
+    "capturedAt": "2026-10-05T12:02:36.079Z",
     "hashAlgorithm": "sha256:utf8-lf",
-    "note": "Scoped binding of fresh joined native identity, request phase timing, related fixtures and explicit TAP acceptance; input capture only, no runtime/test approval."
+    "note": "Scoped binding of native group response header barrier, read-time navigation and existing component fixtures; input capture only, no runtime/test approval."
   },
   "contracts": [
     {
@@ -338,8 +338,8 @@
         "lab/app/zones/page.tsx": "536135b14902cda86181b41eff0c4e3b9292549616fb989cc52a2bf9e2872840",
         "lab/components/event-tree.test.mjs": "e76731f7bb48727f9cee046e10ae931a8a972151ab7017e2025042b01a03e2c6",
         "lab/components/event-tree.tsx": "ad3c6125e22464ed9e09398c35622b628846eac59a257947956b2dc91236da88",
-        "lab/components/studio-administration.test.mjs": "65681e43b7807eab082a91ec8dc0e296619357fea34be36ecb1dea7a7bdb77e9",
-        "lab/components/studio-administration.tsx": "e433e30e4861ed3a303ff5f2ca59833a7922ff2b955199e5dd301907b4dab13f",
+        "lab/components/studio-administration.test.mjs": "0138de85db57edf7667da41779730e03130ed24b0927bd82c68e6cd1ccc585e0",
+        "lab/components/studio-administration.tsx": "137720d6012e2140c94d4ffd5528d8a8fafbf4ba988483f2a7223061a0e1fa4b",
         "lab/components/studio-types.ts": "03b72f8d0b3514b965165466056437a4f05165cd5629b227ba4c3ea0bdac8877",
         "lab/components/studio.tsx": "1d2d9122d879e8824a4281eb4720b7f7bb25c15cfc28fd2947014e5665af06b6",
         "lab/lib/studio-login-client.mjs": "c8974d13ffc29df0a72d0fa6fae90f4d3a77637971c52c19b72763dcf6ce5061",
