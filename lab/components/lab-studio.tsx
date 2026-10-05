@@ -24,7 +24,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
   const [videos, setVideos] = useState(initialVideos);
   const [dealerId, setDealerId] = useState<DealerId>('astrid');
-  const [view, setView] = useState<DealerWorkspaceSection>('idle');
+  const [requestedView, setView] = useState<DealerWorkspaceSection>('idle');
   const [uploadOpen, setUploadOpen] = useState(false);
   const [observeOpen, setObserveOpen] = useState(false);
   const [observationDealerId, setObservationDealerId] = useState<DealerId | null>(null);
@@ -98,6 +98,8 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
   const definition = selection && project.events.find(event => event.id === selection.eventId);
   const event = definition && mediaExampleEvent(definition, selection!.situation);
   const familyWorkspace = supportsFamilyWorkspace(dealerId);
+  const sections = DEALER_WORKSPACE_SECTIONS.filter(section => familyWorkspace || ['idle', 'deal', 'clips'].includes(section.id));
+  const view = sections.some(section => section.id === requestedView) ? requestedView : 'idle';
   const dealerLabel = project.dealers.find(row => row.id === dealerId)?.label ?? dealerId;
   const observationDealerLabel = project.dealers.find(row => row.id === observationDealerId)?.label ?? observationDealerId;
   const familyInventory = { ...videos, families: videos.families?.filter(row => row.dealerId === dealerId) };
@@ -110,14 +112,15 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
       <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat i Studio'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
     </header>
     <main className={styles.main}>
-      <nav className={styles.categories} aria-label="Dealerns klippkategorier">{DEALER_WORKSPACE_SECTIONS.map(({ id, label }) => <button type="button" className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
+      <div className={styles.toolbar}><nav className={styles.categories} aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
+        {familyWorkspace && ['idle', 'deal', 'clips'].includes(view) ? <button type="button" className="primary-button" onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button> : null}
+      </div>
       {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
-      {['idle', 'deal', 'clips'].includes(view) ? <div className={styles.actions}><button type="button" className="primary-button" onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button></div> : null}
-      <div hidden={!uploadOpen || !['idle', 'deal', 'clips'].includes(view)}>
-        {familyWorkspace ? <><p className={styles.intro}>MP4 eller WebM, högst 128 MB. Välj en exakt klippfamilj; nya varianter granskas innan de aktiveras.</p><fieldset className={styles.fields} disabled={!connectedLane || saving}><FamilyVideoUpload project={project} inventory={familyInventory} onUploaded={setVideos} onOpen={open} /></fieldset></> : <p className={styles.intro}>Familjeuppladdning stöds ännu inte för {dealerLabel}. Befintliga exakta klipp kan granskas och originalmotorns tillåtna val kan sparas.</p>}
+      <div hidden={!familyWorkspace || !uploadOpen || !['idle', 'deal', 'clips'].includes(view)}>
+        {familyWorkspace ? <><p className={styles.intro}>MP4 eller WebM, högst 128 MB. Välj en exakt klippfamilj; nya varianter granskas innan de aktiveras.</p><fieldset className={styles.fields} disabled={!connectedLane || saving}><FamilyVideoUpload project={project} inventory={familyInventory} onUploaded={setVideos} onOpen={open} /></fieldset></> : null}
       </div>
       {view === 'probe' ? <section><h2>Talinitiativ vid inaktivitet</h2>{familyWorkspace ? <><p className={styles.intro}>Nya repliker när spelaren är inaktiv. Textprovet skapar varken ljud eller video.</p><details className={styles.help}><summary>Probe-inställningar och syntetiskt textprov</summary><fieldset className={styles.fields} disabled={saving || !connectedLane}><ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy => edit(draft => { draft.probePolicy = policy; })} onActivity={record} /></fieldset></details></> : <p className={styles.intro}>Probe stöds ännu inte för {dealerLabel}. Astrids inställningar gäller endast Astrid.</p>}</section> : null}
       {view === 'background' ? <section><h2>Bakgrund för {dealerLabel}</h2>{familyWorkspace ? <><p className={styles.intro}>Förhandsvisa bakgrundszoner. De styr ännu inte spelets bakgrund. Spara ändringar innan du öppnar verktyget.</p><a className="primary-button" href={labUrl('/zones')}>Öppna bakgrundszoner</a></> : <p className={styles.intro}>Bakgrundsredigering stöds ännu inte för {dealerLabel} i denna arbetsyta.</p>}</section> : null}

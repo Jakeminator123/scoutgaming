@@ -43,8 +43,16 @@ exakt tal, medan Probe kan skapa ett nytt tal-/videopaket när spelaren är
 inaktiv. Ett syntetiskt Probe-textprov är inte en skapad eller spelad film.
 Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
-Backoffice grupperar alla 15 befintliga sektioner, inklusive lane-val, under drift/spelintegritet,
-bord/personal, konton, partner, betalningar/journal och mediegranskning.
+Backoffice har 11 aktiva sektioner under drift/spelintegritet, spel/lanes/bord,
+konton, partner, betalningar/journal och talgranskning. Lägga till, ta bort och
+kontoåtgärder öppnas vid behov; listor och aktuella värden visas först.
+Turneringar och pitboss-inställningar har tagits bort från gränssnittet eftersom
+de saknar verifierad koppling till den aktuella spelvägen. Äldre sparade värden,
+API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
+De tidigare rena informationspanelerna för klipp och AI-generering är borta;
+klipparbete finns under Dealer & klipp. E-postmallar är förhandsvisningar.
+Andra dealers visar bara de klippkategorier som stöds; Astrids Probe, bakgrund
+och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 
 **Lanes:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En lane väljer vilken
@@ -87,9 +95,10 @@ Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 Den nya [systemkartan](../../docs/system-map/index.html) visar tjänster, sidor,
 databas/lagring, spel-/talflöden, nyckelnamn och befintliga tester. Den är en
 fristående HTML-fil; kodinventering och tidigare driftbevis anges separat.
-OpenClaw öppnar den befintliga autentiserade dashboarden på Render.
-Agentinställningar, pairing och modell-/GPU-konfiguration förändras inte av
-den nya menyn. Vanliga sparade klippval kräver ingen Render-omstart;
+OpenClaw-sidan finns i samma Studio på Vercel och visar agenternas modellval.
+Sparning går genom Studios behörighetskontroll till OpenClaw på Render.
+Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.
+Vanliga sparade klippval kräver ingen Render-omstart;
 idleändringar kräver omladdning av spelfliken mellan händer.
 
 Under klippens uppladdning väljer du exakt familj och originalklipp.

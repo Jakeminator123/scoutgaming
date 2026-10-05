@@ -22,6 +22,7 @@ export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {
     catch (error) { setError(error instanceof StudioLoginUiError ? error.message : 'Utloggningen kunde inte bekräftas.'); }
     finally { writing.current = false; setBusy(false); }
   }
-  return <main className={styles.shell}><div className={styles.sessionActions}><button type="button" disabled={busy} onClick={() => void logout()}>Logga ut</button></div>{error && <p role="alert">{error}</p>}
-    {!busy && <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} />}</main>;
+  return <main className={styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
+    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin}
+      sessionAction={<button type="button" onClick={() => void logout()}>Logga ut</button>} />}</main>;
 }

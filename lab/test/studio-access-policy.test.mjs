@@ -9,7 +9,8 @@ import {
 
 test('administrator is the only Studio role and owns every existing section/action', () => {
   assert.deepEqual(STUDIO_ROLES, ['admin']);
-  assert.deepEqual(STUDIO_ADMIN_SECTIONS.map(section => section.id), BACKOFFICE_SECTIONS.map(section => section.id));
+  // Hidden historical sections keep their existing API permissions until retirement.
+  assert.ok(BACKOFFICE_SECTIONS.every(section => STUDIO_ADMIN_SECTIONS.some(policy => policy.id === section.id)));
   assert.equal(STUDIO_ADMIN_SECTIONS.length, 15);
   assert.equal(STUDIO_ADMIN_ACTIONS.length, 37);
   assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 37);

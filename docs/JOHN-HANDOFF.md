@@ -38,8 +38,25 @@ Ett no-op-save av operatörens befintliga modell gav 503: native OpenClaws
 godtar bara konsekvent oförändrad modell och tom changedPaths-lista; övriga
 kvitton måste fortsatt ha hash. 19 riktade backend/transportprov PASS.
 Färsk readback visar samtliga modeller oförändrade;
-inget automatiskt andra skrivförsök eller providerjobb. QA AI/GPU fortsatt OFF.
-GitGuardian på `77a7cb49`: suite queued, incidentlista not-read.
+inget automatiskt andra skrivförsök eller providerjobb.
+
+**Levererad rättning `ee0608044f7c78b80c4f46023cd67a7b391e17f0`:** fullhook
+1 488 PASS / 9 befintliga skip / 0 fel. Director `dep-db1ek0navr4c73bi1log`
+LIVE; Studio `dpl_7YXkCP7srKzW7DiQdsfL8yWggosX` och frontend
+`dpl_1mtD82zJ5dY7QLAL8D759Fg1GuVy` READY. Avgränsat no-op-save efter deploy
+PASS: `saved=true`, oförändrad revision och alla fem agentmodeller,
+`restartScheduled=false`, färsk GET `applied=true`. Autentiserad Studio-flik
+återläst. Privat kvitto `lab/data/platform-private/openclaw-admin-noop-receipt-20261005.json`.
+QA AI/GPU fortsatt OFF. GitGuardian på `ee060804`: suite queued, incidentlista not-read.
+
+QA:s tre befintliga tjänster är nu också på `ee060804`: Render
+`dep-db1em4ad0e5s73fcv3f0`, frontend `dpl_8dp5dw8b38ubwLVCtJQT6mJvhDd1`
+och Studio `dpl_8fEjyiBqhGtx5ohPQKtkcmMvALGS`. Alias-CAS och färsk GET PASS.
+QA:s samtliga 37 miljövärden är oförändrade, health200; inga Cartesia-/RunPod-
+nycklar. Genererat tal, streaming, tal-preview, cloud-tal, kamera, Lissabon-
+profiler och native-admin är fortsatt OFF. Disk, data och journaler bevaras.
+De fem Vercel-projektens roller och den äldre testfrontens lagringskopplingar
+är dokumenterade i CLOUD-MIGRATION; inget Vercel-projekt har raderats.
 
 ## Interaktiv systemkarta och testkoppling — 5 oktober
 
@@ -58,6 +75,15 @@ GitHub branch protection och verifierar inte databaser eller providers live.
 UI:s syntetiska pekar-/färg-/modellprov PASS. Lokal HTML är öppnad i Codex;
 automatiserad browserkontroll av fil-URL blockerades av browserpolicyn och
 har därför inte markerats genomförd. Inga alternativa browseromvägar användes.
+
+CI-körning `37246124351` avbröts efter att det nya cancellation-fixturen i
+`test/system-map.mjs` fastnat på Node24. Samma fixture gick igenom på Node22;
+felet är återskapat även utan customreporter. Fixturen använder nu explicit
+abort och fem sekunders yttre gräns. En otypad avbruten testhändelse kräver
+samma fils slutkvitto med failed0/cancelled>0; verkliga fel och timeouts
+förblir fel. Alla 23 prov med dubbla CI-reportrar PASS på både Node22.22.2
+och Node24.21.0, cirka sex sekunder vardera. Inga spel-/providerfel har
+härletts från teststoppet. Nytt CI-kvitto krävs efter denna fixture-rättning.
 
 ## Lane-register och medierensning — 5 oktober
 
@@ -118,6 +144,16 @@ Vercelbyggen READY. Detta är ingen ny visuell eller läppsynksacceptans.
 GitGuardian: suite queued, incidentlista not-read; inte klartecken.
 
 ## Studio-design — 5 oktober
+
+**Ytterligare UI-pass, förberett för gemensam leverans:** DESIGN har lämnat
+över 14 frysta filer. Backoffice visar elva aktiva sektioner; de overifierade
+pitboss-/turneringsformulären och två informationspaneler har tagits bort
+från menyn. Deras befintliga API, behörighetskatalog, schema och sparade data
+är bevarade. Lane-/konto-/nyckelåtgärder och talgranskning är utfällbara.
+Gemensam navigation och kompaktare Idle-/klippytor; byte från Astrids Probe
+till annan dealer visar den dealerns Idle och bevarar osparat projektutkast.
+53 riktade tester, TypeScript och Next-produktionsbygge PASS före överlämning.
+Faktisk ny desktop-/mobilverifiering återstår efter leverans.
 
 Dealer & klipp och Backoffice delar nu en dämpad gråblå palett. Deal och
 repliker har kompakta situationskort med Spela standard, Inställningar och

@@ -4,13 +4,13 @@ import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-naviga
 import { studioAdminSectionPath } from '../lib/studio-admin-contract.mjs';
 
 test('all Backoffice surfaces keep their native administration destination', () => {
-  assert.deepEqual(BACKOFFICE_SECTIONS.map(section => section.id), ['ops','lanes','voice','clips','gens','apikeys','emails','users','rooms','dealers','pit','tours','players','pay','shoes']);
+  assert.deepEqual(BACKOFFICE_SECTIONS.map(section => section.id), ['ops','lanes','voice','apikeys','emails','users','rooms','dealers','players','pay','shoes']);
   for (const section of BACKOFFICE_SECTIONS) {
     assert.equal(studioAdminSectionPath(section.id), `/studio/administration/${section.id}`);
   }
 });
 
-test('six native Backoffice groups cover every existing function exactly once', () => {
+test('six native Backoffice groups cover every active surface exactly once', () => {
   const ids = BACKOFFICE_GROUPS.flatMap(group => group.sections);
   assert.equal(BACKOFFICE_GROUPS.length, 6);
   assert.equal(ids.length, new Set(ids).size);

@@ -123,7 +123,7 @@ function resources() {
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
-test('render never mutates or requests providers/accounts; only six existing local groups and 15 sections', () => {
+test('render never mutates or requests providers/accounts; six groups expose eleven implemented sections', () => {
   const h = harness(); let calls = 0;
   const props = { apiBase: '/studio/api/admin', availableActions: allActions, session: async () => { ++calls; return actor('superadmin'); }, fetchImpl: async () => { ++calls; throw new Error('no'); } };
   const html = renderToStaticMarkup(h.render(props));
@@ -134,7 +134,7 @@ test('render never mutates or requests providers/accounts; only six existing loc
     const tree = h.StudioAdministrationView(viewProps('superadmin', group.id));
     return nodes(tree, node => node.props?.['data-admin-section']).map(node => node.props['data-admin-section']);
   });
-  assert.equal(sections.length, 15); assert.equal(new Set(sections).size, 15);
+  assert.equal(sections.length, 11); assert.equal(new Set(sections).size, 11);
   assert.deepEqual([...sections].sort(), navigation.BACKOFFICE_SECTIONS.map(section => section.id).sort());
   assert.doesNotMatch(sections.join(' '), /clip-assign/);
 });
@@ -321,17 +321,13 @@ test('player lifecycle is create/status, never hard delete or reopening closed a
   assert.match(unavailable, /players\/status är ännu inte ansluten/); assert.doesNotMatch(unavailable, /Ändra spelarstatus/);
 });
 
-test('forms emit established payloads, string CAS, cap and cleared password input without render writes', () => {
+test('active forms emit established payloads, string CAS and cleared password input without render writes', () => {
   const h = harness(); const calls = [];
   let tree = h.StudioAdministrationView({ ...viewProps('admin', 'tables'), command: (action, body) => calls.push({ action, body }) });
   const formFor = text => nodes(tree, node => node.type === 'form' && buttons(node, text).length)[0];
   formFor('Spara rum').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ state: 'pending' }) });
   formFor('Spara dealer').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ dealer: 'mei' }) });
-  formFor('Spara pit bosses').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ payout10x: 'on', randomWalkMin: '30' }) });
-  formFor('Skapa turneringsutkast').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ name: 'New', format: 'Elimination', buyin: '1', pool: '2', cap: '10', starts: 'TBD' }) });
-  assert.equal(calls.length, 4); assert.ok(calls.every(call => call.body.expectedRevision === 'studio-v1'));
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[2].body)), { payout10x: true, streak5: false, randomWalkMin: 30, expectedRevision: 'studio-v1' });
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[3].body)), { name: 'New', format: 'Elimination', buyin: 1, pool: 2, cap: 10, starts: 'TBD', expectedRevision: 'studio-v1' });
+  assert.equal(calls.length, 2); assert.ok(calls.every(call => call.body.expectedRevision === 'studio-v1'));
   formFor('Spara aktiv lane').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ lane: 'mobile-phone' }) });
   assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { action: 'game-lane', body: { lane: 'mobile-phone', expectedRevision: 'studio-v1' } });
   tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
@@ -339,9 +335,25 @@ test('forms emit established payloads, string CAS, cap and cleared password inpu
   formFor('Skapa spelarkonto').props.onSubmit({ preventDefault() {}, currentTarget: playerForm });
   assert.equal(playerForm.passwordInput.value, ''); assert.equal(calls.at(-1).body.password, 'temporary-password');
   assert.equal(calls.at(-1).action, 'players/create');
-  tree = h.StudioAdministrationView({ ...viewProps('admin', 'tables'), command: (action, body) => calls.push({ action, body }) });
-  formFor('Skapa turneringsutkast').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ name: 'Unlimited', format: 'Elimination', buyin: '0', pool: '1', starts: 'TBD' }) });
-  assert.equal(calls.at(-1).body.cap, 0);
+});
+
+test('retired tournament, pitboss and empty legacy galleries are absent while source data remains intact', () => {
+  const h = harness(); const data = resources(); const original = JSON.stringify(data);
+  data.emails.payload.templates.push({ id: 'tournament-invite', name: 'Tournament invite' });
+  const html = navigation.BACKOFFICE_GROUPS.map(group => renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', group.id), resources: data }))).join('');
+  assert.doesNotMatch(html, /Pit bosses|Turneringar|Skapa turneringsutkast|Spara pit bosses|Existing tournament|Tournament invite|Äldre klipp och granskning|Genererat material|data-admin-section="(pit|tours|clips|gens)"/);
+  data.emails.payload.templates.pop(); assert.equal(JSON.stringify(data), original);
+  assert.equal(data.config.payload.tournaments.length, 1); assert.equal(data.config.payload.pitboss.randomWalkMin, 45);
+});
+
+test('secondary lane and account forms remain functional inside closed disclosures', () => {
+  const h = harness();
+  for (const [group, action] of [['tables', 'Lägg till lane med porträttvideo'], ['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
+    const tree = h.StudioAdministrationView(viewProps('admin', group));
+    const disclosure = nodes(tree, node => node.type === 'details' && buttons(node, action).length)[0];
+    assert.ok(disclosure, action); assert.notEqual(disclosure.props.open, true);
+    assert.ok(nodes(disclosure, node => node.type === 'form' && node.props.method === 'post').length);
+  }
 });
 
 test('config writes disappear without valid revision while read data and honest limitations remain', () => {
@@ -349,7 +361,7 @@ test('config writes disappear without valid revision while read data and honest 
   for (const revision of [undefined, 1, {}, 'bad revision']) {
     const data = resources(); data.config.payload.revision = revision;
     const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('superadmin', 'tables'), resources: data }));
-    assert.match(html, /konfigurationsrevision saknas/); assert.doesNotMatch(html, /<form/); assert.match(html, /Existing tournament/);
+    assert.match(html, /konfigurationsrevision saknas/); assert.doesNotMatch(html, /<form/); assert.match(html, /Test room/);
   }
   const html = renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'operations')));
   assert.match(html, /Certifieringsunderlag: saknas/); assert.match(html,/Cut card efter 312/);assert.doesNotMatch(html, /CERTIFIED|VALID/);

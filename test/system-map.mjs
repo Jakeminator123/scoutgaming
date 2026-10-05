@@ -204,12 +204,26 @@ test('passive reporter masks names/errors and refuses files outside its source r
   let text = ''; for await (const chunk of reportTestFiles(events, { repositoryRoot: ROOT, args: ['--test-name-pattern=fixture'] })) text += chunk;
   assert.equal(text.includes('DO_NOT_PUBLISH_VALUE'), false);
   assert.ok(text.includes('"selection":"filtered"')); assert.ok(text.includes('"path":null'));
+  const file = resolve(ROOT, 'test/system-map.mjs');
+  for (const [failureType, summary, expected] of [
+    [undefined, { failed: 1, cancelled: 0 }, 'failed'],
+    ['testCodeFailure', { failed: 1, cancelled: 1 }, 'failed'],
+    ['testTimeoutFailure', { failed: 0, cancelled: 1 }, 'failed'],
+    [undefined, { failed: 0, cancelled: 1 }, 'cancelled'],
+    [undefined, { cancelled: 1 }, 'failed'],
+    [undefined, null, 'failed'],
+  ]) {
+    const rows = [{ type: 'test:fail', data: { file, details: { error: { failureType } } } }];
+    if (summary) rows.push({ type: 'test:summary', data: { file, counts: summary } });
+    let receipt = ''; for await (const chunk of reportTestFiles(rows, { repositoryRoot: ROOT, args: [] })) receipt += chunk;
+    assert.equal(receipt.trim().split('\n').map(JSON.parse).find(row => row.type === 'test-file')?.result, expected);
+  }
 });
 test('the reporter works with an existing real Node test run and captures complete files', t => {
   const f = fixture(t), reporter = resolve(ROOT, 'tools/system-map-evidence.mjs');
   const env = { ...isolatedGitEnvironment(), GITHUB_WORKSPACE: f.root }; delete env.NODE_TEST_CONTEXT;
   const output = execFileSync(process.execPath, ['--test', '--test-concurrency=4', '--test-reporter=' + pathToFileURL(reporter).href, 'test/known.mjs'], {
-    cwd: f.root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    cwd: f.root, env, encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
   const evidence = importTestEvidence({ snapshot: f.snapshot(), reports: [output] });
   assert.equal(evidence.tests.find(row => row.path === 'test/known.mjs')?.result, 'passed');
   assert.equal(f.check(evidence).status, 'green');
@@ -228,11 +242,12 @@ test('cancelled summary prevents earlier subtest passes from verifying a file', 
 });
 test('real Node cancellation remains grey after a passing subtest', t => {
   const f = fixture(t), reporter = pathToFileURL(resolve(ROOT, 'tools/system-map-evidence.mjs')).href;
-  f.put('test/known.mjs', 'import test from "node:test"; test("passed",()=>{}); test("cancelled",async()=>await new Promise(()=>{}));\n');
+  f.put('test/known.mjs', 'import test from "node:test"; test("passed",()=>{}); const controller=new AbortController(); test("cancelled",{signal:controller.signal},async()=>{setTimeout(()=>controller.abort(),30);await new Promise(()=>{});});\n');
   refreshContracts({ reader: f.reader() });
   const env = { ...isolatedGitEnvironment(), GITHUB_WORKSPACE: f.root }; delete env.NODE_TEST_CONTEXT;
   const run = spawnSync(process.execPath, ['--test', '--test-concurrency=4', '--test-reporter=' + reporter, 'test/known.mjs'], {
-    cwd: f.root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    cwd: f.root, env, encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
+  assert.ifError(run.error);
   assert.equal(run.status, 1);
   const evidence = importTestEvidence({ snapshot: f.snapshot(), reports: [run.stdout] });
   assert.equal(evidence.tests[0].result, 'cancelled'); assert.equal(f.check(evidence).status, 'grey');

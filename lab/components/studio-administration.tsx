@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { GAME_LANES } from '../../web/public/game-lanes.mjs';
@@ -20,6 +20,7 @@ export type StudioAdministrationProps = {
   fetchImpl?: typeof fetch;
   /** Explicit public game origin from server configuration, never request JSON. */
   gameOrigin?: string;
+  sessionAction?: ReactNode;
 };
 type Resource = { payload?: JsonObject; error?: StudioAdminUiError };
 type Resources = Record<string, Resource>;
@@ -250,47 +251,43 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {overview && <><dl className={styles.metrics}>
           <div><dt>Spelare</dt><dd>{label(overview.players)}</dd></div>
           <div><dt>Rum</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
-          <div><dt>Dealers</dt><dd>{Array.isArray(overview.dealers) ? overview.dealers.length : '—'}</dd></div>
-        </dl><p>Siffrorna kommer från servern vid senaste omladdningen; de är inte en realtidsmätare.</p></>}
+        </dl><p className={styles.notice}>Senast hämtade uppgifter.</p></>}
       </>}
       {section === 'shoes' && <>
-        <p>Spelmotorn ansvarar för shuffle, shoe, kort och utfall. Administrationen ändrar inte en pågående hand.</p>
         <ResourceNotice resource={resources.shoes} />
         {resources.shoes?.payload && <><dl className={styles.metrics}>
           <div><dt>Sparade bord</dt><dd>{label(resources.shoes.payload.tableCount)}</dd></div>
           <div><dt>Shoes / pågående rundor</dt><dd>{label(resources.shoes.payload.shoes)} / {label(resources.shoes.payload.activeRounds)}</dd></div>
           <div><dt>Cut card nådd</dt><dd>{label(resources.shoes.payload.cutReached)}</dd></div>
           <div><dt>Kortlekar / kort</dt><dd>{label(object(resources.shoes.payload.rules)?.decks)} / {label(object(resources.shoes.payload.rules)?.total)}</dd></div>
-        </dl><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
+        </dl><details className={styles.disclosure}><summary>Spelregler och status</summary><p>Cut card efter {label(object(resources.shoes.payload.rules)?.cutAfter)} dragna kort; {label(object(resources.shoes.payload.rules)?.burn)} bränt kort. Shuffle sker mellan rundor när cut card nåtts.</p>
           <p>Sparad spelmotorstatus: {label(resources.shoes.payload.observedAt)}.{resources.shoes.payload.partial === true ? ` Visar ${label(resources.shoes.payload.sampledTables)} av ${label(resources.shoes.payload.tableCount)} bord.` : ''}</p>
-          <p>Certifieringsunderlag: saknas.</p>
+          <p>Certifieringsunderlag: saknas.</p></details>
         </>}
       </>}
       {section === 'lanes' && <>
         <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('game-lane')}
-        <p>Valet styr vilket spel som öppnas från hemsidans Blackjack-knapp. Spelare loggar in före start. Pågående spel fortsätter i sin valda lane.</p>
+        <p className={styles.notice}>Välj presentation för nya Blackjack-spel. Pågående spel behåller sin lane.</p>
         {config && <>
           <p>Aktiv lane: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
-          {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
+          {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" className={styles.inlineForm} onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
             <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          <p>Lanes delar spelmotor och kortvisning. Porträttvideo använder Astrids filmbank, chatt, tal och läppsynk.</p>
-          {mayWrite('game-lanes/create', true) && <form method="post" onSubmit={submit('game-lanes/create', form => ({ definition: {
+          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>En ny porträttlane delar Astrids klipp och inställningar.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
             ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'),
           } }), true)}>
             <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
             <label>Lane-ID<input name="id" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} placeholder="min-lane" disabled={busy} /></label>
             <button disabled={busy}>Lägg till lane med porträttvideo</button>
-          </form>}
-          {mayWrite('game-lanes/remove', true) && lanes.map(lane => <form key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
+          </form></details>}
+          {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera befintliga lanes · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas sista lanen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
             lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,
           }), true)}>
             <span>{label(lane.label)}</span>
             {lane.id === activeLane && lanes.length > 1 && <label>Ny aktiv lane<select name="replacement" required disabled={busy}>{lanes.filter(other => other.id !== lane.id).map(other => <option key={label(other.id)} value={label(other.id)}>{label(other.label)}</option>)}</select></label>}
             <button disabled={busy}>Ta bort {label(lane.label)}</button>
-          </form>)}
-          <p>Delad media behålls. Om sista lanen tas bort kan Blackjack öppnas igen när en ny lane har lagts till.</p>
+          </form>)}</details>}
           <a href="/blackjack" target="_blank" rel="noopener">Öppna Blackjack ↗</a>
         </>}
       </>}
@@ -313,31 +310,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <button disabled={busy}>Spara dealer</button>
           </form>}
         </div>)}
-        <p>Aktiva tal- och spelklipp hanteras i Dealer &amp; klipp, inte i en andra klippbank här.</p>
-      </>}
-      {section === 'pit' && <>
-        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('pitboss')}
-        {config && <><p>Serverns inställningar: payout10x {label(object(config.pitboss)?.payout10x === true ? 'på' : object(config.pitboss)?.payout10x === false ? 'av' : undefined)}; streak5 {label(object(config.pitboss)?.streak5 === true ? 'på' : object(config.pitboss)?.streak5 === false ? 'av' : undefined)}.</p>
-          {mayWrite('pitboss', true) && <form method="post" onSubmit={submit('pitboss', form => ({ payout10x: new FormData(form).has('payout10x'), streak5: new FormData(form).has('streak5'), randomWalkMin: Number(value(form, 'randomWalkMin')) }), true)}>
-            <label className={styles.checkbox}><input name="payout10x" type="checkbox" defaultChecked={object(config.pitboss)?.payout10x === true} disabled={busy} />payout10x</label>
-            <label className={styles.checkbox}><input name="streak5" type="checkbox" defaultChecked={object(config.pitboss)?.streak5 === true} disabled={busy} />streak5</label>
-            <label>Random floor walk (minuter)<input name="randomWalkMin" type="number" min="1" max="1440" step="1" defaultValue={typeof object(config.pitboss)?.randomWalkMin === 'number' ? object(config.pitboss)!.randomWalkMin as number : ''} required disabled={busy} /></label>
-            <button disabled={busy}>Spara pit bosses</button>
-          </form>}
-        </>}
-      </>}
-      {section === 'tours' && <>
-        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('tournament')}
-        {config && <><EmptyRows count={rows(config.tournaments).length} />{rows(config.tournaments).map((tour, index) => <p key={label(tour.id, String(index))}><strong>{label(tour.name)}</strong> · {label(tour.format)} · {label(tour.starts)} · {label(tour.state)} · {label(tour.entries)}/{label(tour.cap)}</p>)}</>}
-        {mayWrite('tournament', true) && <form method="post" className={styles.form} onSubmit={submit('tournament', form => ({ name: value(form, 'name'), format: value(form, 'format'), buyin: Number(value(form, 'buyin')), pool: Number(value(form, 'pool')), cap: Number(value(form, 'cap') || '0'), starts: value(form, 'starts') }), true)}>
-          <label>Namn<input name="name" required maxLength={100} disabled={busy} /></label>
-          <label>Format<input name="format" maxLength={100} required disabled={busy} /></label>
-          <label>Buy-in<input name="buyin" type="number" min="0" step="0.01" required disabled={busy} /></label>
-          <label>Pool<input name="pool" type="number" min="0" step="0.01" required disabled={busy} /></label>
-          <label>Max deltagare (0 = ingen gräns)<input name="cap" type="number" min="0" max="1000000" step="1" defaultValue={0} required disabled={busy} /></label>
-          <label>Start (serverns tidsformat)<input name="starts" required maxLength={100} disabled={busy} /></label>
-          <button disabled={busy}>Skapa turneringsutkast</button>
-        </form>}
+        <p className={styles.notice}>Klipp och beteenden redigeras i Dealer &amp; klipp.</p>
       </>}
       {section === 'players' && <>
         <p>Spelare har tillgång till spelet. Administratörer använder samma konto och lösenord i spelet och Studio. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
@@ -347,7 +320,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           <thead><tr><th>Spelare / ID</th><th>Saldo</th><th>Status</th><th>Åtgärd</th></tr></thead>
           <tbody>{rows(resources.players.payload.players).map((player, index) => <tr key={label(player.id, String(index))}>
             <td>{label(player.username, label(player.name))}<small>{label(player.id)}</small></td><td>{label(player.balance)} {label(player.currency)}</td><td>{label(player.status)}</td>
-            <td>{mayWrite('players/status') && resources.players.payload?.administration === true && ['active', 'blocked'].includes(String(player.status)) ? <form method="post" onSubmit={submit('players/status', form => ({ playerId: player.id, status: value(form, 'status'), reason: value(form, 'reason') }))}>
+            <td><details className={styles.disclosure}><summary>Hantera konto</summary>{mayWrite('players/status') && resources.players.payload?.administration === true && ['active', 'blocked'].includes(String(player.status)) ? <form method="post" onSubmit={submit('players/status', form => ({ playerId: player.id, status: value(form, 'status'), reason: value(form, 'reason') }))}>
               <label>Ny status<select name="status" defaultValue={player.status === 'active' ? 'blocked' : 'active'} disabled={busy}>
                 <option value={player.status === 'active' ? 'blocked' : 'active'}>{player.status === 'active' ? 'blocked' : 'active'}</option><option value="closed">closed (slutgiltigt)</option>
               </select></label><label>Orsak<input name="reason" required maxLength={500} disabled={busy} /></label><button disabled={busy}>Ändra spelarstatus</button>
@@ -360,23 +333,22 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
                   <p>Spelarens befintliga sessioner avslutas. Saldo och spelhistorik bevaras.</p><button disabled={busy}>Spara nytt lösenord</button>
                 </form>
               </details>}
-            </td>
+            </details></td>
           </tr>)}</tbody>
         </table></div></>}
         {resources.players?.payload?.administration === false && <p className={styles.notice}>Spelarkontonas lagring stödjer inte administration i den här miljön.</p>}
-        {mayWrite('players/create') && resources.players?.payload?.administration === true && <form method="post" className={styles.form} onSubmit={submit('players/create', form => {
+        {mayWrite('players/create') && resources.players?.payload?.administration === true && <details className={styles.disclosure}><summary>Nytt spelarkonto</summary><form method="post" className={styles.form} onSubmit={submit('players/create', form => {
           const password = String(new FormData(form).get('password') ?? '');
           const input = form.elements.namedItem('password');
           if (input instanceof HTMLInputElement) input.value = '';
           return { username: value(form, 'username'), name: value(form, 'name'), password, currency: value(form, 'currency'), reason: value(form, 'reason') };
         })} autoComplete="off">
-          <h4>Nytt spelarkonto</h4>
           <label>Inloggningsnamn<input name="username" pattern="[a-z0-9][a-z0-9._-]{2,31}" minLength={3} maxLength={32} required autoComplete="off" disabled={busy} /></label>
           <label>Visningsnamn<input name="name" maxLength={40} required disabled={busy} /></label>
           <label>Lösenord (12–128 tecken)<input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" disabled={busy} /></label>
           <label>Valuta<select name="currency" disabled={busy}>{CURRENCIES.map(currency => <option key={currency}>{currency}</option>)}</select></label>
           <label>Orsak<input name="reason" maxLength={500} required disabled={busy} /></label><button disabled={busy}>Skapa spelarkonto</button>
-        </form>}
+        </form></details>}
       </>}
       {section === 'users' && <>
         <ResourceNotice resource={resources.users} />
@@ -389,10 +361,10 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
-        {mayWrite('users/invite') && <form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
-          <h4>Bjud in administratör</h4><label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
+        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in administratör</summary><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
+          <label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
           <label>Roll<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
-        </form>}
+        </form></details>}
       </>}
       {section === 'apikeys' && <>
         <ResourceNotice resource={resources.apikeys} />
@@ -412,23 +384,23 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Belopp<input name="amount" type="number" min="0.01" max="100000" step="0.01" required disabled={busy} /></label><button disabled={busy}>Kreditera demo-saldo</button>
           </form>}
         </div>)}</>}
-        {mayWrite('apikeys/create') && <form method="post" className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
-          <h4>Ny partnernyckel</h4><label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
+        {mayWrite('apikeys/create') && <details className={styles.disclosure}><summary>Ny partnernyckel</summary><form method="post" className={styles.form} onSubmit={submit('apikeys/create', form => ({ name:value(form,'name'), scopes:PARTNER_SCOPES.filter(scope => new FormData(form).has(`scope-${scope}`)), walletUrl:value(form,'walletUrl'), ipAllow:value(form,'ipAllow') }))}>
+          <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
           <label>Wallet-URL (valfritt, HTTPS)<input name="walletUrl" type="url" maxLength={2048} disabled={busy} /></label>
           <label>IP-adresser (valfritt, kommaseparerat)<input name="ipAllow" maxLength={2048} disabled={busy} /></label>
           <fieldset><legend>Rättigheter</legend>{PARTNER_SCOPES.map(scope => <label className={styles.checkbox} key={scope}><input type="checkbox" name={`scope-${scope}`} defaultChecked disabled={busy} />{scope}</label>)}</fieldset>
           <button disabled={busy}>Skapa partnernyckel</button>
-        </form>}
+        </form></details>}
         <p className={styles.notice}>Nyckel och HMAC-hemlighet visas endast direkt efter skapande eller rotation. Kopiera dem till partnerns säkra förvaring innan du lämnar vyn. Spelmotorn bekräftar launch, återkallelse och demo-saldo.</p>
       </>}
       {section === 'emails' && <>
         <ResourceNotice resource={resources.emails} />
-        <p>Förhandsvisning med exempeluppgifter. Inbjudan och återställning skickas från Konton.</p>
-        {resources.emails?.payload && rows(resources.emails.payload.templates).map(template=><article className={styles.review} key={label(template.id)}>
+        <p className={styles.notice}>Inbjudan och återställning skickas från Konton.</p>
+        {resources.emails?.payload && <details className={styles.disclosure}><summary>Visa exempelmallar</summary>{rows(resources.emails.payload.templates).filter(template => template.id !== 'tournament-invite').map(template=><article className={styles.review} key={label(template.id)}>
           <h4>{label(template.name)}</h4><strong>{label(template.heading)}</strong><p>{label(template.text)}</p>
           <dl>{Array.isArray(template.fields) && template.fields.filter(Array.isArray).map((field,index)=><div key={index}><dt>{label(field[0])}</dt><dd>{label(field[1])}</dd></div>)}</dl>
           <p><strong>{label(template.action)}</strong></p><p>18+ · Play responsibly · Scout Gaming</p>
-        </article>)}
+        </article>)}</details>}
       </>}
       {section === 'pay' && <>
         <ResourceNotice resource={resources.transactions} />
@@ -438,21 +410,19 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <ResourceNotice resource={resources.voicelines} />{configNotice()}{unavailableWrite('voiceline-review')}
         {resources.voicelines?.payload && <><EmptyRows count={rows(resources.voicelines.payload.dealers).length} />{rows(resources.voicelines.payload.dealers).map((dealer, index) => <div key={label(dealer.dealer, String(index))}>
           <h4>{label(dealer.name, label(dealer.dealer))}</h4>
-          {rows(dealer.lines).map((line, lineIndex) => <article className={styles.review} key={label(line.key, String(lineIndex))}>
-            <strong>{label(line.key)}</strong><p>{label(line.text)}</p><p>Manuell bedömning: {label(line.review, 'ej granskad')}</p>
+          {rows(dealer.lines).map((line, lineIndex) => <details className={styles.review} key={label(line.key, String(lineIndex))}>
+            <summary><strong>{label(line.text, label(line.key))}</strong><span>{label(line.review, 'ej granskad')}</span></summary><p className={styles.notice}>{label(line.key)}</p>
             {line.reviewState === 'unbound-or-changed-media' && <p>Tidigare bedömning gäller inte för nuvarande mediepar.</p>}
             {studioAdminMediaUrl(line.preview) && <video controls preload="none" src={studioAdminMediaUrl(line.preview)!} aria-label={`Förhandsvisning ${label(line.key)}`} />}
             {studioAdminMediaUrl(line.audio) && <audio controls preload="none" src={studioAdminMediaUrl(line.audio)!} aria-label={`Ljud ${label(line.key)}`} />}
             {mayWrite('voiceline-review', true) && line.reviewable === true && <form method="post" onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
               <label>Bedömning<select name="verdict" defaultValue={label(line.review, '')} disabled={busy}><option value="">Ej granskad</option><option value="approved">Godkänd</option><option value="rejected">Underkänd</option></select></label><button disabled={busy}>Spara manuell granskning</button>
             </form>}
-          </article>)}
+          </details>)}
         </div>)}</>}
         <p>Manuell bedömning är inte automatisk läppsynkscertifiering. Rehearsal i det riktiga spelet behövs fortfarande.</p>
         <p className={styles.notice}>Betald speech-QA körs inte från den här ytan; den kräver separat operatörsgate.</p>
       </>}
-      {section === 'clips' && <><p>Aktiva spelklipp och deras inställningar finns i Dealer &amp; klipp.</p><p className={styles.notice}>Äldre klippbank, landningskopior och tilldelningsslask kopieras inte till en andra mediasamling här. Den avvecklade clip-assign-funktionen återaktiveras inte.</p></>}
-      {section === 'gens' && <><p>Aktiva klipp och nya uppladdningar hanteras i Dealer &amp; klipp. OpenClaw är den separata befintliga genereringsytan.</p><p className={styles.notice}>Äldre genereringsgalleri flyttas inte automatiskt. Den här vyn startar inga GPU-/modelljobb och ändrar inte kostnadsjournalen.</p></>}
     </section>)}
   </div>;
 }
@@ -570,8 +540,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }
 
   return <div className={styles.administration} aria-busy={busy}>
-    <header className={styles.header}><div><h2>Backoffice</h2><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Backoffice kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
-      <button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>
+    <header className={styles.header}><div><h1>Backoffice</h1><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Backoffice kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
+      <div className={styles.headerActions}><button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     </header>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
