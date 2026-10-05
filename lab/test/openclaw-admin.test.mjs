@@ -41,7 +41,10 @@ test('real native JWT is rechecked against account password fingerprint and epoc
   const now = 2000000, secret = 'a'.repeat(64), user = { id:'7', username:'operator', salt:'fixture-salt', hash:'c'.repeat(128), role:'admin' };
   let epoch = 2;
   const stamp = () => createHash('sha256').update(`${user.salt}:${user.hash}`).digest('hex');
-  const boDb = { prepare(sql) { return { async all() { return [user]; }, async get() {
+  const boDb = { prepare(sql) { return { async all(...args) {
+    if (sql.includes('LEFT JOIN bo_auth_epochs')) return user.username.toLowerCase() === args[0] ? [{ ...user, epoch }] : [];
+    return [user];
+  }, async get() {
     if (sql.includes('FROM meta')) return { v:secret };
     if (sql.includes('FROM bo_auth_epochs')) return { epoch };
     return user;

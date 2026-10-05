@@ -102,6 +102,77 @@ dagens metadata saknar deras positioner. Totalt sju positionsluckor, fyra
 Alla tio fortsatt öppna; ingen ignore/resolve/credentialmutation. GitHubchecks
 för ba0cb7ee har komplett coverage men GitGuardian queued/missingrun; ingen
 claim om incidentfrihet. Äldre sexincidenttabell nedan är historisk snapshot.
+### Senaste leveransen cb8e5254 och aktuellt omprov
+
+`cb8e52549ba7c171f5cd0eadaafe51d5159f2f5f` är pushad på main. Obligatorisk
+fullhook gav1520PASS/9befintligaskip/0fel/cancel; privatlogg
+`studio-bo-voice-commit-20261005.log`. Båda productionREADY exaktSHA:
+Studio dpl_8mu8ed2GZswF4LvbWg7y5R6ivSwj/frontend dpl_5eth5vBxbqY22AHRtSAKs7DtzA6b.
+CI37303118034 completed/failure: APTfixen kom förbi paket/start men
+retained_contract_checks_missing stoppade delprovets resultatavläsning.
+Node är24.21.0 iCI och22.22.x lokalt; resultatparsningen kräverTAP, som nu
+väljs uttryckligen. SQL7 med CI=true gavexit0/verkligSQLPASS. Failedlogg
+`studio-ci-37303118034-failed.log`; röda exaktSHA-exporten bevarad i
+`system-map-cb8e5254-ci37303118034/` (18green/1red/5grey, SQLtestfailed).
+NyCI behövs efter detta formatfix och senaste auth-/timingrättning.
+
+Livecb8 privatkvitto `bo-navigation-after-cb8e5254-20261005.json`: alla fyra
+captures full/drained/untruncated, 11GET200=4session+7admin jämfört18tidigare.
+Tider2,553/4,834/6,653/2,682s; allaadminactor/roleheaders synliga. Sessionspike
+3,529s och shoes5,867s visar att latenstoppar finns kvar. Inga generella
+snabbhetsgarantier. Båda OpenClaw-vyer/link/reload har dokument/api200, fem
+modellval, voiceinfo/0controls/0alerts/0voiceGET/POST/0API503. Konton/john.g-
+utkast/fokus återställda0changed/busyfalse; inga muterande APIanrop.
+GG11:33:51UTC: binding först och därefter komplettlista 10TRIGGERED/5IGNORED,
+1incident-/15locationsidor, 7positionsluckor varav4öppna. Sexhashfynd
+omverifierade påexaktcb8-källfiler, alla fortsattöppna/noignore/resolve.
+
+Fördjupad källa visar cachad runtimePromise och återanvänd pool; ingen belagd
+ny pool/close peranrop. Varm auth har4serial SELECT+setup/commit=6queryanrop,
+shoes lägger3 till och haringen N+1/providerfetch. Authagenten slår nu ihop
+färska users/role/stamp/epochprojektioner, med samma säkerhetsprov. Runtime-
+agenten lägger enbart numerisk Server-Timing för runtimevsAPI/auth. Kall
+init har cirka22queryanrop innan auth; dagens spikar är ännu inte belagda
+som kallstart. Ingen authcache/schema/index/poolpolicyändring. Auth-/timingbytes är nu stabila: JWT och Labcookie använder två färska SELECT/
+fyra queryanrop/ett borrow-release, mot fyra/sex tidigare. Users LEFT JOIN
+bo_auth_epochs ger ett färskt statement för konto/stamp/råroll/epoch; signer/
+session är en separat färsk statement före det. Ingen ny snapshotisolerings-
+eller cacheclaim. 118 riktade PASS utan skip, sex auth-/fixturefiler. Lab-
+session med schemaogiltig null/malformedsource_stamp avvisas explicit;
+giltigt opaqueLabflöde behåller sin tidigare stampsemantik. Trusted numerisk
+wrapper skickar studio_runtime + studio_api/admin eller studio_auth/session;
+bara finit/icke-negativms, 18 riktade PASS utan skip och typecheckPASS.
+Tapfixen + senaste scopedhashbindings gavSQL8exit0, inputsStabletrue och
+verkligSQL/HTTPS/omstartPASS. Inga /tmp/croupier-studio-qa-* kluster kvar efter
+cleanupkontrollen. Oberoende slutreviewPASS: fyra kritiska fixturefiler har
+alla tidigare assertions oförändrade, endast JOINstödtillmock. Fullhook och
+nyCI/liveomprov återstår. SQL8 gäller arbetsbytes, inte rent cb8e5254.
+
+### Läsutredda drift- och backuprester — fortfarande öppna
+
+Frame-varningen i `web/public/local-film-player.mjs:17` använder samma text
+för saknad playing/presented/ended. Historiska goodluckprov är inte belägg
+för ursprungligt idlefel. Behåll rVFC-spärren; nästa diagnos kräver terminal-
+flaggor, readyState/currentTime/duration/visibility och exakt media-ID/SHA.
+Zoner är editorlagring (lokala utkast+molnkoordinater+privataBlobklipp), inte
+spelstyrning. Befintlig CAS/dimension/hash/Range/partialuploadkontroll saknar
+full isolerad zonroundtrip/restartacceptans. Tidigare 88medieURLprov inkluderar
+inte reference-poster. Startsideskoden byter SSRhero till annan layout och
+asynkront intro; möjlig flimmermekanism kräver bildserie/layoutshift/laddnings-
+tider inklusive mobile/reduced-motion före riktad fix.
+
+Backupagenten återläste de uttryckligt angivna metadatafilerna utan bred
+backup-/personarkivsökning. Extern produktbackupkvitto matchar dokumenterad
+SHA256, 206filer/10mappar/125745905bytes och verifierade hash-/arkiv-/inventory-
+flaggor. Gamebackupmanifest finns; tidigare32Postgrestabellers återläsning är
+dokumentation, ingen ny DBkontroll. Privat OpenClawenhetsfil finns men är inte
+fullbackup. Director `/data/catalog` och Gateway `/data/openclaw` saknar angivet
+externt fullsnapshot/återläsningskvitto. Exportåtkomst har inte prövats. Kräv
+faktiskt frysta/stoppade skrivare, fullsnapshot, externmanifest/hash och
+SQLite integrity/FK/WAL enligt `ENVIRONMENT-RESTORATION.md:74`; maintenanceMode
+eller quiesced-markör ensam bevisar inte writerdrain. Inga drift-/DB-/provider-
+åtgärder, restore eller nya servertester gjordes i dessa läsutredningar.
+
 ## Återstående arbete i utförandeordning
 
 Detta är den operativa överlämningen efter kontrollerna den 5 oktober, inte en

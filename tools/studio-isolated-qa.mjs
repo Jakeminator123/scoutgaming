@@ -90,7 +90,9 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
     const sourceHashes = async () => Object.fromEntries(await Promise.all(testedSources.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
     const before = await sourceHashes();
-    const retainedUnitOutput = await run(process.execPath, ['--test', join(repository,'test/studio-retained-bank.mjs')], {env});
+    // The acceptance count is TAP metadata; Node's default reporter varies
+    // across versions and execution contexts. Require the parsed format.
+    const retainedUnitOutput = await run(process.execPath, ['--test', '--test-reporter=tap', join(repository,'test/studio-retained-bank.mjs')], {env});
     const retainedContractChecks = Number(/# tests (\d+)/.exec(retainedUnitOutput)?.[1]);
     if (!Number.isSafeInteger(retainedContractChecks) || retainedContractChecks < 4) throw new Error('retained_contract_checks_missing');
     const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, handleNativeAdmin } from '../lib/studio-native-runtime.mjs';
+import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession } from '../lib/studio-native-runtime.mjs';
 
 const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
   CROUPIER_STUDIO_NEON_POLICY: '1',
@@ -56,4 +56,104 @@ test('bundled source paths load all four migrations without asset URLs', async (
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.length, 4);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
+});
+
+const sessionRequest = (method = 'GET', headers = {}) => new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/auth/session`, {method, headers});
+const adminRequest = headers => new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/admin/room`, {headers});
+function timing(response, phase) {
+  const value = response.headers.get('server-timing');
+  assert.match(value, new RegExp(`^studio_runtime;dur=([0-9]+\\.[0-9]{2}), ${phase};dur=([0-9]+\\.[0-9]{2})$`));
+  const durations = value.split(', ').map(item => Number(item.split('=')[1]));
+  assert.ok(durations.every(value => Number.isFinite(value) && value >= 0));
+  return durations;
+}
+
+test('native admin times awaited runtime and API separately while preserving response and ignoring request timing inputs', async () => {
+  let time = 0, runtimeCalls = 0, apiCalls = 0;
+  const handlers = createNativeStudioRequestHandlers({configuration: () => nativeStudioAdminConfiguration(env), clock: () => time,
+    runtime: async () => { runtimeCalls++; await Promise.resolve(); time += 37.125; return {
+      api: {handle: async request => {
+        apiCalls++; assert.equal(new URL(request.url).pathname, '/studio/api/admin/room');
+        await Promise.resolve(); time += 81.375;
+        return Response.json({fixture: true}, {status: 201, headers: {'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff', 'Set-Cookie': 'fixture=opaque; HttpOnly; Secure'}});
+      }},
+    }; },
+  });
+  const response = await handlers.handleNativeAdmin(adminRequest({'Server-Timing': 'PRIVATE;dur=Infinity',
+    'x-studio-runtime-ms': '-1', 'x-studio-api-ms': 'PRIVATE'}));
+  assert.deepEqual(timing(response, 'studio_api'), [37.13, 81.38]);
+  assert.equal(runtimeCalls, 1); assert.equal(apiCalls, 1);
+  assert.equal(response.status, 201); assert.deepEqual(await response.json(), {fixture: true});
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(response.headers.get('set-cookie'), 'fixture=opaque; HttpOnly; Secure');
+  assert.ok(!response.headers.get('server-timing').includes('PRIVATE'));
+  assert.equal(handleNativeAdmin.length, 1); assert.equal(handleNativeSession.length, 1);
+});
+
+test('session timing measures fresh authorize on every request, including safe 401/403 responses', async () => {
+  let time = 0, authorizations = 0;
+  const handlers = createNativeStudioRequestHandlers({configuration: () => nativeStudioAdminConfiguration(env), clock: () => time,
+    runtime: async () => {await Promise.resolve(); time += 4; return {
+      authorize: async () => {
+        authorizations++; await Promise.resolve(); time += 19;
+        if (authorizations > 1) throw Object.assign(Error('PRIVATE user/token/SQL'), {statusCode: authorizations === 2 ? 401 : 403});
+        return {user: 'fixture-user', role: 'admin'};
+      }, api: {availableActions: () => ['room.read']},
+    }; },
+  });
+  for (const [status, body] of [[200, {username: 'fixture-user', role: 'admin', availableActions: ['room.read']}],
+    [401, {error: 'studio_login_required'}], [403, {error: 'studio_request_rejected'}]]) {
+    const response = await handlers.handleNativeSession(sessionRequest());
+    assert.equal(response.status, status); assert.deepEqual(timing(response, 'studio_auth'), [4, 19]);
+    assert.deepEqual(await response.json(), body);
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.ok(!response.headers.get('server-timing').includes('fixture-user'));
+  }
+  assert.equal(authorizations, 3);
+});
+
+test('runtime and API rejections retain their elapsed stage and sanitized error response', async () => {
+  for (const failingStage of ['runtime', 'api']) {
+    let time = 0, apiCalls = 0;
+    const handlers = createNativeStudioRequestHandlers({configuration: () => nativeStudioAdminConfiguration(env), clock: () => time,
+      runtime: async () => {
+        await Promise.resolve(); time += 13;
+        if (failingStage === 'runtime') throw Error('PRIVATE connection string');
+        return {api: {handle: async () => {apiCalls++; await Promise.resolve(); time += 29; throw Error('PRIVATE SQL query');}}};
+      },
+    });
+    const response = await handlers.handleNativeAdmin(adminRequest());
+    assert.equal(response.status, 503); assert.deepEqual(await response.json(), {error: 'studio_native_unavailable'});
+    assert.deepEqual(timing(response, 'studio_api'), failingStage === 'runtime' ? [13, 0] : [13, 29]);
+    assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(apiCalls, failingStage === 'runtime' ? 0 : 1);
+  }
+});
+
+test('Origin denial and session method rejection still precede runtime initialization', async () => {
+  const handlers = createNativeStudioRequestHandlers({configuration: () => nativeStudioAdminConfiguration(env),
+    runtime: async () => assert.fail('rejected request must not initialize runtime')});
+  for (const kind of ['Admin', 'Session']) {
+    const response = await handlers[`handleNative${kind}`](kind === 'Admin'
+      ? adminRequest({Origin: 'https://evil.invalid'}) : sessionRequest('GET', {Origin: 'https://evil.invalid'}));
+    assert.equal(response.status, 403); assert.deepEqual(await response.json(), {error: 'studio_request_rejected'});
+    assert.deepEqual(timing(response, kind === 'Admin' ? 'studio_api' : 'studio_auth'), [0, 0]);
+  }
+  const response = await handlers.handleNativeSession(sessionRequest('POST'));
+  assert.equal(response.status, 405); assert.equal(response.headers.get('allow'), 'GET');
+  assert.equal(await response.text(), ''); assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.deepEqual(timing(response, 'studio_auth'), [0, 0]);
+});
+
+test('timing durations remain finite and nonnegative for invalid or backward trusted clocks', async () => {
+  for (const readings of [[20, 10, 40, 30], [NaN, Infinity, -Infinity, NaN], [0, Number.MAX_VALUE, 0, Number.MAX_VALUE]]) {
+    const handlers = createNativeStudioRequestHandlers({configuration: () => nativeStudioAdminConfiguration(env), clock: () => readings.shift(),
+      runtime: async () => ({api: {handle: async () => Response.json({fixture: true})}})});
+    const response = await handlers.handleNativeAdmin(adminRequest());
+    assert.equal(response.status, 200); timing(response, 'studio_api');
+  }
 });

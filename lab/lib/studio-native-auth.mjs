@@ -1,6 +1,4 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
-import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { isStudioRole, normalizeStudioRole } from './studio-access-policy.mjs';
 
@@ -10,6 +8,15 @@ export class NativeStudioAuthError extends Error {
   }
 }
 const denied = () => { throw new NativeStudioAuthError('studio_login_required', 401); };
+const accountProjection = `SELECT u.id,u.username,u.salt,u.hash,u.role,e.epoch
+  FROM users u LEFT JOIN bo_auth_epochs e ON e.user_id=u.id WHERE `;
+const sourceStamp = account => account?.salt && account?.hash
+  ? createHash('sha256').update(`${account.salt}:${account.hash}`).digest('hex') : null;
+function currentEpoch(account) {
+  const epoch = Number(account.epoch ?? 0);
+  if (!Number.isSafeInteger(epoch) || epoch < 0) throw new NativeStudioAuthError();
+  return epoch;
+}
 function cookie(request, name, pattern) {
   const entries = (request.headers.get('cookie') || '').split(';').map(part => part.trim())
     .filter(part => part.startsWith(`${name}=`));
@@ -42,7 +49,6 @@ function claimsFor(token, secret, now) {
 export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
   if (typeof boDb?.prepare !== 'function') throw new NativeStudioAuthError();
   scope = validateStudioScope(scope);
-  const identity = craigIdentity(boDb), authEpoch = installBoAuthEpoch(boDb);
   return async function authorize(request) {
     try {
       const token = cookie(request, 'bo_jwt', /^[A-Za-z0-9_.-]{1,8192}$/);
@@ -55,23 +61,29 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
           const secret = await boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
           if (!/^[a-f0-9]{64}$/i.test(secret?.v || '')) throw new NativeStudioAuthError();
           const claims = claimsFor(token, Buffer.from(secret.v, 'hex'), now());
-          const account = await identity.find(claims.sub);
-          if (!account || account.stamp !== claims.source_stamp
-            || (await boDb.prepare('SELECT role FROM users WHERE id=?').get(account.id))?.role !== claims.role
-            || await authEpoch(account.id) !== claims.auth_epoch) denied();
-          return Object.freeze({ user: account.name, role: normalizeStudioRole(claims.role), scope });
+          const key = claims.sub.trim().toLowerCase();
+          const matches = await boDb.prepare(accountProjection + 'lower(u.username)=? OR lower(u.email)=?').all(key, key);
+          const account = matches.length === 1 ? matches[0] : null;
+          if (!account?.salt || !/^[a-f0-9]{128}$/i.test(account.hash ?? '')
+            || sourceStamp(account) !== claims.source_stamp || account.role !== claims.role
+            || currentEpoch(account) !== claims.auth_epoch) denied();
+          return Object.freeze({ user: account.username, role: normalizeStudioRole(claims.role), scope });
         }
         const digest = createHash('sha256').update(bearer).digest('hex');
         const session = await boDb.prepare('SELECT * FROM lab_sessions WHERE token_digest=? AND expires>?').get(digest, now());
-        if (!session || !['admin', 'superadmin'].includes(session.role)) denied();
-        const account = await boDb.prepare('SELECT id,username,role FROM users WHERE id=?').get(session.craig_user_id);
-        if (!account || account.role !== session.role || await identity.stamp(account.id) !== session.source_stamp
-          || await authEpoch(account.id) !== session.auth_epoch) denied();
+        if (!session || !['admin', 'superadmin'].includes(session.role)
+          || !/^[a-f0-9]{64}$/.test(session.source_stamp ?? '')) denied();
+        const matches = await boDb.prepare(accountProjection + 'u.id=?').all(session.craig_user_id);
+        const account = matches.length === 1 ? matches[0] : null;
+        if (!account || account.role !== session.role || sourceStamp(account) !== session.source_stamp
+          || currentEpoch(account) !== session.auth_epoch) denied();
         return Object.freeze({ user: account.username, role: normalizeStudioRole(account.role), scope });
       };
       // The PostgreSQL adapter otherwise starts/commits a transaction for each
-      // SELECT. Reuse one connection for this authorization only: all identity,
-      // role, password stamp and epoch reads still run for every request. This
+      // SELECT. Reuse one connection for this authorization only. Read the signer
+      // or opaque session first, then project the current account, raw role,
+      // password stamp inputs and epoch together. Nothing is cached between
+      // requests; the joined fields share one fresh SQL statement snapshot. This
       // does not take the product mutation lock; an existing mutation transaction
       // retains its own lock and connection through the adapter's nested context.
       return await (typeof boDb.transaction === 'function'
