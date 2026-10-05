@@ -58,7 +58,13 @@ befintlig operatörschatt har entydig `/studio/operator-chat`, inklusive intern
 navigation och reload. Login tillåter exakt de elva befintliga Studio-vyerna
 och bevarar destinationen, med bevarat BO-handoff och utkastskydd. KontoUI skiljer
 spelarkonto från e-postaktiverad Studio-admin och visar saknad mailkonfiguration.
-Spelarkonto `john.g` har inte promotats eller ändrats. Samlad hook/CI och
+Spelarkonto `john.g` har inte promotats eller ändrats. Första integrationscommit
+`70a4273025a483d80f10c86b4f3610bca0384adf` passerade obligatorisk fullhook:
+1 507 PASS, 9 befintliga skip, 0 fel/cancel. Privat logg
+`lab/data/platform-private/studio-integration-commit-20261005.log`.
+Oberoende routing-/kontoreview hade inga blockerfynd. Före push kompletteras
+SQL-kontraktets redan testade direkta auth-/modell-/providerberoenden med åtta
+explicita hashbindings; detta breddar inte SQL-acceptanspåståendet. CI och
 publicerat browser-/prestandaomprov återstår inför slutlig leverans.
 
 Nya SQL-kvitton sparas med exklusiva namn
