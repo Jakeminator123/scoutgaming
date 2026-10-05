@@ -23,6 +23,6 @@ export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {
     finally { writing.current = false; setBusy(false); }
   }
   return <main className={styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
-    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin}
+    {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} readIdentity="response-headers-v1"
       sessionAction={<button type="button" onClick={() => void logout()}>Logga ut</button>} />}</main>;
 }

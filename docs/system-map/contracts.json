@@ -4,10 +4,10 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "3e613186120fda2fd48753cd12444a4cfc185706",
-    "capturedAt": "2026-10-05T10:44:14.199Z",
+    "observedCommit": "ba0cb7ee1fbbb01b8148f1ba254a64d0e96cff71",
+    "capturedAt": "2026-10-05T11:20:50.694Z",
     "hashAlgorithm": "sha256:utf8-lf",
-    "note": "Scoped input capture for the isolated SQL acceptance and changed map reporter/verifier/tests only; no test or runtime approval."
+    "note": "Scoped binding of changed native read identity, server-owned voice UI capability and isolated APT selection; input capture only, not test or runtime approval."
   },
   "contracts": [
     {
@@ -128,7 +128,7 @@
         "lab/lib/media-blob-index.mjs": "3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
         "lab/lib/studio-access-policy.mjs": "48ab2d509a098b5f0808ddcc6f52055651137291b0ac5d42bc061a0292705767",
         "lab/lib/studio-admin-accounts.mjs": "66b47b1c05f841377945412a963b2ac130956bb2070277c9e29224cd343f84ea",
-        "lab/lib/studio-admin-api.mjs": "c44ef7fcd1e73672e34e9b7769f40ed1828f1ff5901d3ed093ebcc141f490fab",
+        "lab/lib/studio-admin-api.mjs": "21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
         "lab/lib/studio-admin-contract.mjs": "dfcadb8d1d8427c5556c6df15b65bf8146ef13abe87c3426227aee94fee72c08",
         "lab/lib/studio-admin-data.mjs": "a6f2001926ca987e5b6a23f1ed3d23116b7b4d5480238fb347fe8d5d5ad09fb9",
         "lab/lib/studio-admin-readouts.mjs": "895ee290270faf64266bed5a47b237584f5fdf1e67cabfe4662aa2d7f7511fc8",
@@ -155,7 +155,7 @@
         "test/studio-cutover-integration.mjs": "2c926b23fdaf0c4d0d8b97596941cbd93d5576158be2bef48ef3f6fb9c73e2d1",
         "test/studio-postgres-integration.mjs": "512a4bb62a7cb0167e4405fdf4f61432f2bea5b8dffbfae9b9ea3aa02f98a823",
         "test/studio-retained-bank.mjs": "64fe8d87858eee3afb1effbfa2dcac1d7cce85e0c86388d555f63eec2445626f",
-        "tools/studio-isolated-qa.mjs": "55764f724472fab83eb6fd1a40d12295b655affb3a3caa18616a0f80fca817fb",
+        "tools/studio-isolated-qa.mjs": "e6d265f9ce0c614a7f5c0c2cb4655d1305381c206d43e804ca8e726ad99c0949",
         "web/account-credentials.mjs": "90791fa0bbc5c340a75f7349bdfdd5a3f2c5aef6149eec5cf53496d13892e4df",
         "web/account-role.mjs": "aa0fcf1da61c3ac53fe312f9d3083cc3586edd7f7c74732a84ab5ea1bd77f36f",
         "web/email-templates.mjs": "0a676759c1510b1d505aa7984e9fc400928a84899a3a3b742d25e1eebc5c85fc",
@@ -254,7 +254,11 @@
         "lab/lib/studio-navigation.mjs",
         "lab/lib/studio-navigation.d.mts",
         "lab/lib/studio-login-client.mjs",
-        "lab/lib/ui-server.ts"
+        "lab/lib/ui-server.ts",
+        "lab/components/native-administration.tsx",
+        "lab/components/gateway-panel.tsx",
+        "lab/components/voice-preview-panel.tsx",
+        "lab/lib/studio-admin-api.mjs"
       ],
       "tests": [
         "test/system-map.mjs",
@@ -262,7 +266,9 @@
         "lab/test/studio-login-client.test.mjs",
         "lab/test/studio-navigation.test.mjs",
         "lab/components/studio-administration.test.mjs",
-        "lab/components/event-tree.test.mjs"
+        "lab/components/event-tree.test.mjs",
+        "lab/components/voice-preview-panel.test.mjs",
+        "lab/test/studio-admin-api.test.mjs"
       ],
       "testType": "existing-file-tests",
       "checks": [
@@ -319,25 +325,31 @@
         "lab/app/page.tsx": "7181c578857a64a4d0d5ffdd00def9bc94dcdd85162447a4090eedfa6719708e",
         "lab/app/probe/page.tsx": "ad06b7942d597f7536fda8113a56d0430bc9669784c04fa79995473be898b566",
         "lab/app/set-password/page.tsx": "d755d653b4793b5e9af254405a180509216ff3e859820672fcdb35cdd329d6c3",
-        "lab/app/studio-page.tsx": "96d6c5667b9f93845765eee032ba053917089fbc5453a15c1db2ab1fdd820bcc",
+        "lab/app/studio-page.tsx": "b13197ac4c692f552b98434868f4a0807eb70a262d78b94192c118f5d5c6fb99",
         "lab/app/tree/page.tsx": "7ea92f755735b68a7b26370b825919d25b821f9df39f353fca4db45a745e7ef0",
         "lab/app/videos/page.tsx": "469ffe5d7e8e28f0a65789ea6d468e8cfcd578c7c8b396f57030545372057b51",
         "lab/app/zones/page.tsx": "536135b14902cda86181b41eff0c4e3b9292549616fb989cc52a2bf9e2872840",
         "lab/components/event-tree.test.mjs": "e76731f7bb48727f9cee046e10ae931a8a972151ab7017e2025042b01a03e2c6",
         "lab/components/event-tree.tsx": "ad3c6125e22464ed9e09398c35622b628846eac59a257947956b2dc91236da88",
-        "lab/components/studio-administration.test.mjs": "4c71554b84b4bdfa9baab6f6c42a37120732af8fc16e243b2044ea3eedc7d0d4",
-        "lab/components/studio-administration.tsx": "57e11fe6223fe6b444e2b33d4a19edf6d0581919059f8acaee2ca79bd4bbe055",
+        "lab/components/studio-administration.test.mjs": "02f85f8120ad5625902f3e45db39f4523eb99ad108f33692053706b2d7177b27",
+        "lab/components/studio-administration.tsx": "e433e30e4861ed3a303ff5f2ca59833a7922ff2b955199e5dd301907b4dab13f",
         "lab/components/studio-types.ts": "03b72f8d0b3514b965165466056437a4f05165cd5629b227ba4c3ea0bdac8877",
-        "lab/components/studio.tsx": "5292473a40bb5df8e33b3962725ccfc1db8979e7623032dbfdba4a4d01ba807d",
+        "lab/components/studio.tsx": "1d2d9122d879e8824a4281eb4720b7f7bb25c15cfc28fd2947014e5665af06b6",
         "lab/lib/studio-login-client.mjs": "c8974d13ffc29df0a72d0fa6fae90f4d3a77637971c52c19b72763dcf6ce5061",
         "lab/lib/studio-navigation.d.mts": "602df1add3f9823408c1a869cc2e42a36c645c65c0740ea96ae01e7f4bc94875",
         "lab/lib/studio-navigation.mjs": "af025805cea9ef832cfaf28b9f416b2b539da4e6428dd57c268c3fe7f960eb78",
         "lab/lib/ui-server.ts": "0f78d9d162dc10f0160c33bb15c6e6fef9459b0a1e2c247d674bdfba2237596e",
         "lab/next.config.mjs": "6931a942fbcc406a202a3f40a8c3191209253a1b77d30641d53274851e0bd30e",
-        "lab/test/next-page-navigation.test.mjs": "f14e0d14eb9f384d439f6d1453fc83611fe524d8f2271fb937ab013a19e18b49",
+        "lab/test/next-page-navigation.test.mjs": "e168089462d0e54e67fda7955a39d91f57bd17cfe8f7fdf17c87eabc05b85ef6",
         "lab/test/studio-login-client.test.mjs": "b5f1ff219ec6ccb6d1c0545378740397cd4216b15e5e81b3f893b87feae730b3",
-        "lab/test/studio-navigation.test.mjs": "ce3e15e7c00f020eef0e9b3b36c62c6524350d2a2f32080737fe5e4919600980",
-        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65"
+        "lab/test/studio-navigation.test.mjs": "92be223f3c5ddafdc4b9dcb36d5ddfeeb71138f98a20befd051d7669786ba0b5",
+        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65",
+        "lab/components/native-administration.tsx": "e6180efba1ca01ba0d40ea772315ce0d48821988e0fcf6f7f2aaa5867a46dfd9",
+        "lab/lib/studio-admin-api.mjs": "21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
+        "lab/test/studio-admin-api.test.mjs": "79e83f6b85a2eb36fa860c6891e966eb9f2eb34f1f0db1275f572771a3a6210e",
+        "lab/components/gateway-panel.tsx": "964e3863cd63f4ae810037a94ebf2c5bc0bdef259353f700bdeaf169a7b0ed3b",
+        "lab/components/voice-preview-panel.tsx": "cd00e330eaed46f65a8ed6d6e40868f61104b698b3f238d24fac01af7dfb8b1f",
+        "lab/components/voice-preview-panel.test.mjs": "a34a747d1e941b9c106c4fe96d16646c285f688b8f7e8797816215f08b42e262"
       }
     },
     {

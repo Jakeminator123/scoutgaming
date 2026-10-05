@@ -6,7 +6,7 @@ import type { VoiceResult, VoiceStatus } from '../lib/voice-preview.mjs';
 import { requestJson } from './studio-types';
 import styles from './voice-preview-panel.module.css';
 
-export function VoicePreviewPanel({ latestReply = '' }: { latestReply?: string }) {
+export function VoicePreviewPanel({ latestReply = '', available = true }: { latestReply?: string; available?: boolean }) {
   const [status, setStatus] = useState<VoiceStatus | null>(null);
   const [mode, setMode] = useState<'preset' | 'custom'>('preset');
   const [phraseId, setPhraseId] = useState('welcome');
@@ -24,19 +24,20 @@ export function VoicePreviewPanel({ latestReply = '' }: { latestReply?: string }
   const tooLong = text.length > 500;
 
   useEffect(() => {
+    if (!available) { setBusy(false); setStatus(null); setResult(null); setError(''); return; }
     const request = new AbortController();
-    void requestJson<VoiceStatus>('/api/voice', { signal: request.signal }).then(setStatus).catch(cause => {
+    void requestJson<VoiceStatus>('/api/voice', { signal: request.signal }).then(next => { if (!request.signal.aborted) setStatus(next); }).catch(cause => {
       if (!request.signal.aborted) setError(cause instanceof Error ? cause.message : 'Röststatus kunde inte läsas.');
     });
-    return () => { request.abort(); generation.current?.abort(); audioRef.current?.pause(); };
-  }, []);
+    return () => { request.abort(); generation.current?.abort(); generation.current = null; audioRef.current?.pause(); };
+  }, [available]);
 
   function clearPlayback() { audioRef.current?.pause(); setResult(null); setError(''); }
   function changeMode(next: 'preset' | 'custom') { clearPlayback(); setMode(next); }
   function useReply() { clearPlayback(); setMode('custom'); setCustomText(latestReply); }
 
   async function generate() {
-    if (!status?.configured || !text.trim() || tooLong || generation.current) return;
+    if (!available || !status?.configured || !text.trim() || tooLong || generation.current) return;
     clearPlayback();
     const controller = new AbortController();
     generation.current = controller;
@@ -51,6 +52,11 @@ export function VoicePreviewPanel({ latestReply = '' }: { latestReply?: string }
       if (!controller.signal.aborted) setBusy(false);
     }
   }
+
+  if (!available) return <section className={styles.panel} aria-labelledby="voice-preview-heading">
+    <div className={styles.heading}><span className="eyebrow">FRISTÅENDE LJUDPROV</span><h2 id="voice-preview-heading">Röstprov</h2></div>
+    <p>Det fristående röstprovet är inte tillgängligt i denna Studio-miljö.</p>
+  </section>;
 
   return <section className={styles.panel} aria-labelledby="voice-preview-heading">
     <div className={styles.heading}><span className="eyebrow">FRISTÅENDE LJUDPROV</span><h2 id="voice-preview-heading">Prova rösten</h2><span className={styles.voice}>Victoria · Cartesia</span></div>

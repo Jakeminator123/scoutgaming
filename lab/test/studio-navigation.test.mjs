@@ -139,6 +139,11 @@ test('actual editor shortcut uses the operator chat route and keeps the existing
       assert.ok(panel); assert.equal(panel.props.dealerId, 'astrid');
       assert.equal(panel.props.dirty, false); assert.equal(panel.props.status, props.initialStatus);
       assert.equal(typeof panel.props.onModeChange, 'function'); assert.equal(typeof panel.props.onPlayerChat, 'function');
+      assert.equal(panel.props.standaloneVoicePreviewAvailable, true);
+      visit(Studio({...props, initialView: 'openclaw', standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
+      assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
+      const html = renderToStaticMarkup(tree);
+      assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01/);
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;

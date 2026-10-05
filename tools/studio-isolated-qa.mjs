@@ -42,7 +42,11 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       console.log('Preparing isolated PostgreSQL packages; no system install or service.');
       const lists = join(packages, 'lists'), cache = join(packages, 'cache');
       await mkdir(join(lists, 'partial'), { recursive: true }); await mkdir(cache);
-      const aptScope = ['-o', `Dir::State::lists=${lists}`, '-o', `Dir::Cache=${cache}`, '-o', 'Debug::NoLocking=1'];
+      // Host-installed versions may have no download source in these lists
+      // (for example GitHub's PGDG libpq). Select from verified repositories
+      // using task-owned empty dpkg state; never read or modify host status.
+      const status = join(cache, 'dpkg-status'); await writeFile(status, '', { mode: 0o600 });
+      const aptScope = ['-o', `Dir::State::lists=${lists}`, '-o', `Dir::State::status=${status}`, '-o', `Dir::Cache=${cache}`, '-o', 'Debug::NoLocking=1'];
       // Existing system APT metadata can be stale. Refresh only task-owned
       // lists/cache, retaining APT signature/hash verification without sudo.
       await run('apt-get', [...aptScope, 'update'], { cwd: packages, env, timeout: 120000 });

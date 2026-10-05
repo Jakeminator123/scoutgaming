@@ -15,6 +15,12 @@ function sessionActor(session) {
   if (!role) throw failure(403);
   return Object.freeze({ user: session.user, role });
 }
+function readActorHeaders(actor) {
+  if (actor.user.length > 254 || /[\u0000-\u001f\u007f-\u009f]/.test(actor.user)) throw failure(403);
+  try {
+    return { 'X-Croupier-Studio-Actor': encodeURIComponent(actor.user), 'X-Croupier-Studio-Role': actor.role };
+  } catch { throw failure(403); }
+}
 async function readObject(request) {
   if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) throw failure(415);
   const length = request.headers.get('content-length');
@@ -76,6 +82,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       const session = await authorize(request);
       const actor = sessionActor(session);
       if (!studioRoleMeetsMinimum(actor.role, endpoint.minimumRole)) throw failure(403);
+      // Safe UI identity from this request's fresh authorization, never handler
+      // data, credentials, a token or a cached session. Keep payload contracts intact.
+      const readIdentity = request.method === 'GET' ? readActorHeaders(actor) : {};
       // Trusted authorization owns the scope; copy its validated scalar fields
       // before async input/gates so handlers never share a mutable session scope.
       const scope = validateStudioScope(session.scope);
@@ -122,7 +131,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Mail is an effect of committed identity state. Never send a token whose
       // surrounding transaction may still roll back or hold the product lock.
       for (const work of deferred) await work();
-      return json(result);
+      return json(result, 200, readIdentity);
     } catch (error) {
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;
       return json({ error: publicErrors.get(status) }, status);

@@ -47,13 +47,13 @@ test('malformed and foreign return targets cannot alter the SSR redirect destina
   }
 });
 
-function load(file, overrides) {
+function load(file, overrides, env = {}) {
   const url = new URL(file, import.meta.url), source = readFileSync(url, 'utf8');
   const { code } = transformSync(source, { filename: file,
     jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
     module: { type: 'commonjs' } });
   const module = { exports: {} }, localRequire = createRequire(url);
-  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, URL, process: {env:{}},
+  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, URL, process: {env},
     require: name => Object.hasOwn(overrides, name) ? overrides[name] : localRequire(name) }, { filename: file });
   return module.exports;
 }
@@ -168,6 +168,22 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
     else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
+  }
+});
+
+test('Studio SSR serializes only the standalone voice capability matching native and Neon server flags', async () => {
+  for (const env of [{}, {CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0'},
+    {CROUPIER_STUDIO_NATIVE_ADMIN: '1'}, {CROUPIER_STUDIO_NEON_POLICY: '1'},
+    {CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_STUDIO_NEON_POLICY: '1'}]) {
+    const page = load('../app/studio-page.tsx', {
+      'next/headers': {headers: async () => new Headers({host: 'game.fixture.invalid'})},
+      '@/components/studio': {Studio() {}}, '@/components/studio-types': {viewPaths: {openclaw: '/operator-chat'}},
+      '@/lib/ui-server': {studioUiInitialData: async () => ({project: {}, videos: {videos: []}, status: {configured: true}})},
+    }, env);
+    const element = await page.StudioPage({view: 'openclaw'});
+    assert.equal(element.props.standaloneVoicePreviewAvailable,
+      env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && env.CROUPIER_STUDIO_NEON_POLICY !== '1');
+    assert.ok(!Object.keys(element.props).some(key => key.startsWith('CROUPIER_')));
   }
 });
 

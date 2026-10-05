@@ -13,7 +13,7 @@ export function ModeSelector({ mode, onChange, configured, compact = false }: { 
   return <div className={`mode-selector ${compact ? 'compact' : ''}`}><div className="mode-options" role="group" aria-label="Beslutsmodell">{(Object.keys(modeLabels) as DirectorMode[]).map(key => <button key={key} type="button" className={key === mode ? 'active' : ''} aria-pressed={key === mode} onClick={() => onChange(key)}><span>{modeLabels[key]}</span>{!compact ? <small>{modeExplanations[key]}</small> : null}</button>)}</div>{compact ? <p className="helper">{modeExplanations[mode]}</p> : null}{!configured && (mode === 'shadow' || mode === 'active') ? <p className="connection-warning">Ingen modellkoppling är konfigurerad. Testet använder säker standard och visar orsaken.</p> : null}</div>;
 }
 
-export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void }) {
+export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPlayerChat, standaloneVoicePreviewAvailable = true }: { status: ConnectionStatus; mode: DirectorMode; onModeChange: (mode: DirectorMode) => void; dealerId: string; dirty: boolean; onPlayerChat: () => void; standaloneVoicePreviewAvailable?: boolean }) {
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
@@ -45,7 +45,7 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
       <details className="gateway-diagnostics"><summary>Ansvar, spelarminne och dashboard</summary><div className="authority-grid"><div><span className="eyebrow">KAN PÅVERKA</span><h3>Presentationen</h3><ul><li>Val av en redan tillåten variant</li><li>Ton, hälsning och ett granskat uttryck</li><li>Test av chatt- och preferenssignaler</li></ul></div><div><span className="eyebrow">KAN INTE PÅVERKA</span><h3>Spelets sanning</h3><ul><li>RNG, kort, resultat eller utbetalningar</li><li>Ändra dina policyfiler via denna chatt</li><li>Välja en otillåten eller påhittad video</li></ul></div></div>
       <div className="notice"><strong>Skilj på bordschatt och fristående chattprov.</strong><p>Bordschatten använder originalspelets serverägda underlag; eventuellt spelarminne hanteras i originalspelets inställningar. Eventstudions testsignaler och fristående chattprov är separata och är inte bevis på vad som hänt vid bordet. IDE-agenternas GitLab-inbox hör inte till detta system.</p></div>
       <a className="external-link" href={dashboardUrl} target="_blank" rel="noreferrer">Öppna OpenClaws egen dashboard <span aria-hidden="true">↗</span></a><p className="helper">Dashboarden hanterar agenter och verktyg. Labbets editor hanterar event, regler och videokopplingar.</p>
-      </details><VoicePreviewPanel latestReply={messages.findLast(item => item.role === 'assistant')?.text ?? ''} />
+      </details><VoicePreviewPanel available={standaloneVoicePreviewAvailable} latestReply={messages.findLast(item => item.role === 'assistant')?.text ?? ''} />
       <OpenClawSources />
     </section></div>
   </div>;
