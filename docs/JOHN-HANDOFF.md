@@ -94,19 +94,27 @@ dokumentationsstädning. T2–T4 kvarstår för verkligt kundregister, kundperso
 medlemskap, lane-publicering och operatörsbunden lobby. De öppna A–I-punkterna
 är acceptans/driftarbete, inte ett påstående om att allt är produktionsklart.
 Lokalt verifierat: 90 riktade UI-, serverrutt-, auth- och mejltester, Lab-
-typkontroll och produktionsbygge PASS. Kod 4df5e74a är pushad; fullhook gav
-1626 PASS/9 skip/0 fail. Vercel dpl_95zhvFvin7skaMSw5KrEx5vqWCgT är READY
-på exakt SHA med produktionsalias, och CI37495437898 har tre successjobb.
-Sex läsande HTTP-prov bekräftar login/401 utan inloggning. Befintlig adminsession
+typkontroll och produktionsbygge PASS. Kod 4df5e74a och etikettkomplettering
+ec060e73 är pushade; fullhook gav 1626 PASS/9 skip/0 fail vid båda kodcommits.
+Vercel dpl_7vDDEzyvkN9ZLjqnyEhoKZHtF2Ny är READY på exakt ec060e73 med
+produktionsalias, och CI37496945897 har tre successjobb. Sex läsande HTTP-prov
+på första leveransen bekräftar login/401 utan inloggning. Befintlig adminsession
 verifierade Kontrollpanel → nivå 2-ingång → Demo South → intern Administration.
-Inbjudningsformuläret visar alla tre nivåerna. Livekontrollen hittade också en
-gammal etikett i behörighetsvalet; denna komplettering rättar den och det
-befintliga UI-provet bevakar nu även alternativets etikett. Privata loggar ligger under
-`lab/data/platform-private/level-two-takeover-*`. Inga produktservrar startas
-och ingen riktig konto-/policy-/databasskrivning behövs för dessa kontroller.
-En av de avsedda mottagarna syntes vid livekontrollen som admin som väntar på
-aktivering. Det är ett läst kontotillstånd, inte bevis på mejlleverans eller en
-skrivning av denna agent. Jakob äger fortsatt utskicken och F:s mottagaracceptans.
+Efter senaste publiceringen är även behörighetsvalets etikett verifierad live:
+Administratör – nivå 1, 2 och 3. Det befintliga UI-provet bevakar denna etikett.
+Privata loggar ligger under `lab/data/platform-private/level-two-takeover-*`.
+Inga produktservrar har startats och agenten har inte skrivit konton, policy
+eller riktig databas. Inga extra grenar, worktrees eller nya rapportfiler behövs.
+
+Resend återlästes separat den 6 oktober: Johns verkliga inbjudan har **Bounced**
+med **Recipient not found**, och mottagaradressen har lagts på suppression-listan.
+Kontot väntar på aktivering. Rätt mottagaradress behöver bekräftas innan nytt
+utskick; spärren har inte tagits bort. Ett mejl till Jakobs dg97-adress visas som
+**Delivered** och det kontot som aktiverat. Det bevisar inte leverans till den
+tidigare begärda Gmail-adressen, inte heller mottagarens faktiska inkorg eller
+resetflöde. Exakta adresser och provider-ID finns endast i det privata kvittot
+`level-two-takeover-delivery.json`. Jakob äger fortsatt utskicken och F:s
+mottagaracceptans; denna agent har inte skickat något mejl.
 
 **Personalinbjudningar, första leveransen 6 oktober:** samordnad fortsättning
 efter a72c4bf1; åtkomsttexten har därefter kompletterats enligt övertagandet ovan.

@@ -260,8 +260,14 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   personalinbjudningarna och mottagarnas aktivering/inkorg verifieras separat;
   denna kodleverans markerar inte F komplett och ändrar inga lösenord.
   Jakob tar över de två verkliga utskicken enligt senaste instruktionen.
-  Agenten skickar inga mejl eller skapar konton i denna fortsättning; verifierad
-  leverans och mottagarnas aktivering behöver fortfarande registreras här.
+  Agenten skickar inga mejl eller skapar konton i denna fortsättning.
+  Senare läsande kontroll den 6 oktober visar Johns inbjudan som **Bounced**:
+  **Recipient not found**, adressen ligger på Resends suppression-lista och
+  kontot väntar på aktivering. Rätt adress krävs före nytt utskick; spärren är
+  oförändrad. Jakobs dg97-adress visar **Delivered** och kontot är aktiverat.
+  Den tidigare begärda Gmail-adressens leverans, faktisk inkorg och resetflöde
+  är inte verifierade. F är fortsatt öppen. Privata mottagar-/providerkvitton:
+  `lab/data/platform-private/level-two-takeover-delivery.json`.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
   workspace795524/source30689542 den 6 oktober: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade
