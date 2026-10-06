@@ -51,7 +51,7 @@ jobs:
           load: true
           tags: ${{ env.IMAGE }}:sha-${{ github.sha }}
           labels: |
-            org.opencontainers.image.source=https://github.com/Jakeminator123/github-work
+            org.opencontainers.image.source=https://github.com/Jakeminator123/scoutgaming
             org.opencontainers.image.revision=${{ github.sha }}
       - name: Verify BGRA channels with the image's actual FFmpeg before publishing
         run: |

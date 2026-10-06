@@ -32,7 +32,7 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 
 ## Sources of truth
 
-- The private [GitHub repository](https://github.com/Jakeminator123/github-work)
+- The private [GitHub repository](https://github.com/Jakeminator123/scoutgaming)
   is the active source on `main`. Keep it private.
   GitLab integration is paused; `Jakobs-v1` preserves commit `600093e` on both
   services. See [migration and delivery](docs/CLOUD-MIGRATION.md).

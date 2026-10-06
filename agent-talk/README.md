@@ -54,7 +54,7 @@ delar av arbetet som inte påverkas och lämna den konkreta luckan till samordna
 Befintlig inloggad Chrome ger en praktisk reservväg: kör
 `node tools/security-status.mjs --browser` för den verifierade öppna repo-vyn
 i workspace `795524`. Återanvänd fliken och kontrollera valt `Source`:
-`Jakeminator123/github-work` (source `30689542`). Välj vid behov `Source`, sök
+`Jakeminator123/scoutgaming` (source `30689542`). Välj vid behov `Source`, sök
 exakt repo-namnet och välj det; filterkopplingen verifierades 2026-10-03 och ska
 kontrolleras igen vid läsning. Läs endast avgränsade ID/status/repo/fil/rad/tid,
 aldrig hela rader, sidtext eller screenshots med hemliga utdrag. Ändra inga

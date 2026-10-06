@@ -10,7 +10,7 @@ import {homedir} from 'node:os';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-export const GITGUARDIAN_BINDING=Object.freeze({workspaceId:795524,sourceId:30689542,repository:'Jakeminator123/github-work'});
+export const GITGUARDIAN_BINDING=Object.freeze({workspaceId:795524,sourceId:30689542,repository:'Jakeminator123/scoutgaming'});
 export const GITGUARDIAN_TOKEN_FILE=resolve(homedir(),'.codex/private-connections/gitguardian-795524.dpapi');
 const base='https://api.gitguardian.com/v1',sourcePath='/sources/'+GITGUARDIAN_BINDING.sourceId;
 const incidentPath=sourcePath+'/incidents/secrets',pageSize=100,maxPages=200,maxRows=20000;

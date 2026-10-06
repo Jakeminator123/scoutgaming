@@ -1,6 +1,9 @@
 # Återställning och skydd av data
 
 Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
+GitHub-källan heter nu `Jakeminator123/scoutgaming`, samma repo-ID `1380630440`.
+Namnbytet är godkänt av Jakob och gammal `github-work` vidarebefordras till den.
+Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 

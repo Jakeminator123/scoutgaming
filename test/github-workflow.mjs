@@ -19,7 +19,7 @@ test('push verifies the transported commit once and blocks a failed map check', 
   assert.throws(() => verifyPushMaps(update.replace('a'.repeat(40),'HEAD'), () => {throw Error('must not run');}), /Invalid push commit/);
 });
 test('only the approved GitHub branch can be pushed', () => {
-  assert.equal(policy.repository, 'Jakeminator123/github-work');
+  assert.equal(policy.repository, 'Jakeminator123/scoutgaming');
   assert.equal(policy.branch, 'main');
   assert.doesNotThrow(() => validatePush(url, update, policy, () => true));
   assert.throws(() => validatePush(url, update, policy, () => false), /rewrite history/);

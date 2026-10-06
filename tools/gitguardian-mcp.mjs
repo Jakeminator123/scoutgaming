@@ -8,7 +8,7 @@ import {createGitGuardianReader} from './gitguardian-read.mjs';
 
 const toolNames=['read_source_binding','read_repo_incidents'];
 export const GITGUARDIAN_MCP_TOOLS=Object.freeze(toolNames.map(name=>({name,
-  description:name==='read_source_binding'?'Verify GitGuardian source30689542 binds Jakeminator123/github-work. Metadata only.':
+  description:name==='read_source_binding'?'Verify GitGuardian source30689542 binds Jakeminator123/scoutgaming. Metadata only.':
     'Read every incident status for source30689542, with paginated file/line metadata. No secrets, snippets or mutations.',
   inputSchema:{type:'object',properties:{},additionalProperties:false},
   annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true}})));
