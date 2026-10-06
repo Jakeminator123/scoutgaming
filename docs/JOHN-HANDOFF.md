@@ -1,10 +1,35 @@
 # Aktuell handoff — Croupier
 
-Uppdaterad 5 oktober 2026. Detta är den enda löpande John-handofffilen.
+Uppdaterad 6 oktober 2026. Detta är den enda löpande John-handofffilen.
 Nuläge och kvarvarande krav står nedan; äldre checkpoints är inte aktuella instruktioner.
 Detaljhistoriken finns oförändrad i Git-snapshot
 [`91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/JOHN-HANDOFF.md).
 Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
+
+### Studio-region och latenstest — 6 oktober 2026
+
+På Jakobs begäran är Studio/Backoffice-projektet `croupier-lab-ui` nu sparat
+med Vercelregion `fra1` (Frankfurt), tidigare `iad1` (Virginia). Samma
+produktkod `019dba6d14c0b8b9c9de900af572e916316649b3` publicerades som
+`dpl_24S1idmMEHgzpPYqrwPPLf2P6YNk`; READY, produktion, samma Studio-adress.
+Faktiska svar har `fra1` i `x-vercel-id`. Första Studio→Backoffice gav
+7,879→3,041 s; varm overview 1,595→0,328 s. Runtime/API-väntan minskade
+utan byte av Neon-plan, databasskrivning eller produktkod. Oinloggade
+overview/shoes avvisades med 401; login/game-session GET var 200.
+Detaljer och bevisgränser finns i öppna punkt B i driftkartan.
+Första overview har ännu cirka 2,04 s utanför de två Server-Timing-faserna;
+uppstart, proxy och fortsatt gruppnavigation behöver riktad mätning.
+Inget nytt lösenordsloginprov, spelprov eller skrivprov ingick.
+
+Vercelprojekten är två produktionsbyggen av samma GitHub-repo: frontend
+bygger `apps/croupier-frontend`, Studio bygger `lab`. De två native-QA-
+projekten är isolerade testfronter, inte extra produktionsrepon.
+`croupier-studio` är ett tydligare namnförslag för `croupier-lab-ui`;
+ingen namnändring, QA-radering eller konsolidering är genomförd.
+Frontend ligger kvar i `iad1`; endast Studio-regionen ingick i provet.
+GitGuardian på ursprunglig main: suite queued, inga synliga check-runs.
+Repoansluten incidentläsning gav 13 TRIGGERED, full sourcetäckning men
+partiell file/line-täckning; dessa befintliga säkerhetsärenden kvarstår.
 
 ### Kort notis inför datorbyte — 5 oktober 2026
 
