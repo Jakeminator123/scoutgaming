@@ -619,7 +619,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   }
 
   return <div className={styles.administration} aria-busy={busy}>
-    <header className={styles.header}><div><h1>Backoffice</h1><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Backoffice kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
+    <header className={styles.header}><div><h1>Administration</h1><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
       <div className={styles.headerActions}><button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     </header>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}

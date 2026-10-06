@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { controlToolPath } from '../lib/control-workspace.mjs';
 
 const require = createRequire(import.meta.url);
 const redirects = require('next/dist/client/components/redirect.js');
@@ -25,17 +26,20 @@ function load(file, overrides) {
 
 function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' })) {
   function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
+  function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   const shared = load('../app/control/surface-page.tsx', {
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
     '@/components/kevin-bo/kevin-backoffice': { KevinBackoffice },
+    '@/components/control-workspace': { ControlWorkspace },
+    '@/lib/control-workspace.mjs': { controlToolPath },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
   const control = load('../app/control/[[...path]]/page.tsx', { '../surface-page': shared });
   const partner = load('../app/partner/[[...path]]/page.tsx', { '../../control/surface-page': shared });
-  return { ...shared, KevinBackoffice, control, partner };
+  return { ...shared, KevinBackoffice, ControlWorkspace, control, partner };
 }
 
 async function renderPage(page, path) {
@@ -102,8 +106,7 @@ test('authorized SSR passes only the selected snapshot, view, operator and nativ
     return { snapshot, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin', role: 'admin', privateTestField: 'never-pass' } };
   });
   for (const [surface, path, view, uiSurface] of [['partner', ['demo-south', 'presentation'], 'theme', 'partner'],
-    ['partner', ['demo-south', 'tables'], 'bj', 'partner'], ['partner', ['demo-south', 'integration'], 'api', 'partner'],
-    ['control', ['tables'], 'tables', 'internal'], ['control', ['voice'], 'voice', 'internal'], ['control', undefined, 'ops', 'internal']]) {
+    ['partner', ['demo-south', 'tables'], 'bj', 'partner'], ['partner', ['demo-south', 'integration'], 'api', 'partner']]) {
     const element = await renderPage(loaded[surface], path);
     assert.equal(element.type, loaded.KevinBackoffice);
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
@@ -112,6 +115,32 @@ test('authorized SSR passes only the selected snapshot, view, operator and nativ
     assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
     assert.equal(requests.at(-1).options.operatorSlug, surface === 'partner' ? 'demo-south' : undefined);
   }
+});
+
+test('control shows the real tool entrance without handing operator fixtures to the browser', async () => {
+  const loaded = pages(async () => ({ snapshot: { privateFixture: true }, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin' } }));
+  for (const [path, view] of [[undefined, 'ops'], [['generations'], 'gen'], [['reports'], 'reports']]) {
+    const element = await renderPage(loaded.control, path);
+    assert.equal(element.type, loaded.ControlWorkspace);
+    assert.equal(element.props.user, 'fixture-admin');
+    assert.equal(element.props.initialView, view);
+    assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'user']);
+  }
+});
+
+test('old internal tool documents authorize then lead to the real tool with one basePath', async () => {
+  let reads = 0;
+  const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
+  for (const [section, destination] of [['voice', '/#clips'], ['clips', '/#deal'], ['lanes', '/administration'],
+    ['media', '/videos'], ['presentation-events', '/tree'], ['team', '/administration']]) {
+    for (const basePath of ['', '/studio']) {
+      await assert.rejects(renderPage(loaded.control, [section]), error => {
+        assert.equal(redirectLocation(error, basePath), basePath + destination);
+        return true;
+      });
+    }
+  }
+  assert.equal(reads, 12);
 });
 
 test('legacy control entrances redirect once to existing app-local authenticated tools', async () => {

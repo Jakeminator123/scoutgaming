@@ -10,7 +10,7 @@ test('dashboard uses the Scout palette and code-native wordmark', () => {
   assert.match(css, /--scout-ink:#0a0b0d/);
   assert.match(css, /--scout-off:#f2f1ed/);
   assert.match(css, /--scout-lime:#d6ff3a/);
-  assert.match(navigation, /aria-label="Croupier Kontrollpanel · Scout Gaming"/);
+  assert.match(navigation, /aria-label="ScoutGamingGroup · Administration"/);
   assert.match(navigation, /scout<b>\/</);
   assert.doesNotMatch(studio, /Backoffice\/Lab|BACKOFFICE\/LAB|className="main-nav"|className="studio-brand"/);
 });

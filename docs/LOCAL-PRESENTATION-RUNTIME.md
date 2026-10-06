@@ -30,7 +30,7 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · Kontrollpanel | `/control` | Intern överblick. Produktionsverktygen finns under `/studio`: dealer/klipp, Administration och OpenClaw. Kräver intern admin. |
+| 1 · ScoutGamingGroup-admin | `/control` | Gemensam ingång och meny till lanes, klipp, konton och drift. Verktygen under `/studio` tillhör samma adminyta. Kräver intern admin. |
 | 2 · Partnerportal | `/partner/{operatorSlug}` | Begränsade val för operatörens tilldelade lanes och bord. Nu en intern, adminskyddad förhandsvisning med två exempeloperatörer; riktig partnerinloggning och publicering återstår. |
 | 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
 
@@ -70,10 +70,13 @@ Ordlistans källa är `lab/policies/studio-contract.json` och visas i Studio-gui
 
 ### Adresser och begränsningar
 
-Menyn använder exempelvis `/control/speech`, `/partner/demo-north/presentation`,
+Partnerns meny använder exempelvis `/partner/demo-north/presentation`,
 `/partner/demo-north/tables` och `/partner/demo-north/lanes`.
 Gamla kortformer och hashbokmärken läses som kompatibilitet och leder till
-den aktuella adressen; inga nya länkar skapas med `#theme` eller `#tx`.
+den aktuella adressen; menyn skapar inga nya länkar med `#theme` eller `#tx`.
+Nivå 1 använder fungerande Studio-verktyg direkt. Gamla interna klipp-, tal-,
+medie- och kontoadresser leder dit; oanslutna prototypvyer får en förklaring
+i adminingången. Kevin-komponentens exempelvyer renderas bara för nivå 2.
 Den korta `/administration` går vidare till `/studio/administration`.
 `/studio` är fortfarande det riktiga interna produktionsverktyget, inte en
 uttjänt alternativ produkt. Gamla speladresser går vidare till

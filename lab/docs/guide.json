@@ -58,7 +58,7 @@
   "surfaces": [
     {
       "name": "Kontrollpanel · /control",
-      "purpose": "Nivå 1 för intern personal. Studio under /studio innehåller de befintliga produktions- och administrationsverktygen."
+      "purpose": "ScoutGamingGroups gemensamma adminyta, nivå 1. Ingången leder till de riktiga lane-, klipp-, konto- och driftverktygen med samma huvudmeny. Studio under /studio är verktygsdelen av denna yta."
     },
     {
       "name": "Partnerportal · /partner/{operatorSlug}",

@@ -102,8 +102,12 @@ Privata originalanteckningar i `random/` är inte del av produkt eller deploymen
 
 Aktiv guide och ordlista skiljer lane, klippuppsättning, adapter, urval,
 uppspelningsplan och operatörspaket. PDF:erna används som underlag, aktuell
-kod avgör status. Nivå 1/2 har läsbara adresser och fungerar med gamla
-hashbokmärken. Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
+kod avgör status. Nivå 1 är ScoutGamingGroups gemensamma adminyta med riktiga
+verktygsingångar, inte en parallell uppsättning av Kevins exempelpaneler.
+Studio ingår i samma yta och huvudmeny. Nivå 2 behåller den importerade
+förhandsvisningen. Äldre hashbokmärken fungerar; interna klipp/tal/media/konton
+leder till befintliga verktyg och oanslutna vyer får en tydlig förklaring.
+Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
 lokala utkast fungerar fortsatt i den befintliga bordsförhandsvisningen.
 Ingen partner-login, DB-migration, spelregel eller mediefil ändras här.
 
