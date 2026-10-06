@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "Production uses shared Neon/Blob. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Environment values never belong in this registry.",
+  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Secret values never belong in this registry.",
   "services": {
     "render-game": {
       "sources": [

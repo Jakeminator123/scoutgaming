@@ -9,17 +9,25 @@ ett äldre prov automatiskt.
 
 ## Tre åtkomstnivåer på scoutgaming.tech
 
-### Kandidat för ett Vercelprojekt — 6 oktober 2026
+### Ett gemensamt Vercelprojekt — 6 oktober 2026
 
 Efter uttrycklig samordning har Kevin-chatten släppt alla anspråk. Services i
 rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och Studio (`lab`)
-i ett bygge/projekt utan att slå ihop deras Next-versioner. Ny, avstängd
+i ett bygge/projekt utan att slå ihop deras Next-versioner. Aktiverad
 `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen till
 Studio när Services skickar dit dokument/API direkt. Render behåller spel/live,
 och T2–T4:s verkliga partnerinloggning, livedata och lobby är fortsatt öppna.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
-Providerbygge, publicerad routing och omkoppling till ett `scoutgaming`-projekt
-är ännu inte verifierade. Repo-/projektnamn och befintlig produktion är oförändrade.
+Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
+tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
+Neon/Blob/Resend. Kod `cef3af5c` är READY på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`;
+CI `37449742229` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
+API-spärrar och statiska filer är läsande verifierade. Kevin-chatten har
+bekräftat sin befintliga adminsession i partnerförhandsvisning/control/Backoffice.
+Båda webbdelarna använder `fra1`; Git-autobyggen från main är på igen.
+Den gamla GitHub-adressen och gamla frontend-adressen vidarebefordras.
+Det domänlösa frontendprojektet sparas som `scoutgaming-legacy-frontend`, med
+autobyggen och domäntilldelning avstängda; isolerade QA-projekt/data bevaras.
 
 Jakob har godkänt överföringen av Kevins backoffice och följande indelning.
 Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar:
@@ -202,7 +210,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   omprov görs. Funktionsbeviset på e49 och privata failurekvitton bevaras.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Samordnad Resend-leverans
   6 oktober har återläst produktionsnyckel och `no-reply@scoutgaming.tech` i
-  `croupier-lab-ui`. Den befintliga nyckeln har avgränsad sending-access för den
+   samma Studio-projekt som nu heter `scoutgaming`. Den befintliga nyckeln har avgränsad sending-access för den
   verifierade domänen. READY-deployment `dpl_G7tZPZ5QAPTdppLhHuGgkpPWwnxh`
   publicerar fryst `184fe66ba22acf63704f2a955f895b359e05027e` i `fra1` utan
   partnerarbetets då lokala ändringar. Den verkliga native mail-adaptern fick
@@ -265,8 +273,8 @@ Arbeta i `C:/Users/jakem/Projects/croupier`, på main i det privata
 [Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming).
 Godkänt namnbyte 6 oktober behåller repo-ID `1380630440`, main, historik och
 installationer. Den gamla GitHub-adressen vidarebefordras; återskapa den inte.
-Main är leverans-/standardbranch sedan 2 oktober; två produktionsbyggen på Vercel
-och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
+Main är leverans-/standardbranch sedan 2 oktober; ett Vercelprojekt med två
+Services och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
 `checksPass`; de andra tre `off`. GitLab-inbox/wiki/mirror och Jira/CAC är pensionerade.
 `Jakobs-v1` på `600093e4522efc57bd82979cff65492a528ffeb7` bevarar commitad v1,
 inte ignorerade privata profiler/data.
@@ -643,7 +651,7 @@ med barnprocess/källa/stabil deploy/envbindning i stället.
 
 | Ansvar | Aktiv källa / gräns |
 | --- | --- |
-| Publik webb/spel | Vercel apps/croupier-frontend, /blackjack; Studio lab under /studio |
+| Publik webb/spel | Vercel scoutgaming, service web från apps/croupier-frontend, /blackjack; service studio från lab under /studio |
 | Konton/wallet/rundor | Neon croupier_game/croupier_auth; Render äger spelauktoritet |
 | Zoner | separat croupier_zones/CROUPIER_ZONES_DATABASE_URL, ingen DBfallback |
 | Studio/adminpolicy/historik/mediaregister | Neon croupier_studio med scope/CAS/history/audit; Render samma policy |
@@ -686,24 +694,29 @@ spelsajt-game-server tillhör Jakeminator123/spelsajt och openclaw-sajtagenten t
 Jakeminator123/sajtmaskin; de är inte Croupiers avvecklingsmål.
 Karta/envregister anger tjänstebindning/nyckelnamn, aldrig hemliga värden.
 
-### Varför fem Croupier-projekt i Vercel? — avläst 5 oktober
+### Varför finns flera kort kvar i Vercel? — verifierat 6 oktober
 
 | Projekt | Roll |
 | --- | --- |
-| croupier-frontend | Gitkopplat samma main; hemsida/spel från apps/croupier-frontend |
-| croupier-lab-ui | Gitkopplat samma main; labbygge för /studio på samma publika sajt |
+| scoutgaming | Enda aktiva produktionsprojektet; web + studio från samma repo/main, region fra1 |
+| scoutgaming-legacy-frontend | Tidigare croupier-frontend; domänlös reserv med Git-byggen och automatisk domäntilldelning avstängda |
 | croupier-native-qa-abc92154cb15 | Befintlig isolerad testfrontend |
 | croupier-native-studio-qa-abc92154cb15 | Tillhörande isolerad Studio |
 | croupier-player-preview-qa | Äldre testfront med Blob/Neonintegrationer; kandidat efter ägar-/konsumentkontroll |
 
-Ett repo/en sajt finns genom två produktionsbyggen, inte fem produktrepon.
+Ett repo/en produktionssajt finns genom ett projekt med två Services.
+Det gamla croupier-lab-ui-ID:t bär nu hela projektet, vilket bevarar dess
+Neon/Blob/Resend och nycklar. croupier-lab-ui.vercel.app består som kompatibelt
+Studio-alias; croupier-frontend.vercel.app ger 308 till www.scoutgaming.tech.
+Reservprojektets pause-API gav invalid_deployment eftersom aktiv produktion
+saknas; det är inte markerat paused och får inte beskrivas som raderat.
 NativeQA byggs manuellt/API från samma explicita reposSHA; ConnectGitRepository
 betyder saknad automatisk Gitkoppling.
 Äldre player-preview är READY på 22dca5c4/dpl_6ksHgAKr7NoW5NEAuP4xVcJucAok;
 proxyrot apps/croupier-frontend, session-GET 421 och /studio 500 i avläsningen.
 Den är inte fungerande alternativfront, men Blob/Neonägarskap får inte blindraderas.
 Produktionen kräver inte QA-fronter; deras data/delade media ska ändå skyddas.
-QA behålls/AI-GPU OFF. Ett enda produktbygge är separat arkitekturarbete.
+QA behålls/AI-GPU OFF. Webbapparnas paket/Next-versioner är fortfarande separata.
 
 Frontendpreview kan peka mot produktion; syntetiska konton/rundor kräver isolerad
 backend/annan hostname. presentation=local gäller också i molnet.
