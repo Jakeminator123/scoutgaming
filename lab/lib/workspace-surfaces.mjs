@@ -22,6 +22,7 @@ export const WORKSPACE_VIEW_SLUGS = Object.freeze({
   voice: 'speech', clips: 'clips', media: 'media', tree: 'presentation-events', gen: 'generations',
 });
 
+/** @param {string | null} [operator] */
 export function workspaceSurfacePath(surface, view, operator = null) {
   const views = surface === 'partner' ? PARTNER_PREVIEW_VIEWS : surface === 'control' ? CONTROL_PREVIEW_VIEWS : [];
   if (!views.includes(view)) return null;

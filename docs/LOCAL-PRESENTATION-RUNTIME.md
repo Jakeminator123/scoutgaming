@@ -31,7 +31,7 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
 | 1 · ScoutGamingGroup-admin | `/control` | Gemensam ingång och meny till lanes, klipp, konton och drift. Verktygen under `/studio` tillhör samma adminyta. Kräver intern admin. |
-| 2 · Partnerportal | `/partner/{operatorSlug}` | Begränsade val för operatörens tilldelade lanes och bord. Nu en intern, adminskyddad förhandsvisning med två exempeloperatörer; riktig partnerinloggning och publicering återstår. |
+| 2 · Partnerportal | `/partner`, `/partner/{operatorSlug}` | Intern admin når ingången med samma konto och väljer uttryckligen en demonstration. Kundval är ännu inte aktiverat. Två exempeloperatörer visar begränsade lane- och designval; riktig partnerinloggning och publicering återstår. |
 | 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
 
 En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
@@ -69,6 +69,13 @@ gäller exempelvis kontoåtkomst och hör inte till klippurvalet.
 Ordlistans källa är `lab/policies/studio-contract.json` och visas i Studio-guiden.
 
 ### Adresser och begränsningar
+
+`/partner` visar en adminskyddad ingång där demonstrationer är åtskilda från
+framtida kundval. Det finns ingen automatisk standardkund. En framtida
+kundlista måste komma från aktiva, serververifierade organisationsanslutningar,
+inte fixturelistan, API-nycklar, ett varumärkesnamn eller URL:en. Intern admin
+ska kunna välja mellan anslutna kunder; kundpersonal ska vara avgränsad till
+sina medlemskap. Båda fallen kräver färsk serverkontroll enligt T2.
 
 Partnerns meny använder exempelvis `/partner/demo-north/presentation`,
 `/partner/demo-north/tables` och `/partner/demo-north/lanes`.

@@ -27,11 +27,13 @@ function load(file, overrides) {
 function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' })) {
   function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
+  function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
   const shared = load('../app/control/surface-page.tsx', {
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
     '@/components/kevin-bo/kevin-backoffice': { KevinBackoffice },
     '@/components/control-workspace': { ControlWorkspace },
+    '@/components/partner-workspace': { PartnerWorkspace },
     '@/lib/control-workspace.mjs': { controlToolPath },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
@@ -39,7 +41,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
   });
   const control = load('../app/control/[[...path]]/page.tsx', { '../surface-page': shared });
   const partner = load('../app/partner/[[...path]]/page.tsx', { '../../control/surface-page': shared });
-  return { ...shared, KevinBackoffice, ControlWorkspace, control, partner };
+  return { ...shared, KevinBackoffice, ControlWorkspace, PartnerWorkspace, control, partner };
 }
 
 async function renderPage(page, path) {
@@ -125,6 +127,32 @@ test('control shows the real tool entrance without handing operator fixtures to 
     assert.equal(element.props.user, 'fixture-admin');
     assert.equal(element.props.initialView, view);
     assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'user']);
+  }
+});
+
+test('level-two entrance authorizes and exposes only explicit demo choices, never customer records or an automatic operator', async () => {
+  let reads = 0;
+  const loaded = pages(async () => {
+    reads++;
+    return { session: { user: 'fixture-admin', privateSession: 'never-pass' }, snapshot: {
+      operators: [{ slug: 'demo-north', name: 'Demo North', privateField: 'never-pass' }, { slug: 'demo-south', name: 'Demo South' }],
+      players: [{ privatePlayer: true }], team: [{ privateTeam: true }],
+    } };
+  });
+  const element = await renderPage(loaded.partner);
+  assert.equal(reads, 1);
+  assert.equal(element.type, loaded.PartnerWorkspace);
+  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', demonstrations: [
+    { slug: 'demo-north', name: 'Demo North' }, { slug: 'demo-south', name: 'Demo South' },
+  ] });
+});
+
+test('neither workspace renders a missing identity even if the adapter returns a session shell', async () => {
+  for (const user of ['', undefined, null]) {
+    const loaded = pages(async () => ({ session: { user } }));
+    for (const surface of ['control', 'partner']) {
+      await assert.rejects(renderPage(loaded[surface]), /workspace_identity_unavailable/);
+    }
   }
 });
 

@@ -597,9 +597,9 @@ test('account creation distinguishes game-only players from emailed Studio admin
   assert.match(playerHtml, /ingen administratörsbehörighet eller Studioåtkomst/);
   assert.match(invitationHtml, /<summary>Bjud in adminpersonal – nivå 1<\/summary>/);
   assert.match(invitationHtml, /e-postadress/); assert.match(invitationHtml, /aktiveras.*väljer lösenord via mejlet/);
-  assert.match(invitationHtml, /intern adminpersonal med behörighet till hela nivå 1 och nivå 3/);
+  assert.match(invitationHtml, /intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3/);
   assert.match(invitationHtml, /72 timmar/);
-  assert.match(renderToStaticMarkup(tree), /samma konto och lösenord på båda nivåerna/);
+  assert.match(renderToStaticMarkup(tree), /samma konto och lösenord på alla tre nivåerna/);
   assert.equal(nodes(invitationDisclosure, node => node.type === 'input' && node.props.name === 'email')[0].props.type, 'email');
   assert.equal(calls.length, 0);
   nodes(invitationDisclosure, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ email: 'new-admin@example.test', role: 'admin' }) });

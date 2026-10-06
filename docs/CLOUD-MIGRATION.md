@@ -79,6 +79,13 @@ direktstarter ska fungera under övergången.
   är avklarad. Policyn är inte ansluten till runtime: partner-login, medlemslagring,
   sessioner, SQL/API-isolering och skydd för sista administratören återstår.
   T2 är fortsatt öppen; rena policytester är inte acceptans för riktiga konton.
+  Förtydligande 6 oktober: intern adminpersonal ska ha åtkomst till alla tre
+  nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
+  nivå 2:s förhandsvisning. `/partner` visar nu en separat ingång med explicit
+  demoval; inga exempelbolag presenteras som anslutna kunder. Verkligt kundval
+  ska följa aktiva organisationsanslutningar när dessa införs, och kundpersonal
+  ska bara nå egna medlemskap. Kundregister/sessioner/sparning är ännu inte
+  implementerade; detta är en avgränsad stoppunkt före den större T2-migrationen.
 - [ ] **T3. Anslut en operatörsfunktion i taget.** Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
   funktion behöver organisationens ägarskap genom UI, API, lagring och export.
@@ -244,13 +251,17 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   öppen. Privat kvitto: `lab/data/platform-private/resend-setup-20261006.json`.
   Förtydligande 6 oktober: native Resend-mejl har nu både text och HTML med
   avsändarnamnet ScoutGamingGroup, uttrycklig **intern adminpersonal, nivå 1**
-  och åtkomst till hela nivå 1 samt nivå 3 med samma konto/lösenord. Formuläret
+  och åtkomst till hela nivå 1, nivå 2 samt nivå 3 med samma konto/lösenord.
+  Mejlet förklarar att nivå 2 tills vidare visar demonstrationer. Formuläret
   i Administration → Konton säger samma sak. Engångslänkarna behåller 72 timmar
   för aktivering och två timmar för återställning. Spelarroller får egna
   mejltexter utan adminbehörighet; okända roller skickar inget mejl.
   Riktade mail/auth/UI-tester och Lab-typkontroll PASS. De två begärda verkliga
   personalinbjudningarna och mottagarnas aktivering/inkorg verifieras separat;
   denna kodleverans markerar inte F komplett och ändrar inga lösenord.
+  Jakob tar över de två verkliga utskicken enligt senaste instruktionen.
+  Agenten skickar inga mejl eller skapar konton i denna fortsättning; verifierad
+  leverans och mottagarnas aktivering behöver fortfarande registreras här.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
   workspace795524/source30689542 den 6 oktober: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade

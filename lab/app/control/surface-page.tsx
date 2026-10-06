@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
 import { ControlWorkspace } from '@/components/control-workspace';
+import { PartnerWorkspace } from '@/components/partner-workspace';
 import { controlToolPath } from '@/lib/control-workspace.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
@@ -25,12 +26,17 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
     if (status === 404) notFound();
     throw error;
   }
+  const user = data.session.user;
+  if (typeof user !== 'string' || !user) throw new Error('workspace_identity_unavailable');
   if (surface === 'control') {
-    if (typeof data.session.user !== 'string') throw new Error('control_identity_unavailable');
     const tool = controlToolPath(route.view);
     if (tool) redirect(tool);
-    return <ControlWorkspace user={data.session.user} initialView={route.view} />;
+    return <ControlWorkspace user={user} initialView={route.view} />;
+  }
+  if (route.operatorSlug === null) {
+    return <PartnerWorkspace user={user}
+      demonstrations={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
   return <KevinBackoffice surface="partner"
-    initialSnapshot={data.snapshot} initialView={route.view} apiBase={data.apiBase} user={data.session.user} />;
+    initialSnapshot={data.snapshot} initialView={route.view} apiBase={data.apiBase} user={user} />;
 }
