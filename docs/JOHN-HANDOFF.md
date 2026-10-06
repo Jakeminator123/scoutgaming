@@ -64,7 +64,14 @@ i provbordet, bakåtknapp med bevarat utkast, operatörsbyte med bekräftelse,
 omladdning med rätt lane, gamla hash-länkar och historik till annan operatör.
 Den korta /administration går vidare till /studio/administration efter observerad
 404 på den förstnämnda. Privat provkatalog: lab/data/platform-private/terminology-update.
-Testservern och provfliken är stängda. Publiceringsbevis tillkommer efter push.
+Testservern och provfliken är stängda. Leverans a72c4bf1 är verifierad på
+Vercel dpl_CMCcHtRDDDHxByk3VMRZw8ewtx2k, READY på exakt SHA, och
+CI37462222613 har tre successjobb. Samordnaren verifierade 14 läsande
+HTTP-prov, åtta JS/CSS-resurser och befintlig jakob-session: /control till
+verklig Administration och klippverktyg, gamla #gen till förklaring samt
+separat partnerförhandsvisning. Utloggade dokument går till login och
+admin-/partner-API ger 401. Inga riktiga konto-/spel-/policy-/provider-skrivningar.
+Privata kvitton: terminology-update/live-delivery.json och production-read.json.
 Kompletteringen för en gemensam nivå 1 har dessutom 29 riktade tester,
 ny Lab-typkontroll och nytt Lab-produktionsbygge PASS. Den behåller samma
 färska adminauktorisering, lämnar partnerns data och utkast oförändrade och
@@ -79,7 +86,14 @@ adminpersonal, nivå 1, med åtkomst till hela nivå 1 och nivå 3 via samma kon
 och lösenord. Befintlig serverauktorisering, kontokollisionskontroll,
 transaktion och engångstoken används; spelarroller får ingen admintext eller
 ny behörighet. Ingen lösenordsändring görs för mottagarna. Riktade mail-,
-auth- och UI-tester samt Lab-typkontroll PASS. De begärda verkliga utskicken
+auth- och UI-tester samt Lab-typkontroll PASS. Kodleverans 6f32a58b är pushad;
+full regression gav 1623 PASS, 9 skip och 0 fail. Vercel
+dpl_B4kWYUVrsVa5aNmKGxiieQzoUu3s är READY på exakt kod-SHA med
+www.scoutgaming.tech som produktionsalias. Befintlig adminsession har läst
+den publicerade kontofliken/formuläret: tydlig nivå 1+3, endast adminval och
+72-timmars aktivering. Inga konton eller tokens har skapats vid detta prov.
+CI37462924847 är komplett med success i alla tre jobb.
+De begärda verkliga utskicken
 och mottagarnas aktivering/inkorg behöver eget leveransbevis enligt punkt F;
 lokala testkonton bevisar inte mottagarnas aktivering.
 
