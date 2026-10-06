@@ -62,6 +62,14 @@ direktstarter ska fungera under övergången.
   checksumfrysta `product-schema.sql` eller tidigare migrationsledger. Nuvarande
   native runtime kräver exakt migration 001–004; ny migrationsberedskap måste
   bevara fungerande intern Studio tills den nya delen har tillämpats.
+  Delsteg 6 oktober: fristående `web/partner-access-policy.mjs` har explicita
+  operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.
+  Både aktuell och ny målroll måste vara uttryckligt delegerbara av nivå 1;
+  egen rolländring och ändring av överordnad personal nekas. 22 riktade tester
+  passerar inklusive befintlig credentialresolver/Studio-policy. Oberoende review
+  är avklarad. Policyn är inte ansluten till runtime: partner-login, medlemslagring,
+  sessioner, SQL/API-isolering och skydd för sista administratören återstår.
+  T2 är fortsatt öppen; rena policytester är inte acceptans för riktiga konton.
 - [ ] **T3. Anslut en operatörsfunktion i taget.** Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
   funktion behöver organisationens ägarskap genom UI, API, lagring och export.

@@ -23,6 +23,27 @@ nivå 3 spelarens egen lobby/profil. Detta arbete genomför första etappens
 partner-session, organisationsmedlemskap, teamadministration och lobby är fortsatt
 öppna i T2–T4 i den enda migrationschecklistan.
 
+Parallellt T2-delsteg: `web/partner-access-policy.mjs` inför en fristående
+behörighetspolicy för operatörspersonal. Konto, aktivt medlemskap, organisation,
+rollprofil och resurs måste tillhöra samma serverägda kontext. Rolltilldelning
+kräver nivå 1:s uttryckliga delegeringsmandat för både aktuell och ny målroll,
+rättigheter inom aktörens egna och en annan aktiv medarbetare. Okända rättigheter,
+intern produktion, pengar och legacy reader/staff ger ingen partneråtkomst.
+Elva nya policytester plus elva befintliga auth-/Studio-policytester passerar.
+Oberoende review hittade det saknade delegeringsmandatet; rättning och återgranskning
+är klara. Det nya provet ingår i full pre-commit. Ingen handler, credentialresolver,
+cookie, session eller databas använder policyn ännu. Nästa steg är den granskade
+Studio-migrationen, färska sessions-/medlemsprojektioner och atomiska skrivregler
+(inklusive sista administratören, CAS och audit). T2–T4 är fortsatt öppna.
+
+Efter att Jakob sparat Actions-budgeten startade körning `37445784245` verkliga
+teststeg på `31a0b03d`; lipsync-jobbet passerade. Studio-jobbet fann ett gammalt
+brandtest som fortfarande krävde namnet Croupier Studio, trots T1:s avsiktliga
+byte till Croupier Kontrollpanel. Förväntningen är rättad och testet ingår nu
+även i den lokala fullhooken. Detta ändrar ingen produktfunktion eller inloggning.
+Hela Lab-testsviten passerar lokalt efter rättningen: 895 PASS, två befintliga
+skip och noll fel. Nya GitHub-jobb måste fortfarande verifiera den levererade SHA:n.
+
 Källan är GitLab-head `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`, branch
 `codex/john-final-backoffice`. ImpactPL:s identitet är inte bekräftad som Kevin.
 13 redigerbara JSX-delar, avgränsad CSS och 11 referensbilder är porterade till
