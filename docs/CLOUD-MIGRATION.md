@@ -51,6 +51,25 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   1,472 / 5,544 / 4,709 / 1,181s. Byte under pågående läsning fungerade;
   gammalt anrop avbröts och rätt vy visades utan fel. Latenstoppar i initiering
   och dataläsning kvarstår; punkten förblir öppen för dem.
+  Regionprov 6 oktober på samma `019dba6d14c0b8b9c9de900af572e916316649b3`:
+  Studio-projektets sparade Vercelregion ändrades från `iad1` till `fra1`,
+  nära Neon i Frankfurt. Aktiv produktion är
+  `dpl_24S1idmMEHgzpPYqrwPPLf2P6YNk`, READY, med oförändrad Studio-adress.
+  Första Studio→Backoffice gav 7,879→3,041 s. Overview GET gav
+  7,208→2,449 s (runtime 2646,53→319,49 ms; API 1307,22→88,18 ms),
+  shoes 3,648→0,934 s (runtime 2683,45→546,38 ms; API 666,36→63,00 ms).
+  Varm omläsning gav overview 1,595→0,328 s och shoes 0,866→0,267 s.
+  Båda data-GET var 200 och faktiska svar visade `fra1` i `x-vercel-id`.
+  Oinloggade overview/shoes gav 401; Studio-login och game-session GET gav 200.
+  Neon-plan, DB-data, behörighetskod och produktkod ändrades inte.
+  Ett tidigare redeployförsök är CANCELED: det ärvde `iad1` trots regionoverride.
+  Det accepterade provet byggdes från samma explicita Git-SHA efter sparad
+  regionändring. Första overview har fortfarande cirka 2,04 s utanför
+  Server-Timing-faserna. Detta är ett första-/varmprov med befintlig adminsession,
+  inte ett nytt lösenordsloginprov eller en garanti för alla grupper/enheter.
+  B förblir öppen. Nästa arbete: lokalisera återstående start-/proxyväntan,
+  minska sekventiella startläsningar med bibehållen färsk behörighetskontroll,
+  och pröva navigation utan full sidomladdning med bevarade utkast.
 - [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
   `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
