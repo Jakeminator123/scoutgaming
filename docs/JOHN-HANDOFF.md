@@ -39,6 +39,12 @@ Kodrevision `968ae40ae565494f22aab170298c91140e6dcdd5` klarade full pre-commit:
 1 597 PASS, nio befintliga skip, noll fel. Nya sidors sanerade byggmanifest
 innehåller nödvändig Studio-SQL men inga privata data eller `random/`-anteckningar.
 Privata bygg- och testloggar finns i `lab/data/platform-private/partner-preview-qa/`.
+Första publiceringen `8ff74882` klarade SSR och oinloggat skydd (307 till login,
+preview-API 401), men webbläsarens klientstart avslöjade HTTP 400 för Nexts
+procentkodade `[[...path]]`-chunk. En snäv routingregel tillåter nu endast de två
+nya ytornas hashade JavaScript-filer; kodade API-/dokumentsökvägar nekas fortsatt.
+Åtta riktade routingtester passerar. Publicerad klientstart måste provas igen
+efter denna rättning; enbart SSR-svar är inte tillräcklig acceptans.
 GitHub-körning `37436893516` på föregående `184fe66b` stoppades före alla teststeg:
 samtliga tre jobb saknar steg och anger betalnings-/Actionsgräns. Det är en
 extern CI-täckningslucka, inte ett observerat testfel. Kontogränsen ändrades inte.

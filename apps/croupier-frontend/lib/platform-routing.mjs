@@ -65,6 +65,11 @@ export function backendPlatformPath(value) {
 }
 
 export function platformRoute(url, config) {
+  // Next encodes the literal catch-all folder in these two generated chunks.
+  // Allow only their hashed JS assets; encoded document/API paths stay rejected.
+  if (/^\/studio\/_next\/static\/chunks\/app\/(?:control|partner)\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {
+    return { kind: 'lab', destination: `${config.labUiOrigin}${url.pathname}${url.search}` };
+  }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
   const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
