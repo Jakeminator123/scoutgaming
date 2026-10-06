@@ -598,6 +598,7 @@ test('account creation distinguishes game-only players from emailed Studio admin
   assert.match(invitationHtml, /<summary>Bjud in adminpersonal – nivå 1<\/summary>/);
   assert.match(invitationHtml, /e-postadress/); assert.match(invitationHtml, /aktiveras.*väljer lösenord via mejlet/);
   assert.match(invitationHtml, /intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3/);
+  assert.match(invitationHtml, /<option value="admin">Administratör – nivå 1, 2 och 3<\/option>/);
   assert.match(invitationHtml, /72 timmar/);
   assert.match(renderToStaticMarkup(tree), /samma konto och lösenord på alla tre nivåerna/);
   assert.equal(nodes(invitationDisclosure, node => node.type === 'input' && node.props.name === 'email')[0].props.type, 'email');

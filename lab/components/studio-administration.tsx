@@ -432,7 +432,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </div>)}</>}
         {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in adminpersonal – nivå 1</summary><p>Ange administratörens e-postadress. Mejlet bjuder in intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3. Nivå 2 har ännu bara demonstrationer; kundval följer anslutna spelbolag. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
-          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör – nivå 1 och 3</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
+          <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör – nivå 1, 2 och 3</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form></details>}
       </>}
       {section === 'apikeys' && <>
