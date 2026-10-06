@@ -262,7 +262,9 @@ Avslutade migrationssteg och deras historiska bevis står kvar nedan.
 ## Källa och historiska driftkvitton
 
 Arbeta i `C:/Users/jakem/Projects/croupier`, på main i det privata
-[Jakeminator123/github-work](https://github.com/Jakeminator123/github-work).
+[Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming).
+Godkänt namnbyte 6 oktober behåller repo-ID `1380630440`, main, historik och
+installationer. Den gamla GitHub-adressen vidarebefordras; återskapa den inte.
 Main är leverans-/standardbranch sedan 2 oktober; två produktionsbyggen på Vercel
 och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
 `checksPass`; de andra tre `off`. GitLab-inbox/wiki/mirror och Jira/CAC är pensionerade.

@@ -12,7 +12,8 @@ Den kontrollerar **inte** värden eller leverantörspaneler. Vid ändring direkt
 i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
-Aktuell källa: `Jakeminator123/github-work` på `main`.
+Aktuell källa: `Jakeminator123/scoutgaming` på `main`; gamla `github-work`
+vidarebefordras av GitHub till samma repo-ID `1380630440`.
 Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 

@@ -8,6 +8,13 @@ Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
 ### Tre personal-/spelarytor och Kevins frontend — 6 oktober 2026
 
+Jakob har uttryckligen godkänt GitHub-namnet `Jakeminator123/scoutgaming`.
+Namnbytet är utfört och båda API-adresser returnerar samma repo-ID `1380630440`;
+historik/main bevaras. Lokal origin och aktiv push-/säkerhetspolicy följer nya
+namnet. Återskapa inte `github-work`, eftersom det skulle bryta GitHubs redirect.
+Services-provet bygger båda apparna, men Vercel nekade Edge-runtime innan någon
+aliasflytt. Routing har därför ställts till stödd Node-runtime inför nästa prov.
+
 Pågående Scoutgaming-konsolidering: Kevin-leveransen är överlämnad och filanspråk
 släppta. En avstängd Services-kandidat bygger de två befintliga webbdelarna i
 ett projekt; deras kod/versioner och Render-auktoritet behålls. Ny ingress i

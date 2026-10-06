@@ -10,8 +10,10 @@ polling; file messages do not wake paused agents or override user instructions.
 
 ## GitHub-only work on main — 2026-10-02
 
-Work only on `main`, in `Jakeminator123/github-work`. Jakob explicitly moved
+Work only on `main`, in `Jakeminator123/scoutgaming`. Jakob explicitly moved
 all work to `main` on 2026-10-02 and requested removal of the other branches.
+Jakob authorized the GitHub rename on 2026-10-06; `github-work` redirects to
+the same repository (ID `1380630440`). Never recreate the old repository name.
 Do not create another branch or worktree unless Jakob explicitly requests it.
 GitLab integration is paused: no inbox fetch/send, wiki publication or mirror
 push. Deliver with `node tools/push-github-work.mjs`; never force-push or
@@ -46,7 +48,7 @@ repo's direct-main workflow also needs the intended GitGuardian workspace's
 incident view. A practical read fallback is already available in signed-in
 Chrome: `node tools/security-status.mjs --browser` prints workspace `795524`'s
 repo-filtered open-incidents URL and the known incident link. Reuse that tab;
-verify the workspace and selected `Source` is `Jakeminator123/github-work`
+verify the workspace and selected `Source` is `Jakeminator123/scoutgaming`
 (source `30689542`). If needed, choose `Source`, search the exact repo name,
 and select it. This filter was verified on 2026-10-03; recheck its visible repo
 binding each time. Read only distinct incident ID/status/repo/file/line/time

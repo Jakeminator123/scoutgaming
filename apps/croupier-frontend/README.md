@@ -3,7 +3,7 @@
 ## Aktuell källa och drift
 
 Den här katalogen är Vercel-projektet `croupier-frontend` i
-[Jakeminator123/github-work](https://github.com/Jakeminator123/github-work),
+[Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming),
 branch `main`. [Startsida](https://www.scoutgaming.tech/),
 [spel](https://www.scoutgaming.tech/game) och
 [Croupier Studio](https://www.scoutgaming.tech/studio) har samma publika origin.

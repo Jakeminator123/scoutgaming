@@ -1,6 +1,7 @@
 # Jakob · Croupier V2
 
-Work only on `main` in `Jakeminator123/github-work`, as requested on 2026-10-02.
+Work only on `main` in `Jakeminator123/scoutgaming`. The 2026-10-06 rename
+preserves repository ID `1380630440`; `github-work` redirects to this repository.
 GitLab integration is paused. Follow `AGENTS.md` and deliver with
 `node tools/push-github-work.mjs`. No inbox polling, GitLab wiki publication,
 mirror pushes, force-push or pushes to other branches. Do not create another

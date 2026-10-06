@@ -7,13 +7,13 @@ import {readFile,lstat} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-export const SECURITY_REPOSITORY='Jakeminator123/github-work';
+export const SECURITY_REPOSITORY='Jakeminator123/scoutgaming';
 export function gitguardianBrowserReadPlan(){
   return{purpose:'gitguardian-browser-read-plan-v1',workspaceId:795524,repository:SECURITY_REPOSITORY,sourceId:30689542,
     overviewURL:'https://dashboard.gitguardian.com/workspace/795524/incidents/secrets?view=b6ed3942-60d2-4917-a8f7-eb9339450907&monitoring_status=archived%2Boperator__nin&status=ASSIGNED%2CTRIGGERED%2Boperator__in&sort_date=true&source=30689542%2Boperator__in&page_size=10&page=1',
     knownIncidentURL:'https://dashboard.gitguardian.com/workspace/795524/incidents/37830671',
     scope:'repository-open-incidents',filterPinsVerifiedOn:'2026-10-03',incidentCoverage:'not-read',apiIncidentCoverage:'not-read',
-    instruction:'Reuse the existing signed-in Chrome GitGuardian tab. Verify workspace and selected Source Jakeminator123/github-work before reading; if needed select Source, search this exact repository, and select it. Read distinct metadata fields only, never full row/page text or snippets. Report observed pages and gaps; do not save views or change incidents/access.'};
+    instruction:'Reuse the existing signed-in Chrome GitGuardian tab. Verify workspace and selected Source Jakeminator123/scoutgaming before reading; if needed select Source, search this exact repository, and select it. Read distinct metadata fields only, never full row/page text or snippets. Report observed pages and gaps; do not save views or change incidents/access.'};
 }
 const base='https://api.github.com/repos/'+SECURITY_REPOSITORY;
 const sha=v=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v);
