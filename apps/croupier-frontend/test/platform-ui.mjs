@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../lib/platform-routing.mjs';
@@ -18,6 +18,9 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   const unified = platformConfiguration(unifiedEnv);
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
+  for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+'/studio/administration'});
+  assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_VERCEL_UNIFIED_UI:'0'}));
@@ -83,9 +86,9 @@ test('generated workspace chunks allow encoded bracket folders without widening 
 
 test('new document surfaces rewrite to native Studio without creating customer or API aliases', () => {
   const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for (const [path, destination] of [['/control','/studio/control'], ['/control/voice','/studio/control/voice'],
+  for (const [path, destination] of [['/control','/studio/control'], ['/control/speech','/studio/control/speech'],
     ['/control/studio','/studio'], ['/control/admin','/studio/administration'], ['/control/ops','/studio/openclaw'], ['/control/lab','/studio'],
-    ['/partner','/studio/partner'], ['/partner/demo-north/overview','/studio/partner/demo-north/overview'], ['/partner/demo-south/team','/studio/partner/demo-south/team']]) {
+    ['/partner','/studio/partner'], ['/partner/demo-north','/studio/partner/demo-north'], ['/partner/demo-south/team','/studio/partner/demo-south/team']]) {
     assert.deepEqual(platformRoute(new URL(path + '?_rsc=fixture', native.publicOrigin), native),
       {kind:'lab', destination:native.labUiOrigin + destination + '?_rsc=fixture'}, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
@@ -100,6 +103,40 @@ test('new document surfaces rewrite to native Studio without creating customer o
   for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/control']) {
     assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'lab', path);
   }
+});
+
+test('old workspace slugs redirect to one canonical document without granting another surface',()=>{
+  const native=platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
+  for(const [old,path]of [['/control/voice','/control/speech'],['/control/overview','/control'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/tables']]){
+    assert.deepEqual(platformRoute(new URL(old,native.publicOrigin),native),{kind:'redirect',destination:native.publicOrigin+path});
+    assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab');
+  }
+  assert.equal(platformRoute(new URL('/partner/demo-south/presentation-events',native.publicOrigin),native).kind,'frontend');
+});
+
+test('unified player addresses preserve approved selectors and the existing signed launch handler',()=>{
+  const unified=platformConfiguration({...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'});
+  for(const old of ['/blackjack','/blackjack/','/game','/play/blackjack/'])assert.deepEqual(platformRoute(new URL(old+'?dealer=astrid&lane=mobile-phone&returnTo=https://evil.invalid',unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&lane=mobile-phone'});
+  assert.deepEqual(platformRoute(new URL('/play/blackjack?launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
+  assert.equal(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified).kind,'frontend');
+  assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
+});
+
+test('new game document retains live session/policy checks, cookies and fail-closed errors',async t=>{
+  const directory=await mkdtemp(join(tmpdir(),'croupier-play-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
+  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const request=new Request(config.publicOrigin+'/play/blackjack?dealer=astrid',{headers:{cookie:'game_session=fixture'}});
+  let calls=[];
+  const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return Response.json(url.endsWith('/api/auth/session')?{authenticated:true}:{gameLane:'mobile-phone'});};
+  const ok=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl});
+  assert.equal(ok.status,200);assert.match(await ok.text(),/data-game-lane="mobile-phone"/);assert.equal(calls.length,2);
+  const denied=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>Response.json({authenticated:false})});
+  assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?dealer=astrid');
+  const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
+  assert.equal(failed.status,503);assert.doesNotMatch(await failed.text(),/private upstream detail|Fixture game/);
 });
 
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
@@ -230,7 +267,7 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
     process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1';
-    for (const path of ['/control/voice', '/partner/demo-north/overview']) {
+    for (const path of ['/control/speech', '/partner/demo-north']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path + '?_rsc=fixture', {headers:{
         cookie:'bo_session=isolated-admin-fixture', rsc:'1', 'x-croupier-vercel-secret':'spoof', 'x-croupier-lab-authorized':'spoof',
       }}));

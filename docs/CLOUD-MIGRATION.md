@@ -1,11 +1,11 @@
-# Croupier: aktuell källa, drift och leverans
+# Scoutgaming: aktuell källa, drift och leverans
 
-Uppdaterad 6 oktober 2026. Detta är den enda migrationschecklistan/masterplanen.
-Upprepade historiska checkpoints är komprimerade, inte raderade ur Git:
-[full historik på `91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/CLOUD-MIGRATION.md).
-Privata kvitton, FAIL-historik, journaler och backups ligger kvar på befintliga platser.
-Källkod/publicerad runtime/acceptans har egna revisioner; senare SHA uppgraderar inte
-ett äldre prov automatiskt.
+Uppdaterad 6 oktober 2026. Detta är den enda migrationschecklistan.
+Äldre checkpoints och avslutade delstegs detaljer finns i
+[fryst historik på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md).
+Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
+Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
+Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
 ## Tre åtkomstnivåer på scoutgaming.tech
 
@@ -16,12 +16,13 @@ rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och Studio (`lab`)
 i ett bygge/projekt utan att slå ihop deras Next-versioner. Aktiverad
 `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen till
 Studio när Services skickar dit dokument/API direkt. Render behåller spel/live,
-och T2–T4:s verkliga partnerinloggning, livedata och lobby är fortsatt öppna.
+och T2–T4:s verkliga partnerinloggning, livedata och full operatörsbunden lobby är fortsatt öppna.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
 Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
 tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
 Neon/Blob/Resend. Kod `cef3af5c` är READY på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`;
-CI `37449742229` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
+Senaste avslutade dokumentleverans `4ed55a56` är READY på
+`dpl_3WvxoXqoraAj3WPBy2zG3pzhQipP`, CI `37451320053` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
 API-spärrar och statiska filer är läsande verifierade. Kevin-chatten har
 bekräftat sin befintliga adminsession i partnerförhandsvisning/control/Backoffice.
 Båda webbdelarna använder `fra1`; Git-autobyggen från main är på igen.
@@ -35,8 +36,8 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern administratör når samtliga nivåer och administrerar organisationer, rollprofiler och personal. |
-| 2 | `/partner` | Operatörens personal når egna bord, godkända presentationer, spelare, rapporter och eget delegerbart team. |
-| 3 | `/play` | Enkel spellobby med spelval, egen profil och historik. Blackjack får målvägen `/play/blackjack`. |
+| 2 | `/partner/{operatorSlug}` | Operatörens personal når egna bord, godkända presentationer, spelare, rapporter och eget delegerbart team. |
+| 3 | `/play` | Enkel spellobby med spelval, egen profil och historik. Enkel spelstart finns; operatörskontext, profil och historik återstår. Blackjack nås på `/play/blackjack`. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -88,10 +89,23 @@ direktstarter ska fungera under övergången.
   operatörskontext och ger endast spelarens egen profil/historik. Börja med
   Blackjack; giltiga partnerstarter får öppna spelet direkt utan extra login.
   Ändra inte spelaridentitet eller signerade launch-kontrakt genom namnbytet.
+  Delsteg: enkel `/play`-ingång och `/play/blackjack` återanvänder befintlig
+  sessionskontroll, sparad lane och signerad launch. Äldre speladresser leder
+  vidare i det gemensamma molnprojektet. Operatörsbunden katalog/profil/historik
+  är inte införda; T4 förblir öppen.
 
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
 Privata originalanteckningar i `random/` är inte del av produkt eller deployment.
+
+### Terminologi och navigation — 6 oktober
+
+Aktiv guide och ordlista skiljer lane, klippuppsättning, adapter, urval,
+uppspelningsplan och operatörspaket. PDF:erna används som underlag, aktuell
+kod avgör status. Nivå 1/2 har läsbara adresser och fungerar med gamla
+hashbokmärken. Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
+lokala utkast fungerar fortsatt i den befintliga bordsförhandsvisningen.
+Ingen partner-login, DB-migration, spelregel eller mediefil ändras här.
 
 ## Öppen arbetschecklista: en sammanhängande Studio
 
@@ -205,9 +219,8 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   croupier_game_qa och kördes inte. Separat Studio-SQL-PASS ersätter det inte.
   Efterföljande dokumentcommit04baf354, CI37309484604, stoppades före första
   steg i alla tre jobb. GitHub anger betalningsfel eller Actionsgräns utan att
-  särskilja orsakerna. Ingen ny kodprovning utfördes. Kontoägaren behöver
-  kontrollera Billing and usage; inga budget-/betalningsändringar eller blinda
-  omprov görs. Funktionsbeviset på e49 och privata failurekvitton bevaras.
+  särskilja orsakerna. Ingen ny kodprovning utfördes. Actions-budgeten är därefter rättad av Jakob; senare 6 oktober-körningar
+  har tre successjobb. Det äldre hindret är historik. Funktionsbeviset på e49 och privata failurekvitton bevaras.
 - [ ] **F. Produktionsmail och användbar invite/reset.** Samordnad Resend-leverans
   6 oktober har återläst produktionsnyckel och `no-reply@scoutgaming.tech` i
    samma Studio-projekt som nu heter `scoutgaming`. Den befintliga nyckeln har avgränsad sending-access för den
@@ -226,7 +239,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   återstår; inga riktiga konton eller tokens ändrades i sandboxprovet. F förblir
   öppen. Privat kvitto: `lab/data/platform-private/resend-setup-20261006.json`.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
-  workspace795524/source30689542, 12:20UTC: 12 öppna och fem ignorerade,
+  workspace795524/source30689542 den 6 oktober: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade
   öppna fynd täcker sju källhashpositioner i `docs/system-map/contracts.json`,
   verifierade mot exakt e49f6f36. Senaste nya ID är 37880359/60. Äldre matchning
@@ -264,54 +277,16 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   hash-/SQLitekontroller enligt återställningsreglerna. Exportåtkomst är inte
   prövad. Klart när omprov/fix eller exakt kvarstående hinder är belagt per
   driftfel, och båda tjänster har verifierad extern fullbackup.
-Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
+Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#nästa-arbete-och-viktiga-gränser).
 Avslutade migrationssteg och deras historiska bevis står kvar nedan.
 
 ## Källa och historiska driftkvitton
 
-Arbeta i `C:/Users/jakem/Projects/croupier`, på main i det privata
-[Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming).
-Godkänt namnbyte 6 oktober behåller repo-ID `1380630440`, main, historik och
-installationer. Den gamla GitHub-adressen vidarebefordras; återskapa den inte.
-Main är leverans-/standardbranch sedan 2 oktober; ett Vercelprojekt med två
-Services och fyra Render-kopplingar använder samma repo/main. Produkt-Render autodeploy
-`checksPass`; de andra tre `off`. GitLab-inbox/wiki/mirror och Jira/CAC är pensionerade.
-`Jakobs-v1` på `600093e4522efc57bd82979cff65492a528ffeb7` bevarar commitad v1,
-inte ignorerade privata profiler/data.
-
-Senaste verifierade funktionsversion är `6ced437eb50637c0d8445c6d1d3c60348170c550`:
-CI `37254441092` completed/success, tre jobb; fullhook 1 495 PASS/9 skip/0 fel.
-Produkt-Render `dep-db1ggutckfvc73dnp5q0` LIVE, finished
-`2026-10-05T02:18:51.251466Z`; frontend `dpl_DWszpEvfBcN1V4T7GbCdEF9hkLme` och
-Studio `dpl_AstvxoUUAA5HasMhiAYjaDuPqa8b` READY på samma SHA.
-Paketet rensade åtta dokument och rättade BO-anrop samt kvarliggande idle-feltext.
-Den efterföljande slutöverlämningen ändrar enbart dokumentation och lokala arbetsytor.
-Director och QA behåller `ee0608044f7c78b80c4f46023cd67a7b391e17f0`.
-QA:s 37 envvärden är oförändrade. Genererat tal/streaming/preview/cloud-tal,
-kamera/Lissabonprofiler/native-admin är OFF; inga Cartesia-/RunPodnycklar.
-
-**P0–P5 och P7–P9 är verifierade; P6 är fortsatt öppet.** Dataimport/policybyte och
-fysisk avveckling är utförda. Detta är inte full mänsklig medieacceptans,
-fysisk mic/kamera/mobil/Safari, full invitation/reset eller incidentfrihet.
-För fortsatt arbete: följ [den prioriterade överlämningen](JOHN-HANDOFF.md#återstående-arbete-i-utförandeordning).
-Den innehåller konkreta filer, beroenden och slutvillkor för P6-fixturen,
-kartans resultatkoppling, produktionsmail, GitGuardian, manuella prov och driftsrestpunkter.
-Senast återlästa driftversion är `bc0f3d79` (dokumentation efter funktionspaketet),
-CI37256695695 success och Render/Vercel LIVE/READY; inga produktkodändringar sedan6ced.
-[JOHN-HANDOFF](JOHN-HANDOFF.md) har aktuella drift-ID:n, kvittoplatser och öppna fynd.
-Slutpaketet startade inga nya providerjobb eller prisprov. Slutversion/CI/driftkvitto finns i
-`lab/data/platform-private/docs-cleanup-final-20261005.json`.
-Samlad agentöverlämning, testernas gränser och Git-städning finns i
-[JOHN-HANDOFF](JOHN-HANDOFF.md#samlad-överlämning-från-alla-arbetsagenter).
-Inga PR:er finns i repoavläsningen; leveranserna gjordes direkt på main.
-Efter verifierad privat Gitbundle-backup finns bara main och huvudcheckouten kvar.
-Tre färdiga agentworktrees är återställningsbart arkiverade, två rena initieringsrester
-och elva migrationsbrancher borttagna. Tre appskapade tillfälliga handoffbrancher är också borta.
-
-QA är en separat Croupier-testinstallation, inte Kevin Lane eller enbart OpenClaw.
-QA:s OFF-flaggor hindrar dess AI-/tal-/GPU-prov; produktions-Mobiles lane är aktiv.
-Att ta bort en sparad lane ändrar spelvalet, inte tjänster, databaser eller journaler.
-QA avvecklas därför inte som bieffekt av lokal Git-/lane-städning.
+Aktiv källa är [Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming),
+enbart main. Gamla github-work-adressen vidarebefordras; skapa inte ett nytt
+repo där. GitLab är fryst proveniens och används inte för leverans.
+Samlad tidigare drift-/importhistorik finns i den frysta historiklänken ovan.
+Nuläge, acceptans och historiska kvitton ska aldrig blandas ihop.
 
 ## Fem dokument i docs
 
@@ -338,33 +313,10 @@ Neon-/Blobregler. Inga `.env`-filer, providerinställningar eller databasvärden
 
 ### Mål och städprincip
 
-En publik sajt `www.scoutgaming.tech`, Studio under `/studio`, från ett repo.
-Två tekniska Vercelbyggen är tillåtna under samma adress; paket-/Nextsammanslagning
-är inte ett separat migrationsmål. Ingen admin-iframe eller andra aktiva policykällor.
-`/blackjack` är nu spelet; `/game` redirectar med godkända queryparametrar och
-`/player-login` är entré. Partnerlaunch/callback/returnTo följer samma adresspolicy.
-
-Dealer & klipp, Backoffice och OpenClaw är huvuddelarna. Dealerarbetsytan har
-Idle, Kort & deal, Fasta repliker, Bakgrund och Probe samt exakta egna register.
-Uppladdning är en klipphandling, observation/avancerade regler sekundära verktyg.
-Gamla event-/simulatorvyer flyttas inte in som ny huvudapp.
-Backoffice visar nu elva aktiva sektioner; pitboss/turneringsformulär och två
-informationspaneler är dolda som overifierade, deras API/schema/data/behörigheter bevarade.
-OpenClaw har befintlig native dashboard och en avgränsad modellvalsyta för fem agenter,
-inte ny fri provider/auth/editor eller generell Render-omstartsknapp.
-
-Neon äger konton/behörighet/wallet/rundor, Studio-dokument/revisioner/historik/
-mediemetadata och jobb-/kostnadsjournaler. Zoner har separat explicit databas.
-Samma privata Blob äger beständiga medier, inklusive nya färdiga talpaket.
-Render äger auktoritativ spelmotor/live transport; Director/Gateway och RunPod består.
-Ersatt kod/disk/env/register ska faktiskt bort efter verifierad ersättning,
-inte bli permanent fallback. Gamla adresser får vara rena redirects.
-
-Jakob valde bort gammalt Studio-slask, granskningsgenerationer och cache från
-migration/ny backupkampanj. Nytt tomt granskningsbibliotek är ett uttryckligt
-startbeslut, inte fallback vid DB-fel. Aktiva spelklipp, konton/saldo, OpenClaw,
-jobb/journaler och förbrukade reservationer är inte slask.
-Radering kräver exakt scope/referens-/paritets-/restartbevis, inte mappnamn eller ålder.
+En sajt och ett repo, tre åtkomstnivåer enligt systembeskrivningen.
+Städa ersatt kod och dokumentation efter verifierad ersättning. Bevara privata
+backup-/QA-/kostnadskvitton och andras arbetsdata. Radera inte en tjänst för
+att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
 
 ### Gemensamma kontrakt
 
@@ -399,133 +351,25 @@ Radering kräver exakt scope/referens-/paritets-/restartbevis, inte mappnamn ell
    Självrollbyte/radering/sista-admin-race skyddas. Engångstokens är atomiska;
    partnerhemligheter visas tillfälligt, aldrig i listmetadata/storage/audit.
 
-### Checklista och beroenden
+### Migrationsstatus och beroenden
 
-Bocka av endast verifierat delmål. Kod/fixtures är inte installerad drift;
-hash/transport/stillbild är inte mänsklig synkapproval. P7 godkändes uttryckligen
-med avgränsad funktionell admission medan full P6 lämnades öppen.
-Checklistan är statuskällan; äldre snapshots/procenttal är historik.
+P0–P5 och P7–P9 är levererade med sina dokumenterade avgränsningar.
+Fulla acceptansvillkor, importparitet, källhashar och rollbackkvitton finns i
+[den frysta migrationschecklistan](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md#checklista-och-beroenden).
+P7:s avgränsade aktivering var inte ett godkännande av full P6.
 
-- [x] **P0 — målbild:** en Studio, privat Blob och Neonstate. Render/OpenClaw/
-  RunPod behåller sina aktiva ansvar. Slutstädning ingår, inte bara nytt UI.
-- [x] **P1 — kontrakt och inventering:** käll-/mål-/ägarmapp, exklusiva filclaims
-  och alla läsare/skrivare inventerade före mutation/radering. Saknad åtkomst redovisas.
-  Första ofrysta exporten (129 journalfiler, 18 terminala GPU-jobb, 46 streamrequests,
-  tre kampanjer/sju försök/ingen aktiv grind) var inte importauktoritet.
-  Saknade rå BO-/socialfiler gav separat proveniens för effektiva defaults.
-  Sex av 18 klippbindningar hade bytta bytes i 891c432a; exakta original återfanns
-  i 365f283b: 6/6 hash/storlek/utan ljud. Sex immutabla privata Bloboriginal,
-  8 262 169 byte, fullåterlästes; retained-bank-blob-receipt.json visar identitet,
-  inte visuell approval. Senare fryst produktdisk 206 filer/10 mappar/backuparchash PASS.
-  Acceptans: full inventering/källslutning/rätt åtkomst, inga antagna tomma källor.
-- [x] **P2 — Neon-state:** projekt/revision/historik/profil/social/admin/video-
-  metadata i gemensam adapter. Additiva 001/002, checksum-/strukturkontroll,
-  serverägd scope/CAS/audit/transaktionsrollback/snapshotimport, inget fröprojekt.
-  Exakt dealer/tier/idle/clip-validering och komplett scopebunden medialista.
-  Render/Studio läser samma policy med båda källrevisionerna bevarade.
-  Acceptans: isolerad samtidig sparning/rollback/restart och faktisk P7-paritet
-  för 32 konto-/speltabeller, tre dokument och 18 aktiva+sex retainedposter.
-- [x] **P3 — Blob/jobbstate:** nya färdiga paket i samma privata Blob;
-  request/idempotens/fenced lease/submit/cancel/terminal/kostnadsledger i Neon.
-  Aktiva fullfil/stream/sessioncallers använder journal; endast städad OS-temp.
-  004:s explicita monetära fullfilsreservation före TTS/GPU delar UTC-dygnssumma
-  med stream. Saknad policy/belopp/auth/journal nekas före provider.
-  Production/version 1 fullfilspolicy adopterad med ett additivt INSERT, inte seed.
-  Atomisk fryst import bevarar opaka requests, budget/dygn/reservationer och
-  003:s kampanj/grind/försök; historiska actors fabriceras inte, saknad grind OFF.
-  Exakt replay duplicerar inget, ändrad lease/förbrukning blockerar import;
-  sista receipt-fel rullar tillbaka alla kostnads-/operatörsrader.
-  Acceptans: hash/HEAD/Range, restart/parallellitet/osäker POST/UTC-midnatt/retry/
-  avbrott utan dubbeljobb/refund samt verklig journalimport/elva kostnadstabellers paritet.
-- [x] **P4 — en Studio:** native administration utan iframe, gemensam navigation,
-  roller/livscykel/adresser och annonserade actions. Utkast/CAS bevaras.
-  Konto/partnerformulär har verkliga handlers; hemliga engångsresultat är tillfälliga.
-  Passwordbyte för faktisk playercredential kräver två lika lösenord/anledning;
-  CRAIG följer invitation/reset. Röstreview binder exakt talpar/index/kalibrering/
-  revision/roll. Fyra lokala mailpreviewer och SQL-projicerad skostatus finns,
-  men inga hålkort/kortordningar/spelaruppgifter. Korrupt JSON nekas;
-  högst 500 tabeller visas med explicit delresultat.
-  Gamla direkta betalda voicepreviews stoppas före disk/provider i gemensamt läge.
-  Acceptans: rätt login/callback/launch/roller, nekad anonym/spelare, bevarade utkast
-  och serverkvittad revision — inte bara kontosida eller frontendknappar.
-  Elva menysektioner innebär inte att dolda API/data får raderas.
-- [x] **P5 — API på Vercel:** Studio/admin/auth mot Neon med live identitet/
-  signatur/epoch/Host/Origin/body/gates. Render behåller spelkommandon/wallet/cancel.
-  Native login/reset under /studio, hashade atomiska engångstokens och gamla
-  länkar högst en gång. Logout/password/roll återkallar session/handoff.
-  Fördröjd signerad body kontrolleras efter auth/lås/SQL före mutation;
-  nonce ger ingen dubbelkreditering. Mail annonseras bara med faktisk sender/key.
-  Produktion native/Neon aktiv; gamla bo.json-writers avvecklade.
-  Acceptans: sparning→spelets samma revision, diskfri start, auth/revoke/Render-
-  kommandon och faktisk routing/paritet/restart. Oförändrade godkända QA-prov
-  återanvänds med riktade städprov, inte påstådda nya produktionskontomutationer.
-  Produktens fulla invitation/reset-mailacceptans är separat öppet.
-- [ ] **P6 — helhets-QA:** isolerad backend/DB/hostname, ett koordinerat serverpar.
-  Fyra dealers/två faktiska plays med revision/kvitton, auth/revoke, privata media,
-  Director/SDK/roller/bild/STT/chatt och båda GPU-vägar, cancel/terminal/drain/restart.
-  Fysisk mic/kamera/mobil/Safari och mänsklig synk/take redovisas separat.
-  Fixtures först; betalda liveprov kräver färsk avgränsad auktoritet.
-  - [x] Native90/90 på 190399: fyra dealers/två avkodade/hörbara/endedplays,
-    samma Neonrevision, CAS/utkast/privata medier, ingen iframe. Cleanup/paritet PASS.
-    SHA/immutable receipt finns i handoffen; layoutframes är inte läppsynk.
-  - [x] Shared auth på e461ef07: HTTP 80/80 över 68 anrop, riktiga login 22/22,
-    städ 27 grupper; admin/spelarnekande/game-only-reset/revoke/saldohistorik PASS.
-    Pending verkligt provider-cancel är inte verifierat i authprovet.
-  - [x] Greeting-rehearsal på e461 för alla fyra: matching clip/tvåspelskontroller
-    återaktiverade utan synligt fel. Explicit ended/hash/ny visuell approval saknas.
-  - [x] Isolerad SQL/HTTPS/restart 41 grupper+retained 4, 46 oförändrade källhashar PASS:
-    CAS/rollback/token/epoch/auth/nonce/costimport/QA-rollbacks/review/kortsekretess.
-    Eget kluster/process/certifikat städade; inga driftkonto/mejl/betalda anrop.
-  - [x] Avgränsad funktionell AI→tal→GPU→spel-END för P7 verifierad:
-    fullfilens två härledda game-queue/audio-ended, faktisk cc77-stream-END/
-    completed SQL-request/synlig+hört/cleanup och oförändrade godkända e461-bytes.
-    Provider avlästes CANCELLED efter END; övergångstid/naturligt COMPLETED saknas.
-    Inte full P6, två nya genererade streamplays eller nya takeapprovals.
-  - [ ] Färsk full P6-installation/käll-/manifest-/SDK/envbindning och två-ACK-
-    helhetsacceptans enligt nästa avsnitt; delbevis har egna SHAs.
-  - [ ] Rätta den äldre SQL/HTTPS-fixturen efter aktuell authpolicy och kör om.
-    Färskt försök på bc0f gav503 vid login; `gameDb` saknas och readeråtkomst är
-    ett pensionerat förväntat beteende. Det tidigare SQL-kvittot är historiskt.
-    Privat `p6-check-20261005.json` bevarar FAIL; separat shutdown/mail14PASS.
-  - [ ] Koppla det verkligt utförda SQL-resultatet till befintligt CI-/kartbevis.
-    Den frysta bc0f-exportens19gröna/4grå läser inte senare privata körningar automatiskt.
-  - [ ] Ny mänsklig läppsynk/kortkontakt, fysisk mic/kamera/mobil/Safari,
-    full invitation/reset i produktion och övriga medie-/zon-/latensluckor.
-  - [ ] Färsk incidenttriage: sex TRIGGERED och tre locationluckor, inte clear.
-- [x] **P7 — samordnad aktivering:** uttrycklig beställning och verifierad snäv
-  admission, frysta skrivare/aktuell export/ALL0, additiv import, faktisk paritet
-  och samordnat policy/alias/providerbyte. Utfört på b0bc:
-  32 konto-/speltabeller, elva kostnadstabeller, tre dokument och 18 aktiva+sex
-  retainedposter PASS. Samtliga 17 alias verifierade; gamla mål/SSO/domäner kvar.
-  Max 0/Active 0/FlashBoot OFF gav ALL0 före import; ursprungliga Max 1/Active 0/
-  FlashBoot ON återställdes före produktens tal/stream ON.
-  Production/version 1-adoption ett INSERT, historik/reservationer oförändrade.
-  Acceptans: färska tidsbundna bevis även efter await, fyra SQL-checksummor,
-  fullhash 18 klipp före skrivning, sex retainedparitet/replay 0, runtimeparitet/
-  HTTPS/routing/policy/restart. Förbrukad journal/import körs inte om.
-  Femminuterskvittot löpte ut under aliasåtergången; originaltider består,
-  kontinuerlig TTL-acceptans påstås inte. Färsk konto/kostnad/adoption lästes
-  före provideraktivering. QA OFF/full P6/mail/okänd USD är uttryckliga undantag.
-- [x] **P8 — faktisk avveckling:** ersatta UI/iframe/BOskrivare/disk/env borta
-  efter aktiv ersättning/paritets-/referens-/restartprov, inte permanent fallback.
-  Slutkod 9ba2fd05: produktdisk DELETE204/GET404/service.disk saknas;
-  gamla Bloblista 0/ersättningar 12, noll gamla Neon-/historikreferenser.
-  Explicit restart200: ny process/160 källhashar/åtta avvecklade runtimefiler,
-  AI3/Neon ON/health200, ingen /var/data/persistent produktmount, TLS verify-full kvar.
-  Full backup 206 filer/10 mappar/125 745 905 källbyte bevarad.
-  QA-disk/SDK/journal/reservationer och Director/Gatewaydiskar består, QA AI OFF.
-  Acceptans: faktisk resursläsning+diskfri kallstart/omstart och inga kvarvarande
-  produktläsare. Ren Gitdiff bevisar inte borttagen molnresurs.
-  Inget generellt mandat att radera tools/fixtures/pipeline/media/OpenClaw.
-- [x] **P9 — slutleverans:** fem docs/guide/envregister/en handoff uppdaterade;
-  taskägda mainleveranser/CI/drift-SHA bundna. P7/P8-kvitton finns privat och
-  residualer är öppna. Senast 6ced437e CI 3 PASS/LIVE/READY; tidigare appbytes mot ebbbeb
-  oförändrade; inga nya mänskliga approvals/providerjobb.
-  Rootdokumentkomprimeringen ändrar läsbarhet, inte acceptansstatus.
+- [ ] **P6 — samlad helhetsacceptans.** Fyra dealers/två faktiska plays,
+  auth/revoke, privat media, AI/tal/fullfil/stream, cancel/terminal/journal/
+  omstart och naturligt provider-COMPLETED där bevis saknas. Mänsklig läppsynk,
+  kortkontakt, fysisk mic/kamera/mobil/Safari är separata krav i H.
+- [x] P6:s isolerade SQL/HTTPS-fixtur och faktisk CI-resultatkoppling är rättade;
+  se D/E. Äldre misslyckade kvitton bevaras. Separat game-persistenceprov saknas.
+- [ ] Produktionsmailens hela användarflöde återstår enligt F trots konfigurerad Resend.
+- [ ] GitGuardian-fynd och positionsluckor återstår enligt G.
 
-Vid motsvarande framtida migration: P1 först, P2/P3/P4 parallellt på överlämnade
-kontrakt/filer, P5/integration därefter, P6→P7→P8→P9 samordnat.
-Historiskt P7-undantag är inte generell framtida full P6-approval.
+Framtida migration börjar med källinventering och frysta skrivare, därefter
+kontrakt/lagring/UI och integration; acceptans, aktivering och avveckling
+samordnas. Historiskt godkännande är ingen ny budget eller driftauktoritet.
 
 ### P6: kostnadsundantag och acceptansgränser
 
@@ -736,18 +580,13 @@ inte runtime-token eller publik credential. Jakobs egna lokala Cartesiakey
 ligger ignorerad i `.env`/`lab/.env.local` med förebackup; driftkey är inte därmed bytt.
 Bevara privata anslutnings-/utvecklarprofiler och hemligheter utanför Git.
 
-Färsk GitGuardianläsning via befintlig MCP: workspace 795524/source 30689542/
-Jakeminator123/github-work bundna. Lista: 1 incidentsida/11 locationsidor,
-5 IGNORED/6 TRIGGERED; locationCoverage partial för 37828691/37830671/37862641.
-Öppna ID 37862641/37863164/37863165/37863166/37867511/37867512.
-6316x har container-entry-fixturepositioner; 67511/67512 contracts.json-hashfält.
-Inte verifierade falsklarm: scanner-match/secrets har inte lästs,
-37862641 saknar filmetadata. Ingen resolve/ignore/accessändring utförd.
-Safe kvitto `lab/data/platform-private/gitguardian-read-20261005.json`.
-GitHubGG queued/no runs på 6b9 består; grön CI/neutral/skipped är inte incidentfrihet.
-De tre locationsluckorna är HTTP200/tom lista/ingen nästa sida även vid direktläsning.
-Historiska 5 IGNORED/0 OPEN är daterad triage, inte dagens status.
-Följ AGENTS metadataredaktion/avsedd workspace, inga nya scopes automatiskt.
+GitGuardian följer scoutgaming i workspace 795524/source 30689542.
+Senast verifierat: 12 TRIGGERED/5 IGNORED, en incidentsida/17 locationsidor,
+partiell fil-/radtäckning. Se G för öppna fynd och bevisgränser. Historiska
+färre incidenter eller fixtureklassningar ersätter inte aktuell läsning.
+GitHub queued/no runs, vanlig grön CI eller neutral/skipped är inte incidentfrihet.
+Följ AGENTS metadataredaktion; använd befintlig läsbrygga, inga nya scopes
+eller automatiska resolve/ignore-ändringar.
 
 Öppna restpunkter: full P6/ny take/läppsynk/kortkontakt, fysisk mic/kamera/
 mobil/Safari, ursprunget till ”Film ended without a presented frame”, kvarvarande menyfördröjning,
@@ -759,10 +598,10 @@ och gammal idle-feltext rensas först vid aktuell faktiskt visad bild. Rotorsake
 den historiska frame-varningen och authlatensen är fortfarande okänd.
 QA Resend Free/delivered→Skräppost/testkontocleanup är avgränsat historiskt,
 inte användbar invitation/reset i produktion; nya mejl/konton följer inte automatiskt.
-Färsk läsning visar tom produktions-`RESEND_API_KEY` och saknad
-`CROUPIER_STUDIO_MAIL_FROM`; befintlig QA-nyckel gav401 på Resends domänläsning.
-Giltig produktionsanslutning/avsändare behöver därför fastställas före konfigurering
-och ett uttryckligt beställt invite-/resetprov. Inga hemligheter kopieras på chans.
+Produktion har nu giltig domänbegränsad Resend-sändnyckel och
+`CROUPIER_STUDIO_MAIL_FROM=no-reply@scoutgaming.tech`. Sandboxtransporten är
+verifierad; full riktig invitation/reset återstår enligt F. Sending-only ger
+inte behörighet att lista domäner och en sådan 401 bevisar inte ogiltig sändnyckel.
 GPUshutdown/privat zonbild/OpenClawnavigation är rättade och verifierade avgränsat,
 inte kvarstående obehandlade funktionsfel; detaljer/shutdownbudget i JOHN.
 
@@ -784,8 +623,8 @@ Tools används delvis i runtime; test/pipeline/media är inte generella radering
 
 Filclaims via absoluta agent-talk, status mellan steg och .git-claim vid commit.
 Före integration/push: `node tools/croupier-chef.mjs status`, ingen autoroll.
-MERGE äger slutgranskning/integration/uppdatering. Workers gör inga Gitmutationer/
-build/server/media/env/providerändringar i detta tvåfilspaket.
+Samordna med eventuell aktiv ägare innan gemensam integration. Gamla
+arbetsfördelningar i historiken gäller inte automatiskt ett nytt uppdrag.
 Leverans: `node tools/push-github-work.mjs --check`, sedan helpern utan --check.
 Verifiera repo/main/fast-forward/remoteSHA, aldrig forcepush/annan destination.
 Hooks ny checkout: core.hooksPath=.githooks. GPUimage är separat release.
@@ -798,22 +637,12 @@ Media/spelarändring kräver audit--probe, fyra dealers/två rehearsalplays och
 ny visuell approval för ändrad audio/video/hash. Här ändras inga sådana bytes.
 Efter push återläs SHA/CI/Vercel/Render/GG; testpass/hash är inte synk/mobil/backup.
 
-Systemkarta 91: 23 kontrakt/19 gröna/4 grå/0 röda-gula/errors/warnings.
-HTML: C:/Users/jakem/Downloads/Croupier-systemkarta-91d0c4d9.html.
-Grått är saknat game-event/zonreporterkvitto eller verkliga PostgresSKIP,
-inte produktionsparitet. Passiv CIreporter/30 dagars artifacts/källrefbindning
-gör inga provider-/DBprov eller branchprotectionändringar.
-Privat ci-91d0c4d9-system-map-{status,evidence}.json i lab/data/platform-private.
-FilURL-browserprov blockerades av policy; syntetiska prov är separat bevis.
+Systemkartans exporter är frysta till sitt käll-SHA och observationstid.
+Aktuell resultatkoppling beskrivs i E. Saknat eller skippat prov är inte grönt.
+Den passiva CI-reportern och dess artifacts gör inga provider-/DB-mutationer.
 
-## Kort historisk tidslinje
+## Historik
 
-2 oktober, 22dca5c4: Neon game/auth/Blob/transport. 3 oktober, 190399: native90/90.
-e461ef07: shared auth/SDK. 4 oktober, 5fca→cc77→b0bc: fullfilsdelprov,
-faktisk stream-END/okänd USD och samordnad P7-admission.
-b0bc→9ba2fd05: import/policy/alias/providerbyte/backup/fysisk P8.
-3da83bf8/5270c8ab: route/kameraconfig/shutdown/zon/OpenClawrättningar.
-5 oktober, 8f265831/ee060804/ebbbeb76: lanes/source-staging/dedup/noopsave/UI/karta.
-91d0c4d9: dokumentstädning/slutkvitton, CI 3 PASS/LIVE/READY, appbytes oförändrade.
-Gamla deploymentpinnar/FAIL-föregångare/kostnads-/cleanupkvitton finns i snapshoten.
-Historik är provenance, inte order eller färsk admission.
+Den fullständiga tidslinjen och tidigare deployments ligger i den frysta
+historiklänken överst. Privata loggar och backupfiler är inte borttagna.
+Den aktiva checklistan ovan är statuskällan.

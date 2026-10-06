@@ -1,6 +1,6 @@
 {
-  "title": "En Studio. Välj dealer och klipp.",
-  "intro": "Studio har tre delar: Dealer & klipp, Backoffice och OpenClaw. På klippsidan väljer du dealer och kategori: Idle, Kort & deal, Fasta repliker, Bakgrund eller Probe. Uppladdning hör till klipparbetet; granskning i spel är ett utfällbart verktyg. Backoffice samlar sina 14 funktioner. Gemensam inloggning använder samma användarnamn eller e-post och lösenord: admin har tillgång till spelet och hela Backoffice, spelare till spelet. OpenClaw öppnar den befintliga dashboarden på Render.",
+  "title": "Scoutgaming: tre nivåer, en gemensam produkt",
+  "intro": "Kontrollpanelen är för intern personal, Partnerportalen för operatörens begränsade val och Spelarytan för spelaren. Dealer & klipp, Administration och OpenClaw är verktyg inom den interna Studion. Partnerportalen visar ännu exempeldata bakom intern admininloggning. Börja i /play för att öppna Blackjack; spelmotorn och dess inloggning är samma som tidigare.",
   "steps": [
     {
       "view": "tree",
@@ -34,11 +34,13 @@
     }
   ],
   "boundaries": [
-    "Konton hanteras i native Backoffice → Konton. Admin använder samma credentials i spelet och Studio; spelare nekas Studio. Admin kan byta lösenord för en aktiv eller blockerad spelare med eget spelarlösenord: ange nytt lösenord två gånger och en anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörers lösenord hanteras genom invitation och återställningslänkar. Det nya flödet behöver installeras och provas i native-QA före produktionsbyte.",
+    "En lane samlar presentationsprofilens klipp, varianter, bakgrund, idle och urvalsregler. Spelmotorns signaler går genom presentationsadapter och urval till en uppspelningsplan; spelaren visar video och överlägg. Spelmotorn äger fortfarande kort, regler, saldo och resultat. Operatörspaket betyder tilldelade lanes, spel/bord och tillåtna varumärkesval; paketkopplingen till Partnerportalen återstår.",
+    "Partnerportalens marker, kort och bordsdesign ändrar bara den lokala förhandsvisningen. En tydlig lane-notis visar att spelkoppling saknas. Klipp, masker, urvalsregler och publicering är interna arbetsverktyg. Riktig partnerinloggning, kundavgränsad lagring och publicering är kvarstående arbete; en operatörsväljare ger ingen behörighet.",
+    "Konton hanteras i Administration → Konton. Admin använder samma användarnamn eller e-post och lösenord i spelet och Studio; spelare nekas Studio. Aktiv eller blockerad spelare med eget spelarlösenord kan få ett nytt lösenord med bekräftelse och anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörer använder invitation och återställningslänkar. Resend är konfigurerat i produktion och transporten är provad mot sandbox; full riktig kontoaktivering och återställning återstår att verifiera.",
     "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Ladda upp & bibliotek. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta Studiofamiljer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
     "Uppspelning och spår observerar en spelare. Anslutning, återanslutning och Ny observation startar aldrig en extra Lab-uppspelning. Separat Lab-preview kräver ett uttryckligt val. Klippval, nedladdning och registrering är inte bevis på uppspelning; native-kvittot måste visa faktisk bild/talstart. Partner-SSE och genererat tal visas som egna tydligt märkta flöden.",
     "Bakgrundszoner är ett separat prov: markera en pixelruta på 1080×1920-startbilden och skapa eller lägg in ett klipp med exakt rutans storlek. Webbläsarkopian sparas lokalt. Spara till molnet sparar koordinater i zonernas Neon-databas och klipp i privat Blob när molnlagringen är konfigurerad. Läs från molnet öppnar molnvyn och behåller webbläsarkopian. Exportera JSON och klipp för separat backup. Zonerna styr ännu inte spelet; kontrollera varje tagning och att dealern aldrig täcker zonen innan spelintegration.",
-    "Sidomenyn grupperar sex källtyper i 16 eventgrupper. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
+    "Sidomenyn grupperar sex källtyper i 16 händelsekategorier. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
     "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt Astrid-film ger ett synligt fel i labbet; spelaren lånar inte en annan plats eller replik.",
     "Standard och varianter kommer från manifestet. Oförändrade gamla demoexempel rensas vid start med en historikrevision som återgång. Egna ändringar och deras beroenden bevaras. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
     "Astrids Deal-klipp har en gemensam frekvenseditor i Astrid Studio och avancerade labbet: procent per variant och exakt utdelningsplats, högst 100 procent totalt. Resten använder standardfilen. 0 procent är manuellt prov. Sparade frekvenser används i Regler, Slump och OpenClaw utan modellanrop; Standard och Skuggläge spelar standard. Saknade klipps andelar går till standard, inte andra varianter. Äldre sparade urval bevaras tills en frekvens ändras och sparas för den platsen. Då ersätter frekvensstyrningen det äldre urvalet för hela platsen; andra varianter utan procent blir manuella. Språk, sociala exempel och temperament ingår inte i frekvensvalet.",
@@ -54,6 +56,18 @@
     "Probe: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
   ],
   "surfaces": [
+    {
+      "name": "Kontrollpanel · /control",
+      "purpose": "Nivå 1 för intern personal. Studio under /studio innehåller de befintliga produktions- och administrationsverktygen."
+    },
+    {
+      "name": "Partnerportal · /partner/{operatorSlug}",
+      "purpose": "Nivå 2 med begränsade lane- och designval. Nu intern förhandsvisning med exempeloperatörer och lokala utkast."
+    },
+    {
+      "name": "Spelaryta · /play",
+      "purpose": "Nivå 3: öppna Blackjack på /play/blackjack. Egen profil, historik och operatörsbunden lobby återstår."
+    },
     {
       "name": "Bakgrundszoner",
       "purpose": "Prova exakta pixelzoner ovanpå dealerfilmer. Separat webbläsarkopia, molnsparning och export; ännu ingen spelarintegration."
@@ -76,13 +90,13 @@
     },
     {
       "name": "OpenClaw",
-      "purpose": "En ren ingång till befintlig autentiserad Control UI på Render. Inställningar och verktyg hanteras där, utan ny pairing eller modell-/GPU-ändring från Studio."
+      "purpose": "Studio visar agenternas modellval; sparning går genom Studios behörighetskontroll till OpenClaw på Render. Gatewayens separata dashboard finns kvar för avancerad konfiguration."
     },
     {
       "name": "Probe",
       "purpose": "Gemensam policy, modellval, syntetiska textprov och belagda minnen. Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],
-  "storage": "Studio, avancerat labb och spelfliken delar sparat projekt: legacyClipPolicy för originalspelarna, mediaPolicy för Astrids deal/repliker, idlePolicy för idle och probePolicy för Probe. Molnmedia ligger i privat Blob; projekt, historik och familjeindex ligger på beständig Render-disk och behöver separat backup. Spelarkonton och saldo ligger i game-Neon; zoners molnkoordinater ligger i en separat Neon-databas. Lokal filinläsning använder media/dealers/astrid/runtime/presentation och dess manifest. Deal/replikval och Probe läses inför nästa beslut; ladda om spelfliken efter idleändringar när handen är avslutad. Andra öppna editorer behöver läsas om. Lissabon är avvecklad. Privata lokala projekt, historik och profiler finns i lab/data efter verifierad backup utanför Git. HTTP 409 erbjuder sammanslagning med explicit konfliktval. Hemligheter stannar på serversidan.",
-  "authority": "Källans sex eventtyper och 16 grupper finns i lab/policies/studio-contract.json. Videofamiljerna finns i media/dealers/astrid/runtime/presentation/lab-video-manifest.json. Historiska Emil/Kevin-källnamn är proveniens. Konfiguration av OpenClaw börjar i open-claw/lab/docs/README.md och dess officiella källindex."
+  "storage": "Vercel visar alla tre nivåer och kör Studio/admin-API. Neon sparar revisionsstyrd produktpolicy, metadata och journaler; game-Neon äger spelarkonton och saldo. Privat Blob innehåller medier. Render driver spelmotorn och live-transporten; dess tidigare produktdisk är avvecklad. Director/Gateway har egna kvarvarande diskar och behöver separat backup. Partnerportalens designutkast finns bara i fliken och försvinner vid omladdning eller operatörsbyte. Zoner har separat webbläsarkopia/Neon/Blob och styr ännu inte spelet. Sparad deal/replikpolicy läses inför nästa beslut; idle kräver omladdning mellan händer. HTTP 409 kräver uttrycklig konflikthantering. Hemligheter stannar på serversidan.",
+  "authority": "Aktuell kod och verifierad drift avgör vad som fungerar. Terminologi-PDF:erna är underlag; full aktuell karta finns i docs/LOCAL-PRESENTATION-RUNTIME.md och öppna krav i docs/CLOUD-MIGRATION.md. Ordlistan, sex tekniska eventtyper och 16 händelsekategorier finns i lab/policies/studio-contract.json. Namnbyten ändrar inte tekniska ID:n. GitLab/Emil/Kevin är källproveniens, inte separata aktiva plattformar. OpenClaw-konfiguration börjar i open-claw/lab/docs/README.md."
 }

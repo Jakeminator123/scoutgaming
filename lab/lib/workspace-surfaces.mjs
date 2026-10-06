@@ -12,6 +12,25 @@ const legacyControl = Object.freeze({ studio: '/studio', admin: '/studio/adminis
 const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const reservedOperators = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
 
+// Source component IDs stay internal. Links use one readable document address.
+export const WORKSPACE_VIEW_SLUGS = Object.freeze({
+  ops: 'overview', players: 'players', tx: 'transactions', pit: 'pit-bosses',
+  theme: 'presentation', design: 'table-design', background: 'backgrounds',
+  bj: 'game-tables', roulette: 'roulette', baccarat: 'baccarat', dealers: 'lanes',
+  shoes: 'shoes', test: 'preview', stats: 'statistics', reports: 'reports',
+  team: 'team', api: 'integration', archive: 'archive', tables: 'legacy-rooms',
+  voice: 'speech', clips: 'clips', media: 'media', tree: 'presentation-events', gen: 'generations',
+});
+
+export function workspaceSurfacePath(surface, view, operator = null) {
+  const views = surface === 'partner' ? PARTNER_PREVIEW_VIEWS : surface === 'control' ? CONTROL_PREVIEW_VIEWS : [];
+  if (!views.includes(view)) return null;
+  if (surface === 'partner' && (typeof operator !== 'string' || operator.length > 63 || !operatorSlug.test(operator) || reservedOperators.has(operator))) return null;
+  const root = surface === 'partner' ? `/partner/${operator}` : '/control';
+  const slug = surface === 'partner' && view === 'bj' ? 'tables' : WORKSPACE_VIEW_SLUGS[view];
+  return view === 'ops' ? root : `${root}/${slug}`;
+}
+
 export function resolveWorkspaceSurfacePath(value) {
   if (typeof value !== 'string' || !value.startsWith('/') || /[%\\?#\x00-\x20]/.test(value) || value.includes('//')) return null;
   const publicPath = value.startsWith('/studio/') ? value.slice('/studio'.length) : value;
@@ -27,13 +46,15 @@ export function resolveWorkspaceSurfacePath(value) {
       studioPath: legacyControl[section], legacyPath: legacyControl[section].slice('/studio'.length) || '/',
     });
   } else if (parts.length !== 1) {
-    if (parts.length !== 3 || parts[1].length > 63 || !operatorSlug.test(parts[1]) || reservedOperators.has(parts[1])) return null;
-    operator = parts[1]; section = parts[2];
+    if (![2, 3].includes(parts.length) || parts[1].length > 63 || !operatorSlug.test(parts[1]) || reservedOperators.has(parts[1])) return null;
+    operator = parts[1]; section = parts[2] ?? section;
   }
   const view = surface === 'partner' && section === 'tables' ? 'bj'
-    : Object.hasOwn(aliases, section) ? aliases[section] : section;
+    : Object.hasOwn(aliases, section) ? aliases[section]
+    : Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === section) ?? section;
   if (!(surface === 'partner' ? PARTNER_PREVIEW_VIEWS : CONTROL_PREVIEW_VIEWS).includes(view)) return null;
-  return Object.freeze({ surface, operatorSlug: operator, section, view, publicPath, studioPath: '/studio' + publicPath, legacyPath: null });
+  return Object.freeze({ surface, operatorSlug: operator, section, view, publicPath, studioPath: '/studio' + publicPath,
+    canonicalPath: workspaceSurfacePath(surface, view, operator) ?? '/partner', legacyPath: null });
 }
 
 // Next may report either the public rewrite or the native /studio route.

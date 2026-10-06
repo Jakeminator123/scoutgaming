@@ -39,7 +39,10 @@ export function createPreviewRuntime(snapshot, { surface, user, notify, refresh,
     catalogs:{'/bo/jakob-catalog.json':{items:[],families:[],project:{events:[]}},'/bo/clip-provenance.json':{contributions:[],runtime:{},library:{}},'/bo/generations.json':[]},
     settings:localSettings,
     async api() { throw Error('Denna åtgärd har ännu ingen ansluten tjänst. Ingen ändring har gjorts.'); },
-    designStore:{read:kind=>structuredClone(profiles[kind] || {}),write:(kind,value)=>{profiles[kind]=structuredClone(value);runtime.dirty=true;},save:async()=>{notify('Sparat endast i denna lokala förhandsvisning. Inget publicerat.');},pending:()=>runtime.dirty},
+    designStore:{read:kind=>structuredClone(profiles[kind] || {}),write:(kind,value)=>{
+      profiles[kind]=structuredClone(value);runtime.dirty=true;
+      if(surface==='partner')notify(`${kind==='themes'?'Färger, marker och kort':'Bordsdesign'} saknar koppling till en publicerad lane. Ditt val visas bara i den lokala förhandsvisningen.`);
+    },save:async()=>{notify('Sparat endast i denna lokala förhandsvisning. Inget publicerat.');},pending:()=>runtime.dirty},
     dirty:false,
   };
   return runtime;

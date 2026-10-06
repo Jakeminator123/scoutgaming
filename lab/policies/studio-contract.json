@@ -73,13 +73,13 @@
   "terms": [
     {
       "id": "event",
-      "label": "Event",
-      "definition": "Här i labbkontraktet: en presentationsinstruktion av typen speak, deal, reveal, turn, settle eller idle. Inte samlingsnamnet för alla motor- och spelarsignaler."
+      "label": "Presentationshändelse",
+      "definition": "En instruktion om vad presentationen ska visa, i labbkontraktet speak, deal, reveal, turn, settle eller idle. Skild från spelmotorns fullständiga signalmodell och administrativa händelser."
     },
     {
       "id": "group",
-      "label": "Eventgrupp",
-      "definition": "En av labbets 16 genvägar för presentationsbehov. Inte ett nytt event i spelmotorn eller en universell videofil."
+      "label": "Händelsekategori",
+      "definition": "En av labbets 16 grupper för presentationsbehov, tidigare Eventgrupp. En kategori kan ha flera exakta situationer; den skapar inget nytt event i spelmotorn."
     },
     {
       "id": "situation",
@@ -88,13 +88,13 @@
     },
     {
       "id": "line",
-      "label": "Linje",
-      "definition": "En dealers uppsättning standard och alternativ för ett presentationsbehov, idag knuten till en eventgrupp. En behållare, inte en videofil."
+      "label": "Klippuppsättning",
+      "definition": "En dealers standard och alternativ för ett presentationsbehov, idag knuten till en händelsekategori. Tidigare Linje; tekniskt fältnamn line bevaras. En behållare, inte en videofil eller en hel lane."
     },
     {
       "id": "variant",
       "label": "Variant",
-      "definition": "Standard eller alternativt uttryck inom linjen. Äger urvalstillåtelser och villkor. Idag högst en videoreferens och en 2D-reserv; flera takes per variant är förslag."
+      "definition": "Standard eller alternativt uttryck inom klippuppsättningen. Äger urvalstillåtelser och villkor. Idag högst en videoreferens och en 2D-reserv; flera takes per variant är förslag."
     },
     {
       "id": "video",
@@ -103,8 +103,8 @@
     },
     {
       "id": "trigger",
-      "label": "Trigger",
-      "definition": "Extra villkor som gör ett alternativ valbart. Skapar inte ett nytt spel-event eller automatiskt en extra scen efter standarden."
+      "label": "Villkor",
+      "definition": "Extra villkor som gör ett alternativ valbart, tidigare Trigger. Skapar inte ett nytt spelevent eller automatiskt en extra scen efter standarden."
     },
     {
       "id": "schema",
@@ -118,13 +118,13 @@
     },
     {
       "id": "policy",
-      "label": "Policy",
-      "definition": "Regler för när ett tillåtet alternativ får väljas."
+      "label": "Urvalsregler",
+      "definition": "Regler för när ett tillåtet alternativ får väljas, tekniskt policy."
     },
     {
       "id": "recorded-line",
       "label": "Replik-ID",
-      "definition": "Exakt inspelat talinnehåll, exempelvis greeting. Skilj från dealerlinjen som samlar standard och alternativ för en eventgrupp."
+      "definition": "Exakt inspelat talinnehåll, exempelvis greeting. Skilt från klippuppsättningen som samlar standard och alternativ för en händelsekategori."
     },
     {
       "id": "original-preset",
@@ -150,6 +150,56 @@
       "id": "probe",
       "label": "Probe",
       "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i Lissabon och stora labbet; spelmotorns event-ID:n är oförändrade."
+    },
+    {
+      "id": "game-engine",
+      "label": "Spelmotor (Game Engine)",
+      "definition": "Serverns auktoritet för kort, sko, regler, saldo och utfall. Kör på Render; en lane eller AI får inte bestämma spelresultatet."
+    },
+    {
+      "id": "presentation-adapter",
+      "label": "Presentationsadapter",
+      "definition": "Översätter relevanta spelsignaler till presentationsbehov. Den är inte samma sak som en lane eller ett operatörspaket."
+    },
+    {
+      "id": "presentation-lane",
+      "label": "Lane / presentationsprofil",
+      "definition": "En sammanhållen uppsättning klipp, varianter, bakgrund, idle och urvalsregler. Befintliga lane-ID:n och sparade profiler behålls. Tilldelning till verkliga operatörer från Partnerportalen återstår."
+    },
+    {
+      "id": "presentation-director",
+      "label": "Presentationsurval (Presentation Director)",
+      "definition": "Ansvarar för att välja tillåtet innehåll och dess ordning utifrån spelsignal och lane. Namnet beskriver ansvaret, inte en ny tjänst. OpenClaw kan ge validerade råd; regler och reservval gäller fortfarande."
+    },
+    {
+      "id": "playback-plan",
+      "label": "Uppspelningsplan (Playback Plan)",
+      "definition": "Beskrivning av valda klipp, ordning, lager och synkpunkter för uppspelning. Övergripande begrepp; innebär inte att ett nytt enhetligt planformat redan har ersatt kodens befintliga kontrakt."
+    },
+    {
+      "id": "playback-engine",
+      "label": "Spelare och kompositor",
+      "definition": "Playback Engine spelar valda medier; Scene Compositor lägger ihop video, bakgrund och överlägg. Faktiskt visad bild eller talstart måste kvitteras, inte antas från klippvalet."
+    },
+    {
+      "id": "operator-package",
+      "label": "Operatörspaket",
+      "definition": "Målbild: tilldelade lanes, spel/bord och tillåtna varumärkesval för ett spelbolag. Partnerportalens nuvarande exempeldata och designutkast är ännu inte kopplade till ett publicerat paket."
+    },
+    {
+      "id": "administrative-event",
+      "label": "Administrativ händelse",
+      "definition": "Exempelvis inbjudan, rolländring eller återkallad åtkomst. Hör till administration och åtkomstjournal, inte till klippurvalet."
+    },
+    {
+      "id": "media-registry",
+      "label": "Medieregister och fillager",
+      "definition": "Registret håller stabila ID:n, metadata och filhashar; privat Blob håller själva bytesen. En registrerad eller hashgodkänd fil är inte automatiskt visuellt godkänd."
+    },
+    {
+      "id": "access-level",
+      "label": "Åtkomstnivå",
+      "definition": "Nivå 1 intern Kontrollpanel, nivå 2 operatörens Partnerportal, nivå 3 Spelaryta. Servern avgör konto, medlemskap och resursrättighet; adress och menyval ger aldrig åtkomst."
     }
   ],
   "events": [

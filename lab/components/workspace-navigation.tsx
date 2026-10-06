@@ -18,6 +18,7 @@ export function WorkspaceNavigation() {
     <nav className={styles.nav} aria-label="Interna arbetsytor">
       <a href="/control" aria-current={surface?.surface === 'control' && !surface.legacyPath ? 'page' : undefined}>Kontrollpanel</a>
       <a href="/partner">Partnerportal · förhandsvisning</a>
+      <a href="/play">Spelaryta</a>
       {STUDIO_PRIMARY_NAVIGATION.map(item => <a key={item.href} href={labUrl(item.href)} aria-current={current === item ? 'page' : undefined}>{item.label}</a>)}
       <details className={styles.tools}>
         <summary data-active={toolActive || undefined}>Verktyg</summary>

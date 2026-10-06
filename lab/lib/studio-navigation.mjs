@@ -3,7 +3,7 @@ import { labBasePath } from './lab-url.mjs';
 // Only existing pages in this zone. Apply labUrl once when rendering native anchors.
 export const STUDIO_PRIMARY_NAVIGATION = Object.freeze([
   Object.freeze({ href: '/', label: 'Dealer & klipp' }),
-  Object.freeze({ href: '/administration', label: 'Backoffice' }),
+  Object.freeze({ href: '/administration', label: 'Administration' }),
   Object.freeze({ href: '/openclaw', label: 'OpenClaw' }),
 ]);
 

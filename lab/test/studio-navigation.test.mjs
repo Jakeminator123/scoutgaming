@@ -15,7 +15,7 @@ const { transformSync } = require('next/dist/build/swc');
 
 test('Studio has three main areas without a second global clip library or background menu', () => {
   assert.deepEqual(STUDIO_PRIMARY_NAVIGATION.map(item => [item.href, item.label]), [
-    ['/', 'Dealer & klipp'], ['/administration', 'Backoffice'], ['/openclaw', 'OpenClaw'],
+    ['/', 'Dealer & klipp'], ['/administration', 'Administration'], ['/openclaw', 'OpenClaw'],
   ]);
   assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/operator-chat', '/tree', '/activity', '/guide']);
   assert.equal(new Set(items.map(item => item.href)).size, 7);
@@ -87,7 +87,7 @@ test('internal menu keeps native Studio anchors and adds public control and part
       const tree = WorkspaceNavigation();
       visit(tree, node => { if (node.type === 'a') links.push(node.props); });
       const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/control', '/control', '/partner', ...items.map(item => labUrl(item.href))]);
+      assert.deepEqual(links.map(link => link.href), ['/control', '/control', '/partner', '/play', ...items.map(item => labUrl(item.href))]);
       assert.ok(links.every(link => !link.onNavigate && !link.onClick));
       assert.equal(links.filter(link => link.href === labUrl('/administration')).length, 1);
       assert.match(html, /aria-label="Interna arbetsytor"/);

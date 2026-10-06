@@ -1,22 +1,25 @@
-# Guide — en gemensam ingång
+# Scoutgaming: användarguide
 
-**Tre nivåer på samma sajt.** Kontrollpanel (`/control`) är den interna
-personalens yta. Partnerportal (`/partner`) är grunden för operatörens egna bord,
-presentationer, team och spelare. Spelarytan ska få en enkel lobby på `/play`.
-Den nuvarande `/studio` och spelet på `/blackjack` finns kvar under övergången.
+Tre nivåer delar samma repo och sajt:
 
-Den första partnerportalen är märkt **Intern förhandsvisning** och kräver ditt
-befintliga administratörskonto. Demo North och Demo South innehåller exempeldata.
-Det går att granska Kevins menyer och prova design lokalt, men detta skapar inte
-kundkonton och ändrar inte spel, pengar eller personal. Utkast stannar i fliken
-och försvinner vid omladdning eller byte av exempeloperatör.
-Dealerproduktion, röst-/dealklipp, mediebibliotek, händelselogik, generering och
-äldre arkiv hör till nivå 1 och saknas i nivå 2:s meny. Internytan länkar vidare
-till befintliga arbetsverktyg. Riktig kundinloggning och kundavgränsad sparning
-följer separat efter den visuella överföringen; välj aldrig en global adminroll
-för kundpersonal som tillfällig lösning.
+- **Kontrollpanel**: [/control](https://www.scoutgaming.tech/control), intern överblick. Dealer & klipp, Administration och OpenClaw finns i Studio.
+- **Partnerportal**: [/partner](https://www.scoutgaming.tech/partner), begränsade val för tilldelad lane. För närvarande en intern adminskyddad förhandsvisning med exempeloperatörer.
+- **Spelaryta**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Operatörsbunden spelkatalog, egen profil och historik återstår.
 
-**En arbetsyta: Croupier Studio.** I molnet öppnar du
+**En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
+Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
+välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov:
+marker, kort, bord och bakgrund kan ändras i förhandsvisningen men skickas
+inte till spelet. Lane-notisen och meddelandet vid ändring visar denna gräns.
+Utkasten försvinner vid omladdning eller operatörsbyte.
+
+Begrepp och en kort flödeskarta finns i
+[den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
+Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
+Riktig partner-session och kundavgränsad sparning är kvarstående arbete, inte
+något man får genom att välja en operatör i menyn.
+
+**En arbetsyta: Scoutgaming Studio.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
@@ -36,7 +39,7 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med Studios sparknapp att göra.
 
-Menyn har tre huvuddelar: **Dealer & klipp**, **Backoffice** och **OpenClaw**.
+Menyn har tre huvuddelar: **Dealer & klipp**, **Administration** och **OpenClaw**.
 Välj dealer på klippsidan och arbeta i **Idle**, **Kort & deal**,
 **Fasta repliker**, **Bakgrund** eller **Probe**. Uppladdning hör till
 klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
@@ -48,7 +51,7 @@ Klippöversikten visar kompakta situationskort med **Spela standard** och
 enskilda filmer och mappinformation. Idle visar en rad per variant med
 användningen bredvid filnamnet. Öppna raden för beskrivning och tider;
 fördelning, enminutsprov och hjälp ligger i egna utfällbara avsnitt.
-Kategorierna och Backoffice delar samma lugna färger och knappar.
+Kategorierna och Administration delar samma lugna färger och knappar.
 Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
 **Stäng av** betyder att ändra policyn; råfilen finns kvar.
 
@@ -59,7 +62,7 @@ exakt tal, medan Probe kan skapa ett nytt tal-/videopaket när spelaren är
 inaktiv. Ett syntetiskt Probe-textprov är inte en skapad eller spelad film.
 Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
-Backoffice har 11 aktiva sektioner under drift/spelintegritet, spel/lanes/bord,
+Administration har 11 aktiva sektioner under drift/spelintegritet, spel/lanes/bord,
 konton, partner, betalningar/journal och talgranskning. Lägga till, ta bort och
 kontoåtgärder öppnas vid behov; listor och aktuella värden visas först.
 Turneringar och pitboss-inställningar har tagits bort från gränssnittet eftersom
@@ -73,14 +76,14 @@ och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 **Lanes:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En lane väljer vilken
 presentation och mediesamling som används. Mobile Phone Lane är enda
-standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Backoffice →
+standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Administration →
 Spel, lanes & bord kan en admin lägga till porträttlanes, välja aktiv lane
 och ta bort lanes. De nya porträttlanerna delar Astrids bank och inställningar.
 Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
 Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
 
-Native Studio/Backoffice använder de befintliga kontonas rollkontroller och
+Native Studio/Administration använder de befintliga kontonas rollkontroller och
 den gemensamma Neon-källan. En Studio-inloggning ger inga nya administrativa
 rättigheter.
 
@@ -94,16 +97,16 @@ och saldo flyttas eller återställs inte för provet.
 
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
 lösenord i spelet och Studio. Du väljer ingen kontotyp i inloggningen.
-**Admin** får använda spelet och hela Backoffice. **Spelare** får använda
-spelet och nekas Studio/Backoffice. Ett äldre superadmin-konto fungerar som
+**Admin** får använda spelet och hela Administration. **Spelare** får använda
+spelet och nekas Studio/Administration. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
 
-I den nya native-administrationen går du till **Backoffice → Konton**.
+I den nya native-administrationen går du till **Administration → Konton**.
 Skapa och hantera spelare där. För en aktiv eller blockerad spelare med
 eget spelarlösenord anger du nytt lösenord två gånger och en anledning.
 Gamla spelsessioner återkallas vid bytet; saldo och spelhistorik behålls.
 Stängda konton har inget lösenordsbyte. Administratörers invitationer,
-aktivering och återställningslänkar hanteras i samma Backoffice.
+aktivering och återställningslänkar hanteras i samma Administration.
 Ett administratörskonto som också spelar använder sitt administratörslösenord.
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
@@ -172,7 +175,7 @@ Utvecklarreferenser: [start och arkitektur](../README.md),
 [videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
 [Schemaöversikt](../schemas/README.md).
 [Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
-Eventgrupperna ska överensstämma med projektets seed och motorns källkontrakt.
+Händelsekategorierna ska överensstämma med projektets seed och motorns källkontrakt.
 Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 över samma sex källtyper och 16 ID:n. Den skapar inte nya motorevents.
@@ -240,7 +243,7 @@ inte filmens nya byteinnehåll till molnet.
 
 ### Astrids Deal-frekvenser
 
-I Backoffice/Lab → Kort och samma familj i avancerade labbet anger du procent för
+I Administration/Lab → Kort och samma familj i avancerade labbet anger du procent för
 varje variant. Andelen gäller varje kort till just den platsen; återstoden
 använder standardfilen. 0 % behåller klippet för manuellt prov. Summan får
 vara högst 100 %. Ett saknat klipps andel går till standard. Högst fyra

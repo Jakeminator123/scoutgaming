@@ -1,4 +1,4 @@
-import { gameEntryRedirect } from '../../../web/public/game-entry-contract.mjs';
+import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 export const PLATFORM_SOCKET_ENDPOINTS = Object.freeze({
@@ -75,6 +75,20 @@ export function platformRoute(url, config) {
   }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
+  if(config.unifiedUi && ['/administration','/administration/'].includes(path)){
+    return {kind:'redirect',destination:`${config.publicOrigin}/studio/administration${url.search}`};
+  }
+  if(config.unifiedUi && config.canonicalGame){
+    const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
+    if(previous||['/blackjack','/blackjack/','/play/blackjack/'].includes(path)){
+      const query=approvedGameQuery(url.searchParams,{origin:url.origin}).toString();
+      return {kind:'redirect',destination:`${config.publicOrigin}/play/blackjack${query?'?'+query:''}`};
+    }
+    if(path==='/play/blackjack'&&url.searchParams.has('launch')){
+      // Preserve the existing signed launch handler and game-session audience.
+      return {kind:'backend',destination:`${config.backendOrigin}/blackjack${url.search}`};
+    }
+  }
   const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
   if (gameRedirect) return {kind:'redirect',destination:config.publicOrigin+gameRedirect};
   // Internal Node endpoints are reachable through these two exact rewrites.
@@ -86,6 +100,9 @@ export function platformRoute(url, config) {
   }
   if (path === '/' && ['dealer', 'presentation', 'performance'].some(key => url.searchParams.has(key))) return {kind: 'redirect', destination: `${config.publicOrigin}/game${url.search}`};
   const workspace = config.nativeStudio && resolveWorkspaceSurfacePath(path);
+  if(workspace?.canonicalPath && workspace.publicPath!==workspace.canonicalPath){
+    return {kind:'redirect',destination:`${config.publicOrigin}${workspace.canonicalPath}${url.search}`};
+  }
   if (workspace && (path === '/control' || path.startsWith('/control/') || path === '/partner' || path.startsWith('/partner/'))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }

@@ -78,7 +78,7 @@ test('real catch-all pages reject unknown paths before loading and unknown opera
   let reads = 0;
   const loaded = pages(async () => { reads++; throw Object.assign(new Error('unknown operator'), { statusCode: 404 }); });
   for (const [surface, path] of [['control', ['unknown']], ['control', ['api', 'admin']], ['partner', ['api', 'admin']],
-    ['partner', ['demo-north', 'voice']], ['partner', ['demo-north', 'team', 'users']], ['partner', ['demo-north']],
+    ['partner', ['demo-north', 'voice']], ['partner', ['demo-north', 'team', 'users']],
     ['partner', ['demo-north', '%74eam']]]) {
     await assert.rejects(renderPage(loaded[surface], path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
