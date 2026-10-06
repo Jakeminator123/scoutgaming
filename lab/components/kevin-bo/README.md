@@ -2,7 +2,9 @@
 
 `kevin-backoffice.jsx` exports `KevinBackoffice({ surface, initialSnapshot,
 apiBase, user, initialView })`. Both surfaces are currently protected by the
-existing **internal administrator** server gate. `partner` is an operator UI
+existing **internal administrator** server gate. Public `/control` now renders
+the real internal tool entrance, not this prototype. Old internal tool URLs
+lead to the existing Studio editors. `partner` is an operator UI
 preview, not a grant of real operator access.
 
 The source design is pinned to GitLab commit
@@ -22,7 +24,8 @@ images are imported as build assets; no approved gameplay assets were changed.
 and seven internal-only sections. Roulette and Baccarat remain planned views.
 Partner dealers expose assigned presentation profiles; dealer construction,
 voice/clip generation, original pit-boss trigger rules and background uploads
-are confined to the internal surface. Internal sections link to verified
+belong to internal Studio. The retained internal prototype views are source
+reference only; `/control` no longer renders them. Old tool links lead to
 existing Studio routes. Team membership uses the proposed scoped role labels,
 not the original global role editor.
 
@@ -50,7 +53,7 @@ not the original global role editor.
 
 ## Addresses and lane status
 
-Public links use /control and /partner/{operatorSlug}, with readable sections
+This preview's public links use /partner/{operatorSlug}, with readable sections
 such as presentation, table-design, lanes and tables. Component IDs stay
 internal; old short paths and hash bookmarks resolve to the current address.
 Menu changes preserve mounted drafts; history back/forward is observed.

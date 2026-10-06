@@ -30,7 +30,12 @@ filanspråk. /control är intern Kontrollpanel, /partner/{operatorSlug} är
 Partnerportal och /play är Spelaryta med /play/blackjack. Intern Studio på
 /studio är kvar som verkligt produktionsverktyg; fliken heter Administration.
 
-Nivå 1/2 använder läsbara menyadresser, popstate och gamla hashbokmärken.
+Efter Jakobs förtydligande är nivå 1 en gemensam ScoutGamingGroup-adminyta:
+/control visar verkliga verktygsingångar, inte Kevins parallella exempelpaneler.
+Klipp/tal/media/konton-länkar leder till befintlig Studio med samma huvudmeny.
+Oanslutna gamla exempelvyer visar en förklaring; de låtsas inte vara färdiga
+produktionsverktyg. Kevin-komponenten renderas på /partner, inte /control.
+Nivå 2 använder läsbara menyadresser och popstate. Gamla hashbokmärken fungerar.
 Servern kontrollerar fortsatt intern admin på varje dokument/API-läsning.
 Nivå 2:s lane-/designnotiser skiljer lokala marker/kort/bordsprov från faktisk
 spelpublicering. Lokala designutkast kan fortfarande granskas i provbordet.
@@ -60,6 +65,10 @@ omladdning med rätt lane, gamla hash-länkar och historik till annan operatör.
 Den korta /administration går vidare till /studio/administration efter observerad
 404 på den förstnämnda. Privat provkatalog: lab/data/platform-private/terminology-update.
 Testservern och provfliken är stängda. Publiceringsbevis tillkommer efter push.
+Kompletteringen för en gemensam nivå 1 har dessutom 29 riktade tester,
+ny Lab-typkontroll och nytt Lab-produktionsbygge PASS. Den behåller samma
+färska adminauktorisering, lämnar partnerns data och utkast oförändrade och
+skickar inga exempeloperatörsdata till den nya interna ingången.
 
 ## Nästa arbete och viktiga gränser
 

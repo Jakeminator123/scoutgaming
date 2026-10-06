@@ -87,10 +87,11 @@ test('internal menu keeps native Studio anchors and adds public control and part
       const tree = WorkspaceNavigation();
       visit(tree, node => { if (node.type === 'a') links.push(node.props); });
       const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/control', '/control', '/partner', '/play', ...items.map(item => labUrl(item.href))]);
+      assert.deepEqual(links.map(link => link.href), ['/control', '/control', ...items.map(item => labUrl(item.href)), '/partner', '/play']);
       assert.ok(links.every(link => !link.onNavigate && !link.onClick));
       assert.equal(links.filter(link => link.href === labUrl('/administration')).length, 1);
-      assert.match(html, /aria-label="Interna arbetsytor"/);
+      assert.match(html, /aria-label="ScoutGamingGroup administration"/);
+      assert.match(html, /Nivå 1 · ScoutGamingGroup/);
       assert.match(html, /<details class="tools"><summary data-active="true">Verktyg/);
       assert.match(html, /aria-current="page"[^>]*>Uppspelningsdiagnostik/);
       assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
@@ -134,6 +135,22 @@ function visit(node, callback) {
   callback(node);
   visit(node.props?.children, callback);
 }
+
+test('internal landing links real tools and old clip hashes no longer open a second preview editor', () => {
+  const effects = [], paths = [], browser = { location: { hash: '#clips', replace: path => paths.push(path) },
+    history: { replaceState: () => assert.fail('a real tool needs native navigation') },
+    addEventListener: () => {}, removeEventListener: () => {} };
+  const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect) };
+  const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
+  const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
+  assert.match(html, /Lanes, bord &amp; konton/);
+  assert.match(html, /Dealer &amp; klipp/);
+  assert.match(html, /Nivå 2 · Spelbolag/);
+  assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
+  const cleanup = effects[0]();
+  assert.deepEqual(paths, [labUrl('/#deal')]);
+  cleanup();
+});
 
 test('actual editor shortcut uses the operator chat route and keeps the existing Gateway panel and project context', () => {
   const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;

@@ -2,7 +2,7 @@
 
 Tre nivåer delar samma repo och sajt:
 
-- **Kontrollpanel**: [/control](https://www.scoutgaming.tech/control), intern överblick. Dealer & klipp, Administration och OpenClaw finns i Studio.
+- **ScoutGamingGroup-admin, nivå 1**: [/control](https://www.scoutgaming.tech/control), gemensam ingång till de riktiga verktygen för lanes, klipp, konton och drift. Studio är en del av samma adminyta och delar dess huvudmeny.
 - **Partnerportal**: [/partner](https://www.scoutgaming.tech/partner), begränsade val för tilldelad lane. För närvarande en intern adminskyddad förhandsvisning med exempeloperatörer.
 - **Spelaryta**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Operatörsbunden spelkatalog, egen profil och historik återstår.
 
@@ -19,7 +19,7 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Riktig partner-session och kundavgränsad sparning är kvarstående arbete, inte
 något man får genom att välja en operatör i menyn.
 
-**En arbetsyta: Scoutgaming Studio.** I molnet öppnar du
+**Studio är verktygsdelen av nivå 1.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
@@ -39,7 +39,11 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med Studios sparknapp att göra.
 
-Menyn har tre huvuddelar: **Dealer & klipp**, **Administration** och **OpenClaw**.
+Från Kontrollpanelen når du **Dealer & klipp**, **Administration** och **OpenClaw**.
+De gamla interna exempelvyerna för klipp, tal, media och konton leder till
+de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
+inte en andra editor med skenbart fungerande kontroller. Spelbolagets
+förhandsvisning ligger separat under **Spelbolag & spelare → Nivå 2**.
 Välj dealer på klippsidan och arbeta i **Idle**, **Kort & deal**,
 **Fasta repliker**, **Bakgrund** eller **Probe**. Uppladdning hör till
 klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
