@@ -75,7 +75,7 @@ function loadComponent(file, overrides = {}, browser) {
   return module.exports;
 }
 
-test('active menu renders native zone-local anchors with one admin entrance and tools disclosure', () => {
+test('internal menu keeps native Studio anchors and adds public control and partner entrances', () => {
   const before = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
   try {
     for (const basePath of ['', '/studio']) {
@@ -87,10 +87,10 @@ test('active menu renders native zone-local anchors with one admin entrance and 
       const tree = WorkspaceNavigation();
       visit(tree, node => { if (node.type === 'a') links.push(node.props); });
       const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/', ...items.map(item => item.href)].map(labUrl));
+      assert.deepEqual(links.map(link => link.href), ['/control', '/control', '/partner', ...items.map(item => labUrl(item.href))]);
       assert.ok(links.every(link => !link.onNavigate && !link.onClick));
       assert.equal(links.filter(link => link.href === labUrl('/administration')).length, 1);
-      assert.match(html, /aria-label="Studio"/);
+      assert.match(html, /aria-label="Interna arbetsytor"/);
       assert.match(html, /<details class="tools"><summary data-active="true">Verktyg/);
       assert.match(html, /aria-current="page"[^>]*>Uppspelningsdiagnostik/);
       assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
@@ -99,6 +99,26 @@ test('active menu renders native zone-local anchors with one admin entrance and 
   } finally {
     if (before === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
     else process.env.NEXT_PUBLIC_LAB_BASE_PATH = before;
+  }
+});
+
+test('partner documents never render internal workspace links under public or native paths', () => {
+  for (const path of ['/partner', '/studio/partner', '/partner/demo-north/overview', '/studio/partner/demo-south/team', '/partner/unknown']) {
+    const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
+      'next/navigation': { usePathname: () => path },
+    });
+    assert.equal(renderToStaticMarkup(WorkspaceNavigation()), '', path);
+  }
+});
+
+test('control landing and imported views highlight the control entrance through either rewrite path', () => {
+  for (const path of ['/control', '/studio/control', '/control/voice', '/studio/control/voice']) {
+    const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
+      'next/navigation': { usePathname: () => path },
+    });
+    const html = renderToStaticMarkup(WorkspaceNavigation());
+    assert.match(html, /href="\/control" aria-current="page">Kontrollpanel/);
+    assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   }
 });
 

@@ -12,6 +12,27 @@ const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIE
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
+test('new document surfaces rewrite to native Studio without creating customer or API aliases', () => {
+  const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
+  for (const [path, destination] of [['/control','/studio/control'], ['/control/voice','/studio/control/voice'],
+    ['/control/studio','/studio'], ['/control/admin','/studio/administration'], ['/control/ops','/studio/openclaw'], ['/control/lab','/studio'],
+    ['/partner','/studio/partner'], ['/partner/demo-north/overview','/studio/partner/demo-north/overview'], ['/partner/demo-south/team','/studio/partner/demo-south/team']]) {
+    assert.deepEqual(platformRoute(new URL(path + '?_rsc=fixture', native.publicOrigin), native),
+      {kind:'lab', destination:native.labUiOrigin + destination + '?_rsc=fixture'}, path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
+    assert.equal(backendPlatformPath(path), false, path);
+  }
+  for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
+    '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
+    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'frontend', path);
+    assert.equal(backendPlatformPath(path), false, path);
+  }
+  assert.equal(platformRoute(new URL('/partner/demo-north/%74eam', native.publicOrigin), native).kind, 'reject');
+  for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/control']) {
+    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'lab', path);
+  }
+});
+
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
   const native = platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
   for (const path of ['/studio/api/project','/studio/api/social','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
@@ -99,9 +120,9 @@ test('prepared player uses the actual shared player and redirects retired BO doc
 
 test('actual Next middleware disables rewrite caching for backend and authenticated Lab without leaking ingress to the UI zone', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
-  const {transpileModule, ModuleKind} = require('typescript');
+  const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
-  const compiled = transpileModule(await readFile(new URL('../middleware.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS}}).outputText;
+  const compiled = transpileModule(await readFile(new URL('../middleware.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022}}).outputText;
   const module = {exports: {}};
   new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
   const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
@@ -139,6 +160,20 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     }
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
+    process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1';
+    for (const path of ['/control/voice', '/partner/demo-north/overview']) {
+      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path + '?_rsc=fixture', {headers:{
+        cookie:'bo_session=isolated-admin-fixture', rsc:'1', 'x-croupier-vercel-secret':'spoof', 'x-croupier-lab-authorized':'spoof',
+      }}));
+      assert.equal(response.headers.get('x-middleware-rewrite'), config.labUiOrigin + '/studio' + path + '?_rsc=fixture');
+      assert.equal(response.headers.get('x-middleware-request-cookie'), 'bo_session=isolated-admin-fixture');
+      assert.equal(response.headers.get('x-middleware-request-rsc'), '1');
+      assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
+      assert.equal(response.headers.get('x-middleware-request-x-croupier-lab-authorized'), null);
+      assert.equal(response.headers.get('x-middleware-request-x-forwarded-host'), new URL(config.publicOrigin).host);
+      assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
+      assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0');
+    }
     for (const path of ['/speech-stream', '/lipsync-worker']) {
       const socket = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(socket.headers.get('x-middleware-rewrite'), config.publicOrigin + PLATFORM_SOCKET_ENDPOINTS[path]);

@@ -1,4 +1,5 @@
 import { gameEntryRedirect } from '../../../web/public/game-entry-contract.mjs';
+import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 export const PLATFORM_SOCKET_ENDPOINTS = Object.freeze({
   '/speech-stream': '/api/platform-speech-stream',
@@ -76,6 +77,10 @@ export function platformRoute(url, config) {
     return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
   }
   if (path === '/' && ['dealer', 'presentation', 'performance'].some(key => url.searchParams.has(key))) return {kind: 'redirect', destination: `${config.publicOrigin}/game${url.search}`};
+  const workspace = config.nativeStudio && resolveWorkspaceSurfacePath(path);
+  if (workspace && (path === '/control' || path.startsWith('/control/') || path === '/partner' || path.startsWith('/partner/'))) {
+    return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
+  }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
     || /^\/studio\/api\/(?:videos|clip-controls)(?:\/|$)/.test(path))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };

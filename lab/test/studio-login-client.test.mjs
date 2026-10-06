@@ -28,6 +28,20 @@ test('password bearer is scalar bounded base64url and never normalized from arbi
   for (const value of ['a'.repeat(32),'a'.repeat(43)]) assert.equal(studioPasswordToken(value),value);
   for (const value of ['a'.repeat(31),'a'.repeat(129),'Bearer abc','%20','a.b.c',null,['a'.repeat(32)],{}]) assert.equal(studioPasswordToken(value),null);
 });
+test('new surface login returns preserve only admitted document paths for mounted and standalone Lab', () => {
+  for (const path of ['/control', '/control/voice', '/control/studio', '/control/admin', '/control/ops', '/partner', '/partner/demo-north/overview', '/partner/demo-south/team']) {
+    for (const input of [path, '/studio' + path]) {
+      assert.equal(studioLoginReturnTo(input), path);
+      assert.equal(studioLoginDestination(input, '/studio/api/auth'), path);
+      assert.equal(studioLoginDestination(input, '/api/auth'), path);
+    }
+  }
+  for (const path of ['/partner/api/admin', '/control/api/admin', '/partner/demo-north/voice', '/partner/demo-north/overview?token=x',
+    '/partner/demo-north/overview#private', '/partner/demo-north/overview/child', '/control/login', '/studio/partner//team', '/studio/control/%76oice']) {
+    assert.equal(studioLoginReturnTo(path), '/studio', path);
+    assert.equal(studioLoginDestination(path, '/api/auth'), '/', path);
+  }
+});
 test('client has no render request and sends native auth action only as same-origin no-store JSON', async () => {
   const writes = [], client = createStudioLoginClient({authBase:'/studio/api/auth',fetchImpl:async(...args)=>{writes.push(args);return Response.json({ok:true,secret:'SERVER_SECRET'});}});
   assert.equal(writes.length,0);
