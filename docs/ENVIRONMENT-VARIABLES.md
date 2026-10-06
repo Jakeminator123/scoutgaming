@@ -81,6 +81,15 @@ Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
 policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
+Kandidat för ett gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
+webb och Studio som Services. `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
+`CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
+publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
+Render-origin måste fortfarande vara separat och ingressnyckeln stannar på
+servern. Studio behåller `/studio` som basePath och sin befintliga Neon/Blob/mail-
+konfiguration. Flaggan förblir av i de två befintliga produktionsprojekten tills
+Services-kandidaten är publicerad och verifierad utan omkoppling av sajten.
+
 Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`
 och `BO_URL` till publik origin. Native serverrendering läser samma autentiserade

@@ -8,6 +8,14 @@ Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
 ### Tre personal-/spelarytor och Kevins frontend — 6 oktober 2026
 
+Pågående Scoutgaming-konsolidering: Kevin-leveransen är överlämnad och filanspråk
+släppta. En avstängd Services-kandidat bygger de två befintliga webbdelarna i
+ett projekt; deras kod/versioner och Render-auktoritet behålls. Ny ingress i
+Lab återanvänder den exakta gamla transportgränsen. Tio routingtester samt
+Lab-typkontroll/bygge PASS lokalt. Inget providerbygge eller namnbyte är ännu
+accepterat. T2 kan arbeta separat i nya policyfiler; endast task-owned filer
+committas och Vercel byggs från fryst GitHub-SHA, aldrig en dirty checkout.
+
 Jakob har godkänt nivå 1 `/control`, nivå 2 `/partner` och nivå 3 `/play` på
 scoutgaming.tech. Nivå 1 är intern personal, nivå 2 operatörens egna team/spelare,
 nivå 3 spelarens egen lobby/profil. Detta arbete genomför första etappens

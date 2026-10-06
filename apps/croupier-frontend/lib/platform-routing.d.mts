@@ -1,4 +1,4 @@
-export interface PlatformConfiguration { publicOrigin: string; backendOrigin: string; labUiOrigin: string; secret: string; nativeStudio?: true; canonicalGame?: true; }
+export interface PlatformConfiguration { publicOrigin: string; backendOrigin: string; labUiOrigin: string; secret: string; nativeStudio?: true; canonicalGame?: true; unifiedUi?: true; }
 export const PLATFORM_SOCKET_ENDPOINTS: Readonly<Record<'/speech-stream' | '/lipsync-worker', string>>;
 export function exactPlatformOrigin(value: unknown, name: string): string;
 export function platformConfiguration(env?: Record<string, string | undefined>): PlatformConfiguration | null;
