@@ -87,8 +87,10 @@ webb och Studio som Services. `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
 Render-origin måste fortfarande vara separat och ingressnyckeln stannar på
 servern. Studio behåller `/studio` som basePath och sin befintliga Neon/Blob/mail-
-konfiguration. Flaggan förblir av i de två befintliga produktionsprojekten tills
-Services-kandidaten är publicerad och verifierad utan omkoppling av sajten.
+konfiguration. Under Services-provet ligger publik trafik kvar på tidigare
+publicerade snapshots. Studio-projektets Git-autobyggen är tillfälligt pausade
+med ignored-build-kommandot `exit 0`; manuella frysta prov använder `exit 1`.
+De två nya flaggorna är production-scopade i samma projekt, utan nyckelkopior.
 
 Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`
