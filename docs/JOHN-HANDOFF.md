@@ -18,7 +18,7 @@ journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
   croupier-frontend.vercel.app ger 308. croupier-lab-ui.vercel.app behålls som
   kompatibilitetsalias. Det gamla frontendprojektet är en domänlös reserv med
   autobyggen och domäntilldelning av; det är inte markerat paused. QA består.
-- Senaste avslutade leverans före denna ändring: 4ed55a56, Vercel
+- Infrastrukturens tidigare verifierade leverans: 4ed55a56, Vercel
   dpl_3WvxoXqoraAj3WPBy2zG3pzhQipP READY, fullhook och CI37451320053 tre success.
   Läsande HTTP/static-prov och befintlig adminsession verifierade. Inga riktiga
   konto-/spel-/DB-skrivningar. Privat scoutgaming-delivery-final-read.json.
@@ -79,7 +79,28 @@ skickar inga exempeloperatörsdata till den nya interna ingången.
 
 ## Nästa arbete och viktiga gränser
 
-**Personalinbjudningar, 6 oktober:** samordnad fortsättning efter a72c4bf1.
+**Övertagande och stoppunkt, 6 oktober:** denna chatt tar över efter
+**Hämta Croupier från Kevins branch**. Jakob skickar själv de två
+personalinbjudningarna. Inga nya utskick/konton görs av agenten. Intern admin
+når nivå 1, 2 och 3 med samma konto; nivå 2 var redan adminauktoriserad men
+saknades i inbjudningstexten. Formulär, mejl och båda guiderna är nu samstämmiga.
+`/partner` är en separat ingång med explicit val av demonstration, inte ett
+automatiskt exempelbolag. Kundval är ännu inte aktiverat. Riktiga kunder ska
+komma från verifierade organisationsanslutningar, inte namn eller API-nycklar.
+Gamla giltiga hashbokmärken och befintliga demo-adresser behålls.
+
+Den avgränsade leveransen avslutar navigation/åtkomstinformation och
+dokumentationsstädning. T2–T4 kvarstår för verkligt kundregister, kundpersonal,
+medlemskap, lane-publicering och operatörsbunden lobby. De öppna A–I-punkterna
+är acceptans/driftarbete, inte ett påstående om att allt är produktionsklart.
+Lokalt verifierat: 90 riktade UI-, serverrutt-, auth- och mejltester, Lab-
+typkontroll och produktionsbygge PASS. Fullhook körs vid kodcommit;
+publiceringskvittot registreras efter leverans. Privata loggar ligger under
+`lab/data/platform-private/level-two-takeover-*`. Inga produktservrar startas
+och ingen riktig konto-/policy-/databasskrivning behövs för dessa kontroller.
+
+**Personalinbjudningar, första leveransen 6 oktober:** samordnad fortsättning
+efter a72c4bf1; åtkomsttexten har därefter kompletterats enligt övertagandet ovan.
 Resend-adaptern skickar nu ScoutGamingGroup-mejl i text och HTML med
 aktiveringsknapp, e-postadress och giltighetstid. Formuläret anger intern
 adminpersonal, nivå 1, med åtkomst till hela nivå 1 och nivå 3 via samma konto

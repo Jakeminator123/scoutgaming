@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { STUDIO_PRIMARY_NAVIGATION, STUDIO_TOOL_NAVIGATION, studioNavigationItem } from '../lib/studio-navigation.mjs';
+import { normalizeView } from '../components/kevin-bo/navigation.mjs';
 
 const items = [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION];
 const require = createRequire(import.meta.url);
@@ -109,6 +110,31 @@ test('partner documents never render internal workspace links under public or na
       'next/navigation': { usePathname: () => path },
     });
     assert.equal(renderToStaticMarkup(WorkspaceNavigation()), '', path);
+  }
+});
+
+test('level-two entrance separates demonstrations and preserves only valid old hash destinations', () => {
+  const demonstrations = [{ slug: 'demo-north', name: 'Demo North' }, { slug: 'demo-south', name: 'Demo South' }];
+  for (const [hash, destination] of [['', null], ['#theme', '/partner/demo-north/presentation'],
+    ['#tables', '/partner/demo-north/tables'], ['#voice', null], ['#https://outside.invalid', null]]) {
+    const effects = [], paths = [], listeners = new Map();
+    const browser = { location: { hash, replace: path => paths.push(path) },
+      addEventListener: (name, callback) => listeners.set(name, callback),
+      removeEventListener: (name, callback) => { if (listeners.get(name) === callback) listeners.delete(name); } };
+    const { PartnerWorkspace } = loadComponent('partner-workspace.tsx', {
+      react: { ...React, useEffect: effect => effects.push(effect) }, './kevin-bo/navigation.mjs': { normalizeView },
+    }, browser);
+    const tree = PartnerWorkspace({ user: 'fixture-admin', demonstrations }), links = [];
+    visit(tree, node => { if (node.type === 'a') links.push(node.props.href); });
+    assert.deepEqual(links, ['/partner/demo-north', '/partner/demo-south', '/control', '/play', labUrl('/guide')]);
+    const html = renderToStaticMarkup(tree);
+    assert.match(html, /Kundval är ännu inte aktiverat/);
+    assert.match(html, /De är inte anslutna kunder/);
+    assert.match(html, /nivå 1, 2 och 3 med samma konto/);
+    assert.doesNotMatch(html, /Svenska Spel|<select|<form/);
+    const cleanup = effects[0]();
+    assert.deepEqual(paths, destination ? [destination] : []);
+    cleanup(); assert.equal(listeners.size, 0);
   }
 });
 

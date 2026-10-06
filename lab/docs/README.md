@@ -3,7 +3,7 @@
 Tre nivåer delar samma repo och sajt:
 
 - **ScoutGamingGroup-admin, nivå 1**: [/control](https://www.scoutgaming.tech/control), gemensam ingång till de riktiga verktygen för lanes, klipp, konton och drift. Studio är en del av samma adminyta och delar dess huvudmeny.
-- **Partnerportal**: [/partner](https://www.scoutgaming.tech/partner), begränsade val för tilldelad lane. För närvarande en intern adminskyddad förhandsvisning med exempeloperatörer.
+- **Partnerportal, nivå 2**: [/partner](https://www.scoutgaming.tech/partner), ingång för spelbolagens arbetsytor. Intern adminpersonal kommer åt denna nivå med samma konto. Kundval är ännu inte aktiverat; välj en tydligt märkt demonstration för att prova begränsade lane- och designval.
 - **Spelaryta**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Operatörsbunden spelkatalog, egen profil och historik återstår.
 
 **En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
@@ -43,7 +43,11 @@ Från Kontrollpanelen når du **Dealer & klipp**, **Administration** och **OpenC
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
-förhandsvisning ligger separat under **Spelbolag & spelare → Nivå 2**.
+arbetsytor ligger under **Spelbolag & spelare → Nivå 2**. Demo North och
+Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
+verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
+är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
+medan spelbolagets egen personal bara får tillgång till sin organisation.
 Välj dealer på klippsidan och arbeta i **Idle**, **Kort & deal**,
 **Fasta repliker**, **Bakgrund** eller **Probe**. Uppladdning hör till
 klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
@@ -94,15 +98,18 @@ rättigheter.
 Native administration är aktiverad på den vanliga Studio-adressen och har
 även en separat QA-miljö med egen databas. Den använder samma sparade
 revisionskälla som spelmotorn och bevarar osparade utkast vid en sparningskonflikt.
-QA:s mejlkoppling och ett levererat invitationsmejl är
-verifierade; full invitation/reset-acceptans och produktionskopplingen återstår.
+QA:s mejlkoppling och produktionskopplingen till Resend är verifierade,
+inklusive invite/reset till Resends sandbox. Verkliga mottagares aktivering,
+lösenordsåterställning och inkorg återstår att verifiera.
 Befintliga konton
 och saldo flyttas eller återställs inte för provet.
 
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
 lösenord i spelet och Studio. Du väljer ingen kontotyp i inloggningen.
 **Intern adminpersonal, nivå 1** får använda hela den interna adminytan
-(Kontrollpanel, Studio och Administration) och nivå 3 (spelarlobbyn och spelen).
+(Kontrollpanel, Studio och Administration), nivå 2 (spelbolagens arbetsytor)
+och nivå 3 (spelarlobbyn och spelen). Nivå 2 visar än så länge demonstrationer;
+riktiga kundval följer anslutna spelbolag när kundanslutningen införs.
 **Spelare, nivå 3** får använda
 spelet och nekas Studio/Administration. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
@@ -118,11 +125,13 @@ Ett administratörskonto som också spelar använder sitt administratörslöseno
 För att bjuda in intern personal: öppna **Administration → Konton →
 Användare och roller → Bjud in adminpersonal – nivå 1**. Ange e-postadressen
 och skicka inbjudan. Mejlet från **ScoutGamingGroup <no-reply@scoutgaming.tech>**
-anger behörighet till hela nivå 1 och nivå 3. Mottagaren väljer själv lösenord
+anger behörighet till hela nivå 1, nivå 2 och nivå 3 samt nivå 2:s aktuella
+begränsning. Mottagaren väljer själv lösenord
 via en engångslänk som gäller i 72 timmar. Därefter används samma e-postadress
 och lösenord i administrationen och spelet. Återställningslänkar gäller i två
 timmar. Ett skickat mejl är inte bevis på att mottagaren har aktiverat kontot.
-Inbjudan gäller intern personal; separata spelbolagskonton hör till nivå 2.
+Inbjudan gäller intern personal. Den skapar ingen kundorganisation eller
+spelbolagsanställd; sådana konton ska vara organisationsavgränsade på nivå 2.
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 [driftkartan](../../docs/CLOUD-MIGRATION.md).

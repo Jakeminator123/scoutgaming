@@ -61,8 +61,8 @@
       "purpose": "ScoutGamingGroups gemensamma adminyta, nivå 1. Ingången leder till de riktiga lane-, klipp-, konto- och driftverktygen med samma huvudmeny. Studio under /studio är verktygsdelen av denna yta."
     },
     {
-      "name": "Partnerportal · /partner/{operatorSlug}",
-      "purpose": "Nivå 2 med begränsade lane- och designval. Nu intern förhandsvisning med exempeloperatörer och lokala utkast."
+      "name": "Partnerportal · /partner",
+      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Nivå 2 har en egen ingång med tydligt märkta demonstrationer; kundval är ännu inte aktiverat. Varje exempelbolag nås på /partner/{operatorSlug}. Riktiga kundval ska följa anslutna spelbolag, och deras egen personal ska bara nå sin organisation. Lane- och designval är tills vidare lokala prov."
     },
     {
       "name": "Spelaryta · /play",

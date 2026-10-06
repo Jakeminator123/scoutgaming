@@ -24,7 +24,7 @@ export function WorkspaceNavigation() {
       </details>
       <details className={styles.tools}>
         <summary>Spelbolag & spelare</summary>
-        <div><a href="/partner">Nivå 2 · förhandsvisning</a><a href="/play">Nivå 3 · spelaryta</a></div>
+        <div><a href="/partner">Nivå 2 · spelbolag</a><a href="/play">Nivå 3 · spelaryta</a></div>
       </details>
     </nav>
   </header>;

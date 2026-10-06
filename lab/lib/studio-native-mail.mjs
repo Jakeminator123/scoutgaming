@@ -14,7 +14,7 @@ function message({ to, kind, role, link }, origin) {
     ? `${invite ? 'Du har bjudits in som' : 'Det här mejlet gäller ditt konto som'} intern adminpersonal hos ScoutGamingGroup med administratörsbehörighet på nivå 1.`
     : `${invite ? 'Aktivera' : 'Återställ lösenordet för'} ditt spelarkonto hos ScoutGamingGroup.`;
   const access = admin
-    ? 'Behörighet: hela nivå 1 (intern administration) och nivå 3 (spelarlobbyn och spelen). Du använder samma konto och lösenord på båda nivåerna.'
+    ? 'Behörighet: hela nivå 1 (intern administration), nivå 2 (spelbolagens arbetsytor) och nivå 3 (spelarlobbyn och spelen). Du använder samma konto och lösenord på alla tre nivåerna. Nivå 2 visar tills vidare demonstrationer; kundval aktiveras när spelbolag ansluts till partnerportalen.'
     : 'Behörighet: nivå 3 (spelarlobbyn och spelen).';
   const action = invite ? 'Aktivera kontot och välj lösenord' : 'Välj nytt lösenord';
   const expiry = `Länken gäller i ${invite ? '72' : '2'} timmar och kan användas en gång. Vid behov kan en administratör skicka en ny länk.`;

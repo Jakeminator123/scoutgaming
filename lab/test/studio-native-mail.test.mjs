@@ -32,7 +32,9 @@ test('invite and reset send exactly the configured server sender and owned token
     assert.match(body.subject, /adminpersonal, nivå 1/);
     for (const content of [body.text, body.html]) {
       assert.match(content, /intern adminpersonal/); assert.match(content, /hela nivå 1.*nivå 3/);
-      assert.match(content, /samma konto och lösenord på båda nivåerna/);
+      assert.match(content, /nivå 2 \(spelbolagens arbetsytor\)/);
+      assert.match(content, /samma konto och lösenord på alla tre nivåerna/);
+      assert.match(content, /kundval aktiveras när spelbolag ansluts/);
       assert.ok(content.includes(invitation.to)); assert.ok(content.includes(origin + '/play'));
       assert.ok(content.includes(origin + '/studio/login?returnTo=%2Fcontrol'));
       assert.match(content, /kan användas en gång/); assert.match(content, /Lösenord skickas aldrig via e-post/);
@@ -47,7 +49,7 @@ test('invite and reset send exactly the configured server sender and owned token
   assert.match(JSON.parse(calls[1].init.body).html, /Välj nytt lösenord/);
 });
 
-test('mail uses stored account roles: legacy admin aliases get both levels; game-only accounts never claim admin access', async () => {
+test('mail uses stored account roles: legacy admin aliases get all three levels; game-only accounts never claim staff access', async () => {
   const calls = [];
   const mail = createNativeStudioMail({ env, fetchImpl: async (_url, init) => { calls.push(JSON.parse(init.body)); return Response.json({}); } });
   for (const role of ['superadmin','reader','staff','player']) for (const kind of ['invite','reset']) {
@@ -56,7 +58,7 @@ test('mail uses stored account roles: legacy admin aliases get both levels; game
     if (role === 'superadmin') assert.match(sent.subject, /adminpersonal, nivå 1/);
     else {
       assert.match(sent.subject, /spelare, nivå 3/);
-      assert.doesNotMatch(sent.subject + sent.text + sent.html, /adminpersonal|nivå 1|\/studio\/login/);
+      assert.doesNotMatch(sent.subject + sent.text + sent.html, /adminpersonal|nivå [12]|kundval|\/studio\/login/);
       assert.ok(sent.text.includes(origin + '/player-login'));
     }
   }

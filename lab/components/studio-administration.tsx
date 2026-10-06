@@ -418,7 +418,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </form></details>}
       </>}
       {section === 'users' && <>
-        <p>Intern adminpersonal hos ScoutGamingGroup bjuds in med e-post till nivå 1. Behörigheten omfattar hela nivå 1 (intern administration) och nivå 3 (spelarlobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord på båda nivåerna.</p>
+        <p>Intern adminpersonal hos ScoutGamingGroup bjuds in med e-post till nivå 1. Behörigheten omfattar hela nivå 1 (intern administration), nivå 2 (spelbolagens arbetsytor) och nivå 3 (spelarlobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord på alla tre nivåerna. Nivå 2 visar tills vidare demonstrationer; kundval aktiveras när spelbolag ansluts till partnerportalen.</p>
         <ResourceNotice resource={resources.users} />
         {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas. Att skapa ett spelarkonto ger inte Studioåtkomst.</p>}
         {['users/role', 'users/remove'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
@@ -430,7 +430,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           </div>}
           {mayWrite('users/resend') && <button disabled={busy} type="button" onClick={() => command('users/resend', { username: user.username })}>Skicka nytt aktiverings-/återställningsmejl</button>}
         </div>)}</>}
-        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in adminpersonal – nivå 1</summary><p>Ange administratörens e-postadress. Mejlet bjuder in intern adminpersonal med behörighet till hela nivå 1 och nivå 3. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
+        {mayWrite('users/invite') && <details className={styles.disclosure}><summary>Bjud in adminpersonal – nivå 1</summary><p>Ange administratörens e-postadress. Mejlet bjuder in intern adminpersonal med behörighet till hela nivå 1, nivå 2 och nivå 3. Nivå 2 har ännu bara demonstrationer; kundval följer anslutna spelbolag. Kontot aktiveras genom att mottagaren väljer lösenord via mejlet. Aktiveringslänken gäller i 72 timmar.</p><form method="post" className={styles.form} onSubmit={submit('users/invite', form => ({ email: value(form, 'email'), role: value(form, 'role') }))}>
           <label>E-post<input type="email" name="email" required maxLength={254} disabled={busy} /></label>
           <label>Behörighet<select name="role" disabled={busy}>{STUDIO_ROLES.map(role => <option key={role} value={role}>Administratör – nivå 1 och 3</option>)}</select></label><button disabled={busy}>Skicka inbjudan</button>
         </form></details>}
@@ -606,7 +606,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);
       setNotice(result.payload.emailSent === false ? 'Servern bekräftade åtgärden, men mejlet skickades inte. Ingen inbjudningslänk eller hemlighet visas här.'
-        : result.payload.emailSent === true && action === 'users/invite' ? 'Inbjudan till intern adminpersonal – nivå 1 med tillgång till nivå 3 – har skickats för leverans. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.'
+        : result.payload.emailSent === true && action === 'users/invite' ? 'Inbjudan till intern adminpersonal med tillgång till nivå 1, 2 och 3 har skickats för leverans. Nivå 2 visar tills vidare demonstrationer. Mottagaren aktiverar kontot genom att välja eget lösenord via mejlet.'
           : result.payload.emailSent === true && action === 'users/resend' ? 'Aktiverings-/återställningsmejlet har skickats för leverans. Be mottagaren kontrollera inkorgen och skräpposten.'
             : 'Servern bekräftade åtgärden. Tillgänglig serverdata har lästs om.');
     } catch (error) {
