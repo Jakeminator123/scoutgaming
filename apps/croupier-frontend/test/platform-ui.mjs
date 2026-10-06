@@ -12,6 +12,58 @@ const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIE
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
+test('unified Studio configuration needs no second UI origin and retains distinct game authority', () => {
+  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
+  delete unifiedEnv.CROUPIER_LAB_UI_ORIGIN;
+  const unified = platformConfiguration(unifiedEnv);
+  assert.equal(unified.labUiOrigin, unified.publicOrigin);
+  assert.equal(unified.unifiedUi, true);
+  assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
+  assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
+  assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_VERCEL_UNIFIED_UI:'0'}));
+});
+
+test('actual unified Studio middleware preserves auth transport and rejects encoded document aliases', async () => {
+  const require = createRequire(new URL('../package.json', import.meta.url));
+  const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
+  const {NextRequest} = require('next/server');
+  const source = await readFile(new URL('../../../lab/middleware.ts', import.meta.url), 'utf8');
+  const compiled = transpileModule(source, {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
+  const module = {exports:{}};
+  new Function('require', 'module', 'exports', compiled)(name => require(name === '../apps/croupier-frontend/lib/platform-routing.mjs' ? './lib/platform-routing.mjs' : name), module, module.exports);
+  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
+  const previous = Object.fromEntries(Object.keys(unifiedEnv).map(key => [key, process.env[key]]));
+  Object.assign(process.env, unifiedEnv);
+  try {
+    const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
+      'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
+    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/activity', '/studio/login']) {
+      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
+      assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
+      assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
+      assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
+      assert.equal(response.headers.get('x-middleware-request-x-croupier-lab-authorized'), null);
+      assert.equal(response.headers.get('x-middleware-request-forwarded'), null);
+      assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
+    }
+    const transport = module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
+    assert.equal(transport.headers.get('x-middleware-rewrite'), config.backendOrigin + '/studio/api/inputs');
+    assert.equal(transport.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);
+    const workspace = module.exports.middleware(new NextRequest(config.publicOrigin + '/partner/demo-north/team?_rsc=fixture', {headers}));
+    assert.equal(workspace.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/partner/demo-north/team?_rsc=fixture');
+    for (const path of ['/studio/api/%61dmin/users', '/partner/demo-north/%74eam']) {
+      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 400, path);
+    }
+    for (const path of ['/api/internal', '/partner/api/admin']) {
+      assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + path)).status, 404, path);
+    }
+    delete process.env.CROUPIER_VERCEL_UNIFIED_UI;
+    assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/activity')).headers.get('x-middleware-request-cookie'), null);
+  } finally {
+    for (const [key,value] of Object.entries(previous)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
+});
+
 test('generated workspace chunks allow encoded bracket folders without widening encoded route access', () => {
   for (const surface of ['control', 'partner']) {
     const path = `/studio/_next/static/chunks/app/${surface}/%5B%5B...path%5D%5D/page-99ec07720d222a1e.js`;

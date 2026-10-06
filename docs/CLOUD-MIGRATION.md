@@ -9,6 +9,18 @@ ett äldre prov automatiskt.
 
 ## Tre åtkomstnivåer på scoutgaming.tech
 
+### Kandidat för ett Vercelprojekt — 6 oktober 2026
+
+Efter uttrycklig samordning har Kevin-chatten släppt alla anspråk. Services i
+rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och Studio (`lab`)
+i ett bygge/projekt utan att slå ihop deras Next-versioner. Ny, avstängd
+`CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen till
+Studio när Services skickar dit dokument/API direkt. Render behåller spel/live,
+och T2–T4:s verkliga partnerinloggning, livedata och lobby är fortsatt öppna.
+Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
+Providerbygge, publicerad routing och omkoppling till ett `scoutgaming`-projekt
+är ännu inte verifierade. Repo-/projektnamn och befintlig produktion är oförändrade.
+
 Jakob har godkänt överföringen av Kevins backoffice och följande indelning.
 Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar:
 

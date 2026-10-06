@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "apps/croupier-frontend",
+      "framework": "nextjs",
+      "buildCommand": "npm run build",
+      "functions": {
+        "api/platform-speech-stream.mjs": { "maxDuration": 300 },
+        "api/platform-lipsync-worker.mjs": { "maxDuration": 600 }
+      }
+    },
+    "studio": {
+      "root": "lab",
+      "framework": "nextjs",
+      "buildCommand": "npm run build"
+    }
+  },
+  "rewrites": [
+    { "source": "/studio/:path*", "destination": { "service": "studio" } },
+    { "source": "/control/:path*", "destination": { "service": "studio", "path": "/studio/control/:path*" } },
+    { "source": "/partner/:path*", "destination": { "service": "studio", "path": "/studio/partner/:path*" } },
+    { "source": "/:path*", "destination": { "service": "web" } }
+  ]
+}
