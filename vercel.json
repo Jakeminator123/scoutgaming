@@ -13,13 +13,28 @@
     "studio": {
       "root": "lab",
       "framework": "nextjs",
-      "buildCommand": "npm run build"
+      "buildCommand": "npm run build",
+      "routes": [
+        {
+          "src": "^/(control|partner)$",
+          "dest": "/studio/$1",
+          "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1" }],
+          "continue": true
+        },
+        {
+          "src": "^/(control|partner)/(.*)$",
+          "dest": "/studio/$1/$2",
+          "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1/$2" }],
+          "continue": true
+        }
+      ]
     }
   },
   "rewrites": [
     { "source": "/studio/:path*", "destination": { "service": "studio" } },
-    { "source": "/control/:path*", "destination": { "service": "studio", "path": "/studio/control/:path*" } },
-    { "source": "/partner/:path*", "destination": { "service": "studio", "path": "/studio/partner/:path*" } },
-    { "source": "/:path*", "destination": { "service": "web" } }
+    { "source": "/control/:path*", "destination": { "service": "studio" } },
+    { "source": "/partner/:path*", "destination": { "service": "studio" } },
+    { "source": "/", "destination": { "service": "web", "path": "/" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
   ]
 }

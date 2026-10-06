@@ -15,6 +15,15 @@ namnet. Återskapa inte `github-work`, eftersom det skulle bryta GitHubs redirec
 Services-provet bygger båda apparna, men Vercel nekade Edge-runtime innan någon
 aliasflytt. Routing har därför ställts till stödd Node-runtime inför nästa prov.
 
+Node-kandidat `dpl_8pjzmu9mhGyjSSMfrGvf1rudZT1L` på `dadec1099` är READY,
+CI `37448284700` har tre success och fullhook PASS. Studio/login/set-password
+och oinloggade API-spärrar är verifierade via den befintliga Studio-adressen.
+Ett kort kanoniskt flyttprov hittade dock Services-404 på `/`, `/control` och
+`/partner`; www flyttades omedelbart tillbaka till tidigare frontendprojekt,
+och 200/307 återverifierades. GitHub-namnbytet är klart men gemensam publicering
+är ännu inte accepterad. Nästa kandidat skiljer Services route lookup från
+den URL Next läser genom ett avgränsat request.path-transformsteg.
+
 Pågående Scoutgaming-konsolidering: Kevin-leveransen är överlämnad och filanspråk
 släppta. En avstängd Services-kandidat bygger de två befintliga webbdelarna i
 ett projekt; deras kod/versioner och Render-auktoritet behålls. Ny ingress i
