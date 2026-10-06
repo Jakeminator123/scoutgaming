@@ -12,6 +12,23 @@ const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIE
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
+test('generated workspace chunks allow encoded bracket folders without widening encoded route access', () => {
+  for (const surface of ['control', 'partner']) {
+    const path = `/studio/_next/static/chunks/app/${surface}/%5B%5B...path%5D%5D/page-99ec07720d222a1e.js`;
+    assert.deepEqual(platformRoute(new URL(path + '?dpl=fixture', config.publicOrigin), config),
+      {kind:'lab', destination:config.labUiOrigin + path + '?dpl=fixture'});
+    assert.equal(backendPlatformPath(path), false);
+  }
+  for (const path of [
+    '/studio/_next/static/chunks/app/partner/%255B%255B...path%255D%255D/page-a1.js',
+    '/studio/_next/static/chunks/app/partner/%5B%5B...path%5D%5D%2Fpage-a1.js',
+    '/studio/_next/static/chunks/app/partner/%5B%5B...path%5D%5D/page-a1.js/extra',
+    '/studio/_next/static/chunks/app/other/%5B%5B...path%5D%5D/page-a1.js',
+    '/studio/_next/static/chunks/app/partner/%5B%5B...path%5D%5D/page-a1.html',
+    '/studio/api/%61dmin/users', '/partner/demo-north/%74eam',
+  ]) assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'reject', path);
+});
+
 test('new document surfaces rewrite to native Studio without creating customer or API aliases', () => {
   const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
   for (const [path, destination] of [['/control','/studio/control'], ['/control/voice','/studio/control/voice'],
