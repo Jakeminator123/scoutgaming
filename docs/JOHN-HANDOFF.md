@@ -94,10 +94,19 @@ dokumentationsstädning. T2–T4 kvarstår för verkligt kundregister, kundperso
 medlemskap, lane-publicering och operatörsbunden lobby. De öppna A–I-punkterna
 är acceptans/driftarbete, inte ett påstående om att allt är produktionsklart.
 Lokalt verifierat: 90 riktade UI-, serverrutt-, auth- och mejltester, Lab-
-typkontroll och produktionsbygge PASS. Fullhook körs vid kodcommit;
-publiceringskvittot registreras efter leverans. Privata loggar ligger under
+typkontroll och produktionsbygge PASS. Kod 4df5e74a är pushad; fullhook gav
+1626 PASS/9 skip/0 fail. Vercel dpl_95zhvFvin7skaMSw5KrEx5vqWCgT är READY
+på exakt SHA med produktionsalias, och CI37495437898 har tre successjobb.
+Sex läsande HTTP-prov bekräftar login/401 utan inloggning. Befintlig adminsession
+verifierade Kontrollpanel → nivå 2-ingång → Demo South → intern Administration.
+Inbjudningsformuläret visar alla tre nivåerna. Livekontrollen hittade också en
+gammal etikett i behörighetsvalet; denna komplettering rättar den och det
+befintliga UI-provet bevakar nu även alternativets etikett. Privata loggar ligger under
 `lab/data/platform-private/level-two-takeover-*`. Inga produktservrar startas
 och ingen riktig konto-/policy-/databasskrivning behövs för dessa kontroller.
+En av de avsedda mottagarna syntes vid livekontrollen som admin som väntar på
+aktivering. Det är ett läst kontotillstånd, inte bevis på mejlleverans eller en
+skrivning av denna agent. Jakob äger fortsatt utskicken och F:s mottagaracceptans.
 
 **Personalinbjudningar, första leveransen 6 oktober:** samordnad fortsättning
 efter a72c4bf1; åtkomsttexten har därefter kompletterats enligt övertagandet ovan.
