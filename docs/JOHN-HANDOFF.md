@@ -72,6 +72,17 @@ skickar inga exempeloperatörsdata till den nya interna ingången.
 
 ## Nästa arbete och viktiga gränser
 
+**Personalinbjudningar, 6 oktober:** samordnad fortsättning efter a72c4bf1.
+Resend-adaptern skickar nu ScoutGamingGroup-mejl i text och HTML med
+aktiveringsknapp, e-postadress och giltighetstid. Formuläret anger intern
+adminpersonal, nivå 1, med åtkomst till hela nivå 1 och nivå 3 via samma konto
+och lösenord. Befintlig serverauktorisering, kontokollisionskontroll,
+transaktion och engångstoken används; spelarroller får ingen admintext eller
+ny behörighet. Ingen lösenordsändring görs för mottagarna. Riktade mail-,
+auth- och UI-tester samt Lab-typkontroll PASS. De begärda verkliga utskicken
+och mottagarnas aktivering/inkorg behöver eget leveransbevis enligt punkt F;
+lokala testkonton bevisar inte mottagarnas aktivering.
+
 Den enda arbetslistan är [CLOUD-MIGRATION](CLOUD-MIGRATION.md): T2–T4 för
 verklig partneranslutning/lobby, A–I för övrig användar- och driftacceptans.
 Pågående uppdrag är inte ett generellt mandat till nya migreringar eller betalda prov.

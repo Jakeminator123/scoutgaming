@@ -579,7 +579,7 @@ test('admin is the only Studio UI role; superadmin is a legacy alias and nonadmi
   }
   for (const role of ['admin','superadmin']) {
     const tree = h.StudioAdministrationView(viewProps(role,'accounts')),html=renderToStaticMarkup(tree);
-    assert.match(html,/Skapa spelarkonto|Bjud in Studio-administratör/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
+    assert.match(html,/Skapa spelarkonto|Bjud in adminpersonal – nivå 1/);assert.match(html,/Ditt eget konto: rollbyte och borttagning är spärrade/);
     assert.equal(buttons(tree,'Spara roll').length,1);assert.equal(buttons(tree,'Ta bort konto').length,1);
     assert.doesNotMatch(html,/<option[^>]*>(reader|staff|superadmin)<\/option>/);
     assert.match(html,/Administratör/);assert.match(html,/Spelare/);
@@ -595,8 +595,11 @@ test('account creation distinguishes game-only players from emailed Studio admin
   const playerHtml = renderToStaticMarkup(playerDisclosure), invitationHtml = renderToStaticMarkup(invitationDisclosure);
   assert.match(playerHtml, /<summary>Skapa spelarkonto<\/summary>/);
   assert.match(playerHtml, /ingen administratörsbehörighet eller Studioåtkomst/);
-  assert.match(invitationHtml, /<summary>Bjud in Studio-administratör<\/summary>/);
+  assert.match(invitationHtml, /<summary>Bjud in adminpersonal – nivå 1<\/summary>/);
   assert.match(invitationHtml, /e-postadress/); assert.match(invitationHtml, /aktiveras.*väljer lösenord via mejlet/);
+  assert.match(invitationHtml, /intern adminpersonal med behörighet till hela nivå 1 och nivå 3/);
+  assert.match(invitationHtml, /72 timmar/);
+  assert.match(renderToStaticMarkup(tree), /samma konto och lösenord på båda nivåerna/);
   assert.equal(nodes(invitationDisclosure, node => node.type === 'input' && node.props.name === 'email')[0].props.type, 'email');
   assert.equal(calls.length, 0);
   nodes(invitationDisclosure, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ email: 'new-admin@example.test', role: 'admin' }) });

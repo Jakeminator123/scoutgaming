@@ -242,6 +242,15 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   Verklig kontoinvitation, token/aktivering, återställning och mottagarens inkorg
   återstår; inga riktiga konton eller tokens ändrades i sandboxprovet. F förblir
   öppen. Privat kvitto: `lab/data/platform-private/resend-setup-20261006.json`.
+  Förtydligande 6 oktober: native Resend-mejl har nu både text och HTML med
+  avsändarnamnet ScoutGamingGroup, uttrycklig **intern adminpersonal, nivå 1**
+  och åtkomst till hela nivå 1 samt nivå 3 med samma konto/lösenord. Formuläret
+  i Administration → Konton säger samma sak. Engångslänkarna behåller 72 timmar
+  för aktivering och två timmar för återställning. Spelarroller får egna
+  mejltexter utan adminbehörighet; okända roller skickar inget mejl.
+  Riktade mail/auth/UI-tester och Lab-typkontroll PASS. De två begärda verkliga
+  personalinbjudningarna och mottagarnas aktivering/inkorg verifieras separat;
+  denna kodleverans markerar inte F komplett och ändrar inga lösenord.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
   workspace795524/source30689542 den 6 oktober: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade

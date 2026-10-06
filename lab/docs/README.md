@@ -101,7 +101,9 @@ och saldo flyttas eller återställs inte för provet.
 
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
 lösenord i spelet och Studio. Du väljer ingen kontotyp i inloggningen.
-**Admin** får använda spelet och hela Administration. **Spelare** får använda
+**Intern adminpersonal, nivå 1** får använda hela den interna adminytan
+(Kontrollpanel, Studio och Administration) och nivå 3 (spelarlobbyn och spelen).
+**Spelare, nivå 3** får använda
 spelet och nekas Studio/Administration. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
 
@@ -112,6 +114,15 @@ Gamla spelsessioner återkallas vid bytet; saldo och spelhistorik behålls.
 Stängda konton har inget lösenordsbyte. Administratörers invitationer,
 aktivering och återställningslänkar hanteras i samma Administration.
 Ett administratörskonto som också spelar använder sitt administratörslösenord.
+
+För att bjuda in intern personal: öppna **Administration → Konton →
+Användare och roller → Bjud in adminpersonal – nivå 1**. Ange e-postadressen
+och skicka inbjudan. Mejlet från **ScoutGamingGroup <no-reply@scoutgaming.tech>**
+anger behörighet till hela nivå 1 och nivå 3. Mottagaren väljer själv lösenord
+via en engångslänk som gäller i 72 timmar. Därefter används samma e-postadress
+och lösenord i administrationen och spelet. Återställningslänkar gäller i två
+timmar. Ett skickat mejl är inte bevis på att mottagaren har aktiverat kontot.
+Inbjudan gäller intern personal; separata spelbolagskonton hör till nivå 2.
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 [driftkartan](../../docs/CLOUD-MIGRATION.md).

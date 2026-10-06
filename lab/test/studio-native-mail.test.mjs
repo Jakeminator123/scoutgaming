@@ -4,7 +4,7 @@ import { createNativeStudioMail } from '../lib/studio-native-mail.mjs';
 
 const origin = 'https://studio-fixture.invalid';
 const env = { RESEND_API_KEY: 'synthetic-provider-key', CROUPIER_STUDIO_MAIL_FROM: 'studio@owned-fixture.invalid', CROUPIER_PUBLIC_ORIGIN: origin };
-const invitation = { to: 'own-test+studio@fixture.invalid', kind: 'invite', link: `${origin}/studio/set-password?t=${'a'.repeat(43)}` };
+const invitation = { to: 'own-test+studio@fixture.invalid', kind: 'invite', role: 'admin', link: `${origin}/studio/set-password?t=${'a'.repeat(43)}` };
 
 test('a key without an explicit mailbox never enables the old sender or any provider request', () => {
   let calls = 0;
@@ -27,18 +27,53 @@ test('invite and reset send exactly the configured server sender and owned token
     assert.equal(url, 'https://api.resend.com/emails'); assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error');
     assert.equal(init.headers.Authorization, `Bearer ${env.RESEND_API_KEY}`); assert.equal(init.signal.aborted, false);
     const body = JSON.parse(init.body);
-    assert.equal(body.from, `Croupier Studio <${env.CROUPIER_STUDIO_MAIL_FROM}>`);
-    assert.deepEqual(body.to, [invitation.to]); assert.ok(body.text.endsWith(invitation.link));
-    assert.match(body.text, /Croupier-konto/); assert.doesNotMatch(body.text, /Studio-konto/);
+    assert.equal(body.from, `ScoutGamingGroup <${env.CROUPIER_STUDIO_MAIL_FROM}>`);
+    assert.deepEqual(body.to, [invitation.to]); assert.ok(body.text.includes(invitation.link));
+    assert.match(body.subject, /adminpersonal, nivå 1/);
+    for (const content of [body.text, body.html]) {
+      assert.match(content, /intern adminpersonal/); assert.match(content, /hela nivå 1.*nivå 3/);
+      assert.match(content, /samma konto och lösenord på båda nivåerna/);
+      assert.ok(content.includes(invitation.to)); assert.ok(content.includes(origin + '/play'));
+      assert.ok(content.includes(origin + '/studio/login?returnTo=%2Fcontrol'));
+      assert.match(content, /kan användas en gång/); assert.match(content, /Lösenord skickas aldrig via e-post/);
+    }
+    assert.ok(body.html.includes(`href="${invitation.link}"`));
     assert.equal(JSON.stringify(body).includes(env.RESEND_API_KEY), false); assert.doesNotMatch(JSON.stringify(body), /axelio/);
   }
   assert.notEqual(JSON.parse(calls[0].init.body).subject, JSON.parse(calls[1].init.body).subject);
+  assert.match(JSON.parse(calls[0].init.body).text, /72 timmar/);
+  assert.match(JSON.parse(calls[0].init.body).html, /Aktivera kontot och välj lösenord/);
+  assert.match(JSON.parse(calls[1].init.body).text, /2 timmar/);
+  assert.match(JSON.parse(calls[1].init.body).html, /Välj nytt lösenord/);
+});
+
+test('mail uses stored account roles: legacy admin aliases get both levels; game-only accounts never claim admin access', async () => {
+  const calls = [];
+  const mail = createNativeStudioMail({ env, fetchImpl: async (_url, init) => { calls.push(JSON.parse(init.body)); return Response.json({}); } });
+  for (const role of ['superadmin','reader','staff','player']) for (const kind of ['invite','reset']) {
+    assert.deepEqual(await mail.send({ ...invitation, role, kind }), { sent: true });
+    const sent = calls.at(-1);
+    if (role === 'superadmin') assert.match(sent.subject, /adminpersonal, nivå 1/);
+    else {
+      assert.match(sent.subject, /spelare, nivå 3/);
+      assert.doesNotMatch(sent.subject + sent.text + sent.html, /adminpersonal|nivå 1|\/studio\/login/);
+      assert.ok(sent.text.includes(origin + '/player-login'));
+    }
+  }
+});
+
+test('HTML escapes mailbox characters while keeping the literal recipient in the provider envelope and text', async () => {
+  const to = "a&'b@fixture.invalid"; let sent;
+  const mail = createNativeStudioMail({ env, fetchImpl: async (_url, init) => { sent = JSON.parse(init.body); return Response.json({}); } });
+  assert.deepEqual(await mail.send({ ...invitation, to }), { sent: true });
+  assert.deepEqual(sent.to, [to]); assert.ok(sent.text.includes(to));
+  assert.ok(sent.html.includes('a&amp;&#39;b@fixture.invalid')); assert.equal(sent.html.includes(to), false);
 });
 
 test('foreign origins, duplicate tokens, malformed recipients and unsupported mail never reach provider', async () => {
   let calls = 0;
   const mail = createNativeStudioMail({ env, fetchImpl: async () => { ++calls; return Response.json({}); } });
-  for (const change of [{ kind: 'custom' }, { to: 'a@fixture.invalid,b@fixture.invalid' },
+  for (const change of [{ kind: 'custom' }, { role: undefined }, { role: 'unknown' }, { role: 'partner-admin' }, { to: 'a@fixture.invalid,b@fixture.invalid' },
     { to: 'own@fixture.invalid\nBcc: other@fixture.invalid' }, { link: 'https://foreign.invalid/studio/set-password?t=' + 'a'.repeat(43) },
     { link: invitation.link + '&t=' + 'b'.repeat(43) }, { link: invitation.link + '&extra=1' }, { link: invitation.link + '#fragment' },
     { link: `${origin}/other?t=${'a'.repeat(43)}` }, { link: `${origin}/studio/set-password?t=short` },
