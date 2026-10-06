@@ -35,7 +35,13 @@ rätt team; lokala designutkast syns i bordets förhandsvisning. Administratörs
 och 401 stänger visningen och tömmer gamla utkast. Detta är ett isolerat fixtureprov,
 inte ett riktigt partnerkonto eller godkännande av nya produktionsinloggningar.
 24 riktade integrations-/SSR-/isoleringstester samt båda produktionsbyggena passerar.
+Kodrevision `968ae40ae565494f22aab170298c91140e6dcdd5` klarade full pre-commit:
+1 597 PASS, nio befintliga skip, noll fel. Nya sidors sanerade byggmanifest
+innehåller nödvändig Studio-SQL men inga privata data eller `random/`-anteckningar.
 Privata bygg- och testloggar finns i `lab/data/platform-private/partner-preview-qa/`.
+GitHub-körning `37436893516` på föregående `184fe66b` stoppades före alla teststeg:
+samtliga tre jobb saknar steg och anger betalnings-/Actionsgräns. Det är en
+extern CI-täckningslucka, inte ett observerat testfel. Kontogränsen ändrades inte.
 GitGuardian före leverans: suite queued utan check-runs. Separat repoansluten
 läsning bekräftar 12 TRIGGERED och fem IGNORED; full incidenttäckning för källan,
 partiell fil-/radtäckning. Inga incidenter ändrades.
