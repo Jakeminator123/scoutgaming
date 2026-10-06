@@ -1,11 +1,67 @@
 # Croupier: aktuell källa, drift och leverans
 
-Uppdaterad 5 oktober 2026. Detta är den enda migrationschecklistan/masterplanen.
+Uppdaterad 6 oktober 2026. Detta är den enda migrationschecklistan/masterplanen.
 Upprepade historiska checkpoints är komprimerade, inte raderade ur Git:
 [full historik på `91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/CLOUD-MIGRATION.md).
 Privata kvitton, FAIL-historik, journaler och backups ligger kvar på befintliga platser.
 Källkod/publicerad runtime/acceptans har egna revisioner; senare SHA uppgraderar inte
 ett äldre prov automatiskt.
+
+## Tre åtkomstnivåer på scoutgaming.tech
+
+Jakob har godkänt överföringen av Kevins backoffice och följande indelning.
+Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar:
+
+| Nivå | Yta | Behörighet i målbilden |
+| --- | --- | --- |
+| 1 | `/control` | Intern administratör når samtliga nivåer och administrerar organisationer, rollprofiler och personal. |
+| 2 | `/partner` | Operatörens personal når egna bord, godkända presentationer, spelare, rapporter och eget delegerbart team. |
+| 3 | `/play` | Enkel spellobby med spelval, egen profil och historik. Blackjack får målvägen `/play/blackjack`. |
+
+Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
+Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
+personalåtkomst. Befintliga `/studio`, `/bo`, `/blackjack` och giltiga
+direktstarter ska fungera under övergången.
+
+- [x] **T1. Överförd och uppdelad intern förhandsvisning.** Redigerbar källa från
+  GitLab `codex/john-final-backoffice` på `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`
+  anpassas till befintlig React/Studio-runtime. Partnerdelen saknar Dealer archive,
+  Rooms legacy, Voice lines, Dealing clips, Game media, Action tree och Generations;
+  dessa nås endast genom den interna ytan. Delade vyer skiljer godkända val från
+  intern produktion. Samtliga 24 ursprungliga destinationer ska redovisas, med
+  fungerande navigation/direktlänkar och tydlig status för oanslutna funktioner.
+  Första etappen är enbart för befintligt inloggad intern admin med två isolerade
+  exempeloperatörer. Detta inför inte kundinloggning eller en livekundanslutning.
+  Verifierat lokalt 6 oktober: alla 24 vyer öppnade i webbläsare, rätt team efter
+  operatörsbyte/omladdning, lokala designutkast och stängning vid administratörsbyte
+  respektive återkallad session. 24 riktade integrationstester samt frontend- och
+  Studio-byggen passerar. Produktionsinloggning på de nya vägarna är separat acceptans.
+- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Behåll
+  dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
+  separat partner-session med färsk identitets-, roll-, auth-epoch- och
+  medlemskapskontroll. Inga automatiska reader/staff-uppgraderingar. Nivå 1
+  administrerar operatörer och personal; nivå 2 delegerar endast tillåtna roller
+  inom sin organisation. Isolerade tester ska bevisa aktivering, login, spärr,
+  återkallelse och nekade direkta anrop mellan två organisationer.
+  Detta behöver en separat granskad migration i Studio-schemat för organisationer,
+  rollprofiler, medlemskap, partner-sessioner och åtkomstjournal. Ändra inte den
+  checksumfrysta `product-schema.sql` eller tidigare migrationsledger. Nuvarande
+  native runtime kräver exakt migration 001–004; ny migrationsberedskap måste
+  bevara fungerande intern Studio tills den nya delen har tillämpats.
+- [ ] **T3. Anslut en operatörsfunktion i taget.** Koppla revisionerade
+  presentationer och egna bord, sedan rapporter, team och integrationer. Varje
+  funktion behöver organisationens ägarskap genom UI, API, lagring och export.
+  Render behåller kort, regler, plånbok och avräkning. Importera inte Kevins
+  SQLite-konton, gamla miljöfiler eller loopbackbrygga. En generell proxy till
+  globalt admin-API är inte kundisolering.
+- [ ] **T4. Spelarens lobby.** `/play` visar tillgängliga spel i verifierad
+  operatörskontext och ger endast spelarens egen profil/historik. Börja med
+  Blackjack; giltiga partnerstarter får öppna spelet direkt utan extra login.
+  Ändra inte spelaridentitet eller signerade launch-kontrakt genom namnbytet.
+
+Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
+bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
+Privata originalanteckningar i `random/` är inte del av produkt eller deployment.
 
 ## Öppen arbetschecklista: en sammanhängande Studio
 
@@ -122,16 +178,23 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   särskilja orsakerna. Ingen ny kodprovning utfördes. Kontoägaren behöver
   kontrollera Billing and usage; inga budget-/betalningsändringar eller blinda
   omprov görs. Funktionsbeviset på e49 och privata failurekvitton bevaras.
-- [ ] **F. Produktionsmail och användbar invite/reset.** Mailutredningen har
-  belagt tom produktionsnyckel, saknad avsändare och Resendkoppling endast till
-  QA. Nästa steg är giltig avgränsad sändnyckel för `scoutgaming.tech`, rätt
-  produktionskoppling och ett uttryckligt avgränsat prov med utsedd mottagare.
-  Jakob avsåg Gmailadressen som avsändare, inte mottagare. Resend kräver en
-  verifierad ägd domän; använd exempelvis `no-reply@scoutgaming.tech` efter
-  verifiering. Befintlig admin bjuder in ny admin; inget extra mejlgodkännande
-  av superadmin finns. Ingen ny provmottagare är utsedd.
-  Klart när faktisk produktionskonfiguration är återläst och provet fungerar
-  hela vägen. Historisk QA-invitation är inget nytt utskicksmandat.
+- [ ] **F. Produktionsmail och användbar invite/reset.** Samordnad Resend-leverans
+  6 oktober har återläst produktionsnyckel och `no-reply@scoutgaming.tech` i
+  `croupier-lab-ui`. Den befintliga nyckeln har avgränsad sending-access för den
+  verifierade domänen. READY-deployment `dpl_G7tZPZ5QAPTdppLhHuGgkpPWwnxh`
+  publicerar fryst `184fe66ba22acf63704f2a955f895b359e05027e` i `fra1` utan
+  partnerarbetets då lokala ändringar. Den verkliga native mail-adaptern fick
+  HTTP 200 och Delivered för både invite och reset till Resends sandbox
+  `delivered@resend.dev`. Login och set-password gav 200, utloggad session 401;
+  reset-formens action är `/studio/api/auth/reset-request`.
+  Den oanvända extra Marketplace-installationen är borttagen efter kontroll av
+  noll resurser/projekt/fakturor och noll env-referenser i 71 lästa projekt.
+  Fungerande Resend-konto, domän och QA-koppling är bevarade. Tidigare QA-401
+  vid domänlistning betydde restricted_api_key för sending-only, inte ogiltig nyckel.
+  Produktionskonfiguration och providertransport är därmed verifierade.
+  Verklig kontoinvitation, token/aktivering, återställning och mottagarens inkorg
+  återstår; inga riktiga konton eller tokens ändrades i sandboxprovet. F förblir
+  öppen. Privat kvitto: `lab/data/platform-private/resend-setup-20261006.json`.
 - [ ] **G. GitGuardian-fynd utredda och hanterade.** Senast återläst
   workspace795524/source30689542, 12:20UTC: 12 öppna och fem ignorerade,
   komplett incidentlista (1 incident-/17 locationsidor). Sex positionerade

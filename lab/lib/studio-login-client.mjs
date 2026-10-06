@@ -1,15 +1,20 @@
+import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+
 // Exact current document routes only: no prefixes, query strings or fragments.
 // Keep login and bearer-entry pages out of this list to avoid auth redirect loops.
 const returns = new Set(['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
 const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
 export function studioLoginReturnTo(value) {
-  return typeof value === 'string' && (returns.has(value) || handoff.test(value)) ? value : '/studio';
+  if (typeof value !== 'string') return '/studio';
+  if (returns.has(value) || handoff.test(value)) return value;
+  return resolveWorkspaceSurfacePath(value)?.publicPath || '/studio';
 }
 export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   const target = studioLoginReturnTo(value);
   if (authBase !== '/api/auth') return target;
   if (returns.has(target)) return target.slice('/studio'.length) || '/';
+  if (resolveWorkspaceSurfacePath(target)) return target;
   // Host-only authentication must not be forwarded to a different origin.
   return '/';
 }

@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {checkBuildTraces,privateBuildSource} from '../tools/check-build-traces.mjs';
 test('traced private credentials, local identities and QA state are forbidden on both path styles',()=>{
-  for(const path of ['/app/.env','C:\\app\\lab\\.env.local','/app/lab/data/platform-private/production-neon.json','/app/web/data/craig.db','/app/agent-talk/state.json']) assert.equal(privateBuildSource(path),true);
+  for(const path of ['/app/.env','C:\\app\\lab\\.env.local','/app/lab/data/platform-private/production-neon.json','/app/web/data/craig.db','/app/agent-talk/state.json','/app/random/private-notes.md','C:\\app\\random\\notes.txt']) assert.equal(privateBuildSource(path),true);
   for(const path of ['/app/ops/neon-game/product-schema.sql','/app/media/blob-index.json','/app/open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md']) assert.equal(privateBuildSource(path),false);
 });
 

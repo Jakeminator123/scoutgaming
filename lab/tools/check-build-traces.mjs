@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 export function privateBuildSource(path) {
   const normalized=path.replaceAll('\\','/');
   return /(?:^|\/)\.env[^/]*(?:\/|$)/.test(normalized)
-    || /(?:^|\/)(?:lab\/data|web\/data|open-claw\/lab\/(?:data|runtime)|agent-talk|\.croupier-inbox|\.codex|\.git)(?:\/|$)/.test(normalized)
+    || /(?:^|\/)(?:lab\/data|web\/data|open-claw\/lab\/(?:data|runtime)|agent-talk|random|\.croupier-inbox|\.codex|\.git)(?:\/|$)/.test(normalized)
     || /\.(?:db|sqlite|sqlite3)(?:-(?:wal|shm|journal))?$/.test(normalized);
 }
 export async function checkBuildTraces({directory=resolve(process.cwd(),process.env.CROUPIER_LAB_DIST_DIR||'.next'),sanitize=false}={}) {

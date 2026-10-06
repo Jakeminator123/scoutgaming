@@ -1,0 +1,66 @@
+{
+  "sourceCommit": "7dee0901c75b7470c16a178079d5a5ebe4f11b9f",
+  "sourceDirectory": "tools/bo-design/final",
+  "transferred": [
+    {
+      "file": "shell.jsx",
+      "sha256": "ef459cab5cd56964e03c1bed57b0b026a319fdc1b720a70d1e075cfb7f0ea1ec"
+    },
+    {
+      "file": "design.jsx",
+      "sha256": "aeb864916aa71382b764eb38228587d1323ddd4b0c8ee70790d5f6a6cd5a7d41"
+    },
+    {
+      "file": "v-live.jsx",
+      "sha256": "0487e63ca7ed0284f1c8006466b53fe2b29465b65000239d9bb67af0fd9c3c95"
+    },
+    {
+      "file": "v-player.jsx",
+      "sha256": "c7de6beec375f529948ff3ab895a765fa516c503081565b1aa20afe804a86a29"
+    },
+    {
+      "file": "v-money.jsx",
+      "sha256": "83fc61c9014b48ca261772b2f811d60de64ab3605ebd48d498312a466b64d14d"
+    },
+    {
+      "file": "v-reports.jsx",
+      "sha256": "0444de167b3a073f66af3224f8c5be6806f42352d1864de018a17c045dd47734"
+    },
+    {
+      "file": "v-settings.jsx",
+      "sha256": "a5e04ce7fd71a4f8963b9179d93cadcc146d6a7750d3fe79f70a418402d65ff5"
+    },
+    {
+      "file": "v-studio.jsx",
+      "sha256": "5bcd42ea974998d569d47ab972fda10bf8401538330fe57dc3729310f8b2d8b9"
+    },
+    {
+      "file": "theme.jsx",
+      "sha256": "416084a49ac6c800d1d4781a885dab8dd2d987647e30e0745b40f66c02cb8168"
+    },
+    {
+      "file": "v-dealers.jsx",
+      "sha256": "f330474cd1938fd3629625f0ded585926068de280d72c036b7b9fefef097728f"
+    },
+    {
+      "file": "v-games.jsx",
+      "sha256": "69021c52d97f9fa802790e4fcfcac0257727463ad91fcff93f7c58ea21186cdd"
+    },
+    {
+      "file": "ops-layouts.jsx",
+      "sha256": "d1e0ffe6b24c66b40ed1f35e881405dac1b4967648fc4cb905437bb6b1e984b5"
+    },
+    {
+      "file": "ops.jsx",
+      "sha256": "c13bf071f7a5134cfdfb0be0aecbdce3a5fd1ef99b1f27f55446be06b1fd35a8"
+    }
+  ],
+  "omitted": {
+    "bootstrap.jsx": "Replaced by instance-local runtime; no legacy API loader.",
+    "mount.jsx": "Replaced by native client component; no second React root.",
+    "astrid.jsx": "Legacy simulator/video player not imported; GitHub remains gameplay authority.",
+    "test.jsx": "Replaced by source ThFrame/TableSVG visual state preview; no imitation wallet or player session.",
+    "loader.mjs": "Replaced by authenticated fixture snapshot API.",
+    "export.mjs": "CSV preview only; PDF/XLSX provider dependencies not imported."
+  }
+}

@@ -1,5 +1,21 @@
 # Guide — en gemensam ingång
 
+**Tre nivåer på samma sajt.** Kontrollpanel (`/control`) är den interna
+personalens yta. Partnerportal (`/partner`) är grunden för operatörens egna bord,
+presentationer, team och spelare. Spelarytan ska få en enkel lobby på `/play`.
+Den nuvarande `/studio` och spelet på `/blackjack` finns kvar under övergången.
+
+Den första partnerportalen är märkt **Intern förhandsvisning** och kräver ditt
+befintliga administratörskonto. Demo North och Demo South innehåller exempeldata.
+Det går att granska Kevins menyer och prova design lokalt, men detta skapar inte
+kundkonton och ändrar inte spel, pengar eller personal. Utkast stannar i fliken
+och försvinner vid omladdning eller byte av exempeloperatör.
+Dealerproduktion, röst-/dealklipp, mediebibliotek, händelselogik, generering och
+äldre arkiv hör till nivå 1 och saknas i nivå 2:s meny. Internytan länkar vidare
+till befintliga arbetsverktyg. Riktig kundinloggning och kundavgränsad sparning
+följer separat efter den visuella överföringen; välj aldrig en global adminroll
+för kundpersonal som tillfällig lösning.
+
 **En arbetsyta: Croupier Studio.** I molnet öppnar du
 [`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder

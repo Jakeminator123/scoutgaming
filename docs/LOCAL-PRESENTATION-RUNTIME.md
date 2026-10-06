@@ -24,6 +24,27 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Lokal byggcache och runtime
 
+### Nya personalytor
+
+Överföringen av backoffice förbereder `/control` (intern personal) och `/partner`
+(operatörspersonal) på samma publika origin. Frontenden skriver om enbart
+godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner`.
+Befintliga Studio- och spelvägar behålls. API-anrop har inga allmänna nya alias.
+
+Den första implementerade servergränsen är en intern förhandsvisning:
+`/studio/api/partner-preview` tillåter enbart GET, gör native admin-auktorisering
+på varje anrop och lämnar uttryckliga fixtures för Demo North eller Demo South.
+Ingen global adminläsning eller produktionsdatabas används som reservdatakälla.
+SSR gör samma färska kontroll. Spelare och framtida partnerroller nekas denna
+förhandsvisning; en riktig partner-session införs separat enligt T2 i driftkartan.
+Kontrollpanelens länkar till befintliga interna verktyg behåller deras ordinarie
+auktorisering. Det gamla backofficets rolltabell i klienten styr inte åtkomst.
+
+Privata `random/` undantas uttryckligen från byggtraces, liksom lokal QA-data.
+Detta kompletterar mappens lokala Git-ignore och ändrar inga medieregister.
+
+### Byggutdata
+
 Next skriver byggutdata under respektive apps `.next` och disponibel byggcache
 under `.next/cache`. TypeScript kan skriva `tsconfig.tsbuildinfo`.
 Lab-regressionen använder byggd runtime; cache och runtime är olika saker.

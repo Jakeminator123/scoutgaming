@@ -25,6 +25,7 @@ run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardi
 run_node_tests test/backup-lissabon-state.mjs test/migrate-lab-state.mjs
 run_node_tests lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs
+run_node_tests lab/test/partner-preview.test.mjs lab/test/workspace-surfaces.test.mjs lab/test/workspace-surface-pages.test.mjs lab/components/kevin-bo/preview.test.mjs
 run_node_tests lab/test/studio-native-credentials.test.mjs lab/test/studio-admin-api.test.mjs lab/test/studio-native-auth.test.mjs lab/test/studio-admin-data.test.mjs lab/test/studio-admin-readouts.test.mjs lab/test/studio-voice-lines.test.mjs lab/test/studio-native-runtime.test.mjs lab/test/studio-native-mail.test.mjs lab/test/studio-native-request.test.mjs lab/test/next-page-navigation.test.mjs lab/components/studio-administration.test.mjs
 run_node_tests test/studio-repository.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs
 run_node_tests test/studio-game-policy.mjs test/studio-media-runtime.mjs test/studio-game-authority.mjs test/studio-game-commands.mjs test/studio-admin-accounts.mjs test/studio-native-auth-actions.mjs test/studio-cutover-integration.mjs test/studio-legacy-snapshot.mjs

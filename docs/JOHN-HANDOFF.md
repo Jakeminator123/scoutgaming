@@ -6,6 +6,53 @@ Detaljhistoriken finns oförändrad i Git-snapshot
 [`91d0c4d9edcf27bd4fd5c76524185fa92e0551b9`](https://github.com/Jakeminator123/github-work/blob/91d0c4d9edcf27bd4fd5c76524185fa92e0551b9/docs/JOHN-HANDOFF.md).
 Ingen ny arkiv-/rapportmapp skapas och privata kvitton flyttas inte.
 
+### Tre personal-/spelarytor och Kevins frontend — 6 oktober 2026
+
+Jakob har godkänt nivå 1 `/control`, nivå 2 `/partner` och nivå 3 `/play` på
+scoutgaming.tech. Nivå 1 är intern personal, nivå 2 operatörens egna team/spelare,
+nivå 3 spelarens egen lobby/profil. Detta arbete genomför första etappens
+överföring av backofficegränssnittet med intern admininloggning. Riktig separat
+partner-session, organisationsmedlemskap, teamadministration och lobby är fortsatt
+öppna i T2–T4 i den enda migrationschecklistan.
+
+Källan är GitLab-head `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`, branch
+`codex/john-final-backoffice`. ImpactPL:s identitet är inte bekräftad som Kevin.
+13 redigerbara JSX-delar, avgränsad CSS och 11 referensbilder är porterade till
+`lab/components/kevin-bo/`; originalets globala bootstrap/loader, extra React-root
+och egna backend följer inte med. Partnern har 17 destinationer; arkiv, äldre rum,
+röst-/dealklipp, media, Action tree och Generations är interna. Alla 24 ursprungliga
+destinationer representeras; interna verktyg länkar till befintliga Studio-funktioner.
+
+Preview-API och SSR återanvänder färsk native admin-auktorisering. Endast två
+separerade exempeloperatörer visas, inga riktiga spelare/saldon eller livefallbacks.
+GET är enda API-metoden. Klienten tömmer vy/utkast vid fel, operatörs- eller
+administratörsbyte och avvisar sena svar. Lokala designutkast ändrar inget i spelet.
+Ingen DB-migration, kontoändring, mediepublicering eller leverantörskoppling ingår.
+Routingen bevarar `/studio`, `/bo`, `/blackjack` och launch-kontrakten.
+Lokalt verifierat: alla 24 destinationer öppnade i webbläsare utan visningsfel,
+17 partnerdestinationer och sju interna. Operatörsbyte följt av omladdning behåller
+rätt team; lokala designutkast syns i bordets förhandsvisning. Administratörsbyte
+och 401 stänger visningen och tömmer gamla utkast. Detta är ett isolerat fixtureprov,
+inte ett riktigt partnerkonto eller godkännande av nya produktionsinloggningar.
+24 riktade integrations-/SSR-/isoleringstester samt båda produktionsbyggena passerar.
+Privata bygg- och testloggar finns i `lab/data/platform-private/partner-preview-qa/`.
+GitGuardian före leverans: suite queued utan check-runs. Separat repoansluten
+läsning bekräftar 12 TRIGGERED och fem IGNORED; full incidenttäckning för källan,
+partiell fil-/radtäckning. Inga incidenter ändrades.
+
+### Samordnad Resend-leverans — 6 oktober 2026
+
+Den parallella Resend-agenten har konfigurerat produktionsmail med befintlig
+domänbegränsad sändnyckel och `no-reply@scoutgaming.tech`. Fryst `184fe66b`
+är READY på `dpl_G7tZPZ5QAPTdppLhHuGgkpPWwnxh`, fortsatt `fra1`.
+Invite/reset genom verklig native mail-adapter är Delivered till Resends sandbox;
+login/set-password HTTP 200 och session utan login 401 är verifierade.
+Extra oanvänd Marketplace-installation är borttagen; fungerande konto/domän/QA
+är bevarade. Privat kvitto: `lab/data/platform-private/resend-setup-20261006.json`.
+Ingen riktig kontoinvitation, token/aktivering, återställning eller inkorg har
+provats i denna leverans. Checklistans F förblir därför öppen. Äldre notiser om
+tom produktionsnyckel och saknad avsändare nedan är historiska och nu ersatta.
+
 ### Studio-region och latenstest — 6 oktober 2026
 
 På Jakobs begäran är Studio/Backoffice-projektet `croupier-lab-ui` nu sparat
