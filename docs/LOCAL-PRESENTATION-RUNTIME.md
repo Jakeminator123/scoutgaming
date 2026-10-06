@@ -8,7 +8,11 @@ Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
 I molnet finns [spelet](https://www.scoutgaming.tech/blackjack) och
 [Backoffice/Lab](https://www.scoutgaming.tech/studio) på samma exakta origin.
-Vercel visar gränssnitten; Render äger auktoritativ spelmotor och live-transport.
+Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
+repo/main: `web` bygger `apps/croupier-frontend`, `studio` bygger `lab`.
+Båda kör i Frankfurt. `/control`, `/partner` och `/studio` går till Studio;
+övriga webbdokument går till web. Render äger auktoritativ spelmotor och
+live-transport via den bevarade exakta ingressgränsen.
 Produktion och isolerad native-QA har Studio/admin-API på Vercel och sparad
 policy/metadata/journaler i Neon, med separata scopes. Medier ligger i privat
 Blob. Produktionsimport och policybyte är genomförda; aktuell driftversion

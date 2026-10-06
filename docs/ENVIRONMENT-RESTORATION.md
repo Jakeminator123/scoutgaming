@@ -7,6 +7,26 @@ Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
+Vercelproduktion är nu `scoutgaming`, ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`:
+reporot, framework services, två webbappar, region fra1, Git-autobyggen aktiva.
+www och apex samt de gamla frontend-/Studio-aliasen tillhör samma projekt;
+apex och gammal frontend omdirigerar till www. Kod `cef3af5c` är verifierad
+på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`. Render behåller sin befintliga URL.
+
+Domänlös reserv `scoutgaming-legacy-frontend` har ID
+`prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s`; dess env/historik består, Git-byggen är
+avstängda med exit 0 och automatisk domäntilldelning är av. Vercel markerar den
+inte paused eftersom pause-anropet saknade aktiv produktionsdeployment.
+Återställning kräver uttryckligt avgränsad omkoppling: välj tidigare verifierad
+frontenddeployment, återställ dess domäntilldelning och flytta www/apex tillbaka
+från Scoutgaming-ID:t. Studio kan återgå till sitt tidigare lab/Next-projektläge
+och en kompatibel Studio-snapshot. Ta bort Unified/UI-flaggorna först när den
+tidigare separata Studio-konfigurationen återställs. Ursprungliga säkra
+projektinställningar/deployment-ID finns privat i
+`lab/data/platform-private/scoutgaming-project-before-services.json`.
+Återverifiera då dokument, API-spärrar och klientfiler på kanoniska domänen.
+Återställning får inte skriva över Neon/Blob/Resend, konton eller QA-data.
+
 Produktionens gemensamma Neon-policy, dataimport och diskfria drift är verifierade.
 Den tidigare produktdisken och tolv ersatta Blobobjekt är avvecklade. Aktuella
 versioner, paritetskvitton och kvarvarande acceptans finns i [JOHN-HANDOFF](JOHN-HANDOFF.md).

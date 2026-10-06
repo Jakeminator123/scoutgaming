@@ -14,7 +14,8 @@ repo-dokumentationen i samma leverans. Lagra aldrig värden här.
 
 Aktuell källa: `Jakeminator123/scoutgaming` på `main`; gamla `github-work`
 vidarebefordras av GitHub till samma repo-ID `1380630440`.
-Vercels frontend använder `apps/croupier-frontend` med UI-kontraktet nedan.
+Vercelprojektet `scoutgaming` bygger `apps/croupier-frontend` och `lab` som
+Services från reporoten. Båda använder samma projektmiljö och `fra1`.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
 Verifierad produktion 4 oktober: gemensam Neon-policy och native Studio är
@@ -27,7 +28,7 @@ Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/
 
 Studio-flikens modellinställningar använder den inloggade administratörens
 vanliga Studio-session. `OPENCLAWAPI_KEY` finns server-only i Vercel-projektet
-`croupier-lab-ui`, endast production, och måste motsvara Directors befintliga
+`scoutgaming`, endast production, och måste motsvara Directors befintliga
 Gateway-lösenord. Nyckeln får inte skickas till webbläsaren eller till spelets
 frontend. Det vanliga `LAB_API_TOKEN` ger ingen rätt att administrera Gateway.
 De avvecklade `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` behöver inte återaktiveras.
@@ -82,16 +83,18 @@ Vercel-spel/BO: `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`,
 flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
 policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
-Kandidat för ett gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
+Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb och Studio som Services. `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
 Render-origin måste fortfarande vara separat och ingressnyckeln stannar på
 servern. Studio behåller `/studio` som basePath och sin befintliga Neon/Blob/mail-
-konfiguration. Under Services-provet ligger publik trafik kvar på tidigare
-publicerade snapshots. Studio-projektets Git-autobyggen är tillfälligt pausade
-med ignored-build-kommandot `exit 0`; manuella frysta prov använder `exit 1`.
-De två nya flaggorna är production-scopade i samma projekt, utan nyckelkopior.
+konfiguration. De två nya flaggorna är production-scopade i samma projekt,
+utan nyckelkopior. Git-autobyggen är återaktiverade; rootDirectory och
+ignored-build-kommandot är null, framework är services. Det äldre Studio-
+aliaset bevaras även i native-konfigurationens exakta tillåtna origins.
+Det domänlösa reservprojektet scoutgaming-legacy-frontend har i stället
+ignored-build `exit 0` och automatisk domäntilldelning avstängd.
 
 Vercel-Lab UI: `CROUPIER_LAB_REMOTE_UI=1`, samma fyra origins/ingressnyckel,
 `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`
@@ -139,10 +142,12 @@ verkliga Studio-handlaren 2026-10-03; Resend bekräftar `delivered` och mejlet
 hittades i mottagarens Gmail-skräppost kl. 17:31 svensk tid. QA-testkontot och
 dess tokens städades bort efter provet,
 så mejlets länk är nu ogiltig. Ett separat verkligt resetmejl har inte skickats.
-Ingen betald plan eller produktionsaktivering har gjorts.
-Vid läsning 5 oktober är produktionsnyckeln tom och avsändaren saknas;
-QA-nyckeln gav HTTP401 vid Resends domänläsning. Tidigare leverans är inte ett
-aktuellt credentialsbevis. En giltig avsändaranslutning behöver bekräftas före aktivering.
+Den 6 oktober återlästes en icke-tom domänbegränsad produktionsnyckel och
+`CROUPIER_STUDIO_MAIL_FROM=no-reply@scoutgaming.tech` i samma Studio-projekt,
+nu scoutgaming. Native invite/reset-adaptern gav Delivered till Resends sandbox.
+Den tomma extra Marketplace-installationen är borttagen; fungerande delad
+Resend-koppling och QA bevaras. Free-planen är kvar. Ett riktigt produktionskontos
+invitation/aktivering/reset och mottagarinkorg är fortsatt oprövade (checklistans F).
 För driftkonfiguration används avsedda Render-/Vercel-värden. Lokala provider-
 nycklar kan tillhöra ett annat konto och får inte automatiskt ersätta dem.
 Native videoregistret kräver `CROUPIER_MEDIA_STORAGE=blob`,

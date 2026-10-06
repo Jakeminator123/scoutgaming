@@ -12,25 +12,39 @@ Jakob har uttryckligen godkänt GitHub-namnet `Jakeminator123/scoutgaming`.
 Namnbytet är utfört och båda API-adresser returnerar samma repo-ID `1380630440`;
 historik/main bevaras. Lokal origin och aktiv push-/säkerhetspolicy följer nya
 namnet. Återskapa inte `github-work`, eftersom det skulle bryta GitHubs redirect.
-Services-provet bygger båda apparna, men Vercel nekade Edge-runtime innan någon
-aliasflytt. Routing har därför ställts till stödd Node-runtime inför nästa prov.
 
-Node-kandidat `dpl_8pjzmu9mhGyjSSMfrGvf1rudZT1L` på `dadec1099` är READY,
-CI `37448284700` har tre success och fullhook PASS. Studio/login/set-password
-och oinloggade API-spärrar är verifierade via den befintliga Studio-adressen.
-Ett kort kanoniskt flyttprov hittade dock Services-404 på `/`, `/control` och
-`/partner`; www flyttades omedelbart tillbaka till tidigare frontendprojekt,
-och 200/307 återverifierades. GitHub-namnbytet är klart men gemensam publicering
-är ännu inte accepterad. Nästa kandidat skiljer Services route lookup från
-den URL Next läser genom ett avgränsat request.path-transformsteg.
+Scoutgaming-konsolideringen är publicerad och verifierad. Det tidigare
+Studio-projektets ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarat och heter
+nu `scoutgaming`. Rotens Services bygger `web` från `apps/croupier-frontend`
+och `studio` från `lab`; båda ligger i `fra1`. Befintlig Neon/Blob/Resend-
+konfiguration består. Render behåller spelmotor och live-auktoritet, och dess
+Gitkoppling visar den nya repo-adressen. Git-autobyggen är återaktiverade.
 
-Pågående Scoutgaming-konsolidering: Kevin-leveransen är överlämnad och filanspråk
-släppta. En avstängd Services-kandidat bygger de två befintliga webbdelarna i
-ett projekt; deras kod/versioner och Render-auktoritet behålls. Ny ingress i
-Lab återanvänder den exakta gamla transportgränsen. Tio routingtester samt
-Lab-typkontroll/bygge PASS lokalt. Inget providerbygge eller namnbyte är ännu
-accepterat. T2 kan arbeta separat i nya policyfiler; endast task-owned filer
-committas och Vercel byggs från fryst GitHub-SHA, aldrig en dirty checkout.
+Kod `cef3af5cfcb74e92a2d23633c9a2cfe832f879e9` är READY på
+`dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`, med fullhook PASS och tre successjobb i
+CI `37449742229`. Services kräver Node-middleware. De interna `/control`- och
+`/partner`-vägarna får både korrekt route lookup och explicit request.path;
+en separat rotregel bevarar `/`. Tidigare kandidat-404 ledde till omedelbar
+återställning före denna verifierade rättning.
+
+`www.scoutgaming.tech` och det äldre Studio-aliaset ligger nu på samma projekt.
+`scoutgaming.tech` och `croupier-frontend.vercel.app` ger 308 till www med
+bevarad undersökväg. 15 läsande HTTP-prov verifierar startsida/login 200,
+spelgenvägar och personaldokument 303/307 samt oinloggade Studio-API 401.
+Startsida/Studio har fungerande CSS, typsnitt och JavaScript (GET 200).
+Kevin-chatten har dessutom omladdat sin bevarade internsession och verifierat
+partnerns team/roller/operatörsbyte, kontrollpanelens menyer och färska native
+Backoffice-data utan klientfel. Inga konton, spel eller DB-skrivningar ingick.
+Privat HTTP-kvitto: `lab/data/platform-private/scoutgaming-final-services-read.json`.
+
+Det gamla frontend-ID:t `prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s` heter nu
+`scoutgaming-legacy-frontend`, saknar domäner och har Git-byggen avstängda
+(`exit 0`) samt automatisk domäntilldelning av. Vercels pause-API nekade med
+`invalid_deployment` eftersom aktiv produktionsdeployment saknas; projektet
+är inte markerat paused. Historik/env behålls för återställning; QA är orörd.
+GitGuardian följer samma repo-ID/source efter namnbytet: 12 TRIGGERED och fem
+IGNORED, full incidentlista för källan men partiell fil-/radtäckning. Inga
+incidenter ändrades; queued check-suites bevisar ingen incidentfrihet.
 
 Jakob har godkänt nivå 1 `/control`, nivå 2 `/partner` och nivå 3 `/play` på
 scoutgaming.tech. Nivå 1 är intern personal, nivå 2 operatörens egna team/spelare,
@@ -58,7 +72,8 @@ brandtest som fortfarande krävde namnet Croupier Studio, trots T1:s avsiktliga
 byte till Croupier Kontrollpanel. Förväntningen är rättad och testet ingår nu
 även i den lokala fullhooken. Detta ändrar ingen produktfunktion eller inloggning.
 Hela Lab-testsviten passerar lokalt efter rättningen: 895 PASS, två befintliga
-skip och noll fel. Nya GitHub-jobb måste fortfarande verifiera den levererade SHA:n.
+skip och noll fel. GitHub-jobben för `cb2673c6`, `e8d067ca`, `dadec1099` och
+`cef3af5c` har därefter verifierats med tre success per leverans.
 
 Källan är GitLab-head `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`, branch
 `codex/john-final-backoffice`. ImpactPL:s identitet är inte bekräftad som Kevin.
@@ -90,7 +105,7 @@ procentkodade `[[...path]]`-chunk. En snäv routingregel tillåter nu endast de 
 nya ytornas hashade JavaScript-filer; kodade API-/dokumentsökvägar nekas fortsatt.
 Åtta riktade routingtester och nytt frontendbygge passerar. Kod `5524b968`
 klarade fullhook med 1 598 PASS, nio befintliga skip och noll fel.
-Slutlig produktion är verifierad på samma kod: frontend
+T1:s dåvarande tvåprojektpublicering verifierades på samma kod: frontend
 `dpl_DL6SVjpuFY3DCyqnc2SzJP192rY4` och Studio
 `dpl_BhEmf6jcBXa8mwLu5cJNmY8ULL7u` är READY. Befintlig intern adminsession
 når `/control` och `/partner`, båda klientfilerna ger 200 och menyer fungerar.
@@ -135,12 +150,10 @@ Första overview har ännu cirka 2,04 s utanför de två Server-Timing-faserna;
 uppstart, proxy och fortsatt gruppnavigation behöver riktad mätning.
 Inget nytt lösenordsloginprov, spelprov eller skrivprov ingick.
 
-Vercelprojekten är två produktionsbyggen av samma GitHub-repo: frontend
-bygger `apps/croupier-frontend`, Studio bygger `lab`. De två native-QA-
-projekten är isolerade testfronter, inte extra produktionsrepon.
-`croupier-studio` är ett tydligare namnförslag för `croupier-lab-ui`;
-ingen namnändring, QA-radering eller konsolidering är genomförd.
-Frontend ligger kvar i `iad1`; endast Studio-regionen ingick i provet.
+Vid detta regionprov fanns två produktionsprojekt från samma repo: frontend
+i `iad1` och Studio i `fra1`. Den senare konsolideringen ovan ersätter detta
+läge med ett Scoutgaming-projekt och båda webbdelarna i `fra1`. Native-QA-
+projekten förblir isolerade testfronter, inte extra produktionsrepon.
 GitGuardian på ursprunglig main: suite queued, inga synliga check-runs.
 Repoansluten incidentläsning gav 13 TRIGGERED, full sourcetäckning men
 partiell file/line-täckning; dessa befintliga säkerhetsärenden kvarstår.

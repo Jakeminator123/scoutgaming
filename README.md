@@ -9,9 +9,11 @@ See [start and architecture](lab/README.md) and the [user guide](lab/docs/README
 The cloud entry is [Croupier on Vercel](https://www.scoutgaming.tech/).
 [The game](https://www.scoutgaming.tech/game) and
 [Croupier Studio](https://www.scoutgaming.tech/studio) share that origin.
-Render owns the authoritative game engine and live transport. Production still
-uses its Studio/BO persistence; the native Neon replacement is running in isolated
-QA and awaits full AI/GPU acceptance and a coordinated production switch.
+The single `scoutgaming` Vercel project builds the web and Studio apps as two
+Services from this repository's main branch, both in Frankfurt. Render owns the
+authoritative game engine and live transport; production Studio/admin uses native
+Neon policy and private Blob. Isolated QA remains separate. Full AI/GPU acceptance
+and actual partner login/player lobby remain open in the migration checklist.
 Existing BO tools keep their original permissions. Observation follows the game
 player's receipts; a separate Lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)

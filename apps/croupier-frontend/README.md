@@ -2,13 +2,15 @@
 
 ## Aktuell källa och drift
 
-Den här katalogen är Vercel-projektet `croupier-frontend` i
+Den här katalogen är service `web` i Vercel-projektet `scoutgaming`, från
 [Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming),
 branch `main`. [Startsida](https://www.scoutgaming.tech/),
 [spel](https://www.scoutgaming.tech/game) och
 [Croupier Studio](https://www.scoutgaming.tech/studio) har samma publika origin.
-Studio byggs i ett separat Vercel-projekt; Render äger auktoritativ spelmotor
-och live-transport. Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
+Studio byggs som service `studio` från `lab` i samma projekt/reporot; båda
+ligger i Frankfurt. Render äger auktoritativ spelmotor och live-transport.
+Det äldre frontendprojektet är en domänlös reserv med Git-byggen avstängda.
+Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
 [senaste verifierade leverans](../../docs/JOHN-HANDOFF.md) för produktion och QA.
 
 Med `CROUPIER_VERCEL_UI=1` använder frontend de incheckade route-/ingress-
@@ -20,10 +22,12 @@ behåller sina undersidor. Utan flaggan används de äldre Render-genvägarna oc
 blackjack-demon, dubbla CSS-filen och oanvända UI-/tema-/hookkomponenter är borttagna.
 Den aktiva Button-komponenten och landningssidans kortsymboler är kvar.
 
-Native Studio/Neon och nya speladresser provas i en separat QA-miljö.
-Produktion använder ännu äldre BO-/Studio-grenar tills full AI/GPU-acceptans
-och det samordnade källbytet är verifierade. `/blackjack` är idag spelarentré,
-`/game` spelet; målbilden är `/player-login` respektive `/blackjack`.
+Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
+är spelarentré, `/blackjack` spelet och `/game` ger 307 till `/blackjack`.
+`CROUPIER_VERCEL_UNIFIED_UI=1` styr den gemensamma Services-konfigurationen.
+Partnerportalens befintliga vyer använder intern admin och separerade fixtures;
+riktig partnerinloggning och spelarlobby återstår enligt T2–T4. Separata QA-
+miljöer bevaras för syntetiska prov; full AI/GPU-acceptans redovisas separat.
 
 ## Landningssidans uppspelning
 
