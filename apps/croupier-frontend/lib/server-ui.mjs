@@ -26,7 +26,9 @@ function legacyStudioLocation(url) {
 
 export async function platformUiDocument(request, {env = process.env, directory = resolve(process.cwd(), 'runtime-ui'), fetchImpl = fetch} = {}) {
   const config = platformConfiguration(env);
-  const url = new URL(request.url),path = url.pathname;
+  const url = new URL(request.url);
+  // The public address changes; the existing session/lane/media contract does not.
+  const path = config?.unifiedUi && url.pathname === '/play/blackjack' ? '/blackjack' : url.pathname;
   const legacy = legacyStudioLocation(url);
   const headers = {'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer'};
   if (legacy) {

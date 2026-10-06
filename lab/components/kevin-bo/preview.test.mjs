@@ -18,7 +18,7 @@ new Function('require','module','exports',transformed)(require,output,output.exp
 const {createOriginalViews}=output.exports;
 const scope={environment:'fixture',workspaceId:'croupier'};
 const fixture=readPartnerPreviewFixture(createPartnerPreviewContext({session:{role:'admin',user:'test',scope},scope,operatorId:'operator-demo-north',previewEnabled:true}),{now:()=>Date.UTC(2026,9,6)});
-const makeRuntime=(surface,snapshot=fixture)=>createPreviewRuntime(snapshot,{surface,user:'test',notify:()=>{},refresh:()=>{},assetUrl:()=>undefined,studioUrl:path=>'/studio'+(path==='/'?'':path)});
+const makeRuntime=(surface,snapshot=fixture,options={})=>createPreviewRuntime(snapshot,{surface,user:'test',notify:()=>{},refresh:()=>{},assetUrl:()=>undefined,studioUrl:path=>'/studio'+(path==='/'?'':path),...options});
 
 test('all 24 original destinations render as native React without a browser global',()=>{
   const runtime=makeRuntime('internal');
@@ -64,6 +64,19 @@ test('CSS is fenced inside the portal and source has no legacy loader or global 
   const postcss=require('postcss'),css=postcss.parse(await readFile(new URL('./original.css',import.meta.url),'utf8'));
   css.walkRules(rule=>{if(rule.parent.type==='atrule'&&/keyframes$/.test(rule.parent.name))return;for(const selector of postcss.list.comma(rule.selector))assert.ok(selector.startsWith('.kevin-bo'),selector);});
   assert.doesNotMatch(source,/window\.BO_|ReactDOM|createRoot\(|import\(|fetch\(|new WebSocket|new EventSource|localStorage/);
+});
+
+test('partner design choices remain usable locally and report their missing lane connection',()=>{
+  const notices=[],runtime=makeRuntime('partner',fixture,{notify:message=>notices.push(message)});
+  const themes={scout:{draft:{chipMode:'set',chipSet:'scout'}}};
+  runtime.designStore.write('themes',themes);
+  assert.deepEqual(runtime.designStore.read('themes'),themes);
+  assert.match(notices[0],/marker och kort.*saknar koppling till en publicerad lane/);
+  assert.match(notices[0],/bara i den lokala förhandsvisningen/);
+  runtime.designStore.write('tables',{scout:{draft:{felt:'#000000'}}});
+  assert.match(notices[1],/Bordsdesign saknar koppling/);
+  assert.deepEqual(fixture.presentations[0].status,'demo');
+  assert.deepEqual(makeRuntime('partner').designStore.read('themes'),{});
 });
 
 test('initial operations and transaction markup are stable across server and browser time zones',()=>{

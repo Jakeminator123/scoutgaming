@@ -1,5 +1,6 @@
 // A menu is presentation, never an authorization policy. Both surfaces currently
 // require the server's existing internal administrator session.
+import { WORKSPACE_VIEW_SLUGS } from '../../lib/workspace-surfaces.mjs';
 export const DESTINATIONS = Object.freeze([
   { id: 'ops', label: 'Casino live', group: 'Operations', owner: 'shared' },
   { id: 'players', label: 'Players', group: 'Operations', owner: 'partner' },
@@ -35,7 +36,8 @@ export function destinationsFor(surface) {
 export function normalizeView(value, surface) {
   const aliases = { overview: 'ops', presentation: 'theme', integration: 'api', transactions: 'tx', operations: 'ops', events: 'tree', users: 'team', apikeys: 'api', voicelines: 'voice', generations: 'gen' };
   const raw = typeof value === 'string' ? value.split('?')[0].replace(/^#/, '') : '';
-  const view = surface === 'partner' && raw === 'tables' ? 'bj' : aliases[raw] || raw;
+  const view = surface === 'partner' && raw === 'tables' ? 'bj' : aliases[raw]
+    || Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === raw) || raw;
   return destinationsFor(surface).some(item => item.id === view) ? view : null;
 }
 

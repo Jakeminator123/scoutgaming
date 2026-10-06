@@ -1,4 +1,4 @@
-# Gemensam presentationsruntime
+# Scoutgaming: nivåer, begrepp och presentationsruntime
 
 Arbetsrepo: `C:\Users\jakem\Projects\croupier`, branch `main`.
 Starta med [anslutningshelpern](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
@@ -6,8 +6,8 @@ Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
-I molnet finns [spelet](https://www.scoutgaming.tech/blackjack) och
-[Backoffice/Lab](https://www.scoutgaming.tech/studio) på samma exakta origin.
+I molnet finns [spelet](https://www.scoutgaming.tech/play/blackjack) och
+[Studio](https://www.scoutgaming.tech/studio) på samma exakta origin.
 Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
 repo/main: `web` bygger `apps/croupier-frontend`, `studio` bygger `lab`.
 Båda kör i Frankfurt. `/control`, `/partner` och `/studio` går till Studio;
@@ -26,14 +26,77 @@ Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
 [handoffen](JOHN-HANDOFF.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
+## Tre nivåer och gemensamma begrepp
+
+| Nivå | Adress | Ansvar och faktisk status |
+| --- | --- | --- |
+| 1 · Kontrollpanel | `/control` | Intern överblick. Produktionsverktygen finns under `/studio`: dealer/klipp, Administration och OpenClaw. Kräver intern admin. |
+| 2 · Partnerportal | `/partner/{operatorSlug}` | Begränsade val för operatörens tilldelade lanes och bord. Nu en intern, adminskyddad förhandsvisning med två exempeloperatörer; riktig partnerinloggning och publicering återstår. |
+| 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
+
+En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
+bakgrund och urvalsregler som spelaren får använda. En lane är varken ett
+spelarkonto, en videofil eller själva spelmotorn. Nuvarande sparade profiler
+och lane-ID:n behålls. Ett **operatörspaket** är målbilden för vilka lanes,
+spel/bord och varumärkesval en operatör tilldelas; ett sådant paket är ännu
+inte anslutet till Partnerportalens exempeldata.
+
+```mermaid
+flowchart LR
+  C["Nivå 1: Studio producerar och sparar lane"] --> L["Godkänd lane / presentationsprofil"]
+  G["Spelmotor på Render: kort, regler, saldo"] --> A["Presentationsadapter: spelsignal till behov"]
+  A --> D["Urval / Presentation Director"]
+  L --> D
+  D --> P["Uppspelningsplan: exakta klipp och ordning"]
+  P --> V["Spelare + kompositor: video och överlägg"]
+  V --> U["Nivå 3: spelarens spel"]
+  L -. "Tilldelning återstår" .-> O["Nivå 2: partnerns begränsade val"]
+```
+
+Diagrammets namn beskriver ansvar. Det inför inga nya tjänster eller påstår
+att ett nytt generellt planformat redan är installerat. I koden ligger mycket
+av urvalet i `presentation-runtime/selection.mjs`, befintliga adaptrar och
+Webs spelare. Spelmotorn bestämmer utfallet; presentationen visar det.
+Valfri OpenClaw-rådgivning får bara föreslå redan tillåtna klipp. Rådet måste
+valideras och skuggläge spelar inte förslaget. Studio-assistentens hjälp med
+inställningar och dealerns spelarchatt är skilda roller.
+
+**Gemensamma visningsnamn:** Händelsekategori (tidigare Eventgrupp),
+Klippuppsättning (tidigare Linje), Villkor (Trigger), Urvalsregler (Policy).
+Tekniska event-ID:n, schemafält och `line`-nycklar ändras inte av namnbytet.
+En presentationshändelse gäller det som ska visas; en administrativ händelse
+gäller exempelvis kontoåtkomst och hör inte till klippurvalet.
+Ordlistans källa är `lab/policies/studio-contract.json` och visas i Studio-guiden.
+
+### Adresser och begränsningar
+
+Menyn använder exempelvis `/control/speech`, `/partner/demo-north/presentation`,
+`/partner/demo-north/tables` och `/partner/demo-north/lanes`.
+Gamla kortformer och hashbokmärken läses som kompatibilitet och leder till
+den aktuella adressen; inga nya länkar skapas med `#theme` eller `#tx`.
+Den korta `/administration` går vidare till `/studio/administration`.
+`/studio` är fortfarande det riktiga interna produktionsverktyget, inte en
+uttjänt alternativ produkt. Gamla speladresser går vidare till
+`/play/blackjack` i det gemensamma molnprojektet. Lokal och äldre fristående
+runtime behåller sitt befintliga `/blackjack`-kontrakt.
+Signerad launch använder samma serverkontroll och game-session som tidigare;
+en giltig direktstart behöver inte gå via lobbyn.
+
+Nivå 2:s marker, kort, bord och bakgrund är **lokala designprov**. Valen kan
+visas i bordets förhandsvisning, men skickas inte till en publicerad lane eller
+spelet. Både en fast lane-notis och återkoppling vid designändring visar detta.
+Klipp, masker, urvalsregler och publicering hör till nivå 1. En framtida
+anslutning måste kontrollera operatör, tilldelad lane, sparad revision och
+tillåtna fält på servern; ett dolt menyval eller en slug är ingen behörighet.
+
 ## Lokal byggcache och runtime
 
 ### Nya personalytor
 
-Överföringen av backoffice förbereder `/control` (intern personal) och `/partner`
+Överföringen av backoffice använder `/control` (intern personal) och `/partner`
 (operatörspersonal) på samma publika origin. Frontenden skriver om enbart
 godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner`.
-Befintliga Studio- och spelvägar behålls. API-anrop har inga allmänna nya alias.
+Befintliga Studio-vägar och spelkontrakt behålls. API-anrop har inga allmänna nya alias.
 
 Den första implementerade servergränsen är en intern förhandsvisning:
 `/studio/api/partner-preview` tillåter enbart GET, gör native admin-auktorisering

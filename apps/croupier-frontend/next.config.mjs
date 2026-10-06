@@ -6,7 +6,7 @@ const nextConfig = {
   // Keep local Windows builds responsive while other apps and agents are running.
   ...(process.platform === 'win32' && !process.env.CI ? { experimental: { cpus: 4 } } : {}),
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
-  outputFileTracingIncludes: platform ? { '/game': ['./runtime-ui/game.html'], '/v2': ['./runtime-ui/game.html'], '/casino.html': ['./runtime-ui/casino.html'], '/blackjack': ['./runtime-ui/blackjack.html'], '/player-login': ['./runtime-ui/blackjack.html'] } : {},
+  outputFileTracingIncludes: platform ? { '/game': ['./runtime-ui/game.html'], '/v2': ['./runtime-ui/game.html'], '/casino.html': ['./runtime-ui/casino.html'], '/blackjack': ['./runtime-ui/blackjack.html'], '/play/blackjack': ['./runtime-ui/game.html'], '/player-login': ['./runtime-ui/blackjack.html'] } : {},
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -42,10 +42,11 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
         ],
       },
-      {source: '/:path((?!game|blackjack|v2).*)', headers: [{key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()'}]},
+      {source: '/:path((?!game|blackjack|v2|play/blackjack).*)', headers: [{key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()'}]},
       {source: '/game/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
       {source: '/v2/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
       {source: '/blackjack/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
+      {source: '/play/blackjack/:path*', headers: [{key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()'}]},
     ]
   },
 }

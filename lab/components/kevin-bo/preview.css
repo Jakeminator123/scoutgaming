@@ -9,6 +9,13 @@
 .kevin-bo .kevin-planned{color:#73746D;font-size:10px}
 .kevin-bo .kevin-session-state{max-width:640px;margin:0 auto;padding:80px 24px}
 .kevin-bo .kevin-session-state h1{font-size:24px}
+.kevin-bo .side-nav a.nav-i{text-decoration:none}
+.kevin-bo .kevin-lane-status{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px 18px;margin:18px 24px 0;padding:14px 16px;border:1px solid #D6DEDB;border-radius:8px;background:#F0F5F3;font-size:12px;line-height:1.5}
+.kevin-bo .kevin-lane-status>div{flex:1;min-width:240px}
+.kevin-bo .kevin-lane-status p{margin:4px 0 0;max-width:850px}
+.kevin-bo .kevin-lane-status>p{flex-basis:100%;color:#52635C}
+.kevin-bo .kevin-lane-status strong span{font-weight:400;color:#52635C}
+.kevin-bo .kevin-connection-label{padding:4px 8px;border-radius:4px;background:#FFF3D7;color:#62410B;white-space:nowrap}
 .kevin-bo .kevin-visual-preview{padding:24px;background:#E9E7E1;display:flex;justify-content:center}
 .kevin-bo .kevin-visual-preview .thf{width:370px;max-width:100%;pointer-events:none}
 .kevin-bo .kevin-visual-preview>svg{max-width:900px}

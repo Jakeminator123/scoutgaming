@@ -48,6 +48,19 @@ not the original global role editor.
   import the old simulator, wallet or dealer-video player. Static amounts and
   cards are visible design examples; production game authority remains unchanged.
 
+## Addresses and lane status
+
+Public links use /control and /partner/{operatorSlug}, with readable sections
+such as presentation, table-design, lanes and tables. Component IDs stay
+internal; old short paths and hash bookmarks resolve to the current address.
+Menu changes preserve mounted drafts; history back/forward is observed.
+Cross-operator history reloads through the existing server authorization gate.
+
+The partner design sections show an explicit missing-lane-connection notice.
+Chip/card/colour and table edits also notify that the change is preview-only.
+Local designs still feed the original table preview. No fake publish button,
+new lane assignment or unscoped admin API bridge has been introduced.
+
 ## Verification and remaining work
 
 Run from the repository root with the project's compatible Node:
