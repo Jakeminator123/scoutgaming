@@ -35,7 +35,9 @@ direktstarter ska fungera under övergången.
   Verifierat lokalt 6 oktober: alla 24 vyer öppnade i webbläsare, rätt team efter
   operatörsbyte/omladdning, lokala designutkast och stängning vid administratörsbyte
   respektive återkallad session. 24 riktade integrationstester samt frontend- och
-  Studio-byggen passerar. Produktionsinloggning på de nya vägarna är separat acceptans.
+  Studio-byggen passerar. Publicerad kod `5524b968` är provad med befintlig intern
+  adminsession: båda ytorna, menybyten, operatörsbyte och direktlänkar fungerar.
+  Oinloggade besök går till login; API ger 401. Riktig kundinloggning ligger i T2.
 - [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Behåll
   dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
   separat partner-session med färsk identitets-, roll-, auth-epoch- och

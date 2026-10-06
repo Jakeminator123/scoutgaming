@@ -43,8 +43,18 @@ Första publiceringen `8ff74882` klarade SSR och oinloggat skydd (307 till login
 preview-API 401), men webbläsarens klientstart avslöjade HTTP 400 för Nexts
 procentkodade `[[...path]]`-chunk. En snäv routingregel tillåter nu endast de två
 nya ytornas hashade JavaScript-filer; kodade API-/dokumentsökvägar nekas fortsatt.
-Åtta riktade routingtester passerar. Publicerad klientstart måste provas igen
-efter denna rättning; enbart SSR-svar är inte tillräcklig acceptans.
+Åtta riktade routingtester och nytt frontendbygge passerar. Kod `5524b968`
+klarade fullhook med 1 598 PASS, nio befintliga skip och noll fel.
+Slutlig produktion är verifierad på samma kod: frontend
+`dpl_DL6SVjpuFY3DCyqnc2SzJP192rY4` och Studio
+`dpl_BhEmf6jcBXa8mwLu5cJNmY8ULL7u` är READY. Befintlig intern adminsession
+når `/control` och `/partner`, båda klientfilerna ger 200 och menyer fungerar.
+Operatörsbyte gav rätt team och preview-GET 200; direktlänk och omladdning fungerade.
+Oinloggade dokument ger 307 till login med rätt returväg, preview-API 401 och
+login 200. Inget partnerkonto, lösenordsflöde, livekunddata eller spel ändrades.
+Privata `browser-live-proof.json`, `production-read-smoke.json` och `partner-live.jpg`
+under samma QA-mapp är slutkvitton. Sista Actions-körningen `37442400819` stoppades
+fortfarande före alla steg med samma betalnings-/förbrukningsgräns.
 GitHub-körning `37436893516` på föregående `184fe66b` stoppades före alla teststeg:
 samtliga tre jobb saknar steg och anger betalnings-/Actionsgräns. Det är en
 extern CI-täckningslucka, inte ett observerat testfel. Kontogränsen ändrades inte.
