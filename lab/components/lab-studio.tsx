@@ -13,6 +13,7 @@ import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
 import type { DealerId, MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs';
 import { DEALER_WORKSPACE_SECTIONS, workspaceLocation, supportsFamilyWorkspace, type DealerWorkspaceSection } from '../lib/dealer-workspace.mjs';
 import { requestJson, type VideoInventory } from './studio-types';
+import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './lab-studio.module.css';
 import {ProbeEditor} from './probe-editor';
 import {ProjectConflict} from './project-conflict';
@@ -53,6 +54,10 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
     window.addEventListener('beforeunload', guard);
     return () => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
+  useEffect(() => {
+    publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Osparade ändringar' : 'Sparat i Studio'}</span>);
+    return () => publishShellStatus(null);
+  }, [dirty]);
   function edit(change: (draft: StudioProject) => void) {
     setProject(current => { const draft = structuredClone(current); change(draft); return draft; }); setNotice('');
   }
@@ -87,6 +92,9 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
     setSelection(null); setView(next);
     window.location.hash = next;
   }
+  function selectDealer(id: DealerId) {
+    setDealerId(id); setSelection(null); setVariantId('');
+  }
   function updatePolicy(familyId: string, policy: MediaVariantPolicy) {
     edit(draft => {
       if (policy.frequencyPercent === undefined && !Object.values(policy.selection).some(Boolean)) {
@@ -106,15 +114,24 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
   const media = familyWorkspace && definition && event && mediaLineForEvent(project, videos, dealerId, definition.id, event, { includeManualVariants: true });
   const variant = media && (media.line.variants.find(item => item.id === variantId) ?? media.line.variants[0]);
   const video = definition && event && variant && mediaVideoForEvent(videos, dealerId, definition.id, event, variant.videoGenerationId);
+  const uploadAvailable = familyWorkspace && ['idle', 'deal', 'clips'].includes(view);
+  const saveButton = <button type="button" className="sg-btn sg-btn-secondary" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>;
   return <div className={styles.shell}>
-    <header className={styles.header}><div><span className="eyebrow">DEALER & KLIPP</span><h1>{dealerLabel}<span>Studio</span></h1></div>
-      <label className={styles.dealer}>Dealer<select aria-label="Dealer" value={dealerId} onChange={event => { setDealerId(event.target.value as DealerId); setSelection(null); setVariantId(''); }}>{project.dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
-      <div className={styles.save}><span>{dirty ? 'Osparade ändringar' : 'Sparat i Studio'}</span><button className="primary-button" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button></div>
-    </header>
+    <PageTemplate
+      eyebrow="// STUDIO"
+      title="Dealers & klipp"
+      intro="Välj dealer, sedan vad hen ska göra: vänta, dela kort, prata eller reagera."
+      status={<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Osparade ändringar' : 'Sparat i Studio'}</span>}
+      primary={uploadAvailable
+        ? <button type="button" className="sg-btn sg-btn-primary" onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button>
+        : <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>}
+    >
     <main className={styles.main}>
-      <div className={styles.toolbar}><nav className={styles.categories} aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" className={view === id ? styles.active : ''} aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
-        {familyWorkspace && ['idle', 'deal', 'clips'].includes(view) ? <button type="button" className="primary-button" onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button> : null}
+      <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}
+        <label className="sr-only">Dealer<select aria-label="Dealer" value={dealerId} onChange={event => selectDealer(event.target.value as DealerId)}>{project.dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
       </div>
+      <nav className="sg-tabs" aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
+      {uploadAvailable ? <div className={styles.save}>{saveButton}</div> : null}
       {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
@@ -132,5 +149,6 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
       {view === 'clips' && familyWorkspace ? <details className={styles.help}><summary>Förinspelade exakta talpar</summary><LegacyClipEditor project={project} dealerId={dealerId} section="clips" showLegacyReview={false} onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></details> : null}
       <details className={styles.help} open={observeOpen} onToggle={event => { const isOpen = event.currentTarget.open; setObserveOpen(isOpen); if (isOpen) setObservationDealerId(current => current ?? dealerId); }}><summary>Granska i spel · följ faktisk uppspelning</summary><p className={styles.intro}>Följ spelarens uppspelning och kvitton i den anslutna spelfliken. Registrerat eller valt betyder inte uppspelat.</p>{observationDealerId && observationDealerId !== dealerId ? <p role="status">Observerar {observationDealerLabel}; klippytan visar {dealerLabel}. Välj {observationDealerLabel} i dealer-väljaren för att öppna observerade klipp. Spelfliken påverkas inte av dealerbytet.</p> : null}{observationDealerId && connectedLane ? <ActivityLog focused entries={entries} onActivity={record} onClear={() => setEntries([])} full onOpen={() => setObserveOpen(true)} streamView={{ project, videos, originals: null, dealerId: observationDealerId, onOpenEvent: eventId => { if (observationDealerId !== dealerId) { setNotice(`Välj ${observationDealerLabel} för att öppna klippet från den observerade spelfliken.`); return; } open(eventId, ''); } }} /> : null}</details>
     </main>
+    </PageTemplate>
   </div>;
 }

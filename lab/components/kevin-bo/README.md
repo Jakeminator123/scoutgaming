@@ -31,6 +31,8 @@ The source design is pinned to GitLab commit
 verified as Kevin. `source-provenance.json` records each imported JSX file's
 SHA-256 and the runtime parts deliberately replaced.
 
+Medlemskap (`team`) has left the factory and renders from `views/team.jsx` for both the fixture preview and a real operator snapshot. Leave every other view in `original-views.jsx` until that view's own data is connected and the replacement is tested; delete only the factory functions that replacement covers.
+
 ## Preserved and separated
 
 Thirteen original JSX files provide the actual cards, SVG table editor,
@@ -103,9 +105,9 @@ application build and browser interaction verification.
 Resource ownership for each vertical, durable design storage, publication,
 account operations, media mapping and reports remain explicit integration
 work. Operator membership for the scoped snapshot is already enforced with
-`partner_session`. The imported UI remains one instance-bound factory to keep
-the original cross-view helpers intact; split it into feature modules when
-connecting each vertical slice rather than reinstating its global runtime.
+`partner_session`. Medlemskap renders from `views/team.jsx`. The other imported
+views stay in the factory so their cross-view helpers remain intact; split a
+view out only when its data is connected and the replacement is tested.
 
 To reproduce the pinned transfer after changing the adaptation rules:
 

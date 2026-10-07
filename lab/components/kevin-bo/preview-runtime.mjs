@@ -37,7 +37,7 @@ export function operatorPackageRevision(snapshot) {
   return value ? value.trim() : '';
 }
 
-export function createPreviewRuntime(snapshot, { surface, user, notify, refresh, assetUrl, studioUrl }) {
+export function createPreviewRuntime(snapshot, { surface, user, notify, refresh, assetUrl, studioUrl, teamView }) {
   validatePreviewSnapshot(snapshot);
   if (snapshot.preview === true && snapshot.viewer.user !== user) throw Error('Administratörskontot har ändrats. Ladda om och logga in igen.');
   if (snapshot.preview === false && snapshot.viewer?.user && snapshot.viewer.user !== user) throw Error('Operatörskontot har ändrats. Ladda om och logga in igen.');
@@ -72,6 +72,7 @@ export function createPreviewRuntime(snapshot, { surface, user, notify, refresh,
       if(surface==='partner')notify(`${kind==='themes'?'Färger, marker och kort':'Bordsdesign'} saknar koppling till en publicerad presentationslane. Ditt val visas bara i den lokala förhandsvisningen.`);
     },save:async()=>{notify('Sparat endast i denna lokala förhandsvisning. Inget publicerat.');},pending:()=>runtime.dirty},
     dirty:false,
+    teamView: typeof teamView === 'function' ? teamView : null,
   };
   return runtime;
 }

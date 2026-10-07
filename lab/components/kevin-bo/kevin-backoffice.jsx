@@ -4,6 +4,7 @@ import React from 'react';
 import { labUrl } from '../../lib/lab-url.mjs';
 import { assetUrl } from './assets.mjs';
 import { createOriginalViews } from './original-views.jsx';
+import { TeamView } from './views/team.jsx';
 import { createPreviewRuntime, operatorPackageRevision, sectionNotConnected, validatePreviewSnapshot } from './preview-runtime.mjs';
 import { destinationsFor, normalizeView, INTERNAL_LINKS } from './navigation.mjs';
 import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../lib/workspace-surfaces.mjs';
@@ -39,7 +40,7 @@ function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}
   const [message,setMessage]=React.useState(''),[error,setError]=React.useState(''),[loading,setLoading]=React.useState(false);
   const request=React.useRef(null),sequence=React.useRef(0),refreshRef=React.useRef(null),runtimeRef=React.useRef(null);
   const notify=React.useCallback(value=>setMessage(value),[]);
-  const runtime=React.useMemo(()=>snapshot?createPreviewRuntime(snapshot,{surface,user,notify,assetUrl,studioUrl:labUrl,refresh:()=>refreshRef.current?.()}):null,[snapshot,surface,user,notify]);
+  const runtime=React.useMemo(()=>snapshot?createPreviewRuntime(snapshot,{surface,user,notify,assetUrl,studioUrl:labUrl,refresh:()=>refreshRef.current?.(),teamView:TeamView}):null,[snapshot,surface,user,notify]);
   runtimeRef.current=runtime;
   const original=React.useMemo(()=>runtime?createOriginalViews(runtime):null,[runtime]);
   const navigation=destinationsFor(surface);
@@ -150,6 +151,10 @@ function DisconnectedSection({snapshot,view}) {
 function PreviewView({original,runtime,view,notify}) {
   const [tables,setTables]=React.useState(runtime.data.tables),[attention,setAttention]=React.useState([]);
   if(DISCONNECTED[view]&&sectionNotConnected(runtime.snapshot,dataSection(view)))return <DisconnectedSection snapshot={runtime.snapshot} view={view}/>;
+  if(view==='team'&&typeof runtime.teamView==='function'){
+    const Team=runtime.teamView;
+    return <Team snapshot={runtime.snapshot} runtime={runtime} surface={runtime.surface} toast={notify}/>;
+  }
   const View=original.views[view];
   if(!View)return <div className="page-b"><original.EmptyState title="Ytan hör inte till denna nivå" body="Välj en tillgänglig sida i menyn."/></div>;
   if(view==='api')return <><div className="kevin-internal-link">Integrationer, nyckelhantering, spelstarter och plånböcker är inte anslutna. Kontrollerna nedan visar den planerade ytan.</div><fieldset disabled className="kevin-disabled-surface"><View toast={notify} brand="scout" role={runtime.surface==='internal'?'superadmin':'admin'}/></fieldset></>;

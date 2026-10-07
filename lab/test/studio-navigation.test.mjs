@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { STUDIO_PRIMARY_NAVIGATION, STUDIO_TOOL_NAVIGATION, studioNavigationItem } from '../lib/studio-navigation.mjs';
+import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION } from '../lib/scout-navigation.mjs';
 import { normalizeView } from '../components/kevin-bo/navigation.mjs';
 
 const items = [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION];
@@ -97,13 +98,17 @@ test('internal menu keeps native Studio anchors and adds public control and part
       const tree = WorkspaceNavigation();
       visit(tree, node => { if (node.type === 'a') links.push(node.props); });
       const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/control', ...items.map(item => labUrl(item.href)), '/partner', '/play']);
+      assert.deepEqual(links.map(link => link.href), ['/control',
+        ...SCOUT_NAVIGATION.flatMap(group => group.items.map(item => labUrl(item.href))),
+        ...SCOUT_FOOTER_NAVIGATION.map(item => labUrl(item.href)),
+        ...SCOUT_LEVELS.map(item => labUrl(item.href))]);
       assert.ok(links.every(link => !link.onNavigate && !link.onClick));
       assert.equal(links.filter(link => link.href === labUrl('/control/administration')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
       assert.match(html, /Nivå 1 · ScoutGamingGroup/);
-      assert.match(html, /<details class="tools"><summary data-active="true">Verktyg/);
-      assert.match(html, /aria-current="page"[^>]*>Uppspelningsdiagnostik/);
+      assert.match(html, /CROUPIER STUDIO · AI LIVE CASINO/);
+      assert.doesNotMatch(html, /<details|<summary[^>]*>Verktyg/);
+      assert.match(html, /aria-current="page"[^>]*>Uppspelning/);
       assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
       assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
     }
@@ -153,7 +158,7 @@ test('control landing and imported views highlight the control entrance through 
       'next/navigation': { usePathname: () => path },
     });
     const html = renderToStaticMarkup(WorkspaceNavigation());
-    assert.match(html, /href="\/control" aria-current="page">Kontrollpanel/);
+    assert.match(html, /href="\/control"[^>]*aria-current="page"[^>]*>Översikt/);
     assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   }
 });

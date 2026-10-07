@@ -2713,61 +2713,11 @@ function AccessEditor({
   </div>;
     })}</div>;
 }
-function TeamInvite({
-  onClose,
-  onSend,
-  myRole
-}) {
-  const max = tmMine(myRole),
-    roles = ['reader', 'staff', 'admin'].filter(r => myRole === 'superadmin' || r !== 'admin' || true);
-  const [emails, setEmails] = React.useState(''),
-    [role, setRole] = React.useState('staff'),
-    [brands, setBrands] = React.useState('all'),
-    [acc, setAcc] = React.useState(() => tmClamp(tmPreset('staff'), max)),
-    [custom, setCustom] = React.useState(false);
-  const list = emails.split(/[\s,;]+/).filter(Boolean),
-    bad = list.filter(e => !/^\S+@\S+\.\S+$/.test(e));
-  const pickRole = r => {
-    setRole(r);
-    setAcc(tmClamp(tmPreset(r), max));
-  };
-  const clamped = !tmSame(tmClamp(tmPreset(role), max), tmPreset(role));
-  return <Modal open title="Invite people" onClose={onClose} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!list.length || bad.length > 0} onClick={() => onSend(list, role, brands, acc)}>Send {list.length > 1 ? list.length + ' invites' : 'invite'}</button></>}>
-    <div style={{
-      display: 'grid',
-      gap: 16
-    }}>
-      <div className="field"><label htmlFor="tm-e">Email addresses</label><textarea id="tm-e" className="input" style={{
-          height: 56,
-          padding: 10,
-          resize: 'vertical'
-        }} placeholder="name@company.com, another@company.com" value={emails} onChange={e => setEmails(e.target.value)}></textarea>{bad.length > 0 && <span className="row-issue is-error">Check: {bad.join(', ')}</span>}</div>
-      <div className="field"><label>Start from a role</label><div className="seg">{roles.map(r => <button key={r} className={role === r ? 'on' : ''} onClick={() => pickRole(r)}>{ROLE_N[r]}</button>)}</div><span className="muted" style={{
-          fontSize: 12.5
-        }}>{ROLE_D[role]}{clamped ? ' Limited to what you can do yourself.' : ''}</span></div>
-      <div className="field"><label>Brand access</label><div className="filters"><button className={'chip' + (brands === 'all' ? ' on' : '')} onClick={() => setBrands('all')}>All brands</button>{runtime.data.brands.map(b => {
-            const on = Array.isArray(brands) && brands.includes(b.id);
-            return <button key={b.id} className={'chip' + (on ? ' on' : '')} onClick={() => {
-              const cur = Array.isArray(brands) ? brands : [];
-              const nx = on ? cur.filter(x => x !== b.id) : [...cur, b.id];
-              setBrands(nx.length ? nx : 'all');
-            }}>{b.name}</button>;
-          })}</div></div>
-      <div className="field"><label style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>Pages they can use<button className="btn sm ghost" onClick={() => setCustom(!custom)}>{custom ? 'Hide' : 'Customise'}</button></label>
-        {custom ? <AccessEditor value={acc} onChange={setAcc} max={max} /> : <span className="muted" style={{
-          fontSize: 12.5
-        }}>{Object.values(acc).filter(v => v === 'edit').length} pages with edit, {Object.values(acc).filter(v => v === 'view').length} view only{!tmSame(acc, tmClamp(tmPreset(role), max)) ? ' · customised' : ''}.</span>}</div>
-    </div></Modal>;
-}
-function Team({
-  toast,
-  role: myRole = 'superadmin'
-}) {
-  return <ScopedTeamPreview />;
+// Team moved to views/team.jsx (7 okt 2026)
+function TeamViewRoute(props) {
+  const View = runtime.teamView;
+  if (typeof View !== 'function') return <ScopedTeamPreview />;
+  return <View snapshot={runtime.snapshot} runtime={runtime} surface={runtime.surface} toast={props.toast} brand={props.brand} role={props.role} />;
 }
 function LegacyTeamReference({
   toast,
@@ -2778,7 +2728,7 @@ function LegacyTeamReference({
       ...(TM_EXTRA[u.username] || {})
     }))),
     [tab, setTab] = React.useState('members'),
-    [inv, setInv] = React.useState(false),
+    [, setInv] = React.useState(false),
     [confirm, setConfirm] = React.useState(null),
     [q, setQ] = React.useState(''),
     [accFor, setAccFor] = React.useState(null),
@@ -2901,31 +2851,6 @@ function LegacyTeamReference({
         {tab === 'log' && <table className="tbl"><thead><tr><th>Time</th><th>Member</th><th>Action</th><th>Details</th></tr></thead><tbody>{TM_LOG.map((l, i) => <tr key={i}><td className="mono muted">{l[0]}</td><td>{l[1]}</td><td>{l[2]}</td><td className="muted">{l[3]}</td></tr>)}</tbody></table>}
       </section>
     </div>
-    {inv && <TeamInvite myRole={myRole} onClose={() => setInv(false)} onSend={async (list, r, b, acc) => {
-      try {
-        if (!tmSame(acc, tmPreset(r))) throw Error('Custom page permissions are not supported by the server. Select a standard role.');
-        if (b !== 'all') throw Error('Brand-restricted accounts require an operator tenancy connection.');
-        for (const email of list) {
-          const reply = await api('/api/bo/users/invite', {
-            email,
-            role: r
-          });
-          setUsers(us => [...us, {
-            username: email,
-            email,
-            role: r,
-            active: false,
-            since: new Date().toISOString(),
-            brands: 'all'
-          }]);
-          toast(reply.emailSent ? 'Invite sent to ' + email : 'Account created; email not sent: ' + reply.reason);
-        }
-        setInv(false);
-        setTab('invites');
-      } catch (e) {
-        notifyError(e);
-      }
-    }} />}
     {accFor && <Drawer open onClose={() => setAccFor(null)} width={620}>
       <div className="dr-h"><div><div className="muted" style={{
             fontSize: 12.5
@@ -5983,7 +5908,7 @@ function VisualTableTest({brand}) {
   const id=brand==='all'?'scout':brand, theme=thLoad()[id].draft,table=loadDesigns()[id].draft;
   return <><PageH title="Test a table" sub="Kevins visuella förhandsvisning av tema, kort och marker. Belopp och kort är statiska exempel. Inget spel, ingen wallet och ingen mediauppspelning startas."/><div className="page-b"><section className="panel"><div className="panel-h wrap"><div className="seg">{[['game','Game presentation'],['table','Table design']].map(([id,label])=><button key={id} className={preview===id?'on':''} onClick={()=>setPreview(id)}>{label}</button>)}</div><div className="seg">{[['bet','Betting'],['dec','Decision'],['ins','Insurance'],['set','Settled']].map(([id,label])=><button key={id} className={phase===id?'on':''} onClick={()=>setPhase(id)}>{label}</button>)}</div></div><div className="kevin-visual-preview">{preview==='game'?<ThFrame t={theme} st={phase}/>:<TableSVG d={table} uid="test-local" brandLabel={runtime.snapshot.operator.name}/>}</div><div className="note">Redigera Colours, chips & cards eller Table och återvänd hit för att se ditt lokala utkast.</div></section></div></>;
 }
-const views={ops:Ops,players:Players,tx:Transactions,pit:runtime.surface==='partner'?PartnerPitBosses:PitBosses,theme:BrandTheme,design:TableDesign,background:CasinoBackground,bj:props=><GamePage {...props} game="bj"/>,roulette:props=><GamePage {...props} game="roulette"/>,baccarat:props=><GamePage {...props} game="baccarat"/>,dealers:DealersHub,shoes:Shoes,test:VisualTableTest,stats:Statistics,reports:ReportsLib,team:Team,api:ApiKeys};
+const views={ops:Ops,players:Players,tx:Transactions,pit:runtime.surface==='partner'?PartnerPitBosses:PitBosses,theme:BrandTheme,design:TableDesign,background:CasinoBackground,bj:props=><GamePage {...props} game="bj"/>,roulette:props=><GamePage {...props} game="roulette"/>,baccarat:props=><GamePage {...props} game="baccarat"/>,dealers:DealersHub,shoes:Shoes,test:VisualTableTest,stats:Statistics,reports:ReportsLib,team:TeamViewRoute,api:ApiKeys};
 if(runtime.surface==='internal')Object.assign(views,{archive:DealerArchive,tables:TablesRooms,voice:VoiceLines,clips:DealingClips,media:GameMedia,tree:ActionTree,gen:Generations});
 return {views,Mark,Badge,EmptyState,Toast};
 

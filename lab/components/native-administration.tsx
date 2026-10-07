@@ -24,5 +24,5 @@ export function NativeAdministration({ apiBase, availableActions,gameOrigin }: {
   }
   return <main className={styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
     {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} readIdentity="response-headers-v1"
-      sessionAction={<button type="button" onClick={() => void logout()}>Logga ut</button>} />}</main>;
+      sessionAction={<button type="button" className="sg-btn sg-btn-ghost" onClick={() => void logout()}>Logga ut</button>} />}</main>;
 }

@@ -4,7 +4,7 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Nivå 1 /control | påbörjad — verktyg samlade, A–C öppna | Namn |
+| Nivå 1 /control | påbörjad — verktyg samlade, Johns skal och sidmall inne, A–C öppna | Design |
 | Nivå 2 /partner | påbörjad — session finns, speldata ej | Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
@@ -15,6 +15,33 @@ Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Design, 7 oktober 2026
+
+Johns designpaket (`Croupier-Studio-design`) är infört på nivå 1: sidomeny i fem
+grupper (`lab/lib/scout-navigation.mjs`), nivåväxlare, lime/ink-tokens i
+`lab/app/scout-theme.css`, ljust och mörkt läge (`theme-toggle.tsx`, sparas i
+`localStorage` som `sg-theme`), och en gemensam sidmall (`page-template.tsx`) på
+Dealers & klipp, Agentmodeller och Administration. Inloggningssidorna renderas
+utan meny. Bakgrundszoner och Händelser ligger under Studio. Administrationen har
+ett menyval tills sidan får flikar. Medlemskap i partnerportalen renderas från
+`kevin-bo/views/team.jsx`; verkligt läge är läsbart, utkast finns bara i
+förhandsvisningen. Testat: 919 labbtester gröna lokalt (två ffprobe-tester
+kräver ffmpeg och körs i CI), typecheck, build. Kvar: filterchips i klipplistan,
+dold `<select>` bakom dealerchipsen, sektionsankare i administrationen,
+"Spara alla" som riktig batch. Beslutsunderlag: `random/beslutsmatris-2026-10-07.md`.
+Jakobs regel 7 okt: repots logik är facit, John styr design, Kevins nivå 2
+anpassas till repot och inte tvärtom.
+
+## Konton, 7 oktober 2026
+
+Agentkontot `LLM` (roll `admin`, `croupier_auth.users` id 5) skapades på Jakobs
+begäran med samma villkor som hans dg97-konto, så att agenten kan granska `/control`
+inloggad. Lösenordet är Jakobs, inte i Git. Nivå 1-inbjudningar till Kevin
+(`kevin.negash@scoutgaminggroup.com`) och Emil (`emilmattsson@yahoo.se`) skickades
+via `POST /studio/api/admin/users/invite` med `emailSent: true`. GitHub-inbjudningar
+med skrivrätt: `EmaCodeHero`, Kevins och Johns e-post; grenarna `kevin`, `emil`,
+`john` finns, och `main` kräver PR för alla utom repo-admin.
 
 ## Namn, 7 oktober 2026
 
