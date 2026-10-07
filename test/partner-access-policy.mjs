@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PARTNER_PERMISSIONS, isPartnerPermission, allowsPartnerResource, allowsPartnerRoleAssignment,
+  PARTNER_PERMISSIONS, OPERATOR_ADMIN_PERMISSION, isOperatorAdmin, isPartnerPermission,
+  allowsPartnerResource, allowsPartnerRoleAssignment,
 } from '../web/partner-access-policy.mjs';
 import { effectiveAccountRole } from '../web/account-role.mjs';
 import { meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
@@ -174,4 +175,36 @@ test('policy evaluation does not modify the projections or exported permission c
   assert.deepEqual({ actor, target }, before);
   assert.equal(Object.isFrozen(PARTNER_PERMISSIONS), true);
   assert.throws(() => PARTNER_PERMISSIONS.push('users/role'), TypeError);
+});
+
+test('an operator admin is an active member whose role in that company can assign roles', () => {
+  const scope = () => ({ environment: 'qa', workspaceId: 'scoutgaming' });
+  const member = (overrides = {}) => ({
+    userId: 'staff-1', operatorId: 'operator-north', roleId: 'owner', status: 'active', scope: scope(), ...overrides,
+  });
+  const assigned = (overrides = {}) => ({
+    id: 'owner', operatorId: 'operator-north', permissions: [OPERATOR_ADMIN_PERMISSION], scope: scope(), ...overrides,
+  });
+  assert.equal(OPERATOR_ADMIN_PERMISSION, 'team.roles.assign');
+  assert.equal(PARTNER_PERMISSIONS.includes(OPERATOR_ADMIN_PERMISSION), true);
+  assert.equal(isOperatorAdmin(member(), assigned()), true);
+  assert.equal(isOperatorAdmin(member(), assigned({ permissions: [...PARTNER_PERMISSIONS] })), true);
+  for (const status of ['suspended', 'invited', 'revoked', '']) {
+    assert.equal(isOperatorAdmin(member({ status }), assigned()), false, status);
+  }
+  assert.equal(isOperatorAdmin(member(), assigned({ permissions: ['team.read', 'team.invite', 'team.suspend'] })), false);
+  assert.equal(isOperatorAdmin(member(), assigned({ permissions: ['overview.read'] })), false);
+  assert.equal(isOperatorAdmin(member(), assigned({ operatorId: 'operator-south' })), false);
+  assert.equal(isOperatorAdmin(member(), assigned({ id: 'chief' })), false);
+  assert.equal(isOperatorAdmin(member({ roleId: 'chief' }), assigned()), false);
+  const otherScope = member();
+  otherScope.scope.environment = 'other';
+  assert.equal(isOperatorAdmin(otherScope, assigned()), false);
+  for (const value of [null, undefined, {}, []]) {
+    assert.equal(isOperatorAdmin(value, assigned()), false);
+    assert.equal(isOperatorAdmin(member(), value), false);
+  }
+  const trap = {};
+  Object.defineProperty(trap, 'status', { get() { throw new Error('must not execute'); } });
+  assert.equal(isOperatorAdmin(trap, assigned()), false);
 });

@@ -14,24 +14,70 @@ const clock = () => 1_700_000_000_000;
 function memorySql() {
   const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [] };
   const calls = [];
+  const clients = [];
+  const trace = [];
+  const tails = new Map();
+  const depth = new Map();
+  const flags = { holdUntilWaiters: 0 };
+  let clientSeq = 0;
+  let rendezvousDone = false;
   const pgError = code => Object.assign(new Error('fixture'), { code });
   const copy = row => structuredClone(row);
-  const sql = async (text, values = []) => {
+  function restore(snapshot) {
+    for (const name of Object.keys(tables)) {
+      tables[name].length = 0;
+      tables[name].push(...snapshot[name]);
+    }
+  }
+  async function acquire(key) {
+    depth.set(key, (depth.get(key) ?? 0) + 1);
+    const previous = tails.get(key) ?? Promise.resolve();
+    let releaseGate;
+    const gate = new Promise(resolve => { releaseGate = resolve; });
+    tails.set(key, previous.then(() => gate, () => gate));
+    await previous;
+    try {
+      if (flags.holdUntilWaiters && !rendezvousDone) {
+        rendezvousDone = true;
+        const need = flags.holdUntilWaiters + 1;
+        const start = Date.now();
+        while ((depth.get(key) ?? 0) < need) {
+          if (Date.now() - start > 2000) throw new Error('lock rendezvous timed out');
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+      }
+    } catch (error) {
+      depth.set(key, (depth.get(key) ?? 1) - 1);
+      releaseGate();
+      throw error;
+    }
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      depth.set(key, (depth.get(key) ?? 1) - 1);
+      releaseGate();
+    };
+  }
+  async function dispatch(text, values = [], tx = null) {
     calls.push({ text, values: [...values] });
     const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
     if (!tag) throw new Error(`untagged query: ${text}`);
     const [environment, workspace] = values;
     const scoped = name => tables[name].filter(row => row.environment_id === environment && row.workspace_id === workspace);
+    const snapshot = () => { if (tx?.inTx && !tx.snapshot) tx.snapshot = structuredClone(tables); };
     if (tag === 'list-operators') return scoped('operators').sort((a, b) => a.slug.localeCompare(b.slug)).map(copy);
     if (tag === 'operator-by-slug') return scoped('operators').filter(row => row.slug === values[2]).map(copy);
     if (tag === 'operator-by-id') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
-    if (tag === 'list-roles') return scoped('operator_roles').filter(row => row.operator_id === values[2]).sort((a, b) => a.role_id.localeCompare(b.role_id)).map(copy);
+    if (tag === 'list-roles' || tag === 'guard-roles') return scoped('operator_roles').filter(row => row.operator_id === values[2]).sort((a, b) => a.role_id.localeCompare(b.role_id)).map(copy);
     if (tag === 'get-role') return scoped('operator_roles').filter(row => row.operator_id === values[2] && row.role_id === values[3]).map(copy);
     if (tag === 'get-membership') return scoped('operator_memberships').filter(row => row.operator_id === values[2] && row.user_id === values[3]).map(copy);
-    if (tag === 'list-memberships') return scoped('operator_memberships').filter(row => row.operator_id === values[2]).sort((a, b) => a.user_id.localeCompare(b.user_id)).map(copy);
+    if (tag === 'list-memberships' || tag === 'guard-memberships') return scoped('operator_memberships').filter(row => row.operator_id === values[2]).sort((a, b) => a.user_id.localeCompare(b.user_id)).map(copy);
     if (tag === 'current-package') return scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1).map(copy);
+    if (tag === 'lock-operator') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
     if (tag === 'create-operator') {
       if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
+      snapshot();
       const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], slug: values[3], name: values[4], status: values[5], created_at_ms: values[6] };
       tables.operators.push(row);
       return [copy(row)];
@@ -39,6 +85,7 @@ function memorySql() {
     if (tag === 'upsert-role') {
       if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
       let row = tables.operator_roles.find(item => item.environment_id === environment && item.workspace_id === workspace && item.operator_id === values[2] && item.role_id === values[3]);
+      snapshot();
       if (!row) {
         row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], role_id: values[3], label: values[4], permissions: values[5], delegable: values[6] };
         tables.operator_roles.push(row);
@@ -49,6 +96,7 @@ function memorySql() {
       if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
       if (!scoped('operator_roles').some(row => row.operator_id === values[2] && row.role_id === values[4])) throw pgError('23503');
       if (scoped('operator_memberships').some(row => row.operator_id === values[2] && row.user_id === values[3])) throw pgError('23505');
+      snapshot();
       const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], user_id: values[3], role_id: values[4], status: values[5], revision: 1, created_at_ms: values[6] };
       tables.operator_memberships.push(row);
       return [copy(row)];
@@ -57,6 +105,7 @@ function memorySql() {
       if (!scoped('operator_roles').some(row => row.operator_id === values[2] && row.role_id === values[5])) throw pgError('23503');
       const row = tables.operator_memberships.find(item => item.environment_id === environment && item.workspace_id === workspace && item.operator_id === values[2] && item.user_id === values[3] && item.revision === values[4]);
       if (!row) return [];
+      snapshot();
       row.role_id = values[5];
       row.status = values[6];
       row.revision += 1;
@@ -64,15 +113,64 @@ function memorySql() {
     }
     if (tag === 'publish-package') {
       if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
+      snapshot();
       const revision = scoped('operator_packages').filter(row => row.operator_id === values[2]).reduce((max, row) => Math.max(max, Number(row.package_revision)), 0) + 1;
       const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
       tables.operator_packages.push(row);
       return [copy(row)];
     }
     throw new Error(`unknown tag ${tag}`);
+  }
+  const sql = async (text, values) => dispatch(text, values, null);
+  sql.connect = async () => {
+    const client = { id: ++clientSeq, calls: [], inTx: false, snapshot: null, lockRelease: null, released: false };
+    const unlock = () => {
+      const release = client.lockRelease;
+      client.lockRelease = null;
+      release?.();
+    };
+    client.query = async (text, values = []) => {
+      client.calls.push({ text, values: [...values] });
+      const command = text.trim();
+      if (command === 'BEGIN') {
+        client.inTx = true;
+        client.snapshot = null;
+        return { rows: [], command: 'BEGIN' };
+      }
+      if (command.startsWith('SET LOCAL')) return { rows: [], command: 'SET' };
+      if (command === 'COMMIT' || command === 'ROLLBACK') {
+        if (command === 'ROLLBACK' && client.snapshot) restore(client.snapshot);
+        client.snapshot = null;
+        client.inTx = false;
+        unlock();
+        trace.push({ event: command === 'COMMIT' ? 'commit' : 'rollback', client: client.id });
+        return { rows: [], command };
+      }
+      const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
+      if (tag === 'lock-operator') {
+        const key = `${values[0]}\0${values[1]}\0${values[2]}`;
+        trace.push({ event: 'lock-wait', client: client.id, key });
+        client.lockRelease = await acquire(key);
+        trace.push({ event: 'lock-acquired', client: client.id, key });
+      }
+      return { rows: await dispatch(text, values, client) };
+    };
+    client.release = () => {
+      client.released = true;
+      unlock();
+    };
+    clients.push(client);
+    return client;
   };
   sql.calls = calls;
   sql.tables = tables;
+  sql.clients = clients;
+  sql.trace = trace;
+  Object.defineProperty(sql, 'holdUntilWaiters', {
+    enumerable: true,
+    get: () => flags.holdUntilWaiters,
+    set: value => { flags.holdUntilWaiters = value; },
+  });
   return sql;
 }
 
@@ -213,4 +311,245 @@ test('a row that claims another workspace is corrupt, and a missing role cannot 
   const getter = {};
   Object.defineProperty(getter, 'userId', { get() { throw new Error('must not execute'); } });
   await assert.rejects(real.resolvePartnerContext({ account: getter }), refusal('studio_invalid_data'));
+});
+
+const adminPermissions = ['overview.read', 'team.roles.assign'];
+const viewerPermissions = ['overview.read'];
+const lastAdmin = error => error instanceof StudioStorageError
+  && error.code === 'studio_last_operator_admin' && error.statusCode === 409;
+
+async function tenant(sql, { roles, members, operatorId = 'operator-unibet', slug = 'unibet' }) {
+  const store = await open(north, sql);
+  await store.createOperator({ operatorId, slug, name: 'Unibet', actor });
+  for (const role of roles) {
+    await store.upsertRole({
+      operatorId, roleId: role.id, label: role.label ?? role.id, permissions: role.permissions,
+      delegable: role.delegable ?? true, actor,
+    });
+  }
+  for (const member of members) {
+    await store.upsertMembership({
+      operatorId, userId: member.userId, roleId: member.roleId, status: member.status ?? 'active', actor,
+    });
+  }
+  return store;
+}
+
+function member(sql, userId) {
+  return sql.tables.operator_memberships.find(row => row.user_id === userId);
+}
+
+function roleRow(sql, roleId) {
+  return sql.tables.operator_roles.find(row => row.role_id === roleId);
+}
+
+function texts(client) {
+  return client.calls.map(call => call.text);
+}
+
+test('the last operator admin cannot be demoted, suspended or uninvited', async () => {
+  const sql = memorySql();
+  const store = await tenant(sql, {
+    roles: [
+      { id: 'owner', permissions: adminPermissions },
+      { id: 'viewer', permissions: viewerPermissions },
+    ],
+    members: [{ userId: 'admin-1', roleId: 'owner' }, { userId: 'guest', roleId: 'owner', status: 'suspended' }],
+  });
+  const before = structuredClone(sql.tables);
+  await assert.rejects(store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 1, actor,
+  }), lastAdmin);
+  assert.deepEqual(sql.tables, before);
+  const denied = sql.clients.at(-1);
+  const deniedText = texts(denied);
+  assert.equal(deniedText.some(text => text.includes('cas-membership')), false);
+  assert.ok(deniedText.some(text => text.trim() === 'ROLLBACK'));
+  assert.equal(deniedText.some(text => text.trim() === 'COMMIT'), false);
+  assert.equal(denied.released, true);
+  const lockAt = deniedText.findIndex(text => text.includes('lock-operator'));
+  const readAt = deniedText.findIndex(text => text.includes('guard-memberships'));
+  assert.ok(deniedText.findIndex(text => text.trim() === 'BEGIN') < lockAt);
+  assert.ok(lockAt < readAt);
+  assert.ok(readAt < deniedText.findIndex(text => text.trim() === 'ROLLBACK'));
+  assert.match(deniedText.find(text => text.includes('lock-operator')), /FOR UPDATE/);
+  assert.match(denied.calls[deniedText.findIndex(text => text.startsWith('SET LOCAL'))].text, /statement_timeout = '5000ms'/);
+  assert.match(denied.calls[deniedText.findIndex(text => text.startsWith('SET LOCAL'))].text, /lock_timeout = '3000ms'/);
+
+  await assert.rejects(store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'owner', status: 'suspended', expectedRevision: 1, actor,
+  }), lastAdmin);
+  await assert.rejects(store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'owner', status: 'invited', expectedRevision: 1, actor,
+  }), lastAdmin);
+  assert.equal(member(sql, 'admin-1').status, 'active');
+  assert.equal(member(sql, 'admin-1').role_id, 'owner');
+  assert.equal(member(sql, 'admin-1').revision, 1);
+  sql.tables.operator_memberships.find(row => row.user_id === 'admin-1').revision = '1';
+  await assert.rejects(store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 1, actor,
+  }), lastAdmin);
+  assert.equal(member(sql, 'admin-1').role_id, 'owner');
+});
+
+test('another active admin, a non-admin company, and a move between admin roles are allowed', async () => {
+  const sql = memorySql();
+  const store = await tenant(sql, {
+    roles: [
+      { id: 'owner', permissions: adminPermissions },
+      { id: 'chief', permissions: ['team.roles.assign', 'team.read'] },
+      { id: 'viewer', permissions: viewerPermissions },
+    ],
+    members: [
+      { userId: 'admin-1', roleId: 'owner' },
+      { userId: 'admin-2', roleId: 'chief' },
+    ],
+  });
+  const demoted = await store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 1, actor,
+  });
+  assert.equal(demoted.roleId, 'viewer');
+  assert.equal(demoted.revision, 2);
+  assert.equal(member(sql, 'admin-2').role_id, 'chief');
+  assert.equal(member(sql, 'admin-2').status, 'active');
+  const client = sql.clients.at(-1);
+  const order = texts(client);
+  const at = part => order.findIndex(text => text.includes(part));
+  assert.ok(at('BEGIN') < at('SET LOCAL') && at('SET LOCAL') < at('lock-operator'));
+  assert.ok(at('lock-operator') < at('guard-memberships') && at('guard-memberships') < at('guard-roles'));
+  assert.ok(at('guard-roles') < at('cas-membership') && at('cas-membership') < at('COMMIT'));
+  assert.equal(client.released, true);
+  assert.equal(sql.clients.filter(item => item.calls.some(call => call.text.includes('cas-membership'))).length, 1);
+
+  const swapped = await store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-2', roleId: 'owner', status: 'active', expectedRevision: 1, actor,
+  });
+  assert.equal(swapped.roleId, 'owner');
+  assert.equal(swapped.status, 'active');
+
+  const empty = memorySql();
+  const viewers = await tenant(empty, {
+    roles: [{ id: 'viewer', permissions: viewerPermissions }, { id: 'support', permissions: ['players.read'] }],
+    members: [{ userId: 'staff-9', roleId: 'viewer' }],
+  });
+  const edited = await viewers.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'staff-9', roleId: 'support', status: 'suspended', expectedRevision: 1, actor,
+  });
+  assert.equal(edited.roleId, 'support');
+  assert.equal(edited.status, 'suspended');
+});
+
+test('removing team.roles.assign from the only admin role is rejected and a second admin role is not', async () => {
+  const sql = memorySql();
+  const store = await tenant(sql, {
+    roles: [
+      { id: 'owner', permissions: adminPermissions },
+      { id: 'chief', permissions: ['team.roles.assign'] },
+    ],
+    members: [{ userId: 'admin-1', roleId: 'owner' }, { userId: 'admin-2', roleId: 'chief' }],
+  });
+  const renamed = await store.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'owner', label: 'Owner', permissions: ['overview.read', 'team.roles.assign'],
+    delegable: false, actor,
+  });
+  assert.equal(renamed.label, 'Owner');
+  assert.deepEqual(renamed.permissions, ['overview.read', 'team.roles.assign']);
+  assert.equal(roleRow(sql, 'owner').permissions, '["overview.read","team.roles.assign"]');
+  const opened = await store.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'chief', label: 'Chief', permissions: viewerPermissions, delegable: true, actor,
+  });
+  assert.deepEqual(opened.permissions, viewerPermissions);
+  const ownerBefore = roleRow(sql, 'owner').permissions;
+  await assert.rejects(store.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'owner', label: 'Owner', permissions: viewerPermissions, delegable: true, actor,
+  }), lastAdmin);
+  assert.equal(roleRow(sql, 'owner').permissions, ownerBefore);
+  assert.equal(texts(sql.clients.at(-1)).some(text => text.includes('upsert-role')), false);
+  assert.ok(texts(sql.clients.at(-1)).includes('ROLLBACK'));
+  const created = await store.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'night', label: 'Night', permissions: ['reports.read'], delegable: false, actor,
+  });
+  assert.equal(created.id, 'night');
+  assert.equal(roleRow(sql, 'night').permissions, '["reports.read"]');
+
+  const shared = memorySql();
+  const sharedStore = await tenant(shared, {
+    roles: [{ id: 'owner', permissions: ['team.roles.assign'] }],
+    members: [{ userId: 'admin-1', roleId: 'owner' }, { userId: 'admin-2', roleId: 'owner' }],
+  });
+  const sharedBefore = roleRow(shared, 'owner').permissions;
+  await assert.rejects(sharedStore.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'owner', label: 'Owner', permissions: viewerPermissions, delegable: true, actor,
+  }), lastAdmin);
+  assert.equal(roleRow(shared, 'owner').permissions, sharedBefore);
+  assert.equal(texts(shared.clients.at(-1)).some(text => text.includes('upsert-role')), false);
+});
+
+test('a stale admin revision is still a conflict, and writes without a transaction never skip the guard', async () => {
+  const sql = memorySql();
+  const store = await tenant(sql, {
+    roles: [{ id: 'owner', permissions: ['team.roles.assign'] }, { id: 'viewer', permissions: viewerPermissions }],
+    members: [{ userId: 'admin-1', roleId: 'owner' }],
+  });
+  await assert.rejects(store.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 4, actor,
+  }), refusal('studio_conflict'));
+  assert.equal(member(sql, 'admin-1').role_id, 'owner');
+  assert.equal(member(sql, 'admin-1').revision, 1);
+
+  const bare = (text, values) => sql(text, values);
+  const blocked = await createOperatorStore({ sql: bare, scope: north, now: clock });
+  const before = structuredClone(sql.tables);
+  const calls = sql.calls.length;
+  await assert.rejects(blocked.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 1, actor,
+  }), error => error instanceof StudioStorageError && error.code === 'studio_invalid_configuration' && error.statusCode === 503);
+  await assert.rejects(blocked.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'night', label: 'Night', permissions: ['reports.read'], delegable: false, actor,
+  }), error => error instanceof StudioStorageError && error.code === 'studio_invalid_configuration' && error.statusCode === 503);
+  assert.equal(sql.calls.length, calls);
+  assert.deepEqual(sql.tables, before);
+  const queryOnly = { async query(text, values) { return { rows: await sql(text, values) }; } };
+  const wrapped = await createOperatorStore({ sql: queryOnly, scope: north, now: clock });
+  assert.equal((await wrapped.listOperators()).length, 1);
+  await assert.rejects(wrapped.upsertRole({
+    operatorId: 'operator-unibet', roleId: 'owner', label: 'Owner', permissions: viewerPermissions, delegable: true, actor,
+  }), error => error instanceof StudioStorageError && error.code === 'studio_invalid_configuration' && error.statusCode === 503);
+  assert.equal(roleRow(sql, 'owner').permissions, '["team.roles.assign"]');
+  const created = await blocked.upsertMembership({
+    operatorId: 'operator-unibet', userId: 'staff-9', roleId: 'viewer', status: 'active', actor,
+  });
+  assert.equal(created.revision, 1);
+});
+
+test('two concurrent admin demotions serialize on the operator lock', async () => {
+  const sql = memorySql();
+  const store = await tenant(sql, {
+    roles: [
+      { id: 'owner', permissions: ['team.roles.assign'] },
+      { id: 'viewer', permissions: viewerPermissions },
+    ],
+    members: [{ userId: 'admin-1', roleId: 'owner' }, { userId: 'admin-2', roleId: 'owner' }],
+  });
+  const mark = sql.trace.length;
+  sql.holdUntilWaiters = 1;
+  const settled = await Promise.allSettled([
+    store.upsertMembership({ operatorId: 'operator-unibet', userId: 'admin-1', roleId: 'viewer', status: 'active', expectedRevision: 1, actor }),
+    store.upsertMembership({ operatorId: 'operator-unibet', userId: 'admin-2', roleId: 'viewer', status: 'active', expectedRevision: 1, actor }),
+  ]);
+  const ok = settled.filter(item => item.status === 'fulfilled');
+  const denied = settled.filter(item => item.status === 'rejected');
+  assert.equal(ok.length, 1);
+  assert.equal(denied.length, 1);
+  assert.equal(denied[0].reason.code, 'studio_last_operator_admin');
+  assert.equal(denied[0].reason.statusCode, 409);
+  const stillAdmin = sql.tables.operator_memberships.filter(row => row.role_id === 'owner' && row.status === 'active');
+  assert.equal(stillAdmin.length, 1);
+  const race = sql.trace.slice(mark);
+  const first = race.find(event => event.event === 'lock-acquired');
+  const firstCommit = race.findIndex(event => event.event === 'commit' && event.client === first.client);
+  const otherWait = race.findIndex(event => event.event === 'lock-wait' && event.client !== first.client);
+  const secondAcquire = race.findIndex(event => event.event === 'lock-acquired' && event.client !== first.client);
+  assert.ok(otherWait !== -1 && otherWait < firstCommit);
+  assert.ok(secondAcquire > firstCommit);
 });
