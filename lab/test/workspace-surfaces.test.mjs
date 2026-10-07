@@ -68,3 +68,18 @@ test('each allowed view has one readable address that reloads to the same view a
   assert.equal(resolveWorkspaceSurfacePath('/studio/partner/login'), null);
   assert.equal(workspaceSurfacePath('partner','gen','demo-south'),null);
 });
+
+test('disconnected control previews are unknown while partner previews and control redirects stay', () => {
+  for (const section of ['pit-bosses', 'presentation', 'table-design', 'roulette', 'baccarat', 'preview', 'statistics', 'reports', 'generations', 'pit', 'theme', 'design', 'test', 'stats', 'gen']) {
+    assert.equal(resolveWorkspaceSurfacePath('/control/' + section), null, section);
+  }
+  for (const section of ['roulette', 'baccarat', 'presentation', 'reports', 'statistics', 'preview', 'pit-bosses', 'table-design']) {
+    const route = resolveWorkspaceSurfacePath('/partner/demo-north/' + section);
+    assert.equal(route.surface, 'partner', section);
+  }
+  assert.equal(workspaceSurfacePath('control', 'roulette'), null);
+  assert.equal(workspaceSurfacePath('control', 'gen'), null);
+  assert.equal(workspaceSurfacePath('partner', 'roulette', 'demo-north'), '/partner/demo-north/roulette');
+  assert.equal(resolveWorkspaceSurfacePath('/control/backgrounds').view, 'background');
+  assert.equal(resolveWorkspaceSurfacePath('/control/overview').view, 'ops');
+});

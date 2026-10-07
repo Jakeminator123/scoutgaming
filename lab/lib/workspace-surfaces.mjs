@@ -4,8 +4,11 @@ export const PARTNER_PREVIEW_VIEWS = Object.freeze([
   'ops', 'players', 'tx', 'pit', 'theme', 'design', 'background', 'bj',
   'roulette', 'baccarat', 'dealers', 'shoes', 'test', 'stats', 'reports', 'team', 'api',
 ]);
+// Kevin preview slugs that only repeated the control overview. Partner keeps them.
+const controlDeadViews = new Set(['pit', 'theme', 'design', 'roulette', 'baccarat', 'test', 'stats', 'reports', 'gen']);
 export const CONTROL_PREVIEW_VIEWS = Object.freeze([
-  ...PARTNER_PREVIEW_VIEWS, 'archive', 'tables', 'voice', 'clips', 'media', 'tree', 'gen',
+  ...PARTNER_PREVIEW_VIEWS.filter(view => !controlDeadViews.has(view)),
+  'archive', 'tables', 'voice', 'clips', 'media', 'tree',
 ]);
 const aliases = Object.freeze({ overview: 'ops', presentation: 'theme', integration: 'api' });
 // studioPath stays the internal Lab rewrite. legacyPath is the public /control URL.

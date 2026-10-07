@@ -45,6 +45,13 @@ function nodes(node, predicate) {
   if (Array.isArray(node)) return node.flatMap(child => nodes(child, predicate));
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
+function pressDealer(tree, label) {
+  const chip = nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && [].concat(node.props.children).join('').includes(label))[0];
+  assert.ok(chip, label);
+  assert.equal(chip.props['aria-pressed'], false);
+  chip.props.onClick();
+  return chip;
+}
 const props = () => ({ initialProject: createSeedProject(), initialVideos: { videos: [] }, connectedLane: true });
 
 test('cloud idle refresh reads the shared registry even when imported media has an old archive label', async () => {
@@ -63,42 +70,44 @@ test('cloud idle refresh reads the shared registry even when imported media has 
   assert.equal(h.values[0],p.initialProject,'loading clips preserves the project draft');
 });
 
-test('focused workspace has one dealer selector, five categories and no duplicate OpenClaw navigation', () => {
+test('focused workspace uses dealer chips, three categories and links instead of a hidden dealer list', () => {
   const h = harness('./lab-studio.tsx'); const tree = h.render(props());
   const html = renderToStaticMarkup(tree);
-  assert.equal(nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer').length, 1);
+  assert.equal(nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer').length, 0);
+  const chips = nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip');
+  assert.equal(chips.length, 4);
+  assert.equal(chips.filter(node => node.props['aria-pressed'] === true).length, 1);
   const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.equal(nodes(nav, node => node.type === 'button').length, 5);
-  assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab/);
-  assert.equal(nodes(tree, node => node.props?.streamView).length, 0, 'no automatic observation');
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
+  assert.match(html, /href="\/control\/zones"/);
+  assert.match(html, /Öppna Bakgrundszoner →/);
+  assert.match(html, /href="\/control\/probe"/);
+  assert.match(html, /Öppna Talgranskning →/);
+  assert.match(html, /href="\/control\/activity"/);
+  assert.match(html, /Öppna Uppspelning →/);
+  assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
+  assert.equal(nodes(tree, node => node.props?.streamView).length, 0, 'playback log is a link, not an embed');
 });
 
-test('draft survives dealer/category changes; observation identity survives closing and mismatch', () => {
+test('draft survives dealer chip and category changes', () => {
   const h = harness('./lab-studio.tsx'); const p = props();
   let tree = h.render(p);
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
-  const observation = () => nodes(tree, node => node.type === 'details' && node.props.onToggle)[0];
-  observation().props.onToggle({ currentTarget: { open: true } }); tree = h.render(p);
-  let observer = nodes(tree, node => node.props?.streamView)[0];
-  assert.equal(observer.props.streamView.dealerId, 'astrid');
-  observation().props.onToggle({ currentTarget: { open: false } }); tree = h.render(p);
-  assert.equal(nodes(tree, node => node.props?.streamView)[0].type, observer.type, 'collapse keeps observer mounted');
-  nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer')[0].props.onChange({ target: { value: 'vera' } });
+  pressDealer(tree, 'Vera');
   tree = h.render(p);
   const categories = nodes(tree, node => node.type === 'nav')[0];
   nodes(categories, node => node.type === 'button')[1].props.onClick(); tree = h.render(p);
   assert.equal(h.values[0], draft);
+  assert.equal(h.values[4], 'deal');
   const legacy = nodes(tree, node => node.props?.section === 'deal')[0];
   assert.equal(legacy.props.dealerId, 'vera');
   assert.equal(nodes(tree, node => node.props?.inventory && !node.props?.section).length, 0, 'Astrid family tools not rendered for Vera');
-  observer = nodes(tree, node => node.props?.streamView)[0];
-  assert.equal(observer.props.streamView.dealerId, 'astrid');
-  assert.match(renderToStaticMarkup(tree), /Observerar Astrid; klippytan visar Vera/);
-  observer.props.streamView.onOpenEvent('speak.goodluck'); tree = h.render(p);
-  assert.match(renderToStaticMarkup(tree), /Välj Astrid för att öppna klippet/);
-  assert.equal(h.values[4], 'deal', 'mismatch does not open another dealer event');
-  observation().props.onToggle({ currentTarget: { open: true } }); tree = h.render(p);
-  assert.equal(nodes(tree, node => node.props?.streamView)[0].props.streamView.dealerId, 'astrid');
+  const html = renderToStaticMarkup(tree);
+  assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
+  assert.match(html, /href="\/control\/zones"/);
+  assert.match(html, /href="\/control\/activity"/);
+  assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
+  assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'V Vera');
 });
 
 test('controlled legacy editor lists only selected dealer exact speech and no second dealer selector', () => {
@@ -108,19 +117,19 @@ test('controlled legacy editor lists only selected dealer exact speech and no se
   assert.match(html, /vera exact text/); assert.doesNotMatch(html, /astrid exact text|<select/);
 });
 
-test('switching from Astrid Probe to another dealer shows that dealer idle tools and preserves the draft', () => {
+test('another dealer keeps idle tools and the draft without a probe tab', () => {
   const h = harness('./lab-studio.tsx'); const p = props();
   let tree = h.render(p);
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
-  nodes(tree, node => node.type === 'button' && node.props.children === 'Probe')[0].props.onClick();
-  tree = h.render(p);
-  nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer')[0].props.onChange({ target: { value: 'vera' } });
+  pressDealer(tree, 'Vera');
   tree = h.render(p);
   const nav = nodes(tree, node => node.type === 'nav')[0];
   assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
+  assert.equal(nodes(nav, node => node.type === 'button' && node.props.children === 'Probe').length, 0);
   assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Idle');
   assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
+  assert.match(renderToStaticMarkup(tree), /href="\/control\/probe"/);
   assert.equal(h.values[0], draft);
 });
 

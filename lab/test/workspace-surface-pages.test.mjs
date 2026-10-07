@@ -148,14 +148,15 @@ test('authorized SSR passes only the selected snapshot, view, operator and nativ
   }
 });
 
-test('control shows the real tool entrance without handing operator fixtures to the browser', async () => {
+test('control shows the overview and disconnected preview addresses are not found', async () => {
   const loaded = pages(async () => ({ snapshot: { privateFixture: true }, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin' } }));
-  for (const [path, view] of [[undefined, 'ops'], [['generations'], 'gen'], [['reports'], 'reports']]) {
-    const element = await renderPage(loaded.control, path);
-    assert.equal(element.type, loaded.ControlWorkspace);
-    assert.equal(element.props.user, 'fixture-admin');
-    assert.equal(element.props.initialView, view);
-    assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'user']);
+  const element = await renderPage(loaded.control, undefined);
+  assert.equal(element.type, loaded.ControlWorkspace);
+  assert.equal(element.props.user, 'fixture-admin');
+  assert.equal(element.props.initialView, 'ops');
+  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'user']);
+  for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['preview'], ['statistics']]) {
+    await assert.rejects(renderPage(loaded.control, path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
 });
 
@@ -189,7 +190,7 @@ test('old internal tool documents authorize then lead to the real tool with one 
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
   for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration'],
-    ['media', '/control/videos'], ['presentation-events', '/control/tree'], ['team', '/control/administration']]) {
+    ['media', '/control/videos'], ['presentation-events', '/control/tree'], ['team', '/control/administration'], ['backgrounds', '/control/zones']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);
@@ -197,7 +198,7 @@ test('old internal tool documents authorize then lead to the real tool with one 
       });
     }
   }
-  assert.equal(reads, 12);
+  assert.equal(reads, 14);
 });
 
 test('a partner cookie never authorizes control and a partner session skips the fixture preview', async () => {

@@ -1,21 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
 import { CONTROL_TOOLS, controlToolPath, legacyControlView } from '../lib/control-workspace.mjs';
-import { workspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import styles from './control-workspace.module.css';
 
-export function ControlWorkspace({ user, initialView = 'ops' }: { user: string; initialView?: string }) {
-  const [view, setView] = useState(initialView);
+export function ControlWorkspace({ user }: { user: string; initialView?: string }) {
   useEffect(() => {
     const navigate = () => {
       const next = legacyControlView(window.location.hash);
       if (!next) return;
       const tool = controlToolPath(next);
-      if (tool) { window.location.replace(labUrl(tool)); return; }
-      setView(next);
-      window.history.replaceState(window.history.state, '', workspaceSurfacePath('control', next));
+      if (tool) window.location.replace(labUrl(tool));
     };
     navigate();
     window.addEventListener('hashchange', navigate);
@@ -27,9 +23,6 @@ export function ControlWorkspace({ user, initialView = 'ops' }: { user: string; 
     <header className={styles.intro}><p className={styles.kicker}>// NIVÅ 1 · INTERN DRIFT</p><h1>Översikt</h1>
       <p>Vår gemensamma arbetsyta för lanes, klipp, konton och drift.</p><span className={styles.user}>Inloggad som {user}</span>
     </header>
-    {view !== 'ops' && <section className={styles.notice} role="status"><strong>Den tidigare exempelvyn är inte ansluten.</strong>
-      <p>Här finns de fungerande interna verktygen. Generering och operatörsrapportering är ännu inte anslutna som egna arbetsflöden. Spelbolagets design- och rapportvyer finns i förhandsvisningen av nivå 2.</p>
-    </section>}
     <section aria-label="Snabbval" className={styles.quick}><h2>Snabbval</h2>{CONTROL_TOOLS.map(tool => <div className={styles.quickItem} key={tool.href}>
       <a className={tool === primary ? 'sg-btn sg-btn-primary' : 'sg-btn sg-btn-secondary'} href={labUrl(tool.href)}><span>{tool.title}</span><span aria-hidden="true">→</span></a>
       <p>{tool.text}</p>
