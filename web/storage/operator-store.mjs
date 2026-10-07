@@ -10,7 +10,7 @@
 // parallel ledger. Writes still require a validated actor for the caller.
 // Branding is package data. It is not a permission boundary.
 import { isAdministratorRole } from '../account-role.mjs';
-import { PARTNER_PERMISSIONS, isPartnerPermission } from '../partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson, studioStorageFailure, validateActor, validateStudioScope,
 } from './studio-contract.mjs';
@@ -282,6 +282,85 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
       }),
     };
   }
+  // READ COMMITTED gives every statement a fresh snapshot, but a single
+  // statement's subqueries do not. Two demotions can both count the other
+  // admin and both commit (write skew) unless the check and the write share
+  // one connection: lock the operator, then read, then write.
+  async function withOperatorLock(work) {
+    if (typeof sql?.connect !== 'function') fail('studio_invalid_configuration', 503);
+    let client, begun = false;
+    try {
+      client = await sql.connect();
+      if (!client || typeof client.query !== 'function' || typeof client.release !== 'function') fail('studio_invalid_configuration', 503);
+      await client.query('BEGIN');
+      begun = true;
+      await client.query("SET LOCAL statement_timeout = '5000ms'; SET LOCAL lock_timeout = '3000ms'; SET LOCAL idle_in_transaction_session_timeout = '10000ms'");
+      async function txQuery(text, values = []) {
+        let result;
+        try { result = await client.query(text, [...parameters, ...values]); }
+        catch (error) { throw studioStorageFailure(error); }
+        if (Array.isArray(result)) return result;
+        if (result && Array.isArray(result.rows)) return result.rows;
+        fail('studio_storage_unavailable');
+      }
+      const result = await work(txQuery);
+      const committed = await client.query('COMMIT');
+      begun = false;
+      if (committed?.command === 'ROLLBACK') fail('studio_transaction_rolled_back', 503);
+      return result;
+    } catch (error) {
+      if (begun) try { await client.query('ROLLBACK'); } catch { /* Never expose the secondary database error. */ }
+      throw studioStorageFailure(error);
+    } finally {
+      try { client?.release?.(); } catch { /* Caller owns pool health. */ }
+    }
+  }
+  async function lockOperator(txQuery, operatorId) {
+    const rows = await txQuery(`/* operator-store:lock-operator */
+      SELECT environment_id, workspace_id, operator_id
+      FROM croupier_studio.operators
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+      FOR UPDATE`, [operatorId]);
+    if (rows.length > 1) fail('studio_corrupt_operator');
+    return rows[0] ?? null;
+  }
+  async function guardRoles(txQuery, operatorId) {
+    return txQuery(`/* operator-store:guard-roles */
+      SELECT environment_id, workspace_id, operator_id, role_id, label, permissions, delegable
+      FROM croupier_studio.operator_roles
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+      ORDER BY role_id`, [operatorId]);
+  }
+  async function guardMemberships(txQuery, operatorId) {
+    return txQuery(`/* operator-store:guard-memberships */
+      SELECT environment_id, workspace_id, operator_id, user_id, role_id, status, revision, created_at_ms
+      FROM croupier_studio.operator_memberships
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+      ORDER BY user_id`, [operatorId]);
+  }
+  function countActiveAdmins(membershipRows, roleRows) {
+    const roles = new Map();
+    for (const row of roleRows) {
+      const parsed = role(row);
+      if (roles.has(parsed.id)) fail('studio_corrupt_operator');
+      roles.set(parsed.id, parsed);
+    }
+    const seen = new Set();
+    let count = 0;
+    for (const row of membershipRows) {
+      const member = membership(row);
+      if (seen.has(member.userId)) fail('studio_corrupt_operator');
+      seen.add(member.userId);
+      const assigned = roles.get(member.roleId);
+      if (assigned && isOperatorAdmin(member, assigned)) count += 1;
+    }
+    return count;
+  }
+  function rejectIfRemovesLastAdmin(beforeMemberships, beforeRoles, afterMemberships, afterRoles) {
+    const before = countActiveAdmins(beforeMemberships, beforeRoles);
+    const after = countActiveAdmins(afterMemberships, afterRoles);
+    if (before >= 1 && after === 0) fail('studio_last_operator_admin', 409);
+  }
   async function createOperator(input = {}) {
     actorOf(input);
     const operatorId = idText(ownValue(input, 'operatorId'));
@@ -305,16 +384,27 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
     const permissions = canonicalPermissions(ownValue(input, 'permissions'));
     const delegable = ownValue(input, 'delegable');
     if (delegable !== true && delegable !== false) fail('studio_invalid_data', 422);
-    const row = (await query(`/* operator-store:upsert-role */
-      INSERT INTO croupier_studio.operator_roles
-        (environment_id, workspace_id, operator_id, role_id, label, permissions, delegable)
-      VALUES ($1,$2,$3,$4,$5,$6,$7)
-      ON CONFLICT (environment_id, workspace_id, operator_id, role_id)
-      DO UPDATE SET label=EXCLUDED.label, permissions=EXCLUDED.permissions, delegable=EXCLUDED.delegable
-      RETURNING environment_id, workspace_id, operator_id, role_id, label, permissions, delegable`,
-    [operatorId, roleId, label, permissions, delegable]))[0];
-    if (!row) fail('studio_storage_unavailable');
-    return role(row);
+    return withOperatorLock(async txQuery => {
+      await lockOperator(txQuery, operatorId);
+      const roles = await guardRoles(txQuery, operatorId);
+      const existing = roles.find(row => row.role_id === roleId);
+      if (existing) {
+        const memberships = await guardMemberships(txQuery, operatorId);
+        const nextRoles = roles.map(row => row === existing
+          ? { ...row, label, permissions, delegable } : row);
+        rejectIfRemovesLastAdmin(memberships, roles, memberships, nextRoles);
+      }
+      const row = (await txQuery(`/* operator-store:upsert-role */
+        INSERT INTO croupier_studio.operator_roles
+          (environment_id, workspace_id, operator_id, role_id, label, permissions, delegable)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT (environment_id, workspace_id, operator_id, role_id)
+        DO UPDATE SET label=EXCLUDED.label, permissions=EXCLUDED.permissions, delegable=EXCLUDED.delegable
+        RETURNING environment_id, workspace_id, operator_id, role_id, label, permissions, delegable`,
+      [operatorId, roleId, label, permissions, delegable]))[0];
+      if (!row) fail('studio_storage_unavailable');
+      return role(row);
+    });
   }
   async function upsertMembership(input = {}) {
     actorOf(input);
@@ -336,16 +426,29 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
       return saved;
     }
     const revision = integer(expected, 1, 'studio_invalid_data', 422);
-    const row = (await query(`/* operator-store:cas-membership */
-      UPDATE croupier_studio.operator_memberships
-      SET role_id=$6, status=$7, revision=revision+1
-      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND user_id=$4 AND revision=$5
-      RETURNING environment_id, workspace_id, operator_id, user_id, role_id, status, revision, created_at_ms`,
-    [operatorId, userId, revision, roleId, status]))[0];
-    if (!row) fail('studio_conflict', 409);
-    const saved = membership(row);
-    if (saved.revision !== revision + 1) fail('studio_corrupt_operator');
-    return saved;
+    return withOperatorLock(async txQuery => {
+      await lockOperator(txQuery, operatorId);
+      const memberships = await guardMemberships(txQuery, operatorId);
+      const roles = await guardRoles(txQuery, operatorId);
+      const current = memberships.find(row => row.user_id === userId
+        && integer(row.revision, 1, 'studio_corrupt_operator', 503) === revision);
+      const nextRole = roles.find(row => row.role_id === roleId);
+      if (current && nextRole) {
+        const nextMemberships = memberships.map(row => row === current
+          ? { ...row, role_id: roleId, status } : row);
+        rejectIfRemovesLastAdmin(memberships, roles, nextMemberships, roles);
+      }
+      const row = (await txQuery(`/* operator-store:cas-membership */
+        UPDATE croupier_studio.operator_memberships
+        SET role_id=$6, status=$7, revision=revision+1
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND user_id=$4 AND revision=$5
+        RETURNING environment_id, workspace_id, operator_id, user_id, role_id, status, revision, created_at_ms`,
+      [operatorId, userId, revision, roleId, status]))[0];
+      if (!row) fail('studio_conflict', 409);
+      const saved = membership(row);
+      if (saved.revision !== revision + 1) fail('studio_corrupt_operator');
+      return saved;
+    });
   }
   async function publishPackage(input = {}) {
     actorOf(input);

@@ -2,7 +2,9 @@
 // These are permission floors, not authentication. Inputs must be fresh,
 // server-owned projections read in the same transaction as a protected write.
 // The caller must also verify session identity/stamp/epoch, membership revision,
-// Origin/CSRF, input, last-administrator protection, CAS and audit requirements.
+// Origin/CSRF, input, CAS and audit requirements.
+// The store rejects a membership or role change that would remove the last
+// operator administrator (an active member whose role includes team.roles.assign).
 // Resource ownership must come from storage, never a request's operator slug.
 // Existing internal Studio policy and player/game authority remain separate.
 import { validateStudioScope } from './storage/studio-contract.mjs';
@@ -15,6 +17,9 @@ export const PARTNER_PERMISSIONS = Object.freeze([
   'presentations.read', 'presentations.configure',
   'reports.read', 'integrations.read',
 ]);
+
+// The only permission that can grant another operator administrator.
+export const OPERATOR_ADMIN_PERMISSION = 'team.roles.assign';
 
 const permissions = new Set(PARTNER_PERMISSIONS);
 const id = value => typeof value === 'string' && value.trim() === value
@@ -38,6 +43,19 @@ export function isPartnerPermission(value) {
 function validPermissions(value) {
   return Array.isArray(value) && value.length <= PARTNER_PERMISSIONS.length
     && new Set(value).size === value.length && Array.from(value).every(isPartnerPermission);
+}
+
+// Active membership whose role, in the same operator, can assign roles.
+// Other team permissions do not make an administrator.
+export function isOperatorAdmin(membership, role) {
+  if (!own(membership, ['status', 'operatorId', 'roleId', 'scope'])) return false;
+  if (membership.status !== 'active') return false;
+  if (!own(role, ['id', 'operatorId', 'permissions', 'scope'])) return false;
+  if (!id(membership.operatorId) || membership.operatorId !== role.operatorId) return false;
+  if (!id(role.id) || membership.roleId !== role.id) return false;
+  if (!sameScope(membership.scope, role.scope)) return false;
+  if (!validPermissions(role.permissions)) return false;
+  return role.permissions.includes(OPERATOR_ADMIN_PERMISSION);
 }
 
 function boundToOperator(value, scope, operatorId) {
