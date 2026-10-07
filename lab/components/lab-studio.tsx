@@ -120,7 +120,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
       <nav className="sg-tabs" aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
       <p className={styles.intro}><a href={labUrl('/control/zones')}>Öppna Bakgrundszoner →</a> · <a href={labUrl('/control/probe')}>Öppna Talgranskning →</a></p>
       {uploadAvailable ? <div className={styles.save}>{saveButton}</div> : null}
-      {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta med Start-Lab.cmd för gemensam lagring och spelanslutning. Det kostnadsfria lokala provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
+      {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta lokalt med node lab/start.mjs för gemensam lagring och spelanslutning. En agent använder node lab/start.mjs --no-open. Det kostnadsfria provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
