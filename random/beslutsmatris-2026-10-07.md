@@ -38,6 +38,16 @@ Rader 12–14 kom från produktionskontrollen av `661de97b`, inloggad som LLM.
 | 14 | Inloggningskortet ligger kvar i gammal stil: toppjusterat, grå knapp, ingen lime | A: eget litet pass med sidmallens tokens. B: lämna | **A, lågprio** | John |
 | 15 | Sökfältet i topplisten är en attrapp ("Inte ansluten ännu") | A: behåll som platshållare. B: dölj tills sökning finns | **B**. Johns regel: visa inget som inte fungerar | John |
 
+Rader 16–20 kom från inventeringen av `/control` 7 okt, kväll. Underlag och arbetsordning: `random/prompt-control-koherens.md`.
+
+| # | Tveksamt | Alternativ | Rekommendation | Vem |
+|---|---|---|---|---|
+| 16 | Sju sidor (`events`, `tree`, `videos`, `activity`, `probe`, `guide`, `operator-chat`) renderar gamla `studio.tsx` med egen sidomeny inuti Johns skal; `changeView` byter innehåll utan att byta URL | A: flytta vy för vy till sidmallen, ta bort `studio.tsx` till sist. B: lämna | **A**, i ny chatt med prompten ovan | Jakob |
+| 17 | Probe finns på tre ställen: `/control/probe`, flik i Dealers & klipp, flik i Administration | A: en plats, `/control/probe` (menyn säger Talgranskning). B: flik i Dealers & klipp, ta bort sidan. C: lämna | **A** | John |
+| 18 | OpenClaw två gånger: Agentmodeller (`/control/openclaw`) och Operatörschatt (`/control/operator-chat` = gamla OpenClaw-vyn) | A: behåll båda men ge Operatörschatt sidmallen och eget innehåll. B: slå ihop till en sida med två flikar | **B** | John |
+| 19 | Bakgrund på tre ställen: flik i Dealers & klipp, `/control/zones`, alias `/control/backgrounds` | A: fliken länkar till `/control/zones`, aliaset pekar dit. B: zoner in som flik, sidan bort | **A** | John |
+| 20 | Nio döda Kevin-slugs under `/control` (`roulette`, `baccarat`, `statistics` …) visar översikten med notis | A: ta bort ur `CONTROL_PREVIEW_VIEWS`, behåll de 15 som omdirigerar. B: lämna | **A** | Jakob |
+
 ## Avgjort av orkestratorn, till kännedom
 
 | Tveksamt | Vad som gjordes |
@@ -53,6 +63,8 @@ Rader 12–14 kom från produktionskontrollen av `661de97b`, inloggad som LLM.
 | Offline-labbet ger 500 på alla sidor utom Agentmodeller | Förväntat sedan `45ae2752`: sidorna kräver Neon, ingen diskfallback. Inte en regression. Verifiera UI i produktion eller med Neon-anslutning |
 | Administrationens eyebrow sa "// ÅTKOMST" fast menyn har sidan under Drift | Ändrad till "// DRIFT" |
 | Pre-commit-kroken körs inte i den här klonen (`core.hooksPath` är inte satt) | Kontrollerna kördes för hand med `node tools/precommit-checks.mjs --full`; bara ffmpeg-testerna föll, de kräver ffmpeg lokalt. Sätt `git config core.hooksPath .githooks` |
+| `next/font/google` hämtade typsnitt från Google vid bygge; gav flakigt CI-fel | Tre variabla woff2 (OFL-1.1, 110 KB) ligger i `lab/app/fonts`, laddas med `next/font/local`. `6ffd7c78` |
+| Sidtitlar "Backoffice/Lab" på Händelser, ingen titel på Talgranskning, "← Backoffice/Lab" i Bakgrundszoner | Rättade till "Croupier Studio" och "← Dealers & klipp" |
 
 ## Till Kevin
 
