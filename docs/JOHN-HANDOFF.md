@@ -1,5 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
+## Nuläge per funktion
+
+| Funktion | Status | Avsnitt |
+| --- | --- | --- |
+| Nivå 1 /control | påbörjad — verktyg samlade, A–C öppna | Namn |
+| Nivå 2 /partner | påbörjad — session finns, speldata ej | Partnerportal |
+| Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
+| Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
+| Systemkarta | klart — tre nivåer, CI-spärr | Systemkarta |
+| Render croupier-v2 | påbörjad — motor live, deploy väntar | Aktuell leverans |
+
 Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
@@ -14,8 +25,7 @@ Denna dokumentpassning samlar personalens gränssnitt under `/control`:
 Kevins importerade backoffice (`lab/components/kevin-bo`) ligger kvar på
 `/partner` och `/partner/{operatorSlug}`. Det är inte kontrollpanelen.
 `/studio` är labb-servicens basePath, inte en fjärde produkt och inte namnet i gränssnittet.
-Spelarytan är `/play` och `/play/blackjack`. Lobby, profil, historik,
-riktig operatörsinloggning och tenantdata är inte klara.
+Spelarytan är `/play` och `/play/blackjack`.
 `174f893` är pushad till `main`. Gamla `/bo`, `/bo/login.html` och `/bo/set-password.html` svarar 308 till `/control/administration`, `/control/login` och `/control/set-password`. `/api/bo` är kvar som inloggningsbrygga.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
@@ -25,12 +35,12 @@ Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 `/play` är Spellobby, `/play/profil` egen profil och `/play/historik` egen historik,
 alla i `apps/croupier-frontend` ovanpå befintliga `GET /api/auth/session` och
 `POST /api/player` via ingress-headers. Utan session går profil och historik till
-`/player-login?returnTo=…`; lobbyn visar inloggningsknapp. Historiken är ärligt
-tom: `readPlayerResults` saknar publik spelarrutt och `/api/v1/history` är
-partner-API. Ingen ändring i `web/`, spelmotor eller signerad direktstart.
-Testat: `apps/croupier-frontend/test/player-area.mjs` 6, `platform-ui` 13,
-`game-entry` 12, `tsc --noEmit` grön. Kvar: resultatrutt för spelaren,
-operatörskontext i lobbyn, redigerbar profil.
+`/player-login?returnTo=…`; lobbyn visar inloggningsknapp. Historiksidan anropar
+`POST /api/history` för egna aggregerade resultat. `/api/v1/history` är
+partner-API. Spelmotor och signerad direktstart är oförändrade.
+Testat före resultatrutten: `apps/croupier-frontend/test/player-area.mjs` 6, `platform-ui` 13,
+`game-entry` 12, `tsc --noEmit` grön. Kvar: operatörskontext i lobbyn
+och redigerbar profil. Tomt resultat betyder inga avslutade rundor, inte en saknad rutt.
 
 ## Partnerportal, 7 oktober 2026
 
@@ -87,8 +97,7 @@ Kontraktens filhasher är prefixade. Inget acceptanskrav markeras klart.
 
 Samordnat med chatten **Hämta Croupier från Kevins branch**, som släppt sina
 filanspråk. /control är intern Kontrollpanel, /partner/{operatorSlug} är
-Partnerportal och /play är Spelaryta med /play/blackjack. Intern Studio på
-/studio är kvar som verkligt produktionsverktyg; fliken heter Administration.
+Partnerportal och /play är Spelaryta med /play/blackjack. Fliken heter Administration.
 
 Efter Jakobs förtydligande är nivå 1 en gemensam ScoutGamingGroup-adminyta:
 /control visar verkliga verktygsingångar, inte Kevins parallella exempelpaneler.
@@ -96,21 +105,15 @@ Klipp/tal/media/konton-länkar leder till befintlig Studio med samma huvudmeny.
 Oanslutna gamla exempelvyer visar en förklaring; de låtsas inte vara färdiga
 produktionsverktyg. Kevin-komponenten renderas på /partner, inte /control.
 Nivå 2 använder läsbara menyadresser och popstate. Gamla hashbokmärken fungerar.
-Servern kontrollerar fortsatt intern admin på varje dokument/API-läsning.
 Nivå 2:s lane-/designnotiser skiljer lokala marker/kort/bordsprov från faktisk
 spelpublicering. Lokala designutkast kan fortfarande granskas i provbordet.
 Operatörs-/administratörsbyte och authfel tömmer vyn; inga gamla utkast får
 visas för en ny identitet. Klipp, masker, urvalsregler och publicering är interna.
 
-/play är en enkel Blackjack-ingång. /play/blackjack använder befintlig
+/play/blackjack använder befintlig
 sessionskontroll, sparad lane och spel-HTML. Äldre molnadresser går vidare;
 giltig launch går genom samma signerade serverhantering och game-audience.
 Spelmotor, media, sessionsformat och kunddatabas ändras inte.
-
-Full partner-session/medlemskap/organisationslagring, publicerat operatörspaket,
-kundavgränsad sparning samt spelarprofil/historik är fortfarande öppna T2–T4.
-Den separata policyn web/partner-access-policy.mjs från cb2673c6 är fortsatt
-bara policy; ingen runtime/DB använder den som verklig partnerinloggning.
 
 Guide, ordlista och systembeskrivning förenar PDF-underlaget med aktuell kod.
 Namn på ansvar är inte nya tjänster eller nya scheman. Privata random-förslag
@@ -145,13 +148,14 @@ personalinbjudningarna. Inga nya utskick/konton görs av agenten. Intern admin
 når nivå 1, 2 och 3 med samma konto; nivå 2 var redan adminauktoriserad men
 saknades i inbjudningstexten. Formulär, mejl och båda guiderna är nu samstämmiga.
 `/partner` är en separat ingång med explicit val av demonstration, inte ett
-automatiskt exempelbolag. Kundval är ännu inte aktiverat. Riktiga kunder ska
-komma från verifierade organisationsanslutningar, inte namn eller API-nycklar.
+automatiskt exempelbolag. Adminens val bland riktiga operatörer är
+ännu inte aktiverat. Operatörens egen inloggning står i Partnerportal.
+Riktiga kunder ska komma från verifierade organisationsanslutningar, inte namn
+eller API-nycklar.
 Gamla giltiga hashbokmärken och befintliga demo-adresser behålls.
 
 Den avgränsade leveransen avslutar navigation/åtkomstinformation och
-dokumentationsstädning. T2–T4 kvarstår för verkligt kundregister, kundpersonal,
-medlemskap, lane-publicering och operatörsbunden lobby. De öppna A–I-punkterna
+dokumentationsstädning. De öppna A–I-punkterna
 är acceptans/driftarbete, inte ett påstående om att allt är produktionsklart.
 Lokalt verifierat: 90 riktade UI-, serverrutt-, auth- och mejltester, Lab-
 typkontroll och produktionsbygge PASS. Kod 4df5e74a och etikettkomplettering
@@ -468,3 +472,51 @@ fel molnkälla ger 503 utan lokal fallback. Export 290×104 var pixelidentisk me
 OpenClawproxy tillåter endast avsedd toppnavigation till exakt /openclaw[/];
 API/fetch/iframe/mutation/WS/Origin/Host/auth/pairing behåller separata kontroller.
 Dessa prov ändrade ingen zonrevision, pairing, speldata eller betaldispatch.
+
+## Historik (daterade lägesbilder)
+
+Flyttade meningar som motsade nuläget 7 oktober 2026. De är inte raderade.
+Kvitton, acceptans, P6, medieregler och privata sökvägar står kvar ovan.
+
+### 7 oktober 2026 — Spelaryta-avsnittet, före resultatrutten i arbetskopian
+
+Ersatt samma dag när historiksidan kopplades till `POST /api/history`. T4 är inte klar.
+
+Historiken är ärligt tom: `readPlayerResults` saknar publik spelarrutt och `/api/v1/history` är partner-API. Ingen ändring i `web/`, spelmotor eller signerad direktstart. Kvar: resultatrutt för spelaren.
+
+### 7 oktober 2026 — Namn-avsnittet, före Spelaryta och Partnerportal samma dag
+
+Ersatt 7 oktober av Spelaryta- och Partnerportal-avsnitten.
+
+Lobby, profil, historik, riktig operatörsinloggning och tenantdata är inte klara.
+
+### 6 oktober 2026 — Tre nivåer: denna ändring
+
+Ersatt 7 oktober av Namn-avsnittet (`/studio` är basePath, inte produktionsverktygets namn). Fliken heter fortfarande Administration.
+
+Intern Studio på /studio är kvar som verkligt produktionsverktyg; fliken heter Administration.
+
+Ersatt 7 oktober av Partnerportal-avsnittet (`partner_session` är en egen cookie; intern admin-cookie öppnar inte partnerdata).
+
+Servern kontrollerar fortsatt intern admin på varje dokument/API-läsning.
+
+Ersatt 7 oktober av Spelaryta-avsnittet (`/play` är Spellobby, med profil och historik).
+
+/play är en enkel Blackjack-ingång.
+
+Ersatt 7 oktober av Partnerportal- och Spelaryta-avsnitten.
+
+Full partner-session/medlemskap/organisationslagring, publicerat operatörspaket,
+kundavgränsad sparning samt spelarprofil/historik är fortfarande öppna T2–T4.
+Den separata policyn web/partner-access-policy.mjs från cb2673c6 är fortsatt
+bara policy; ingen runtime/DB använder den som verklig partnerinloggning.
+
+### 6 oktober 2026 — Övertagande och stoppunkt
+
+Ersatt 7 oktober av Partnerportal-avsnittet (medlemslagring och `partner_session` finns; lane-publicering och operatörsbunden lobby är kvar i T2–T4).
+
+T2–T4 kvarstår för verkligt kundregister, kundpersonal, medlemskap, lane-publicering och operatörsbunden lobby.
+
+Ersatt 7 oktober av en snävare mening i Övertagande: adminens val bland riktiga operatörer är kvar; operatörens inloggning står i Partnerportal.
+
+Kundval är ännu inte aktiverat.
