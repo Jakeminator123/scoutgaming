@@ -53,12 +53,12 @@ test('cloud Lab guard requires exact gateway authority and same-origin mutations
       headers: { 'Sec-Fetch-Site': 'same-site' },
     })), forbidden);
 
-    const page = new Request('http://lab.example.test/lissabon', {
+    const page = new Request('http://lab.example.test/control', {
       headers: cloudHeaders({ 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-Site': 'cross-site' }),
     });
     assert.doesNotThrow(() => assertLocalPageRequest(page));
-    assert.throws(() => assertLocalPageRequest(new Request('http://lab.example.test/lissabon', {
+    assert.throws(() => assertLocalPageRequest(new Request('http://lab.example.test/control', {
       headers: cloudHeaders({ 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'iframe' }),
     })), forbidden);
 

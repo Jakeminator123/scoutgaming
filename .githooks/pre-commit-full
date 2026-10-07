@@ -22,13 +22,13 @@ run_node_tests() {
 node docs/system-map/verify.mjs --check
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
-run_node_tests test/backup-lissabon-state.mjs test/migrate-lab-state.mjs
+run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs
 run_node_tests lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs
-run_node_tests test/partner-access-policy.mjs
+run_node_tests test/partner-access-policy.mjs test/operator-store.mjs
 run_node_tests lab/test/partner-preview.test.mjs lab/test/workspace-surfaces.test.mjs lab/test/workspace-surface-pages.test.mjs lab/components/kevin-bo/preview.test.mjs lab/components/dashboard-brand.test.mjs
 run_node_tests lab/test/studio-native-credentials.test.mjs lab/test/studio-admin-api.test.mjs lab/test/studio-native-auth.test.mjs lab/test/studio-admin-data.test.mjs lab/test/studio-admin-readouts.test.mjs lab/test/studio-voice-lines.test.mjs lab/test/studio-native-runtime.test.mjs lab/test/studio-native-mail.test.mjs lab/test/studio-native-request.test.mjs lab/test/next-page-navigation.test.mjs lab/components/studio-administration.test.mjs
-run_node_tests test/studio-repository.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs
+run_node_tests test/studio-repository.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/check-migration-readiness.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs
 run_node_tests test/studio-game-policy.mjs test/studio-media-runtime.mjs test/studio-game-authority.mjs test/studio-game-commands.mjs test/studio-admin-accounts.mjs test/studio-native-auth-actions.mjs test/studio-cutover-integration.mjs test/studio-legacy-snapshot.mjs
 run_node_tests test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs test/speech-ledger-import.mjs test/postgres-operator-speech-qa.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
 run_node_tests test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs apps/croupier-frontend/test/game-entry.mjs
@@ -39,13 +39,13 @@ run_node_tests lab/test/zone-reference.test.mjs lab/test/zone-cloud-store.test.m
 run_node_tests lab/test/openclaw-admin.test.mjs open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
 run_node_tests test/bo-lab-auth.mjs
 run_node_tests test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
-run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs
-run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs
+run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
+run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 node tools/check-environment-variables.mjs
 run_node_tests test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node test/player-auth.mjs
-run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
+run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
 run_node_tests ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs ops/vercel-entry/test/preview-routes.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
@@ -54,11 +54,11 @@ node pipeline/audit-performance.mjs
 node pipeline/audit-astrid-actor.mjs
 run_node_tests test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs test/animation-clock.mjs test/dealing-cues.mjs test/movement-cues.mjs test/casino-navigation.mjs
 run_node_tests test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-run_node_tests test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs
+run_node_tests test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs
 run_node_tests test/activate-native-ai-qa.mjs test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs
 run_node_tests test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests test/player-probe.mjs
-run_node_tests test/performance-contact.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
+run_node_tests test/performance-contact.mjs test/performance-player-source.mjs test/pack-contact-media.mjs test/table-audio.mjs test/shoe-contact-occlusion.mjs
 run_node_tests test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 run_node_tests test/idle-video-loop.mjs
 run_node_tests test/action-placement.mjs test/bugshot-report.mjs

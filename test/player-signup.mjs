@@ -49,7 +49,7 @@ test('player account survives restart, remains separate from Scout, rejects impe
   } finally {await new Promise(resolve=>server.close(resolve));db.close();rmSync(directory,{recursive:true,force:true});}
 });
 
-test('Vercel entrance accepts exact HTTPS origin and uses the Lissabon login route',()=>{
+test('Vercel entrance accepts exact HTTPS origin and uses the blackjack route',()=>{
   assert.equal(blackjackUrl('https://game.example.invalid'),'https://game.example.invalid/blackjack');
   assert.equal(blackjackUrl('http://127.0.0.1:4200',{local:true}),'http://127.0.0.1:4200/blackjack');
   for(const value of ['', 'http://game.example.invalid','https://user:password@game.example.invalid','https://game.example.invalid/path','https://game.example.invalid?x=1','https://localhost'])assert.throws(()=>blackjackUrl(value));

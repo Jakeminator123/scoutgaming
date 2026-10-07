@@ -2,11 +2,53 @@
 // Local, cooperative role registry only. Never fetches, merges, pushes or starts agents.
 import { execFile } from 'node:child_process';
 import { promisify, parseArgs } from 'node:util';
-import { readFile, writeFile, mkdir, rename, unlink, realpath } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { readFile, writeFile, mkdir, rename, unlink, realpath, open } from 'node:fs/promises';
+import { randomUUID, createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { identity, acquireLock } from './croupier-inbox.mjs';
+
+const OWNERS = { jakob: 'Jakob', kevin: 'Kevin', emil: 'Emil' };
+const digest = value => createHash('sha256').update(value).digest('hex');
+const singleLine = value => String(value).replace(/[\r\n]/g, ' ').trim();
+
+// Identity key is sha256(session).slice(0, 16). Chef compares that key with the saved registry.
+export function identity(owner, title, session) {
+  owner = String(owner).toLowerCase();
+  if (!OWNERS[owner] || !title?.trim() || !session?.trim()) {
+    throw new Error('Use --owner Jakob|Kevin|Emil, --title and a stable --session (or CODEX_THREAD_ID).');
+  }
+  const key = digest(session).slice(0, 16);
+  const slug = singleLine(title).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'croupier';
+  return { key, id: `${owner}/${key}`, owner, name: `Agent-${slug}, ${OWNERS[owner]}` };
+}
+
+async function readJson(file, fallback) {
+  try { return JSON.parse(await readFile(file, 'utf8')); }
+  catch (error) { if (error.code === 'ENOENT') return fallback; throw error; }
+}
+
+export async function acquireLock(file) {
+  try {
+    const handle = await open(file, 'wx');
+    await handle.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+    return handle;
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const previous = await readJson(file, null);
+    if (Number.isInteger(previous?.pid) && previous.pid > 0) {
+      try { process.kill(previous.pid, 0); }
+      catch (check) {
+        if (check.code === 'ESRCH') {
+          // Only remove this conversation's lock after proving its process is gone.
+          await unlink(file);
+          return acquireLock(file);
+        }
+      }
+    }
+    throw new Error('Inbox busy or lock ownership unknown. Check .croupier-inbox/agents/*.lock before manual recovery.');
+  }
+}
 
 const exec = promisify(execFile);
 async function git(cwd, args) {

@@ -234,7 +234,7 @@
         "lab/app/control/probe/page.tsx:8",
         "lab/app/control/guide/page.tsx:8",
         "lab/components/studio-session.tsx",
-        "lab/lib/studio-navigation.mjs:10"
+        "lab/lib/scout-navigation.mjs"
       ],
       "tests": [
         "lab/test/studio-navigation.test.mjs",

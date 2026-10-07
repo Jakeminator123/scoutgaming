@@ -5,8 +5,13 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { STUDIO_PRIMARY_NAVIGATION, STUDIO_TOOL_NAVIGATION } from '../lib/studio-navigation.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutNavigationItem } from '../lib/scout-navigation.mjs';
+
+// Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
+const OLD_HEADER_DESTINATIONS = Object.freeze([
+  '/control', '/control/clips', '/control/administration', '/control/openclaw',
+  '/control/operator-chat', '/control/tree', '/control/activity', '/control/guide',
+]);
 
 const groups = SCOUT_NAVIGATION;
 const sidebar = [...groups.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
@@ -43,12 +48,12 @@ test('sidebar groups stay in Spec 02 order and point at real pages', () => {
 
 test('old header destinations stay reachable from the sidebar or the level switcher', () => {
   const covered = new Set([...sidebar.map(item => item.href), ...SCOUT_LEVELS.map(item => item.href)]);
-  for (const item of [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION]) {
-    if (item.href === '/control/operator-chat') {
-      assert.equal(covered.has('/control/openclaw?tab=chat'), true, item.href);
+  for (const href of OLD_HEADER_DESTINATIONS) {
+    if (href === '/control/operator-chat') {
+      assert.equal(covered.has('/control/openclaw?tab=chat'), true, href);
       continue;
     }
-    assert.equal(covered.has(item.href), true, item.href);
+    assert.equal(covered.has(href), true, href);
   }
   assert.equal(covered.has('/partner'), true);
   assert.equal(covered.has('/play'), true);
@@ -139,7 +144,8 @@ test('openclaw chat query activates operator chat and the bare path activates mo
   assert.match(chat, /aria-current="page"[^>]*>Operatörschatt/);
   assert.doesNotMatch(chat, /aria-current="page"[^>]*>Agentmodeller/);
   assert.match(chat, /href="\/control\/openclaw\?tab=chat"/);
-  assert.match(chat, /Nivå 1 · ScoutGamingGroup/);
+  assert.match(chat, /Nivå 1 </);
+  assert.match(chat, /aria-label="ScoutGamingGroup administration"/);
   const models = renderToStaticMarkup(loadNavigation('/control/openclaw').WorkspaceNavigation());
   assert.match(models, /aria-current="page"[^>]*>Agentmodeller/);
   assert.doesNotMatch(models, /aria-current="page"[^>]*>Operatörschatt/);
