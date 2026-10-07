@@ -1,5 +1,7 @@
 # Partnerportal component
 
+Internal fixture preview and real operator data are two snapshots of this same component. Without `partner_session`, an internal admin on `/partner` and `/partner/{operatorSlug}` gets the fixture (`preview: true`, `mode: 'fixture'`) from `/studio/api/partner-preview`. `/partner/login` issues `partner_session`; those same `/partner` routes then serve that operator's data (`preview: false`, `mode: 'live'`). No session on `/partner` redirects to `/partner/login`. `/control` does not render this component. Players, transactions, reports, onboarding and package publishing stay disconnected.
+
 `kevin-backoffice.jsx` exports `KevinBackoffice({ surface, initialSnapshot,
 apiBase, user, initialView })`. The same component serves two snapshot modes:
 
@@ -98,9 +100,10 @@ draft isolation and reject old backend mutations. CSS fencing and UTC versus
 Stockholm initial markup are also checked. The coordinating task runs the
 application build and browser interaction verification.
 
-Real operator membership, resource ownership, durable design storage,
-publication, account operations, media mapping and reports remain explicit
-integration work. The imported UI remains one instance-bound factory to keep
+Resource ownership for each vertical, durable design storage, publication,
+account operations, media mapping and reports remain explicit integration
+work. Operator membership for the scoped snapshot is already enforced with
+`partner_session`. The imported UI remains one instance-bound factory to keep
 the original cross-view helpers intact; split it into feature modules when
 connecting each vertical slice rather than reinstating its global runtime.
 

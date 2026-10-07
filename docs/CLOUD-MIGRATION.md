@@ -21,8 +21,8 @@ Efter uttrycklig samordning har Kevin-chatten släppt alla anspråk. Services i
 rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och labb (`lab`,
 basePath `/studio`) i ett bygge/projekt utan att slå ihop deras Next-versioner.
 Aktiverad `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen
-till labb-servicen när Services skickar dit dokument/API direkt. Render behåller spel/live,
-T2 är påbörjad: operatörslagring, partnerinloggning och scoped data. T2 är inte klar. T3 och T4 är fortsatt öppna.
+till labb-servicen när Services skickar dit dokument/API direkt. Render behåller spel/live.
+T2 är påbörjad, inte klar: levererat är 005-lagring, `partner_session` och scoped snapshot; kvar är onboarding-UI, åtkomstjournal för operatörsskrivningar, spelare/transaktioner/rapporter och paketpublicering. T3 och T4 är öppna.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
 Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
 tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
@@ -31,7 +31,7 @@ Senaste avslutade dokumentleverans `4ed55a56` är READY på
 `dpl_3WvxoXqoraAj3WPBy2zG3pzhQipP`, CI `37451320053` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
 API-spärrar och statiska filer är läsande verifierade. Kevin-chatten har
 bekräftat sin befintliga adminsession. Kevins importerade backoffice
-(`lab/components/kevin-bo`) är endast förhandsvisningen på `/partner`, inte kontrollpanelen.
+(`lab/components/kevin-bo`) på `/partner` har två lägen: intern fixturförhandsvisning och scoped operatörsdata. Det är inte kontrollpanelen.
 Båda webbdelarna använder `fra1`; Git-autobyggen från main är på igen.
 Den gamla GitHub-adressen och gamla frontend-adressen vidarebefordras.
 Det domänlösa frontendprojektet sparas som `scoutgaming-legacy-frontend`, med
@@ -43,8 +43,8 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. |
-| 2 | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Partnerportalen visar intern demonförhandsvisning eller scoped operatörsdata. T2 är påbörjad: operatörslagring, partnerinloggning och scoped data. Spelare och transaktioner är inte anslutna. |
-| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor; historiken är tom tills spelmotorn får en spelarrutt för resultat. Operatörskontext i lobbyn återstår. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Spelare, transaktioner och rapporter är inte anslutna. T2 är påbörjad, inte klar. |
+| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Historiksidan anropar `POST /api/history`. Operatörskontext i lobbyn och redigerbar profil återstår. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -60,13 +60,14 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   fungerande navigation/direktlänkar och tydlig status för oanslutna funktioner.
   Första etappen är enbart för befintligt inloggad intern admin med två isolerade
   exempeloperatörer. Detta inför inte kundinloggning eller en livekundanslutning.
+  Det gäller T1:s etapp. Operatörsinloggning är påbörjad i T2, inte klar.
   Verifierat lokalt 6 oktober: alla 24 vyer öppnade i webbläsare, rätt team efter
   operatörsbyte/omladdning, lokala designutkast och stängning vid administratörsbyte
   respektive återkallad session. 24 riktade integrationstester samt frontend- och
   Studio-byggen passerar. Publicerad kod `5524b968` är provad med befintlig intern
   adminsession: båda ytorna, menybyten, operatörsbyte och direktlänkar fungerar.
   Oinloggade besök går till login; API ger 401. Riktig kundinloggning ligger i T2.
-- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad: operatörslagring, partnerinloggning och scoped data. Inte klar. Behåll
+- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad, inte klar. Levererat: migration `005-operators.sql`, `partner_session` och scoped snapshot. Kvar: operatörs-onboarding-UI, åtkomstjournal för operatörsskrivningar, spelardata, transaktioner, rapporter och paketpublicering. Behåll
   dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
   separat partner-session med färsk identitets-, roll-, auth-epoch- och
   medlemskapskontroll. Inga automatiska reader/staff-uppgraderingar. Nivå 1
@@ -86,22 +87,24 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   4. Merga PR, Vercel bygger.
   7 oktober 2026 pushades migration 005 till main innan den körts mot produktions-Neon; Vercel byggde inom tre minuter och varje /control-sida svarade att labbet inte kunde läsas.
   Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
-  Delsteg 6 oktober: fristående `web/partner-access-policy.mjs` har explicita
+  Delsteg 6 oktober: `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.
   Både aktuell och ny målroll måste vara uttryckligt delegerbara av nivå 1;
   egen rolländring och ändring av överordnad personal nekas. 22 riktade tester
   passerar inklusive befintlig credentialresolver/Studio-policy. Oberoende review
-  är avklarad. Policyn är inte ansluten till runtime: partner-login, medlemslagring,
-  sessioner, SQL/API-isolering och skydd för sista administratören återstår.
-  T2 är fortsatt öppen; rena policytester är inte acceptans för riktiga konton.
+  är avklarad. `lab/lib/partner-data.mjs` anropar `allowsPartnerResource` för den
+  scopade snapshoten. Partner-login, medlemslagring och `partner_session` finns.
+  Isolerat bevis för spärr, återkallelse, nekade anrop mellan två organisationer
+  och skydd för sista administratören återstår. T2 är påbörjad, inte klar;
+  rena policytester är inte acceptans för riktiga konton.
   Förtydligande 6 oktober: intern adminpersonal ska ha åtkomst till alla tre
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
   nivå 2:s förhandsvisning. `/partner` visar nu en separat ingång med explicit
-  demoval; inga exempelbolag presenteras som anslutna kunder. Verkligt kundval
-  ska följa aktiva organisationsanslutningar när dessa införs, och kundpersonal
-  ska bara nå egna medlemskap. Kundregister/sessioner/sparning är ännu inte
-  implementerade; detta är en avgränsad stoppunkt före den större T2-migrationen.
-- [ ] **T3. Anslut en operatörsfunktion i taget.** Koppla revisionerade
+  demoval; inga exempelbolag presenteras som anslutna kunder. Kundpersonal når
+  bara egna aktiva medlemskap. Adminens val bland riktiga operatörer
+  (onboarding-UI) och paketpublicering är kvar. Operatörslagring, `partner_session`
+  och scoped snapshot finns; T2 är påbörjad, inte klar.
+- [ ] **T3. Anslut en operatörsfunktion i taget.** Öppen. Scoped snapshot kan visa sparat paket (presentationer, bord, revision) och medlemskap. Spelare, transaktioner och rapporter är inte anslutna. Publicering, onboarding och integrationer saknas. Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
   funktion behöver organisationens ägarskap genom UI, API, lagring och export.
   Render behåller kort, regler, plånbok och avräkning. Importera inte Kevins
@@ -111,10 +114,12 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   operatörskontext och ger endast spelarens egen profil/historik. Börja med
   Blackjack; giltiga partnerstarter får öppna spelet direkt utan extra login.
   Ändra inte spelaridentitet eller signerade launch-kontrakt genom namnbytet.
-  Delsteg: enkel `/play`-ingång och `/play/blackjack` återanvänder befintlig
-  sessionskontroll, sparad lane och signerad launch. Äldre speladresser leder
-  vidare i det gemensamma molnprojektet. Operatörsbunden katalog/profil/historik
-  är inte införda; T4 förblir öppen.
+  Delsteg 7 oktober: `/play` är spellobby, `/play/profil` visar namn, saldo och
+  valuta, `/play/historik` anropar `POST /api/history` för egna aggregerade
+  resultat, och `/play/blackjack` återanvänder befintlig sessionskontroll,
+  sparad lane och signerad launch. Äldre speladresser leder vidare i det
+  gemensamma molnprojektet. Kvar: operatörsbunden katalog, operatörskontext i
+  lobbyn och redigerbar profil. T4 förblir öppen.
 
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
@@ -127,12 +132,13 @@ uppspelningsplan och operatörspaket. PDF:erna används som underlag, aktuell
 kod avgör status. Nivå 1 är ScoutGamingGroups gemensamma adminyta på `/control`, med riktiga
 verktygsingångar, inte en parallell uppsättning av Kevins exempelpaneler.
 `/studio` är labbets basePath, inte produktnamnet i gränssnittet. Nivå 2 på
-`/partner` behåller den importerade förhandsvisningen. Kevins backoffice hör
+`/partner` hade i den här passningen den importerade förhandsvisningen; sedan
+7 oktober finns också scoped operatörsdata, se T2. Kevins backoffice hör
 inte hemma i `/control`. Äldre hashbokmärken fungerar; interna klipp/tal/media/konton
 leder till befintliga verktyg och oanslutna vyer får en tydlig förklaring.
 Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
 lokala utkast fungerar fortsatt i den befintliga bordsförhandsvisningen.
-Ingen partner-login, DB-migration, spelregel eller mediefil ändras här.
+Den här passningen ändrade ingen partner-login, DB-migration, spelregel eller mediefil. `partner_session` och migration 005 kom 7 oktober.
 
 ## Öppen arbetschecklista: personalyta under /control
 

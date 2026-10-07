@@ -34,8 +34,9 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
 | 1 · intern personal | `/control` | Gemensam ingång. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
-| 2 · Partnerportal | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Kevins importerade backoffice är bara denna förhandsvisning, inte `/control`. Intern admin kan öppna en märkt demonstration. Riktig operatörsinloggning, tenantdata och publicering återstår. |
-| 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
+| 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Spelare, transaktioner och rapporter är inte anslutna. |
+| 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Historiksidan anropar `POST /api/history`, se raden under. Operatörsbunden katalog och redigerbar profil återstår. |
+| 3 · Spelarresultat | `/api/history` | Spelare. Egna aggregerade resultat. Samma session som `/api/player`. |
 
 ### Lagring
 
@@ -47,9 +48,9 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
 bakgrund och urvalsregler som spelaren får använda. En lane är varken ett
 spelarkonto, en videofil eller själva spelmotorn. Nuvarande sparade profiler
-och lane-ID:n behålls. Ett **operatörspaket** är målbilden för vilka lanes,
-spel/bord och varumärkesval en operatör tilldelas; ett sådant paket är ännu
-inte anslutet till Partnerportalens exempeldata.
+och lane-ID:n behålls. Ett **operatörspaket** är vilka lanes, spel/bord och varumärkesval en operatör
+tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
+kan visa ett sparat pakets revision; publicering till spel är inte ansluten.
 
 ```mermaid
 flowchart LR
@@ -80,12 +81,13 @@ Ordlistans källa är `lab/policies/studio-contract.json` och visas i användarg
 
 ### Adresser och begränsningar
 
-`/partner` visar en adminskyddad ingång där demonstrationer är åtskilda från
-framtida kundval. Det finns ingen automatisk standardkund. En framtida
-kundlista måste komma från aktiva, serververifierade organisationsanslutningar,
-inte fixturelistan, API-nycklar, ett varumärkesnamn eller URL:en. Intern admin
-ska kunna välja mellan anslutna kunder; kundpersonal ska vara avgränsad till
-sina medlemskap. Båda fallen kräver färsk serverkontroll enligt T2.
+`/partner` har två lägen. Utan `partner_session` är ingången en adminskyddad
+fixturförhandsvisning; demonstrationer är inte anslutna kunder. Det finns ingen
+automatisk standardkund. Operatör loggar in på `/partner/login` och når bara
+egna aktiva medlemskap. Adminens val bland anslutna kunder väntar på
+onboarding-UI. Kundlistan ska komma från aktiva, serververifierade
+organisationsanslutningar, inte fixturelistan, API-nycklar, ett varumärkesnamn
+eller URL:en. Båda lägena kräver färsk serverkontroll. T2 är påbörjad, inte klar.
 
 Partnerns meny använder exempelvis `/partner/demo-north/presentation`,
 `/partner/demo-north/tables` och `/partner/demo-north/lanes`.
@@ -118,12 +120,14 @@ godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner
 under labbets basePath. `/studio` är inte personalens produktnamn.
 Befintliga labbvägar och spelkontrakt behålls. API-anrop har inga allmänna nya alias.
 
-Den första implementerade servergränsen är en intern förhandsvisning:
-`/studio/api/partner-preview` tillåter enbart GET, gör native admin-auktorisering
-på varje anrop och lämnar uttryckliga fixtures för Demo North eller Demo South.
-Ingen global adminläsning eller produktionsdatabas används som reservdatakälla.
-SSR gör samma färska kontroll. Spelare och framtida partnerroller nekas denna
-förhandsvisning; en riktig partner-session införs separat enligt T2 i driftkartan.
+Den interna förhandsvisningen är `/studio/api/partner-preview`: enbart GET,
+native admin-auktorisering på varje anrop, och uttryckliga fixtures för Demo
+North eller Demo South. Ingen global adminläsning eller produktionsdatabas
+används som reservdatakälla. SSR gör samma färska kontroll. Spelare nekas
+denna förhandsvisning. Operatörens inloggning är separat: `/partner/login`
+sätter `partner_session`, och `/partner` samt `/partner/{operatorSlug}` visar
+då scoped snapshot (`preview: false`). Spelare, transaktioner och rapporter är
+inte anslutna. T2 är påbörjad, inte klar.
 Kontrollpanelens länkar till befintliga interna verktyg behåller deras ordinarie
 auktorisering. Det gamla backofficets rolltabell i klienten styr inte åtkomst.
 
@@ -193,7 +197,7 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 ## Sparad policy och chatt
 
-Personalens arbetsyta är `/control`; operatörens förhandsvisning är `/partner`. Native administration använder
+Personalens arbetsyta är `/control`. `/partner` är antingen intern fixturförhandsvisning eller operatörens inloggade snapshot. Native administration använder
 befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
 klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
 BO-tilldelningar är historik och används inte som parallell policykälla.
