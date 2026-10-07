@@ -1,4 +1,4 @@
-import type { StudioAsset, StudioVariant } from '../lib/studio-model.mjs';
+import type { DealerId, StudioAsset, StudioProject, StudioVariant } from '../lib/studio-model.mjs';
 import { labUrl, stripLabBasePath } from "../lib/lab-url.mjs";
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 
@@ -97,6 +97,43 @@ export const viewPaths: Record<StudioView, string> = {
   tree: '/control/tree', lab: '/control/events', videos: '/control/videos', activity: '/control/activity',
   openclaw: '/control/operator-chat', guide: '/control/guide', probe: '/control/probe',
 };
+
+const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
+
+// Public control URL plus dealer, event and an optional allowlisted tab.
+export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; tab?: string } = {}) {
+  const base = path.split(/[?#]/, 1)[0];
+  const params = new URLSearchParams();
+  if (selection.dealerId) params.set('dealer', selection.dealerId);
+  if (selection.eventId) params.set('event', selection.eventId);
+  if (selection.tab === 'chat' || (selection.tab && EDITOR_TABS.has(selection.tab))) params.set('tab', selection.tab);
+  const query = params.toString();
+  return labUrl(query ? `${base}?${query}` : base);
+}
+
+// Current document path with the selection written into dealer and event.
+// Editor tab is kept only on the events page. OpenClaw chat tab is kept only there.
+export function selectionHref(pathname: string, search: string, dealerId: string, eventId: string) {
+  const path = stripLabBasePath((pathname || '/').split(/[?#]/, 1)[0]) || '/';
+  const tab = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('tab') ?? '';
+  const onEvents = path === '/events' || path.endsWith('/events');
+  const onOpenClaw = path === '/openclaw' || path.endsWith('/openclaw');
+  const nextTab = onEvents && EDITOR_TABS.has(tab) ? tab : onOpenClaw && tab === 'chat' ? tab : undefined;
+  return studioHref(path, { dealerId, eventId, tab: nextTab });
+}
+
+export function firstQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export function resolveStudioDealerId(project: StudioProject, initial?: string): DealerId {
+  const match = project.dealers.find(item => item.id === initial);
+  return (match?.id ?? project.dealers[0]?.id ?? 'astrid') as DealerId;
+}
+
+export function resolveStudioEventId(project: StudioProject, initial?: string) {
+  return initial && project.events.some(item => item.id === initial) ? initial : project.events[0].id;
+}
 
 export function studioViewForPath(path: string): StudioView {
   const parts = stripLabBasePath(path).split('/').filter(Boolean);
