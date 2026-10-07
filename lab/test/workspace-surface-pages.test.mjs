@@ -7,6 +7,7 @@ import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
+import { partnerSessionPresent } from '../lib/partner-session.mjs';
 
 const require = createRequire(import.meta.url);
 const redirects = require('next/dist/client/components/redirect.js');
@@ -25,7 +26,9 @@ function load(file, overrides) {
   return module.exports;
 }
 
-function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' })) {
+function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = async () => {
+  throw Object.assign(new Error('partner session should not authorize this request'), { statusCode: 500 });
+}) {
   function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
@@ -38,6 +41,8 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/control-workspace.mjs': { controlToolPath },
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
+    '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
+    '@/lib/partner-session.mjs': { partnerSessionPresent },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
@@ -69,11 +74,9 @@ test('real catch-all pages use exact public login returns and one Next basePath 
     authorized.push({ request, options });
     throw Object.assign(new Error('fixture login required'), { statusCode: 401 });
   });
-  for (const [surface, path, expected] of [['control', undefined, '/control'], ['control', ['voice'], '/control/voice'],
-    ['partner', undefined, '/partner'], ['partner', ['demo-north', 'overview'], '/partner/demo-north/overview'],
-    ['partner', ['demo-south', 'team'], '/partner/demo-south/team']]) {
+  for (const [path, expected] of [[undefined, '/control'], [['voice'], '/control/voice']]) {
     for (const basePath of ['', '/studio']) {
-      await assert.rejects(renderPage(loaded[surface], path), error => {
+      await assert.rejects(renderPage(loaded.control, path), error => {
         const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
         assert.equal(login.pathname, basePath + '/login');
         assert.equal(login.searchParams.get('returnTo'), expected);
@@ -84,7 +87,24 @@ test('real catch-all pages use exact public login returns and one Next basePath 
       assert.equal(new URL(call.request.url).pathname, '/studio' + expected);
       assert.equal(call.request.headers.get('cookie'), 'bo_session=isolated-fixture');
       assert.equal(call.request.headers.get('x-forwarded-host'), 'game.fixture.invalid');
-      assert.equal(call.options.operatorSlug, surface === 'partner' && path ? path[0] : undefined);
+      assert.equal(call.options.operatorSlug, undefined);
+    }
+  }
+  for (const [path, expected] of [[undefined, '/partner'], [['demo-north', 'overview'], '/partner/demo-north/overview'],
+    [['demo-south', 'team'], '/partner/demo-south/team']]) {
+    for (const basePath of ['', '/studio']) {
+      await assert.rejects(renderPage(loaded.partner, path), error => {
+        const login = new URL(redirectLocation(error, basePath));
+        assert.equal(login.origin, 'https://game.fixture.invalid');
+        assert.equal(login.pathname, '/partner/login');
+        assert.equal(login.search, '');
+        return true;
+      });
+      const call = authorized.at(-1);
+      assert.equal(new URL(call.request.url).pathname, '/studio' + expected);
+      assert.equal(call.request.headers.get('cookie'), 'bo_session=isolated-fixture');
+      assert.equal(call.request.headers.get('x-forwarded-host'), 'game.fixture.invalid');
+      assert.equal(call.options.operatorSlug, path ? path[0] : undefined);
     }
   }
 });
@@ -93,7 +113,7 @@ test('real catch-all pages reject unknown paths before loading and unknown opera
   let reads = 0;
   const loaded = pages(async () => { reads++; throw Object.assign(new Error('unknown operator'), { statusCode: 404 }); });
   for (const [surface, path] of [['control', ['unknown']], ['control', ['api', 'admin']], ['partner', ['api', 'admin']],
-    ['partner', ['demo-north', 'voice']], ['partner', ['demo-north', 'team', 'users']],
+    ['partner', ['login']], ['partner', ['demo-north', 'voice']], ['partner', ['demo-north', 'team', 'users']],
     ['partner', ['demo-north', '%74eam']]]) {
     await assert.rejects(renderPage(loaded[surface], path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
@@ -178,6 +198,42 @@ test('old internal tool documents authorize then lead to the real tool with one 
     }
   }
   assert.equal(reads, 12);
+});
+
+test('a partner cookie never authorizes control and a partner session skips the fixture preview', async () => {
+  let previews = 0;
+  let partners = 0;
+  const partnerHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: `partner_session=${'ab'.repeat(32)}` });
+  const snapshot = { preview: false, operator: { id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }, operators: [{ id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }] };
+  const loaded = pages(async () => { previews++; throw Object.assign(new Error('admin login required'), { statusCode: 401 }); }, partnerHeaders, async () => {
+    partners++;
+    return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'north-partner', role: 'partner', accessClass: 'partner' } };
+  });
+  for (const basePath of ['', '/studio']) {
+    await assert.rejects(renderPage(loaded.control), error => {
+      const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
+      assert.equal(login.pathname, basePath + '/login');
+      assert.equal(login.searchParams.get('returnTo'), '/control');
+      return true;
+    });
+  }
+  assert.equal(partners, 0);
+  assert.equal(previews, 2);
+  const element = await renderPage(loaded.partner, ['demo-north', 'overview']);
+  assert.equal(element.type, loaded.KevinBackoffice);
+  assert.equal(element.props.initialSnapshot, snapshot);
+  assert.equal(element.props.initialSnapshot.preview, false);
+  assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
+  assert.equal(element.props.user, 'north-partner');
+  assert.equal(element.props.initialView, 'ops');
+  assert.equal(element.props.surface, 'partner');
+  assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
+  assert.equal(previews, 2);
+  assert.equal(partners, 1);
+  const entrance = await renderPage(loaded.partner);
+  assert.equal(entrance.type, loaded.PartnerWorkspace);
+  assert.equal(entrance.props.preview, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(entrance.props.demonstrations)), [{ slug: 'demo-north', name: 'Demo North' }]);
 });
 
 test('legacy control entrances redirect once to canonical public control tools', async () => {

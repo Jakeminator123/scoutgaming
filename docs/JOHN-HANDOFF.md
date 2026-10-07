@@ -20,6 +20,33 @@ riktig operatörsinloggning och tenantdata är inte klara.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
 
+## Partnerportal, 7 oktober 2026
+
+Nivå 2-skalet kan visa intern fixtur (`preview: true`) och riktig operatörsdata
+(`preview: false`). Parallella filer i samma pass:
+`ops/neon-studio/005-operators.sql`, `web/storage/operator-store.mjs`,
+`lab/lib/partner-session.mjs`, `lab/lib/partner-data.mjs`,
+`lab/app/partner/login` och `lab/app/api/partner`.
+
+Gräns: `partner_session` är en egen cookie med eget syfte. En intern admin-cookie
+öppnar inte partnerdata, och partner-cookien öppnar inte `/control`. Medlemskap
+ger bara den egna operatörens data; annan operatör eller avstängt medlemskap ger
+403, okänd slug 404. Spelare, transaktioner och rapporter är tomma med `notConnected`.
+`/partner` utan session går till `/partner/login`. Interna admins ser fortfarande
+fixturförhandsvisningen med Partnerportal-rubrik och login-länk.
+
+Testat: `npm --prefix lab test` 909 pass (två ffprobe-tester kräver ffmpeg lokalt),
+`npm --prefix lab run typecheck`, `test/operator-store.mjs`, `test/partner-access-policy.mjs`,
+`test/studio-migrations.mjs`, `test/speech-ledger-import.mjs` 40 pass,
+`docs/system-map/verify.mjs --check` 0 fel. Ingen riktig Postgres-körning här;
+`tools/studio-isolated-qa.mjs` hashar nu `005-operators.sql` och körs i CI.
+
+Drift: runtime kräver exakt migration 001–005. Kör `005-operators.sql` mot
+produktions-Neon före deploy, annars svarar Studio-admin `unavailable`.
+Kvar: operatörs-onboarding-UI, åtkomstjournal för operatörsskrivningar
+(`audit_events` tar bara dokument/media), spelardata, transaktioner, rapporter.
+Inget krav i T2–T4 är markerat klart.
+
 ## Systemkarta, 7 oktober 2026
 
 Kartan beskriver nivå 1 `/control`, nivå 2 `/partner` och nivå 3 `/play`.

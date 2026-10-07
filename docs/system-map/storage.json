@@ -8,15 +8,15 @@
     "providerConfigurationRead": false,
     "envFilesRead": false,
     "testsRun": false,
-    "statement": "Samtliga tabellkolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är lästa i sex SQL-källor. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
+    "statement": "Samtliga tabellkolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är lästa i sju SQL-källor. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
   },
   "summary": {
     "schemaCount": 4,
-    "tableCount": 49,
+    "tableCount": 53,
     "tableCountBySchema": {
       "croupier_game": 25,
       "croupier_auth": 7,
-      "croupier_studio": 15,
+      "croupier_studio": 19,
       "croupier_zones": 2
     }
   },
@@ -42,7 +42,7 @@
       ],
       "startupContract": [
         "product-v1-källchecksum måste matcha game-ledgern.",
-        "Studio 001–004 måste vara verifierat installerade utan pending versioner.",
+        "Studio 001–005 måste vara verifierat installerade utan pending versioner.",
         "Saknad sparad policy/schema ger fel; ingen flagga migrerar, seedar eller aktiverar diskfallback."
       ],
       "sources": [
@@ -152,15 +152,16 @@
     {
       "name": "croupier_studio",
       "databaseId": "game-auth-studio-neon",
-      "tableCount": 15,
-      "purpose": "Gemensam sparad presentationspolicy, historik/audit, mediaidentiteter och beständiga tal/GPU/QA-journaler.",
-      "scope": "Serverägd environment; workspace för dokument/media/operatörs-QA; owner_hash/request/session för journaler.",
+      "tableCount": 19,
+      "purpose": "Gemensam sparad presentationspolicy, historik/audit, mediaidentiteter och beständiga tal/GPU/QA-journaler, plus operatör, medlemskap, rollprofil och paket.",
+      "scope": "Serverägd environment; workspace för dokument/media/operatörs-QA; owner_hash/request/session för journaler; workspace även för operatörstenant.",
       "writer": "Native Studio för dokument/media; Render journaladaptrar för tal/GPU/QA.",
       "migrationVersions": [
         "001",
         "002",
         "003",
-        "004"
+        "004",
+        "005"
       ],
       "installation": "Explicit immutable runner; kontrollerar käll- och strukturchecksum. Migrationer seedar inte policy eller kostnadsrätt.",
       "documentKinds": [
@@ -5175,6 +5176,575 @@
       ]
     },
     {
+      "schema": "croupier_studio",
+      "name": "operators",
+      "purpose": "Operatörsorganisation med stabilt operator_id",
+      "owner": "Native Studio tenantlager",
+      "scope": "Serverägd miljö och workspace",
+      "sources": [
+        {
+          "path": "ops/neon-studio/005-operators.sql",
+          "line": 5
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "slug",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 10
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 11
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 12
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/005-operators.sql",
+            "line": 13
+          }
+        ]
+      },
+      "foreignKeys": []
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_roles",
+      "purpose": "Namngiven rollprofil med behörigheter och delegationsgräns",
+      "owner": "Native Studio tenantlager",
+      "scope": "Serverägd miljö, workspace och operator_id",
+      "sources": [
+        {
+          "path": "ops/neon-studio/005-operators.sql",
+          "line": 16
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "role_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 20
+            }
+          ]
+        },
+        {
+          "name": "label",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 21
+            }
+          ]
+        },
+        {
+          "name": "permissions",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "delegable",
+          "dataType": "boolean",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id",
+          "role_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/005-operators.sql",
+            "line": 24
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operators",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 25
+            },
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 26
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_memberships",
+      "purpose": "Personalidentitet kopplad till operatör, rollprofil och status",
+      "owner": "Native Studio tenantlager",
+      "scope": "Serverägd miljö, workspace och operator_id. user_id är croupier_auth.users.id som text, inte användarnamn eller digest",
+      "sources": [
+        {
+          "path": "ops/neon-studio/005-operators.sql",
+          "line": 28
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "user_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "name": "role_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 34
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 36
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id",
+          "user_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/005-operators.sql",
+            "line": 37
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operators",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 38
+            },
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 39
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id",
+            "role_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_roles",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id",
+              "role_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 40
+            },
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 41
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_packages",
+      "purpose": "Tilldelade banor, spel, bord och branding. Branding är inte en behörighetsgräns",
+      "owner": "Native Studio tenantlager",
+      "scope": "Serverägd miljö, workspace och operator_id",
+      "sources": [
+        {
+          "path": "ops/neon-studio/005-operators.sql",
+          "line": 43
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 44
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "name": "package_revision",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 47
+            }
+          ]
+        },
+        {
+          "name": "lanes",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "name": "games",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 49
+            }
+          ]
+        },
+        {
+          "name": "tables",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 50
+            }
+          ]
+        },
+        {
+          "name": "branding",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 51
+            }
+          ]
+        },
+        {
+          "name": "published_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 52
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id",
+          "package_revision"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/005-operators.sql",
+            "line": 53
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operators",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 54
+            },
+            {
+              "path": "ops/neon-studio/005-operators.sql",
+              "line": 55
+            }
+          ]
+        }
+      ]
+    },
+    {
       "schema": "croupier_zones",
       "name": "clips",
       "purpose": "Uppladdade zonklipps exakta mått och privata mediareferens",
@@ -5563,7 +6133,7 @@
     }
   ],
   "caveats": [
-    "Kolumnkatalogen omfattar alla 49 SQL-tabeller i sex befintliga källor. Index, alla CHECK-/UNIQUE-uttryck, triggers och live-grants är inte en full driftinventering; relevanta SQL-källrader är länkade.",
+    "Kolumnkatalogen omfattar alla 53 SQL-tabeller i sju befintliga källor. Index, alla CHECK-/UNIQUE-uttryck, triggers och live-grants är inte en full driftinventering; relevanta SQL-källrader är länkade.",
     "Installerat live-schema, grants, riktiga rader, faktiska miljövärden och providerresurser är inte avlästa här.",
     "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
     "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
@@ -5575,16 +6145,16 @@
   ],
   "sqlContractCatalog": {
     "complete": true,
-    "scope": "Samtliga 49 CREATE TABLE-kontrakt i de sex befintliga SQL-källorna; inga live-schema/grants/rader avlästa.",
-    "sourceCount": 6,
-    "tableCount": 49,
-    "columnCount": 299,
-    "primaryKeyCount": 49,
-    "foreignKeyCount": 22,
+    "scope": "Samtliga 53 CREATE TABLE-kontrakt i de sju befintliga SQL-källorna; inga live-schema/grants/rader avlästa.",
+    "sourceCount": 7,
+    "tableCount": 53,
+    "columnCount": 330,
+    "primaryKeyCount": 53,
+    "foreignKeyCount": 26,
     "columnCountBySchema": {
       "croupier_game": 143,
       "croupier_auth": 41,
-      "croupier_studio": 106,
+      "croupier_studio": 137,
       "croupier_zones": 9
     },
     "nullableCountBySchema": {
@@ -5625,6 +6195,10 @@
       },
       {
         "path": "ops/neon-studio/004-fullfile-reservations.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/005-operators.sql",
         "line": 1
       },
       {

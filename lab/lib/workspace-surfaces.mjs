@@ -17,6 +17,9 @@ const legacyControl = Object.freeze({
 });
 const staffTools = new Set(['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat']);
 const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+// `login` is the public partner page, not an operator. The App Router page
+// wins by specificity; rejecting the slug here keeps the catch-all from
+// treating /partner/login as a workspace.
 const reservedOperators = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
 
 // Source component IDs stay internal. Links use one readable document address.

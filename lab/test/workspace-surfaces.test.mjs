@@ -63,6 +63,8 @@ test('each allowed view has one readable address that reloads to the same view a
   }
   assert.equal(resolveWorkspaceSurfacePath('/partner/demo-south').view,'ops');
   assert.equal(workspaceSurfacePath('partner','theme','demo-south'),'/partner/demo-south/presentation');
-  for(const slug of ['api','../other','other/team','Demo','a--b','a'.repeat(64),null])assert.equal(workspaceSurfacePath('partner','team',slug),null);
+  for(const slug of ['api','login','../other','other/team','Demo','a--b','a'.repeat(64),null])assert.equal(workspaceSurfacePath('partner','team',slug),null);
+  assert.equal(resolveWorkspaceSurfacePath('/partner/login'), null);
+  assert.equal(resolveWorkspaceSurfacePath('/studio/partner/login'), null);
   assert.equal(workspaceSurfacePath('partner','gen','demo-south'),null);
 });

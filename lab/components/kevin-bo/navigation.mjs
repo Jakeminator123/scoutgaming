@@ -1,31 +1,34 @@
-// A menu is presentation, never an authorization policy. Both surfaces currently
+// A menu is presentation, never an access grant. Both surfaces currently
 // require the server's existing internal administrator session.
 import { WORKSPACE_VIEW_SLUGS } from '../../lib/workspace-surfaces.mjs';
+
+export const STUDIO_GROUP = 'Produktion';
+
 export const DESTINATIONS = Object.freeze([
-  { id: 'ops', label: 'Casino live', group: 'Operations', owner: 'shared' },
-  { id: 'players', label: 'Players', group: 'Operations', owner: 'partner' },
-  { id: 'tx', label: 'Transactions', group: 'Operations', owner: 'partner' },
-  { id: 'pit', label: 'Pit bosses', group: 'Operations', owner: 'shared' },
-  { id: 'theme', label: 'Colours, chips & cards', group: 'Branding', owner: 'partner' },
-  { id: 'design', label: 'Table', group: 'Branding', owner: 'partner' },
-  { id: 'background', label: 'Casino background', group: 'Branding', owner: 'shared' },
-  { id: 'bj', label: 'Blackjack', group: 'Games', owner: 'partner' },
-  { id: 'roulette', label: 'Roulette', group: 'Games', owner: 'planned' },
-  { id: 'baccarat', label: 'Baccarat', group: 'Games', owner: 'planned' },
-  { id: 'dealers', label: 'Dealers', group: 'Games', owner: 'shared' },
-  { id: 'shoes', label: 'Shoes & decks', group: 'Games', owner: 'shared' },
-  { id: 'test', label: 'Test a table', group: 'Test', owner: 'shared' },
-  { id: 'stats', label: 'Statistics', group: 'Insights', owner: 'partner' },
-  { id: 'reports', label: 'Reports', group: 'Insights', owner: 'partner' },
-  { id: 'team', label: 'Team & access', group: 'Settings', owner: 'shared' },
-  { id: 'api', label: 'API keys', group: 'Settings', owner: 'shared' },
-  { id: 'archive', label: 'Dealer archive', group: 'Internal library', owner: 'internal' },
-  { id: 'tables', label: 'Rooms (legacy)', group: 'Internal library', owner: 'internal' },
-  { id: 'voice', label: 'Voice lines', group: 'Studio', owner: 'internal' },
-  { id: 'clips', label: 'Dealing clips', group: 'Studio', owner: 'internal' },
-  { id: 'media', label: 'Game media', group: 'Studio', owner: 'internal' },
-  { id: 'tree', label: 'Presentation events', group: 'Studio', owner: 'internal', originalLabel: 'Action tree' },
-  { id: 'gen', label: 'Generations', group: 'Studio', owner: 'internal' },
+  { id: 'ops', label: 'Livebord', group: 'Översikt', owner: 'shared' },
+  { id: 'pit', label: 'Pitbossar', group: 'Översikt', owner: 'shared' },
+  { id: 'players', label: 'Spelare', group: 'Spelare', owner: 'partner' },
+  { id: 'tx', label: 'Transaktioner', group: 'Spelare', owner: 'partner' },
+  { id: 'theme', label: 'Färger, marker och kort', group: 'Presentation', owner: 'partner' },
+  { id: 'design', label: 'Bord', group: 'Presentation', owner: 'partner' },
+  { id: 'background', label: 'Bakgrund', group: 'Presentation', owner: 'shared' },
+  { id: 'dealers', label: 'Presentationslanes', group: 'Presentation', owner: 'shared' },
+  { id: 'bj', label: 'Blackjack', group: 'Spel', owner: 'partner' },
+  { id: 'roulette', label: 'Roulette', group: 'Spel', owner: 'planned' },
+  { id: 'baccarat', label: 'Baccarat', group: 'Spel', owner: 'planned' },
+  { id: 'shoes', label: 'Skor och kortlekar', group: 'Spel', owner: 'shared' },
+  { id: 'test', label: 'Provbord', group: 'Spel', owner: 'shared' },
+  { id: 'stats', label: 'Statistik', group: 'Rapporter', owner: 'partner' },
+  { id: 'reports', label: 'Rapporter', group: 'Rapporter', owner: 'partner' },
+  { id: 'team', label: 'Medlemskap', group: 'Team & åtkomst', owner: 'shared' },
+  { id: 'api', label: 'Integrationer', group: 'Team & åtkomst', owner: 'shared' },
+  { id: 'archive', label: 'Dealerarkiv', group: 'Internt bibliotek', owner: 'internal' },
+  { id: 'tables', label: 'Rum (äldre)', group: 'Internt bibliotek', owner: 'internal' },
+  { id: 'voice', label: 'Röstklipp', group: STUDIO_GROUP, owner: 'internal' },
+  { id: 'clips', label: 'Deal-klipp', group: STUDIO_GROUP, owner: 'internal' },
+  { id: 'media', label: 'Spelmedia', group: STUDIO_GROUP, owner: 'internal' },
+  { id: 'tree', label: 'Presentationshändelser', group: STUDIO_GROUP, owner: 'internal', originalLabel: 'Action tree' },
+  { id: 'gen', label: 'Genereringar', group: STUDIO_GROUP, owner: 'internal' },
 ]);
 
 export function destinationsFor(surface) {

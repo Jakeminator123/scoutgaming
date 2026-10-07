@@ -22,7 +22,7 @@ rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och labb (`lab`,
 basePath `/studio`) i ett bygge/projekt utan att slå ihop deras Next-versioner.
 Aktiverad `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen
 till labb-servicen när Services skickar dit dokument/API direkt. Render behåller spel/live,
-och T2–T4:s verkliga partnerinloggning, livedata och full operatörsbunden lobby är fortsatt öppna.
+T2 är påbörjad: operatörslagring, partnerinloggning och scoped data. T2 är inte klar. T3 och T4 är fortsatt öppna.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
 Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
 tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
@@ -43,7 +43,7 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. |
-| 2 | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Kevins backoffice är bara denna förhandsvisning. Riktig operatörsinloggning och tenantdata är inte klara. |
+| 2 | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Partnerportalen visar intern demonförhandsvisning eller scoped operatörsdata. T2 är påbörjad: operatörslagring, partnerinloggning och scoped data. Spelare och transaktioner är inte anslutna. |
 | 3 | `/play`, `/play/blackjack` | Spelare. Lobby, profil och historik är inte klara. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
@@ -66,18 +66,20 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Studio-byggen passerar. Publicerad kod `5524b968` är provad med befintlig intern
   adminsession: båda ytorna, menybyten, operatörsbyte och direktlänkar fungerar.
   Oinloggade besök går till login; API ger 401. Riktig kundinloggning ligger i T2.
-- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Behåll
+- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad: operatörslagring, partnerinloggning och scoped data. Inte klar. Behåll
   dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
   separat partner-session med färsk identitets-, roll-, auth-epoch- och
   medlemskapskontroll. Inga automatiska reader/staff-uppgraderingar. Nivå 1
   administrerar operatörer och personal; nivå 2 delegerar endast tillåtna roller
   inom sin organisation. Isolerade tester ska bevisa aktivering, login, spärr,
   återkallelse och nekade direkta anrop mellan två organisationer.
-  Detta behöver en separat granskad migration i Studio-schemat för organisationer,
-  rollprofiler, medlemskap, partner-sessioner och åtkomstjournal. Ändra inte den
-  checksumfrysta `product-schema.sql` eller tidigare migrationsledger. Nuvarande
-  native runtime kräver exakt migration 001–004; ny migrationsberedskap måste
-  bevara fungerande intern Studio tills den nya delen har tillämpats.
+  Migration `005-operators.sql` (7 oktober) lägger till `operators`,
+  `operator_roles`, `operator_memberships` och `operator_packages` i Studio-schemat.
+  Ändra inte den checksumfrysta `product-schema.sql` eller tidigare migrationsledger.
+  Native runtime kräver nu exakt migration 001–005: en Neon-databas där 005 inte
+  är applicerad svarar `unavailable` tills migrationen körts. Kör den granskade
+  migrationen mot produktions-Neon innan koden deployas, aldrig tvärtom.
+  Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
   Delsteg 6 oktober: fristående `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.
   Både aktuell och ny målroll måste vara uttryckligt delegerbara av nivå 1;
@@ -384,7 +386,7 @@ att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
    OpenClaw får tillåten publik kontext/katalogrevision, ingen direkt saldoauktoritet.
    Kamera består; mic transkriberas före modellen. Råljud/modell-/GPU-uppgradering ingår inte.
 5. **Schema/authkommandon:** checksumlåst product-v1/`ops/neon-game/product-schema.sql`
-   ändras inte retroaktivt. Separata additiva001–004 och återläsningsprov krävs.
+   ändras inte retroaktivt. Separata additiva 001–005 och återläsningsprov krävs.
    `/api/bo/config` är aktiv Neon-spelprojektion, inte generell raderingskandidat.
    Spelarstatus/partner rotate/revoke/launch/credit kräver signerad Renderauthority,
    nonce/tidsfence och verklig runtimecancel före OK; Vercel skriver inte eget saldo.

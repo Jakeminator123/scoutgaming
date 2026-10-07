@@ -3,8 +3,10 @@
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
 - **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe` och `/control/operator-chat`.
-- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Kevins importerade backoffice är bara denna förhandsvisning, inte kontrollpanelen. Riktig operatörsinloggning och tenantdata är inte klara. Kundval är ännu inte aktiverat; välj en tydligt märkt demonstration för att prova begränsade lane- och designval.
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, egen profil och historik återstår.
+
+Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
 **En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
