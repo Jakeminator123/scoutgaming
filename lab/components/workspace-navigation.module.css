@@ -43,17 +43,7 @@
 }
 .crumb strong { color: var(--sg-text); font-weight: 500; }
 .sep { color: var(--sg-strong); padding: 0 4px; }
-.search { display: flex; align-items: center; gap: 8px; flex: 0 1 320px; min-width: 180px; }
-.search input {
-  flex: 1; min-width: 0; min-height: 40px; width: auto; background: var(--sg-field); color: var(--sg-text);
-  border: 1px solid var(--sg-field-line); border-radius: 8px; padding: 0 12px; font-size: 14px;
-}
-.search input:hover { border-color: var(--sg-strong); }
 .status { display: flex; align-items: center; }
-.pending {
-  font-family: var(--sg-font-mono), "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sg-warn-text); white-space: nowrap;
-}
 .levels {
   display: flex; gap: 2px; padding: 3px; border: 1px solid var(--sg-field-line); border-radius: 9px; background: var(--sg-field);
 }

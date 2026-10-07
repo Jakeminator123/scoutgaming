@@ -177,7 +177,7 @@ test('native group headers use seven fresh admin GETs and no sessions while lega
     const h = harness(), f = nativeReadFixture(), props = { ...f.props, readIdentity };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
     f.state.reads = 0; f.state.sessions = 0;
-    for (const menu of ['Spel, lanes & bord', 'Konton', 'Partner', 'Talgranskning']) {
+    for (const menu of ['Spel, lanes & bord', 'Konton', 'Partnernycklar', 'Talgranskning']) {
       buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
       const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
       assert.ok(view && Object.values(view.props.resources).every(resource => resource.payload), menu);
@@ -431,7 +431,7 @@ test('menu changes fetch only displayed resources and keep a live identity check
     ['operations', 'Drift & spelintegritet', ['overview', 'shoes']],
     ['tables', 'Spel, lanes & bord', ['config']],
     ['accounts', 'Konton', ['players', 'users']],
-    ['partners', 'Partner', ['apikeys', 'emails']],
+    ['partners', 'Partnernycklar', ['apikeys', 'emails']],
     ['finance', 'Betalningar & journal', ['transactions']],
     ['media-review', 'Talgranskning', ['config', 'voicelines']],
   ]) {
@@ -533,7 +533,7 @@ test('one-time credential display clears on explicit reload/group change and nev
   const props = {apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
     init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree,'Partner')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree,'Partnernycklar')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   let native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
   native.props.command('apikeys/create',{name:'Example'}); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
@@ -784,7 +784,7 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
     assert.equal(buttons(tree, 'Konton')[0].props.disabled, false);
     buttons(tree, 'Konton')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
     h.render(props); h.effects(); await flush(); tree = h.render(props); assert.equal(pending.length, 3);
-    buttons(tree, 'Partner')[0].props.onClick();
+    buttons(tree, 'Partnernycklar')[0].props.onClick();
     assert.ok(pending.slice(1).every(entry => entry.signal.aborted));
     // Resolve stale reads in the click-to-effect window. These fetches ignore
     // cancellation and include both successful data and an authorization error.
@@ -839,7 +839,7 @@ test('POST and its reload block navigation and double writes; one-time results r
         const waiting = deferred(); pending.push({ action, ...waiting }); return waiting.promise;
       } };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
-    buttons(tree, 'Partner')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    buttons(tree, 'Partnernycklar')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
     view().props.command('apikeys/create', { name: 'Fixture partner' });
     const duplicate = { name: 'Duplicate', password: 'discarded-fixture-password' }; view().props.command('apikeys/create', duplicate);
