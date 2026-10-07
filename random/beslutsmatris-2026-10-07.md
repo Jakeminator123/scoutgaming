@@ -91,6 +91,24 @@ Granskning av sqlite-vägen i `web/server.mjs` (pass C, endast läsning). Handof
 | Om sqlite pensioneras | Förloras: offline-labbet, lokala profiler, sqlite-fixturer i testerna, `tools/backup-lab-state.mjs`, `lab/data`, `test/sqlite-postgres-migration.mjs` | `lab/start.mjs:16-21`, `:68-72`; `tools/backup-lab-state.mjs:166` |
 | Beslut nu | Ta inte bort något | – |
 
+## Rader 37–44, natten 7–8 oktober
+
+Från Jakobs genomgång av `/control`, agentens Tveksamt efter pass A–C, och Vercel-listan.
+Rekommendationerna är orkestratorns; Jakob avgör.
+
+| # | Tveksamt | Alternativ | Rekommendation | Vem |
+|---|---|---|---|---|
+| 37 | Händelser (`/control/events`) och Händelser → klipp (`/control/tree`) visar samma data: en redigerar ett event, den andra är översikten över alla | A: en sida; översikten blir läget utan valt event. B: två sidor som nu | **A**, i klipplogikpasset | John |
+| 38 | Klipp vid kortutdelning finns i två system: `events`/`lines`/`variants`/`triggers` (Händelser) och `legacyClipPolicy` (Kort & deal, frekvens per klipp). `web/clip-mapping.mjs` läser det ena, `web/presentation-api.mjs` det andra | A: ett system; avgör först vilket spelet faktiskt använder, flytta det andras data dit, ta bort det andra. B: lämna | **A**. Det är kärnan i Jakobs klipplogik. Egen brief: `random/prompt-klipplogik.md` | Jakob |
+| 39 | L23: rullande observationsfönster monteras inte sedan `studio.tsx` togs bort; Uppspelning stannar vid 300 meddelanden eller 4 MiB | A: montera rullande läge på `/control/activity`. B: lämna | **A**. Beteendet fanns; regeln säger att det ska tillbaka | Jakob |
+| 40 | Vercel `scoutgaming-legacy-frontend`: frontenden före Services-bytet. Git är fortfarande kopplat, varje push startar ett bygge som avbryts | A: radera. Koden finns i Git, miljönamnen i `docs/ENVIRONMENT-VARIABLES.md`; förlorar deploy-historik. B: koppla loss Git, behåll som reserv | **A**. Reserven är repot | Jakob |
+| 41 | Vercel `croupier-native-qa-abc92154cb15` och `croupier-native-studio-qa-abc92154cb15`: isolerad testmiljö (frontend + Studio, egen databas), ingen Git | A: behåll, kostar inget, är testbänken för att prova lane-export utan att röra produktion. B: radera, återskapa vid behov (~1 h) | **A** | Jakob |
+| 42 | Systemkartan: 24 kontrakt, varav 9 är miljöfakta (`environment.*`) som aldrig blir gröna lokalt; gul läses som fel fast det betyder "indata ändrad, granska" | A: trimma till kontrakt som skyddar något (rutter, scheman, spelhändelser, integritet); miljöfakta blir en vanlig tabell; gul får svensk text "granska" med commit som ändrade. B: lämna | **A**, eget litet pass | Jakob |
+| 43 | `/control/zones` har eget skal (mörkgrön bakgrund), för mycket text | A: in på sidmallen, korta texten. B: lämna | **A** | John |
+| 44 | Jakobs UI-lista rad 3–6: rullgardin med anslutna bolag på Översikt, spelare per bolag, "SG test game provider" som demo-operatör | Är lane-flödet (L1–L3, L15) i UI-form. Demo-operatören är ett bra första steg: en intern operatör att exportera till | Ingår i klipplogik/lane-passet, inte separat | Jakob |
+
+Avgjort på Jakobs delegering: L20–L22 (tre texter) rättas i nästa mekaniska pass. GPU-workflows låses till `ubuntu-24.04` före 19 oktober.
+
 ## Avgjort av orkestratorn, till kännedom
 
 | Tveksamt | Vad som gjordes |
