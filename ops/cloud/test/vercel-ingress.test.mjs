@@ -58,13 +58,13 @@ test('old Render document bookmarks redirect to canonical UI without forwarding 
   assert.equal(vercelIngressRequest(direct('/blackjack?dealer=astrid&presentation=local&launch=private&token=secret'),ingress).redirect,'https://preview.example.test/game?dealer=astrid&presentation=local');
   assert.equal(vercelIngressRequest(direct('/studio/activity'),ingress).redirect,'https://preview.example.test/studio/activity');
   assert.equal(vercelIngressRequest(direct('/v2?dealer=amira&rehearsal=1'),ingress).redirect,'https://preview.example.test/v2?dealer=amira&rehearsal=1');
-  assert.equal(vercelIngressRequest(direct('/bo?token=secret'),ingress).redirect,'https://preview.example.test/studio/administration');
+  assert.equal(vercelIngressRequest(direct('/bo?token=secret'),ingress).redirect,'https://preview.example.test/control/administration');
   const state='a'.repeat(64),token='b'.repeat(43);
   assert.equal(vercelIngressRequest(direct(`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}&token=secret`),ingress).redirect,
-    `https://preview.example.test/studio/login?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}`);
+    `https://preview.example.test/control/login?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}`);
   assert.equal(vercelIngressRequest(direct(`/bo/set-password.html?t=${token}&next=https://evil.invalid`),ingress).redirect,
-    `https://preview.example.test/studio/set-password?t=${token}`);
-  assert.equal(vercelIngressRequest(direct('/bo/login.html?returnTo=https://evil.invalid'),ingress).redirect,'https://preview.example.test/studio/login');
+    `https://preview.example.test/control/set-password?t=${token}`);
+  assert.equal(vercelIngressRequest(direct('/bo/login.html?returnTo=https://evil.invalid'),ingress).redirect,'https://preview.example.test/control/login');
   for(const path of ['/api/table','/studio/api/project','/speech-stream','/lipsync-worker','/%62o','//evil.test','/api/auth/bo/callback?code=secret'])assert.equal(vercelIngressRequest(direct(path),ingress).accepted,false,path);
   assert.equal(vercelIngressRequest({...direct('/bo'),method:'POST'},ingress).accepted,false);
   assert.equal(vercelIngressRequest({...direct('/bo'),headers:{host:'evil.test'}},ingress).accepted,false);

@@ -76,7 +76,7 @@ export function platformRoute(url, config) {
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
   if(config.unifiedUi && ['/administration','/administration/'].includes(path)){
-    return {kind:'redirect',destination:`${config.publicOrigin}/studio/administration${url.search}`};
+    return {kind:'redirect',destination:`${config.publicOrigin}/control/administration${url.search}`};
   }
   if(config.unifiedUi && config.canonicalGame){
     const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
