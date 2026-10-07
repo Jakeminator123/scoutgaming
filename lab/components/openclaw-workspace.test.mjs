@@ -233,15 +233,15 @@ test('invalid explicit dashboard is not replaced with the default or reflected',
 test('page authorizes request before rendering and never fetches project or video state', async () => {
   const incoming = new Headers({ host: 'localhost:4188', cookie: 'existing-session' });
   let authorized = false;
-  const page = load('../app/openclaw/page.tsx', {
+  const page = load('../app/control/openclaw/page.tsx', {
     'next/headers': { headers: async () => incoming },
-    '@/lib/ui-server': { authorizeUiPage: async request => { assert.equal(request.url, 'http://localhost:4188/openclaw'); assert.equal(request.headers.get('cookie'), 'existing-session'); authorized = true; } },
+    '@/lib/ui-server': { authorizeUiPage: async request => { assert.equal(request.url, 'http://localhost:4188/control/openclaw'); assert.equal(request.headers.get('cookie'), 'existing-session'); authorized = true; } },
     '@/components/openclaw-workspace': { OpenClawWorkspace },
   });
   assert.equal(page.dynamic, 'force-dynamic');
   await page.default();
   assert.equal(authorized, true);
-  const denied = load('../app/openclaw/page.tsx', {
+  const denied = load('../app/control/openclaw/page.tsx', {
     'next/headers': { headers: async () => incoming },
     '@/lib/ui-server': { authorizeUiPage: async () => { throw new Error('denied'); } },
     '@/components/openclaw-workspace': { OpenClawWorkspace },
