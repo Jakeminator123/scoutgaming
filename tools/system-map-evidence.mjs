@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { captureSystemMapInputs, createSourceReader, hashText, safeCiUrl, safePath } from '../docs/system-map/verify.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SHA = /^[a-f0-9]{40}$/, HASH = /^[a-f0-9]{64}$/;
+const SHA = /^[a-f0-9]{40}$/, HASH = /^sha256:[a-f0-9]{64}$/;
 const ISOLATED_KIND = 'isolated-studio-sql-restart-https';
 const ISOLATED_PATH = 'tools/studio-isolated-qa.mjs';
 const json = path => JSON.parse(readFileSync(resolve(path), 'utf8').replace(/^\uFEFF/, ''));

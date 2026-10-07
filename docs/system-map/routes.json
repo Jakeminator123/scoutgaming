@@ -1,5 +1,5 @@
 {
-  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
+  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
   "evidence": "code-inspected",
   "evidenceLabel": "Kodläst katalog; inga nya runtimeprov",
   "runtimeVerified": false,
@@ -56,15 +56,28 @@
       ]
     },
     {
+      "id": "player-area",
+      "paths": [
+        "/play"
+      ],
+      "label": "Spelaryta",
+      "serving": "Vercel service web / Next, project scoutgaming.",
+      "access": "Player. The page links to /play/blackjack. Login happens when the game opens if there is no player session.",
+      "sources": [
+        "apps/croupier-frontend/app/play/page.tsx:5"
+      ]
+    },
+    {
       "id": "game-entry",
       "paths": [
-        "/blackjack"
+        "/play/blackjack"
       ],
       "label": "Blackjack",
-      "serving": "Vercel frontend GET/HEAD route -> platformUiDocument -> prepared game.html from web/public/index.html",
-      "access": "With CROUPIER_STUDIO_NEON_POLICY=1, requires authenticated player session before serving the game shell.",
+      "serving": "Vercel service web GET/HEAD /play/blackjack -> platformUiDocument. When unified UI and canonical game are enabled, /blackjack redirects here.",
+      "access": "Player. With CROUPIER_STUDIO_NEON_POLICY=1, an authenticated player session is required before the game shell.",
       "behavior": "Reads /api/auth/session then saved /api/bo/config. Anonymous -> 303 /player-login. Unavailable session or policy -> 503. Signed partner launch is sent to Render before a clean canonical redirect.",
       "sources": [
+        "apps/croupier-frontend/app/play/blackjack/route.ts:4",
         "apps/croupier-frontend/app/blackjack/route.ts:4",
         "apps/croupier-frontend/lib/server-ui.mjs",
         "apps/croupier-frontend/lib/platform-routing.mjs:75",
@@ -100,16 +113,30 @@
       ]
     },
     {
+      "id": "control-home",
+      "paths": [
+        "/control"
+      ],
+      "label": "Kontrollpanel",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "sources": [
+        "lab/app/control/[[...path]]/page.tsx:6",
+        "lab/app/control/surface-page.tsx:12"
+      ],
+      "note": "Staff home. Dedicated /control/<tool> pages are separate files. /studio is only the lab basePath."
+    },
+    {
       "id": "studio",
       "paths": [
-        "/studio"
+        "/control/clips"
       ],
-      "localPath": "/",
+      "localPath": "/control/clips",
       "label": "Dealer & klipp",
-      "serving": "Vercel Lab Next page -> LabStudio",
-      "access": "Native mode: admin, with legacy superadmin normalized to admin. Anonymous -> Studio login. Local non-native mode has loopback guard.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
       "sources": [
-        "lab/app/page.tsx:6",
+        "lab/app/control/clips/page.tsx:6",
         "lab/lib/ui-server.ts:9",
         "lab/components/lab-studio.tsx"
       ],
@@ -117,17 +144,18 @@
         "lab/test/studio-navigation.test.mjs",
         "lab/test/dealer-workspace.test.mjs",
         "lab/test/studio-document-api.test.mjs"
-      ]
+      ],
+      "note": "Dealer & klipp. lab/app/page.tsx re-exports this page. /studio is the lab basePath, not a product."
     },
     {
       "id": "studio-administration",
       "paths": [
-        "/studio/administration"
+        "/control/administration"
       ],
-      "localPath": "/administration",
+      "localPath": "/control/administration",
       "label": "Backoffice",
-      "serving": "Lab Next page -> NativeAdministration -> StudioAdministration",
-      "access": "Native live admin authorization; action availability also depends on registered handlers and explicit gates.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin. Native live admin authorization; action availability also depends on registered handlers and explicit gates.",
       "groups": [
         "Drift & spelintegritet",
         "Spel, lanes & bord",
@@ -137,12 +165,12 @@
         "Talgranskning"
       ],
       "sources": [
-        "lab/app/administration/page.tsx:11",
+        "lab/app/control/administration/page.tsx:11",
         "lab/components/native-administration.tsx",
         "lab/components/studio-administration.tsx",
         "lab/lib/backoffice-navigation.mjs:22"
       ],
-      "note": "Sections are UI state within this page. studioAdminSectionPath() descriptors do not establish real /administration/:section pages.",
+      "note": "Sections are UI state within this page. studioAdminSectionPath() descriptors do not establish real /administration/:section pages. lab/app/administration/page.tsx only redirects here.",
       "tests": [
         "lab/test/studio-admin-contract.test.mjs",
         "lab/test/studio-admin-api.test.mjs",
@@ -152,13 +180,15 @@
     {
       "id": "studio-auth-pages",
       "paths": [
-        "/studio/login",
-        "/studio/set-password"
+        "/control/login",
+        "/control/set-password"
       ],
       "label": "Studio-inloggning och lösenordsval",
-      "serving": "Lab Next pages -> StudioLogin",
-      "access": "Public entry in enabled native mode; actual login only admits administrator credentials. Password selection requires a validated single-use token.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin credential entry. Password selection requires a validated single-use token.",
       "sources": [
+        "lab/app/control/login/page.tsx:1",
+        "lab/app/control/set-password/page.tsx:1",
         "lab/app/login/page.tsx:9",
         "lab/app/set-password/page.tsx:9",
         "lab/lib/studio-native-auth-actions.mjs:144"
@@ -167,17 +197,18 @@
         "lab/test/studio-login-form.test.mjs",
         "lab/test/studio-login-client.test.mjs",
         "test/studio-native-auth-actions.mjs"
-      ]
+      ],
+      "note": "The /control pages re-export lab/app/login/page.tsx and lab/app/set-password/page.tsx."
     },
     {
       "id": "studio-tools",
       "paths": [
-        "/studio/videos",
-        "/studio/tree",
-        "/studio/activity",
-        "/studio/events",
-        "/studio/probe",
-        "/studio/guide"
+        "/control/videos",
+        "/control/tree",
+        "/control/activity",
+        "/control/events",
+        "/control/probe",
+        "/control/guide"
       ],
       "labels": [
         "Klippbibliotek",
@@ -187,35 +218,36 @@
         "Probe",
         "Guide"
       ],
-      "serving": "Lab Next pages -> StudioPage -> Studio with initialView",
-      "access": "Same studioUiInitialData authorization as Studio home",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
       "sources": [
         "lab/app/studio-page.tsx:6",
-        "lab/app/videos/page.tsx:4",
-        "lab/app/tree/page.tsx:6",
-        "lab/app/activity/page.tsx:4",
-        "lab/app/events/page.tsx:4",
-        "lab/app/probe/page.tsx:2",
-        "lab/app/guide/page.tsx:4",
+        "lab/app/control/videos/page.tsx:4",
+        "lab/app/control/tree/page.tsx:6",
+        "lab/app/control/activity/page.tsx:4",
+        "lab/app/control/events/page.tsx:4",
+        "lab/app/control/probe/page.tsx:2",
+        "lab/app/control/guide/page.tsx:4",
         "lab/lib/studio-navigation.mjs:10"
       ],
       "tests": [
         "lab/test/studio-navigation.test.mjs",
         "lab/test/activity-log.test.mjs",
         "lab/test/native-observation.test.mjs"
-      ]
+      ],
+      "note": "Old lab/app/<tool>/page.tsx handlers only redirect to these /control paths."
     },
     {
       "id": "background-zones",
       "paths": [
-        "/studio/zones"
+        "/control/zones"
       ],
-      "localPath": "/zones",
+      "localPath": "/control/zones",
       "label": "Astrids bakgrundszoner",
-      "serving": "Lab Next page -> BackgroundZones",
-      "access": "Studio authorization; cloud APIs retain the Lab request boundary.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
       "sources": [
-        "lab/app/zones/page.tsx:9",
+        "lab/app/control/zones/page.tsx:9",
         "lab/lib/zone-cloud-store.mjs:62",
         "lab/docs/README.md"
       ],
@@ -227,15 +259,15 @@
     {
       "id": "openclaw-entry",
       "paths": [
-        "/studio/openclaw"
+        "/control/openclaw"
       ],
-      "localPath": "/openclaw",
+      "localPath": "/control/openclaw",
       "label": "OpenClaw",
-      "serving": "Authorized native Studio page -> OpenClaw model editor; optional advanced native dashboard link",
-      "access": "Live Studio admin session authorizes model configuration; native advanced dashboard retains its separate password and pairing.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
       "destination": "https://croupier-lab-director.onrender.com/openclaw/",
       "sources": [
-        "lab/app/openclaw/page.tsx:8",
+        "lab/app/control/openclaw/page.tsx:8",
         "lab/components/openclaw-workspace.tsx",
         "lab/lib/openclaw-dashboard.mjs:1",
         "lab/lib/openclaw-admin.mjs"
@@ -249,14 +281,14 @@
     {
       "id": "operator-chat",
       "paths": [
-        "/studio/operator-chat"
+        "/control/operator-chat"
       ],
-      "localPath": "/operator-chat",
+      "localPath": "/control/operator-chat",
       "label": "Operatörschatt",
-      "serving": "Authorized Studio advanced view -> existing GatewayPanel operator chat",
-      "access": "Live Studio admin page guard; existing Gateway connection and chat protections remain.",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
       "sources": [
-        "lab/app/operator-chat/page.tsx",
+        "lab/app/control/operator-chat/page.tsx",
         "lab/app/studio-page.tsx",
         "lab/components/studio-types.ts",
         "lab/components/studio.tsx",
@@ -268,6 +300,21 @@
         "lab/test/studio-navigation.test.mjs",
         "lab/test/studio-login-client.test.mjs"
       ]
+    },
+    {
+      "id": "partner-preview",
+      "paths": [
+        "/partner",
+        "/partner/:operatorSlug"
+      ],
+      "label": "Operatörsförhandsvisning",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin. Preview only; this is not operator login or tenant data.",
+      "sources": [
+        "lab/app/partner/[[...path]]/page.tsx:7",
+        "lab/components/kevin-bo/kevin-backoffice.jsx"
+      ],
+      "note": "lab/components/kevin-bo is this preview. The Next file pattern is /partner/:path*."
     }
   ],
   "apiGroups": [
@@ -556,6 +603,18 @@
         "open-claw/lab/test/studio-admin.test.mjs",
         "open-claw/lab/test/gateway-rpc.test.mjs"
       ]
+    },
+    {
+      "id": "partner-preview-api",
+      "paths": [
+        "GET /studio/api/partner-preview"
+      ],
+      "serving": "Lab route under basePath /studio. Other exported methods reject the preview.",
+      "access": "Internal admin. Live authorize on every read. Fixture preview must be explicitly enabled; request JSON does not select the operator data.",
+      "sources": [
+        "lab/app/api/partner-preview/route.ts:6",
+        "lab/lib/partner-preview.mjs:39"
+      ]
     }
   ],
   "lanes": [
@@ -600,7 +659,7 @@
         "Studio -> Backoffice -> Spel, lanes & bord",
         "POST /studio/api/admin/game-lane with lane and expectedRevision",
         "Admin handler validates lane and saves administration.gameLane with CAS",
-        "Clean /blackjack checks player session and reads saved /api/bo/config",
+        "Clean /play/blackjack checks player session and reads saved /api/bo/config",
         "gameLaneSelection resolves saved lane or explicit allowed legacy selectors",
         "Game HTML receives data-game-lane, data-game-dealer and data-game-presentation"
       ],
@@ -635,12 +694,14 @@
         "/bo/",
         "/bo/index.html"
       ],
-      "to": "/studio/administration",
+      "to": "/control/administration",
       "status": 308,
       "sources": [
         "apps/croupier-frontend/lib/server-ui.mjs",
         "web/server.mjs"
-      ]
+      ],
+      "retired": true,
+      "note": "Old /bo HTML bookmarks. Destination authorization is the control administration page."
     },
     {
       "from": [
@@ -648,14 +709,15 @@
         "/bo/set-password.html"
       ],
       "to": [
-        "/studio/login",
-        "/studio/set-password"
+        "/control/login",
+        "/control/set-password"
       ],
       "status": 308,
       "note": "Only exact allowed returnTo and bounded valid password-token syntax are retained.",
       "sources": [
         "apps/croupier-frontend/lib/server-ui.mjs"
-      ]
+      ],
+      "retired": true
     },
     {
       "from": [
@@ -665,11 +727,13 @@
         "/studio-lissabon",
         "/labb-lissabon"
       ],
-      "to": "/studio",
+      "to": "/control",
       "status": "Temporary redirect in platform mode",
       "sources": [
         "apps/croupier-frontend/next.config.mjs:21"
-      ]
+      ],
+      "retired": true,
+      "note": "Retired names /lab, /labb, /studio-astrid, /studio-lissabon and /labb-lissabon. /studio itself stays the lab basePath."
     },
     {
       "from": [
@@ -678,19 +742,46 @@
         "/labb/guide"
       ],
       "to": [
-        "/studio/videos",
-        "/studio/zones",
-        "/studio/guide"
+        "/control/videos",
+        "/control/zones",
+        "/control/guide"
       ],
       "sources": [
         "apps/croupier-frontend/next.config.mjs:21"
+      ],
+      "retired": true
+    },
+    {
+      "from": [
+        "/lissabon"
+      ],
+      "to": "/control",
+      "retired": true,
+      "note": "Lab app path. With basePath /studio the mounted URL is /studio/lissabon. Redirect-only page.",
+      "sources": [
+        "lab/app/lissabon/page.tsx:6",
+        "lab/app/control/public-redirect.ts:5"
       ]
     },
     {
       "from": "/studio/lissabon",
-      "to": "Studio home",
+      "to": "/control",
       "sources": [
         "lab/app/lissabon/page.tsx:2"
+      ],
+      "retired": true,
+      "note": "lab/app/lissabon/page.tsx is redirect-only. Lissabon is not a product name."
+    },
+    {
+      "from": [
+        "/blackjack",
+        "/blackjack/",
+        "/play/blackjack/"
+      ],
+      "to": "/play/blackjack",
+      "note": "When unified UI and canonical game are enabled, platform routing redirects these to /play/blackjack. A signed launch on /play/blackjack is still sent to Render /blackjack.",
+      "sources": [
+        "apps/croupier-frontend/lib/platform-routing.mjs:83"
       ]
     },
     {
@@ -703,6 +794,37 @@
         "apps/croupier-frontend/app/v2/route.ts:3",
         "apps/croupier-frontend/app/casino.html/route.ts:3",
         "apps/croupier-frontend/lib/server-ui.mjs"
+      ]
+    },
+    {
+      "from": [
+        "/activity",
+        "/administration",
+        "/events",
+        "/guide",
+        "/openclaw",
+        "/operator-chat",
+        "/probe",
+        "/tree",
+        "/videos",
+        "/zones"
+      ],
+      "to": [
+        "/control/activity",
+        "/control/administration",
+        "/control/events",
+        "/control/guide",
+        "/control/openclaw",
+        "/control/operator-chat",
+        "/control/probe",
+        "/control/tree",
+        "/control/videos",
+        "/control/zones"
+      ],
+      "retired": true,
+      "note": "Old lab/app/<tool>/page.tsx handlers are redirect-only via redirectToPublicControl. Mounted under basePath /studio they are /studio/<tool>.",
+      "sources": [
+        "lab/app/control/public-redirect.ts:5"
       ]
     }
   ],
@@ -726,22 +848,22 @@
     ],
     "completeForScope": true,
     "counts": {
-      "files": 57,
-      "frontend": 10,
-      "studio": 47,
-      "pages": 16,
-      "routeHandlers": 41,
-      "apiHandlers": 34,
-      "explicitMethodExports": 63
+      "files": 76,
+      "frontend": 12,
+      "studio": 64,
+      "pages": 41,
+      "routeHandlers": 43,
+      "apiHandlers": 35,
+      "explicitMethodExports": 72
     },
-    "pathConvention": "path is the URL pattern within the app, publicPath uses the documented /studio Lab mount. :id denotes one segment, :path+ required catch-all, :path* optional catch-all.",
+    "pathConvention": "path is the Next pattern inside the app. Public product paths are /control, /partner and /play. :id is one segment, :path+ a required catch-all, :path* an optional catch-all. /studio is the lab basePath, not a product.",
     "methodConvention": "methods lists only HTTP verbs explicitly exported by route.ts. Next page components have methods=[]; implicit framework HEAD/OPTIONS and unsupported verbs are not inferred.",
     "servingConvention": "Services describe platform routing with native Studio enabled in existing code, with conditional legacy/local branches stated. Source file existence does not prove a handler is reached on a deployed public origin.",
     "caveats": [
       "No deployed route, live authorization, native browser UI or provider was exercised for this catalog.",
       "Historical alias route files are marked historicalAlias and remain distinct from their redirect target; no extra QA-query rows duplicate a file.",
       "Manually registered web server routes, native Node WebSocket endpoints outside app and framework-generated assets are covered by existing groups only; this bounded file catalog is not an exhaustive server-regex inventory.",
-      "Source SHA is managed by the coordinating agent after the code commit."
+      "sourceSha is git rev-parse HEAD for this inventory. A Next route added or moved without routes.json is a route-drift error."
     ],
     "sources": [
       {
@@ -802,7 +924,7 @@
       "handlerFile": "apps/croupier-frontend/app/blackjack/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Canonical Neon-policy mode requires authenticated player session and saved game policy.",
-      "boundary": "platformUiDocument reads signed Render /api/auth/session and /api/bo/config before serving the prepared game shell; anonymous 303 to /player-login, unknown access/policy 503. Signed launch is routed to Render by middleware.",
+      "boundary": "Prepared game document. When unified UI and canonical game are enabled, platform routing redirects /blackjack to /play/blackjack before this handler. /play/blackjack uses the same platformUiDocument helper.",
       "groupId": "game-entry",
       "sources": [
         {
@@ -846,7 +968,7 @@
       "handlerFile": "apps/croupier-frontend/app/bo/[[...path]]/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Recognized legacy redirects; destination performs authorization.",
-      "boundary": "Optional catch-all file does not expose a general BO API. Only /bo, /bo/, /bo/index.html, /bo/login.html and /bo/set-password.html receive bounded 308 redirects; other unmatched documents return 404. Middleware separately forwards its explicit BO allowlist to Render.",
+      "boundary": "Optional catch-all does not expose a general BO API. Recognized /bo HTML bookmarks redirect to /control/administration, /control/login and /control/set-password. Other unmatched documents return 404.",
       "groupId": "aliases",
       "sources": [
         {
@@ -1005,7 +1127,7 @@
       "handlerFile": "apps/croupier-frontend/app/labb-lissabon/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Redirect entry; destination performs its own authorization.",
-      "boundary": "Platform Next redirect sends this alias to /studio before the handler. Outside platform mode this GET handler returns its configured literal Render /studio redirect.",
+      "boundary": "In platform mode next.config redirects /labb-lissabon to /control before this handler. Outside platform mode this GET handler returns its configured literal Render /studio redirect.",
       "groupId": "aliases",
       "sources": [
         {
@@ -1146,36 +1268,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/activity/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/activity.",
       "groupId": "studio-tools",
       "sources": [
         {
           "path": "lab/app/activity/page.tsx",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
           "line": 6
+        },
+        {
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/activity"
     },
     {
       "id": "studio-administration",
@@ -1185,32 +1294,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/administration/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native authorize() revalidates the live administrator; unavailable actions remain absent.",
-      "boundary": "Normalized exact native Host/Origin boundary and live authorization; 401 redirects to Studio login. NativeAdministration uses registered API action availability.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/administration.",
       "groupId": "studio-administration",
       "sources": [
         {
           "path": "lab/app/administration/page.tsx",
-          "line": 11
+          "line": 6
         },
         {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/studio-native-runtime.mjs",
-          "line": 52
-        },
-        {
-          "path": "lab/lib/studio-native-auth.mjs",
-          "line": 42
-        },
-        {
-          "path": "lab/lib/studio-admin-api.mjs",
-          "line": 60
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/administration"
     },
     {
       "id": "studio-api-admin-action",
@@ -3028,36 +3128,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/events/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/events.",
       "groupId": "studio-tools",
       "sources": [
         {
           "path": "lab/app/events/page.tsx",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
           "line": 6
+        },
+        {
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/events"
     },
     {
       "id": "studio-guide",
@@ -3067,36 +3154,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/guide/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/guide.",
       "groupId": "studio-tools",
       "sources": [
         {
           "path": "lab/app/guide/page.tsx",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
           "line": 6
+        },
+        {
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/guide"
     },
     {
       "id": "studio-lissabon",
@@ -3106,21 +3180,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/lissabon/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Redirect page; no explicit authorization in this file.",
-      "boundary": "Calls redirect('/'); final mounted destination follows the existing Next deployment base-path behavior.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control.",
       "groupId": "aliases",
       "sources": [
         {
           "path": "lab/app/lissabon/page.tsx",
-          "line": 2
+          "line": 6
         },
         {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
       ],
-      "historicalAlias": true
+      "historicalAlias": true,
+      "redirectOnly": true,
+      "redirectTo": "/control"
     },
     {
       "id": "studio-login",
@@ -3151,7 +3227,8 @@
           "path": "lab/lib/studio-native-auth-actions.mjs",
           "line": 131
         }
-      ]
+      ],
+      "note": "Implementation re-exported by /control/login or /control/set-password. This file remains the lab app path."
     },
     {
       "id": "studio-openclaw",
@@ -3161,32 +3238,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/openclaw/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "authorizeUiPage guards this entry page; linked Director destination retains Gateway login and browser pairing.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/openclaw.",
       "groupId": "openclaw-entry",
       "sources": [
         {
           "path": "lab/app/openclaw/page.tsx",
-          "line": 8
+          "line": 6
         },
         {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 34
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/openclaw"
     },
     {
       "id": "studio-operator-chat",
@@ -3196,30 +3264,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/operator-chat/page.tsx",
-      "serving": "Authorized Studio advanced view -> existing GatewayPanel operator chat",
-      "access": "Live Studio admin page guard; existing Gateway connection and chat protections remain.",
-      "boundary": "StudioPage uses this exact view route for login return; internal navigation and direct reload retain GatewayPanel. OpenClaw model settings remain on /studio/openclaw.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/operator-chat.",
       "groupId": "operator-chat",
       "sources": [
         {
-          "path": "lab/app/operator-chat/page.tsx"
+          "path": "lab/app/operator-chat/page.tsx",
+          "line": 6
         },
         {
-          "path": "lab/app/studio-page.tsx"
-        },
-        {
-          "path": "lab/components/studio-types.ts"
-        },
-        {
-          "path": "lab/components/studio.tsx"
-        },
-        {
-          "path": "lab/components/gateway-panel.tsx"
-        },
-        {
-          "path": "lab/lib/ui-server.ts"
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/operator-chat"
     },
     {
       "id": "studio-home",
@@ -3231,28 +3292,16 @@
       "handlerFile": "lab/app/page.tsx",
       "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
       "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "boundary": "Re-exports lab/app/control/clips/page.tsx. Public staff tool is /control/clips. /studio is the lab basePath, not a separate product.",
       "groupId": "studio",
       "sources": [
         {
           "path": "lab/app/page.tsx",
+          "line": 1
+        },
+        {
+          "path": "lab/app/control/clips/page.tsx",
           "line": 6
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
         }
       ]
     },
@@ -3264,36 +3313,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/probe/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/probe.",
       "groupId": "studio-tools",
       "sources": [
         {
           "path": "lab/app/probe/page.tsx",
-          "line": 2
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
           "line": 6
+        },
+        {
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/probe"
     },
     {
       "id": "studio-set-password",
@@ -3324,7 +3360,8 @@
           "path": "lab/lib/studio-native-auth-actions.mjs",
           "line": 131
         }
-      ]
+      ],
+      "note": "Implementation re-exported by /control/login or /control/set-password. This file remains the lab app path."
     },
     {
       "id": "studio-tree",
@@ -3334,9 +3371,9 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/tree/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/tree.",
       "groupId": "studio-tools",
       "sources": [
         {
@@ -3344,26 +3381,13 @@
           "line": 6
         },
         {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
-          "line": 6
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/tree"
     },
     {
       "id": "studio-videos",
@@ -3373,36 +3397,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/videos/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/videos.",
       "groupId": "studio-tools",
       "sources": [
         {
           "path": "lab/app/videos/page.tsx",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
-        },
-        {
-          "path": "lab/app/studio-page.tsx",
           "line": 6
+        },
+        {
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/videos"
     },
     {
       "id": "studio-zones",
@@ -3412,32 +3423,23 @@
       "kind": "page",
       "app": "studio",
       "handlerFile": "lab/app/zones/page.tsx",
-      "serving": "Vercel Lab / Next page in the documented native Studio platform mode",
-      "access": "Native live admin authorization; non-native local mode requires loopback page guard; remote UI mode checks the protected Render session.",
-      "boundary": "studioUiInitialData guards this page and loads authorized saved project/media; shared StudioPage calls the same helper.",
+      "serving": "Redirect-only lab page. It does not render the tool.",
+      "access": "No page authorization in this file. The destination checks internal admin access.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/zones.",
       "groupId": "background-zones",
       "sources": [
         {
           "path": "lab/app/zones/page.tsx",
-          "line": 9
+          "line": 6
         },
         {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 84
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 40
-        },
-        {
-          "path": "lab/lib/ui-server.ts",
-          "line": 9
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 79
+          "path": "lab/app/control/public-redirect.ts",
+          "line": 5
         }
-      ]
+      ],
+      "redirectOnly": true,
+      "historicalAlias": true,
+      "redirectTo": "/control/zones"
     },
     {
       "id": "studio-api-openclaw-admin",
@@ -3466,6 +3468,341 @@
         },
         {
           "path": "open-claw/lab/src/gateway-rpc.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-partner-preview",
+      "path": "/api/partner-preview",
+      "publicPath": "/studio/api/partner-preview",
+      "methods": [
+        "DELETE",
+        "GET",
+        "HEAD",
+        "OPTIONS",
+        "PATCH",
+        "POST",
+        "PUT"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/partner-preview/route.ts",
+      "serving": "Lab API under basePath /studio.",
+      "access": "Internal admin. GET is the preview read; every other exported method is rejected.",
+      "boundary": "handlePartnerPreview authorizes on each read. Preview data is not chosen by request JSON.",
+      "groupId": "partner-preview-api",
+      "sources": [
+        {
+          "path": "lab/app/api/partner-preview/route.ts"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-path",
+      "path": "/control/:path*",
+      "publicPath": "/control/:path*",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/[[...path]]/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "WorkspaceSurfacePage for /control. Specific /control/<tool> pages take precedence over this optional catch-all. Some preview sections redirect to a tool path.",
+      "groupId": "control-home",
+      "sources": [
+        {
+          "path": "lab/app/control/[[...path]]/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-activity",
+      "path": "/control/activity",
+      "publicPath": "/control/activity",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/activity/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view activity.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/activity/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-administration",
+      "path": "/control/administration",
+      "publicPath": "/control/administration",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/administration/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "Native authorize revalidates the live administrator. 401 redirects to the control login.",
+      "groupId": "studio-administration",
+      "sources": [
+        {
+          "path": "lab/app/control/administration/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-clips",
+      "path": "/control/clips",
+      "publicPath": "/control/clips",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/clips/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "studioUiInitialData loads the authorized project and media. CROUPIER_STREAM_LANE value lissabon-stream-lane is an environment id, not a product name.",
+      "groupId": "studio",
+      "sources": [
+        {
+          "path": "lab/app/control/clips/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-events",
+      "path": "/control/events",
+      "publicPath": "/control/events",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/events/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view lab.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/events/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-guide",
+      "path": "/control/guide",
+      "publicPath": "/control/guide",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/guide/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view guide.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/guide/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-login",
+      "path": "/control/login",
+      "publicPath": "/control/login",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/login/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin credential entry. The page re-exports lab/app/login/page.tsx.",
+      "boundary": "Re-export only. The login handler admits administrator credentials.",
+      "groupId": "studio-auth-pages",
+      "sources": [
+        {
+          "path": "lab/app/control/login/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-openclaw",
+      "path": "/control/openclaw",
+      "publicPath": "/control/openclaw",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/openclaw/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "authorizeUiPage guards the page. OpenClawWorkspace is the model editor.",
+      "groupId": "openclaw-entry",
+      "sources": [
+        {
+          "path": "lab/app/control/openclaw/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-operator-chat",
+      "path": "/control/operator-chat",
+      "publicPath": "/control/operator-chat",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/operator-chat/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view openclaw, the existing operator chat.",
+      "groupId": "operator-chat",
+      "sources": [
+        {
+          "path": "lab/app/control/operator-chat/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-probe",
+      "path": "/control/probe",
+      "publicPath": "/control/probe",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/probe/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view probe.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/probe/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-set-password",
+      "path": "/control/set-password",
+      "publicPath": "/control/set-password",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/set-password/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Password selection requires a validated single-use token. The page re-exports lab/app/set-password/page.tsx.",
+      "boundary": "Re-export only.",
+      "groupId": "studio-auth-pages",
+      "sources": [
+        {
+          "path": "lab/app/control/set-password/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-tree",
+      "path": "/control/tree",
+      "publicPath": "/control/tree",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/tree/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view tree.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/tree/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-videos",
+      "path": "/control/videos",
+      "publicPath": "/control/videos",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/videos/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "StudioPage view videos.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/videos/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-zones",
+      "path": "/control/zones",
+      "publicPath": "/control/zones",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/zones/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "studioUiInitialData guards the page. BackgroundZones edits Astrid zones; that editor does not by itself drive the game player.",
+      "groupId": "background-zones",
+      "sources": [
+        {
+          "path": "lab/app/control/zones/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-partner-path",
+      "path": "/partner/:path*",
+      "publicPath": "/partner/:path*",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/partner/[[...path]]/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin preview. Not operator login or tenant data.",
+      "boundary": "WorkspaceSurfacePage for /partner and /partner/:operatorSlug. An operator slug renders the kevin-bo preview.",
+      "groupId": "partner-preview",
+      "sources": [
+        {
+          "path": "lab/app/partner/[[...path]]/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "frontend-play-blackjack",
+      "path": "/play/blackjack",
+      "publicPath": "/play/blackjack",
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
+      "kind": "page",
+      "app": "frontend",
+      "handlerFile": "apps/croupier-frontend/app/play/blackjack/route.ts",
+      "serving": "Vercel service web / Next, project scoutgaming.",
+      "access": "Player. Canonical game entry; session and saved policy are checked by platformUiDocument.",
+      "boundary": "GET and HEAD call platformUiDocument. Signed launch is handled by platform routing before this document is served.",
+      "groupId": "game-entry",
+      "sources": [
+        {
+          "path": "apps/croupier-frontend/app/play/blackjack/route.ts"
+        }
+      ]
+    },
+    {
+      "id": "frontend-play",
+      "path": "/play",
+      "publicPath": "/play",
+      "methods": [],
+      "kind": "page",
+      "app": "frontend",
+      "handlerFile": "apps/croupier-frontend/app/play/page.tsx",
+      "serving": "Vercel service web / Next, project scoutgaming.",
+      "access": "Player. Links to /play/blackjack.",
+      "boundary": "Public player page. No page-level session check in this file.",
+      "groupId": "player-area",
+      "sources": [
+        {
+          "path": "apps/croupier-frontend/app/play/page.tsx"
         }
       ]
     }

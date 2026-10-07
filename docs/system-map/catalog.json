@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "title": "Croupier — systemkarta",
-  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
-  "inspectionDate": "2026-10-05",
+  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "inspectionDate": "2026-10-07",
   "scope": "Faktabunden systemkarta med graf, Next-rutter, SQL-kolumner och befintliga testkopplingar. Kodinventering och daterade driftbevis redovisas separat; inga provideranrop från kartan.",
   "runtimeEvidence": {
     "sha": "ee0608044f7c78b80c4f46023cd67a7b391e17f0",
@@ -16,9 +16,9 @@
       "label": "Publik webb och spel",
       "environment": "production",
       "host": "Vercel",
-      "project": "croupier-frontend",
+      "project": "scoutgaming",
       "url": "https://www.scoutgaming.tech",
-      "purpose": "Startsida, spelarinloggning och /blackjack. Förmedlar tillåten HTTP/WebSocket-trafik till Render; spelregler och saldo ägs av servern.",
+      "purpose": "Nivå 3, spelare: /play och /play/blackjack, plus startsida och spelarinloggning. Förmedlar tillåten HTTP/WebSocket-trafik till Render-tjänsten croupier-v2; spelregler och saldo ägs av servern. Vercel service web i samma projekt scoutgaming som labbtjänsten.",
       "status": "live-verified",
       "sources": [
         "apps/croupier-frontend/next.config.mjs",
@@ -35,9 +35,9 @@
       "label": "Croupier Studio",
       "environment": "production",
       "host": "Vercel",
-      "project": "croupier-lab-ui",
-      "url": "https://www.scoutgaming.tech/studio",
-      "purpose": "Dealer & klipp, Backoffice och avgränsade OpenClaw-modellval. Gemensam policy och mediemetadata i Neon; spelkommandon till Render; modellinställningar via Director med serverhemlighet.",
+      "project": "scoutgaming",
+      "url": "https://www.scoutgaming.tech/control",
+      "purpose": "Nivå 1, intern personal: /control och verktygen därunder. Nivå 2, operatörsförhandsvisning: /partner och /partner/{operatorSlug}; lab/components/kevin-bo är bara den förhandsvisningen. Vercel service studio, basePath /studio via CROUPIER_LAB_BASE_PATH. /studio är inte en produkt. Samma Vercelprojekt scoutgaming som den publika webben. Gemensam policy och mediemetadata i Neon; spelkommandon till Render croupier-v2; modellinställningar via Director med serverhemlighet.",
       "status": "live-verified",
       "sources": [
         "lab/app/page.tsx",

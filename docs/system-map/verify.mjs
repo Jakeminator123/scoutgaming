@@ -8,12 +8,12 @@ import { referencedNames, validateRegistry } from '../../tools/check-environment
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const PARTS = ['catalog', 'routes', 'storage', 'flows'];
 const SHA = /^[a-f0-9]{40}$/;
-const HASH = /^[a-f0-9]{64}$/;
+const HASH = /^sha256:[a-f0-9]{64}$/;
 const CATEGORIES = ['required', 'firstBoot', 'conditional', 'managed', 'blocked'];
 const NAME = /^[A-Za-z0-9_.:@+\[\]/-]+$/;
 const TEXT = /\.(?:mjs|cjs|js|jsx|ts|tsx|mts|sql|json|md|css|html|yml|yaml)$|(?:^|\/)(?:Dockerfile|package-lock\.json|pre-commit-full|pre-push)$/;
 const NEXT_SOURCE = /\/(?:page|route)\.(?:tsx?|jsx?)$/;
-export const hashText = text => createHash('sha256').update(String(text).replace(/\r\n/g, '\n')).digest('hex');
+export const hashText = text => 'sha256:' + createHash('sha256').update(String(text).replace(/\r\n/g, '\n')).digest('hex');
 const parse = text => JSON.parse(text.replace(/^\uFEFF/, ''));
 const stable = value => JSON.stringify(value);
 
@@ -294,16 +294,17 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
         const prefix = check.app === 'frontend' ? 'apps/croupier-frontend/app' : 'lab/app';
         const actual = reader.list(prefix).filter(path => NEXT_SOURCE.test(path));
         const listed = data.routes.sourceRoutes.filter(row => row.app === check.app);
+        const routeDrift = (code, message, path, objectId) => errors.push({ code, message, ...(path ? { path } : {}), ...(objectId ? { objectId } : {}) });
         for (const path of actual) {
           const row = listed.find(item => item.handlerFile === path), url = routePattern(path, prefix);
-          if (!row) warning(warnings, 'route.uninventoried', 'Selected route has no catalog entry: ' + url, path);
+          if (!row) routeDrift('route.uninventoried', 'Selected route has no catalog entry: ' + url, path);
           else {
-            if (row.path !== url) warning(warnings, 'route.path-drift', 'Source route pattern differs from catalog: ' + url, path, row.id);
+            if (row.path !== url) routeDrift('route.path-drift', 'Source route pattern differs from catalog: ' + url, path, row.id);
             const methods = /\/route\.(?:tsx?|jsx?)$/.test(path) ? verbs(reader.read(path)) : [];
-            if (stable(methods) !== stable([...(row.methods || [])].sort())) warning(warnings, 'route.method-drift', 'Exported HTTP methods differ from the route catalog.', path, row.id);
+            if (stable(methods) !== stable([...(row.methods || [])].sort())) routeDrift('route.method-drift', 'Exported HTTP methods differ from the route catalog.', path, row.id);
           }
         }
-        for (const row of listed) if (!actual.includes(row.handlerFile)) warning(warnings, 'route.removed', 'Catalog route has no selected source handler.', row.handlerFile, row.id);
+        for (const row of listed) if (!actual.includes(row.handlerFile)) routeDrift('route.removed', 'Catalog route has no selected source handler.', row.handlerFile, row.id);
       } else if (check.type === 'schema') {
         const sqlPaths = paths.filter(path => path.endsWith('.sql')), parsed = sqlPaths.flatMap(path => { const text = reader.read(path); return text === null ? [] : [{ path, ...parseSqlTables(text, path) }]; });
         const actual = parsed.flatMap(part => part.tables).filter(table => table.schema === check.schema);

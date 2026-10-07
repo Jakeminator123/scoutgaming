@@ -20,6 +20,12 @@ riktig operatörsinloggning och tenantdata är inte klara.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
 
+## Systemkarta, 7 oktober 2026
+
+Kartan beskriver nivå 1 `/control`, nivå 2 `/partner` och nivå 3 `/play`.
+En Next-rutt som läggs till eller flyttas utan `routes.json` ger route-drift och CI-fel.
+Kontraktens filhasher är prefixade. Inget acceptanskrav markeras klart.
+
 ## Aktuell leverans och ansvar
 
 - GitHub: Jakeminator123/scoutgaming, main, repo-ID 1380630440. Gamla

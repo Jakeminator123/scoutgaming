@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
+  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
   "evidence": {
     "kind": "Kodläst katalog",
     "liveSchemaRead": false,
@@ -1076,7 +1076,7 @@
     {
       "schema": "croupier_game",
       "name": "lissabon_profiles",
-      "purpose": "Beständig Lissabon-profilkoppling",
+      "purpose": "Beständig labbet-profilkoppling",
       "owner": "Render produktserver",
       "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
@@ -1144,7 +1144,7 @@
     {
       "schema": "croupier_game",
       "name": "lissabon_profile_sessions",
-      "purpose": "Lissabon-profilsessioner",
+      "purpose": "Labbet-profilsessioner",
       "owner": "Render produktserver",
       "scope": "Separat miljödatabas; ytterligare tabellnycklar enligt primaryKey",
       "sources": [
@@ -5570,7 +5570,7 @@
     "Aktuellt lagringsunderlag: docs/CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa och docs/ENVIRONMENT-VARIABLES.md. Historiska checkpoints är bevarade i Git; använd inte äldre mellanlägen som driftkonfiguration.",
     "Full extern Director-/Gateway-backup är dokumenterat ett separat kvarvarande ansvar.",
     "Versionschecksum, mediahash och testpass bevisar inte visuell lipsyncacceptans.",
-    "Gamla Lissabon/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift.",
+    "Gamla labbet/preview-tabeller är koddefinierade kompatibilitetskontrakt; deras förekomst bevisar inte att funktionerna är aktiverade i molndrift. Tabellnamnet lissabon_profiles är kvar som SQL-id.",
     "Befintliga testfiler är inventerade, inte körda som del av denna kataloguppgift."
   ],
   "sqlContractCatalog": {

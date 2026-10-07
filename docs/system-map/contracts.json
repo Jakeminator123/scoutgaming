@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "catalogSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
+  "catalogSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "34f64e344d4885171f8a5f7e10c7644b33a6c96d",
-    "capturedAt": "2026-10-05T12:15:22.526Z",
+    "observedCommit": "de264d0d6a050c31247b8e429dde131721fbf98e",
+    "capturedAt": "2026-10-07T08:59:19.241Z",
     "hashAlgorithm": "sha256:utf8-lf",
-    "note": "Scoped binding of existing shoe and zone test receipt integration in CI; input capture only, no runtime/test approval."
+    "note": "Input capture only; no tests or runtime are marked verified."
   },
   "contracts": [
     {
@@ -26,11 +26,11 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/build.mjs": "a0afd1be0116d384edb75d7ab20e2fcc2c050e5342211ddb02d529d9fe470adf",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/verify.mjs": "77fdef11ee002f93f6723f069465356fa03dc06dd2d73d001d3c15904728d544",
-        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65",
-        "tools/system-map-evidence.mjs": "850b731cd3f9eb264815d5e502fdd308c51efa0a95fd4574d3bc5458d052eade"
+        "docs/system-map/build.mjs": "sha256:a0afd1be0116d384edb75d7ab20e2fcc2c050e5342211ddb02d529d9fe470adf",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/verify.mjs": "sha256:f6f7f39897b89006746babbf752ee0821436c2955917957088b08aa61d430259",
+        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36",
+        "tools/system-map-evidence.mjs": "sha256:7792bd4fe186d30e0a14ffc2516bc993ea62251c832ea2369a873fab03fb0721"
       }
     },
     {
@@ -121,67 +121,67 @@
       "testType": "existing-isolated-sql-acceptance",
       "checks": [],
       "expectedHashes": {
-        ".github/workflows/croupier.yml": "3a6a62feda09bae2b6b1dc90d3ea470986883716d6a56371d4a15dd0f719552b",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
-        "lab/lib/cloud-media-store.mjs": "063f1a03730e7b7d52f7ce51bf4c9d99408b98b91c28881cde482f0f8ee9a77c",
-        "lab/lib/media-blob-index.mjs": "3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
-        "lab/lib/studio-access-policy.mjs": "48ab2d509a098b5f0808ddcc6f52055651137291b0ac5d42bc061a0292705767",
-        "lab/lib/studio-admin-accounts.mjs": "66b47b1c05f841377945412a963b2ac130956bb2070277c9e29224cd343f84ea",
-        "lab/lib/studio-admin-api.mjs": "21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
-        "lab/lib/studio-admin-contract.mjs": "dfcadb8d1d8427c5556c6df15b65bf8146ef13abe87c3426227aee94fee72c08",
-        "lab/lib/studio-admin-data.mjs": "a6f2001926ca987e5b6a23f1ed3d23116b7b4d5480238fb347fe8d5d5ad09fb9",
-        "lab/lib/studio-admin-readouts.mjs": "895ee290270faf64266bed5a47b237584f5fdf1e67cabfe4662aa2d7f7511fc8",
-        "lab/lib/studio-document-api.mjs": "6fa31e5a6344aef9fbdeb035f57f2c15eaa92e6e4a5bebbdbeb0208940f467f4",
-        "lab/lib/studio-game-authority.mjs": "5bb54e725216a7a3d98b8237e30c5d7a8b259963cd9f110dc2f6bb19e3fe4a3f",
-        "lab/lib/studio-login-client.mjs": "c8974d13ffc29df0a72d0fa6fae90f4d3a77637971c52c19b72763dcf6ce5061",
-        "lab/lib/studio-model.mjs": "f8c44da5f7dc38255ae03e2cb1a6b5e5e21b29450b1d4c4f9de28ac83f5f8eee",
-        "lab/lib/studio-native-auth-actions.mjs": "2eb707dea86bedf1d3d54b460905622a58ede4ea88cb745b1820bea53393d2b7",
-        "lab/lib/studio-native-auth.mjs": "2697cf97f97d32d2f67093b89fa4699f8231dad2e4b4c25b2a36c9a2edacd28f",
-        "lab/lib/studio-voice-lines.mjs": "61f68d15788ef46b3476418dfe2d6d2812fa3362e16122122efc9683b81f8dc0",
-        "lab/lib/voice-preview.mjs": "6b3e56a9bc5c5cc6269d711f286a941227096e5d0dcb67cdc3eb697b8fa0da75",
-        "lab/package-lock.json": "4c6956f21e19d4d6a033706679f087c928b53e5808098d1567da2de8c04ccadf",
-        "lab/package.json": "28f809e320266930504f72daf7b650aef920c0d22e6d0e0f439d904ba5f85842",
-        "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
-        "ops/neon-studio/001-studio-metadata.sql": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
-        "ops/neon-studio/002-generation-journals.sql": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
-        "ops/neon-studio/003-operator-speech-qa.sql": "0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae",
-        "ops/neon-studio/004-fullfile-reservations.sql": "03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383",
-        "ops/neon-studio/migrations.mjs": "974e81373d3ab08c9fde63e747089b21a121dc14e35e99ea81b9c513321629d4",
-        "ops/neon-studio/retained-bank.mjs": "da9f89807db5d48e5274726d880b125c18b413dca527d335c23115b46300a25f",
-        "ops/neon-studio/speech-ledger-import.mjs": "a2276623629e8f2e540c33a7d67d003226f44436a680c79ae138dbf0c052a673",
-        "ops/neon-studio/speech-ledger-snapshot.mjs": "5fb8d5d394dd2c2186afddc51d7ae6fa51b5b1ba134b18fd83c4e0439094d925",
-        "test/speech-ledger-import.mjs": "5208c051dee273cc835abbfddf154da34deec7595777c3288cc307c1d7e9c4d9",
-        "test/studio-cutover-integration.mjs": "2c926b23fdaf0c4d0d8b97596941cbd93d5576158be2bef48ef3f6fb9c73e2d1",
-        "test/studio-postgres-integration.mjs": "512a4bb62a7cb0167e4405fdf4f61432f2bea5b8dffbfae9b9ea3aa02f98a823",
-        "test/studio-retained-bank.mjs": "64fe8d87858eee3afb1effbfa2dcac1d7cce85e0c86388d555f63eec2445626f",
-        "tools/studio-isolated-qa.mjs": "8b67b9619ac613baa1243a7cbfcea7a64eb18be20f56331c10151e97487f6366",
-        "web/account-credentials.mjs": "90791fa0bbc5c340a75f7349bdfdd5a3f2c5aef6149eec5cf53496d13892e4df",
-        "web/account-role.mjs": "aa0fcf1da61c3ac53fe312f9d3083cc3586edd7f7c74732a84ab5ea1bd77f36f",
-        "web/email-templates.mjs": "0a676759c1510b1d505aa7984e9fc400928a84899a3a3b742d25e1eebc5c85fc",
-        "web/generated-speech-provider.mjs": "7b76110cd98bfd5fe535e780e83f8501996d009efaad46b3a949e977d73c6993",
-        "web/generated-speech-session.mjs": "fa04a68085210c1f2485b4e148e306a6af8864b9a94e5cc93d9ad16df593543e",
-        "web/generated-speech-stream.mjs": "a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
-        "web/generated-speech.mjs": "e48e5d08da8d5cea6fb14ee1f80684ef345864a282588cac10415f258ca1a0bd",
-        "web/package-lock.json": "cc9730eed78f77020b170db2855067d7b39a7f513dfa7982c246746cee3a69f1",
-        "web/package.json": "a328a01d25ea03343bbeaa1b6d2624ea0fe9cc98f2173bf688e5a9849c0559bc",
-        "web/partner-api.mjs": "daef9396c2d9c9c2115870e932949d2b33281b5ceb618fe92d5cf7f0a5c645f7",
-        "web/postgres-operator-speech-qa.mjs": "30afaa798e641d73ca60bec3b7023ee214736141edb0d6186b1590f2426b8203",
-        "web/postgres-speech-journal.mjs": "4766a3a895683fb5e290705c54d31c24bd309cbcfb587d9510f5be0c9afe7c57",
-        "web/public/speech-lines.mjs": "e911f0d15ab88ef8c7d94de6876410fcc4978e56d48b5cb34f8bae8236b7c83b",
-        "web/shoe-game.mjs": "9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd",
-        "web/speech-blob-artifacts.mjs": "20afe5c800aa383814594a02b6da865b30936b4b6d186ec68cfe577c6b42d882",
-        "web/speech-journal-constants.mjs": "ccdc9f6d2d79313e49c4fda20918a838bd63c87ebd1cff1f4e41a203bc4dab2d",
-        "web/speech-journal-runtime.mjs": "f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56",
-        "web/storage/async-bo-auth-epoch.mjs": "d5138c89af7efed649c30921ef578c93215d95ba92e5648ac3682b1507fc062f",
-        "web/storage/async-craig-identity.mjs": "06e986aa06e894c0419559c26a49615a8817437a655aafa687bc74fc407ac005",
-        "web/storage/player-administration.mjs": "29674d5c1353c4812bb08ad0ae29dc29fc0245170187273f2399b96e4c7a9f2c",
-        "web/storage/postgres-store.mjs": "712d9144c090b2050da0238cc5d1964996498303ad45cd20b39409092f5d505e",
-        "web/storage/studio-contract.mjs": "dfc65a85291b26458000fe7ff10f4a683aa50f165198f80c2a0e5cbb8983aef4",
-        "web/storage/studio-game-policy.mjs": "955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617",
-        "web/storage/studio-repository.mjs": "f5030cc2ddce94e334f49420622b4deb14492eafecec4fb7d1025956df9f12a4",
-        "web/storage/studio-runtime.mjs": "b4f1d691035247d1e4768cd3472d3ca83164dd65168752198a9314c46b0f2e2d",
-        "web/studio-game-commands.mjs": "d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f"
+        ".github/workflows/croupier.yml": "sha256:3a6a62feda09bae2b6b1dc90d3ea470986883716d6a56371d4a15dd0f719552b",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/storage.json": "sha256:da749dfb0b2ee35e7770ad81bae358006f1062a9e8fb88b94eda8189368e9b83",
+        "lab/lib/cloud-media-store.mjs": "sha256:063f1a03730e7b7d52f7ce51bf4c9d99408b98b91c28881cde482f0f8ee9a77c",
+        "lab/lib/media-blob-index.mjs": "sha256:3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
+        "lab/lib/studio-access-policy.mjs": "sha256:48ab2d509a098b5f0808ddcc6f52055651137291b0ac5d42bc061a0292705767",
+        "lab/lib/studio-admin-accounts.mjs": "sha256:66b47b1c05f841377945412a963b2ac130956bb2070277c9e29224cd343f84ea",
+        "lab/lib/studio-admin-api.mjs": "sha256:21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
+        "lab/lib/studio-admin-contract.mjs": "sha256:dfcadb8d1d8427c5556c6df15b65bf8146ef13abe87c3426227aee94fee72c08",
+        "lab/lib/studio-admin-data.mjs": "sha256:a6f2001926ca987e5b6a23f1ed3d23116b7b4d5480238fb347fe8d5d5ad09fb9",
+        "lab/lib/studio-admin-readouts.mjs": "sha256:895ee290270faf64266bed5a47b237584f5fdf1e67cabfe4662aa2d7f7511fc8",
+        "lab/lib/studio-document-api.mjs": "sha256:6fa31e5a6344aef9fbdeb035f57f2c15eaa92e6e4a5bebbdbeb0208940f467f4",
+        "lab/lib/studio-game-authority.mjs": "sha256:5bb54e725216a7a3d98b8237e30c5d7a8b259963cd9f110dc2f6bb19e3fe4a3f",
+        "lab/lib/studio-login-client.mjs": "sha256:ca1834f58ab6ab255cf792cf630eeb303e52cc6d61a5cfb78cd316896d977e91",
+        "lab/lib/studio-model.mjs": "sha256:f8c44da5f7dc38255ae03e2cb1a6b5e5e21b29450b1d4c4f9de28ac83f5f8eee",
+        "lab/lib/studio-native-auth-actions.mjs": "sha256:2eb707dea86bedf1d3d54b460905622a58ede4ea88cb745b1820bea53393d2b7",
+        "lab/lib/studio-native-auth.mjs": "sha256:2697cf97f97d32d2f67093b89fa4699f8231dad2e4b4c25b2a36c9a2edacd28f",
+        "lab/lib/studio-voice-lines.mjs": "sha256:61f68d15788ef46b3476418dfe2d6d2812fa3362e16122122efc9683b81f8dc0",
+        "lab/lib/voice-preview.mjs": "sha256:6b3e56a9bc5c5cc6269d711f286a941227096e5d0dcb67cdc3eb697b8fa0da75",
+        "lab/package-lock.json": "sha256:4c6956f21e19d4d6a033706679f087c928b53e5808098d1567da2de8c04ccadf",
+        "lab/package.json": "sha256:28f809e320266930504f72daf7b650aef920c0d22e6d0e0f439d904ba5f85842",
+        "ops/neon-game/product-schema.sql": "sha256:831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
+        "ops/neon-studio/001-studio-metadata.sql": "sha256:009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
+        "ops/neon-studio/002-generation-journals.sql": "sha256:efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
+        "ops/neon-studio/003-operator-speech-qa.sql": "sha256:0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae",
+        "ops/neon-studio/004-fullfile-reservations.sql": "sha256:03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383",
+        "ops/neon-studio/migrations.mjs": "sha256:974e81373d3ab08c9fde63e747089b21a121dc14e35e99ea81b9c513321629d4",
+        "ops/neon-studio/retained-bank.mjs": "sha256:da9f89807db5d48e5274726d880b125c18b413dca527d335c23115b46300a25f",
+        "ops/neon-studio/speech-ledger-import.mjs": "sha256:a2276623629e8f2e540c33a7d67d003226f44436a680c79ae138dbf0c052a673",
+        "ops/neon-studio/speech-ledger-snapshot.mjs": "sha256:5fb8d5d394dd2c2186afddc51d7ae6fa51b5b1ba134b18fd83c4e0439094d925",
+        "test/speech-ledger-import.mjs": "sha256:5208c051dee273cc835abbfddf154da34deec7595777c3288cc307c1d7e9c4d9",
+        "test/studio-cutover-integration.mjs": "sha256:2c926b23fdaf0c4d0d8b97596941cbd93d5576158be2bef48ef3f6fb9c73e2d1",
+        "test/studio-postgres-integration.mjs": "sha256:512a4bb62a7cb0167e4405fdf4f61432f2bea5b8dffbfae9b9ea3aa02f98a823",
+        "test/studio-retained-bank.mjs": "sha256:64fe8d87858eee3afb1effbfa2dcac1d7cce85e0c86388d555f63eec2445626f",
+        "tools/studio-isolated-qa.mjs": "sha256:8b67b9619ac613baa1243a7cbfcea7a64eb18be20f56331c10151e97487f6366",
+        "web/account-credentials.mjs": "sha256:90791fa0bbc5c340a75f7349bdfdd5a3f2c5aef6149eec5cf53496d13892e4df",
+        "web/account-role.mjs": "sha256:aa0fcf1da61c3ac53fe312f9d3083cc3586edd7f7c74732a84ab5ea1bd77f36f",
+        "web/email-templates.mjs": "sha256:0a676759c1510b1d505aa7984e9fc400928a84899a3a3b742d25e1eebc5c85fc",
+        "web/generated-speech-provider.mjs": "sha256:7b76110cd98bfd5fe535e780e83f8501996d009efaad46b3a949e977d73c6993",
+        "web/generated-speech-session.mjs": "sha256:fa04a68085210c1f2485b4e148e306a6af8864b9a94e5cc93d9ad16df593543e",
+        "web/generated-speech-stream.mjs": "sha256:a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
+        "web/generated-speech.mjs": "sha256:e48e5d08da8d5cea6fb14ee1f80684ef345864a282588cac10415f258ca1a0bd",
+        "web/package-lock.json": "sha256:cc9730eed78f77020b170db2855067d7b39a7f513dfa7982c246746cee3a69f1",
+        "web/package.json": "sha256:a328a01d25ea03343bbeaa1b6d2624ea0fe9cc98f2173bf688e5a9849c0559bc",
+        "web/partner-api.mjs": "sha256:daef9396c2d9c9c2115870e932949d2b33281b5ceb618fe92d5cf7f0a5c645f7",
+        "web/postgres-operator-speech-qa.mjs": "sha256:30afaa798e641d73ca60bec3b7023ee214736141edb0d6186b1590f2426b8203",
+        "web/postgres-speech-journal.mjs": "sha256:4766a3a895683fb5e290705c54d31c24bd309cbcfb587d9510f5be0c9afe7c57",
+        "web/public/speech-lines.mjs": "sha256:e911f0d15ab88ef8c7d94de6876410fcc4978e56d48b5cb34f8bae8236b7c83b",
+        "web/shoe-game.mjs": "sha256:9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd",
+        "web/speech-blob-artifacts.mjs": "sha256:20afe5c800aa383814594a02b6da865b30936b4b6d186ec68cfe577c6b42d882",
+        "web/speech-journal-constants.mjs": "sha256:ccdc9f6d2d79313e49c4fda20918a838bd63c87ebd1cff1f4e41a203bc4dab2d",
+        "web/speech-journal-runtime.mjs": "sha256:f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56",
+        "web/storage/async-bo-auth-epoch.mjs": "sha256:d5138c89af7efed649c30921ef578c93215d95ba92e5648ac3682b1507fc062f",
+        "web/storage/async-craig-identity.mjs": "sha256:06e986aa06e894c0419559c26a49615a8817437a655aafa687bc74fc407ac005",
+        "web/storage/player-administration.mjs": "sha256:29674d5c1353c4812bb08ad0ae29dc29fc0245170187273f2399b96e4c7a9f2c",
+        "web/storage/postgres-store.mjs": "sha256:712d9144c090b2050da0238cc5d1964996498303ad45cd20b39409092f5d505e",
+        "web/storage/studio-contract.mjs": "sha256:dfc65a85291b26458000fe7ff10f4a683aa50f165198f80c2a0e5cbb8983aef4",
+        "web/storage/studio-game-policy.mjs": "sha256:955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617",
+        "web/storage/studio-repository.mjs": "sha256:f5030cc2ddce94e334f49420622b4deb14492eafecec4fb7d1025956df9f12a4",
+        "web/storage/studio-runtime.mjs": "sha256:b4f1d691035247d1e4768cd3472d3ca83164dd65168752198a9314c46b0f2e2d",
+        "web/studio-game-commands.mjs": "sha256:d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f"
       }
     },
     {
@@ -213,23 +213,25 @@
         }
       ],
       "expectedHashes": {
-        "apps/croupier-frontend/app/about/page.tsx": "780299655c4f655f9b3f2ae80fc2926e48015d75ab17ba9dcc257c01075e5ee4",
-        "apps/croupier-frontend/app/blackjack/route.ts": "0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
-        "apps/croupier-frontend/app/bo/[[...path]]/route.ts": "47dd66c4fdc3757f68034f8d5cb24fc334967e93f1ca4dda129adcfd4e7b66cc",
-        "apps/croupier-frontend/app/casino.html/route.ts": "1f1144cf0c6ce32e96f340569a0ef7252444e6a8f722b8a3f57cf73c75f78364",
-        "apps/croupier-frontend/app/demo/page.tsx": "c3c61827ca465f263714d3f287dd0429e3271eb9214c02ea6bb77eec502053fc",
-        "apps/croupier-frontend/app/game/route.ts": "0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
-        "apps/croupier-frontend/app/labb-lissabon/route.ts": "fde7154a8d0a5fed824812dc3a000eec66d190b37302b45237353df824d87d42",
-        "apps/croupier-frontend/app/page.tsx": "23fef8aed50b60fc70ea25d9a5f8ab7c74a0f64c917b70de2dee501000094fb4",
-        "apps/croupier-frontend/app/player-login/route.ts": "0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
-        "apps/croupier-frontend/app/v2/route.ts": "1f1144cf0c6ce32e96f340569a0ef7252444e6a8f722b8a3f57cf73c75f78364",
-        "apps/croupier-frontend/lib/platform-routing.mjs": "ad6ba61292e1e2bed4f77919744eb6431ba71cffa359341a233556fa19df7258",
-        "apps/croupier-frontend/middleware.ts": "33d31db7830d0314adb543f424a447b3841dd6bd422392c3f717af17a5b485b1",
-        "apps/croupier-frontend/next.config.mjs": "9eabd82bfdc32884324ac8ac30bfc159f5cc8bbdb16f04d991a4e38389b1a644",
-        "apps/croupier-frontend/test/game-entry.mjs": "8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/routes.json": "3197464ea46c09f29cfb27bcb00e0425afbb00750cb09e63f8404c5474c0e7d2",
-        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65"
+        "apps/croupier-frontend/app/about/page.tsx": "sha256:780299655c4f655f9b3f2ae80fc2926e48015d75ab17ba9dcc257c01075e5ee4",
+        "apps/croupier-frontend/app/blackjack/route.ts": "sha256:0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
+        "apps/croupier-frontend/app/bo/[[...path]]/route.ts": "sha256:47dd66c4fdc3757f68034f8d5cb24fc334967e93f1ca4dda129adcfd4e7b66cc",
+        "apps/croupier-frontend/app/casino.html/route.ts": "sha256:1f1144cf0c6ce32e96f340569a0ef7252444e6a8f722b8a3f57cf73c75f78364",
+        "apps/croupier-frontend/app/demo/page.tsx": "sha256:c3c61827ca465f263714d3f287dd0429e3271eb9214c02ea6bb77eec502053fc",
+        "apps/croupier-frontend/app/game/route.ts": "sha256:0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
+        "apps/croupier-frontend/app/labb-lissabon/route.ts": "sha256:fde7154a8d0a5fed824812dc3a000eec66d190b37302b45237353df824d87d42",
+        "apps/croupier-frontend/app/page.tsx": "sha256:23fef8aed50b60fc70ea25d9a5f8ab7c74a0f64c917b70de2dee501000094fb4",
+        "apps/croupier-frontend/app/play/blackjack/route.ts": "sha256:47dd66c4fdc3757f68034f8d5cb24fc334967e93f1ca4dda129adcfd4e7b66cc",
+        "apps/croupier-frontend/app/play/page.tsx": "sha256:05d09d625c2d8f581a4722e5552a9ef2f3457103f92a2272828dd64c14eeff4c",
+        "apps/croupier-frontend/app/player-login/route.ts": "sha256:0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
+        "apps/croupier-frontend/app/v2/route.ts": "sha256:1f1144cf0c6ce32e96f340569a0ef7252444e6a8f722b8a3f57cf73c75f78364",
+        "apps/croupier-frontend/lib/platform-routing.mjs": "sha256:0bbc8d65857d2a2c371955134a10813d24d2bc6b8b485d81535bcc1156e921ea",
+        "apps/croupier-frontend/middleware.ts": "sha256:acad5eb15cd76b53f14c91887ecf53f4979b0a416cbc93187c424460473457ce",
+        "apps/croupier-frontend/next.config.mjs": "sha256:dbe6394215648b0eb91ea8bc6b13ba5b5e4cccf8fc3ff2ba4f18c98a113930b8",
+        "apps/croupier-frontend/test/game-entry.mjs": "sha256:8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
+        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36"
       }
     },
     {
@@ -285,85 +287,101 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/routes.json": "3197464ea46c09f29cfb27bcb00e0425afbb00750cb09e63f8404c5474c0e7d2",
-        "lab/app/activity/page.tsx": "8587aab06c2b77d96be4b64f9499f119f224c84b310f415e91f8adce5cfad6e5",
-        "lab/app/administration/page.tsx": "eafcb863265a03fd4fd8466bf34d12998401df588d05fe15baf74c4e895f0c1e",
-        "lab/app/api/admin/[...action]/route.ts": "f27c08cd75dc65bdf255c9e4f2bd5c7bf33caa38a025424af884580e1b92af05",
-        "lab/app/api/auth/[action]/route.ts": "c42bf8f3c8b701224f53fc56f6ccd65e45d0f5a8b484cc650f7193458594c9bf",
-        "lab/app/api/auth/session/route.ts": "c21bfa9add5ab4c2d5ca9a45c41e8a877e9f8cd9efce7d20b68f541fdd84c221",
-        "lab/app/api/chat/route.ts": "15dfd0c6bfe10dfd139d3bc7996c8b4a3d56df9fb520e3d3c48fbf48c554c602",
-        "lab/app/api/clip-controls/route.ts": "03338715bbdabb12ddfc8d3c9dd7d47ddf71135e674db8bfdbec91907ccf5d0d",
-        "lab/app/api/generated-speech/[id]/[kind]/route.ts": "bb18ddcbe660de14f88f84cbd2d867bd53431aa6bb267d70d119cb0738f774be",
-        "lab/app/api/health/route.ts": "6aa9e4c38247888badcb3ca302a4b94ef3b03e503d850f5dddcefb8972fa3d67",
-        "lab/app/api/inputs/events/route.ts": "eaf0a3b9b5f0a9f6f6ecaba4c8e3b701ab79e176acfc8b10a7b2420a7f649bcd",
-        "lab/app/api/inputs/reference/route.ts": "fd3e7d821879ca00dc6d4986c6e84e3eec10ccd73908f9188ab3a04c3eae5de2",
-        "lab/app/api/inputs/route.ts": "eaf0a3b9b5f0a9f6f6ecaba4c8e3b701ab79e176acfc8b10a7b2420a7f649bcd",
-        "lab/app/api/openclaw/admin/route.ts": "b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
-        "lab/app/api/original-media/[...path]/route.ts": "79266f2c82be0c9b25f75885eb3a12f91fdbc783d6b8f234d3aea1596a38127a",
-        "lab/app/api/original-media/route.ts": "c884cc2f9d67e755846ffc070f4bf76d0af89718df0302b8c62072306220de2e",
-        "lab/app/api/presentation/decision/route.ts": "0ca56cf9820cd86b217674903e0178b45e49aef799cbf16e7f37744bbe838144",
-        "lab/app/api/presentation/idle/route.ts": "c50affdc29ff5f7dbfeea2f61d87cc5449e11bb3a7fdb8fad3c3faa49c06e4e2",
-        "lab/app/api/probe/route.ts": "607489dfc7adf50892efd5d899b5bf917dff561ca6c1ae0d0a45b80135ec4339",
-        "lab/app/api/project/route.ts": "32610ccafeeda47ad1382ae2c3d9a09678c6219bd9bbf5bf07a3acabbe0fa630",
-        "lab/app/api/simulate/route.ts": "c3584680eb7dd6f025112d935a3168a9b48ee84e034e7fa7500d26184c0f7378",
-        "lab/app/api/social/chat/route.ts": "de248c8fc9468958ef03d8b644b77194902b13a61bd9154f59f84565eb7c9019",
-        "lab/app/api/social/profile/route.ts": "dc342ac203fdf529b82c0976ac22d56a8b5992ccf5b0373cc7ff9cf02f6075c2",
-        "lab/app/api/social/route.ts": "6adf3eed0f2d77d0c434e2beeb66ac0b78c3f7f867e7d1c7e94d2c2a01261357",
-        "lab/app/api/social/status/route.ts": "0462f39c0c1b930e0c9693fba493f7eabfa925cfa767268cf723fea84fcc97a2",
-        "lab/app/api/social/voice/route.ts": "de248c8fc9468958ef03d8b644b77194902b13a61bd9154f59f84565eb7c9019",
-        "lab/app/api/videos/[id]/route.ts": "0febd9344230c42a4d1e7235c371710ede2ac5f2b11b13f17513464e981656e9",
-        "lab/app/api/videos/classify/route.ts": "33a7c0b821597a68867157bd4b2438790e63f8ce9dc1750664455cfcc1dc9508",
-        "lab/app/api/videos/rescan/route.ts": "34d3ad55ef3453304a60089c5ce602af60838291ad353023bd6713ce8fd1d5ba",
-        "lab/app/api/videos/route.ts": "be7d7ee03012c2a38c6e6c6b137a2877cf26886bfbe506e858c6548968951817",
-        "lab/app/api/videos/upload/route.ts": "2e16e1e17d3129b4ed83079af62bcd28f32f61106e729ec4f39435fc376ec057",
-        "lab/app/api/voice/[id]/route.ts": "74843c0dfd54ba952a7b5a0ede9900bd1f00c2afaa73621d55ba5877b8911b8d",
-        "lab/app/api/voice/route.ts": "9a7bbd79961f0fabb9e958fcb5a6e3d8f207e4e88313a6e093ef6b167014ee11",
-        "lab/app/api/zones/clips/[id]/route.ts": "8da9f4039d09f25aff7fb08631853491c328f2976f77c78394ee94078ba2dcd5",
-        "lab/app/api/zones/clips/route.ts": "c79e8ab47f6e396e2b39de147799145de2ab215daae084e8fd9d7731c7f61edf",
-        "lab/app/api/zones/reference/route.ts": "a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
-        "lab/app/api/zones/route.ts": "88af87f3b05c87eb7400c725f982dc5687b8cd60fc39d7889671dd9c6e3beed5",
-        "lab/app/events/page.tsx": "66ed863b7b5ba3aa66cacc27b1f8b5722d3755e6787ca14af42984991279bb6a",
-        "lab/app/guide/page.tsx": "58bfbfa116868c4486d72f853c5140ae9cf67d018385bc38a4c365b0977f148e",
-        "lab/app/lissabon/page.tsx": "f457e71a91c048054a9dfe8fc9887b6afbaa542cc5c8f6ea533e40de3d57f8a5",
-        "lab/app/login/page.tsx": "c4e87f2bc2fb78ec14fe4b77ed4b8ee57670ef7b5657b29d38afb692204f5375",
-        "lab/app/openclaw/page.tsx": "5036dddb751cc342db618ee0246c2135efb98d71819fbb079381a5ec6f61848d",
-        "lab/app/operator-chat/page.tsx": "1bc90d17fc56fa9c86830cc7d6bdc9634499a032f87bb1d62bbb339849c7f10d",
-        "lab/app/page.tsx": "7181c578857a64a4d0d5ffdd00def9bc94dcdd85162447a4090eedfa6719708e",
-        "lab/app/probe/page.tsx": "ad06b7942d597f7536fda8113a56d0430bc9669784c04fa79995473be898b566",
-        "lab/app/set-password/page.tsx": "d755d653b4793b5e9af254405a180509216ff3e859820672fcdb35cdd329d6c3",
-        "lab/app/studio-page.tsx": "b13197ac4c692f552b98434868f4a0807eb70a262d78b94192c118f5d5c6fb99",
-        "lab/app/tree/page.tsx": "7ea92f755735b68a7b26370b825919d25b821f9df39f353fca4db45a745e7ef0",
-        "lab/app/videos/page.tsx": "469ffe5d7e8e28f0a65789ea6d468e8cfcd578c7c8b396f57030545372057b51",
-        "lab/app/zones/page.tsx": "536135b14902cda86181b41eff0c4e3b9292549616fb989cc52a2bf9e2872840",
-        "lab/components/event-tree.test.mjs": "e76731f7bb48727f9cee046e10ae931a8a972151ab7017e2025042b01a03e2c6",
-        "lab/components/event-tree.tsx": "ad3c6125e22464ed9e09398c35622b628846eac59a257947956b2dc91236da88",
-        "lab/components/studio-administration.test.mjs": "0138de85db57edf7667da41779730e03130ed24b0927bd82c68e6cd1ccc585e0",
-        "lab/components/studio-administration.tsx": "137720d6012e2140c94d4ffd5528d8a8fafbf4ba988483f2a7223061a0e1fa4b",
-        "lab/components/studio-types.ts": "03b72f8d0b3514b965165466056437a4f05165cd5629b227ba4c3ea0bdac8877",
-        "lab/components/studio.tsx": "1d2d9122d879e8824a4281eb4720b7f7bb25c15cfc28fd2947014e5665af06b6",
-        "lab/lib/studio-login-client.mjs": "c8974d13ffc29df0a72d0fa6fae90f4d3a77637971c52c19b72763dcf6ce5061",
-        "lab/lib/studio-navigation.d.mts": "602df1add3f9823408c1a869cc2e42a36c645c65c0740ea96ae01e7f4bc94875",
-        "lab/lib/studio-navigation.mjs": "af025805cea9ef832cfaf28b9f416b2b539da4e6428dd57c268c3fe7f960eb78",
-        "lab/lib/ui-server.ts": "0f78d9d162dc10f0160c33bb15c6e6fef9459b0a1e2c247d674bdfba2237596e",
-        "lab/next.config.mjs": "6931a942fbcc406a202a3f40a8c3191209253a1b77d30641d53274851e0bd30e",
-        "lab/test/next-page-navigation.test.mjs": "e168089462d0e54e67fda7955a39d91f57bd17cfe8f7fdf17c87eabc05b85ef6",
-        "lab/test/studio-login-client.test.mjs": "b5f1ff219ec6ccb6d1c0545378740397cd4216b15e5e81b3f893b87feae730b3",
-        "lab/test/studio-navigation.test.mjs": "92be223f3c5ddafdc4b9dcb36d5ddfeeb71138f98a20befd051d7669786ba0b5",
-        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65",
-        "lab/components/native-administration.tsx": "e6180efba1ca01ba0d40ea772315ce0d48821988e0fcf6f7f2aaa5867a46dfd9",
-        "lab/lib/studio-admin-api.mjs": "21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
-        "lab/test/studio-admin-api.test.mjs": "79e83f6b85a2eb36fa860c6891e966eb9f2eb34f1f0db1275f572771a3a6210e",
-        "lab/components/gateway-panel.tsx": "964e3863cd63f4ae810037a94ebf2c5bc0bdef259353f700bdeaf169a7b0ed3b",
-        "lab/components/voice-preview-panel.tsx": "cd00e330eaed46f65a8ed6d6e40868f61104b698b3f238d24fac01af7dfb8b1f",
-        "lab/components/voice-preview-panel.test.mjs": "a34a747d1e941b9c106c4fe96d16646c285f688b8f7e8797816215f08b42e262",
-        "lab/lib/studio-native-auth.mjs": "2697cf97f97d32d2f67093b89fa4699f8231dad2e4b4c25b2a36c9a2edacd28f",
-        "lab/lib/studio-native-runtime.d.mts": "af4b9d9d713579a5ee3a801c48eaa7e362d1aaef718d51f5d3851088a54bf8f6",
-        "lab/lib/studio-native-runtime.mjs": "d82956677d78ec97450573e6b41bf1841a80631484b4dd593c1c27e31ec2e10f",
-        "lab/test/studio-native-auth.test.mjs": "2b8a04d5b698903b9943f35c1c63a3782845d45feaec5cafd7644b051c4d17a4",
-        "lab/test/studio-native-runtime.test.mjs": "aa26635643adb1db6ca3bcde7c60fd4fb168cbc4a91923e3d85571041dd42712",
-        "lab/lib/studio-native-request.mjs": "c7b267652cc32f0d8c45732b6169756ba9e4595af3171c65ed05a42a83497355",
-        "lab/test/studio-native-request.test.mjs": "abd1c9feec74a3d3a12ee5aa0d675aae2b79d89c6153c775043606beafc45424"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
+        "lab/app/activity/page.tsx": "sha256:c292c87196b1ff1fb22c1392748e49196ce1db12f2223df4325fbe5de207a439",
+        "lab/app/administration/page.tsx": "sha256:eeb22dbe2a58a7f6abbdeada7275a54f3bf2338f3f60a024bde3600a4943b7a3",
+        "lab/app/api/admin/[...action]/route.ts": "sha256:f27c08cd75dc65bdf255c9e4f2bd5c7bf33caa38a025424af884580e1b92af05",
+        "lab/app/api/auth/[action]/route.ts": "sha256:c42bf8f3c8b701224f53fc56f6ccd65e45d0f5a8b484cc650f7193458594c9bf",
+        "lab/app/api/auth/session/route.ts": "sha256:c21bfa9add5ab4c2d5ca9a45c41e8a877e9f8cd9efce7d20b68f541fdd84c221",
+        "lab/app/api/chat/route.ts": "sha256:15dfd0c6bfe10dfd139d3bc7996c8b4a3d56df9fb520e3d3c48fbf48c554c602",
+        "lab/app/api/clip-controls/route.ts": "sha256:03338715bbdabb12ddfc8d3c9dd7d47ddf71135e674db8bfdbec91907ccf5d0d",
+        "lab/app/api/generated-speech/[id]/[kind]/route.ts": "sha256:bb18ddcbe660de14f88f84cbd2d867bd53431aa6bb267d70d119cb0738f774be",
+        "lab/app/api/health/route.ts": "sha256:6aa9e4c38247888badcb3ca302a4b94ef3b03e503d850f5dddcefb8972fa3d67",
+        "lab/app/api/inputs/events/route.ts": "sha256:eaf0a3b9b5f0a9f6f6ecaba4c8e3b701ab79e176acfc8b10a7b2420a7f649bcd",
+        "lab/app/api/inputs/reference/route.ts": "sha256:fd3e7d821879ca00dc6d4986c6e84e3eec10ccd73908f9188ab3a04c3eae5de2",
+        "lab/app/api/inputs/route.ts": "sha256:eaf0a3b9b5f0a9f6f6ecaba4c8e3b701ab79e176acfc8b10a7b2420a7f649bcd",
+        "lab/app/api/openclaw/admin/route.ts": "sha256:b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
+        "lab/app/api/original-media/[...path]/route.ts": "sha256:79266f2c82be0c9b25f75885eb3a12f91fdbc783d6b8f234d3aea1596a38127a",
+        "lab/app/api/original-media/route.ts": "sha256:c884cc2f9d67e755846ffc070f4bf76d0af89718df0302b8c62072306220de2e",
+        "lab/app/api/partner-preview/route.ts": "sha256:d628ae22f762a041e1d5e00e63fd21277a4889e1238f765c712441fda09f7f3c",
+        "lab/app/api/presentation/decision/route.ts": "sha256:0ca56cf9820cd86b217674903e0178b45e49aef799cbf16e7f37744bbe838144",
+        "lab/app/api/presentation/idle/route.ts": "sha256:c50affdc29ff5f7dbfeea2f61d87cc5449e11bb3a7fdb8fad3c3faa49c06e4e2",
+        "lab/app/api/probe/route.ts": "sha256:607489dfc7adf50892efd5d899b5bf917dff561ca6c1ae0d0a45b80135ec4339",
+        "lab/app/api/project/route.ts": "sha256:32610ccafeeda47ad1382ae2c3d9a09678c6219bd9bbf5bf07a3acabbe0fa630",
+        "lab/app/api/simulate/route.ts": "sha256:c3584680eb7dd6f025112d935a3168a9b48ee84e034e7fa7500d26184c0f7378",
+        "lab/app/api/social/chat/route.ts": "sha256:de248c8fc9468958ef03d8b644b77194902b13a61bd9154f59f84565eb7c9019",
+        "lab/app/api/social/profile/route.ts": "sha256:dc342ac203fdf529b82c0976ac22d56a8b5992ccf5b0373cc7ff9cf02f6075c2",
+        "lab/app/api/social/route.ts": "sha256:6adf3eed0f2d77d0c434e2beeb66ac0b78c3f7f867e7d1c7e94d2c2a01261357",
+        "lab/app/api/social/status/route.ts": "sha256:0462f39c0c1b930e0c9693fba493f7eabfa925cfa767268cf723fea84fcc97a2",
+        "lab/app/api/social/voice/route.ts": "sha256:de248c8fc9468958ef03d8b644b77194902b13a61bd9154f59f84565eb7c9019",
+        "lab/app/api/videos/[id]/route.ts": "sha256:0febd9344230c42a4d1e7235c371710ede2ac5f2b11b13f17513464e981656e9",
+        "lab/app/api/videos/classify/route.ts": "sha256:33a7c0b821597a68867157bd4b2438790e63f8ce9dc1750664455cfcc1dc9508",
+        "lab/app/api/videos/rescan/route.ts": "sha256:34d3ad55ef3453304a60089c5ce602af60838291ad353023bd6713ce8fd1d5ba",
+        "lab/app/api/videos/route.ts": "sha256:be7d7ee03012c2a38c6e6c6b137a2877cf26886bfbe506e858c6548968951817",
+        "lab/app/api/videos/upload/route.ts": "sha256:2e16e1e17d3129b4ed83079af62bcd28f32f61106e729ec4f39435fc376ec057",
+        "lab/app/api/voice/[id]/route.ts": "sha256:74843c0dfd54ba952a7b5a0ede9900bd1f00c2afaa73621d55ba5877b8911b8d",
+        "lab/app/api/voice/route.ts": "sha256:9a7bbd79961f0fabb9e958fcb5a6e3d8f207e4e88313a6e093ef6b167014ee11",
+        "lab/app/api/zones/clips/[id]/route.ts": "sha256:8da9f4039d09f25aff7fb08631853491c328f2976f77c78394ee94078ba2dcd5",
+        "lab/app/api/zones/clips/route.ts": "sha256:c79e8ab47f6e396e2b39de147799145de2ab215daae084e8fd9d7731c7f61edf",
+        "lab/app/api/zones/reference/route.ts": "sha256:a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
+        "lab/app/api/zones/route.ts": "sha256:88af87f3b05c87eb7400c725f982dc5687b8cd60fc39d7889671dd9c6e3beed5",
+        "lab/app/control/[[...path]]/page.tsx": "sha256:da2b3a4581bcadf58778da2d9b70e0a1c82e5699231863f9960ba3e8d5515666",
+        "lab/app/control/activity/page.tsx": "sha256:cfc84bd0d7ea354e905137838340c40a9550bee642612b753ecf6e237762b2b0",
+        "lab/app/control/administration/page.tsx": "sha256:f2f33de29aee4fd1a705ec59cddb108f77b153537c3cf69d59d42fddf7bc9bf5",
+        "lab/app/control/clips/page.tsx": "sha256:7181c578857a64a4d0d5ffdd00def9bc94dcdd85162447a4090eedfa6719708e",
+        "lab/app/control/events/page.tsx": "sha256:b62e0ee38a6d5bb2dc40b389c24338b02917804e0a344d90f6422448c51a4006",
+        "lab/app/control/guide/page.tsx": "sha256:d666938181ae872730c162551b536f69c36a340f00196000a4278172be3125af",
+        "lab/app/control/login/page.tsx": "sha256:ec355d1e5507ec5cd050ba4f55b4fa8a40b342247c54b23ee62d6f2e2c170da1",
+        "lab/app/control/openclaw/page.tsx": "sha256:2224fa84b0cb978044c5333930ce1f9d74896386a9abadfbcc9231735198a6c2",
+        "lab/app/control/operator-chat/page.tsx": "sha256:831a88824b74e61d823fb949aa5530f32d052faa80d4c7a7fb1e63c476dd0edc",
+        "lab/app/control/probe/page.tsx": "sha256:d5e498f98b8df5777bc1698fa8954aabe1ca08968c9dcb5010fcb2679c5430f6",
+        "lab/app/control/set-password/page.tsx": "sha256:7139c0ec6e5fa83ea4c2413167688c1aa3aedd33b4f7a57def015610b7aa4b72",
+        "lab/app/control/tree/page.tsx": "sha256:d3c7df6b029efc45214031166d4c044f12631e8a007848b845ca851ce62906d7",
+        "lab/app/control/videos/page.tsx": "sha256:c316205da1e64d8650fe21b464b30b8ad81f871772bce001272c14ae047cf256",
+        "lab/app/control/zones/page.tsx": "sha256:536135b14902cda86181b41eff0c4e3b9292549616fb989cc52a2bf9e2872840",
+        "lab/app/events/page.tsx": "sha256:73d0f170e40b2f1bc82563bb8edf7be3a8608ac9bb0c04289edc853fce6a3c96",
+        "lab/app/guide/page.tsx": "sha256:91d42e1b348c34db067f47e88075cd0e7b0905d24845fffb311c6ab905ee34bf",
+        "lab/app/lissabon/page.tsx": "sha256:38d5373e51b9f2ddbc3afa23a1cec8939c35ec8ffa99422c1b0e172421df4441",
+        "lab/app/login/page.tsx": "sha256:c4e87f2bc2fb78ec14fe4b77ed4b8ee57670ef7b5657b29d38afb692204f5375",
+        "lab/app/openclaw/page.tsx": "sha256:7a2cc07c9f9b436d558f04db68b05667c3a9353bb6cc330dac3d46a3e833249b",
+        "lab/app/operator-chat/page.tsx": "sha256:4b7334945ecfe7d622bbc496f39c49555bde2c906633ed380a83415443d339dd",
+        "lab/app/page.tsx": "sha256:946542a68bcd0ddfabbd398d20d46ad0f816152e75f65d1434dc162e31c463a3",
+        "lab/app/partner/[[...path]]/page.tsx": "sha256:19d11b19d3ca0611a0894690a74e143fbf255f3485079df0be257b7cc35d4e7b",
+        "lab/app/probe/page.tsx": "sha256:9af0d7cf44a5eed690650029110b4c05a2fa5e3facaefa0c4879bcbc50c607a5",
+        "lab/app/set-password/page.tsx": "sha256:d755d653b4793b5e9af254405a180509216ff3e859820672fcdb35cdd329d6c3",
+        "lab/app/studio-page.tsx": "sha256:b13197ac4c692f552b98434868f4a0807eb70a262d78b94192c118f5d5c6fb99",
+        "lab/app/tree/page.tsx": "sha256:e6fd407b99dd74d2ff1724a202f11494bd20e135247979f7e5f802a5ea311dfc",
+        "lab/app/videos/page.tsx": "sha256:9a4b65eec85b5a2d088745b43388d6664c6b8b0f6e054f76cb47c18c7da8df80",
+        "lab/app/zones/page.tsx": "sha256:889ba8eff6e3f358390b8b343885d145fb0b8d1f5efcc7e1644185ae39bd6795",
+        "lab/components/event-tree.test.mjs": "sha256:4ff5f4edaa53578d8d1baebc41a94f8eff57902a6f2d877f3531e171fd905e3d",
+        "lab/components/event-tree.tsx": "sha256:ad3c6125e22464ed9e09398c35622b628846eac59a257947956b2dc91236da88",
+        "lab/components/gateway-panel.tsx": "sha256:964e3863cd63f4ae810037a94ebf2c5bc0bdef259353f700bdeaf169a7b0ed3b",
+        "lab/components/native-administration.tsx": "sha256:e6180efba1ca01ba0d40ea772315ce0d48821988e0fcf6f7f2aaa5867a46dfd9",
+        "lab/components/studio-administration.test.mjs": "sha256:d5286bb24029d004aea0b541cfecb3f0888f9bc84e8e0ee33d5daf117a78de98",
+        "lab/components/studio-administration.tsx": "sha256:bc7e76147041916a6f3ef0c65c34ede15c3d2f54cfe09ef1bc2f4e05876982a5",
+        "lab/components/studio-types.ts": "sha256:689c399a6dc14fa15c4306259de52b645a057b7602ccae745cacef35a0945fc7",
+        "lab/components/studio.tsx": "sha256:1d2d9122d879e8824a4281eb4720b7f7bb25c15cfc28fd2947014e5665af06b6",
+        "lab/components/voice-preview-panel.test.mjs": "sha256:a34a747d1e941b9c106c4fe96d16646c285f688b8f7e8797816215f08b42e262",
+        "lab/components/voice-preview-panel.tsx": "sha256:cd00e330eaed46f65a8ed6d6e40868f61104b698b3f238d24fac01af7dfb8b1f",
+        "lab/lib/studio-admin-api.mjs": "sha256:21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
+        "lab/lib/studio-login-client.mjs": "sha256:ca1834f58ab6ab255cf792cf630eeb303e52cc6d61a5cfb78cd316896d977e91",
+        "lab/lib/studio-native-auth.mjs": "sha256:2697cf97f97d32d2f67093b89fa4699f8231dad2e4b4c25b2a36c9a2edacd28f",
+        "lab/lib/studio-native-request.mjs": "sha256:c7b267652cc32f0d8c45732b6169756ba9e4595af3171c65ed05a42a83497355",
+        "lab/lib/studio-native-runtime.d.mts": "sha256:af4b9d9d713579a5ee3a801c48eaa7e362d1aaef718d51f5d3851088a54bf8f6",
+        "lab/lib/studio-native-runtime.mjs": "sha256:d82956677d78ec97450573e6b41bf1841a80631484b4dd593c1c27e31ec2e10f",
+        "lab/lib/studio-navigation.d.mts": "sha256:602df1add3f9823408c1a869cc2e42a36c645c65c0740ea96ae01e7f4bc94875",
+        "lab/lib/studio-navigation.mjs": "sha256:38e952db60b95a6724659f646af98f454ff3bd2c0a7c9f855e629f71fa8f6c05",
+        "lab/lib/ui-server.ts": "sha256:0f78d9d162dc10f0160c33bb15c6e6fef9459b0a1e2c247d674bdfba2237596e",
+        "lab/next.config.mjs": "sha256:69b75b34e5322c28ec431113168d231a088c4da94d77faaff0a367589e16e935",
+        "lab/test/next-page-navigation.test.mjs": "sha256:e1fbdb5433705b49bc870755dbfdb4a30d0e550c16be77a0f2c8b83a3d1d6126",
+        "lab/test/studio-admin-api.test.mjs": "sha256:79e83f6b85a2eb36fa860c6891e966eb9f2eb34f1f0db1275f572771a3a6210e",
+        "lab/test/studio-login-client.test.mjs": "sha256:76d390c54c3deb31ab0db98eff4e425fb9106f2e1a3d57a00bcf0bae57a34572",
+        "lab/test/studio-native-auth.test.mjs": "sha256:2b8a04d5b698903b9943f35c1c63a3782845d45feaec5cafd7644b051c4d17a4",
+        "lab/test/studio-native-request.test.mjs": "sha256:abd1c9feec74a3d3a12ee5aa0d675aae2b79d89c6153c775043606beafc45424",
+        "lab/test/studio-native-runtime.test.mjs": "sha256:aa26635643adb1db6ca3bcde7c60fd4fb168cbc4a91923e3d85571041dd42712",
+        "lab/test/studio-navigation.test.mjs": "sha256:30bacb79d55b8fa556668c3146accfe6433911c33d5d96ce6b694c9913ed630c",
+        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36"
       }
     },
     {
@@ -392,14 +410,14 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "apps/croupier-frontend/app/blackjack/route.ts": "0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
-        "apps/croupier-frontend/lib/server-ui.mjs": "a2a45cf0769b4eed17644e69bd6cc869c1040ef4cffd955c7def758bb1ec1944",
-        "apps/croupier-frontend/test/game-entry.mjs": "8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/routes.json": "3197464ea46c09f29cfb27bcb00e0425afbb00750cb09e63f8404c5474c0e7d2",
-        "test/game-entry-auth.mjs": "1fadb111a62fdb4343e1033944de7f272d071f5f8f4f50d12bdec36ebb96fd80",
-        "test/game-entry-contract.mjs": "e88eb45b8f6068903c284e28c0dfaa3f062809bcd4ad86d313302e030d17ab3c",
-        "web/public/game-entry-contract.mjs": "b5920e8001accf9572d72e4e5488de0d1e0009942d9edfd72e820f411d420b75"
+        "apps/croupier-frontend/app/blackjack/route.ts": "sha256:0a5f2b4734283cdf4fcf62d1f00bd8a0a1a17074fd799484e2fdf4aa0eee01a4",
+        "apps/croupier-frontend/lib/server-ui.mjs": "sha256:cddf9da1602eaa142ca1c614aa0dbdfa46e65ca786245c110fdda59395fefec0",
+        "apps/croupier-frontend/test/game-entry.mjs": "sha256:8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
+        "test/game-entry-auth.mjs": "sha256:1fadb111a62fdb4343e1033944de7f272d071f5f8f4f50d12bdec36ebb96fd80",
+        "test/game-entry-contract.mjs": "sha256:e88eb45b8f6068903c284e28c0dfaa3f062809bcd4ad86d313302e030d17ab3c",
+        "web/public/game-entry-contract.mjs": "sha256:b5920e8001accf9572d72e4e5488de0d1e0009942d9edfd72e820f411d420b75"
       }
     },
     {
@@ -444,14 +462,14 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
-        "test/clip-mapping.mjs": "57f8dd369969798c69aadc42d94ab8ff52d5f2f6d90499783517a10f901380bc",
-        "test/shoe-game.mjs": "670b4c893b37f446838286f68513a8ebfd69e45ccc146f2907ee11e8fe08c49f",
-        "test/system-map.mjs": "c19fd179a21938107d1814813f7287e50cb6a863a5a81aece1f0756abf620b65",
-        "web/clip-mapping.mjs": "09cd959bd2a5c6b067d4dedb88744f515639033d3d3b381ba4fe764f6e844f75",
-        "web/public/blackjack.mjs": "5cdd479dc2b00693042bf6285cc9f01609b02f1e8bc48e86b20f260ddff53920",
-        "web/shoe-game.mjs": "9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/flows.json": "sha256:7847e4bc055c813925986668da6d882f4058c2f312c70b8ef4a2405435ee863b",
+        "test/clip-mapping.mjs": "sha256:57f8dd369969798c69aadc42d94ab8ff52d5f2f6d90499783517a10f901380bc",
+        "test/shoe-game.mjs": "sha256:670b4c893b37f446838286f68513a8ebfd69e45ccc146f2907ee11e8fe08c49f",
+        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36",
+        "web/clip-mapping.mjs": "sha256:09cd959bd2a5c6b067d4dedb88744f515639033d3d3b381ba4fe764f6e844f75",
+        "web/public/blackjack.mjs": "sha256:5cdd479dc2b00693042bf6285cc9f01609b02f1e8bc48e86b20f260ddff53920",
+        "web/shoe-game.mjs": "sha256:9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd"
       }
     },
     {
@@ -483,17 +501,17 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
-        "ops/cloud/process-group.mjs": "7216b4117b0d3286559f28c0d28c39b0b6689d45dacb0da7d8202c5dfe55c024",
-        "ops/cloud/start.mjs": "57409218dc11b5ba833b6aa2f55118889861ceefbefe23a9d997d6bdad859c3c",
-        "ops/cloud/test/shutdown.test.mjs": "cb63377ae871bd32616ff04598b8e587f4706e0f65d6361f44c4f0e6c3478067",
-        "test/server-shutdown.mjs": "34a082a3c8ee3d75ec1855960edbba52d8f6d7a6846a9153ba861aa28c6f04ef",
-        "test/speech-journal-runtime.mjs": "35192b7ef8327e82ddbacab65d8a55cd31a53c688577a6ceb3b9eb94a388a423",
-        "web/generated-speech-stream.mjs": "a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
-        "web/graceful-shutdown.mjs": "2ce120d5853bfbf84de53991c15904227fd08c6415d7fa97af004962a8aad3e3",
-        "web/server.mjs": "f75dd049135cb6cfc3ea697c49667534abf7a3da2f7803d44cc6cb413e0d0a4d",
-        "web/speech-journal-runtime.mjs": "f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/flows.json": "sha256:7847e4bc055c813925986668da6d882f4058c2f312c70b8ef4a2405435ee863b",
+        "ops/cloud/process-group.mjs": "sha256:7216b4117b0d3286559f28c0d28c39b0b6689d45dacb0da7d8202c5dfe55c024",
+        "ops/cloud/start.mjs": "sha256:57409218dc11b5ba833b6aa2f55118889861ceefbefe23a9d997d6bdad859c3c",
+        "ops/cloud/test/shutdown.test.mjs": "sha256:cb63377ae871bd32616ff04598b8e587f4706e0f65d6361f44c4f0e6c3478067",
+        "test/server-shutdown.mjs": "sha256:34a082a3c8ee3d75ec1855960edbba52d8f6d7a6846a9153ba861aa28c6f04ef",
+        "test/speech-journal-runtime.mjs": "sha256:35192b7ef8327e82ddbacab65d8a55cd31a53c688577a6ceb3b9eb94a388a423",
+        "web/generated-speech-stream.mjs": "sha256:a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
+        "web/graceful-shutdown.mjs": "sha256:2ce120d5853bfbf84de53991c15904227fd08c6415d7fa97af004962a8aad3e3",
+        "web/server.mjs": "sha256:6a4246cb0106f9fa34f73f7a92ff3d46a90e608ba2cc1c88d4c8c02d71db75fc",
+        "web/speech-journal-runtime.mjs": "sha256:f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56"
       }
     },
     {
@@ -523,15 +541,15 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/flows.json": "248c756548062988d74a0f47552c1c4bc5f261eb97ee9003049ecd677336484e",
-        "test/postgres-speech-journal.mjs": "17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
-        "test/speech-journal-runtime.mjs": "35192b7ef8327e82ddbacab65d8a55cd31a53c688577a6ceb3b9eb94a388a423",
-        "web/generated-speech-session.mjs": "fa04a68085210c1f2485b4e148e306a6af8864b9a94e5cc93d9ad16df593543e",
-        "web/generated-speech-stream.mjs": "a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
-        "web/postgres-speech-journal.mjs": "4766a3a895683fb5e290705c54d31c24bd309cbcfb587d9510f5be0c9afe7c57",
-        "web/speech-journal-constants.mjs": "ccdc9f6d2d79313e49c4fda20918a838bd63c87ebd1cff1f4e41a203bc4dab2d",
-        "web/speech-journal-runtime.mjs": "f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/flows.json": "sha256:7847e4bc055c813925986668da6d882f4058c2f312c70b8ef4a2405435ee863b",
+        "test/postgres-speech-journal.mjs": "sha256:17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
+        "test/speech-journal-runtime.mjs": "sha256:35192b7ef8327e82ddbacab65d8a55cd31a53c688577a6ceb3b9eb94a388a423",
+        "web/generated-speech-session.mjs": "sha256:fa04a68085210c1f2485b4e148e306a6af8864b9a94e5cc93d9ad16df593543e",
+        "web/generated-speech-stream.mjs": "sha256:a0eb0c67c307e0aca0851f189ccd061c80080efc2a22c97f2e9711d34a039ed9",
+        "web/postgres-speech-journal.mjs": "sha256:4766a3a895683fb5e290705c54d31c24bd309cbcfb587d9510f5be0c9afe7c57",
+        "web/speech-journal-constants.mjs": "sha256:ccdc9f6d2d79313e49c4fda20918a838bd63c87ebd1cff1f4e41a203bc4dab2d",
+        "web/speech-journal-runtime.mjs": "sha256:f2dc33e71e9be6a8a9de72aaaa862ae76e39acd914c9059ff23dea380ffe3f56"
       }
     },
     {
@@ -568,22 +586,22 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/routes.json": "3197464ea46c09f29cfb27bcb00e0425afbb00750cb09e63f8404c5474c0e7d2",
-        "lab/app/api/zones/reference/route.ts": "a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
-        "lab/lib/media-blob-index.mjs": "3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
-        "lab/lib/zone-reference.mjs": "db73abff9ace1751e4b157c2a6abd623f62455a48cde14c8afa255a06ac4c08c",
-        "lab/test/blob-source-routing.test.mjs": "1b7e274dac21aff9a27a13d3f425b0e64c26ea49eb24be529881c0f65ddd0c2c",
-        "lab/test/zone-reference.test.mjs": "cafcb07d74f64ac1c7eb16bbdb9918d51a716109fb0cec1807f41df8c8e2519a",
-        "media/blob-index.json": "ed1d761470abdd309323dbaf7904afb4731ab960ba374d52b11719298d28ad4b",
-        "media/layout.json": "a314f709a4d87f2b023cca56765037a85162981b6cff7e493888a9c70860018a",
-        "test/media-blob-export.mjs": "63e64223c7fe073156ed1ecef15b871a812c2ce1cb4d3c3b0058121f249c04f8",
-        "test/media-deduplication.mjs": "f376ae8128efbacab5255d2a31a783543c21cef6b06ba63ce28025ef1673cf25",
-        "test/media-layout.mjs": "14fe175db99dc162e8419524ced5a3dc743fff69e1e58a3c7fe41f256bcf6f90",
-        "test/media-migration.mjs": "887b63bd0a3a6a54ee02bb800dfc065d36a19574ff987f0d3e9cc57f027d631f",
-        "tools/deduplicate-media.mjs": "49a74650008655993dc248e28c587ea91d1d80ad53fa3bc680cc77c283deffed",
-        "tools/export-media-blob.mjs": "88671412f0eda51ab5a7a11112a413080611e7daed0342b9001fa232ca5f0638",
-        "tools/media-layout.mjs": "486225d9e25ab4e8618137e101248bd837a93000b848c9777f03974610b8c763"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
+        "lab/app/api/zones/reference/route.ts": "sha256:a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
+        "lab/lib/media-blob-index.mjs": "sha256:3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
+        "lab/lib/zone-reference.mjs": "sha256:db73abff9ace1751e4b157c2a6abd623f62455a48cde14c8afa255a06ac4c08c",
+        "lab/test/blob-source-routing.test.mjs": "sha256:1b7e274dac21aff9a27a13d3f425b0e64c26ea49eb24be529881c0f65ddd0c2c",
+        "lab/test/zone-reference.test.mjs": "sha256:cafcb07d74f64ac1c7eb16bbdb9918d51a716109fb0cec1807f41df8c8e2519a",
+        "media/blob-index.json": "sha256:ed1d761470abdd309323dbaf7904afb4731ab960ba374d52b11719298d28ad4b",
+        "media/layout.json": "sha256:a314f709a4d87f2b023cca56765037a85162981b6cff7e493888a9c70860018a",
+        "test/media-blob-export.mjs": "sha256:63e64223c7fe073156ed1ecef15b871a812c2ce1cb4d3c3b0058121f249c04f8",
+        "test/media-deduplication.mjs": "sha256:f376ae8128efbacab5255d2a31a783543c21cef6b06ba63ce28025ef1673cf25",
+        "test/media-layout.mjs": "sha256:14fe175db99dc162e8419524ced5a3dc743fff69e1e58a3c7fe41f256bcf6f90",
+        "test/media-migration.mjs": "sha256:887b63bd0a3a6a54ee02bb800dfc065d36a19574ff987f0d3e9cc57f027d631f",
+        "tools/deduplicate-media.mjs": "sha256:49a74650008655993dc248e28c587ea91d1d80ad53fa3bc680cc77c283deffed",
+        "tools/export-media-blob.mjs": "sha256:88671412f0eda51ab5a7a11112a413080611e7daed0342b9001fa232ca5f0638",
+        "tools/media-layout.mjs": "sha256:486225d9e25ab4e8618137e101248bd837a93000b848c9777f03974610b8c763"
       }
     },
     {
@@ -619,21 +637,21 @@
       "testType": "existing-file-tests",
       "checks": [],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/routes.json": "3197464ea46c09f29cfb27bcb00e0425afbb00750cb09e63f8404c5474c0e7d2",
-        "lab/app/api/openclaw/admin/route.ts": "b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
-        "lab/components/openclaw-workspace.test.mjs": "90da50077119e0196c7842725c9ebfaa39b927dff411745a33e32b38ef719805",
-        "lab/components/openclaw-workspace.tsx": "193a4e9c7e01622bf4f17c121188c6666d1958fae3e65ef20e78fc287ba3f142",
-        "lab/lib/openclaw-admin.mjs": "1bfaa4cc6df847afd5069546249a8e1d35913d8fe1635781e08e0bce67651d9a",
-        "lab/lib/openclaw-dashboard.mjs": "d2d981c4bef137b71db4ccb0096d3f1e3543122f5deff8a7fb907497788e71d1",
-        "lab/test/openclaw-admin.test.mjs": "1105ca754a4d5590de29b5b9fe0f54585e7afa9a76817a04f8afbb8587bb5a0b",
-        "lab/test/openclaw-dashboard.test.mjs": "98538d6265310163f69ca47dfe7a24ccae031cf0431d6e87126b507eda652bfe",
-        "open-claw/lab/src/dashboard-proxy.mjs": "091ddcde58dc7cfb16a31487e1a26efc3eaf68058c5d5656e5b3c67bdc20a814",
-        "open-claw/lab/src/gateway-rpc.mjs": "b9d5804f0d986c219e773c78a71c8e7d65e84ca3ce32f3043aea898a2e01cdb6",
-        "open-claw/lab/src/studio-admin.mjs": "0f8b4bc9807e4c1d750755c97e81d54250de68fdb1535cb3c01be1e9d259f141",
-        "open-claw/lab/test/dashboard-proxy.test.mjs": "4425296cdd0d2e143b52856bbbcdb97a4311f80d8d33a0bab22b5bc2e4be852a",
-        "open-claw/lab/test/gateway-rpc.test.mjs": "e746ffc7d6678a2aaaf5cf6612a43650a7d8a3e55812e7d43f9ec3eb82ca062c",
-        "open-claw/lab/test/studio-admin.test.mjs": "19d914a1117c7091abe5101afc6f1e01750997b9ec8c1a7d8a51188eff5844ec"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
+        "lab/app/api/openclaw/admin/route.ts": "sha256:b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
+        "lab/components/openclaw-workspace.test.mjs": "sha256:f9eb60e1da21ae2d53216c2863d95ee5ea43316c4c47f9dba33feba102c52556",
+        "lab/components/openclaw-workspace.tsx": "sha256:193a4e9c7e01622bf4f17c121188c6666d1958fae3e65ef20e78fc287ba3f142",
+        "lab/lib/openclaw-admin.mjs": "sha256:1bfaa4cc6df847afd5069546249a8e1d35913d8fe1635781e08e0bce67651d9a",
+        "lab/lib/openclaw-dashboard.mjs": "sha256:d2d981c4bef137b71db4ccb0096d3f1e3543122f5deff8a7fb907497788e71d1",
+        "lab/test/openclaw-admin.test.mjs": "sha256:1105ca754a4d5590de29b5b9fe0f54585e7afa9a76817a04f8afbb8587bb5a0b",
+        "lab/test/openclaw-dashboard.test.mjs": "sha256:98538d6265310163f69ca47dfe7a24ccae031cf0431d6e87126b507eda652bfe",
+        "open-claw/lab/src/dashboard-proxy.mjs": "sha256:091ddcde58dc7cfb16a31487e1a26efc3eaf68058c5d5656e5b3c67bdc20a814",
+        "open-claw/lab/src/gateway-rpc.mjs": "sha256:b9d5804f0d986c219e773c78a71c8e7d65e84ca3ce32f3043aea898a2e01cdb6",
+        "open-claw/lab/src/studio-admin.mjs": "sha256:0f8b4bc9807e4c1d750755c97e81d54250de68fdb1535cb3c01be1e9d259f141",
+        "open-claw/lab/test/dashboard-proxy.test.mjs": "sha256:4425296cdd0d2e143b52856bbbcdb97a4311f80d8d33a0bab22b5bc2e4be852a",
+        "open-claw/lab/test/gateway-rpc.test.mjs": "sha256:e746ffc7d6678a2aaaf5cf6612a43650a7d8a3e55812e7d43f9ec3eb82ca062c",
+        "open-claw/lab/test/studio-admin.test.mjs": "sha256:19d914a1117c7091abe5101afc6f1e01750997b9ec8c1a7d8a51188eff5844ec"
       }
     },
     {
@@ -662,10 +680,10 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
-        "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
-        "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/storage.json": "sha256:da749dfb0b2ee35e7770ad81bae358006f1062a9e8fb88b94eda8189368e9b83",
+        "ops/neon-game/product-schema.sql": "sha256:831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
+        "test/postgres-persistence.mjs": "sha256:1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a"
       }
     },
     {
@@ -696,11 +714,11 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
-        "ops/neon-game/product-schema.sql": "831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
-        "test/postgres-persistence.mjs": "1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a",
-        "test/studio-native-auth-actions.mjs": "85d7694cdd4409045086be9c84db9544d584300a6589a6f2f804c87821a1e068"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/storage.json": "sha256:da749dfb0b2ee35e7770ad81bae358006f1062a9e8fb88b94eda8189368e9b83",
+        "ops/neon-game/product-schema.sql": "sha256:831637c49f3fa2210c3c5804531b13807d2d8fb1feb2c324bc2a986493f7fb1a",
+        "test/postgres-persistence.mjs": "sha256:1b65bb3e89fe0eed17ce539c70270a1c31b8188877048ff457943876b3a9f86a",
+        "test/studio-native-auth-actions.mjs": "sha256:85d7694cdd4409045086be9c84db9544d584300a6589a6f2f804c87821a1e068"
       }
     },
     {
@@ -731,15 +749,15 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
-        "ops/neon-studio/001-studio-metadata.sql": "009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
-        "ops/neon-studio/002-generation-journals.sql": "efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
-        "ops/neon-studio/003-operator-speech-qa.sql": "0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae",
-        "ops/neon-studio/004-fullfile-reservations.sql": "03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383",
-        "ops/neon-studio/migrations.mjs": "974e81373d3ab08c9fde63e747089b21a121dc14e35e99ea81b9c513321629d4",
-        "test/postgres-speech-journal.mjs": "17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
-        "test/studio-migrations.mjs": "951a35a9c731b35c82e01e82c6b0b67e2c313f971bbe327f2f5abace99aa7e17"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/storage.json": "sha256:da749dfb0b2ee35e7770ad81bae358006f1062a9e8fb88b94eda8189368e9b83",
+        "ops/neon-studio/001-studio-metadata.sql": "sha256:009aaa0348237ad33492a375b7df1e859817f974821b75a1f904723c42018237",
+        "ops/neon-studio/002-generation-journals.sql": "sha256:efc323821d4702aea6c032dd92292545aadff31f7e4f1476fbbb195b397dd662",
+        "ops/neon-studio/003-operator-speech-qa.sql": "sha256:0a5f499d2d254156e4c8f13c20e9415ef7ffaf435b9bc41e4d90c7a174d171ae",
+        "ops/neon-studio/004-fullfile-reservations.sql": "sha256:03babc94026c87f69a9f2731dd2d59b9a7cfedb9250cbf617feb762465ceb383",
+        "ops/neon-studio/migrations.mjs": "sha256:974e81373d3ab08c9fde63e747089b21a121dc14e35e99ea81b9c513321629d4",
+        "test/postgres-speech-journal.mjs": "sha256:17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
+        "test/studio-migrations.mjs": "sha256:951a35a9c731b35c82e01e82c6b0b67e2c313f971bbe327f2f5abace99aa7e17"
       }
     },
     {
@@ -769,10 +787,10 @@
         }
       ],
       "expectedHashes": {
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "docs/system-map/storage.json": "2751171d7850b7644272e5a3183639bdd119c89195235ebce84bbf757961c75b",
-        "lab/lib/zone-cloud-schema.sql": "8807c7824192a3e837f778bcee39fb2fff8a383538af295f955c0f2388e6de96",
-        "lab/test/zone-cloud-store.test.mjs": "c6477d704d567d72d81a4c992b43da8eaf9636f1ef6d4b74f2142f8efb4e2184"
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "docs/system-map/storage.json": "sha256:da749dfb0b2ee35e7770ad81bae358006f1062a9e8fb88b94eda8189368e9b83",
+        "lab/lib/zone-cloud-schema.sql": "sha256:8807c7824192a3e837f778bcee39fb2fff8a383538af295f955c0f2388e6de96",
+        "lab/test/zone-cloud-store.test.mjs": "sha256:c6477d704d567d72d81a4c992b43da8eaf9636f1ef6d4b74f2142f8efb4e2184"
       }
     },
     {
@@ -800,10 +818,10 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -833,24 +851,24 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "ops/cloud/config.mjs": "aa651cae09913f97525b460f0afc5da21bb925cd3ace70ad595df10751a4dd97",
-        "ops/cloud/container-entry.mjs": "b3bd6141ddfd287a62d779216f33780f63399cba1e416e5c4217f24dccf56753",
-        "ops/cloud/gateway.mjs": "1fd5112814b888b55ce4386a0e8a6d990495779375ae1c51bbb8e066a6f8f16a",
-        "ops/cloud/start.mjs": "57409218dc11b5ba833b6aa2f55118889861ceefbefe23a9d997d6bdad859c3c",
-        "ops/cloud/storage-export.mjs": "16a4c5f3b620b841c8cb0086307d1fb6a4f055987ee83594b4fb2db4ac2eb99b",
-        "ops/cloud/vercel-ingress.mjs": "cfba2951f8189f2ea4aa6f350e405628823e2d1f091bfde9e0997dc1a76b362f",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8",
-        "web/generated-speech.mjs": "e48e5d08da8d5cea6fb14ee1f80684ef345864a282588cac10415f258ca1a0bd",
-        "web/native-ai-qa-private.mjs": "b23580f7e888fb49764351b1559bbea3631a941fdf6cb239b3a2045cc136f6cc",
-        "web/native-ai-qa-runtime.mjs": "77dccf7fcb8fac217795a8448483a93958cbcc79bf9c69afeeae9a232a73e33f",
-        "web/native-p6-qa-hook.mjs": "4bfa37b92976fbfaa18ae9d7238125038dcc70c71316c63857631175586de63c",
-        "web/operator-speech-qa.mjs": "8e5a28ff54b5f986a55830e5c17ff216bc4d01f9231d9dd3672d5c657dde25b1",
-        "web/storage/studio-game-policy.mjs": "955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617",
-        "web/storage/studio-runtime.mjs": "b4f1d691035247d1e4768cd3472d3ca83164dd65168752198a9314c46b0f2e2d",
-        "web/studio-game-commands.mjs": "d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "ops/cloud/config.mjs": "sha256:aa651cae09913f97525b460f0afc5da21bb925cd3ace70ad595df10751a4dd97",
+        "ops/cloud/container-entry.mjs": "sha256:b3bd6141ddfd287a62d779216f33780f63399cba1e416e5c4217f24dccf56753",
+        "ops/cloud/gateway.mjs": "sha256:919e761aeaaadf1392e24df72f9e72254c19d631213fedb4755943bb21bd28fc",
+        "ops/cloud/start.mjs": "sha256:57409218dc11b5ba833b6aa2f55118889861ceefbefe23a9d997d6bdad859c3c",
+        "ops/cloud/storage-export.mjs": "sha256:16a4c5f3b620b841c8cb0086307d1fb6a4f055987ee83594b4fb2db4ac2eb99b",
+        "ops/cloud/vercel-ingress.mjs": "sha256:8ca9932eb6905dc0d46eba70532ed66dea570e0e2d6ec36f86f9b428af1dd271",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8",
+        "web/generated-speech.mjs": "sha256:e48e5d08da8d5cea6fb14ee1f80684ef345864a282588cac10415f258ca1a0bd",
+        "web/native-ai-qa-private.mjs": "sha256:b23580f7e888fb49764351b1559bbea3631a941fdf6cb239b3a2045cc136f6cc",
+        "web/native-ai-qa-runtime.mjs": "sha256:77dccf7fcb8fac217795a8448483a93958cbcc79bf9c69afeeae9a232a73e33f",
+        "web/native-p6-qa-hook.mjs": "sha256:4bfa37b92976fbfaa18ae9d7238125038dcc70c71316c63857631175586de63c",
+        "web/operator-speech-qa.mjs": "sha256:8e5a28ff54b5f986a55830e5c17ff216bc4d01f9231d9dd3672d5c657dde25b1",
+        "web/storage/studio-game-policy.mjs": "sha256:955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617",
+        "web/storage/studio-runtime.mjs": "sha256:b4f1d691035247d1e4768cd3472d3ca83164dd65168752198a9314c46b0f2e2d",
+        "web/studio-game-commands.mjs": "sha256:d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f"
       }
     },
     {
@@ -880,11 +898,11 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "services/astrid-gpu-worker/gateway/server.mjs": "c63a08ab842c6d1757dc764be8ce1d968a50dee42e9c7172bcf619eae09bb17b",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "services/astrid-gpu-worker/gateway/server.mjs": "sha256:c63a08ab842c6d1757dc764be8ce1d968a50dee42e9c7172bcf619eae09bb17b",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -914,12 +932,12 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "open-claw/lab/deploy/start-director.mjs": "5c4b6f6437ade8c030ca8d05167d8b98b0e2e915cd9095ce4bf6cc99bd33e4f2",
-        "open-claw/lab/src/gateway-rpc.mjs": "b9d5804f0d986c219e773c78a71c8e7d65e84ca3ce32f3043aea898a2e01cdb6",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "open-claw/lab/deploy/start-director.mjs": "sha256:5c4b6f6437ade8c030ca8d05167d8b98b0e2e915cd9095ce4bf6cc99bd33e4f2",
+        "open-claw/lab/src/gateway-rpc.mjs": "sha256:b9d5804f0d986c219e773c78a71c8e7d65e84ca3ce32f3043aea898a2e01cdb6",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -949,11 +967,11 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "open-claw/lab/deploy/gateway-config.mjs": "b57abf18060eaf82433b05338cac3da0f3a50a18b4609bd7e79563b73d09882c",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "open-claw/lab/deploy/gateway-config.mjs": "sha256:b57abf18060eaf82433b05338cac3da0f3a50a18b4609bd7e79563b73d09882c",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -983,10 +1001,10 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -1014,11 +1032,11 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "ops/vercel-entry/build.mjs": "490460ea55de9a7b1ce7cd5453ce0f4292637165c576b98f98b079d213049202",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "ops/vercel-entry/build.mjs": "sha256:490460ea55de9a7b1ce7cd5453ce0f4292637165c576b98f98b079d213049202",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -1048,12 +1066,12 @@
         }
       ],
       "expectedHashes": {
-        "apps/croupier-frontend/lib/game-url.ts": "fe3eac0e8e668db747f39fda94a69dd2ab6db772241d9c467e0d89033488db3f",
-        "apps/croupier-frontend/lib/platform-routing.mjs": "ad6ba61292e1e2bed4f77919744eb6431ba71cffa359341a233556fa19df7258",
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "apps/croupier-frontend/lib/game-url.ts": "sha256:fe3eac0e8e668db747f39fda94a69dd2ab6db772241d9c467e0d89033488db3f",
+        "apps/croupier-frontend/lib/platform-routing.mjs": "sha256:0bbc8d65857d2a2c371955134a10813d24d2bc6b8b485d81535bcc1156e921ea",
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     },
     {
@@ -1083,19 +1101,20 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "lab/lib/neon-video-registry.mjs": "5c9f50b0a723dda04746dc46a48da6aa2bd2019bf2cc7d2d7bc39c1b6306cd83",
-        "lab/lib/openclaw-admin.mjs": "1bfaa4cc6df847afd5069546249a8e1d35913d8fe1635781e08e0bce67651d9a",
-        "lab/lib/remote-ui.mjs": "76fc4185df4a99636b8e10dee2e9b2b6c798fb519b17c1e510c043e13466a080",
-        "lab/lib/studio-game-authority.mjs": "5bb54e725216a7a3d98b8237e30c5d7a8b259963cd9f110dc2f6bb19e3fe4a3f",
-        "lab/lib/studio-native-mail.mjs": "8f65462ae3f67272f285f5f0f768b8004a69c7d8ce99c18ef5076824944ddced",
-        "lab/lib/studio-native-runtime.mjs": "d82956677d78ec97450573e6b41bf1841a80631484b4dd593c1c27e31ec2e10f",
-        "lab/lib/studio-voice-lines.mjs": "61f68d15788ef46b3476418dfe2d6d2812fa3362e16122122efc9683b81f8dc0",
-        "lab/lib/voice-preview.mjs": "6b3e56a9bc5c5cc6269d711f286a941227096e5d0dcb67cdc3eb697b8fa0da75",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8",
-        "web/storage/studio-game-policy.mjs": "955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "lab/lib/neon-video-registry.mjs": "sha256:5c9f50b0a723dda04746dc46a48da6aa2bd2019bf2cc7d2d7bc39c1b6306cd83",
+        "lab/lib/openclaw-admin.mjs": "sha256:1bfaa4cc6df847afd5069546249a8e1d35913d8fe1635781e08e0bce67651d9a",
+        "lab/lib/remote-ui.mjs": "sha256:76fc4185df4a99636b8e10dee2e9b2b6c798fb519b17c1e510c043e13466a080",
+        "lab/lib/studio-game-authority.mjs": "sha256:5bb54e725216a7a3d98b8237e30c5d7a8b259963cd9f110dc2f6bb19e3fe4a3f",
+        "lab/lib/studio-native-mail.mjs": "sha256:99f3175cf8dbefb553c984290e3b2b74468df4320e246326d2e64a1be9a22b93",
+        "lab/lib/studio-native-runtime.mjs": "sha256:d82956677d78ec97450573e6b41bf1841a80631484b4dd593c1c27e31ec2e10f",
+        "lab/lib/studio-voice-lines.mjs": "sha256:61f68d15788ef46b3476418dfe2d6d2812fa3362e16122122efc9683b81f8dc0",
+        "lab/lib/voice-preview.mjs": "sha256:6b3e56a9bc5c5cc6269d711f286a941227096e5d0dcb67cdc3eb697b8fa0da75",
+        "lab/middleware.ts": "sha256:2d2111008cc27b0ab72b6845fc674560582ea55b6417dd621167e9c6bc375382",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8",
+        "web/storage/studio-game-policy.mjs": "sha256:955ceee61345a40244bb9237f25a61f2c6e8a153d2f3e1faa835bf3776e32617"
       }
     },
     {
@@ -1123,10 +1142,10 @@
         }
       ],
       "expectedHashes": {
-        "docs/environment-variables.json": "cd3fbe4bde7e771d8ce42ef8211168e82770b44dbc48c9b8d64273f8fdcf5452",
-        "docs/system-map/catalog.json": "a98a1d57fca248854469aefae849526e3c66e3bcb9191d0592122485d6480787",
-        "test/check-environment-variables.mjs": "d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
-        "tools/check-environment-variables.mjs": "97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
+        "docs/environment-variables.json": "sha256:f7a3c2d8a8243b87f57bf1ddb8754add2fcb5dcc90b6c374ba12647b36366661",
+        "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
+        "test/check-environment-variables.mjs": "sha256:d81046e70333ae56b2b041fd19e1c7229c40479ef3c724f4de4a5d602097c8ca",
+        "tools/check-environment-variables.mjs": "sha256:97c0172b12c63352f89950187b2d611f76bc81bfebc413b156fb5ddb8df690c8"
       }
     }
   ]
