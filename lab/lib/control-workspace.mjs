@@ -4,11 +4,11 @@ import { WORKSPACE_VIEW_SLUGS } from './workspace-surfaces.mjs';
 // Leave unconnected prototype features without a destination rather than
 // pretending that a similar-looking production tool implements them.
 const tools = Object.freeze({
-  players: '/administration', tx: '/administration', team: '/administration',
-  api: '/administration', bj: '/administration', dealers: '/administration',
-  shoes: '/administration', tables: '/administration',
-  background: '/#background', voice: '/#clips', clips: '/#deal',
-  media: '/videos', archive: '/videos', tree: '/tree',
+  players: '/control/administration', tx: '/control/administration', team: '/control/administration',
+  api: '/control/administration', bj: '/control/administration', dealers: '/control/administration',
+  shoes: '/control/administration', tables: '/control/administration',
+  background: '/control/clips#background', voice: '/control/clips#clips', clips: '/control/clips#deal',
+  media: '/control/videos', archive: '/control/videos', tree: '/control/tree',
 });
 
 export function controlToolPath(view) {
@@ -23,10 +23,10 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
-  { href: '/administration', title: 'Lanes, bord & konton', text: 'Skapa och välj lane under Spel, lanes & bord. Hantera personal, spelarkonton och partneråtkomst i samma administration.' },
-  { href: '/', title: 'Dealer & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker, bakgrund och klippval.' },
-  { href: '/tree', title: 'Presentationshändelser & regler', text: 'Koppla spelhändelser till klippuppsättningar och granska villkor och urvalsregler.' },
-  { href: '/videos', title: 'Klippbibliotek', text: 'Granska registrerat material. Klippinställningar hör till respektive dealer i Dealer & klipp.' },
-  { href: '/openclaw', title: 'OpenClaw & drift', text: 'Hantera den befintliga anslutningen, rådgivningen och driftinställningarna.' },
-  { href: '/activity', title: 'Uppspelningsdiagnostik', text: 'Följ händelser och kvitton från den anslutna spelytan.' },
+  { href: '/control/administration', title: 'Lanes, bord & konton', text: 'Skapa och välj lane under Spel, lanes & bord. Hantera personal, spelarkonton och partneråtkomst i samma administration.' },
+  { href: '/control/clips', title: 'Dealer & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker, bakgrund och klippval.' },
+  { href: '/control/tree', title: 'Presentationshändelser & regler', text: 'Koppla spelhändelser till klippuppsättningar och granska villkor och urvalsregler.' },
+  { href: '/control/videos', title: 'Klippbibliotek', text: 'Granska registrerat material. Klippinställningar hör till respektive dealer i Dealer & klipp.' },
+  { href: '/control/openclaw', title: 'OpenClaw & drift', text: 'Hantera den befintliga anslutningen, rådgivningen och driftinställningarna.' },
+  { href: '/control/activity', title: 'Uppspelningsdiagnostik', text: 'Följ händelser och kvitton från den anslutna spelytan.' },
 ].map(item => Object.freeze(item)));

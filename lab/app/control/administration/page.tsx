@@ -1,0 +1,24 @@
+import { headers } from 'next/headers';
+import { NativeAdministration } from '@/components/native-administration';
+import { nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from '@/lib/studio-native-runtime.mjs';
+import { normalizeNativeStudioPageRequest } from '@/lib/studio-native-request.mjs';
+import { redirect } from 'next/navigation';
+import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
+
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Administration · ScoutGamingGroup' };
+
+export default async function Page() {
+  const h = await headers();
+  const config = nativeStudioAdminConfiguration();
+  const request = normalizeNativeStudioPageRequest(new Request(`https://${h.get('host') || 'invalid'}/studio/administration`, { headers: h }), config);
+  assertNativeStudioRequest(request, config);
+  const native = await studioNativeRuntime();
+  let session;
+  try { session = await native.authorize(request); }
+  catch (error) {
+    if ((error as {statusCode?:number})?.statusCode === 401) redirect(nextStudioLoginRedirect('/studio/administration'));
+    throw error;
+  }
+  return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} />;
+}

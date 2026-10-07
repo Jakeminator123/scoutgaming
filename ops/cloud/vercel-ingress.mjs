@@ -22,7 +22,7 @@ export function vercelIngressRequest(request, ingress) {
     const documents=new Map([['/','/game'],['/game','/game'],['/blackjack','/game'],['/v2','/v2'],['/v2/','/v2'],['/casino.html','/casino.html'],
       ['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
       ['/bo/login.html','/studio/login'],['/bo/set-password.html','/studio/set-password'],
-      ['/studio','/studio'],['/studio/','/studio'],['/studio/activity','/studio/activity'],['/studio/administration','/studio/administration'],['/lab','/studio'],['/studio-astrid','/studio'],['/studio-lissabon','/studio']]);
+      ['/studio','/studio'],['/studio/','/studio'],['/studio/activity','/studio/activity'],['/studio/administration','/studio/administration'],['/lab','/control'],['/studio-astrid','/control'],['/studio-lissabon','/control']]);
     const destination=documents.get(rawPath);
     if(destination){
       const target=new URL(destination,ingress.publicOrigin),source=new URL(request.url,ingress.transportOrigin);

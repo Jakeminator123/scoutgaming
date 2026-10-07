@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
+import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
 const require = createRequire(import.meta.url);
 const redirects = require('next/dist/client/components/redirect.js');
@@ -35,6 +36,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/components/control-workspace': { ControlWorkspace },
     '@/components/partner-workspace': { PartnerWorkspace },
     '@/lib/control-workspace.mjs': { controlToolPath },
+    '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
@@ -52,6 +54,13 @@ async function renderPage(page, path) {
 function redirectLocation(error, basePath) {
   assert.equal(redirects.getRedirectStatusCodeFromError(error), 307);
   return addPathPrefix(redirects.getURLFromRedirectError(error), basePath);
+}
+
+function canonicalControlPath(error, basePath) {
+  const location = redirectLocation(error, basePath);
+  const url = new URL(location);
+  assert.equal(url.pathname.startsWith('/studio'), false);
+  return url.pathname + url.hash;
 }
 
 test('real catch-all pages use exact public login returns and one Next basePath after authorization 401', async () => {
@@ -159,11 +168,11 @@ test('neither workspace renders a missing identity even if the adapter returns a
 test('old internal tool documents authorize then lead to the real tool with one basePath', async () => {
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
-  for (const [section, destination] of [['voice', '/#clips'], ['clips', '/#deal'], ['lanes', '/administration'],
-    ['media', '/videos'], ['presentation-events', '/tree'], ['team', '/administration']]) {
+  for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration'],
+    ['media', '/control/videos'], ['presentation-events', '/control/tree'], ['team', '/control/administration']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
-        assert.equal(redirectLocation(error, basePath), basePath + destination);
+        assert.equal(canonicalControlPath(error, basePath), destination);
         return true;
       });
     }
@@ -171,12 +180,12 @@ test('old internal tool documents authorize then lead to the real tool with one 
   assert.equal(reads, 12);
 });
 
-test('legacy control entrances redirect once to existing app-local authenticated tools', async () => {
+test('legacy control entrances redirect once to canonical public control tools', async () => {
   const loaded = pages(async () => assert.fail('existing destination retains its own guard; no preview snapshot is loaded'));
-  for (const [section, destination] of [['studio', '/'], ['admin', '/administration'], ['ops', '/openclaw'], ['lab', '/']]) {
+  for (const [section, destination] of [['studio', '/control'], ['admin', '/control/administration'], ['ops', '/control/openclaw'], ['lab', '/control']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
-        assert.equal(redirectLocation(error, basePath), basePath + destination);
+        assert.equal(canonicalControlPath(error, basePath), destination);
         return true;
       });
     }

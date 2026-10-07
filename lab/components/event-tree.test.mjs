@@ -100,12 +100,16 @@ test('available original is explicitly not a visual approval', () => {
 });
 
 test('history route mapping includes tree without matching unrelated prefixes', () => {
-  assert.equal(viewPaths.tree, '/tree');
+  assert.equal(viewPaths.tree, '/control/tree');
+  assert.equal(studioViewForPath('/control/tree'), 'tree');
   assert.equal(studioViewForPath('/tree'), 'tree');
   assert.equal(studioViewForPath('/tree/'), 'tree');
+  assert.equal(studioViewForPath('/control/videos'), 'videos');
   assert.equal(studioViewForPath('/videos'), 'videos');
-  assert.equal(viewPaths.openclaw, '/operator-chat');
+  assert.equal(viewPaths.openclaw, '/control/operator-chat');
+  assert.equal(studioViewForPath('/control/operator-chat'), 'openclaw');
   assert.equal(studioViewForPath('/operator-chat'), 'openclaw');
+  assert.equal(studioViewForPath('/control/openclaw'), 'lab', 'model settings are a separate document page');
   assert.equal(studioViewForPath('/openclaw'), 'lab', 'model settings are a separate document page');
   assert.equal(studioViewForPath('/'), 'lab');
   assert.equal(studioViewForPath('/treehouse'), 'lab');

@@ -26,11 +26,18 @@ test('friendly sections keep source view IDs while existing internal tools retai
   }
   assert.equal(resolveWorkspaceSurfacePath('/control/tables').view, 'tables');
   assert.equal(resolveWorkspaceSurfacePath('/control/overview').view, 'ops');
-  for (const [section, studioPath, legacyPath] of [['studio', '/studio', '/'], ['admin', '/studio/administration', '/administration'],
-    ['ops', '/studio/openclaw', '/openclaw'], ['lab', '/studio', '/']]) {
+  for (const [section, studioPath, legacyPath] of [['studio', '/studio', '/control'], ['admin', '/studio/administration', '/control/administration'],
+    ['ops', '/studio/openclaw', '/control/openclaw'], ['lab', '/studio', '/control']]) {
     const route = resolveWorkspaceSurfacePath('/control/' + section);
     assert.equal(route.studioPath, studioPath); assert.equal(route.legacyPath, legacyPath);
     assert.equal(route.view, null);
+    assert.equal(route.legacyPath.startsWith('/studio'), false);
+  }
+  for (const tool of ['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat']) {
+    const route = resolveWorkspaceSurfacePath('/control/' + tool);
+    assert.equal(route.canonicalPath, '/control/' + tool);
+    assert.equal(route.studioPath, '/studio/control/' + tool);
+    assert.equal(route.legacyPath, null);
   }
 });
 
