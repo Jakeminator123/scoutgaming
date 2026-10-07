@@ -3,6 +3,19 @@
 För nästa chatt. Läs i ordning: `AGENTS.md`, `CLAUDE.md`, den här filen, sedan underlaget
 för ditt pass (tabellen nedan). Status och kvitton står i `docs/JOHN-HANDOFF.md`.
 
+## Startprompt (klistra in i ny chatt)
+
+Läs `AGENTS.md`, `CLAUDE.md` och `random/handoff-2026-10-07-kvall.md`. Kör pass A och B
+parallellt som två underagenter (`grok-4.7-xhigh-fast`), med prompterna A och B i filen
+inklusive "Tillägg efter granskning". Du granskar och mergar; underagenter committar inte.
+Kör pass C efter A. CI-ändringen är granskad och godkänd; lämna ffmpeg-installationen som
+den är. Bevarandelistan gäller i alla pass. Ingen av de 19 lösa trådarna åtgärdas; fler
+läggs till i `random/losa-tradar-2026-10-07.md` om du hittar dem. Grön CI före varje ny push.
+Efter A, B och C: en ny överlämning i `random/`, uppdaterad översta tabell i
+`docs/JOHN-HANDOFF.md` och en rad per pass i `random/beslutsmatris-2026-10-07.md` med vad som
+gjordes och vad som återstår. Rapport: en tabell per pass (gjort | tester | verifierat), sist
+`Tveksamt`.
+
 ## Startrutin
 
 ```
@@ -10,13 +23,18 @@ node tools/agent-talk.mjs status <ditt-id>
 node tools/inbox.mjs list --to me
 node tools/security-status.mjs
 git fetch origin main && git status
+gh run list --repo Jakeminator123/scoutgaming --branch main --limit 1   # senaste CI ska vara grön
 ```
 
 Produktion verifieras i Cursors webbvy, som är inloggad som `LLM` på
 <https://www.scoutgaming.tech/control>. Lösenordet finns inte i Git, och `.env.local`
 innehåller inte längre `LLM_LOGIN_*` (Vercel skrev om filen 7 okt 18:52).
 
-## Läge, main = `588d7802`
+## Läge, main = `598caa55`, CI grön
+
+`598caa55` låste CI-jobben i `croupier.yml` till `ubuntu-24.04`, gav installationen av
+ffmpeg/jq egen tidsgräns och tre försök, och lät SQL-acceptansen använda runnerns
+PostgreSQL 16 (verifierat i körningen). Tabellen nedan gäller `/control` från `588d7802`.
 
 | Område | Läge |
 |---|---|
@@ -54,7 +72,8 @@ varje rapport slutar med `Tveksamt`. Inventeringen är gjord; verkställ den.
    `sr-only`-texten "Nivå 1 · ScoutGamingGroup" i `lab/components/workspace-navigation.tsx`
    (krävs av `lab/test/studio-navigation.test.mjs`) och konstanterna
    `STUDIO_PRIMARY_NAVIGATION`/`STUDIO_TOOL_NAVIGATION` i `lab/lib/studio-navigation.mjs`
-   som bara tester använder.
+   som bara tester använder (se "Tillägg efter granskning": skyddet för gamla menyadresser
+   ska finnas kvar).
 3. Pensionerade namn enligt inventeringens avsnitt (Lissabon-sidor, Backoffice/Lab,
    Kontrollpanel). Levande: `/bo` → `/control`, `studio/login`, flaggan `lissabon-stream-lane`.
 4. `test/backoffice-lab-browser.mjs` väntar på menyn "Backoffice/Lab": uppdatera till
@@ -73,10 +92,19 @@ Rör inte `web/shoe-game.mjs`, `pipeline/`, `media/`, `test/dealer-*`, `test/rig
 lokalt på `jq` i `test/bugshot-report.mjs`; kör stegen efter den för hand). Leverera med
 `node tools/push-github-work.mjs`, grön CI före nästa push, uppdatera `docs/JOHN-HANDOFF.md`.
 
-Frågor till Jakob från inventeringen (lägg i Tveksamt, rör inte utan svar): får
-`backup-lissabon-state` döpas om; ska `test/fixtures/astrid-camera-browser.html` bort; ska
-`bo-lab-auth` fortsätta tillåta returvägen `/lissabon`; ska `player-area`, `landing-motion`
-och `intro-device` in i `dealer-regression`.
+### Tillägg efter granskning (gäller före stegen ovan)
+
+- Steg 2, rättelse: testet "old header destinations stay reachable" använder
+  `STUDIO_PRIMARY_NAVIGATION`/`STUDIO_TOOL_NAVIGATION` för att kontrollera att varje gammal
+  menyadress fortfarande nås från nya menyn. Skyddet ska finnas kvar: lägg en fast lista över
+  de gamla adresserna direkt i testfilen, kör testet grönt, ta sedan bort konstanterna ur
+  `lab/lib/studio-navigation.mjs`.
+- Jakobs svar på inventeringens fyra frågor: `backup-lissabon-state` döps om bara om testet
+  rör den pensionerade produkten, inte lane-flaggan `lissabon-stream-lane`.
+  `test/fixtures/astrid-camera-browser.html` tas bort om inget test läser den. `bo-lab-auth`
+  slutar tillåta `/lissabon` som returväg och pekar om till `/control`. `player-area`,
+  `landing-motion` och `intro-device` läggs in i `dealer-regression` om de är gröna och tar
+  under en minut vardera.
 
 ## Prompt B: dokumentation mot kod
 
@@ -103,6 +131,16 @@ Regler: högst fem Markdown-filer i `docs/`, inga nya rapporter, inga hemlighete
 `node tools/check-environment-variables.mjs` om du rör miljövariabler. Kör
 `node tools/precommit-checks.mjs` (dokumentationsläget) före commit. Leverera med
 `node tools/push-github-work.mjs`.
+
+### Tillägg efter granskning
+
+- Sist i passet, när alla ruttändringar från A och B är kända: uppdatera systemkartans
+  baslinje med `node docs/system-map/verify.mjs --refresh-baseline` och skriv i commit-texten
+  vilka poster som ändrades och varför (kartan är gul sedan `/control`-flytten och CI-ändringen).
+- Lägg en kommentar i issue #2 om att rad 13 (sparstatus bara i topplisten) och rad 15
+  (sökattrappen borttagen) är verkställda på Jakobs delegering och att John kan ändra dem.
+- Lägg i `docs/JOHN-HANDOFF.md` en påminnelse: `.github/workflows/astrid-gpu-build.yml` och
+  `astrid-gpu-publish.yml` kör `ubuntu-latest` och ska låsas till `ubuntu-24.04` före 19 oktober.
 
 ## Prompt C: sista administratören på nivå 2, och granskning av sqlite-vägen
 
