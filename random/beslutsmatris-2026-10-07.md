@@ -29,6 +29,15 @@ Inga hemligheter här. Status uppdateras i `docs/JOHN-HANDOFF.md`, inte i den h�
 | 10 | Dealerns gamla `<select>` ligger dold bakom chipsen för ett gammalt test | A: behåll dold. B: skriv om testet, ta bort | **B i nästa pass** | Öppet |
 | 11 | Klipplistans filterchips och triggerpiller från Johns bild saknas | A: eget pass. B: hoppa över | **A, steg 3** | Öppet |
 
+Rader 12–14 kom från produktionskontrollen av `661de97b`, inloggad som LLM.
+
+| # | Tveksamt | Alternativ | Rekommendation | Vem |
+|---|---|---|---|---|
+| 12 | Administration har redan sex flikar (Drift & spelintegritet, Spel/lanes/bord, Konton, Partner, Betalningar & journal, Talgranskning). Rad 1 C blir därför billig: djuplänk per flik | A: en meny­rad "Administration" (nu). B: återinför Johns fyra etiketter som djuplänkar till rätt flik | **B i nästa designpass** | John |
+| 13 | "Sparad"-pillret visas två gånger på Dealers & klipp: i topplisten (skalets statusfält) och i sidhuvudet | A: bara topplisten. B: bara sidhuvudet. C: båda | **A** | John |
+| 14 | Inloggningskortet ligger kvar i gammal stil: toppjusterat, grå knapp, ingen lime | A: eget litet pass med sidmallens tokens. B: lämna | **A, lågprio** | John |
+| 15 | Sökfältet i topplisten är en attrapp ("Inte ansluten ännu") | A: behåll som platshållare. B: dölj tills sökning finns | **B**. Johns regel: visa inget som inte fungerar | John |
+
 ## Avgjort av orkestratorn, till kännedom
 
 | Tveksamt | Vad som gjordes |
@@ -42,6 +51,8 @@ Inga hemligheter här. Status uppdateras i `docs/JOHN-HANDOFF.md`, inte i den h�
 | Agentmodeller hade två lime-knappar | Radens Spara är sekundär (Johns regel 2) |
 | Skalet läste React-internals för att hoppa över hooks i test | Borttaget 7 okt. Statusfältet är en egen komponent |
 | Offline-labbet ger 500 på alla sidor utom Agentmodeller | Förväntat sedan `45ae2752`: sidorna kräver Neon, ingen diskfallback. Inte en regression. Verifiera UI i produktion eller med Neon-anslutning |
+| Administrationens eyebrow sa "// ÅTKOMST" fast menyn har sidan under Drift | Ändrad till "// DRIFT" |
+| Pre-commit-kroken körs inte i den här klonen (`core.hooksPath` är inte satt) | Kontrollerna kördes för hand med `node tools/precommit-checks.mjs --full`; bara ffmpeg-testerna föll, de kräver ffmpeg lokalt. Sätt `git config core.hooksPath .githooks` |
 
 ## Till Kevin
 

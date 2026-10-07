@@ -633,7 +633,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     return () => publishShellStatus(null);
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
-    <PageTemplate eyebrow="// ÅTKOMST" title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
+    <PageTemplate eyebrow="// DRIFT" title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-primary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
