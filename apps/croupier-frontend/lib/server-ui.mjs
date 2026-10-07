@@ -11,15 +11,16 @@ const DOCUMENTS = new Map([
 
 const HANDOFF = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
 function legacyStudioLocation(url) {
-  if (['/bo','/bo/','/bo/index.html'].includes(url.pathname)) return '/studio/administration';
+  if (['/bo','/bo/','/bo/index.html'].includes(url.pathname)) return '/control/administration';
   if (url.pathname === '/bo/login.html') {
     const returnTo = url.searchParams.get('returnTo');
-    return returnTo && (['/studio','/studio/administration'].includes(returnTo) || HANDOFF.test(returnTo))
-      ? `/studio/login?returnTo=${encodeURIComponent(returnTo)}` : '/studio/login';
+    const allowed = ['/studio','/studio/administration','/control','/control/administration'];
+    return returnTo && (allowed.includes(returnTo) || HANDOFF.test(returnTo))
+      ? `/control/login?returnTo=${encodeURIComponent(returnTo)}` : '/control/login';
   }
   if (url.pathname === '/bo/set-password.html') {
     const token = url.searchParams.get('t');
-    return token && /^[A-Za-z0-9_-]{32,128}$/.test(token) ? `/studio/set-password?t=${encodeURIComponent(token)}` : '/studio/set-password';
+    return token && /^[A-Za-z0-9_-]{32,128}$/.test(token) ? `/control/set-password?t=${encodeURIComponent(token)}` : '/control/set-password';
   }
   return null;
 }

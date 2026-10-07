@@ -19,7 +19,7 @@ test('unified Studio configuration needs no second UI origin and retains distinc
   assert.equal(unified.labUiOrigin, unified.publicOrigin);
   assert.equal(unified.unifiedUi, true);
   for(const path of ['/administration','/administration/'])assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),
-    {kind:'redirect',destination:unified.publicOrigin+'/studio/administration'});
+    {kind:'redirect',destination:unified.publicOrigin+'/control/administration'});
   assert.equal(platformRoute(new URL('/administration/api',unified.publicOrigin),unified).kind,'frontend');
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_BACKEND_ORIGIN:unified.publicOrigin}));
   assert.throws(() => platformConfiguration({...unifiedEnv, CROUPIER_STUDIO_NATIVE_ADMIN:'0'}));
@@ -211,14 +211,14 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     assert.match(game.headers.get('cache-control'), /no-store/);
     for (const path of ['/v2', '/casino.html']) assert.equal((await platformUiDocument(new Request(config.publicOrigin + path), {env, directory: join(directory, 'runtime-ui')})).status, 200);
     const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64), token = 'b'.repeat(43);
-    for (const [path,location] of [['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
-      ['/bo/login.html','/studio/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,`/studio/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`],
-      [`/bo/set-password.html?t=${token}`,`/studio/set-password?t=${token}`]]) {
+    for (const [path,location] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
+      ['/bo/login.html','/control/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,`/control/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`],
+      [`/bo/set-password.html?t=${token}`,`/control/set-password?t=${token}`]]) {
       const response = await platformUiDocument(new Request(config.publicOrigin + path),{env,directory:runtime});
       assert.equal(response.status,308,path); assert.equal(response.headers.get('location'),location,path);
     }
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/login.html?returnTo=https://attacker.invalid'),{env,directory:runtime})).headers.get('location'),'/studio/login');
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/set-password.html?t=private.bad'),{env,directory:runtime})).headers.get('location'),'/studio/set-password');
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/login.html?returnTo=https://attacker.invalid'),{env,directory:runtime})).headers.get('location'),'/control/login');
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/set-password.html?t=private.bad'),{env,directory:runtime})).headers.get('location'),'/control/set-password');
     assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo',{method:'POST'}),{env,directory:runtime})).status,405);
     assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/generations.json'), {env, directory})).status, 404);
   } finally {await rm(directory, {recursive: true, force: true});}

@@ -20,15 +20,15 @@ export function vercelIngressRequest(request, ingress) {
   if (request.headers.host === transportHost && request.method === 'GET' && !request.headers['x-croupier-vercel-secret']) {
     const queryAt=request.url.indexOf('?'),rawPath=queryAt<0?request.url:request.url.slice(0,queryAt);
     const documents=new Map([['/','/game'],['/game','/game'],['/blackjack','/game'],['/v2','/v2'],['/v2/','/v2'],['/casino.html','/casino.html'],
-      ['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
-      ['/bo/login.html','/studio/login'],['/bo/set-password.html','/studio/set-password'],
+      ['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
+      ['/bo/login.html','/control/login'],['/bo/set-password.html','/control/set-password'],
       ['/studio','/studio'],['/studio/','/studio'],['/studio/activity','/studio/activity'],['/studio/administration','/studio/administration'],['/lab','/control'],['/studio-astrid','/control'],['/studio-lissabon','/control']]);
     const destination=documents.get(rawPath);
     if(destination){
       const target=new URL(destination,ingress.publicOrigin),source=new URL(request.url,ingress.transportOrigin);
       if(rawPath==='/bo/login.html'){
         const value=source.searchParams.get('returnTo');
-        if(value && (['/studio','/studio/administration'].includes(value) || /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/.test(value)))target.searchParams.set('returnTo',value);
+        if(value && (['/studio','/studio/administration','/control','/control/administration'].includes(value) || /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/.test(value)))target.searchParams.set('returnTo',value);
       }else if(rawPath==='/bo/set-password.html'){
         const value=source.searchParams.get('t');
         if(value && /^[A-Za-z0-9_-]{32,128}$/.test(value))target.searchParams.set('t',value);

@@ -16,6 +16,7 @@ Kevins importerade backoffice (`lab/components/kevin-bo`) ligger kvar på
 `/studio` är labb-servicens basePath, inte en fjärde produkt och inte namnet i gränssnittet.
 Spelarytan är `/play` och `/play/blackjack`. Lobby, profil, historik,
 riktig operatörsinloggning och tenantdata är inte klara.
+`174f893` är pushad till `main`. Gamla `/bo`, `/bo/login.html` och `/bo/set-password.html` svarar 308 till `/control/administration`, `/control/login` och `/control/set-password`. `/api/bo` är kvar som inloggningsbrygga.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
 

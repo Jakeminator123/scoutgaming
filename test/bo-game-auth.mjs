@@ -65,19 +65,19 @@ try {
   const initial=await begin();
   const loggedOut=await request(initial.authorize);assert.equal(loggedOut.status,303);assert.match(location(loggedOut),/^\/studio\/login\?returnTo=%2Fapi%2Fbo%2Fgame-login%3Fstate%3D[a-f0-9]{64}$/);
   const aliasState='a'.repeat(64),token='b'.repeat(43);
-  for(const [path,destination] of [['/bo','/studio/administration'],['/bo/','/studio/administration'],['/bo/index.html','/studio/administration'],
-    ['/bo/login.html','/studio/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/studio/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
-    [`/bo/set-password.html?t=${token}`,`/studio/set-password?t=${token}`]]){
+  for(const [path,destination] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
+    ['/bo/login.html','/control/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`,`/control/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${aliasState}`)}`],
+    [`/bo/set-password.html?t=${token}`,`/control/set-password?t=${token}`]]){
     const response=await request(bo+path);assert.equal(response.status,308,path);assert.equal(location(response),destination,path);
   }
-  assert.equal(location(await request(bo+'/bo/login.html?returnTo=https://attacker.invalid')),'/studio/login');
-  assert.equal(location(await request(bo+'/bo/set-password.html?t=private.bad')),'/studio/set-password');
+  assert.equal(location(await request(bo+'/bo/login.html?returnTo=https://attacker.invalid')),'/control/login');
+  assert.equal(location(await request(bo+'/bo/set-password.html?t=private.bad')),'/control/set-password');
   assert.equal((await request(bo+'/api/bo/config')).status,503,'legacy disk defaults cannot answer the public game projection');
   for(const [path,options] of [['/api/bo/me',{}],['/api/bo/players',{}],['/api/bo/login',{body:{user:'demo-reviewer',pass:password}}],
     ['/api/bo/users/remove',{body:{username:'demo-reviewer'}}]])assert.equal((await request(bo+path,options)).status,404,path);
   let boCookie=administratorCookie();
   const speechQa=await request(bo+'/bo/speech-qa.html',{cookie:boCookie});assert.equal(speechQa.status,200);assert.match(await speechQa.text(),/speech-qa\.mjs/);
-  const protectedMedia=await request(bo+'/bo/media-preview.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/studio/login');
+  const protectedMedia=await request(bo+'/bo/media-preview.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/control/login');
   const boClaims=JSON.parse(Buffer.from(boCookie.split('.')[1],'base64url').toString());
   const launchCookie='bo_jwt='+sign({sub:'partner-player',partner:'partner-key',exp:boClaims.exp});
   assert.equal(location(await request((await begin()).authorize,{cookie:launchCookie})).startsWith('/studio/login'),true,'Partner launch JWT is not a BO session');
