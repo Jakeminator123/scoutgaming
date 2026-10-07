@@ -5,6 +5,7 @@ import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-naviga
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { GAME_LANES } from '../../web/public/game-lanes.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
+import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './studio-administration.module.css';
 
 type JsonObject = Record<string, unknown>;
@@ -254,17 +255,18 @@ type AdministrationViewProps = {
   actor: StudioAdminActor; group: string; resources: Resources; busy: boolean;
   available: (method: Method, action: string) => boolean; command: Command;
   onDirty?: (form: HTMLFormElement) => void;
+  onReload?: () => void;
 };
 
-function ResourceNotice({ resource }: { resource?: Resource }) {
+function ResourceNotice({ resource, onReload, reloadLabel }: { resource?: Resource; onReload?: () => void; reloadLabel: string }) {
   if (resource?.error) return <p className={styles.notice} role="status">{resource.error.message}</p>;
-  if (!resource?.payload) return <p className={styles.notice}>Ingen serverdata har lästs för den här funktionen.</p>;
+  if (!resource?.payload) return <p className={styles.notice}><button type="button" className="sg-btn sg-btn-secondary" onClick={() => onReload?.()}>{reloadLabel}</button></p>;
   return null;
 }
 function EmptyRows({ count }: { count: number }) { return count ? null : <p>Servern returnerade inga poster.</p>; }
 
 /** Pure presentation export also allows isolated render/role tests without a live server. */
-export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty }: AdministrationViewProps) {
+export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload }: AdministrationViewProps) {
   const selected = BACKOFFICE_GROUPS.find(item => item.id === group);
   if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
   const config = resources.config?.payload;
@@ -310,18 +312,22 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   }
   const overview = resources.overview?.payload;
   const sections = selected.sections.filter(section => meetsStudioAdminSectionRole(actor.role, section));
+  function missing(resource: Resource | undefined, kind: string) {
+    const reloadLabel = kind === 'players' ? 'Hämta spelarkonton' : kind === 'users' ? 'Hämta konton' : 'Hämta serverdata';
+    return <ResourceNotice resource={resource} onReload={onReload} reloadLabel={reloadLabel} />;
+  }
   return <div className={styles.sections} onInput={event => { const target = event.target; if (target instanceof HTMLElement) { const form = target.closest('form'); if (form instanceof HTMLFormElement) onDirty?.(form); } }}>
     {sections.map(section => <section key={section} data-admin-section={section} className={styles.section} aria-labelledby={`admin-${section}`}>
       <h3 id={`admin-${section}`}>{BACKOFFICE_SECTIONS.find(item => item.id === section)?.label}</h3>
       {section === 'ops' && <>
-        <ResourceNotice resource={resources.overview} />
+        {missing(resources.overview, 'overview')}
         {overview && <><dl className={styles.metrics}>
           <div><dt>Spelare</dt><dd>{label(overview.players)}</dd></div>
           <div><dt>Rum</dt><dd>{Array.isArray(overview.rooms) ? overview.rooms.length : '—'}</dd></div>
         </dl><p className={styles.notice}>Senast hämtade uppgifter.</p></>}
       </>}
       {section === 'shoes' && <>
-        <ResourceNotice resource={resources.shoes} />
+        {missing(resources.shoes, 'shoes')}
         {resources.shoes?.payload && <><dl className={styles.metrics}>
           <div><dt>Sparade bord</dt><dd>{label(resources.shoes.payload.tableCount)}</dd></div>
           <div><dt>Shoes / pågående rundor</dt><dd>{label(resources.shoes.payload.shoes)} / {label(resources.shoes.payload.activeRounds)}</dd></div>
@@ -333,7 +339,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </>}
       </>}
       {section === 'lanes' && <>
-        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('game-lane')}
+        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('game-lane')}
         <p className={styles.notice}>Välj presentation för nya Blackjack-spel. Pågående spel behåller sin lane.</p>
         {config && <>
           <p>Aktiv lane: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
@@ -359,7 +365,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </>}
       </>}
       {section === 'rooms' && <>
-        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('room')}
+        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('room')}
         {config && <><EmptyRows count={rows(config.rooms).length} />{rows(config.rooms).map((room, index) => <div className={styles.row} key={label(room.id, String(index))}>
           <div><strong>{label(room.name, label(room.id))}</strong><p>{label(room.tier)} · {label(room.state)}</p></div>
           {mayWrite('room', true) && <form method="post" onSubmit={submit('room', form => ({ id: room.id, state: value(form, 'state') }), true)}>
@@ -369,7 +375,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </div>)}</>}
       </>}
       {section === 'dealers' && <>
-        <ResourceNotice resource={resources.config} />{configNotice()}{unavailableWrite('tier')}
+        {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('tier')}
         {config && Object.entries(object(config.tiers) ?? {}).filter(([tier]) => ['classic', 'high', 'vip'].includes(tier)).map(([tier, dealer]) => <div className={styles.row} key={tier}>
           <div><strong>{tier}</strong><p>Dealer: {label(dealer)}</p></div>
           {mayWrite('tier', true) && <form method="post" onSubmit={submit('tier', form => ({ tier, dealer: value(form, 'dealer') }), true)}>
@@ -381,7 +387,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       </>}
       {section === 'players' && <>
         <p>Spelarkonton ger tillgång till nivå 3: spelarlobbyn och spelen. För adminåtkomst använder du Bjud in adminpersonal – nivå 1 under Användare och roller. Stängning bevarar saldo och journal; kontot hårdraderas inte.</p>
-        <ResourceNotice resource={resources.players} />
+        {missing(resources.players, 'players')}
         {unavailableWrite('players/create')}{unavailableWrite('players/status')}{unavailableWrite('players/password')}
         {resources.players?.payload && <><EmptyRows count={rows(resources.players.payload.players).length} /><div className={styles.tableWrap}><table>
           <thead><tr><th>Spelare / ID</th><th>Saldo</th><th>Status</th><th>Åtgärd</th></tr></thead>
@@ -419,7 +425,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       </>}
       {section === 'users' && <>
         <p>Intern adminpersonal hos ScoutGamingGroup bjuds in med e-post till nivå 1. Behörigheten omfattar hela nivå 1 (intern administration), nivå 2 (spelbolagens arbetsytor) och nivå 3 (spelarlobbyn och spelen). Mottagaren väljer eget lösenord via aktiveringslänken och använder sedan samma konto och lösenord på alla tre nivåerna. Nivå 2 visar tills vidare demonstrationer; kundval aktiveras när spelbolag ansluts till partnerportalen.</p>
-        <ResourceNotice resource={resources.users} />
+        {missing(resources.users, 'users')}
         {!available('POST', 'users/invite') && <p className={styles.notice} role="status">E-post för Studio behöver konfigureras innan administratörsinbjudningar kan skickas. Att skapa ett spelarkonto ger inte Studioåtkomst.</p>}
         {['users/role', 'users/remove'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.users?.payload && <><EmptyRows count={rows(resources.users.payload.users).length} />{rows(resources.users.payload.users).map((user, index) => <div className={styles.row} key={label(user.username, String(index))}>
@@ -436,7 +442,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </form></details>}
       </>}
       {section === 'apikeys' && <>
-        <ResourceNotice resource={resources.apikeys} />
+        {missing(resources.apikeys, 'apikeys')}
         {['apikeys/create','apikeys/rotate','apikeys/revoke','apikeys/launch','apikeys/credit'].map(action => <div key={action}>{unavailableWrite(action)}</div>)}
         {resources.apikeys?.payload && <><EmptyRows count={rows(resources.apikeys.payload.keys).length} />{rows(resources.apikeys.payload.keys).map((key, index) => <div className={styles.row} key={label(key.id, String(index))}>
           <div><strong>{label(key.name)}</strong><p>Nyckel: dold · {Array.isArray(key.scopes) ? key.scopes.filter(scope => typeof scope === 'string' && PARTNER_SCOPES.includes(scope)).join(', ') : '—'}</p><p>{key.revoked_at ? `Återkallad: ${label(key.revoked_at)}` : 'Aktiv'} · Senast använd: {label(key.last_used)} · Wallet: {key.walletConfigured === true ? 'ansluten' : 'ej ansluten'}</p></div>
@@ -463,7 +469,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         <p className={styles.notice}>Nyckel och HMAC-hemlighet visas endast direkt efter skapande eller rotation. Kopiera dem till partnerns säkra förvaring innan du lämnar vyn. Spelmotorn bekräftar launch, återkallelse och demo-saldo.</p>
       </>}
       {section === 'emails' && <>
-        <ResourceNotice resource={resources.emails} />
+        {missing(resources.emails, 'emails')}
         <p className={styles.notice}>Inbjudan och återställning skickas från Konton.</p>
         {resources.emails?.payload && <details className={styles.disclosure}><summary>Visa exempelmallar</summary>{rows(resources.emails.payload.templates).filter(template => template.id !== 'tournament-invite').map(template=><article className={styles.review} key={label(template.id)}>
           <h4>{label(template.name)}</h4><strong>{label(template.heading)}</strong><p>{label(template.text)}</p>
@@ -472,11 +478,11 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </article>)}</details>}
       </>}
       {section === 'pay' && <>
-        <ResourceNotice resource={resources.transactions} />
+        {missing(resources.transactions, 'pay')}
         {resources.transactions?.payload && <><EmptyRows count={rows(resources.transactions.payload.tx).length} /><div className={styles.tableWrap}><table><thead><tr><th>Tid</th><th>Spelar-ID</th><th>Typ</th><th>Belopp</th></tr></thead><tbody>{rows(resources.transactions.payload.tx).map((tx, index) => <tr key={index}><td>{label(tx.at)}</td><td>{label(tx.player_id)}</td><td>{label(tx.type)}</td><td>{label(tx.amount)} {label(tx.currency)}</td></tr>)}</tbody></table></div><p>Serverns senaste journalposter. Den här vyn ändrar inte saldo eller historik.</p></>}
       </>}
       {section === 'voice' && <>
-        <ResourceNotice resource={resources.voicelines} />{configNotice()}{unavailableWrite('voiceline-review')}
+        {missing(resources.voicelines, 'voice')}{configNotice()}{unavailableWrite('voiceline-review')}
         {resources.voicelines?.payload && <><EmptyRows count={rows(resources.voicelines.payload.dealers).length} />{rows(resources.voicelines.payload.dealers).map((dealer, index) => <div key={label(dealer.dealer, String(index))}>
           <h4>{label(dealer.name, label(dealer.dealer))}</h4>
           {rows(dealer.lines).map((line, lineIndex) => <details className={styles.review} key={label(line.key, String(lineIndex))}>
@@ -621,10 +627,14 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     }
   }
 
+  const pageTitle = group === 'accounts' ? 'Konton & roller' : (BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration');
+  useEffect(() => {
+    publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
+    return () => publishShellStatus(null);
+  }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
-    <header className={styles.header}><div><h1>Administration</h1><p>{actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'}</p></div>
-      <div className={styles.headerActions}><button type="button" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
-    </header>
+    <PageTemplate eyebrow="// ÅTKOMST" title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-primary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">
@@ -636,8 +646,8 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <><nav className={styles.groups} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
-      <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
+    {actor && <><nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
+      <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;
 }

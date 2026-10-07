@@ -1,0 +1,2 @@
+/* Page chrome uses the global .sg-* classes in app/scout-theme.css. */
+.slot { display: contents; }

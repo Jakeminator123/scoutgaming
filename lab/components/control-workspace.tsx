@@ -22,16 +22,18 @@ export function ControlWorkspace({ user, initialView = 'ops' }: { user: string; 
     return () => window.removeEventListener('hashchange', navigate);
   }, []);
 
+  const primary = CONTROL_TOOLS[0];
   return <main className={styles.shell}>
-    <header className={styles.intro}><p className={styles.eyebrow}>Nivå 1 · ScoutGamingGroup</p><h1>Administration</h1>
+    <header className={styles.intro}><p className={styles.kicker}>// NIVÅ 1 · INTERN DRIFT</p><h1>Översikt</h1>
       <p>Vår gemensamma arbetsyta för lanes, klipp, konton och drift.</p><span className={styles.user}>Inloggad som {user}</span>
     </header>
     {view !== 'ops' && <section className={styles.notice} role="status"><strong>Den tidigare exempelvyn är inte ansluten.</strong>
       <p>Här finns de fungerande interna verktygen. Generering och operatörsrapportering är ännu inte anslutna som egna arbetsflöden. Spelbolagets design- och rapportvyer finns i förhandsvisningen av nivå 2.</p>
     </section>}
-    <section aria-label="Administrationsverktyg" className={styles.tools}>{CONTROL_TOOLS.map(tool => <a className={styles.tool} key={tool.href} href={labUrl(tool.href)}>
-      <h2>{tool.title}<span aria-hidden="true"> →</span></h2><p>{tool.text}</p>
-    </a>)}</section>
+    <section aria-label="Snabbval" className={styles.quick}><h2>Snabbval</h2>{CONTROL_TOOLS.map(tool => <div className={styles.quickItem} key={tool.href}>
+      <a className={tool === primary ? 'sg-btn sg-btn-primary' : 'sg-btn sg-btn-secondary'} href={labUrl(tool.href)}><span>{tool.title}</span><span aria-hidden="true">→</span></a>
+      <p>{tool.text}</p>
+    </div>)}</section>
     <section className={styles.levels} aria-label="Spelbolag och spelare"><div><h2>Nivå 2 · Spelbolag</h2><p>Intern adminpersonal har också tillgång till spelbolagens ytor. Kundval är ännu inte aktiverat; tills vidare finns tydligt märkta demonstrationer.</p><a href="/partner">Öppna spelbolagens arbetsytor →</a></div>
       <div><h2>Nivå 3 · Spelare</h2><p>Spelaren går till spelstart och befintlig spelinloggning.</p><a href="/play">Öppna spelarytan →</a></div></section>
     <p className={styles.help}>Nya lanes delar fortfarande Astrids klippbank. Separata publicerade lane-paket och spelbolagens egen inloggning återstår. <a href={labUrl('/control/guide')}>Läs guiden →</a></p>

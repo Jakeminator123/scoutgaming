@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { openClawDashboardUrl } from '../lib/openclaw-dashboard.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import type { OpenClawAdminModel, OpenClawAdminSnapshot, OpenClawAdminReceipt } from '../lib/openclaw-admin.mjs';
+import { PageTemplate, UnsavedBar, publishShellStatus } from './page-template.mjs';
 import styles from './openclaw-workspace.module.css';
 
 type Model = OpenClawAdminModel;
@@ -119,13 +120,19 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
     return () => { alive.current = false; controller.current?.abort(); controller.current = null; };
   }, []);
 
-  const dirty = Object.entries(drafts).some(([id, primary]) => data?.agents.find(agent => agent.id === id)?.model.primary !== primary);
+  const changedAgents = data?.agents.filter(agent => (drafts[agent.id] ?? agent.model.primary) !== agent.model.primary) ?? [];
+  const dirty = changedAgents.length > 0 || Object.keys(drafts).some(id => !data?.agents.some(agent => agent.id === id));
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
+  useEffect(() => {
+    if (!data) { publishShellStatus(null); return; }
+    publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
+    return () => publishShellStatus(null);
+  }, [dirty, data]);
 
   async function save(agent: Agent) {
     const primary = drafts[agent.id];
@@ -160,11 +167,18 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
     }
   }
 
+  function undoAll() {
+    setDrafts({});
+    setNotice('');
+  }
   return <main id="main-content" className={styles.shell}>
-    <header className={styles.header}>
-      <div><span className="eyebrow">OPENCLAW</span><h1>Agenternas modeller</h1><p>Välj modell för en agent och spara. Du använder din Studio-inloggning.</p></div>
-      <button className={styles.secondary} type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button>
-    </header>
+    <PageTemplate
+      eyebrow="// OPENCLAW"
+      title="Agentmodeller"
+      intro="Välj modell för en agent och spara. Du använder din Studio-inloggning."
+      status={<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>}
+    />
+    <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">
       {busy === 'load' && <p role="status">Hämtar inställningar från OpenClaw…</p>}
       {busy && busy !== 'load' && <p role="status">Sparar och kontrollerar modellvalet…</p>}
@@ -183,7 +197,7 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
         const changed = primary !== agent.model.primary;
         const inCatalog = data.models.some(item => item.id === primary);
         return <article key={agent.id} className={styles.agent} aria-labelledby={`agent-${agent.id}`}>
-          <div className={styles.identity}><h3 id={`agent-${agent.id}`}>{agent.id}</h3><p>Aktuell: <code>{agent.model.primary}</code></p>
+          <div className={styles.identity}><h3 className={styles.modelName} id={`agent-${agent.id}`}>{agent.id}</h3><p>Aktuell: <code>{agent.model.primary}</code></p>
             {agent.model.fallbacks.length > 0 && <details className={styles.details}><summary>Reservmodeller · {agent.model.fallbacks.length}</summary><p>Behålls när du sparar.</p><ol>{agent.model.fallbacks.map((fallback, index) => <li key={`${index}-${fallback}`}><code>{fallback}</code></li>)}</ol></details>}
           </div>
           <label className={styles.field}>Modell för {agent.id}
@@ -197,7 +211,7 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
             {changed && <span className={styles.draft}>Nytt val: <code>{primary}</code></span>}
           </label>
           <div className={styles.actions}>
-            <button className="primary-button" type="button" aria-label={`Spara modell för ${agent.id}`} disabled={!changed || !inCatalog || agent.model.fallbacks.includes(primary) || !!busy || needsRefresh || !data.gateway.connected} onClick={() => void save(agent)}>{busy === agent.id ? 'Sparar…' : 'Spara'}</button>
+            <button className="sg-btn sg-btn-secondary" type="button" aria-label={`Spara modell för ${agent.id}`} disabled={!changed || !inCatalog || agent.model.fallbacks.includes(primary) || !!busy || needsRefresh || !data.gateway.connected} onClick={() => void save(agent)}>{busy === agent.id ? 'Sparar…' : 'Spara'}</button>
             {changed && <button className={styles.secondary} type="button" disabled={!!busy} aria-label={`Återställ modell för ${agent.id}`} onClick={() => {
               setDrafts(previous => { const next = { ...previous }; delete next[agent.id]; return next; }); setNotice('');
             }}>Återställ</button>}
@@ -215,5 +229,6 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
       <p className={styles.advancedNote}>Dashboarden kan begära OpenClaws befintliga webbläsargodkännande. Ändra dealerns klipp och regler i <a href={labUrl('/')}>Studio</a>.</p>
     </section>
+    {changedAgents.length > 0 ? <UnsavedBar count={changedAgents.length} onSave={() => { const agent = changedAgents[0]; if (agent) void save(agent); }} onUndo={undoAll} /> : null}
   </main>;
 }
