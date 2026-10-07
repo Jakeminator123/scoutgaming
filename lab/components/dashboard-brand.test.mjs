@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
-const studio = readFileSync(new URL('./studio.tsx', import.meta.url), 'utf8');
 const navigation = readFileSync(new URL('./workspace-navigation.tsx', import.meta.url), 'utf8');
+const shells = ['control-events-page.tsx', 'control-videos-page.tsx', 'control-tree-page.tsx', 'control-activity-page.tsx', 'control-guide-page.tsx', 'control-probe-page.tsx', 'control-openclaw-chat.tsx', 'page-template.mjs']
+  .map(file => readFileSync(new URL(`./${file}`, import.meta.url), 'utf8'));
 
 test('dashboard uses the Scout palette and code-native wordmark', () => {
   assert.match(css, /--scout-ink:#0a0b0d/);
@@ -12,7 +13,7 @@ test('dashboard uses the Scout palette and code-native wordmark', () => {
   assert.match(css, /--scout-lime:#d6ff3a/);
   assert.match(navigation, /aria-label="ScoutGamingGroup · Administration"/);
   assert.match(navigation, /scout<b>\/</);
-  assert.doesNotMatch(studio, /Backoffice\/Lab|BACKOFFICE\/LAB|className="main-nav"|className="studio-brand"/);
+  for (const source of shells) assert.doesNotMatch(source, /Backoffice\/Lab|BACKOFFICE\/LAB|className="main-nav"|className="studio-brand"/);
 });
 
 test('dashboard motion has a reduced-motion fallback', () => {

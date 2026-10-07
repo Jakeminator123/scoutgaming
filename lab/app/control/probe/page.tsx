@@ -1,4 +1,12 @@
-import { StudioPage } from '../../studio-page';
+import { ControlProbePage } from '@/components/control-probe-page';
+import { firstQueryValue } from '@/components/studio-types';
+import { loadControlStudio } from '../../control-studio-data';
+
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Talgranskning · Croupier Studio' };
-export default function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) { return <StudioPage view="probe" searchParams={props?.searchParams} />; }
+
+export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = props?.searchParams ? await props.searchParams : {};
+  const data = await loadControlStudio('/control/probe');
+  return <ControlProbePage initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} initialDealerId={firstQueryValue(query.dealer)} initialEventId={firstQueryValue(query.event)} />;
+}

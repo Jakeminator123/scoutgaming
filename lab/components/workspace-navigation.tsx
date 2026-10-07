@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { Suspense, createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutLevel, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 import { isPartnerSurfacePath, resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
@@ -31,11 +31,10 @@ function StatusSlot() {
   return status ? <div className={styles.status}>{status}</div> : null;
 }
 
-export function WorkspaceNavigation({ children }: { children?: ReactNode } = {}) {
-  const pathname = usePathname() || '';
-  if (isPartnerSurfacePath(pathname) || isScoutAuthPath(pathname)) return children ?? null;
+function Shell({ pathname, search, children }: { pathname: string; search: string; children?: ReactNode }) {
   const surface = resolveWorkspaceSurfacePath(pathname);
-  const current = scoutNavigationItem(surface?.legacyPath ?? pathname);
+  const located = surface?.legacyPath ?? pathname;
+  const current = scoutNavigationItem(search ? `${located}?${search}` : located);
   const overview = SCOUT_NAVIGATION[0].items[0];
   const active = current ?? (surface?.surface === 'control' && !surface.legacyPath ? overview : null);
   const level = scoutLevel(pathname) ?? 'admin';
@@ -70,4 +69,18 @@ export function WorkspaceNavigation({ children }: { children?: ReactNode } = {})
       {children}
     </div>
   </div>;
+}
+
+function ShellQuery({ pathname, children }: { pathname: string; children?: ReactNode }) {
+  const search = useSearchParams()?.toString() ?? '';
+  return <Shell pathname={pathname} search={search}>{children}</Shell>;
+}
+
+export function WorkspaceNavigation({ children }: { children?: ReactNode } = {}) {
+  const pathname = usePathname() || '';
+  if (isPartnerSurfacePath(pathname) || isScoutAuthPath(pathname)) return children ?? null;
+  // Query lives under Suspense so a static page can still prerender the shell.
+  return <Suspense fallback={<Shell pathname={pathname} search="">{children}</Shell>}>
+    <ShellQuery pathname={pathname}>{children}</ShellQuery>
+  </Suspense>;
 }

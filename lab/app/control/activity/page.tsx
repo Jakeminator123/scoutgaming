@@ -1,6 +1,6 @@
 import { ControlActivityPage } from '@/components/control-activity-page';
 import { firstQueryValue } from '@/components/studio-types';
-import { loadControlStudio } from '../../studio-page';
+import { loadControlStudio } from '../../control-studio-data';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Uppspelning · Croupier Studio' };

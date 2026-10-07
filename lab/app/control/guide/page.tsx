@@ -1,6 +1,6 @@
 import { ControlGuidePage } from '@/components/control-guide-page';
 import { firstQueryValue } from '@/components/studio-types';
-import { loadControlStudio } from '../../studio-page';
+import { loadControlStudio } from '../../control-studio-data';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Guide & hjälp · Croupier Studio' };

@@ -62,6 +62,13 @@ async function request(method: 'GET' | 'PATCH', signal: AbortSignal, body?: unkn
   return value;
 }
 
+function OpenClawModelTabs() {
+  return <>
+    <a href={labUrl('/control/openclaw')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
+    <a href={labUrl('/control/openclaw?tab=chat')}>Chatt</a>
+  </>;
+}
+
 export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
@@ -174,8 +181,9 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
   return <main id="main-content" className={styles.shell}>
     <PageTemplate
       eyebrow="// OPENCLAW"
-      title="Agentmodeller"
+      title="OpenClaw"
       intro="Välj modell för en agent och spara. Du använder din Studio-inloggning."
+      tabs={<OpenClawModelTabs />}
     />
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">

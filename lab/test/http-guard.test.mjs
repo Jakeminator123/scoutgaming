@@ -81,9 +81,13 @@ test('ordinary same-origin page and RSC fetches still work without relaxing fore
   assert.throws(() => assertLocalPageRequest(pageRequest({ ...sameOrigin, Origin: 'https://external.example' })), status(403));
 });
 
-test('StudioPage delegates to the guarded UI helper; API routes cannot use the navigation exception', async () => {
-  const page = await readFile(new URL('../app/studio-page.tsx', import.meta.url), 'utf8');
+test('loadControlStudio delegates to the guarded UI helper; API routes cannot use the navigation exception', async () => {
+  const page = await readFile(new URL('../app/control-studio-data.tsx', import.meta.url), 'utf8');
   assert.match(page, /studioUiInitialData/);
+  for (const file of ['events', 'videos', 'tree', 'activity', 'guide', 'probe', 'openclaw']) {
+    const source = await readFile(new URL(`../app/control/${file}/page.tsx`, import.meta.url), 'utf8');
+    assert.match(source, /loadControlStudio/, file);
+  }
   const require = createRequire(new URL('../lib/ui-server.ts', import.meta.url));
   const helperSource = await readFile(new URL('../lib/ui-server.ts', import.meta.url), 'utf8');
   const compiled = stripTypeScriptTypes(helperSource).replace(/from (['"])([^'"]+)\1/g, (_match, _quote, specifier) =>

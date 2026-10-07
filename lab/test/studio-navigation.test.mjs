@@ -77,6 +77,7 @@ function loadComponent(file, overrides = {}, browser) {
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
+      if (name.endsWith('.mjs') || name.endsWith('.js') || name.endsWith('.json')) return localRequire(name);
       if (name === './studio-types') return loadComponent('studio-types.ts', overrides, browser);
       if (name === './studio-session' || name === './studio-session.tsx') return loadComponent('studio-session.tsx', overrides, browser);
       if (name === './test-context') return loadComponent('test-context.tsx', overrides, browser);
@@ -92,19 +93,17 @@ test('internal menu keeps native Studio anchors and adds public control and part
   try {
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
-      const links = [];
       const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-        'next/navigation': { usePathname: () => basePath + '/activity' },
+        'next/navigation': { usePathname: () => basePath + '/activity', useSearchParams: () => new URLSearchParams() },
       });
-      const tree = WorkspaceNavigation();
-      visit(tree, node => { if (node.type === 'a') links.push(node.props); });
-      const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/control',
+      const html = renderToStaticMarkup(WorkspaceNavigation());
+      const links = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map(match => match[1].replaceAll('&amp;', '&'));
+      assert.deepEqual(links, ['/control',
         ...SCOUT_NAVIGATION.flatMap(group => group.items.map(item => labUrl(item.href))),
         ...SCOUT_FOOTER_NAVIGATION.map(item => labUrl(item.href)),
         ...SCOUT_LEVELS.map(item => labUrl(item.href))]);
-      assert.ok(links.every(link => !link.onNavigate && !link.onClick));
-      assert.equal(links.filter(link => link.href === labUrl('/control/administration')).length, 1);
+      assert.doesNotMatch(html, /onClick|onNavigate/);
+      assert.equal(links.filter(link => link === labUrl('/control/administration')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
       assert.match(html, /Nivå 1 · ScoutGamingGroup/);
       assert.match(html, /CROUPIER STUDIO · AI LIVE CASINO/);
@@ -122,7 +121,7 @@ test('internal menu keeps native Studio anchors and adds public control and part
 test('partner documents never render internal workspace links under public or native paths', () => {
   for (const path of ['/partner', '/studio/partner', '/partner/demo-north/overview', '/studio/partner/demo-south/team', '/partner/unknown']) {
     const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-      'next/navigation': { usePathname: () => path },
+      'next/navigation': { usePathname: () => path, useSearchParams: () => new URLSearchParams() },
     });
     assert.equal(renderToStaticMarkup(WorkspaceNavigation()), '', path);
   }
@@ -156,7 +155,7 @@ test('level-two entrance separates demonstrations and preserves only valid old h
 test('control landing and imported views highlight the control entrance through either rewrite path', () => {
   for (const path of ['/control', '/studio/control', '/control/voice', '/studio/control/voice']) {
     const { WorkspaceNavigation } = loadComponent('workspace-navigation.tsx', {
-      'next/navigation': { usePathname: () => path },
+      'next/navigation': { usePathname: () => path, useSearchParams: () => new URLSearchParams() },
     });
     const html = renderToStaticMarkup(WorkspaceNavigation());
     assert.match(html, /href="\/control"[^>]*aria-current="page"[^>]*>Översikt/);
@@ -193,35 +192,34 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   cleanup();
 });
 
-test('actual editor shortcut uses the operator chat route and keeps the existing Gateway panel and project context', () => {
+test('OpenClaw chat is a document route and keeps the Gateway panel and project context', () => {
   const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
   try {
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
-      const paths = [], project = createSeedProject();
-      const browser = {history: {pushState: (_state, _title, path) => paths.push(path)}};
+      const events = readFileSync(new URL('../components/control-events-page.tsx', import.meta.url), 'utf8');
+      assert.doesNotMatch(events, /changeView\(|history\.pushState/);
+      const routes = loadComponent('studio-types.ts');
+      assert.equal(routes.viewPaths.openclaw, '/control/openclaw?tab=chat');
+      assert.equal(routes.studioViewForPath(routes.viewPaths.openclaw), 'openclaw');
+      const project = createSeedProject();
       const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
         useEffect: () => {}, useRef: current => ({current}), useMemo: fn => fn(), useCallback: fn => fn};
       function GatewayPanel() { return null; }
-      const {Studio} = loadComponent('studio.tsx', {react: hooks, './gateway-panel': {GatewayPanel}}, browser);
-      const props = {initialProject: project, initialVideos: {videos: []}, initialStatus: {configured: false}};
-      const tree = Studio(props);
-      let shortcut;
-      visit(tree, node => { if (node.type === 'button' && node.props.children === 'Fråga OpenClaw om labbet →') shortcut = node; });
-      assert.ok(shortcut); shortcut.props.onClick();
-      assert.deepEqual(paths, ['/control/operator-chat']);
-      const routes = loadComponent('studio-types.ts');
-      assert.equal(routes.studioViewForPath(paths[0]), 'openclaw');
+      const {ControlOpenClawChat} = loadComponent('control-openclaw-chat.tsx', {react: hooks, './gateway-panel': {GatewayPanel}});
+      const props = {initialProject: project, initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true};
+      const tree = ControlOpenClawChat(props);
       let panel;
-      visit(Studio({...props, initialView: 'openclaw'}), node => {if (node.type === GatewayPanel) panel = node;});
+      visit(tree, node => {if (node.type === GatewayPanel) panel = node;});
       assert.ok(panel); assert.equal(panel.props.dealerId, 'astrid');
       assert.equal(panel.props.dirty, false); assert.equal(panel.props.status, props.initialStatus);
       assert.equal(typeof panel.props.onModeChange, 'function'); assert.equal(typeof panel.props.onPlayerChat, 'function');
       assert.equal(panel.props.standaloneVoicePreviewAvailable, true);
-      visit(Studio({...props, initialView: 'openclaw', standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
+      visit(ControlOpenClawChat({...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
-      assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01/);
+      assert.match(html, /href="\/control\/openclaw\?tab=chat"/);
+      assert.doesNotMatch(html, /ISOLERAT LABB|DITT LABB|LOCAL \/ 01|Fråga OpenClaw om labbet →/);
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -230,7 +228,7 @@ test('actual editor shortcut uses the operator chat route and keeps the existing
 });
 
 test('both real page guards protect dirty project drafts on native leave and clean up without mutating them', () => {
-  for (const [file, name] of [['lab-studio.tsx', 'LabStudio'], ['studio.tsx', 'Studio']]) {
+  for (const [file, name] of [['lab-studio.tsx', 'LabStudio'], ['control-events-page.tsx', 'ControlEventsPage']]) {
     for (const dirty of [false, true]) {
       const project = createSeedProject(), before = JSON.stringify(project), effects = [];
       const browser = new EventTarget();
@@ -248,10 +246,10 @@ test('both real page guards protect dirty project drafts on native leave and cle
       assert.equal(guardEffects.length, 1);
       const release = guardEffects[0]();
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), !dirty);
-      if (name === 'Studio' && !dirty) {
+      if (name === 'ControlEventsPage' && !dirty) {
         let social;
-        visit(tree, node => { if (node.props?.draftCache) social = node.props.draftCache; });
-        assert.ok(social, 'the social policy draft remains covered by the Studio guard');
+        visit(tree, node => { const cache = node.props?.draftCache ?? node.props?.social?.draftCache; if (cache) social = cache; });
+        assert.ok(social, 'the social policy draft remains covered by the events page guard');
         social.current = { draft: { text: 'Osparad policy' }, status: { policy: { text: 'Sparad policy' } } };
         assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), false);
         social.current.draft = { ...social.current.status.policy };

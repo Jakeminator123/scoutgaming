@@ -415,24 +415,25 @@ test('social policy draft survives panel navigation and warns before browser rel
   restored.unmount();
 });
 
-test('studio uses a distinct direct-preview state, cancellation and separate social panel', () => {
-  const studio = readFileSync(new URL('./studio.tsx', import.meta.url), 'utf8');
-  const direct = studio.match(/function previewSelected\(\) \{([\s\S]*?)\n  \}/)?.[1];
+test('events page uses a distinct direct-preview state, cancellation and separate social panel', () => {
+  const events = readFileSync(new URL('./control-events-page.tsx', import.meta.url), 'utf8');
+  const preview = readFileSync(new URL('./events-preview.tsx', import.meta.url), 'utf8');
+  const direct = events.match(/function previewSelected\(\) \{([\s\S]*?)\n  \}/)?.[1];
   assert.ok(direct); assert.match(direct, /setPreviewKind\('selected'\)/);
   assert.doesNotMatch(direct, /requestJson|setResult\(response\)/);
-  assert.match(studio, /onPreview=\{previewSelected\}/);
-  assert.match(studio, /signal: controller\.signal/);
-  assert.match(studio, /cancelSocial\.current\?\.\(\)/);
+  assert.match(events, /onPreview: previewSelected/);
+  assert.match(events, /signal: controller\.signal/);
+  assert.match(events, /cancelSocial\.current\?\.\(\)/);
   assert.match(readFileSync(new URL('./event-test-panel.tsx', import.meta.url), 'utf8'), /Det är inget godkänt regelbeslut/);
-  assert.match(studio, /<SocialChatPanel/);
-  assert.match(studio, /speechHost=\{speechHost\}/);
-  assert.match(studio, /<div className=\{socialStyles\.speechStage\}><Stage/);
-  assert.match(studio, /<div ref=\{speechHost\} className=\{socialStyles\.speechHost\} \/><\/div>/);
-  assert.match(studio, /aria-live="polite" aria-atomic="true"/);
-  assert.match(studio, /<p>\{socialReply\}<\/p>/);
-  assert.match(studio, /previewKind !== 'social'/);
-  assert.match(studio, /prefers-reduced-motion: reduce/);
-  assert.match(studio, /Visa chatten/);
+  assert.match(preview, /<SocialChatPanel/);
+  assert.match(preview, /speechHost=\{speechHost\}/);
+  assert.match(preview, /<div className=\{socialStyles\.speechStage\}>\s*<Stage/);
+  assert.match(preview, /<div ref=\{speechHost\} className=\{socialStyles\.speechHost\} \/>/);
+  assert.match(preview, /aria-live="polite" aria-atomic="true"/);
+  assert.match(preview, /<p>\{socialReply\}<\/p>/);
+  assert.match(events, /previewKind !== 'social'/);
+  assert.match(events, /prefers-reduced-motion: reduce/);
+  assert.match(preview, /Visa chatten/);
   assert.equal(modeLabels.off, 'Standard');
   assert.match(readFileSync(new URL('./gateway-panel.tsx', import.meta.url), 'utf8'), /export \{ modeLabels, modeExplanations \}/);
 });

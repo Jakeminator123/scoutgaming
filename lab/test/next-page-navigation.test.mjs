@@ -53,7 +53,7 @@ function load(file, overrides, env = {}) {
     jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
     module: { type: 'commonjs' } });
   const module = { exports: {} }, localRequire = createRequire(url);
-  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, URL, process: {env},
+  vm.runInNewContext(code, { module, exports: module.exports, Request, Headers, URL, URLSearchParams, process: {env},
     require: name => Object.hasOwn(overrides, name) ? overrides[name] : localRequire(name) }, { filename: file });
   return module.exports;
 }
@@ -135,27 +135,30 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
     for (const basePath of ['', '/studio']) {
       process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
       const routes = load('../components/studio-types.ts', {}), requests = [];
-      function Editor() { assert.fail('SSR delegates an element without invoking client work'); }
-      const page = load('../app/studio-page.tsx', {
+      const dataModule = load('../app/control-studio-data.tsx', {
         'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
-        '@/components/studio': {Studio: Editor}, '@/components/studio-types': routes,
         '@/lib/ui-server': { studioUiInitialData: async request => {
           requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
         } },
       });
-      const paths = { tree: '/control/tree', lab: '/control/events', videos: '/control/videos', activity: '/control/activity', openclaw: '/control/operator-chat', guide: '/control/guide', probe: '/control/probe' };
-      for (const [view, path] of Object.entries(paths)) {
-        const element = await page.StudioPage({view});
-        assert.equal(element.type, Editor); assert.equal(element.props.initialView, view);
+      const surfaces = [
+        ['../app/control/tree/page.tsx', '@/components/control-tree-page', 'ControlTreePage', '/control/tree'],
+        ['../app/control/events/page.tsx', '@/components/control-events-page', 'ControlEventsPage', '/control/events'],
+        ['../app/control/videos/page.tsx', '@/components/control-videos-page', 'ControlVideosPage', '/control/videos'],
+        ['../app/control/activity/page.tsx', '@/components/control-activity-page', 'ControlActivityPage', '/control/activity'],
+        ['../app/control/guide/page.tsx', '@/components/control-guide-page', 'ControlGuidePage', '/control/guide'],
+      ];
+      for (const [file, specifier, exportName, path] of surfaces) {
+        function Surface() { assert.fail('SSR delegates an element without invoking client work'); }
+        const surface = load(file, {
+          [specifier]: { [exportName]: Surface },
+          '@/components/studio-types': routes,
+          '../../control-studio-data': dataModule,
+        });
+        const element = await surface.default({ searchParams: Promise.resolve({}) });
+        assert.equal(element.type, Surface, path);
         assert.equal(requests.at(-1), 'http://game.fixture.invalid' + path);
       }
-      const chatPage = load('../app/control/operator-chat/page.tsx', {'../../studio-page': page});
-      const chat = chatPage.default();
-      assert.equal(chat.type, page.StudioPage); assert.equal(chat.props.view, 'openclaw');
-      const reloadedChat = await chat.type(chat.props);
-      assert.equal(reloadedChat.type, Editor); assert.equal(reloadedChat.props.initialView, 'openclaw');
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/operator-chat');
-
       function Models() { assert.fail('SSR does not invoke model client work'); }
       const models = load('../app/control/openclaw/page.tsx', {
         'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
@@ -164,6 +167,59 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
       });
       assert.equal((await models.default()).type, Models);
       assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
+
+      function ProbeSurface(props) { return props; }
+      const probe = load('../app/control/probe/page.tsx', {
+        '../../control-studio-data': dataModule,
+        '@/components/control-probe-page': { ControlProbePage: ProbeSurface },
+        '@/components/studio-types': routes,
+      });
+      const bareProbe = await probe.default();
+      assert.equal(bareProbe.type, ProbeSurface);
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/probe');
+      const probed = await probe.default({ searchParams: Promise.resolve({ dealer: ['vera'], event: 'idle.ready' }) });
+      assert.equal(probed.props.initialDealerId, 'vera');
+      assert.equal(probed.props.initialEventId, 'idle.ready');
+
+      function ChatSurface(props) { return props; }
+      const chatRoute = load('../app/control/openclaw/page.tsx', {
+        'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
+        '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
+        '@/components/openclaw-workspace': { OpenClawWorkspace: Models },
+        '../../control-studio-data': dataModule,
+        '@/components/control-openclaw-chat': { ControlOpenClawChat: ChatSurface },
+        '@/components/studio-types': routes,
+      });
+      const chatElement = await chatRoute.default({ searchParams: Promise.resolve({ tab: 'chat', dealer: ['mei'] }) });
+      assert.equal(chatElement.type, ChatSurface);
+      assert.equal(chatElement.props.initialDealerId, 'mei');
+      assert.equal(chatElement.props.standaloneVoicePreviewAvailable, process.env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && process.env.CROUPIER_STUDIO_NEON_POLICY !== '1');
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
+
+      const operator = load('../app/control/operator-chat/page.tsx', {
+        'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
+        'next/navigation': navigation,
+        '@/lib/lab-url.mjs': { publicAbsoluteUrl: require('../lib/lab-url.mjs').publicAbsoluteUrl },
+        '@/components/studio-types': routes,
+        '@/lib/ui-server': { authorizeUiPage: async request => { requests.push(request.url); } },
+      });
+      await assert.rejects(operator.default(), error => {
+        const url = new URL(locationFromNext(error, basePath));
+        assert.equal(url.protocol, 'https:');
+        assert.equal(url.host, 'game.fixture.invalid');
+        assert.equal(url.pathname, '/control/openclaw');
+        assert.equal(url.search, '?tab=chat');
+        return true;
+      });
+      await assert.rejects(operator.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'idle.ready' }) }), error => {
+        const url = new URL(locationFromNext(error, basePath));
+        assert.equal(url.pathname.startsWith('/studio'), false);
+        assert.equal(url.searchParams.get('tab'), 'chat');
+        assert.equal(url.searchParams.get('dealer'), 'vera');
+        assert.equal(url.searchParams.get('event'), 'idle.ready');
+        return true;
+      });
+      assert.equal(requests.at(-1), 'http://studio.fixture.invalid/control/operator-chat');
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -171,16 +227,21 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
   }
 });
 
-test('Studio SSR serializes only the standalone voice capability matching native and Neon server flags', async () => {
+test('OpenClaw chat SSR serializes only the standalone voice capability matching native and Neon server flags', async () => {
   for (const env of [{}, {CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0'},
     {CROUPIER_STUDIO_NATIVE_ADMIN: '1'}, {CROUPIER_STUDIO_NEON_POLICY: '1'},
     {CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_STUDIO_NEON_POLICY: '1'}]) {
-    const page = load('../app/studio-page.tsx', {
+    function Chat() { return null; }
+    const page = load('../app/control/openclaw/page.tsx', {
       'next/headers': {headers: async () => new Headers({host: 'game.fixture.invalid'})},
-      '@/components/studio': {Studio() {}}, '@/components/studio-types': {viewPaths: {openclaw: '/operator-chat'}},
-      '@/lib/ui-server': {studioUiInitialData: async () => ({project: {}, videos: {videos: []}, status: {configured: true}})},
+      '@/lib/ui-server': { authorizeUiPage: async () => assert.fail('chat tab loads studio data') },
+      '@/components/openclaw-workspace': { OpenClawWorkspace() { assert.fail('chat tab does not render model settings'); } },
+      '../../control-studio-data': { loadControlStudio: async () => ({project: {}, videos: {videos: []}, status: {configured: true}}) },
+      '@/components/control-openclaw-chat': { ControlOpenClawChat: Chat },
+      '@/components/studio-types': { firstQueryValue(value) { return Array.isArray(value) ? value[0] : value; } },
     }, env);
-    const element = await page.StudioPage({view: 'openclaw'});
+    const element = await page.default({ searchParams: Promise.resolve({ tab: 'chat' }) });
+    assert.equal(element.type, Chat);
     assert.equal(element.props.standaloneVoicePreviewAvailable,
       env.CROUPIER_STUDIO_NATIVE_ADMIN !== '1' && env.CROUPIER_STUDIO_NEON_POLICY !== '1');
     assert.ok(!Object.keys(element.props).some(key => key.startsWith('CROUPIER_')));

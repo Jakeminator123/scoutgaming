@@ -18,7 +18,7 @@ test('sidebar groups stay in Spec 02 order and point at real pages', () => {
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
     [['/control', 'Översikt']],
     [['/control/clips', 'Dealers & klipp'], ['/control/tree', 'Händelser → klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser']],
-    [['/control/openclaw', 'Agentmodeller'], ['/control/operator-chat', 'Operatörschatt']],
+    [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
     [['/control/administration', 'Administration'], ['/control/activity', 'Uppspelning'], ['/control/probe', 'Talgranskning']],
     [['/partner', 'Partners']],
   ]);
@@ -32,9 +32,10 @@ test('sidebar groups stay in Spec 02 order and point at real pages', () => {
     ['/control', '1 · Admin'], ['/partner', '2 · Spelbolag'], ['/play', '3 · Spelare'],
   ]);
   for (const item of sidebar) {
-    const page = item.href === '/control' ? 'control/[[...path]]/page.tsx'
-      : item.href === '/partner' ? 'partner/[[...path]]/page.tsx'
-      : `${item.href.slice(1)}/page.tsx`;
+    const href = item.href.split('?')[0];
+    const page = href === '/control' ? 'control/[[...path]]/page.tsx'
+      : href === '/partner' ? 'partner/[[...path]]/page.tsx'
+      : `${href.slice(1)}/page.tsx`;
     assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, item.href);
   }
   assert.match(readFileSync(new URL('../../apps/croupier-frontend/app/play/page.tsx', import.meta.url), 'utf8'), /export default/);
@@ -42,7 +43,13 @@ test('sidebar groups stay in Spec 02 order and point at real pages', () => {
 
 test('old header destinations stay reachable from the sidebar or the level switcher', () => {
   const covered = new Set([...sidebar.map(item => item.href), ...SCOUT_LEVELS.map(item => item.href)]);
-  for (const item of [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION]) assert.equal(covered.has(item.href), true, item.href);
+  for (const item of [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION]) {
+    if (item.href === '/control/operator-chat') {
+      assert.equal(covered.has('/control/openclaw?tab=chat'), true, item.href);
+      continue;
+    }
+    assert.equal(covered.has(item.href), true, item.href);
+  }
   assert.equal(covered.has('/partner'), true);
   assert.equal(covered.has('/play'), true);
 });
@@ -66,7 +73,7 @@ test('active item resolves for empty and /studio base paths and keeps the first 
   for (const base of [null, {}, [], '/studio/', '/other']) assert.equal(scoutNavigationItem('/control/clips', base), null);
 });
 
-function loadNavigation(pathname) {
+function loadNavigation(pathname, search = '') {
   const file = 'workspace-navigation.tsx';
   const url = new URL(`../components/${file}`, import.meta.url);
   const output = transformSync(readFileSync(url, 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
@@ -74,7 +81,7 @@ function loadNavigation(pathname) {
   vm.runInNewContext(output.code, {
     module, exports: module.exports, structuredClone,
     require: name => {
-      if (name === 'next/navigation') return { usePathname: () => pathname };
+      if (name === 'next/navigation') return { usePathname: () => pathname, useSearchParams: () => new URLSearchParams(search) };
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./')) return new Proxy({}, { get: () => () => null });
       return localRequire(name);
@@ -116,4 +123,25 @@ test('partner documents render no staff shell and administration highlights only
   const source = readFileSync(new URL('../components/workspace-navigation.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /onClick|onNavigate|next\/link|history\.(?:pushState|replaceState)/);
   assert.doesNotMatch(html, /type="search"|Sök dealer, klipp, bord, konto…|Inte ansluten ännu/);
+});
+
+test('openclaw chat query activates operator chat and the bare path activates model settings', () => {
+  for (const base of ['', '/studio']) {
+    assert.equal(scoutNavigationItem('/control/openclaw', base)?.label, 'Agentmodeller');
+    assert.equal(scoutNavigationItem('/control/openclaw?tab=chat', base)?.label, 'Operatörschatt');
+    assert.equal(scoutNavigationItem('/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', base)?.label, 'Operatörschatt');
+    assert.equal(scoutNavigationItem('/control/openclaw?dealer=astrid', base)?.label, 'Agentmodeller');
+    assert.equal(scoutNavigationItem('/operator-chat', base)?.label, 'Operatörschatt');
+    assert.equal(scoutNavigationItem('/control/operator-chat', base)?.label, 'Operatörschatt');
+    assert.equal(scoutNavigationItem(`${base}/control/openclaw?tab=chat`.replace('//', '/'), base)?.label, 'Operatörschatt');
+  }
+  const chat = renderToStaticMarkup(loadNavigation('/control/openclaw', 'tab=chat&dealer=astrid').WorkspaceNavigation());
+  assert.match(chat, /aria-current="page"[^>]*>Operatörschatt/);
+  assert.doesNotMatch(chat, /aria-current="page"[^>]*>Agentmodeller/);
+  assert.match(chat, /href="\/control\/openclaw\?tab=chat"/);
+  assert.match(chat, /Nivå 1 · ScoutGamingGroup/);
+  const models = renderToStaticMarkup(loadNavigation('/control/openclaw').WorkspaceNavigation());
+  assert.match(models, /aria-current="page"[^>]*>Agentmodeller/);
+  assert.doesNotMatch(models, /aria-current="page"[^>]*>Operatörschatt/);
+  assert.equal((models.match(/aria-current="page"/g) ?? []).length, 1);
 });

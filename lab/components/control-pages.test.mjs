@@ -59,6 +59,10 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(studioHref('/control/tree', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/control/tree?dealer=astrid&event=idle.ready');
   assert.equal(selectionHref('/control/events', '?tab=variants&filter=x', 'mei', 'idle.ready'), '/control/events?dealer=mei&event=idle.ready&tab=variants');
   assert.equal(selectionHref('/control/tree', '?tab=variants', 'mei', 'idle.ready'), '/control/tree?dealer=mei&event=idle.ready');
+  assert.equal(studioHref('/control/videos', { dealerId: 'mei', eventId: 'idle.ready', variantId: 'v2' }), '/control/videos?dealer=mei&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/control/events', '?tab=variants', 'mei', 'idle.ready', 'v2'), '/control/events?dealer=mei&event=idle.ready&variant=v2&tab=variants');
+  assert.equal(selectionHref('/control/videos', '', 'mei', 'idle.ready', 'v2'), '/control/videos?dealer=mei&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/control/tree', '', 'mei', 'idle.ready', 'v2'), '/control/tree?dealer=mei&event=idle.ready');
 });
 
 test('tree, guide and activity pages drop the inner studio chrome and link the selected event', () => {
