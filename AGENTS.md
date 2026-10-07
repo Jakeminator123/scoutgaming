@@ -11,7 +11,7 @@ Vercel project name is `scoutgaming`. The game engine stays on Render service `c
 | 2 | Operator (Unibet etc.) | `/partner`, `/partner/{operatorSlug}` | Kevin's imported backoffice (`lab/components/kevin-bo`) is only this preview. It is not the control panel. Real operator login and tenant data are not done. |
 | 3 | Player | `/play`, `/play/blackjack` | Lobby, profile, and history are not done. |
 
-`/studio` is the Next.js `basePath` of the lab service. It is not a fourth product and not the name to use in the UI. Lissabon, `/lab`, `/labb`, and `/bo` are retired aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
+`/studio` is the Next.js `basePath` of the lab service. It is not a fourth product and not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
 
 ## GitHub-only work on main
 

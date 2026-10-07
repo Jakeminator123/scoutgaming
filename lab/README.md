@@ -54,10 +54,10 @@ Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 [Start-Lab.cmd](../Start-Lab.cmd) startar den befintliga anslutna profilen på
 4200/4201. [Start-Lissabon.cmd](../Start-Lissabon.cmd) fungerar som alias.
 Sparat projekt, historik och profiler finns i `lab/data`; speldata i dess
-`players/`. Den gamla Lissabon-katalogen är avvecklad med verifierad privat
+`players/`. Den gamla katalogen är avvecklad med verifierad privat
 backup enligt [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md).
 Äldre checkouter måste migreras med `tools/migrate-lab-state.mjs` före start.
-Startaren återskapar aldrig Lissabon. Standardprojektet skapas från
+Standardprojektet skapas från
 `policies/project.seed.json` och profilens få idleval. En separat projektsnapshot
 behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.

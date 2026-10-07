@@ -150,7 +150,7 @@ urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
 idlepolicy eller originalmotorns klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
-Lissabon-katalogen är avvecklad; äldre lokala data i `lab/data` bevaras som
+Äldre lokala data i `lab/data` bevaras som
 historik och är inte produktionspolicy.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
@@ -186,7 +186,7 @@ ocklusion för varje tilltänkt klipp innan användning.
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
 Avancerade verktyg nås genom **Avancerat labb** (`/control/tree` i molnet,
-`/tree` lokalt). Lissabon, `/lab`, `/labb` och `/bo` är avvecklade alias.
+`/tree` lokalt). `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
 Personalens ingång är `/control`.
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)

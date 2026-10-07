@@ -23,7 +23,7 @@ Staff tools are being gathered under `/control/clips`, `/control/administration`
 Real operator login, tenant data, and the player lobby, profile, and history are not done.
 
 `/studio` is the Next.js basePath of the lab service, not a fourth product and
-not the name to use in the UI. Lissabon, `/lab`, `/labb`, and `/bo` are retired
+not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
 aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
 
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
@@ -44,7 +44,7 @@ node lab/start.mjs --offline --no-open
 
 [Start-Lab.cmd](Start-Lab.cmd) starts the existing connected profile.
 [Start-Lissabon.cmd](Start-Lissabon.cmd) is a compatibility shortcut.
-Lissabon has been removed and is not a product URL. Private saved projects, history and players now live
+Private saved projects, history and players now live
 in `lab/data`, after a verified backup outside Git. See the restoration guide.
 In the cloud the general editor is `/control/tree`. Key names and locations
 (no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).

@@ -87,7 +87,7 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
   }
   function connect(): Promise<void> {
     // The local profile may differ from the synthetic Partner launch player.
-    // Lissabon follows the actual Web tab; do not open a misleading second feed.
+    // Labbet follows the actual Web tab; do not open a misleading second feed.
     if (focused) { setConnection('Studion följer spelfliken direkt'); return Promise.resolve(); }
     if (connectionWait.current) return connectionWait.current.promise;
     if (stream.current) return Promise.resolve();

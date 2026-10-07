@@ -149,7 +149,7 @@
     {
       "id": "probe",
       "label": "Probe",
-      "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i Lissabon och stora labbet; spelmotorns event-ID:n är oförändrade."
+      "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i labbet; spelmotorns event-ID:n är oförändrade."
     },
     {
       "id": "game-engine",
