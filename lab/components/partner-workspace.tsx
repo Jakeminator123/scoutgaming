@@ -8,8 +8,10 @@ import styles from './control-workspace.module.css';
 
 type Demonstration = { slug: string; name: string };
 
-export function PartnerWorkspace({ user, demonstrations }: { user: string; demonstrations: Demonstration[] }) {
-  const legacyOperator = demonstrations[0]?.slug;
+export function PartnerWorkspace({ user, demonstrations, preview = true }: {
+  user: string; demonstrations: Demonstration[]; preview?: boolean;
+}) {
+  const legacyOperator = preview ? demonstrations[0]?.slug : undefined;
   useEffect(() => {
     // Preserve old /partner#theme bookmarks without selecting a demo on normal entry.
     const navigate = () => {
@@ -22,16 +24,27 @@ export function PartnerWorkspace({ user, demonstrations }: { user: string; demon
     return () => window.removeEventListener('hashchange', navigate);
   }, [legacyOperator]);
 
-  return <main className={styles.shell}>
-    <header className={styles.intro}><p className={styles.eyebrow}>Nivå 2 · Spelbolag</p><h1>Spelbolagens arbetsytor</h1>
-      <p>Som intern adminpersonal har du tillgång till nivå 1, 2 och 3 med samma konto.</p>
+  if (!preview) return <main className={styles.shell}>
+    <header className={styles.intro}><p className={styles.eyebrow}>Nivå 2 · Spelbolag</p><h1>Partnerportal</h1>
+      <p>Du ser bara de spelbolag ditt konto är kopplat till.</p>
       <span className={styles.user}>Inloggad som {user}</span>
     </header>
-    <section className={styles.notice} aria-labelledby="connected-operators"><h2 id="connected-operators">Anslutna spelbolag</h2>
-      <p>Kundval är ännu inte aktiverat i partnerportalen. Här ska du kunna välja bland faktiskt anslutna spelbolag och öppna deras respektive arbetsyta.</p>
-      <p>Demonstrationerna nedan visar exempeldata. De är inte anslutna kunder.</p>
+    <section className={styles.tools} aria-label="Spelbolag">{demonstrations.map(operator => <a className={styles.tool} key={operator.slug} href={workspaceSurfacePath('partner', 'ops', operator.slug) ?? '/partner'}>
+      <h2>{operator.name}<span aria-hidden="true"> →</span></h2><p>Öppna arbetsytan för det här spelbolaget.</p>
+    </a>)}</section>
+    <p className={styles.help}>Spelare, transaktioner och rapporter är inte anslutna. <a href="/partner/login">Byt konto</a></p>
+  </main>;
+
+  return <main className={styles.shell}>
+    <header className={styles.intro}><p className={styles.eyebrow}>Nivå 2 · Spelbolag</p><h1>Partnerportal</h1>
+      <p>Som intern adminpersonal har du tillgång till nivå 1, 2 och 3 med samma konto. Spelbolagens egen personal loggar in separat.</p>
+      <span className={styles.user}>Inloggad som {user}</span>
+      <p><a className="primary-button" href="/partner/login">Logga in som spelbolag</a></p>
+    </header>
+    <section className={styles.notice} aria-labelledby="preview-operators"><h2 id="preview-operators">Förhandsvisning</h2>
+      <p>Demonstrationerna nedan visar exempeldata. De är inte anslutna kunder. Riktiga spelbolag ser bara sin egen organisation efter inloggning.</p>
     </section>
-    <section className={styles.tools} aria-label="Demonstrationer">{demonstrations.map(operator => <a className={styles.tool} key={operator.slug} href={workspaceSurfacePath('partner', 'ops', operator.slug) ?? '/partner'}>
+    <section className={styles.tools} aria-label="Förhandsvisning">{demonstrations.map(operator => <a className={styles.tool} key={operator.slug} href={workspaceSurfacePath('partner', 'ops', operator.slug) ?? '/partner'}>
       <h2>{operator.name}<span aria-hidden="true"> →</span></h2><p>Öppna demonstration med exempeldata och lokala designprov.</p>
     </a>)}</section>
     <section className={styles.levels} aria-label="Övriga nivåer"><div><h2>Nivå 1 · Intern administration</h2><p>Lanes, klipp, konton och drift.</p><a href="/control">Till Kontrollpanelen →</a></div>

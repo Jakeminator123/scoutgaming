@@ -98,7 +98,7 @@ ska inte presenteras som ett genomfört driftprov.
 ### B. Databaser och lagring
 
 - Utgå från [product-schema](../../ops/neon-game/product-schema.sql),
-  [Studio-migrationerna](../../ops/neon-studio/migrations.mjs) med SQL 001–004
+  [Studio-migrationerna](../../ops/neon-studio/migrations.mjs) med SQL 001–005
   och [zonschemat](../../lab/lib/zone-cloud-schema.sql).
 - För varje tabell: syfte, schema/kolumner, primär-/främmande nycklar,
   scope, skrivande tjänst, läsande flöde och relevant migration/test.

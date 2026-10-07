@@ -16,6 +16,9 @@ const sources = Object.freeze([
     tables: ['operator_qa_campaigns', 'operator_qa_gate', 'operator_qa_attempts'], indexes: [] },
   { version: '004', file: '004-fullfile-reservations.sql', optional: true,
     tables: ['fullfile_budget_policies', 'fullfile_reservations'], indexes: ['fullfile_reservations_day_idx'] },
+  { version: '005', file: '005-operators.sql', optional: true,
+    tables: ['operators', 'operator_roles', 'operator_memberships', 'operator_packages'],
+    indexes: ['operator_memberships_user_idx'] },
 ]);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 

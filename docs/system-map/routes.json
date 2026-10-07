@@ -615,6 +615,21 @@
         "lab/app/api/partner-preview/route.ts:6",
         "lab/lib/partner-preview.mjs:39"
       ]
+    },
+    {
+      "id": "partner-api",
+      "paths": [
+        "GET /studio/api/partner/snapshot",
+        "POST /studio/api/partner/login",
+        "POST /studio/api/partner/logout"
+      ],
+      "serving": "Lab route under basePath /studio. Login and logout are POST. The snapshot is GET. Other exported methods are rejected.",
+      "access": "Operator staff with role partner. A partner_session cookie is separate from the internal admin session. Snapshot data is limited to active memberships.",
+      "sources": [
+        "lab/app/api/partner/[...action]/route.ts",
+        "lab/lib/partner-session.mjs",
+        "lab/lib/partner-data.mjs"
+      ]
     }
   ],
   "lanes": [
@@ -3498,6 +3513,32 @@
       ]
     },
     {
+      "id": "studio-api-partner",
+      "path": "/api/partner/:action+",
+      "publicPath": "/studio/api/partner/:action+",
+      "methods": [
+        "DELETE",
+        "GET",
+        "HEAD",
+        "OPTIONS",
+        "PATCH",
+        "POST",
+        "PUT"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/partner/[...action]/route.ts",
+      "serving": "Lab API under basePath /studio.",
+      "access": "Operator staff. POST login and logout, GET snapshot. Every other exported method is rejected.",
+      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership.",
+      "groupId": "partner-api",
+      "sources": [
+        {
+          "path": "lab/app/api/partner/[...action]/route.ts"
+        }
+      ]
+    },
+    {
       "id": "studio-control-path",
       "path": "/control/:path*",
       "publicPath": "/control/:path*",
@@ -3750,6 +3791,24 @@
       ]
     },
     {
+      "id": "studio-partner-login",
+      "path": "/partner/login",
+      "publicPath": "/partner/login",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/partner/login/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Public partner credential form. Unavailable native configuration returns notFound.",
+      "boundary": "The page posts credentials to the partner auth API and does not accept an internal admin cookie as a partner session.",
+      "groupId": "partner-preview",
+      "sources": [
+        {
+          "path": "lab/app/partner/login/page.tsx"
+        }
+      ]
+    },
+    {
       "id": "studio-partner-path",
       "path": "/partner/:path*",
       "publicPath": "/partner/:path*",
@@ -3758,8 +3817,8 @@
       "app": "studio",
       "handlerFile": "lab/app/partner/[[...path]]/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
-      "access": "Internal admin preview. Not operator login or tenant data.",
-      "boundary": "WorkspaceSurfacePage for /partner and /partner/:operatorSlug. An operator slug renders the kevin-bo preview.",
+      "access": "Partner staff with a partner session see their operators. Without that cookie, internal admins still get the fixture preview. Otherwise the browser is sent to /partner/login.",
+      "boundary": "WorkspaceSurfacePage tries the partner session first, then the internal fixture preview. /partner/login is a separate page and is not an operator slug.",
       "groupId": "partner-preview",
       "sources": [
         {

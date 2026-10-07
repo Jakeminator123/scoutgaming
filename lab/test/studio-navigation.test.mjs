@@ -135,9 +135,9 @@ test('level-two entrance separates demonstrations and preserves only valid old h
     }, browser);
     const tree = PartnerWorkspace({ user: 'fixture-admin', demonstrations }), links = [];
     visit(tree, node => { if (node.type === 'a') links.push(node.props.href); });
-    assert.deepEqual(links, ['/partner/demo-north', '/partner/demo-south', '/control', '/play', labUrl('/guide')]);
+    assert.deepEqual(links, ['/partner/login', '/partner/demo-north', '/partner/demo-south', '/control', '/play', labUrl('/guide')]);
     const html = renderToStaticMarkup(tree);
-    assert.match(html, /Kundval är ännu inte aktiverat/);
+    assert.match(html, /Partnerportal/);
     assert.match(html, /De är inte anslutna kunder/);
     assert.match(html, /nivå 1, 2 och 3 med samma konto/);
     assert.doesNotMatch(html, /Svenska Spel|<select|<form/);

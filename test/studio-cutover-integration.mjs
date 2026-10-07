@@ -145,9 +145,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
     await runtime.repository.initializeDocument('project', { value: createSeedProject(), revision: 'https-project-initial', actor: 'fixture-import' });
     await runtime.repository.initializeDocument('administration', { value: adminValue, revision: 'https-admin-initial', actor: 'fixture-import' });
-    await check('current product-v1 and Studio001/002/003/004 SQL are checksum-verified', async () => {
+    await check('current product-v1 and Studio 001/002/003/004/005 SQL are checksum-verified', async () => {
       await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
-      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003', '004']); assert.equal(plan.toApply.length, 0);
+      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003', '004', '005']); assert.equal(plan.toApply.length, 0);
     });
     await check('actual Render default schema factory accepts001004 saved Neon policy and denies missing import without seeding', async () => {
       // URL validation is inert; the supplied pool remains the owned localhost

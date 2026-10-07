@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -186,7 +186,7 @@ test('import contains only inserted cost rows and one scoped receipt, no schema/
   assert.doesNotMatch(code,/croupier_game\.|croupier_auth\.|fetch\(|process\.env|api\.runpod|cartesia\.ai/);
 });
 
-// Parent's isolated runner can invoke this after installing exact001/002/003/004.
+// Parent's isolated runner can invoke this after installing exact 001/002/003/004/005.
 // The target guard runs before any mutation; no environment or live URL lookup.
 export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
   const actual=(await pool.query("SELECT host(inet_server_addr()) AS address,current_user AS role,current_database() AS database,current_setting('listen_addresses') AS listeners")).rows[0];

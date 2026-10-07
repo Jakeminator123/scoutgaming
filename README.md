@@ -19,8 +19,11 @@ The public surfaces are not feature-complete:
 Staff tools are being gathered under `/control/clips`, `/control/administration`,
 `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`,
 `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, and
-`/control/operator-chat`. Kevin's imported backoffice is only the level-2 preview.
-Real operator login, tenant data, and the player lobby, profile, and history are not done.
+`/control/operator-chat`.
+
+The Partnerportal is level 2. Operator staff sign in at `/partner/login`.
+Internal staff still see the demo preview. Players and transactions are not
+connected. The player lobby, profile, and history are not done.
 
 `/studio` is the Next.js basePath of the lab service, not a fourth product and
 not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
