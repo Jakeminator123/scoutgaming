@@ -71,7 +71,7 @@ export function checkPlan(mode) {
   if (mode !== 'documentation') throw Error('Unknown verification mode');
   return [
     [process.execPath, 'tools/check-environment-variables.mjs'],
-    [process.execPath, '--test', 'test/check-environment-variables.mjs', 'test/github-workflow.mjs', 'test/precommit-checks.mjs'],
+    [process.execPath, '--test', 'test/check-environment-variables.mjs', 'test/github-workflow.mjs', 'test/precommit-checks.mjs', 'test/inbox.mjs'],
     ['git', 'diff', '--cached', '--check'],
   ];
 }

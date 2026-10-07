@@ -47,6 +47,8 @@ The GitLab inbox is paused. Jakob requested deletion of `.croupier-inbox/` on 20
 Do not restore identities, cursors, drafts, or checkpoints, and do not initialize the old inbox.
 No ordinary turn-start inbox check is required. Do not use that directory as a worktree, download, or media archive.
 
+The team inbox for Jakob, John, Kevin and Emil is GitHub Issues labelled `inbox` on this repository; see `inbox/README.md` and `tools/inbox.mjs` (`send`, `list`, `read`, `reply`, `done`). Decisions carry the `beslut` label. Agents may read and write there but do not close other people's issues.
+
 ## GitGuardian
 
 At task start and before commit/push, read remote `main` security status with `node tools/security-status.mjs` (or the connected GitHub fetch tool if the CLI is unavailable). The read is status-only: app, name, status, conclusion, numeric incident links, and repository-relative file and line. Do not print secrets, raw scanner output, or annotation messages. Do not install software or create access grants for this check. The complete API incident list can remain `not-read`. A green CI check is not proof of no incidents. Do not resolve, ignore, or mark coverage clear without reading it.

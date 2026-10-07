@@ -1,0 +1,6 @@
+{
+  "jakob": { "name": "Jakob", "github": "Jakeminator123", "role": "repo-ägare, nivå 1" },
+  "john": { "name": "John", "github": "Johncleochile", "role": "chef, design" },
+  "kevin": { "name": "Kevin", "github": null, "role": "nivå 2, partnerportal", "note": "GitHub-inbjudan via e-post väntar" },
+  "emil": { "name": "Emil", "github": "EmaCodeHero", "role": "utvecklare", "note": "GitHub-inbjudan väntar" }
+}
