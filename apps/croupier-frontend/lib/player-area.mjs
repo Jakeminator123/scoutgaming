@@ -1,12 +1,11 @@
 import {platformBackendHeaders, platformConfiguration} from './platform-routing.mjs';
 
-// readPlayerResults is only folded into chat status on the Lissabon stream lane.
-// Partner /api/v1/history is a key-authenticated operator API, not this session.
-export const PLAYER_RESULTS_PATH = null;
+// Signed-in player's own aggregate. Partner /api/v1/history stays a separate key API.
+export const PLAYER_RESULTS_PATH = '/api/history';
 
 const NOTICE = 'Spelkontot kan inte läsas just nu. Försök igen om en stund.';
 const LOGIN_SENTENCE = 'Logga in för att se egen profil och egen historik.';
-const HISTORY_EMPTY = 'Egen historik har ingen publik spelarrutt ännu.';
+const HISTORY_EMPTY = 'Inga avslutade rundor ännu. Historiken fylls på när du spelat klart en runda.';
 const LOGIN_BLACKJACK = '/player-login?returnTo=/play/blackjack';
 
 function unavailable() {
@@ -133,8 +132,8 @@ export async function playerAreaData(request, env = process.env, options = {}) {
   const playerData = await readBackend(config, request, '/api/player', {method: 'POST', body: {}, fetchImpl});
   const player = playerData === null ? null : playerData.unavailable ? playerData : playerView(playerData);
   let results = null;
-  if (PLAYER_RESULTS_PATH) {
-    const resultsData = await readBackend(config, request, PLAYER_RESULTS_PATH, {fetchImpl});
+  if (PLAYER_RESULTS_PATH && options.surface === 'historik') {
+    const resultsData = await readBackend(config, request, PLAYER_RESULTS_PATH, {method: 'POST', body: {}, fetchImpl});
     results = resultsData === null ? null : resultsData.unavailable ? resultsData : resultsView(resultsData);
   }
   return {session, player, results};
@@ -174,7 +173,11 @@ export function playerAreaModel(data, surface) {
     : surface === 'historik'
       ? {href: '/play/blackjack', label: 'Spela en runda'}
       : {href: signedIn || outage ? '/play/blackjack' : LOGIN_BLACKJACK, label: 'Spela Blackjack'};
-  const historyRows = !data?.results || data.results.unavailable ? [] : data.results.currencies || [];
+  const outcomeLabel = {win: 'vinst', loss: 'förlust', push: 'lika'};
+  const historyRows = !data?.results || data.results.unavailable ? [] : (data.results.currencies || []).filter(row => row.rounds > 0);
+  const last = historyRows.length && data.results.lastRound ? data.results.lastRound : null;
+  const historyLines = historyRows.map(row => `${row.currency}: ${row.rounds} rundor, netto ${formatAmount(row.net, row.currency) || row.net}`);
+  if (last) historyLines.push(`Senaste runda: ${outcomeLabel[last.outcome] || 'lika'}, netto ${formatAmount(last.net, last.currency) || last.net}`);
   return areaModel(surface, null, {
     intro: surface === 'profil'
       ? 'Uppgifterna kommer från spelkontot och kan inte ändras här.'
@@ -186,13 +189,13 @@ export function playerAreaModel(data, surface) {
     pills: surface === 'lobby'
       ? [{label: 'Roulette', status: 'planerat'}, {label: 'Baccarat', status: 'planerat'}]
       : surface === 'profil' && kind ? [{label: 'Kontotyp', status: kind}]
-        : surface === 'historik' && signedIn && !historyRows.length && !outage ? [{label: 'Historik', status: 'ej publicerad'}] : [],
+        : surface === 'historik' && signedIn && !historyRows.length && !outage ? [{label: 'Historik', status: 'inga rundor'}] : [],
     links: surface === 'lobby' && signedIn && !outage
       ? [{href: '/play/profil', label: 'Egen profil'}, {href: '/play/historik', label: 'Egen historik'}] : [],
     sentence: surface === 'lobby' && state === 'out' ? LOGIN_SENTENCE : null,
     primary,
     empty: surface === 'historik' && signedIn && !outage && !historyRows.length ? HISTORY_EMPTY : null,
-    historyLines: historyRows.map(row => `${row.currency}: ${row.rounds} rundor, netto ${formatAmount(row.net, row.currency) || row.net}`),
+    historyLines,
     clientLabel: surface === 'lobby' ? 'Spelklient' : null,
   });
 }
@@ -244,7 +247,7 @@ export function renderPlayerAreaHtml(model) {
 }
 
 export async function playerAreaPage(request, env = process.env, surface = 'lobby', options = {}) {
-  const data = await playerAreaData(request, env, options);
+  const data = await playerAreaData(request, env, {...options, surface});
   const model = playerAreaModel(data, surface);
   if (model.redirect) return {redirect: model.redirect, html: '', data, model};
   return {redirect: null, html: renderPlayerAreaHtml(model), data, model};

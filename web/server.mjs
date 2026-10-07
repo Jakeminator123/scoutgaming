@@ -8,6 +8,7 @@ import { createPostgresNativeTableCommand } from './postgres-native-table.mjs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { command as shoeCommand, newGame } from './shoe-game.mjs';
+import { createPlayerHistoryHandler } from './player-history.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
@@ -206,7 +207,14 @@ const apiCurrency = postgres ? async ({ id, currency }) => postgresWallet(id, as
   await logTx(id, 'fx', balance, currency, `converted from ${player.currency}`);
   return { balance, currency };
 }) : sqliteApiCurrency;
-const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency };
+const playerHistory = createPlayerHistoryHandler({
+  db, getPlayer, readPlayerResults,
+  readGame: async playerId => {
+    const saved = await db.prepare('SELECT state FROM blackjack_tables WHERE player_id=?').get(playerId);
+    return saved ? JSON.parse(saved.state) : newGame();
+  },
+});
+const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balance': apiBalance, '/api/currency': apiCurrency, '/api/history': ({ id }) => playerHistory(id) };
 
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
 const nativeOptions = { db, getPlayer, logTx,
@@ -1018,7 +1026,7 @@ const server = createServer(async (req, res) => {
         if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
       }
       catch (e) { out = publicFailure(e); }
-      res.writeHead(out.statusCode ?? (out.error ? 400 : 200), { 'Content-Type': 'application/json','Cache-Control':'no-store' });
+      res.writeHead(out.statusCode ?? (out.error ? 400 : 200), { 'Content-Type': 'application/json','Cache-Control': req.url === '/api/history' ? 'private, no-store' : 'no-store' });
       res.end(JSON.stringify(out));
     });
     return;

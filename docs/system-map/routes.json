@@ -493,6 +493,7 @@
         "POST /api/deposit",
         "POST /api/balance",
         "POST /api/currency",
+        "POST /api/history",
         "POST /chat"
       ],
       "serving": "Vercel middleware -> Render product server",
@@ -505,7 +506,8 @@
       ],
       "tests": [
         "test/table-http.mjs",
-        "test/product-chat-http.mjs"
+        "test/product-chat-http.mjs",
+        "test/player-history.mjs"
       ]
     },
     {
@@ -3898,7 +3900,7 @@
       "handlerFile": "apps/croupier-frontend/app/play/historik/page.tsx",
       "serving": "Vercel service web / Next, project scoutgaming.",
       "access": "Player with a session. Otherwise redirect to /player-login?returnTo=/play/historik.",
-      "boundary": "Server component. No public player results route is called. The page shows the player account and says round history is not published.",
+      "boundary": "Server component. POST /api/history returns the signed-in player's aggregated results through the platform backend proxy. A ledger with zero rounds stays on the empty state.",
       "groupId": "player-area",
       "sources": [
         {
