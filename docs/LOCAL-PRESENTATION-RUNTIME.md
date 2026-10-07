@@ -1,7 +1,8 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
-Arbetsrepo: `C:\Users\jakem\Projects\croupier`, branch `main`.
-Starta med [anslutningshelpern](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
+Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
+Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
+[anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
 Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
@@ -33,7 +34,7 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · intern personal | `/control` | Gemensam ingång. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
+| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Dealers & klipp `/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`, Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration`, Uppspelning `/control/activity`, Talgranskning `/control/probe`, Guide & hjälp `/control/guide`. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
 | 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Spelare, transaktioner och rapporter är inte anslutna. |
 | 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Historiksidan anropar `POST /api/history`, se raden under. Operatörsbunden katalog och redigerbar profil återstår. |
 | 3 · Spelarresultat | `/api/history` | Spelare. Egna aggregerade resultat. Samma session som `/api/player`. |
@@ -179,7 +180,7 @@ Ingen kontoflytt, plånboksjustering eller schemaändring ingår.
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.
 `presentation-runtime/selection.mjs` väljer exakt familj och tillåten variant
-med samma triggers, regler, slump och Director-kontrakt som Eventstudion.
+med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Labbets tidigare moduler återexporterar den gemensamma implementationen.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
@@ -215,7 +216,7 @@ produktion och isolerad native-QA. Äldre `lab/data` bevaras som lokal historik;
 Medieregistren återanvänds med bevarade fil-ID och bytes.
 
 Helpern ger Web och Lab samma isolerade projektkatalog. Spara ändringar i
-Eventstudion. Nästa deal/replik läser sparad policy; idlepolicyn läses vid
+Händelser (`/control/events`). Nästa deal/replik läser sparad policy; idlepolicyn läses vid
 sidstart, så ladda om spelfliken efter idleändringar. Osparade editorändringar
 är inte produktens policy. En ny helperkörning börjar med en ny testkatalog.
 

@@ -1,13 +1,15 @@
-# Backoffice/Lab — gemensam arbetsyta
+# Lab — utvecklarreferens
 
-**Användarguide: [Guide i Backoffice/Lab](https://www.scoutgaming.tech/studio/guide).**
-Det är den gemensamma dokumentationsytan. Denna README är utvecklarreferens.
+**Användarguide: [Guide & hjälp](https://www.scoutgaming.tech/control/guide).**
+`/studio/guide` omdirigerar dit. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
-**Moln:** [Backoffice/Lab](https://www.scoutgaming.tech/studio) är den
-kanoniska arbetsytan. Vercel visar spel, BO och Lab; Render kör spelmotorn,
-API och sparade projekt. **Lokalt:** samma Studio körs på det enda
-koordinerade serverparet. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
+**Moln:** personalytan är [/control](https://www.scoutgaming.tech/control).
+`/studio` är labbets basePath, inte en fjärde produkt. Vercel-projektet
+`scoutgaming` visar gränssnitten. Render-tjänsten `croupier-v2` äger spelmotorn
+och live-transporten. Sparade studio-projekt ligger i Neon; lokalt i `lab/data`.
+**Lokalt:** samma arbetsyta körs på det enda serverparet som `node lab/start.mjs`
+startar. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
@@ -29,12 +31,11 @@ osparade utkast och manuella förhandsvisningar påverkar endast Lab-provet.
 Fördjupning/äldre systemunderlag: [systemkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Praktiskt prov: [Astrids sociala svar i idle, högst sex sekunder tal](SOCIAL-CHAT.md).
 Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
-Buggar, förbättringar och öppna kontroller för labbet och övriga repot finns i
-[findings](../docs/CLOUD-MIGRATION.md); implementation och QA följs i Jira CAC.
+Öppen status finns i [docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
 
 ## Starta
 
-Astrids fokuserade studio finns på `/` lokalt och `/studio` i molnet.
+Lokalt öppnas Lab på `/`. I molnet är personalytan `/control`; `/studio` är labbets basePath.
 `/lissabon` inne i Lab är en omdirigering till samma startsida.
 Startkod, standardprojekt och lokala profilval finns nu här i Lab.
 
@@ -48,7 +49,7 @@ node lab/start.mjs --no-open
 Offlineparet finns på `http://localhost:4194` (spel) och
 `http://127.0.0.1:4192` (Lab). Bygger Next före start; `--skip-build` får endast
 användas med ett aktuellt bygge. Ctrl+C stoppar paret och tar bort dess testdata.
-Ett koordinerat sessionslås hindrar ett andra produkt/labbpar.
+Sessionslåset `acquireLocalSession` i `open-claw/lab/deploy/local-session.mjs` hindrar ett andra produkt/labbpar.
 Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 
 `node lab/start.mjs --no-open` startar den befintliga anslutna profilen på
@@ -62,8 +63,10 @@ Standardprojektet skapas från
 behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
 
-Node 22.16+ och installerade beroenden krävs för lokal start. För molndrift
-används den befintliga [koordinerade molnstartaren](../ops/cloud/README.md).
+Node 22.16+ och installerade beroenden krävs för lokal start. Molndrift är
+Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
+[docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
+[ops/cloud/README.md](../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
 
 ### Ett register per ansvar
 
@@ -84,7 +87,7 @@ En ny hash är inte ett visuellt godkännande.
 
 - **Guide (`/guide`):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
-- **Nodträdet (`/tree`):** välj dealer och presentationssätt: idle/bakgrund,
+- **Händelser → klipp (`/control/tree`):** välj dealer och presentationssätt: idle/bakgrund,
   engångshandling, exakt tal eller tur/resultat. De fyra grupperna är en vy
   över befintliga sex källtyper och 16 eventgrupper. Vald nod visar exempeldata,
   förväntade källfält och saknade uppgifter, separat från testkontext och
@@ -92,7 +95,7 @@ En ny hash är inte ett visuellt godkännande.
   en dealers standard och alternativ. Klicka vidare till editorn utan att
   tappa osparat arbete. Ingen seed eller något tekniskt ID migreras.
 
-- **Eventstudion:** välj croupier/event, redigera namn, linje, varianter och
+- **Händelser (`/control/events`):** välj croupier/event, redigera namn, linje, varianter och
   triggers. **Övrig spelreplik → Tal-klipp att prova** väljer en exakt lokal
   replik för exemplet (14 Astrid-klipp, utöver de tre egna talnoderna).
   Tur/resultat visar speldata; resultattalet har ett separat speak-event.
@@ -106,45 +109,47 @@ En ny hash är inte ett visuellt godkännande.
   när du trycker. **Avancerade jämförelsetester** innehåller standard, regler,
   slump och skuggläge. Testsituationen påverkar variantvalet, inte en extra
   animation ovanpå den kopplade videon. I Astrids vänteläge finns separat
-  riktig OpenClaw-spelarchatt med fritt svar och ElevenLabs-ljud förvalt.
+  riktig OpenClaw-spelarchatt med fritt svar. Ljudet kommer från Cartesia (Victoria), inte ElevenLabs.
   En enda Inställningar-länk samlar social policy och valfria standardfraser.
   Socialt svar och handlingspreview har en gemensam spärr: ett textsvar och
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
   separat; ingen hand- eller kroppsrörelse läggs ovanpå talet. Riktig läppsynk
   återstår.
-- **Videobanken:** lägg in egna MP4/WebM-filer med dealer, event, typ,
+- **Klippbibliotek (`/control/videos`):** lägg in egna MP4/WebM-filer med dealer, event, typ,
   standard/alternativ och konkret situation. Filtrera banken och kontrollera
   vilka standardlinjer som har video. Inspektera original och bind vald variant till ett exakt
-  `videoGenerationId`. Samma koppling kan redigeras direkt i Eventstudion.
+  `videoGenerationId`. Samma koppling kan redigeras direkt i Händelser.
   Detta är en labbkoppling, inte ett runtime-godkännande.
-- **Händelselogg (`/activity`):** flikens indata, beslut och uppspelarens
+- **Uppspelning (`/control/activity`):** flikens indata, beslut och uppspelarens
   start/slut/fel med tid, källa, beslutsfattare och orsak. Fäll ut faktisk JSON
-  och filtrera stegen. Loggen håller högst 150 poster i minnet och töms vid
-  omladdning. En kompakt logg följer de andra vyerna. Här finns även valfri,
+  och filtrera stegen. Loggen håller högst 150 poster i `sessionStorage`, följer
+  med vid sidbyte och töms när fliken stängs. Den korta loggen på andra sidor är
+  borta. Här finns även valfri,
   läsande observation av Partner-strömmen. Visa originalspelets flik lokalt eller
   spela samma instruktioner i labbet genom ett uttryckligt val. Sekvenslistan
   öppnar riktiga eventdata i editorn. På samma yta kan du verifiera åtkomst,
   öppna originalspelet via Partner-launch och importera/exportera observationer.
-- **Chatt & OpenClaw:** två tydliga chattvägar, anslutningsstatus och operatörschatt om det senast
-  sparade projektet. Länk till den befintliga, separata native-dashboarden.
-  Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
-  Här finns också **Prova rösten**: tre standardfraser, egen text eller en
-  kopia av det senaste operatörssvaret. Explicit knapptryck genererar Sarah-röst
-  via ElevenLabs (kan kosta krediter); återanvändning av samma prov kostar inget
-  nytt modellanrop. Detta är separat ljud, inte spelarchatt eller videosynk.
+- **OpenClaw (`/control/openclaw`):** flikarna Agentmodeller och Chatt
+  (`?tab=chat`). `/control/operator-chat` omdirigerar till chattfliken.
+  Chatten läser det senast sparade projektet. Länk till den befintliga, separata
+  native-dashboarden. Chatt kräver en konfigurerad anslutning; inga modellsvar fejkas.
+  På chattfliken finns också **Prova rösten**: tre standardfraser, egen text eller en
+  kopia av det senaste operatörssvaret. Explicit knapptryck genererar Victoria-röst
+  via Cartesia (kan kosta krediter); återanvändning av samma prov kostar inget
+  nytt modellanrop. `node tools/elevenlabs-lab-preview.mjs` är ett separat prov,
+  inte panelen. Detta är separat ljud, inte spelarchatt eller videosynk.
 
 ## Var finns chatten och vad täcker 2D?
 
-**Spelarchatt med Astrid** finns som genväg ovanför arbetsytan, även från
-Videobanken. Den öppnar Astrids vänteläge och rullar till chattpanelen direkt under bordet.
-Panelen sitter ihop med förhandsvisningen, före eventtestets inställningar,
-och syns även för andra noder med en tydlig knapp till Astrids vänteläge.
-**Fråga OpenClaw om labbet** öppnar operatörschatten för det sparade projektet.
-Båda finns samlade under **Chatt & OpenClaw**; ingen fråga skickas av navigationen.
+**Spelarchatt med Astrid** sitter i Händelser (`/control/events`), i förhandsvisningen.
+Chattgenvägarna ovanför de andra sidorna är borta.
+**Fråga OpenClaw om labbet** ligger på fliken Chatt (`/control/openclaw?tab=chat`).
+Ingen fråga skickas av navigationen.
 
 2D-biblioteket innehåller 64 unika rörelsefiler, fyra per eventgrupp, plus
-en separat social rörelse. Seedens 256 variantkopplingar delar dessa filer
-över fyra dealers. De är schematiska rörelseprov, inte fullständig spelkoreografi:
+en separat social rörelse. Startprojektet har 64 linjer och en variant per linje.
+Tre alternativ per linje och 256 variantposter finns inte i seedet.
+De är schematiska rörelseprov, inte fullständig spelkoreografi:
 alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
 
 API:er, nyckelroller och miljöfiler finns i
@@ -160,7 +165,7 @@ lab/
   schemas/social.schema.json   format för den separata sociala policyn
   animations/                 64 eventrörelser + separat social.ledsen i JSON
   lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
-  lib/presentation-profile.mjs visningsgrupper och källfält för Nodträdet
+  lib/presentation-profile.mjs visningsgrupper och källfält för Händelser → klipp
   lib/activity-log.mjs         tillfällig händelselogg och förloppskoppling
   lib/partner-observer.mjs     läsande, signerad Partner-SSE på lokal server
   lib/social-playback.mjs      en talägare, sexsekundersgräns och stopp
@@ -193,11 +198,12 @@ Partner-presentationstyperna beskriver bara en del av systemets händelser.
 `box` är plats 0–6, inte en identifierad spelare. Variant-ID är ett beslut
 efter indata; längd och landningstid kommer från materialets metadata.
 
-En linje hör till en croupier och ett event. Starten har 64 linjer med en
-standard och tre labbalternativ vardera (256 dealer-specifika variantposter,
-64 gemensamma rörelser). Högst fyra alternativ plus standard kan redigeras.
+En linje hör till en croupier och ett event. Startprojektet har 64 linjer och
+en variant per linje (64 poster, fyra dealers). Rörelseindexet har 64 klipp.
+Tre alternativ per linje och 256 variantposter finns inte i seedet.
+Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
-Roulette är bara en synlig framtida plats, inte implementerat.
+Spelväljaren med Roulette är borta från `/control`. Roulette är inte ett spel här.
 
 Partner-API:ts **sex presentationstyper** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
 De **16 noderna** är labbets begripliga mappningar, inte 16 nya motor-events.
@@ -207,7 +213,7 @@ kan läggas till och tas bort; använda triggers måste först kopplas loss.
 
 Triggerkategorier: `deterministic` (publicerat spel/avgjord historik), `social`
 (simulerad chatt/preferens), `temperament` (croupierns framtoning, inte en
-diagnos av spelaren). I nodträdet visas två huvudgrupper: **spelstyrda** och
+diagnos av spelaren). I Händelser → klipp visas två huvudgrupper: **spelstyrda** och
 **sociala/uttryck** (social + temperament). Alla valda villkor måste stämma. Inga villkor betyder
 inga extra villkor; variantens separata val för regler, modell och slump avgör
 vilka urvalslägen den får delta i. Nya alternativ börjar manuellt.
@@ -345,11 +351,10 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
    JSON-underlaget visas även för kopiering när webbläsaren inte hämtar filen.
 
 Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
-Gränsen är 300 meddelanden eller 4 MiB. Avancerat Lab stoppar vid gränsen;
-fokuserad Studio fortsätter med ett rullande fönster och tydlig gapmarkör som
-anger bortfall och tidigare kanal-/sekvensgräns. Exporten är då ingen full
-historik. Det bevaras mellan labbvyernas navigation men försvinner vid omladdning. Töm visningen
-tömmer bara de 150 loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
+Gränsen är 300 meddelanden eller 4 MiB, och Uppspelning stannar där.
+Protokollet ligger i sidans minne och försvinner vid sidbyte eller omladdning.
+De högst 150 loggraderna ligger i `sessionStorage` och följer med vid sidbyte
+tills fliken stängs. Töm visningen tömmer loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
 Videokartan, verifierade scopes och avbrott följer med exporten.
 
 Vid fullständigt protokoll: exportera och välj **Ny observation** under
@@ -399,9 +404,9 @@ npm --prefix lab run build
 node tools/start-local-comparison.mjs
 ```
 
-Öppna `http://127.0.0.1:4192/activity` och tryck **Anslut**. Spelet körs på
-`http://localhost:4194`, originalet på `/` och Kevins alternativ på `/v2/`.
-BO ligger på samma game-host under `/bo/`. Olika hostnamn håller testets
+Öppna `http://127.0.0.1:4192/activity` (Uppspelning) och tryck **Anslut**. Spelet körs på
+`http://localhost:4194` med originalet på `/`. `/v2/` finns kvar. `/bo`, `/bo/` och `/bo/index.html`
+svarar 308 till `/control/administration`. Olika hostnamn håller testets
 spelcookies skilda från labbet. Tillfälliga databaser och en
 syntetisk demospelare skapas; `.env`-filer och riktiga konton/saldon används
 inte. Modell-, mail- och andra externa nätanrop är avstängda. Detta prov
@@ -462,7 +467,7 @@ koppla och förhandsvisa redan registrerade klipp startar inga modell-, tal-
 eller GPU-jobb. `want` är intake, inte visuell acceptans. Dealer, situation,
 riktning och eventuell exakt talrad måste matcha; text/ljud, hash och kalibrering
 granskas per take före aktivering. Engångsprov spelar filmen till dess eget slut,
-inte animationens testlängd, och loopar inte. Nodträdet ändrar inte motorns kontrakt.
+inte animationens testlängd, och loopar inte. Händelser → klipp ändrar inte motorns kontrakt.
 
 Ansluten chatt går via originalets autentiserade produktchatt och serverbundna
 konversationsminne. Spelfliken äger uppspelningen och Lab följer dess kvitton;

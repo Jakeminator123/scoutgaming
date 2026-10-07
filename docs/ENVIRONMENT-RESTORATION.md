@@ -1,6 +1,6 @@
 # Återställning och skydd av data
 
-Arbetskopian är `C:\Users\jakem\Projects\croupier` på `main`.
+Arbetskopian är den checkout vars origin är `Jakeminator123/scoutgaming` på `main`.
 GitHub-källan heter nu `Jakeminator123/scoutgaming`, samma repo-ID `1380630440`.
 Namnbytet är godkänt av Jakob och gammal `github-work` vidarebefordras till den.
 Lokal origin och push-/säkerhetspolicy använder den nya adressen.
@@ -47,7 +47,7 @@ Ignorerade `.env`-filer och leverantörernas hemlighetslager har en annan roll;
 
 ## Lokal miljö
 
-Använd koordinerad startare enligt [labbguiden](../lab/docs/README.md).
+Starta med `node lab/start.mjs` enligt [labbguiden](../lab/docs/README.md). Sessionsvakten i `open-claw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
 Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex används
 `--no-open`. Återanvänd spel- och labbflik, bevara utkast och spel.
 Stoppade servrar förblir stoppade tills Jakob ber om start.
@@ -133,7 +133,7 @@ utesluter privat `data/` från appens typkontroll. Labbets övriga `.next`
 innehåller en runtime som det befintliga integrationstestet faktiskt använder;
 behåll den eller kör `npm --prefix lab run build` före full regression.
 Använd exakta sökvägar; rensa inte `lab/data`, privata QA-kvitton, medier
-eller journaler. Interaktiv start använder alltid den koordinerade startaren.
+eller journaler. Interaktiv start är `node lab/start.mjs`.
 
 ## Media och regression
 

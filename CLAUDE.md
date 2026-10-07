@@ -9,9 +9,9 @@ or worktree unless Jakob explicitly requests it.
 Public site: https://www.scoutgaming.tech. Apex `scoutgaming.tech` is a 308 to www.
 Vercel project name: `scoutgaming`. Game engine: Render service `croupier-v2`.
 
-- Nivå 1, internal staff: `/control`
-- Nivå 2, operator: `/partner` and `/partner/{operatorSlug}`
-- Nivå 3, player: `/play` and `/play/blackjack`
+- Nivå 1, internal staff: `/control` (Översikt, Dealers & klipp, Händelser → klipp, Klippbibliotek, Bakgrundszoner, Händelser, OpenClaw, Administration, Uppspelning, Talgranskning, Guide & hjälp)
+- Nivå 2, operator: `/partner`, `/partner/login` and `/partner/{operatorSlug}` (scoped snapshot exists; onboarding, journal, players and packages to the game are not done)
+- Nivå 3, player: `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` (operator context and an editable profile remain)
 - `/studio` is the lab service basePath, not a fourth product and not the UI name.
 - v1 checkpoint: tag `Jakobs-v1`, commit `600093e`.
 - Current guide: `lab/docs/README.md`.

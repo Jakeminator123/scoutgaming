@@ -16,6 +16,26 @@ Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
 
+## Teststädning och dokumentation, 7 oktober 2026 natt
+
+Teststädning: sex gröna testfiler utan körare och tre frontendtester (lobby/profil/historik,
+landningssida, introenhet) körs nu av `.githooks/pre-commit-full`. Testberoende DOM är borta
+(dold text "Nivå 1 · ScoutGamingGroup", konstanterna i `lab/lib/studio-navigation.mjs`); skyddet
+för gamla menyadresser är en fast lista i testet. Pensionerade namn i tester är bytta;
+`tools/backup-lissabon-state.mjs` heter `tools/backup-lab-state.mjs` med oförändrat backupformat.
+GitLab-inboxens verktyg och test är borta; `identity` och låset ligger i
+`tools/croupier-chef.mjs`. Död CSS för gamla Studions sidomeny och chattgenvägar är borttagen.
+
+Dokumentation: `AGENTS.md`, `CLAUDE.md`, `README.md`, `lab/README.md`, labbguiden,
+`lab/docs/guide.json`, driftdokumenten och `.cursor/rules` följer koden (avvikelserna D1–D32 i
+`random/docs-avvikelser-2026-10-07.md`): partnerinloggning och spelarsidorna finns, dagens
+`/control`-namn, start med `node lab/start.mjs`, repot `scoutgaming`. T2 och T4 är öppna.
+
+Testat: labbtester, open-claw-tester, typecheck, build, systemkartan och full regression
+lokalt utom `test/bugshot-report.mjs` (kräver `jq`). Kvar: `test/backoffice-lab-browser.mjs`
+är opt-in och inte körd; tre gränssnittstexter ligger efter koden (lösa trådar L20–L22), och det
+rullande observationsfönstret monteras inte längre på någon sida (L23).
+
 ## /control-ombyggnad, 7 oktober 2026 kväll
 
 Underlag: `random/control-inventering-2026-10-07.md` (varje knapp och flik, C1–C265),
@@ -25,7 +45,7 @@ beslutsmatrisens rader 21–30.
 Ändrat: delat tillstånd för Studio-sidorna ligger i `useStudioSession`
 (`lab/components/studio-session.tsx`) med vakt mot osparade ändringar. Händelser →
 klipp, Uppspelning och Guide & hjälp är egna sidor på sidmallen; val av dealer och
-event följer med i adressen (`?dealer=&event=`), loggen i `sessionStorage`.
+event följer med i adressen (`?dealer=&event=`), loggen i `sessionStorage` (högst 150 poster).
 Dealers & klipp har tre flikar; Probe, Bakgrund och Uppspelning är länkar. Nio döda
 Kevin-adresser ger 404. Sökattrappen och dubbla sparpiller är borta. Rotens startfiler
 är borttagna; start sker med `node lab/start.mjs`.
@@ -42,9 +62,7 @@ data laddas med `lab/app/control-studio-data.tsx`.
 Testat: 942 labbtester (940 gröna, 2 skippade webbläsartester), typecheck, build,
 systemkartan (gul, 0 röda), full regression lokalt utom `test/bugshot-report.mjs`
 som kräver `jq` (finns i CI). Omskrivna tester gäller avsiktligt borttagen UI och listas
-i commit-texten. Kvar: guidens texter (`lab/docs/guide.json`) använder gamla namn,
-situationen från en videomapp följer inte med till Händelser, gammal CSS för den inre
-sidomenyn ligger kvar i `lab/app/globals.css`.
+i commit-texten. Kvar: situationen från en videomapp följer inte med till Händelser.
 
 ## CI, 7 oktober 2026 kväll
 
@@ -55,7 +73,31 @@ hängde i 30 minuter. Tredje försöket blev grönt. De tre jobben i
 (som byts till Ubuntu 26 från 19 oktober). Installationen hoppas över om verktyget finns,
 har en egen gräns på 8 minuter och tre försök. Den isolerade SQL-acceptansen använder
 runnerns PostgreSQL 16 om den finns och laddar annars ner som förut.
-`astrid-gpu-build.yml` och `astrid-gpu-publish.yml` kör fortfarande `ubuntu-latest`.
+`.github/workflows/astrid-gpu-build.yml` (rad 15) och `astrid-gpu-publish.yml` (rad 21)
+kör fortfarande `ubuntu-latest` och ska låsas till `ubuntu-24.04` före 19 oktober.
+`croupier.yml` är redan låst.
+
+## Kopplingar som saknas
+
+Ytan kan finnas, men kopplingen saknas. Listan följer `random/losa-tradar-2026-10-07.md`.
+
+- **L1** Lane-villkor för idle och kortutdelning skrivs inte in i operatörspaketet, och en ny porträttlane får ingen egen klippuppsättning. `lab/components/studio-administration.tsx`, `web/public/game-lanes.mjs`.
+- **L2** Ingen sida anropar `publishPackage`, och spelmotorn läser inte `operator_packages`. `web/storage/operator-store.mjs`.
+- **L3** Bolagets filtfärg, marker och kort stannar i minnet och publiceras inte till spelet. `lab/components/kevin-bo`.
+- **L4** Probe i Talgranskning är ett textprov utan ljud eller video. Menyn och administrationens talflik är olika saker. `lab/components/probe-editor.tsx`.
+- **L5** Team-vyns inbjudan, rollbyte och suspend skriver inte till servern. `lab/components/kevin-bo/views/team.jsx`.
+- **L6** Klienten kastar 501 på POST `speech-qa` innan något anrop. `lab/components/studio-administration.tsx`.
+- **L7** `POST /api/history` och `/bo`-ompekningarna i `web/server.mjs` är inte deployade på Render.
+- **L9** Nivå 2 saknar spärr mot att ta bort sista operatörsadmin. `web/partner-access-policy.mjs`.
+- **L10** Spelare, transaktioner och rapporter hämtas inte från spelmotorn. `lab/lib/partner-data.mjs`.
+- **L11** Ingen rutt anropar `createOperator`, `upsertRole` eller `upsertMembership`. `web/storage/operator-store.mjs`.
+- **L12** Operatörsskrivningar får ingen rad i `audit_events`. `ops/neon-studio/001-studio-metadata.sql`.
+- **L13** Lobbyn saknar operatörskontext och profilen kan inte redigeras. `apps/croupier-frontend/app/play`.
+- **L14** Rollen `partner` kan inte bjudas in eller återställa lösenord. `web/account-role.mjs`.
+- **L15** En intern admin-cookie öppnar inte riktiga bolag, och det finns inget bolagsval. `lab/lib/partner-session.mjs`.
+- **L16** Bakgrundszoner styr inte spelets bakgrund. `lab/components/lab-studio.tsx`.
+- **L19** Varianter för Vera, Amira och Mei sparas men spelets urval använder dem inte. `web/presentation-api.mjs`.
+- **L23** Det rullande observationsfönstret monteras inte; Uppspelning stannar vid 300 meddelanden eller 4 MiB. `lab/components/activity-log.tsx`.
 
 ## Design, 7 oktober 2026
 
@@ -95,7 +137,7 @@ Denna dokumentpassning samlar personalens gränssnitt under `/control`:
 Kevins importerade backoffice (`lab/components/kevin-bo`) ligger kvar på
 `/partner` och `/partner/{operatorSlug}`. Det är inte kontrollpanelen.
 `/studio` är labb-servicens basePath, inte en fjärde produkt och inte namnet i gränssnittet.
-Spelarytan är `/play` och `/play/blackjack`.
+Spelarytan är `/play`, `/play/profil`, `/play/historik` och `/play/blackjack`.
 `174f893` är pushad till `main`. Gamla `/bo`, `/bo/login.html` och `/bo/set-password.html` svarar 308 till `/control/administration`, `/control/login` och `/control/set-password`. `/api/bo` är kvar som inloggningsbrygga.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.

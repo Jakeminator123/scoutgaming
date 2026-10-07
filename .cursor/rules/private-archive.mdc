@@ -6,5 +6,6 @@ alwaysApply: true
 Follow the active-documentation and private-archive boundary in root AGENTS.md.
 Do not read or index `random-stuff-jakob/jakob-docs/arkiv/`, including restored
 copies, Git-history versions or external backups, unless Jakob explicitly asks
-for a specific historical document. Use the current guide, system map, sprint
-and findings instead. Old handoff references do not authorize archive retrieval.
+for a specific historical document. Use `lab/docs/README.md`,
+`docs/LOCAL-PRESENTATION-RUNTIME.md` and `docs/CLOUD-MIGRATION.md`.
+Do not read the archive. Old handoff references do not authorize archive retrieval.

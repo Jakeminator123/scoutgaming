@@ -14,16 +14,22 @@ The public surfaces are not feature-complete:
 | --- | --- | --- |
 | 1 | Internal staff | [/control](https://www.scoutgaming.tech/control) |
 | 2 | Operator | [/partner](https://www.scoutgaming.tech/partner) and `/partner/{operatorSlug}` |
-| 3 | Player | [/play](https://www.scoutgaming.tech/play) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
+| 3 | Player | [/play](https://www.scoutgaming.tech/play), [/play/profil](https://www.scoutgaming.tech/play/profil), [/play/historik](https://www.scoutgaming.tech/play/historik) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
 
-Staff tools are being gathered under `/control/clips`, `/control/administration`,
-`/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`,
-`/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, and
-`/control/operator-chat`.
+Staff pages share one template: Översikt `/control`, Dealers & klipp
+`/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek
+`/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`,
+Agentmodeller `/control/openclaw`, Operatörschatt `/control/openclaw?tab=chat`,
+Administration `/control/administration`, Uppspelning `/control/activity`,
+Talgranskning `/control/probe` and Guide & hjälp `/control/guide`.
+`/control/operator-chat` redirects to the chat tab. `/control/backgrounds`
+redirects to `/control/zones`.
 
-The Partnerportal is level 2. Operator staff sign in at `/partner/login`.
-Internal staff still see the demo preview. Players and transactions are not
-connected. The player lobby, profile, and history are not done.
+The Partnerportal is level 2. Operator staff sign in at `/partner/login` and see
+a scoped snapshot. Internal staff without `partner_session` still see the demo
+preview. Players and transactions are not connected (L10). The lobby,
+`/play/profil` and `/play/historik` exist. Operator context and an editable
+profile remain (L13).
 
 `/studio` is the Next.js basePath of the lab service, not a fourth product and
 not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
@@ -33,8 +39,9 @@ See [start and architecture](lab/README.md) and the [user guide](lab/docs/README
 The single `scoutgaming` Vercel project builds the web and lab apps as two
 Services from this repository's main branch, both in Frankfurt. Render owns the
 authoritative game engine and live transport. Lab admin uses native Neon policy
-and private Blob. Isolated QA remains separate. Full AI/GPU acceptance,
-actual partner login, and the player lobby remain open in the migration checklist.
+and private Blob. Isolated QA remains separate. Full AI/GPU acceptance remains open in the migration checklist. Partner sign-in
+and the player lobby exist. T2 and T4 are not done: onboarding, the audit journal,
+game data and operator context remain (L2, L10, L13).
 Existing backoffice tools keep their original permissions. Observation follows the game
 player's receipts; a separate lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
@@ -107,9 +114,10 @@ explicitly exposes them.
 
 ## Run locally
 
-Use the coordinated `node lab/start.mjs --offline --no-open` launcher shown
+Use `node lab/start.mjs --offline --no-open` shown
 above for an isolated, temporary preview. Use `node lab/start.mjs --no-open` for the saved
-connected profile. Both go through the shared session guard. Stop the current
+connected profile. Both go through `acquireLocalSession` in
+`open-claw/lab/deploy/local-session.mjs`. Stop the current
 product/Lab pair before changing environments; never bypass the guard with
 a direct server command or another port. A stopped environment stays stopped
 until a new start is requested. Follow [the user guide](lab/docs/README.md)

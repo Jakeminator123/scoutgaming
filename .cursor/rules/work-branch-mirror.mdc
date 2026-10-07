@@ -5,8 +5,9 @@ alwaysApply: true
 
 # Croupier main delivery
 
-- Work only on `main` in private `Jakeminator123/github-work`, as requested by
-  Jakob on 2026-10-02. Do not create another branch or worktree unless requested.
+- Work only on `main` in `Jakeminator123/scoutgaming` (repository ID `1380630440`),
+  as requested by Jakob on 2026-10-02. `github-work` redirects there. Do not create
+  another branch or worktree unless requested.
 - GitLab integration is paused: no inbox fetch/send, wiki publication or mirror
   push. Historical GitLab delivery instructions do not apply.
 - Before a shared push, run `node tools/croupier-chef.mjs status` and follow
