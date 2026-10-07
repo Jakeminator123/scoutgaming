@@ -1,8 +1,9 @@
 ---
 name: ping-croupier
-description: Explain the paused legacy GitLab inbox when explicitly requested; use agent-talk for local coordination.
+description: Reach a teammate or their agent in another branch or machine through the GitHub Issues team inbox; use agent-talk for agents in the same checkout.
 ---
 
-The GitLab inbox is paused. Do not restore, poll, or initialize it.
-Local coordination is agent-talk: `agent-talk/README.md` and `node tools/agent-talk.mjs`.
-Repository policy is in `AGENTS.md`.
+Read and follow `.agents/skills/ping-croupier/SKILL.md`.
+Short form: `node tools/inbox.mjs ping --to <namn> --message "<fråga>"`,
+`node tools/inbox.mjs list --to me`. Same checkout: `node tools/agent-talk.mjs ping`.
+The GitLab inbox stays retired.

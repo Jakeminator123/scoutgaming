@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PEOPLE, REPO, composeBody, labelsFor, parseArgs, recipients } from '../tools/inbox.mjs';
+import { PEOPLE, REPO, composeBody, labelsFor, ownerOfBranch, parseArgs, recipients } from '../tools/inbox.mjs';
+
+test('every person owns exactly one branch and "me" resolves through the current branch', () => {
+  const branches = Object.values(PEOPLE).map(person => person.branch);
+  assert.deepEqual([...branches].sort(), ['emil', 'john', 'kevin', 'main']);
+  assert.equal(ownerOfBranch('main'), 'jakob');
+  assert.equal(ownerOfBranch('kevin'), 'kevin');
+  assert.throws(() => ownerOfBranch('feature-x'), /Ingen i inbox\/people.json äger grenen "feature-x"/);
+  assert.deepEqual(recipients('me', 'john'), ['john']);
+  assert.deepEqual(recipients('me,john', 'john'), ['john']);
+  assert.throws(() => recipients('me', 'preview'), /äger grenen "preview"/);
+});
 
 test('inbox targets the policy repository and knows the four people', () => {
   assert.equal(REPO, 'Jakeminator123/scoutgaming');
@@ -18,7 +29,8 @@ test('arguments parse flags, values and positionals; a flag without a value fail
 });
 
 test('recipients are validated, lower-cased and de-duplicated', () => {
-  assert.deepEqual(recipients('John, kevin,john'), ['john', 'kevin']);
+  assert.deepEqual(recipients('John, kevin,john', 'main'), ['john', 'kevin']);
+  assert.deepEqual(parseArgs(['ping', '--to', 'kevin', '--message', 'Hej?']), { command: 'ping', options: { positional: [], to: 'kevin', message: 'Hej?' } });
   assert.throws(() => recipients(''), /Ange mottagare/);
   assert.throws(() => recipients('astrid'), /Okänd mottagare "astrid"/);
 });

@@ -71,3 +71,5 @@ Verifiering av redaktion och ofullständig täckning:
 > `claim` innan du ändrar dem. Kontrollera tavlan mellan arbetssteg och före
 > commit/push. Använd `ping`/`ack` vid överlapp och `done` när du är klar.
 > Behåll andras ändringar; en gammal status eller ping är inget godkännande.
+> Agenter i andra grenar eller på andra datorer nås inte härifrån; använd
+> teaminboxen `node tools/inbox.mjs ping --to <namn> --message "…"` (`inbox/README.md`).
