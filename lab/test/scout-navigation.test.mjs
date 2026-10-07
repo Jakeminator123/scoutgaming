@@ -115,7 +115,5 @@ test('partner documents render no staff shell and administration highlights only
   assert.match(withStatus, /status-marker/);
   const source = readFileSync(new URL('../components/workspace-navigation.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /onClick|onNavigate|next\/link|history\.(?:pushState|replaceState)/);
-  assert.match(html, /type="search"/);
-  assert.match(html, /Sök dealer, klipp, bord, konto…/);
-  assert.match(html, /Inte ansluten ännu/);
+  assert.doesNotMatch(html, /type="search"|Sök dealer, klipp, bord, konto…|Inte ansluten ännu/);
 });

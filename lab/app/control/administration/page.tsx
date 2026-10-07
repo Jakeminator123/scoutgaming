@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Administration · ScoutGamingGroup' };
+export const metadata = { title: 'Administration · Croupier Studio' };
 
 export default async function Page() {
   const h = await headers();

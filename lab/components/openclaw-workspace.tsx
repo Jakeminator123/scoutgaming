@@ -176,7 +176,6 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
       eyebrow="// OPENCLAW"
       title="Agentmodeller"
       intro="Välj modell för en agent och spara. Du använder din Studio-inloggning."
-      status={<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>}
     />
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">

@@ -61,11 +61,6 @@ export function WorkspaceNavigation({ children }: { children?: ReactNode } = {})
     <div className={styles.column}>
       <header className={styles.topbar}>
         <p className={styles.crumb}>{level === 'player' ? 'Nivå 3' : 'Nivå 1'} <span className={styles.sep} aria-hidden="true">/</span> <strong>{section}</strong></p>
-        <label className={styles.search}>
-          <span className="sr-only">Sök</span>
-          <input type="search" placeholder="Sök dealer, klipp, bord, konto…" aria-describedby="sg-search-note" autoComplete="off" />
-          <span id="sg-search-note" className={styles.pending}>Inte ansluten ännu</span>
-        </label>
         <StatusSlot />
         <div className={styles.levels} role="group" aria-label="Byt nivå">
           {SCOUT_LEVELS.map(item => LevelLink({ item, current: item.id === level }))}
