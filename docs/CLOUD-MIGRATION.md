@@ -574,7 +574,7 @@ Ingen generell medieradering eller ny mänsklig synkapproval följer av dedup.
 
 | Tjänst | ID / disk | Ansvar |
 | --- | --- | --- |
-| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar |
+| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 7 oktobers `web/server.mjs` (`/bo`-redirects till `/control`) väntar där; Vercel har redan samma regler. |
 | croupier-vercel-preview-qa | srv-datj7l893c1s73ar3u50; /var/data, 1 GB | Separat QA/SDK/data/journal/cache |
 | croupier-lab-director | /data/catalog, 1 GB | Katalog/historik/CompanionDB |
 | croupier-lab-openclaw | /data/openclaw, 1 GB | Konfiguration/agentfiler/sessioner/sökDB |

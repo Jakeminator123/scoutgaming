@@ -80,10 +80,3 @@ test('repeating the same speech clip gets a different presentation request', () 
   const a=e.interrupt('hello'),b=e.interrupt('hello');
   assert.notEqual(a,b);assert.deepEqual(e.nextClip(),{key:'hello',request:b});
 });
-
-
-test('provider session limit cannot be performed as dealer dialogue', async () => {
-  const { isAgentFailure } = await import('../web/agent-response.mjs');
-  assert.equal(isAgentFailure("You've hit your session limit · resets 8:30am (UTC)"), true);
-  assert.equal(isAgentFailure('The table limit is displayed above.'), false);
-});

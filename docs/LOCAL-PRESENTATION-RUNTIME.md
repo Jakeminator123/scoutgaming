@@ -37,6 +37,13 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 | 2 · Partnerportal | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Kevins importerade backoffice är bara denna förhandsvisning, inte `/control`. Intern admin kan öppna en märkt demonstration. Riktig operatörsinloggning, tenantdata och publicering återstår. |
 | 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
 
+### Lagring
+
+| Projekt | Region | Innehåll |
+| --- | --- | --- |
+| `wandering-hill-60561912` | eu-central-1, Frankfurt | Produktion: databasen `croupier_game` med schemana `croupier_game`, `croupier_auth` och `croupier_studio`. Samma projekt: QA-databaserna `croupier_game_qa` och `croupier_studio_qa_abc92154cb15`. |
+| `blue-king-49830878` (`croupier-preview-neon`) | us-east-1 | Äldre tom förhandsvisning. |
+
 En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
 bakgrund och urvalsregler som spelaren får använda. En lane är varken ett
 spelarkonto, en videofil eller själva spelmotorn. Nuvarande sparade profiler
