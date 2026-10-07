@@ -4,7 +4,7 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Nivå 1 /control | påbörjad — verktyg samlade, Johns skal och sidmall inne, A–C öppna | Design |
+| Nivå 1 /control | påbörjad — skal och sidmall; tre av sju gamla Studio-sidor utbrutna, fyra kvar | /control-ombyggnad |
 | Nivå 2 /partner | påbörjad — session finns, speldata ej | Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
@@ -15,6 +15,24 @@ Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## /control-ombyggnad, 7 oktober 2026 kväll
+
+Underlag: `random/control-inventering-2026-10-07.md` (varje knapp och flik, C1–C265),
+`random/losa-tradar-2026-10-07.md` (19 ofärdiga kopplingar, inte åtgärdade) och
+beslutsmatrisens rader 21–30.
+
+Ändrat: delat tillstånd för Studio-sidorna ligger i `useStudioSession`
+(`lab/components/studio-session.tsx`) med vakt mot osparade ändringar. Händelser →
+klipp, Uppspelning och Guide & hjälp är egna sidor på sidmallen; val av dealer och
+event följer med i adressen (`?dealer=&event=`), loggen i `sessionStorage`.
+Dealers & klipp har tre flikar; Probe, Bakgrund och Uppspelning är länkar. Nio döda
+Kevin-adresser ger 404. Sökattrappen och dubbla sparpiller är borta. Rotens startfiler
+är borttagna; start sker med `node lab/start.mjs`.
+
+Testat: 925 labbtester (921 gröna, 2 skippade webbläsartester, 2 omskrivna och gröna),
+typecheck, build, systemkartan. Kvar i `studio.tsx`: Händelser, Klippbibliotek,
+Talgranskning och Operatörschatt; de flyttas i nästa omgång och filen raderas sedan.
 
 ## Design, 7 oktober 2026
 
