@@ -13,8 +13,8 @@ const close = server => new Promise(resolve => server.close(resolve));
 test('old Studio bookmarks preserve queries on a single canonical document route', () => {
   for (const alias of ['/lab', '/studio-astrid', '/studio-lissabon']) {
     for (const method of ['GET', 'HEAD']) {
-      assert.equal(studioAliasRedirect(incoming(alias, method), config), '/studio');
-      assert.equal(studioAliasRedirect(incoming(`${alias}/?family=deal_pos1&next=%2Fbo%2F`, method), config), '/studio?family=deal_pos1&next=%2Fbo%2F');
+      assert.equal(studioAliasRedirect(incoming(alias, method), config), '/control');
+      assert.equal(studioAliasRedirect(incoming(`${alias}/?family=deal_pos1&next=%2Fbo%2F`, method), config), '/control?family=deal_pos1&next=%2Fbo%2F');
     }
   }
 });
@@ -56,15 +56,16 @@ test('following a Studio alias still requires the normal Lab session and never r
     gatewayPort = await listen(gateway);
     const alias = await read('/studio-lissabon?view=clips', true);
     assert.equal(alias.status, 307);
-    assert.equal(alias.headers.location, '/studio?view=clips');
+    assert.equal(alias.headers.location, '/control?view=clips');
     assert.equal(sessionChecks, 0);
-    const protectedPage = await read(alias.headers.location, true);
+    const studioDocument = '/studio?view=clips';
+    const protectedPage = await read(studioDocument, true);
     assert.equal(protectedPage.status, 303);
     assert.equal(protectedPage.headers.location, '/api/auth/lab/start?next=%2Fstudio%3Fview%3Dclips');
     assert.equal((await read('/studio/api/project')).status, 401);
     assert.equal(upstreamCalls, 0);
     authorized = true;
-    assert.equal((await read(alias.headers.location, true)).status, 200);
+    assert.equal((await read(studioDocument, true)).status, 200);
     assert.equal(upstreamCalls, 1);
   } finally { await close(gateway); await close(lab); }
 });

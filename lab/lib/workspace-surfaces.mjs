@@ -8,7 +8,14 @@ export const CONTROL_PREVIEW_VIEWS = Object.freeze([
   ...PARTNER_PREVIEW_VIEWS, 'archive', 'tables', 'voice', 'clips', 'media', 'tree', 'gen',
 ]);
 const aliases = Object.freeze({ overview: 'ops', presentation: 'theme', integration: 'api' });
-const legacyControl = Object.freeze({ studio: '/studio', admin: '/studio/administration', ops: '/studio/openclaw', lab: '/studio' });
+// studioPath stays the internal Lab rewrite. legacyPath is the public /control URL.
+const legacyControl = Object.freeze({
+  studio: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
+  admin: Object.freeze({ studioPath: '/studio/administration', legacyPath: '/control/administration' }),
+  ops: Object.freeze({ studioPath: '/studio/openclaw', legacyPath: '/control/openclaw' }),
+  lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
+});
+const staffTools = new Set(['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat']);
 const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const reservedOperators = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
 
@@ -42,10 +49,13 @@ export function resolveWorkspaceSurfacePath(value) {
   if (surface === 'control') {
     if (parts.length > 2 || (parts.length === 2 && !parts[1])) return null;
     section = parts[1] || section;
-    if (Object.hasOwn(legacyControl, section)) return Object.freeze({
-      surface, operatorSlug: null, section, view: null, publicPath,
-      studioPath: legacyControl[section], legacyPath: legacyControl[section].slice('/studio'.length) || '/',
-    });
+    if (Object.hasOwn(legacyControl, section)) {
+      const destination = legacyControl[section];
+      return Object.freeze({
+        surface, operatorSlug: null, section, view: null, publicPath,
+        studioPath: destination.studioPath, legacyPath: destination.legacyPath,
+      });
+    }
   } else if (parts.length !== 1) {
     if (![2, 3].includes(parts.length) || parts[1].length > 63 || !operatorSlug.test(parts[1]) || reservedOperators.has(parts[1])) return null;
     operator = parts[1]; section = parts[2] ?? section;
@@ -53,9 +63,18 @@ export function resolveWorkspaceSurfacePath(value) {
   const view = surface === 'partner' && section === 'tables' ? 'bj'
     : Object.hasOwn(aliases, section) ? aliases[section]
     : Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === section) ?? section;
-  if (!(surface === 'partner' ? PARTNER_PREVIEW_VIEWS : CONTROL_PREVIEW_VIEWS).includes(view)) return null;
+  const allowed = (surface === 'partner' ? PARTNER_PREVIEW_VIEWS : CONTROL_PREVIEW_VIEWS).includes(view);
+  if (!allowed) {
+    if (surface === 'control' && staffTools.has(section)) return Object.freeze({
+      surface, operatorSlug: null, section, view: null, publicPath,
+      studioPath: '/studio' + publicPath, canonicalPath: publicPath, legacyPath: null,
+    });
+    return null;
+  }
+  const canonicalPath = surface === 'control' && staffTools.has(section)
+    ? publicPath : (workspaceSurfacePath(surface, view, operator) ?? '/partner');
   return Object.freeze({ surface, operatorSlug: operator, section, view, publicPath, studioPath: '/studio' + publicPath,
-    canonicalPath: workspaceSurfacePath(surface, view, operator) ?? '/partner', legacyPath: null });
+    canonicalPath, legacyPath: null });
 }
 
 // Next may report either the public rewrite or the native /studio route.

@@ -4,18 +4,36 @@ Croupier is the working blackjack demo with server-owned game state and a
 shared playback path for four AI dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
-The dealer editor, advanced tools and administration share **Croupier Studio**.
+Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/). Apex
+`scoutgaming.tech` is a 308 to www. The Vercel project name is `scoutgaming`.
+The game engine stays on Render service `croupier-v2`.
+
+The public surfaces are not feature-complete:
+
+| Level | Who | Path |
+| --- | --- | --- |
+| 1 | Internal staff | [/control](https://www.scoutgaming.tech/control) |
+| 2 | Operator | [/partner](https://www.scoutgaming.tech/partner) and `/partner/{operatorSlug}` |
+| 3 | Player | [/play](https://www.scoutgaming.tech/play) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
+
+Staff tools are being gathered under `/control/clips`, `/control/administration`,
+`/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`,
+`/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, and
+`/control/operator-chat`. Kevin's imported backoffice is only the level-2 preview.
+Real operator login, tenant data, and the player lobby, profile, and history are not done.
+
+`/studio` is the Next.js basePath of the lab service, not a fourth product and
+not the name to use in the UI. Lissabon, `/lab`, `/labb`, and `/bo` are retired
+aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
+
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
-The cloud entry is [Croupier on Vercel](https://www.scoutgaming.tech/).
-[The game](https://www.scoutgaming.tech/game) and
-[Croupier Studio](https://www.scoutgaming.tech/studio) share that origin.
-The single `scoutgaming` Vercel project builds the web and Studio apps as two
+The single `scoutgaming` Vercel project builds the web and lab apps as two
 Services from this repository's main branch, both in Frankfurt. Render owns the
-authoritative game engine and live transport; production Studio/admin uses native
-Neon policy and private Blob. Isolated QA remains separate. Full AI/GPU acceptance
-and actual partner login/player lobby remain open in the migration checklist.
-Existing BO tools keep their original permissions. Observation follows the game
-player's receipts; a separate Lab preview requires an explicit action.
+authoritative game engine and live transport. Lab admin uses native Neon policy
+and private Blob. Isolated QA remains separate. Full AI/GPU acceptance,
+actual partner login, and the player lobby remain open in the migration checklist.
+Existing backoffice tools keep their original permissions. Observation follows the game
+player's receipts; a separate lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
 and [route guide](docs/LOCAL-PRESENTATION-RUNTIME.md).
 For a disposable local preview with existing films and no external providers:
@@ -26,9 +44,9 @@ node lab/start.mjs --offline --no-open
 
 [Start-Lab.cmd](Start-Lab.cmd) starts the existing connected profile.
 [Start-Lissabon.cmd](Start-Lissabon.cmd) is a compatibility shortcut.
-Lissabon has been removed. Private saved projects, history and players now live
+Lissabon has been removed and is not a product URL. Private saved projects, history and players now live
 in `lab/data`, after a verified backup outside Git. See the restoration guide.
-The general editor remains at `/tree`. Key names and locations
+In the cloud the general editor is `/control/tree`. Key names and locations
 (no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 
@@ -36,11 +54,9 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 
 - The private [GitHub repository](https://github.com/Jakeminator123/scoutgaming)
   is the active source on `main`. Keep it private.
-  GitLab integration is paused; `Jakobs-v1` preserves commit `600093e` on both
-  services. See [migration and delivery](docs/CLOUD-MIGRATION.md).
+  Tag `Jakobs-v1` preserves commit `600093e`. See [migration and delivery](docs/CLOUD-MIGRATION.md).
 - [Cloud and storage map](docs/CLOUD-MIGRATION.md) describes services and delivery.
-- Historical GitLab references do not authorize inbox, wiki or mirror work.
-  New code and documentation are delivered to GitHub only.
+- GitLab inbox, wiki, and mirror are paused. New code and documentation are delivered to GitHub only.
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
@@ -79,9 +95,9 @@ The code has two public client paths:
   the same presentation list can be delivered as `round.events` over SSE.
 
 The Partner transport and the native player's observation feed have different
-contracts. Astrid Studio follows the native player's real playback receipts
+contracts. Lab observation follows the native player's real playback receipts
 when observation is configured. The ordinary game can be opened independently;
-Studio does not run a competing Astrid video. See the route guide above for
+the lab service does not run a competing Astrid video. See the route guide above for
 recorded media, observation and generated speech streams.
 
 Internal round events are implementation details unless a public contract

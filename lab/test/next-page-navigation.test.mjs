@@ -143,27 +143,27 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
           requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
         } },
       });
-      const paths = { tree: '/tree', lab: '/events', videos: '/videos', activity: '/activity', openclaw: '/operator-chat', guide: '/guide', probe: '/probe' };
+      const paths = { tree: '/control/tree', lab: '/control/events', videos: '/control/videos', activity: '/control/activity', openclaw: '/control/operator-chat', guide: '/control/guide', probe: '/control/probe' };
       for (const [view, path] of Object.entries(paths)) {
         const element = await page.StudioPage({view});
         assert.equal(element.type, Editor); assert.equal(element.props.initialView, view);
-        assert.equal(requests.at(-1), 'http://game.fixture.invalid' + basePath + path);
+        assert.equal(requests.at(-1), 'http://game.fixture.invalid' + path);
       }
-      const chatPage = load('../app/operator-chat/page.tsx', {'../studio-page': page});
+      const chatPage = load('../app/control/operator-chat/page.tsx', {'../../studio-page': page});
       const chat = chatPage.default();
       assert.equal(chat.type, page.StudioPage); assert.equal(chat.props.view, 'openclaw');
       const reloadedChat = await chat.type(chat.props);
       assert.equal(reloadedChat.type, Editor); assert.equal(reloadedChat.props.initialView, 'openclaw');
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid' + basePath + '/operator-chat');
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/operator-chat');
 
       function Models() { assert.fail('SSR does not invoke model client work'); }
-      const models = load('../app/openclaw/page.tsx', {
+      const models = load('../app/control/openclaw/page.tsx', {
         'next/headers': { headers: async () => new Headers({host: 'game.fixture.invalid'}) },
         '@/lib/ui-server': {authorizeUiPage: async request => requests.push(request.url)},
         '@/components/openclaw-workspace': {OpenClawWorkspace: Models},
       });
       assert.equal((await models.default()).type, Models);
-      assert.equal(requests.at(-1), 'http://game.fixture.invalid/openclaw');
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/openclaw');
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -189,7 +189,7 @@ test('Studio SSR serializes only the standalone voice capability matching native
 
 test('actual administration page uses Next-local login with the exact public return destination', async () => {
   for (const status of [401, 403]) {
-    const page = load('../app/administration/page.tsx', {
+    const page = load('../app/control/administration/page.tsx', {
       'next/navigation': navigation,
       'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
       '@/components/native-administration': {},
@@ -206,7 +206,7 @@ test('actual administration page uses Next-local login with the exact public ret
 });
 
 test('administration without native configuration fails before runtime initialization', async () => {
-  const page = load('../app/administration/page.tsx', {
+  const page = load('../app/control/administration/page.tsx', {
     'next/navigation': navigation,
     'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
     '@/components/native-administration': {},
@@ -224,13 +224,13 @@ test('administration without native configuration fails before runtime initializ
   await assert.rejects(page.default(), error => error.statusCode === 503);
 });
 
-test('actual retired Lissabon page redirects to the app root with one mounted prefix', () => {
-  const page = load('../app/lissabon/page.tsx', { 'next/navigation': navigation });
-  assert.throws(() => page.default(), error => {
-    assert.equal(locationFromNext(error, '/studio'), '/studio/');
-    assert.equal(locationFromNext(error, ''), '/');
-    return true;
+test('actual retired Lissabon page redirects to public /control', async () => {
+  let target;
+  const page = load('../app/lissabon/page.tsx', {
+    '../control/public-redirect': { redirectToPublicControl: async pathname => { target = pathname; throw new Error('redirected'); } },
   });
+  await assert.rejects(page.default(), /redirected/);
+  assert.equal(target, '/control');
 });
 
 const authEntryConfig = authBase => ({

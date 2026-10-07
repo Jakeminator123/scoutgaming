@@ -1,10 +1,10 @@
 # Scoutgaming: användarguide
 
-Tre nivåer delar samma repo och sajt:
+Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **ScoutGamingGroup-admin, nivå 1**: [/control](https://www.scoutgaming.tech/control), gemensam ingång till de riktiga verktygen för lanes, klipp, konton och drift. Studio är en del av samma adminyta och delar dess huvudmeny.
-- **Partnerportal, nivå 2**: [/partner](https://www.scoutgaming.tech/partner), ingång för spelbolagens arbetsytor. Intern adminpersonal kommer åt denna nivå med samma konto. Kundval är ännu inte aktiverat; välj en tydligt märkt demonstration för att prova begränsade lane- och designval.
-- **Spelaryta**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Operatörsbunden spelkatalog, egen profil och historik återstår.
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe` och `/control/operator-chat`.
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Kevins importerade backoffice är bara denna förhandsvisning, inte kontrollpanelen. Riktig operatörsinloggning och tenantdata är inte klara. Kundval är ännu inte aktiverat; välj en tydligt märkt demonstration för att prova begränsade lane- och designval.
+- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, egen profil och historik återstår.
 
 **En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
@@ -19,25 +19,25 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Riktig partner-session och kundavgränsad sparning är kvarstående arbete, inte
 något man får genom att välja en operatör i menyn.
 
-**Studio är verktygsdelen av nivå 1.** I molnet öppnar du
-[`/studio`](https://www.scoutgaming.tech/studio) på Vercel. Render äger
+**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet. I molnet öppnar du
+[`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
 Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
-**Öppna spelet** i molnstudion fungerar med vanlig spelarinloggning även om
+**Öppna spelet** fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
-presentationsväg och kopplar dessutom spelflikens händelser till Studio.
-Spela och chatta i spelfliken. BO är administration och inloggning,
+presentationsväg och kopplar dessutom spelflikens händelser till personalytan.
+Spela och chatta i spelfliken. Administration är inloggning och konton,
 ingen separat spelström.
 
-**Vad betyder projekt här?** Studios projekt är dina sparade inställningar
+**Vad betyder projekt här?** Ett sparat projekt är inställningar
 för spelets presentation: exempelvis vilka dealerklipp som används och när
 de spelas. "Lab-projekt" är inget separat projekt; det syftar på samma
-sparning. Lab är arbetsmiljön, Studio är editorn. Inställningarna och äldre
+sparning. Lab är arbetsmiljön. Personalens ingång är `/control`, inte `/studio`. Inställningarna och äldre
 versioner sparas i Neon i både produktion och den isolerade native-QA-miljön.
 Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
-en teknisk webbpublicering och har inget med Studios sparknapp att göra.
+en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
 Från Kontrollpanelen når du **Dealer & klipp**, **Administration** och **OpenClaw**.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
@@ -91,11 +91,11 @@ Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
 Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
 
-Native Studio/Administration använder de befintliga kontonas rollkontroller och
-den gemensamma Neon-källan. En Studio-inloggning ger inga nya administrativa
+Native administration på `/control` använder de befintliga kontonas rollkontroller och
+den gemensamma Neon-källan. En inloggning där ger inga nya administrativa
 rättigheter.
 
-Native administration är aktiverad på den vanliga Studio-adressen och har
+Native administration är aktiverad på `/control/administration` och har
 även en separat QA-miljö med egen databas. Den använder samma sparade
 revisionskälla som spelmotorn och bevarar osparade utkast vid en sparningskonflikt.
 QA:s mejlkoppling och produktionskopplingen till Resend är verifierade,
@@ -105,13 +105,12 @@ Befintliga konton
 och saldo flyttas eller återställs inte för provet.
 
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
-lösenord i spelet och Studio. Du väljer ingen kontotyp i inloggningen.
-**Intern adminpersonal, nivå 1** får använda hela den interna adminytan
-(Kontrollpanel, Studio och Administration), nivå 2 (spelbolagens arbetsytor)
-och nivå 3 (spelarlobbyn och spelen). Nivå 2 visar än så länge demonstrationer;
+lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
+**Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
+och nivå 3 (`/play`). Nivå 2 visar än så länge demonstrationer;
 riktiga kundval följer anslutna spelbolag när kundanslutningen införs.
 **Spelare, nivå 3** får använda
-spelet och nekas Studio/Administration. Ett äldre superadmin-konto fungerar som
+spelet och nekas `/control`. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
 
 I den nya native-administrationen går du till **Administration → Konton**.
@@ -138,8 +137,8 @@ Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 Den nya [systemkartan](../../docs/system-map/index.html) visar tjänster, sidor,
 databas/lagring, spel-/talflöden, nyckelnamn och befintliga tester. Den är en
 fristående HTML-fil; kodinventering och tidigare driftbevis anges separat.
-OpenClaw-sidan finns i samma Studio på Vercel och visar agenternas modellval.
-Sparning går genom Studios behörighetskontroll till OpenClaw på Render.
+OpenClaw-sidan finns på `/control/openclaw` och visar agenternas modellval.
+Sparning går genom labbets behörighetskontroll till OpenClaw på Render.
 Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.
 Vanliga sparade klippval kräver ingen Render-omstart;
 idleändringar kräver omladdning av spelfliken mellan händer.
@@ -157,7 +156,7 @@ Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
 **Bakgrundszoner:** öppna **Bakgrund** på Astrids klippsida och dess zoneditor
-(`/studio/zones` i molnet, `/zones` lokalt). Rita en pixelruta på
+(`/control/zones` i molnet, `/zones` lokalt). Rita en pixelruta på
 1080×1920-startbilden, skapa ett tvåsekunders blinkklipp eller lägg in en
 MP4/WebM med exakt rutans storlek. Välj **Automatisk · högst 2/minut** i zonens
 Uppspelning om klippet ska starta själv: första start inom 10 sekunder,
@@ -177,7 +176,7 @@ ljusläget blandar bort
 svarta pixlar, medan normalläget visar filmens egen alfakanal om den finns.
 **Webbläsarkopia** sparar koordinater och klipp i din lokala webbläsarprofil.
 **Spara till molnet** sparar koordinater i zonernas separata Neon-databas och
-klipp i privat Blob när Studio visar att molnlagringen är konfigurerad.
+klipp i privat Blob när ytan visar att molnlagringen är konfigurerad.
 **Läs från molnet** öppnar molnvyn och behåller webbläsarkopian. Exportera JSON
 och ladda ned klippen om du behöver en separat specifikation eller backup.
 Automatisk gäller i Labbets förhandsvisning;
@@ -186,10 +185,11 @@ ocklusion för varje tilltänkt klipp innan användning.
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `Start-Lab.cmd` behåller den befintliga privata anslutna profilen.
-Avancerade verktyg nås genom **Avancerat labb** (`/studio/tree` i molnet,
-`/tree` lokalt). Det äldre `/lissabon` inne i Lab omdirigerar till startsidan.
+Avancerade verktyg nås genom **Avancerat labb** (`/control/tree` i molnet,
+`/tree` lokalt). Lissabon, `/lab`, `/labb` och `/bo` är avvecklade alias.
+Personalens ingång är `/control`.
 
-Jakobs arbetsdokumentation visas i [Guide i labbet](https://www.scoutgaming.tech/studio/guide)
+Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på det koordinerade paret).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
@@ -261,7 +261,7 @@ befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
 **Läs in nya filer**. Knappen skannar mapparna, uppdaterar manifestet och läser
 om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
 policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
-Detta läser lokala filer. I molnstudion används **Ladda upp klipp** och
+Detta läser lokala filer. I molnet används **Ladda upp klipp** och
 **Läs in nya filer** läser serverbiblioteket; en lokal filändring publicerar
 inte filmens nya byteinnehåll till molnet.
 

@@ -1,9 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 6 oktober 2026. Detta är den enda löpande handoffen.
+Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Namn, 7 oktober 2026
+
+Denna dokumentpassning samlar personalens gränssnitt under `/control`:
+`/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`,
+`/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`,
+`/control/events`, `/control/probe` och `/control/operator-chat`.
+Kevins importerade backoffice (`lab/components/kevin-bo`) ligger kvar på
+`/partner` och `/partner/{operatorSlug}`. Det är inte kontrollpanelen.
+`/studio` är labb-servicens basePath, inte en fjärde produkt och inte namnet i gränssnittet.
+Spelarytan är `/play` och `/play/blackjack`. Lobby, profil, historik,
+riktig operatörsinloggning och tenantdata är inte klara.
+Inget öppet acceptanskrav nedan markeras klart av den här passningen.
+Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
 
 ## Aktuell leverans och ansvar
 

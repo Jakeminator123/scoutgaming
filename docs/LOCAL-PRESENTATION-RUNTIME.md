@@ -6,14 +6,17 @@ Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 
-I molnet finns [spelet](https://www.scoutgaming.tech/play/blackjack) och
-[Studio](https://www.scoutgaming.tech/studio) på samma exakta origin.
+I molnet finns personal på [/control](https://www.scoutgaming.tech/control),
+operatör på [/partner](https://www.scoutgaming.tech/partner) och spel på
+[/play/blackjack](https://www.scoutgaming.tech/play/blackjack), samma origin
+www.scoutgaming.tech. Apex `scoutgaming.tech` är en 308 till www.
 Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
 repo/main: `web` bygger `apps/croupier-frontend`, `studio` bygger `lab`.
-Båda kör i Frankfurt. `/control`, `/partner` och `/studio` går till Studio;
-övriga webbdokument går till web. Render äger auktoritativ spelmotor och
-live-transport via den bevarade exakta ingressgränsen.
-Produktion och isolerad native-QA har Studio/admin-API på Vercel och sparad
+Båda kör i Frankfurt. `/control` och `/partner` skrivs om till labb-servicen;
+`/studio` är den servicens basePath, inte en fjärde produkt och inte namnet i
+gränssnittet. Övriga webbdokument går till web. Render-tjänsten `croupier-v2`
+äger auktoritativ spelmotor och live-transport via den bevarade exakta ingressgränsen.
+Produktion och isolerad native-QA har labbets admin-API på Vercel och sparad
 policy/metadata/journaler i Neon, med separata scopes. Medier ligger i privat
 Blob. Produktionsimport och policybyte är genomförda; aktuell driftversion
 och avvecklingsstatus finns i [driftkartan](CLOUD-MIGRATION.md).
@@ -30,8 +33,8 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · ScoutGamingGroup-admin | `/control` | Gemensam ingång och meny till lanes, klipp, konton och drift. Verktygen under `/studio` tillhör samma adminyta. Kräver intern admin. |
-| 2 · Partnerportal | `/partner`, `/partner/{operatorSlug}` | Intern admin når ingången med samma konto och väljer uttryckligen en demonstration. Kundval är ännu inte aktiverat. Två exempeloperatörer visar begränsade lane- och designval; riktig partnerinloggning och publicering återstår. |
+| 1 · intern personal | `/control` | Gemensam ingång. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
+| 2 · Partnerportal | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Kevins importerade backoffice är bara denna förhandsvisning, inte `/control`. Intern admin kan öppna en märkt demonstration. Riktig operatörsinloggning, tenantdata och publicering återstår. |
 | 3 · Spelaryta | `/play`, `/play/blackjack` | Enkel ingång till Blackjack med befintlig spelarlogin och spelare. Operatörsbunden spelkatalog, egen profil och historik återstår. |
 
 En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
@@ -43,7 +46,7 @@ inte anslutet till Partnerportalens exempeldata.
 
 ```mermaid
 flowchart LR
-  C["Nivå 1: Studio producerar och sparar lane"] --> L["Godkänd lane / presentationsprofil"]
+  C["Nivå 1 /control: producerar och sparar lane"] --> L["Godkänd lane / presentationsprofil"]
   G["Spelmotor på Render: kort, regler, saldo"] --> A["Presentationsadapter: spelsignal till behov"]
   A --> D["Urval / Presentation Director"]
   L --> D
@@ -66,7 +69,7 @@ Klippuppsättning (tidigare Linje), Villkor (Trigger), Urvalsregler (Policy).
 Tekniska event-ID:n, schemafält och `line`-nycklar ändras inte av namnbytet.
 En presentationshändelse gäller det som ska visas; en administrativ händelse
 gäller exempelvis kontoåtkomst och hör inte till klippurvalet.
-Ordlistans källa är `lab/policies/studio-contract.json` och visas i Studio-guiden.
+Ordlistans källa är `lab/policies/studio-contract.json` och visas i användarguiden.
 
 ### Adresser och begränsningar
 
@@ -81,13 +84,12 @@ Partnerns meny använder exempelvis `/partner/demo-north/presentation`,
 `/partner/demo-north/tables` och `/partner/demo-north/lanes`.
 Gamla kortformer och hashbokmärken läses som kompatibilitet och leder till
 den aktuella adressen; menyn skapar inga nya länkar med `#theme` eller `#tx`.
-Nivå 1 använder fungerande Studio-verktyg direkt. Gamla interna klipp-, tal-,
+Nivå 1 använder verktygen under `/control`. Gamla interna klipp-, tal-,
 medie- och kontoadresser leder dit; oanslutna prototypvyer får en förklaring
-i adminingången. Kevin-komponentens exempelvyer renderas bara för nivå 2.
-Den korta `/administration` går vidare till `/studio/administration`.
-`/studio` är fortfarande det riktiga interna produktionsverktyget, inte en
-uttjänt alternativ produkt. Gamla speladresser går vidare till
-`/play/blackjack` i det gemensamma molnprojektet. Lokal och äldre fristående
+i adminingången. Kevin-komponentens exempelvyer renderas bara för nivå 2
+(`/partner`), inte i kontrollpanelen. `/studio` är labbets basePath, inte
+det interna produktionsverktyget och inte namnet i gränssnittet. Gamla
+speladresser går vidare till `/play/blackjack` i det gemensamma molnprojektet. Lokal och äldre fristående
 runtime behåller sitt befintliga `/blackjack`-kontrakt.
 Signerad launch använder samma serverkontroll och game-session som tidigare;
 en giltig direktstart behöver inte gå via lobbyn.
@@ -105,8 +107,9 @@ tillåtna fält på servern; ett dolt menyval eller en slug är ingen behörighe
 
 Överföringen av backoffice använder `/control` (intern personal) och `/partner`
 (operatörspersonal) på samma publika origin. Frontenden skriver om enbart
-godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner`.
-Befintliga Studio-vägar och spelkontrakt behålls. API-anrop har inga allmänna nya alias.
+godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner`
+under labbets basePath. `/studio` är inte personalens produktnamn.
+Befintliga labbvägar och spelkontrakt behålls. API-anrop har inga allmänna nya alias.
 
 Den första implementerade servergränsen är en intern förhandsvisning:
 `/studio/api/partner-preview` tillåter enbart GET, gör native admin-auktorisering
@@ -135,7 +138,7 @@ pågående bygge, server eller regression. Följ sessionsvakt och agent-talk.
 
 ## Gemensam kontoåtkomst
 
-Spelets `/api/auth/login` och native Studios `/studio/api/auth/login` använder
+Spelets `/api/auth/login` och labbets `/studio/api/auth/login` (basePath) använder
 samma serverresolver för befintliga CRAIG- och player_accounts-credentials.
 Inloggningsnamn/e-post normaliseras; exakt en kandidat i båda registren krävs
 innan hashkontroll. Klienten väljer varken kontoägare eller behörighet.
@@ -183,7 +186,7 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 ## Sparad policy och chatt
 
-Studio/Backoffice är den gemensamma arbetsytan. Native administration använder
+Personalens arbetsyta är `/control`; operatörens förhandsvisning är `/partner`. Native administration använder
 befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
 klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
 BO-tilldelningar är historik och används inte som parallell policykälla.

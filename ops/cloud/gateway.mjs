@@ -34,7 +34,7 @@ const LAB_CALLBACK = '/api/auth/lab/callback';
 const LAB_CHECK = '/api/auth/lab/check';
 const STUDIO_ALIASES = new Set(['/lab', '/lab/', '/studio-astrid', '/studio-astrid/', '/studio-lissabon', '/studio-lissabon/']);
 
-// Old bookmarks select the same Studio; they never become another API mount.
+// Old product aliases select staff control; they never become another API mount.
 // Keep the original query, but only accept exact read-only document paths.
 export function studioAliasRedirect({ headers, method, url }, config) {
   if (!config.singleOrigin || headers?.host !== new URL(config.gameOrigin).host
@@ -42,7 +42,7 @@ export function studioAliasRedirect({ headers, method, url }, config) {
     || /[\u0000-\u0020\u007f#]/.test(url)) return null;
   const queryAt = url.indexOf('?');
   const path = queryAt < 0 ? url : url.slice(0, queryAt);
-  return STUDIO_ALIASES.has(path) ? `/studio${queryAt < 0 ? '' : url.slice(queryAt)}` : null;
+  return STUDIO_ALIASES.has(path) ? `/control${queryAt < 0 ? '' : url.slice(queryAt)}` : null;
 }
 
 export function upstreamForRequest({ headers, method, url }, config) {

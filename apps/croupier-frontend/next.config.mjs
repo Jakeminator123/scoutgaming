@@ -15,21 +15,22 @@ const nextConfig = {
   },
   async redirects() {
     if (platform) return [
-      ...['/lab', '/labb', '/studio-astrid', '/studio-lissabon', '/labb-lissabon'].map(source => ({source, destination: '/studio', permanent: false})),
-      {source: '/labb/filmer', destination: '/studio/videos', permanent: false},
-      {source: '/labb/zoner', destination: '/studio/zones', permanent: false},
-      {source: '/labb/guide', destination: '/studio/guide', permanent: false},
+      ...['/lab', '/labb', '/studio-astrid', '/studio-lissabon', '/labb-lissabon'].map(source => ({source, destination: '/control', permanent: false})),
+      {source: '/labb/filmer', destination: '/control/videos', permanent: false},
+      {source: '/labb/zoner', destination: '/control/zones', permanent: false},
+      {source: '/labb/guide', destination: '/control/guide', permanent: false},
     ];
-    // Operator shortcuts to the existing authenticated Lab on Render.
+    // Legacy lab names go to staff control. /studio stays the Render lab mount.
     return [
       { source: "/studio", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/lab", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/studio-astrid", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/studio-lissabon", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/labb", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },
-      { source: "/labb/filmer", destination: "https://croupier-v2.onrender.com/studio/videos", permanent: false },
-      { source: "/labb/zoner", destination: "https://croupier-v2.onrender.com/studio/zones", permanent: false },
-      { source: "/labb/guide", destination: "https://croupier-v2.onrender.com/studio/guide", permanent: false },
+      { source: "/lab", destination: "https://www.scoutgaming.tech/control", permanent: false },
+      { source: "/studio-astrid", destination: "https://www.scoutgaming.tech/control", permanent: false },
+      { source: "/studio-lissabon", destination: "https://www.scoutgaming.tech/control", permanent: false },
+      { source: "/labb", destination: "https://www.scoutgaming.tech/control", permanent: false },
+      { source: "/labb-lissabon", destination: "https://www.scoutgaming.tech/control", permanent: false },
+      { source: "/labb/filmer", destination: "https://www.scoutgaming.tech/control/videos", permanent: false },
+      { source: "/labb/zoner", destination: "https://www.scoutgaming.tech/control/zones", permanent: false },
+      { source: "/labb/guide", destination: "https://www.scoutgaming.tech/control/guide", permanent: false },
     ]
   },
   async headers() {

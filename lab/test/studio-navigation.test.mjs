@@ -14,32 +14,41 @@ const items = [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION];
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('Studio has three main areas without a second global clip library or background menu', () => {
+test('Studio staff navigation uses canonical control routes including Kontrollpanel', () => {
   assert.deepEqual(STUDIO_PRIMARY_NAVIGATION.map(item => [item.href, item.label]), [
-    ['/', 'Dealer & klipp'], ['/administration', 'Administration'], ['/openclaw', 'OpenClaw'],
+    ['/control', 'Kontrollpanel'], ['/control/clips', 'Dealer & klipp'],
+    ['/control/administration', 'Administration'], ['/control/openclaw', 'OpenClaw'],
   ]);
-  assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/operator-chat', '/tree', '/activity', '/guide']);
-  assert.equal(new Set(items.map(item => item.href)).size, 7);
+  assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/control/operator-chat', '/control/tree', '/control/activity', '/control/guide']);
+  assert.equal(new Set(items.map(item => item.href)).size, 8);
   for (const item of items) {
     assert.equal(Object.isFrozen(item), true);
-    const page = item.href === '/' ? 'page.tsx' : `${item.href.slice(1)}/page.tsx`;
+    const page = item.href === '/control' ? 'control/[[...path]]/page.tsx' : `${item.href.slice(1)}/page.tsx`;
     assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/);
   }
 });
 
-test('existing dealer deep links highlight the one dealer area without creating extra main tabs', () => {
-  for (const path of ['/videos', '/zones', '/events', '/probe']) {
-    assert.equal(studioNavigationItem(path, ''), STUDIO_PRIMARY_NAVIGATION[0]);
-    assert.equal(studioNavigationItem(`/studio${path}`, '/studio'), STUDIO_PRIMARY_NAVIGATION[0]);
+test('existing dealer deep links highlight Dealer & klipp for canonical and legacy paths', () => {
+  const dealer = STUDIO_PRIMARY_NAVIGATION.find(item => item.href === '/control/clips');
+  for (const path of ['/', '/videos', '/zones', '/events', '/probe', '/control/clips', '/control/videos', '/control/zones', '/control/events', '/control/probe']) {
+    assert.equal(studioNavigationItem(path, ''), dealer);
+    assert.equal(studioNavigationItem(path, '/studio'), dealer);
+    assert.equal(studioNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio'), dealer);
   }
 });
 
-test('exact active-page lookup handles local and mounted Studio without double-prefixing paths', () => {
+test('exact active-page lookup handles canonical and legacy stripped paths', () => {
   for (const item of items) {
     assert.equal(studioNavigationItem(item.href, ''), item);
     assert.equal(studioNavigationItem(item.href, '/studio'), item);
-    assert.equal(studioNavigationItem(item.href === '/' ? '/studio' : `/studio${item.href}`, '/studio'), item);
+    assert.equal(studioNavigationItem(`/studio${item.href}`, '/studio'), item);
     assert.equal(item.href.startsWith('/studio'), false);
+    if (item.href !== '/control') {
+      const legacy = item.href.slice('/control'.length);
+      assert.equal(studioNavigationItem(legacy, ''), item);
+      assert.equal(studioNavigationItem(legacy, '/studio'), item);
+      assert.equal(studioNavigationItem(`/studio${legacy}`, '/studio'), item);
+    }
   }
   assert.equal(studioNavigationItem('/studio', ''), null);
   assert.equal(studioNavigationItem('/studio/studio/videos', '/studio'), null);
@@ -88,9 +97,9 @@ test('internal menu keeps native Studio anchors and adds public control and part
       const tree = WorkspaceNavigation();
       visit(tree, node => { if (node.type === 'a') links.push(node.props); });
       const html = renderToStaticMarkup(tree);
-      assert.deepEqual(links.map(link => link.href), ['/control', '/control', ...items.map(item => labUrl(item.href)), '/partner', '/play']);
+      assert.deepEqual(links.map(link => link.href), ['/control', ...items.map(item => labUrl(item.href)), '/partner', '/play']);
       assert.ok(links.every(link => !link.onNavigate && !link.onClick));
-      assert.equal(links.filter(link => link.href === labUrl('/administration')).length, 1);
+      assert.equal(links.filter(link => link.href === labUrl('/control/administration')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
       assert.match(html, /Nivå 1 · ScoutGamingGroup/);
       assert.match(html, /<details class="tools"><summary data-active="true">Verktyg/);
@@ -174,7 +183,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();
-  assert.deepEqual(paths, [labUrl('/#deal')]);
+  assert.deepEqual(paths, [labUrl('/control/clips#deal')]);
   cleanup();
 });
 
@@ -194,7 +203,7 @@ test('actual editor shortcut uses the operator chat route and keeps the existing
       let shortcut;
       visit(tree, node => { if (node.type === 'button' && node.props.children === 'Fråga OpenClaw om labbet →') shortcut = node; });
       assert.ok(shortcut); shortcut.props.onClick();
-      assert.deepEqual(paths, [basePath + '/operator-chat']);
+      assert.deepEqual(paths, ['/control/operator-chat']);
       const routes = loadComponent('studio-types.ts');
       assert.equal(routes.studioViewForPath(paths[0]), 'openclaw');
       let panel;

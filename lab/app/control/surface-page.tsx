@@ -4,6 +4,7 @@ import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
 import { controlToolPath } from '@/lib/control-workspace.mjs';
+import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '@/lib/workspace-surfaces.mjs';
@@ -13,9 +14,9 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
 }) {
   const route = resolveWorkspaceSurfacePath('/' + [surface, ...path].join('/'));
   if (!route || route.surface !== surface) notFound();
-  // Next applies the configured /studio basePath to app-relative redirects.
-  if (route.legacyPath !== null) redirect(route.legacyPath);
   const h = await headers();
+  // Absolute public URL so Next does not prefix the /studio basePath.
+  if (route.legacyPath !== null) redirect(publicAbsoluteUrl(h, route.legacyPath));
   const request = new Request(`https://${h.get('host') || 'invalid'}${route.studioPath}`, { headers: h });
   let data;
   try {
@@ -30,7 +31,7 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
   if (typeof user !== 'string' || !user) throw new Error('workspace_identity_unavailable');
   if (surface === 'control') {
     const tool = controlToolPath(route.view);
-    if (tool) redirect(tool);
+    if (tool) redirect(publicAbsoluteUrl(h, tool));
     return <ControlWorkspace user={user} initialView={route.view} />;
   }
   if (route.operatorSlug === null) {

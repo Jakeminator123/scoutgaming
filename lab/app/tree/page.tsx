@@ -1,8 +1,7 @@
-import { StudioPage } from '../studio-page';
+import { redirectToPublicControl } from '../control/public-redirect';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Regler · Croupier Studio' };
 
-export default function Page() {
-  return <StudioPage view="tree" />;
+export default async function Page() {
+  await redirectToPublicControl('/control/tree');
 }

@@ -7,15 +7,21 @@ Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
-## Tre åtkomstnivåer på scoutgaming.tech
+## Tre åtkomstnivåer på www.scoutgaming.tech
+
+Apex `scoutgaming.tech` är en 308 till www. Vercelprojektet heter `scoutgaming`.
+Spelmotorn ligger kvar på Render-tjänsten `croupier-v2`. `/studio` är Next.js-basePath
+för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet.
+Lissabon, `/lab`, `/labb` och `/bo` är avvecklade alias. Flaggningen
+`lissabon-stream-lane` är inte en produktadress.
 
 ### Ett gemensamt Vercelprojekt — 6 oktober 2026
 
 Efter uttrycklig samordning har Kevin-chatten släppt alla anspråk. Services i
-rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och Studio (`lab`)
-i ett bygge/projekt utan att slå ihop deras Next-versioner. Aktiverad
-`CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen till
-Studio när Services skickar dit dokument/API direkt. Render behåller spel/live,
+rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och labb (`lab`,
+basePath `/studio`) i ett bygge/projekt utan att slå ihop deras Next-versioner.
+Aktiverad `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen
+till labb-servicen när Services skickar dit dokument/API direkt. Render behåller spel/live,
 och T2–T4:s verkliga partnerinloggning, livedata och full operatörsbunden lobby är fortsatt öppna.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
 Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
@@ -24,7 +30,8 @@ Neon/Blob/Resend. Kod `cef3af5c` är READY på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV
 Senaste avslutade dokumentleverans `4ed55a56` är READY på
 `dpl_3WvxoXqoraAj3WPBy2zG3pzhQipP`, CI `37451320053` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
 API-spärrar och statiska filer är läsande verifierade. Kevin-chatten har
-bekräftat sin befintliga adminsession i partnerförhandsvisning/control/Backoffice.
+bekräftat sin befintliga adminsession. Kevins importerade backoffice
+(`lab/components/kevin-bo`) är endast förhandsvisningen på `/partner`, inte kontrollpanelen.
 Båda webbdelarna använder `fra1`; Git-autobyggen från main är på igen.
 Den gamla GitHub-adressen och gamla frontend-adressen vidarebefordras.
 Det domänlösa frontendprojektet sparas som `scoutgaming-legacy-frontend`, med
@@ -35,14 +42,14 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
-| 1 | `/control` | Intern administratör når samtliga nivåer och administrerar organisationer, rollprofiler och personal. |
-| 2 | `/partner/{operatorSlug}` | Operatörens personal når egna bord, godkända presentationer, spelare, rapporter och eget delegerbart team. |
-| 3 | `/play` | Enkel spellobby med spelval, egen profil och historik. Enkel spelstart finns; operatörskontext, profil och historik återstår. Blackjack nås på `/play/blackjack`. |
+| 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. |
+| 2 | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Kevins backoffice är bara denna förhandsvisning. Riktig operatörsinloggning och tenantdata är inte klara. |
+| 3 | `/play`, `/play/blackjack` | Spelare. Lobby, profil och historik är inte klara. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
-personalåtkomst. Befintliga `/studio`, `/bo`, `/blackjack` och giltiga
-direktstarter ska fungera under övergången.
+personalåtkomst. `/studio` är labbets basePath. Avvecklade alias är inte
+produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
 
 - [x] **T1. Överförd och uppdelad intern förhandsvisning.** Redigerbar källa från
   GitLab `codex/john-final-backoffice` på `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`
@@ -109,32 +116,34 @@ Privata originalanteckningar i `random/` är inte del av produkt eller deploymen
 
 Aktiv guide och ordlista skiljer lane, klippuppsättning, adapter, urval,
 uppspelningsplan och operatörspaket. PDF:erna används som underlag, aktuell
-kod avgör status. Nivå 1 är ScoutGamingGroups gemensamma adminyta med riktiga
+kod avgör status. Nivå 1 är ScoutGamingGroups gemensamma adminyta på `/control`, med riktiga
 verktygsingångar, inte en parallell uppsättning av Kevins exempelpaneler.
-Studio ingår i samma yta och huvudmeny. Nivå 2 behåller den importerade
-förhandsvisningen. Äldre hashbokmärken fungerar; interna klipp/tal/media/konton
+`/studio` är labbets basePath, inte produktnamnet i gränssnittet. Nivå 2 på
+`/partner` behåller den importerade förhandsvisningen. Kevins backoffice hör
+inte hemma i `/control`. Äldre hashbokmärken fungerar; interna klipp/tal/media/konton
 leder till befintliga verktyg och oanslutna vyer får en tydlig förklaring.
 Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
 lokala utkast fungerar fortsatt i den befintliga bordsförhandsvisningen.
 Ingen partner-login, DB-migration, spelregel eller mediefil ändras här.
 
-## Öppen arbetschecklista: en sammanhängande Studio
+## Öppen arbetschecklista: personalyta under /control
 
-Målet är att `/studio` fungerar som en gemensam arbetsyta för tidigare Lab och
-Backoffice: samma inloggning, begriplig navigation och fungerande dealer-, klipp-,
-administrations- och OpenClawflöden. Detta är den öppna arbetslistan för fortsatt
+Målet är att `/control` samlar tidigare Lab- och personalverktyg: samma
+inloggning, begriplig navigation och fungerande dealer-, klipp-,
+administrations- och OpenClawflöden. `/studio` är labbets basePath, inte
+ytans namn. Kevins backoffice stannar på `/partner`. Detta är den öppna arbetslistan för fortsatt
 arbete, inte en ny migrationsplan. Huvudagenten samordnar och uppdaterar den.
 En ruta kryssas först när resultatet nedan har verifierats; äldre PASS räcker
 inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
 
-- [ ] **A. Administratör kan logga in till Studio.** Jakob har bekräftat att han
+- [ ] **A. Administratör kan logga in till `/control`.** Jakob har bekräftat att han
   skapade `john.g` i Backoffice från det inloggade kontot `Jakob`. `john.g`
   fungerar som blackjackspelare. Synlig kontometadata bekräftar aktivt
   spelarkonto, ingen synlig Studio-användare med samma namn. Spelarkonton har
   enligt nuvarande kontrakt ingen Studioåtkomst; headerns Administratör gäller
   inloggade Jakob. Kontoformulären förtydligas. Ett separat administratörskonto
   behöver invitation/aktivering via e-post; produktionsmail är punkt F.
-  Klart när det avsedda administratörskontot når `/studio`, med rätt behörighet,
+  Klart när det avsedda administratörskontot når `/control`, med rätt behörighet,
   och spelarkonton fortfarande nekas. Kontodata ändras först utifrån belagd orsak.
 - [ ] **B. Backoffice går rimligt snabbt att navigera i.** Föreprov på
   `3e613186` gav fyra gruppbyten 7,468 / 4,944 / 4,859 / 10,018 s.
@@ -181,8 +190,9 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   B förblir öppen. Nästa arbete: lokalisera återstående start-/proxyväntan,
   minska sekventiella startläsningar med bibehållen färsk behörighetskontroll,
   och pröva navigation utan full sidomladdning med bevarade utkast.
-- [ ] **C. Studio samlar Lab och Backoffice.** OpenClaws modellvy har
-  `/studio/openclaw`; operatörschatt har `/studio/operator-chat`. Intern
+- [ ] **C. Personalverktyg samlas under `/control`.** OpenClaw samlas på
+  `/control/openclaw` och operatörschatt på `/control/operator-chat`.
+  `/studio` är labbets basePath. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
   samt spelarkonto/adminförtydligandet är verifierade i publicerad `ba0cb7ee`.
   Native/Neon spärrar det äldre fristående röstprovet; UI ska visa detta och
@@ -339,7 +349,7 @@ Två QA-kvitton med öppna takebeslut och alla aktiva miljö-/baseline-/kartregi
 De tekniska guiderna kortas; inaktuella produktdiskkommandon ersätts av aktuella
 Neon-/Blobregler. Inga `.env`-filer, providerinställningar eller databasvärden ändras.
 
-## Masterplan: en Croupier Studio
+## Masterplan: en sajt, tre nivåer
 
 ### Mål och städprincip
 
@@ -351,13 +361,13 @@ att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
 ### Gemensamma kontrakt
 
 1. **Identitet:** gemensamt username/e-post/lösenord, ingen kontotypsväljare.
-   Admin får spel+hela Studio/BO, superadmin är adminalias; reader/staff är game-only.
+   Admin får spel och hela personalytan på `/control`; superadmin är adminalias; reader/staff är game-only.
    Befintliga råroller/IDs/saldon/historik bevaras, ingen ny OAuth/kontoreset.
    Credentialresolver kräver exakt en kandidat; collision/pending/fel lösenord ger
    generiskt avslag utan fallback/klientroll. Kapabilitet `sharedCredentials`
    läses före dispatch; misslyckad läsning blockerar, inte alternativ namespace.
    Sessions-/Origin/CSRF/Host/JSON/roll/fingerprint/auth_epoch gäller på servern.
-2. **Sparad policy:** Render/Studio använder samma explicita Neonmiljö/workspace.
+2. **Sparad policy:** Render och labb-servicen använder samma explicita Neonmiljö/workspace.
    `CROUPIER_STUDIO_NEON_POLICY=1` och native `CROUPIER_STUDIO_NATIVE_ADMIN=1`
    får inte skapa två writers. Gemensam spelrevision binder projekt/adminrevision,
    exakt projektrevision består i spelarens kvitto. Repeatable-read/CAS/transaktion/
@@ -368,7 +378,7 @@ att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
    till klienten. HEAD/Range och privat source/layout-spärr består.
    Blob ersätter filer, inte idempotens, ägare, lease/budget eller GPU-reservationer.
    Fullfil får Blobpaket; stream får inte tvingas genom Blob/betald fullfilsfallback.
-4. **Spel/AI-gräns:** Vercel gör lätta Studio/admin-anrop; Render/RunPod äger live spel/
+4. **Spel/AI-gräns:** Vercel gör lätta adminanrop; Render/RunPod äger live spel/
    långvariga jobb. `/speech-stream` och `/lipsync-worker` bevarar auth/workerbiljetter.
    Reconnect återspelar inte gammal kö/startar inte nytt betalt GPU-jobb.
    OpenClaw får tillåten publik kontext/katalogrevision, ingen direkt saldoauktoritet.
@@ -525,7 +535,7 @@ med barnprocess/källa/stabil deploy/envbindning i stället.
 
 | Ansvar | Aktiv källa / gräns |
 | --- | --- |
-| Publik webb/spel | Vercel scoutgaming, service web från apps/croupier-frontend, /blackjack; service studio från lab under /studio |
+| Publik webb | Vercelprojekt scoutgaming på www.scoutgaming.tech (apex 308 till www). Ytor: `/control`, `/partner`, `/play`. Service web från apps/croupier-frontend; service studio är labb-appen med basePath `/studio`, inte en egen produkt. Spelmotor: Render `croupier-v2`. |
 | Konton/wallet/rundor | Neon croupier_game/croupier_auth; Render äger spelauktoritet |
 | Zoner | separat croupier_zones/CROUPIER_ZONES_DATABASE_URL, ingen DBfallback |
 | Studio/adminpolicy/historik/mediaregister | Neon croupier_studio med scope/CAS/history/audit; Render samma policy |
