@@ -662,7 +662,7 @@ inte kvarstående obehandlade funktionsfel; detaljer/shutdownbudget i JOHN.
 ## Lokal start och sökning
 
 Starta bara när begärt: `node lab/start.mjs --offline --no-open` är isolerad
-preview; `Start-Lab.cmd` följer sparad ansluten profil.
+preview; `node lab/start.mjs --no-open` följer sparad ansluten profil.
 Ett serverpar/sessionsvakt, bevarade utkast/spel och återanvända browserflikar.
 Efter Neoncutover kan offlineStudio ge 503 studio_read_storage_unavailable,
 ingen auth/lagringsfallback till QA. Lokal guestpolicy består enligt AGENTS.
