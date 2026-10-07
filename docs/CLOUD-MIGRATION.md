@@ -95,7 +95,9 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   är avklarad. `lab/lib/partner-data.mjs` anropar `allowsPartnerResource` för den
   scopade snapshoten. Partner-login, medlemslagring och `partner_session` finns.
   Isolerat bevis för spärr, återkallelse, nekade anrop mellan två organisationer
-  och skydd för sista administratören återstår. T2 är påbörjad, inte klar;
+  och skydd för sista administratören återstår. Spärren mot att ta bort sista
+  operatörsadmin finns i lagret sedan 7 oktober (`186c6bc4`), provad mot minnesfixtur;
+  isolerat bevis mot riktig Postgres saknas. T2 är påbörjad, inte klar;
   rena policytester är inte acceptans för riktiga konton.
   Förtydligande 6 oktober: intern adminpersonal ska ha åtkomst till alla tre
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan

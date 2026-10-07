@@ -23,7 +23,7 @@ Inga hemligheter här. Status uppdateras i `docs/JOHN-HANDOFF.md`, inte i den h�
 | 4 | Nivåväxlare och chips 40 px, Johns bild 36 px | A: 40 enligt hans regel 10. B: 36 enligt bilden | **A** | Ingen ändring |
 | 5 | Inloggningssidor visade sidomenyn | A: behåll. B: ren inloggningssida | **B** | Gjort 7 okt |
 | 6 | Översiktens lime-knapp är "Lanes, bord & konton" | A: behåll. B: "Ladda om från servern" när livedata finns | **A nu, B senare** | Ingen ändring |
-| 7 | "Skydd för sista administratören" står som kvar i T2, ingen kod finns | A: bygg i nästa partnerpass. B: stryk | **A** | Öppet, Kevin-spår |
+| 7 | "Skydd för sista administratören" står som kvar i T2, ingen kod finns | A: bygg i nästa partnerpass. B: stryk | **A** | Gjort i operatörslagret 7 okt natt (`186c6bc4`); ingen rutt eller vy skriver ännu (T2, Kevin) |
 | 8 | Nivå 1 står som "påbörjad" fast sidorna fungerar | A: behåll. B: "klart" | **A** | Ingen ändring |
 | 9 | Agentmodeller: "Spara alla" sparar en agent per klick | A: behåll. B: riktig batch | **A nu** | Ingen ändring |
 | 10 | Dealerns gamla `<select>` ligger dold bakom chipsen för ett gammalt test | A: behåll dold. B: skriv om testet, ta bort | **B i nästa pass** | Öppet |
@@ -64,7 +64,32 @@ Rader 21–30, 7 okt kl 18:45. Jakob delegerade alla beslut om `/control`, även
 | 30 | Rotens startfiler (Start-Lab.cmd m.fl.) borttagna av Jakob; `launcher.test.mjs` borttagen; dokumentationen pekar på `node lab/start.mjs --no-open` | – | Gjort |
 | 31 | Valet av variant följer med i adressen (`?variant=`) på Händelser och Klippbibliotek | Ursprungligt villkor: bara dealer och event i adressen | Gjort; annars kopplas video till fel variant vid sidbyte |
 | 32 | OpenClaw-fliken Chatt har ingen sparknapp | Rad C77 (Spara bara där något redigeras) | Gjort; chattens läge sparas inte i projektet |
-| 33 | Systemkartans baslinje uppdateras inte | Handoffens "uppdatera vid avsiktlig ruttändring" | Kartan är gul utan fel; två gula poster kommer från andras tidigare ändringar (`.github/workflows/croupier.yml`, `apps/croupier-frontend/lib/platform-routing.mjs`) och ska granskas av den som äger dem |
+| 33 | Systemkartans baslinje uppdateras inte | Handoffens "uppdatera vid avsiktlig ruttändring" | Uppdaterad 7 okt natt (`8ebb53e2`) sist i pass B, efter granskning. Kartan är grå: 0 gula, 0 röda. Varje ändrad post och dess commit står i commit-texten |
+
+Rader 34–36, 7 okt natt: pass A–C enligt `random/handoff-2026-10-07-kvall.md`. Underagenter körde, orkestratorn granskade och levererade.
+
+| # | Pass | Gjort | Kvar |
+|---|---|---|---|
+| 34 | A. Teststädning (`1aba4ff6`) | Sex gröna testfiler utan körare och tre frontendtester i `pre-commit-full`. Dold text och `studio-navigation.mjs` borta; skyddet för gamla menyadresser är en fast lista. Pensionerade namn i tester; `backup-lab-state` med oförändrat format. GitLab-inboxens verktyg borta, `identity` och låset i chefen. Död CSS för gamla sidomenyn borta | `test/backoffice-lab-browser.mjs` är opt-in och inte körd. Chefens register ligger kvar i `.croupier-inbox/chef.json` och låsets feltext säger "Inbox busy". CSS utanför listan (`studio-shell`, `studio-brand`, `main-nav`, `studio-body`, `dealer-selector`, `studio-footer`) är kvar |
+| 35 | B. Dokumentation mot kod (`a2402600`, baslinje `8ebb53e2`) | D1–D32 rättade i `AGENTS.md`, `CLAUDE.md`, README-filerna, labbguiden, `guide.json`, `docs/` och `.cursor/rules`. "Kopplingar som saknas" och GPU-påminnelsen i handoffen. Kommentar i #2 om rad 13 och 15 | Gränssnittstexter som ligger efter koden (L20–L22). Rullande observationsfönstret monteras inte (L23). GPU-workflows låses före 19 okt |
+| 36 | C. Sista operatörsadmin och sqlite (`186c6bc4`) | Lagret avvisar en medlemskaps- eller rolländring som lämnar bolaget utan aktiv medlem med `team.roles.assign`: 409 i samma transaktion, låst bolagsrad. Utan pool med `connect()` stängs sådana skrivningar med 503. Sqlite-vägen granskad, inget borttaget (tabellen nedan) | Ingen rutt eller vy skriver (L5, L11). Skrivande rutt måste skicka poolen (L24). Ingen databasspärr och inget samtidighetsprov mot riktig Postgres |
+
+Granskning av sqlite-vägen i `web/server.mjs` (pass C, endast läsning). Handoffens "11 grenar, 15 P6" stämmer inte med dagens fil: omkring 20 postgres-villkor och drygt 20 `nativeP6`-referenser, och P6 är en QA-router som inte hör till sqlite.
+
+| Fråga | Rekommendation | Bevis |
+|---|---|---|
+| Vad kör produktion? | Postgres; behåll | `docs/ENVIRONMENT-VARIABLES.md:64`, `:107`; `web/server.mjs:52-59` |
+| Läge utan miljövariabel | Sqlite är standard; låt det vara kvar | `web/server.mjs:52`, `:86` |
+| Domänmoduler | Produktion laddar `web/storage/async-*.mjs` (10), sqlite `web/*.mjs` | `web/server.mjs:78-82` |
+| Plånbok, spelare, bord | Produktion kör postgres-grenarna | `web/server.mjs:175-237`; `test/postgres-persistence.mjs`, `test/postgres-native-table.mjs`, `test/player-auth.mjs` |
+| Speladministration | Bara postgres, annars null | `web/server.mjs:253-254`; `test/player-password.mjs` |
+| Lokalt konto och schema | Bara sqlite skapar schema och lokal superadmin | `web/server.mjs:255-325`; `test/cloud-admin-bootstrap.mjs`, `test/craig-login.mjs` |
+| Probe-lagring | Sqlite kan använda `dataDir/studio`; produktion använder Neon | `web/server.mjs:99-101` |
+| Lokala profiler (`lissabon-stream-lane`) | Bara sqlite med lokala flaggor; postgres får en tom ersättare | `web/server.mjs:547-551`; `test/lissabon-profiles.mjs` |
+| `preview_sessions` | Schemat skapas bara i sqlite | `web/server.mjs:553` |
+| P6 | Ingen sqlite-gren; avstängd som standard | `web/native-p6-qa-hook.mjs:28-33`; `ops/cloud/test/native-p6-router-hook.test.mjs` |
+| Om sqlite pensioneras | Förloras: offline-labbet, lokala profiler, sqlite-fixturer i testerna, `tools/backup-lab-state.mjs`, `lab/data`, `test/sqlite-postgres-migration.mjs` | `lab/start.mjs:16-21`, `:68-72`; `tools/backup-lab-state.mjs:166` |
+| Beslut nu | Ta inte bort något | – |
 
 ## Avgjort av orkestratorn, till kännedom
 
@@ -95,12 +120,12 @@ Rader 21–30, 7 okt kl 18:45. Jakob delegerade alla beslut om `/control`, även
 | `port-source.mjs` skulle återställa fabrikens `Team` om porten körs om | Varningsrad tillagd i skriptet 7 okt |
 | Resten av hans 13 vyer rörs inte förrän de får riktig data | Policy |
 | Hans kopplingar anpassas till repots API och sessioner, inte tvärtom | Jakobs policy 7 okt |
-| Rad 7: skydd för sista administratören | Nästa partnerpass |
+| Rad 7: skydd för sista administratören | Byggt i lagret (`186c6bc4`). En skrivande rutt måste skicka poolen med `connect()`, inte `{ query }` (L24) |
 
 ## Större beslut som väntar på Jakob
 
 | Fråga | Rekommendation |
 |---|---|
-| `web/server.mjs` har dubbla vägar sqlite/postgres (11 grenar, 15 P6-referenser) | Separat granskning. Ta inte bort sqlite utan beslut |
+| `web/server.mjs` har dubbla vägar sqlite/postgres | Granskad 7 okt natt (rad 36 och tabellen under den): produktion kör postgres, sqlite bär offline-labbet och lokala fixturer. Ta inte bort sqlite utan beslut |
 | Render `croupier-v2` har autodeploy av; `/bo`-redirects och `/api/history` är inte deployade | Manuell deploy i Render-konsolen, eller ge API-nyckel |
 | Neon-rollen `croupier_game` visades i klartext i en MCP-session | Rotera lösenordet, uppdatera Vercel-env |
