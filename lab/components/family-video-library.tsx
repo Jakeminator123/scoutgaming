@@ -23,11 +23,22 @@ export function FamilyNavigation({ inventory, project, dealerId, selectedFamilyI
   </div>;
 }
 
-export function FamilyOverview({ inventory, project, dealerId, onOpen }: { inventory: VideoInventory; project: StudioProject; dealerId: string; onOpen: (eventId: string, situation: string) => void }) {
+export function FamilyOverview({ inventory, project, dealerId, onOpen, hrefFor }: {
+  inventory: VideoInventory; project: StudioProject; dealerId: string;
+  onOpen?: (eventId: string, situation: string) => void;
+  hrefFor?: (eventId: string, situation: string) => string;
+}) {
   const groups = [['deal', 'Kort till rätt plats'], ['speak', 'Exakta repliker'], ['idle', 'Vänteläge']] as const;
   return <section aria-label="Händelser och videomappar"><div className="event-heading"><div><span className="eyebrow">ÖVERSIKT</span><h1>Händelse → videomapp</h1><p>Välj en destination eller replik för att spela dess standardklipp och se varianterna som faktiskt finns.</p></div></div>
-    {groups.map(([type, title]) => <section key={type} className={styles.situation}><h2>{title}</h2><div className={styles.overviewGrid}>{(inventory.families ?? []).filter(family => family.dealerId === dealerId && matchesGroup(family.eventId, type)).map(family => <button type="button" className={styles.familyButton} key={family.id} onClick={() => onOpen(family.eventId, family.situation)}><strong>{familyLabel(family)}</strong><code>{mediaFamilyFolder(family)}/</code><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></button>)}</div></section>)}
-    <details className={styles.situation}><summary>Övriga spelsignaler</summary><p>Tur och resultat har egna eventdata. Talet kommer separat som en exakt replik.</p>{project.events.filter(event => ['turn', 'settle', 'reveal'].includes(event.sourceType) && !familiesFor(inventory, dealerId).some(family => family.eventId === event.id)).map(event => <button className="text-button" key={event.id} onClick={() => onOpen(event.id, '')}>{event.label}</button>)}</details>
+    {groups.map(([type, title]) => <section key={type} className={styles.situation}><h2>{title}</h2><div className={styles.overviewGrid}>{(inventory.families ?? []).filter(family => family.dealerId === dealerId && matchesGroup(family.eventId, type)).map(family => {
+      const href = hrefFor?.(family.eventId, family.situation);
+      const body = <><strong>{familyLabel(family)}</strong><code>{mediaFamilyFolder(family)}/</code><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></>;
+      return href ? <a key={family.id} className={styles.familyButton} href={href}>{body}</a> : <button type="button" className={styles.familyButton} key={family.id} onClick={() => onOpen?.(family.eventId, family.situation)}>{body}</button>;
+    })}</div></section>)}
+    <details className={styles.situation}><summary>Övriga spelsignaler</summary><p>Tur och resultat har egna eventdata. Talet kommer separat som en exakt replik.</p>{project.events.filter(event => ['turn', 'settle', 'reveal'].includes(event.sourceType) && !familiesFor(inventory, dealerId).some(family => family.eventId === event.id)).map(event => {
+      const href = hrefFor?.(event.id, '');
+      return href ? <a className="text-button" key={event.id} href={href}>{event.label}</a> : <button className="text-button" key={event.id} onClick={() => onOpen?.(event.id, '')}>{event.label}</button>;
+    })}</details>
   </section>;
 }
 

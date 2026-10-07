@@ -4,10 +4,8 @@ import { labUrl } from "../lib/lab-url.mjs";
 import { ProbeEditor } from './probe-editor';
 import { ProjectConflict } from './project-conflict';
 import { createDefaultProbePolicy } from '../lib/probe-policy.mjs';
-import { StudioGuide } from './studio-guide';
-import { EventTree } from './event-tree';
-import { ActivityLog, type ActivityDraft } from './activity-log';
-import { appendActivity, decisionAttribution, eventSummary, type ActivityEntry } from '../lib/activity-log.mjs';
+import { ActivityLog } from './activity-log';
+import { decisionAttribution, eventSummary } from '../lib/activity-log.mjs';
 import { OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 import treeStyles from './event-tree.module.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -27,19 +25,20 @@ import { neutralContext } from './test-context';
 import { SocialChatPanel } from './social-chat-panel';
 import type { SocialDraftCache, SocialActivity } from './social-chat-panel';
 import socialStyles from './social-chat-panel.module.css';
-import { requestJson, studioViewForPath, viewPaths, previewVideoIdFor } from './studio-types';
-import type { ConnectionStatus, DirectorMode, SimulationResult, StudioView, TestContext, VideoInventory } from './studio-types';
-import { resolveOriginalDefault, type OriginalMediaCatalog } from '../lib/original-media.mjs';
+import { requestJson, studioHref, studioViewForPath, viewPaths, previewVideoIdFor } from './studio-types';
+import type { ConnectionStatus, SimulationResult, StudioView, TestContext, VideoInventory } from './studio-types';
+import { resolveOriginalDefault } from '../lib/original-media.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import streamStyles from './game-stream.module.css';
 import { SpeechSource } from './speech-source';
 import { IdlePolicyEditor } from './idle-policy-editor';
 import { createDefaultIdlePolicy, type IdlePolicy } from '../lib/idle-policy.mjs';
-import { upsertMediaVariantPolicy, dealFrequencyPolicies, mediaExampleEvent, mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
+import { upsertMediaVariantPolicy, dealFrequencyPolicies, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { MediaFamilyEditor, MediaSituation } from './media-family-editor';
-import { FamilyNavigation, FamilyOverview, FamilyVideoLibrary } from './family-video-library';
+import { FamilyNavigation, FamilyVideoLibrary } from './family-video-library';
 import { LegacyClipEditor } from './legacy-clip-editor';
-import { PageTemplate, publishShellStatus } from './page-template.mjs';
+import { PageTemplate } from './page-template.mjs';
+import { useStudioSession } from './studio-session';
 
 const socialTitles: Record<string, string> = {
   'social.requested': 'Meddelande skickat till Astrid',
@@ -94,48 +93,50 @@ const logReasons: Record<string, string> = {
 };
 const readableLogReason = (reason: string | undefined) => reason ? logReasons[reason] ?? `Rapporterad orsak: ${reason}` : 'Ingen särskild orsak angavs. Se serverns beslutsspår.';
 
-export function Studio({ initialProject, initialVideos, initialStatus, initialView = 'lab', connectedLane = false, standaloneVoicePreviewAvailable = true }: { initialProject: StudioProject; initialVideos: VideoInventory; initialStatus: ConnectionStatus; initialView?: StudioView; connectedLane?: boolean; standaloneVoicePreviewAvailable?: boolean }) {
-  const [project, setProject] = useState(initialProject);
-  const [conflict, setConflict] = useState(false);
-  const [videos, setVideos] = useState(initialVideos);
-  const [originals, setOriginals] = useState<OriginalMediaCatalog | null>(null);
+export function Studio({ initialProject, initialVideos, initialStatus, initialView = 'lab', initialDealerId, initialEventId, connectedLane = false, standaloneVoicePreviewAvailable = true }: { initialProject: StudioProject; initialVideos: VideoInventory; initialStatus: ConnectionStatus; initialView?: StudioView; initialDealerId?: string; initialEventId?: string; connectedLane?: boolean; standaloneVoicePreviewAvailable?: boolean }) {
   const [observedStep, setObservedStep] = useState<PresentationStep | null>(null);
   const [exampleSpeechLine, setExampleSpeechLine] = useState('placebets');
   const [exampleSituation, setExampleSituation] = useState('');
-  const [refreshingVideos, setRefreshingVideos] = useState(false);
-  const projectRef = useRef(project);
-  projectRef.current = project;
-  const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialProject));
   const [view, setView] = useState<StudioView>(initialView);
-  const [dealerId, setDealerId] = useState<DealerId>('astrid');
-  const [eventId, setEventId] = useState(initialProject.events[0].id);
-  const [variantId, setVariantId] = useState('');
   const [editorTab, setEditorTab] = useState<'event' | 'variants' | 'triggers'>('variants');
   const [testToolsOpen, setTestToolsOpen] = useState(false);
   const [focusSocial, setFocusSocial] = useState(false);
-  const [mode, setMode] = useState<DirectorMode>('off');
   const [context, setContext] = useState<TestContext>(() => structuredClone(neutralContext));
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [simulating, setSimulating] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [playId, setPlayId] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [previewKind, setPreviewKind] = useState<'selected' | 'social' | null>(null);
   const [socialAsset, setSocialAsset] = useState<StudioAsset | null>(null);
   const [socialReply, setSocialReply] = useState('');
   const [filter, setFilter] = useState('');
-  const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [socialBusyState, setSocialBusy] = useState(false);
   const [idlePreviewBusy, setIdlePreviewBusy] = useState(false);
   const socialBusy = socialBusyState;
   const socialBusyRef = useRef(false);
   const activePlayback = useRef<{ id: string; title: string; started: boolean } | null>(null);
-  const recordActivity = useCallback((entry: ActivityDraft) => {
-    setActivities(current => appendActivity(current, { ...entry, id: crypto.randomUUID(), time: new Date().toISOString() }));
-  }, []);
   const socialOwnership = useCallback((value: boolean) => { socialBusyRef.current = value; setSocialBusy(value); }, []);
+  const simulationRun = useRef(0);
+  const simulationRequest = useRef<AbortController | null>(null);
+  const cancelSocial = useRef<((reason?: string) => void) | null>(null);
+  const socialDraftCache = useRef<SocialDraftCache | null>(null);
+  const invalidateRef = useRef<((stopSocial?: boolean) => void) | null>(null);
+  const mainStage = useRef<HTMLDivElement>(null);
+  const speechHost = useRef<HTMLDivElement>(null);
+  const socialChat = useRef<HTMLDivElement>(null);
+  const registerSocialCancel = useCallback((cancel: ((reason?: string) => void) | null) => { cancelSocial.current = cancel; }, []);
+  const session = useStudioSession({
+    initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, connectedLane,
+    unsavedSocialRef: socialDraftCache, onInvalidate: invalidateRef,
+    observation: { active: view === 'lab', step: observedStep, speechLine: exampleSpeechLine, situation: exampleSituation },
+  });
+  const {
+    project, setProject, updateProject, modelEdit, dirty, saving, save, exportProject,
+    error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
+    videos, setVideos, refreshVideos, refreshingVideos, originals,
+    dealerId, selectDealer, eventId, selectEvent: selectStoredEvent, variantId, setVariantId, selectVariant, assignSelection,
+    mode, changeMode, event, observedEvent, line, variant, media, dealer, recordActivity, activities, setActivities, projectRef,
+  } = session;
   const recordSocial = useCallback((entry: SocialActivity) => {
     const audio = entry.type.includes('.audio.');
     const status = entry.type.endsWith('requested') ? 'received' : entry.type.endsWith('started') ? 'started' : entry.type.endsWith('loading') ? 'waiting' : entry.type.endsWith('completed') ? 'completed' : entry.type.endsWith('cancelled') || entry.type.endsWith('suppressed') ? 'cancelled' : entry.type.endsWith('failed') || entry.type.endsWith('rejected') ? 'failed' : 'selected';
@@ -145,26 +146,7 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
           : entry.data?.decisionOwner === 'local-social-policy' ? 'Labbets sociala policy' : 'Labbets sociala kontroll';
     recordActivity({ source: 'social', stage: audio ? 'playback' : status === 'received' ? 'input' : 'decision', status, title: socialTitles[entry.type] ?? `Social händelse: ${entry.type}`, runId: entry.requestId, owner, reason: readableLogReason(entry.reason), data: { ...entry.data, type: entry.type, rawReason: entry.reason } });
   }, [recordActivity]);
-  const simulationRun = useRef(0);
-  const simulationRequest = useRef<AbortController | null>(null);
-  const cancelSocial = useRef<((reason?: string) => void) | null>(null);
-  const socialDraftCache = useRef<SocialDraftCache | null>(null);
-  const mainStage = useRef<HTMLDivElement>(null);
-  const speechHost = useRef<HTMLDivElement>(null);
-  const socialChat = useRef<HTMLDivElement>(null);
-  const registerSocialCancel = useCallback((cancel: ((reason?: string) => void) | null) => { cancelSocial.current = cancel; }, []);
-
-  const projectJson = useMemo(() => JSON.stringify(project), [project]);
-  const dirty = projectJson !== savedJson;
-  const eventDefinition = project.events.find(item => item.id === eventId) ?? project.events[0];
-  const observedEvent = view === 'lab' && observedStep?.eventId === eventDefinition.id && observedStep.event && typeof observedStep.event === 'object' ? observedStep.event as Record<string, unknown> : null;
-  const speechExample = eventDefinition.id === 'speak.other' ? { ...eventDefinition.exampleEvent, line: exampleSpeechLine } : null;
-  const event = observedEvent ? { ...eventDefinition, exampleEvent: observedEvent } : exampleSituation ? { ...eventDefinition, exampleEvent: mediaExampleEvent(eventDefinition, exampleSituation) } : speechExample ? { ...eventDefinition, exampleEvent: speechExample } : eventDefinition;
-  const media = mediaLineForEvent(project, videos, dealerId, event.id, event.exampleEvent);
-  const line = media.line;
-  const variant = line.variants.find(item => item.id === variantId) ?? line.variants[0];
   const isBaseline = variant.id === line.baselineVariantId;
-  const dealer = project.dealers.find(item => item.id === dealerId)!;
   const selectedAsset = project.assets.find(item => item.id === variant.assetId);
   const currentAsset = socialAsset ?? result?.asset ?? selectedAsset;
   const selectedAnimationCompatible = isAssetCompatible(event, selectedAsset);
@@ -189,31 +171,18 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
   function openFirstIncompatibleBinding() {
     const first = incompatibleBindings[0];
     if (!first) return;
-    setDealerId(first.dealerId); setEventId(first.eventId); setVariantId(first.variantId);
+    assignSelection({ dealerId: first.dealerId, eventId: first.eventId, variantId: first.variantId }, { invalidate: false });
     setEditorTab('variants'); changeView('lab');
   }
-  useEffect(() => {
-    const controller = new AbortController();
-    requestJson<OriginalMediaCatalog>('/api/original-media', { signal: controller.signal }).then(setOriginals).catch(() => {});
-    return () => controller.abort();
-  }, []);
-  useEffect(() => {
-    function onBeforeUnload(event: BeforeUnloadEvent) {
-      const social = socialDraftCache.current;
-      if (dirty || social && JSON.stringify(social.draft) !== JSON.stringify(social.status.policy)) { event.preventDefault(); event.returnValue = ''; }
-    }
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [dirty]);
-  useEffect(() => {
-    publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
-    return () => publishShellStatus(null);
-  }, [dirty]);
   useEffect(() => {
     function onPopState() { invalidateSimulation(); setView(studioViewForPath(window.location.pathname)); }
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+  useEffect(() => {
+    if (view !== 'tree' && view !== 'guide' && view !== 'activity') return;
+    window.location.assign(studioHref(viewPaths[view], { dealerId, eventId }));
+  }, [view, dealerId, eventId]);
   useEffect(() => () => { simulationRun.current++; simulationRequest.current?.abort(); cancelSocial.current?.(); }, []);
   useEffect(() => {
     if (view !== 'lab' || previewKind !== 'social' || !socialReply) return;
@@ -249,7 +218,7 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
     recordActivity({ source: 'manual', stage: 'input', status: 'received', runId: id, title: 'Förhandsvisa markerad variant', owner: 'Du', reason: 'Manuellt val. Regler och OpenClaw körs inte.', data: { event: event.exampleEvent, dealerId, variantId: variant.id, videoGenerationId: variant.videoGenerationId, assetId: variant.assetId, durationMs: selectedAsset?.durationMs, durationSource: '2D-asset; video använder sin egen tid' } });
     setPreviewKind('selected'); setPlayId(current => current + 1); setPlaying(true);
   }
-  function goToAstridIdle() { changeView('lab'); setDealerId('astrid'); setEventId('idle.ready'); setVariantId(''); setFocusSocial(true); }
+  function goToAstridIdle() { changeView('lab'); assignSelection({ dealerId: 'astrid', eventId: 'idle.ready', variantId: '' }, { invalidate: false }); setFocusSocial(true); }
   function playSocialReaction(assetId: 'social.ledsen' | 'idle.ready.standard', label: string, exactReply: string) {
     if (dealerId !== 'astrid' || event.id !== 'idle.ready' || view !== 'lab') return;
     const clip = getMotionClip('idle.ready.standard');
@@ -271,22 +240,17 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
     if (receipt.phase === 'completed') activePlayback.current = null;
     if (receipt.phase === 'fallback') run.started = false;
   }
-  function changeView(next: StudioView) { invalidateSimulation(); setView(next); window.history.pushState(null, '', viewPaths[next]); }
-  function updateProject(edit: (draft: StudioProject) => void) { setProject(current => { const draft = structuredClone(current); edit(draft); return draft; }); invalidateSimulation(); setError(''); setNotice(''); }
-  function modelEdit(edit: (value: StudioProject) => StudioProject) {
-    try { setProject(edit(project)); invalidateSimulation(); setError(''); setNotice(''); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Ändringen kunde inte göras.'); }
+  function changeView(next: StudioView) {
+    if (next === 'tree' || next === 'guide' || next === 'activity') {
+      window.location.assign(studioHref(viewPaths[next], { dealerId, eventId }));
+      return;
+    }
+    invalidateSimulation(); setView(next); window.history.pushState(null, '', viewPaths[next]);
   }
   function updateVariant(patch: Partial<StudioVariant>) { updateProject(draft => { const target = draft.lines.find(item => item.dealerId === dealerId && item.eventId === event.id)!.variants.find(item => item.id === variant.id)!; Object.assign(target, patch); }); }
   function updateIdlePolicy(next: IdlePolicy) { updateProject(draft => { draft.idlePolicy = next; }); }
   function updateMediaPolicy(familyId: string, policy: MediaVariantPolicy) {
     updateProject(draft => { draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, familyId, policy); });
-  }
-  async function refreshVideos() {
-    invalidateSimulation(); setRefreshingVideos(true); setError('');
-    try { setVideos(await requestJson<VideoInventory>('/api/videos/rescan', { method: 'POST' })); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Videomapparna kunde inte läsas.'); }
-    finally { setRefreshingVideos(false); }
   }
   function uploadedVideo(inventory: VideoInventory, video: VideoEntry, binding: UploadBinding | null) {
     setVideos(inventory);
@@ -299,8 +263,8 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
       const targetVariant = binding.role === 'standard' ? targetLine.variants.find(v => v.id === targetLine.baselineVariantId)! : targetLine.variants.at(-1)!;
       targetVariant.videoGenerationId = video.id;
       if (binding.role === 'alternative') { targetVariant.selection = binding.selection; targetVariant.triggerIds = binding.triggerIds; }
-      setProject(next); setDealerId(targetDealer); setEventId(targetEvent); setVariantId(targetVariant.id);
-      invalidateSimulation(); setError(''); setNotice('Videon finns i banken. Kopplingen ligger i utkastet tills du sparar projektet.');
+      setProject(next); assignSelection({ dealerId: targetDealer, eventId: targetEvent, variantId: targetVariant.id });
+      setError(''); setNotice('Videon finns i banken. Kopplingen ligger i utkastet tills du sparar projektet.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Filen sparades men kunde inte kopplas.'); }
   }
   function updateTrigger(id: string, patch: Partial<StudioTrigger>) { updateProject(draft => { Object.assign(draft.triggers.find(item => item.id === id)!, patch); }); }
@@ -310,35 +274,12 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
     updateProject(draft => { draft.triggers.push({ id, label: `Ny ${category === 'deterministic' ? 'spelregel' : category === 'social' ? 'social trigger' : 'framtoning'}`, category, path: descriptor.path, op: descriptor.operators[0], value: defaultValue(descriptor) }); });
     return id;
   }
-  function selectEvent(id: string) { setObservedStep(null); setEventId(id); setVariantId(''); setExampleSituation(''); invalidateSimulation(); }
+  function selectEvent(id: string) { setObservedStep(null); setExampleSituation(''); selectStoredEvent(id); }
   function openObservedEvent(id: string, step: PresentationStep) {
     if (step.blocked || !step.eventId) return;
-    changeView('lab'); setEventId(id); setVariantId(''); setObservedStep(step);
+    changeView('lab'); assignSelection({ eventId: id, variantId: '' }, { invalidate: false }); setObservedStep(step);
   }
-  function selectDealer(id: DealerId) { setDealerId(id); setVariantId(''); invalidateSimulation(); }
-  function selectVariant(id: string) { setVariantId(id); invalidateSimulation(); }
   function changeContext(next: TestContext) { setContext(next); invalidateSimulation(); }
-  function changeMode(next: DirectorMode) { setMode(next); invalidateSimulation(); }
-
-  async function save() {
-    if (saving) return;
-    invalidateSimulation();
-    setSaving(true); setError(''); setNotice('');
-    const submitted = project;
-    try {
-      const response = await requestJson<{ project: StudioProject }>('/api/project', { method: 'PUT', body: JSON.stringify({ project: submitted, expectedRevision: submitted.revision }) });
-      if (!response.project) throw new Error('Servern returnerade inte det sparade projektet.');
-      setSavedJson(JSON.stringify(response.project));
-      setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
-      setNotice(connectedLane
-        ? 'Sparat. Spelet läser nya deal- och replikval vid nästa händelse och Probe inför nästa beslut. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.'
-        : 'Projektet är sparat. Probe läser policyn inför nästa beslut.');
-      recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat', owner: 'Du / projektlagringen',
-        reason: 'Regler och kopplingar sparades.',
-        data: { revision: response.project.revision } });
-    } catch (cause) { if ((cause as {statusCode?:number})?.statusCode===409) setConflict(true); setError(cause instanceof Error ? cause.message : 'Projektet kunde inte sparas.'); }
-    finally { setSaving(false); }
-  }
 
   async function simulate() {
     if (socialBusyRef.current) { setNotice('Vänta tills det sociala svaret är klart eller välj Stoppa före ett nytt eventprov.'); return; }
@@ -362,27 +303,24 @@ export function Studio({ initialProject, initialVideos, initialStatus, initialVi
     finally { if (run === simulationRun.current) { simulationRequest.current = null; setSimulating(false); } }
   }
 
-  function exportProject() {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'croupier-lab-project.json'; anchor.click(); URL.revokeObjectURL(url);
-    setNotice('JSON exporterad. Filen innehåller labbpolicyer, inte hemligheter eller videofiler.');
-  }
-
-  const workspaceTitle = view === 'lab' ? event.label : view === 'tree' ? 'Nodträdet' : view === 'videos' ? 'Videobanken' : view === 'guide' ? 'Guide' : view === 'activity' ? 'Händelselogg' : view === 'probe' ? 'Probe' : 'OpenClaw';
-  return <div className={`studio-shell ${isIdleEditor ? 'idle-editor-active' : ''}`}><a className="skip-link" href="#workspace">Hoppa till arbetsytan</a><PageTemplate eyebrow="// STUDIO" title={workspaceTitle} intro={<span className="workspace-breadcrumb"><span>Blackjack</span><span> / </span><span>{dealer.label}</span><span> / </span><strong>{workspaceTitle}</strong><span className="environment-badge"><i /> STUDIO</span></span>} status={<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>} primary={<><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{dirty ? 'Osparade ändringar' : 'Inga osparade ändringar'}</span><button className="icon-button export-button" title="Exportera projekt som JSON" aria-label="Exportera projekt som JSON" onClick={exportProject}>↓</button><button className="primary-button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button></>} />
+  invalidateRef.current = invalidateSimulation;
+  const movedView = view === 'tree' || view === 'guide' || view === 'activity';
+  const workspaceTitle = view === 'lab' ? event.label : view === 'videos' ? 'Videobanken' : view === 'probe' ? 'Probe' : 'OpenClaw';
+  if (movedView) return <a href={studioHref(viewPaths[view], { dealerId, eventId })}>Öppna {viewPaths[view]}</a>;
+  return <div className={`studio-shell ${isIdleEditor ? 'idle-editor-active' : ''}`}><a className="skip-link" href="#workspace">Hoppa till arbetsytan</a><PageTemplate eyebrow="// STUDIO" title={workspaceTitle} intro={<span className="workspace-breadcrumb"><span>Blackjack</span><span> / </span><span>{dealer.label}</span><span> / </span><strong>{workspaceTitle}</strong><span className="environment-badge"><i /> STUDIO</span></span>} primary={<><span className={`save-state ${dirty ? 'dirty' : ''}`}><i />{dirty ? 'Osparade ändringar' : 'Inga osparade ändringar'}</span><button className="icon-button export-button" title="Exportera projekt som JSON" aria-label="Exportera projekt som JSON" onClick={exportProject}>↓</button><button className="primary-button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button></>} />
     <div className={`studio-body ${view === 'lab' || view === 'videos' ? '' : treeStyles.fullWidth}`}>{view === 'lab' || view === 'videos' ? <aside className="event-sidebar"><div className="sidebar-top"><div className="eyebrow">STUDIO <span>VY / 01</span></div><div className="game-selector"><button className="active" aria-pressed="true"><span aria-hidden="true">♠</span> Blackjack</button><button disabled title="Roulette är inte implementerat">Roulette <small>Senare</small></button></div><label className="dealer-selector"><span className="eyebrow">CROUPIER</span><select value={dealerId} onChange={e => selectDealer(e.target.value as DealerId)}>{project.dealers.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label className="search-field sidebar-search"><span aria-hidden="true">⌕</span><input placeholder="Hitta ett event…" aria-label="Sök event" value={filter} onChange={e => setFilter(e.target.value)} /></label></div>{media.managed ? <FamilyNavigation inventory={videos} project={project} dealerId={dealerId} selectedFamilyId={media.family?.id} eventId={event.id} filter={filter} onOpen={(id, situation) => { selectEvent(id); setExampleSituation(situation); }} /> : <div className="event-tree"><div className="tree-title"><span>EVENTTRÄD</span><span>{project.events.length}</span></div>{OUTPUT_GROUPS.map(group => { const source = group.id; const items = visibleEvents.filter(item => presentationProfile(item.sourceType)?.id === source); return items.length ? <div className="event-group" key={source}><div className="event-group-title"><span>{group.symbol}</span>{group.label}<code>{items.length}</code></div>{items.map(item => <button className={`event-node ${event.id === item.id ? 'active' : ''}`} key={item.id} aria-pressed={event.id === item.id} onClick={() => selectEvent(item.id)}><i /><span className="event-node-label">{item.label}<small title="Källtyp · Labbets nod-ID">({item.sourceType} · {item.id})</small></span>{event.id === item.id ? <span className="node-arrow">↗</span> : null}</button>)}</div> : null; })}{!visibleEvents.length ? <p className="helper">Inga event matchar sökningen.</p> : null}</div>}<div className="sidebar-footer"><span className="sidebar-foot-icon" aria-hidden="true">⌘</span><p><strong>{media.managed ? "En mapp per situation." : "4 presentationssätt · 16 grupper."}</strong><span>{media.managed ? "Kortdata finns kvar i eventet. Mapparna väljer rörelsen." : "Grupperat efter utdata. Källans 6 typer finns kvar."}</span></p></div></aside> : null}
       <main id="workspace" className={`workspace view-${view}`}>{error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Stäng felmeddelande" onClick={() => setError('')}>×</button></div> : null}{notice ? <div className="feedback success" role="status"><span>{notice}</span><button className="icon-button" aria-label="Stäng meddelande" onClick={() => setNotice('')}>×</button></div> : null}
         {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/> : null}
         {incompatibleBindings.length ? <div className="feedback error" role="alert"><span><strong>{incompatibleBindings.length} animationskopplingar behöver rättas.</strong> Projektet innehåller äldre val som inte matchar spelhändelsen. Inget har ändrats automatiskt. Välj en kompatibel labbanimation för varje markerad variant innan du sparar eller testar.</span><button className="primary-button" onClick={openFirstIncompatibleBinding}>Rätta första kopplingen →</button></div> : null}
         {invalidVideoBindings.length ? <div className="feedback error" role="alert"><span>{invalidVideoBindings.length} videokopplingar behöver kategoriseras eller kopplas loss. Inga original har ändrats.</span><button className="text-button" onClick={() => changeView('videos')}>Granska i Videobanken →</button></div> : null}
         {view === 'videos' ? <fieldset disabled={saving || !connectedLane}><LegacyClipEditor project={project} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} /></fieldset> : null}
-        {view !== 'openclaw' ? <div className="studio-chat-shortcuts" aria-label="Labbets två chattar"><span>Chatt</span><button type="button" className="text-button" onClick={() => changeView('activity')}>Spelarchatt vid bordet →</button><button type="button" className="text-button" onClick={() => changeView('openclaw')}>Fråga OpenClaw om labbet →</button></div> : null}
+        {view !== 'openclaw' ? <div className="studio-chat-shortcuts" aria-label="Labbets två chattar"><span>Chatt</span><a className="text-button" href={studioHref('/control/activity', { dealerId, eventId })}>Spelarchatt vid bordet →</a><button type="button" className="text-button" onClick={() => changeView('openclaw')}>Fråga OpenClaw om labbet →</button></div> : null}
         {view === 'lab' && isIdleEditor ? <><div className="event-heading"><div><span className="eyebrow">VÄNTELÄGE</span><h1>Idle · basloop och variationer</h1><p>Välj grundloop, ställ in korta variationer och prova schemat med dina riktiga videor.</p></div><button className="text-button" disabled={refreshingVideos} onClick={() => void refreshVideos()}>{refreshingVideos ? "Läser…" : "Läs in nya filer"}</button></div><IdlePolicyEditor policy={idlePolicy} inventory={videos} blocked={socialBusyState || simulating || playing} onChange={updateIdlePolicy} onBusyChange={setIdlePreviewBusy} /></> : null}
-{view === 'activity' ? null : view === 'probe' ? <ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy=>updateProject(draft=>{draft.probePolicy=policy;})} onActivity={recordActivity}/> : view === 'tree' && media.managed ? <FamilyOverview inventory={videos} project={project} dealerId={dealerId} onOpen={(id, situation) => { selectEvent(id); setExampleSituation(situation); changeView('lab'); }} /> : view === 'tree' ? <EventTree project={project} inventory={videos} originals={originals} dealerId={dealerId} event={event} line={line} variant={variant} mode={mode} onSelectDealer={selectDealer} onSelectEvent={selectEvent} onSelectVariant={selectVariant} onEdit={tab => { setEditorTab(tab); changeView('lab'); }} onVideos={() => changeView('videos')} onOpenClaw={() => changeView('openclaw')} /> : view === 'videos' && media.managed ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} onOpen={(id, situation) => { selectEvent(id); setExampleSituation(situation); changeView('lab'); }} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} /> : view === 'videos' ? <VideoLibrary originals={originals} onInventory={next => { setVideos(next); invalidateSimulation(); }} project={project} onUploaded={uploadedVideo} onOpenEvent={id => { selectEvent(id); changeView('lab'); }} inventory={videos} dealer={dealer.label} eventLabel={event.label} line={line} variant={variant} onSelectVariant={selectVariant} onBind={id => updateVariant({ videoGenerationId: id })} /> : view === 'guide' ? <StudioGuide onNavigate={changeView} /> : view === 'openclaw' ? <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={initialStatus} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => changeView('activity')} /> : <div className="editor-layout"><div className="preview-column">{!isIdleEditor ? <div className="event-heading"><div><span className="eyebrow">01 / EVENTSTUDION</span><h1>{event.label}</h1><p>{media.managed ? "Spela situationens standardfil eller en variant från samma mapp. Mottagna kortvärden ändrar inte vilken rörelse som används." : event.description}</p></div><span className="source-tag">{event.sourceType}<span>källtyp · labbindelning</span></span></div> : null}{isIdleEditor ? null : media.managed ? <MediaSituation event={event} observed={Boolean(observedEvent)} onSelect={situation => { setExampleSituation(situation); setVariantId(''); invalidateSimulation(); }} /> : <SpeechSource event={event} originals={originals} dealerId={dealerId} observed={Boolean(observedEvent)} onSelect={line => { setExampleSpeechLine(line); invalidateSimulation(); }} onOpenSpeech={() => { selectEvent("speak.other"); setExampleSpeechLine("placebets"); }} /> }<div ref={mainStage} className={socialStyles.stageAnchor}>{observedStep ? <div className={streamStyles.context}><strong>Mottaget steg {observedStep.presentationIndex + 1}</strong>{observedStep.label}<button className="text-button" onClick={() => { setObservedStep(null); invalidateSimulation(); }}>Tillbaka till exempel</button><button className="text-button" onClick={() => changeView('activity')}>Hela sekvensen →</button></div> : null}{!isIdleEditor || previewKind === 'social' ? <div className={socialStyles.speechStage}><Stage event={event} asset={currentAsset} dealer={dealer.label} variantLabel={socialAsset?.label ?? result?.variant?.label ?? variant.label} playId={playId} playing={playing} hasResult={Boolean(result)} previewing={Boolean(previewKind) && playing} busy={simulating} blocked={socialBusy} onPlaybackEvent={recordPlayback} videoUrl={selectedVideo?.previewUrl} videoName={selectedVideo?.fileName ?? selectedVideo?.label} videoId={previewVideoId ?? undefined} familyId={media.family?.id ?? selectedVideo?.familyId} allow2dFallback={!media.managed || previewKind === 'social'} fallbackVideo={media.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, line.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(previewVideoId && !selectedVideo)} originalMedia={selectedOriginal} sourceIsObserved={Boolean(observedEvent)} onPlay={() => void simulate()} onPreview={previewSelected} onPlaybackEnd={() => setPlaying(false)} /><div ref={speechHost} className={socialStyles.speechHost} /></div> : null}<div ref={socialChat} className={socialStyles.chatAnchor}><SocialChatPanel compact speechHost={speechHost} draftCache={socialDraftCache} dealerId={dealerId} eventId={event.id} registerCancel={registerSocialCancel} blocked={simulating || (playing && event.sourceType !== 'idle' && previewKind !== 'social')} onBusyChange={socialOwnership} onActivity={recordSocial} onBegin={() => invalidateSimulation(false)} onReaction={playSocialReaction} onGoToIdle={goToAstridIdle} /></div><div className={socialStyles.sceneReply} aria-live="polite" aria-atomic="true">{socialReply ? <><div><span className="eyebrow">ASTRID · SOCIALT LABBSVAR</span><p>{socialReply}</p><small>Separat social presentation, inte ett nytt spel-event eller godkänd läppsynk.</small></div><button className="text-button" type="button" onClick={() => scrollTo(socialChat.current)}>Visa chatten ↓</button></> : isIdleEditor ? <span>Idleprovet ovan stannar när ett socialt svar tar över. Liveval av idlevarianter i produkten är en separat koppling.</span> : <span><strong>Spela valt klipp</strong> visar ditt material direkt. <strong>Testa event</strong> {frequencyMode && !['off', 'shadow'].includes(mode) ? 'väljer klipp enligt dina frekvenser, utan modellanrop.' : mode === 'active' ? 'låter OpenClaw välja; ett modellanrop kan göras när du trycker.' : `kör jämförelseläget ${mode === 'off' ? 'Bara standard' : mode === 'shadow' ? 'Skuggläge' : mode === 'rules' ? 'Regler' : 'Slumpvariation'}.`}</span>}</div></div>
+{view === 'probe' ? <ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy=>updateProject(draft=>{draft.probePolicy=policy;})} onActivity={recordActivity}/> : view === 'videos' && media.managed ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} onOpen={(id, situation) => { selectEvent(id); setExampleSituation(situation); changeView('lab'); }} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} /> : view === 'videos' ? <VideoLibrary originals={originals} onInventory={next => { setVideos(next); invalidateSimulation(); }} project={project} onUploaded={uploadedVideo} onOpenEvent={id => { selectEvent(id); changeView('lab'); }} inventory={videos} dealer={dealer.label} eventLabel={event.label} line={line} variant={variant} onSelectVariant={selectVariant} onBind={id => updateVariant({ videoGenerationId: id })} /> : view === 'openclaw' ? <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={initialStatus} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => changeView('activity')} /> : <div className="editor-layout"><div className="preview-column">{!isIdleEditor ? <div className="event-heading"><div><span className="eyebrow">01 / EVENTSTUDION</span><h1>{event.label}</h1><p>{media.managed ? "Spela situationens standardfil eller en variant från samma mapp. Mottagna kortvärden ändrar inte vilken rörelse som används." : event.description}</p></div><span className="source-tag">{event.sourceType}<span>källtyp · labbindelning</span></span></div> : null}{isIdleEditor ? null : media.managed ? <MediaSituation event={event} observed={Boolean(observedEvent)} onSelect={situation => { setExampleSituation(situation); setVariantId(''); invalidateSimulation(); }} /> : <SpeechSource event={event} originals={originals} dealerId={dealerId} observed={Boolean(observedEvent)} onSelect={line => { setExampleSpeechLine(line); invalidateSimulation(); }} onOpenSpeech={() => { selectEvent("speak.other"); setExampleSpeechLine("placebets"); }} /> }<div ref={mainStage} className={socialStyles.stageAnchor}>{observedStep ? <div className={streamStyles.context}><strong>Mottaget steg {observedStep.presentationIndex + 1}</strong>{observedStep.label}<button className="text-button" onClick={() => { setObservedStep(null); invalidateSimulation(); }}>Tillbaka till exempel</button><a className="text-button" href={studioHref('/control/activity', { dealerId, eventId })}>Hela sekvensen →</a></div> : null}{!isIdleEditor || previewKind === 'social' ? <div className={socialStyles.speechStage}><Stage event={event} asset={currentAsset} dealer={dealer.label} variantLabel={socialAsset?.label ?? result?.variant?.label ?? variant.label} playId={playId} playing={playing} hasResult={Boolean(result)} previewing={Boolean(previewKind) && playing} busy={simulating} blocked={socialBusy} onPlaybackEvent={recordPlayback} videoUrl={selectedVideo?.previewUrl} videoName={selectedVideo?.fileName ?? selectedVideo?.label} videoId={previewVideoId ?? undefined} familyId={media.family?.id ?? selectedVideo?.familyId} allow2dFallback={!media.managed || previewKind === 'social'} fallbackVideo={media.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, line.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(previewVideoId && !selectedVideo)} originalMedia={selectedOriginal} sourceIsObserved={Boolean(observedEvent)} onPlay={() => void simulate()} onPreview={previewSelected} onPlaybackEnd={() => setPlaying(false)} /><div ref={speechHost} className={socialStyles.speechHost} /></div> : null}<div ref={socialChat} className={socialStyles.chatAnchor}><SocialChatPanel compact speechHost={speechHost} draftCache={socialDraftCache} dealerId={dealerId} eventId={event.id} registerCancel={registerSocialCancel} blocked={simulating || (playing && event.sourceType !== 'idle' && previewKind !== 'social')} onBusyChange={socialOwnership} onActivity={recordSocial} onBegin={() => invalidateSimulation(false)} onReaction={playSocialReaction} onGoToIdle={goToAstridIdle} /></div><div className={socialStyles.sceneReply} aria-live="polite" aria-atomic="true">{socialReply ? <><div><span className="eyebrow">ASTRID · SOCIALT LABBSVAR</span><p>{socialReply}</p><small>Separat social presentation, inte ett nytt spel-event eller godkänd läppsynk.</small></div><button className="text-button" type="button" onClick={() => scrollTo(socialChat.current)}>Visa chatten ↓</button></> : isIdleEditor ? <span>Idleprovet ovan stannar när ett socialt svar tar över. Liveval av idlevarianter i produkten är en separat koppling.</span> : <span><strong>Spela valt klipp</strong> visar ditt material direkt. <strong>Testa event</strong> {frequencyMode && !['off', 'shadow'].includes(mode) ? 'väljer klipp enligt dina frekvenser, utan modellanrop.' : mode === 'active' ? 'låter OpenClaw välja; ett modellanrop kan göras när du trycker.' : `kör jämförelseläget ${mode === 'off' ? 'Bara standard' : mode === 'shadow' ? 'Skuggläge' : mode === 'rules' ? 'Regler' : 'Slumpvariation'}.`}</span>}</div></div>
           {!isIdleEditor ? <EventTestPanel dealClips={isDealEditor} dealFrequency={frequencyMode} open={testToolsOpen} onOpen={setTestToolsOpen} mode={mode} onMode={changeMode} configured={Boolean(initialStatus.configured)} context={context} onContext={changeContext} dealer={dealer.label} eventLabel={event.label} sourceType={event.sourceType} result={result} originalLabel={selectedOriginal?.label} manifestOwned={media.managed} previewKind={previewKind} busy={simulating} blocked={socialBusy} onRun={() => void simulate()} /> : null}{!media.managed ? <div className="workspace-footnote">2D-reserven är ett rörelseprov för labbets eventgrupper. Kompletta spelhänder och läppsynk ingår inte.</div> : null}<div className="workspace-footnote">Testmiljö, inte ett spel om pengar. RNG, regler och utbetalningar är alltid utanför studion.</div>
         </div>{media.managed ? isIdleEditor ? null : <MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={line.variants} selectedId={variant.id} onSelect={selectVariant} onPolicy={updateMediaPolicy} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} /> : <aside className="inspector"><div className="inspector-heading"><span className="eyebrow">BYGG PRESENTATIONEN</span><h2>Redigera vald nod</h2><p>Valt event: {event.label} · {dealer.label}.</p></div><div className="inspector-tabs" role="tablist" aria-label="Redigera event"><button role="tab" aria-selected={editorTab === 'event'} onClick={() => setEditorTab('event')}>Event</button><button role="tab" aria-selected={editorTab === 'variants'} onClick={() => setEditorTab('variants')}>Varianter <span>{line.variants.length}</span></button><button role="tab" aria-selected={editorTab === 'triggers'} onClick={() => setEditorTab('triggers')}>Triggers</button></div>
           <div className="inspector-content">{editorTab === 'event' ? <div><label className="field">Eventets visningsnamn<input value={event.label} maxLength={120} onChange={e => updateProject(draft => { draft.events.find(item => item.id === event.id)!.label = e.target.value; })} /></label><p className="helper">Samma labbnamn för alla fyra croupierer. Motorns typer och ID:n ligger fast.</p>{event.id === 'speak.other' ? <p className="notice subtle">Den här labbnoden samlar flera exakta replik-ID:n. En generisk videokoppling här är bara ett labbexempel — den kan inte användas som gemensam talvideo för alla repliker i spelet.</p> : null}<label className="field">Beskrivning<textarea rows={4} value={event.description} maxLength={600} onChange={e => updateProject(draft => { draft.events.find(item => item.id === event.id)!.description = e.target.value; })} /></label><label className="field">Linjens namn<input value={line.label} maxLength={120} onChange={e => updateProject(draft => { draft.lines.find(item => item.dealerId === dealerId && item.eventId === event.id)!.label = e.target.value; })} /></label><p className="helper">Variantuppsättningen samlar en skyddad standardvariant och möjliga alternativ för {dealer.label}.</p><div className="protected-contract"><span className="eyebrow">LÅST KÄLLKONTRAKT</span><code>{event.id}</code><p>Tekniskt event-ID och motorns fält ändras inte när du byter namn.</p><details className="technical-details"><summary>Se källeventets exempel</summary><pre>{JSON.stringify(event.exampleEvent, null, 2)}</pre></details></div></div> : editorTab === 'triggers' ? <TriggerEditor triggers={project.triggers} descriptors={allowedPathDescriptors} onChange={updateTrigger} onAdd={createTrigger} onRemove={id => { const count = project.lines.reduce((total, item) => total + item.variants.filter(v => v.triggerIds.includes(id)).length, 0); if (count > 0) { setError(`Triggern används av ${count} varianter. Koppla loss den uttryckligen under Varianter innan du tar bort den.`); return; } if (window.confirm('Ta bort denna oanvända trigger? Ändringen sparas först när du väljer Spara projekt.')) modelEdit(value => removeTrigger(value, id)); }} /> : <div><div className="variant-list">{line.variants.map((item, index) => <button key={item.id} className={`variant-option ${variant.id === item.id ? 'active' : ''}`} onClick={() => selectVariant(item.id)}><span className="variant-number">{String(index).padStart(2, '0')}</span><span><strong>{item.label}</strong><small>{item.id === line.baselineVariantId ? 'Standard · alltid tillåten' : result ? eligibleIds.has(item.id) ? 'Tillåten i senaste testet' : 'Ej valbar i detta läge' : `${item.triggerIds.length} triggers · prioritet ${item.priority}`}</small></span>{item.id === line.baselineVariantId ? <span className="baseline-mark" title="Skyddad standardvariant">◇</span> : null}</button>)}</div><button className="text-button add-variant" disabled={line.variants.length >= MAX_ALTERNATIVES + 1} onClick={() => { try { const next = addVariant(project, dealerId, event.id, `Alternativ ${line.variants.length}`); setProject(next); setVariantId(next.lines.find(item => item.dealerId === dealerId && item.eventId === event.id)!.variants.at(-1)!.id); invalidateSimulation(); setError(''); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Varianten kunde inte skapas.'); } }}>＋ Lägg till variant <span>{line.variants.length - 1}/{MAX_ALTERNATIVES}</span></button><div className="variant-form"><span className="eyebrow">{isBaseline ? 'REDIGERA STANDARDVARIANT' : 'REDIGERA ALTERNATIV'}</span><label className="field">Variantens namn<input value={variant.label} maxLength={120} onChange={e => updateVariant({ label: e.target.value })} /></label><VariantVideoBinding key={variant.id} inventory={videos} dealerId={dealerId} eventId={event.id} variant={variant} isBaseline={isBaseline} originalDefault={isBaseline ? originalDefault : null} onBind={id => updateVariant({ videoGenerationId: id })} onInspect={() => changeView('videos')} />{!isBaseline ? <VariantSelectionEditor variant={variant} onChange={selection => updateVariant({ selection })} /> : null}{!media.managed ? <details className="reserve-editor"><summary>2D-reserv</summary><label className="field">2D-rörelse när video saknas<select value={variant.assetId} aria-invalid={!selectedAnimationCompatible} onChange={e => updateVariant({ assetId: e.target.value })}>{!selectedAnimationCompatible ? <option value={variant.assetId} disabled>{selectedAsset?.label ?? variant.assetId} · behöver bytas (matchar inte eventet)</option> : null}{project.assets.filter(asset => isAssetCompatible(event, asset)).map(asset => <option value={asset.id} key={asset.id}>{asset.label} · {asset.animation}</option>)}</select></label></details> : null}{!isBaseline ? <label className="field">Prioritet <span className="optional">Högre väljs först i regelläget</span><input type="number" value={variant.priority} min={-100} max={100} onChange={e => updateVariant({ priority: Number(e.target.value) })} /></label> : null}{isBaseline ? <div className="notice subtle"><strong>Din standardvariant.</strong><p>Den har inga villkor och kan inte tas bort. Om ett modellval fallerar finns den alltid kvar.</p></div> : <fieldset className="trigger-assignment"><legend>Vilka triggers måste matcha?</legend><p className="helper">Alla valda villkor måste vara sanna. Inga valda = inga extra villkor. Urvalstillåtelsen gäller fortfarande.</p>{project.triggers.map(trigger => <label className="check-field" key={trigger.id}><input type="checkbox" checked={variant.triggerIds.includes(trigger.id)} onChange={e => updateVariant({ triggerIds: e.target.checked ? [...variant.triggerIds, trigger.id] : variant.triggerIds.filter(id => id !== trigger.id) })} /><span>{trigger.label}<small>{categoryLabels[trigger.category]}</small></span></label>)}<button type="button" className="text-button" onClick={() => setEditorTab('triggers')}>Hantera triggerbiblioteket →</button></fieldset>}<code className="technical-id">{variant.id}</code>{!isBaseline ? <button className="danger-button" onClick={() => { modelEdit(value => removeVariant(value, dealerId, event.id, variant.id)); setVariantId(line.baselineVariantId); }}>Ta bort alternativ</button> : null}</div></div>}</div><div className="inspector-footer"><i className={dirty ? 'unsaved-dot' : 'saved-dot'} />{dirty ? 'Utkast · spara när du är nöjd' : 'Projekt sparat lokalt'}<span>JSON, inte dold konfiguration.</span></div></aside>}</div>}
-        <ActivityLog entries={activities} onActivity={recordActivity} onClear={() => setActivities([])} full={view === 'activity'} onOpen={() => changeView('activity')} streamView={{ project, videos, originals, dealerId, onOpenEvent: openObservedEvent }} />
+        <ActivityLog entries={activities} onActivity={recordActivity} onClear={() => setActivities([])} onOpen={() => changeView('activity')} streamView={{ project, videos, originals, dealerId, onOpenEvent: openObservedEvent }} />
       </main></div><footer className="studio-footer"><span><span className="footer-brand">scout<span>/</span>gaming</span> <span className="footer-version">· CROUPIER LAB</span></span><span>Indata → Presentationsbehov → Standard eller alternativ → Uppspelning</span><span>{initialStatus.configured ? 'OpenClaw konfigurerat' : 'Lokalt regelläge'}</span></footer>
   </div>;
 }

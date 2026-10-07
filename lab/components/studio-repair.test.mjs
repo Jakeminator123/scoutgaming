@@ -32,9 +32,10 @@ function loadComponent(relativeFile) {
   const output = transformSync(source, { filename: relativeFile, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams,
     require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === './studio-types' ? loadComponent('./studio-types.ts')
+      : name === './studio-session' ? loadComponent('./studio-session.tsx')
       : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
       : name === './speech-source' ? loadComponent('./speech-source.tsx')
       : name === './media-family-editor' ? loadComponent('./media-family-editor.tsx')
@@ -57,7 +58,8 @@ test('manifest-owned studio displays real files and zero folder variants instead
   assert.match(html, /0 varianter — standardfilen används/);
   assert.doesNotMatch(html, /Rodnande tack|Lekfull dubbelvink|Välkommen tillbaka · tyska|Lägg till variant/);
   assert.equal(JSON.stringify(project), before);
-  const overview = renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: inventory, initialStatus: {}, initialView: 'tree' }));
+  const { ControlTreePage } = loadComponent('./control-tree-page.tsx');
+  const overview = renderToStaticMarkup(React.createElement(ControlTreePage, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
   assert.match(overview, /deal\/deal_pos3/);
   assert.match(overview, /repliker\/goodluck/);
 });
@@ -97,12 +99,21 @@ test('testsituation selection is derived from actual values, including custom ed
   assert.doesNotMatch(custom, /aria-pressed="true"/);
 });
 
-test('Guide and OpenClaw are full-width surfaces without the unrelated event sidebar', () => {
-  for (const initialView of ['guide', 'openclaw', 'activity']) {
-    const html = renderToStaticMarkup(React.createElement(Studio, { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {}, initialView }));
+test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
+  const props = { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {} };
+  const openclaw = renderToStaticMarkup(React.createElement(Studio, { ...props, initialView: 'openclaw' }));
+  assert.doesNotMatch(openclaw, /class="event-sidebar"/);
+  assert.doesNotMatch(openclaw, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
+  assert.match(openclaw, /Spara projekt/);
+  const { ControlGuidePage } = loadComponent('./control-guide-page.tsx');
+  const { ControlActivityPage } = loadComponent('./control-activity-page.tsx');
+  for (const Page of [ControlGuidePage, ControlActivityPage]) {
+    const html = renderToStaticMarkup(React.createElement(Page, props));
     assert.doesNotMatch(html, /class="event-sidebar"/);
-    assert.doesNotMatch(html, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
-    assert.match(html, /Spara projekt/);
+    assert.doesNotMatch(html, /studio-chat-shortcuts/);
+    assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/);
+    assert.doesNotMatch(html, /Osparade ändringar/);
+    assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/activity'), 'activity');
