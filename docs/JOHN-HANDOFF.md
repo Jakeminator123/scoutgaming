@@ -4,6 +4,7 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
+| Klipplogik och lane | påbörjad — idle fungerar; deal i två system (rad 38); lane är en id-lista utan skapa/export/bolagsyta (L1–L3). Brief: `random/prompt-klipplogik.md`; orkestrator: `random/handoff-2026-10-08-orkestrator.md` | Lösa trådar |
 | Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen, gamla `studio.tsx` borttagen; ljust läge och Johns rader 11, 12, 14 väntar; lösa trådar mot nivå 2 öppna | /control-ombyggnad |
 | Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
