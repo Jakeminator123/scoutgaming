@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
 import Script from 'next/script';
 import './globals.css';
 import './scout-theme.css';
 import { WorkspaceNavigation } from '@/components/workspace-navigation';
 
-const display = Space_Grotesk({ subsets: ['latin', 'latin-ext'], weight: '600', variable: '--sg-next-display', display: 'swap' });
-const body = Inter({ subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600'], variable: '--sg-next-body', display: 'swap' });
-const mono = JetBrains_Mono({ subsets: ['latin', 'latin-ext'], weight: ['400', '500'], variable: '--sg-next-mono', display: 'swap' });
+// Local variable fonts (app/fonts/README.md). Builds no longer depend on fonts.googleapis.com.
+const display = localFont({ src: './fonts/space-grotesk-latin-wght-normal.woff2', weight: '300 700', variable: '--sg-next-display', display: 'swap' });
+const body = localFont({ src: './fonts/inter-latin-wght-normal.woff2', weight: '100 900', variable: '--sg-next-body', display: 'swap' });
+const mono = localFont({ src: './fonts/jetbrains-mono-latin-wght-normal.woff2', weight: '100 800', variable: '--sg-next-mono', display: 'swap' });
 const themeBoot = `try{var t=localStorage.getItem('sg-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}`;
 
 export const metadata: Metadata = {
