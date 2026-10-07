@@ -23,6 +23,7 @@ export function ControlActivityPage({ initialProject, initialVideos, initialStat
     <StudioBindingNotices project={project} videos={videos} dealerId={dealerId} eventId={event.id} />
     <ActivityLog
       full
+      rolling
       entries={activities}
       onActivity={recordActivity}
       onClear={clearActivities}
