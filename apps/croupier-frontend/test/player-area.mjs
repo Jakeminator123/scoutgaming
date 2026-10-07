@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {playerAccountKind, playerAreaData, playerAreaPage, PLAYER_RESULTS_PATH} from '../lib/player-area.mjs';
+import {playerAccountKind, playerAreaData, playerAreaModel, playerAreaPage, PLAYER_RESULTS_PATH} from '../lib/player-area.mjs';
 
 const env = {
   CROUPIER_VERCEL_UI: '1',
@@ -17,7 +17,7 @@ test('player account kind uses only session flags the payload can carry', () => 
   assert.equal(playerAccountKind({authenticated: true, guest: false}), 'konto');
   assert.equal(playerAccountKind({authenticated: false, guest: true}), 'gäst');
   assert.equal(playerAccountKind({authenticated: true, partnerKeyId: 'key-1'}), 'partner-start');
-  assert.equal(PLAYER_RESULTS_PATH, null);
+  assert.equal(PLAYER_RESULTS_PATH, '/api/history');
 });
 
 test('session 401 renders the lobby login call to action', async () => {
@@ -97,7 +97,7 @@ test('history stays honest when no public results route exists', async () => {
   const page = await playerAreaPage(request, env, 'historik', {fetchImpl});
   assert.equal(page.redirect, null);
   assert.match(page.html, /Egen historik/);
-  assert.match(page.html, /Egen historik har ingen publik spelarrutt ännu/);
+  assert.match(page.html, /Inga avslutade rundor ännu/);
   assert.match(page.html, /Ada/);
   assert.match(page.html, /EUR/);
   assert.match(page.html, /Spela en runda/);
@@ -107,4 +107,54 @@ test('history stays honest when no public results route exists', async () => {
   assert.match(profil.html, /Kontotyp · konto/);
   assert.match(profil.html, /Till spellobbyn/);
   assert.match(profil.html, /href="\/play"/);
+});
+
+test('history renders two currencies and the latest outcome in Swedish', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({url: String(url), method: init.method, body: init.body ?? null});
+    if (String(url).endsWith('/api/auth/session')) return Response.json({authenticated: true, guest: false, sharedCredentials: true});
+    if (String(url).endsWith('/api/player')) return Response.json({name: 'Ada', currency: 'SEK', balance: 10});
+    if (String(url).endsWith('/api/history')) return Response.json({
+      currencies: [
+        {currency: 'SEK', rounds: 2, won: 10, lost: 4, net: 6, wagered: 20, returned: 26},
+        {currency: 'EUR', rounds: 1, won: 0, lost: 5, net: -5, wagered: 5, returned: 0},
+      ],
+      lastRound: {currency: 'EUR', net: -5, outcome: 'loss', roundId: 'native-ledger-9'},
+      id: 'player-must-not-leak',
+    });
+    return new Response('secret-stack-trace', {status: 404});
+  };
+  const page = await playerAreaPage(request, env, 'historik', {fetchImpl});
+  assert.equal(calls[2].url, env.CROUPIER_BACKEND_ORIGIN + '/api/history');
+  assert.equal(calls[2].method, 'POST');
+  assert.equal(calls[2].body, '{}');
+  assert.match(page.html, /SEK: 2 rundor/);
+  assert.match(page.html, /EUR: 1 rundor/);
+  assert.match(page.html, /förlust/);
+  assert.doesNotMatch(page.html, /player-must-not-leak|native-ledger-9|secret-stack-trace|Inga avslutade rundor/);
+  for (const [outcome, label] of [['win', 'vinst'], ['push', 'lika']]) {
+    const model = playerAreaModel({
+      session: {authenticated: true, guest: false},
+      player: {name: 'Ada', currency: 'SEK', balance: 1},
+      results: {currencies: [{currency: 'SEK', rounds: 1, won: 0, lost: 0, net: 0, wagered: 1, returned: 1}], lastRound: {currency: 'SEK', net: 0, outcome}},
+    }, 'historik');
+    assert.ok(model.historyLines.some(line => line.includes(label)), label);
+  }
+});
+
+test('history keeps the empty state when every currency has zero rounds', () => {
+  const model = playerAreaModel({
+    session: {authenticated: true, guest: false},
+    player: {name: 'Ada', currency: 'SEK', balance: 10},
+    results: {
+      currencies: [
+        {currency: 'SEK', rounds: 0, won: 0, lost: 0, net: 0, wagered: 0, returned: 0},
+        {currency: 'EUR', rounds: 0, won: 0, lost: 0, net: 0, wagered: 0, returned: 0},
+      ],
+      lastRound: null,
+    },
+  }, 'historik');
+  assert.equal(model.historyLines.length, 0);
+  assert.match(model.empty, /Inga avslutade rundor ännu/);
 });
