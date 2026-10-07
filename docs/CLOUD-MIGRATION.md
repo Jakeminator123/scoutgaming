@@ -354,8 +354,10 @@ Behåll högst fem Markdownfiler i docs; uppdatera dem i stället för nya rappo
 sprintarkiv. [Labbguiden](../lab/docs/README.md) och
 [OpenClaws versionsbundna källindex](../open-claw/lab/docs/README.md) ligger nära koden.
 JSON-register/systemkarta, media/baseline och privata QA-kvitton bevaras.
-Tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1` är borttagna i 91;
-take/preview/tillgänglighetsregler finns i guiden, aktiva launchers består.
+Tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1` är borttagna.
+Cmd-startfilerna i roten är borta. `node lab/start.mjs` och sessionsvakten
+i `open-claw/lab/deploy/local-session.mjs` består.
+Take/preview/tillgänglighetsregler finns i guiden.
 Gallringen i `6ced437e` tog bort fem historiska V3-kartfiler under `docs/animation-events/`,
 en ersatt releaseinventering och två Polarlotto-filer om andra operatörer:
 åtta filer/1 143 070 byte. De har inga aktiva konsumenter och finns i Git `6b9dad55`.

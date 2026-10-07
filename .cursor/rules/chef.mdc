@@ -6,5 +6,6 @@ alwaysApply: true
 Explicit `/chef` or `$chef`: read `.agents/skills/chef/SKILL.md`; discussion about
 creating the role does not activate it. Before integrating/pushing shared work,
 run `node tools/croupier-chef.mjs status`. If another chat owns the active role,
-coordinate that integration with it; continue independent work on your own branch.
+coordinate that integration with it; continue independent work on `main` in this
+checkout. Do not create your own branch.
 Do not load the full skill or contact other agents on every ordinary turn.

@@ -2,9 +2,9 @@
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe` och `/control/operator-chat`.
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`, Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration`, Uppspelning `/control/activity`, Talgranskning `/control/probe` och Guide & hjälp `/control/guide`. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen.
-- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), enkel ingång till [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, egen profil och historik återstår.
+- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Operatörskontext i lobbyn och redigerbar profil återstår (L13). Render-deploy av `POST /api/history` är öppen (L7).
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
@@ -18,14 +18,14 @@ Utkasten försvinner vid omladdning eller operatörsbyte.
 Begrepp och en kort flödeskarta finns i
 [den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
-Riktig partner-session och kundavgränsad sparning är kvarstående arbete, inte
-något man får genom att välja en operatör i menyn.
+Partner-session finns via `/partner/login`. Kundavgränsad sparning av design till spelet är inte klar (L3),
+och den kommer inte av att välja en operatör i menyn.
 
 **Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet. I molnet öppnar du
 [`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
-Lokalt finns samma arbetsyta på det koordinerade Lab-parets `/`.
+Lokalt finns samma arbetsyta på Lab-paret som `node lab/start.mjs` startar, på `/`.
 **Öppna spelet** fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till personalytan.
@@ -41,7 +41,7 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
-Från Kontrollpanelen når du **Dealer & klipp**, **Administration** och **OpenClaw**.
+Från Översikt når du **Dealers & klipp**, **Administration** och **OpenClaw** (flikarna Agentmodeller och Chatt).
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
@@ -50,8 +50,9 @@ Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
 verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
 är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
 medan spelbolagets egen personal bara får tillgång till sin organisation.
-Välj dealer på klippsidan och arbeta i **Idle**, **Kort & deal**,
-**Fasta repliker**, **Bakgrund** eller **Probe**. Uppladdning hör till
+Välj dealer på Dealers & klipp och arbeta i **Idle**, **Kort & deal** eller
+**Fasta repliker**. Bakgrundszoner och Talgranskning är länkar, inte flikar.
+Uppladdning hör till
 klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
 tekniska detaljer är sekundära verktyg; avancerade regler och diagnostik
 ligger under Verktyg.
@@ -68,15 +69,18 @@ Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
 de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
-exakt tal, medan Probe kan skapa ett nytt tal-/videopaket när spelaren är
-inaktiv. Ett syntetiskt Probe-textprov är inte en skapad eller spelad film.
+exakt tal. Probe i Talgranskning är ett textprov (L4). Det skapar inte ljud
+eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
+Ett syntetiskt textprov är inte en skapad eller spelad film.
 Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
-Administration har 11 aktiva sektioner under drift/spelintegritet, spel/lanes/bord,
+Administration visar 11 sektioner under drift/spelintegritet, spel/lanes/bord,
 konton, partner, betalningar/journal och talgranskning. Lägga till, ta bort och
 kontoåtgärder öppnas vid behov; listor och aktuella värden visas först.
 Turneringar och pitboss-inställningar har tagits bort från gränssnittet eftersom
-de saknar verifierad koppling till den aktuella spelvägen. Äldre sparade värden,
+de saknar verifierad koppling till den aktuella spelvägen. Policyn
+`STUDIO_ADMIN_SECTIONS` listar fortfarande 15 poster, inklusive pit och turneringar.
+Äldre sparade värden,
 API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
 klipparbete finns under Dealer & klipp. E-postmallar är förhandsvisningar.
@@ -109,8 +113,9 @@ och saldo flyttas eller återställs inte för provet.
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
 lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
 **Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
-och nivå 3 (`/play`). Nivå 2 visar än så länge demonstrationer;
-riktiga kundval följer anslutna spelbolag när kundanslutningen införs.
+och nivå 3 (`/play`). Utan `partner_session` visas demonstrationer.
+Inloggad operatör ser sitt bolags snapshot. Paket, spelare och design är inte
+kopplade till spelet (L2, L3, L10).
 **Spelare, nivå 3** får använda
 spelet och nekas `/control`. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
@@ -182,17 +187,17 @@ klipp i privat Blob när ytan visar att molnlagringen är konfigurerad.
 **Läs från molnet** öppnar molnvyn och behåller webbläsarkopian. Exportera JSON
 och ladda ned klippen om du behöver en separat specifikation eller backup.
 Automatisk gäller i Labbets förhandsvisning;
-zonerna styr ännu inte spelets spelare. Kontrollera kameraregistrering och
+zonerna styr ännu inte spelets spelare (L16). Kontrollera kameraregistrering och
 ocklusion för varje tilltänkt klipp innan användning.
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
-Avancerade verktyg nås genom **Avancerat labb** (`/control/tree` i molnet,
+Avancerade verktyg nås genom **Händelser → klipp** (`/control/tree` i molnet,
 `/tree` lokalt). `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`.
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, och `chat` på OpenClaw. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Talgranskning, Bakgrundszoner och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
-(lokalt `http://127.0.0.1:4201/guide` på det koordinerade paret).
+(lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
 inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
@@ -202,7 +207,7 @@ Utvecklarreferenser: [start och arkitektur](../README.md),
 [Schemaöversikt](../schemas/README.md).
 [Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Händelsekategorierna ska överensstämma med projektets seed och motorns källkontrakt.
-Nodträdet grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
+Händelser → klipp grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 över samma sex källtyper och 16 ID:n. Den skapar inte nya motorevents.
 Ändrade tekniska ID:n, nya typer eller playback-funktioner kräver ett uttalat
@@ -212,7 +217,7 @@ kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
-**Händelseloggen** på `/activity` skiljer källa, eventdata, kontext, beslut och
+**Uppspelning** på `/control/activity` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
 originalsession och startar läsande observation.
 Observation startar ingen separat Lab-spelare. Native-kedjan visar mottaget
@@ -231,12 +236,12 @@ Aktuella kontroller och provgränser beskrivs i
 [kamera- och talguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Driftens aktiverade funktioner och återstående liveprov följs i
 [molnstatusen](../../docs/CLOUD-MIGRATION.md).
-För lokalt kameratest används den koordinerade startarens `--astrid-camera`;
+För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
 stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
 
-## Idle i Eventstudion
+## Idle i Händelser
 
-Astrids Eventstudio och native-följning använder nu samma exakta mediefamilj:
+Astrids Händelser-sida och native-följning använder nu samma exakta mediefamilj:
 `box0` → `deal_pos1`, …, `box6` → `deal_pos7`, samt exakt `speak.line` →
 `repliker/<line>/`. Situationsväljaren ändrar bara manuella exempel; mottagna
 events behåller kort, box, handindex och replik. Standardfil och varianter
@@ -288,10 +293,10 @@ manifeststyrda familjer. Arbetskopior och backuper på skrivbordet är inte
 automatiskt spelbara eller molnpublicerade. Nya varianter är manuella tills
 de uttryckligen läggs till och aktiveras i den sparade policyn.
 
-Översikten och Videobanken visar samma fysiska familjer. Uppspelningskvittot för
+Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
-räknas inte som uppspelat. OpenClaw-källorna finns även i Guide och Chatt &
-OpenClaw. Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
+Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
 Välj **Astrid → Idle** för den förenklade idleeditorn. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
@@ -350,10 +355,10 @@ standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 `node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
 
 **Diagnostik** samlar verifiering, videokarta, import/export och särskilda
-videolägen. Sekvenssteg öppnar befintlig editor. Loggen håller högst 150
-poster; observationsprotokollet håller högst 300 meddelanden/4 MiB i
-flikens minne. Avancerat Lab stoppar vid gränsen, fokuserad Studio rullar
-fönstret med gap-/bortfallsmarkör och är då ingen full historik.
+videolägen. Sekvenssteg öppnar befintlig editor. Uppspelningens logg håller högst 150
+poster i `sessionStorage`, följer med vid sidbyte och töms när fliken stängs.
+Observationsprotokollet håller högst 300 meddelanden/4 MiB i
+flikens minne och stannar vid gränsen.
 Exportera före omladdning. Native-observation kräver den nya
 spelarkoden på vald server; lokal merge är inte Bettalotto-deploy.
 Vid full historik: exportera och välj **Ny observation** i Diagnostik.
@@ -361,13 +366,13 @@ Det ersätter protokollet och gamla labbkön men behåller spelet och anslutning
 Konfiguration och gränser finns i [labbets README](../README.md#läsande-partner-ström).
 
 Källklippen från Emil är 1080×1920 (9:16). Det beskriver filens pixelformat,
-inte att Eventstudion eller spelet har en enda låst mobil layout. Respektive
+inte att Händelser eller spelet har en enda låst mobil layout. Respektive
 klient har sin egen desktop-/mobilyta. Jämförelsen har nu Dator/Mobil-ramar
 på båda sidor; labbet visar hela källfilen utan beskärning. Originalflikens
 faktiska fönsterstorlek måste fortfarande ändras för ett riktigt mobilprov.
 Produktens
 `?rehearsal=1` öppnar den befintliga QA-panelen ovanpå den riktiga
-produktspelaren; det är inte en ny Eventstudio-flik.
+produktspelaren; det är inte en flik i Händelser.
 
 **Chatta vid det anslutna bordet** ligger under labbets jämförelsebild. En
 avgränsad brygga skickar bara text till originalets autentiserade chatt; servern
@@ -390,7 +395,7 @@ takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
 Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten
 om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
 
-**Fristående chattprov** i Eventstudion har egen provkontext och högst 25
+**Fristående chattprov** i Händelser har egen provkontext och högst 25
 sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../SOCIAL-CHAT.md).
 
 [Signal- och begreppskartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)

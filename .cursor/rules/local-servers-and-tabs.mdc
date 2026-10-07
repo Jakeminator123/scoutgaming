@@ -6,8 +6,9 @@ alwaysApply: true
 # Local Croupier sessions
 
 Follow **Local servers and browser tabs** in the repository's `AGENTS.md`.
-Use the shared launcher guard for normal and QA server pairs. Start from
-Codex with `--no-open`, then inspect and reuse the connected browser's
-existing game/lab tabs. A matching URL needs reload, not a duplicate tab;
-replace an older URL in that same tab after preserving in-progress input.
-When the user requests shutdown, leave the servers stopped.
+Start with `node lab/start.mjs`. The session guard in
+`open-claw/lab/deploy/local-session.mjs` covers the connected pair and the
+offline comparison. From Codex, pass `--no-open`, then inspect and reuse the
+connected browser's existing game/lab tabs. A matching URL needs reload, not a
+duplicate tab; replace an older URL in that same tab after preserving
+in-progress input. When the user requests shutdown, leave the servers stopped.

@@ -6,8 +6,7 @@ alwaysApply: false
 # Reference repos
 
 `Jakeminator123/spelsajt` and the historical `emil-branch` import from
-`EmaCodeHero/ava-live-blackjack` are read-only inspiration. Local reference:
-`C:\Users\jakem\Projects\ref\spelsajt`, with push disabled. Never merge, dump,
+`EmaCodeHero/ava-live-blackjack` are read-only inspiration. Never merge, dump,
 submodule or copy their engine, wallet or RNG into Croupier.
 
 Current V3 work is different: Emil works with Kevin on video in the branch Kevin

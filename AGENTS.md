@@ -7,9 +7,9 @@ Vercel project name is `scoutgaming`. The game engine stays on Render service `c
 
 | Level | Who | Path | Now |
 | --- | --- | --- | --- |
-| 1 | Internal staff | `/control` | Tools are being gathered under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. |
-| 2 | Operator (Unibet etc.) | `/partner`, `/partner/{operatorSlug}` | Kevin's imported backoffice (`lab/components/kevin-bo`) is only this preview. It is not the control panel. Real operator login and tenant data are not done. |
-| 3 | Player | `/play`, `/play/blackjack` | Lobby, profile, and history are not done. |
+| 1 | Internal staff | `/control` | One generation of pages on the shared template. Menu: Översikt `/control`, Dealers & klipp `/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`, Agentmodeller `/control/openclaw`, Operatörschatt `/control/openclaw?tab=chat`, Administration `/control/administration`, Uppspelning `/control/activity`, Talgranskning `/control/probe`, Guide & hjälp `/control/guide`. `/control/operator-chat` redirects to the chat tab. `/control/backgrounds` redirects to `/control/zones`. |
+| 2 | Operator (Unibet etc.) | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Kevin's imported backoffice (`lab/components/kevin-bo`) is this preview, not the control panel. Without `partner_session`, `/partner` shows the fixture. Sign-in at `/partner/login` shows a scoped snapshot. Players, the audit journal, onboarding and packages to the game are not done (L2, L10, L11, L12). Design choices stay in the browser (L3). Inviting or resetting operator staff is not wired (L14). |
+| 3 | Player | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | The lobby, profile and history pages exist. Operator context in the lobby and an editable profile remain (L13). Render deploy of `POST /api/history` is still open (L7). |
 
 `/studio` is the Next.js `basePath` of the lab service. It is not a fourth product and not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
 
@@ -33,7 +33,7 @@ Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changin
 
 ## Local servers and browser tabs
 
-Run only one local product/lab server pair at a time, including QA on different ports. Use the coordinated launchers and their session guard. Stop the current pair before switching environments. Short-lived test fixtures must clean up their own processes.
+Run only one local product/lab server pair at a time, including QA on different ports. Start with `node lab/start.mjs` (`--offline`, `--no-open`, `--skip-build`, `--check`; also `--astrid-camera` and `--cloud-storage`). `acquireLocalSession` in `open-claw/lab/deploy/local-session.mjs` blocks a second pair. The root cmd launchers are gone. Stop the current pair before switching environments. Short-lived test fixtures must clean up their own processes.
 
 From Codex, start Lab with `--no-open`. Reuse the existing game or lab browser tab; reload a matching URL instead of opening a duplicate. Preserve drafts and ongoing play. A request to stop servers leaves them stopped.
 

@@ -1,7 +1,7 @@
 # Lokal OpenClaw-anslutning
 
-Guiden gäller `Jakeminator123/github-work`, branch
-`main`, i den aktuella Croupier-arbetskopian.
+Guiden gäller `Jakeminator123/scoutgaming`, branch
+`main`, i den aktuella Croupier-arbetskopian. `github-work` vidarebefordrar dit.
 Helpern läser privata lokala miljöfiler och ansluter via Render Director.
 Se [miljökartan](../../../docs/ENVIRONMENT-VARIABLES.md) för filernas placering och
 [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) för spelaren.
@@ -144,7 +144,7 @@ Med dagens privata konfiguration använder labbet Director och produktservern
 det separata speech-reläet. `--check` är ändå auktoritativt för en ny körning:
 en nåbar tjänst utan rätt roll eller credential är inte en fungerande chatt.
 
-Under **Händelselogg → Anslut** öppnas Astrid med lokal presentation. Spela och
+Under **Uppspelning → Anslut** (`/control/activity`) öppnas Astrid med lokal presentation. Spela och
 chatta direkt i spelfliken. Lab visar **En spelare · Web** och dess kvitton.
 Det lokala läget monterar ingen extra Lab-spelare eller bordschatt. Video väntar
 på renderad primär-idle; deal får alltid företräde. Vanliga native-eventrepliker
