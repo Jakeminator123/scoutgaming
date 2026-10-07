@@ -4,8 +4,8 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "de264d0d6a050c31247b8e429dde131721fbf98e",
-    "capturedAt": "2026-10-07T08:59:19.241Z",
+    "observedCommit": "638dd43f978383701706eb5d0836153aa25c441f",
+    "capturedAt": "2026-10-07T09:15:19.050Z",
     "hashAlgorithm": "sha256:utf8-lf",
     "note": "Input capture only; no tests or runtime are marked verified."
   },
@@ -28,8 +28,8 @@
       "expectedHashes": {
         "docs/system-map/build.mjs": "sha256:a0afd1be0116d384edb75d7ab20e2fcc2c050e5342211ddb02d529d9fe470adf",
         "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
-        "docs/system-map/verify.mjs": "sha256:f6f7f39897b89006746babbf752ee0821436c2955917957088b08aa61d430259",
-        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36",
+        "docs/system-map/verify.mjs": "sha256:270630696ad76e905cbc8495313e7cf1a878ca7091b7d5133c2ad108a81c424c",
+        "test/system-map.mjs": "sha256:f450e88ed12d8cf011d69cbc2120e9c758b3fba973aa81782890cdd656a4308e",
         "tools/system-map-evidence.mjs": "sha256:7792bd4fe186d30e0a14ffc2516bc993ea62251c832ea2369a873fab03fb0721"
       }
     },
@@ -231,7 +231,7 @@
         "apps/croupier-frontend/test/game-entry.mjs": "sha256:8247f617a3334fca86852f183714bced18af333ebf9dfa0ecf24607a1b0c4913",
         "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
         "docs/system-map/routes.json": "sha256:d9a2f436bbd1935de364bb61f41cbcb83a5518e30d2557e06c6d8cad0fc0818b",
-        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36"
+        "test/system-map.mjs": "sha256:f450e88ed12d8cf011d69cbc2120e9c758b3fba973aa81782890cdd656a4308e"
       }
     },
     {
@@ -381,7 +381,7 @@
         "lab/test/studio-native-request.test.mjs": "sha256:abd1c9feec74a3d3a12ee5aa0d675aae2b79d89c6153c775043606beafc45424",
         "lab/test/studio-native-runtime.test.mjs": "sha256:aa26635643adb1db6ca3bcde7c60fd4fb168cbc4a91923e3d85571041dd42712",
         "lab/test/studio-navigation.test.mjs": "sha256:30bacb79d55b8fa556668c3146accfe6433911c33d5d96ce6b694c9913ed630c",
-        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36"
+        "test/system-map.mjs": "sha256:f450e88ed12d8cf011d69cbc2120e9c758b3fba973aa81782890cdd656a4308e"
       }
     },
     {
@@ -466,7 +466,7 @@
         "docs/system-map/flows.json": "sha256:7847e4bc055c813925986668da6d882f4058c2f312c70b8ef4a2405435ee863b",
         "test/clip-mapping.mjs": "sha256:57f8dd369969798c69aadc42d94ab8ff52d5f2f6d90499783517a10f901380bc",
         "test/shoe-game.mjs": "sha256:670b4c893b37f446838286f68513a8ebfd69e45ccc146f2907ee11e8fe08c49f",
-        "test/system-map.mjs": "sha256:13ab50db318b9f17ef9496f20c291d97fb1e3ff83eb4b802afc45d72f3c49e36",
+        "test/system-map.mjs": "sha256:f450e88ed12d8cf011d69cbc2120e9c758b3fba973aa81782890cdd656a4308e",
         "web/clip-mapping.mjs": "sha256:09cd959bd2a5c6b067d4dedb88744f515639033d3d3b381ba4fe764f6e844f75",
         "web/public/blackjack.mjs": "sha256:5cdd479dc2b00693042bf6285cc9f01609b02f1e8bc48e86b20f260ddff53920",
         "web/shoe-game.mjs": "sha256:9fb6a164eb5ef1adff27623ce42178461fa5abe3b7017dc20e4401fea1324acd"

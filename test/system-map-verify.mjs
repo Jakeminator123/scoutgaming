@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hashText, verifySystemMap } from '../docs/system-map/verify.mjs';
+import { hashText, safeCiUrl, verifySystemMap } from '../docs/system-map/verify.mjs';
 
 const SHA = 'a'.repeat(40);
 const ROUTE = 'apps/croupier-frontend/app/play/page.tsx';
@@ -41,6 +41,16 @@ test('an uninventoried Next route is an error and the map is red', () => {
   const assurance = check([], { [ROUTE]: 'export default function Page() {}\n' });
   assert.equal(assurance.status, 'red');
   assert.ok(assurance.errors.some(row => row.code === 'route.uninventoried' && row.path === ROUTE));
+});
+
+test('map accepts CI run links for the current and the previous repository name only', () => {
+  for (const url of ['https://github.com/Jakeminator123/scoutgaming/actions/runs/37598077333',
+    'https://github.com/Jakeminator123/scoutgaming/actions/runs/1/attempts/2/job/3',
+    'https://github.com/Jakeminator123/github-work/actions/runs/123']) assert.equal(safeCiUrl(url), url);
+  for (const url of ['https://github.com/Jakeminator123/other/actions/runs/1', 'https://github.com/Jakeminator123/scoutgaming/pull/1',
+    'http://github.com/Jakeminator123/scoutgaming/actions/runs/1', 'https://github.com/Jakeminator123/scoutgaming/actions/runs/1?token=x', 42, null]) {
+    assert.equal(safeCiUrl(url), null, String(url));
+  }
 });
 
 test('a fully inventoried route fixture has no route error', () => {
