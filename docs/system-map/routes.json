@@ -58,13 +58,18 @@
     {
       "id": "player-area",
       "paths": [
-        "/play"
+        "/play",
+        "/play/profil",
+        "/play/historik"
       ],
       "label": "Spelaryta",
       "serving": "Vercel service web / Next, project scoutgaming.",
-      "access": "Player. The page links to /play/blackjack. Login happens when the game opens if there is no player session.",
+      "access": "Player. /play is the lobby. Profile and history require a player session and otherwise send the browser to /player-login. Signed launch stays on /play/blackjack.",
       "sources": [
-        "apps/croupier-frontend/app/play/page.tsx:5"
+        "apps/croupier-frontend/app/play/page.tsx",
+        "apps/croupier-frontend/app/play/profil/page.tsx",
+        "apps/croupier-frontend/app/play/historik/page.tsx",
+        "apps/croupier-frontend/lib/player-area.mjs"
       ]
     },
     {
@@ -863,10 +868,10 @@
     ],
     "completeForScope": true,
     "counts": {
-      "files": 76,
-      "frontend": 12,
+      "files": 78,
+      "frontend": 14,
       "studio": 64,
-      "pages": 41,
+      "pages": 43,
       "routeHandlers": 43,
       "apiHandlers": 35,
       "explicitMethodExports": 72
@@ -3856,12 +3861,48 @@
       "app": "frontend",
       "handlerFile": "apps/croupier-frontend/app/play/page.tsx",
       "serving": "Vercel service web / Next, project scoutgaming.",
-      "access": "Player. Links to /play/blackjack.",
-      "boundary": "Public player page. No page-level session check in this file.",
+      "access": "Player. Spellobby reads the player session and shows Blackjack, profile and history when the session is authenticated.",
+      "boundary": "Server component. Session and POST /api/player go through the platform backend proxy. Signed launch is not handled here.",
       "groupId": "player-area",
       "sources": [
         {
           "path": "apps/croupier-frontend/app/play/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "frontend-play-profil",
+      "path": "/play/profil",
+      "publicPath": "/play/profil",
+      "methods": [],
+      "kind": "page",
+      "app": "frontend",
+      "handlerFile": "apps/croupier-frontend/app/play/profil/page.tsx",
+      "serving": "Vercel service web / Next, project scoutgaming.",
+      "access": "Player with a session. Otherwise redirect to /player-login?returnTo=/play/profil.",
+      "boundary": "Server component for the signed-in profile. No profile editing. Session and POST /api/player use the platform backend proxy.",
+      "groupId": "player-area",
+      "sources": [
+        {
+          "path": "apps/croupier-frontend/app/play/profil/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "frontend-play-historik",
+      "path": "/play/historik",
+      "publicPath": "/play/historik",
+      "methods": [],
+      "kind": "page",
+      "app": "frontend",
+      "handlerFile": "apps/croupier-frontend/app/play/historik/page.tsx",
+      "serving": "Vercel service web / Next, project scoutgaming.",
+      "access": "Player with a session. Otherwise redirect to /player-login?returnTo=/play/historik.",
+      "boundary": "Server component. No public player results route is called. The page shows the player account and says round history is not published.",
+      "groupId": "player-area",
+      "sources": [
+        {
+          "path": "apps/croupier-frontend/app/play/historik/page.tsx"
         }
       ]
     }

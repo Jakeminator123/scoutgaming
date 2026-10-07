@@ -1,0 +1,251 @@
+import {platformBackendHeaders, platformConfiguration} from './platform-routing.mjs';
+
+// readPlayerResults is only folded into chat status on the Lissabon stream lane.
+// Partner /api/v1/history is a key-authenticated operator API, not this session.
+export const PLAYER_RESULTS_PATH = null;
+
+const NOTICE = 'Spelkontot kan inte läsas just nu. Försök igen om en stund.';
+const LOGIN_SENTENCE = 'Logga in för att se egen profil och egen historik.';
+const HISTORY_EMPTY = 'Egen historik har ingen publik spelarrutt ännu.';
+const LOGIN_BLACKJACK = '/player-login?returnTo=/play/blackjack';
+
+function unavailable() {
+  return {unavailable: true};
+}
+
+export function playerAccountKind(session) {
+  if (!session || session.unavailable) return null;
+  if (session.guest === true) return 'gäst';
+  if (session.authenticated !== true) return null;
+  if (typeof session.partnerKeyId === 'string' && session.partnerKeyId) return 'partner-start';
+  return 'konto';
+}
+
+function sessionState(session) {
+  if (session?.unavailable) return 'unavailable';
+  if (session?.authenticated === true) return 'in';
+  return 'out';
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+}
+
+function cleanName(value) {
+  const name = typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
+  return [...name].slice(0, 40).join('') || 'Spelare';
+}
+
+function formatAmount(amount, currency) {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return null;
+  const text = value.toLocaleString('sv-SE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  return /^[A-Z]{3}$/.test(currency) ? `${text} ${currency}` : text;
+}
+
+function sessionView(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || typeof data.authenticated !== 'boolean') return unavailable();
+  const partnerKeyId = typeof data.partnerKeyId === 'string' && data.partnerKeyId ? data.partnerKeyId.slice(0, 80) : '';
+  return {
+    authenticated: data.authenticated,
+    guest: data.guest === true,
+    sharedCredentials: data.sharedCredentials === true,
+    ...(data.playerAccounts === true ? {playerAccounts: true} : {}),
+    ...(partnerKeyId ? {partnerKeyId} : {}),
+  };
+}
+
+function playerView(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return unavailable();
+  const balance = Number(data.balance);
+  const currency = typeof data.currency === 'string' ? data.currency : '';
+  if (!Number.isFinite(balance) || !/^[A-Z]{3}$/.test(currency)) return unavailable();
+  return {name: cleanName(data.name), currency, balance};
+}
+
+function resultsView(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return unavailable();
+  const currencies = Array.isArray(data.currencies) ? data.currencies.flatMap(row => {
+    if (!row || typeof row !== 'object') return [];
+    const currency = typeof row.currency === 'string' && /^[A-Z]{3}$/.test(row.currency) ? row.currency : null;
+    if (!currency) return [];
+    const number = key => Number.isFinite(Number(row[key])) ? Number(row[key]) : 0;
+    return [{currency, rounds: number('rounds'), won: number('won'), lost: number('lost'), net: number('net'), wagered: number('wagered'), returned: number('returned')}];
+  }) : [];
+  const last = data.lastRound && typeof data.lastRound === 'object' ? data.lastRound : null;
+  return {currencies, lastRound: last && /^[A-Z]{3}$/.test(last.currency) ? {
+    currency: last.currency,
+    net: Number.isFinite(Number(last.net)) ? Number(last.net) : 0,
+    outcome: ['win', 'loss', 'push'].includes(last.outcome) ? last.outcome : 'push',
+  } : null};
+}
+
+async function readBackend(config, request, path, {method = 'GET', body, fetchImpl}) {
+  try {
+    const headers = platformBackendHeaders(new Headers({
+      Accept: 'application/json',
+      ...(request.headers.get('cookie') ? {Cookie: request.headers.get('cookie')} : {}),
+      ...(body !== undefined ? {'Content-Type': 'application/json'} : {}),
+    }), config);
+    const response = await fetchImpl(config.backendOrigin + path, {
+      method, headers, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(10000),
+      ...(body !== undefined ? {body: JSON.stringify(body)} : {}),
+    });
+    if (response.status === 401) {
+      await response.body?.cancel?.();
+      return null;
+    }
+    if (!response.ok) {
+      await response.body?.cancel?.();
+      return unavailable();
+    }
+    let data;
+    try { data = await response.json(); } catch { return unavailable(); }
+    return data;
+  } catch {
+    return unavailable();
+  }
+}
+
+export function playerAreaRequest(path, headerList, env = process.env) {
+  const origin = typeof env?.CROUPIER_PUBLIC_ORIGIN === 'string' && /^https:\/\/[^/]+$/.test(env.CROUPIER_PUBLIC_ORIGIN)
+    ? env.CROUPIER_PUBLIC_ORIGIN : 'https://www.scoutgaming.tech';
+  const headers = new Headers();
+  const cookie = headerList?.get?.('cookie');
+  if (typeof cookie === 'string' && cookie) headers.set('cookie', cookie);
+  return new Request(origin + path, {headers});
+}
+
+export async function playerAreaData(request, env = process.env, options = {}) {
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const empty = {session: unavailable(), player: null, results: null};
+  let config;
+  try { config = platformConfiguration(env); } catch { return empty; }
+  if (!config?.backendOrigin) return empty;
+  const sessionData = await readBackend(config, request, '/api/auth/session', {fetchImpl});
+  if (sessionData === null) return {session: null, player: null, results: null};
+  if (sessionData?.unavailable) return empty;
+  const session = sessionView(sessionData);
+  if (session.unavailable) return {session, player: null, results: null};
+  if (session.authenticated !== true) return {session, player: null, results: null};
+  const playerData = await readBackend(config, request, '/api/player', {method: 'POST', body: {}, fetchImpl});
+  const player = playerData === null ? null : playerData.unavailable ? playerData : playerView(playerData);
+  let results = null;
+  if (PLAYER_RESULTS_PATH) {
+    const resultsData = await readBackend(config, request, PLAYER_RESULTS_PATH, {fetchImpl});
+    results = resultsData === null ? null : resultsData.unavailable ? resultsData : resultsView(resultsData);
+  }
+  return {session, player, results};
+}
+
+function playerFields(player) {
+  if (!player || player.unavailable) return [];
+  const money = formatAmount(player.balance, player.currency);
+  return [
+    {label: 'Visningsnamn', value: player.name},
+    {label: 'Saldo', value: money || String(player.balance)},
+    {label: 'Valuta', value: player.currency},
+  ];
+}
+
+function areaModel(surface, redirect, extra = {}) {
+  return {
+    redirect, surface,
+    eyebrow: 'Spelaryta',
+    title: surface === 'profil' ? 'Egen profil' : surface === 'historik' ? 'Egen historik' : 'Spellobby',
+    intro: '', notice: null, fields: [], pills: [], links: [], sentence: null, primary: null, empty: null, historyLines: [], clientLabel: null,
+    ...extra,
+  };
+}
+
+export function playerAreaModel(data, surface) {
+  const state = sessionState(data?.session);
+  const outage = state === 'unavailable' || data?.player?.unavailable === true || data?.results?.unavailable === true;
+  const signedIn = state === 'in';
+  if (surface === 'profil' && state === 'out') return areaModel(surface, '/player-login?returnTo=/play/profil');
+  if (surface === 'historik' && state === 'out') return areaModel(surface, '/player-login?returnTo=/play/historik');
+  const kind = playerAccountKind(data?.session);
+  const fields = signedIn ? playerFields(data.player) : [];
+  if (surface === 'profil' && signedIn && kind) fields.splice(1, 0, {label: 'Kontotyp', value: kind});
+  const primary = surface === 'profil'
+    ? {href: '/play', label: 'Till spellobbyn'}
+    : surface === 'historik'
+      ? {href: '/play/blackjack', label: 'Spela en runda'}
+      : {href: signedIn || outage ? '/play/blackjack' : LOGIN_BLACKJACK, label: 'Spela Blackjack'};
+  const historyRows = !data?.results || data.results.unavailable ? [] : data.results.currencies || [];
+  return areaModel(surface, null, {
+    intro: surface === 'profil'
+      ? 'Uppgifterna kommer från spelkontot och kan inte ändras här.'
+      : surface === 'historik'
+        ? 'Namn, saldo och valuta kommer från spelkontot.'
+        : 'Välj spel. Blackjack öppnas i spelklienten.',
+    notice: outage ? NOTICE : null,
+    fields,
+    pills: surface === 'lobby'
+      ? [{label: 'Roulette', status: 'planerat'}, {label: 'Baccarat', status: 'planerat'}]
+      : surface === 'profil' && kind ? [{label: 'Kontotyp', status: kind}]
+        : surface === 'historik' && signedIn && !historyRows.length && !outage ? [{label: 'Historik', status: 'ej publicerad'}] : [],
+    links: surface === 'lobby' && signedIn && !outage
+      ? [{href: '/play/profil', label: 'Egen profil'}, {href: '/play/historik', label: 'Egen historik'}] : [],
+    sentence: surface === 'lobby' && state === 'out' ? LOGIN_SENTENCE : null,
+    primary,
+    empty: surface === 'historik' && signedIn && !outage && !historyRows.length ? HISTORY_EMPTY : null,
+    historyLines: historyRows.map(row => `${row.currency}: ${row.rounds} rundor, netto ${formatAmount(row.net, row.currency) || row.net}`),
+    clientLabel: surface === 'lobby' ? 'Spelklient' : null,
+  });
+}
+
+function pillsHtml(pills) {
+  if (!pills.length) return '';
+  return `<p class="mt-6 flex flex-wrap gap-2">${pills.map(pill =>
+    `<span class="rounded-full border border-white/15 px-3 py-1 text-sm text-slate-300">${escapeHtml(pill.label)} · ${escapeHtml(pill.status)}</span>`).join('')}</p>`;
+}
+
+function fieldsHtml(fields) {
+  if (!fields.length) return '';
+  return `<dl class="mt-6 space-y-2">${fields.map(field =>
+    `<div class="flex flex-wrap gap-2 text-slate-200"><dt class="text-slate-400">${escapeHtml(field.label)}</dt><dd data-field="${escapeHtml(field.label)}">${escapeHtml(field.value)}</dd></div>`).join('')}</dl>`;
+}
+
+function primaryHtml(primary) {
+  if (!primary) return '';
+  return `<a href="${escapeHtml(primary.href)}" class="mt-7 inline-block rounded-lg bg-emerald-300 px-6 py-3 font-semibold text-slate-950">${escapeHtml(primary.label)}</a>`;
+}
+
+export function renderPlayerAreaHtml(model) {
+  const history = model.historyLines?.length ? `<ul class="mt-6 space-y-2 text-slate-200">${model.historyLines.map(line =>
+    `<li>${escapeHtml(line)}</li>`).join('')}</ul>` : '';
+  const lobbyCard = model.surface === 'lobby' ? `<section class="mt-9 rounded-2xl border border-white/15 bg-white/5 p-8" aria-labelledby="blackjack-title">
+      <p class="text-sm uppercase tracking-widest text-emerald-300">${escapeHtml(model.clientLabel)}</p>
+      <h2 id="blackjack-title" class="mt-4 text-2xl font-semibold">Blackjack</h2>
+      <p class="mt-3 text-slate-300">Klassiskt kortspel med videodealer.</p>
+      ${primaryHtml(model.primary)}
+    </section>` : primaryHtml(model.primary);
+  const links = model.links?.length ? `<nav class="mt-6 flex flex-wrap gap-4" aria-label="Spelarkonto">${model.links.map(link =>
+    `<a href="${escapeHtml(link.href)}" class="text-emerald-300 underline decoration-emerald-300/70 underline-offset-4">${escapeHtml(link.label)}</a>`).join('')}</nav>` : '';
+  return `<main class="min-h-screen bg-[#0b151b] px-6 py-14 text-white">
+    <div class="mx-auto max-w-3xl">
+      <a href="/" class="text-sm text-slate-300">← Scoutgaming</a>
+      <p class="mt-12 text-sm uppercase tracking-widest text-emerald-300">${escapeHtml(model.eyebrow)}</p>
+      <h1 class="mt-3 text-4xl font-semibold">${escapeHtml(model.title)}</h1>
+      <p class="mt-4 text-slate-300">${escapeHtml(model.intro)}</p>
+      ${model.notice ? `<p role="status" class="mt-6 inline-block rounded-full border border-white/15 px-3 py-1 text-sm text-slate-200">${escapeHtml(model.notice)}</p>` : ''}
+      ${fieldsHtml(model.fields || [])}
+      ${model.sentence ? `<p class="mt-6 text-slate-300">${escapeHtml(model.sentence)}</p>` : ''}
+      ${model.empty ? `<p role="status" class="mt-6 text-slate-300">${escapeHtml(model.empty)}</p>` : ''}
+      ${history}
+      ${links}
+      ${lobbyCard}
+      ${pillsHtml(model.pills || [])}
+    </div>
+  </main>`;
+}
+
+export async function playerAreaPage(request, env = process.env, surface = 'lobby', options = {}) {
+  const data = await playerAreaData(request, env, options);
+  const model = playerAreaModel(data, surface);
+  if (model.redirect) return {redirect: model.redirect, html: '', data, model};
+  return {redirect: null, html: renderPlayerAreaHtml(model), data, model};
+}

@@ -44,7 +44,7 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/tree`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/probe`, `/control/operator-chat`. |
 | 2 | `/partner`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Partnerportalen visar intern demonförhandsvisning eller scoped operatörsdata. T2 är påbörjad: operatörslagring, partnerinloggning och scoped data. Spelare och transaktioner är inte anslutna. |
-| 3 | `/play`, `/play/blackjack` | Spelare. Lobby, profil och historik är inte klara. |
+| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor; historiken är tom tills spelmotorn får en spelarrutt för resultat. Operatörskontext i lobbyn återstår. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
