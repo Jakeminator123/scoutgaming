@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "77a7cb49db4847f143574714e879bc87b3778f1f",
+  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
   "inspection": {
     "kind": "code-inspected",
     "scope": "Spelauktoritet, presentation, röst/kamera, OpenClaw, genererat tal och GPU-livscykel",
@@ -17,9 +17,9 @@
         {
           "id": "player-login",
           "title": "Verifiera spelarsession",
-          "detail": "En oinloggad /blackjack-begäran går till den kanoniska inloggningen. Player-sessionens cookie, expiry, kontostämpel och återkallelse kontrolleras på servern. API-åtkomst kräver giltig session och POST kräver tillåtet origin.",
+          "detail": "En oinloggad /play/blackjack-begäran går till den kanoniska inloggningen. /play är spelarytan. Player-sessionens cookie, expiry, kontostämpel och återkallelse kontrolleras på servern. API-åtkomst kräver giltig session och POST kräver tillåtet origin.",
           "events": [
-            "GET /blackjack",
+            "GET /play/blackjack",
             "GET /api/auth/session",
             "POST /api/auth/login"
           ],
@@ -860,7 +860,7 @@
     {
       "id": "lanes",
       "title": "Mobile Phone Lane och sparat lane-register",
-      "detail": "Mobile Phone Lane är förvald och servervalet i gemensam Studio-policy styr /blackjack. Admin kan skapa/ta bort versionerade porträttlanes med känd renderer, dealer och delad mediesamling. Sista borttagningen sätter gameLane=null och stänger ny spelstart. Kevin/original är avvecklad; gamla queryparametrar återaktiverar den inte. Kort, RNG, spelarkonto, wallet och kalibrerad kortprojektion är gemensamma och består. Nya renderertyper/banker kräver adapter och verifierade media.",
+      "detail": "Mobile Phone Lane är förvald och servervalet i gemensam policy styr spelaren på /play/blackjack. Admin kan skapa/ta bort versionerade porträttlanes med känd renderer, dealer och delad mediesamling. Sista borttagningen sätter gameLane=null och stänger ny spelstart. Kevin/original är avvecklad; gamla queryparametrar återaktiverar den inte. Kort, RNG, spelarkonto, wallet och kalibrerad kortprojektion är gemensamma och består. Nya renderertyper/banker kräver adapter och verifierade media.",
       "sources": [
         {
           "path": "web/public/game-lanes.mjs",

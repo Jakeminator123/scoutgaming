@@ -121,18 +121,19 @@ test('missing registered reference and duplicate catalog identities are hard fac
   assert.ok(result.errors.some(row => row.code === 'catalog.missing-reference' && row.path === 'web/missing.mjs'));
   assert.ok(result.errors.some(row => row.code === 'catalog.duplicate'));
 });
-test('new selected route and changed HTTP exports warn with exact file and URL', t => {
+test('new selected route and changed HTTP exports are route-drift errors', t => {
   const f = fixture(t);
   f.put('apps/croupier-frontend/app/new/route.ts', 'export async function PATCH() {}\n');
   f.put('apps/croupier-frontend/app/new-js/route.js', 'export async function GET() {}\n');
   f.put('apps/croupier-frontend/app/new-page/page.jsx', 'export default function Page() {}\n');
   f.put(route, 'export async function POST() {}\n');
   const result = f.check(), contract = result.contracts.find(row => row.id === 'routes');
-  assert.equal(contract.status, 'yellow'); assert.equal(result.errors.length, 0);
-  assert.ok(contract.warnings.some(row => row.code === 'route.uninventoried' && row.message.includes('/new')));
-  assert.ok(contract.warnings.some(row => row.path?.endsWith('/new-js/route.js')));
-  assert.ok(contract.warnings.some(row => row.path?.endsWith('/new-page/page.jsx')));
-  assert.ok(contract.warnings.some(row => row.code === 'route.method-drift' && row.path === route));
+  assert.equal(contract.status, 'red');
+  assert.equal(contract.warnings.some(row => String(row.code).startsWith('route.')), false);
+  assert.ok(result.errors.some(row => row.code === 'route.uninventoried' && row.message.includes('/new')));
+  assert.ok(result.errors.some(row => row.path?.endsWith('/new-js/route.js')));
+  assert.ok(result.errors.some(row => row.path?.endsWith('/new-page/page.jsx')));
+  assert.ok(result.errors.some(row => row.code === 'route.method-drift' && row.path === route));
 });
 test('new SQL column is yellow; catalog update plus rebaseline and fresh tests can become green', t => {
   const f = fixture(t), previous = f.evidence();
@@ -302,7 +303,9 @@ test('CLI summaries bound warnings and omit the full file/hash inventory', t => 
   const f = fixture(t);
   for (let i = 0; i < 20; i++) f.put(`apps/croupier-frontend/app/new${i}/route.ts`, 'export function GET() {}\n');
   const summary = summarizeAssurance(f.check());
-  assert.equal(summary.status, 'yellow'); assert.equal(summary.warnings.length, 12); assert.ok(summary.omittedWarnings > 0);
+  assert.equal(summary.status, 'red');
+  assert.ok(summary.errors.some(row => row.code === 'route.uninventoried'));
+  assert.equal(summary.warnings.length, 12); assert.ok(summary.omittedWarnings > 0);
   assert.equal('files' in summary, false); assert.equal('contracts' in summary, false);
 });
 test('offline builder is import-safe, escapes embedded JSON and supports non-writing --check', t => {
@@ -346,7 +349,8 @@ test('Git --ref reads frozen committed bytes, ignores dirty worktree, and isolat
     assert.equal(committed.currentSha, sha); assert.ok(committed.read(route).includes('GET'));
     assert.equal(verifySystemMap({ reader: committed, evidence }).assurance.status, 'green');
     const working = createSourceReader({ repositoryRoot: f.root }), result = verifySystemMap({ reader: working, evidence }).assurance;
-    assert.equal(result.sourceView, 'working-tree'); assert.equal(result.status, 'yellow');
+    assert.equal(result.sourceView, 'working-tree'); assert.equal(result.status, 'red');
+    assert.ok(result.errors.some(row => row.code === 'route.method-drift' && row.path === route));
     assert.equal(result.files.find(row => row.path === route).commitMatched, false);
     const stale = { ...evidence, sourceSha: B };
     assert.equal(verifySystemMap({ reader: committed, evidence: stale }).assurance.status, 'yellow');

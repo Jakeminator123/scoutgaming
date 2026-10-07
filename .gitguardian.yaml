@@ -1,0 +1,6 @@
+# docs/system-map/contracts.json holds sha256 file digests only, no credentials.
+# ggshield v2 configuration; the hosted dashboard keeps its own exclusions.
+version: 2
+secret:
+  ignored_paths:
+    - docs/system-map/contracts.json
