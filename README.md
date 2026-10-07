@@ -45,8 +45,7 @@ For a disposable local preview with existing films and no external providers:
 node lab/start.mjs --offline --no-open
 ```
 
-[Start-Lab.cmd](Start-Lab.cmd) starts the existing connected profile.
-[Start-Lissabon.cmd](Start-Lissabon.cmd) is a compatibility shortcut.
+`node lab/start.mjs --no-open` starts the existing connected profile.
 Private saved projects, history and players now live
 in `lab/data`, after a verified backup outside Git. See the restoration guide.
 In the cloud the general editor is `/control/tree`. Key names and locations
@@ -109,7 +108,7 @@ explicitly exposes them.
 ## Run locally
 
 Use the coordinated `node lab/start.mjs --offline --no-open` launcher shown
-above for an isolated, temporary preview. Use `Start-Lab.cmd` for the saved
+above for an isolated, temporary preview. Use `node lab/start.mjs --no-open` for the saved
 connected profile. Both go through the shared session guard. Stop the current
 product/Lab pair before changing environments; never bypass the guard with
 a direct server command or another port. A stopped environment stays stopped

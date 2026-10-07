@@ -51,8 +51,8 @@ användas med ett aktuellt bygge. Ctrl+C stoppar paret och tar bort dess testdat
 Ett koordinerat sessionslås hindrar ett andra produkt/labbpar.
 Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 
-[Start-Lab.cmd](../Start-Lab.cmd) startar den befintliga anslutna profilen på
-4200/4201. [Start-Lissabon.cmd](../Start-Lissabon.cmd) fungerar som alias.
+`node lab/start.mjs --no-open` startar den befintliga anslutna profilen på
+4200/4201.
 Sparat projekt, historik och profiler finns i `lab/data`; speldata i dess
 `players/`. Den gamla katalogen är avvecklad med verifierad privat
 backup enligt [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md).
@@ -62,8 +62,6 @@ Standardprojektet skapas från
 behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
 
-Det äldre `Start-Labb.ps1` finns kvar för den generella fristående editorn;
-öppna `/tree` där. Kör den inte samtidigt med det anslutna paret.
 Node 22.16+ och installerade beroenden krävs för lokal start. För molndrift
 används den befintliga [koordinerade molnstartaren](../ops/cloud/README.md).
 

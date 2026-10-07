@@ -21,3 +21,6 @@ media/.migration/
 
 # Local backoffice network captures; keep raw responses out of Git.
 /random-stuff-jakob/jakob-log-files/
+.vercel
+.env*
+!.env.example
