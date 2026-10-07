@@ -29,6 +29,6 @@ export function ControlWorkspace({ user }: { user: string; initialView?: string 
     </div>)}</section>
     <section className={styles.levels} aria-label="Spelbolag och spelare"><div><h2>Nivå 2 · Spelbolag</h2><p>Intern adminpersonal har också tillgång till spelbolagens ytor. Kundval är ännu inte aktiverat; tills vidare finns tydligt märkta demonstrationer.</p><a href="/partner">Öppna spelbolagens arbetsytor →</a></div>
       <div><h2>Nivå 3 · Spelare</h2><p>Spelaren går till spelstart och befintlig spelinloggning.</p><a href="/play">Öppna spelarytan →</a></div></section>
-    <p className={styles.help}>Nya lanes delar fortfarande Astrids klippbank. Separata publicerade lane-paket och spelbolagens egen inloggning återstår. <a href={labUrl('/control/guide')}>Läs guiden →</a></p>
+    <p className={styles.help}>Nya lanes delar fortfarande Astrids klippbank och separata publicerade lane-paket återstår. Operatörens personal loggar in på /partner/login; kvar är inbjudan och återställning för den personalen samt adminens val av en riktig operatör. <a href={labUrl('/control/guide')}>Läs guiden →</a></p>
   </main>;
 }
