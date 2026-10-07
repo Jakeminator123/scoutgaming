@@ -58,7 +58,11 @@ Rader 12–14 kom från produktionskontrollen av `661de97b`, inloggad som LLM.
 
 | Punkt | Läge |
 |---|---|
-| Team-vyn lyfts ut ur `original-views.jsx` som första vy, mot riktig data | Pågår |
+| Team-vyn utlyft ur `original-views.jsx` till `views/team.jsx` (5990 → 5915 rader) | Klart 7 okt, pushat i `661de97b` |
+| Fixture-sidan `/partner/demo-north/team` är inte pixel-identisk: svenska kolumner, rollväljare per rad, formuläret Bjud in; knappen Invite people borta | Repot får tweaka Kevins kod (Jakobs policy). Kevin bör se det |
+| Inbjudan, rollbyte och `team.suspend` är inte kopplade till servern; verkligt läge är läsbart | Kräver Jakobs godkännande innan koppling. Hör ihop med rad 7 |
+| `preview.test.mjs` träffar fortfarande gamla `ScopedTeamPreview`; `TeamView` testas i `partner-team.test.mjs` via `renderToStaticMarkup`, inte i webbläsare | Täckning att komplettera när vyn får serverkoppling |
+| `port-source.mjs` skulle återställa fabrikens `Team` om porten körs om | Varningsrad tillagd i skriptet 7 okt |
 | Resten av hans 13 vyer rörs inte förrän de får riktig data | Policy |
 | Hans kopplingar anpassas till repots API och sessioner, inte tvärtom | Jakobs policy 7 okt |
 | Rad 7: skydd för sista administratören | Nästa partnerpass |
