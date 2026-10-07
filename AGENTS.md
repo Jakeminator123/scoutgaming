@@ -60,5 +60,6 @@ At task start and before commit/push, read remote `main` security status with `n
 - Run `node pipeline/audit-dealer-sync.mjs --probe` and the tests in `.githooks/pre-commit` for every media/player change. Review all four dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
 - The asset baseline is not proof of lip sync. Do not mark a take approved from a hash, waveform, test pass, or first-mouth onset. Update the baseline only after inspecting intentional changes and recording the per-line result. Never regenerate unrelated approved assets while repairing one take. Do not use pasted mouth overlays.
 - Keep server-owned cards, shoe counts, wallet, and payouts authoritative. Do not manipulate the real user database for testing. Use an isolated server/database and a different hostname.
+- A Studio migration ships in two steps: run it against production Neon first, then merge the code. CI's migration readiness step enforces this; do not add continue-on-error to it.
 - Temporary guest access stays on for local product development until the user asks otherwise. Do not treat this demo as ready for real money.
 - At each delivery, commit only task-owned files and update the handoff with what changed, what was tested, and what remains broken. Keep conversation exports private and outside Git.

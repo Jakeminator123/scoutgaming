@@ -7,7 +7,8 @@ De innehåller inga hemliga värden. Ignorerade `.env`/`.env.local` och tjänste
 miljöinställningar är separata och ska inte raderas vid dokumentstädning.
 Ändra båda när en variabel läggs till, tas bort eller byter betydelse.
 `node tools/check-environment-variables.mjs` körs i Git-hook och CI och
-kontrollerar namn som läses av molnstart, Vercelbygge och GPU-relä.
+kontrollerar namn som läses av molnstart, Vercelbygge, GPU-relä och
+migreringsgrinden.
 Den kontrollerar **inte** värden eller leverantörspaneler. Vid ändring direkt
 i Render/Vercel/RunPod: jämför endast nyckelnamn med listan och uppdatera
 repo-dokumentationen i samma leverans. Lagra aldrig värden här.
@@ -236,6 +237,13 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 | Render: privat OpenClaw Gateway | Separata `OPENCLAWAPI_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
 | RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
+| GitHub Actions: Studio-migreringsgrind | – | – | `CROUPIER_GAME_DATABASE_URL` är repository secret och läses av readiness-kontrollen vid push till main; `CROUPIER_MIGRATION_CONFIRM` är lokal operatörsbekräftelse och sätts aldrig i CI eller Vercel | – |
+
+`tools/check-migration-readiness.mjs` läser `CROUPIER_GAME_DATABASE_URL` som
+GitHub-repository secret i `presentation-studio` vid push till `main`. Samma
+namn används av en operatör lokalt. `CROUPIER_MIGRATION_CONFIRM` ska vara
+exakt `apply-pending` endast i den terminal som kör `--apply`. Sätt den aldrig
+i CI eller Vercel.
 
 Huvudprojektets Preview kan peka mot produktion. Syntetiska spel-/kontoprov
 kräver den separata native-QA-backenden och dess egen databas/hostname.
