@@ -4,17 +4,34 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen, gamla `studio.tsx` borttagen; lösa trådar mot nivå 2 öppna | /control-ombyggnad |
-| Nivå 2 /partner | påbörjad — session finns, speldata ej | Partnerportal |
+| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen, gamla `studio.tsx` borttagen; ljust läge och Johns rader 11, 12, 14 väntar; lösa trådar mot nivå 2 öppna | /control-ombyggnad |
+| Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
+| Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32) | Teststädning och dokumentation |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
-| Systemkarta | klart — tre nivåer, CI-spärr | Systemkarta |
+| Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
 | Render croupier-v2 | påbörjad — motor live, deploy väntar | Aktuell leverans |
 
 Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Sista operatörsadmin, 7 oktober 2026 natt
+
+Ändrat (`186c6bc4`): operatörslagret (`web/storage/operator-store.mjs`) avvisar en ändring av
+medlemskap (roll eller status) eller av en befintlig roll som skulle lämna bolaget utan aktiv
+admin. Admin är en aktiv medlem vars roll har `team.roles.assign`
+(`OPERATOR_ADMIN_PERMISSION` och `isOperatorAdmin` i `web/partner-access-policy.mjs`).
+Avvisningen är 409 `studio_last_operator_admin`. Kontroll och skrivning sker i en transaktion
+med låst bolagsrad; utan en pool med `connect()` avvisas sådana skrivningar med 503. Ingen
+migration, ingen vy och ingen rutt. Sqlite-vägen i `web/server.mjs` är granskad utan ändringar:
+produktion kör postgres, sqlite bär offline-labbet (beslutsmatrisens rad 36).
+
+Testat: 82 tester för lagret, policyn och partnerdatan, labbtester, typecheck, systemkartan och
+full regression lokalt utom `test/bugshot-report.mjs`. Kvar: ingen rutt eller vy skriver
+medlemskap (L5, L11), en skrivande rutt måste skicka poolen (L24), ingen databasspärr och
+inget samtidighetsprov mot riktig Postgres.
 
 ## Teststädning och dokumentation, 7 oktober 2026 natt
 
@@ -88,7 +105,6 @@ Ytan kan finnas, men kopplingen saknas. Listan följer `random/losa-tradar-2026-
 - **L5** Team-vyns inbjudan, rollbyte och suspend skriver inte till servern. `lab/components/kevin-bo/views/team.jsx`.
 - **L6** Klienten kastar 501 på POST `speech-qa` innan något anrop. `lab/components/studio-administration.tsx`.
 - **L7** `POST /api/history` och `/bo`-ompekningarna i `web/server.mjs` är inte deployade på Render.
-- **L9** Nivå 2 saknar spärr mot att ta bort sista operatörsadmin. `web/partner-access-policy.mjs`.
 - **L10** Spelare, transaktioner och rapporter hämtas inte från spelmotorn. `lab/lib/partner-data.mjs`.
 - **L11** Ingen rutt anropar `createOperator`, `upsertRole` eller `upsertMembership`. `web/storage/operator-store.mjs`.
 - **L12** Operatörsskrivningar får ingen rad i `audit_events`. `ops/neon-studio/001-studio-metadata.sql`.
@@ -98,6 +114,7 @@ Ytan kan finnas, men kopplingen saknas. Listan följer `random/losa-tradar-2026-
 - **L16** Bakgrundszoner styr inte spelets bakgrund. `lab/components/lab-studio.tsx`.
 - **L19** Varianter för Vera, Amira och Mei sparas men spelets urval använder dem inte. `web/presentation-api.mjs`.
 - **L23** Det rullande observationsfönstret monteras inte; Uppspelning stannar vid 300 meddelanden eller 4 MiB. `lab/components/activity-log.tsx`.
+- **L24** En skrivande rutt för operatörer måste skicka poolen med `connect()`; partnerdatan skickar bara `{ query }`. `lab/lib/partner-data.mjs`.
 
 ## Design, 7 oktober 2026
 
