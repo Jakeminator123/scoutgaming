@@ -31,6 +31,8 @@ export function ControlOpenClawChat({ initialProject, initialVideos, initialStat
     intro="Fråga OpenClaw om labbet, eller öppna spelarchatten vid bordet."
     tabs={<OpenClawTabLinks active="chat" />}
   >
-    <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(labUrl('/control/activity')); }} />
+    <div className="sg-page-body">
+      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(labUrl('/control/activity')); }} />
+    </div>
   </PageTemplate>;
 }

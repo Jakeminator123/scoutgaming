@@ -199,6 +199,7 @@ html[data-theme="light"] {
 
 .sg-page { display: contents; }
 .sg-page-body { max-width: 1368px; margin: 0 auto; padding: 8px 32px 40px; }
+.sg-page > .sg-tabs { padding: 4px 32px 0; }
 .sg-page-head {
   display: flex;
   justify-content: space-between;
@@ -336,6 +337,7 @@ html[data-theme="light"] .sg-shell {
 @media (max-width: 720px) {
   .sg-page-head { padding: 20px 16px 4px; }
   .sg-page-body { padding: 8px 16px 32px; }
+  .sg-page > .sg-tabs { padding: 4px 16px 0; }
   .sg-page-head h1 { font-size: 32px; }
   .sg-page-actions { margin-left: 0; }
   .sg-unsaved { left: 16px; right: 16px; transform: none; width: auto; }

@@ -23,8 +23,10 @@ export function ControlProbePage({ initialProject, initialVideos, initialStatus,
     intro="Astrids egna tal när spelaren är inaktiv. Spara projektet när du ändrat läge, tid eller modell."
     primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
   >
-    <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
-    {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
-    <ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy => updateProject(draft => { draft.probePolicy = policy; })} onActivity={recordActivity} />
+    <div className="sg-page-body">
+      <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
+      {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
+      <ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy => updateProject(draft => { draft.probePolicy = policy; })} onActivity={recordActivity} />
+    </div>
   </PageTemplate>;
 }
