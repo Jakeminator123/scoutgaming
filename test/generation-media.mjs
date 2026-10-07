@@ -53,7 +53,7 @@ test('explicit media directory cannot re-enable retired BO or token package rout
     for (const path of [boPath, `/bo%2fgen%2f${first.id}.mp4`, `/bo%5cgen%5c${first.id}.mp4`, '/bo/generations.json']) {
       const response = await get(path);
       assert.equal(response.status, 302);
-      assert.equal(response.headers.get('location'), '/studio/login');
+      assert.equal(response.headers.get('location'), '/control/login');
     }
     const auth = { Authorization: `Bearer ${fixture.credentials.generations.token}` };
     for (const path of [apiPath, `/api/v1/generations/${second.id}/video`, '/api/v1/generations']) {
@@ -103,10 +103,10 @@ test('retired generation aliases cannot fall through to static files through Win
     for (const prefix of prefixes) {
       const denied = await get(`${prefix}${known}.mp4`);
       assert.equal(denied.status, 302, `${prefix} requires BO auth even when default files exist`);
-      assert.equal(denied.headers.get('location'), '/studio/login');
+      assert.equal(denied.headers.get('location'), '/control/login');
     }
     const catalog = await get('/bo/generations.json');
-    assert.equal(catalog.status, 302); assert.equal(catalog.headers.get('location'), '/studio/login');
+    assert.equal(catalog.status, 302); assert.equal(catalog.headers.get('location'), '/control/login');
     const retired = await fetch(fixture.gameUrl + `/api/v1/generations/${known}/video`, {
       headers: { Authorization: `Bearer ${fixture.credentials.generations.token}` }, redirect: 'manual' });
     assert.equal(retired.status, 410);
