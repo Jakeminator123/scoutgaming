@@ -41,7 +41,9 @@ inloggad. Lösenordet är Jakobs, inte i Git. Nivå 1-inbjudningar till Kevin
 (`kevin.negash@scoutgaminggroup.com`) och Emil (`emilmattsson@yahoo.se`) skickades
 via `POST /studio/api/admin/users/invite` med `emailSent: true`. GitHub-inbjudningar
 med skrivrätt: `EmaCodeHero`, Kevins och Johns e-post; grenarna `kevin`, `emil`,
-`john` finns, och `main` kräver PR för alla utom repo-admin.
+`john` finns, och `main` kräver PR för alla utom repo-admin. Teamets inbox är
+GitHub Issues med etiketten `inbox` (`inbox/README.md`, `tools/inbox.mjs`); de
+första beslutsärendena är #2 till John och #3 till Kevin.
 
 ## Namn, 7 oktober 2026
 
