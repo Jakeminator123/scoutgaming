@@ -45,7 +45,6 @@ function Shell({ pathname, search, children }: { pathname: string; search: strin
       <a className={styles.brand} href="/control" aria-label="ScoutGamingGroup · Administration">
         <span className={styles.wordmark}>scout<b>/</b>gaming</span>
         <span className={styles.product}>CROUPIER STUDIO · AI LIVE CASINO</span>
-        <span className="sr-only" aria-hidden="true">Nivå 1 · ScoutGamingGroup</span>
       </a>
       <nav className={styles.nav} aria-label="ScoutGamingGroup administration">
         {SCOUT_NAVIGATION.map(group => <div className={styles.group} key={group.label || 'overview'}>

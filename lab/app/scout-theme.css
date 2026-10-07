@@ -289,7 +289,6 @@ html[data-theme="light"] .sg-shell {
   --sg-danger-bg: #f8e8e6;
   --sg-danger-line: #e2b6b2;
 }
-.sg-shell .studio-header,
 .sg-shell .sg-page-head {
   position: static;
   z-index: 20;
@@ -299,7 +298,6 @@ html[data-theme="light"] .sg-shell {
   box-shadow: none;
 }
 .sg-shell .studio-shell { color: var(--sg-text); background: transparent; }
-.sg-shell .event-sidebar,
 .sg-shell .inspector,
 .sg-shell .workspace,
 .sg-shell .stage-panel {

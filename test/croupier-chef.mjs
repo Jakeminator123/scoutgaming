@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, mkdir, writeFile, readFile, access, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, access, rm, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { chef, registryLocation } from '../tools/croupier-chef.mjs';
+import { acquireLock, chef, identity, registryLocation } from '../tools/croupier-chef.mjs';
 
 const exec = promisify(execFile);
 const owner = { owner: 'Jakob', title: 'Samordning', target: 'work', session: 'chef-a' };
@@ -100,4 +100,32 @@ test('separate clone has a separate local chief even when branches are named ali
   await chef('activate', owner, f.at(f.root));
   await runGit(f.directory, 'clone', f.root, clone);
   assert.equal((await chef('status', {}, f.at(clone))).status, 'inactive');
+});
+
+test('identity is stable across renames and distinct across chats', () => {
+  const jakob = identity('Jakob', 'Granska ändringar', 'chat-a');
+  const otherJakob = identity('Jakob', 'OpenClaw', 'chat-b');
+  assert.equal(identity('Jakob', 'Nytt namn', 'chat-a').id, jakob.id);
+  assert.notEqual(jakob.id, otherJakob.id);
+  assert.equal(jakob.name, 'Agent-granska-andringar, Jakob');
+  assert.equal(jakob.key, identity('Jakob', 'session', 'chat-a').key);
+  assert.throws(() => identity('unknown', 'Test', 'x'));
+});
+
+test('an active process lock prevents concurrent access and can be released', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'croupier-chef-lock-'));
+  const file = path.join(dir, 'chat.lock');
+  try {
+    const handle = await acquireLock(file);
+    await assert.rejects(acquireLock(file), /busy/);
+    await handle.close(); await unlink(file);
+    const next = await acquireLock(file); await next.close(); await unlink(file);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('unknown lock ownership cannot be silently stolen', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'croupier-chef-lock-'));
+  const file = path.join(dir, 'chat.lock');
+  try { await writeFile(file, '{}'); await assert.rejects(acquireLock(file), /ownership unknown/); }
+  finally { await rm(dir, { recursive: true, force: true }); }
 });

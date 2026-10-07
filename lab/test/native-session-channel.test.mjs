@@ -5,7 +5,7 @@ import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 
-test('Lissabon separates observations after Web reload and local profile version reset', () => {
+test('native session separates observations after Web reload and local profile version reset', () => {
   let epoch = 0;
   const records = [];
   for (const input of [

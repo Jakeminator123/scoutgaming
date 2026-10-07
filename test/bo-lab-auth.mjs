@@ -127,9 +127,9 @@ try {
   assert.match(issued[0], /^lab_session=[a-f0-9]{64}; Path=\/; HttpOnly; Secure; SameSite=Lax;/);
   assert.ok(!issued[0].includes('Domain='));
   const labCookie = cookies(completed)[0]; assert.ok(!labCookie.includes('bo_jwt'));
-  const restoredPage = await authorize(adminCookie, '/lissabon?private-token=must-not-persist');
+  const restoredPage = await authorize(adminCookie, '/control?private-token=must-not-persist');
   const pageResponse = await request(restoredPage.callback, { cookie: restoredPage.stateCookie });
-  assert.equal(location(pageResponse), '/lissabon');
+  assert.equal(location(pageResponse), '/control');
   for (const unsafe of ['//evil.invalid/', 'https://evil.invalid/', '/\\evil.invalid/', '/api/project', '/probe#fragment']) {
     const unsafeFlow = await authorize(adminCookie, unsafe);
     const unsafeResponse = await request(unsafeFlow.callback, { cookie: unsafeFlow.stateCookie });

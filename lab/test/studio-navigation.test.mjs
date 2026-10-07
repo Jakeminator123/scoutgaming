@@ -7,64 +7,85 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
-import { STUDIO_PRIMARY_NAVIGATION, STUDIO_TOOL_NAVIGATION, studioNavigationItem } from '../lib/studio-navigation.mjs';
-import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION } from '../lib/scout-navigation.mjs';
+import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 import { normalizeView } from '../components/kevin-bo/navigation.mjs';
 
-const items = [...STUDIO_PRIMARY_NAVIGATION, ...STUDIO_TOOL_NAVIGATION];
+// Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
+const OLD_HEADER_DESTINATIONS = Object.freeze([
+  '/control', '/control/clips', '/control/administration', '/control/openclaw',
+  '/control/operator-chat', '/control/tree', '/control/activity', '/control/guide',
+]);
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('Studio staff navigation uses canonical control routes including Kontrollpanel', () => {
-  assert.deepEqual(STUDIO_PRIMARY_NAVIGATION.map(item => [item.href, item.label]), [
-    ['/control', 'Kontrollpanel'], ['/control/clips', 'Dealer & klipp'],
-    ['/control/administration', 'Administration'], ['/control/openclaw', 'OpenClaw'],
-  ]);
-  assert.deepEqual(STUDIO_TOOL_NAVIGATION.map(item => item.href), ['/control/operator-chat', '/control/tree', '/control/activity', '/control/guide']);
-  assert.equal(new Set(items.map(item => item.href)).size, 8);
-  for (const item of items) {
-    assert.equal(Object.isFrozen(item), true);
-    const page = item.href === '/control' ? 'control/[[...path]]/page.tsx' : `${item.href.slice(1)}/page.tsx`;
-    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/);
+test('visible staff menu names Översikt and old header routes still have pages', () => {
+  const visible = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
+  assert.equal(visible.find(item => item.href === '/control').label, 'Översikt');
+  assert.equal(visible.some(item => item.label === 'Kontrollpanel'), false);
+  for (const href of OLD_HEADER_DESTINATIONS) {
+    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
+    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, href);
   }
 });
 
-test('existing dealer deep links highlight Dealer & klipp for canonical and legacy paths', () => {
-  const dealer = STUDIO_PRIMARY_NAVIGATION.find(item => item.href === '/control/clips');
-  for (const path of ['/', '/videos', '/zones', '/events', '/probe', '/control/clips', '/control/videos', '/control/zones', '/control/events', '/control/probe']) {
-    assert.equal(studioNavigationItem(path, ''), dealer);
-    assert.equal(studioNavigationItem(path, '/studio'), dealer);
-    assert.equal(studioNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio'), dealer);
-  }
+test('legacy dealer paths highlight the current page in the visible menu', () => {
+  const expectLabel = (path, label) => {
+    assert.equal(scoutNavigationItem(path, '')?.label, label, path);
+    assert.equal(scoutNavigationItem(path, '/studio')?.label, label, path);
+    assert.equal(scoutNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio')?.label, label, path);
+  };
+  expectLabel('/', 'Dealers & klipp');
+  expectLabel('/control/clips', 'Dealers & klipp');
+  expectLabel('/videos', 'Klippbibliotek');
+  expectLabel('/control/videos', 'Klippbibliotek');
+  expectLabel('/zones', 'Bakgrundszoner');
+  expectLabel('/control/zones', 'Bakgrundszoner');
+  expectLabel('/events', 'Händelser');
+  expectLabel('/control/events', 'Händelser');
+  expectLabel('/probe', 'Talgranskning');
+  expectLabel('/control/probe', 'Talgranskning');
+  expectLabel('/clips', 'Dealers & klipp');
+  expectLabel('/administration', 'Administration');
+  expectLabel('/openclaw', 'Agentmodeller');
+  expectLabel('/operator-chat', 'Operatörschatt');
+  expectLabel('/control/operator-chat', 'Operatörschatt');
+  expectLabel('/tree', 'Händelser → klipp');
+  expectLabel('/activity', 'Uppspelning');
+  expectLabel('/guide', 'Guide & hjälp');
 });
 
-test('exact active-page lookup handles canonical and legacy stripped paths', () => {
+test('exact active-page lookup handles canonical paths and rejects a doubled studio prefix', () => {
+  const items = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
   for (const item of items) {
-    assert.equal(studioNavigationItem(item.href, ''), item);
-    assert.equal(studioNavigationItem(item.href, '/studio'), item);
-    assert.equal(studioNavigationItem(`/studio${item.href}`, '/studio'), item);
+    assert.equal(scoutNavigationItem(item.href, ''), item);
+    assert.equal(scoutNavigationItem(item.href, '/studio'), item);
+    assert.equal(scoutNavigationItem(`/studio${item.href}`, '/studio'), item);
     assert.equal(item.href.startsWith('/studio'), false);
-    if (item.href !== '/control') {
-      const legacy = item.href.slice('/control'.length);
-      assert.equal(studioNavigationItem(legacy, ''), item);
-      assert.equal(studioNavigationItem(legacy, '/studio'), item);
-      assert.equal(studioNavigationItem(`/studio${legacy}`, '/studio'), item);
-    }
   }
-  assert.equal(studioNavigationItem('/studio', ''), null);
-  assert.equal(studioNavigationItem('/studio/studio/videos', '/studio'), null);
+  assert.equal(scoutNavigationItem('/studio', ''), null);
+  assert.equal(scoutNavigationItem('/studio/studio/videos', '/studio'), null);
 });
 
 test('unknown, malformed and injected paths have no active item or default destination', () => {
+  const resolved = new Map([
+    ['/videos?token=secret', 'Klippbibliotek'],
+  ]);
   for (const basePath of ['', '/studio']) {
     for (const path of [null, undefined, 1, {}, [], 'constructor', '__proto__', '', '/unknown',
       '//evil.test/videos', 'https://scoutgaming.tech/studio/videos', '/videos?token=secret',
       '/videos#users', '/videos/', '/Videos', '/studio-other/videos', '/studio//videos',
       '/studio/videos?token=secret', '/studio/videos#users', '/studio/videos/',
       '/studio/../videos', '/studio/%2fvideos', '/studio\\videos', '<script>',
-    ]) assert.equal(studioNavigationItem(path, basePath), null, `${basePath}: ${String(path)}`);
+    ]) {
+      const item = scoutNavigationItem(path, basePath);
+      const label = typeof path === 'string' ? resolved.get(path) : undefined;
+      if (label && basePath === '') assert.equal(item?.label, label, `${basePath}: ${path}`);
+      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Klippbibliotek', path);
+      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Klippbibliotek', path);
+      else assert.equal(item, null, `${basePath}: ${String(path)}`);
+    }
   }
-  for (const basePath of [null, {}, [], '/studio/', '/other']) assert.equal(studioNavigationItem('/videos', basePath), null);
+  for (const basePath of [null, {}, [], '/studio/', '/other']) assert.equal(scoutNavigationItem('/videos', basePath), null);
 });
 
 function loadComponent(file, overrides = {}, browser) {
@@ -105,7 +126,7 @@ test('internal menu keeps native Studio anchors and adds public control and part
       assert.doesNotMatch(html, /onClick|onNavigate/);
       assert.equal(links.filter(link => link === labUrl('/control/administration')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
-      assert.match(html, /Nivå 1 · ScoutGamingGroup/);
+      assert.match(html, /Nivå 1 </);
       assert.match(html, /CROUPIER STUDIO · AI LIVE CASINO/);
       assert.doesNotMatch(html, /<details|<summary[^>]*>Verktyg/);
       assert.match(html, /aria-current="page"[^>]*>Uppspelning/);

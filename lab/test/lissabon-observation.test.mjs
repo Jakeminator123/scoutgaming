@@ -5,7 +5,7 @@ import { createIdleLogFilter } from '../lib/activity-log.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';
 
-test('Lissabon keeps receiving past the trace limit and exports a visible boundary with complete events', () => {
+test('partner trace keeps receiving past the limit and exports a visible boundary with complete events', () => {
   let trace = createPartnerTrace({ rolling: true });
   const events = Array.from({ length: 65 }, (_, index) => ({ type: 'deal', shoeDraw: index }));
   for (let version = 0; version < 650; version++) trace = appendPartnerTrace(trace, {

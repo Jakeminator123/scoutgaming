@@ -54,7 +54,11 @@ try {
     if (request.url() === labUrl + '/api/presentation/decision' && request.method() === 'POST') requests.labDecisions++;
   });
   checkpoint('Lab save/reload'); lab = await context.newPage(); await lab.goto(labUrl + '/#upload');
-  await lab.getByRole('navigation', { name: 'Backoffice/Lab', exact: true }).waitFor();
+  const menu = lab.getByRole('navigation', { name: 'ScoutGamingGroup administration', exact: true });
+  await menu.waitFor();
+  for (const label of ['Översikt', 'Dealers & klipp', 'Händelser → klipp', 'Klippbibliotek', 'Bakgrundszoner', 'Händelser', 'Agentmodeller', 'Operatörschatt', 'Administration', 'Uppspelning', 'Talgranskning', 'Partners', 'Guide & hjälp']) {
+    await menu.getByRole('link', { name: label, exact: true }).waitFor();
+  }
   const editor = lab.getByRole('region', { name: 'Gemensamma klippval för alla dealers' });
   await editor.getByText('Ordinarie motorkälla:', { exact: false }).waitFor();
   const inventory = await (await lab.request.get(labUrl + '/api/clip-controls')).json();
@@ -181,11 +185,11 @@ try {
   checkpoint('mobile workspace'); await lab.setViewportSize({ width: 390, height: 844 });
   assert.ok(await lab.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'mobile navigation does not overflow');
   await lab.screenshot({ path: resolve(output, 'mobile.png'), fullPage: false }); assert.deepEqual(result.errors, []); assert.equal(context.pages().length, 2);
-  result.status = 'passed'; console.log('PASS Backoffice/Lab UI save/reload, BO14, actual native playback/reset/reconnect and seven two-play rehearsals');
+  result.status = 'passed'; console.log('PASS ScoutGamingGroup administration UI save/reload, BO14, actual native playback/reset/reconnect and seven two-play rehearsals');
 } catch (error) {
   result.status = 'failed'; result.failure = { stage, message: redact(error.message) };
   await game?.screenshot({ path: resolve(output, 'failure-game.png') }).catch(() => {}); await lab?.screenshot({ path: resolve(output, 'failure-lab.png') }).catch(() => {});
-  throw new Error(`Backoffice/Lab QA failed at ${stage}: ${redact(error.message)}`);
+  throw new Error(`ScoutGamingGroup administration QA failed at ${stage}: ${redact(error.message)}`);
 } finally {
   await writeFile(resolve(output, 'result.json'), JSON.stringify(result, null, 2)); await context?.close(); await browser?.close(); await fixture?.stop();
 }
