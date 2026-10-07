@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -27,32 +28,41 @@ const mocks = {
   './project-conflict': { ProjectConflict: empty },
   './test-context': { TestContextPanel: empty, neutralContext: {} },
 };
+const componentCache = new Map();
 function loadComponent(relativeFile) {
-  const source = readFileSync(new URL(relativeFile, import.meta.url), 'utf8');
-  const output = transformSync(source, { filename: relativeFile, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
+  const url = relativeFile instanceof URL ? relativeFile : new URL(relativeFile, import.meta.url);
+  if (componentCache.has(url.href)) return componentCache.get(url.href);
+  const source = readFileSync(url, 'utf8');
+  const output = transformSync(source, { filename: fileURLToPath(url), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
+  componentCache.set(url.href, module.exports);
+  const localRequire = createRequire(url);
   vm.runInNewContext(output.code, {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
-    require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} }
-      : name === './studio-types' ? loadComponent('./studio-types.ts')
-      : name === './studio-session' ? loadComponent('./studio-session.tsx')
-      : name === './event-test-panel' ? loadComponent('./event-test-panel.tsx')
-      : name === './speech-source' ? loadComponent('./speech-source.tsx')
-      : name === './media-family-editor' ? loadComponent('./media-family-editor.tsx')
-      : name === './deal-frequency-editor' ? loadComponent('./deal-frequency-editor.tsx')
-      : name === './family-video-library' ? loadComponent('./family-video-library.tsx')
-      : name === './legacy-clip-editor' ? loadComponent('./legacy-clip-editor.tsx')
-        : mocks[name] ?? require(name),
-  }, { filename: relativeFile });
+    require: name => {
+      if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: {} };
+      if (mocks[name]) return mocks[name];
+      if (name.startsWith('./') || name.startsWith('../')) {
+        for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
+          const candidate = new URL(name + suffix, url);
+          if (!existsSync(candidate)) continue;
+          const path = fileURLToPath(candidate);
+          if (path.endsWith('.mjs') || path.endsWith('.js')) return localRequire(path);
+          return loadComponent(candidate);
+        }
+      }
+      return localRequire(name);
+    },
+  }, { filename: fileURLToPath(url) });
   return module.exports;
 }
-const { Studio } = loadComponent('./studio.tsx');
-const render = project => renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
+const { ControlEventsPage } = loadComponent('./control-events-page.tsx');
+const render = project => renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
 
 test('manifest-owned studio displays real files and zero folder variants instead of the seed demos', () => {
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true })) };
   const project = createSeedProject(), before = JSON.stringify(project);
-  const html = renderToStaticMarkup(React.createElement(Studio, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
+  const html = renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
   assert.match(html, /Standard och varianter/);
   assert.match(html, /goodluck.mp4/);
   assert.match(html, /0 varianter — standardfilen används/);
@@ -101,10 +111,12 @@ test('testsituation selection is derived from actual values, including custom ed
 
 test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
   const props = { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {} };
-  const openclaw = renderToStaticMarkup(React.createElement(Studio, { ...props, initialView: 'openclaw' }));
+  const { ControlOpenClawChat } = loadComponent('./control-openclaw-chat.tsx');
+  const openclaw = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: true }));
   assert.doesNotMatch(openclaw, /class="event-sidebar"/);
   assert.doesNotMatch(openclaw, /aria-label="Huvudnavigation"|class="main-nav"|Backoffice\/Lab/);
-  assert.match(openclaw, /Spara projekt/);
+  assert.doesNotMatch(openclaw, /<button[^>]*>[^<]*Spara projekt/);
+  assert.match(openclaw, /href="\/control\/openclaw\?tab=chat"/);
   const { ControlGuidePage } = loadComponent('./control-guide-page.tsx');
   const { ControlActivityPage } = loadComponent('./control-activity-page.tsx');
   for (const Page of [ControlGuidePage, ControlActivityPage]) {
@@ -164,8 +176,9 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(html, /<strong>Testa event<\/strong>/);
   assert.match(html, /Urvalsläge för eventtest/);
   assert.doesNotMatch(html, /decision-chain|Regeltest &amp; OpenClaw/);
-  assert.match(html, /Spelarchatt vid bordet →/);
-  assert.match(html, /Fråga OpenClaw om labbet →/);
+  assert.doesNotMatch(html, /studio-chat-shortcuts|Spelarchatt vid bordet →|Fråga OpenClaw om labbet →/);
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.activity, '/control/activity');
+  assert.equal(loadComponent('./studio-types.ts').viewPaths.openclaw, '/control/openclaw?tab=chat');
   assert.match(html, /<option value="off" selected="">Standard/);
   assert.match(html, /kör jämförelseläget Bara standard/);
   assert.doesNotMatch(html, /Din regi|En tydlig kedja, hela vägen/);

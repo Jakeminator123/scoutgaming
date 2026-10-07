@@ -6,6 +6,7 @@
 // initialStatus: ConnectionStatus — connection status, returned as status
 // initialDealerId?: string — query dealer; unknown values fall back to the first dealer
 // initialEventId?: string — query event; unknown values fall back to the first event
+// initialVariantId?: string — query variant; unknown values fall back to the line default
 // connectedLane?: boolean — save notice mentions the live lane when true
 // unsavedSocialRef?: ref — social draft included in the beforeunload guard
 // onInvalidate?: ref — Studio playback reset; tree, guide and activity omit it
@@ -31,7 +32,7 @@
 // selectEvent(id): set event, clear variant, replaceState the query
 // variantId: string
 // setVariantId(id): raw variant setter, no query and no invalidate
-// selectVariant(id): set variant and invalidate
+// selectVariant(id): set variant, replaceState the query (events and videos only), invalidate
 // assignSelection(patch, options?): one dealer/event/variant update
 // mode: DirectorMode
 // changeMode(mode): set mode and invalidate
@@ -75,6 +76,7 @@ type SessionOptions = {
   initialStatus: ConnectionStatus;
   initialDealerId?: string;
   initialEventId?: string;
+  initialVariantId?: string;
   connectedLane?: boolean;
   unsavedSocialRef?: { readonly current: UnsavedSocialDraft | null };
   onInvalidate?: RefObject<((stopSocial?: boolean) => void) | null>;
@@ -93,7 +95,7 @@ export function useStudioSession(options: SessionOptions) {
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialProject));
   const [dealerId, setDealerId] = useState<DealerId>(() => resolveStudioDealerId(initialProject, options.initialDealerId));
   const [eventId, setEventId] = useState(() => resolveStudioEventId(initialProject, options.initialEventId));
-  const [variantId, setVariantId] = useState('');
+  const [variantId, setVariantId] = useState(() => options.initialVariantId ?? '');
   const [mode, setMode] = useState<DirectorMode>('off');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -118,9 +120,9 @@ export function useStudioSession(options: SessionOptions) {
   const variant = line.variants.find((item: { id: string }) => item.id === variantId) ?? line.variants[0];
   const dealer = project.dealers.find(item => item.id === dealerId)!;
 
-  function replaceSelectionQuery(nextDealer: string, nextEvent: string) {
+  function replaceSelectionQuery(nextDealer: string, nextEvent: string, nextVariant = '') {
     if (typeof window === 'undefined' || !window.location || !window.history?.replaceState) return;
-    const href = selectionHref(window.location.pathname, window.location.search, nextDealer, nextEvent);
+    const href = selectionHref(window.location.pathname, window.location.search, nextDealer, nextEvent, nextVariant);
     if (`${window.location.pathname}${window.location.search}` === href) return;
     window.history.replaceState(null, '', href);
   }
@@ -131,14 +133,16 @@ export function useStudioSession(options: SessionOptions) {
     if (patch.eventId && !project.events.some(item => item.id === patch.eventId)) return;
     if (patch.dealerId) setDealerId(patch.dealerId);
     if (patch.eventId) setEventId(patch.eventId);
+    const selectionMoved = patch.dealerId !== undefined || patch.eventId !== undefined;
+    const nextVariant = patch.variantId !== undefined ? patch.variantId : selectionMoved ? '' : variantId;
     if (patch.variantId !== undefined) setVariantId(patch.variantId);
-    else if (patch.dealerId !== undefined || patch.eventId !== undefined) setVariantId('');
-    if (patch.dealerId !== undefined || patch.eventId !== undefined) replaceSelectionQuery(nextDealer, nextEvent);
+    else if (selectionMoved) setVariantId('');
+    if (selectionMoved || patch.variantId !== undefined) replaceSelectionQuery(nextDealer, nextEvent, nextVariant);
     if (call.invalidate !== false) options.onInvalidate?.current?.();
   }
   function selectDealer(id: DealerId) { assignSelection({ dealerId: id }); }
   function selectEvent(id: string) { assignSelection({ eventId: id }); }
-  function selectVariant(id: string) { setVariantId(id); options.onInvalidate?.current?.(); }
+  function selectVariant(id: string) { setVariantId(id); replaceSelectionQuery(dealerId, eventId, id); options.onInvalidate?.current?.(); }
   function changeMode(next: DirectorMode) { setMode(next); options.onInvalidate?.current?.(); }
   function updateProject(edit: (draft: StudioProject) => void) {
     setProject(current => { const draft = structuredClone(current); edit(draft); return draft; });

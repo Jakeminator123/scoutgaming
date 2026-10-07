@@ -18,8 +18,10 @@ export function ControlGuidePage({ initialProject, initialVideos, initialStatus,
   const { project, videos, dealerId, event, dealer, error, setError, notice, setNotice } = session;
   function onNavigate(view: StudioView) { window.location.assign(labUrl(viewPaths[view])); }
   return <PageTemplate eyebrow="// STUDIO" title="Guide & hjälp" intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Guide & hjälp" eventHref={studioHref('/control/events', { dealerId, eventId: event.id })} eventLabel={event.label} />}>
+    <div className="sg-page-body">
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     <StudioBindingNotices project={project} videos={videos} dealerId={dealerId} eventId={event.id} />
     <StudioGuide onNavigate={onNavigate} />
+    </div>
   </PageTemplate>;
 }

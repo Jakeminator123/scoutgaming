@@ -29,7 +29,7 @@ export function FamilyOverview({ inventory, project, dealerId, onOpen, hrefFor }
   hrefFor?: (eventId: string, situation: string) => string;
 }) {
   const groups = [['deal', 'Kort till rätt plats'], ['speak', 'Exakta repliker'], ['idle', 'Vänteläge']] as const;
-  return <section aria-label="Händelser och videomappar"><div className="event-heading"><div><span className="eyebrow">ÖVERSIKT</span><h1>Händelse → videomapp</h1><p>Välj en destination eller replik för att spela dess standardklipp och se varianterna som faktiskt finns.</p></div></div>
+  return <section aria-label="Händelser och videomappar"><p className="helper">Välj en destination eller replik för att spela dess standardklipp och se varianterna som faktiskt finns.</p>
     {groups.map(([type, title]) => <section key={type} className={styles.situation}><h2>{title}</h2><div className={styles.overviewGrid}>{(inventory.families ?? []).filter(family => family.dealerId === dealerId && matchesGroup(family.eventId, type)).map(family => {
       const href = hrefFor?.(family.eventId, family.situation);
       const body = <><strong>{familyLabel(family)}</strong><code>{mediaFamilyFolder(family)}/</code><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></>;

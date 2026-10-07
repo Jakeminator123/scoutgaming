@@ -250,9 +250,9 @@
       ],
       "sources": [
         "lab/next.config.mjs",
-        "lab/app/studio-page.tsx",
+        "lab/app/control-studio-data.tsx",
         "lab/components/studio-types.ts",
-        "lab/components/studio.tsx",
+        "lab/components/studio-session.tsx",
         "lab/components/event-tree.tsx",
         "lab/components/studio-administration.tsx",
         "lab/lib/studio-navigation.mjs",

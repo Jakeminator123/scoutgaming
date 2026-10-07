@@ -91,21 +91,22 @@ export function previewVideoIdFor(variant: StudioVariant, result: SimulationResu
   return social ? undefined : result ? result.videoGenerationId : variant.videoGenerationId;
 }
 
-// Staff editor views use the public /control addresses. Model settings stay on
-// /control/openclaw and must not share the operator-chat history URL.
+// Staff editor views use the public /control addresses. OpenClaw chat is the
+// tab on /control/openclaw. Model settings stay on that path without the tab.
 export const viewPaths: Record<StudioView, string> = {
   tree: '/control/tree', lab: '/control/events', videos: '/control/videos', activity: '/control/activity',
-  openclaw: '/control/operator-chat', guide: '/control/guide', probe: '/control/probe',
+  openclaw: '/control/openclaw?tab=chat', guide: '/control/guide', probe: '/control/probe',
 };
 
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
 
-// Public control URL plus dealer, event and an optional allowlisted tab.
-export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; tab?: string } = {}) {
+// Public control URL plus dealer, event, an optional variant and an optional allowlisted tab.
+export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string } = {}) {
   const base = path.split(/[?#]/, 1)[0];
   const params = new URLSearchParams();
   if (selection.dealerId) params.set('dealer', selection.dealerId);
   if (selection.eventId) params.set('event', selection.eventId);
+  if (selection.variantId) params.set('variant', selection.variantId);
   if (selection.tab === 'chat' || (selection.tab && EDITOR_TABS.has(selection.tab))) params.set('tab', selection.tab);
   const query = params.toString();
   return labUrl(query ? `${base}?${query}` : base);
@@ -113,13 +114,15 @@ export function studioHref(path: string, selection: { dealerId?: string; eventId
 
 // Current document path with the selection written into dealer and event.
 // Editor tab is kept only on the events page. OpenClaw chat tab is kept only there.
-export function selectionHref(pathname: string, search: string, dealerId: string, eventId: string) {
+// A variant is kept only where a video binding targets it: events and videos.
+export function selectionHref(pathname: string, search: string, dealerId: string, eventId: string, variantId = '') {
   const path = stripLabBasePath((pathname || '/').split(/[?#]/, 1)[0]) || '/';
   const tab = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('tab') ?? '';
   const onEvents = path === '/events' || path.endsWith('/events');
+  const onVideos = path === '/videos' || path.endsWith('/videos');
   const onOpenClaw = path === '/openclaw' || path.endsWith('/openclaw');
   const nextTab = onEvents && EDITOR_TABS.has(tab) ? tab : onOpenClaw && tab === 'chat' ? tab : undefined;
-  return studioHref(path, { dealerId, eventId, tab: nextTab });
+  return studioHref(path, { dealerId, eventId, variantId: onEvents || onVideos ? variantId : undefined, tab: nextTab });
 }
 
 export function firstQueryValue(value: string | string[] | undefined) {
@@ -136,9 +139,12 @@ export function resolveStudioEventId(project: StudioProject, initial?: string) {
 }
 
 export function studioViewForPath(path: string): StudioView {
-  const parts = stripLabBasePath(path).split('/').filter(Boolean);
+  const bare = stripLabBasePath(path).split('#')[0];
+  const [pathname, query = ''] = bare.split('?');
+  const parts = pathname.split('/').filter(Boolean);
   const segment = parts[0] === 'control' ? parts[1] : parts[0];
-  if (segment === 'operator-chat') return 'openclaw';
+  const tab = query.split('&').find((part: string) => part.startsWith('tab='))?.slice(4) ?? '';
+  if (segment === 'operator-chat' || (segment === 'openclaw' && tab === 'chat')) return 'openclaw';
   if (segment === 'events') return 'lab';
   return segment === 'tree' || segment === 'videos' || segment === 'activity' || segment === 'guide' || segment === 'probe' ? segment : 'lab';
 }

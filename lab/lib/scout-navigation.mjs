@@ -1,6 +1,6 @@
 import { labBasePath } from './lab-url.mjs';
 
-// Staff shell only. A repeated href stays a separate label; the first match is active.
+// Staff shell only. A menu href with a query wins over the same path without one.
 export const SCOUT_NAVIGATION = Object.freeze([
   Object.freeze({
     label: '',
@@ -22,7 +22,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'OpenClaw',
     items: Object.freeze([
       Object.freeze({ href: '/control/openclaw', label: 'Agentmodeller' }),
-      Object.freeze({ href: '/control/operator-chat', label: 'Operatörschatt' }),
+      Object.freeze({ href: '/control/openclaw?tab=chat', label: 'Operatörschatt' }),
     ]),
   }),
   // One entry until the administration page has tabs; four labels to one page confused the active state.
@@ -67,7 +67,8 @@ const legacyPaths = new Map([
   ['/probe', '/control/probe'],
   ['/administration', '/control/administration'],
   ['/openclaw', '/control/openclaw'],
-  ['/operator-chat', '/control/operator-chat'],
+  ['/operator-chat', '/control/openclaw?tab=chat'],
+  ['/control/operator-chat', '/control/openclaw?tab=chat'],
   ['/tree', '/control/tree'],
   ['/activity', '/control/activity'],
   ['/guide', '/control/guide'],
@@ -80,11 +81,29 @@ function shellPath(pathname, basePath) {
   return pathname;
 }
 
+function hrefParts(href) {
+  const cut = href.indexOf('?');
+  return cut === -1 ? { path: href, query: '' } : { path: href.slice(0, cut), query: href.slice(cut + 1) };
+}
+
 export function scoutNavigationItem(pathname, basePath = labBasePath()) {
-  const path = shellPath(pathname, basePath);
+  if (typeof pathname !== 'string') return null;
+  const cut = pathname.indexOf('?');
+  const path = shellPath(cut === -1 ? pathname : pathname.slice(0, cut), basePath);
   if (path == null) return null;
-  const href = legacyPaths.get(path) ?? path;
-  return items.find(item => item.href === href) ?? null;
+  const mapped = hrefParts(legacyPaths.get(path) ?? path);
+  const params = new URLSearchParams(cut === -1 ? '' : pathname.slice(cut + 1));
+  if (mapped.query) {
+    for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
+  }
+  const matches = items.filter(item => {
+    const parts = hrefParts(item.href);
+    if (parts.path !== mapped.path) return false;
+    for (const [key, value] of new URLSearchParams(parts.query)) if (params.get(key) !== value) return false;
+    return true;
+  });
+  matches.sort((left, right) => hrefParts(right.href).query.length - hrefParts(left.href).query.length);
+  return matches[0] ?? null;
 }
 
 export function isScoutAuthPath(pathname, basePath = labBasePath()) {

@@ -217,28 +217,33 @@
       ],
       "labels": [
         "Klippbibliotek",
-        "Avancerade regler",
-        "Uppspelningsdiagnostik",
-        "Event och regler",
-        "Probe",
-        "Guide"
+        "Händelser → klipp",
+        "Uppspelning",
+        "Händelser",
+        "Talgranskning",
+        "Guide & hjälp"
       ],
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
       "sources": [
-        "lab/app/studio-page.tsx:6",
-        "lab/app/control/videos/page.tsx:4",
-        "lab/app/control/tree/page.tsx:6",
-        "lab/app/control/activity/page.tsx:4",
-        "lab/app/control/events/page.tsx:4",
-        "lab/app/control/probe/page.tsx:2",
-        "lab/app/control/guide/page.tsx:4",
+        "lab/app/control-studio-data.tsx:4",
+        "lab/app/control/videos/page.tsx:8",
+        "lab/app/control/tree/page.tsx:8",
+        "lab/app/control/activity/page.tsx:8",
+        "lab/app/control/events/page.tsx:8",
+        "lab/app/control/probe/page.tsx:8",
+        "lab/app/control/guide/page.tsx:8",
+        "lab/components/studio-session.tsx",
         "lab/lib/studio-navigation.mjs:10"
       ],
       "tests": [
         "lab/test/studio-navigation.test.mjs",
         "lab/test/activity-log.test.mjs",
-        "lab/test/native-observation.test.mjs"
+        "lab/test/native-observation.test.mjs",
+        "lab/components/control-pages.test.mjs",
+        "lab/components/control-events-page.test.mjs",
+        "lab/components/control-videos-page.test.mjs",
+        "lab/components/control-probe-page.test.mjs"
       ],
       "note": "Old lab/app/<tool>/page.tsx handlers only redirect to these /control paths."
     },
@@ -272,16 +277,21 @@
       "access": "Internal admin.",
       "destination": "https://croupier-lab-director.onrender.com/openclaw/",
       "sources": [
-        "lab/app/control/openclaw/page.tsx:8",
+        "lab/app/control/openclaw/page.tsx:12",
         "lab/components/openclaw-workspace.tsx",
+        "lab/components/control-openclaw-chat.tsx",
+        "lab/components/gateway-panel.tsx",
+        "lab/app/control-studio-data.tsx",
         "lab/lib/openclaw-dashboard.mjs:1",
         "lab/lib/openclaw-admin.mjs"
       ],
       "tests": [
         "lab/test/openclaw-dashboard.test.mjs",
         "lab/test/openclaw-admin.test.mjs",
-        "lab/components/openclaw-workspace.test.mjs"
-      ]
+        "lab/components/openclaw-workspace.test.mjs",
+        "lab/components/control-openclaw-chat.test.mjs"
+      ],
+      "note": "Tabs: Agentmodeller (no query) and Chatt (?tab=chat)."
     },
     {
       "id": "operator-chat",
@@ -294,17 +304,16 @@
       "access": "Internal admin.",
       "sources": [
         "lab/app/control/operator-chat/page.tsx",
-        "lab/app/studio-page.tsx",
         "lab/components/studio-types.ts",
-        "lab/components/studio.tsx",
-        "lab/components/gateway-panel.tsx",
+        "lab/lib/lab-url.mjs",
         "lab/lib/ui-server.ts"
       ],
       "tests": [
         "lab/test/next-page-navigation.test.mjs",
         "lab/test/studio-navigation.test.mjs",
         "lab/test/studio-login-client.test.mjs"
-      ]
+      ],
+      "note": "Redirects to /control/openclaw?tab=chat after the UI authorization check; dealer and event are kept."
     },
     {
       "id": "partner-preview",
