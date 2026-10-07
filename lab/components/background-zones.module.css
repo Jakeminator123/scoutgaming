@@ -1,2 +1,39 @@
-.shell{min-height:100vh;background:#111b1a;color:#e6ede5}.header{display:flex;align-items:center;gap:24px;padding:24px 4vw;border-bottom:1px solid #33433e;background:#172420}.header>a{color:#d0ec55}.header h1{font-size:29px}.header>button{margin-left:auto}.header button,.editor button,.upload{border:1px solid #526354;border-radius:7px;background:#24352b;color:#e6ede5;padding:10px 13px;cursor:pointer}.main{max-width:1440px;margin:auto;padding:28px 4vw 70px}.intro{max-width:920px;color:#b4c6bc;line-height:1.7;margin-bottom:20px}.message{margin:0 0 20px;padding:11px 15px;border:1px solid #627444;background:#283520;border-radius:6px}.layout{display:grid;grid-template-columns:minmax(360px,1fr) 340px;gap:24px;align-items:start}.toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:12px}.toolbar label{flex:1}.toolbar span,.note{font-size:12px;color:#a9b8af;line-height:1.55}.toolbar select,.editor select,.editor input{display:block;width:100%;margin-top:5px;background:#0f1915;color:#f0f6ec;border:1px solid #516153;border-radius:5px;padding:9px}.frame{position:relative;width:min(100%,540px);aspect-ratio:9/16;overflow:hidden;touch-action:none;cursor:crosshair;border:1px solid #53655b;background:#0d1712;user-select:none}.frame>img,.baseVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}.baseVideo{z-index:1}.zone,.drawing{position:absolute;z-index:2;border:2px solid #e2e669;overflow:hidden;cursor:pointer}.zone.selected{border-color:#fff;box-shadow:0 0 0 1px #111}.zone video{width:100%;height:100%;object-fit:fill;pointer-events:none}.zone span{position:absolute;top:0;left:0;background:#101b15db;color:white;font-size:11px;padding:2px 5px;pointer-events:none}.drawing{z-index:3;border-style:dashed;background:#e2e66930;pointer-events:none}.panel{background:#182620;border:1px solid #3a5042;border-radius:9px;padding:20px}.panel h2{font-size:20px;margin-bottom:7px}.panel>p{color:#b4c6bc;line-height:1.55;font-size:12px}.list{display:grid;gap:6px;margin:16px 0;max-height:280px;overflow:auto}.list button{display:block;width:100%;text-align:left;border:1px solid #405548;background:#203329;border-radius:6px;padding:9px 10px;cursor:pointer}.list button.current{border-color:#d0ec55}.list small{display:block;color:#a8b9b0;margin-top:3px}.editor{display:grid;gap:14px;border-top:1px solid #3a5042;padding-top:16px}.editor label{display:block}.editor p{font-size:12px;color:#bfcdc4;line-height:1.6}.actions{display:grid;gap:8px}.upload{display:block;text-align:center}.upload input{display:none}.danger{border-color:#784943!important;color:#ffc2b8!important;background:#362521!important}.note{margin-top:12px!important}.panel .note{border-top:1px solid #3a5042;padding-top:15px}@media(max-width:850px){.layout{grid-template-columns:1fr}.frame{margin:auto}.panel{max-width:540px}.header{flex-wrap:wrap}.header>button{margin-left:0}.toolbar{flex-wrap:wrap}}
-.boundsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.back { color: var(--sg-accent-text); }
+.message { margin: 0 0 20px; padding: 11px 15px; border: 1px solid var(--sg-border); background: var(--sg-surface-2); color: var(--sg-text); border-radius: 6px; }
+.layout { display: grid; grid-template-columns: minmax(360px, 1fr) 340px; gap: 24px; align-items: start; }
+.toolbar { display: flex; justify-content: space-between; align-items: end; gap: 15px; margin-bottom: 12px; }
+.toolbar label { flex: 1; color: var(--sg-text); }
+.toolbar span, .note { font-size: 12px; color: var(--sg-muted); line-height: 1.55; }
+.toolbar select, .editor select, .editor input { display: block; width: 100%; margin-top: 5px; background: var(--sg-field); color: var(--sg-text); border: 1px solid var(--sg-field-line); border-radius: 5px; padding: 9px; }
+.actions button, .editor button, .upload, .list button { border: 1px solid var(--sg-strong); border-radius: 7px; background: var(--sg-surface-2); color: var(--sg-text); padding: 10px 13px; cursor: pointer; }
+.frame { position: relative; width: min(100%, 540px); aspect-ratio: 9 / 16; overflow: hidden; touch-action: none; cursor: crosshair; border: 1px solid var(--sg-border); background: #0d1712; user-select: none; }
+.frame > img, .baseVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.baseVideo { z-index: 1; }
+.zone, .drawing { position: absolute; z-index: 2; border: 2px solid #e2e669; overflow: hidden; cursor: pointer; }
+.zone.selected { border-color: #fff; box-shadow: 0 0 0 1px #111; }
+.zone video { width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.zone span { position: absolute; top: 0; left: 0; background: #101b15db; color: white; font-size: 11px; padding: 2px 5px; pointer-events: none; }
+.drawing { z-index: 3; border-style: dashed; background: #e2e66930; pointer-events: none; }
+.panel { background: var(--sg-surface); color: var(--sg-text); border: 1px solid var(--sg-border); border-radius: 9px; padding: 20px; }
+.panel h2 { font-size: 20px; margin-bottom: 7px; }
+.panel > p { color: var(--sg-muted); line-height: 1.55; font-size: 12px; }
+.list { display: grid; gap: 6px; margin: 16px 0; max-height: 280px; overflow: auto; }
+.list button { display: block; width: 100%; text-align: left; }
+.list button.current { border-color: var(--sg-mark); }
+.list small { display: block; color: var(--sg-faint); margin-top: 3px; }
+.editor { display: grid; gap: 14px; border-top: 1px solid var(--sg-border); padding-top: 16px; }
+.editor label { display: block; }
+.editor p { font-size: 12px; color: var(--sg-muted); line-height: 1.6; }
+.actions { display: grid; gap: 8px; }
+.upload { display: block; text-align: center; }
+.upload input { display: none; }
+.danger { border-color: var(--sg-warn-text) !important; color: var(--sg-warn-text) !important; background: var(--sg-warn-bg) !important; }
+.note { margin-top: 12px !important; }
+.panel .note { border-top: 1px solid var(--sg-border); padding-top: 15px; }
+.boundsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 850px) {
+  .layout { grid-template-columns: 1fr; }
+  .frame { margin: auto; }
+  .panel { max-width: 540px; }
+  .toolbar { flex-wrap: wrap; }
+}

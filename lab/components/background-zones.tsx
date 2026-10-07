@@ -5,6 +5,7 @@ import { labUrl } from '../lib/lab-url.mjs';
 import { firstAutomaticDelayMs, nextAutomaticDelayMs } from '../lib/background-zone-schedule.mjs';
 import { ZONE_BROWSER_STORAGE as STORAGE, ZONE_CLOUD_DRAFT_STORAGE, persistBrowserZones, persistCloudZoneDraft, readCloudZoneDraft, adoptUploadedZoneClip, restoredCloudDraftState, zoneClipKey, zoneClipSource } from '../lib/zone-workspaces.mjs';
 import styles from './background-zones.module.css';
+import { PageTemplate } from './page-template.mjs';
 
 const WIDTH = 1080, HEIGHT = 1920;
 type Playback = 'continuous' | 'automatic' | 'off';
@@ -374,11 +375,15 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
     const link = document.createElement('a'); link.href = url; link.download = 'astrid-bakgrundszoner.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const displayed = videos.find(video => video.id === base);
-  return <div className={styles.shell}>
-    <header className={styles.header}><a href={labUrl('/control/clips')}>← Dealers & klipp</a><div><span className="eyebrow">ASTRID · STUDIO</span><h1>Bakgrundszoner</h1></div><button onClick={exportJson} disabled={!zones.length}>Exportera koordinater</button></header>
-    <main className={styles.main}>
-      <p className={styles.intro}>Dra en ruta på startbilden. Rutan blir en exakt pixelzon för ett eget litet klipp. Välj sedan om klippet ska visas hela tiden eller starta automatiskt. Zonklippet styrs oberoende av dealerklippet i förhandsvisningen. Ingenting skrivs in i originalfilmerna eller spelets uppspelning.</p>
-      <section aria-label="Molnlagring"><p><strong>{workspace === 'local' ? 'Webbläsarkopia' : 'Molnvy'}</strong> · {cloudStatus}</p><div className={styles.actions}><button disabled={busy || !hydrated || !cloud?.configured} onClick={() => void saveCloud()}>{busy ? 'Arbetar…' : 'Spara till molnet'}</button><button disabled={busy || !hydrated} onClick={() => void loadCloud()}>Läs från molnet</button>{workspace === 'cloud' ? <button disabled={busy} onClick={restoreBrowser}>Till webbläsarkopian</button> : null}{hasCloudDraft ? <button disabled={busy} onClick={restoreCloudDraft}>Återställ molnutkast</button> : null}</div><p className={styles.note}>Spara till molnet sparar de synliga zonerna och ersätter tidigare molnkoordinater. Läs från molnet öppnar en separat vy; din webbläsarkopia och dess klipp behålls. Osparade molnändringar kan återställas som molnutkast. Molnklipp kräver Lab-inloggning.</p></section>
+  return <PageTemplate
+    eyebrow="// STUDIO"
+    title="Bakgrundszoner"
+    intro="Dra en ruta på startbilden. Rutan är en pixelzon för ett eget klipp som visas hela tiden, automatiskt eller av. Zonen skrivs inte in i dealerfilmen eller spelet."
+    primary={<button type="button" className="sg-btn sg-btn-secondary" onClick={exportJson} disabled={!zones.length}>Exportera koordinater</button>}
+  >
+    <div className="sg-page-body">
+      <p><a className={styles.back} href={labUrl('/control/clips')}>← Dealers & klipp</a></p>
+      <section aria-label="Molnlagring"><p><strong>{workspace === 'local' ? 'Webbläsarkopia' : 'Molnvy'}</strong> · {cloudStatus}</p><div className={styles.actions}><button disabled={busy || !hydrated || !cloud?.configured} onClick={() => void saveCloud()}>{busy ? 'Arbetar…' : 'Spara till molnet'}</button><button disabled={busy || !hydrated} onClick={() => void loadCloud()}>Läs från molnet</button>{workspace === 'cloud' ? <button disabled={busy} onClick={restoreBrowser}>Till webbläsarkopian</button> : null}{hasCloudDraft ? <button disabled={busy} onClick={restoreCloudDraft}>Återställ molnutkast</button> : null}</div><p className={styles.note}>Spara till molnet ersätter molnkoordinaterna. Läs från molnet byter vy och behåller webbläsarkopian. Molnklipp kräver inloggning.</p></section>
       {message ? <p role="status" className={styles.message}>{message}</p> : null}
       <div className={styles.layout} inert={busy || undefined}>
         <section><div className={styles.toolbar}><label>Underlag för prov<select value={base} onChange={event => { setBase(event.target.value); setBaseSize(''); }}><option value="">Startbild</option>{videos.map(video => <option value={video.id} key={video.id}>{video.label}</option>)}</select></label><span>Referens: {WIDTH} × {HEIGHT} px</span></div>
@@ -389,23 +394,23 @@ export function BackgroundZones({ videos }: { videos: Clip[] }) {
               {clipUrl(zone) && clipFits(zone) ? <ZoneClip key={`${zone.id}:${zone.playback || 'continuous'}`} src={clipUrl(zone)} blend={zone.blend} playback={zone.playback || 'continuous'} /> : null}<span>{zone.name}</span></div>)}
             {drawing ? <div className={styles.drawing} style={{ left: `${drawing.x / WIDTH * 100}%`, top: `${drawing.y / HEIGHT * 100}%`, width: `${drawing.width / WIDTH * 100}%`, height: `${drawing.height / HEIGHT * 100}%` }} /> : null}
           </div>
-          {displayed && baseSize ? <p className={styles.note}>Provklippets bildyta: {baseSize}. {baseSize !== `${WIDTH} × ${HEIGHT}` ? 'Avvikande upplösning: kontrollera att motivet verkligen ligger på samma relativa plats innan zonen används.' : 'Kontrollera fortfarande kameraregistrering och eventuell rörelse i zonen.'}</p> : null}
+          {displayed && baseSize ? <p className={styles.note}>Provklippets bildyta: {baseSize}.{baseSize !== `${WIDTH} × ${HEIGHT}` ? ' Avvikande upplösning mot referensen. Kontrollera att motivet ligger på samma plats.' : ''}</p> : null}
         </section>
-        <aside className={styles.panel}><h2>Zoner</h2><p>Klicka på en ruta för att redigera den. {workspace === 'local' ? 'Koordinater och zonklipp sparas i den här webbläsarprofilen.' : 'Ändringar i molnvyn behöver sparas med Spara till molnet.'}</p>
+        <aside className={styles.panel}><h2>Zoner</h2><p>Välj en zon. {workspace === 'local' ? 'Koordinater och klipp sparas i den här webbläsaren.' : 'Spara till molnet för att behålla ändringarna.'}</p>
           <div className={styles.list}>{zones.map(zone => <button key={zone.id} className={zone.id === selected ? styles.current : ''} onClick={() => setSelected(zone.id)}>{zone.name}<small>{zone.x}, {zone.y} · {zone.width} × {zone.height} px{zone.clipName ? ' · klipp' : ''}</small></button>)}</div>
           {active ? <div className={styles.editor}><label>Namn<input value={active.name} maxLength={50} onChange={event => change(active.id, { name: event.target.value })} /></label><p><strong>Pixelruta:</strong> x {active.x}–{active.x + active.width - 1}, y {active.y}–{active.y + active.height - 1}<br /><strong>Klippstorlek:</strong> {active.width} × {active.height} px</p>
             <div className={styles.boundsGrid}>{(['x', 'y', 'width', 'height'] as const).map(field => <label key={field}>{({ x: 'X', y: 'Y', width: 'Bredd', height: 'Höjd' })[field]}<input type="number" min={field === 'x' || field === 'y' ? 0 : 4} max={field === 'x' || field === 'width' ? WIDTH : HEIGHT} value={boundsDraft[field]} onChange={event => setBoundsDraft(current => ({ ...current, [field]: event.target.value }))} /></label>)}</div>
             <button onClick={applyBounds}>Spara pixelruta</button>
             <label>Blandning<select value={active.blend} onChange={event => change(active.id, { blend: event.target.value as Zone['blend'] })}><option value="screen">Ljus (svart blir osynligt)</option><option value="normal">Vanlig video / alfakanal</option></select></label>
             <label>Uppspelning<select value={active.playback || 'continuous'} onChange={event => change(active.id, { playback: event.target.value as Playback })}><option value="continuous">Hela tiden</option><option value="automatic">Automatisk · högst 2/minut</option><option value="off">Av</option></select></label>
-            {active.playback === 'automatic' ? <p>Första start inom 10 sekunder. Därefter minst 30 sekunder mellan starterna, plus 0–10 sekunder slump. Klippet spelas klart innan nästa start. Timern fortsätter när du byter dealerklipp i Labbet.</p> : null}
+            {active.playback === 'automatic' ? <p>Första start inom 10 sekunder. Därefter minst 30 sekunder plus 0–10 sekunder slump. Klippet spelas klart innan nästa start. Timern fortsätter när dealerklippet byts.</p> : null}
             <p><strong>Zonklipp:</strong> {active.clipName ? clipFits(active) ? active.clipName : `${active.clipName} har gamla mått ${active.clipWidth} × ${active.clipHeight} px. Skapa eller lägg in ett nytt klipp för ${active.width} × ${active.height} px.` : `Inget sparat klipp. Lägg in en video som är exakt ${active.width} × ${active.height} px eller välj Skapa blinkklipp.`}</p>
             <div className={styles.actions}><button onClick={() => void downloadCrop()}>Ladda ned zonens startbild</button><button disabled={busy} onClick={() => void pulse()}>{busy ? 'Arbetar…' : 'Skapa blinkklipp'}</button><label className={styles.upload}>Lägg in eget zonklipp<input type="file" accept="video/mp4,video/webm" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void upload(file); event.target.value = ''; }} /></label></div>
             {active.clipName ? <button onClick={() => void downloadClip()}>Ladda ned {active.clipName}</button> : null}<button className={styles.danger} onClick={() => void remove()}>Ta bort zon</button>
           </div> : <p>Rita din första zon på bilden.</p>}
-          <p className={styles.note}>En rektangel är masken. Ett eget klipp måste ha exakt zonens pixelstorlek. För lampor fungerar ljusblandning; objekt bakom en rörlig dealer kräver separat förgrundsmask. Prova varje relevant grundfilm och variant visuellt.</p>
+          <p className={styles.note}>Klippet måste ha exakt zonens pixelstorlek.</p>
         </aside>
       </div>
-    </main>
-  </div>;
+    </div>
+  </PageTemplate>;
 }
