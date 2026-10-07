@@ -1,9 +1,9 @@
 import type { DealerId } from './studio-model.mjs';
 import type { LegacyClipEntry } from './legacy-clip-inventory.mjs';
-export type DealerWorkspaceSection = 'idle' | 'deal' | 'clips' | 'background' | 'probe';
+export type DealerWorkspaceSection = 'idle' | 'deal' | 'clips';
 export type LegacyWorkspaceSection = DealerWorkspaceSection | 'all';
 export const DEALER_WORKSPACE_SECTIONS: readonly { id: DealerWorkspaceSection; label: string }[];
-export function workspaceLocation(hash: string): { section: DealerWorkspaceSection; upload: boolean; observe: boolean };
+export function workspaceLocation(hash: string): { section: DealerWorkspaceSection; upload: boolean; redirect: string | null };
 export function legacyPartInSection(part: string, section?: LegacyWorkspaceSection): boolean;
 export function legacyClipInSection(clip: LegacyClipEntry, section?: LegacyWorkspaceSection): boolean;
 export function selectedDealerClips(clips: LegacyClipEntry[], dealerId: DealerId, section?: LegacyWorkspaceSection): LegacyClipEntry[];

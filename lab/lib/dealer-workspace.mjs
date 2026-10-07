@@ -3,16 +3,16 @@ export const DEALER_WORKSPACE_SECTIONS = Object.freeze([
   { id: 'idle', label: 'Idle' },
   { id: 'deal', label: 'Kort & deal' },
   { id: 'clips', label: 'Fasta repliker / ljud' },
-  { id: 'background', label: 'Bakgrund' },
-  { id: 'probe', label: 'Probe' },
 ]);
+// Former tabs that became their own pages. Old bookmarks still land there.
+const MOVED_SECTIONS = Object.freeze({ background: '/control/zones', probe: '/control/probe', stream: '/control/activity' });
 const idleParts = new Set(['idle', 'headTilt', 'think', 'gest']);
 const dealParts = new Set(['deal', 'dealWatch', 'box0', 'box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'dealer-up', 'dealer-hole']);
 export function workspaceLocation(hash) {
   const value = String(hash ?? '').replace(/^#/, '');
-  if (value === 'upload') return { section: 'idle', upload: true, observe: false };
-  if (value === 'stream') return { section: 'idle', upload: false, observe: true };
-  return { section: DEALER_WORKSPACE_SECTIONS.some(row => row.id === value) ? value : 'idle', upload: false, observe: false };
+  if (value === 'upload') return { section: 'idle', upload: true, redirect: null };
+  if (Object.hasOwn(MOVED_SECTIONS, value)) return { section: 'idle', upload: false, redirect: MOVED_SECTIONS[value] };
+  return { section: DEALER_WORKSPACE_SECTIONS.some(row => row.id === value) ? value : 'idle', upload: false, redirect: null };
 }
 export function legacyPartInSection(part, section) {
   if (!section || section === 'all') return true;

@@ -7,7 +7,7 @@ const tools = Object.freeze({
   players: '/control/administration', tx: '/control/administration', team: '/control/administration',
   api: '/control/administration', bj: '/control/administration', dealers: '/control/administration',
   shoes: '/control/administration', tables: '/control/administration',
-  background: '/control/clips#background', voice: '/control/clips#clips', clips: '/control/clips#deal',
+  background: '/control/zones', voice: '/control/clips#clips', clips: '/control/clips#deal',
   media: '/control/videos', archive: '/control/videos', tree: '/control/tree',
 });
 
@@ -24,9 +24,9 @@ export function legacyControlView(hash) {
 
 export const CONTROL_TOOLS = Object.freeze([
   { href: '/control/administration', title: 'Lanes, bord & konton', text: 'Skapa och välj lane under Spel, lanes & bord. Hantera personal, spelarkonton och partneråtkomst i samma administration.' },
-  { href: '/control/clips', title: 'Dealer & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker, bakgrund och klippval.' },
-  { href: '/control/tree', title: 'Presentationshändelser & regler', text: 'Koppla spelhändelser till klippuppsättningar och granska villkor och urvalsregler.' },
-  { href: '/control/videos', title: 'Klippbibliotek', text: 'Granska registrerat material. Klippinställningar hör till respektive dealer i Dealer & klipp.' },
-  { href: '/control/openclaw', title: 'OpenClaw & drift', text: 'Hantera den befintliga anslutningen, rådgivningen och driftinställningarna.' },
-  { href: '/control/activity', title: 'Uppspelningsdiagnostik', text: 'Följ händelser och kvitton från den anslutna spelytan.' },
+  { href: '/control/clips', title: 'Dealers & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker och klippval.' },
+  { href: '/control/tree', title: 'Händelser → klipp', text: 'Koppla spelhändelser till klippuppsättningar och granska villkor och urvalsregler.' },
+  { href: '/control/videos', title: 'Klippbibliotek', text: 'Granska registrerat material. Klippinställningar hör till respektive dealer i Dealers & klipp.' },
+  { href: '/control/openclaw', title: 'Agentmodeller', text: 'Välj modell per OpenClaw-agent.' },
+  { href: '/control/activity', title: 'Uppspelning', text: 'Följ händelser och kvitton från den anslutna spelytan.' },
 ].map(item => Object.freeze(item)));

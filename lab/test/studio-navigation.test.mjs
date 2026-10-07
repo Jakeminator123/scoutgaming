@@ -73,11 +73,12 @@ function loadComponent(file, overrides = {}, browser) {
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const localRequire = createRequire(url), module = { exports: {} };
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, window: browser,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, window: browser,
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name === './studio-types') return loadComponent('studio-types.ts', overrides, browser);
+      if (name === './studio-session' || name === './studio-session.tsx') return loadComponent('studio-session.tsx', overrides, browser);
       if (name === './test-context') return loadComponent('test-context.tsx', overrides, browser);
       if (name.startsWith('./')) return new Proxy({}, { get: () => () => null });
       return localRequire(name);
@@ -184,7 +185,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
   assert.match(html, /Lanes, bord &amp; konton/);
-  assert.match(html, /Dealer &amp; klipp/);
+  assert.match(html, /Dealers &amp; klipp/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();
