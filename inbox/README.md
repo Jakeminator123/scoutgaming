@@ -23,11 +23,28 @@ Från terminalen (kräver `gh auth login`):
 
 ```
 node tools/inbox.mjs send --to john --subject "Rubrik" --body-file brev.md --decision
+node tools/inbox.mjs ping --to kevin --message "Kort fråga"
 node tools/inbox.mjs list --to kevin
+node tools/inbox.mjs list --to me
 node tools/inbox.mjs read 12
 node tools/inbox.mjs reply 12 --body-file svar.md
 node tools/inbox.mjs done 12
 ```
+
+## Agenter
+
+Två kanaler, olika räckvidd:
+
+| Kanal | Når | Verktyg |
+|---|---|---|
+| Agent-talk | agenter i **samma checkout** på samma dator | `node tools/agent-talk.mjs claim/ping/ack/done` |
+| Teaminbox | personer och deras agenter i **andra grenar och på andra datorer** | `node tools/inbox.mjs ping/send/list/reply` |
+
+En agent som arbetar i Kevins checkout läser Kevins ärenden med
+`node tools/inbox.mjs list --to me` (`me` = ägaren av den aktuella grenen enligt
+`people.json`). Kort fråga till någon annan: `node tools/inbox.mjs ping --to john --message "…"`.
+I Cursor finns `/ping <namn> <text>`. Agenter svarar i tråden, stänger bara egna ärenden
+och behandlar ett svar som information, inte som godkännande att ändra repots logik.
 
 ## Regler
 

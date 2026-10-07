@@ -3,11 +3,13 @@
 // Not the retired GitLab inbox: nothing here reads or writes .croupier-inbox/.
 //
 //   node tools/inbox.mjs send --to john,kevin --subject "Rubrik" --body-file brev.md [--decision] [--from "Namn"]
-//   node tools/inbox.mjs list [--to kevin] [--all]
+//   node tools/inbox.mjs ping --to kevin --message "Kort fråga till dig eller din agent"   (same as send, inline text)
+//   node tools/inbox.mjs list [--to kevin | --to me] [--all]      ("me" = owner of the current git branch)
 //   node tools/inbox.mjs read <nummer>
-//   node tools/inbox.mjs reply <nummer> --body-file svar.md
+//   node tools/inbox.mjs reply <nummer> --body-file svar.md | --message "Svar"
 //   node tools/inbox.mjs done <nummer>
 //   node tools/inbox.mjs labels
+// Agents in the same checkout coordinate with tools/agent-talk.mjs; this tool reaches other machines and branches.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -34,11 +36,30 @@ export function parseArgs(argv) {
   return { command, options };
 }
 
-export function recipients(list) {
-  const names = String(list ?? '').split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
+// "me" is whoever owns the current git branch, so an agent in a teammate's checkout reads that teammate's inbox.
+export function ownerOfBranch(branch) {
+  const entry = Object.entries(PEOPLE).find(([, person]) => person.branch === branch);
+  if (!entry) throw new Error(`Ingen i inbox/people.json äger grenen "${branch}". Ange --to med ett namn.`);
+  return entry[0];
+}
+
+function currentBranch() {
+  try { return execFileSync('git', ['branch', '--show-current'], { encoding: 'utf8', windowsHide: true }).trim(); } catch { return ''; }
+}
+
+export function recipients(list, branch = currentBranch()) {
+  const names = String(list ?? '').split(',').map(name => name.trim().toLowerCase()).filter(Boolean)
+    .map(name => name === 'me' ? ownerOfBranch(branch) : name);
   if (!names.length) throw new Error('Ange mottagare med --to, till exempel --to john,kevin.');
-  for (const name of names) if (!PEOPLE[name]) throw new Error(`Okänd mottagare "${name}". Kända: ${Object.keys(PEOPLE).join(', ')}.`);
+  for (const name of names) if (!PEOPLE[name]) throw new Error(`Okänd mottagare "${name}". Kända: ${Object.keys(PEOPLE).join(', ')}, me.`);
   return [...new Set(names)];
+}
+
+function messageBody(options) {
+  if (options.message && options['body-file']) throw new Error('Ange antingen --message eller --body-file.');
+  if (options.message) return options.message;
+  if (options['body-file']) return readFileSync(resolve(options['body-file']), 'utf8');
+  throw new Error('Ange --message "text" eller --body-file fil.md.');
 }
 
 export function labelsFor(to, decision = false) {
@@ -87,15 +108,17 @@ export function main(argv = process.argv.slice(2)) {
   const { command, options } = parseArgs(argv);
   const number = options.positional[0];
   switch (command) {
+    case 'ping':
     case 'send': {
-      if (!options.subject) throw new Error('Ange --subject.');
-      if (!options['body-file']) throw new Error('Ange --body-file.');
+      const text = messageBody(options);
+      const subject = options.subject ?? (command === 'ping' ? `Ping: ${text.trim().split('\n')[0].slice(0, 70)}` : null);
+      if (!subject) throw new Error('Ange --subject.');
       const to = recipients(options.to);
       const known = collaborators();
       ensureLabels();
-      const body = composeBody({ to, from: sender(options), body: readFileSync(resolve(options['body-file']), 'utf8'), decision: Boolean(options.decision), collaborators: known });
+      const body = composeBody({ to, from: sender(options), body: text, decision: Boolean(options.decision), collaborators: known });
       const assignees = to.map(name => PEOPLE[name].github).filter(login => login && known.includes(login));
-      console.log(gh(['issue', 'create', '--repo', REPO, '--title', options.subject, '--body-file', '-',
+      console.log(gh(['issue', 'create', '--repo', REPO, '--title', subject, '--body-file', '-',
         ...labelsFor(to, Boolean(options.decision)).flatMap(label => ['--label', label]),
         ...assignees.flatMap(login => ['--assignee', login])], body));
       return;
@@ -113,8 +136,8 @@ export function main(argv = process.argv.slice(2)) {
       console.log(gh(['issue', 'view', number, '--repo', REPO, '--comments']));
       return;
     case 'reply':
-      if (!number || !options['body-file']) throw new Error('Ange ärendenummer och --body-file.');
-      console.log(gh(['issue', 'comment', number, '--repo', REPO, '--body-file', resolve(options['body-file'])]));
+      if (!number) throw new Error('Ange ärendenummer.');
+      console.log(gh(['issue', 'comment', number, '--repo', REPO, '--body-file', '-'], messageBody(options)));
       return;
     case 'done':
       if (!number) throw new Error('Ange ärendenummer.');
@@ -124,7 +147,7 @@ export function main(argv = process.argv.slice(2)) {
       console.log(ensureLabels().join('\n'));
       return;
     default:
-      throw new Error('Kommandon: send, list, read, reply, done, labels. Se huvudet i tools/inbox.mjs.');
+      throw new Error('Kommandon: send, ping, list, read, reply, done, labels. Se huvudet i tools/inbox.mjs.');
   }
 }
 
