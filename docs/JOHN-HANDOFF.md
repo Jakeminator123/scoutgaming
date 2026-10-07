@@ -20,6 +20,18 @@ riktig operatörsinloggning och tenantdata är inte klara.
 Inget öppet acceptanskrav nedan markeras klart av den här passningen.
 Äldre meningar som kallar `/studio` för produktionsverktyget är 6-oktoberhistorik.
 
+## Spelaryta, 7 oktober 2026
+
+`/play` är Spellobby, `/play/profil` egen profil och `/play/historik` egen historik,
+alla i `apps/croupier-frontend` ovanpå befintliga `GET /api/auth/session` och
+`POST /api/player` via ingress-headers. Utan session går profil och historik till
+`/player-login?returnTo=…`; lobbyn visar inloggningsknapp. Historiken är ärligt
+tom: `readPlayerResults` saknar publik spelarrutt och `/api/v1/history` är
+partner-API. Ingen ändring i `web/`, spelmotor eller signerad direktstart.
+Testat: `apps/croupier-frontend/test/player-area.mjs` 6, `platform-ui` 13,
+`game-entry` 12, `tsc --noEmit` grön. Kvar: resultatrutt för spelaren,
+operatörskontext i lobbyn, redigerbar profil.
+
 ## Partnerportal, 7 oktober 2026
 
 Nivå 2-skalet kan visa intern fixtur (`preview: true`) och riktig operatörsdata

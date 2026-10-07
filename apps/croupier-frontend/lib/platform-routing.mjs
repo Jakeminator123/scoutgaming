@@ -89,6 +89,9 @@ export function platformRoute(url, config) {
       return {kind:'backend',destination:`${config.backendOrigin}/blackjack${url.search}`};
     }
   }
+  if (path === '/play' || path === '/play/' || path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
+    return {kind: 'frontend'};
+  }
   const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
   if (gameRedirect) return {kind:'redirect',destination:config.publicOrigin+gameRedirect};
   // Internal Node endpoints are reachable through these two exact rewrites.

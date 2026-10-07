@@ -122,6 +122,11 @@ test('unified player addresses preserve approved selectors and the existing sign
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
   assert.equal(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified).kind,'frontend');
   assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
+  for (const path of ['/play', '/play/', '/play/profil', '/play/profil/', '/play/historik', '/play/historik/']) {
+    assert.equal(platformRoute(new URL(path, unified.publicOrigin), unified).kind, 'frontend', path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
+    assert.equal(backendPlatformPath(path), false, path);
+  }
 });
 
 test('new game document retains live session/policy checks, cookies and fail-closed errors',async t=>{
