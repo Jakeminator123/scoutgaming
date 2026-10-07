@@ -4,7 +4,7 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Nivå 1 /control | påbörjad — skal och sidmall; tre av sju gamla Studio-sidor utbrutna, fyra kvar | /control-ombyggnad |
+| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen, gamla `studio.tsx` borttagen; lösa trådar mot nivå 2 öppna | /control-ombyggnad |
 | Nivå 2 /partner | påbörjad — session finns, speldata ej | Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
@@ -30,9 +30,21 @@ Dealers & klipp har tre flikar; Probe, Bakgrund och Uppspelning är länkar. Nio
 Kevin-adresser ger 404. Sökattrappen och dubbla sparpiller är borta. Rotens startfiler
 är borttagna; start sker med `node lab/start.mjs`.
 
-Testat: 925 labbtester (921 gröna, 2 skippade webbläsartester, 2 omskrivna och gröna),
-typecheck, build, systemkartan. Kvar i `studio.tsx`: Händelser, Klippbibliotek,
-Talgranskning och Operatörschatt; de flyttas i nästa omgång och filen raderas sedan.
+Andra omgången: Händelser, Klippbibliotek och Talgranskning är egna sidor.
+OpenClaw har flikarna Agentmodeller och Chatt (`?tab=chat`); `/control/operator-chat`
+omdirigerar dit. Händelser har dealerchips, eventsök och eventlista i sidan, villkors-
+biblioteket även för Astrid, idle som länk till Dealers & klipp och en rad om att
+Vera, Amira och Mei inte används av spelet ännu (lös tråd L19). Valet av variant följer
+med i adressen till Klippbibliotek. Mottaget steg från Uppspelning öppnas i Händelser
+via `sessionStorage`. `lab/components/studio.tsx` och `StudioPage` är borttagna;
+data laddas med `lab/app/control-studio-data.tsx`.
+
+Testat: 942 labbtester (940 gröna, 2 skippade webbläsartester), typecheck, build,
+systemkartan (gul, 0 röda), full regression lokalt utom `test/bugshot-report.mjs`
+som kräver `jq` (finns i CI). Omskrivna tester gäller avsiktligt borttagen UI och listas
+i commit-texten. Kvar: guidens texter (`lab/docs/guide.json`) använder gamla namn,
+situationen från en videomapp följer inte med till Händelser, gammal CSS för den inre
+sidomenyn ligger kvar i `lab/app/globals.css`.
 
 ## Design, 7 oktober 2026
 

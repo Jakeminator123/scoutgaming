@@ -52,7 +52,7 @@ Rader 21–30, 7 okt kl 18:45. Jakob delegerade alla beslut om `/control`, även
 
 | # | Beslut | Avviker från | Status |
 |---|---|---|---|
-| 21 | Rad 16–20 verkställs: 17A, 18B, 19A utan att vänta på John | Rekommendationen att vänta två arbetsdagar | Rad 19 och 20 gjorda; 16 halvvägs (tre av sju sidor); 17 och 18 i nästa omgång |
+| 21 | Rad 16–20 verkställs: 17A, 18B, 19A utan att vänta på John | Rekommendationen att vänta två arbetsdagar | Gjort 7 okt kväll: alla sju sidor utbrutna, `studio.tsx` borttagen, Probe på en plats, OpenClaw med två flikar, Bakgrund via länk, nio döda adresser 404 |
 | 22 | Sparstatus bara i topplisten (rad 13 A) | Johns rad 13 var öppen | Gjort |
 | 23 | Sökfältet i topplisten tas bort (rad 15 B) | Johns rad 15 var öppen | Gjort |
 | 24 | Administrationens flik Partner heter Partnernycklar | Kevins etikett | Gjort; id `partners` oförändrat |
@@ -60,8 +60,11 @@ Rader 21–30, 7 okt kl 18:45. Jakob delegerade alla beslut om `/control`, även
 | 26 | Chattgenvägar, kort logg längst ner och sidfoten "Croupier Lab" på de gamla sidorna tas bort | – | Gjort på tre sidor |
 | 27 | Händelseloggen följer med vid sidbyte i `sessionStorage`, 150 poster, töms när fliken stängs | Tidigare bara i minnet | Gjort |
 | 28 | Dealers & klipp: flikarna Probe och Bakgrund blir länkar; gamla `#probe`, `#background`, `#stream` leder till sina sidor | – | Gjort |
-| 29 | Händelser blir en smal sida: villkorsbibliotek, eventnamn och testbänk. Astrids klippregler blir länk till Dealers & klipp; varianter för Vera, Amira och Mei märks "når inte spelet ännu" (lös tråd L19) | Rad D4 i inventeringen | Nästa omgång |
+| 29 | Händelser: villkorsbibliotek (nu även för Astrid), eventnamn och testbänk. Astrids klippregler stannar på Händelser eftersom de visas för vald händelse; samma redigerare finns i Dealers & klipp per mapp. Idle är en länk. Varianter för Vera, Amira och Mei märks "används inte av spelet ännu" (L19) | Rad D4 i inventeringen; tidigare förslag att göra Astrids klippregler till en länk | Gjort |
 | 30 | Rotens startfiler (Start-Lab.cmd m.fl.) borttagna av Jakob; `launcher.test.mjs` borttagen; dokumentationen pekar på `node lab/start.mjs --no-open` | – | Gjort |
+| 31 | Valet av variant följer med i adressen (`?variant=`) på Händelser och Klippbibliotek | Ursprungligt villkor: bara dealer och event i adressen | Gjort; annars kopplas video till fel variant vid sidbyte |
+| 32 | OpenClaw-fliken Chatt har ingen sparknapp | Rad C77 (Spara bara där något redigeras) | Gjort; chattens läge sparas inte i projektet |
+| 33 | Systemkartans baslinje uppdateras inte | Handoffens "uppdatera vid avsiktlig ruttändring" | Kartan är gul utan fel; två gula poster kommer från andras tidigare ändringar (`.github/workflows/croupier.yml`, `apps/croupier-frontend/lib/platform-routing.mjs`) och ska granskas av den som äger dem |
 
 ## Avgjort av orkestratorn, till kännedom
 
