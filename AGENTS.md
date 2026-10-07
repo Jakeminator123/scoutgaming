@@ -25,7 +25,7 @@ Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>` 
 
 ## Active documentation and private archive
 
-Use `lab/docs/README.md` for the user guide and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical references. Keep at most five Markdown files under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Update them in place. New reports and sprint documentation are paused.
+Use `lab/docs/README.md` for the user guide, `lab/docs/TERMINOLOGI.md` for the team's shared terms, and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical references. Keep at most five Markdown files under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Update them in place. New reports and sprint documentation are paused.
 
 Do not read `random-stuff-jakob/jakob-docs/arkiv/`, including restored copies, Git history, or external backups, unless Jakob explicitly asks for a specific historical document. Ordinary file searches must honor `.ignore`. Do not scan media binaries or generated artifacts for ordinary documentation questions.
 

@@ -1,5 +1,7 @@
 # Scoutgaming: användarguide
 
+Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
+
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
 - **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`, Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration`, Uppspelning `/control/activity`, Talgranskning `/control/probe` och Guide & hjälp `/control/guide`. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
