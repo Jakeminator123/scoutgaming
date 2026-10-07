@@ -50,7 +50,7 @@ function fixture(t) {
   const snapshot = () => captureSystemMapInputs({ reader: frozen() });
   const evidence = result => ({ schemaVersion: 1, kind: 'explicit-ci-test-files', sourceSha: A, observedAt: '2026-10-05T00:00:00Z',
     hashAlgorithm: 'sha256:utf8-lf',
-    files: snapshot().files, tests: [{ path: 'test/known.mjs', result: result || 'passed' }], ciUrl: 'https://github.com/Jakeminator123/github-work/actions/runs/123' });
+    files: snapshot().files, tests: [{ path: 'test/known.mjs', result: result || 'passed' }], ciUrl: 'https://github.com/Jakeminator123/scoutgaming/actions/runs/123' });
   const check = input => verifySystemMap({ reader: frozen(), evidence: input }).assurance;
   return { root, put, get, reader, frozen, snapshot, evidence, check };
 }

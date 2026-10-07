@@ -222,7 +222,9 @@ export function refreshContracts({ reader = createSourceReader(), write = true }
 }
 export function safeCiUrl(value) {
   if (value === undefined || value === null) return null;
-  return typeof value === 'string' && /^https:\/\/github\.com\/Jakeminator123\/github-work\/actions\/runs\/\d+(?:\/attempts\/\d+)?(?:\/job\/\d+)?$/i.test(value) ? value : null;
+  // The repository was renamed from github-work to scoutgaming on 2026-10-06;
+  // older evidence still carries the previous address.
+  return typeof value === 'string' && /^https:\/\/github\.com\/Jakeminator123\/(?:scoutgaming|github-work)\/actions\/runs\/\d+(?:\/attempts\/\d+)?(?:\/job\/\d+)?$/i.test(value) ? value : null;
 }
 
 export function verifySystemMap({ reader = createSourceReader(), evidence, now = new Date().toISOString() } = {}) {
