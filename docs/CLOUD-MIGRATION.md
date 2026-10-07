@@ -12,7 +12,7 @@ Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 Apex `scoutgaming.tech` är en 308 till www. Vercelprojektet heter `scoutgaming`.
 Spelmotorn ligger kvar på Render-tjänsten `croupier-v2`. `/studio` är Next.js-basePath
 för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet.
-Lissabon, `/lab`, `/labb` och `/bo` är avvecklade alias. Flaggningen
+`/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias. Flaggningen
 `lissabon-stream-lane` är inte en produktadress.
 
 ### Ett gemensamt Vercelprojekt — 6 oktober 2026
@@ -514,7 +514,7 @@ Importreceipt
 Admission/plan/BEFORE/runtime/postdelete står i JOHN och snapshoten.
 Gamebackup `C:/Users/jakem/CroupierBackups/neon-game-20261002-132437`:
 24 källtabeller/102 rader, 32 Postgrestabellers rad-/sekvensparitet.
-Lissabon/syskonstädning/privat OpenClawdevice-backup står i handoffen.
+Labbbackup/syskonstädning/privat OpenClawdevice-backup står i handoffen.
 
 Återgång kräver stoppade/frysta skrivare, separat kopia av senaste Neon/ledger,
 rätt scope/schema/media, aktuell paritet och samordnad rollbackpunkt.

@@ -294,7 +294,7 @@ schema/checksummor, aktuell paritet, media och rollbackpunkt före operation.
 Gamla SQLite-/diskbytes får inte aktiveras efter nya Neon-skrivningar utan datatillbakaföring.
 Gamebackup: `C:/Users/jakem/CroupierBackups/neon-game-20261002-132437`
 (24 källtabeller/102 rader; 32 Postgrestabeller med rad-/sekvensparitet).
-Lissabonbackup: `C:/Users/jakem/CroupierBackups/lab-consolidation-20261002`;
+Labbbackup: `C:/Users/jakem/CroupierBackups/lab-consolidation-20261002`;
 lokal syskonstädning: `C:/Users/jakem/CroupierBackups/local-project-cleanup-20261004T210828Z`
 (214 bevarade filer, två verifierade Gitbundlar, workercommits kvar).
 Återställningsprocedurer: [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md).

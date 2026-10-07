@@ -56,7 +56,7 @@ spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
 får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs`.
 
 Den 2 oktober flyttades 39 privata filer (4 568 960 byte) utan överskrivning
-från Lissabon till Lab. Hela gamla katalogen, 42 filer, finns i en separat
+från den tidigare katalogen till labbet. Hela gamla katalogen, 42 filer, finns i en separat
 hashverifierad privat kopia: `C:\Users\jakem\CroupierBackups\lab-consolidation-20261002`.
 `lissabon/` är därefter borttagen. Projektets bytes och historik bevarades;
 den gamla sessionsvakten ersattes med `lab/data/.local-session.sqlite`.
@@ -68,7 +68,7 @@ Utan `--apply` inventerar det endast; ett giltigt gammalt projekt får inte
 ignoreras av startaren. Backupen verifieras med `verifyLabMigrationBackup()`
 i samma modul. Återställ endast med stoppade servrar, bevara nuvarande Lab-data
 separat och kopiera den verifierade backupens `lissabon/data` till en tom
-`lab/data`, utan den gamla `.local-session.sqlite`. Återskapa inte Lissabon.
+`lab/data`, utan den gamla `.local-session.sqlite`. Återskapa inte den gamla katalogen.
 
 ## Beständig molndata
 
