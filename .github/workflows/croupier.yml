@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   presentation-studio:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -25,7 +25,20 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: lab/package-lock.json
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Install ffmpeg when missing
+        timeout-minutes: 8
+        run: |
+          packages=""
+          { command -v ffmpeg && command -v ffprobe; } >/dev/null 2>&1 || packages="ffmpeg"
+          if [ -n "$packages" ]; then
+            for attempt in 1 2 3; do
+              if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -qq \
+                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq $packages; then break; fi
+              if [ "$attempt" = 3 ]; then exit 1; fi
+              sleep 20
+            done
+          fi
+          ffmpeg -version | head -n 1
       - run: npm --prefix lab ci
       - name: Studio migration readiness (production ledger)
         # Runs for pushes to main and for pull requests from branches in this
@@ -42,7 +55,7 @@ jobs:
       - run: npm --prefix open-claw/lab run check
 
   dealer-regression:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -51,7 +64,22 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: lab/package-lock.json
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
+      - name: Install ffmpeg and jq when missing
+        timeout-minutes: 8
+        run: |
+          packages=""
+          { command -v ffmpeg && command -v ffprobe; } >/dev/null 2>&1 || packages="ffmpeg"
+          command -v jq >/dev/null 2>&1 || packages="$packages jq"
+          if [ -n "$packages" ]; then
+            for attempt in 1 2 3; do
+              if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -qq \
+                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq $packages; then break; fi
+              if [ "$attempt" = 3 ]; then exit 1; fi
+              sleep 20
+            done
+          fi
+          ffmpeg -version | head -n 1
+          jq --version
       - run: npm --prefix lab ci
       - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
@@ -76,7 +104,14 @@ jobs:
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/system-map-evidence"
-          node tools/system-map-evidence.mjs --run-isolated-qa --download-postgres --report-output "$RUNNER_TEMP/system-map-evidence/studio-isolated-qa.jsonl"
+          # The runner image ships PostgreSQL 16 binaries; the download stays as fallback.
+          if [ -x /usr/lib/postgresql/16/bin/initdb ] && [ -x /usr/lib/postgresql/16/bin/pg_ctl ]; then
+            postgres_source=(--postgres-bin /usr/lib/postgresql/16/bin)
+          else
+            postgres_source=(--download-postgres)
+          fi
+          echo "PostgreSQL source: ${postgres_source[*]}"
+          node tools/system-map-evidence.mjs --run-isolated-qa "${postgres_source[@]}" --report-output "$RUNNER_TEMP/system-map-evidence/studio-isolated-qa.jsonl"
       - name: Build system map with the existing regression results
         if: always()
         run: |
@@ -111,7 +146,7 @@ jobs:
       - run: node --test ops/cloud/test/*.test.mjs
 
   lipsync-worker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -121,7 +156,20 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Install ffmpeg when missing
+        timeout-minutes: 8
+        run: |
+          packages=""
+          { command -v ffmpeg && command -v ffprobe; } >/dev/null 2>&1 || packages="ffmpeg"
+          if [ -n "$packages" ]; then
+            for attempt in 1 2 3; do
+              if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -qq \
+                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq $packages; then break; fi
+              if [ "$attempt" = 3 ]; then exit 1; fi
+              sleep 20
+            done
+          fi
+          ffmpeg -version | head -n 1
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway test
       - run: python -m unittest discover -s services/astrid-gpu-worker/tests -v

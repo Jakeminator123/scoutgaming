@@ -46,6 +46,17 @@ i commit-texten. Kvar: guidens texter (`lab/docs/guide.json`) använder gamla na
 situationen från en videomapp följer inte med till Händelser, gammal CSS för den inre
 sidomenyn ligger kvar i `lab/app/globals.css`.
 
+## CI, 7 oktober 2026 kväll
+
+`dealer-regression` föll två gånger när Ubuntus paketservrar var långsamma:
+nedladdningen av PostgreSQL passerade QA-skriptets gräns, och `apt-get install ffmpeg jq`
+hängde i 30 minuter. Tredje försöket blev grönt. De tre jobben i
+`.github/workflows/croupier.yml` kör nu på `ubuntu-24.04` i stället för `ubuntu-latest`
+(som byts till Ubuntu 26 från 19 oktober). Installationen hoppas över om verktyget finns,
+har en egen gräns på 8 minuter och tre försök. Den isolerade SQL-acceptansen använder
+runnerns PostgreSQL 16 om den finns och laddar annars ner som förut.
+`astrid-gpu-build.yml` och `astrid-gpu-publish.yml` kör fortfarande `ubuntu-latest`.
+
 ## Design, 7 oktober 2026
 
 Johns designpaket (`Croupier-Studio-design`) är infört på nivå 1: sidomeny i fem
