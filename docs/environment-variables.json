@@ -376,6 +376,19 @@
         "RUNPOD_API_KEY",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN"
       ]
+    },
+    "github-actions-tooling": {
+      "sources": [
+        "tools/check-migration-readiness.mjs"
+      ],
+      "required": [],
+      "firstBoot": [],
+      "conditional": [
+        "CROUPIER_GAME_DATABASE_URL",
+        "CROUPIER_MIGRATION_CONFIRM"
+      ],
+      "managed": [],
+      "blocked": []
     }
   }
 }

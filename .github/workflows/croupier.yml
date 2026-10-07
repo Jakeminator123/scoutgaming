@@ -27,6 +27,13 @@ jobs:
           cache-dependency-path: lab/package-lock.json
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: npm --prefix lab ci
+      - name: Studio migration readiness (production ledger)
+        # Runs for pushes to main and for pull requests from branches in this
+        # repository. Fork PRs do not receive secrets and would fail closed.
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        run: node tools/check-migration-readiness.mjs
+        env:
+          CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
       - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - run: npm --prefix lab test

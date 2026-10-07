@@ -1,6 +1,6 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-Uppdaterad 6 oktober 2026. Detta är den enda migrationschecklistan.
+Uppdaterad 7 oktober 2026. Detta är den enda migrationschecklistan.
 Äldre checkpoints och avslutade delstegs detaljer finns i
 [fryst historik på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md).
 Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
@@ -79,6 +79,12 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Native runtime kräver nu exakt migration 001–005: en Neon-databas där 005 inte
   är applicerad svarar `unavailable` tills migrationen körts. Kör den granskade
   migrationen mot produktions-Neon innan koden deployas, aldrig tvärtom.
+  Ordning vid ny Studio-migration:
+  1. PR mot main.
+  2. CI kör readiness mot produktionsledgern och blir röd om migrationen saknas.
+  3. Operatör kör `node tools/check-migration-readiness.mjs --apply` med CROUPIER_MIGRATION_CONFIRM=apply-pending från en terminal med produktionsnyckeln.
+  4. Merga PR, Vercel bygger.
+  7 oktober 2026 pushades migration 005 till main innan den körts mot produktions-Neon; Vercel byggde inom tre minuter och varje /control-sida svarade att labbet inte kunde läsas.
   Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
   Delsteg 6 oktober: fristående `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.
