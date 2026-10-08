@@ -90,13 +90,20 @@ projects", dvs. Vercel-styrd), innehåller flera databaser:
 konton och Studio-policy; det är den `CROUPIER_GAME_DATABASE_URL` pekar på från både
 Render och Vercel), `croupier_game_qa`, `croupier_game_restore_check`,
 `croupier_studio_qa_abc92154cb15` och `neondb` (zonerna, `CROUPIER_ZONES_DATABASE_URL`).
-Resursen (och Blob-lagret `croupier-media-private`) är kopplad i Vercel till projektet
-`croupier-player-preview-qa` på det personliga teamet `jakeminator123s-projects`. Produktions-
-projektet `scoutgaming` ligger sedan 8 oktober på teamet `scoutgaming`, så dess Storage-flik
-är tom; produktionen läser ändå databasen och blobben via miljövariablerna. Att flytta
-resurserna till teamet `scoutgaming` kräver Vercels "Transfer Database" med "Disconnect all
-projects" först, vilket kan rotera anslutningssträngar – görs bara planerat och efter Jakobs
-uttryckliga beslut, aldrig som bifångst.
+Resursen och Blob-lagret `croupier-media-private` (787 MB, region arn1) flyttades
+8 oktober 17:25 på Jakobs beslut från det personliga teamet `jakeminator123s-projects`
+till teamet `scoutgaming` (Vercel "Transfer Database" respektive "Transfer Store") och
+kopplades till produktionsprojektet `scoutgaming` (Production + Preview, Sensitive, ingen
+automatisk Neon-gren per deploy). Kopplingarna fick egna prefix så att de handsatta
+nycklarna inte rörs: Neon injicerar 16 namn `CROUPIER_NEON_*` och Blob injicerar
+`CROUPIER_MEDIA_STORE_ID` + `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` (read-write-token-rutan
+lämnades av). Koden läser ingen av dem; `CROUPIER_GAME_DATABASE_URL` och
+`BLOB_READ_WRITE_TOKEN` är fortsatt de auktoritativa värdena och verifierades oförändrade
+(namnjämförelse 44 → 59 namn, bara tillägg; `/api/operators/sg-test` svarade före, under
+och efter). Render berördes inte (egen kopia av `CROUPIER_GAME_DATABASE_URL`).
+Bieffekt: QA-projektet `croupier-player-preview-qa` (kvar på personliga teamet) förlorade
+sin Neon-koppling och därmed `CROUPIER_ZONES_*` i Preview/Development; produktionen har
+aldrig haft dem. Återkoppling kräver att QA-projektet också flyttas till `scoutgaming`.
 Migration `006-player-profile.sql` kördes där 8 oktober 16:48 (två nya nullbara kolumner,
 4 spelare oförändrade).
 

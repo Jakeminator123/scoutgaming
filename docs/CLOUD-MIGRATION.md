@@ -606,7 +606,7 @@ Karta/envregister anger tjänstebindning/nyckelnamn, aldrig hemliga värden.
 | scoutgaming-legacy-frontend | Tidigare croupier-frontend; domänlös reserv med Git-byggen och automatisk domäntilldelning avstängda |
 | croupier-native-qa-abc92154cb15 | Befintlig isolerad testfrontend |
 | croupier-native-studio-qa-abc92154cb15 | Tillhörande isolerad Studio |
-| croupier-player-preview-qa | Äldre testfront med Blob/Neonintegrationer; kandidat efter ägar-/konsumentkontroll |
+| croupier-player-preview-qa | Äldre testfront på personliga teamet. 8 okt 17:25 förlorade den sin Neon-koppling (`CROUPIER_ZONES_*`) när Neon `croupier-production` och Blob `croupier-media-private` flyttades till teamet `scoutgaming` och kopplades till projektet `scoutgaming` (se `ENVIRONMENT-VARIABLES.md`); kandidat för flytt eller avveckling efter ägar-/konsumentkontroll |
 
 Ett repo/en produktionssajt finns genom ett projekt med två Services.
 Det gamla croupier-lab-ui-ID:t bär nu hela projektet, vilket bevarar dess
