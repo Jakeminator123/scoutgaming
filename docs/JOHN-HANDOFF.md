@@ -4,8 +4,8 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet (K1 verifierat mot prod, K2 beslutat 8 okt); `project.lanes[]` finns som typ utan läsare; klippnamn; `/control/preview` visar grenens tre-lager-spelare; kvar: steg 3b (select för fyra dealers, rehearsal med Jakob), lane-export, bolagsyta (L1–L3). Uppföljning: `random/checklista-2026-10-08.md` | Pass S |
-| Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida (rad 37), Probe i menyn (17b), fyra adminlänkar (12), inloggningskort (14), Bakgrundszoner på mallen (43), Uppspelning rullar (L23); kvar: ljust läge på inre sidor, filterchips (11) efter 3b | Pass S |
+| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet; `project.lanes[]` + `/control/lanes` publicerar paket (`publishPackage`, pool med `connect()`); `clipLabels` redigeras i Klippbibliotek; `/control/preview` visar grenens tre-lager-spelare; kvar: C5b (select för fyra dealers, rehearsal med Jakob), bolagsyta L4, spelet läser inte paketet L8. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt förmiddag |
+| Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes `/control/lanes`, fyra adminlänkar, inloggningskort, Bakgrundszoner på mallen, Uppspelning rullar; kvar: ljust läge på inre sidor, filterchips (11) efter 3b | 8 okt förmiddag |
 | Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
@@ -13,10 +13,18 @@
 | Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
 | Render croupier-v2 | påbörjad — motor live, deploy väntar | Aktuell leverans |
 
-Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
+Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## 8 oktober 2026 förmiddag: Lanes, clipLabels, CI-actions
+
+`/control/lanes` publicerar ett operatörspaket (POST `operator-package`) och kan skapa
+`SG test game provider` på klick (POST `operator-create-demo`). Skrivningar kräver Neon-pool
+med `connect()`; `{ query }` ger 503. Spelet läser inte paketet. Klippbibliotek sätter
+`project.clipLabels` via sidans Spara. `dealer-regression` använder `pnpm/action-setup@v6`
+och `actions/upload-artifact@v7`. Kartans L3-ruta är live.
 
 ## Pass S, 8 oktober 2026 natt: klipplogik steg 3a, Händelser en sida, förhandsvisning
 

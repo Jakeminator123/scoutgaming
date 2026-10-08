@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { addVariant, isAssetCompatible, type StudioProject, type StudioVariant } from '../lib/studio-model.mjs';
+import { applyClipLabel, clipLabel } from '../lib/clip-label.mjs';
 import { OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 import { videoFitsLine } from '../lib/video-intake.mjs';
 import { FamilyVideoLibrary } from './family-video-library';
@@ -11,7 +13,7 @@ import styles from './control-videos-page.module.css';
 import { StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
 import { studioHref, type ConnectionStatus, type VideoEntry, type VideoInventory } from './studio-types';
 import type { UploadBinding } from './video-upload';
-import { VideoLibrary } from './video-library';
+import { ClipNameEditor, VideoLibrary } from './video-library';
 
 export function ControlVideosPage({
   initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, connectedLane = false,
@@ -28,7 +30,7 @@ export function ControlVideosPage({
     initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, connectedLane,
   });
   const {
-    project, setProject, updateProject, projectRef, dirty, saving, save,
+    project, setProject, updateProject, modelEdit, projectRef, dirty, saving, save,
     error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
     videos, setVideos, refreshVideos, refreshingVideos, originals,
     dealerId, selectDealer, selectEvent, selectVariant, assignSelection,
@@ -38,6 +40,13 @@ export function ControlVideosPage({
   const incompatibleBindings = project.lines.flatMap(item => item.variants.filter(candidate => !isAssetCompatible(project.events.find(entry => entry.id === item.eventId), project.assets.find(asset => asset.id === candidate.assetId))).map(candidate => ({ dealerId: item.dealerId, eventId: item.eventId, variantId: candidate.id })));
   const firstBinding = incompatibleBindings[0];
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
+  const [namedId, setNamedId] = useState('');
+  const dealerClips = videos.videos.filter(video => video.dealer === dealerId || video.familyId?.startsWith(`${dealerId}/`));
+  const named = dealerClips.find(video => video.id === namedId) ?? dealerClips[0];
+
+  function renameClip(clipId: string, text: string) {
+    modelEdit(current => applyClipLabel(current, clipId, text));
+  }
 
   function updateVariant(patch: Partial<StudioVariant>) {
     updateProject(draft => {
@@ -126,6 +135,20 @@ export function ControlVideosPage({
       <fieldset disabled={saving || !connectedLane}>
         <LegacyClipEditor project={project} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
       </fieldset>
+      {media.managed && named ? (
+        <div className={styles.binding}>
+          <label className={styles.field}>
+            Klipp
+            <select value={named.id} onChange={change => setNamedId(change.target.value)}>
+              {dealerClips.map(video => {
+                const fileName = video.fileName || video.relativePath?.split('/').at(-1) || video.id;
+                return <option key={video.id} value={video.id}>{clipLabel({ id: video.id, label: video.label, familyId: video.familyId, role: video.role, relativePath: video.relativePath }, project.clipLabels)} · {fileName}</option>;
+              })}
+            </select>
+          </label>
+          <ClipNameEditor className={styles.field} video={named} clipLabels={project.clipLabels} onChange={renameClip} />
+        </div>
+      ) : null}
       {media.managed
         ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} clipLabels={project.clipLabels} onOpen={id => openEvent(id)} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} />
         : (
@@ -135,6 +158,7 @@ export function ControlVideosPage({
             project={project}
             onUploaded={uploadedVideo}
             onOpenEvent={openEvent}
+            onClipLabel={renameClip}
             inventory={videos}
             dealer={dealer.label}
             eventLabel={event.label}

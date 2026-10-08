@@ -33,7 +33,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | A4 | CI-steg orphan tests + undantagsfil | klart `9dbfe09e`: 259 filer, 0 föräldralösa, 3 undantag (matris 47); grönt i CI | brief M p5 | M |
 | A5 | Systemkartan: trimma miljökontrakt, gul = "granska", `planned`-rutor (T11) | klart (S5): 10 miljöfakta ur kontrakten, 14 skyddande kvar; gul = svensk granskningstext; 8 planned-rutor | matris 42 | – |
 | A10 | `test/fuzz-blackjack.mjs` mot `web/shoe-game.mjs` (J5) | klart natt 8 okt (S3): 3 000 rundor ~5 s i kroken, 100 000 gröna; undantaget borta. CI grön `a4288aa7` | beslut 53 | – |
-| A11 | `dealer-regression`: `actions/upload-artifact@v4` och `pnpm/action-setup@v4` kör Node 20 (deprecerat, tvingas till 24) | kvar, litet: bump till senaste major när nästa CI-ändring görs | CI-annotation 8 okt | M |
+| A11 | `dealer-regression`: `actions/upload-artifact@v4` och `pnpm/action-setup@v4` kör Node 20 (deprecerat, tvingas till 24) | kod inne (`@v7` / `@v6`); CI omkörs vid push | CI-annotation 8 okt | M |
 | A6 | Chefens register i `.croupier-inbox/chef.json`, låstext "Inbox busy" | kvar, lågprio | matris 34 | M senare |
 | A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | kvar, lågprio | matris 34 | M senare |
 | A8 | `test/backoffice-lab-browser.mjs` opt-in, ej körd | kvar; blir undantag i A4 | matris 34 | M |
@@ -71,7 +71,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | C8 | Zoner styr spelets bakgrund (L16) | kvar; blir del av D-lagret nedan | lösa trådar | K/T |
 | C9 | Probe verifierad i produktion (L4) | kvar | lösa trådar | K |
 | C10 | Beskrivande klippnamn: manifestet har bara `id` (uuid), `familyId`, `role`, `relativePath`; UI visar id/siffror. Lägg till visningsnamn (`label`) härlett från familj + roll, redigerbart i Klippbibliotek. Inga filbyten: ny hash ogiltigförklarar godkänd synk | klart natt 8 okt (S2): `lab/lib/clip-label.mjs`, visas i Klippbibliotek, Dealers & klipp, Händelser; `clipLabels` i projektet utan redigeringsyta ännu | `lab-video-manifest.json` | K |
-| C11 | Redigeringsyta för `clipLabels` (byta namn på ett klipp i Klippbibliotek) | kvar, litet | C10 | M |
+| C11 | Redigeringsyta för `clipLabels` (byta namn på ett klipp i Klippbibliotek) | kod inne; sidans Spara; tomt fält tar bort nyckeln | C10 | M |
 
 ## T. Tre lager (nytt 8 okt: bakgrund, avatar, bord)
 
@@ -95,9 +95,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|---|---|
 | L1 | Lagring `operator_packages` med lanes/spel/bord/branding | klart | 005 | – |
 | L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | kvar; efter C5 | lösa trådar | Lane |
-| L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kvar | lösa trådar | Lane |
+| L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kod inne (`/control/lanes` + POST); meny + karta live; spelet läser inte paketet (L8) | lösa trådar | Lane |
 | L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kvar | lösa trådar | Lane |
-| L5 | Demo-operatör "SG test game provider" i fixturen | kvar; första steg i Lane | matris 44 | Lane |
+| L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
 | L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | kvar | matris 44 | Lane |
 | L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
 | L8 | Spelmotorn läser `operator_packages` | kvar | L2 | Lane |

@@ -387,12 +387,21 @@
       "paths": [
         "/control/lanes"
       ],
-      "label": "Publicera lane till bolag",
-      "serving": "Planerad",
-      "access": "Intern personal.",
-      "status": "planned",
-      "plannedRef": "L3",
-      "purpose": "Exportera och publicera en lane. publishPackage har ingen anropare."
+      "localPath": "/control/lanes",
+      "label": "Lanes",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "sources": [
+        "lab/app/control/lanes/page.tsx",
+        "lab/components/control-lanes-page.tsx",
+        "lab/lib/operator-package-api.mjs"
+      ],
+      "limitation": "publishPackage writes operator_packages. The game engine does not read the package yet (L8).",
+      "tests": [
+        "lab/test/control-lanes-page.test.mjs",
+        "lab/test/operator-package-api.test.mjs"
+      ],
+      "purpose": "Publicera lane-id:n till ett bolag. Demo-operatör SG test skapas bara på klick."
     },
     {
       "id": "lobby-operator",
@@ -499,7 +508,9 @@
         "users/*",
         "apikeys/*",
         "game-lanes/create",
-        "game-lanes/remove"
+        "game-lanes/remove",
+        "operator-package",
+        "operator-create-demo"
       ],
       "operatorRoute": "GET/POST/DELETE speech-qa additionally requires the operator speech-QA gate",
       "sources": [
@@ -508,11 +519,13 @@
         "lab/lib/studio-admin-api.mjs:64",
         "lab/lib/studio-access-policy.mjs",
         "lab/lib/studio-admin-data.mjs",
+        "lab/lib/operator-package-api.mjs",
         "web/public/game-lanes.mjs"
       ],
       "tests": [
         "lab/test/studio-admin-api.test.mjs",
         "lab/test/studio-admin-data.test.mjs",
+        "lab/test/operator-package-api.test.mjs",
         "test/studio-game-authority.mjs",
         "test/studio-game-commands.mjs",
         "test/game-lanes.mjs"
@@ -3921,6 +3934,24 @@
       "sources": [
         {
           "path": "lab/app/control/preview/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-lanes",
+      "path": "/control/lanes",
+      "publicPath": "/control/lanes",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/lanes/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo with the Neon pool (connect required). Game does not read the package.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/lanes/page.tsx"
         }
       ]
     },
