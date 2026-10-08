@@ -10,6 +10,7 @@ export interface VideoEntry {
   source?: 'emil' | 'archive' | 'upload';
   familyId?: string;
   role?: 'standard' | 'variant';
+  relativePath?: string;
   eventId?: string;
   situation?: string;
   playbackType?: 'once' | 'idle-pool';

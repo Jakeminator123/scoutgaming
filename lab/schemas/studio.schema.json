@@ -620,9 +620,104 @@
     },
     "probePolicy": {
       "$ref": "probe-policy.schema.json"
+    },
+    "lanes": {
+      "description": "Optional presentation lanes. A saved project without this key stays valid; normalization supplies the mobile-phone lane. An explicit empty list is kept.",
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/lane" }
+    },
+    "clipLabels": {
+      "description": "Optional display names keyed by clip id. Files and hashes are not renamed.",
+      "type": "object",
+      "maxProperties": 2048,
+      "propertyNames": { "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$" },
+      "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S" }
     }
   },
   "$defs": {
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "dealers", "layers", "openclaw", "operatorAdjustable"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "not": { "enum": ["original", "constructor", "prototype"] }
+        },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S" },
+        "dealers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["astrid", "vera", "amira", "mei"] }
+        },
+        "layers": { "$ref": "#/$defs/laneLayers" },
+        "openclaw": { "$ref": "#/$defs/laneOpenClaw" },
+        "operatorAdjustable": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["table.color", "background", "dealer", "branding"] }
+        }
+      }
+    },
+    "laneLayers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["background", "table", "dealer"],
+      "properties": {
+        "background": { "$ref": "#/$defs/laneBackground" },
+        "table": { "$ref": "#/$defs/laneTable" },
+        "dealer": { "$ref": "#/$defs/laneDealer" }
+      }
+    },
+    "laneBackground": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "mode", "default", "allowed"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": { "enum": ["baked", "image", "video"] },
+        "default": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+      }
+    },
+    "laneTable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "default", "allowed"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "default": { "type": ["string", "null"], "minLength": 1, "maxLength": 40 },
+        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 40 } }
+      }
+    },
+    "laneDealer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "default", "allowed"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "default": { "type": "string", "enum": ["astrid", "vera", "amira", "mei"] },
+        "allowed": { "type": "array", "maxItems": 4, "uniqueItems": true, "items": { "enum": ["astrid", "vera", "amira", "mei"] } }
+      }
+    },
+    "laneOpenClaw": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idle", "deal", "reveal", "speak", "probe"],
+      "properties": {
+        "idle": { "$ref": "#/$defs/openClawMode" },
+        "deal": { "$ref": "#/$defs/openClawMode" },
+        "reveal": { "$ref": "#/$defs/openClawMode" },
+        "speak": { "$ref": "#/$defs/openClawMode" },
+        "probe": { "$ref": "#/$defs/openClawMode" }
+      }
+    },
+    "openClawMode": { "enum": ["off", "rules", "random", "shadow", "active"] },
     "mediaFamilyPolicy": {
       "type": "object", "additionalProperties": false, "required": ["familyId", "variants"],
       "properties": {

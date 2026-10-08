@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { clipLabel } from '../lib/clip-label.mjs';
 import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../lib/idle-policy.mjs';
 import type { VideoEntry, VideoInventory } from './studio-types';
 import styles from './idle-policy-editor.module.css';
@@ -38,15 +39,23 @@ function usageDescription(item: IdleVariantPolicy) {
   return `Automatisk · cirka var ${seconds(item.automatic.averageEveryMs)}:e sekund`;
 }
 
-export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyChange }: {
+export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyChange, clipLabels }: {
   policy: IdlePolicy;
   inventory: VideoInventory;
   blocked: boolean;
   onChange: (policy: IdlePolicy) => void;
   onBusyChange: (busy: boolean) => void;
+  clipLabels?: Record<string, string>;
 }) {
   const family = inventory.families?.find(item => item.id === policy.familyId);
   const byId = useMemo(() => new Map(inventory.videos.map(item => [item.id, item])), [inventory.videos]);
+  const shown = (videoId: string) => {
+    const video = byId.get(videoId);
+    const file = fileLabel(video, videoId);
+    const role = video?.role ?? (family?.standardIds.includes(videoId) || policy.base.some(row => row.videoId === videoId) ? 'standard' : 'variant');
+    const name = clipLabel({ id: videoId, familyId: video?.familyId ?? policy.familyId, role, relativePath: video?.relativePath }, clipLabels);
+    return { text: name === file ? file : `${name} · ${file}`, title: videoId };
+  };
   const estimate = useMemo(() => idleShareEstimate(policy), [policy]);
   const [seed, setSeed] = useState(25);
   const [showPlan, setShowPlan] = useState(false);
@@ -65,7 +74,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000 }), [policy, seed]);
   const primary = policy.base[0];
   const primaryActualShare = primary ? estimate.shares[primary.videoId] ?? 0 : 0;
-  const visibleVariants = policy.variants.filter(item => `${fileLabel(byId.get(item.videoId), item.videoId)} ${useLabels[item.use]} ${item.description ?? ''}`.toLocaleLowerCase('sv').includes(filter.trim().toLocaleLowerCase('sv')));
+  const visibleVariants = policy.variants.filter(item => `${shown(item.videoId).text} ${useLabels[item.use]} ${item.description ?? ''}`.toLocaleLowerCase('sv').includes(filter.trim().toLocaleLowerCase('sv')));
 
   useEffect(() => {
     if (!blocked) return;
@@ -156,21 +165,21 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     <section className={styles.section}>
       <div className={styles.sectionHeading}><span>1</span><div><h3>Grundloop</h3><p>Det här visas mellan kort, tal och korta variationer.</p></div></div>
       {!family ? <p className={styles.warning}>Idlefamiljen saknas i videomanifestet.</p> : null}
-      <label className="field">Huvudloop<select value={primary.videoId} onChange={event => setPrimary(event.target.value)}>{policy.base.map(item => <option key={item.videoId} value={item.videoId}>{fileLabel(byId.get(item.videoId), item.videoId)}</option>)}</select></label>
+      <label className="field">Huvudloop<select value={primary.videoId} onChange={event => setPrimary(event.target.value)}>{policy.base.map(item => <option key={item.videoId} value={item.videoId} title={shown(item.videoId).title}>{shown(item.videoId).text}</option>)}</select></label>
       <details className={styles.help}><summary>Fördelning mellan loopar och variationer</summary>
         {policy.base.length > 1 ? <label className={styles.range}>Huvudloopens andel före variationer <strong>{primary.weight} %</strong><input type="range" min={50} max={99} value={primary.weight} onChange={event => setPrimaryWeight(Number(event.target.value))} /></label> : null}
         <div className={styles.share}><strong>Andel i det automatiska schemat: {percent(primaryActualShare)}</strong><span>Automatiska variationer tar cirka {percent(estimate.automaticShare)} av tiden. OpenClaw-reaktioner, tal och spelhandlingar ingår inte i uppskattningen.</span></div>
       </details>
-      <div className={styles.baseList}>{policy.base.map(item => <button type="button" key={item.videoId} onClick={() => play(item.videoId)} disabled={blocked}><span>{item.videoId === primary.videoId ? 'Huvudloop' : 'Reservloop'}</span><strong>{fileLabel(byId.get(item.videoId), item.videoId)}</strong><small>{item.weight} % grundvikt · spela prov</small></button>)}</div>
+      <div className={styles.baseList}>{policy.base.map(item => <button type="button" key={item.videoId} title={shown(item.videoId).title} onClick={() => play(item.videoId)} disabled={blocked}><span>{item.videoId === primary.videoId ? 'Huvudloop' : 'Reservloop'}</span><strong>{shown(item.videoId).text}</strong><small>{item.weight} % grundvikt · spela prov</small></button>)}</div>
     </section>
 
     <section className={styles.section}>
       <div className={styles.sectionHeading}><span>2</span><div><h3>Korta variationer</h3><p>{policy.variants.length} klipp · öppna en rad för att redigera</p></div></div>
       <label className={styles.search}>Hitta idleklipp<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Sök klipp, användning eller beskrivning…" /></label>
-      {unconfigured.length ? <details className={styles.help}><summary>Nya klipp · {unconfigured.length}</summary><div className={styles.variantList}><p>Lägg till i policyn och spara. Högst {MAX_IDLE_VARIANTS} varianter.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} disabled={blocked || policy.variants.length >= MAX_IDLE_VARIANTS || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {fileLabel(byId.get(id), id)} som manuell variant</button>)}</div></details> : null}
+      {unconfigured.length ? <details className={styles.help}><summary>Nya klipp · {unconfigured.length}</summary><div className={styles.variantList}><p>Lägg till i policyn och spara. Högst {MAX_IDLE_VARIANTS} varianter.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} title={shown(id).title} disabled={blocked || policy.variants.length >= MAX_IDLE_VARIANTS || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {shown(id).text} som manuell variant</button>)}</div></details> : null}
       {importError ? <p role="alert" className={styles.warning}>{importError}</p> : null}
       <div className={styles.variantList}>{visibleVariants.map(item => <div className={styles.variant} key={item.videoId}>
-        <details className={styles.variantDetails}><summary><strong>{fileLabel(byId.get(item.videoId), item.videoId)}</strong><small>{usageDescription(item)}</small></summary><div className={styles.variantSettings}>
+        <details className={styles.variantDetails}><summary title={shown(item.videoId).title}><strong>{shown(item.videoId).text}</strong><small>{usageDescription(item)}</small></summary><div className={styles.variantSettings}>
         <label>Används som<select value={item.use} onChange={event => setUse(item, event.target.value as IdleVariantUse)}><option value="openclaw">OpenClaw</option><option value="automatic">Automatisk</option><option value="manual">Manuell · bara prov</option>{item.use === 'rules' ? <option value="rules" disabled>Regelstyrd · ej ansluten</option> : null}</select></label>
         <label className={styles.description}>När passar klippet?<input type="text" maxLength={80} value={item.description ?? ''} placeholder="Beskriv reaktionen och när den passar" onChange={event => updateVariant(item.videoId, { description: event.target.value })} /><span>Beskrivning till OpenClaw · högst 80 tecken</span></label>
         {item.use !== 'openclaw' ? <p className={styles.useHelp}>{item.use === 'automatic' ? 'Spelas enligt tiderna nedan, utan att tolka chatten.' : item.use === 'rules' ? 'Det finns ännu ingen ansluten regeltrigger för idle. Välj OpenClaw eller Automatisk för levande uppspelning.' : 'Startas bara med Spela här. Väljs inte i strömmen.'}</p> : null}
@@ -180,7 +189,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
           <label><span>Minsta paus</span><input type="number" min={0} max={300} value={seconds(item.automatic.cooldownMs)} onChange={event => setAutomatic(item, 'cooldownMs', Math.max(0, Number(event.target.value)) * 1000)} /><span>sek</span></label>
           <label><span>Max/min</span><input type="number" min={1} max={12} value={item.automatic.maxPerMinute} onChange={event => setAutomatic(item, 'maxPerMinute', Math.max(1, Number(event.target.value)))} /></label>
         </div> : null}
-        </div></details><button type="button" className="text-button" aria-label={`Spela ${fileLabel(byId.get(item.videoId), item.videoId)}`} onClick={() => play(item.videoId)} disabled={blocked || !byId.get(item.videoId)?.available}>Spela</button>
+        </div></details><button type="button" className="text-button" title={shown(item.videoId).title} aria-label={`Spela ${shown(item.videoId).text}`} onClick={() => play(item.videoId)} disabled={blocked || !byId.get(item.videoId)?.available}>Spela</button>
       </div>)}</div>
       {!visibleVariants.length ? <p className={styles.useHelp}>Inga klipp matchar sökningen.</p> : null}
       <details className={styles.help}><summary>Om idleklipp och användning</summary><p>Klipp från <code>idle/variant/</code>. Automatisk använder tiderna du ställer in. Manuell spelar endast prov. OpenClaw tolkar beskrivningen vid nya chattmeddelanden, högst en reaktion per minut. Tal och spelhandlingar går före.</p></details>
@@ -190,12 +199,12 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
       <details className={styles.help}><summary>Prova en minut</summary><p>Samma seed ger samma förlopp.</p>
       <div className={styles.previewControls}><label>Seed<input type="number" min={0} max={4294967295} value={seed} onChange={event => { stop('Seed ändrades'); setSeed(Math.max(0, Number(event.target.value))); }} /></label><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj plan' : 'Visa planerat förlopp'}</button></div>
       <p className="helper">Planen är beräknad från klipplängderna i policyn. Engångsvarianter får spela klart. Loggen nedan visar faktiska uppspelningshändelser.</p>
-      {showPlan ? <><div className={styles.timeline} aria-label="Förhandsvisning av idleförlopp">{plan.map((segment, index) => <span key={`${segment.startMs}-${index}`} className={segment.kind === 'variant' ? styles.variantSegment : styles.baseSegment} style={{ width: `${(segment.endMs - segment.startMs) / 600}%` }} title={`${Math.round(segment.startMs / 100) / 10}s · ${fileLabel(byId.get(segment.videoId), segment.videoId)}`} />)}</div><ol className={styles.log}>{events.length ? events.map((entry, index) => <li key={`${entry.at}-${entry.label}-${index}`}><time>{(entry.at / 1000).toFixed(1)} s</time><code>{entry.label}</code><span>{fileLabel(byId.get(entry.videoId), entry.videoId)}</span></li>) : <li>Inga automatiska variationer under minuten.</li>}</ol></> : null}
+      {showPlan ? <><div className={styles.timeline} aria-label="Förhandsvisning av idleförlopp">{plan.map((segment, index) => <span key={`${segment.startMs}-${index}`} className={segment.kind === 'variant' ? styles.variantSegment : styles.baseSegment} style={{ width: `${(segment.endMs - segment.startMs) / 600}%` }} title={`${Math.round(segment.startMs / 100) / 10}s · ${shown(segment.videoId).text}`} />)}</div><ol className={styles.log}>{events.length ? events.map((entry, index) => <li key={`${entry.at}-${entry.label}-${index}`}><time>{(entry.at / 1000).toFixed(1)} s</time><code>{entry.label}</code><span title={shown(entry.videoId).title}>{shown(entry.videoId).text}</span></li>) : <li>Inga automatiska variationer under minuten.</li>}</ol></> : null}
       </details>
     </section>
 
     <section className={styles.player} aria-label="Idleklippspelare">
-      <div><span className="eyebrow">LOKALT VIDEOPROV</span><strong>{fileLabel(preview, previewId)}</strong><small>Provet styr inte spelet och stoppas när en annan spelare tar över.</small></div>
+      <div><span className="eyebrow">LOKALT VIDEOPROV</span><strong title={shown(previewId).title}>{shown(previewId).text}</strong><small>Provet styr inte spelet och stoppas när en annan spelare tar över.</small></div>
       {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
         onBusyChange(true);

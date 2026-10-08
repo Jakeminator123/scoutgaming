@@ -2,10 +2,12 @@ import { createLegacyProject as createSeedProject } from './fixtures/legacy-proj
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import schema from '../schemas/studio.schema.json' with { type: 'json' };
+import seedDocument from '../policies/project.seed.json' with { type: 'json' };
 import {
   validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
-  StudioValidationError, isAssetCompatible
+  StudioValidationError, isAssetCompatible, createSeedProject as createStudioSeed,
+  normalizeProject, defaultPresentationLane
 } from '../lib/studio-model.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 
@@ -252,6 +254,59 @@ test('old projects without idle policy remain readable while edited policies are
   assert.equal(validateProject(legacy), legacy);
   const invalid = createSeedProject(); invalid.idlePolicy.base[0].weight = 80;
   assert.throws(() => validateProject(invalid), /idlePolicy.*summera till 100/);
+});
+
+test('seed is valid with the default lane and a saved project without lanes stays valid', () => {
+  assert.equal(schema.properties.schemaVersion.const, 1);
+  assert.equal(schema.required.includes('lanes'), false);
+  assert.equal(schema.required.includes('clipLabels'), false);
+  assert.deepEqual(schema.$defs.openClawMode.enum, ['off', 'rules', 'random', 'shadow', 'active']);
+  assert.deepEqual(schema.$defs.laneBackground.properties.mode.enum, ['baked', 'image', 'video']);
+  for (const key of Object.keys(seedDocument)) assert.ok(schema.properties[key], key);
+  assert.equal(Object.hasOwn(seedDocument, 'lanes'), false);
+  const raw = structuredClone(seedDocument);
+  assert.equal(validateProject(raw), raw);
+  assert.equal(Object.hasOwn(raw, 'lanes'), false);
+  const seeded = createStudioSeed();
+  assert.equal(validateProject(seeded), seeded);
+  assert.equal(seeded.schemaVersion, 1);
+  assert.deepEqual(seeded.lanes, [defaultPresentationLane()]);
+  const legacy = createSeedProject();
+  assert.equal(Object.hasOwn(legacy, 'lanes'), false);
+  const before = structuredClone(legacy);
+  assert.equal(validateProject(legacy), legacy);
+  assert.deepEqual(legacy, before);
+  const normalized = normalizeProject(structuredClone(legacy));
+  assert.deepEqual(normalized.lanes, [defaultPresentationLane()]);
+  assert.equal(normalized.schemaVersion, 1);
+  const emptied = structuredClone(legacy);
+  emptied.lanes = [];
+  assert.deepEqual(normalizeProject(emptied).lanes, []);
+  assert.equal(validateProject(emptied).lanes.length, 0);
+});
+
+test('invalid lane id, unknown dealer, allowed outside dealers, duplicate ids and unknown openclaw mode are rejected', () => {
+  const base = () => normalizeProject(structuredClone(createSeedProject()));
+  const invalidId = base();
+  invalidId.lanes[0].id = 'original';
+  assert.throws(() => validateProject(invalidId), /lane-id/);
+  const unknownDealer = base();
+  unknownDealer.lanes[0].dealers = ['nope'];
+  assert.throws(() => validateProject(unknownDealer), /okänd dealer/);
+  const outside = base();
+  outside.lanes[0].layers.dealer.allowed = ['vera'];
+  assert.throws(() => validateProject(outside), /lane\.dealers/);
+  const duplicate = base();
+  duplicate.lanes.push(structuredClone(duplicate.lanes[0]));
+  assert.throws(() => validateProject(duplicate), /dubblerat ID/);
+  const mode = base();
+  mode.lanes[0].openclaw.probe = 'auto';
+  assert.throws(() => validateProject(mode), /okänt läge/);
+  const labels = base();
+  labels.clipLabels = { '11111111-1111-4111-8111-111111111111': 'Min tagning' };
+  assert.equal(validateProject(labels).clipLabels['11111111-1111-4111-8111-111111111111'], 'Min tagning');
+  labels.clipLabels['11111111-1111-4111-8111-111111111111'] = 'x'.repeat(81);
+  assert.throws(() => validateProject(labels), /clipLabels/);
 });
 
 test('lab assets cannot reverse a published deal or replace a reveal', () => {

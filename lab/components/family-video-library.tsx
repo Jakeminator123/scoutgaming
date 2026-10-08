@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { VideoInventory } from './studio-types';
+import { clipLabel } from '../lib/clip-label.mjs';
 import { mediaFamilyFolder, mediaSituationLabel } from '../lib/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
 import type { StudioProject } from '../lib/studio-model.mjs';
@@ -42,8 +43,14 @@ export function FamilyOverview({ inventory, project, dealerId, onOpen, hrefFor }
   </section>;
 }
 
-export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, refreshing, familyType }: {
-  inventory: VideoInventory; dealerId: string; onOpen: (eventId: string, situation: string) => void; onRefresh: () => void; refreshing: boolean; familyType?: 'deal' | 'speak';
+const namedClip = (video: { id: string; familyId?: string; role?: string; relativePath?: string; fileName?: string; classification?: { label?: string } } | undefined, id: string, role: string, clipLabels?: Record<string, string>) => {
+  const legacy = video?.classification?.label || video?.fileName || id;
+  const name = clipLabel({ id: video?.id ?? id, familyId: video?.familyId, role: video?.role ?? role, relativePath: video?.relativePath }, clipLabels);
+  return { name, legacy, text: name === legacy ? legacy : `${name} · ${legacy}` };
+};
+
+export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, refreshing, familyType, clipLabels }: {
+  inventory: VideoInventory; dealerId: string; onOpen: (eventId: string, situation: string) => void; onRefresh: () => void; refreshing: boolean; familyType?: 'deal' | 'speak'; clipLabels?: Record<string, string>;
 }) {
   const [filter, setFilter] = useState('');
   const [previewId, setPreviewId] = useState('');
@@ -54,11 +61,13 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
     && (`${mediaFamilyFolder(family)} ${familyLabel(family)} ${family.situation}`.toLocaleLowerCase('sv').includes(needle)
       || [...family.standardIds, ...family.variantIds].some(id => {
         const video = videosById.get(id);
-        return video && `${video.label} ${video.fileName} ${video.id}`.toLocaleLowerCase('sv').includes(needle);
+        const named = namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels);
+        return video && `${named.text} ${video.label} ${video.fileName} ${video.id}`.toLocaleLowerCase('sv').includes(needle);
       })));
   const selectedVideo = videosById.get(previewId);
   const preview = selectedVideo?.available ? selectedVideo : undefined;
-  const previewName = preview?.classification?.label || preview?.fileName;
+  const previewNamed = preview ? namedClip(preview, preview.id, preview.role ?? 'standard', clipLabels) : undefined;
+  const previewName = previewNamed?.text;
   return <section aria-label="Videomappar"><div className={styles.libraryHeader}><div><h2>{familyType === 'deal' ? 'Kort & deal' : familyType === 'speak' ? 'Fasta repliker / ljud' : 'Dina videomappar'}</h2><p className={styles.count}>{families.length} situationer · välj klipp eller inställningar</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Läser…' : 'Läs in nya filer'}</button></div>
     <details className={styles.situation}><summary>Lägg till eller stäng av klipp</summary>
       <p>Välj <strong>Ladda upp klipp</strong> för att lägga till en MP4 eller WebM i rätt familj. Öppna sedan Inställningar för att aktivera varianten. Idleklipp läggs till i Idle-policyn.</p>
@@ -73,7 +82,7 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
         <header className={styles.cardHeader}><h3>{familyLabel(family)}</h3><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></header>
         <div className={styles.cardActions}><button type="button" disabled={!standardId} aria-label={`Spela standard · ${familyLabel(family)}`} onClick={() => standardId && setPreviewId(standardId)}>Spela standard</button><button type="button" aria-label={`Inställningar · ${familyLabel(family)}`} onClick={() => onOpen(family.eventId, family.situation)}>Inställningar</button></div>
         <details className={styles.files}><summary>Filer · {family.standardIds.length + family.variantIds.length}</summary><code>{mediaFamilyFolder(family)}/</code>
-          {[...family.standardIds, ...family.variantIds].map(id => { const video = videosById.get(id); return <button key={id} type="button" className="text-button" disabled={!video?.available} onClick={() => setPreviewId(id)}>{video?.classification?.label || video?.fileName || id} · {family.standardIds.includes(id) ? 'standard' : video?.source === 'upload' ? 'uppladdad variant' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
+          {[...family.standardIds, ...family.variantIds].map(id => { const video = videosById.get(id); const named = namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels); return <button key={id} type="button" className="text-button" title={id} disabled={!video?.available} onClick={() => setPreviewId(id)}>{named.text} · {family.standardIds.includes(id) ? 'standard' : video?.source === 'upload' ? 'uppladdad variant' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
         </details>
       </article>;
     })}</div>

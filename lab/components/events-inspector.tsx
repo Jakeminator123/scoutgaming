@@ -6,6 +6,7 @@ import { VariantSelectionEditor } from './variant-selection';
 import { VariantVideoBinding } from './video-library';
 import { studioHref } from './studio-types';
 import type { MediaFamily, VideoInventory } from './studio-types';
+import { clipLabel } from '../lib/clip-label.mjs';
 import { upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
 import { addVariant, allowedPathDescriptors, isAssetCompatible, MAX_ALTERNATIVES, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
 import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../lib/studio-model.mjs';
@@ -163,14 +164,19 @@ export function EventsInspector({
       </div> : editorTab === 'triggers' ? triggerEditor : <div>
         {dealerId !== 'astrid' ? <p className="helper">Varianter för {dealerLabel} sparas i projektet men används inte av spelet ännu.</p> : null}
         <div className="variant-list">
-          {line.variants.map((item, index) => <button type="button" key={item.id} className={`variant-option ${variant.id === item.id ? 'active' : ''}`} onClick={() => selectVariant(item.id)}>
+          {line.variants.map((item, index) => {
+            const bound = item.videoGenerationId ? videos.videos.find(row => row.id === item.videoGenerationId) : undefined;
+            const boundName = bound ? clipLabel({ id: bound.id, familyId: bound.familyId, role: bound.role, relativePath: bound.relativePath }, project.clipLabels) : '';
+            const boundText = boundName && boundName !== item.label ? ` · ${boundName}${bound?.fileName && bound.fileName !== boundName ? ` · ${bound.fileName}` : ''}` : '';
+            return <button type="button" key={item.id} className={`variant-option ${variant.id === item.id ? 'active' : ''}`} title={item.videoGenerationId ?? item.id} onClick={() => selectVariant(item.id)}>
             <span className="variant-number">{String(index).padStart(2, '0')}</span>
             <span>
               <strong>{item.label}</strong>
-              <small>{item.id === line.baselineVariantId ? 'Standard · alltid tillåten' : result ? eligibleIds.has(item.id) ? 'Tillåten i senaste testet' : 'Ej valbar i detta läge' : `${item.triggerIds.length} triggers · prioritet ${item.priority}`}</small>
+              <small>{item.id === line.baselineVariantId ? 'Standard · alltid tillåten' : result ? eligibleIds.has(item.id) ? 'Tillåten i senaste testet' : 'Ej valbar i detta läge' : `${item.triggerIds.length} triggers · prioritet ${item.priority}`}{boundText}</small>
             </span>
             {item.id === line.baselineVariantId ? <span className="baseline-mark" title="Skyddad standardvariant">◇</span> : null}
-          </button>)}
+          </button>;
+          })}
         </div>
         <button type="button" className="text-button add-variant" disabled={line.variants.length >= MAX_ALTERNATIVES + 1} onClick={addAlternative}>
           ＋ Lägg till variant <span>{line.variants.length - 1}/{MAX_ALTERNATIVES}</span>
@@ -190,6 +196,7 @@ export function EventsInspector({
             originalDefault={isBaseline ? originalDefault : null}
             onBind={id => updateVariant({ videoGenerationId: id })}
             onInspect={inspectVideos}
+            clipLabels={project.clipLabels}
           />
           {!isBaseline ? <VariantSelectionEditor variant={variant} onChange={selection => updateVariant({ selection })} /> : null}
           <details className="reserve-editor">

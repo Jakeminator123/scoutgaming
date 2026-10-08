@@ -82,7 +82,7 @@ test('focused workspace uses dealer chips, three categories and links instead of
   assert.match(html, /href="\/control\/zones"/);
   assert.match(html, /Öppna Bakgrundszoner →/);
   assert.match(html, /href="\/control\/probe"/);
-  assert.match(html, /Öppna Talgranskning →/);
+  assert.match(html, /Öppna Probe →/);
   assert.match(html, /href="\/control\/activity"/);
   assert.match(html, /Öppna Uppspelning →/);
   assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
