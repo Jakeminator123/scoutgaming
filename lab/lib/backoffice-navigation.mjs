@@ -22,3 +22,7 @@ export const BACKOFFICE_GROUPS = Object.freeze([
   { id: 'finance', label: 'Betalningar & journal', sections: ['pay'] },
   { id: 'media-review', label: 'Talgranskning', sections: ['voice'] },
 ].map(group => Object.freeze({ ...group, sections: Object.freeze(group.sections) })));
+
+export function backofficeGroupId(value) {
+  return BACKOFFICE_GROUPS.some(group => group.id === value) ? value : 'operations';
+}

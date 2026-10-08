@@ -43,7 +43,7 @@ test('speech review keeps the probe editor, a disabled save button and no old st
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlProbePage, props));
   assert.match(html, /\/\/ DRIFT/);
-  assert.match(html, /<h1>Talgranskning<\/h1>/);
+  assert.match(html, /<h1>Probe<\/h1>/);
   assert.match(html, /Astrids egna tal när spelaren är inaktiv/);
   assert.match(html, /aria-label="Probe för Astrid"/);
   assert.match(html, /<button[^>]*class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara projekt<\/button>/);
@@ -60,6 +60,6 @@ test('probe route loads studio data for /control/probe and tolerates a missing s
   assert.match(source, /props\?\.searchParams/);
   assert.match(source, /firstQueryValue\(query\.dealer\)/);
   assert.match(source, /firstQueryValue\(query\.event\)/);
-  assert.match(source, /title: 'Talgranskning · Croupier Studio'/);
+  assert.match(source, /title: 'Probe · Croupier Studio'/);
   assert.match(source, /dynamic = 'force-dynamic'/);
 });

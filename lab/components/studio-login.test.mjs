@@ -38,6 +38,9 @@ test('login render has no request, accessible username/password/reset forms and 
   const html=renderToStaticMarkup(h.render({authBase:'/studio/api/auth',resetAvailable:true,fetchImpl:async()=>{calls++;throw Error('no');}}));
   assert.equal(calls,0);assert.match(html,/autoComplete="username"|autoComplete="current-password"|autocomplete="username"/);
   assert.match(html,/Glömt lösenordet/);assert.match(html,/samma Croupier-konto och lösenord/);assert.match(html,/Spelarkonton har bara tillgång till spelet/);assert.doesNotMatch(html,/localStorage|sessionStorage|type="hidden"/);
+  assert.match(html,/class="sg-btn sg-btn-primary"[^>]*>Logga in/);
+  assert.match(html,/class="sg-btn sg-btn-secondary"[^>]*>Begär återställningslänk/);
+  assert.equal((html.match(/sg-btn-primary/g) ?? []).length, 1);
 });
 
 test('login sends one event only, clears password DOM immediately and navigates exact allowlisted page',async()=>{

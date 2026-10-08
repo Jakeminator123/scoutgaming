@@ -5,3 +5,4 @@ export interface BackofficeGroup {
   readonly sections: readonly string[];
 }
 export const BACKOFFICE_GROUPS: readonly BackofficeGroup[];
+export function backofficeGroupId(value: string | undefined): string;

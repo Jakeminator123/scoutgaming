@@ -42,14 +42,15 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/zones', 'Bakgrundszoner');
   expectLabel('/events', 'Händelser');
   expectLabel('/control/events', 'Händelser');
-  expectLabel('/probe', 'Talgranskning');
-  expectLabel('/control/probe', 'Talgranskning');
+  expectLabel('/probe', 'Probe');
+  expectLabel('/control/probe', 'Probe');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Administration');
   expectLabel('/openclaw', 'Agentmodeller');
   expectLabel('/operator-chat', 'Operatörschatt');
   expectLabel('/control/operator-chat', 'Operatörschatt');
-  expectLabel('/tree', 'Händelser → klipp');
+  expectLabel('/tree', 'Händelser');
+  expectLabel('/control/tree', 'Händelser');
   expectLabel('/activity', 'Uppspelning');
   expectLabel('/guide', 'Guide & hjälp');
 });

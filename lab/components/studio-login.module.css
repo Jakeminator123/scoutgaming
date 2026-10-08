@@ -1,0 +1,82 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--sg-bg);
+  color: var(--sg-text);
+  font-family: var(--sg-font-body), Inter, system-ui, sans-serif;
+}
+
+.card {
+  width: min(100%, 28rem);
+  margin: 0;
+  padding: 28px 24px;
+  background: var(--sg-surface);
+  color: var(--sg-text);
+  border: 1px solid var(--sg-border);
+  border-radius: 12px;
+}
+
+.card h1 {
+  margin: 0 0 8px;
+  font-family: var(--sg-font-display), "Space Grotesk", system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--sg-text);
+}
+
+.card p,
+.card summary {
+  margin: 8px 0;
+  color: var(--sg-muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.notice {
+  color: var(--sg-text);
+  font-size: 14px;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  color: var(--sg-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form input {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--sg-field-line);
+  background: var(--sg-field);
+  color: var(--sg-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.form button {
+  justify-self: start;
+}
+
+.card a {
+  color: var(--sg-accent-text);
+}
+
+.card :is(button, input, summary, a):focus-visible {
+  outline: 2px solid var(--sg-lime);
+  outline-offset: 2px;
+}

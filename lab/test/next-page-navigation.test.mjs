@@ -141,9 +141,23 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
           requests.push(request.url); return {project: {fixture: true}, videos: {videos: []}, status: {configured: false}};
         } },
       });
+      function TreeSurface() { return null; }
+      function EventsSurface() { return null; }
+      const eventsPage = load('../app/control/events/page.tsx', {
+        '@/components/control-tree-page': { ControlTreePage: TreeSurface },
+        '@/components/control-events-page': { ControlEventsPage: EventsSurface },
+        '@/components/studio-types': routes,
+        '../../control-studio-data': dataModule,
+      });
+      const overview = await eventsPage.default({ searchParams: Promise.resolve({}) });
+      assert.equal(overview.type, TreeSurface, '/control/events');
+      assert.equal(requests.at(-1), 'http://game.fixture.invalid/control/events');
+      const editor = await eventsPage.default({ searchParams: Promise.resolve({ event: 'idle.ready', dealer: ['mei'], variant: 'v2' }) });
+      assert.equal(editor.type, EventsSurface);
+      assert.equal(editor.props.initialDealerId, 'mei');
+      assert.equal(editor.props.initialEventId, 'idle.ready');
+      assert.equal(editor.props.initialVariantId, 'v2');
       const surfaces = [
-        ['../app/control/tree/page.tsx', '@/components/control-tree-page', 'ControlTreePage', '/control/tree'],
-        ['../app/control/events/page.tsx', '@/components/control-events-page', 'ControlEventsPage', '/control/events'],
         ['../app/control/videos/page.tsx', '@/components/control-videos-page', 'ControlVideosPage', '/control/videos'],
         ['../app/control/activity/page.tsx', '@/components/control-activity-page', 'ControlActivityPage', '/control/activity'],
         ['../app/control/guide/page.tsx', '@/components/control-guide-page', 'ControlGuidePage', '/control/guide'],
@@ -220,6 +234,32 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
         return true;
       });
       assert.equal(requests.at(-1), 'http://studio.fixture.invalid/control/operator-chat');
+
+      const tree = load('../app/control/tree/page.tsx', {
+        'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
+        '@/lib/lab-url.mjs': { publicAbsoluteUrl: require('../lib/lab-url.mjs').publicAbsoluteUrl },
+        '@/lib/ui-server': { authorizeUiPage: async request => { requests.push(request.url); } },
+      });
+      await assert.rejects(tree.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'idle.ready', variant: 'v2', extra: 'kept' }) }), error => {
+        assert.equal(navigation.getRedirectStatusCodeFromError(error), 308);
+        const url = new URL(navigation.getURLFromRedirectError(error));
+        assert.equal(url.protocol, 'https:');
+        assert.equal(url.host, 'game.fixture.invalid');
+        assert.equal(url.pathname.startsWith('/studio'), false);
+        assert.equal(url.pathname, '/control/events');
+        assert.equal(url.searchParams.get('dealer'), 'vera');
+        assert.equal(url.searchParams.get('event'), 'idle.ready');
+        assert.equal(url.searchParams.get('variant'), 'v2');
+        assert.equal(url.searchParams.get('extra'), 'kept');
+        return true;
+      });
+      await assert.rejects(tree.default(), error => {
+        const url = new URL(navigation.getURLFromRedirectError(error));
+        assert.equal(navigation.getRedirectStatusCodeFromError(error), 308);
+        assert.equal(url.pathname, '/control/events');
+        assert.equal(url.search, '');
+        return true;
+      });
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;

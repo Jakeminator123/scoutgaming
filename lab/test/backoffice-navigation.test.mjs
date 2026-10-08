@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminSectionPath } from '../lib/studio-admin-contract.mjs';
 
 test('all Backoffice surfaces keep their native administration destination', () => {
@@ -15,6 +15,10 @@ test('six native Backoffice groups cover every active surface exactly once', () 
   assert.equal(BACKOFFICE_GROUPS.length, 6);
   assert.equal(ids.length, new Set(ids).size);
   assert.deepEqual([...ids].sort(), BACKOFFICE_SECTIONS.map(section => section.id).sort());
+  assert.equal(backofficeGroupId('accounts'), 'accounts');
+  assert.equal(backofficeGroupId('media-review'), 'media-review');
+  assert.equal(backofficeGroupId('missing'), 'operations');
+  assert.equal(backofficeGroupId(undefined), 'operations');
   for (const group of BACKOFFICE_GROUPS) {
     assert.ok(Object.isFrozen(group));
     assert.ok(Object.isFrozen(group.sections));
