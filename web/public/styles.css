@@ -1104,3 +1104,11 @@ body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); 
   box-shadow: 0 0 0 3px rgba(255,176,32,.28), 0 3px 10px rgba(0,0,0,.55);
 }
 .cal-handle-hand::before { background: linear-gradient(rgba(255,176,32,.9), rgba(255,176,32,0)); }
+
+/* Background 0 -> table 1 -> exact full-frame dealer 2 -> authoritative cards 4. */
+.presentation-plane {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;}
+.presentation-background {z-index:0;}
+.presentation-table {z-index:1;}
+#scene[data-dealer-layer-enabled="false"] .local-presentation-film,
+#scene[data-dealer-layer-enabled="false"] #dealer-wrap,
+#scene[data-dealer-layer-enabled="false"] #dealer-hands-wrap {visibility:hidden;}

@@ -11,6 +11,17 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
 **En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
+Studioflödet är **Dealers & klipp → Förhandsvisning → Lanes**. I Förhandsvisning
+väljer du dealer, bord och bakgrund i samma sparade lane. Lagerbiblioteket tar
+bild/video för bord och bakgrund när den sparade studion är ansluten. Spara lanen,
+välj den på Lanes och använd **Exportera lanes (JSON)** eller **Publicera paket**
+till ett bolag. JSON-filen är ett manifest med filreferenser; medier följer inte
+med som en nedladdad ZIP. Bolagspaketet fryser tillåtna lager och dealer-val.
+Partnerns designval begränsas till en lane och de rättigheter som publicerats.
+Godkända fullbildsfilmer innehåller redan bord och bakgrund; de separata valen
+ändrar inte filmens pixlar. Frilagda dealerpaket behöver fortfarande godkännas
+i spelets repetition. Paow/Dragge-provet finns kvar under Förhandsvisning.
+
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
 välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov för marker, kort, bord och bakgrund.
 Lane-notisen och meddelandet vid ändring visar den gränsen.

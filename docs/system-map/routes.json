@@ -277,7 +277,7 @@
         "lab/components/control-preview-page.tsx",
         "test-videoeditor/README.md"
       ],
-      "limitation": "Preview of the three-layer player (Paow, Dragge, 720p; media originally from the deleted branch test-video-jakob). Media stay as files in test-videoeditor/preview/site and are served through the session-guarded /preview/[...path] handler. Not a game path; no engine, wallet, blob or database.",
+      "limitation": "Shared saved lane editor and private background/table library. Existing full-frame dealer clips remain opaque; separate Paow/Dragge preview stays under /preview. Publication freezes presentation choices; game outcomes and wallets remain server-owned.",
       "tests": [
         "lab/test/preview-prepare.test.mjs"
       ]
@@ -2910,6 +2910,37 @@
           "path": "lab/lib/studio-render-persistence.mjs",
           "line": 12
         }
+      ]
+    },
+    {
+      "id": "studio-api-layer-assets",
+      "path": "/api/layer-assets/:path*",
+      "publicPath": "/studio/api/layer-assets/:path*",
+      "methods": [
+        "GET",
+        "HEAD",
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/layer-assets/[[...path]]/route.ts",
+      "serving": "Vercel native Lab; library and prepare/commit upload",
+      "access": "Live scoped admin; exact same-origin writes and reauthorization before mutation",
+      "boundary": "Private immutable Blob paths and SHA verification. Assets are registered by CAS in the existing project JSON document; no SQL migration. Published game assets resolve only within the operator package.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/lib/layer-asset-api.mjs",
+          "line": 1
+        },
+        {
+          "path": "lab/lib/layer-upload-service.mjs",
+          "line": 1
+        }
+      ],
+      "tests": [
+        "test/layer-asset-store.mjs",
+        "test/presentation-layers.mjs"
       ]
     },
     {

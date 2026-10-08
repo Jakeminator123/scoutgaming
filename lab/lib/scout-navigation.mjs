@@ -12,13 +12,15 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Studio',
     items: Object.freeze([
       Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
-      Object.freeze({ href: '/control/videos', label: 'Klippbibliotek' }),
-      Object.freeze({ href: '/control/zones', label: 'Bakgrundszoner' }),
-      Object.freeze({ href: '/control/events', label: 'Händelser' }),
       Object.freeze({ href: '/control/preview', label: 'Förhandsvisning' }),
       Object.freeze({ href: '/control/lanes', label: 'Lanes' }),
     ]),
   }),
+  Object.freeze({ label: 'Studio · verktyg', items: Object.freeze([
+      Object.freeze({ href: '/control/videos', label: 'Klippbibliotek' }),
+      Object.freeze({ href: '/control/zones', label: 'Bakgrundszoner' }),
+      Object.freeze({ href: '/control/events', label: 'Händelser' }),
+    ]), }),
   Object.freeze({
     label: 'OpenClaw',
     items: Object.freeze([

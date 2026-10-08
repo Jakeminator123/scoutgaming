@@ -17,6 +17,7 @@ export interface NativeStudioRuntime {
   videoResponse?: (id: string, request: Request) => Promise<Response>;
   legacyControls?: (project: any) => Promise<any>;
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
+  layerUploads?: NativeStudioRuntime['uploads'];
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
   listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string }>>;
   listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;

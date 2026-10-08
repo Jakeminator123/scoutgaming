@@ -1,3 +1,4 @@
+import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
 export const GAME_LANES = Object.freeze([
@@ -204,6 +205,10 @@ export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
   const selection = { lane: dataset.gameLane, dealer: dataset.gameDealer, presentation: dataset.gamePresentation };
   const packaged = dataset.gamePackageRevision !== undefined || dataset.gameBranding !== undefined;
   const finish = () => {
+    if(dataset.gameComposition!==undefined){
+      if(typeof dataset.gameComposition!=='string'||dataset.gameComposition.length>32000)throw Error('Invalid game presentation');
+      selection.composition=validateComposition(JSON.parse(dataset.gameComposition));
+    }
     if (dataset.gameChoices !== undefined) selection.choices = gameChoicesFromDocument(dataset.gameChoices);
     return selection;
   };

@@ -74,6 +74,10 @@ const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...s
 const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope }) }) : null;
+const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
+  packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
+  privateMedia:(await import('../lab/lib/cloud-media-store.mjs')).getPrivateMedia,
+}) : null;
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
@@ -1056,6 +1060,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   const url = new URL(req.url, 'http://x');
+  if (publishedLayerAssets && url.pathname.startsWith('/api/presentation/layers/')) {
+    const response=await publishedLayerAssets(new Request(gameOrigin+req.url,{method:req.method,headers:req.headers}));
+    if(response){res.writeHead(response.status,Object.fromEntries(response.headers));if(!response.body){res.end();return;}
+      const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
+  }
   const gameRedirect = neonStudioEnabled ? gameEntryRedirect(new URL(req.url,gameOrigin),process.env) : null;
   if (gameRedirect) {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }

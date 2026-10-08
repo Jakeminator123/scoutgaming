@@ -1,3 +1,4 @@
+import {comparisonStudio} from './comparison-studio.mjs';
 import { resolve, basename } from 'node:path';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { chatWithDirector } from '../../open-claw/lab/src/openclaw.mjs';
@@ -32,7 +33,7 @@ export function connectionStatus(settings = settingsNow()) {
 
 export async function studioInitialData() {
   const [project, videos] = await Promise.all([studioStore().load(), studioVideoRegistry()]);
-  return { project, videos, status: connectionStatus() };
+  return { project, videos, status: comparisonStudio()?{configured:true,provider:'isolated-fixture',message:'Isolerad testlagring. Externa tjänster är avstängda.'}:connectionStatus() };
 }
 
 export { remoteRequest, decisionCatalog, validateVideoBindings } from '../../presentation-runtime/selection.mjs';

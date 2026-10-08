@@ -119,7 +119,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane }: { in
     <main className={styles.main}>
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
       <nav className="sg-tabs" aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
-      <p className={styles.intro}><a href={labUrl('/control/zones')}>Öppna Bakgrundszoner →</a> · <a href={labUrl('/control/probe')}>Öppna Probe →</a></p>
+      <p className={styles.intro}><a href={labUrl('/control/videos')}>Klippbibliotek och namn →</a> · <a href={labUrl('/control/events')}>Händelser och villkor →</a> · <a href={labUrl('/control/preview')}>Tre lager →</a> · <a href={labUrl('/control/zones')}>Öppna Bakgrundszoner →</a> · <a href={labUrl('/control/probe')}>Öppna Probe →</a></p>
       {uploadAvailable ? <div className={styles.save}>{saveButton}</div> : null}
       {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta lokalt med node lab/start.mjs för gemensam lagring och spelanslutning. En agent använder node lab/start.mjs --no-open. Det kostnadsfria provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}

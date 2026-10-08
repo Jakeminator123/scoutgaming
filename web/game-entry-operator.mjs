@@ -6,6 +6,7 @@
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
 import { gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
+import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
 
 export const OPERATOR_NOT_FOUND_HTML = '<!doctype html><html lang="sv"><head><meta charset="utf-8">'
   + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bolaget finns inte</title></head>'
@@ -57,17 +58,29 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     const current = context.package;
     if (!current) return { status: 200, selection: withChoices({ ...base, operator: slug }, saved, gameLanes) };
     let selection = base;
+    const frozen = readPackagePresentation(current);
     if (packageLaneIds(current.lanes, gameLanes).length) selection = gameLaneSelection(params, gameLane, gameLanes, current.lanes);
     else warnOnce(`lanes:${slug}:${current.revision}`,
       `[operator-package] ${slug} r${current.revision}: no package lane in the saved catalogue; using ${selection.lane}`);
     const lane = gameLanes.find(row => row.id === selection.lane);
-    const presentationLane = Array.isArray(saved.project?.lanes) ? saved.project.lanes.find(row => row?.id === selection.lane) : undefined;
+    const presentationLane = (frozen?.lanes ?? saved.project?.lanes)?.find(row => row?.id === selection.lane);
+    if(frozen && !presentationLane) throw Object.assign(new Error('presentation_lane_unavailable'),{statusCode:503});
     if (presentationLane) {
       const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer);
       if (dealer) selection = { ...selection, dealer };
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
-    return { status: 200, selection: withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: current.branding }, saved, gameLanes) };
+    const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: publicPackageBranding(current.branding) },
+      frozen?{project:{lanes:frozen.lanes}}:saved,gameLanes);
+    if(frozen) {
+      const layers=presentationLane.layers;
+      next.composition={schemaVersion:1,
+        background:{enabled:layers.background.enabled,mode:layers.background.mode,allowed:layers.background.allowed,default:layers.background.default},
+        table:{enabled:layers.table.enabled,allowed:layers.table.allowed,default:layers.table.default},
+        dealer:{enabled:layers.dealer.enabled,compatibility:'full-frame'},
+        assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
+    }
+    return {status:200,selection:next};
   };
 }

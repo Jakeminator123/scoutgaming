@@ -5,9 +5,11 @@ import { readStudioDocumentJson } from './studio-document-api.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'} });
-export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mutationTransaction} = {}) {
+export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mutationTransaction, baseOverride} = {}) {
   if (typeof authorize !== 'function' || !config || !['/api/admin','/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
-  const scope = validateStudioScope(config.scope), base = config.apiBase === '/api/admin' ? '/api/videos' : '/studio/api/videos';
+  const scope = validateStudioScope(config.scope), prefix = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
+  if (baseOverride !== undefined && baseOverride !== `${prefix}/layer-assets`) fail('studio_invalid_configuration');
+  const base = baseOverride ?? `${prefix}/videos`;
   async function principalFor(request) {
     const session = await authorize(request);
     if (!session || !['admin','superadmin'].includes(session.role)
@@ -48,7 +50,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         }
         fail('studio_invalid_request',400);
       }
-      if (path === `${base}/classify` && request.method === 'POST') {
+      if (baseOverride === undefined && path === `${base}/classify` && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin
           || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
         const body = await readStudioDocumentJson(request);

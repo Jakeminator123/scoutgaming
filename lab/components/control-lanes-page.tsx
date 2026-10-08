@@ -1,5 +1,6 @@
 'use client';
 
+import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
 import { useState, type FormEvent } from 'react';
 import { labBasePath } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
@@ -13,7 +14,7 @@ import type { ConnectionStatus, VideoInventory } from './studio-types';
 
 export type LaneOperatorChoice = { id: string; slug: string; name: string };
 
-const OFFLINE = 'Ingen skrivbar Neon-pool. Fixturen visas. Publicera paket och Skapa SG test game provider är avstängda tills poolen har connect().';
+const OFFLINE = 'Förhandsvisning. Publicering kräver anslutning till den sparade studion.';
 
 export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' | 'dealers'>[] | undefined, savedJson: string, dirty: boolean) {
   let saved: { id?: string }[] = [];
@@ -82,7 +83,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     try {
       const { response, payload } = await post('operator-package', { operatorId, lanes });
       if (!response.ok) {
-        setPublishError(response.status === 422 ? 'Lane-id:t finns inte i projektet.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
+        setPublishError(response.status === 422 ? 'Paketet saknar giltiga lagerfiler eller tillåtna val. Kontrollera lanen och spara.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
         return;
       }
       const next = Number(payload?.package_revision ?? payload?.packageRevision);
@@ -94,6 +95,16 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     } finally {
       setBusy('');
     }
+  }
+
+  function exportLanes() {
+    try {
+      const saved=JSON.parse(savedJson) as StudioProject;
+      if(!saved.lanes?.length)saved.lanes=[defaultPresentationLane()];
+      const pack=buildPresentationPackage(saved,publishable,saved.layerAssets??[]);
+      const url=URL.createObjectURL(new Blob([JSON.stringify(pack,null,2)],{type:'application/json'}));
+      const link=document.createElement('a');link.href=url;link.download='scoutgaming-lanes.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    } catch {setPublishError('Paketet är ofullständigt. Välj lager från biblioteket, kontrollera tillåtna val och spara projektet.');}
   }
 
   async function createDemo() {
@@ -134,7 +145,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
           <fieldset className={styles.choices}>
             <legend>Lanes</legend>
             {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
-              <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={!storeAvailable || row.unsaved}
+              <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={row.unsaved}
                 onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
               {row.id} · {row.label} · {row.dealers.join(', ')}{row.unsaved ? ' (osparad)' : ''}
             </label>) : <p>Projektet har inga lanes.</p>}
@@ -145,6 +156,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
             </select>
           </label>
           <div className={styles.actions}>
+            <button className="sg-btn sg-btn-secondary" type="button" disabled={publishable.length < 1 || dirty} onClick={exportLanes}>Exportera lanes (JSON)</button>
             <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId}>Publicera paket</button>
             <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
           </div>
