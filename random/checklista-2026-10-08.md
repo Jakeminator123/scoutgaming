@@ -148,7 +148,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Rehearsal lokalt: `/blackjack?dealer=<namn>&rehearsal=1`, Play twice, fyra dealers | väntar |
 | Jakob | `LAB_PARTNER_*` vs `BETTALOTTO_PARTNER_*`: vilket namn gäller? | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |
-| Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan | väntar |
+| Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan; fem beslut om roller i `random/beslut-kevin-2026-10-08.md` | väntar |
+| Emil | Fyra beslut om nästa dealerpaket i `random/beslut-emil-2026-10-08.md`; standard i `random/meddelande-kevin-emil-2026-10-08.md` | väntar |
 | Emil | Acceptera GitHub-inbjudan | väntar |
 
 ## Beslut av orkestrator 2 (till kännedom, en rad i matrisen när de verkställs)
