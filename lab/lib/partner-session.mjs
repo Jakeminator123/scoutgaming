@@ -8,6 +8,7 @@ import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
+import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
 
 // Opaque partner sessions are stored in the existing lab_sessions table.
 // The digest is purpose-prefixed so a lab_session or bo_jwt value can never
@@ -85,7 +86,8 @@ export function rejectPartnerMethod() {
 function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
-  return json({ error: messages.get(status) }, status);
+  const reason = status === 409 && PARTNER_TEAM_CONFLICTS.includes(error?.reason) ? error.reason : null;
+  return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
   if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) fail(415);
@@ -243,7 +245,7 @@ function preparePartnerRequest(request, config) {
   let operatorSlugValue;
   if (request.method === 'GET') {
     operatorSlugValue = takeOperatorSlug(url);
-  } else if (request.method === 'POST' && partnerAction(url.pathname, config) === 'branding') {
+  } else if (request.method === 'POST' && ['branding', 'team'].includes(partnerAction(url.pathname, config))) {
     if (url.hash) fail(400);
     operatorSlugValue = takeOperatorSlug(url);
   } else if (url.search || url.hash) fail(400);
@@ -270,8 +272,8 @@ function preparePartnerRequest(request, config) {
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
   const action = partnerAction(pathname, config);
-  if (!['login', 'logout', 'snapshot', 'branding'].includes(action)) fail(404);
-  if (action === 'branding') {
+  if (!['login', 'logout', 'snapshot', 'branding', 'team'].includes(action)) fail(404);
+  if (action === 'branding' || action === 'team') {
     if (request.method !== 'GET' && request.method !== 'POST') {
       return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
@@ -316,7 +318,8 @@ async function openBrandingStore(config) {
     fail(503);
   }
 }
-async function brandingResponse(prepared, config) {
+// Session, operator and the caller's active membership, read fresh for this request.
+async function partnerOperatorContext(prepared, config) {
   const session = await authorizePartner(prepared.request, config);
   const store = await openBrandingStore(config);
   if (typeof store.getOperatorBySlug !== 'function' || typeof store.resolvePartnerContext !== 'function' || typeof store.getMembership !== 'function') fail(503);
@@ -334,16 +337,13 @@ async function brandingResponse(prepared, config) {
   const membership = await store.getMembership(operator.id, session.accountId);
   if (!membership || membership.status !== 'active' || (membership.userId && String(membership.userId) !== session.accountId)) fail(403);
   if (membership.scope && !sameOperatorScope(membership.scope, session.scope)) fail(403);
-  const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
-  const api = createPartnerBrandingApi({
-    store,
-    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
-  });
-  if (prepared.request.method === 'GET') return json(await api.read({ operatorId: operator.id }), 200, [], { vary: true });
+  return { session, store, operator, context, membership };
+}
+async function decidedPartnerContext({ session, store, operator, context, membership }) {
   if (typeof store.getRole !== 'function') fail(503);
   const role = await store.getRole(operator.id, membership.roleId);
   const scope = context.scope ?? session.scope;
-  const decided = {
+  return {
     ...context,
     scope,
     membership: {
@@ -360,6 +360,18 @@ async function brandingResponse(prepared, config) {
       scope: role.scope ?? scope,
     } : context.role,
   };
+}
+async function brandingResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const { session, store, operator } = found;
+  const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
+  const api = createPartnerBrandingApi({
+    store,
+    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
+  });
+  if (prepared.request.method === 'GET') return json(await api.read({ operatorId: operator.id }), 200, [], { vary: true });
+  const decided = await decidedPartnerContext(found);
+  const { scope } = decided;
   if (!allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id })) fail(403);
   const body = await bodyOf(prepared.request);
   keys(body, ['expectedRevision', 'branding']);
@@ -371,6 +383,18 @@ async function brandingResponse(prepared, config) {
     branding: body.branding,
   });
   return json(saved, 200, [], { vary: true });
+}
+// Invite links an existing partner account; no e-mail invitation is sent (N2.6).
+async function teamResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const { session, store } = found;
+  if (!['listRoles', 'listMemberships', 'upsertMembership'].every(name => typeof store[name] === 'function')) fail(503);
+  const decided = await decidedPartnerContext(found);
+  const api = createPartnerTeamApi({ store, boDb: config.boDb, journal: config.journal });
+  if (prepared.request.method === 'GET') return json(await api.read(decided), 200, [], { vary: true });
+  if (!api.writable(decided)) fail(403);
+  const body = await bodyOf(prepared.request);
+  return json(await api.write(decided, { actor: session.user, body }), 200, [], { vary: true });
 }
 
 export async function handlePartnerAuth(request, injected) {
@@ -389,6 +413,7 @@ export async function handlePartnerAuth(request, injected) {
       return json(snapshot, 200, [], { vary: true });
     }
     if (prepared.action === 'branding') return await brandingResponse(prepared, config);
+    if (prepared.action === 'team') return await teamResponse(prepared, config);
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     return await logout(prepared.request, body, config);
