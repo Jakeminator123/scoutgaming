@@ -70,6 +70,7 @@ run_node_tests test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-fa
 run_node_tests test/dealer-face-calibration.mjs test/dealer-face-skin.mjs test/generations-api.mjs
 run_node_tests test/native-partner-events.mjs test/bo-media-preview.mjs
 run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
+run_node_tests test/fuzz-blackjack.mjs
 run_node_tests test/local-comparison-fixture.mjs test/generation-media.mjs
 run_node_tests test/local-presentation.mjs test/local-card-overlay.mjs test/verified-video-buffer.mjs lab/test/media-family-playback.test.mjs lab/test/retire-demo-examples.test.mjs
 run_node_tests test/lissabon-profiles.mjs test/player-results.mjs lab/test/local-start.test.mjs
