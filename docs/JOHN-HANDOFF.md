@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
 | Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
-| Nivå 2 /partner | påbörjad — session finns; `branding` läses/skrivs inom lanen med CAS men kräver roller som ingen rutt ännu skapar (N2.2 promptfil); speldata ej | Sista operatörsadmin, Partnerportal |
+| Nivå 2 /partner | påbörjad — session finns; team och branding skrivs (revision som CAS, sista-admin-spärr i lagret); Bolag på `/control/lanes` skapar bolag, roller och medlemskap; kvar: e-postinbjudan N2.6, journaltabell, speldata | Skrivande partnerrutter, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby med `Spelar hos` och senaste bord/dealer från webbläsaren; redigerbar profil (namn, språk; migration `006` väntar); historikrutt; panelen Ditt bord väljer dealer och bordsfärg inom lanen (N3.4). Bakgrund är avstängd när filmen är inbakad. Valet ligger inte på kontot | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
@@ -17,6 +17,28 @@ Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Skrivande partnerrutter, 8 oktober 2026 eftermiddag: bolag, roller, team (N2.2, N2.3)
+
+Byggt på 005 och `ac936377` utan att vänta på Kevins svar (#3); ingen migration. Väntar på orkestratorns granskning.
+Nivå 1: POST `operator-create` (bolag med standardrollerna `partner-admin`, `partner-editor`,
+`partner-viewer`), `operator-role` (kända behörigheter; `team.roles.assign` bara på `partner-admin`)
+och `operator-membership` (befintligt konto med roll `partner`, revision som CAS, sista-admin-spärr).
+Kortet Bolag på `/control/lanes` listar bolag och medlemmar, skapar bolag, lägger till medlem via
+användarnamn, byter roll och stänger av. Äldre bolag som `sg-test` får rollerna med Skapa saknade
+standardroller; först med ett medlemskap som `partner-admin` eller `partner-editor` slutar
+branding-skrivningen ge 403. Nivå 2: `GET/POST /api/partner/team?operator=` (GET kräver `team.read`,
+POST dessutom `team.roles.assign`). Bjud in kopplar ett befintligt partnerkonto via e-post; ingen
+e-post skickas (N2.6). `partner-admin` är inte delegerbar, så operatören kan inte utse, degradera eller
+stänga av administratörer. Kevins `team.jsx` har ett additivt `runtime.team`; utan det renderas vyn
+som förut. Bjud in och rollbyte anropar API:t i riktig session; avstängning finns i API:t och i Bolag,
+inte i Kevins vy. Journaltabell saknas: varje skrivning ger en serverloggrad `[operator-journal]`
+(at, actor, action, operatorId, target, ingen e-post). Testat: lab `npm test` (två webbläsartester
+hoppas över som förut), `npm run typecheck`, `npm --prefix lab run build`, hela
+`.githooks/pre-commit-full` (Kevins portaltest, `test/operator-store.mjs`,
+`test/partner-access-policy.mjs`), systemkartan utan fel. Kvar: e-postinbjudan och accept-steg,
+journaltabell; en admin-409 skiljer inte sista-admin från revisionskrock; låstimeout i partner-API:t
+blir 503. Kevin godkänner rollnamn, standardbehörigheter, placering och journalformat.
 
 ## 8 oktober 2026 middag: paketet når spelet, select för fyra dealers, spelarprofil
 
