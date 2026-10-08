@@ -56,7 +56,9 @@ test('real product HTTP result survives into authenticated stream; memory forget
   });
   child.stdout.on('data', b => { output += b; }); child.stderr.on('data', b => { errors += b; });
   await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(Error('Product fixture did not start')), 10000);
+    // 30 s: server.mjs now imports the operator package reader and player surface at
+    // boot; under the full pre-commit hook the 10 s budget tripped on 8 Oct.
+    const timer = setTimeout(() => reject(Error('Product fixture did not start')), 30000);
     child.once('exit', code => { clearTimeout(timer); reject(Error(`Product fixture exited ${code}: ${errors}`)); });
     child.stdout.on('data', b => { if (String(b).includes('croupier demo on')) { clearTimeout(timer); resolve(); } });
   });
