@@ -1,0 +1,123 @@
+{
+  "asset": {
+    "animation": "celebrate",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "settle.dealerBust.standard",
+    "kind": "animation",
+    "label": "Visa resultat"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": true
+      },
+      "session": {
+        "recentLosses": 2,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": null,
+      "fileName": null,
+      "reason": "no_exact_video_2d",
+      "sha256": null,
+      "situation": null,
+      "standard": true,
+      "videoId": null
+    },
+    "mode": "rules",
+    "presentationReplay": true,
+    "reason": "deterministic_rules",
+    "requestId": "astrid-baseline:settle.dealerBust:rules:returning-two-losses",
+    "simulated": false,
+    "sourceEvent": {
+      "dealerBlackjack": false,
+      "dealerTotal": 23,
+      "hands": [
+        {
+          "box": 3,
+          "outcome": "win"
+        }
+      ],
+      "type": "settle"
+    },
+    "variantId": "astrid.settle.dealerBust.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "settle.dealerBust.standard",
+      "id": "astrid.settle.dealerBust.standard",
+      "label": "Ingen video för situationen",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "deterministic_rules",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: settle. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "settle.dealerBust · Croupiern över 21",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.settle.dealerBust.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.settle.dealerBust.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Regelmotorn väljer högst prioriterade tillåtna variant. Inget modellanrop.",
+      "stage": "rules",
+      "status": "selected"
+    },
+    {
+      "detail": "accepted",
+      "stage": "gate",
+      "status": "accepted"
+    },
+    {
+      "detail": "Ingen video för situationen · celebrate",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "Ingen video för exakt situation. 2D-reserven används.",
+      "stage": "media-family",
+      "status": "fallback"
+    }
+  ],
+  "variant": {
+    "assetId": "settle.dealerBust.standard",
+    "id": "astrid.settle.dealerBust.standard",
+    "label": "Ingen video för situationen",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": null
+  },
+  "videoGenerationId": null
+}

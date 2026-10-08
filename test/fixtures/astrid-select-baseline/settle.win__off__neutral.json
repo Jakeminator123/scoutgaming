@@ -1,0 +1,123 @@
+{
+  "asset": {
+    "animation": "celebrate",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "settle.win.standard",
+    "kind": "animation",
+    "label": "Bekräfta vinst"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": null,
+      "fileName": null,
+      "reason": "no_exact_video_2d",
+      "sha256": null,
+      "situation": null,
+      "standard": true,
+      "videoId": null
+    },
+    "mode": "off",
+    "presentationReplay": true,
+    "reason": "ai_disabled",
+    "requestId": "astrid-baseline:settle.win:off:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "dealerBlackjack": false,
+      "dealerTotal": 18,
+      "hands": [
+        {
+          "box": 3,
+          "outcome": "win"
+        }
+      ],
+      "type": "settle"
+    },
+    "variantId": "astrid.settle.win.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "settle.win.standard",
+      "id": "astrid.settle.win.standard",
+      "label": "Ingen video för situationen",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "off",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: settle. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "settle.win · Publicerad vinst",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.settle.win.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.settle.win.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: ai_disabled.",
+      "stage": "advice",
+      "status": "skipped"
+    },
+    {
+      "detail": "ai_disabled",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "Ingen video för situationen · celebrate",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "Ingen video för exakt situation. 2D-reserven används.",
+      "stage": "media-family",
+      "status": "fallback"
+    }
+  ],
+  "variant": {
+    "assetId": "settle.win.standard",
+    "id": "astrid.settle.win.standard",
+    "label": "Ingen video för situationen",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": null
+  },
+  "videoGenerationId": null
+}

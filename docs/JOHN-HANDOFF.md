@@ -18,6 +18,20 @@ Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
 
+## 8 oktober 2026 middag: paketet når spelet, select för fyra dealers, spelarprofil
+
+Tre promptagenter levererade parallellt, orkestratorn löste korsfelen och mergade.
+Spelmotorn läser operatörspaketet på `/blackjack?operator=<slug>` (lane och dealer
+begränsas till paketet, 30 s cache, okänd slug 404, utan `?operator=` oförändrad väg).
+`POST /api/presentation/select` gäller alla fyra dealers; `legacyClipPolicy` översätts till
+standardvarianter vid läsning och Astrids svar är bevisat oförändrade (baslinje 160 anrop,
+`tools/astrid-select-baseline.mjs`). Vera, Amira och Mei spelar 2D-reserv där klipp saknas
+tills nya paket finns. Spelaren kan redigera visningsnamn och språk (`PATCH /api/profile`,
+saldo serverägt) och lobbyn visar `Spelar hos`. Migration `006-player-profile.sql` väntar på
+körning mot spel-Neon, Render väntar på manuell deploy, rehearsal av tre dealers väntar på Jakob.
+Uppspelning är nedbantad till loggen; ljust läge rättat på `/partner`, guiden, chatten och
+inspektorn; demo-bolagen bor i `web/demo-operators.mjs` så servern inte importerar `lab/`.
+
 ## 8 oktober 2026 förmiddag: Lanes, clipLabels, CI-actions
 
 `/control/lanes` publicerar ett operatörspaket (POST `operator-package`) och kan skapa

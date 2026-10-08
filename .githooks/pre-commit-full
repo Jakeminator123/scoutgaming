@@ -72,6 +72,6 @@ run_node_tests test/native-partner-events.mjs test/bo-media-preview.mjs
 run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests test/fuzz-blackjack.mjs
 run_node_tests test/local-comparison-fixture.mjs test/generation-media.mjs
-run_node_tests test/local-presentation.mjs test/local-card-overlay.mjs test/verified-video-buffer.mjs lab/test/media-family-playback.test.mjs lab/test/retire-demo-examples.test.mjs
+run_node_tests test/local-presentation.mjs test/local-card-overlay.mjs test/verified-video-buffer.mjs lab/test/media-family-playback.test.mjs lab/test/retire-demo-examples.test.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs lab/test/legacy-standard-variants.test.mjs
 run_node_tests test/lissabon-profiles.mjs test/player-results.mjs lab/test/local-start.test.mjs
 run_node_tests open-claw/lab/deploy/local-session.test.mjs open-claw/lab/deploy/local-connection.test.mjs

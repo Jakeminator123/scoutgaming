@@ -1,0 +1,116 @@
+{
+  "asset": {
+    "animation": "point",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "speak.double.standard",
+    "kind": "animation",
+    "label": "Bekräfta"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": true
+      },
+      "session": {
+        "recentLosses": 2,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/speak.double/double",
+      "fileName": "double.mp4",
+      "reason": "exact_family",
+      "sha256": "89f925bb1996895db7ef51591ff72cf08d6bf54b4c40828952b59994ef246ba0",
+      "situation": "double",
+      "standard": true,
+      "videoId": "89f925bb-1996-895d-b7ef-51591ff72cf0"
+    },
+    "mode": "active",
+    "presentationReplay": true,
+    "reason": "no_advice",
+    "requestId": "astrid-baseline:speak.double:active:returning-two-losses",
+    "simulated": false,
+    "sourceEvent": {
+      "line": "double",
+      "type": "speak"
+    },
+    "variantId": "astrid.speak.double.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "speak.double.standard",
+      "id": "astrid.speak.double.standard",
+      "label": "double.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "only_standard_no_model",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: speak. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "speak.double · Dubbling bekräftad",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.speak.double.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.speak.double.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: no_advice.",
+      "stage": "advice",
+      "status": "unavailable"
+    },
+    {
+      "detail": "no_advice",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "double.mp4 · point",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/speak.double/double → double.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "speak.double.standard",
+    "id": "astrid.speak.double.standard",
+    "label": "double.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "89f925bb-1996-895d-b7ef-51591ff72cf0"
+  },
+  "videoGenerationId": "89f925bb-1996-895d-b7ef-51591ff72cf0"
+}

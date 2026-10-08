@@ -1,0 +1,115 @@
+{
+  "asset": {
+    "animation": "idle",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "idle.ready.standard",
+    "kind": "animation",
+    "label": "Vänta"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/idle.ready/ready",
+      "fileName": "idle_still_f73_s302.mp4",
+      "reason": "exact_family",
+      "sha256": "4a459446ba3c007504abff6ed0b501a4c6e9355897cad3090f44a606186ef5ad",
+      "situation": "ready",
+      "standard": true,
+      "videoId": "4a459446-ba3c-0075-04ab-ff6ed0b501a4"
+    },
+    "mode": "off",
+    "presentationReplay": true,
+    "reason": "ai_disabled",
+    "requestId": "astrid-baseline:idle.ready:off:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "type": "idle"
+    },
+    "variantId": "astrid.idle.ready.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "idle.ready.standard",
+      "id": "astrid.idle.ready.standard",
+      "label": "idle_still_f73_s302.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "off",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: idle. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "idle.ready · Bordet väntar",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.idle.ready.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.idle.ready.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: ai_disabled.",
+      "stage": "advice",
+      "status": "skipped"
+    },
+    {
+      "detail": "ai_disabled",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "idle_still_f73_s302.mp4 · idle",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/idle.ready/ready → idle_still_f73_s302.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "idle.ready.standard",
+    "id": "astrid.idle.ready.standard",
+    "label": "idle_still_f73_s302.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "4a459446-ba3c-0075-04ab-ff6ed0b501a4"
+  },
+  "videoGenerationId": "4a459446-ba3c-0075-04ab-ff6ed0b501a4"
+}

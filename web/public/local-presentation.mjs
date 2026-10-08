@@ -66,7 +66,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   let idleRun = 0, idleError = null;
   function resumeIdle() {
-    if (closed || action || speech || document.hidden) return;
+    if (dealerId !== 'astrid' || closed || action || speech || document.hidden) return;
     const clip = idle.snapshot().clip;
     if (!clip || clip.playId === idleRun) return;
     presentationKind = 'idle'; onBusy();

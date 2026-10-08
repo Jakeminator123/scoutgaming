@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
+import { normalizeProject } from '../../lab/lib/studio-model.mjs';
 import {
   StudioStorageError, studioStorageFailure, validateStudioScope, validateRevision,
   validateActor, validateDocumentValue, canonicalStudioJson,
@@ -144,7 +145,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
   }
   const api = {
     scope, readSaved,
-    async readProject() { return (await readSaved()).project; },
+    async readProject() { return normalizeProject((await readSaved()).project, { allowIncompatibleAnimations: true, preserveMissingLanes: true }); },
     async readAdministration() { const saved = await readSaved(); return freeze({ kind: 'administration', revision: saved.administrationRevision, value: saved.administration }); },
     async readGameConfiguration() {
       const saved = await readSaved();

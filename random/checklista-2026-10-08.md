@@ -66,7 +66,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | C3 | Förslag: ett system, flytt av frekvens per klipp, vad användaren förlorar/ersättning | klart: `random/k2-forslag-2026-10-08.md` | brief K steg 2 | K |
 | C4 | Jakobs go på C3 | klart 02:49 ("kör enligt rekommendationerna") | beslut 49–53 | – |
 | C5a | Genomför 3a: rad 37, 17b, lane-typ, klippnamn, fuzz, `/control/preview` | klart natt 8 okt (S1–S4) | K2 | K |
-| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | **väntar på dagtid med Jakob**; promptfil `random/prompt-C5b-select-fyra-dealers.md` (Opus) | K2 | K |
+| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | kod inne 8 okt 12:35: select för astrid/vera/amira/mei; `legacyClipPolicy` → varianter vid läsning (fältet kvar, disk orörd tills Spara); `local` för annan dealer bara om lanen är portrait för henne. Jakob 12:28: `think`→turn, `gest`→settle godkända; `headTilt`/`deal`/`dealWatch` urval av. Astrid bevisat orörd: baslinje 160 anrop HEAD = arbetsträd (C5c). **Rehearsal Vera/Amira/Mei kvar** (visuell acceptans; de spelar 2D-reserv tills Emils paket, T7) | K2 | K |
+| C5c | Astrid-baslinje för select: 16 events × 5 lägen × 2 kontexter | klart: `tools/astrid-select-baseline.mjs` (`--write` kräver Jakobs ok), test i hooken | C5b | K |
 | C6 | Bakgrund och probe in i samma modell | kvar | brief K steg 4 | K |
 | C7 | Varianter/villkor för Vera, Amira, Mei i spelet (L19) | kvar | lösa trådar | K |
 | C8 | Zoner styr spelets bakgrund (L16) | kvar; blir del av D-lagret nedan | lösa trådar | K/T |
@@ -101,7 +102,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
 | L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | live i prod 8 okt 10:52 (S2): fixturens tre bolag + länk till `/partner/{slug}`; spelare per bolag väntar N2.4; riktig lista väntar N2.2 | matris 44 | Lane |
 | L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
-| L8 | Spelmotorn läser `operator_packages` | promptfil `random/prompt-L8-spelmotorn-laser-paket.md` (Opus/Codex, Jakob kör) | L2 | Lane |
+| L8 | Spelmotorn läser `operator_packages` | kod inne `19f8073a`: `/blackjack?operator=<slug>` begränsar lane+dealer till paketet, 30 s cache, okänd slug 404, utan `?operator=` byte-identiskt. Gäller Renders `/blackjack`; Vercels `/play/blackjack` läser inte paketet än. Render-deploy + Neon-rättighet för `operators`/`operator_packages` väntar (Jakob) | L2 | Lane |
 
 ## N2. Nivå 2 (operatör)
 
@@ -120,8 +121,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | N3.1 | Lobby, profil, historik | klart | – | – |
-| N3.2 | Operatörskontext i lobbyn (L13) | promptfil `random/prompt-N3-spelarens-profil-och-bolag.md` (grok fast) | lösa trådar | Lane |
-| N3.3 | Redigerbar profil | samma promptfil som N3.2 | L13 | N3 |
+| N3.2 | Operatörskontext i lobbyn (L13) | kod inne `19f8073a`: `Spelar hos` från `?operator=`/localStorage via `GET /api/operators/<slug>`; Render-deploy väntar | lösa trådar | Lane |
+| N3.3 | Redigerbar profil | kod inne `19f8073a`: `PATCH /api/profile` (namn 2–40, språk sv/en; saldo serverägt). **Migration `ops/neon-game/006-player-profile.sql` ska köras av Jakob mot spel-Neon före deploy**; koden tål saknade kolumner | L13 | N3 |
 | N3.4 | Spelarens val: bordsfärg, bakgrund, dealer (T3–T5) | kvar | nytt | Lane |
 | N3.5 | Render-deploy av `/api/history` och `/bo`-redirects (L7) | väntar (Jakob: manuell deploy) | lösa trådar | – |
 
@@ -139,7 +140,11 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Eget inlogg till orkestratorn (sa 10:52 "du ska ha inlogg själv") – skapa ett admin-konto `orkestrator` under Konton & roller när det passar; inga hemligheter i chatt eller Git | väntar |
 | Jakob | Ta bort `LLM_LOGIN_UN`/`LLM_LOGIN_PW` ur Vercel (ingen kod läser dem; panelgranskning antecknad i `docs/ENVIRONMENT-VARIABLES.md`) | väntar |
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
-| Jakob | Kör promptfilerna `random/prompt-L8-*.md` (Opus/Codex), `prompt-C5b-*.md` (Opus, med dig), `prompt-N3-*.md` (grok fast) i egna agenter | väntar |
+| Jakob | Kör promptfilerna L8, C5b, N3 i egna agenter | klart 12:05; alla tre levererade och mergade |
+| Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar |
+| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | väntar |
+| Jakob | Rehearsal lokalt: `/blackjack?dealer=<namn>&rehearsal=1`, Play twice, fyra dealers | väntar |
+| Jakob | `LAB_PARTNER_*` vs `BETTALOTTO_PARTNER_*`: vilket namn gäller? | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |
 | Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan | väntar |
 | Emil | Acceptera GitHub-inbjudan | väntar |
