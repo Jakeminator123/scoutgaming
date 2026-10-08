@@ -1,8 +1,9 @@
 import { lstat } from 'node:fs/promises';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 
-const labRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// Same cwd rule as the other lab servers (zone-reference, original-media): the
+// bundled import.meta.url does not point at the traced preview-build on Vercel.
+const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export const previewBuildDirectory = resolve(labRoot, 'preview-build');
 
 const segmentPattern = /^[A-Za-z0-9._-]+$/;

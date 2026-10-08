@@ -21,6 +21,12 @@ async function removeTemp(path) {
 
 test('reviewed preview media is hashed into the private build directory with relative paths', async () => {
   assert.match(previewBuildDirectory.replaceAll('\\', '/'), /\/lab\/preview-build$/);
+  // Resolved from cwd like the other lab servers; a bundled import.meta.url pointed
+  // outside the traced files on Vercel and /preview/index.html answered 404 (8 okt).
+  const source = await readFile(new URL('../lib/preview-files.mjs', import.meta.url), 'utf8');
+  const code = source.split(/\r?\n/).filter(line => !line.trimStart().startsWith('//')).join('\n');
+  assert.doesNotMatch(code, /import\.meta\.url|fileURLToPath/);
+  assert.match(code, /basename\(process\.cwd\(\)\) === 'lab'/);
   const output = await mkdtemp(join(tmpdir(), 'croupier-preview-'));
   const sourcePreview = await readFile(join(previewRoot, 'site/preview.js'));
   try {
