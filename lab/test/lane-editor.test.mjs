@@ -148,11 +148,11 @@ test('the editor shows the default lane suggestion, the administration hint and 
   }));
   assert.match(html, /Lägg till standardlane/);
   // No saved lanes: the publish list still offers the standard lane, which the API accepts.
-  assert.match(html, /<input type="checkbox" disabled="" name="lanes" value="mobile-phone"\/>mobile-phone · Mobile Phone Lane · astrid<\/label>/);
+  assert.match(html, /<input type="checkbox" name="lanes" value="mobile-phone"\/>mobile-phone · Mobile Phone Lane · astrid<\/label>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(html, /Administration → Spel, lanes &amp; bord/);
   assert.equal(html.match(/sg-btn-primary/g).length, 1);
-  assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*>Publicera paket<\/button>/);
+  assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
 });
 

@@ -61,7 +61,11 @@ test('Lanes renders the title and disables write buttons when no store is connec
   assert.match(html, /mobile-phone/);
   assert.match(html, /Demo North/);
   assert.match(html, /Demo South/);
-  assert.match(html, /Ingen skrivbar Neon-pool/);
+  assert.match(html, /Publicering kräver anslutning till den sparade studion/);
+  assert.match(html, />Exportera lanes \(JSON\)<\/button>/);
+  const laneChoice=html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
+  assert.ok(laneChoice);
+  assert.doesNotMatch(laneChoice,/disabled/,'offline can select saved lanes for export while publishing stays disabled');
   assert.match(html, /Administration → Spel, lanes &amp; bord/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(componentSource, /\(osparad\)/);
