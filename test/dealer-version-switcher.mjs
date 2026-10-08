@@ -87,9 +87,28 @@ test('shared rehearsal describes its own playback path without consulting the le
   const update=rehearsalSource.match(/const update = \(\) => \{[\s\S]*?\n  \};/)?.[0];
   assert.ok(update);
   const status={textContent:''};
-  vm.runInNewContext(`${update}; update();`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},bank:{goodluck:{text:'Good luck.'}},LINES:{},status});
+  vm.runInNewContext(`${update}; update();`,{rehearsalInitialized:true,speechless:false,localPresentationEnabled:true,lineSelect:{value:'goodluck'},bank:{goodluck:{text:'Good luck.'}},LINES:{},status});
   assert.match(status.textContent,/Good luck.*shared Studio presentation/);
   assert.doesNotMatch(status.textContent,/matching clip missing|voice only/);
+});
+
+test('rehearsal for a dealer without a speech bank starts the table and offers only the dealer choice',async()=>{
+  const read=rehearsalSource.match(/const bank = await fetch\(`\$\{DEALER\.base\}\/audio\/en\/bank\.json`\)[^\n]*/)?.[0];
+  const update=rehearsalSource.match(/const update = \(\) => \{[\s\S]*?\n  \};/)?.[0];
+  const review=rehearsalSource.match(/const review = async count => \{[\s\S]*?\n  \};/)?.[0];
+  const settle=rehearsalSource.match(/settleRehearsalInitialization = failed => \{[\s\S]*?\n  \};/)?.[0];
+  assert.ok(read&&update&&review&&settle);
+  // Paow's bank.json answers 404 with a plain-text body; a network error reads the same.
+  for(const fetch of [async()=>({ok:false,json:async()=>{throw new SyntaxError('not found');}}),async()=>{throw new TypeError('offline');}])
+    assert.equal(JSON.stringify(await vm.runInNewContext(`(async()=>{${read} return bank;})()`,{fetch,DEALER:{base:'dealers/paow'}})),'{}');
+  const dealerSelect={disabled:true},controls=[dealerSelect,{disabled:true},{disabled:true}],status={textContent:''};let plays=0;
+  const context=vm.createContext({speechless:true,rehearsalInitialized:false,initialControls:controls,dealerSelect,status,DEALER:{name:'Paow'},
+    localPresentationEnabled:true,lineSelect:{value:''},panel:{querySelectorAll:()=>controls},speaking:false,async play(){plays++;return true;}});
+  vm.runInContext(`${update}; ${review}; settleRehearsalInitialization = null; ${settle}; settleRehearsalInitialization(false); review(2);`,context);
+  await Promise.resolve();
+  assert.equal(status.textContent,'Paow has no recorded speech to rehearse.');
+  assert.deepEqual(controls.map(control=>control.disabled),[false,true,true]);
+  assert.equal(plays,0);
 });
 
 test('shared rehearsal requires a completed real playback result even when the speech queue swallows errors',async()=>{
@@ -112,7 +131,7 @@ test('shared rehearsal counts two completed clips and never counts a failed seco
   for(const failSecond of [false,true]){
     const controls=[{disabled:false},{disabled:false}],messages=[];let calls=0;
     const status={set textContent(value){messages.push(value);}};
-    await vm.runInNewContext(`${review}; review(2);`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status,speaking:false,update(){},
+    await vm.runInNewContext(`${review}; review(2);`,{rehearsalInitialized:true,speechless:false,localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status,speaking:false,update(){},
       async play(){calls++;if(failSecond&&calls===2)throw new Error('interrupted');return true;}});
     assert.equal(calls,2);assert.ok(controls.every(control=>control.disabled===false));
     assert.ok(messages.some(message=>message.startsWith('1/2 completed')));
@@ -129,7 +148,7 @@ test('rehearsal cannot start before server-owned table initialization and stays 
   for(const failed of [false,true]){
     const controls=[{disabled:true},{disabled:true}];let plays=0,finish,fail;
     const tableReady=new Promise((resolve,reject)=>{finish=resolve;fail=reject;});
-    const context=vm.createContext({rehearsalInitialized:false,settleRehearsalInitialization:null,initialControls:controls,tableReady,
+    const context=vm.createContext({rehearsalInitialized:false,speechless:false,settleRehearsalInitialization:null,initialControls:controls,tableReady,
       localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status:{textContent:''},speaking:false,
       update(){},async play(){plays++;return true;}});
     vm.runInContext(`${review}; ${settle}; ${bind};`,context);
