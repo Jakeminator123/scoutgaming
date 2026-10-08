@@ -1,10 +1,8 @@
 import { validateActor, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { DEMO_OPERATORS } from '../../web/demo-operators.mjs';
 
-export const PARTNER_PREVIEW_OPERATORS = Object.freeze([
-  Object.freeze({ id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }),
-  Object.freeze({ id: 'operator-demo-south', slug: 'demo-south', name: 'Demo South' }),
-  Object.freeze({ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }),
-]);
+// The list lives in web/ so the game server can serve /api/operators/<slug> without lab/.
+export const PARTNER_PREVIEW_OPERATORS = DEMO_OPERATORS;
 export const DEFAULT_PARTNER_PREVIEW_OPERATOR = PARTNER_PREVIEW_OPERATORS[0].id;
 const deny = (statusCode = 403) => { throw Object.assign(new Error('partner_preview_rejected'), { statusCode }); };
 const sameScope = (left, right) => left.environment === right.environment && left.workspaceId === right.workspaceId;

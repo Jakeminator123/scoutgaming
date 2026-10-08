@@ -61,13 +61,17 @@ export function createOperatorPackageApi({ pool, scope, project, now = () => Dat
   handlers.set('POST /studio/api/admin/operator-package', async context => {
     exactKeys(context.body, ['operatorId', 'lanes']);
     const lanes = selectedLanes(context.body.lanes, await allowedLaneIds());
-    const published = await (await store()).publishPackage({
+    const operators = await store();
+    // Publishing lanes must not wipe what the operator saved through the partner
+    // branding API; games and tables are carried forward the same way.
+    const current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
+    const published = await operators.publishPackage({
       actor: context.actor.user,
       operatorId: context.body.operatorId,
       lanes,
-      games: ['blackjack'],
-      tables: [],
-      branding: {},
+      games: current?.games?.length ? [...current.games] : ['blackjack'],
+      tables: current ? [...current.tables] : [],
+      branding: current ? structuredClone(current.branding) : {},
     });
     return {
       ok: true,

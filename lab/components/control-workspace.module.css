@@ -1,4 +1,4 @@
-.shell { padding: 32px; max-width: 1240px; line-height: 1.5; color: var(--sg-text, var(--text)); }
+.shell { padding: 32px; max-width: 1240px; line-height: 1.5; color: var(--sg-text, var(--text)); background: var(--sg-bg, var(--bg)); }
 .intro { margin-bottom: 8px; }
 .kicker {
   font-family: var(--sg-font-mono), "JetBrains Mono", ui-monospace, monospace;
