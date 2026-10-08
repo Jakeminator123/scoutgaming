@@ -141,7 +141,7 @@ jobs:
       - name: Build the real studio used by launcher regression tests
         run: npm --prefix lab run build
       - name: Install the real Next middleware used by frontend regression tests
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
           run_install: false
@@ -183,7 +183,7 @@ jobs:
           exit "$map_status"
       - name: Save version-bound map and test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: croupier-system-map-${{ github.sha }}
           retention-days: 30

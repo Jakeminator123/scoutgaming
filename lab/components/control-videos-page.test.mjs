@@ -95,6 +95,48 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
   assert.match(html, /V Vera/);
 });
 
+test('clip library shows one display-name override and keeps the single save button', () => {
+  const project = createSeedProject();
+  const clip = astridVideos.videos[0];
+  project.clipLabels = { [clip.id]: 'Eget namn' };
+  const html = render({ initialProject: project, initialVideos: astridVideos });
+  const fileName = clip.fileName;
+  assert.match(html, new RegExp(`value="Eget namn"`));
+  assert.match(html, new RegExp(`${fileName} · ${clip.id}`));
+  assert.match(html, new RegExp(`Eget namn · ${fileName}`));
+  assert.match(html, /Visningsnamn/);
+  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal(html.match(/>Spara projekt</g)?.length, 1);
+  assert.doesNotMatch(html, /clipLabels|sha256/);
+});
+
+test('an unmanaged clip keeps the override in the library detail without a second save button', () => {
+  const project = createSeedProject();
+  const id = '11111111-1111-4111-8111-111111111111';
+  const line = project.lines.find(item => item.dealerId === 'vera' && item.eventId === 'speak.goodluck');
+  line.variants[0].videoGenerationId = id;
+  project.clipLabels = { [id]: 'Kvällsnamn' };
+  const video = {
+    id, label: 'Originalnamn', fileName: 'kvall.mp4', verdict: 'unrated', bytes: 2048,
+    sha256: 'ab'.repeat(32), available: false, previewUrl: '/api/videos/x',
+    reviewStatus: 'unreviewed', integrity: 'unchecked', bindingScope: 'lab-only', dealer: 'vera',
+    classification: { label: 'Originalnamn', dealerId: 'vera', eventId: 'speak.goodluck', kind: 'speech', role: 'standard', situation: 'goodluck', notes: '' },
+  };
+  const html = render({
+    initialProject: project,
+    initialVideos: { videos: [video] },
+    initialDealerId: 'vera',
+    initialEventId: 'speak.goodluck',
+  });
+  assert.match(html, /value="Kvällsnamn"/);
+  assert.match(html, /kvall\.mp4 · 11111111-1111-4111-8111-111111111111/);
+  assert.match(html, /<h2>Kvällsnamn<\/h2>/);
+  assert.match(html, /<strong>Kvällsnamn<\/strong>/);
+  assert.match(html, /Originalnamn/);
+  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.doesNotMatch(html, /<label[^>]*>\s*Klipp/);
+});
+
 test('videos page reads optional search params and the stream lane on the server', () => {
   const source = readFileSync(new URL('../app/control/videos/page.tsx', import.meta.url), 'utf8');
   assert.match(source, /dynamic = 'force-dynamic'/);

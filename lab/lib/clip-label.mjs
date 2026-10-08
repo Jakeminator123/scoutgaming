@@ -82,15 +82,51 @@ function labelFromPath(relativePath, role) {
   return withRole(path.split('/').at(-1), role);
 }
 
+// Same bounds as studio-model clipLabelErrors. Display text only.
+const CLIP_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
+const CLIP_LABEL_MAX = 80;
+const MAX_CLIP_LABELS = 2048;
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
+
+const clipMap = value => {
+  if (value === undefined) return {};
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('clipLabels: ska vara ett objekt');
+  return { ...value };
+};
+
+// Blank text removes the key so clipLabel derives the name again.
+// A longer name is rejected; nothing is truncated and no file or hash is touched.
+export function assignClipLabel(clipLabels, clipId, text) {
+  if (typeof clipId !== 'string' || !CLIP_ID.test(clipId)) throw new Error(`clipLabels: ogiltigt klipp-id ${clipId}`);
+  const next = clipMap(clipLabels);
+  if (typeof text !== 'string' || !text.trim()) {
+    delete next[clipId];
+    return next;
+  }
+  if (text.length > CLIP_LABEL_MAX || CONTROL_CHARS.test(text)) throw new Error(`clipLabels.${clipId}: ska vara text med 1–${CLIP_LABEL_MAX} tecken`);
+  if (!Object.hasOwn(next, clipId) && Object.keys(next).length >= MAX_CLIP_LABELS) throw new Error('clipLabels: ska ha högst 2048 namn');
+  next[clipId] = text;
+  return next;
+}
+
+export function applyClipLabel(project, clipId, text) {
+  const clipLabels = assignClipLabel(project?.clipLabels, clipId, text);
+  const next = structuredClone(project);
+  if (Object.keys(clipLabels).length) next.clipLabels = clipLabels;
+  else delete next.clipLabels;
+  return next;
+}
+
 // overrides is the project's clipLabels map (clip id → text), not the whole project.
 export function clipLabel(clip, overrides) {
   const id = clip && typeof clip.id === 'string' ? clip.id : '';
   const override = overrides && id && typeof overrides[id] === 'string' ? overrides[id] : '';
-  if (override.trim() && override.length <= 80 && !/[\u0000-\u001f\u007f]/.test(override)) return override;
+  if (override.trim() && override.length <= CLIP_LABEL_MAX && !CONTROL_CHARS.test(override)) return override;
   const fromFamily = labelFromFamily(clip?.familyId, clip?.role);
   if (fromFamily) return fromFamily;
   const fromPath = labelFromPath(clip?.relativePath, clip?.role);
   if (fromPath) return fromPath;
+  if (typeof clip?.label === 'string' && clip.label.trim()) return clip.label;
   if (id.trim()) return id.trim();
   return 'Klipp';
 }

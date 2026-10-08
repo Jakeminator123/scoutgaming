@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { clipLabel } from '../lib/clip-label.mjs';
+import { applyClipLabel, assignClipLabel, clipLabel } from '../lib/clip-label.mjs';
+import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 
 const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 
@@ -41,4 +42,40 @@ test('unknown tokens stay visible, path is only a fallback, and the label is nev
   assert.equal(clipLabel({ id: 'bare-id' }), 'bare-id');
   assert.equal(clipLabel(null), 'Klipp');
   assert.equal(clipLabel({ id: 'bare-id', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }, { 'bare-id': 'x'.repeat(81) }), 'Reveal · dealerns hålkort');
+  assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn' }), 'Arkivnamn');
+  assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn' }, { 'bare-id': 'Eget' }), 'Eget');
+  assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }), 'Reveal · dealerns hålkort');
+});
+
+test('assignClipLabel stores a name, drops a blank override, and rejects text over 80', () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  const other = '22222222-2222-4222-8222-222222222222';
+  const project = createSeedProject();
+  const before = structuredClone(project);
+  const named = applyClipLabel(project, id, 'Min tagning');
+  assert.equal(named.clipLabels[id], 'Min tagning');
+  assert.equal(Object.hasOwn(project, 'clipLabels'), false);
+  assert.deepEqual(project, before);
+  assert.equal(validateProject(named).clipLabels[id], 'Min tagning');
+  const kept = applyClipLabel(named, id, 'x'.repeat(80));
+  assert.equal(kept.clipLabels[id].length, 80);
+  assert.equal(validateProject(kept).clipLabels[id].length, 80);
+  const both = applyClipLabel(kept, other, 'Andra');
+  const cleared = applyClipLabel(both, id, '   ');
+  assert.equal(Object.hasOwn(cleared.clipLabels, id), false);
+  assert.equal(cleared.clipLabels[other], 'Andra');
+  assert.equal(kept.clipLabels[id].length, 80);
+  const gone = applyClipLabel(cleared, other, '');
+  assert.equal(Object.hasOwn(gone, 'clipLabels'), false);
+  assert.throws(() => applyClipLabel(named, id, 'x'.repeat(81)), /clipLabels\..*: ska vara text med 1–80 tecken/);
+  assert.equal(named.clipLabels[id], 'Min tagning');
+  assert.throws(() => assignClipLabel(named.clipLabels, 'astrid/deal.player.left/box0', 'Namn'), /ogiltigt klipp-id/);
+  assert.throws(() => applyClipLabel(named, id, 'rad\nbyte'), /ska vara text med 1–80 tecken/);
+  const full = {};
+  for (let index = 0; index < 2048; index += 1) full[`n${index}`] = 'Namn';
+  const packed = createSeedProject();
+  packed.clipLabels = full;
+  assert.throws(() => applyClipLabel(packed, 'extra-id', 'Ny'), /högst 2048 namn/);
+  assert.equal(applyClipLabel(packed, 'n0', 'Annat').clipLabels.n0, 'Annat');
+  assert.equal(Object.keys(packed.clipLabels).length, 2048);
 });

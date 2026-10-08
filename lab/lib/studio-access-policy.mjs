@@ -49,6 +49,8 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys/launch', 'admin', ['game-authority']],
   ['apikeys/credit', 'admin', ['game-authority']],
   ['speech-qa', 'admin', ['operator-speech-qa-gate']],
+  ['operator-package', 'admin'],
+  ['operator-create-demo', 'admin'],
 ].map(([id, minimumRole, requirements = []]) => Object.freeze({
   id, minimumRole, handlerRequirements: Object.freeze(requirements),
 })));

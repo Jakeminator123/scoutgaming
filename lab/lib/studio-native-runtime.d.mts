@@ -18,6 +18,7 @@ export interface NativeStudioRuntime {
   legacyControls?: (project: any) => Promise<any>;
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
+  listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string }>>;
 }
 export function studioNativeRuntime(): Promise<NativeStudioRuntime>;
 export function createNativeStudioRequestHandlers(options?: {

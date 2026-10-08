@@ -3,6 +3,7 @@ import { validateActor, validateStudioScope } from '../../web/storage/studio-con
 export const PARTNER_PREVIEW_OPERATORS = Object.freeze([
   Object.freeze({ id: 'operator-demo-north', slug: 'demo-north', name: 'Demo North' }),
   Object.freeze({ id: 'operator-demo-south', slug: 'demo-south', name: 'Demo South' }),
+  Object.freeze({ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }),
 ]);
 export const DEFAULT_PARTNER_PREVIEW_OPERATOR = PARTNER_PREVIEW_OPERATORS[0].id;
 const deny = (statusCode = 403) => { throw Object.assign(new Error('partner_preview_rejected'), { statusCode }); };

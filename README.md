@@ -19,7 +19,7 @@ The public surfaces are not feature-complete:
 Staff pages share one template: Översikt `/control`, Dealers & klipp
 `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`,
 Händelser `/control/events` (overview without `?event=`, editor with it),
-Förhandsvisning `/control/preview`, Agentmodeller `/control/openclaw`,
+Förhandsvisning `/control/preview`, Lanes `/control/lanes`, Agentmodeller `/control/openclaw`,
 Operatörschatt `/control/openclaw?tab=chat`, Administration
 `/control/administration` with four deep links to its tabs, Uppspelning
 `/control/activity`, Probe `/control/probe` and Guide & hjälp `/control/guide`.
