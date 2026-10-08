@@ -44,9 +44,9 @@ run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-ex
 node tools/check-environment-variables.mjs
 run_node_tests test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
-# Dragge and Paow banks are checked once their media folder exists.
+# Dragge's and Paow's banks are tracked: a missing or moved bank folder fails here.
 for dealer in dragge paow; do
-  [ ! -d "media/dealers/$dealer/runtime/presentation" ] || node pipeline/build-lab-video-manifest.mjs --dealer "$dealer" --check
+  node pipeline/build-lab-video-manifest.mjs --dealer "$dealer" --check
 done
 node test/player-auth.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
