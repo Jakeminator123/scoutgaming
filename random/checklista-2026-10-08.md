@@ -28,9 +28,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | A1 | Pinnad Ubuntu, körare för alla tester, D1–D32, teaminbox, terminologiblad | klart | matris 34–35 | – |
-| A2 | ffmpeg `.deb`-cache i CI (hängde två gånger 7 okt) | klart lokalt, commit på väg; `dealer-regression` utan cache (matris 46) | brief M p4 | M |
-| A3 | GPU-workflows till `ubuntu-24.04` före 19 okt | klart lokalt, commit på väg. `services/astrid-gpu-worker/.github/workflows/checks.yml` har `ubuntu-latest` men körs inte av GitHub | brief M p3 | M |
-| A4 | CI-steg orphan tests + undantagsfil | klart lokalt, commit på väg: 259 filer, 0 föräldralösa, 3 undantag (matris 47) | brief M p5 | M |
+| A2 | ffmpeg `.deb`-cache i CI (hängde två gånger 7 okt) | klart `683dd4fd` + `7d523bde` (cache v6). Verifierat i run 37707970447: båda jobben `Cache restored from key: ubuntu-24.04-ffmpeg-7:6.1.1-3ubuntu5`, ingen nedladdning. `dealer-regression` utan cache (matris 46) | brief M p4 | M |
+| A3 | GPU-workflows till `ubuntu-24.04` före 19 okt | klart `f95ed1ef`. `services/astrid-gpu-worker/.github/workflows/checks.yml` har `ubuntu-latest` men körs inte av GitHub | brief M p3 | M |
+| A4 | CI-steg orphan tests + undantagsfil | klart `9dbfe09e`: 259 filer, 0 föräldralösa, 3 undantag (matris 47); grönt i CI | brief M p5 | M |
 | A5 | Systemkartan: trimma miljökontrakt, gul = "granska" | kvar | matris 42 | eget litet pass |
 | A6 | Chefens register i `.croupier-inbox/chef.json`, låstext "Inbox busy" | kvar, lågprio | matris 34 | M senare |
 | A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | kvar, lågprio | matris 34 | M senare |
