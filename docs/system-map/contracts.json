@@ -4,8 +4,8 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "a24026005308fbd113d68a39b20bf1f065561f10",
-    "capturedAt": "2026-10-07T20:59:52.577Z",
+    "observedCommit": "9dbfe09ebd497e2cb7fa2a61410e6d8d373d3a11",
+    "capturedAt": "2026-10-08T00:10:26.956Z",
     "hashAlgorithm": "sha256:utf8-lf",
     "note": "Input capture only; no tests or runtime are marked verified."
   },
@@ -121,7 +121,7 @@
       "testType": "existing-isolated-sql-acceptance",
       "checks": [],
       "expectedHashes": {
-        ".github/workflows/croupier.yml": "sha256:479e63f21070b716308db81120b3b7445738abdd690bd1039866fd36d562642f",
+        ".github/workflows/croupier.yml": "sha256:56ff5b062c2e33ec741b222e5c44d97d2f4e248198ff2a0278a7aadc41acbe23",
         "docs/system-map/catalog.json": "sha256:c2481e568c3bf5223a74f30e47b3430e6a0e07c8239bef8d8425cdb67435f30f",
         "docs/system-map/storage.json": "sha256:d04f63aa4c603d9a303a9a2548423a2bfd6508efc9031c0103a021140d26d2b2",
         "lab/lib/cloud-media-store.mjs": "sha256:063f1a03730e7b7d52f7ce51bf4c9d99408b98b91c28881cde482f0f8ee9a77c",

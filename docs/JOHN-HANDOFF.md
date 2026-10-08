@@ -4,11 +4,11 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — idle fungerar; deal i två system (rad 38); lane är en id-lista utan skapa/export/bolagsyta (L1–L3). Brief: `random/prompt-klipplogik.md`; orkestrator: `random/handoff-2026-10-08-orkestrator.md` | Kopplingar som saknas |
-| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen, gamla `studio.tsx` borttagen; ljust läge och Johns rader 11, 12, 14 väntar; lösa trådar mot nivå 2 öppna | /control-ombyggnad |
+| Klipplogik och lane | påbörjad — idle fungerar; produktionsvägen är kartlagd 8 okt (`random/k1-fakta-spelvagen-2026-10-08.md`: system A spelar, `gameLane: mobile-phone`, full-frame mp4); lane är en id-lista utan skapa/export/bolagsyta (L1–L3). Brief: `random/prompt-klipplogik.md`; uppföljning: `random/checklista-2026-10-08.md` | Kopplingar som saknas |
+| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen inklusive Bakgrundszoner (8 okt), Uppspelning rullar igen (L23), texterna L20–L22 följer koden; ljust läge och Johns rader 11, 12, 14, 17b väntar; lösa trådar mot nivå 2 öppna | Pass M |
 | Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
-| Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32) | Teststädning och dokumentation |
+| Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
 | Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
 | Render croupier-v2 | påbörjad — motor live, deploy väntar | Aktuell leverans |
@@ -17,6 +17,30 @@ Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Pass M, 8 oktober 2026 natt
+
+Mekaniskt pass enligt `random/handoff-2026-10-08-orkestrator.md`, två underagenter parallellt,
+granskat av orkestratorn. Beslut i `random/beslutsmatris-2026-10-07.md` rader 45–48.
+
+Ändrat: `a91f92ee` tre gränssnittstexter (L20–L22). `820709dd` Uppspelning monterar det
+rullande observationsfönstret via en egen `rolling`-prop i `ActivityLog`; *Visa spelfliken här*,
+Partner-SSE och övriga verktyg finns kvar (rad 39, L23). `815b0b76` Bakgrundszoner på sidmallen
+med kortad text, alla funktioner kvar (rad 43). `f95ed1ef` GPU-workflows på `ubuntu-24.04`.
+`683dd4fd` ffmpeg i `presentation-studio` och `lipsync-worker` installeras från cachade `.deb`
+(`actions/cache`, nyckel `ubuntu-24.04-ffmpeg-<version>`), nedladdning bara vid miss; jobben får
+`actions: write` för att spara cache. `9dbfe09e` CI-steget Orphan tests
+(`tools/check-orphan-tests.mjs`): 259 testfiler, 0 föräldralösa, 3 undantag med motivering i
+`tools/orphan-tests-exceptions.json`; tre gröna tester in i `pre-commit-full`.
+
+Testat: labbtester 941/943 (2 skippade sedan tidigare), typecheck, systemkartan grå, full
+pre-commit-krok för varje commit (ffmpeg och jq lokalt). Produktion verifieras som `LLM`:
+`/control/activity`, `/control/guide`, `/control`, `/control/zones` ljust och mörkt.
+
+Kvar: `dealer-regression` installerar ffmpeg och jq utan cache (rad 46). `test/fuzz-blackjack.mjs`
+är ett manuellt skript mot klientmodulen och räknar invariantbrott (rad 47). Johns rader 11, 12,
+14, 17b. Klipplogiken: steg 2-förslaget väntar på Jakobs svar och på granskning av grenen
+`test-video-jakob` (tre lager); se `random/checklista-2026-10-08.md`.
 
 ## Sista operatörsadmin, 7 oktober 2026 natt
 
