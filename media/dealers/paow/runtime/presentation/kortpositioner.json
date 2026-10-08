@@ -1,0 +1,87 @@
+{
+ "bild": "1080x1920",
+ "kort_bredd": 79,
+ "kort_hojd": 106,
+ "positioner": {
+  "1": {
+   "cx": 110,
+   "cy": 1025
+  },
+  "2": {
+   "cx": 253,
+   "cy": 1075
+  },
+  "3": {
+   "cx": 396,
+   "cy": 1105
+  },
+  "4": {
+   "cx": 540,
+   "cy": 1115
+  },
+  "5": {
+   "cx": 684,
+   "cy": 1105
+  },
+  "6": {
+   "cx": 827,
+   "cy": 1075
+  },
+  "7": {
+   "cx": 970,
+   "cy": 1025
+  },
+  "dealer": {
+   "cx": 540,
+   "cy": 895
+  }
+ },
+ "startbild": "rest.png",
+ "klipp": {
+  "deal/deal_pos1/deal_pos1.mp4": {
+   "rutor": 68,
+   "plats": "1",
+   "kortet_ligger_still_fran_ruta": 41
+  },
+  "deal/deal_pos2/deal_pos2.mp4": {
+   "rutor": 68,
+   "plats": "2",
+   "kortet_ligger_still_fran_ruta": 41
+  },
+  "deal/deal_pos3/deal_pos3.mp4": {
+   "rutor": 69,
+   "plats": "3",
+   "kortet_ligger_still_fran_ruta": 40
+  },
+  "deal/deal_pos4/deal_pos4.mp4": {
+   "rutor": 68,
+   "plats": "4",
+   "kortet_ligger_still_fran_ruta": 41
+  },
+  "deal/deal_pos5/deal_pos5.mp4": {
+   "rutor": 68,
+   "plats": "5",
+   "kortet_ligger_still_fran_ruta": 39
+  },
+  "deal/deal_pos6/deal_pos6.mp4": {
+   "rutor": 68,
+   "plats": "6",
+   "kortet_ligger_still_fran_ruta": 40
+  },
+  "deal/deal_pos7/deal_pos7.mp4": {
+   "rutor": 68,
+   "plats": "7",
+   "kortet_ligger_still_fran_ruta": 41
+  },
+  "deal/deal_posdealer/deal_posdealer.mp4": {
+   "rutor": 70,
+   "plats": "dealer",
+   "kortet_ligger_still_fran_ruta": 41
+  },
+  "deal/deal_pos6/variant/deal_pos6b.mp4": {
+   "rutor": 68,
+   "plats": "6",
+   "kortet_ligger_still_fran_ruta": 43
+  }
+ }
+}

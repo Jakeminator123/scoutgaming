@@ -76,6 +76,7 @@
     { "source": "/dealer/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealer/poster.jpg" },
     { "source": "/dealers/amira/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/amira/poster.jpg" },
     { "source": "/dealers/mei/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/mei/poster.jpg" },
-    { "source": "/dealers/dragge/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/dragge/poster.jpg" }
+    { "source": "/dealers/dragge/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/dragge/poster.jpg" },
+    { "source": "/dealers/paow/poster.jpg", "destination": "__ISOLATED_BACKEND_ORIGIN__/dealers/paow/poster.jpg" }
   ]
 }
