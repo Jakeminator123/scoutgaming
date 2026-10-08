@@ -45,6 +45,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|---|---|
 | B1 | Johns skal, sidmall, en kodgeneration, sju sidor utbrutna, `studio.tsx` borta | klart | matris 16–33 | – |
 | B2 | Uppspelning: rullande observationsfönster (L23) | klart `820709dd`; verifierat i prod 8 okt 10:56 (300-fönster, 0/150) | matris 39 | – |
+| B13 | Uppspelning avskalad (Jakob 11:05: rörig, tre saker blandade) | kod inne (U1): status → kedja/tal en rad → Anslut & följ (enda lime, spelbild i details) → Logg → Diagnostik stängd; förklaringar till guiden; inget borttaget | Jakob 11:05 | D |
 | B3 | Tre texter L20–L22 | klart `a91f92ee`; verifierat i prod 8 okt (`/control`, `/control/guide` med Lanes/Förhandsvisning) | lösa trådar | – |
 | B4 | `/control/zones` på sidmallen, kortad text | klart `815b0b76`; verifierat mörkt i prod 8 okt (referensbild, moln v2); ljust kvar | matris 43 | M |
 | B5 | Händelser + Händelser → klipp en sida | klart natt 8 okt (S1); verifierat i prod 8 okt: översikt utan `?event=`, `/control/tree?event=…&dealer=vera` → Händelser med query kvar | matris 37, beslut 52 | – |
@@ -52,7 +53,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | B7 | Johns fyra etiketter som djuplänkar till adminflikar | klart natt 8 okt (S1): `?tab=tables|operations|finance|accounts`; Administration kvar utan parameter | matris 12 | D |
 | B8 | Inloggningskortet på sidmallens tokens | klart natt 8 okt (S1); verifiera ljust/mörkt i prod | matris 14 | D |
 | B9 | Namnkrock Talgranskning (meny → Probe, adminflik = betald QA) | klart natt 8 okt (S1) | matris 17b, beslut 52 | D |
-| B10 | Ljust läge på två inre sidor | kvar; verifiera i produktion vilka | matris 3 | D |
+| B10 | Ljust läge på två inre sidor | granskat i prod 8 okt 11:30 (U3): trasigt på `/partner` (svart på svart), `/control/guide` (boundaries-blocket), Operatörschatt (textarea), delvis Händelser-inspektorn; förhandsvisningens iframe medvetet mörk. Fix pågår (U4) | matris 3 | D |
 | B11 | `lab/docs/guide.json` använder gamla sidnamn | klart (S4): dagens menynamn + poster för Förhandsvisning och Lanes | matris 25 | – |
 | B12 | Dold `<select>` bakom dealerchipsen (gammalt test) | klart: fanns inte längre; chips med `aria-pressed` | matris 10 | – |
 
@@ -94,7 +95,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | L1 | Lagring `operator_packages` med lanes/spel/bord/branding | klart | 005 | – |
-| L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | live i prod 8 okt 10:53 (S1): redigerare, Spara projekt enda lime, id låst efter skapande. Nits: förslagsraden saknar mellanrum mellan spans; ingen kortram runt redigeraren. Prod-Neon har 0 bolag → operatörsval tomt tills `Skapa SG test game provider` klickas (Jakobs klick) | lösa trådar | Lane |
+| L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | live i prod 8 okt 10:53 (S1): redigerare, Spara projekt enda lime, id låst efter skapande. Layout-nits rättade (U2): tre kort, `·`-avgränsad förslagsrad. Prod-Neon har 0 bolag → operatörsval tomt tills `Skapa SG test game provider` klickas (Jakobs klick) | lösa trådar | Lane |
 | L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kod inne (`/control/lanes` + POST); meny + karta live; spelet läser inte paketet (L8) | lösa trådar | Lane |
 | L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kod inne (S3): partner-API `branding` GET/POST (CAS, `presentations.configure`, pool) + panel i Kevins vy Färger, marker och kort för riktig session; prod ger 403 tills roller seedas (N2.2); chips kvar | lösa trådar | Lane |
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
@@ -136,6 +137,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Logga in på `www.scoutgaming.tech/control` i Cursor-webbläsaren så orkestratorn kan verifiera B2–B5, B8, T10, L2, L6 live | klart 10:52; B8 (inloggningskort) och B4 ljust kvar att se |
 | Jakob | Klicka `Skapa SG test game provider` på `/control/lanes` i prod (första skrivningen till `croupier_studio.operators`) | väntar |
 | Jakob | Eget inlogg till orkestratorn (sa 10:52 "du ska ha inlogg själv") – skapa ett admin-konto `orkestrator` under Konton & roller när det passar; inga hemligheter i chatt eller Git | väntar |
+| Jakob | Ta bort `LLM_LOGIN_UN`/`LLM_LOGIN_PW` ur Vercel (ingen kod läser dem; panelgranskning antecknad i `docs/ENVIRONMENT-VARIABLES.md`) | väntar |
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
 | Jakob | Kör promptfilerna `random/prompt-L8-*.md` (Opus/Codex), `prompt-C5b-*.md` (Opus, med dig), `prompt-N3-*.md` (grok fast) i egna agenter | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |

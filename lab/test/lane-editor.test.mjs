@@ -155,3 +155,24 @@ test('the editor shows the default lane suggestion, the administration hint and 
   assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
 });
+
+test('the suggestion row separates its values and the page keeps one primary button', () => {
+  const empty = createSeedProject();
+  empty.lanes = [];
+  const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
+  assert.match(editorHtml, /<dt>Id<\/dt><dd>mobile-phone<\/dd>/);
+  assert.match(editorHtml, /<dd>mobile-phone<\/dd>[\s\S]*·[\s\S]*<dd>Mobile Phone Lane<\/dd>/);
+  const splitAt = editorHtml.indexOf('Ny lane</h2>');
+  assert.ok(splitAt > 0);
+  const help = 'Administration → Spel, lanes &amp; bord';
+  assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 1);
+  assert.equal(editorHtml.slice(splitAt).split(help).length - 1, 1);
+  const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
+    initialProject: empty,
+    initialVideos: { videos: [] },
+    initialStatus: { configured: false },
+    operators: fixtureLaneOperators(),
+    storeAvailable: false,
+  }));
+  assert.equal(html.match(/sg-btn-primary/g).length, 1);
+});

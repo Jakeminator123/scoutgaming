@@ -5,7 +5,7 @@ import type { ActivityDraft } from './activity-log';
 import styles from './game-stream.module.css';
 
 /** The browser owns tab selection and permission. No screen data leaves it. */
-export function ReferenceCapture({ onActivity }: { onActivity: (entry: ActivityDraft) => void }) {
+export function ReferenceCapture({ onActivity, quiet = false }: { onActivity: (entry: ActivityDraft) => void; quiet?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const generation = useRef(0);
@@ -46,8 +46,8 @@ export function ReferenceCapture({ onActivity }: { onActivity: (entry: ActivityD
   }
   return <div className={styles.capture}>
     <video ref={video} autoPlay playsInline muted hidden={!sharing} aria-label="Direktbild från vald spelflik" />
-    {!sharing ? <div className={styles.empty}><span aria-hidden="true">♠</span><strong>Originalspelets bild</strong><p>Anslut öppnar spelet. Välj sedan dess flik nedan för att visa bilden här. Webbläsaren kräver ditt val; speldata och labbet fungerar även utan bilddelning.</p></div> : null}
-    <div className={styles.toolbar}><button className="text-button" disabled={requesting} onClick={() => sharing ? stop() : void start()}>{sharing ? 'Sluta visa spelfliken' : requesting ? 'Välj spelflik i webbläsaren…' : 'Visa spelfliken här'}</button><small>Bilden stannar i din webbläsare. Ljudet hörs från originalfliken.</small></div>
+    {!sharing ? <div className={styles.empty}><span aria-hidden="true">♠</span><strong>Originalspelets bild</strong>{quiet ? null : <p>Anslut öppnar spelet. Välj sedan dess flik nedan för att visa bilden här. Webbläsaren kräver ditt val; speldata och labbet fungerar även utan bilddelning.</p>}</div> : null}
+    <div className={styles.toolbar}><button className="text-button" disabled={requesting} onClick={() => sharing ? stop() : void start()}>{sharing ? 'Sluta visa spelfliken' : requesting ? 'Välj spelflik i webbläsaren…' : 'Visa spelfliken här'}</button>{quiet ? null : <small>Bilden stannar i din webbläsare. Ljudet hörs från originalfliken.</small>}</div>
     {error ? <p role="status">{error}</p> : null}
   </div>;
 }

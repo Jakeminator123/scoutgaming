@@ -1,7 +1,7 @@
 'use client';
 import { labBasePath, labUrl } from "../lib/lab-url.mjs";
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import { exportPartnerTrace, type PartnerTrace } from '../lib/partner-trace.mjs';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
 import { scopeNativeSession } from '../lib/native-session-channel.mjs';
@@ -13,7 +13,7 @@ interface Configuration { configured: boolean; mappingConfigured: boolean; mappi
 interface Access { verifiedAt: string; playerId: string; scopes: string[] }
 interface Mapping { fetchedAt: string; source: string; actualPlayback: false; mapping: { revision?: string | null; dealers: Record<string, Record<string, unknown>>; backofficePicks?: unknown; notes?: string[] } }
 
-export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode }) {
+export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false, layout }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode; layout?: (parts: { card: ReactNode; toolbar: ReactNode; diagnostics: ReactNode }) => ReactNode }) {
   // The cloud build mounts Studio on the game origin. Its ordinary player
   // entry is usable even when the optional Partner observer is unconfigured.
   const cloudStudio = labBasePath() === '/studio';
@@ -209,45 +209,53 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   }
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   const canLaunch = access?.scopes.includes('launch');
-  return <section className={styles.reference} aria-label="Referensspel och observationsprotokoll">
-    <span className="eyebrow">SPELFLIKENS PRESENTATION · LÄSANDE OBSERVATION</span>
-    <h3>Spela i spelfliken. Konfigurera och följ i Lab.</h3>
-    <p>{dealerId === 'astrid' ? 'Astrid använder Labbets gemensamma klippfamiljer. Spela och chatta i spelfliken. Anslut & följ spelet öppnar dessutom observation så att klippval och uppspelningskvitton visas här.' : 'Anslut öppnar rätt spelarsession och följer originalets speldata och tillgängliga native-kvitton. Ett separat Lab-previewprov startas bara efter ditt uttryckliga val och har egna kvitton.'}</p>
-    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || (!cloudStudio && !configuration?.configured)} onClick={() => connected ? disconnect() : void connectGame()}>{busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut'}</button><strong role="status">{connection}</strong></div>
-    {cloudStudio ? <p className={styles.note}>Studiokopplingen använder din vanliga spelarinloggning och spelflikens uppspelningskvitton.</p> : !configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
+  const childNodes = Children.toArray(children);
+  const labelOf = (node: ReactNode) => isValidElement<{ 'aria-label'?: string }>(node) ? node.props['aria-label'] : undefined;
+  const previewNodes = childNodes.filter(node => labelOf(node) === 'Separat Lab-preview');
+  const cardNodes = childNodes.filter(node => labelOf(node) !== 'Separat Lab-preview');
+  const connectLabel = busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut';
+  const card = <section className={styles.reference} aria-label="Anslut och följ">
+    <h3>Anslut & följ</h3>
+    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || (!cloudStudio && !configuration?.configured)} onClick={() => connected ? disconnect() : void connectGame()}>{connectLabel}</button><strong role="status">{connection}</strong></div>
+    <p>{focused ? 'Anslut & följ spelet öppnar spelet med din spelarinloggning; loggen visar spelflikens verkliga klippval och kvitton.' : 'Anslut öppnar spelet med din spelarinloggning; loggen nedan visar spelflikens verkliga klippval och kvitton.'}</p>
+    {cloudStudio ? null : !configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
-    <NativeSpeechContext.Provider value={{ binding: speechBinding, connected }}>{children}</NativeSpeechContext.Provider>
-    <details className={styles.mapping}><summary>{focused ? 'Diagnostik · anslutning och observationsfiler' : 'Diagnostik · videokarta, anslutning och observationsfiler'}</summary>
-    {!cloudStudio ? <><p><strong>{focused ? "Teknisk launch-identitet:" : "Spelare:"}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
+    {cardNodes}
+  </section>;
+  const toolbar = <>
+    <button className="text-button" disabled={!trace.records.length && !mapping && !access} onClick={download}>Exportera observationsprotokoll</button>
+    {onImport ? <><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={event => void importObservation(event.target.files?.[0])} /><button className="text-button" disabled={connected} onClick={() => importInput.current?.click()}>Läs in observation</button></> : null}
+    {onNewObservation ? <button className="text-button" disabled={Boolean(busy)} onClick={() => { setExportText(''); onNewObservation(); }}>Ny observation</button> : null}
+  </>;
+  const diagnosticsBody = <>
+    {!cloudStudio ? <><p><strong>{focused ? 'Teknisk launch-identitet:' : 'Spelare:'}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
-      {!focused ? <><button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
+      {!focused ? <><button className="text-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button></> : null}
     </div>
     </> : null}
     {diagnostics}
     {!focused && !cloudStudio ? <details className={styles.mapping}>
       <summary>Testa Astrids grundfilmer</summary>
-      <p>Öppnar staged-grundläget utan smooth60 eller rhythm. Grundfilmerna är märkta för granskning. Använd detta för att jämföra videolägen efter en avslutad runda.</p>
-      <button className="primary-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>
-      <p className={styles.note}>Samma Partner-spelare används. Saknade talfiler och rundmeddelanden i Partner-strömmen kan fortfarande behöva åtgärdas separat.</p>
+      <button className="text-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>
     </details> : null}
-    {!access ? <p className={styles.note}>Verifiera åtkomsten före spelöppning. Inga externa anrop görs när sidan öppnas.</p> : !canLaunch ? <p className={styles.note}>Nyckeln saknar launch. Den kan inte öppna referensspelet.</p> : null}
-    {!focused && access && !access.scopes.includes('play') ? <p className={styles.note}>Nyckeln kan öppna spelet men saknar play för en egen klient med Partner-table. Labbet skickar inga insatser eller spelhandlingar.</p> : null}
+    {!access ? null : !canLaunch ? <p className={styles.note}>Nyckeln saknar launch. Den kan inte öppna referensspelet.</p> : null}
+    {!focused && access && !access.scopes.includes('play') ? <p className={styles.note}>Nyckeln kan öppna spelet men saknar play för en egen klient med Partner-table.</p> : null}
     {!focused && !configuration?.mappingConfigured && configuration ? <p className={styles.note}>{configuration.mappingError ?? 'Videokartan behöver generations-API:ts separata lästoken, BETTALOTTO_API.'}</p> : null}
-    {focused ? <p className={styles.note}>Launch-identiteten används för att öppna spelet. Profilen du väljer i Astrids flik äger ditt spel och minne; den flikens faktiska händelser visas här.</p> : <p className={styles.note}>En accepterad SSE-anslutning bevisar inte att rundor från referensspelet publiceras. Bekräfta att en verklig runda dyker upp här. Ingen trafik ersätts med exempeldata.</p>}
     {mapping ? <details className={styles.mapping}><summary>Videokarta · {Object.keys(mapping.mapping.dealers).length} dealers · {new Date(mapping.fetchedAt).toLocaleTimeString('sv-SE')}</summary>
       <p>Serverrevision: {mapping.mapping.revision ?? 'inte angiven av servern'}. Detta är material och bindningar, inte uppspelningskvitton.</p>
       {Object.entries(mapping.mapping.dealers).map(([dealer, data]) => <details key={dealer}><summary>{dealer} · {Array.isArray(data.engine) ? data.engine.length : 0} motorklipp · {Array.isArray(data.stagedTakes) ? data.stagedTakes.length : 0} staged-takes · {Array.isArray(data.greenTakes) ? data.greenTakes.length : 0} green-takes</summary><pre>{JSON.stringify(data, null, 2)}</pre></details>)}
       <details><summary>Backoffice-val per bordsdel</summary><pre>{JSON.stringify(mapping.mapping.backofficePicks ?? {}, null, 2)}</pre></details>
       <ul>{mapping.mapping.notes?.map(note => <li key={note}>{note}</li>)}</ul>
     </details> : null}
-    <div className={styles.protocol}><div><strong>Observationsprotokoll · {trace.rolling ? `${trace.records.length} senaste poster · ${rounds} spelkommandon` : `${rounds} mottagna kommandomeddelanden`}</strong><p className={styles.note}>{trace.rolling ? "Live-observationen fortsätter löpande. De senaste 300 posterna sparas med hela presentationslistor; äldre poster lämnar fönstret med en tydlig luckmarkering i exporten." : "Hela mottagna presentationslistor sparas separat från den kortade loggvisningen. Protokollet finns kvar mellan labbets vyer tills sidan laddas om."} {connected ? 'Observation pågår.' : 'Ingen aktiv anslutning.'}</p></div><button className="text-button" disabled={!trace.records.length && !mapping && !access} onClick={download}>Exportera observationsprotokoll</button>{onImport ? <><input ref={importInput} type="file" accept="application/json,.json" hidden onChange={event => void importObservation(event.target.files?.[0])} /><button className="text-button" disabled={connected} onClick={() => importInput.current?.click()}>Läs in observation</button></> : null}</div>
-    {onNewObservation ? <div className={styles.protocol}><div><strong>Börja en ny historik här</strong><p className={styles.note}>Exportera först om du vill behålla protokollet. Ny observation ersätter dess {trace.records.length} poster{focused ? "." : " och avbryter labbets gamla uppspelningskö."} Spelet, anslutningen och bilddelningen behålls; bara framtida instruktioner följs.</p></div><button className="text-button" disabled={Boolean(busy)} onClick={() => { setExportText(''); onNewObservation(); }}>Ny observation</button></div> : null}
+    <p><strong>Observationsprotokoll · {trace.rolling ? `${trace.records.length} senaste poster · ${rounds} spelkommandon` : `${rounds} mottagna kommandomeddelanden`}</strong></p>
+    <p className={styles.note}>{connected ? 'Observation pågår.' : 'Ingen aktiv anslutning.'}</p>
     {trace.rolling && (trace.droppedRecords ?? 0) > 0 ? <p role="status">Observation pågår. {trace.droppedRecords} äldre poster har lämnat det rullande fönstret och ingår inte i nästa export.</p> : null}
     {trace.limited ? <p role="alert">Protokollet har nått sin gräns och fångar inga fler meddelanden. Exportera det och välj Ny observation för att fortsätta följa kommande händer.</p> : null}
-    {exportText ? <details className={styles.mapping} open><summary>JSON-export redo</summary><p className={styles.note}>Samma underlag som i JSON-filen. Du kan också markera och kopiera det här. Exportera igen för att ta med senare meddelanden.</p><textarea className={styles.exportText} aria-label="Observationsprotokoll som JSON" readOnly value={exportText} rows={8} /></details> : null}
-    <p className={styles.note}>{focused ? "Protokollet följer Astrids verkliga spelflik. Det innehåller offentliga serversvar, chatt och uppspelningskvitton." : "Native-observation kan komplettera Partner-instruktionerna med originalets offentliga serversvar, chatt och uppspelningskvitton. Äldre serverversioner kan sakna detta."} Launch-länk och inloggningsuppgifter följer inte med exporten.</p>
-    </details>
-  </section>;
+    {exportText ? <details className={styles.mapping} open><summary>JSON-export redo</summary><textarea className={styles.exportText} aria-label="Observationsprotokoll som JSON" readOnly value={exportText} rows={8} /></details> : null}
+    {previewNodes}
+  </>;
+  const body = layout ? layout({ card, toolbar, diagnostics: diagnosticsBody }) : <>{card}{toolbar}<details className={styles.mapping}><summary>Diagnostik</summary>{diagnosticsBody}</details></>;
+  return <NativeSpeechContext.Provider value={{ binding: speechBinding, connected }}>{body}</NativeSpeechContext.Provider>;
 }

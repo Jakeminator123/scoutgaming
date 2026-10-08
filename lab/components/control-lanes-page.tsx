@@ -5,6 +5,7 @@ import { labBasePath } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
 import { LaneEditor } from './lane-editor';
 import { PageTemplate } from './page-template';
+import styles from './control-lanes-page.module.css';
 import { ProjectConflict } from './project-conflict';
 import { useStudioSession } from './studio-session';
 import type { ConnectionStatus, VideoInventory } from './studio-types';
@@ -117,7 +118,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     intro="Sätt ihop en lane av dealers, lager och OpenClaw-läge. Publicera ett operatörspaket. Spelet läser inte paketet i det här steget."
     primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
   >
-    <div className="sg-page-body">
+    <div className={`sg-page-body ${styles.page}`}>
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
       {shownError ? <p role="alert">{shownError}</p> : null}
       {message ? <p role="status">{message}</p> : null}
@@ -125,23 +126,28 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
       {revision !== null ? <p>Senaste package_revision: {revision}</p> : null}
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       <LaneEditor project={project} onEdit={modelEdit} />
-      <form onSubmit={event => { void publish(event); }}>
-        <fieldset>
-          <legend>Lanes i projektet</legend>
-          {rows.length ? rows.map(row => <label key={row.id}>
-            <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={!storeAvailable || row.unsaved}
-              onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
-            {row.id} · {row.label} · {row.dealers.join(', ')}{row.unsaved ? ' (osparad)' : ''}
-          </label>) : <p>Projektet har inga lanes.</p>}
-        </fieldset>
-        <label>Operatör
-          <select value={operatorId} disabled={!storeAvailable || !listed.length} onChange={event => setOperatorId(event.target.value)}>
-            {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
-          </select>
-        </label>
-        <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId}>Publicera paket</button>
-      </form>
-      <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
+      <section className={styles.card} aria-labelledby="publish-package">
+        <h2 id="publish-package">Publicera paket</h2>
+        <form className={styles.form} onSubmit={event => { void publish(event); }}>
+          <fieldset className={styles.choices}>
+            <legend>Lanes</legend>
+            {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
+              <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={!storeAvailable || row.unsaved}
+                onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
+              {row.id} · {row.label} · {row.dealers.join(', ')}{row.unsaved ? ' (osparad)' : ''}
+            </label>) : <p>Projektet har inga lanes.</p>}
+          </fieldset>
+          <label className={styles.field}>Operatör
+            <select value={operatorId} disabled={!storeAvailable || !listed.length} onChange={event => setOperatorId(event.target.value)}>
+              {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
+            </select>
+          </label>
+          <div className={styles.actions}>
+            <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId}>Publicera paket</button>
+            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
+          </div>
+        </form>
+      </section>
     </div>
   </PageTemplate>;
 }

@@ -61,6 +61,14 @@ Kontoroller och lösenord ändras i Backoffice, aldrig genom klientens env.
 
 ### Aktiv molnkonfiguration
 
+Panelgranskning 8 oktober 2026 (Vercel `scoutgaming`, namn jämförda mot denna
+förteckning): Jakob har lagt in `LLM_LOGIN_UN` och `LLM_LOGIN_PW` med
+Studio-kontot `LLM`:s inloggning. Ingen kod läser dem; de är inte en del av
+någon tjänsts konfiguration och ska inte registreras som krav. Rekommendation:
+ta bort dem ur Vercel och förvara inloggningen i en lösenordshanterare. Studio-
+inloggningen är ett konto i Neon (`/control/administration?tab=accounts`), inte
+en miljövariabel. Värden står aldrig här.
+
 Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
 en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
 verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan

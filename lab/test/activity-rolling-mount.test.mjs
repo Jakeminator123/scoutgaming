@@ -50,13 +50,42 @@ test('Uppspelning mounts the rolling observation window and keeps Ny observation
     initialStatus: { configured: false },
   }));
   assert.match(html, /<h1>Uppspelning<\/h1>/);
-  assert.match(html, /Live-observationen fortsätter löpande/);
   assert.match(html, /0 senaste poster/);
   assert.match(html, />Ny observation</);
   assert.doesNotMatch(html, /Protokollet finns kvar mellan labbets vyer/);
-  // Nothing reachable before this change may disappear.
-  assert.match(html, /Visa spelfliken här/);
-  assert.match(html, /Partner SSE är kompletterande instruktioner/);
-  assert.match(html, /0\/150/);
+  assert.doesNotMatch(html, /Live-observationen fortsätter löpande/);
   assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
+  const guide = readFileSync(new URL('../docs/guide.json', import.meta.url), 'utf8');
+  assert.match(guide, /300/);
+  assert.match(guide, /sessionStorage/);
+  assert.match(guide, /Partner-SSE/);
+  assert.match(guide, /\$logTruncation/);
+  assert.match(guide, /Live-observationen fortsätter|senaste 300 posterna/);
+});
+
+test('Uppspelning is the log, with one lime and the old actions still in the markup', () => {
+  const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
+  const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
+    initialProject: createSeedProject(),
+    initialVideos: { videos: [] },
+    initialStatus: { configured: false },
+  }));
+  assert.equal((html.match(/primary-button|sg-btn-primary/g) ?? []).length, 1);
+  assert.match(html, /<summary>Visa spelbild här<\/summary>/);
+  assert.match(html, /<summary>Diagnostik<\/summary>/);
+  assert.match(html, /Logg <small>0\/150<\/small>/);
+  for (const chip of ['Alla', 'Indata', 'Beslut', 'Uppspelning', 'Anslutning', 'Konfiguration']) assert.match(html, new RegExp(`>${chip}<`));
+  for (const label of ['Töm detaljloggen', 'Exportera observationsprotokoll', 'Läs in observation', 'Ny observation', 'Anslut', 'Visa spelfliken här', 'Källöversikt', 'Partner-SSE']) {
+    assert.match(html, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  const status = html.indexOf('Aktiv anslutning');
+  const chain = html.indexOf('Kedja:');
+  const speech = html.indexOf('Tal:');
+  const connect = html.indexOf('Anslut &amp; följ');
+  const log = html.indexOf('>Logg <');
+  const diagnostics = html.indexOf('<summary>Diagnostik</summary>');
+  assert.ok(status >= 0 && status < chain && chain < speech && speech < connect && connect < log && log < diagnostics);
+  const chips = html.indexOf('Filtrera detaljlogg');
+  const empty = html.indexOf('Inga registrerade händelser i detta urval.');
+  assert.ok(chips >= 0 && chips < empty && empty < diagnostics);
 });
