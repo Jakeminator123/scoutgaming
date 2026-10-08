@@ -59,17 +59,20 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
-const DEALER = DEALERS[entrySelection.dealer];
-const localPresentationEnabled = entrySelection.presentation === 'local';
+const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };
+const layeredPresentationEnabled = entrySelection.presentation === 'layered';
+const localPresentationEnabled = entrySelection.presentation === 'local' || layeredPresentationEnabled;
 if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
+if (entrySelection.lane === 'layer-preview') document.title = 'Layer Preview Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;
 if (localPresentationEnabled) {
-  document.documentElement.dataset.presentation = 'local';
+  document.documentElement.dataset.presentation = layeredPresentationEnabled ? 'layered' : 'local';
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/local-presentation.css'; document.head.append(css);
   $('#supervisor')?.removeAttribute('src');
   $('#supervisor')?.load();
 }
+document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let speechPoseGate = null;
@@ -512,21 +515,39 @@ speechPoseGate = createSpeechPoseGate({
 });
 if (localPresentationEnabled) {
   try {
-    const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([import('./performance-player.mjs'), import('./local-presentation.mjs'), import('./local-card-overlay.mjs')]);
-    performancePlayer = new PerformancePlayer({ host: $('#scene') });
-    localPresentation = await createLocalPresentation({ player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
-      version: () => tableVersion, muted: () => voice.muted,
-      receipt: entry => nativeObservation.emit('playback', entry),
-      onIdle: () => presentStandardIdle('local-primary-frame'),
-      onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
-    });
-    localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+    if (layeredPresentationEnabled) {
+      const { createLayeredPresentation } = await import('./layered-presentation.mjs');
+      localPresentation = await createLayeredPresentation({
+        host: $('#scene'),
+        dealerId: DEALER.key,
+        rehearsal: new URLSearchParams(location.search).get('rehearsal') === '1',
+        receipt: entry => nativeObservation.emit('playback', entry),
+        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'layered-owner'),
+      });
+      localCards = null;
+    } else {
+      const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([
+        import('./performance-player.mjs'),
+        import('./local-presentation.mjs'),
+        import('./local-card-overlay.mjs'),
+      ]);
+      performancePlayer = new PerformancePlayer({ host: $('#scene') });
+      localPresentation = await createLocalPresentation({
+        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
+        version: () => tableVersion, muted: () => voice.muted,
+        receipt: entry => nativeObservation.emit('playback', entry),
+        onIdle: () => presentStandardIdle('local-primary-frame'),
+        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
+      });
+      localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+    }
     localPresentation.start();
-    window.addEventListener('pagehide', () => { localCards.close(); localPresentation.close(); }, { once: true });
+    window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); }, { once: true });
   } catch (error) {
-    console.error('[local presentation]', error.message);
+    console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
-    status.textContent = 'Lokal video kunde inte startas · 2D-reserv'; $('#scene').append(status);
+    status.textContent = layeredPresentationEnabled ? 'Lagerpaket saknas · 2D-reserv' : 'Lokal video kunde inte startas · 2D-reserv';
+    $('#scene').append(status);
   }
 }
 queueMicrotask(() => {
@@ -905,6 +926,16 @@ async function tableCommand(op, extra = {}) {
         if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
         throw e;
       }
+    }
+  }
+  if (layeredPresentationEnabled && Array.isArray(out.presentation)) {
+    const consumed = localPresentation?.consume?.({ roundId: String(out.version), presentation: out.presentation });
+    if (consumed?.unsupported?.length) {
+      nativeObservation.emit('playback', {
+        event: 'layered-unsupported',
+        count: consumed.unsupported.length,
+        types: [...new Set(consumed.unsupported.map(item => item.type))],
+      });
     }
   }
   tableVersion = out.version;
@@ -2559,6 +2590,7 @@ if (playerChoice && entrySelection.choices) {
     onBackground: id => {
       playerChoice.nextStored = { ...playerChoice.nextStored, background: id };
       remember({ background: id });
+      localPresentation?.setBackground?.(id);
     },
   });
 }

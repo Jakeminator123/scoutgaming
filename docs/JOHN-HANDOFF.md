@@ -1,5 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
+## 8 oktober 2026 eftermiddag: T9 layer-preview bakom flagga
+
+Spelvägen har ett opt-in-spår för tre lager utan att röra Astrids ordinarie local-väg:
+ny server-lane `layer-preview` (`renderer: layered`, default dealer `paow`) och ny
+Render-rutt `/layer-packs/*` som bara svarar när entrén har satt cookie-flaggan
+`croupier_layer_preview=1`. Rutten serverar runtime-moduler från
+`test-videoeditor/program/web` och manifest/media från `lab/preview-build`, med
+`Range`-stöd och `Cross-Origin-Resource-Policy: same-origin`.
+
+Klienten har ny modul `web/public/layered-presentation.mjs` som monterar canvas i
+`#scene`, laddar `/layer-packs/<dealer>/manifest.json` och matar `bridge.consume`
+med serverns `presentation[]` från `/api/table`. `unsupported[]` (exempelvis `speak`)
+loggas som kvitto i observationsflödet och kastas inte. Om paket saknas visas
+`Lagerpaket saknas · 2D-reserv` och ordinarie DOM/SVG-kort fortsätter.
+
+`gameChoices` för `layer-preview` öppnar dealer-val `paow/dragge` och bakgrundsval
+från katalog-ID:t; panelen Ditt bord använder samma lagring som N3.4.
+`#dealer-options` listar fortfarande bara dealers i `DEALERS`-objektet, alltså inte
+Paow/Dragge där ännu; de syns i Ditt bord-panelen.
+
 ## Nuläge per funktion
 
 | Funktion | Status | Avsnitt |

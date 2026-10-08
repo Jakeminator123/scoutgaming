@@ -37,6 +37,7 @@ import { join, normalize, extname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
+import { createLayerPacksRoute } from './layer-packs.mjs';
 
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../..');
@@ -434,6 +435,7 @@ const port = Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
 const host = process.env.HOST ?? '0.0.0.0';
+const layerPacksRoute = createLayerPacksRoute();
 // Source files change constantly while this is being built; Chrome happily
 // serves a cached app.mjs for a reload, so a change looks like it did nothing.
 // Media (clips, audio, art) is content-addressed enough to keep caching.
@@ -651,6 +653,7 @@ const server = createServer(async (req, res) => {
   try {
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  if (await layerPacksRoute(req, res, pathname)) return;
   if (pathname === '/api/studio-game/command') {
     if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
     const request = new Request(`${process.env.CROUPIER_PUBLIC_ORIGIN}${req.url}`, { method: req.method, headers: req.headers,

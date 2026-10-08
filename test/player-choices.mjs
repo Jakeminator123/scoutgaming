@@ -160,5 +160,6 @@ test('the dealer row follows the lane only when an operator package is active', 
 test('the lobby text names the last dealer and table colour', () => {
   assert.equal(lobbyChoiceText(parseStoredChoices(JSON.stringify({ dealer: 'astrid', tableColor: '#112233' }))), 'Dealer Astrid · bord #112233');
   assert.equal(lobbyChoiceText({ dealer: 'mei' }), 'Dealer Mei');
+  assert.equal(lobbyChoiceText({ dealer: 'paow' }), 'Dealer Paow');
   assert.equal(lobbyChoiceText({ dealer: 'ghost', tableColor: 'green', background: 'stad' }), '');
 });

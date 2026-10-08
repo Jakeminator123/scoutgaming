@@ -4,8 +4,8 @@
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
-    "observedCommit": "70901c260756944470568098b4e1454fd9ca4de3",
-    "capturedAt": "2026-10-08T13:43:10.361Z",
+    "observedCommit": "ce494cb02e647d3fdb55bb10efcd64aa72f067a5",
+    "capturedAt": "2026-10-08T13:57:01.172Z",
     "hashAlgorithm": "sha256:utf8-lf",
     "note": "Input capture only; no tests or runtime are marked verified."
   },
@@ -128,7 +128,7 @@
         "lab/lib/media-blob-index.mjs": "sha256:3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
         "lab/lib/studio-access-policy.mjs": "sha256:7e7bc7c064940f7bf95e5551e99e3570ed1ad5a6c62744e55ab6059caddec270",
         "lab/lib/studio-admin-accounts.mjs": "sha256:66b47b1c05f841377945412a963b2ac130956bb2070277c9e29224cd343f84ea",
-        "lab/lib/studio-admin-api.mjs": "sha256:21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
+        "lab/lib/studio-admin-api.mjs": "sha256:6b09672beebd8f2cc463963dd85ae663bf60736bac6ad5e03fc0451ee77d5e53",
         "lab/lib/studio-admin-contract.mjs": "sha256:b0bbea24a151d5631618ff581260221e15f5661847aad0c46bee0b03375dd00d",
         "lab/lib/studio-admin-data.mjs": "sha256:a6f2001926ca987e5b6a23f1ed3d23116b7b4d5480238fb347fe8d5d5ad09fb9",
         "lab/lib/studio-admin-readouts.mjs": "sha256:895ee290270faf64266bed5a47b237584f5fdf1e67cabfe4662aa2d7f7511fc8",
@@ -232,7 +232,7 @@
         "apps/croupier-frontend/next.config.mjs": "sha256:dbe6394215648b0eb91ea8bc6b13ba5b5e4cccf8fc3ff2ba4f18c98a113930b8",
         "apps/croupier-frontend/test/game-entry.mjs": "sha256:c435c08820037bc1a3a6f591086780ddfc63ffb880a00ee910892651431d7cab",
         "docs/system-map/catalog.json": "sha256:212363d65a04422a745a7f718bb8c4c70fb957420e4d635da6d449edb0028ce8",
-        "docs/system-map/routes.json": "sha256:c3cf1488b6abc38b07ac04ca28d124d3bec4b2b59c9d7f2387aaf33c2d040bf0",
+        "docs/system-map/routes.json": "sha256:c86f7bea32cfa654a498d22e2afb8166a4b78c25fcdf4a6859a74bc526065184",
         "test/system-map.mjs": "sha256:d974d7725cfd8f9c44ef47bfff30f3cc3cda8590533faafb3334e7f5248cfb5e"
       }
     },
@@ -289,7 +289,7 @@
       ],
       "expectedHashes": {
         "docs/system-map/catalog.json": "sha256:212363d65a04422a745a7f718bb8c4c70fb957420e4d635da6d449edb0028ce8",
-        "docs/system-map/routes.json": "sha256:c3cf1488b6abc38b07ac04ca28d124d3bec4b2b59c9d7f2387aaf33c2d040bf0",
+        "docs/system-map/routes.json": "sha256:c86f7bea32cfa654a498d22e2afb8166a4b78c25fcdf4a6859a74bc526065184",
         "lab/app/activity/page.tsx": "sha256:c292c87196b1ff1fb22c1392748e49196ce1db12f2223df4325fbe5de207a439",
         "lab/app/administration/page.tsx": "sha256:eeb22dbe2a58a7f6abbdeada7275a54f3bf2338f3f60a024bde3600a4943b7a3",
         "lab/app/api/admin/[...action]/route.ts": "sha256:f27c08cd75dc65bdf255c9e4f2bd5c7bf33caa38a025424af884580e1b92af05",
@@ -371,12 +371,12 @@
         "lab/components/voice-preview-panel.test.mjs": "sha256:a34a747d1e941b9c106c4fe96d16646c285f688b8f7e8797816215f08b42e262",
         "lab/components/voice-preview-panel.tsx": "sha256:cd00e330eaed46f65a8ed6d6e40868f61104b698b3f238d24fac01af7dfb8b1f",
         "lab/lib/scout-navigation.mjs": "sha256:6d654516ef4e2b8de8caddd1917518c133c6ce9a176d4e1d1d06bdb01392a7ce",
-        "lab/lib/studio-admin-api.mjs": "sha256:21dd630fbdd245e70ded2b70e8d27eb9623a1a8a013f5cb2c3d8d29ab66cd83e",
+        "lab/lib/studio-admin-api.mjs": "sha256:6b09672beebd8f2cc463963dd85ae663bf60736bac6ad5e03fc0451ee77d5e53",
         "lab/lib/studio-login-client.mjs": "sha256:ca1834f58ab6ab255cf792cf630eeb303e52cc6d61a5cfb78cd316896d977e91",
         "lab/lib/studio-native-auth.mjs": "sha256:2697cf97f97d32d2f67093b89fa4699f8231dad2e4b4c25b2a36c9a2edacd28f",
         "lab/lib/studio-native-request.mjs": "sha256:c7b267652cc32f0d8c45732b6169756ba9e4595af3171c65ed05a42a83497355",
         "lab/lib/studio-native-runtime.d.mts": "sha256:13a999156440507c9debd609d6ffa361bd98812ff68599d02b5ae0ec4f816ca3",
-        "lab/lib/studio-native-runtime.mjs": "sha256:8063415f592297ee0298b6fa1649714b7e8ad10f3bc250a41e1e3c8c84692b7d",
+        "lab/lib/studio-native-runtime.mjs": "sha256:c79cf417a578c7fed2c0eeec4ad4c0d255228bbfa1770802c344edac428e72c6",
         "lab/lib/ui-server.ts": "sha256:0f78d9d162dc10f0160c33bb15c6e6fef9459b0a1e2c247d674bdfba2237596e",
         "lab/next.config.mjs": "sha256:fb7443f6235e01585385d51d98f941fd781d47285fac79e5ccb4572a0ca4a2db",
         "lab/test/next-page-navigation.test.mjs": "sha256:e61a9059c1c43634faaf2f01098e3082ebcbf7aa951e0cbb611f269b4fc2e8a3",
@@ -419,7 +419,7 @@
         "apps/croupier-frontend/lib/server-ui.mjs": "sha256:2a7ca79011a30ed978c01e0b6d39ee7dee80ae1c59b44d83ed5be813fa9bc970",
         "apps/croupier-frontend/test/game-entry.mjs": "sha256:c435c08820037bc1a3a6f591086780ddfc63ffb880a00ee910892651431d7cab",
         "docs/system-map/catalog.json": "sha256:212363d65a04422a745a7f718bb8c4c70fb957420e4d635da6d449edb0028ce8",
-        "docs/system-map/routes.json": "sha256:c3cf1488b6abc38b07ac04ca28d124d3bec4b2b59c9d7f2387aaf33c2d040bf0",
+        "docs/system-map/routes.json": "sha256:c86f7bea32cfa654a498d22e2afb8166a4b78c25fcdf4a6859a74bc526065184",
         "test/game-entry-auth.mjs": "sha256:1fadb111a62fdb4343e1033944de7f272d071f5f8f4f50d12bdec36ebb96fd80",
         "test/game-entry-contract.mjs": "sha256:e88eb45b8f6068903c284e28c0dfaa3f062809bcd4ad86d313302e030d17ab3c",
         "web/public/game-entry-contract.mjs": "sha256:1dba44e081b40c97e9cac1e3ed7d8df653932c2fb1cabcbdf202fbade154c452"
@@ -592,7 +592,7 @@
       "checks": [],
       "expectedHashes": {
         "docs/system-map/catalog.json": "sha256:212363d65a04422a745a7f718bb8c4c70fb957420e4d635da6d449edb0028ce8",
-        "docs/system-map/routes.json": "sha256:c3cf1488b6abc38b07ac04ca28d124d3bec4b2b59c9d7f2387aaf33c2d040bf0",
+        "docs/system-map/routes.json": "sha256:c86f7bea32cfa654a498d22e2afb8166a4b78c25fcdf4a6859a74bc526065184",
         "lab/app/api/zones/reference/route.ts": "sha256:a079611f7a55aed6891e7f2c34367fb7797d82e017292eaf190801eeee0a3b97",
         "lab/lib/media-blob-index.mjs": "sha256:3d9d6028c18ecedba3652efd6713465848c9e30a443ff2df4509a8da35823a1c",
         "lab/lib/zone-reference.mjs": "sha256:db73abff9ace1751e4b157c2a6abd623f62455a48cde14c8afa255a06ac4c08c",
@@ -643,7 +643,7 @@
       "checks": [],
       "expectedHashes": {
         "docs/system-map/catalog.json": "sha256:212363d65a04422a745a7f718bb8c4c70fb957420e4d635da6d449edb0028ce8",
-        "docs/system-map/routes.json": "sha256:c3cf1488b6abc38b07ac04ca28d124d3bec4b2b59c9d7f2387aaf33c2d040bf0",
+        "docs/system-map/routes.json": "sha256:c86f7bea32cfa654a498d22e2afb8166a4b78c25fcdf4a6859a74bc526065184",
         "lab/app/api/openclaw/admin/route.ts": "sha256:b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
         "lab/components/openclaw-workspace.test.mjs": "sha256:f9eb60e1da21ae2d53216c2863d95ee5ea43316c4c47f9dba33feba102c52556",
         "lab/components/openclaw-workspace.tsx": "sha256:d76721bc0427b80ccecc8e7da7c19ac2f6107587c545c751e8703469c4c88fdf",
