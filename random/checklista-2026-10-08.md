@@ -66,12 +66,12 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | C3 | Förslag: ett system, flytt av frekvens per klipp, vad användaren förlorar/ersättning | klart: `random/k2-forslag-2026-10-08.md` | brief K steg 2 | K |
 | C4 | Jakobs go på C3 | klart 02:49 ("kör enligt rekommendationerna") | beslut 49–53 | – |
 | C5a | Genomför 3a: rad 37, 17b, lane-typ, klippnamn, fuzz, `/control/preview` | klart natt 8 okt (S1–S4) | K2 | K |
-| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | kod inne 8 okt 12:35: select för astrid/vera/amira/mei; `legacyClipPolicy` → varianter vid läsning (fältet kvar, disk orörd tills Spara); `local` för annan dealer bara om lanen är portrait för henne. Jakob 12:28: `think`→turn, `gest`→settle godkända; `headTilt`/`deal`/`dealWatch` urval av. Astrid bevisat orörd: baslinje 160 anrop HEAD = arbetsträd (C5c). **Rehearsal Vera/Amira/Mei kvar** (visuell acceptans; de spelar 2D-reserv tills Emils paket, T7) | K2 | K |
+| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | kod i `7445b5a5` (12:35): select för astrid/vera/amira/mei; `legacyClipPolicy` → varianter vid läsning (fältet kvar, disk orörd tills Spara); `local` för annan dealer bara om lanen är portrait för henne. Jakob 12:28: `think`→turn, `gest`→settle godkända; `headTilt`/`deal`/`dealWatch` urval av. Astrid bevisat orörd: baslinje 160 anrop HEAD = arbetsträd (C5c). **Rehearsal Vera/Amira/Mei kvar** (visuell acceptans; de spelar 2D-reserv tills Emils paket, T7) | K2 | K |
 | C5c | Astrid-baslinje för select: 16 events × 5 lägen × 2 kontexter | klart: `tools/astrid-select-baseline.mjs` (`--write` kräver Jakobs ok), test i hooken | C5b | K |
 | C6 | Bakgrund och probe in i samma modell | kvar | brief K steg 4 | K |
 | C7 | Varianter/villkor för Vera, Amira, Mei i spelet (L19) | kvar | lösa trådar | K |
 | C8 | Zoner styr spelets bakgrund (L16) | kvar; blir del av D-lagret nedan | lösa trådar | K/T |
-| C9 | Probe verifierad i produktion (L4) | kvar | lösa trådar | K |
+| C9 | Probe verifierad i produktion (L4) | kvar: admin på `/control/probe`, läge Textprov, knapp Prova text, modell (seed `gpt-5.6-terra`). Studio behöver `OPENCLAW_BASE_URL` eller `OPENCLAW_HOSTPORT` plus `OPENCLAWAPI_KEY`. Textprovet ger varken ljud eller video. Inte kört i prod | lösa trådar | K |
 | C10 | Beskrivande klippnamn: manifestet har bara `id` (uuid), `familyId`, `role`, `relativePath`; UI visar id/siffror. Lägg till visningsnamn (`label`) härlett från familj + roll, redigerbart i Klippbibliotek. Inga filbyten: ny hash ogiltigförklarar godkänd synk | klart natt 8 okt (S2): `lab/lib/clip-label.mjs`, visas i Klippbibliotek, Dealers & klipp, Händelser; `clipLabels` i projektet utan redigeringsyta ännu | `lab-video-manifest.json` | K |
 | C11 | Redigeringsyta för `clipLabels` (byta namn på ett klipp i Klippbibliotek) | kod inne; sidans Spara; tomt fält tar bort nyckeln | C10 | M |
 
@@ -81,9 +81,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|---|---|
 | T1 | Inventering: finns lagren redan i klienten (`actor-compositor`, `table-scene` palett, zoner)? | klart: ja som kod (`actor-compositor`, `table-scene` palett per dealer, `rooms[].felt` i `/api/bo/config`), **nej i produktionsvägen** (full-frame mp4). Zon-JSON har ingen läsare i `web/`. Tre lager kräver antingen `/v2`-keyningen för alla dealers eller nytt material (F3) | K1 tabell 2–3 | K |
 | T2 | Datamodell: lane = dealer(s) + idle + dealsekvenser + bakgrund + probe + OpenClaw-rättigheter | klart natt 8 okt (S2): `project.lanes[]` med `layers`, `openclaw`, `operatorAdjustable`; ingen läsare ännu; `project-store` normaliserar inte vid läsning (matris 54) | beslut 49 | K steg 5 |
-| T3 | Bordsfärg som inställning: paket (bolag) → tillåtna val → spelarens val | väntar (F2, F4) | nytt | Lane |
-| T4 | Bakgrund som eget lager valbart för spelaren | väntar (T1) | nytt | Lane |
-| T5 | Dealerbyte för spelaren inom lanens dealers | väntar (F1) | nytt | Lane |
+| T3 | Bordsfärg som inställning: paket (bolag) → tillåtna val → spelarens val | kod inne (N3.4): DOM/SVG (filt-märke, plånbok, marker). Filmen och 3D-filten oförändrade. Inte på kontot | F2, F4 | Lane |
+| T4 | Bakgrund som eget lager valbart för spelaren | kod inne som val, avstängt med texten Kommer med nya dealerpaket när `mode` är `baked`. Ingen ritare | T1 | Lane |
+| T5 | Dealerbyte för spelaren inom lanens dealers | kod inne (N3.4): knappar bara för `gameChoices.dealers`, samma adressväg som `?dealer=`. Gamla dealer-raden listar fortfarande alla fyra | F1 | Lane |
 | T6 | Idle-frekvens ("gäspning") och dealsekvens-varianter som lane-grundinställning | väntar (T1) | nytt | K |
 | T7 | Nytt mediearbete (keya Vera/Mei) om fullbild | väntar (T1, F3) | nytt | eget mediespår |
 | T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas | klart natt 8 okt: grenen = fristående Laneverkstad (Python `program/`, stannar på grenen) + `preview/` (Paow, Dragge, 720p, 12 MB) + webbspelare `program/web/` (WebGL-kompositor, greenscreen, lager, `bridge.js` mot `presentation[]`). Grenen rör bara `apps/croupier-frontend` utanför mappen (`/test`, inte portad) | Jakob 8 okt | K |
@@ -97,12 +97,12 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|---|---|
 | L1 | Lagring `operator_packages` med lanes/spel/bord/branding | klart | 005 | – |
 | L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | live i prod 8 okt 10:53 (S1): redigerare, Spara projekt enda lime, id låst efter skapande. Layout-nits rättade (U2): tre kort, `·`-avgränsad förslagsrad. Prod-Neon har 0 bolag → operatörsval tomt tills `Skapa SG test game provider` klickas (Jakobs klick) | lösa trådar | Lane |
-| L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kod inne (`/control/lanes` + POST); meny + karta live; spelet läser inte paketet (L8) | lösa trådar | Lane |
+| L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kod inne (`/control/lanes` + POST); meny + karta live. Renders `/blackjack?operator=` läser paketet (återstart 12:45, inte beteendeverifierat). Vercel `/play/blackjack?operator=` proxar det dokumentet (L8b, inte klickat i prod) | lösa trådar | Lane |
 | L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kod inne (S3): partner-API `branding` GET/POST (CAS, `presentations.configure`, pool) + panel i Kevins vy Färger, marker och kort för riktig session; prod ger 403 tills roller seedas (N2.2); chips kvar | lösa trådar | Lane |
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
 | L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | live i prod 8 okt 10:52 (S2): fixturens tre bolag + länk till `/partner/{slug}`; spelare per bolag väntar N2.4; riktig lista väntar N2.2 | matris 44 | Lane |
 | L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
-| L8 | Spelmotorn läser `operator_packages` | kod inne `19f8073a`: `/blackjack?operator=<slug>` begränsar lane+dealer till paketet, 30 s cache, okänd slug 404, utan `?operator=` byte-identiskt. Gäller Renders `/blackjack`; Vercels `/play/blackjack` läser inte paketet än. Render-deploy + Neon-rättighet för `operators`/`operator_packages` väntar (Jakob) | L2 | Lane |
+| L8 | Spelmotorn läser `operator_packages` | kod inne `19f8073a` på Render (återstart 12:45, inte beteendeverifierat; 30 s cache, okänd slug 404). L8b: Vercel `/play/blackjack?operator=` hämtar samma dokument. Ogiltig slug och `claims.partner` når inte paketet. Inte klickat i prod. Neon-rättighet inte bevisad | L2 | Lane |
 
 ## N2. Nivå 2 (operatör)
 
@@ -121,9 +121,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | N3.1 | Lobby, profil, historik | klart | – | – |
-| N3.2 | Operatörskontext i lobbyn (L13) | kod inne `19f8073a`: `Spelar hos` från `?operator=`/localStorage via `GET /api/operators/<slug>`; Render-deploy väntar | lösa trådar | Lane |
-| N3.3 | Redigerbar profil | kod inne `19f8073a`: `PATCH /api/profile` (namn 2–40, språk sv/en; saldo serverägt). **Migration `ops/neon-game/006-player-profile.sql` ska köras av Jakob mot spel-Neon före deploy**; koden tål saknade kolumner | L13 | N3 |
-| N3.4 | Spelarens val: bordsfärg, bakgrund, dealer (T3–T5) | kvar | nytt | Lane |
+| N3.2 | Operatörskontext i lobbyn (L13) | kod inne `19f8073a`, Vercel-CI grön `0019df59`/`7445b5a5`: `Spelar hos` från `?operator=`/localStorage via `GET /api/operators/<slug>`. API:t ligger på Render (återstart 12:45, inte klickverifierat) | lösa trådar | Lane |
+| N3.3 | Redigerbar profil | kod inne `19f8073a`: `PATCH /api/profile` (namn 2–40, språk sv/en; saldo serverägt). Utan kolumner svarar skrivningen 503. **`006-player-profile.sql` är inte körd mot spel-Neon** | L13 | N3 |
+| N3.4 | Spelarens val: bordsfärg, bakgrund, dealer (T3–T5) | kod inne: `gameChoices` i datasetet, panelen Ditt bord, `localStorage` `croupier.choices.<slug>`. Bakgrund baked avstängd. Inte på kontot. Inte klickat i webbläsaren | nytt | Lane |
 | N3.5 | Render-deploy av `/api/history` och `/bo`-redirects (L7) | väntar (Jakob: manuell deploy) | lösa trådar | – |
 
 ## Hos människor
@@ -132,7 +132,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|
 | Jakob | Bekräfta matrisrader 37–44 | väntar |
 | Jakob | Radera Vercel `scoutgaming-legacy-frontend` (rad 40) | väntar |
-| Jakob | Render manuell deploy `croupier-v2` | väntar |
+| Jakob | Render manuell deploy `croupier-v2` | återstartat 12:45; inte beteendeverifierat |
 | Jakob | Rotera Neon-rollen `croupier_game` | väntar |
 | Jakob | Svar F1–F5 nedan | besvarade 02:49 via "kör enligt rekommendationerna" |
 | Jakob | Logga in på `www.scoutgaming.tech/control` i Cursor-webbläsaren så orkestratorn kan verifiera B2–B5, B8, T10, L2, L6 live | klart 10:52; B8 (inloggningskort) och B4 ljust kvar att se |
@@ -142,7 +142,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
 | Jakob | Kör promptfilerna L8, C5b, N3 i egna agenter | klart 12:05; alla tre levererade och mergade |
 | Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar |
-| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | väntar |
+| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | återstartat 12:45 (L8/N3 i koden). Inte beteendeverifierat. `006` inte körd |
 | Jakob | Rehearsal lokalt: `/blackjack?dealer=<namn>&rehearsal=1`, Play twice, fyra dealers | väntar |
 | Jakob | `LAB_PARTNER_*` vs `BETTALOTTO_PARTNER_*`: vilket namn gäller? | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |

@@ -75,6 +75,89 @@ export function laneDealerSelection(query, lane, dealerLayer) {
 }
 
 const packageRevisionPattern = /^[1-9][0-9]{0,15}$/;
+const CHOICE_DEALERS = Object.freeze(['vera', 'astrid', 'amira', 'mei']);
+const TABLE_COLOR = /^#[0-9a-f]{6}$/;
+const CHOICE_BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
+// Same layers as lab/lib/studio-model.mjs defaultPresentationLane. web does not import lab.
+const STANDARD_PRESENTATION_LAYERS = Object.freeze({
+  background: Object.freeze({ enabled: true, mode: 'baked', default: null, allowed: Object.freeze([]) }),
+  table: Object.freeze({ enabled: true, default: null, allowed: Object.freeze([]) }),
+  dealer: Object.freeze({ enabled: true, default: 'astrid', allowed: Object.freeze(['astrid']) }),
+});
+const choiceText = value => typeof value === 'string' && value.length >= 1 && value.length <= 200 && !/[\u0000-\u001f\u007f]/u.test(value);
+
+function choiceList(list, accept, max) {
+  if (!Array.isArray(list) || list.length > max) return null;
+  const out = [];
+  for (const item of list) {
+    if (!accept(item) || out.includes(item)) return null;
+    out.push(item);
+  }
+  return out;
+}
+
+// The document attribute is escaped JSON. A tampered list fails closed.
+export function gameChoicesFromDocument(text) {
+  if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { throw Error('Invalid game presentation'); }
+  return assertGameChoices(parsed);
+}
+
+export function assertGameChoices(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Invalid game presentation');
+  if (Object.keys(value).length !== 5 || !['dealers', 'dealerDefault', 'tableColors', 'tableDefault', 'background'].every(key => Object.hasOwn(value, key))) throw Error('Invalid game presentation');
+  const dealers = choiceList(value.dealers, id => CHOICE_DEALERS.includes(id), 4);
+  if (!dealers || (value.dealerDefault !== null && !dealers.includes(value.dealerDefault))) throw Error('Invalid game presentation');
+  const tableColors = choiceList(value.tableColors, color => TABLE_COLOR.test(color), 16);
+  if (!tableColors || (value.tableDefault !== null && !tableColors.includes(value.tableDefault))) throw Error('Invalid game presentation');
+  const background = value.background;
+  if (!background || typeof background !== 'object' || Array.isArray(background)) throw Error('Invalid game presentation');
+  if (Object.keys(background).length !== 4 || !['enabled', 'mode', 'allowed', 'default'].every(key => Object.hasOwn(background, key))) throw Error('Invalid game presentation');
+  if (typeof background.enabled !== 'boolean' || !CHOICE_BACKGROUND_MODES.has(background.mode)) throw Error('Invalid game presentation');
+  const allowed = choiceList(background.allowed, choiceText, 32);
+  if (!allowed || (background.default !== null && !allowed.includes(background.default))) throw Error('Invalid game presentation');
+  return value;
+}
+
+function keptStrings(list, accept, max) {
+  const out = [];
+  if (!Array.isArray(list)) return out;
+  for (const item of list) {
+    if (!accept(item) || out.includes(item)) continue;
+    out.push(item);
+    if (out.length === max) break;
+  }
+  return out;
+}
+
+// Missing project lane → the standard lane. Portrait lanes can only offer the
+// dealer that lane already renders; an indexed lane can offer any of the four.
+export function gameChoicesForLane(projectLanes, laneId, serverLane) {
+  const found = Array.isArray(projectLanes) ? projectLanes.find(row => row && row.id === laneId) : undefined;
+  const layers = found?.layers && typeof found.layers === 'object' ? found.layers : STANDARD_PRESENTATION_LAYERS;
+  const renderable = !serverLane ? CHOICE_DEALERS
+    : serverLane.renderer === 'indexed-video' ? CHOICE_DEALERS
+    : CHOICE_DEALERS.includes(serverLane.dealer) ? [serverLane.dealer] : [];
+  const dealerLayer = layers.dealer && typeof layers.dealer === 'object' ? layers.dealer : {};
+  const dealers = keptStrings([dealerLayer.default, ...(Array.isArray(dealerLayer.allowed) ? dealerLayer.allowed : [])], id => renderable.includes(id), 4);
+  const table = layers.table && typeof layers.table === 'object' ? layers.table : {};
+  const tableColors = keptStrings(Array.isArray(table.colors) ? table.colors : table.allowed, color => TABLE_COLOR.test(color), 16);
+  const background = layers.background && typeof layers.background === 'object' ? layers.background : {};
+  const allowed = keptStrings(background.allowed, choiceText, 32);
+  return {
+    dealers,
+    dealerDefault: dealers.includes(dealerLayer.default) ? dealerLayer.default : (dealers[0] ?? null),
+    tableColors,
+    tableDefault: tableColors.includes(table.default) ? table.default : null,
+    background: {
+      enabled: typeof background.enabled === 'boolean' ? background.enabled : true,
+      mode: CHOICE_BACKGROUND_MODES.has(background.mode) ? background.mode : 'baked',
+      allowed,
+      default: allowed.includes(background.default) ? background.default : null,
+    },
+  };
+}
 
 // The server resolves the saved catalogue. Client query strings cannot
 // reselect a retired adapter or override that server-owned decision.
@@ -92,13 +175,17 @@ export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
   }
   const selection = { lane: dataset.gameLane, dealer: dataset.gameDealer, presentation: dataset.gamePresentation };
   const packaged = dataset.gamePackageRevision !== undefined || dataset.gameBranding !== undefined;
+  const finish = () => {
+    if (dataset.gameChoices !== undefined) selection.choices = gameChoicesFromDocument(dataset.gameChoices);
+    return selection;
+  };
   if (dataset.gameOperator === undefined) {
     if (packaged) throw Error('Invalid game presentation');
-    return selection;
+    return finish();
   }
   if (!isOperatorSlug(dataset.gameOperator)) throw Error('Invalid game presentation');
   selection.operator = dataset.gameOperator;
-  if (!packaged) return selection;
+  if (!packaged) return finish();
   if (!packageRevisionPattern.test(dataset.gamePackageRevision ?? '') || !Number.isSafeInteger(Number(dataset.gamePackageRevision))
     || typeof dataset.gameBranding !== 'string') throw Error('Invalid game presentation');
   let branding;
@@ -106,5 +193,5 @@ export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
   if (!branding || typeof branding !== 'object' || Array.isArray(branding)) throw Error('Invalid game presentation');
   selection.packageRevision = Number(dataset.gamePackageRevision);
   selection.branding = branding;
-  return selection;
+  return finish();
 }

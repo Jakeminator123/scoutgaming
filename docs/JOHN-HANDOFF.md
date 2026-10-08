@@ -4,10 +4,10 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=`; kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), Vercels spelväg (L8b), spelarens val (N3.4), tre lager i spelet (Jakobs gren). Uppföljning: `random/checklista-2026-10-08.md` | 8 okt middag |
+| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
 | Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
 | Nivå 2 /partner | påbörjad — session finns; `branding` läses/skrivs inom lanen med CAS men kräver roller som ingen rutt ännu skapar (N2.2 promptfil); speldata ej | Sista operatörsadmin, Partnerportal |
-| Nivå 3 /play | påbörjad — lobby med `Spelar hos`, redigerbar profil (namn, språk; migration `006` väntar), historikrutt; kvar: spelarens val av dealer/bordsfärg inom paketet (N3.4) | Spelaryta |
+| Nivå 3 /play | påbörjad — lobby med `Spelar hos` och senaste bord/dealer från webbläsaren; redigerbar profil (namn, språk; migration `006` väntar); historikrutt; panelen Ditt bord väljer dealer och bordsfärg inom lanen (N3.4). Bakgrund är avstängd när filmen är inbakad. Valet ligger inte på kontot | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
 | Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
@@ -31,6 +31,17 @@ saldo serverägt) och lobbyn visar `Spelar hos`. Migration `006-player-profile.s
 körning mot spel-Neon, Render väntar på manuell deploy, rehearsal av tre dealers väntar på Jakob.
 Uppspelning är nedbantad till loggen; ljust läge rättat på `/partner`, guiden, chatten och
 inspektorn; demo-bolagen bor i `web/demo-operators.mjs` så servern inte importerar `lab/`.
+
+## 8 oktober 2026 eftermiddag: Vercel bär paketet, spelaren väljer inom lanen
+
+L8b och N3.4. Vercel `/play/blackjack?operator=<slug>` hämtar Renders `/blackjack`-dokument
+(paketets lane och dealer, bolagets 404, 503 om motorn inte svarar). Ogiltig slug och en
+signerad launch med `claims.partner` skickas inte som operatör. Utan `?operator=` är vägen
+densamma som förut. Spelet får `gameChoices` från lanen även utan bolag. Panelen Ditt bord
+byter dealer via befintlig adress och lägger bordsfärg på filt-märke, plånbokskant och
+marker. Inbakad bakgrund går inte att välja. Valet sparas i `localStorage`, inte på kontot.
+Testat: spelentré, spelarval, lobbyns text, fuzz 3000 rundor, dealer-probe PASS. Inte klickat
+i webbläsaren eller i produktion. N2.2 (skrivande partnerrutter) har ingen kod i den här leveransen.
 
 ## 8 oktober 2026 förmiddag: Lanes, clipLabels, CI-actions
 

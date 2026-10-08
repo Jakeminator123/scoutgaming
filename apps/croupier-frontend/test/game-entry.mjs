@@ -4,6 +4,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformUiDocument} from '../lib/server-ui.mjs';
+import {OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {platformConfiguration,platformRoute} from '../lib/platform-routing.mjs';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:'https://game.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.onrender.com',
@@ -230,6 +231,41 @@ test('modal keeps one CRAIG/shared POST and exposes only a fixed or query-allowl
       assert.equal(nodes['#auth-password'].value,'');assert.doesNotMatch(nodes['#auth-error'].textContent,/PRIVATE|fixture-modal-password/);
       dialog.close('cancel');assert.equal(await result,false);
     });
+});
+
+test('unknown operator slug is the company 404 from the engine, not the open catalogue',async t=>{
+  const directory=await mkdtemp(join(tmpdir(),'operator-entry-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  await writeFile(join(directory,'game.html'),'<html><script src="app.mjs"></script></html>');
+  const unified={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const enginePage='<!doctype html><html lang="sv"><head><title>Bolaget finns inte</title></head><body><h1>Bolaget finns inte</h1></body></html>';
+  const calls=[];
+  const fetchImpl=async(url,init)=>{
+    calls.push(String(url));
+    assert.equal(init.headers.get('cookie'),'fixture-session=existing');
+    assert.equal(init.headers.get('x-croupier-vercel-secret'),env.CROUPIER_VERCEL_INGRESS_SECRET);
+    if(String(url).endsWith('/api/auth/session'))return Response.json({authenticated:true});
+    assert.match(String(url),/\/blackjack\?operator=nobody$/);
+    assert.equal(init.redirect,'manual');
+    if(init.method==='HEAD')return new Response(null,{status:404,headers:{'content-type':'text/html; charset=utf-8'}});
+    return new Response(enginePage,{status:404,headers:{'content-type':'text/html; charset=utf-8'}});
+  };
+  const options={env:unified,directory,fetchImpl};
+  const request=method=>new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=nobody',{method,headers:{cookie:'fixture-session=existing'}});
+  const response=await platformUiDocument(request('GET'),options);
+  assert.equal(response.status,404);assert.equal(await response.text(),enginePage);
+  const head=await platformUiDocument(request('HEAD'),options);
+  assert.equal(head.status,404);assert.equal(await head.text(),'');
+  assert.equal(calls.some(url=>url.includes('/api/bo/config')),false);
+  const fallback=await platformUiDocument(request('GET'),{...options,fetchImpl:async url=>{
+    if(String(url).endsWith('/api/auth/session'))return Response.json({authenticated:true});
+    return new Response('not found',{status:404});
+  }});
+  assert.equal(fallback.status,404);assert.equal(await fallback.text(),OPERATOR_NOT_FOUND_HTML);
+  const foreign=await platformUiDocument(request('GET'),{...options,fetchImpl:async url=>{
+    if(String(url).endsWith('/api/auth/session'))return Response.json({authenticated:true});
+    return new Response(null,{status:303,headers:{location:'https://evil.invalid/steal'}});
+  }});
+  assert.equal(foreign.status,503);assert.doesNotMatch(await foreign.text(),/evil\.invalid/);
 });
 
 test('modal stays inert before capability resolves and ignores a cancelled stale GET response',async()=>{

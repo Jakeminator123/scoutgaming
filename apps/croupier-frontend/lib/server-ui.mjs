@@ -1,8 +1,9 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {platformConfiguration,platformBackendHeaders} from './platform-routing.mjs';
-import {gameEntryEnabled,gameEntryRedirect,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
+import {platformConfiguration,platformBackendHeaders,launchHasPartnerClaim} from './platform-routing.mjs';
+import {gameEntryEnabled,gameEntryRedirect,approvedGameQuery,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
 import {gameLaneSelection} from '../../../web/public/game-lanes.mjs';
+import {requestedOperator,OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
 
 const DOCUMENTS = new Map([
   ['/game', 'game.html'], ['/game/', 'game.html'], ['/blackjack', 'blackjack.html'], ['/blackjack/', 'blackjack.html'],
@@ -23,6 +24,39 @@ function legacyStudioLocation(url) {
     return token && /^[A-Za-z0-9_-]{32,128}$/.test(token) ? `/control/set-password?t=${encodeURIComponent(token)}` : '/control/set-password';
   }
   return null;
+}
+
+function safeGameLocation(location) {
+  if (typeof location !== 'string' || location.length > 2048 || !location.startsWith('/') || location.startsWith('//') || location.includes('\\') || /[\r\n]/.test(location)) return null;
+  return location;
+}
+
+// Authenticated ?operator=<slug> is the engine document: package lane/dealer, or the company 404.
+async function proxyOperatorGame(request, url, config, fetchImpl, headers) {
+  const unavailable = () => new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
+    {status:503,headers:{...headers,'Content-Type':'text/plain; charset=utf-8'}});
+  const query = approvedGameQuery(url.searchParams,{origin:url.origin}).toString();
+  const upstreamHeaders = platformBackendHeaders(new Headers({Accept:'text/html',
+    ...(request.headers.get('cookie') ? {Cookie:request.headers.get('cookie')} : {})}),config);
+  let upstream;
+  try {
+    upstream = await fetchImpl(`${config.backendOrigin}/blackjack${query ? `?${query}` : ''}`,{method:request.method,headers:upstreamHeaders,
+      cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(10000)});
+  } catch { return unavailable(); }
+  if (upstream.status === 303 || upstream.status === 307) {
+    const location = safeGameLocation(upstream.headers.get('location'));
+    if (!location) return unavailable();
+    return new Response(null,{status:upstream.status,headers:{...headers,Location:location}});
+  }
+  if (upstream.status === 404) {
+    const body = request.method === 'HEAD' ? '' : await upstream.text();
+    const html = body.includes('<title>Bolaget finns inte</title>') ? body : OPERATOR_NOT_FOUND_HTML;
+    return new Response(request.method === 'HEAD' ? null : html,{status:404,headers:{...headers,'Content-Type':'text/html; charset=utf-8'}});
+  }
+  if (upstream.status !== 200) return unavailable();
+  const html = request.method === 'HEAD' ? null : await upstream.text();
+  if (request.method !== 'HEAD' && (typeof html !== 'string' || html.length > 2_000_000 || !/<html[\s>]/i.test(html))) return unavailable();
+  return new Response(html,{status:200,headers:{...headers,'Content-Type':'text/html; charset=utf-8'}});
 }
 
 export async function platformUiDocument(request, {env = process.env, directory = resolve(process.cwd(), 'runtime-ui'), fetchImpl = fetch} = {}) {
@@ -59,6 +93,10 @@ export async function platformUiDocument(request, {env = process.env, directory 
       const session = await read('/api/auth/session');
       if (typeof session?.authenticated !== 'boolean') throw Error('Invalid session');
       if (!session.authenticated) return new Response(null,{status:303,headers:{...headers,Location:playerLoginDestination(url)}});
+      // Invalid slugs never reach this branch: requestedOperator is null and the catalogue path below is unchanged.
+      if (typeof requestedOperator(url.searchParams) === 'string' && !launchHasPartnerClaim(url.searchParams.get('launch'))) {
+        return proxyOperatorGame(request,url,config,fetchImpl,headers);
+      }
       const policy = await read('/api/bo/config');
       selection = gameLaneSelection(url.searchParams,policy?.gameLane === undefined ? 'mobile-phone' : policy.gameLane,policy?.gameLanes);
     } catch {

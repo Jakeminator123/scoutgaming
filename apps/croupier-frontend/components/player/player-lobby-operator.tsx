@@ -5,6 +5,7 @@ import {
   OPERATOR_STORAGE_KEY, clearedOperatorLocation, operatorChoice, operatorLoginPath, operatorPlayPath,
   operatorPublicView, operatorSlugFromSearch,
 } from '@/lib/player-operator.mjs';
+import {lobbyChoiceText, readChoices} from '@/lib/player-choices.mjs';
 
 type Operator = {slug: string, name: string};
 
@@ -17,6 +18,12 @@ export function PlayerLobbyOperator({
   directPlay: boolean;
 }) {
   const [operator, setOperator] = useState<Operator | null>(initial);
+  const [choiceText, setChoiceText] = useState('');
+  useEffect(() => {
+    const stored = window.localStorage.getItem(OPERATOR_STORAGE_KEY);
+    const slug = operator?.slug || operatorChoice({search: window.location.search, stored});
+    setChoiceText(lobbyChoiceText(readChoices(window.localStorage, slug)));
+  }, [operator?.slug]);
   useEffect(() => {
     const stored = window.localStorage.getItem(OPERATOR_STORAGE_KEY);
     const slug = operatorChoice({search: window.location.search, stored});
@@ -48,6 +55,7 @@ export function PlayerLobbyOperator({
   }
   return <>
     {operator ? <p className="mt-6 text-slate-200" data-operator>Spelar hos: {operator.name}</p> : null}
+    {choiceText ? <p className="mt-2 text-sm text-slate-300" data-player-choice>{choiceText}</p> : null}
     {operator ? <button type="button" data-operator-clear className="mt-3 text-sm text-slate-300 underline" onClick={clearOperator}>Byt bolag</button> : null}
     <a href={href} className="mt-7 inline-block rounded-lg bg-emerald-300 px-6 py-3 font-semibold text-slate-950">{playLabel}</a>
   </>;

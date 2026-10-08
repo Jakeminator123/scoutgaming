@@ -13,6 +13,7 @@ import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6G
 import { createTableAudio } from './table-audio.mjs';
 import { requestLogin } from './auth-modal.mjs';
 import { gameLaneFromDocument } from './game-lanes.mjs';
+import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from './player-choices.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
 import { playSpeech, abortableDelay, waitForAudio } from './speech-playback.mjs';
 import { handValue } from './blackjack.mjs';
@@ -81,6 +82,18 @@ const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
 if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
+const playerChoice = entrySelection.choices ? resolvePlayerSelection({
+  choices: entrySelection.choices,
+  search: location.search,
+  stored: readChoices(localStorage, entrySelection.operator),
+  branding: entrySelection.branding,
+  currentDealer: entrySelection.dealer,
+}) : null;
+if (playerChoice) {
+  writeChoices(localStorage, entrySelection.operator, playerChoice.nextStored);
+  if (playerChoice.tableColor) applyTableColor(document, playerChoice.tableColor);
+  if (playerChoice.navigateDealer) location.replace(dealerVersionPath(playerChoice.navigateDealer, dealerV2Route ? 'v2' : 'original', location.search));
+}
 {
   document.documentElement.dataset.dealer = DEALER.key;
   const rs = document.documentElement.style;
@@ -1710,7 +1723,7 @@ function showActions(seat) {
     }
   }
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
-  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#rehearsal')].filter(visible);
+  const protectedEls=[...document.querySelectorAll('.card,.hand-total,.seat .spot.staked,.seat .sidearcs,.sideresult,#wallet,#bottom-right,#table-pick,#player-choices,#rehearsal')].filter(visible);
   const obstacles=protectedEls.map(el=>el.classList.contains('card')?(tableScene?.cardBounds?.(el)??el.getBoundingClientRect()):el.getBoundingClientRect());
   const totals=[...activeSeat.querySelectorAll('.hand-total')].map(el=>el.getBoundingClientRect());
   const fan=tableScene?.handBounds?.(boxContainer(round.active));
@@ -2524,6 +2537,31 @@ function setTable(id) {
   renderBets();
 }
 document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
+if (playerChoice && entrySelection.choices) {
+  const remember = patch => writeChoices(localStorage, entrySelection.operator, { ...playerChoice.nextStored, ...patch });
+  mountPlayerChoices(document, {
+    choices: entrySelection.choices,
+    names: Object.fromEntries(Object.values(DEALERS).map(dealer => [dealer.key, dealer.name])),
+    currentDealer: DEALER.key,
+    tableColor: playerChoice.tableColor,
+    backgroundValue: playerChoice.backgroundValue,
+    isBusy: () => !!(round || busy),
+    onDealer: key => {
+      remember({ dealer: key });
+      location.href = dealerVersionPath(key, dealerV2Route ? 'v2' : 'original', location.search);
+    },
+    onTableColor: color => {
+      playerChoice.nextStored = { ...playerChoice.nextStored, tableColor: color };
+      playerChoice.tableColor = color;
+      remember({ tableColor: color });
+      applyTableColor(document, color);
+    },
+    onBackground: id => {
+      playerChoice.nextStored = { ...playerChoice.nextStored, background: id };
+      remember({ background: id });
+    },
+  });
+}
 
 // Dealer tables are available in the main controls, without a rehearsal URL.
 for (const dealer of Object.values(DEALERS)) {
