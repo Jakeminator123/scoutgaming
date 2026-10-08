@@ -106,7 +106,8 @@
     "content/staging/2026-10-08/dragge-klara-bake": "media/dealers/dragge/staging/2026-10-08/klara-bake",
     "h3/klara-paow": "media/dealers/paow/runtime/presentation",
     "h3/klara-paow-README.md": "media/dealers/paow/source/provenance/klara-delivery.md",
-    "content/staging/2026-10-08/paow-klara-bake": "media/dealers/paow/staging/2026-10-08/klara-bake"
+    "content/staging/2026-10-08/paow-klara-bake": "media/dealers/paow/staging/2026-10-08/klara-bake",
+    "content/staging/2026-10-08/dragge-speech-en-bake": "media/dealers/dragge/staging/2026-10-08/speech-en-bake"
   },
   "provenance": {
     "presentation": {
@@ -129,6 +130,13 @@
       "originalRoot": "h3/klara-paow",
       "deliveryDate": "2026-10-07",
       "bake": "media/dealers/paow/staging/2026-10-08/klara-bake"
+    },
+    "draggeSpeechEn": {
+      "supplier": "Kevin (ElevenLabs voice, MuseTalk lip sync on the KLARA VILA still)",
+      "originalRoot": "h3/klara-dragge",
+      "recordedDate": "2026-10-08",
+      "language": "en",
+      "bake": "media/dealers/dragge/staging/2026-10-08/speech-en-bake"
     }
   },
   "files": [
@@ -11251,8 +11259,8 @@
     {
       "legacyPath": "h3/klara-dragge/lab-video-manifest.json",
       "path": "dealers/dragge/runtime/presentation/lab-video-manifest.json",
-      "size": 5605,
-      "sha256": "2138e3ca1f258afedb4d2bc2ec2efaea227251f9e571e65d0bdb82d9cc0fccff",
+      "size": 28973,
+      "sha256": "440fd826e2983e1cabc8bae5b4b939a8ec67da2bf3d66dfc9f528cb5936421bd",
       "tracked": true,
       "access": "source"
     },
@@ -11268,8 +11276,569 @@
     {
       "legacyPath": "h3/klara-dragge/README.md",
       "path": "dealers/dragge/runtime/presentation/README.md",
-      "size": 2531,
-      "sha256": "be4c8e20d03a46825c85d48e153e68b6b17568344e2d640123f6f165a024a04d",
+      "size": 2994,
+      "sha256": "db8c7ebbbe104fcb448c81f15de1bef9aee37c110400fd38c060de286fa8deed",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "web/public/dealers/dragge/audio/en/bank.json",
+      "path": "dealers/dragge/runtime/presentation/repliker/bank.json",
+      "size": 1410,
+      "sha256": "bb4a315197213c7a7a0b15050d15336b1d982fea0b71b62a7b7dd3db8d170507",
+      "tracked": true,
+      "access": "public",
+      "publicUrl": "/dealers/dragge/audio/en/bank.json"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/blackjack/blackjack.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/blackjack/blackjack.mp4",
+      "size": 632800,
+      "sha256": "f4e6af39bc1462a4bd756692620801861d5e702b56d025b5d0c1a5644b9f08bf",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/blackjack/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/blackjack/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/blackjack/variant/blackjack_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/blackjack/variant/blackjack_2.mp4",
+      "size": 641583,
+      "sha256": "293a5e23e249d4a67b0d5bcebad09ada55d797faaf5a8678ed2b1633d7954f39",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/blackjack/variant/blackjack_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/blackjack/variant/blackjack_3.mp4",
+      "size": 636728,
+      "sha256": "69c9c591459863c3d6f38e22510c3e7abbac92206f791d1f451c88c6eaa24fa8",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/bust/bust.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/bust/bust.mp4",
+      "size": 631820,
+      "sha256": "a68bfddc4193d832e365d9da59b9b3cb4a137d87830d13251d6829e93874c404",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/bust/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/bust/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/bust/variant/bust_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/bust/variant/bust_2.mp4",
+      "size": 577806,
+      "sha256": "6ec17b7de6b507752e954a3cf969489c05005c968c2e380c90c2fbedea3c3db6",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/bust/variant/bust_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/bust/variant/bust_3.mp4",
+      "size": 630525,
+      "sha256": "abb94aad31afb827efffb3c3260cb84e518db62eea30ca4f001b52285ac0ce44",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter1/chatter1.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter1/chatter1.mp4",
+      "size": 617268,
+      "sha256": "22fd631a63acf2cf1b693552f65528f81b545fbcf5e4e2e4a59e1622335a4676",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter1/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter1/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter1/variant/chatter1_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter1/variant/chatter1_2.mp4",
+      "size": 687522,
+      "sha256": "cdfac9a950669a4947a2246d00daba95a69881e558f4599011c44b7b101de19f",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter1/variant/chatter1_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter1/variant/chatter1_3.mp4",
+      "size": 690618,
+      "sha256": "cceadcccb82a07411c2003d9fadaf33ab201edcb449d95fccbba7158fc2943c1",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter2/chatter2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter2/chatter2.mp4",
+      "size": 613928,
+      "sha256": "00afcfebf18dd349815bcd3d97129bc6ee25d8920e796ecf5ed25771346d0717",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter2/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter2/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter2/variant/chatter2_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter2/variant/chatter2_2.mp4",
+      "size": 587880,
+      "sha256": "95fbde9e92236849213acef0d9b99804ac8b325401f03dd08c4045ca78ffe165",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/chatter2/variant/chatter2_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/chatter2/variant/chatter2_3.mp4",
+      "size": 610466,
+      "sha256": "a9c2058ae61fd583b30f2dfb596aa4bf1e0150a7c0a1f4ac7c6b46151cf7f486",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerblackjack/dealerblackjack.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerblackjack/dealerblackjack.mp4",
+      "size": 608720,
+      "sha256": "586d72ebd50700a8e1df0b84000ba71eed2ea754b1d242f57d21c1d631d8db87",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerblackjack/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerblackjack/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerblackjack/variant/dealerblackjack_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerblackjack/variant/dealerblackjack_2.mp4",
+      "size": 632419,
+      "sha256": "b684a0e67c7ed3da8546bb381dbc200ef4feee3609290ac1678ad9ddef89bc26",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerblackjack/variant/dealerblackjack_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerblackjack/variant/dealerblackjack_3.mp4",
+      "size": 666720,
+      "sha256": "a3c59bcced1c935672a35c7a44feaef5cf66633b20fa8641df0b9b180a2957f7",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerbust/dealerbust.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerbust/dealerbust.mp4",
+      "size": 632753,
+      "sha256": "e958a8c94f616753c5679da98dd78fab646896112731cf34f994f0558336fec9",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerbust/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerbust/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerbust/variant/dealerbust_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerbust/variant/dealerbust_2.mp4",
+      "size": 639992,
+      "sha256": "8621d8a2caf021bdb0926e3023782c5748c7bafc8744cddb419e7603e42d38bf",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/dealerbust/variant/dealerbust_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/dealerbust/variant/dealerbust_3.mp4",
+      "size": 635369,
+      "sha256": "6f9452ca35a4f06694f6da9dc2161cc11c9657203e27e25a47fa12a7373ac426",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/double/double.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/double/double.mp4",
+      "size": 610915,
+      "sha256": "b79a214e9cff14b247da68417508d88629b1cda7762342ea1fe66d8ba03d5bf6",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/double/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/double/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/double/variant/double_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/double/variant/double_2.mp4",
+      "size": 602417,
+      "sha256": "f80c85c1dcab897582d7714d8266c8dc809b1f137a111637b707531059c36e33",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/double/variant/double_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/double/variant/double_3.mp4",
+      "size": 584093,
+      "sha256": "09ba0aa9452cea5d10e60d02cb3cde2366d9dd9971c53441be6dc12628722aa5",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/farewell/farewell.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/farewell/farewell.mp4",
+      "size": 635243,
+      "sha256": "b6b189d89ceb9d5a92a29a2111877cc3f5d56005d480c7612b114f6fd88bb926",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/farewell/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/farewell/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/farewell/variant/farewell_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/farewell/variant/farewell_2.mp4",
+      "size": 672729,
+      "sha256": "186a848573fa1408e3ee18d25c20dcc5a06641b9a95f3e7256e7fbca9ad22805",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/farewell/variant/farewell_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/farewell/variant/farewell_3.mp4",
+      "size": 637089,
+      "sha256": "76f475b2f32a0918f609abf17c05990eb768581a1e1f361d45a076dfd17a959f",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/goodluck/goodluck.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/goodluck/goodluck.mp4",
+      "size": 590118,
+      "sha256": "3d91bf38d5a641f39a807911e95424e190d097aab3feb8dea2cd9d6143bde8b3",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/goodluck/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/goodluck/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/goodluck/variant/goodluck_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/goodluck/variant/goodluck_2.mp4",
+      "size": 591785,
+      "sha256": "ffb70994b6d929928a5c09636f188c74d1af0f90c77faee45eaf8a2dbfb15b07",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/goodluck/variant/goodluck_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/goodluck/variant/goodluck_3.mp4",
+      "size": 629983,
+      "sha256": "5efc1ac5a988c6840e26572c752cf4a69609bedd4454f00b13a07d44a1182819",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/greeting/greeting.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/greeting/greeting.mp4",
+      "size": 675156,
+      "sha256": "c3934c82862353e3d72fb203ba5df4e8347d90b17e2b848500771a26ebbf0678",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/greeting/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/greeting/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/greeting/variant/greeting_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/greeting/variant/greeting_2.mp4",
+      "size": 655936,
+      "sha256": "878ce94bb4a0beb1ac4a9d1e30d0bbe4c2e2386f29c50a7f461a7880304c90e9",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/greeting/variant/greeting_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/greeting/variant/greeting_3.mp4",
+      "size": 676770,
+      "sha256": "fae353498a54514ec5706106c394c4af60247bbf6da156cbc1b4a54687b40014",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/insurance/insurance.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/insurance/insurance.mp4",
+      "size": 617152,
+      "sha256": "ad36615e9a017d6bfacc0790110e3737ed69c955721825d585532139e1c4c01b",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/insurance/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/insurance/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/insurance/variant/insurance_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/insurance/variant/insurance_2.mp4",
+      "size": 649638,
+      "sha256": "b008b3aa899109260de5cbb20524e42b7b6da6630f6d803d1a79efe6f5025797",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/insurance/variant/insurance_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/insurance/variant/insurance_3.mp4",
+      "size": 618500,
+      "sha256": "4ad29957f72c4ee68f7d1616b5ca62569a26b53b3c16ab55da75ebf4d2c19aa6",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/lose/lose.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/lose/lose.mp4",
+      "size": 610094,
+      "sha256": "1af6526fe32c747390b65672e1e61444d782106da9fecc44328d8f023d7486c1",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/lose/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/lose/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/lose/variant/lose_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/lose/variant/lose_2.mp4",
+      "size": 606591,
+      "sha256": "fad31b506fda1013bbaf03d4b5ba9443ac81567a6958182a33ace370e94cbf15",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/lose/variant/lose_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/lose/variant/lose_3.mp4",
+      "size": 603411,
+      "sha256": "44908ca1a05a98fdb6bfcd9d8cc435ccbdf8cde73f81adabf95e828222bdff0a",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/peek/peek.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/peek/peek.mp4",
+      "size": 589846,
+      "sha256": "b092f155a0d5a497a5ca7212105063f10a5d7d9c476a96948900935c2cceb9c6",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/peek/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/peek/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/peek/variant/peek_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/peek/variant/peek_2.mp4",
+      "size": 570113,
+      "sha256": "cf02a1d50e52b8638e04ceaaa21550906541692c91d21222374af7416f9c761b",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/peek/variant/peek_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/peek/variant/peek_3.mp4",
+      "size": 604503,
+      "sha256": "faab69c3a66ab69a04c7a0fe4829dd2056eabe3e08f8a6ed4b042064c38cdfcc",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/placebets/placebets.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/placebets/placebets.mp4",
+      "size": 633544,
+      "sha256": "12a5af97ba197ccadb2f76b85ed98a98b2226eac6be3a3deb3a7e1729e13bc6e",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/placebets/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/placebets/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/placebets/variant/placebets_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/placebets/variant/placebets_2.mp4",
+      "size": 640564,
+      "sha256": "03d890857d874e4f3e94d65b8b0edcab1b28df14c2ec8c0dfa28ef3fe1b76a5c",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/placebets/variant/placebets_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/placebets/variant/placebets_3.mp4",
+      "size": 632378,
+      "sha256": "475d5c7e453e929d50d62e4e95a65b868e0dffb4c33e1ed1718c06efa526ecd0",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/push/push.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/push/push.mp4",
+      "size": 624965,
+      "sha256": "5a221c7300d99917348a649d255749be82c197a2960927ad01a647a304a924d5",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/push/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/push/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/push/variant/push_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/push/variant/push_2.mp4",
+      "size": 644462,
+      "sha256": "6587023d4704297736b48eea9e24d1d19f7855edc16424743cfb4b67991e3f25",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/push/variant/push_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/push/variant/push_3.mp4",
+      "size": 582297,
+      "sha256": "b5eb890fb2f83e0fed5481408f33812fb693fba943a0b2dac0218699b13b46b7",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/README.md",
+      "path": "dealers/dragge/runtime/presentation/repliker/README.md",
+      "size": 7530,
+      "sha256": "fb2ac427ac5fe33273018d64bd5dd4525fad6a982a654fbec793330196ca5546",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/sidebet/sidebet.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/sidebet/sidebet.mp4",
+      "size": 637743,
+      "sha256": "23e5d0e596afc050cc0facc3c831c70401cec28dfaf20e9ee0d44af084db31a3",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/sidebet/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/sidebet/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/sidebet/variant/sidebet_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/sidebet/variant/sidebet_2.mp4",
+      "size": 624352,
+      "sha256": "1f97df2b192aba5d8f5f826b5417388b219a8f6cfb6f6187dd1708898279d867",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/sidebet/variant/sidebet_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/sidebet/variant/sidebet_3.mp4",
+      "size": 642398,
+      "sha256": "cfc481cea08306516907521c32659cddc3d34c379340f20125c358c9bf5149a1",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/win/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/repliker/win/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/win/variant/win_2.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/win/variant/win_2.mp4",
+      "size": 593075,
+      "sha256": "d6ebeea831bb5643cb851f6008a7d4ea9bc3faf217d8beacdf936d06e23e9179",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/win/variant/win_3.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/win/variant/win_3.mp4",
+      "size": 585127,
+      "sha256": "e96adbed436b6adfdd570eb5a463c3a0bd70611f27a5f7c59e7d91e987c36d7c",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/repliker/win/win.mp4",
+      "path": "dealers/dragge/runtime/presentation/repliker/win/win.mp4",
+      "size": 600511,
+      "sha256": "5092de818fa089e60c88b42ae8a1545d901be864d39bf2c2dec70c8736028c0b",
       "tracked": true,
       "access": "source"
     },
@@ -11327,6 +11896,38 @@
       "path": "dealers/dragge/staging/2026-10-08/klara-bake/rooms_v2.py",
       "size": 4048,
       "sha256": "43f5470eda0c600147185580398b1352b06d14612bb809312712f60043e33194",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-speech-en-bake/build.py",
+      "path": "dealers/dragge/staging/2026-10-08/speech-en-bake/build.py",
+      "size": 26669,
+      "sha256": "04bd00b3dd6099252d6d0d5fd29f0c97a02a7ded5d5fa0ccb2829d14b139bbf7",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-speech-en-bake/README.md",
+      "path": "dealers/dragge/staging/2026-10-08/speech-en-bake/README.md",
+      "size": 4785,
+      "sha256": "d786e90ece3fad27de39d9aa4da24f9d773bb279f972f0a5facd8a156420013f",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-speech-en-bake/receipt.json",
+      "path": "dealers/dragge/staging/2026-10-08/speech-en-bake/receipt.json",
+      "size": 69017,
+      "sha256": "bcd0b36da67e73f18056042b97e2d3a692e3402192ed171a82a561848fed8590",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-speech-en-bake/takes.md",
+      "path": "dealers/dragge/staging/2026-10-08/speech-en-bake/takes.md",
+      "size": 170463,
+      "sha256": "4d801998276040ad3ca3ab2be525697a655716202007d34689c96b0fbbdf4c07",
       "tracked": true,
       "access": "source"
     },

@@ -52,13 +52,14 @@ export const MEDIA_FAMILY_DEFINITIONS = freeze([
 
 // Dragge and Paow: H3 KLARA deal takes. Neither has a flip take or an idle pool;
 // Paow has no hole take, so her hole card and reveal stay on the 2D path.
+// Dragge also speaks the 17 lines in English; Paow has no voice.
 const H3_DEALS = ['deal_pos1', 'deal_pos2', 'deal_pos3', 'deal_pos4', 'deal_pos5', 'deal_pos6', 'deal_pos7', 'deal_posdealer'];
 
 // Bank root per dealer: media/dealers/<dealer>/runtime/presentation. The source
 // names the delivery the bank's lab-video-manifest.json was built from.
 export const PRESENTATION_BANKS = Object.freeze({
   astrid: Object.freeze({ source: 'emil/dealklipp-v1', families: MEDIA_FAMILY_DEFINITIONS }),
-  dragge: Object.freeze({ source: 'h3/klara-dragge', families: freeze(dealDefinitions('dragge', [...H3_DEALS, 'deal_hole'])) }),
+  dragge: Object.freeze({ source: 'h3/klara-dragge', families: freeze([...dealDefinitions('dragge', [...H3_DEALS, 'deal_hole']), ...speechDefinitions('dragge')]) }),
   paow: Object.freeze({ source: 'h3/klara-paow', families: freeze(dealDefinitions('paow', H3_DEALS)) }),
 });
 export const PRESENTATION_BANK_DEALERS = Object.freeze(Object.keys(PRESENTATION_BANKS));

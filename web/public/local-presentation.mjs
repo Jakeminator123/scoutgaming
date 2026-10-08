@@ -4,8 +4,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const response = await fetch('/api/presentation/config', { cache: 'no-store' });
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
-  // A registered bank without speech or idle films (Dragge, Paow) rests on its
-  // baked still and skips game speech. Astrid's bank has both and is unchanged.
+  // A registered bank without idle films (Dragge, Paow) rests on its baked
+  // still; one without speech films (Paow) skips game speech. Astrid's bank has
+  // both and is unchanged.
   const bank = (config.inventory.families ?? []).filter(row => row.dealerId === dealerId);
   const speechless = bank.length > 0 && !bank.some(row => row.eventId.startsWith('speak.'));
   const restStill = bank.length > 0 && !bank.some(row => row.playbackType === 'idle-pool');

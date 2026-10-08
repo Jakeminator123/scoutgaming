@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { MEDIA_FAMILY_DEFINITIONS, PRESENTATION_BANKS, PRESENTATION_BANK_DEALERS } from '../../presentation-runtime/media-families.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest, validateLabVideoManifest } from '../lib/lab-video-manifest.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { presentationBankRoot } from '../../tools/media-layout.mjs';
+import { resolveMediaFamily, resolveMediaFamilySelection } from '../../presentation-runtime/media-family-resolver.mjs';
 
 const bankDirectory = (root, dealerId) => join(root, 'media/dealers', dealerId, 'runtime/presentation');
 
@@ -34,21 +36,29 @@ async function repository(t) {
   return root;
 }
 
-test('Astrid keeps her catalogue; Dragge and Paow have deal families only, Paow without a hole take', () => {
+test('Astrid keeps her catalogue; Dragge has deal and speech families, Paow deal families only and no hole take', () => {
   assert.deepEqual(PRESENTATION_BANK_DEALERS, ['astrid', 'dragge', 'paow']);
   assert.equal(PRESENTATION_BANKS.astrid.families, MEDIA_FAMILY_DEFINITIONS);
   assert.equal(PRESENTATION_BANKS.astrid.source, 'emil/dealklipp-v1');
   const deals = ['box0', 'box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'dealer-up'];
-  assert.deepEqual(PRESENTATION_BANKS.dragge.families.map(row => row.situation), [...deals, 'dealer-hole']);
+  const speech = MEDIA_FAMILY_DEFINITIONS.filter(row => row.eventId.startsWith('speak.'));
+  assert.equal(speech.length, 17);
+  assert.deepEqual(PRESENTATION_BANKS.dragge.families.map(row => row.situation), [...deals, 'dealer-hole', ...speech.map(row => row.situation)]);
+  assert.deepEqual(PRESENTATION_BANKS.dragge.families.slice(9).map(row => [row.id, row.eventId, row.standardPaths, row.variantDirectory]),
+    speech.map(row => [row.id.replace(/^astrid\//, 'dragge/'), row.eventId, row.standardPaths, row.variantDirectory]));
   assert.deepEqual(PRESENTATION_BANKS.paow.families.map(row => row.situation), deals);
   for (const dealerId of ['dragge', 'paow']) {
     const families = PRESENTATION_BANKS[dealerId].families;
-    assert.ok(families.every(row => row.dealerId === dealerId && row.id.startsWith(`${dealerId}/deal.`) && row.playbackType === 'once'));
-    assert.equal(families.some(row => row.eventId === 'reveal.dealer' || row.eventId.startsWith('speak.') || row.eventId === 'idle.ready'), false);
+    assert.ok(families.every(row => row.dealerId === dealerId && row.id.startsWith(`${dealerId}/`) && row.playbackType === 'once'));
+    assert.equal(families.some(row => row.eventId === 'reveal.dealer' || row.eventId === 'idle.ready'), false);
     assert.equal(mediaDefinitionForPath('deal/deal_pos1/deal_pos1.mp4', dealerId).definition.id, `${dealerId}/deal.player.left/box0`);
     assert.equal(mediaDefinitionForPath('deal/deal_flip/deal_flip.mp4', dealerId), null);
-    assert.equal(mediaDefinitionForPath('repliker/win/win.mp4', dealerId), null);
   }
+  assert.equal(mediaDefinitionForPath('repliker/win/win.mp4', 'dragge').definition.id, 'dragge/speak.other/win');
+  assert.equal(mediaDefinitionForPath('repliker/goodluck/goodluck.mp4', 'dragge').definition.id, 'dragge/speak.goodluck/goodluck');
+  assert.equal(mediaDefinitionForPath('repliker/win/variant/win_2.mp4', 'dragge').role, 'variant');
+  assert.equal(mediaDefinitionForPath('repliker/win/win.mp4', 'paow'), null);
+  assert.equal(mediaDefinitionForPath('repliker/win/variant/win_2.mp4', 'paow'), null);
   assert.equal(mediaDefinitionForPath('deal/deal_hole/deal_hole.mp4', 'paow'), null);
   assert.equal(mediaDefinitionForPath('deal/deal_pos6/variant/deal_pos6b.mp4', 'paow').role, 'variant');
   assert.equal(mediaDefinitionForPath('deal/deal_pos1/deal_pos1.mp4', 'vera'), null);
@@ -64,7 +74,7 @@ test('the builder writes one manifest per dealer bank and the validator refuses 
   const paow = await writeBank(root, 'paow', { extra: { 'deal/deal_pos6/variant/deal_pos6b.mp4': 'paow:pos6b' } });
   const draggeManifest = await buildLabVideoManifest({ dealerId: 'dragge', root: dragge });
   assert.equal(draggeManifest.source, 'h3/klara-dragge');
-  assert.equal(draggeManifest.items.length, 9);
+  assert.equal(draggeManifest.items.length, 26);
   assert.ok(draggeManifest.families.every(row => row.dealerId === 'dragge' && row.standardIds.length === 1 && row.variantIds.length === 0));
   assert.throws(() => validateLabVideoManifest(draggeManifest), /Unsupported lab video manifest/);
   assert.throws(() => validateLabVideoManifest(draggeManifest, 'paow'), /Unsupported lab video manifest/);
@@ -100,7 +110,7 @@ test('the registry merges every registered bank, keeps Astrid when another bank 
   const merged = await loadVideoRegistry(options);
   assert.deepEqual(merged.families.slice(0, alone.families.length), alone.families);
   const draggeFamilies = merged.families.filter(row => row.dealerId === 'dragge');
-  assert.equal(draggeFamilies.length, 9);
+  assert.equal(draggeFamilies.length, 26);
   assert.equal(merged.families.some(row => row.dealerId === 'paow'), false);
   assert.ok(merged.summary.notes.some(note => /paow/.test(note)));
   const box0 = merged.videos.find(row => row.familyId === 'dragge/deal.player.left/box0');
@@ -117,4 +127,25 @@ test('the registry merges every registered bank, keeps Astrid when another bank 
   assert.equal(single.families.some(row => row.dealerId === 'dragge'), false);
   await assert.rejects(loadVideoRegistry({ ...options, strict: true }), error => error.status === 503);
   assert.equal(await readFile(join(dragge, 'lab-video-manifest.json'), 'utf8'), manifestJson(draggeManifest, 'dragge'));
+});
+
+test("Dragge's English speech in the repository: every line resolves to its own standard film and two variants, Paow has none", async () => {
+  const bank = presentationBankRoot(fileURLToPath(new URL('../../', import.meta.url)), 'dragge');
+  const manifest = await readLabVideoManifest(join(bank, 'lab-video-manifest.json'), 'dragge');
+  const texts = JSON.parse(await readFile(join(bank, 'repliker/bank.json'), 'utf8'));
+  const registry = await loadVideoRegistry();
+  const lines = PRESENTATION_BANKS.dragge.families.filter(row => row.eventId.startsWith('speak.'));
+  assert.deepEqual(Object.keys(texts).sort(), lines.map(row => row.situation).sort());
+  const item = path => manifest.items.find(row => row.relativePath === path);
+  for (const { eventId, situation: line } of lines) {
+    assert.ok(typeof texts[line].text === 'string' && texts[line].text.length > 0, line);
+    const event = { type: 'speak', line };
+    const family = resolveMediaFamily(registry, { dealerId: 'dragge', eventId, event });
+    assert.equal(family?.id, `dragge/${eventId}/${line}`);
+    assert.deepEqual(family.standardIds, [item(`repliker/${line}/${line}.mp4`).id]);
+    assert.deepEqual([...family.variantIds].sort(), [2, 3].map(n => item(`repliker/${line}/variant/${line}_${n}.mp4`).id).sort());
+    const chosen = resolveMediaFamilySelection(registry, family);
+    assert.deepEqual([chosen.reason, chosen.selected.id], ['standard', family.standardIds[0]]);
+    assert.equal(resolveMediaFamily(registry, { dealerId: 'paow', eventId, event }), null);
+  }
 });

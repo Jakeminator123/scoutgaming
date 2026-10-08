@@ -1,4 +1,4 @@
-# Dragge – deal films (KLARA, baked 2026-10-08)
+# Dragge – deal and speech films (KLARA, baked 2026-10-08)
 
 Portrait deal bank for the local presentation lane, baked from the KLARA green-screen delivery of 2026-10-07
 (MiniMax H3 takes, `media/dealers/dragge/source/provenance/klara-delivery.md`). Same contract as Astrid's bank:
@@ -33,12 +33,19 @@ of the table under him.
 | `deal_posdealer/deal_posdealer.mp4` | dealer up card | 80 | 49 |
 | `deal_hole/deal_hole.mp4` (H3 `deal_poshole`) | dealer hole card, black back up | 81 | 46 |
 
-There is no flip, idle or speech film: turning the hole card falls back to the 2D path, the rest is the still,
-and game lines are skipped for this bank.
+There is no flip or idle film: turning the hole card falls back to the 2D path, and the rest is the still.
+
+## repliker/
+
+The 17 game lines in English as lip-synced films with sound, keyed over the same plate and starting and ending
+on the same rest still as the deal films: `repliker/<line>/<line>.mp4`, two other wordings per line in `variant/`. The
+exact texts are in `repliker/bank.json`, published as `/dealers/dragge/audio/en/bank.json`. Details in
+`repliker/README.md`; how they were baked, and the take records, in
+`media/dealers/dragge/staging/2026-10-08/speech-en-bake/`.
 
 ## Known limits
 
 - The hand is filmed, so SVG cards already on the table lie over it when it reaches past them.
 - The delivered last frame of each deal take is H3's REDO still with the card pasted in; that card is a little
   warmer than the filmed one before it, a small colour step where the deal part ends.
-- Visual acceptance (seams, card cover, phone and desktop) has not been done.
+- Visual acceptance (seams, card cover, phone and desktop) and lip-sync approval have not been done.

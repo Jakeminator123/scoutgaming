@@ -1,0 +1,53 @@
+{
+  "greeting": {
+    "text": "Good evening, and welcome to the table. I'm Dragge, take any seat you like."
+  },
+  "placebets": {
+    "text": "Bets are open. Place your chips whenever you're ready."
+  },
+  "goodluck": {
+    "text": "No more bets. Here come the cards."
+  },
+  "sidebet": {
+    "text": "Your side bet comes in. That one pays straight away."
+  },
+  "insurance": {
+    "text": "Ace showing. Would anyone like insurance?"
+  },
+  "double": {
+    "text": "Doubling down. One card, and one card only."
+  },
+  "bust": {
+    "text": "Over twenty-one, I'm afraid. That hand is done."
+  },
+  "blackjack": {
+    "text": "Blackjack! Beautifully done. That pays three to two."
+  },
+  "dealerblackjack": {
+    "text": "Dealer has blackjack. I'm sorry, everyone."
+  },
+  "dealerbust": {
+    "text": "Dealer busts! Everyone still in the hand gets paid."
+  },
+  "win": {
+    "text": "Well played. That hand is yours."
+  },
+  "push": {
+    "text": "Same total. It's a push, your stake stays with you."
+  },
+  "lose": {
+    "text": "Dealer wins. That one goes to the house."
+  },
+  "peek": {
+    "text": "One moment while I check for blackjack."
+  },
+  "farewell": {
+    "text": "Thank you for playing. It was a pleasure dealing for you."
+  },
+  "chatter1": {
+    "text": "Quiet night at the table. Those are my favourite."
+  },
+  "chatter2": {
+    "text": "Take your time. The cards aren't going anywhere."
+  }
+}
