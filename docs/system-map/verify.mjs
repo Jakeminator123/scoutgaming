@@ -71,7 +71,20 @@ export function createSourceReader({ repositoryRoot = ROOT, ref } = {}) {
     };
     walk(prefix); return found.sort();
   };
-  return { root, currentSha, mode, read, list,
+  const commits = new Map();
+  // Short hash of the commit that last touched the file. Missing Git yields the
+  // same visible fallback as an empty history; never throws into the checker.
+  const lastChange = path => {
+    if (!safePath(path)) return 'okänd';
+    if (!commits.has(path)) {
+      try {
+        const out = git(['log', '-1', '--format=%h', '--', path]).trim();
+        commits.set(path, /^[0-9a-f]{4,40}$/i.test(out) ? out : 'okänd');
+      } catch { commits.set(path, 'okänd'); }
+    }
+    return commits.get(path);
+  };
+  return { root, currentSha, mode, read, list, lastChange,
     commitMatched(path) { const text = read(path), original = atCommit(path); return text !== null && original !== null && hashText(text) === hashText(original); } };
 }
 
@@ -283,19 +296,54 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
     if (!fileMap.has(path) || row.status !== 'current') fileMap.set(path, row);
     return row;
   };
+  const gateErrors = [];
+  const gate = (code, message, path) => gateErrors.push({ code, message, ...(path ? { path } : {}) });
+  if (data.catalog.environmentFacts !== undefined) {
+    if (!Array.isArray(data.catalog.environmentFacts)) gate('catalog.environment-fact', 'Miljöfakta ska vara en lista.', 'docs/system-map/catalog.json');
+    else for (const fact of data.catalog.environmentFacts) {
+      const sourceOk = (typeof fact?.source === 'string' && fact.source.trim()) || (Array.isArray(fact?.source) && fact.source.length > 0 && fact.source.every(item => typeof item === 'string' && item.trim()));
+      if (!fact || typeof fact.id !== 'string' || !NAME.test(fact.id) || typeof fact.label !== 'string' || !fact.label.trim() || typeof fact.where !== 'string' || !fact.where.trim() || !sourceOk || typeof fact.verifiedBy !== 'string' || !fact.verifiedBy.trim())
+        gate('catalog.environment-fact', 'Miljöfaktum saknar id, etikett, plats, källa eller verifiering.', 'docs/system-map/catalog.json');
+    }
+  }
+  const planned = [];
+  const addPlanned = (row, kind) => { if (row?.status === 'planned') planned.push({ row, kind }); };
+  for (const service of data.catalog.services || []) {
+    addPlanned(service, 'service');
+    if (Array.isArray(service.plannedRemarks)) for (const note of service.plannedRemarks) addPlanned(note, 'service');
+  }
+  for (const page of data.routes.pages || []) addPlanned(page, 'page');
+  for (const layer of data.storage.storageLayers || []) addPlanned(layer, 'layer');
+  for (const connection of data.catalog.connections || []) if (Object.hasOwn(connection, 'status')) addPlanned(connection, 'connection');
+  if (planned.length) {
+    const checklistPath = 'random/checklista-2026-10-08.md';
+    const checklist = reader.read(checklistPath);
+    const hasId = (text, ref) => text.split(/\r?\n/).some(line => line.startsWith('| ' + ref + ' |'));
+    if (checklist === null) gate('planned.checklist', 'Checklistan för planerade rutor saknas.', checklistPath);
+    else for (const { row, kind } of planned) {
+      const ref = row.plannedRef;
+      const label = row.id || row.label || row.name || kind;
+      if (typeof ref !== 'string' || !/^[A-Za-z][A-Za-z0-9.]*$/.test(ref) || !hasId(checklist, ref))
+        gate('planned.ref', 'Planerad ruta saknar ett id som finns i checklistan: ' + label + (typeof ref === 'string' ? ' (' + ref + ')' : '') + '.', checklistPath);
+    }
+  }
+  const baselineCommit = typeof contracts.baseline?.observedCommit === 'string' && contracts.baseline.observedCommit.trim()
+    ? contracts.baseline.observedCommit.trim() : 'okänd';
+  const reviewMessage = path => 'Granska: indata ändrad sedan baslinjen. Senast ändrad: ' + (typeof reader.lastChange === 'function' ? reader.lastChange(path) : 'okänd') + '. Baslinje: ' + baselineCommit + '.';
   for (const spec of contracts.contracts) {
     const warnings = [], errors = [], paths = selectedInputs(reader, data, registry, spec);
     const sources = paths.map(path => fileStatus(path, spec.expectedHashes?.[path]));
     for (const file of sources) {
       if (file.status === 'missing') errors.push({ code: 'contract.missing-input', message: 'Required contract input is missing.', path: file.path });
-      else if (file.status === 'changed') warning(warnings, 'input.changed', 'Contract input differs from its captured baseline.', file.path);
-      if (file.commitMatched === false && reader.currentSha) warning(warnings, 'input.worktree-changed', 'Working input differs from the selected commit.', file.path);
+      else if (file.status === 'changed') warning(warnings, 'input.changed', reviewMessage(file.path), file.path);
+      if (file.commitMatched === false && reader.currentSha) warning(warnings, 'input.worktree-changed', reviewMessage(file.path), file.path);
     }
     for (const check of spec.checks || []) {
       if (check.type === 'next-routes') {
         const prefix = check.app === 'frontend' ? 'apps/croupier-frontend/app' : 'lab/app';
         const actual = reader.list(prefix).filter(path => NEXT_SOURCE.test(path));
-        const listed = data.routes.sourceRoutes.filter(row => row.app === check.app);
+        // A planned page has no handler file and is not a live route.
+        const listed = data.routes.sourceRoutes.filter(row => row.app === check.app && !(row.status === 'planned' && !row.handlerFile));
         const routeDrift = (code, message, path, objectId) => errors.push({ code, message, ...(path ? { path } : {}), ...(objectId ? { objectId } : {}) });
         for (const path of actual) {
           const row = listed.find(item => item.handlerFile === path), url = routePattern(path, prefix);
@@ -368,6 +416,7 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
   assurance.files = [...fileMap.values()].sort((a, b) => a.path.localeCompare(b.path));
   assurance.changedInputs = assurance.files.filter(file => file.status === 'changed' || file.commitMatched === false).map(file => file.path);
   for (const contract of assurance.contracts) for (const detail of contract.errors) assurance.errors.push({ contractId: contract.id, ...detail });
+  for (const detail of gateErrors) assurance.errors.push(detail);
   assurance.status = assurance.errors.length ? 'red' : assurance.counts.yellow ? 'yellow' : assurance.counts.grey || !assurance.counts.green ? 'grey' : 'green';
   return { data, assurance };
 }
@@ -395,6 +444,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const { assurance } = verifySystemMap({ reader, evidence });
     if (options.json) writeFileSync(resolve(options.json), JSON.stringify(assurance, null, 2) + '\n');
     console.log(JSON.stringify(summarizeAssurance(assurance)));
+    // Red blocks the gate. Yellow (changed input, drift, stale evidence) does not.
     if (assurance.errors.length) process.exitCode = 1;
   } catch { console.error('System map check could not read the selected catalog/version or options.'); process.exitCode = 1; }
 }

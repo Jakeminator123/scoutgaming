@@ -332,6 +332,49 @@ test('offline builder embeds a valid red test result but refuses a structurally 
   assert.equal(invalid.written, false); assert.equal(readFileSync(target, 'utf8'), before);
 });
 
+test('changed input is a yellow review with the last commit and baseline, not a failed check', t => {
+  const f = fixture(t);
+  const contracts = f.get('docs/system-map/contracts.json');
+  const baseline = 'd'.repeat(40);
+  contracts.baseline = { ...(contracts.baseline || {}), observedCommit: baseline };
+  f.put('docs/system-map/contracts.json', contracts);
+  f.put('web/events.mjs', 'export class Round { run() { this.emit("card.dealt"); } }\n// review\n');
+  const reader = f.frozen();
+  reader.lastChange = () => 'abc1234';
+  const result = verifySystemMap({ reader, evidence: f.evidence() }).assurance;
+  const warning = result.contracts.find(row => row.id === 'events').warnings.find(row => row.code === 'input.changed');
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.status, 'yellow');
+  assert.equal(warning.message, 'Granska: indata ändrad sedan baslinjen. Senast ändrad: abc1234. Baslinje: ' + baseline + '.');
+  const bare = f.frozen();
+  delete bare.lastChange;
+  const fallback = verifySystemMap({ reader: bare, evidence: f.evidence() }).assurance.contracts.find(row => row.id === 'events').warnings.find(row => row.code === 'input.changed');
+  assert.match(fallback.message, /Senast ändrad: okänd\. Baslinje: d{40}\./);
+  bare.commitMatched = () => false;
+  bare.lastChange = () => 'abc1234';
+  const moved = verifySystemMap({ reader: bare, evidence: f.evidence() }).assurance;
+  const worktree = moved.contracts.find(row => row.id === 'events').warnings.find(row => row.code === 'input.worktree-changed');
+  assert.equal(worktree.message, warning.message);
+  assert.equal(moved.errors.length, 0);
+});
+test('a planned page needs a checklist id and does not become route drift', t => {
+  const f = fixture(t);
+  const routes = f.get('docs/system-map/routes.json');
+  routes.pages.push({ id: 'lane-publish', label: 'Publicera', status: 'planned', plannedRef: 'L3', paths: ['/control/lanes'] });
+  routes.sourceRoutes.push({ id: 'planned-future', app: 'frontend', path: '/future', methods: [], status: 'planned', plannedRef: 'L3' });
+  f.put('docs/system-map/routes.json', routes);
+  let result = f.check();
+  assert.equal(result.status, 'red');
+  assert.ok(result.errors.some(row => row.code === 'planned.checklist'));
+  f.put('random/checklista-2026-10-08.md', '| L3 | Exportera |\n');
+  result = f.check();
+  assert.equal(result.errors.some(row => row.code === 'planned.ref' || row.code === 'planned.checklist' || row.code === 'route.removed'), false);
+  routes.pages[0].plannedRef = 'SAKNAS';
+  f.put('docs/system-map/routes.json', routes);
+  result = f.check();
+  assert.equal(result.status, 'red');
+  assert.ok(result.errors.some(row => row.code === 'planned.ref' && row.message.includes('SAKNAS')));
+});
 test('Git --ref reads frozen committed bytes, ignores dirty worktree, and isolates inherited GIT_*', t => {
   const f = fixture(t), gitEnv = isolatedGitEnvironment();
   const git = args => execFileSync('git', args, { cwd: f.root, env: gitEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -354,6 +397,13 @@ test('Git --ref reads frozen committed bytes, ignores dirty worktree, and isolat
     assert.equal(result.files.find(row => row.path === route).commitMatched, false);
     const stale = { ...evidence, sourceSha: B };
     assert.equal(verifySystemMap({ reader: committed, evidence: stale }).assurance.status, 'yellow');
+    const review = result.contracts.flatMap(row => row.warnings).filter(row => row.path === route && (row.code === 'input.changed' || row.code === 'input.worktree-changed'));
+    assert.ok(review.length >= 1);
+    for (const row of review) {
+      assert.match(row.message, /Granska: indata ändrad sedan baslinjen/);
+      assert.match(row.message, /Senast ändrad: [0-9a-f]{4,40}/);
+      assert.match(row.message, /Baslinje: /);
+    }
     assert.equal(hashText('same\r\n'), hashText('same\n'), 'Windows text checkout is normalized explicitly');
   } finally {
     for (const [key, value] of [['GIT_DIR', previous.dir], ['GIT_WORK_TREE', previous.tree], ['GIT_INDEX_FILE', previous.index]]) {

@@ -345,6 +345,78 @@
         "lab/components/kevin-bo/kevin-backoffice.jsx"
       ],
       "note": "lab/components/kevin-bo is this preview. The Next file pattern is /partner/:path*."
+    },
+    {
+      "id": "partner-write",
+      "paths": [
+        "/partner/:operatorSlug"
+      ],
+      "label": "Skrivande partner-rutter",
+      "serving": "Planerad",
+      "access": "Operatör.",
+      "status": "planned",
+      "plannedRef": "N2.2",
+      "purpose": "Skrivande rutter för /partner/{slug}. Den läsbara förhandsvisningen finns redan."
+    },
+    {
+      "id": "partner-players",
+      "paths": [
+        "/partner/:operatorSlug/spelare"
+      ],
+      "label": "Spelare och transaktioner",
+      "serving": "Planerad",
+      "access": "Operatör.",
+      "status": "planned",
+      "plannedRef": "N2.4",
+      "purpose": "Spelare, transaktioner och rapporter från spelmotorn."
+    },
+    {
+      "id": "operator-design",
+      "paths": [
+        "/partner/:operatorSlug/utseende"
+      ],
+      "label": "Bolagets justeringsyta",
+      "serving": "Planerad",
+      "access": "Operatör.",
+      "status": "planned",
+      "plannedRef": "L4",
+      "purpose": "Bordsfärg, branding och chips inom det lane tillåter."
+    },
+    {
+      "id": "lane-publish",
+      "paths": [
+        "/control/lanes"
+      ],
+      "label": "Publicera lane till bolag",
+      "serving": "Planerad",
+      "access": "Intern personal.",
+      "status": "planned",
+      "plannedRef": "L3",
+      "purpose": "Exportera och publicera en lane. publishPackage har ingen anropare."
+    },
+    {
+      "id": "lobby-operator",
+      "paths": [
+        "/play"
+      ],
+      "label": "Operatörskontext i lobbyn",
+      "serving": "Planerad",
+      "access": "Spelare.",
+      "status": "planned",
+      "plannedRef": "N3.2",
+      "purpose": "Lobbyn visar vilket bolag spelaren hör till."
+    },
+    {
+      "id": "player-choice",
+      "paths": [
+        "/play"
+      ],
+      "label": "Spelarens val",
+      "serving": "Planerad",
+      "access": "Spelare.",
+      "status": "planned",
+      "plannedRef": "N3.4",
+      "purpose": "Bord, bakgrund och dealer inom paketets tillåtna."
     }
   ],
   "apiGroups": [

@@ -6038,6 +6038,15 @@
           "path": "docs/CLOUD-MIGRATION.md"
         }
       ]
+    },
+    {
+      "id": "operator-package-read",
+      "name": "Operatörspaket läst av spelmotorn",
+      "status": "planned",
+      "plannedRef": "L8",
+      "evidence": "Planerad",
+      "durable": true,
+      "authoritativeFor": "Spelmotorn läser operator_packages. Ingen läsare ännu."
     }
   ],
   "tests": [
