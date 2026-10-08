@@ -394,14 +394,18 @@
       "sources": [
         "lab/app/control/lanes/page.tsx",
         "lab/components/control-lanes-page.tsx",
-        "lab/lib/operator-package-api.mjs"
+        "lab/components/control-operator-directory.tsx",
+        "lab/lib/operator-package-api.mjs",
+        "lab/lib/operator-admin-api.mjs"
       ],
-      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
+      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package. Vercel /play/blackjack does not. Bolag adds existing partner accounts only; no e-mail invitation (N2.6) and no journal table.",
       "tests": [
         "lab/test/control-lanes-page.test.mjs",
-        "lab/test/operator-package-api.test.mjs"
+        "lab/test/control-operator-directory.test.mjs",
+        "lab/test/operator-package-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs"
       ],
-      "purpose": "Publicera lane-id:n till ett bolag. Demo-operatör SG test skapas bara på klick."
+      "purpose": "Publicera lane-id:n till ett bolag. Demo-operatör SG test skapas bara på klick. Kortet Bolag skapar bolag med standardroller och lägger till, byter roll på eller stänger av medlemmar."
     },
     {
       "id": "lobby-operator",
@@ -514,7 +518,10 @@
         "game-lanes/create",
         "game-lanes/remove",
         "operator-package",
-        "operator-create-demo"
+        "operator-create-demo",
+        "operator-create",
+        "operator-role",
+        "operator-membership"
       ],
       "operatorRoute": "GET/POST/DELETE speech-qa additionally requires the operator speech-QA gate",
       "sources": [
@@ -524,12 +531,14 @@
         "lab/lib/studio-access-policy.mjs",
         "lab/lib/studio-admin-data.mjs",
         "lab/lib/operator-package-api.mjs",
+        "lab/lib/operator-admin-api.mjs",
         "web/public/game-lanes.mjs"
       ],
       "tests": [
         "lab/test/studio-admin-api.test.mjs",
         "lab/test/studio-admin-data.test.mjs",
         "lab/test/operator-package-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs",
         "test/studio-game-authority.mjs",
         "test/studio-game-commands.mjs",
         "test/game-lanes.mjs"
@@ -745,14 +754,25 @@
       "paths": [
         "GET /studio/api/partner/snapshot",
         "POST /studio/api/partner/login",
-        "POST /studio/api/partner/logout"
+        "POST /studio/api/partner/logout",
+        "GET/POST /studio/api/partner/branding?operator={slug}",
+        "GET/POST /studio/api/partner/team?operator={slug}"
       ],
-      "serving": "Lab route under basePath /studio. Login and logout are POST. The snapshot is GET. Other exported methods are rejected.",
-      "access": "Operator staff with role partner. A partner_session cookie is separate from the internal admin session. Snapshot data is limited to active memberships.",
+      "serving": "Lab route under basePath /studio. Login and logout are POST. The snapshot is GET. Branding and team are GET and POST. Other exported methods are rejected.",
+      "access": "Operator staff with role partner. A partner_session cookie is separate from the internal admin session. Snapshot data is limited to active memberships. Team GET needs team.read; team POST (invite an existing partner account by e-mail, role, suspend, reactivate) also needs team.roles.assign, a membership revision and the store's last-administrator lock. No e-mail is sent (N2.6).",
       "sources": [
         "lab/app/api/partner/[...action]/route.ts",
         "lab/lib/partner-session.mjs",
-        "lab/lib/partner-data.mjs"
+        "lab/lib/partner-data.mjs",
+        "lab/lib/partner-branding-api.mjs",
+        "lab/lib/partner-team-api.mjs",
+        "web/partner-access-policy.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-session.test.mjs",
+        "lab/test/partner-team-api.test.mjs",
+        "lab/test/partner-team-loader.test.mjs",
+        "test/partner-access-policy.mjs"
       ]
     }
   ],
@@ -3663,8 +3683,8 @@
       "app": "studio",
       "handlerFile": "lab/app/api/partner/[...action]/route.ts",
       "serving": "Lab API under basePath /studio.",
-      "access": "Operator staff. POST login and logout, GET snapshot. Every other exported method is rejected.",
-      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership.",
+      "access": "Operator staff. POST login and logout, GET snapshot, GET/POST branding and team with ?operator={slug}. Every other exported method is rejected.",
+      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership. Team writes need team.roles.assign, a membership revision (CAS) and keep at least one operator administrator.",
       "groupId": "partner-api",
       "sources": [
         {
@@ -3954,7 +3974,7 @@
       "handlerFile": "lab/app/control/lanes/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
-      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo with the Neon pool (connect required). Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
+      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo / operator-create / operator-role / operator-membership with the Neon pool (connect required). Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
       "groupId": "studio-tools",
       "sources": [
         {
