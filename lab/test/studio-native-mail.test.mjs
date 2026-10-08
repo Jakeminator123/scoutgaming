@@ -85,6 +85,38 @@ test('foreign origins, duplicate tokens, malformed recipients and unsupported ma
   assert.equal(calls, 0);
 });
 
+test('partner mail uses the operator set-password link and refuses the Studio link', async () => {
+  const calls = [];
+  const mail = createNativeStudioMail({ env, fetchImpl: async (_url, init) => { calls.push(JSON.parse(init.body)); return Response.json({}); } });
+  const token = 'c'.repeat(43);
+  const link = `${origin}/partner/set-password?t=${token}`;
+  assert.deepEqual(await mail.send({
+    to: invitation.to, kind: 'invite', role: 'partner', link,
+    operatorName: 'North & Co', roleLabel: 'Viewer "ett"',
+  }), { sent: true });
+  const sent = calls[0];
+  assert.match(sent.subject, /Inbjudan – operatörspersonal, nivå 2/);
+  assert.match(sent.text, /hos North & Co/);
+  assert.match(sent.text, /med rollen Viewer "ett"/);
+  assert.ok(sent.text.includes(link));
+  assert.ok(sent.text.includes(`${origin}/partner/login`));
+  assert.equal(sent.text.includes(`${origin}/play`), false);
+  assert.doesNotMatch(sent.subject + sent.text, /adminpersonal|spelare, nivå 3|hela nivå 1/);
+  assert.ok(sent.html.includes('North &amp; Co'));
+  assert.ok(sent.html.includes('Viewer &quot;ett&quot;'));
+  assert.equal(sent.html.includes('North & Co'), false);
+  assert.equal(calls.length, 1);
+  calls.length = 0;
+  assert.deepEqual(await mail.send({ ...invitation, role: 'partner', kind: 'reset', link, operatorName: '', roleLabel: '' }), { sent: true });
+  assert.match(calls[0].subject, /Återställ lösenord – operatörspersonal, nivå 2/);
+  assert.doesNotMatch(calls[0].text, /hos |rollen/);
+  let refused = 0;
+  const blocked = createNativeStudioMail({ env, fetchImpl: async () => { refused += 1; return Response.json({}); } });
+  assert.deepEqual(await blocked.send({ ...invitation, role: 'partner' }), { sent: false });
+  assert.deepEqual(await blocked.send({ ...invitation, role: 'admin', link }), { sent: false });
+  assert.equal(refused, 0);
+});
+
 test('rejected, uncertain or redirected delivery returns failure with no automatic retry', async () => {
   for (const outcome of [async () => new Response(null, { status: 401 }), async () => new Response(null, { status: 307 }),
     async () => { throw Error('private-provider-diagnostic'); }]) {

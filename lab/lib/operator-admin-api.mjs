@@ -1,6 +1,10 @@
 import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../web/partner-access-policy.mjs';
-import { createOperatorAccounts } from './operator-accounts.mjs';
+import {
+  consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
+  partnerMailbox, playerOwnsEmail, sendPartnerInvite, visibleOperatorUsername,
+} from './operator-accounts.mjs';
 import { createOperatorJournal } from './operator-journal.mjs';
+import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { openWritableOperatorStore } from './operator-package-api.mjs';
 import { workspaceSurfacePath } from './workspace-surfaces.mjs';
 
@@ -57,10 +61,14 @@ function publicRole(role) {
   return { id: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable };
 }
 
-export function createOperatorAdminApi({ pool, boDb, scope, now = () => Date.now(), storeFactory, journal = createOperatorJournal({ now }) } = {}) {
+export function createOperatorAdminApi({
+  pool, boDb, gameDb, scope, now = () => Date.now(), storeFactory, journal = createOperatorJournal({ now }), mail, publicOrigin,
+} = {}) {
   const handlers = new Map();
   const store = () => openWritableOperatorStore({ pool, scope, now, storeFactory });
   const accounts = () => createOperatorAccounts(boDb);
+  const clock = typeof now === 'function' ? now : () => Date.now();
+  const delivery = typeof mail?.send === 'function' ? mail : createNativeStudioMail({ env: process.env });
 
   // Usernames are display only. An unreadable users table leaves them null.
   async function usernames(userIds) {
@@ -76,7 +84,7 @@ export function createOperatorAdminApi({ pool, boDb, scope, now = () => Date.now
       roles: roles.map(publicRole),
       missingRoles: STANDARD_OPERATOR_ROLES.filter(role => !roles.some(item => item.id === role.id)).map(role => role.id),
       members: members.map(member => ({
-        userId: member.userId, username: names.get(member.userId) ?? null,
+        userId: member.userId, username: visibleOperatorUsername(names.get(member.userId)),
         roleId: member.roleId, status: member.status, revision: member.revision,
       })),
     };
@@ -139,8 +147,54 @@ export function createOperatorAdminApi({ pool, boDb, scope, now = () => Date.now
     return { ok: true, role: publicRole(saved), operator: await operatorEntry(operators, operator.id) };
   });
 
+  async function inviteByEmail(context) {
+    const body = context.body;
+    keysOf(body, ['operatorId', 'roleId', 'email', 'status']);
+    if (body.status !== 'invited') fail(422);
+    const email = partnerMailbox(body.email);
+    if (!email) fail(422);
+    const actor = context.actor.user;
+    const operators = await store();
+    const operator = await existingOperator(operators, body.operatorId);
+    const role = await operators.getRole(operator.id, body.roleId);
+    if (!role) fail(422);
+    let account = await accounts().byEmail(email);
+    if (account && account.role !== 'partner') fail(422);
+    if (!account && await playerOwnsEmail(gameDb, email)) fail(422);
+    const release = consumePartnerInvite(actor, clock());
+    let invitation = null;
+    let createdNew = false;
+    let saved;
+    try {
+      if (!account) {
+        const created = await insertInvitedPartner(boDb, email, clock, publicOrigin);
+        if (created) {
+          createdNew = true;
+          account = { userId: created.userId, username: email, role: 'partner' };
+          if (created.link) invitation = partnerInviteDelivery({
+            to: email, link: created.link, operatorName: operator.name, roleLabel: role.label,
+          });
+        } else account = await accounts().byEmail(email);
+        if (!account || account.role !== 'partner') fail(422);
+      }
+      saved = await operators.upsertMembership({
+        actor, operatorId: operator.id, userId: account.userId, roleId: role.id, status: createdNew ? 'invited' : 'active',
+      });
+    } catch (error) {
+      release();
+      throw error;
+    }
+    if (typeof context.afterCommit === 'function' && invitation) context.afterCommit(() => sendPartnerInvite(delivery, invitation));
+    else if (invitation) await sendPartnerInvite(delivery, invitation);
+    journal.record({ actor, action: 'operator-membership', operatorId: operator.id, target: { email: maskOperatorEmail(email) } });
+    return { ok: true, invited: true, operator: await operatorEntry(operators, operator.id) };
+  }
+
   handlers.set('POST /studio/api/admin/operator-membership', async context => {
     const body = context.body;
+    if (body && typeof body === 'object' && Object.hasOwn(body, 'email')) {
+      return inviteByEmail(context);
+    }
     keysOf(body, ['operatorId', 'roleId', 'status'], ['userId', 'username', 'expectedRevision']);
     if (Object.hasOwn(body, 'userId') === Object.hasOwn(body, 'username')) fail(400);
     const change = Object.hasOwn(body, 'expectedRevision');

@@ -6,7 +6,7 @@ const returns = new Set(['/studio','/studio/administration','/studio/openclaw','
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
 const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
 export function studioLoginReturnTo(value) {
-  if (typeof value !== 'string') return '/studio';
+  if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/studio';
   if (returns.has(value) || handoff.test(value)) return value;
   return resolveWorkspaceSurfacePath(value)?.publicPath || '/studio';
 }
@@ -22,7 +22,7 @@ export function studioPasswordToken(value) { return typeof value === 'string' &&
 export class StudioLoginUiError extends Error {
   constructor(status = 503) {
     super(({400:'Kontrollera uppgifterna eller öppna en ny aktiverings-/återställningslänk.',401:'Inloggningen kunde inte verifieras.',
-      403:'Studio kräver administratörsbehörighet och rätt inloggningsadress.',429:'För många försök. Vänta 15 minuter och försök igen.',
+      403:'Studio kräver administratörsbehörighet och rätt inloggningsadress.',422:'Lösenordet måste vara 8–128 tecken.',429:'För många försök. Vänta 15 minuter och försök igen.',
       503:'Inloggningstjänsten är tillfälligt otillgänglig.'})[status] || 'Åtgärden kunde inte bekräftas. Försök igen senare.');
     this.name = 'StudioLoginUiError'; this.status = status;
   }
@@ -31,7 +31,7 @@ export class StudioLoginUiError extends Error {
 // Explicit event transport only. Passwords and bearer links remain in the
 // caller's temporary event data, never client storage or a response cache.
 export function createStudioLoginClient({ authBase = '/studio/api/auth',fetchImpl = fetch } = {}) {
-  if (!['/studio/api/auth','/api/auth'].includes(authBase) || typeof fetchImpl !== 'function') throw new StudioLoginUiError(400);
+  if (!['/studio/api/auth','/api/auth','/studio/api/partner','/api/partner'].includes(authBase) || typeof fetchImpl !== 'function') throw new StudioLoginUiError(400);
   async function request(action,body) {
     if (!['login','logout','reset-request','set-password'].includes(action)
       || !body || typeof body !== 'object' || Array.isArray(body)) throw new StudioLoginUiError(400);

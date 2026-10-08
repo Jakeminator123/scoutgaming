@@ -119,7 +119,9 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       project: async () => (await gamePolicy.readSaved()).project,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    const operatorAdmin = createOperatorAdminApi({ pool, boDb: store.boDb, scope: config.scope });
+    const operatorAdmin = createOperatorAdminApi({
+      pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
+    });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction: work => store.boDb.transaction(work) });

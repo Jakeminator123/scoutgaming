@@ -1,5 +1,8 @@
 // croupier_auth.users for the account lookups in lab/lib/operator-accounts.mjs.
+// Also the invite writes: users insert (RETURNING id) and the tokens table.
 export function usersDb(users) {
+  const tokens = [];
+  let nextId = users.reduce((max, user) => Math.max(max, Number(user.id) || 0), 0);
   const found = (sql, args) => {
     if (sql === 'SELECT id,username,role FROM users WHERE id=?') return users.filter(user => user.id === args[0]);
     if (sql === 'SELECT id,username,role FROM users WHERE lower(username)=?') return users.filter(user => user.username.toLowerCase() === args[0]);
@@ -9,6 +12,8 @@ export function usersDb(users) {
   };
   return {
     queries: [],
+    tokens,
+    async transaction(work) { return work(); },
     prepare(sql) {
       const db = this;
       return {
@@ -17,6 +22,29 @@ export function usersDb(users) {
           if (!rows) throw new Error(`unexpected users query: ${sql}`);
           db.queries.push(sql);
           return rows.map(user => ({ id: user.id, username: user.username, role: user.role }));
+        },
+        async get(...args) { return (await this.all(...args))[0]; },
+        async run(...args) {
+          db.queries.push(sql);
+          if (sql === 'INSERT INTO users (username,email,role,created_at) VALUES (?,?,?,?) RETURNING id') {
+            const [username, email, role, created_at] = args;
+            if (users.some(user => user.username.toLowerCase() === String(username).toLowerCase() || user.email?.toLowerCase() === String(email).toLowerCase())) {
+              throw Object.assign(new Error('duplicate'), { code: '23505' });
+            }
+            const id = String(++nextId);
+            users.push({ id, username, email, role, created_at, salt: null, hash: null });
+            return { changes: 1, lastInsertRowid: id };
+          }
+          if (sql === 'DELETE FROM tokens WHERE username=?') {
+            const username = args[0];
+            for (let index = tokens.length - 1; index >= 0; index -= 1) if (tokens[index].username === username) tokens.splice(index, 1);
+            return { changes: 1 };
+          }
+          if (sql === 'INSERT INTO tokens (token,username,kind,exp) VALUES (?,?,?,?)') {
+            tokens.push({ token: args[0], username: args[1], kind: args[2], exp: args[3] });
+            return { changes: 1 };
+          }
+          throw new Error(`unexpected users write: ${sql}`);
         },
       };
     },

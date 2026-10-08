@@ -71,7 +71,9 @@ test('the Bolag card lists companies, members and roles with secondary buttons o
   const html = page({ directory });
   assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
   assert.match(html, /<h2 id="operator-directory">Bolag<\/h2>/);
-  assert.match(html, /ingen e-post skickas/);
+  assert.match(html, /E-post/);
+  assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
+  assert.match(html, /Skapa saknade standardroller/);
   for (const label of ['Nordic Bet', 'nordic-bet', 'north-admin', 'konto 43', 'revision 2', 'revision 5', 'aktiv', 'avstängd', 'Amber House', 'Inga medlemmar ännu.']) {
     assert.match(html, new RegExp(label), label);
   }
@@ -100,6 +102,10 @@ test('failures name the cause the admin API status allows, without guessing betw
   assert.match(operatorDirectoryFailure('create', 422), /reserverade ord/);
   assert.match(operatorDirectoryFailure('member', 409), /redan medlem, någon annan ändrade medlemskapet, eller .* sista administratören/);
   assert.match(operatorDirectoryFailure('member', 422), /partnerkonto/);
+  assert.match(operatorDirectoryFailure('member', 429), /För många inbjudningar/);
+  const surface = readFileSync(new URL('../app/control/surface-page.tsx', import.meta.url), 'utf8');
+  assert.match(surface, /listLaneOperators/);
+  assert.match(surface, /nativeStudioAdminEnabled/);
   assert.match(operatorDirectoryFailure('role', 409), /sista administratören/);
   assert.match(operatorDirectoryFailure('member', 403), /Åtkomst nekad/);
   assert.match(operatorDirectoryFailure('create', 503), /Neon-pool/);

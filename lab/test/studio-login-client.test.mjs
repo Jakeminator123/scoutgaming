@@ -16,7 +16,7 @@ test('native login returnTo preserves current Studio views or one-use BO handoff
     assert.equal(studioLoginDestination(value,'/studio/api/auth'),value);
   }
   for (const value of ['/studio/administration?secret=x','/studio/','//attacker.test','https://attacker.test','/game','/blackjack','/api/bo/game-login',
-    '/studio/login','/studio/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
+    '/studio/login','/studio/set-password','/partner/set-password','/studio/partner/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
     '/studio/tree/child','/studio/tree/','/studio/Tree','/studio/%74ree','/studio\\tree','/studio//tree','/tree',
     `/api/bo/game-login?state=${'a'.repeat(63)}`,`/api/bo/lab-login?state=${'A'.repeat(64)}`,
     `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/studio');

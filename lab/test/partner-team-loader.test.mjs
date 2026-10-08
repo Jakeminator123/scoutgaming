@@ -122,7 +122,7 @@ test('the adapter sends the current revision, refreshes after a conflict and ref
   assert.equal(await live.invite('outside@partner.invalid', 'partner-viewer'), false);
   assert.deepEqual(messages, [
     'Medlemskapet ändrades av någon annan. Listan är uppdaterad; försök igen.',
-    'Kontot är kopplat till teamet. Ingen e-post har skickats.',
+    'Inbjudan är registrerad.',
     'Ändringen skulle lämna operatören utan administratör.',
   ]);
   assert.equal(await live.role({ id: '99' }, 'partner-editor'), false);
@@ -132,6 +132,7 @@ test('the adapter sends the current revision, refreshes after a conflict and ref
   assert.equal(messages.at(-1), 'Vänta, föregående ändring sparas.');
   assert.equal(calls.length, 5);
   assert.equal(partnerTeamMessage('invite', 422), 'Det finns inget partnerkonto med den e-postadressen.');
+  assert.equal(partnerTeamMessage('invite', 429), 'För många inbjudningar den här timmen. Försök igen om en stund.');
   assert.equal(partnerTeamMessage('role', 403), 'Du saknar behörighet för den ändringen.');
   assert.equal(partnerTeamMessage('role', 401), 'Sessionen har gått ut. Logga in igen.');
 });
@@ -149,7 +150,7 @@ test('a live administrator gets Kevin\'s invite and role controls, limited to wh
   assert.deepEqual([...selectFor(html, 'team-role-43')[1].matchAll(/value="([^"]+)"/g)].map(match => match[1]), ['partner-editor', 'partner-viewer']);
   assert.match(tag(html, 'team-role-44'), /disabled/);
   assert.match(html, /Medlemskap i North/);
-  assert.match(html, /ingen e-post skickas/);
+  assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
   assert.match(html, /avstängd/);
   assert.equal(html.includes('Inbjudan och rollbyte ansluts i nästa steg'), false);
   assert.equal(html.includes('@'), false);
