@@ -13,6 +13,14 @@ export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'tem
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const LABEL_MAX = 120;
+const LANE_ID = /^[a-z][a-z0-9-]{0,63}$/;
+const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype']);
+const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'active']);
+const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
+const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
+const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
+const MAX_LANES = 32;
+const MAX_CLIP_LABELS = 2048;
 const VALUE_OPS = ['eq', 'ne', 'in', 'exists'];
 const NUMBER_OPS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'exists'];
 const ARRAY_OPS = ['includes', 'all_eq', 'exists'];
@@ -48,6 +56,125 @@ const canonical = value => JSON.stringify(value, function (key, value) {
   return record(value) ? Object.fromEntries(Object.keys(value).sort().map(k => [k, value[k]])) : value;
 });
 const clone = value => structuredClone(value);
+const textError = (value, max) => typeof value !== 'string' || !value.trim() || value.length > max ? `ska vara text med 1–${max} tecken` : '';
+const exactFields = (value, allowed, at, fail) => {
+  if (!record(value)) { fail(at, 'ska vara ett objekt'); return false; }
+  for (const key of Object.keys(value)) if (!allowed.includes(key)) fail(at, `okänt fält ${key}`);
+  for (const key of allowed) if (!Object.hasOwn(value, key)) fail(at, `fältet ${key} saknas`);
+  return true;
+};
+const stringList = (value, at, max, fail) => {
+  if (!Array.isArray(value) || value.length > 32) { fail(at, 'ska vara en lista med högst 32 texter'); return; }
+  const seen = new Set();
+  value.forEach((item, index) => {
+    const message = textError(item, max);
+    if (message) fail(`${at}[${index}]`, message);
+    else if (seen.has(item)) fail(`${at}[${index}]`, `dubblerat värde ${item}`);
+    else seen.add(item);
+  });
+};
+
+// Same id rule as web/public/game-lanes.mjs isGameLaneId. The server catalogue is not imported or changed.
+export function defaultPresentationLane() {
+  return {
+    id: 'mobile-phone',
+    label: 'Mobile Phone Lane',
+    dealers: ['astrid'],
+    layers: {
+      background: { enabled: true, mode: 'baked', default: null, allowed: [] },
+      table: { enabled: true, default: null, allowed: [] },
+      dealer: { enabled: true, default: 'astrid', allowed: ['astrid'] },
+    },
+    openclaw: { idle: 'active', deal: 'active', reveal: 'active', speak: 'active', probe: 'off' },
+    operatorAdjustable: ['table.color', 'branding'],
+  };
+}
+
+function laneErrors(lanes, projectDealerIds) {
+  const errors = [];
+  const fail = (at, message) => errors.push(`${at}: ${message}`);
+  if (!Array.isArray(lanes) || lanes.length > MAX_LANES) return ['lanes: ska vara en lista med 0–32 lanes'];
+  const ids = new Set();
+  lanes.forEach((lane, index) => {
+    const at = `lanes[${index}]`;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail)) return;
+    if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
+    else if (ids.has(lane.id)) fail(`${at}.id`, `dubblerat ID ${lane.id}`);
+    else ids.add(lane.id);
+    const labelMessage = textError(lane.label, 80);
+    if (labelMessage) fail(`${at}.label`, labelMessage);
+    const laneDealers = new Set();
+    // Same cap as project.dealers in lab/schemas/studio.schema.json (exactly four today). New dealers
+    // such as Paow and Dragge raise both caps together.
+    if (!Array.isArray(lane.dealers) || lane.dealers.length < 1 || lane.dealers.length > 4) fail(`${at}.dealers`, 'ska ha 1–4 dealers');
+    else lane.dealers.forEach((dealerId, dealerIndex) => {
+      if (typeof dealerId !== 'string' || !projectDealerIds.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `okänd dealer ${typeof dealerId === 'string' ? dealerId : ''}`);
+      else if (laneDealers.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `dubblerat ID ${dealerId}`);
+      else laneDealers.add(dealerId);
+    });
+    if (exactFields(lane.layers, ['background', 'table', 'dealer'], `${at}.layers`, fail)) {
+      const background = lane.layers.background;
+      if (exactFields(background, ['enabled', 'mode', 'default', 'allowed'], `${at}.layers.background`, fail)) {
+        if (typeof background.enabled !== 'boolean') fail(`${at}.layers.background.enabled`, 'ska vara true eller false');
+        if (!BACKGROUND_MODES.has(background.mode)) fail(`${at}.layers.background.mode`, 'ska vara baked, image eller video');
+        if (background.default !== null) {
+          const message = textError(background.default, 200);
+          if (message) fail(`${at}.layers.background.default`, message);
+        }
+        stringList(background.allowed, `${at}.layers.background.allowed`, 200, fail);
+      }
+      const table = lane.layers.table;
+      if (exactFields(table, ['enabled', 'default', 'allowed'], `${at}.layers.table`, fail)) {
+        if (typeof table.enabled !== 'boolean') fail(`${at}.layers.table.enabled`, 'ska vara true eller false');
+        if (table.default !== null) {
+          const message = textError(table.default, 40);
+          if (message) fail(`${at}.layers.table.default`, message);
+        }
+        stringList(table.allowed, `${at}.layers.table.allowed`, 40, fail);
+      }
+      const dealer = lane.layers.dealer;
+      if (exactFields(dealer, ['enabled', 'default', 'allowed'], `${at}.layers.dealer`, fail)) {
+        if (typeof dealer.enabled !== 'boolean') fail(`${at}.layers.dealer.enabled`, 'ska vara true eller false');
+        if (typeof dealer.default !== 'string' || !laneDealers.has(dealer.default)) fail(`${at}.layers.dealer.default`, 'ska vara en dealer i lane.dealers');
+        if (!Array.isArray(dealer.allowed)) fail(`${at}.layers.dealer.allowed`, 'ska vara en lista');
+        else {
+          const seen = new Set();
+          dealer.allowed.forEach((dealerId, dealerIndex) => {
+            if (typeof dealerId !== 'string' || !laneDealers.has(dealerId)) fail(`${at}.layers.dealer.allowed[${dealerIndex}]`, 'ska vara en dealer i lane.dealers');
+            else if (seen.has(dealerId)) fail(`${at}.layers.dealer.allowed[${dealerIndex}]`, `dubblerat ID ${dealerId}`);
+            else seen.add(dealerId);
+          });
+        }
+      }
+    }
+    if (exactFields(lane.openclaw, OPENCLAW_PHASES, `${at}.openclaw`, fail)) {
+      for (const phase of OPENCLAW_PHASES) if (Object.hasOwn(lane.openclaw, phase) && !OPENCLAW_MODES.has(lane.openclaw[phase])) fail(`${at}.openclaw.${phase}`, 'okänt läge');
+    }
+    if (!Array.isArray(lane.operatorAdjustable) || lane.operatorAdjustable.length > OPERATOR_ADJUSTABLE.length) fail(`${at}.operatorAdjustable`, 'ska vara en lista av tillåtna justeringar');
+    else {
+      const seen = new Set();
+      lane.operatorAdjustable.forEach((item, itemIndex) => {
+        if (!OPERATOR_ADJUSTABLE.includes(item)) fail(`${at}.operatorAdjustable[${itemIndex}]`, 'okänd justering');
+        else if (seen.has(item)) fail(`${at}.operatorAdjustable[${itemIndex}]`, `dubblerat ID ${item}`);
+        else seen.add(item);
+      });
+    }
+  });
+  return errors;
+}
+
+function clipLabelErrors(value) {
+  if (!record(value)) return ['clipLabels: ska vara ett objekt'];
+  const errors = [];
+  const keys = Object.keys(value);
+  if (keys.length > MAX_CLIP_LABELS) errors.push('clipLabels: ska ha högst 2048 namn');
+  for (const key of keys) {
+    if (!ID.test(key)) errors.push(`clipLabels: ogiltigt klipp-id ${key}`);
+    const message = textError(value[key], 80);
+    if (message) errors.push(`clipLabels.${key}: ${message}`);
+  }
+  return errors;
+}
 
 export class StudioValidationError extends Error {
   constructor(errors) {
@@ -56,7 +183,16 @@ export class StudioValidationError extends Error {
   }
 }
 
-export function createSeedProject() { return { ...clone(seed), idlePolicy: createDefaultIdlePolicy(), probePolicy: createDefaultProbePolicy() }; }
+export function normalizeProject(project) {
+  if (!record(project) || Object.hasOwn(project, 'lanes')) return validateProject(project);
+  const next = clone(project);
+  next.lanes = [defaultPresentationLane()];
+  return validateProject(next);
+}
+
+export function createSeedProject() {
+  return normalizeProject({ ...clone(seed), idlePolicy: createDefaultIdlePolicy(), probePolicy: createDefaultProbePolicy() });
+}
 
 // Illustration choices must not reverse a published deal or hide a reveal.
 // This is NOT media acceptance: exact dealer/line/take validation belongs to
@@ -81,7 +217,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -182,6 +318,8 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!baseline || !Array.isArray(baseline.triggerIds) || baseline.triggerIds.length) error(`${at}.baselineVariantId`, 'standardvarianten måste finnas och vara ovillkorlig (utan triggers)');
   });
   for (const dealerId of DEALER_IDS) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
+  if (Object.hasOwn(project, 'lanes')) errors.push(...laneErrors(project.lanes, dealerIds));
+  if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
   if (errors.length) throw new StudioValidationError(errors);
   return project;
 }

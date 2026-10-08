@@ -127,7 +127,7 @@ export function ControlVideosPage({
         <LegacyClipEditor project={project} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
       </fieldset>
       {media.managed
-        ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} onOpen={id => openEvent(id)} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} />
+        ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} clipLabels={project.clipLabels} onOpen={id => openEvent(id)} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} />
         : (
           <VideoLibrary
             originals={originals}

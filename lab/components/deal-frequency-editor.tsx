@@ -2,6 +2,7 @@
 
 import type { MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs';
 import type { MediaFamily, VideoInventory } from './studio-types';
+import { clipLabel } from '../lib/clip-label.mjs';
 import { dealFrequencyPolicies, mediaVariantPolicy } from '../lib/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
 
@@ -23,15 +24,18 @@ export function DealFrequencyEditor({ family, inventory, project, onPolicy }: {
     {legacy ? <p className="notice subtle">Ett äldre urval finns sparat för den här platsen. Första frekvensändringen ersätter det urvalet för hela platsen när du sparar. Sätt procent för varje variant du vill använda.</p> : null}
     {ids.map(id => {
       const video = inventory.videos.find(item => item.id === id);
+      const fileName = video?.fileName ?? 'Tidigare variant · filen saknas';
+      const derived = clipLabel({ id, familyId: video?.familyId ?? family.id, role: video?.role ?? 'variant', relativePath: video?.relativePath }, project.clipLabels);
+      const clipName = derived === fileName ? fileName : `${derived} · ${fileName}`;
       const available = Boolean(video?.available && family.variantIds.includes(id));
       const policy = mediaVariantPolicy(project, family, id);
       const percent = policy.frequencyPercent ?? 0;
       const full = percent === 0 && activeCount >= 4;
       const maximum = full ? 0 : 100 - total + percent;
       return <div className={styles.frequencyRow} key={id}>
-        <label className="field">{video?.fileName ?? 'Tidigare variant · filen saknas'}
+        <label className="field" title={id}>{clipName}
           <span className={styles.percentInput}><input type="number" min={0} max={maximum} step={1} value={percent}
-            aria-label={`Frekvens i procent för ${video?.fileName ?? id}`} disabled={full || !available && percent === 0}
+            aria-label={`Frekvens i procent för ${clipName}`} disabled={full || !available && percent === 0}
             onChange={event => {
               const value = event.target.valueAsNumber;
               if (Number.isFinite(value)) onPolicy(family.id, { ...policy, frequencyPercent: Math.max(0, Math.min(maximum, Math.round(value))) });
