@@ -220,3 +220,75 @@ test('the directory shows usernames when the users table answers and ids when it
   const [blind] = await failing.listOperatorDirectory();
   assert.deepEqual(blind.members.map(member => [member.userId, member.username]), [['42', null], ['44', null]]);
 });
+
+test('email invitation creates an invited partner or links an existing one, and the sixth in an hour is 429', async () => {
+  const copy = people.map(user => ({ ...user }));
+  const pool = operatorMemoryPool();
+  const boDb = usersDb(copy);
+  const sent = [];
+  const logs = [];
+  const journal = createOperatorJournal({ now: clock, log: (...line) => logs.push(line) });
+  const operatorApi = createOperatorAdminApi({
+    pool, boDb, scope, now: clock, journal, publicOrigin: origin,
+    mail: { async send(message) { sent.push(message); return { sent: true }; } },
+  });
+  const api = createStudioAdminApi({
+    authorize: async () => session,
+    mutationTransaction: work => work(),
+    allowedOrigins: [origin],
+    publicHosts: ['studio.example'],
+    handlers: operatorApi.handlers,
+  });
+  const post = async (action, body) => {
+    const response = await api.handle(new Request(`${origin}/studio/api/admin/${action}`, {
+      method: 'POST',
+      headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }));
+    return { status: response.status, body: await response.json() };
+  };
+  assert.equal((await post('operator-create', { slug: 'north-casino', name: 'North Casino' })).status, 200);
+  const created = await post('operator-membership', {
+    operatorId: 'north-casino', roleId: 'partner-viewer', email: 'New.Person@partner.invalid', status: 'invited',
+  });
+  assert.equal(created.status, 200);
+  assert.equal(created.body.invited, true);
+  assert.equal(created.body.ok, true);
+  const account = copy.find(user => user.email === 'new.person@partner.invalid');
+  assert.equal(account.role, 'partner');
+  assert.equal(account.hash, null);
+  const member = created.body.operator.members.find(item => item.userId === account.id);
+  assert.equal(member.status, 'invited');
+  assert.equal(member.username, null);
+  assert.equal(JSON.stringify(created.body).includes('new.person@partner.invalid'), false);
+  assert.equal(sent.length, 1);
+  const link = new URL(sent[0].link);
+  assert.equal(link.pathname, '/partner/set-password');
+  assert.equal(link.searchParams.has('password'), false);
+  assert.match(sent[0].text, /North Casino/);
+  assert.match(sent[0].text, /Partner viewer/);
+  const linked = await post('operator-membership', {
+    operatorId: 'north-casino', roleId: 'partner-editor', email: 'admin@north.invalid', status: 'invited',
+  });
+  assert.equal(linked.status, 200);
+  assert.equal(linked.body.invited, true);
+  assert.equal(copy.length, people.length + 1);
+  assert.equal(sent.length, 1);
+  assert.equal(linked.body.operator.members.find(item => item.userId === '42').status, 'active');
+  const inviteLog = journalEntries(logs).find(entry => entry.action === 'operator-membership');
+  assert.deepEqual(inviteLog.target, { email: 'n***@partner.invalid' });
+  assert.equal(logs.flat().join(' ').includes('new.person@partner.invalid'), false);
+  for (let index = 2; index <= 4; index += 1) {
+    const extra = await post('operator-membership', {
+      operatorId: 'north-casino', roleId: 'partner-viewer', email: `more-${index}@partner.invalid`, status: 'invited',
+    });
+    assert.equal(extra.status, 200, String(index));
+    assert.equal(extra.body.invited, true);
+  }
+  const blocked = await post('operator-membership', {
+    operatorId: 'north-casino', roleId: 'partner-viewer', email: 'more-5@partner.invalid', status: 'invited',
+  });
+  assert.equal(blocked.status, 429);
+  assert.equal(copy.some(user => user.email === 'more-5@partner.invalid'), false);
+  assert.equal(pool.tables.operator_memberships.filter(row => row.status === 'invited').length, 4);
+});

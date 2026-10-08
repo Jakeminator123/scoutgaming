@@ -101,7 +101,7 @@ function loadNavigation(pathname, search = '') {
 
 test('login pages render without the staff menu under empty and /studio base paths', () => {
   for (const base of ['', '/studio']) {
-    for (const path of ['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login']) {
+    for (const path of ['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login', '/partner/set-password']) {
       assert.equal(isScoutAuthPath(`${base}${path}`, base), true, `${base}${path}`);
       assert.equal(isScoutAuthPath(`${base}${path}/`, base), true, `${base}${path}/`);
     }

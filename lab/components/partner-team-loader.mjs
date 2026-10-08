@@ -37,7 +37,8 @@ export function partnerTeamSnapshot(snapshot, team) {
 }
 
 export function partnerTeamMessage(action, status, reason) {
-  if (status === 200) return action === 'invite' ? 'Kontot är kopplat till teamet. Ingen e-post har skickats.' : 'Rollprofilen är sparad.';
+  if (status === 200) return action === 'invite' ? 'Inbjudan är registrerad.' : 'Rollprofilen är sparad.';
+  if (status === 429) return 'För många inbjudningar den här timmen. Försök igen om en stund.';
   if (status === 409) {
     if (reason === 'member') return 'Kontot är redan medlem i teamet.';
     if (reason === 'last-admin') return 'Ändringen skulle lämna operatören utan administratör.';
@@ -96,7 +97,7 @@ export function createPartnerTeamAdapter({ team, client, notify, onTeam, guard =
   return Object.freeze({
     inviteRoles: Object.freeze([...team.inviteRoles]),
     note: manages
-      ? 'Bjud in kopplar ett befintligt partnerkonto direkt till teamet; ingen e-post skickas. Administratörer och avstängning hanteras av intern personal.'
+      ? 'En ny adress får ett aktiveringsmejl. Ett befintligt partnerkonto kopplas utan mejl. Administratörer och avstängning hanteras av intern personal.'
       : 'Du kan se teamet. Inbjudan och rollbyte kräver operatörsadministratör.',
     assignable: member => members.get(member?.id)?.allowed.role ?? [],
     invite: (email, roleId) => run('invite', { action: 'invite', email, roleId }),

@@ -3,12 +3,14 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginDestination, studioLoginReturnTo, studioPasswordToken } from '../lib/studio-login-client.mjs';
 import styles from './studio-login.module.css';
 
-type Props = { authBase:'/studio/api/auth'|'/api/auth'; returnTo?:string; token?:string|null; mode?:'login'|'set-password';fetchImpl?:typeof fetch;resetAvailable?:boolean;gameOrigin?:string };
+type AuthBase = '/studio/api/auth'|'/api/auth'|'/studio/api/partner'|'/api/partner';
+type Props = { authBase:AuthBase; returnTo?:string; token?:string|null; mode?:'login'|'set-password';fetchImpl?:typeof fetch;resetAvailable?:boolean;gameOrigin?:string };
 export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,resetAvailable = false,gameOrigin }:Props) {
   const client = useMemo(() => createStudioLoginClient({authBase,fetchImpl}),[authBase,fetchImpl]);
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [notice,setNotice] = useState(''), [complete,setComplete] = useState(false);
   const writing = useRef(false), alive = useRef(false), passwordToken = useRef(studioPasswordToken(token));
-  const loginPath = gameOrigin ? new URL('/studio/login',gameOrigin).href : authBase === '/studio/api/auth' ? '/studio/login' : '/login';
+  const partnerBase = authBase === '/studio/api/partner' || authBase === '/api/partner';
+  const loginPath = partnerBase ? '/partner/login' : gameOrigin ? new URL('/studio/login',gameOrigin).href : authBase === '/studio/api/auth' ? '/studio/login' : '/login';
   // Native auth is enabled with the canonical game policy. The game may have
   // a different public origin from standalone Studio, especially in QA.
   const gameLoginPath = gameOrigin ? new URL('/player-login',gameOrigin).href : '/player-login';
@@ -24,10 +26,12 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
     event.preventDefault();
     if (!ready || !alive.current || writing.current) return;
     const form = event.currentTarget, fields = new FormData(form);
-    const body:Record<string,unknown> = action === 'set-password' ? {token:passwordToken.current,pass:String(fields.get('pass') || '')}
-      : action === 'login' ? {user:String(fields.get('user') || '').trim(),pass:String(fields.get('pass') || ''),returnTo:studioLoginReturnTo(returnTo)}
+    const entered = String(fields.get('pass') || '');
+    const body:Record<string,unknown> = action === 'set-password'
+      ? (partnerBase ? {token:passwordToken.current,password:entered} : {token:passwordToken.current,pass:entered})
+      : action === 'login' ? {user:String(fields.get('user') || '').trim(),pass:entered,returnTo:studioLoginReturnTo(returnTo)}
         : {user:String(fields.get('user') || '').trim()};
-    if (action === 'set-password' && body.pass !== fields.get('confirm')) { setNotice('Lösenorden stämmer inte överens.'); delete body.pass; return; }
+    if (action === 'set-password' && entered !== fields.get('confirm')) { setNotice('Lösenorden stämmer inte överens.'); delete body.pass; delete body.password; return; }
     writing.current = true; setBusy(true); setNotice('');
     for (const name of ['pass','confirm']) { const field = form.elements.namedItem(name); if (field instanceof HTMLInputElement) field.value = ''; }
     try {
@@ -37,7 +41,7 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
       else if (action === 'set-password') { passwordToken.current = null; setComplete(true); setNotice('Lösenordet är sparat. Logga in med ditt nya lösenord.'); }
       else setNotice('Om ett aktivt konto med e-post finns skickas en återställningslänk.');
     } catch (error) { if (alive.current) setNotice(error instanceof StudioLoginUiError ? error.message : new StudioLoginUiError().message); }
-    finally { delete body.pass; delete body.token; writing.current = false; if (alive.current) setBusy(false); }
+    finally { delete body.pass; delete body.password; delete body.token; writing.current = false; if (alive.current) setBusy(false); }
   }
   return <main className={styles.page}>
     <section className={styles.card} aria-busy={!ready || busy}>
@@ -55,7 +59,9 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
         {resetAvailable && <details><summary>Glömt lösenordet?</summary><form className={styles.form} method="post" action={`${authBase}/reset-request`} onSubmit={event => void submit(event,'reset-request')}>
           <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label><button type="submit" className="sg-btn sg-btn-secondary" disabled={!ready || busy}>Begär återställningslänk</button>
         </form></details>}
-      </> : complete ? <><p><a href={gameLoginPath}>Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
+      </> : complete ? (partnerBase
+        ? <p><a href="/partner/login">Logga in i partnerportalen</a></p>
+        : <><p><a href={gameLoginPath}>Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></>) : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
         <label>Nytt lösenord (8–128 tecken)<input name="pass" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label>
         <label>Upprepa lösenordet<input name="confirm" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label><button type="submit" className="sg-btn sg-btn-primary" disabled={!ready || busy}>Spara lösenord</button>
       </form> : <p role="alert">Länken saknas eller är ogiltig. Be en administratör om en ny inbjudan eller begär återställning från <a href={loginPath}>inloggningen</a>.</p>}

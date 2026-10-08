@@ -20,6 +20,7 @@ export function operatorDirectoryFailure(kind: Kind, status: number) {
   if (kind === 'create' && status === 422) return 'Ogiltig slug eller namn. Slug: små bokstäver, siffror och bindestreck; reserverade ord som api, login och partner går inte.';
   if (kind === 'member' && status === 409) return 'Ingenting sparades: kontot är redan medlem, någon annan ändrade medlemskapet, eller ändringen skulle ta bort sista administratören. Ladda om sidan.';
   if (kind === 'member' && status === 422) return 'Kontot finns inte som partnerkonto, eller rollen saknas hos bolaget.';
+  if (kind === 'member' && status === 429) return 'För många inbjudningar den här timmen. Ingenting sparades.';
   if (kind === 'member' && status === 404) return 'Bolaget finns inte längre.';
   if (kind === 'role' && status === 409) return 'Rolländringen skulle ta bort sista administratören.';
   return 'Ändringen gick inte igenom.';
@@ -37,7 +38,7 @@ export function ControlOperatorDirectory({ directory, onCreated }: {
   const [entries, setEntries] = useState<OperatorDirectoryEntry[]>(() => directory?.operators ?? []);
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
-  const [adds, setAdds] = useState<Record<string, { username: string; roleId: string }>>({});
+  const [adds, setAdds] = useState<Record<string, { username: string; email: string; roleId: string }>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
@@ -95,13 +96,21 @@ export function ControlOperatorDirectory({ directory, onCreated }: {
   }
   async function addMember(event: FormEvent<HTMLFormElement>, operator: OperatorDirectoryEntry) {
     event.preventDefault();
-    const draft = adds[operator.id] ?? { username: '', roleId: '' };
+    const draft = adds[operator.id] ?? { username: '', email: '', roleId: '' };
     const roleId = draft.roleId || defaultRole(operator);
     const username = draft.username.trim();
-    if (!username || !roleId) { setError('Ange användarnamn och roll.'); return; }
-    const payload = await run(`add:${operator.id}`, 'operator-membership', { operatorId: operator.id, username, roleId, status: 'active' },
-      'member', `${username} är medlem i ${operator.name}.`);
-    if (payload) setAdds(current => ({ ...current, [operator.id]: { username: '', roleId } }));
+    const email = draft.email.trim();
+    const both = Boolean(email && username);
+    if (!roleId || both || (!email && !username)) {
+      setError(both ? 'Ange antingen användarnamn eller e-post.' : 'Ange användarnamn eller e-post, och en roll.');
+      return;
+    }
+    const payload = email
+      ? await run(`add:${operator.id}`, 'operator-membership', { operatorId: operator.id, email, roleId, status: 'invited' },
+        'member', `Inbjudan till ${operator.name} är registrerad.`)
+      : await run(`add:${operator.id}`, 'operator-membership', { operatorId: operator.id, username, roleId, status: 'active' },
+        'member', `${username} är medlem i ${operator.name}.`);
+    if (payload) setAdds(current => ({ ...current, [operator.id]: { username: '', email: '', roleId } }));
   }
   async function change(operator: OperatorDirectoryEntry, member: OperatorDirectoryMember, next: { roleId: string; status: string }, done: string) {
     const key = `${operator.id}:${member.userId}`;
@@ -122,7 +131,7 @@ export function ControlOperatorDirectory({ directory, onCreated }: {
 
   return <section className={styles.card} aria-labelledby="operator-directory">
     <h2 id="operator-directory">Bolag</h2>
-    <p>Operatörsbolag med roller och medlemskap. En medlem är ett befintligt partnerkonto; ingen e-post skickas. Bolagets administratörer bjuder in och byter roller i partnerportalen.</p>
+    <p>Operatörsbolag med roller och medlemskap. En ny e-postadress får ett aktiveringsmejl. Ett befintligt partnerkonto kopplas utan mejl. Saknade standardroller läggs till med knappen under bolaget.</p>
     {error ? <p role="alert">{error}</p> : null}
     {message ? <p role="status">{message}</p> : null}
     <form className={styles.form} aria-label="Skapa bolag" onSubmit={event => { void create(event); }}>
@@ -137,7 +146,7 @@ export function ControlOperatorDirectory({ directory, onCreated }: {
       </div>
     </form>
     {entries.length ? <div className={styles.operators}>{entries.map(operator => {
-      const add = adds[operator.id] ?? { username: '', roleId: '' };
+      const add = adds[operator.id] ?? { username: '', email: '', roleId: '' };
       return <article className={styles.operator} key={operator.id} aria-labelledby={`operator-${operator.id}`}>
         <h3 id={`operator-${operator.id}`}>{operator.name} <span className={styles.muted}>· {operator.slug}{operator.status !== 'active' ? ` · ${operator.status}` : ''}</span></h3>
         {operator.missingRoles.length ? <div className={styles.actions}>
@@ -172,8 +181,12 @@ export function ControlOperatorDirectory({ directory, onCreated }: {
         </table></div> : <p className={styles.muted}>Inga medlemmar ännu.</p>}
         <form className={styles.form} aria-label={`Lägg till medlem i ${operator.name}`} onSubmit={event => { void addMember(event, operator); }}>
           <label className={styles.field}>Användarnamn
-            <input value={add.username} autoComplete="off" spellCheck={false} maxLength={254} required
+            <input value={add.username} autoComplete="off" spellCheck={false} maxLength={254}
               onChange={event => { const value = event.target.value; setAdds(current => ({ ...current, [operator.id]: { ...add, username: value } })); }} />
+          </label>
+          <label className={styles.field}>E-post
+            <input value={add.email} type="email" autoComplete="off" spellCheck={false} maxLength={254}
+              onChange={event => { const value = event.target.value; setAdds(current => ({ ...current, [operator.id]: { ...add, email: value } })); }} />
           </label>
           <label className={styles.field}>Roll
             <select value={add.roleId || defaultRole(operator)} disabled={!operator.roles.length}

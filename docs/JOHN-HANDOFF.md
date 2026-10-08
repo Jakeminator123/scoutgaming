@@ -20,13 +20,26 @@ från katalog-ID:t; panelen Ditt bord använder samma lagring som N3.4.
 `#dealer-options` listar fortfarande bara dealers i `DEALERS`-objektet, alltså inte
 Paow/Dragge där ännu; de syns i Ditt bord-panelen.
 
+## 8 oktober 2026 sen eftermiddag: e-postinbjudan för operatörspersonal
+
+`invite` i partner-API:t och `operator-membership` med e-post skapar ett partnerkonto utan
+hash, en engångstoken (samma `tokens`-tabell och `studio-sha256:`-hash som Studio) och
+medlemskap `invited` när adressen saknas; ett befintligt partnerkonto kopplas `active` utan
+mejl. Mejlet (Resend, rubrik "Inbjudan – operatörspersonal, nivå 2") bär bolagsnamn, roll och
+länk till `/partner/set-password?t=`. Svaret är alltid `{ invited: true }`; högst 5 per aktör och
+timme, sedan 429. `POST /api/partner/set-password` konsumerar token, sätter scrypt-hash, bumpar
+auth-epoch och aktiverar inbjudna medlemskap; Studio:s set-password och login vägrar fortfarande
+roll `partner`. Journalen loggar maskad e-post. Översikten `/control` läser riktiga bolag via
+`listLaneOperators()` när native admin är på. Inte klickat i webbläsare; inget riktigt mejl skickat.
+Kvar: glömt-lösenord för partner, journaltabell.
+
 ## Nuläge per funktion
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
 | Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
 | Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
-| Nivå 2 /partner | påbörjad — session finns; team och branding skrivs (revision som CAS, sista-admin-spärr i lagret); Bolag på `/control/lanes` skapar bolag, roller och medlemskap; kvar: e-postinbjudan N2.6, journaltabell, speldata | Skrivande partnerrutter, Partnerportal |
+| Nivå 2 /partner | påbörjad — session finns; team och branding skrivs (revision som CAS, sista-admin-spärr i lagret); Bolag på `/control/lanes` skapar bolag, roller och medlemskap; e-postinbjudan skapar inbjudet partnerkonto + engångslänk till `/partner/set-password`, kontot kan sedan logga in på `/partner/login` (5 inbjudningar per aktör och timme); Översikten listar riktiga bolag ur Neon när lagret är på; kvar: journaltabell, glömt-lösenord för partner, speldata, prod-klick | Skrivande partnerrutter, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby med `Spelar hos` och senaste bord/dealer från webbläsaren; redigerbar profil (namn, språk; migration `006` väntar); historikrutt; panelen Ditt bord väljer dealer och bordsfärg inom lanen (N3.4). Bakgrund är avstängd när filmen är inbakad. Valet ligger inte på kontot | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |

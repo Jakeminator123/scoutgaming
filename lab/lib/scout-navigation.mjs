@@ -52,7 +52,7 @@ export const SCOUT_FOOTER_NAVIGATION = Object.freeze([
 ]);
 
 // Login and password pages render without the staff menu.
-const authPaths = new Set(['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login']);
+const authPaths = new Set(['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login', '/partner/set-password']);
 
 export const SCOUT_LEVELS = Object.freeze([
   Object.freeze({ href: '/control', label: '1 · Admin', id: 'admin' }),

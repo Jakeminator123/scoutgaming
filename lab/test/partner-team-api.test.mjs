@@ -1,6 +1,6 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes, scryptSync } from 'node:crypto';
+import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { handlePartnerAuth } from '../lib/partner-session.mjs';
 import { createOperatorJournal } from '../lib/operator-journal.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
@@ -42,7 +42,8 @@ function authDb() {
     accounts,
     async transaction(work) { return work(); },
     prepare(sql) {
-      if (accountQueries.has(sql) || sql.startsWith('SELECT id,username FROM users WHERE id IN (')) return accounts.prepare(sql);
+      if (accountQueries.has(sql) || sql.startsWith('SELECT id,username FROM users WHERE id IN (')
+        || sql.startsWith('INSERT INTO users') || sql.startsWith('DELETE FROM tokens') || sql.startsWith('INSERT INTO tokens')) return accounts.prepare(sql);
       const rows = args => {
         if (sql.includes('FROM lab_sessions')) return sessions.filter(session => session.token_digest === args[0] && session.expires > args[1]);
         if (sql.includes('lower(username)=? OR lower(email)=?')) return byLogin(String(args[0]).toLowerCase());
@@ -199,8 +200,9 @@ describe('partner team API', { concurrency: 1 }, () => {
     const invited = await handlePartnerAuth(write(cookie, { action: 'invite', email: 'Outside@Partner.invalid', roleId: 'partner-viewer' }), config);
     assert.equal(invited.status, 200);
     const body = await invited.json();
-    assert.deepEqual(body.changed, { userId: '45', roleId: 'partner-viewer', status: 'active', revision: 1 });
-    assert.deepEqual(body.members.find(member => member.userId === '45'), {
+    assert.deepEqual(body, { invited: true });
+    const listed = await (await handlePartnerAuth(read(cookie), config)).json();
+    assert.deepEqual(listed.members.find(member => member.userId === '45'), {
       userId: '45', username: 'outside-partner', roleId: 'partner-viewer', roleLabel: 'Partner viewer', status: 'active', revision: 1,
       allowed: { role: ['partner-editor'], suspend: true, reactivate: false },
     });
@@ -209,7 +211,7 @@ describe('partner team API', { concurrency: 1 }, () => {
     assert.equal(repeat.status, 409);
     assert.deepEqual(await repeat.json(), { error: 'Conflict', reason: 'member' });
     assert.equal(memberRow(pool, '45').role_id, 'partner-viewer');
-    for (const email of ['nobody@partner.invalid', 'admin@studio.invalid', 'not-an-email', 42]) {
+    for (const email of ['admin@studio.invalid', 'not-an-email', 42]) {
       const rejected = await handlePartnerAuth(write(cookie, { action: 'invite', email, roleId: 'partner-viewer' }), config);
       assert.equal(rejected.status, 422, String(email));
     }
@@ -229,9 +231,9 @@ describe('partner team API', { concurrency: 1 }, () => {
     const entries = journalEntries(logs);
     assert.deepEqual(entries, [{
       at: new Date(now).toISOString(), actor: 'north-admin', action: 'team.invite', operatorId: 'north',
-      target: { userId: '45', roleId: 'partner-viewer', status: 'active', revision: 1 },
+      target: { email: 'o***@partner.invalid' },
     }]);
-    assert.equal(logs.flat().join(' ').includes('@'), false);
+    assert.equal(logs.flat().join(' ').includes('outside@partner.invalid'), false);
   });
 
   test('role change, suspension and reactivation use the membership revision; a stale revision is 409', async () => {
@@ -297,5 +299,68 @@ describe('partner team API', { concurrency: 1 }, () => {
     assert.deepEqual(logs, []);
     // The suspended actor's next request no longer gets past the membership check.
     assert.equal((await handlePartnerAuth(read(cookie), config)).status, 403);
+  });
+
+  test('a new address is invited with one mail; an existing address is linked with the same response and no mail', async () => {
+    const { config, pool, boDb } = await fixture();
+    const sent = [];
+    config.mail = { async send(message) { sent.push(message); return { sent: true }; } };
+    config.publicOrigin = origin;
+    const cookie = await cookieFor(config, 'north-admin');
+    const before = users.length;
+    const created = await handlePartnerAuth(write(cookie, { action: 'invite', email: 'New.Person@partner.invalid', roleId: 'partner-viewer' }), config);
+    const linked = await handlePartnerAuth(write(cookie, { action: 'invite', email: 'outside@partner.invalid', roleId: 'partner-editor' }), config);
+    assert.equal(created.status, 200);
+    assert.equal(linked.status, 200);
+    assert.deepEqual(await created.json(), { invited: true });
+    assert.deepEqual(await linked.json(), { invited: true });
+    assert.equal(users.length, before + 1);
+    const account = users.find(user => user.email === 'new.person@partner.invalid');
+    assert.equal(account.role, 'partner');
+    assert.equal(account.username, 'new.person@partner.invalid');
+    assert.equal(account.hash ?? null, null);
+    assert.equal(memberRow(pool, account.id).status, 'invited');
+    assert.equal(memberRow(pool, account.id).role_id, 'partner-viewer');
+    assert.equal(memberRow(pool, '45').status, 'active');
+    assert.equal(memberRow(pool, '45').role_id, 'partner-editor');
+    assert.equal(sent.length, 1);
+    const link = new URL(sent[0].link);
+    assert.equal(link.origin, origin);
+    assert.equal(link.pathname, '/partner/set-password');
+    assert.match(link.searchParams.get('t'), /^[A-Za-z0-9_-]{32,128}$/);
+    assert.equal(link.searchParams.has('password'), false);
+    assert.equal(sent[0].password, undefined);
+    assert.match(sent[0].text, /North/);
+    assert.match(sent[0].text, /Partner viewer/);
+    assert.equal(sent[0].to, 'new.person@partner.invalid');
+    const token = link.searchParams.get('t');
+    assert.equal(boDb.accounts.tokens[0].token, `studio-sha256:${createHash('sha256').update(token).digest('hex')}`);
+    assert.equal(boDb.accounts.tokens[0].kind, 'invite');
+    assert.equal(boDb.accounts.tokens[0].username, 'new.person@partner.invalid');
+    const viewer = await cookieFor(config, 'north-viewer');
+    assert.equal((await handlePartnerAuth(write(viewer, { action: 'invite', email: 'other@partner.invalid', roleId: 'partner-viewer' }), config)).status, 403);
+    assert.equal(users.some(user => user.email === 'other@partner.invalid'), false);
+    const taken = { ...config, gameDb: { prepare: () => ({ all: async () => [{ player_id: 'p1' }] }) } };
+    assert.equal((await handlePartnerAuth(write(cookie, { action: 'invite', email: 'player@partner.invalid', roleId: 'partner-viewer' }), taken)).status, 422);
+    assert.equal(users.some(user => user.email === 'player@partner.invalid'), false);
+  });
+
+  test('the sixth invitation from one actor within the hour is 429 and creates nothing', async () => {
+    const { config, pool } = await fixture();
+    const sent = [];
+    config.mail = { async send(message) { sent.push(message); return { sent: true }; } };
+    config.publicOrigin = origin;
+    const cookie = await cookieFor(config, 'north-second-admin');
+    for (let index = 1; index <= 5; index += 1) {
+      const response = await handlePartnerAuth(write(cookie, { action: 'invite', email: `hour-${index}@partner.invalid`, roleId: 'partner-viewer' }), config);
+      assert.equal(response.status, 200, String(index));
+      assert.deepEqual(await response.json(), { invited: true });
+    }
+    const blocked = await handlePartnerAuth(write(cookie, { action: 'invite', email: 'hour-6@partner.invalid', roleId: 'partner-viewer' }), config);
+    assert.equal(blocked.status, 429);
+    assert.deepEqual(await blocked.json(), { error: 'Too many attempts' });
+    assert.equal(sent.length, 5);
+    assert.equal(users.some(user => user.email === 'hour-6@partner.invalid'), false);
+    assert.equal(pool.tables.operator_memberships.filter(row => row.status === 'invited').length, 5);
   });
 });

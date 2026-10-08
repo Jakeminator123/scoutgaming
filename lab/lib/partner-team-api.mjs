@@ -2,8 +2,12 @@ import {
   OPERATOR_ADMIN_PERMISSION, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerResource,
   allowsPartnerRoleAssignment, allowsPartnerSuspension,
 } from '../../web/partner-access-policy.mjs';
-import { createOperatorAccounts } from './operator-accounts.mjs';
+import {
+  consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
+  partnerMailbox, playerOwnsEmail, sendPartnerInvite, visibleOperatorUsername,
+} from './operator-accounts.mjs';
 import { createOperatorJournal } from './operator-journal.mjs';
+import { createNativeStudioMail } from './studio-native-mail.mjs';
 
 // Reasons a client may show for a 409. Anything else stays a bare status.
 export const PARTNER_TEAM_CONFLICTS = Object.freeze(['last-admin', 'revision', 'member']);
@@ -20,8 +24,12 @@ function revisionOf(value) {
 // `decided` is the fresh partner context built for this request: account,
 // scope, operator, membership and role, all read from storage after the
 // session check. The store re-checks the last administrator under its lock.
-export function createPartnerTeamApi({ store, boDb, journal = createOperatorJournal() }) {
+export function createPartnerTeamApi({
+  store, boDb, gameDb, journal = createOperatorJournal(), mail, now = () => Date.now(), publicOrigin,
+} = {}) {
   const accounts = () => createOperatorAccounts(boDb);
+  const clock = typeof now === 'function' ? now : () => Date.now();
+  const delivery = typeof mail?.send === 'function' ? mail : createNativeStudioMail({ env: process.env });
   async function usernames(userIds) {
     try { return await accounts().usernames(userIds); } catch { return new Map(); }
   }
@@ -38,7 +46,7 @@ export function createPartnerTeamApi({ store, boDb, journal = createOperatorJour
       const may = nextStatus => Boolean(admin && currentRole && allowsPartnerSuspension(decided, { membership: member, currentRole, nextStatus }));
       return {
         userId: member.userId,
-        username: names.get(member.userId) ?? null,
+        username: visibleOperatorUsername(names.get(member.userId)),
         roleId: member.roleId,
         roleLabel: currentRole?.label ?? member.roleId,
         status: member.status,
@@ -102,13 +110,42 @@ export function createPartnerTeamApi({ store, boDb, journal = createOperatorJour
       const { action } = body;
       let saved;
       if (action === 'invite') {
-        // Links an existing partner account found by e-mail. No mail is sent (N2.6).
         keys(body, ['action', 'email', 'roleId']);
         const nextRole = await roleOf(operatorId, body.roleId);
-        const account = await accounts().byEmail(body.email);
-        if (!account || account.role !== 'partner') fail(422);
-        if (!allowsPartnerInvite(decided, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
-        saved = await save(action, { actor, operatorId, userId: account.userId, roleId: nextRole.id, status: 'active' });
+        if (!allowsPartnerInviteRole(decided, nextRole)) fail(403);
+        const email = partnerMailbox(body.email);
+        if (!email) fail(422);
+        let account = await accounts().byEmail(email);
+        if (account && account.role !== 'partner') fail(422);
+        if (account && !allowsPartnerInvite(decided, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
+        if (!account && await playerOwnsEmail(gameDb, email)) fail(422);
+        const operator = typeof store.getOperatorById === 'function' ? await store.getOperatorById(operatorId) : null;
+        const release = consumePartnerInvite(actor, clock());
+        let invitation = null;
+        let createdNew = false;
+        try {
+          if (!account) {
+            const created = await insertInvitedPartner(boDb, email, clock, publicOrigin);
+            if (created) {
+              createdNew = true;
+              account = { userId: created.userId, role: 'partner' };
+              if (created.link) invitation = partnerInviteDelivery({
+                to: email, link: created.link, operatorName: operator?.name || operatorId, roleLabel: nextRole.label,
+              });
+            } else account = await accounts().byEmail(email);
+            if (!account || account.role !== 'partner') fail(422);
+            if (!allowsPartnerInvite(decided, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
+          }
+          await save(action, {
+            actor, operatorId, userId: account.userId, roleId: nextRole.id, status: createdNew ? 'invited' : 'active',
+          });
+        } catch (error) {
+          release();
+          throw error;
+        }
+        if (invitation) await sendPartnerInvite(delivery, invitation);
+        journal.record({ actor, action: 'team.invite', operatorId, target: { email: maskOperatorEmail(email) } });
+        return { invited: true };
       } else if (action === 'role') {
         keys(body, ['action', 'userId', 'roleId', 'expectedRevision']);
         const expectedRevision = revisionOf(body.expectedRevision);

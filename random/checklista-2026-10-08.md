@@ -101,7 +101,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kod inne (S3): partner-API `branding` GET/POST (CAS, `presentations.configure`, pool) + panel i Kevins vy Färger, marker och kort för riktig session; prod ger 403 tills roller seedas (N2.2); chips kvar | lösa trådar | Lane |
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
 | L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | live i prod 8 okt 10:52 (S2): fixturens tre bolag + länk till `/partner/{slug}`; spelare per bolag väntar N2.4; riktig lista väntar N2.2 | matris 44 | Lane |
-| L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
+| L7 | Adminens val av riktigt bolag (L15) | kod inne (W2): Översikten läser `listLaneOperators()` ur Neon när native admin är på; fixtur offline | lösa trådar | Lane |
 | L8 | Spelmotorn läser `operator_packages` | kod inne `19f8073a` på Render (återstart 12:45, inte beteendeverifierat; 30 s cache, okänd slug 404). L8b: Vercel `/play/blackjack?operator=` hämtar samma dokument. Ogiltig slug och `claims.partner` når inte paketet. Inte klickat i prod. Neon-rättighet inte bevisad | L2 | Lane |
 
 ## N2. Nivå 2 (operatör)
@@ -113,7 +113,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | N2.3 | Team-vyns serverkoppling: inbjudan, rollbyte, suspend (L5) | kod på `main` `5912800e`: partner-action `team` GET/POST, Kevins `team.jsx` anropar API:t i riktig session (+25/−11, additivt). Inbjudan = koppla befintligt partnerkonto; e-post (N2.6) kvar | lösa trådar | N2 |
 | N2.4 | Spelare, transaktioner, rapporter från spelmotorn (L10) | kvar | lösa trådar | N2 |
 | N2.5 | Journal för operatörsskrivningar (L12) | kvar | lösa trådar | N2 |
-| N2.6 | Inbjudan/återställning för rollen `partner` (L14) | kvar | lösa trådar | N2 |
+| N2.6 | Inbjudan/återställning för rollen `partner` (L14) | inbjudan kod inne (W2+W3): inbjudet konto + engångslänk till `/partner/set-password`, mejl via Resend, 5/h, kontot loggar in på `/partner/login`. Återställning (glömt lösenord) för partner kvar | lösa trådar | N2 |
 | N2.7 | Speech-QA 501 (L6) | struket tills vidare (avstängd betald funktion) | lösa trådar | – |
 
 ## N3. Nivå 3 (spelare)

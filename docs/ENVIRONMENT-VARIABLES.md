@@ -154,7 +154,11 @@ och `CROUPIER_VERCEL_INGRESS_SECRET`. Isolerad auth/SQL/HTTPS/restart är
 godkänd; faktisk produktionsimport, policy-/aliasbyte och diskfri omstart är
 verifierade. Produktionskonton har inte använts för nya syntetiska authprov.
 `RESEND_API_KEY` och `CROUPIER_STUDIO_MAIL_FROM` på Vercel-Studio krävs tillsammans
-för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
+för riktiga invite/resend/reset-mail. Sedan 8 oktober 2026 gäller samma två nycklar
+och `CROUPIER_PUBLIC_ORIGIN` även inbjudan av operatörspersonal (partner-API:t `team`
+`invite` och admin-åtgärden `operator-membership` med e-post): länken byggs mot den
+publika originen till `/partner/set-password`; utan mejlnycklar skapas kontot men inget
+mejl går, och svaret avslöjar inte det. Inga nya variabelnamn. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
 Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
