@@ -453,7 +453,7 @@ const MIME = {
 // Dealer chat now runs exclusively through the deployed OpenClaw gateway.
 // Product chat has one active decision owner: OpenClaw. It receives only this
 // freshly projected public state and a closed speech/media allowlist.
-const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' });
+const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei', dragge: 'dealers/dragge', paow: 'dealers/paow' });
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
   && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';

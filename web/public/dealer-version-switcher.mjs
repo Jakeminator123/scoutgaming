@@ -1,8 +1,14 @@
 // Separate presentation routes share the same origin, session and game API.
 import {approvedGameQuery} from './game-entry-contract.mjs';
+import {GAME_LANES} from './game-lanes.mjs';
 export const V2_DEALERS = ['astrid', 'amira'];
+const INDEXED_DEALERS = ['vera', 'astrid', 'amira', 'mei'];
+// Dragge and Paow have no indexed table; their link opens their own portrait lane.
+const portraitLane = dealer => INDEXED_DEALERS.includes(dealer) ? null
+  : GAME_LANES.find(lane => lane.renderer === 'portrait-video' && lane.dealer === dealer)?.id ?? null;
 export function dealerVersionPath(dealer, version, observerSearch = '') {
-  const key = ['vera', 'astrid', 'amira', 'mei'].includes(dealer) ? dealer : 'vera';
+  const lane = portraitLane(dealer);
+  const key = INDEXED_DEALERS.includes(dealer) || lane ? dealer : 'vera';
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
   // The clean Blackjack URL carries its saved presentation in the document.
@@ -10,6 +16,7 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   if (!previous.has('presentation') && (previous.get('lane') === 'mobile-phone'
     || globalThis.document?.documentElement?.dataset.gamePresentation === 'local')) previous.set('presentation','local');
   previous.delete('lane');
+  if (lane) { previous.set('lane', lane); previous.set('presentation', 'local'); query.set('lane', lane); }
   for(const name of ['labObserverOrigin','labObserverChannel']){
     const value=previous.get(name);if(value)query.set(name,value);
   }

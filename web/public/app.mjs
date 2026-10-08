@@ -57,6 +57,10 @@ const DEALERS = {
   mei:    { key: 'mei', base: 'dealers/mei', anchor: 0.87, name: 'Mei',
             scene: 'dealers/mei/scene.png', sceneWK: 3.468, sceneHK: 1.47126,
             table: 'dealers/mei/table.png' },
+  // Portrait-only dealers: their own lane, no indexed streams or table art.
+  // Their films are framed on Astrid's portrait plate, so the rail anchor is hers.
+  dragge: { key: 'dragge', base: 'dealers/dragge', anchor: 0.878, name: 'Dragge' },
+  paow:   { key: 'paow',   base: 'dealers/paow',   anchor: 0.878, name: 'Paow' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
 const DEALER = DEALERS[entrySelection.dealer];

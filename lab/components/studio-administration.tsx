@@ -40,6 +40,8 @@ const GROUP_READS: Record<string, readonly string[]> = {
   operations: ['overview', 'shoes'], tables: ['config'], accounts: ['players', 'users'],
   partners: ['apikeys','emails'], finance: ['transactions'], 'media-review': ['config', 'voicelines'],
 };
+// A new lane copies the code lane of the chosen dealer: renderer and media collection stay paired.
+const PORTRAIT_LANES = GAME_LANES.filter(lane => lane.renderer === 'portrait-video');
 const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
@@ -225,7 +227,7 @@ export function studioPartnerResult(action: string, payload: JsonObject, gameOri
     if (approved.origin !== gameOrigin || approved.protocol !== 'https:' || approved.username || approved.password
       || url.origin !== approved.origin || url.username || url.password || url.hash || !['/game', '/blackjack'].includes(url.pathname)
       || query.length !== 2 || !query.includes('dealer') || !query.includes('launch')
-      || !['vera','astrid','amira','mei'].includes(url.searchParams.get('dealer') || '')
+      || !['vera','astrid','amira','mei','dragge','paow'].includes(url.searchParams.get('dealer') || '')
       || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.searchParams.get('launch') || '')
       || url.href.length > 16384 || !clean(payload.playerRef,256)) throw new StudioAdminUiError(503);
     return { kind: 'launch', url: url.href, playerRef: payload.playerRef };
@@ -349,10 +351,11 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>En ny porträttlane delar Astrids klipp och inställningar.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
-            ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'),
+          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>En ny porträttlane delar den valda dealerns klipp och inställningar.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
+            ...(PORTRAIT_LANES.find(lane => lane.dealer === value(form, 'dealer')) ?? PORTRAIT_LANES[0]), id: value(form, 'id'), label: value(form, 'name'),
           } }), true)}>
             <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
+            <label>Dealer<select name="dealer" defaultValue={PORTRAIT_LANES[0].dealer} disabled={busy}>{PORTRAIT_LANES.map(lane => <option key={lane.dealer} value={lane.dealer}>{lane.dealer}</option>)}</select></label>
             <label>Lane-ID<input name="id" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} placeholder="min-lane" disabled={busy} /></label>
             <button disabled={busy}>Lägg till lane med porträttvideo</button>
           </form></details>}

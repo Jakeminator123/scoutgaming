@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GAME_LANES, gameLaneSelection, gameLaneConfiguration, gameLaneFromDocument, validateGameLanes,
-  isOperatorSlug, laneDealerSelection, packageLaneIds } from '../web/public/game-lanes.mjs';
+  isOperatorSlug, laneDealerSelection, packageLaneIds, gameChoicesForLane } from '../web/public/game-lanes.mjs';
 import { decorateGameEntryHtml, playerLoginDestination } from '../web/public/game-entry-contract.mjs';
 import { validateDocumentValue } from '../web/storage/studio-contract.mjs';
 
-test('only Mobile is initially registered; retired dealer URLs cannot reactivate Kevin', () => {
+test('Mobile is the default lane; retired dealer URLs cannot reactivate Kevin', () => {
   assert.deepEqual(gameLaneSelection('', 'mobile-phone'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
   assert.deepEqual(gameLaneSelection('', 'original'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
   for (const dealer of ['vera','astrid','amira','mei']) {
@@ -81,6 +81,35 @@ test('a presentation lane only narrows the dealers its server lane can render', 
   assert.equal(laneDealerSelection('',legacy,{default:'paow',allowed:['x']}),null);
   assert.equal(laneDealerSelection('',legacy,null),null);
   assert.throws(() => laneDealerSelection('',{...legacy,renderer:'remote-script'},{default:'vera',allowed:[]}));
+});
+
+test('Dragge and Paow play only on their own portrait lanes and are never indexed dealers', () => {
+  const env = {CROUPIER_STUDIO_NEON_POLICY:'1'};
+  assert.deepEqual(GAME_LANES.map(lane => [lane.id, lane.renderer, lane.dealer, lane.mediaCollection]), [
+    ['mobile-phone','portrait-video','astrid','astrid-presentation'],
+    ['mobile-phone-dragge','portrait-video','dragge','dragge-presentation'],
+    ['mobile-phone-paow','portrait-video','paow','paow-presentation'],
+  ]);
+  assert.deepEqual(gameLaneConfiguration({}).gameLane, 'mobile-phone');
+  for (const dealer of ['dragge','paow']) {
+    const lane = `mobile-phone-${dealer}`;
+    assert.deepEqual(gameLaneSelection(`?lane=${lane}`,'mobile-phone'),{lane,dealer,presentation:'local'});
+    assert.equal(gameLaneSelection(`?dealer=${dealer}`,'mobile-phone').dealer,'astrid');
+    assert.equal(gameLaneSelection(`?lane=legacy&dealer=${dealer}`,'mobile-phone',catalogue).dealer,'vera');
+    assert.equal(laneDealerSelection(`?dealer=${dealer}`,legacy,{default:'mei',allowed:['dragge','paow']}),'mei');
+    assert.throws(() => validateGameLanes([{...legacy,dealer}]));
+    assert.throws(() => validateGameLanes([{...GAME_LANES[0],id:'mixed',dealer}]));
+    assert.match(decorateGameEntryHtml('<html>',env,gameLaneSelection(`?lane=${lane}`,'mobile-phone')),
+      new RegExp(`data-game-lane="${lane}" data-game-dealer="${dealer}" data-game-presentation="local"`));
+    assert.deepEqual(gameLaneFromDocument({gameLane:lane,gameDealer:dealer,gamePresentation:'local'}),{lane,dealer,presentation:'local'});
+    assert.throws(() => gameLaneFromDocument({gameLane:'mobile-phone',gameDealer:dealer,gamePresentation:'local'}));
+    assert.throws(() => gameLaneFromDocument({gameLane:'legacy',gameDealer:dealer,gamePresentation:'original'}));
+    const serverLane = GAME_LANES.find(row => row.id === lane);
+    assert.deepEqual(gameChoicesForLane([], lane, serverLane).dealers, []);
+    const projectLane = {id:lane,layers:{dealer:{default:dealer,allowed:[dealer,'astrid']}}};
+    assert.deepEqual(gameChoicesForLane([projectLane], lane, serverLane).dealers, [dealer]);
+    assert.deepEqual(gameChoicesForLane([{...projectLane,id:'legacy'}], 'legacy', legacy).dealers, ['astrid']);
+  }
 });
 
 test('operator context is read-only client data: validated, escaped and never a selector', () => {

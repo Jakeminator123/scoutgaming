@@ -1,5 +1,5 @@
 export type GameLaneId = string;
-export type GameLane = { schemaVersion: 1; id: string; label: string; renderer: 'portrait-video' | 'indexed-video'; dealer: string; mediaCollection: 'astrid-presentation' | 'vera-presentation' | 'amira-presentation' | 'mei-presentation' | 'legacy-dealers' };
+export type GameLane = { schemaVersion: 1; id: string; label: string; renderer: 'portrait-video' | 'indexed-video'; dealer: string; mediaCollection: 'astrid-presentation' | 'vera-presentation' | 'amira-presentation' | 'mei-presentation' | 'dragge-presentation' | 'paow-presentation' | 'legacy-dealers' };
 export const GAME_LANES: readonly Readonly<GameLane>[];
 export function isGameLaneId(value: unknown): value is string;
 export function isGameLane(value: unknown, lanes?: readonly GameLane[]): value is GameLaneId;

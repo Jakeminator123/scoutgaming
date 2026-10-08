@@ -60,6 +60,9 @@ test('lane creation and removal enforce role, CAS, replacement and preserve shar
   await f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: 'mobile-two', expectedRevision: 'studio-new' });
   assert.equal(f.state.document.value.gameLane, 'mobile-two');
   assert.deepEqual(f.state.document.value.rooms, [{ id: 'one', state: 'preview' }]);
+  // The code catalogue also carries the Dragge and Paow portrait lanes; the last lane closes entry.
+  for (const lane of ['mobile-phone-dragge', 'mobile-phone-paow']) await f.call('POST', 'game-lanes/remove', { lane, replacementLane: null, expectedRevision: 'studio-new' });
+  assert.deepEqual(f.state.document.value.gameLanes, [definition]);
   await f.call('POST', 'game-lanes/remove', { lane: 'mobile-two', replacementLane: null, expectedRevision: 'studio-new' });
   assert.deepEqual(f.state.document.value.gameLanes, []);
   assert.equal(f.state.document.value.gameLane, null);

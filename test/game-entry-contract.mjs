@@ -34,6 +34,8 @@ test('server marker changes player links without new browser flags and keeps off
   const prior = globalThis.document;t.after(() => {if(prior === undefined) delete globalThis.document;else globalThis.document = prior;});
   globalThis.document = {documentElement:{dataset:{gamePath:'/blackjack'}}};
   for (const dealer of ['vera','astrid','amira','mei']) assert.equal(dealerVersionPath(dealer,'original'),'/blackjack?dealer='+dealer);
+  for (const dealer of ['dragge','paow']) assert.equal(dealerVersionPath(dealer,'original'),`/blackjack?dealer=${dealer}&presentation=local&lane=mobile-phone-${dealer}`);
+  assert.equal(dealerVersionPath('astrid','original','?dealer=dragge&presentation=local&lane=mobile-phone-dragge'),'/blackjack?dealer=astrid&presentation=local');
   assert.equal(dealerVersionPath('mei','original','?performance=staged&motion=smooth60&labObserverOrigin=https://evil.invalid&labObserverChannel=00000000-0000-4000-8000-000000000001&launch=a.b.c'),'/blackjack?dealer=mei&performance=staged&motion=smooth60');
   assert.equal(dealerVersionPath('astrid','v2'),'/v2/?dealer=astrid');
   globalThis.document.documentElement.dataset = {};

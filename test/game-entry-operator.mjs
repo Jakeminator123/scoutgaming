@@ -88,6 +88,18 @@ test('without ?operator the saved catalogue entry is byte-identical to before an
   }
 });
 
+test('the code catalogue serves Dragge and Paow on their own portrait lanes only by ?lane=', async () => {
+  const { page } = await fixture();
+  for (const dealer of ['dragge', 'paow']) {
+    const lane = `mobile-phone-${dealer}`;
+    const result = await page(`?lane=${lane}&dealer=${dealer}`);
+    assert.deepEqual([result.selection.lane, result.selection.dealer, result.selection.presentation], [lane, dealer, 'local']);
+    assert.deepEqual(result.selection.choices.dealers, []);
+    assert.match(result.body, new RegExp(`data-game-lane="${lane}" data-game-dealer="${dealer}" data-game-presentation="local"`));
+    assert.equal((await page(`?dealer=${dealer}`)).body, SNAPSHOT.default['']);
+  }
+});
+
 test('?operator=sg-test with package [mobile-phone] binds lane, operator, revision and branding', async () => {
   const { page, logs } = await fixture();
   const result = await page('?operator=sg-test');

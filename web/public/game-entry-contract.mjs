@@ -1,5 +1,5 @@
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
-const dealers = new Set(['vera','astrid','amira','mei']);
+const dealers = new Set(['vera','astrid','amira','mei','dragge','paow']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
 export function publicGamePath(env = {}) {

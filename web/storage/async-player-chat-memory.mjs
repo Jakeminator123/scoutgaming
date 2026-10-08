@@ -2,7 +2,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
 const DAY = 86400000;
-const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
+const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei', 'dragge', 'paow']);
 const HISTORY_STATUS = 'generated-not-playback-confirmed';
 export const PLAYER_CHAT_MEMORY_LIMITS = Object.freeze({
   history: 30, historyChars: 8000, message: 1000, retentionDays: 30,

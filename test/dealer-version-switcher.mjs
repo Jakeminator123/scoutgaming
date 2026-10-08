@@ -12,6 +12,7 @@ test('comparison routes keep original and V2 presentations separate',()=>{
 test('dealers without V2 stay on their original presentation',()=>{
   for(const key of ['vera','mei'])assert.equal(dealerVersionPath(key,'v2'),`/?dealer=${key}`);
   assert.equal(dealerVersionPath('unknown','v2'),'/?dealer=vera');
+  for(const key of ['dragge','paow'])assert.equal(dealerVersionPath(key,'original'),`/?dealer=${key}&lane=mobile-phone-${key}&presentation=local`);
 });
 test('version switching keeps only the explicit observation channel, never launch credentials',()=>{
   const search='?launch=private&labObserverOrigin=http%3A%2F%2F127.0.0.1%3A4188&labObserverChannel=channel-1234567890';
