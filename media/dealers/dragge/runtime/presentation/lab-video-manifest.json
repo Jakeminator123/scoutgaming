@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 2,
+  "source": "h3/klara-dragge",
+  "families": [
+    {
+      "id": "dragge/deal.player.left/box0",
+      "dealerId": "dragge",
+      "eventId": "deal.player.left",
+      "situation": "box0",
+      "playbackType": "once",
+      "standardIds": [
+        "273dfc52-5948-6d11-3bcf-9f8162a31572"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.left/box1",
+      "dealerId": "dragge",
+      "eventId": "deal.player.left",
+      "situation": "box1",
+      "playbackType": "once",
+      "standardIds": [
+        "20437993-8889-1cd1-7fdc-4a64fd9058ac"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.centre/box2",
+      "dealerId": "dragge",
+      "eventId": "deal.player.centre",
+      "situation": "box2",
+      "playbackType": "once",
+      "standardIds": [
+        "16689373-eab7-3b29-ac68-ff579d153786"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.centre/box3",
+      "dealerId": "dragge",
+      "eventId": "deal.player.centre",
+      "situation": "box3",
+      "playbackType": "once",
+      "standardIds": [
+        "c04bc65e-4138-d305-6db6-65b4d910c94a"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.centre/box4",
+      "dealerId": "dragge",
+      "eventId": "deal.player.centre",
+      "situation": "box4",
+      "playbackType": "once",
+      "standardIds": [
+        "34337a2f-0288-a87b-a578-0f80ececf56d"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.right/box5",
+      "dealerId": "dragge",
+      "eventId": "deal.player.right",
+      "situation": "box5",
+      "playbackType": "once",
+      "standardIds": [
+        "da90a3cf-6798-9f49-1dc4-2f0437c3ff5c"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.player.right/box6",
+      "dealerId": "dragge",
+      "eventId": "deal.player.right",
+      "situation": "box6",
+      "playbackType": "once",
+      "standardIds": [
+        "a924fdc9-edb5-7b3e-85f5-b8fa5a38468c"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.dealer/dealer-up",
+      "dealerId": "dragge",
+      "eventId": "deal.dealer",
+      "situation": "dealer-up",
+      "playbackType": "once",
+      "standardIds": [
+        "5a4aa222-c815-07fe-8abb-61b0ffedb4cf"
+      ],
+      "variantIds": []
+    },
+    {
+      "id": "dragge/deal.dealer/dealer-hole",
+      "dealerId": "dragge",
+      "eventId": "deal.dealer",
+      "situation": "dealer-hole",
+      "playbackType": "once",
+      "standardIds": [
+        "123fceed-3a2d-7012-25c9-61bd9a021710"
+      ],
+      "variantIds": []
+    }
+  ],
+  "items": [
+    {
+      "id": "123fceed-3a2d-7012-25c9-61bd9a021710",
+      "familyId": "dragge/deal.dealer/dealer-hole",
+      "role": "standard",
+      "relativePath": "deal/deal_hole/deal_hole.mp4",
+      "extension": "mp4",
+      "size": 1778398,
+      "sha256": "123fceed3a2d701225c961bd9a021710780aec53784e91d30734c860e4e97cab"
+    },
+    {
+      "id": "273dfc52-5948-6d11-3bcf-9f8162a31572",
+      "familyId": "dragge/deal.player.left/box0",
+      "role": "standard",
+      "relativePath": "deal/deal_pos1/deal_pos1.mp4",
+      "extension": "mp4",
+      "size": 1760946,
+      "sha256": "273dfc5259486d113bcf9f8162a315726c82443f4584f80c533acd33cc8d9765"
+    },
+    {
+      "id": "20437993-8889-1cd1-7fdc-4a64fd9058ac",
+      "familyId": "dragge/deal.player.left/box1",
+      "role": "standard",
+      "relativePath": "deal/deal_pos2/deal_pos2.mp4",
+      "extension": "mp4",
+      "size": 1759759,
+      "sha256": "2043799388891cd17fdc4a64fd9058ac52560e568c3471206c0e9ec672b7ba3e"
+    },
+    {
+      "id": "16689373-eab7-3b29-ac68-ff579d153786",
+      "familyId": "dragge/deal.player.centre/box2",
+      "role": "standard",
+      "relativePath": "deal/deal_pos3/deal_pos3.mp4",
+      "extension": "mp4",
+      "size": 1869011,
+      "sha256": "16689373eab73b29ac68ff579d1537860d4e3d26f51b8d91fcb6ca01cfad7f71"
+    },
+    {
+      "id": "c04bc65e-4138-d305-6db6-65b4d910c94a",
+      "familyId": "dragge/deal.player.centre/box3",
+      "role": "standard",
+      "relativePath": "deal/deal_pos4/deal_pos4.mp4",
+      "extension": "mp4",
+      "size": 1774139,
+      "sha256": "c04bc65e4138d3056db665b4d910c94af8aaf120058a73ff9ee10e1442f34eb1"
+    },
+    {
+      "id": "34337a2f-0288-a87b-a578-0f80ececf56d",
+      "familyId": "dragge/deal.player.centre/box4",
+      "role": "standard",
+      "relativePath": "deal/deal_pos5/deal_pos5.mp4",
+      "extension": "mp4",
+      "size": 1801601,
+      "sha256": "34337a2f0288a87ba5780f80ececf56d55ca3506fd0b3d79ea86217fd9511711"
+    },
+    {
+      "id": "da90a3cf-6798-9f49-1dc4-2f0437c3ff5c",
+      "familyId": "dragge/deal.player.right/box5",
+      "role": "standard",
+      "relativePath": "deal/deal_pos6/deal_pos6.mp4",
+      "extension": "mp4",
+      "size": 1858049,
+      "sha256": "da90a3cf67989f491dc42f0437c3ff5c7799fa2bb3cd554ac27bbc55ed857b91"
+    },
+    {
+      "id": "a924fdc9-edb5-7b3e-85f5-b8fa5a38468c",
+      "familyId": "dragge/deal.player.right/box6",
+      "role": "standard",
+      "relativePath": "deal/deal_pos7/deal_pos7.mp4",
+      "extension": "mp4",
+      "size": 1767080,
+      "sha256": "a924fdc9edb57b3e85f5b8fa5a38468c67b214a1c0c7b700069e1076796bf18a"
+    },
+    {
+      "id": "5a4aa222-c815-07fe-8abb-61b0ffedb4cf",
+      "familyId": "dragge/deal.dealer/dealer-up",
+      "role": "standard",
+      "relativePath": "deal/deal_posdealer/deal_posdealer.mp4",
+      "extension": "mp4",
+      "size": 1767694,
+      "sha256": "5a4aa222c81507fe8abb61b0ffedb4cf4c37c24e5f5a3ee680a504b5aa65a829"
+    }
+  ]
+}

@@ -100,7 +100,10 @@
     "content/scene-empty.png": "media/game/source/scene/scene-empty.png",
     "content/table-gen.png": "media/game/source/scene/table-gen.png",
     "content/table-high.png": "media/game/source/scene/table-high.png",
-    "content/table-steep.png": "media/game/source/scene/table-steep.png"
+    "content/table-steep.png": "media/game/source/scene/table-steep.png",
+    "h3/klara-dragge": "media/dealers/dragge/runtime/presentation",
+    "h3/klara-dragge-README.md": "media/dealers/dragge/source/provenance/klara-delivery.md",
+    "content/staging/2026-10-08/dragge-klara-bake": "media/dealers/dragge/staging/2026-10-08/klara-bake"
   },
   "provenance": {
     "presentation": {
@@ -111,6 +114,12 @@
     "recordedCards": {
       "supplier": "Kevin",
       "sourceCommit": "0d12b7a559d328a333598b7e583b980e88d7925c"
+    },
+    "draggePresentation": {
+      "supplier": "KLARA (MiniMax H3 takes)",
+      "originalRoot": "h3/klara-dragge",
+      "deliveryDate": "2026-10-07",
+      "bake": "media/dealers/dragge/staging/2026-10-08/klara-bake"
     }
   },
   "files": [
@@ -11077,6 +11086,240 @@
       "tracked": true,
       "access": "source",
       "canonicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/speak.json"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_hole/deal_hole.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_hole/deal_hole.mp4",
+      "size": 1778398,
+      "sha256": "123fceed3a2d701225c961bd9a021710780aec53784e91d30734c860e4e97cab",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_hole/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_hole/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos1/deal_pos1.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos1/deal_pos1.mp4",
+      "size": 1760946,
+      "sha256": "273dfc5259486d113bcf9f8162a315726c82443f4584f80c533acd33cc8d9765",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos1/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos1/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos2/deal_pos2.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos2/deal_pos2.mp4",
+      "size": 1759759,
+      "sha256": "2043799388891cd17fdc4a64fd9058ac52560e568c3471206c0e9ec672b7ba3e",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos2/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos2/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos3/deal_pos3.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos3/deal_pos3.mp4",
+      "size": 1869011,
+      "sha256": "16689373eab73b29ac68ff579d1537860d4e3d26f51b8d91fcb6ca01cfad7f71",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos3/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos3/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos4/deal_pos4.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos4/deal_pos4.mp4",
+      "size": 1774139,
+      "sha256": "c04bc65e4138d3056db665b4d910c94af8aaf120058a73ff9ee10e1442f34eb1",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos4/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos4/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos5/deal_pos5.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos5/deal_pos5.mp4",
+      "size": 1801601,
+      "sha256": "34337a2f0288a87ba5780f80ececf56d55ca3506fd0b3d79ea86217fd9511711",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos5/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos5/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos6/deal_pos6.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos6/deal_pos6.mp4",
+      "size": 1858049,
+      "sha256": "da90a3cf67989f491dc42f0437c3ff5c7799fa2bb3cd554ac27bbc55ed857b91",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos6/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos6/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos7/deal_pos7.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos7/deal_pos7.mp4",
+      "size": 1767080,
+      "sha256": "a924fdc9edb57b3e85f5b8fa5a38468c67b214a1c0c7b700069e1076796bf18a",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_pos7/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_pos7/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_posdealer/deal_posdealer.mp4",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_posdealer/deal_posdealer.mp4",
+      "size": 1767694,
+      "sha256": "5a4aa222c81507fe8abb61b0ffedb4cf4c37c24e5f5a3ee680a504b5aa65a829",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/deal/deal_posdealer/variant/.gitkeep",
+      "path": "dealers/dragge/runtime/presentation/deal/deal_posdealer/variant/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/kortpositioner.json",
+      "path": "dealers/dragge/runtime/presentation/kortpositioner.json",
+      "size": 1558,
+      "sha256": "a458a06369f43409637fab3388130518f7252e8798adad45bd568eb99a5070f3",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/lab-video-manifest.json",
+      "path": "dealers/dragge/runtime/presentation/lab-video-manifest.json",
+      "size": 5605,
+      "sha256": "2138e3ca1f258afedb4d2bc2ec2efaea227251f9e571e65d0bdb82d9cc0fccff",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "web/public/dealers/dragge/poster.jpg",
+      "path": "dealers/dragge/runtime/presentation/poster.jpg",
+      "size": 143407,
+      "sha256": "5183ecc78bb33368fb28540988af16a79e184c1639bf16f963b7eb1401c8a26d",
+      "tracked": true,
+      "access": "public",
+      "publicUrl": "/dealers/dragge/poster.jpg"
+    },
+    {
+      "legacyPath": "h3/klara-dragge/README.md",
+      "path": "dealers/dragge/runtime/presentation/README.md",
+      "size": 2531,
+      "sha256": "be4c8e20d03a46825c85d48e153e68b6b17568344e2d640123f6f165a024a04d",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "web/public/dealers/dragge/rest.png",
+      "path": "dealers/dragge/runtime/presentation/rest.png",
+      "size": 1804529,
+      "sha256": "03256209954cdc06acec2a7169f82ded0ebc92256aa2220a14938073a8b69f36",
+      "tracked": true,
+      "access": "public",
+      "publicUrl": "/dealers/dragge/rest.png"
+    },
+    {
+      "legacyPath": "h3/klara-dragge-README.md",
+      "path": "dealers/dragge/source/provenance/klara-delivery.md",
+      "size": 2588,
+      "sha256": "0a3ceb9f3c510295edbe9c8a9cde25f575efdc22241337613cb046dd8c2c7ea2",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-klara-bake/build.py",
+      "path": "dealers/dragge/staging/2026-10-08/klara-bake/build.py",
+      "size": 16878,
+      "sha256": "7473991f23bb8f176474b5bcbf0a145f8f3c098dcd68edf087f0577e751068f9",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-klara-bake/darkhall.png",
+      "path": "dealers/dragge/staging/2026-10-08/klara-bake/darkhall.png",
+      "size": 1637675,
+      "sha256": "33dbde8e76ea74163345106a2e6a4496afa77126f9963501c7e9c5300a0eab3c",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-klara-bake/README.md",
+      "path": "dealers/dragge/staging/2026-10-08/klara-bake/README.md",
+      "size": 4588,
+      "sha256": "998310f3131b6ab4d7d1ea542daf7c3f9eefc8fbc35d4cbf0c13a9fc02db1f37",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-klara-bake/receipt.json",
+      "path": "dealers/dragge/staging/2026-10-08/klara-bake/receipt.json",
+      "size": 11363,
+      "sha256": "e663de691953bca7f1528a582fc3595029b569cb72cfe1e3f48ccba1644195a6",
+      "tracked": true,
+      "access": "source"
+    },
+    {
+      "legacyPath": "content/staging/2026-10-08/dragge-klara-bake/rooms_v2.py",
+      "path": "dealers/dragge/staging/2026-10-08/klara-bake/rooms_v2.py",
+      "size": 4048,
+      "sha256": "43f5470eda0c600147185580398b1352b06d14612bb809312712f60043e33194",
+      "tracked": true,
+      "access": "source"
     },
     {
       "legacyPath": "web/public/lab/mei-atlas-sheet.png",

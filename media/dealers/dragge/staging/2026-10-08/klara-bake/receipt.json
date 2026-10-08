@@ -1,0 +1,500 @@
+{
+ "dealer": "dragge",
+ "delivery": "KLARA (MiniMax H3), produktion/, 2026-10-07",
+ "inputs": {
+  "VILA.png": {
+   "sha256": "b83b74adddd722ea8829be6ceb2ada9c9b9a64d09d32a65d0d9fec8003786744",
+   "size": 876364
+  },
+  "REDO.png": {
+   "sha256": "6558929d3d1b76ba0438b7dc4716fbeb0615bfbc2715d671f64a8ccf70da7958",
+   "size": 1392028
+  },
+  "in_vila_till_redo.mp4": {
+   "sha256": "d14496eee70f51772a12552f885ce70c56c53090a90d8c6b0a1148b628737a8e",
+   "size": 881423,
+   "frames": 28
+  },
+  "ut_redo_till_vila.mp4": {
+   "sha256": "23bccced267bbbcb6e793890cdda2200730a11e874b7798f04bd2cb96b14c19b",
+   "size": 899758,
+   "frames": 28
+  },
+  "deal_pos1.mp4": {
+   "sha256": "3756c33ccd2c2f8074bca1631852bc9d84aee7c84cf6b138747fb57e1f532c3e",
+   "size": 1010081,
+   "frames": 26
+  },
+  "deal_pos2.mp4": {
+   "sha256": "7397c3ee737923353c195338dbfd13a14703192e5098b6f266187e235a81ef9a",
+   "size": 994392,
+   "frames": 26
+  },
+  "deal_pos3.mp4": {
+   "sha256": "7521c3aa9c917a89f49c2f56dc0dd271c2b11ea5c8eed03b4522dbb6a102521a",
+   "size": 1062842,
+   "frames": 27
+  },
+  "deal_pos4.mp4": {
+   "sha256": "ec40ab5f5a0d294d3f15102fc2806df1f5cf179826ceee1c9086dd98b20a1aad",
+   "size": 1035146,
+   "frames": 26
+  },
+  "deal_pos5.mp4": {
+   "sha256": "f2fb80e2163dacd21eae96f99bcdb54273374d13b3cc958ecedc98bc5931c54e",
+   "size": 1060782,
+   "frames": 26
+  },
+  "deal_pos6.mp4": {
+   "sha256": "8181e12bb0dcc4f9d80ab070cddfffc309740777c167d31daff78dff65f049aa",
+   "size": 1060868,
+   "frames": 26
+  },
+  "deal_pos7.mp4": {
+   "sha256": "6732735a4ad095a37ffb77d6970099d0a8a646f3f76b85c1c667dc1c1c1abb5c",
+   "size": 1019472,
+   "frames": 26
+  },
+  "deal_posdealer.mp4": {
+   "sha256": "c07be8043d07544c92f24bd098fec10ce5d3f9e541eda89bee209dc65e215a12",
+   "size": 961493,
+   "frames": 26
+  },
+  "deal_poshole.mp4": {
+   "sha256": "a2e1e5f387ac22bb9948f1c8b9d2fe8d2f80596fc30cf9e8614d8a51562865b4",
+   "size": 1001254,
+   "frames": 27
+  }
+ },
+ "plate": {
+  "file": "darkhall.png",
+  "sha256": "33dbde8e76ea74163345106a2e6a4496afa77126f9963501c7e9c5300a0eab3c",
+  "builtBy": "rooms_v2.py",
+  "builtBySha256": "43f5470eda0c600147185580398b1352b06d14612bb809312712f60043e33194"
+ },
+ "buildScriptSha256": "7473991f23bb8f176474b5bcbf0a145f8f3c098dcd68edf087f0577e751068f9",
+ "restStill": {
+  "from": "VILA.png",
+  "firstFilmFrameMatrix": "bt709"
+ },
+ "encode": "-vf scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd,format=yuv420p -c:v libx264 -preset slow -crf 12 -pix_fmt yuv420p -colorspace bt709 -color_range tv -an -movflags +faststart",
+ "decode": "scale=in_color_matrix=bt709:in_range=tv:flags=accurate_rnd+full_chroma_int,format=rgb24",
+ "tools": {
+  "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "python": "3.11.11",
+  "numpy": "1.26.3",
+  "opencv": "4.8.1"
+ },
+ "films": [
+  {
+   "path": "deal/deal_pos1/deal_pos1.mp4",
+   "take": "deal_pos1.mp4",
+   "seat": "1",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 46,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     79,
+     105
+    ],
+    "area": 8212,
+    "centre": [
+     109.4,
+     1025.0
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.6,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.07,
+     48.12
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos2/deal_pos2.mp4",
+   "take": "deal_pos2.mp4",
+   "seat": "2",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 46,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     79,
+     105
+    ],
+    "area": 8216,
+    "centre": [
+     253.5,
+     1075.0
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.63,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     48.17
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos3/deal_pos3.mp4",
+   "take": "deal_pos3.mp4",
+   "seat": "3",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 26,
+    "ut": 27
+   },
+   "frames": 81,
+   "streams": 1,
+   "cardSettledFromFrame": 46,
+   "dealEndsOnFrame": 53,
+   "landedProp": {
+    "size": [
+     79,
+     105
+    ],
+    "area": 8224,
+    "centre": [
+     395.1,
+     1104.9
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.6,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     47.95
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos4/deal_pos4.mp4",
+   "take": "deal_pos4.mp4",
+   "seat": "4",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 45,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     79,
+     105
+    ],
+    "area": 8174,
+    "centre": [
+     539.1,
+     1115.0
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.63,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     48.16
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos5/deal_pos5.mp4",
+   "take": "deal_pos5.mp4",
+   "seat": "5",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 46,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     78,
+     105
+    ],
+    "area": 8145,
+    "centre": [
+     683.1,
+     1104.7
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.62,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     48.15
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos6/deal_pos6.mp4",
+   "take": "deal_pos6.mp4",
+   "seat": "6",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 47,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     79,
+     105
+    ],
+    "area": 8258,
+    "centre": [
+     827.0,
+     1075.0
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.3,
+    "lastFrameVsRestOutsideCardPsnr": 44.61,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     47.97
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_pos7/deal_pos7.mp4",
+   "take": "deal_pos7.mp4",
+   "seat": "7",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 51,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     78,
+     106
+    ],
+    "area": 8154,
+    "centre": [
+     969.0,
+     1024.9
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.63,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     48.16
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_posdealer/deal_posdealer.mp4",
+   "take": "deal_posdealer.mp4",
+   "seat": "dealer",
+   "card": "white",
+   "join": {
+    "in": 28,
+    "deal": 25,
+    "ut": 27
+   },
+   "frames": 80,
+   "streams": 1,
+   "cardSettledFromFrame": 49,
+   "dealEndsOnFrame": 52,
+   "landedProp": {
+    "size": [
+     79,
+     106
+    ],
+    "area": 8310,
+    "centre": [
+     539.1,
+     894.8
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.3,
+    "lastFrameVsRestOutsideCardPsnr": 44.67,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.09,
+     48.01
+    ],
+    "greenFringePixelsMax": 0
+   }
+  },
+  {
+   "path": "deal/deal_hole/deal_hole.mp4",
+   "take": "deal_poshole.mp4",
+   "seat": "dealer",
+   "card": "black",
+   "join": {
+    "in": 28,
+    "deal": 26,
+    "ut": 27
+   },
+   "frames": 81,
+   "streams": 1,
+   "cardSettledFromFrame": 46,
+   "dealEndsOnFrame": 53,
+   "landedProp": {
+    "size": [
+     78,
+     106
+    ],
+    "area": 8207,
+    "centre": [
+     538.5,
+     894.0
+    ]
+   },
+   "checks": {
+    "firstFrameVsRestPsnr": 46.29,
+    "lastFrameVsRestOutsideCardPsnr": 44.67,
+    "cardOnSeatInLastFrame": true,
+    "encodeVsCompositePsnr": [
+     49.08,
+     47.97
+    ],
+    "greenFringePixelsMax": 0
+   }
+  }
+ ],
+ "outputs": {
+  "kortpositioner.json": {
+   "sha256": "a458a06369f43409637fab3388130518f7252e8798adad45bd568eb99a5070f3",
+   "size": 1558
+  },
+  "poster.jpg": {
+   "sha256": "5183ecc78bb33368fb28540988af16a79e184c1639bf16f963b7eb1401c8a26d",
+   "size": 143407
+  },
+  "rest.png": {
+   "sha256": "03256209954cdc06acec2a7169f82ded0ebc92256aa2220a14938073a8b69f36",
+   "size": 1804529
+  },
+  "deal/deal_posdealer/deal_posdealer.mp4": {
+   "sha256": "5a4aa222c81507fe8abb61b0ffedb4cf4c37c24e5f5a3ee680a504b5aa65a829",
+   "size": 1767694
+  },
+  "deal/deal_posdealer/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_hole/deal_hole.mp4": {
+   "sha256": "123fceed3a2d701225c961bd9a021710780aec53784e91d30734c860e4e97cab",
+   "size": 1778398
+  },
+  "deal/deal_hole/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos5/deal_pos5.mp4": {
+   "sha256": "34337a2f0288a87ba5780f80ececf56d55ca3506fd0b3d79ea86217fd9511711",
+   "size": 1801601
+  },
+  "deal/deal_pos5/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos2/deal_pos2.mp4": {
+   "sha256": "2043799388891cd17fdc4a64fd9058ac52560e568c3471206c0e9ec672b7ba3e",
+   "size": 1759759
+  },
+  "deal/deal_pos2/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos3/deal_pos3.mp4": {
+   "sha256": "16689373eab73b29ac68ff579d1537860d4e3d26f51b8d91fcb6ca01cfad7f71",
+   "size": 1869011
+  },
+  "deal/deal_pos3/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos4/deal_pos4.mp4": {
+   "sha256": "c04bc65e4138d3056db665b4d910c94af8aaf120058a73ff9ee10e1442f34eb1",
+   "size": 1774139
+  },
+  "deal/deal_pos4/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos1/deal_pos1.mp4": {
+   "sha256": "273dfc5259486d113bcf9f8162a315726c82443f4584f80c533acd33cc8d9765",
+   "size": 1760946
+  },
+  "deal/deal_pos1/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos6/deal_pos6.mp4": {
+   "sha256": "da90a3cf67989f491dc42f0437c3ff5c7799fa2bb3cd554ac27bbc55ed857b91",
+   "size": 1858049
+  },
+  "deal/deal_pos6/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  "deal/deal_pos7/deal_pos7.mp4": {
+   "sha256": "a924fdc9edb57b3e85f5b8fa5a38468c67b214a1c0c7b700069e1076796bf18a",
+   "size": 1767080
+  },
+  "deal/deal_pos7/variant/.gitkeep": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  }
+ }
+}
