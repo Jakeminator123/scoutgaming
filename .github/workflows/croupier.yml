@@ -18,6 +18,9 @@ jobs:
   presentation-studio:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -25,20 +28,70 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: lab/package-lock.json
+      - name: Restore ffmpeg package cache
+        id: ffmpeg-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/runner/apt-cache/ffmpeg
+          # Saved entries use ubuntu-24.04-ffmpeg-<package version>. apt-get update
+          # is what hangs, so the version is not known yet. This lookup key is never
+          # saved; restore-keys loads the newest versioned entry.
+          key: ffmpeg-deb-lookup-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ubuntu-24.04-ffmpeg-
       - name: Install ffmpeg when missing
+        id: ffmpeg-install
         timeout-minutes: 8
         run: |
-          packages=""
-          { command -v ffmpeg && command -v ffprobe; } >/dev/null 2>&1 || packages="ffmpeg"
-          if [ -n "$packages" ]; then
+          cache_dir=/home/runner/apt-cache/ffmpeg
+          mkdir -p "$cache_dir"
+          if command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1; then
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            ffmpeg -version | head -n 1
+            exit 0
+          fi
+          shopt -s nullglob
+          debs=( "$cache_dir"/*.deb )
+          from_cache=0
+          if [ "${#debs[@]}" -gt 0 ]; then
+            if sudo apt-get install -y --no-install-recommends "${debs[@]}"; then
+              from_cache=1
+            fi
+          fi
+          if [ "$from_cache" -eq 0 ]; then
             for attempt in 1 2 3; do
+              rm -rf "$cache_dir"
+              mkdir -p "$cache_dir"
               if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -qq \
-                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq $packages; then break; fi
+                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq --download-only --no-install-recommends -o "Dir::Cache::archives=${cache_dir}/" ffmpeg; then
+                debs=( "$cache_dir"/*.deb )
+                if [ "${#debs[@]}" -gt 0 ] && sudo apt-get install -y --no-install-recommends "${debs[@]}"; then
+                  break
+                fi
+              fi
               if [ "$attempt" = 3 ]; then exit 1; fi
               sleep 20
             done
           fi
+          sudo chown -R "$USER:$USER" "$cache_dir"
+          find "$cache_dir" -mindepth 1 -maxdepth 1 ! -name '*.deb' -exec rm -rf {} +
+          version="$(dpkg-query -W -f='${Version}' ffmpeg)"
+          if [ "$from_cache" -eq 0 ] && [ -n "$version" ]; then
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "save=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "ffmpeg package ${version}"
           ffmpeg -version | head -n 1
+      - name: Save ffmpeg package cache
+        if: steps.ffmpeg-install.outputs.save == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /home/runner/apt-cache/ffmpeg
+          key: ubuntu-24.04-ffmpeg-${{ steps.ffmpeg-install.outputs.version }}
       - run: npm --prefix lab ci
       - name: Studio migration readiness (production ledger)
         # Runs for pushes to main and for pull requests from branches in this
@@ -49,6 +102,8 @@ jobs:
           CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
       - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
+      - name: Orphan tests
+        run: node tools/check-orphan-tests.mjs
       - run: npm --prefix lab test
       - run: npm --prefix lab run build
       - run: npm --prefix open-claw/lab test
@@ -148,6 +203,9 @@ jobs:
   lipsync-worker:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -156,20 +214,70 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+      - name: Restore ffmpeg package cache
+        id: ffmpeg-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/runner/apt-cache/ffmpeg
+          # Saved entries use ubuntu-24.04-ffmpeg-<package version>. apt-get update
+          # is what hangs, so the version is not known yet. This lookup key is never
+          # saved; restore-keys loads the newest versioned entry.
+          key: ffmpeg-deb-lookup-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ubuntu-24.04-ffmpeg-
       - name: Install ffmpeg when missing
+        id: ffmpeg-install
         timeout-minutes: 8
         run: |
-          packages=""
-          { command -v ffmpeg && command -v ffprobe; } >/dev/null 2>&1 || packages="ffmpeg"
-          if [ -n "$packages" ]; then
+          cache_dir=/home/runner/apt-cache/ffmpeg
+          mkdir -p "$cache_dir"
+          if command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1; then
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            ffmpeg -version | head -n 1
+            exit 0
+          fi
+          shopt -s nullglob
+          debs=( "$cache_dir"/*.deb )
+          from_cache=0
+          if [ "${#debs[@]}" -gt 0 ]; then
+            if sudo apt-get install -y --no-install-recommends "${debs[@]}"; then
+              from_cache=1
+            fi
+          fi
+          if [ "$from_cache" -eq 0 ]; then
             for attempt in 1 2 3; do
+              rm -rf "$cache_dir"
+              mkdir -p "$cache_dir"
               if sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update -qq \
-                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq $packages; then break; fi
+                && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y -qq --download-only --no-install-recommends -o "Dir::Cache::archives=${cache_dir}/" ffmpeg; then
+                debs=( "$cache_dir"/*.deb )
+                if [ "${#debs[@]}" -gt 0 ] && sudo apt-get install -y --no-install-recommends "${debs[@]}"; then
+                  break
+                fi
+              fi
               if [ "$attempt" = 3 ]; then exit 1; fi
               sleep 20
             done
           fi
+          sudo chown -R "$USER:$USER" "$cache_dir"
+          find "$cache_dir" -mindepth 1 -maxdepth 1 ! -name '*.deb' -exec rm -rf {} +
+          version="$(dpkg-query -W -f='${Version}' ffmpeg)"
+          if [ "$from_cache" -eq 0 ] && [ -n "$version" ]; then
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "save=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "ffmpeg package ${version}"
           ffmpeg -version | head -n 1
+      - name: Save ffmpeg package cache
+        if: steps.ffmpeg-install.outputs.save == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /home/runner/apt-cache/ffmpeg
+          key: ubuntu-24.04-ffmpeg-${{ steps.ffmpeg-install.outputs.version }}
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway test
       - run: python -m unittest discover -s services/astrid-gpu-worker/tests -v
