@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## 8 oktober 2026 kväll: Codex och befintlig checkout
+
+Arbetskatalogen är `C:/Users/jakob/dev/projects/scoutgame`, på `main` i
+`Jakeminator123/scoutgaming`. Efter Cursor-agentens leverans hämtades remote main:
+`ddc58fcb`, utan divergens. Ingen ny checkout eller flytt av lokala filer gjordes.
+De 60 inventerade filerna i `random/` och 16 `.env`-filerna behöll samma SHA-256;
+hemliga värden ingår inte i rapporten eller Git.
+
+`.codex/config.toml` ger projektet `workspace-write`, nätåtkomst, automatisk
+granskning av utökade behörigheter och Windows-sandbox `elevated`. Modellval och
+inloggningar ärvs från användaren. Git använder `.githooks`, fast-forward-only pull
+och prune vid fetch. Codex-CLI uppdaterades via Volta från 0.150.0 till 0.161.0;
+enbart det föråldrade `mcp_servers.vercel.type` togs bort ur användarkonfigurationen.
+
+Verifierat: TOML, faktisk laddning från rätt cwd, installation, auth, sandbox,
+HTTP-åtkomst och WebSocket-handshake via `codex doctor`, samt filbevarande.
+Repoets fulla pre-commit-kontroller körs vid commit. Systemkartan har 0 röda fel
+men gul baslinjedrift. GitGuardian-suite väntar; incidentlistan är inte läst.
+Valfria CLI-varningar kvar: desktopvariabel för `node_repl`, Defender-exkluderingar
+ej verifierade och `TERM=dumb` vid icke-interaktiv körning. Produktservrar startades
+inte. T10 är fortsatt en plan; detta arbete ändrar ingen spel- eller medialogik.
+
 ## 8 oktober 2026 eftermiddag: T9 layer-preview bakom flagga
 
 Spelvägen har ett opt-in-spår för tre lager utan att röra Astrids ordinarie local-väg:
