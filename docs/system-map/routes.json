@@ -4031,6 +4031,27 @@
       ]
     },
     {
+      "id": "game-layer-packs",
+      "path": "/layer-packs/:path+",
+      "publicPath": "/layer-packs/:path+",
+      "methods": ["GET", "HEAD"],
+      "kind": "api",
+      "app": "game",
+      "handlerFile": "web/layer-packs.mjs",
+      "serving": "Render game service. Runtime modules come from test-videoeditor/program/web and lane media/manifests from lab/preview-build.",
+      "access": "Player session lane flag. Without cookie croupier_layer_preview=1 the route responds 404.",
+      "boundary": "No traversal, reviewed file types only, byte-range support and Cross-Origin-Resource-Policy same-origin.",
+      "groupId": "layer-preview",
+      "sources": [
+        {
+          "path": "web/layer-packs.mjs"
+        },
+        {
+          "path": "web/server.mjs"
+        }
+      ]
+    },
+    {
       "id": "studio-partner-login",
       "path": "/partner/login",
       "publicPath": "/partner/login",

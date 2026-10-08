@@ -6,7 +6,7 @@ import { previewBuildDirectory } from '../lib/preview-files.mjs';
 
 const labRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(labRoot, '..');
-const webModules = ['player.js', 'compositor.js', 'geometry.js'];
+const webModules = ['player.js', 'compositor.js', 'bridge.js', 'geometry.js', 'lanes.js'];
 
 const htmlRewrites = [
   ['href="/test/preview.css"', 'href="preview.css"'],
