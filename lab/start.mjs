@@ -9,6 +9,7 @@ import { loadPrivateConnection, probeConnections, startIsolatedConnection } from
 import { createSeedProject, validateProject } from './lib/studio-model.mjs';
 import { createProjectStore } from './lib/project-store.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
+import { preparePreview } from './tools/prepare-preview.mjs';
 import profile from './policies/local-profile.json' with { type: 'json' };
 
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -68,7 +69,10 @@ export async function main(args = process.argv.slice(2)) {
   if (args.includes('--offline')) {
     if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
     const fixture = await startLocalComparison({ generationDirectory: join(root, 'media/dealers/astrid/runtime/presentation'), streamLane: profile.id,
-      prepare: args.includes('--skip-build') ? undefined : buildLab, prepareStudio: prepareProject });
+      prepare: async session => {
+        await preparePreview();
+        if (!args.includes('--skip-build')) await buildLab(session);
+      }, prepareStudio: prepareProject });
     console.log(`Lab: ${fixture.labUrl}\nSpel: ${fixture.gameUrl}/?dealer=astrid&presentation=local\nIsolerat prov med tom testdatabas och externa tjänster avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
     const stop = async () => { await fixture.stop(); process.exit(0); };
     process.once('SIGINT', stop); process.once('SIGTERM', stop);
@@ -95,6 +99,7 @@ export async function main(args = process.argv.slice(2)) {
     cloudStorage: args.includes('--cloud-storage'),
     prepare: async session => {
       await prepareProject(studioDataDir);
+      await preparePreview();
       if (!args.includes('--skip-build')) await buildLab(session);
     },
   });
