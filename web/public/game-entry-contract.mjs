@@ -1,4 +1,4 @@
-import { isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
+import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
 const dealers = new Set(['vera','astrid','amira','mei']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
@@ -71,6 +71,12 @@ export function decorateGameEntryHtml(html,env,selection) {
         attributes += ` data-game-package-revision="${selection.packageRevision}" data-game-branding="${brandingAttribute(selection.branding)}"`;
       }
     } else if (packaged) throw Error('Invalid game presentation');
+    if (selection.choices !== undefined) {
+      assertGameChoices(selection.choices);
+      const text = JSON.stringify(selection.choices);
+      if (text.length > 8000) throw Error('Invalid game presentation');
+      attributes += ` data-game-choices="${attributeText(text)}"`;
+    }
   }
   // A replacer function: attribute text must never be read as a $-pattern.
   return html.replace(/<html(?=[\s>])/i,() => '<html'+attributes);

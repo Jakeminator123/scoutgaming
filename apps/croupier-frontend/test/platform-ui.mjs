@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../lib/platform-routing.mjs';
 import {platformUiDocument} from '../lib/server-ui.mjs';
+import {operatorPlayPath} from '../lib/player-operator.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {createRequire} from 'node:module';
 
@@ -122,6 +123,10 @@ test('unified player addresses preserve approved selectors and the existing sign
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
   assert.equal(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified).kind,'frontend');
   assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
+  assert.deepEqual(platformRoute(new URL('/blackjack?operator=sg-test&dealer=astrid&returnTo=https://evil.invalid',unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&operator=sg-test'});
+  assert.deepEqual(platformRoute(new URL('/blackjack?operator=play&dealer=astrid',unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid'});
   for (const path of ['/play', '/play/', '/play/profil', '/play/profil/', '/play/historik', '/play/historik/']) {
     assert.equal(platformRoute(new URL(path, unified.publicOrigin), unified).kind, 'frontend', path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
@@ -142,6 +147,55 @@ test('new game document retains live session/policy checks, cookies and fail-clo
   assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?dealer=astrid');
   const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
   assert.equal(failed.status,503);assert.doesNotMatch(await failed.text(),/private upstream detail|Fixture game/);
+});
+
+test('lobby operator survives into the engine proxy; an invalid slug matches today and a launch partner wins',async t=>{
+  const directory=await mkdtemp(join(tmpdir(),'croupier-operator-proxy-'));t.after(()=>rm(directory,{recursive:true,force:true}));
+  await writeFile(join(directory,'game.html'),'<html><body>Fixture game</body></html>');
+  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unified=platformConfiguration(unifiedEnv);
+  const partner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({partner:'key-1',sub:'player-1'})).toString('base64url')}.sig`;
+  const notPartner=`eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({operator:'sg-test',sub:'player-1'})).toString('base64url')}.sig`;
+  assert.equal(operatorPlayPath('sg-test'),'/play/blackjack?operator=sg-test');
+  assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/blackjack?operator=sg-test&launch=fixture.claim.signature&table=room-1'});
+  assert.deepEqual(platformRoute(new URL('/play/blackjack?operator=play&launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
+  assert.deepEqual(platformRoute(new URL(`/play/blackjack?operator=sg-test&launch=${partner}&table=room-1`,unified.publicOrigin),unified),
+    {kind:'backend',destination:unified.backendOrigin+`/blackjack?launch=${partner}&table=room-1`});
+  assert.deepEqual(platformRoute(new URL(`/blackjack?operator=sg-test&launch=${partner}`,unified.publicOrigin),unified),
+    {kind:'redirect',destination:unified.publicOrigin+`/play/blackjack?launch=${partner}`});
+  const kept=platformRoute(new URL(`/play/blackjack?operator=demo-north&launch=${notPartner}`,unified.publicOrigin),unified);
+  assert.equal(kept.kind,'backend');assert.match(kept.destination,/operator=demo-north/);assert.doesNotMatch(kept.destination,/partner=/);
+  const calls=[];let authenticated=true;
+  const fetchImpl=async(url,init)=>{
+    calls.push(String(url));
+    assert.equal(init.headers.get('cookie'),'game_session=fixture');
+    assert.equal(init.headers.get('x-croupier-vercel-secret'),unifiedEnv.CROUPIER_VERCEL_INGRESS_SECRET);
+    assert.equal(init.cache,'no-store');
+    if(String(url).includes('/blackjack?')){assert.equal(init.redirect,'manual');return new Response('<!doctype html><html data-game-operator="sg-test" data-game-lane="lane-a"></html>',{status:200,headers:{'content-type':'text/html; charset=utf-8'}});}
+    return Response.json(String(url).endsWith('/api/auth/session')?{authenticated}:{gameLane:'mobile-phone'});
+  };
+  const request=path=>new Request(unified.publicOrigin+path,{headers:{cookie:'game_session=fixture'}});
+  const options={env:unifiedEnv,directory,fetchImpl};
+  const played=await platformUiDocument(request(operatorPlayPath('sg-test')),options);
+  assert.equal(played.status,200);assert.match(await played.text(),/data-game-operator="sg-test"/);
+  assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?operator=sg-test']);
+  calls.length=0;authenticated=false;
+  const login=await platformUiDocument(request(operatorPlayPath('sg-test')),options);
+  assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?operator=sg-test');
+  assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
+  calls.length=0;authenticated=true;
+  const plain=await platformUiDocument(request('/play/blackjack?dealer=astrid'),options);
+  const invalid=await platformUiDocument(request('/play/blackjack?dealer=astrid&operator=play'),options);
+  const duplicate=await platformUiDocument(request('/play/blackjack?dealer=astrid&operator=sg-test&operator=demo-north'),options);
+  const plainText=await plain.text();
+  assert.equal(await invalid.text(),plainText);assert.equal(await duplicate.text(),plainText);
+  assert.equal(calls.some(url=>url.includes('/blackjack?')),false);
+  calls.length=0;
+  const partnerPage=await platformUiDocument(request(`/play/blackjack?dealer=astrid&operator=sg-test&launch=${partner}`),options);
+  assert.equal(await partnerPage.text(),plainText);
+  assert.equal(calls.some(url=>url.includes('/blackjack?')),false);
 });
 
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {

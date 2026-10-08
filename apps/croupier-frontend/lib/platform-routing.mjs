@@ -1,4 +1,5 @@
 import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
+import { requestedOperator } from '../../../web/game-entry-operator.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
 export const PLATFORM_SOCKET_ENDPOINTS = Object.freeze({
@@ -29,6 +30,30 @@ export function platformConfiguration(env = process.env) {
     ...(unifiedUi ? { unifiedUi: true } : {}),
     ...(env.CROUPIER_STUDIO_NATIVE_ADMIN === '1' ? { nativeStudio: true } : {}),
     ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { canonicalGame: true } : {}) };
+}
+
+// Launch payload only. The signature stays the engine's; the claim name is partner.
+export function launchHasPartnerClaim(token) {
+  if (typeof token !== 'string' || token.length > 16384) return false;
+  const part = token.split('.');
+  if (part.length !== 3 || part[1].length === 0 || part[1].length > 12000) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(part[1], 'base64url').toString());
+    return typeof payload?.partner === 'string' && payload.partner.length > 0;
+  } catch { return false; }
+}
+
+// A signed launch with claims.partner wins over ?operator=. An invalid slug is omitted.
+// Without an operator parameter the original search is returned unchanged.
+export function launchBackendSearch(url) {
+  if (!url.searchParams.has('operator')) return url.search;
+  if (launchHasPartnerClaim(url.searchParams.get('launch')) || typeof requestedOperator(url.searchParams) !== 'string') {
+    const params = new URLSearchParams(url.search);
+    params.delete('operator');
+    const text = params.toString();
+    return text ? `?${text}` : '';
+  }
+  return url.search;
 }
 
 export function canonicalPlatformPath(value) {
@@ -82,12 +107,14 @@ export function platformRoute(url, config) {
   if(config.unifiedUi && config.canonicalGame){
     const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
     if(previous||['/blackjack','/blackjack/','/play/blackjack/'].includes(path)){
-      const query=approvedGameQuery(url.searchParams,{origin:url.origin}).toString();
-      return {kind:'redirect',destination:`${config.publicOrigin}/play/blackjack${query?'?'+query:''}`};
+      const query=approvedGameQuery(url.searchParams,{origin:url.origin});
+      if(launchHasPartnerClaim(query.get('launch'))) query.delete('operator');
+      const text=query.toString();
+      return {kind:'redirect',destination:`${config.publicOrigin}/play/blackjack${text?'?'+text:''}`};
     }
     if(path==='/play/blackjack'&&url.searchParams.has('launch')){
       // Preserve the existing signed launch handler and game-session audience.
-      return {kind:'backend',destination:`${config.backendOrigin}/blackjack${url.search}`};
+      return {kind:'backend',destination:`${config.backendOrigin}/blackjack${launchBackendSearch(url)}`};
     }
   }
   if (path === '/play' || path === '/play/' || path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
@@ -100,7 +127,7 @@ export function platformRoute(url, config) {
   if (Object.values(PLATFORM_SOCKET_ENDPOINTS).includes(path)) return {kind: 'reject'};
   if (Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, path)) return {kind: 'socket', destination: `${config.publicOrigin}${PLATFORM_SOCKET_ENDPOINTS[path]}${url.search}`};
   if ((path === '/' || path === '/game' || path === '/game/' || config.canonicalGame && ['/blackjack','/blackjack/'].includes(path)) && url.searchParams.has('launch')) {
-    return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
+    return { kind: 'backend', destination: `${config.backendOrigin}${path}${launchBackendSearch(url)}` };
   }
   if (path === '/' && ['dealer', 'presentation', 'performance'].some(key => url.searchParams.has(key))) return {kind: 'redirect', destination: `${config.publicOrigin}/game${url.search}`};
   const workspace = config.nativeStudio && resolveWorkspaceSurfacePath(path);

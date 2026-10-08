@@ -5,6 +5,8 @@ import {backendPlatformPath} from '../lib/platform-routing.mjs';
 import {
   OPERATOR_STORAGE_KEY, clearedOperatorLocation, lobbyOperatorName, operatorChoice, operatorPlayPath,
 } from '../lib/player-operator.mjs';
+import { choicesStorageKey, lobbyChoiceText, parseStoredChoices } from '../lib/player-choices.mjs';
+import { readFileSync } from 'node:fs';
 
 const env = {
   CROUPIER_VERCEL_UI: '1',
@@ -97,6 +99,22 @@ test('lobby operator choice prefers the query, then storage, and drops an unknow
   assert.equal(operatorPlayPath('sg-test'), '/play/blackjack?operator=sg-test');
   assert.equal(clearedOperatorLocation('https://preview.example.test/play?operator=sg-test&dealer=astrid'), '/play?dealer=astrid');
   assert.equal(clearedOperatorLocation('/play?operator=sg-test'), '/play');
+});
+
+test('lobby names the last dealer and table colour from the same browser key', () => {
+  const stored = parseStoredChoices(JSON.stringify({ dealer: 'astrid', tableColor: '#112233', background: 'stad' }));
+  assert.equal(choicesStorageKey('sg-test'), 'croupier.choices.sg-test');
+  assert.equal(choicesStorageKey(''), 'croupier.choices.default');
+  assert.equal(lobbyChoiceText(stored), 'Dealer Astrid · bord #112233');
+  assert.equal(lobbyChoiceText(parseStoredChoices('{"dealer":"vera"}')), 'Dealer Vera');
+  assert.equal(lobbyChoiceText(parseStoredChoices('{"dealer":"ghost"}')), '');
+  const source = readFileSync(new URL('../components/player/player-lobby-operator.tsx', import.meta.url), 'utf8');
+  assert.match(source, /data-player-choice/);
+  assert.match(source, /lobbyChoiceText\(readChoices/);
+  assert.match(source, /Spelar hos/);
+  const choice = source.indexOf('data-player-choice');
+  const company = source.indexOf('Spelar hos');
+  assert.equal(choice > company, true);
 });
 
 test('profile and public operator paths stay on the game backend', () => {
