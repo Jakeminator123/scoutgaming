@@ -69,6 +69,19 @@ ta bort dem ur Vercel och förvara inloggningen i en lösenordshanterare. Studio
 inloggningen är ett konto i Neon (`/control/administration?tab=accounts`), inte
 en miljövariabel. Värden står aldrig här.
 
+Lokala env-filer (konsoliderade 8 oktober 2026). Vercel production är källan
+för delade nycklar. Förnya lokalt med `vercel env pull --environment=production
+--yes <tempfil>` och slå ihop; systemnycklar `VERCEL_*`, `NX_*`, `TURBO_*` tas
+bort. Nycklar som bara finns lokalt (OpenClaw-agent/modell/tal-URL/token,
+`LAB_API_TOKEN`, `LAB_PARTNER_*`, `BETTALOTTO_*`, `ELEVENLABS_*`) behålls från
+den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` är samma
+innehåll; opt-in-filerna `lab/.env.generated-speech.local`,
+`lab/.env.cloud-storage.local` och `lab/.env.cloud-activation.local` läses av
+`open-claw/lab/deploy/local-connection.mjs` under respektive flagga. Äldre
+kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
+mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
+Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
+
 Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
 en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
 verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan
