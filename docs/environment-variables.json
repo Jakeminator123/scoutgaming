@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. Secret values never belong in this registry.",
+  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry.",
   "services": {
     "render-game": {
       "sources": [
@@ -138,13 +138,15 @@
         "apps/croupier-frontend/lib/game-url.ts",
         "apps/croupier-frontend/lib/platform-routing.mjs"
       ],
-      "project": "croupier-frontend",
+      "project": "scoutgaming",
+      "team": "scoutgaming",
       "gitBranch": "main",
       "rootDirectory": "apps/croupier-frontend",
       "configuredTargets": [
         "production",
         "preview"
       ],
+      "storageConnections": "2026-10-08: Neon resource croupier-production (store_f0uLTbYiQKqQjLCY) and Blob store croupier-media-private (store_AqwvebTbBHarOjvG) were transferred from team jakeminator123s-projects to team scoutgaming and connected to this project (Production, Preview; Sensitive). The connections inject the managed names below with custom prefixes so the hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN stay authoritative and unchanged. Code does not read the managed names.",
       "required": [],
       "firstBoot": [],
       "conditional": [
@@ -158,12 +160,33 @@
         "CROUPIER_LAB_UI_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET"
       ],
-      "managed": [],
+      "managed": [
+        "CROUPIER_NEON_DATABASE_URL",
+        "CROUPIER_NEON_DATABASE_URL_UNPOOLED",
+        "CROUPIER_NEON_NEON_PROJECT_ID",
+        "CROUPIER_NEON_PGDATABASE",
+        "CROUPIER_NEON_PGHOST",
+        "CROUPIER_NEON_PGHOST_UNPOOLED",
+        "CROUPIER_NEON_PGPASSWORD",
+        "CROUPIER_NEON_PGUSER",
+        "CROUPIER_NEON_POSTGRES_DATABASE",
+        "CROUPIER_NEON_POSTGRES_HOST",
+        "CROUPIER_NEON_POSTGRES_PASSWORD",
+        "CROUPIER_NEON_POSTGRES_PRISMA_URL",
+        "CROUPIER_NEON_POSTGRES_URL",
+        "CROUPIER_NEON_POSTGRES_URL_NO_SSL",
+        "CROUPIER_NEON_POSTGRES_URL_NON_POOLING",
+        "CROUPIER_NEON_POSTGRES_USER",
+        "CROUPIER_MEDIA_STORE_ID",
+        "CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY"
+      ],
       "blocked": []
     },
     "vercel-zones-qa": {
       "sources": [],
       "project": "croupier-player-preview-qa",
+      "team": "jakeminator123s-projects",
+      "connectionStatus": "2026-10-08: the Neon connection (Preview, Development) was removed so the resource could be transferred to team scoutgaming; the CROUPIER_ZONES_* names below are no longer injected into this QA project. Reconnect requires moving the QA project to team scoutgaming or setting the names by hand. Production never had them.",
       "required": [],
       "firstBoot": [],
       "conditional": [
