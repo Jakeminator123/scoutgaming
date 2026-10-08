@@ -1,0 +1,116 @@
+{
+  "asset": {
+    "animation": "neutral",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "speak.insurance.standard",
+    "kind": "animation",
+    "label": "Informera"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/speak.insurance/insurance",
+      "fileName": "insurance.mp4",
+      "reason": "exact_family",
+      "sha256": "9f23e445551064c28c09becde4ce1fba7c16d22111ca3376938a2c384a165e26",
+      "situation": "insurance",
+      "standard": true,
+      "videoId": "9f23e445-5510-64c2-8c09-becde4ce1fba"
+    },
+    "mode": "rules",
+    "presentationReplay": true,
+    "reason": "deterministic_rules",
+    "requestId": "astrid-baseline:speak.insurance:rules:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "line": "insurance",
+      "type": "speak"
+    },
+    "variantId": "astrid.speak.insurance.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "speak.insurance.standard",
+      "id": "astrid.speak.insurance.standard",
+      "label": "insurance.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "deterministic_rules",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: speak. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "speak.insurance · Försäkring erbjuds",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.speak.insurance.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.speak.insurance.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Regelmotorn väljer högst prioriterade tillåtna variant. Inget modellanrop.",
+      "stage": "rules",
+      "status": "selected"
+    },
+    {
+      "detail": "accepted",
+      "stage": "gate",
+      "status": "accepted"
+    },
+    {
+      "detail": "insurance.mp4 · neutral",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/speak.insurance/insurance → insurance.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "speak.insurance.standard",
+    "id": "astrid.speak.insurance.standard",
+    "label": "insurance.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "9f23e445-5510-64c2-8c09-becde4ce1fba"
+  },
+  "videoGenerationId": "9f23e445-5510-64c2-8c09-becde4ce1fba"
+}

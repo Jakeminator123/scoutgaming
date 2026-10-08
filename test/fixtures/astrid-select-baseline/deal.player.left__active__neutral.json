@@ -1,0 +1,127 @@
+{
+  "asset": {
+    "animation": "deal-left",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "deal.player.left.standard",
+    "kind": "animation",
+    "label": "Dela vänster"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/deal.player.left/box0",
+      "fileName": "deal_pos1.mp4",
+      "reason": "exact_family",
+      "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff",
+      "situation": "box0",
+      "standard": true,
+      "videoId": "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
+    },
+    "mode": "active",
+    "presentationReplay": true,
+    "reason": "no_advice",
+    "requestId": "astrid-baseline:deal.player.left:active:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "box": 0,
+      "card": {
+        "r": "8",
+        "s": "♣"
+      },
+      "clip": {
+        "action": "deal-left"
+      },
+      "faceDown": false,
+      "handIndex": 0,
+      "shoeDraw": 2,
+      "to": "box",
+      "type": "deal"
+    },
+    "variantId": "astrid.deal.player.left.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "deal.player.left.standard",
+      "id": "astrid.deal.player.left.standard",
+      "label": "deal_pos1.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "only_standard_no_model",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: deal. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "deal.player.left · Kort till vänster",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.deal.player.left.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.deal.player.left.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: no_advice.",
+      "stage": "advice",
+      "status": "unavailable"
+    },
+    {
+      "detail": "no_advice",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "deal_pos1.mp4 · deal-left",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/deal.player.left/box0 → deal_pos1.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "deal.player.left.standard",
+    "id": "astrid.deal.player.left.standard",
+    "label": "deal_pos1.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
+  },
+  "videoGenerationId": "5c23fe9a-d68c-b3e5-05b3-86a215d9eeb3"
+}

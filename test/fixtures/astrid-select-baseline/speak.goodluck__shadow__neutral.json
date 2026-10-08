@@ -1,0 +1,117 @@
+{
+  "asset": {
+    "animation": "wave",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "speak.goodluck.standard",
+    "kind": "animation",
+    "label": "Standardhälsning"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/speak.goodluck/goodluck",
+      "fileName": "goodluck.mp4",
+      "reason": "exact_family",
+      "sha256": "28edfd14064e8b8730fa030042cc6b3b3cc440ea5a664d131116fd5c3aeaa515",
+      "situation": "goodluck",
+      "standard": true,
+      "videoId": "28edfd14-064e-8b87-30fa-030042cc6b3b"
+    },
+    "mode": "shadow",
+    "presentationReplay": true,
+    "reason": "no_advice",
+    "requestId": "astrid-baseline:speak.goodluck:shadow:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "blocking": true,
+      "line": "goodluck",
+      "type": "speak"
+    },
+    "variantId": "astrid.speak.goodluck.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "speak.goodluck.standard",
+      "id": "astrid.speak.goodluck.standard",
+      "label": "goodluck.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "only_standard_no_model",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: speak. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "speak.goodluck · Lycka till",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.speak.goodluck.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.speak.goodluck.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: no_advice.",
+      "stage": "advice",
+      "status": "unavailable"
+    },
+    {
+      "detail": "no_advice",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "goodluck.mp4 · wave",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/speak.goodluck/goodluck → goodluck.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "speak.goodluck.standard",
+    "id": "astrid.speak.goodluck.standard",
+    "label": "goodluck.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "28edfd14-064e-8b87-30fa-030042cc6b3b"
+  },
+  "videoGenerationId": "28edfd14-064e-8b87-30fa-030042cc6b3b"
+}

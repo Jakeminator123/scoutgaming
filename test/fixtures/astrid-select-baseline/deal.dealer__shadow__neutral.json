@@ -1,0 +1,124 @@
+{
+  "asset": {
+    "animation": "deal-dealer",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "deal.dealer.standard",
+    "kind": "animation",
+    "label": "Dela croupier"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/deal.dealer/dealer-hole",
+      "fileName": "deal_hole.mp4",
+      "reason": "exact_family",
+      "sha256": "a7f2629f471cbab914faef8ddcb59a3f788f4dc688db1a4cd946462b10b49c58",
+      "situation": "dealer-hole",
+      "standard": true,
+      "videoId": "a7f2629f-471c-bab9-14fa-ef8ddcb59a3f"
+    },
+    "mode": "shadow",
+    "presentationReplay": true,
+    "reason": "no_advice",
+    "requestId": "astrid-baseline:deal.dealer:shadow:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "box": null,
+      "card": null,
+      "clip": {
+        "action": "deal-dealer"
+      },
+      "faceDown": true,
+      "handIndex": null,
+      "shoeDraw": 5,
+      "to": "dealer",
+      "type": "deal"
+    },
+    "variantId": "astrid.deal.dealer.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "deal.dealer.standard",
+      "id": "astrid.deal.dealer.standard",
+      "label": "deal_hole.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "only_standard_no_model",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: deal. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "deal.dealer · Kort till croupiern",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.deal.dealer.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.deal.dealer.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: no_advice.",
+      "stage": "advice",
+      "status": "unavailable"
+    },
+    {
+      "detail": "no_advice",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "deal_hole.mp4 · deal-dealer",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/deal.dealer/dealer-hole → deal_hole.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "deal.dealer.standard",
+    "id": "astrid.deal.dealer.standard",
+    "label": "deal_hole.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "a7f2629f-471c-bab9-14fa-ef8ddcb59a3f"
+  },
+  "videoGenerationId": "a7f2629f-471c-bab9-14fa-ef8ddcb59a3f"
+}

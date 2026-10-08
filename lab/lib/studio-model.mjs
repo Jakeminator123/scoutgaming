@@ -4,6 +4,7 @@ import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
 import { createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { applyLegacyStandardVariants, LEGACY_VARIANT_DEALERS } from '../../presentation-runtime/legacy-standard-variants.mjs';
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -12,6 +13,9 @@ export const SOURCE_TYPES = Object.freeze(Object.keys(contract.sourceTypes));
 export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'temperament']);
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
+const VIDEO_GENERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const validVideoGenerationId = value => typeof value === 'string' && VIDEO_GENERATION_ID.test(value)
+  && !value.includes('..') && !value.includes('\\') && !value.startsWith('/') && !value.includes('://') && !/^[A-Za-z]:\//.test(value);
 const LABEL_MAX = 120;
 export const LANE_ID = /^[a-z][a-z0-9-]{0,63}$/;
 export const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype']);
@@ -187,11 +191,22 @@ export class StudioValidationError extends Error {
   }
 }
 
-export function normalizeProject(project) {
-  if (!record(project) || Object.hasOwn(project, 'lanes')) return validateProject(project);
+function needsLegacyVariantMigration(project) {
+  return Array.isArray(project.legacyClipPolicy) && project.legacyClipPolicy.some(row => LEGACY_VARIANT_DEALERS.includes(row?.dealerId));
+}
+
+export function normalizeProject(project, options) {
+  const preserveMissingLanes = options?.preserveMissingLanes === true;
+  const validation = options ? { ...options } : undefined;
+  if (validation) delete validation.preserveMissingLanes;
+  if (!record(project)) return validateProject(project, validation);
+  const migrate = needsLegacyVariantMigration(project);
+  const addLanes = !preserveMissingLanes && !Object.hasOwn(project, 'lanes');
+  if (!migrate && !addLanes) return validateProject(project, validation);
   const next = clone(project);
-  next.lanes = [defaultPresentationLane()];
-  return validateProject(next);
+  if (addLanes) next.lanes = [defaultPresentationLane()];
+  if (migrate) applyLegacyStandardVariants(next);
+  return validateProject(next, validation);
 }
 
 export function createSeedProject() {
@@ -312,7 +327,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
       if (!Number.isInteger(variant.priority) || variant.priority < -100 || variant.priority > 100) error(`${vp}.priority`, 'ska vara ett heltal från -100 till 100');
       if (!assetIds.has(variant.assetId)) error(`${vp}.assetId`, 'okänd animationsreferens');
       else if (!allowIncompatibleAnimations && !isAssetCompatible(project.events.find(event => event.id === line.eventId), project.assets.find(asset => asset.id === variant.assetId))) error(`${vp}.assetId`, 'labbanimationen måste behålla eventets delningsriktning eller kortvändning; repliker/resultat får inte lägga till en kortoperation');
-      if (variant.videoGenerationId !== null && (typeof variant.videoGenerationId !== 'string' || !ID.test(variant.videoGenerationId))) error(`${vp}.videoGenerationId`, 'ska vara null eller ett generationId, aldrig en sökväg/URL');
+      if (variant.videoGenerationId !== null && !validVideoGenerationId(variant.videoGenerationId)) error(`${vp}.videoGenerationId`, 'ska vara null, ett generationId eller ett legacy-klipp-id, aldrig en sökväg/URL');
       if (array(variant.triggerIds, `${vp}.triggerIds`, 0, 16)) {
         if (new Set(variant.triggerIds).size !== variant.triggerIds.length) error(`${vp}.triggerIds`, 'samma trigger är vald flera gånger');
         variant.triggerIds.forEach(triggerId => { if (!triggerIds.has(triggerId)) error(`${vp}.triggerIds`, `okänd trigger ${triggerId}`); });

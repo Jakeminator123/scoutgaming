@@ -59,7 +59,7 @@ const DEALERS = {
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
 const DEALER = DEALERS[entrySelection.dealer];
-const localPresentationEnabled = DEALER.key === 'astrid' && entrySelection.presentation === 'local';
+const localPresentationEnabled = entrySelection.presentation === 'local';
 if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;

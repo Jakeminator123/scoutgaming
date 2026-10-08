@@ -5,7 +5,7 @@ import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
-import { buildRuntimeCatalog } from '../lab/lib/studio-model.mjs';
+import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
@@ -103,13 +103,15 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         finally { res.removeListener('close', disconnected); }
         return true;
       }
-      if (body.dealerId !== 'astrid' || !modes.has(body.mode) || !Number.isInteger(body.version)) fail('Invalid presentation request');
+      if (!modes.has(body.mode) || !Number.isInteger(body.version) || typeof body.dealerId !== 'string') fail('Invalid presentation request');
+      const [loaded, inventory] = await Promise.all([store.load(), registryLoader()]);
+      const project = normalizeProject(loaded, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
+      if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
       const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
       if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
-      const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
-      const key = JSON.stringify([playerId, body.version, sourceEvent, body.mode, project.revision]);
+      const key = JSON.stringify([playerId, body.dealerId, body.version, sourceEvent, body.mode, project.revision]);
       const controller = new AbortController();
       const disconnected = () => { if (!res.writableEnded) controller.abort(); };
       res.once('close', disconnected);

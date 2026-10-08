@@ -1,0 +1,116 @@
+{
+  "asset": {
+    "animation": "neutral",
+    "color": "#83d4a6",
+    "durationMs": 1400,
+    "id": "speak.other.standard",
+    "kind": "animation",
+    "label": "Läs spelreplik"
+  },
+  "contextReceipt": {
+    "contractVersion": null,
+    "observedChatMessages": null
+  },
+  "decision": {
+    "context": {
+      "chat": {
+        "signal": "none"
+      },
+      "playerHistory": {
+        "preferredLanguage": null,
+        "returning": false
+      },
+      "session": {
+        "recentLosses": 0,
+        "recentWins": 0
+      }
+    },
+    "media": {
+      "familyId": "astrid/speak.other/placebets",
+      "fileName": "placebets.mp4",
+      "reason": "exact_family",
+      "sha256": "f57132470b01691978d1143aed59312ed9ff00db5d8392461ed6cbb578e988e4",
+      "situation": "placebets",
+      "standard": true,
+      "videoId": "f5713247-0b01-6919-78d1-143aed59312e"
+    },
+    "mode": "shadow",
+    "presentationReplay": true,
+    "reason": "no_advice",
+    "requestId": "astrid-baseline:speak.other:shadow:neutral",
+    "simulated": false,
+    "sourceEvent": {
+      "line": "placebets",
+      "type": "speak"
+    },
+    "variantId": "astrid.speak.other.standard"
+  },
+  "eligible": [
+    {
+      "assetId": "speak.other.standard",
+      "id": "astrid.speak.other.standard",
+      "label": "placebets.mp4",
+      "priority": 0,
+      "when": {
+        "all": []
+      }
+    }
+  ],
+  "provider": "only_standard_no_model",
+  "trace": [
+    {
+      "detail": "Publicerad källtyp: speak. Övriga fält är borttagna.",
+      "stage": "event",
+      "status": "accepted"
+    },
+    {
+      "detail": "speak.other · Övrig spelreplik",
+      "stage": "mapping",
+      "status": "matched"
+    },
+    {
+      "detail": "0 alternativ uteslutna på grund av saknad eller felmatchad video. Obundna alternativ är endast 2D-prov; standardens reserv finns kvar.",
+      "stage": "compatibility",
+      "status": "checked"
+    },
+    {
+      "detail": "1/1 varianter tillåtna: astrid.speak.other.standard",
+      "stage": "triggers",
+      "status": "evaluated"
+    },
+    {
+      "detail": "astrid.speak.other.standard är alltid tillgänglig.",
+      "stage": "baseline",
+      "status": "ready"
+    },
+    {
+      "detail": "Inget tillämpbart råd: no_advice.",
+      "stage": "advice",
+      "status": "unavailable"
+    },
+    {
+      "detail": "no_advice",
+      "stage": "gate",
+      "status": "fallback"
+    },
+    {
+      "detail": "placebets.mp4 · neutral",
+      "stage": "animation",
+      "status": "selected"
+    },
+    {
+      "detail": "astrid/speak.other/placebets → placebets.mp4",
+      "stage": "media-family",
+      "status": "selected"
+    }
+  ],
+  "variant": {
+    "assetId": "speak.other.standard",
+    "id": "astrid.speak.other.standard",
+    "label": "placebets.mp4",
+    "priority": 0,
+    "triggerIds": [],
+    "videoGenerationId": "f5713247-0b01-6919-78d1-143aed59312e"
+  },
+  "videoGenerationId": "f5713247-0b01-6919-78d1-143aed59312e"
+}

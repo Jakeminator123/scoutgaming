@@ -1,7 +1,7 @@
 import { readFile, mkdir, writeFile, rename, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { createSeedProject, validateProject } from './studio-model.mjs';
+import { createSeedProject, normalizeProject, validateProject } from './studio-model.mjs';
 import lockfile from 'proper-lockfile';
 
 export class StudioError extends Error {
@@ -13,7 +13,7 @@ export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
   const load = async () => {
     // Old editors permitted incompatible motion bindings. Keep those files
     // readable for explicit UI repair; save and simulation remain strict.
-    try { return validateProject(JSON.parse(await readFile(file, 'utf8')), { allowIncompatibleAnimations: true }); }
+    try { return normalizeProject(JSON.parse(await readFile(file, 'utf8')), { allowIncompatibleAnimations: true, preserveMissingLanes: true }); }
     catch (error) {
       if (error.code === 'ENOENT') return createSeedProject();
       throw new StudioError('Den sparade projektfilen är ogiltig. Originalet har inte ersatts.', 422);

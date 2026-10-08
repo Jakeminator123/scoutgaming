@@ -7,6 +7,7 @@ import { StudioError } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
 import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
+import { isLegacyClipReference, legacySituationLine, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
 
 export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
   let url;
@@ -46,10 +47,11 @@ export async function validateVideoBindings(project, { registry } = {}) {
   const bound = legacyLines.flatMap(line => line.variants).filter(variant => variant.videoGenerationId !== null);
   if (!bound.length) return;
   const known = new Set(registry.videos.map(video => video.id));
-  if (bound.some(variant => !known.has(variant.videoGenerationId))) throw new StudioError('En videokoppling saknas i det kända registret. Välj en fil i Videobanken.', 422);
+  const tolerated = (line, id) => LEGACY_VARIANT_DEALERS.includes(line.dealerId) && isLegacyClipReference(id);
+  if (legacyLines.some(line => line.variants.some(variant => variant.videoGenerationId && !known.has(variant.videoGenerationId) && !tolerated(line, variant.videoGenerationId)))) throw new StudioError('En videokoppling saknas i det kända registret. Välj en fil i Videobanken.', 422);
   const videos = new Map(registry.videos.map(v => [v.id, v]));
   for (const line of legacyLines) for (const variant of line.variants) {
-    if (variant.videoGenerationId && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError(`${variant.id}: videon saknar giltig kategorisering för denna linje. Kategorisera i Videobankens Inkorg eller koppla loss filmen.`, 422);
+    if (variant.videoGenerationId && known.has(variant.videoGenerationId) && !videoFitsLine(videos.get(variant.videoGenerationId), line.dealerId, line.eventId)) throw new StudioError(`${variant.id}: videon saknar giltig kategorisering för denna linje. Kategorisera i Videobankens Inkorg eller koppla loss filmen.`, 422);
   }
 }
 
@@ -67,7 +69,10 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
   const media = mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
   const frequency = dealFrequencyPolicies(savedProject, media.family);
-  const project = media.managed ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? media.line : line) } : savedProject;
+  const playedLine = media.managed ? media.line : legacySituationLine(media.line, input.event);
+  const project = media.managed || playedLine !== media.line
+    ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? playedLine : line) }
+    : savedProject;
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
   let prepared = prepareDecision(catalog, input);
   if (prepared.node.id !== body.eventId) throw new StudioError('Källeventet matchar inte vald eventgrupp.');
