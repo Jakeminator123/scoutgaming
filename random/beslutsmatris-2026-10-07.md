@@ -109,6 +109,17 @@ Rekommendationerna är orkestratorns; Jakob avgör.
 
 Avgjort på Jakobs delegering: L20–L22 (tre texter) rättas i nästa mekaniska pass. GPU-workflows låses till `ubuntu-24.04` före 19 oktober.
 
+## Rader 45–48, natten 8 oktober (orkestrator 2, pass M)
+
+Underagenter M1 (CI) och M2 (UI) körde parallellt; orkestratorn granskade och rättade. Uppföljning i `random/checklista-2026-10-08.md`.
+
+| # | Tveksamt | Alternativ | Beslut | Status |
+|---|---|---|---|---|
+| 45 | Rad 39: underagenten monterade `focused` på Uppspelning. Det ger rullande fönster men döljer *Visa spelfliken här*, Partner-SSE och lokala knappar | A: `focused` (gamla observationspanelen i Dealers & klipp). B: separat `rolling`-prop, allt annat kvar | **B**. Ingenting får bli sämre; testet bevisar både rullande text och att knapparna finns | Gjort `820709dd` |
+| 46 | ffmpeg-cache: vid cacheträff hoppas `apt-get update` över, så ny ffmpeg kommer först när cacheposten faller (7 dagar oanvänd). Jobben `presentation-studio` och `lipsync-worker` får `permissions: actions: write` för att kunna spara cache | A: acceptera; `dealer-regression` utan cache tills vidare. B: cacha även `dealer-regression` (ffmpeg + jq) | **A nu, B om jobbet hänger** | Gjort (pass M) |
+| 47 | Orphan-undantag: `test/fuzz-blackjack.mjs` är ett manuellt fuzz-skript mot klientmodulen `web/public/blackjack.mjs` (T1–T3-eran) och räknade 85 820 invariantbrott på 12 s. Servern äger korten (`web/shoe-game.mjs`), så det är inte produktionsrisk, men skriptet är antingen föråldrat eller pekar på något | A: undantag nu, egen granskning senare. B: ta bort skriptet | **A**; Jakob avgör om skriptet ska uppdateras mot `shoe-game` eller tas bort | Öppet |
+| 48 | Commiten för punkt 4 (cache) tog med raden `Orphan tests` i `croupier.yml` eftersom filen stagades hel; skriptet kommer i nästa commit. Mellancommiten är inte CI-ren ensam, pushen som helhet är det | – | Till kännedom | – |
+
 ## Avgjort av orkestratorn, till kännedom
 
 | Tveksamt | Vad som gjordes |

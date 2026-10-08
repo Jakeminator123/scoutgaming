@@ -31,6 +31,8 @@ Syftet är en lägesbild av vad som finns och vad som inte är ihopkopplat mella
 | L23 | Rullande observationsfönster | `createPartnerTrace({ rolling: true })` och läget `focused` i `ActivityLog` finns och är testade. | Ingen sida monterar läget sedan gamla `studio.tsx` togs bort, så Uppspelning stannar vid 300 meddelanden eller 4 MiB tills Ny observation. | `lab/components/activity-log.tsx:21`, `lab/components/control-activity-page.tsx:24`, `lab/test/lissabon-observation.test.mjs:8` | 1 | ja |
 | L24 | Pool för operatörsskrivningar | Lagrets spärrade skrivningar (rolländring, ändrat medlemskap) kör i en transaktion via `connect()` och avvisas med 503 utan den. | Partnerdatan skapar lagret med bara `{ query }`, så en framtida skrivande rutt måste skicka själva poolen. | `lab/lib/partner-data.mjs:55`, `web/storage/operator-store.mjs` | 1→2 | ja |
 
+Åtgärdat 8 oktober natt (pass M): L20 (`a91f92ee`, starttexten säger `node lab/start.mjs`), L21 (`a91f92ee`, steglänken namnger målsidan), L22 (`a91f92ee`, texten säger att `/partner/login` finns och att L14–L15 återstår), L23 (`820709dd`, Uppspelning monterar rullande fönster via egen `rolling`-prop utan att dölja verktyg). Övriga trådar oförändrade; produktionsvägen för klippval är kartlagd i `random/k1-fakta-spelvagen-2026-10-08.md`.
+
 ## Konton och roller, nuläge
 
 Det här är en lägesbild. Inget av det ska tas bort.
