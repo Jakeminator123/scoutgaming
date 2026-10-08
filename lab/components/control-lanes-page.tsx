@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { labBasePath } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
+import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { LaneEditor } from './lane-editor';
 import { PageTemplate } from './page-template';
 import styles from './control-lanes-page.module.css';
@@ -38,12 +39,13 @@ export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' 
   return rows;
 }
 
-export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable }: {
+export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
   operators: LaneOperatorChoice[];
   storeAvailable: boolean;
+  directory?: OperatorDirectory | null;
 }) {
   const session = useStudioSession({ initialProject, initialVideos, initialStatus });
   const {
@@ -148,6 +150,8 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
           </div>
         </form>
       </section>
+      {directory !== undefined ? <ControlOperatorDirectory directory={directory}
+        onCreated={operator => setListed(current => current.some(item => item.id === operator.id) ? current : [...current, operator])} /> : null}
     </div>
   </PageTemplate>;
 }
