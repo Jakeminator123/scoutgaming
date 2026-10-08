@@ -24,3 +24,6 @@ media/.migration/
 .vercel
 .env*
 !.env.example
+
+# Session-gated preview build. Served by lab/app/preview, never from public/.
+/lab/preview-build/
