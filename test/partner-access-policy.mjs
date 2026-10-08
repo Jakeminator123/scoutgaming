@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PARTNER_PERMISSIONS, OPERATOR_ADMIN_PERMISSION, isOperatorAdmin, isPartnerPermission,
-  allowsPartnerResource, allowsPartnerRoleAssignment,
+  allowsPartnerResource, allowsPartnerRoleAssignment, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerSuspension,
 } from '../web/partner-access-policy.mjs';
 import { effectiveAccountRole } from '../web/account-role.mjs';
 import { meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
@@ -175,6 +175,66 @@ test('policy evaluation does not modify the projections or exported permission c
   assert.deepEqual({ actor, target }, before);
   assert.equal(Object.isFrozen(PARTNER_PERMISSIONS), true);
   assert.throws(() => PARTNER_PERMISSIONS.push('users/role'), TypeError);
+});
+
+function invitation() {
+  return { account: { userId: '77', role: 'partner' }, nextRole: role('viewer', ['overview.read', 'team.read']) };
+}
+function suspension(nextStatus = 'suspended') {
+  return {
+    membership: { userId: 'staff-2', status: nextStatus === 'suspended' ? 'active' : 'suspended', roleId: 'viewer', ...resource() },
+    currentRole: role('viewer', ['overview.read']),
+    nextStatus,
+  };
+}
+
+test('an invitation links an existing partner account to a delegable role within the inviter mandate', () => {
+  assert.equal(allowsPartnerInvite(context(), invitation()), true);
+  assert.equal(allowsPartnerInviteRole(context(), invitation().nextRole), true);
+  const actor = context(); actor.role.permissions = ['overview.read', 'team.read', 'team.roles.assign'];
+  assert.equal(allowsPartnerInvite(actor, invitation()), false, 'team.invite is required');
+  const narrow = context(); narrow.role.permissions = ['overview.read', 'team.invite'];
+  assert.equal(allowsPartnerInvite(narrow, invitation()), false, 'cannot hand out team.read without holding it');
+  for (const change of [
+    target => { target.account.userId = 'staff-1'; },
+    target => { target.account.role = 'admin'; },
+    target => { target.account.role = 'player'; },
+    target => { target.account.userId = '../77'; },
+    target => { target.nextRole.delegable = false; },
+    target => { delete target.nextRole.delegable; },
+    target => { target.nextRole.operatorId = 'operator-south'; },
+    target => { target.nextRole.scope.workspaceId = 'other'; },
+    target => { target.nextRole.permissions = ['wallet.credit']; },
+  ]) {
+    const target = invitation(); change(target);
+    assert.equal(allowsPartnerInvite(context(), target), false);
+  }
+  for (const value of [null, undefined, {}, Object.create(invitation())]) assert.equal(allowsPartnerInvite(context(), value), false);
+});
+
+test('suspension and reactivation move another delegable member between active and suspended only', () => {
+  assert.equal(allowsPartnerSuspension(context(), suspension('suspended')), true);
+  assert.equal(allowsPartnerSuspension(context(), suspension('active')), true);
+  const actor = context(); actor.role.permissions = ['overview.read', 'team.read', 'team.roles.assign'];
+  assert.equal(allowsPartnerSuspension(actor, suspension()), false, 'team.suspend is required');
+  for (const change of [
+    target => { target.membership.userId = 'staff-1'; },
+    target => { target.membership.status = 'suspended'; },
+    target => { target.membership.status = 'invited'; },
+    target => { target.nextStatus = 'invited'; },
+    target => { target.nextStatus = 'revoked'; },
+    target => { target.membership.roleId = 'other'; },
+    target => { target.membership.operatorId = 'operator-south'; },
+    target => { target.currentRole.delegable = false; },
+    target => { target.currentRole.permissions = ['overview.read', 'wallet.credit']; },
+  ]) {
+    const target = suspension(); change(target);
+    assert.equal(allowsPartnerSuspension(context(), target), false);
+  }
+  const lesser = context(); lesser.role.permissions = ['overview.read', 'team.suspend'];
+  const superior = suspension(); superior.currentRole.permissions = ['overview.read', 'players.read'];
+  assert.equal(allowsPartnerSuspension(lesser, superior), false, 'cannot suspend a member with more permissions');
+  for (const value of [null, undefined, {}, Object.create(suspension())]) assert.equal(allowsPartnerSuspension(context(), value), false);
 });
 
 test('an operator admin is an active member whose role in that company can assign roles', () => {
