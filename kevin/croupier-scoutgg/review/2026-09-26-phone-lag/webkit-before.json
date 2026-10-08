@@ -1,0 +1,255 @@
+{
+  "engine": "webkit",
+  "prepMs": 512,
+  "settled": true,
+  "errors": [],
+  "events": [
+    {
+      "type": "playing",
+      "at": 1567,
+      "time": 0.2025,
+      "source": "/media/repliker/goodluck_1.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 1568,
+      "time": 0.2025,
+      "source": "/media/repliker/goodluck_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "seeked",
+      "at": 1640,
+      "time": 0.20267387501429768,
+      "source": "/media/repliker/goodluck_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 4876,
+      "time": 3.375,
+      "source": "/media/repliker/goodluck_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 4934,
+      "time": 0.113,
+      "source": "/media/deal/pos4.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 4936,
+      "time": 0.113,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "seeked",
+      "at": 4970,
+      "time": 0.11316966671682895,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 8150,
+      "time": 3.292,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 8306,
+      "time": 0.115,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 8307,
+      "time": 0.115,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "seeked",
+      "at": 8332,
+      "time": 0.11535391666460783,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 10926,
+      "time": 2.709,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 11060,
+      "time": 0.0795,
+      "source": "/media/deal/pos4.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 11061,
+      "time": 0.0795,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "seeked",
+      "at": 11083,
+      "time": 0.07968058333080262,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 14296,
+      "time": 3.292,
+      "source": "/media/deal/pos4.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 14440,
+      "time": 0.0895,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 14441,
+      "time": 0.0895,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "seeked",
+      "at": 14465,
+      "time": 0.0898319582901895,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 17085,
+      "time": 2.709,
+      "source": "/media/deal/posdealer.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 17529,
+      "time": 0,
+      "source": "/media/idle/still.mp4",
+      "shown": false
+    },
+    {
+      "type": "playing",
+      "at": 18816,
+      "time": 0.155,
+      "source": "/media/repliker/lose_1.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeking",
+      "at": 18819,
+      "time": 0.155,
+      "source": "/media/repliker/lose_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 18819,
+      "time": 1.2586342082694246,
+      "source": "/media/idle/still.mp4",
+      "shown": false
+    },
+    {
+      "type": "seeked",
+      "at": 18882,
+      "time": 0.1552674583811313,
+      "source": "/media/repliker/lose_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "pause",
+      "at": 22161,
+      "time": 3.375,
+      "source": "/media/repliker/lose_1.mp4",
+      "shown": true
+    },
+    {
+      "type": "playing",
+      "at": 22374,
+      "time": 0,
+      "source": "/media/idle/still.mp4",
+      "shown": false
+    }
+  ],
+  "gaps": [],
+  "mutations": 18886,
+  "longTasks": [],
+  "seeks": [
+    {
+      "at": 1562,
+      "from": 0,
+      "to": 0.2025
+    },
+    {
+      "at": 4933,
+      "from": 0,
+      "to": 0.113,
+      "clip": "goodluck_1"
+    },
+    {
+      "at": 8305,
+      "from": 0,
+      "to": 0.115,
+      "clip": "deal_pos4"
+    },
+    {
+      "at": 11059,
+      "from": 0,
+      "to": 0.0795,
+      "clip": "deal_posdealer"
+    },
+    {
+      "at": 14439,
+      "from": 0,
+      "to": 0.0895,
+      "clip": "deal_pos4"
+    },
+    {
+      "at": 18812,
+      "from": 0,
+      "to": 0.155,
+      "clip": "idle"
+    }
+  ],
+  "frames": 477,
+  "api": [],
+  "roundAt": 504,
+  "endAt": 22817,
+  "videos": [
+    {
+      "width": 1080,
+      "height": 1920,
+      "dropped": 0,
+      "total": 82
+    },
+    {
+      "width": 1080,
+      "height": 1920,
+      "dropped": 0,
+      "total": 12
+    }
+  ]
+}

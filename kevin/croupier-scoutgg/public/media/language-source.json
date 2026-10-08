@@ -1,0 +1,12 @@
+{
+  "sourceProject": "https://gitlab.com/EmaCodeHero/astrid-demo-v3",
+  "sourceCommit": "24d809fd47bf89c359c4e6d80ffdcbe15d45118c",
+  "importedAt": "2026-09-28",
+  "languages": {
+    "en": "public/media/repliker",
+    "es": "public/media/repliker-es",
+    "fr": "public/media/repliker-fr",
+    "zh": "public/media/repliker-zh"
+  },
+  "notes": "English, Spanish, French and Mandarin dealer speech assets. Localized clips are selected by the shared table language; the server remains authoritative for cards, rules and payouts."
+}

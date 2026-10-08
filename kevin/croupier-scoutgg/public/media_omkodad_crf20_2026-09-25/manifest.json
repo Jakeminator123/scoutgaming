@@ -1,0 +1,694 @@
+{
+ "startbild": "/media_omkodad_crf20_2026-09-25/startbild.png",
+ "format": "1080x1920, 24 fps, H.264 BT.709 — alla klipp börjar och slutar exakt i startbilden",
+ "rost": {
+  "leverantor": "Cartesia sonic-3.5",
+  "namn": "Freja – Informative Host (svensk brytning)",
+  "id": "bcdcad6d-4eb6-4a71-89fd-1ae2ce9f95d8"
+ },
+ "idle": [
+  {
+   "id": "still",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/still.mp4",
+   "vikt": 40,
+   "beskrivning": "stilla, andas",
+   "dur": 3.04
+  },
+  {
+   "id": "breath",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/breath.mp4",
+   "vikt": 14,
+   "beskrivning": "djupare andetag",
+   "dur": 3.04
+  },
+  {
+   "id": "glance",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/glance.mp4",
+   "vikt": 12,
+   "beskrivning": "blicken åt sidan",
+   "dur": 3.04
+  },
+  {
+   "id": "cheek",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/cheek.mp4",
+   "vikt": 3,
+   "beskrivning": "handen till kinden",
+   "dur": 3.04
+  },
+  {
+   "id": "insulted",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/insulted.mp4",
+   "vikt": 1,
+   "beskrivning": "kort förnärmad min",
+   "dur": 3.04
+  },
+  {
+   "id": "still_short",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/still_short.mp4",
+   "vikt": 20,
+   "beskrivning": "NY 2026-09-25: stilla, andas (2,3 s)",
+   "dur": 2.33
+  },
+  {
+   "id": "hands_together",
+   "url": "/media_omkodad_crf20_2026-09-25/idle/hands_together.mp4",
+   "vikt": 4,
+   "beskrivning": "NY 2026-09-25: händerna glider ihop och isär",
+   "dur": 3.75
+  }
+ ],
+ "repliker": [
+  {
+   "id": "greeting_1",
+   "event": "greeting",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/greeting_1.mp4",
+   "text": "Good evening, and welcome to the table. I'm Astrid, take any seat you like.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.21
+  },
+  {
+   "id": "greeting_2",
+   "event": "greeting",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/greeting_2.mp4",
+   "text": "Welcome in. Pull up a chair, the cards are fresh and the table is yours.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.54
+  },
+  {
+   "id": "greeting_3",
+   "event": "greeting",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/greeting_3.mp4",
+   "text": "A new face at the table. Welcome, I'm Astrid, and I'll be dealing for you tonight.",
+   "handelse": "spelaren kommer in",
+   "dur": 5.29
+  },
+  {
+   "id": "placebets_1",
+   "event": "placebets",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/placebets_1.mp4",
+   "text": "Bets are open. Place your chips whenever you're ready.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 3.71
+  },
+  {
+   "id": "placebets_2",
+   "event": "placebets",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/placebets_2.mp4",
+   "text": "New round, fresh cards. The betting circle is all yours.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 4.75
+  },
+  {
+   "id": "placebets_3",
+   "event": "placebets",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/placebets_3.mp4",
+   "text": "The table is open. Take your time, and place your bets.",
+   "handelse": "ny runda, insatser öppna",
+   "dur": 4.58
+  },
+  {
+   "id": "goodluck_1",
+   "event": "goodluck",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/goodluck_1.mp4",
+   "text": "No more bets. Here come the cards.",
+   "handelse": "insatserna stängs",
+   "dur": 3.38
+  },
+  {
+   "id": "goodluck_2",
+   "event": "goodluck",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/goodluck_2.mp4",
+   "text": "Bets are closed. Good luck, everyone.",
+   "handelse": "insatserna stängs",
+   "dur": 3.38
+  },
+  {
+   "id": "goodluck_3",
+   "event": "goodluck",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/goodluck_3.mp4",
+   "text": "That's all the bets. Let's see what the shoe has for us.",
+   "handelse": "insatserna stängs",
+   "dur": 3.75
+  },
+  {
+   "id": "sidebet_1",
+   "event": "sidebet",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/sidebet_1.mp4",
+   "text": "Your side bet comes in. That one pays straight away.",
+   "handelse": "en sidobet vinner",
+   "dur": 4.0
+  },
+  {
+   "id": "sidebet_2",
+   "event": "sidebet",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/sidebet_2.mp4",
+   "text": "Side bet's a winner. Nice way to start the hand.",
+   "handelse": "en sidobet vinner",
+   "dur": 3.75
+  },
+  {
+   "id": "sidebet_3",
+   "event": "sidebet",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/sidebet_3.mp4",
+   "text": "And the side bet lands. Paid before we've even begun.",
+   "handelse": "en sidobet vinner",
+   "dur": 4.08
+  },
+  {
+   "id": "insurance_1",
+   "event": "insurance",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/insurance_1.mp4",
+   "text": "Ace showing. Would anyone like insurance?",
+   "handelse": "försäkring erbjuds",
+   "dur": 3.21
+  },
+  {
+   "id": "insurance_2",
+   "event": "insurance",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/insurance_2.mp4",
+   "text": "I have an ace. Insurance is open, and it pays two to one.",
+   "handelse": "försäkring erbjuds",
+   "dur": 4.58
+  },
+  {
+   "id": "insurance_3",
+   "event": "insurance",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/insurance_3.mp4",
+   "text": "Ace up, so insurance is on offer. Entirely your call.",
+   "handelse": "försäkring erbjuds",
+   "dur": 4.67
+  },
+  {
+   "id": "double_1",
+   "event": "double",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/double_1.mp4",
+   "text": "Doubling down. One card, and one card only.",
+   "handelse": "spelaren dubblar",
+   "dur": 4.17
+  },
+  {
+   "id": "double_2",
+   "event": "double",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/double_2.mp4",
+   "text": "Double it is. Here's your one card.",
+   "handelse": "spelaren dubblar",
+   "dur": 2.88
+  },
+  {
+   "id": "double_3",
+   "event": "double",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/double_3.mp4",
+   "text": "Doubled. One card to settle it.",
+   "handelse": "spelaren dubblar",
+   "dur": 3.29
+  },
+  {
+   "id": "bust_1",
+   "event": "bust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/bust_1.mp4",
+   "text": "Over twenty-one, I'm afraid. That hand is done.",
+   "handelse": "spelarens hand över 21",
+   "dur": 4.25
+  },
+  {
+   "id": "bust_2",
+   "event": "bust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/bust_2.mp4",
+   "text": "That's a bust. Unlucky card.",
+   "handelse": "spelarens hand över 21",
+   "dur": 3.29
+  },
+  {
+   "id": "bust_3",
+   "event": "bust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/bust_3.mp4",
+   "text": "Too many, I'm sorry. That one goes to the house.",
+   "handelse": "spelarens hand över 21",
+   "dur": 3.46
+  },
+  {
+   "id": "blackjack_1",
+   "event": "blackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/blackjack_1.mp4",
+   "text": "Blackjack! Beautifully done. That pays three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.5
+  },
+  {
+   "id": "blackjack_2",
+   "event": "blackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/blackjack_2.mp4",
+   "text": "Blackjack, straight off the deal. Paid three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.0
+  },
+  {
+   "id": "blackjack_3",
+   "event": "blackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/blackjack_3.mp4",
+   "text": "Now that's how you open a hand. Blackjack, three to two.",
+   "handelse": "spelaren får blackjack och vinner",
+   "dur": 4.42
+  },
+  {
+   "id": "dealerblackjack_1",
+   "event": "dealerblackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerblackjack_1.mp4",
+   "text": "Dealer has blackjack. I'm sorry, everyone.",
+   "handelse": "dealern har blackjack",
+   "dur": 3.75
+  },
+  {
+   "id": "dealerblackjack_2",
+   "event": "dealerblackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerblackjack_2.mp4",
+   "text": "Blackjack for the house this time. It happens to the best of us.",
+   "handelse": "dealern har blackjack",
+   "dur": 4.5
+  },
+  {
+   "id": "dealerblackjack_3",
+   "event": "dealerblackjack",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerblackjack_3.mp4",
+   "text": "I'm afraid it's blackjack for me. That round goes to the house.",
+   "handelse": "dealern har blackjack",
+   "dur": 4.5
+  },
+  {
+   "id": "dealerbust_1",
+   "event": "dealerbust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerbust_1.mp4",
+   "text": "Dealer busts! Everyone still in the hand gets paid.",
+   "handelse": "dealern över 21",
+   "dur": 4.25
+  },
+  {
+   "id": "dealerbust_2",
+   "event": "dealerbust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerbust_2.mp4",
+   "text": "Too many for me. The house busts. Congratulations, table.",
+   "handelse": "dealern över 21",
+   "dur": 4.88
+  },
+  {
+   "id": "dealerbust_3",
+   "event": "dealerbust",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/dealerbust_3.mp4",
+   "text": "And that's over twenty-one for the dealer. Winners all round.",
+   "handelse": "dealern över 21",
+   "dur": 4.17
+  },
+  {
+   "id": "win_1",
+   "event": "win",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/win_1.mp4",
+   "text": "Well played. That hand is yours.",
+   "handelse": "spelare vinner",
+   "dur": 3.29
+  },
+  {
+   "id": "win_2",
+   "event": "win",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/win_2.mp4",
+   "text": "You beat me on that one. Congratulations.",
+   "handelse": "spelare vinner",
+   "dur": 3.29
+  },
+  {
+   "id": "win_3",
+   "event": "win",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/win_3.mp4",
+   "text": "A winning hand. Paid in full.",
+   "handelse": "spelare vinner",
+   "dur": 3.46
+  },
+  {
+   "id": "push_1",
+   "event": "push",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/push_1.mp4",
+   "text": "Same total. It's a push, your stake stays with you.",
+   "handelse": "oavgjort",
+   "dur": 4.67
+  },
+  {
+   "id": "push_2",
+   "event": "push",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/push_2.mp4",
+   "text": "We're level. A push, nobody wins and nobody loses.",
+   "handelse": "oavgjort",
+   "dur": 4.33
+  },
+  {
+   "id": "push_3",
+   "event": "push",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/push_3.mp4",
+   "text": "Push. Your bet comes back.",
+   "handelse": "oavgjort",
+   "dur": 3.12
+  },
+  {
+   "id": "lose_1",
+   "event": "lose",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/lose_1.mp4",
+   "text": "Dealer wins. That one goes to the house.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.38
+  },
+  {
+   "id": "lose_2",
+   "event": "lose",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/lose_2.mp4",
+   "text": "Not this time, I'm afraid. The house holds.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.71
+  },
+  {
+   "id": "lose_3",
+   "event": "lose",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/lose_3.mp4",
+   "text": "Close, but the house has it this round.",
+   "handelse": "spelaren förlorar",
+   "dur": 3.38
+  },
+  {
+   "id": "peek_1",
+   "event": "peek",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/peek_1.mp4",
+   "text": "One moment while I check for blackjack.",
+   "handelse": null,
+   "dur": 3.29
+  },
+  {
+   "id": "peek_2",
+   "event": "peek",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/peek_2.mp4",
+   "text": "Dealer checks for blackjack.",
+   "handelse": null,
+   "dur": 2.5
+  },
+  {
+   "id": "peek_3",
+   "event": "peek",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/peek_3.mp4",
+   "text": "Checking for blackjack. Nothing up my sleeve.",
+   "handelse": null,
+   "dur": 3.75
+  },
+  {
+   "id": "farewell_1",
+   "event": "farewell",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/farewell_1.mp4",
+   "text": "Thank you for playing. It was a pleasure dealing for you.",
+   "handelse": null,
+   "dur": 3.75
+  },
+  {
+   "id": "farewell_2",
+   "event": "farewell",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/farewell_2.mp4",
+   "text": "All done for tonight? Thank you, it was lovely having you at the table.",
+   "handelse": null,
+   "dur": 4.67
+  },
+  {
+   "id": "farewell_3",
+   "event": "farewell",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/farewell_3.mp4",
+   "text": "Good night, and thank you for the company at my table.",
+   "handelse": null,
+   "dur": 3.62
+  },
+  {
+   "id": "chatter1_1",
+   "event": "chatter1",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter1_1.mp4",
+   "text": "Quiet night at the table. Those are my favourite.",
+   "handelse": null,
+   "dur": 3.54
+  },
+  {
+   "id": "chatter1_2",
+   "event": "chatter1",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter1_2.mp4",
+   "text": "Eight decks, shuffled fresh every round. Every hand starts from nothing.",
+   "handelse": null,
+   "dur": 5.75
+  },
+  {
+   "id": "chatter1_3",
+   "event": "chatter1",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter1_3.mp4",
+   "text": "I've dealt a lot of hands at this table. No two ever play out the same.",
+   "handelse": null,
+   "dur": 5.29
+  },
+  {
+   "id": "chatter2_1",
+   "event": "chatter2",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter2_1.mp4",
+   "text": "Take your time. The cards aren't going anywhere.",
+   "handelse": null,
+   "dur": 3.62
+  },
+  {
+   "id": "chatter2_2",
+   "event": "chatter2",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter2_2.mp4",
+   "text": "No rush at all. Think it over.",
+   "handelse": null,
+   "dur": 3.04
+  },
+  {
+   "id": "chatter2_3",
+   "event": "chatter2",
+   "url": "/media_omkodad_crf20_2026-09-25/repliker/chatter2_3.mp4",
+   "text": "Whenever you're ready. The decision is yours.",
+   "handelse": null,
+   "dur": 3.54
+  }
+ ],
+ "deal": [
+  {
+   "id": "deal_pos1",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos1.mp4",
+   "beskrivning": "kort till spelare 1",
+   "kort": {
+    "cx": 110,
+    "cy": 1025
+   },
+   "dur": 3.5
+  },
+  {
+   "id": "deal_pos2",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos2.mp4",
+   "beskrivning": "kort till spelare 2",
+   "kort": {
+    "cx": 253,
+    "cy": 1075
+   },
+   "dur": 3.33
+  },
+  {
+   "id": "deal_pos3",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos3.mp4",
+   "beskrivning": "kort till spelare 3",
+   "kort": {
+    "cx": 396,
+    "cy": 1105
+   },
+   "dur": 3.38
+  },
+  {
+   "id": "deal_pos4",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos4.mp4",
+   "beskrivning": "kort till spelare 4",
+   "kort": {
+    "cx": 540,
+    "cy": 1115
+   },
+   "dur": 3.29
+  },
+  {
+   "id": "deal_pos5",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos5.mp4",
+   "beskrivning": "kort till spelare 5",
+   "kort": {
+    "cx": 684,
+    "cy": 1105
+   },
+   "dur": 3.08
+  },
+  {
+   "id": "deal_pos6",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos6.mp4",
+   "beskrivning": "kort till spelare 6",
+   "kort": {
+    "cx": 827,
+    "cy": 1075
+   },
+   "dur": 3.12
+  },
+  {
+   "id": "deal_pos7",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/pos7.mp4",
+   "beskrivning": "kort till spelare 7",
+   "kort": {
+    "cx": 970,
+    "cy": 1025
+   },
+   "dur": 3.38
+  },
+  {
+   "id": "deal_posdealer",
+   "url": "/media_omkodad_crf20_2026-09-25/deal/posdealer.mp4",
+   "beskrivning": "dealerns eget kort",
+   "kort": {
+    "cx": 540,
+    "cy": 895
+   },
+   "dur": 2.71
+  }
+ ],
+ "kort_storlek": {
+  "bredd": 63,
+  "hojd": 85
+ },
+ "handelser": {
+  "greeting": {
+   "handelse": "spelaren kommer in",
+   "varianter": [
+    "greeting_1",
+    "greeting_2",
+    "greeting_3"
+   ]
+  },
+  "placebets": {
+   "handelse": "ny runda, insatser öppna",
+   "varianter": [
+    "placebets_1",
+    "placebets_2",
+    "placebets_3"
+   ]
+  },
+  "goodluck": {
+   "handelse": "insatserna stängs",
+   "varianter": [
+    "goodluck_1",
+    "goodluck_2",
+    "goodluck_3"
+   ]
+  },
+  "sidebet": {
+   "handelse": "en sidobet vinner",
+   "varianter": [
+    "sidebet_1",
+    "sidebet_2",
+    "sidebet_3"
+   ]
+  },
+  "insurance": {
+   "handelse": "försäkring erbjuds",
+   "varianter": [
+    "insurance_1",
+    "insurance_2",
+    "insurance_3"
+   ]
+  },
+  "double": {
+   "handelse": "spelaren dubblar",
+   "varianter": [
+    "double_1",
+    "double_2",
+    "double_3"
+   ]
+  },
+  "bust": {
+   "handelse": "spelarens hand över 21",
+   "varianter": [
+    "bust_1",
+    "bust_2",
+    "bust_3"
+   ]
+  },
+  "blackjack": {
+   "handelse": "spelaren får blackjack och vinner",
+   "varianter": [
+    "blackjack_1",
+    "blackjack_2",
+    "blackjack_3"
+   ]
+  },
+  "dealerblackjack": {
+   "handelse": "dealern har blackjack",
+   "varianter": [
+    "dealerblackjack_1",
+    "dealerblackjack_2",
+    "dealerblackjack_3"
+   ]
+  },
+  "dealerbust": {
+   "handelse": "dealern över 21",
+   "varianter": [
+    "dealerbust_1",
+    "dealerbust_2",
+    "dealerbust_3"
+   ]
+  },
+  "win": {
+   "handelse": "spelare vinner",
+   "varianter": [
+    "win_1",
+    "win_2",
+    "win_3"
+   ]
+  },
+  "push": {
+   "handelse": "oavgjort",
+   "varianter": [
+    "push_1",
+    "push_2",
+    "push_3"
+   ]
+  },
+  "lose": {
+   "handelse": "spelaren förlorar",
+   "varianter": [
+    "lose_1",
+    "lose_2",
+    "lose_3"
+   ]
+  },
+  "peek": {
+   "handelse": null,
+   "varianter": [
+    "peek_1",
+    "peek_2",
+    "peek_3"
+   ]
+  },
+  "farewell": {
+   "handelse": null,
+   "varianter": [
+    "farewell_1",
+    "farewell_2",
+    "farewell_3"
+   ]
+  },
+  "chatter1": {
+   "handelse": null,
+   "varianter": [
+    "chatter1_1",
+    "chatter1_2",
+    "chatter1_3"
+   ]
+  },
+  "chatter2": {
+   "handelse": null,
+   "varianter": [
+    "chatter2_1",
+    "chatter2_2",
+    "chatter2_3"
+   ]
+  }
+ }
+}

@@ -1,0 +1,4018 @@
+{
+  "source": "https://gitlab.com/EmaCodeHero/astrid-demo-v3",
+  "commit": "24d809fd47bf89c359c4e6d80ffdcbe15d45118c",
+  "clips": [
+    {
+      "language": "es",
+      "id": "greeting_1",
+      "url": "/media/repliker-es/greeting_1_es.mp4",
+      "sha256": "d644725a559205e207bf37d99878f43ef61c446094f3be858a65071bb7a777e1",
+      "bytes": 302176,
+      "manifestDuration": 6.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.416667",
+        "nb_frames": "154"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.417000",
+          "nb_frames": "152"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "greeting_2",
+      "url": "/media/repliker-es/greeting_2_es.mp4",
+      "sha256": "8319d62e8201cccc5d04ffb3dc26b0abea601252e17f8d44ebf915cf134f0137",
+      "bytes": 360016,
+      "manifestDuration": 9.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "9.208333",
+        "nb_frames": "221"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "9.208000",
+          "nb_frames": "217"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "greeting_3",
+      "url": "/media/repliker-es/greeting_3_es.mp4",
+      "sha256": "b86be6bf4dd2491c4b9f85e52109ac4fa66f4b7402d2e12479863848415b3bde",
+      "bytes": 316131,
+      "manifestDuration": 7.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "7.041667",
+        "nb_frames": "169"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "7.042000",
+          "nb_frames": "167"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "placebets_1",
+      "url": "/media/repliker-es/placebets_1_es.mp4",
+      "sha256": "b7ffdcb73279b4f52eec8206ceec7572bb56f660844aa446a10151b776cdc01c",
+      "bytes": 278441,
+      "manifestDuration": 5.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.208333",
+        "nb_frames": "125"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.208000",
+          "nb_frames": "124"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "placebets_2",
+      "url": "/media/repliker-es/placebets_2_es.mp4",
+      "sha256": "7457f2176009c065e15f588c3649a5447c6f8431a9fa7bf05fd02879177b5009",
+      "bytes": 321212,
+      "manifestDuration": 7.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "7.458333",
+        "nb_frames": "179"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "7.458000",
+          "nb_frames": "176"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "placebets_3",
+      "url": "/media/repliker-es/placebets_3_es.mp4",
+      "sha256": "035c2197714cc7c9a34e374dc166a51e5d00532da63260332b8c93c5d50d4672",
+      "bytes": 297481,
+      "manifestDuration": 6.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.250000",
+        "nb_frames": "150"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.250000",
+          "nb_frames": "148"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "goodluck_1",
+      "url": "/media/repliker-es/goodluck_1_es.mp4",
+      "sha256": "480254dc12de8a458d7ae0f3ccff52d753016db65fef48c25ce6b118050528b2",
+      "bytes": 245548,
+      "manifestDuration": 3.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.833333",
+        "nb_frames": "92"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.833000",
+          "nb_frames": "91"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "goodluck_2",
+      "url": "/media/repliker-es/goodluck_2_es.mp4",
+      "sha256": "e5628d72e7e5c33bb44eb243fe316174d6d25bcd762810419cf3442a6e1d122a",
+      "bytes": 268613,
+      "manifestDuration": 4.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.750000",
+        "nb_frames": "114"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.750000",
+          "nb_frames": "113"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "goodluck_3",
+      "url": "/media/repliker-es/goodluck_3_es.mp4",
+      "sha256": "51937030260e3b7f645a8e6c2cec4c7c1270c1658b5b8cf36d92e957555b75bb",
+      "bytes": 272453,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "sidebet_1",
+      "url": "/media/repliker-es/sidebet_1_es.mp4",
+      "sha256": "f22157c8c5da3e42f5792d5e2e90177c4e730bb0a02dc251721a6d139236002f",
+      "bytes": 293357,
+      "manifestDuration": 6.08,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.083333",
+        "nb_frames": "146"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.083000",
+          "nb_frames": "144"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "sidebet_2",
+      "url": "/media/repliker-es/sidebet_2_es.mp4",
+      "sha256": "3129ac5a34b89432279cb967279386ae5bfa4c24ee3751795a593de3ddbee53d",
+      "bytes": 290031,
+      "manifestDuration": 5.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.833333",
+        "nb_frames": "140"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.833000",
+          "nb_frames": "138"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "sidebet_3",
+      "url": "/media/repliker-es/sidebet_3_es.mp4",
+      "sha256": "76e8e2edce400203064e0aae4233ca4ada97903932b6095aec757977e3a049ea",
+      "bytes": 296930,
+      "manifestDuration": 6.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.250000",
+        "nb_frames": "150"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.250000",
+          "nb_frames": "148"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "insurance_1",
+      "url": "/media/repliker-es/insurance_1_es.mp4",
+      "sha256": "4ed7b8091063a84179bcb44a3d6ed62c360c50bfdcbba964c1258ac8c3bf295b",
+      "bytes": 253180,
+      "manifestDuration": 4.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.166667",
+        "nb_frames": "100"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.167000",
+          "nb_frames": "99"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "insurance_2",
+      "url": "/media/repliker-es/insurance_2_es.mp4",
+      "sha256": "68bd976bdcb6f18ca76cb963936075fe3ea1038d17f4adc8f2329cce383917fb",
+      "bytes": 296397,
+      "manifestDuration": 6.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.250000",
+        "nb_frames": "150"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.250000",
+          "nb_frames": "148"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "insurance_3",
+      "url": "/media/repliker-es/insurance_3_es.mp4",
+      "sha256": "06a44348cc3fa955f43bd9fe37d69b1d573cbaae7b3a336a26227f30ec374a49",
+      "bytes": 314358,
+      "manifestDuration": 7.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "7.208333",
+        "nb_frames": "173"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "7.208000",
+          "nb_frames": "170"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "double_1",
+      "url": "/media/repliker-es/double_1_es.mp4",
+      "sha256": "777e16c53ba0326278126bb54062dde31575f43649643df53dcbbf7c1039ff28",
+      "bytes": 271199,
+      "manifestDuration": 5.29,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.291667",
+        "nb_frames": "127"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.292000",
+          "nb_frames": "126"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "double_2",
+      "url": "/media/repliker-es/double_2_es.mp4",
+      "sha256": "6ebd8731a16871ca563f49d40ced1fa869c61288aeb4714d10c2edfdadab929f",
+      "bytes": 277373,
+      "manifestDuration": 5.29,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.291667",
+        "nb_frames": "127"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.292000",
+          "nb_frames": "126"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "double_3",
+      "url": "/media/repliker-es/double_3_es.mp4",
+      "sha256": "055813407255d41a8e354146432d4aac144d71e2fcebfe781af87fe6a86d083c",
+      "bytes": 263404,
+      "manifestDuration": 4.58,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.583333",
+        "nb_frames": "110"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.583000",
+          "nb_frames": "109"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "bust_1",
+      "url": "/media/repliker-es/bust_1_es.mp4",
+      "sha256": "4057b302520a4fd8cdf742dfdef774a33a0b8f69bc7d2583a4291b5aa7b7d3be",
+      "bytes": 292167,
+      "manifestDuration": 6.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.083333",
+        "nb_frames": "146"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.167000",
+          "nb_frames": "146"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "bust_2",
+      "url": "/media/repliker-es/bust_2_es.mp4",
+      "sha256": "aae667d6c0e53461b6b282525de172423f76968c17238b39a131d68eb051eecf",
+      "bytes": 267822,
+      "manifestDuration": 4.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.958333",
+        "nb_frames": "119"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.958000",
+          "nb_frames": "118"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "bust_3",
+      "url": "/media/repliker-es/bust_3_es.mp4",
+      "sha256": "8c88085e5e5663cc60ddd2cdbaef42e928e8882c7286982d144034d77128ee51",
+      "bytes": 284584,
+      "manifestDuration": 5.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.708333",
+        "nb_frames": "137"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.708000",
+          "nb_frames": "135"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "blackjack_1",
+      "url": "/media/repliker-es/blackjack_1_es.mp4",
+      "sha256": "8bf43882050d9d439593213b098634b7be641831c00b60b3ff10de7143a5ca1e",
+      "bytes": 281932,
+      "manifestDuration": 5.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.458333",
+        "nb_frames": "131"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.458000",
+          "nb_frames": "129"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "blackjack_2",
+      "url": "/media/repliker-es/blackjack_2_es.mp4",
+      "sha256": "6d7e9d6cd4c876b513a1c6a6a70d74c37b22cbe4e828f40b35755703be3efe56",
+      "bytes": 286436,
+      "manifestDuration": 5.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.541667",
+        "nb_frames": "133"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.542000",
+          "nb_frames": "131"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "blackjack_3",
+      "url": "/media/repliker-es/blackjack_3_es.mp4",
+      "sha256": "5d64695d314f2e6740e29f53f2d96eb456f732ba3dd1aa43c8799c605a61a09d",
+      "bytes": 281475,
+      "manifestDuration": 5.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.458333",
+        "nb_frames": "131"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.458000",
+          "nb_frames": "129"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerblackjack_1",
+      "url": "/media/repliker-es/dealerblackjack_1_es.mp4",
+      "sha256": "b9d91f0884b1a487ffda32dc4d0005c7d0fce220d44acd1fd9df575bad5b1720",
+      "bytes": 263068,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerblackjack_2",
+      "url": "/media/repliker-es/dealerblackjack_2_es.mp4",
+      "sha256": "dd9fe609e6434f774dccf3a28f9519ce5abef33cc220f48d35d1cf50aa9f69b8",
+      "bytes": 292738,
+      "manifestDuration": 5.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.833333",
+        "nb_frames": "140"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.833000",
+          "nb_frames": "138"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerblackjack_3",
+      "url": "/media/repliker-es/dealerblackjack_3_es.mp4",
+      "sha256": "53f2561916b9202fe50ad247ee07120c434bc7c21f119055ff37501c41966f23",
+      "bytes": 275540,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerbust_1",
+      "url": "/media/repliker-es/dealerbust_1_es.mp4",
+      "sha256": "9e0a8462479293aeaa8322ac123f798d068ea10c4de50392575eabb0865185d8",
+      "bytes": 284507,
+      "manifestDuration": 5.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.625000",
+        "nb_frames": "135"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.625000",
+          "nb_frames": "133"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerbust_2",
+      "url": "/media/repliker-es/dealerbust_2_es.mp4",
+      "sha256": "c92b5b08d38e562aa2be60ef10dd42600dc1554eaeb8a502c2e522a29d704474",
+      "bytes": 308344,
+      "manifestDuration": 7.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "7.125000",
+        "nb_frames": "171"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "7.125000",
+          "nb_frames": "168"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "dealerbust_3",
+      "url": "/media/repliker-es/dealerbust_3_es.mp4",
+      "sha256": "1dd5e55e13a57accb58c7312a147f1c4da6746cfb322e311deced03626a8d40b",
+      "bytes": 268952,
+      "manifestDuration": 5.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.041667",
+        "nb_frames": "121"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.042000",
+          "nb_frames": "120"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "win_1",
+      "url": "/media/repliker-es/win_1_es.mp4",
+      "sha256": "1bd2d83102e2f2ee8a51a9c4679887c936ee9ae59312f940c8da3ca056f9d56d",
+      "bytes": 249868,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "win_2",
+      "url": "/media/repliker-es/win_2_es.mp4",
+      "sha256": "dc338cf04e259367e3f0f2ee15eb54cd29dff5fe65f4ac018412370b6f561f56",
+      "bytes": 247570,
+      "manifestDuration": 3.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.916667",
+        "nb_frames": "94"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.917000",
+          "nb_frames": "93"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "win_3",
+      "url": "/media/repliker-es/win_3_es.mp4",
+      "sha256": "b5f3671884af77a94d76dc093536c21b2cf97cca0e5e2ee9bf5592b0375c84c7",
+      "bytes": 259741,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "push_1",
+      "url": "/media/repliker-es/push_1_es.mp4",
+      "sha256": "9fde4686b65499b6818cc2befe8fe7447f062dbf0249fc191936a8523a364e0f",
+      "bytes": 283103,
+      "manifestDuration": 5.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.541667",
+        "nb_frames": "133"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.542000",
+          "nb_frames": "131"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "push_2",
+      "url": "/media/repliker-es/push_2_es.mp4",
+      "sha256": "b5d449324b1286d2f202951afd88190d676f0402fbef8925be9cfee5e947d1cd",
+      "bytes": 306629,
+      "manifestDuration": 6.88,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.875000",
+        "nb_frames": "165"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.875000",
+          "nb_frames": "163"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "push_3",
+      "url": "/media/repliker-es/push_3_es.mp4",
+      "sha256": "f53d44b990ab51e7809a923e52e0a26a0647dfc6ac94d9cfcad6ebf88eed1fdf",
+      "bytes": 249244,
+      "manifestDuration": 3.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.916667",
+        "nb_frames": "94"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.917000",
+          "nb_frames": "93"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "lose_1",
+      "url": "/media/repliker-es/lose_1_es.mp4",
+      "sha256": "e034148e0d14f951978751fc5479e5a0ef3fdad28d1adb3f27c1f6c5b3cfbb19",
+      "bytes": 259495,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "lose_2",
+      "url": "/media/repliker-es/lose_2_es.mp4",
+      "sha256": "f7969ec4beac6a2af628fa0fe5d60d81a1a03f08b317cf803a39b92b2512ede0",
+      "bytes": 259421,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "lose_3",
+      "url": "/media/repliker-es/lose_3_es.mp4",
+      "sha256": "ceffc0549d0b11dfbf802d669fefc0fef076118c55d6542065ec491745132e03",
+      "bytes": 278504,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "peek_1",
+      "url": "/media/repliker-es/peek_1_es.mp4",
+      "sha256": "b260516aead268fa4394554c2e996a2611ac17f264d9e0684185f5f66ba8cd2f",
+      "bytes": 255199,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.333333",
+        "nb_frames": "104"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "peek_2",
+      "url": "/media/repliker-es/peek_2_es.mp4",
+      "sha256": "5cd037a522d09d54c4e6a866dbc3c04620029c14e2d7bee99dbf92ae12698ce7",
+      "bytes": 242115,
+      "manifestDuration": 3.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.458333",
+        "nb_frames": "83"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.458000",
+          "nb_frames": "83"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "peek_3",
+      "url": "/media/repliker-es/peek_3_es.mp4",
+      "sha256": "4b8e7610151428dbbff661566d60c781a96eaa24d92c7d4c1e62a1fad343d500",
+      "bytes": 268766,
+      "manifestDuration": 4.79,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.791667",
+        "nb_frames": "115"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.792000",
+          "nb_frames": "114"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "farewell_1",
+      "url": "/media/repliker-es/farewell_1_es.mp4",
+      "sha256": "1dde17ad260bd1c1ef54d676adbb40a21a96b9d32fd30e3a3b30a7adbf7b2b6a",
+      "bytes": 273083,
+      "manifestDuration": 4.79,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.791667",
+        "nb_frames": "115"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.792000",
+          "nb_frames": "114"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "farewell_2",
+      "url": "/media/repliker-es/farewell_2_es.mp4",
+      "sha256": "14615d61135871def865f3f2a9e08aace7332b724182457595552e215dc40cea",
+      "bytes": 307410,
+      "manifestDuration": 6.67,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.666667",
+        "nb_frames": "160"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.667000",
+          "nb_frames": "158"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "farewell_3",
+      "url": "/media/repliker-es/farewell_3_es.mp4",
+      "sha256": "8ab309cc92e147877310a68d005e88983d3a8a835690cee6969b365642bdbc44",
+      "bytes": 264863,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter1_1",
+      "url": "/media/repliker-es/chatter1_1_es.mp4",
+      "sha256": "40ef256258ad30c06104dc9857399426f83db22afe070714dd692318a7440ff8",
+      "bytes": 264742,
+      "manifestDuration": 4.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.750000",
+        "nb_frames": "114"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.750000",
+          "nb_frames": "113"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter1_2",
+      "url": "/media/repliker-es/chatter1_2_es.mp4",
+      "sha256": "6e9cdba3f66188dba5f0c2ad9ffbf0cf77ed592bf863f8538ee72e17d5353af3",
+      "bytes": 319234,
+      "manifestDuration": 7.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "7.208333",
+        "nb_frames": "173"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "7.208000",
+          "nb_frames": "170"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter1_3",
+      "url": "/media/repliker-es/chatter1_3_es.mp4",
+      "sha256": "ae8e3d6cbd5a67f9e44dbda007d10c45b7203567b5924da4217598a4c6146fd5",
+      "bytes": 289487,
+      "manifestDuration": 5.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.916667",
+        "nb_frames": "142"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.917000",
+          "nb_frames": "140"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter2_1",
+      "url": "/media/repliker-es/chatter2_1_es.mp4",
+      "sha256": "1796b98ed7b57e33475cc799b507423c47b95658c5b5f11f7f9f67dbee82d35e",
+      "bytes": 279707,
+      "manifestDuration": 5.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.458333",
+        "nb_frames": "131"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.458000",
+          "nb_frames": "129"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter2_2",
+      "url": "/media/repliker-es/chatter2_2_es.mp4",
+      "sha256": "ac3c4b6e60f071f4dc7b97a53e102a994ea99ba9cf79fddbe9676bf782de59f9",
+      "bytes": 259368,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "id": "chatter2_3",
+      "url": "/media/repliker-es/chatter2_3_es.mp4",
+      "sha256": "a265f57c712dbb2692ccd3be22b9c88f618591c16b6d629572f2ec7b1432026f",
+      "bytes": 269292,
+      "manifestDuration": 4.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.958333",
+        "nb_frames": "119"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.958000",
+          "nb_frames": "118"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "greeting_1",
+      "url": "/media/repliker-fr/greeting_1_fr.mp4",
+      "sha256": "f5cdb256c751f11b3f8e8bda96d58869943e5cd92688fbc04ea990fbba2879d0",
+      "bytes": 274818,
+      "manifestDuration": 4.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.958333",
+        "nb_frames": "119"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.958000",
+          "nb_frames": "118"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "greeting_2",
+      "url": "/media/repliker-fr/greeting_2_fr.mp4",
+      "sha256": "5eb683a74f139b04fcb5e8fc03a21e13f9b01f368b4c623a3a470715b0d7dbfc",
+      "bytes": 278065,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "greeting_3",
+      "url": "/media/repliker-fr/greeting_3_fr.mp4",
+      "sha256": "87d65f41a349e5822a01d5d51b3ab3ff0eb06be70767503b0c75a050d11e5584",
+      "bytes": 296901,
+      "manifestDuration": 5.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.916667",
+        "nb_frames": "142"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.917000",
+          "nb_frames": "140"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "placebets_1",
+      "url": "/media/repliker-fr/placebets_1_fr.mp4",
+      "sha256": "18acb3606dbb1a316344f2f6c912f0a182244028f3f9400e9d52a54d19088f1d",
+      "bytes": 245117,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "placebets_2",
+      "url": "/media/repliker-fr/placebets_2_fr.mp4",
+      "sha256": "8ad18b5af5993c0a2fd794f3eea1e1d63acc58db07870066bfdd5c6f8c65ea6c",
+      "bytes": 255070,
+      "manifestDuration": 4.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.166667",
+        "nb_frames": "100"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.167000",
+          "nb_frames": "99"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "placebets_3",
+      "url": "/media/repliker-fr/placebets_3_fr.mp4",
+      "sha256": "0001b018ce79194a39c6c67d7397c1b91c5a2cf3f8949343d11071d251171256",
+      "bytes": 262136,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "goodluck_1",
+      "url": "/media/repliker-fr/goodluck_1_fr.mp4",
+      "sha256": "f0717168c160d62202f06c63dd50e5ff1e683fa7e2a0f5eae4b8661e1c3c5f11",
+      "bytes": 233019,
+      "manifestDuration": 3.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.125000",
+        "nb_frames": "75"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.125000",
+          "nb_frames": "75"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "goodluck_2",
+      "url": "/media/repliker-fr/goodluck_2_fr.mp4",
+      "sha256": "a9468ac7b02436ce097ef2608e72e906083e7f259a9a77441964d8a2b70df7d5",
+      "bytes": 232682,
+      "manifestDuration": 3.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.125000",
+        "nb_frames": "75"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.125000",
+          "nb_frames": "75"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "goodluck_3",
+      "url": "/media/repliker-fr/goodluck_3_fr.mp4",
+      "sha256": "827a2908016baf28808d47c9f4935b9953de5667b9b53aec1aec996dc1581de2",
+      "bytes": 248544,
+      "manifestDuration": 3.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.916667",
+        "nb_frames": "94"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.917000",
+          "nb_frames": "93"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "sidebet_1",
+      "url": "/media/repliker-fr/sidebet_1_fr.mp4",
+      "sha256": "f852e38aa441b9cdb521629d8b173f589d6d97d2fee88c53c797b3bda98124aa",
+      "bytes": 254827,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "sidebet_2",
+      "url": "/media/repliker-fr/sidebet_2_fr.mp4",
+      "sha256": "420c44ed68d363273e9a7436a3929cd95ecbbb20a8871d10501f64297f4b629f",
+      "bytes": 256853,
+      "manifestDuration": 4.08,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.083333",
+        "nb_frames": "98"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.083000",
+          "nb_frames": "97"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "sidebet_3",
+      "url": "/media/repliker-fr/sidebet_3_fr.mp4",
+      "sha256": "26b30da186ccc6459d828681b59871046a255bfbe254df7f4eb6e8f2684ab632",
+      "bytes": 259833,
+      "manifestDuration": 4.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.250000",
+          "nb_frames": "101"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "insurance_1",
+      "url": "/media/repliker-fr/insurance_1_fr.mp4",
+      "sha256": "8432599bd11d4ef4ad0d5a3040b7cd25dd1094c945d43bb366ab3c144e8d96ed",
+      "bytes": 242284,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "insurance_2",
+      "url": "/media/repliker-fr/insurance_2_fr.mp4",
+      "sha256": "a58729790cd206a350cd321b9fb48bb6b6ac1b529ecefd119bc6ac35476116c6",
+      "bytes": 260919,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "insurance_3",
+      "url": "/media/repliker-fr/insurance_3_fr.mp4",
+      "sha256": "264535d3f8c021b75316d0620111c7bf90a7bdf84d561537ac7a77d83b36abc4",
+      "bytes": 260843,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.333333",
+        "nb_frames": "104"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "double_1",
+      "url": "/media/repliker-fr/double_1_fr.mp4",
+      "sha256": "82bf0440ad90cb557b216bb0ccccb5c5a92192d2afd5755b151ea347de53fb1a",
+      "bytes": 246103,
+      "manifestDuration": 3.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.750000",
+        "nb_frames": "90"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.750000",
+          "nb_frames": "89"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "double_2",
+      "url": "/media/repliker-fr/double_2_fr.mp4",
+      "sha256": "90679ed6ca9772a333f38f311d2c7e14920e52a78de658b2d31b7e299d640483",
+      "bytes": 234064,
+      "manifestDuration": 3.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.208333",
+        "nb_frames": "77"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.208000",
+          "nb_frames": "77"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "double_3",
+      "url": "/media/repliker-fr/double_3_fr.mp4",
+      "sha256": "17a747a9bf6d71dfd3e6563990c66ab0df778fe4c1c99774f8d46d07020f08bd",
+      "bytes": 245641,
+      "manifestDuration": 3.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.750000",
+        "nb_frames": "90"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.750000",
+          "nb_frames": "89"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "bust_1",
+      "url": "/media/repliker-fr/bust_1_fr.mp4",
+      "sha256": "0e66cc0d7048491eed779a4e19a5b2d046ecb0f69aed2d669500734e291bfb84",
+      "bytes": 252791,
+      "manifestDuration": 4.08,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.083333",
+        "nb_frames": "98"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.083000",
+          "nb_frames": "97"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "bust_2",
+      "url": "/media/repliker-fr/bust_2_fr.mp4",
+      "sha256": "6860fa6c5b0439b29e175602ddc424219c409cbab703dad89a15b82b2bca2f81",
+      "bytes": 234674,
+      "manifestDuration": 3.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.208333",
+        "nb_frames": "77"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.208000",
+          "nb_frames": "77"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "bust_3",
+      "url": "/media/repliker-fr/bust_3_fr.mp4",
+      "sha256": "50256875d18ce8ed18757f0520cc298ecf90ec33920bc52ec2e0fec8248611fb",
+      "bytes": 257050,
+      "manifestDuration": 4.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.083333",
+        "nb_frames": "98"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.167000",
+          "nb_frames": "99"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "blackjack_1",
+      "url": "/media/repliker-fr/blackjack_1_fr.mp4",
+      "sha256": "77f7f6ece06cf3a5258b52dee23a515288bbb12023ae74b3ef87ac828613c184",
+      "bytes": 262701,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.333333",
+        "nb_frames": "104"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "blackjack_2",
+      "url": "/media/repliker-fr/blackjack_2_fr.mp4",
+      "sha256": "fe6092cfcba1ebc1524e2fa9e53776bd5485f6c958d76fb00dd4b11c0b6282f7",
+      "bytes": 251185,
+      "manifestDuration": 3.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.833333",
+        "nb_frames": "92"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.833000",
+          "nb_frames": "91"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "blackjack_3",
+      "url": "/media/repliker-fr/blackjack_3_fr.mp4",
+      "sha256": "3f4b70c21c1d14f31a8e6f0229049efd444b0434446d171a80ecb9c87800a44e",
+      "bytes": 255999,
+      "manifestDuration": 4.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.250000",
+          "nb_frames": "101"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerblackjack_1",
+      "url": "/media/repliker-fr/dealerblackjack_1_fr.mp4",
+      "sha256": "9cd6a7f87e9db64d4513996c9b772adab6c942c1854772a2279b8f477bfb1ec0",
+      "bytes": 250130,
+      "manifestDuration": 3.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.833333",
+        "nb_frames": "92"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.833000",
+          "nb_frames": "91"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerblackjack_2",
+      "url": "/media/repliker-fr/dealerblackjack_2_fr.mp4",
+      "sha256": "db9219f871a0e531646eeedc2aa034ad16cfd6c9d1e0b3c3a6b2deca5ffc9a79",
+      "bytes": 246163,
+      "manifestDuration": 3.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.750000",
+        "nb_frames": "90"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.750000",
+          "nb_frames": "89"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerblackjack_3",
+      "url": "/media/repliker-fr/dealerblackjack_3_fr.mp4",
+      "sha256": "adb93a6253ef0a11a5b4273d9fe6b2a67cd4244dfa7bf22315a08078b293810f",
+      "bytes": 253458,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerbust_1",
+      "url": "/media/repliker-fr/dealerbust_1_fr.mp4",
+      "sha256": "f38c586c2464b8370bb5ebfc550adce233f8dbddf55c055554f1924381339ab7",
+      "bytes": 247677,
+      "manifestDuration": 3.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.750000",
+        "nb_frames": "90"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.750000",
+          "nb_frames": "89"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerbust_2",
+      "url": "/media/repliker-fr/dealerbust_2_fr.mp4",
+      "sha256": "4f6518ba15e87bf7a64b69d0a2011b5784c278eaeb6a524c1110b65254242f8c",
+      "bytes": 271350,
+      "manifestDuration": 4.88,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.875000",
+        "nb_frames": "117"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.875000",
+          "nb_frames": "116"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "dealerbust_3",
+      "url": "/media/repliker-fr/dealerbust_3_fr.mp4",
+      "sha256": "f6f8631163beeb8ccb980528657d20a13d389b27d891dc2498c9820a712cc1f5",
+      "bytes": 245063,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "win_1",
+      "url": "/media/repliker-fr/win_1_fr.mp4",
+      "sha256": "51a7ea5718f8656dd14592f1a7e1e81e64c56c7fcb7a12b010b617707cc2b6bd",
+      "bytes": 224124,
+      "manifestDuration": 2.79,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "2.791667",
+        "nb_frames": "67"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "2.792000",
+          "nb_frames": "67"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "win_2",
+      "url": "/media/repliker-fr/win_2_fr.mp4",
+      "sha256": "5b7f41059ac34d38c220a9b424e506061912214f5d0f25376da075703b672508",
+      "bytes": 241276,
+      "manifestDuration": 3.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.458333",
+        "nb_frames": "83"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.458000",
+          "nb_frames": "83"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "win_3",
+      "url": "/media/repliker-fr/win_3_fr.mp4",
+      "sha256": "7c82447616089d9493e06f4ceb68a380a2fd8bc33be6ef4dc86e9b1bac2ee93d",
+      "bytes": 240579,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "push_1",
+      "url": "/media/repliker-fr/push_1_fr.mp4",
+      "sha256": "fad15259f57b795a7ea5385743e83ad407983413304b40433467c46bc3e5f2cf",
+      "bytes": 259058,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.333333",
+        "nb_frames": "104"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "push_2",
+      "url": "/media/repliker-fr/push_2_fr.mp4",
+      "sha256": "fbe87513341bfb86fe2d2e7bae113dd153d2f300df6d15ff13f1b25b81050a68",
+      "bytes": 257992,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "push_3",
+      "url": "/media/repliker-fr/push_3_fr.mp4",
+      "sha256": "41f4043983770ccff90b8fdf315410f95486d74f6775927d3ae5a222094fa984",
+      "bytes": 238890,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "lose_1",
+      "url": "/media/repliker-fr/lose_1_fr.mp4",
+      "sha256": "474da214cf967292382072a324ff8f05ad7bf5364acd4d78ee13ee56ec6086f5",
+      "bytes": 243368,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "lose_2",
+      "url": "/media/repliker-fr/lose_2_fr.mp4",
+      "sha256": "68b16b6a9b8863f2e6ac778f79afa134609c6bba4cadca77ff37e4ce60a8567f",
+      "bytes": 249565,
+      "manifestDuration": 3.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.833333",
+        "nb_frames": "92"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.833000",
+          "nb_frames": "91"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "lose_3",
+      "url": "/media/repliker-fr/lose_3_fr.mp4",
+      "sha256": "252daf74a1afb3e66d8a9601e158af71d71575f64b0c797e364069326f0d2af9",
+      "bytes": 245532,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "peek_1",
+      "url": "/media/repliker-fr/peek_1_fr.mp4",
+      "sha256": "9b50c8b869beb9d5620358229cf408ddd75bb644b9b14e972162e27934e521ca",
+      "bytes": 241268,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "peek_2",
+      "url": "/media/repliker-fr/peek_2_fr.mp4",
+      "sha256": "02a9d8d47595311f56ee676210f3dcf243caa620dfd8bfc961776a34a5257905",
+      "bytes": 231749,
+      "manifestDuration": 3.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.125000",
+        "nb_frames": "75"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.125000",
+          "nb_frames": "75"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "peek_3",
+      "url": "/media/repliker-fr/peek_3_fr.mp4",
+      "sha256": "43c4687af0dc665bca8c366b52828fab4abe2f47d00d7dcab4e63b580a87692b",
+      "bytes": 246484,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "farewell_1",
+      "url": "/media/repliker-fr/farewell_1_fr.mp4",
+      "sha256": "7cfb1a356e22706aa54cf37b63efd919cc63e94278f24b1755a778dfec0bf650",
+      "bytes": 256585,
+      "manifestDuration": 4.08,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.083333",
+        "nb_frames": "98"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.083000",
+          "nb_frames": "97"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "farewell_2",
+      "url": "/media/repliker-fr/farewell_2_fr.mp4",
+      "sha256": "556e8ab1b46cc176a8979d5565de8a012819769f30f1255929285cd917e34372",
+      "bytes": 281157,
+      "manifestDuration": 5.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.208333",
+        "nb_frames": "125"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.208000",
+          "nb_frames": "124"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "farewell_3",
+      "url": "/media/repliker-fr/farewell_3_fr.mp4",
+      "sha256": "3a3f83189b45f98f4dffe42312379850aadfa0ee6e8a2f33388f20888d6aed66",
+      "bytes": 241519,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter1_1",
+      "url": "/media/repliker-fr/chatter1_1_fr.mp4",
+      "sha256": "dc60819d9f7343b47c3bba2e85c7b06f3c9bc3be8280ec6bd194b3933b4970e4",
+      "bytes": 242938,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter1_2",
+      "url": "/media/repliker-fr/chatter1_2_fr.mp4",
+      "sha256": "9265733ffc1741e31b072a589a511e7c2bce74e9f23514e6ca23d96220de9ed8",
+      "bytes": 276242,
+      "manifestDuration": 5.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.041667",
+        "nb_frames": "121"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.042000",
+          "nb_frames": "120"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter1_3",
+      "url": "/media/repliker-fr/chatter1_3_fr.mp4",
+      "sha256": "13729115a524aa5594f109823540cc3a177aac46b294bea5b038abffd0de1dbf",
+      "bytes": 265531,
+      "manifestDuration": 4.58,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.583333",
+        "nb_frames": "110"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.583000",
+          "nb_frames": "109"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter2_1",
+      "url": "/media/repliker-fr/chatter2_1_fr.mp4",
+      "sha256": "155ff9744039d29507bd87335137031965fd21fde58c68fe72db971b184229be",
+      "bytes": 240529,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter2_2",
+      "url": "/media/repliker-fr/chatter2_2_fr.mp4",
+      "sha256": "6bd2c65dac4fd1595e811682bf1ad2b12311b9981fb0beea2ef575a0c807773d",
+      "bytes": 233102,
+      "manifestDuration": 3.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.125000",
+        "nb_frames": "75"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.125000",
+          "nb_frames": "75"
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "id": "chatter2_3",
+      "url": "/media/repliker-fr/chatter2_3_fr.mp4",
+      "sha256": "27bc838323314e39b61cbd61df04b94cab62fa240cca5f0630ff24490a2bd96e",
+      "bytes": 238122,
+      "manifestDuration": 3.38,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.375000",
+        "nb_frames": "81"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.375000",
+          "nb_frames": "81"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "greeting_1",
+      "url": "/media/repliker-zh/greeting_1_zh.mp4",
+      "sha256": "b2c9cc25939f6aebf0de5f6dde09f436c27061dde8517eac6cd89032f84c7850",
+      "bytes": 284422,
+      "manifestDuration": 5.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.750000",
+        "nb_frames": "138"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.750000",
+          "nb_frames": "136"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "greeting_2",
+      "url": "/media/repliker-zh/greeting_2_zh.mp4",
+      "sha256": "73ec874e6ca4e9cb2450ed1d8fe332e94a6050948f02a065e677bb6bef702614",
+      "bytes": 286753,
+      "manifestDuration": 5.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.833333",
+        "nb_frames": "140"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.833000",
+          "nb_frames": "138"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "greeting_3",
+      "url": "/media/repliker-zh/greeting_3_zh.mp4",
+      "sha256": "d30f4b461c254e79b1ed4291af3966647da59e0d20fb992a64da13c29985e3a2",
+      "bytes": 302889,
+      "manifestDuration": 6.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.958333",
+        "nb_frames": "167"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.958000",
+          "nb_frames": "165"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "placebets_1",
+      "url": "/media/repliker-zh/placebets_1_zh.mp4",
+      "sha256": "4f9bbe6af383906e78f364993833eeaaffd81ec6979f983b8cd4e98ba62d6f0c",
+      "bytes": 256649,
+      "manifestDuration": 4.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.250000",
+          "nb_frames": "101"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "placebets_2",
+      "url": "/media/repliker-zh/placebets_2_zh.mp4",
+      "sha256": "eafe98f6704645dc72df8cf99e44a36a4a66e8e5bcaf814b1968a7581eaba184",
+      "bytes": 265283,
+      "manifestDuration": 5.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.041667",
+        "nb_frames": "121"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.042000",
+          "nb_frames": "120"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "placebets_3",
+      "url": "/media/repliker-zh/placebets_3_zh.mp4",
+      "sha256": "fee42f5cc2d17b14b8bfb33d47fd2c89d6634097401617cf6a49574d0c9e1820",
+      "bytes": 258053,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "goodluck_1",
+      "url": "/media/repliker-zh/goodluck_1_zh.mp4",
+      "sha256": "b05e1aa12fc73953df7994e8b775ddba3953f96a5980f019b8395f02aa882cf8",
+      "bytes": 237383,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "goodluck_2",
+      "url": "/media/repliker-zh/goodluck_2_zh.mp4",
+      "sha256": "aada08cbd1c5ced58691132da7c0c9702a80485121d0cbb2f59f2bfd51281e29",
+      "bytes": 236005,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "goodluck_3",
+      "url": "/media/repliker-zh/goodluck_3_zh.mp4",
+      "sha256": "58c269edbc6be9d3e0feb70d8f74c608f6cdaeb7daf245cffdb1e567e8d1cc71",
+      "bytes": 260087,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "sidebet_1",
+      "url": "/media/repliker-zh/sidebet_1_zh.mp4",
+      "sha256": "ae0293f307a8a44389e449aad59c53cdd90522799a485bb422c400a62a1cde2c",
+      "bytes": 238918,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "sidebet_2",
+      "url": "/media/repliker-zh/sidebet_2_zh.mp4",
+      "sha256": "92f24fa47a451900dfc0c827d7e765b5d5fb4f6e47711833bcc2761c0395d4e5",
+      "bytes": 251323,
+      "manifestDuration": 4.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.166667",
+        "nb_frames": "100"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.167000",
+          "nb_frames": "99"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "sidebet_3",
+      "url": "/media/repliker-zh/sidebet_3_zh.mp4",
+      "sha256": "8cce611e1387f0ad5a6df17861bfc5e94aa04a7c9fab330333c00a3592fb4c16",
+      "bytes": 249334,
+      "manifestDuration": 4.17,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.166667",
+        "nb_frames": "100"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.167000",
+          "nb_frames": "99"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "insurance_1",
+      "url": "/media/repliker-zh/insurance_1_zh.mp4",
+      "sha256": "ee05dcd97da0db6846f37482fcdd14d51c9f057c3bfbb12d7b7d89b0062ba30a",
+      "bytes": 254805,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "insurance_2",
+      "url": "/media/repliker-zh/insurance_2_zh.mp4",
+      "sha256": "d638aa9de102a79e7d4caabacd07b0b4ff1e1fa1ff1819d94f4ed36c22c28758",
+      "bytes": 273274,
+      "manifestDuration": 5.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.208333",
+        "nb_frames": "125"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.208000",
+          "nb_frames": "124"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "insurance_3",
+      "url": "/media/repliker-zh/insurance_3_zh.mp4",
+      "sha256": "7139b84275e7fbc02552410f3bf66948b33ddf0641b5375acffd9a1c332d0304",
+      "bytes": 274555,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "double_1",
+      "url": "/media/repliker-zh/double_1_zh.mp4",
+      "sha256": "a7ec9a7152619e87340209ca510f79595002328b241e5361d9469a11da89dfae",
+      "bytes": 241534,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "double_2",
+      "url": "/media/repliker-zh/double_2_zh.mp4",
+      "sha256": "ee77a4e0609450e2bca8e6200a4abc1b105e8cbd2329617c2819ca5857bb0829",
+      "bytes": 245596,
+      "manifestDuration": 3.92,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.916667",
+        "nb_frames": "94"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.917000",
+          "nb_frames": "93"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "double_3",
+      "url": "/media/repliker-zh/double_3_zh.mp4",
+      "sha256": "3cc01cef6de62b0ca22fee49a5dc0ec16ea0d714d2344a09b868ce59f2517c2c",
+      "bytes": 238135,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "bust_1",
+      "url": "/media/repliker-zh/bust_1_zh.mp4",
+      "sha256": "0dfcc274b1891754e0a034d1bc30d3254c65133c2a5e1436ccdcb6aa6e3b07c6",
+      "bytes": 268001,
+      "manifestDuration": 4.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.958333",
+        "nb_frames": "119"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.958000",
+          "nb_frames": "118"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "bust_2",
+      "url": "/media/repliker-zh/bust_2_zh.mp4",
+      "sha256": "34c02958007c048f4a3267d57b63ee1cef78f68f14ce68315b003eff7eb1873c",
+      "bytes": 240315,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "bust_3",
+      "url": "/media/repliker-zh/bust_3_zh.mp4",
+      "sha256": "902fc81d461ee186f971111766c934a23af5b816fbe9d0ea14598cadd0b27cef",
+      "bytes": 259519,
+      "manifestDuration": 4.5,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.500000",
+        "nb_frames": "108"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.500000",
+          "nb_frames": "107"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "blackjack_1",
+      "url": "/media/repliker-zh/blackjack_1_zh.mp4",
+      "sha256": "a52a7930a5baa47397e6e83682436a972191e96bcf818920f9eb559a840101b2",
+      "bytes": 255141,
+      "manifestDuration": 4.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.250000",
+          "nb_frames": "101"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "blackjack_2",
+      "url": "/media/repliker-zh/blackjack_2_zh.mp4",
+      "sha256": "f73769e07b3811682624112749ee4af28d22073ffe367a67a90068320575afd1",
+      "bytes": 257367,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "blackjack_3",
+      "url": "/media/repliker-zh/blackjack_3_zh.mp4",
+      "sha256": "c9dc77d9a4f58c154197045dcf1f0eba17a6c43cc3a6b2b9d9dc048dcd5a71c3",
+      "bytes": 260379,
+      "manifestDuration": 4.67,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.666667",
+        "nb_frames": "112"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.667000",
+          "nb_frames": "111"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerblackjack_1",
+      "url": "/media/repliker-zh/dealerblackjack_1_zh.mp4",
+      "sha256": "9de97a619029540492d77d40e152a42e3850237a556d2149d807a418a5a36b4b",
+      "bytes": 260016,
+      "manifestDuration": 4.58,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.583333",
+        "nb_frames": "110"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.583000",
+          "nb_frames": "109"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerblackjack_2",
+      "url": "/media/repliker-zh/dealerblackjack_2_zh.mp4",
+      "sha256": "0ed0a811313158a714974f5b61b83fd0ab95917ccf450087f9469ae5683c217d",
+      "bytes": 273850,
+      "manifestDuration": 5.38,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.375000",
+        "nb_frames": "129"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.375000",
+          "nb_frames": "127"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerblackjack_3",
+      "url": "/media/repliker-zh/dealerblackjack_3_zh.mp4",
+      "sha256": "ce5bb9196a324c950dc3aaff1553f3c5f57cfd66ae98379144498a34c446a795",
+      "bytes": 262486,
+      "manifestDuration": 4.88,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.875000",
+        "nb_frames": "117"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.875000",
+          "nb_frames": "116"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerbust_1",
+      "url": "/media/repliker-zh/dealerbust_1_zh.mp4",
+      "sha256": "b15c95fb480b1064769d1fbc7dc5c415643e7d400ddef1264e97613eaa85101c",
+      "bytes": 257121,
+      "manifestDuration": 4.33,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.333000",
+          "nb_frames": "103"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerbust_2",
+      "url": "/media/repliker-zh/dealerbust_2_zh.mp4",
+      "sha256": "14d740b5ac3e09837005c5e38930bdc405c3dd6769a1794c20f134d00a57abfc",
+      "bytes": 271184,
+      "manifestDuration": 5.12,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.125000",
+        "nb_frames": "123"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.125000",
+          "nb_frames": "122"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "dealerbust_3",
+      "url": "/media/repliker-zh/dealerbust_3_zh.mp4",
+      "sha256": "8986d065ea68e9c7e99b95bad5e9968b92041cfbbef911a92465f2ab9b4f7686",
+      "bytes": 250268,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "win_1",
+      "url": "/media/repliker-zh/win_1_zh.mp4",
+      "sha256": "60e538ff89aec248bcc38e9a8912261781cacdfdf4b95d4fbc63dadb0999bd89",
+      "bytes": 234708,
+      "manifestDuration": 3.54,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.541667",
+        "nb_frames": "85"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.542000",
+          "nb_frames": "85"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "win_2",
+      "url": "/media/repliker-zh/win_2_zh.mp4",
+      "sha256": "75804382af237c66591dfa62eb1f78648f8131a8a034994ed7f1f501ecf96d99",
+      "bytes": 235273,
+      "manifestDuration": 3.71,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.708333",
+        "nb_frames": "89"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.708000",
+          "nb_frames": "88"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "win_3",
+      "url": "/media/repliker-zh/win_3_zh.mp4",
+      "sha256": "8b468ea9498cf42039dbc02debbe72bea9487f317511dcabfa53ef485c5101cd",
+      "bytes": 230330,
+      "manifestDuration": 3.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.041667",
+        "nb_frames": "73"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.042000",
+          "nb_frames": "73"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "push_1",
+      "url": "/media/repliker-zh/push_1_zh.mp4",
+      "sha256": "b0563987cd5ec12fb0844500cb7cd05a2e883f4724ca0682cae8354753cb989a",
+      "bytes": 268756,
+      "manifestDuration": 5.04,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.041667",
+        "nb_frames": "121"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.042000",
+          "nb_frames": "120"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "push_2",
+      "url": "/media/repliker-zh/push_2_zh.mp4",
+      "sha256": "a36426f8943efee59eb66e46634a8b81497a35394b18a4c2fd23aa0064d2657e",
+      "bytes": 250901,
+      "manifestDuration": 4.42,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.416667",
+        "nb_frames": "106"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.417000",
+          "nb_frames": "105"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "push_3",
+      "url": "/media/repliker-zh/push_3_zh.mp4",
+      "sha256": "0bb1be49c4b6f2b819d262cd9346707c7ca73584892eb81888f7face6411ded6",
+      "bytes": 231505,
+      "manifestDuration": 3.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.458333",
+        "nb_frames": "83"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.458000",
+          "nb_frames": "83"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "lose_1",
+      "url": "/media/repliker-zh/lose_1_zh.mp4",
+      "sha256": "cb51acc8021965ca3a38b9d55dcc09ec111825ae211ec4ede4d6561c4569e555",
+      "bytes": 245471,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "lose_2",
+      "url": "/media/repliker-zh/lose_2_zh.mp4",
+      "sha256": "3962440acc29ece58214859f9b81f73ec30491a4be66c02db83c25d702707eda",
+      "bytes": 247508,
+      "manifestDuration": 4.08,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.083333",
+        "nb_frames": "98"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.083000",
+          "nb_frames": "97"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "lose_3",
+      "url": "/media/repliker-zh/lose_3_zh.mp4",
+      "sha256": "3096cda892d1fc6f3c6a0e022207d7c20beeca8b054eceedf2b20adf0c592586",
+      "bytes": 249050,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "peek_1",
+      "url": "/media/repliker-zh/peek_1_zh.mp4",
+      "sha256": "ba1bc9283a87dd3bd3254cd2c17a0a68d13fda715e9b5f6619452db8f45a55b7",
+      "bytes": 252020,
+      "manifestDuration": 4.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.000000",
+        "nb_frames": "96"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.000000",
+          "nb_frames": "95"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "peek_2",
+      "url": "/media/repliker-zh/peek_2_zh.mp4",
+      "sha256": "26c20f0fd1adb5a44e6ba7af6749ca426fe0ca4c6c695e4973c5ca24ac56d997",
+      "bytes": 240825,
+      "manifestDuration": 3.29,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.291667",
+        "nb_frames": "79"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.292000",
+          "nb_frames": "79"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "peek_3",
+      "url": "/media/repliker-zh/peek_3_zh.mp4",
+      "sha256": "16938b8850c9d272238945a9b177de8974bace932dbe64d32404d95abb7d896d",
+      "bytes": 242971,
+      "manifestDuration": 3.83,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.833333",
+        "nb_frames": "92"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.833000",
+          "nb_frames": "91"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "farewell_1",
+      "url": "/media/repliker-zh/farewell_1_zh.mp4",
+      "sha256": "b820a6e0a3123dfb0b202236c85a918fc9b24623cc278f13f9f34ea0280166b0",
+      "bytes": 252250,
+      "manifestDuration": 4.25,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.250000",
+        "nb_frames": "102"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.250000",
+          "nb_frames": "101"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "farewell_2",
+      "url": "/media/repliker-zh/farewell_2_zh.mp4",
+      "sha256": "f093ccd9f11413b1f0b67c6cdda89f246619509f0df54abe4db709369d924420",
+      "bytes": 277135,
+      "manifestDuration": 5.38,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.375000",
+        "nb_frames": "129"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.375000",
+          "nb_frames": "127"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "farewell_3",
+      "url": "/media/repliker-zh/farewell_3_zh.mp4",
+      "sha256": "bae6b9a2f15117453b470512679bb917fa74e290de1fbce40a2d568f6e03d5b6",
+      "bytes": 236637,
+      "manifestDuration": 3.38,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.375000",
+        "nb_frames": "81"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.375000",
+          "nb_frames": "81"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter1_1",
+      "url": "/media/repliker-zh/chatter1_1_zh.mp4",
+      "sha256": "ae9e5bee1016a479c9c973cc5edefbb302dc6578696221920eab20711c8b3661",
+      "bytes": 262688,
+      "manifestDuration": 4.75,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "4.750000",
+        "nb_frames": "114"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "4.750000",
+          "nb_frames": "113"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter1_2",
+      "url": "/media/repliker-zh/chatter1_2_zh.mp4",
+      "sha256": "b4992d0b18dd36d3f4a37cc485cf35456ce2ffb644ef16b582cb96fccd9276d7",
+      "bytes": 291509,
+      "manifestDuration": 6.0,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "6.000000",
+        "nb_frames": "144"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "6.000000",
+          "nb_frames": "142"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter1_3",
+      "url": "/media/repliker-zh/chatter1_3_zh.mp4",
+      "sha256": "26f7894b08b1c2606eae765961b1b1dfab9c11f19410fc86abdcaa612091addb",
+      "bytes": 283253,
+      "manifestDuration": 5.46,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "5.458333",
+        "nb_frames": "131"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "5.458000",
+          "nb_frames": "129"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter2_1",
+      "url": "/media/repliker-zh/chatter2_1_zh.mp4",
+      "sha256": "750500cb50587b5330669fdbce183539dc2997b4401ee05db0b100e023450640",
+      "bytes": 229220,
+      "manifestDuration": 2.96,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "2.958333",
+        "nb_frames": "71"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "2.958000",
+          "nb_frames": "71"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter2_2",
+      "url": "/media/repliker-zh/chatter2_2_zh.mp4",
+      "sha256": "cadde6caf833061ab22b428dc91ee615ba36fdfb9758cc1dc81ba6b6a144972b",
+      "bytes": 234502,
+      "manifestDuration": 3.21,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.208333",
+        "nb_frames": "77"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.208000",
+          "nb_frames": "77"
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "id": "chatter2_3",
+      "url": "/media/repliker-zh/chatter2_3_zh.mp4",
+      "sha256": "34b34f60edd03d6654c0ef798ab609cfeeebd986c241ff5856a17ee3c7f3b656",
+      "bytes": 238231,
+      "manifestDuration": 3.62,
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1",
+        "duration": "3.625000",
+        "nb_frames": "87"
+      },
+      "audio": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "r_frame_rate": "0/0",
+          "duration": "3.625000",
+          "nb_frames": "86"
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "videoEndsBeforeAudio": [
+    {
+      "language": "es",
+      "id": "bust_1",
+      "videoDuration": "6.083333",
+      "audioDuration": "6.167000"
+    },
+    {
+      "language": "es",
+      "id": "lose_1",
+      "videoDuration": "4.250000",
+      "audioDuration": "4.333000"
+    },
+    {
+      "language": "fr",
+      "id": "bust_3",
+      "videoDuration": "4.083333",
+      "audioDuration": "4.167000"
+    },
+    {
+      "language": "zh",
+      "id": "blackjack_2",
+      "videoDuration": "4.250000",
+      "audioDuration": "4.333000"
+    },
+    {
+      "language": "zh",
+      "id": "dealerbust_1",
+      "videoDuration": "4.250000",
+      "audioDuration": "4.333000"
+    }
+  ],
+  "note": "Five sources hold their final video frame for the last ~83ms of audio. The source manifest correctly includes that audio tail. No clips or durations were changed."
+}

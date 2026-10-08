@@ -1,0 +1,20 @@
+# Användartjänst: publik länk via Cloudflare quick tunnel (när servern saknar fast adress).
+# Skriver adressen till ~/astrid-lipsync-demo-2/public-url.txt — servern läser den därifrån och ger den
+# till GPU-arbetaren (sessionsläget). Behövs INTE om SESSION_URL är satt (fast adress via reverse proxy).
+#
+# Wants=, inte Requires=: en omstart av demot (deploy) ska inte starta om tunneln — då byter länken namn.
+
+[Unit]
+Description=Astrid demo 2.0 — publik länk (cloudflared quick tunnel)
+After=network-online.target astrid-demo2.service
+Wants=astrid-demo2.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/astrid-lipsync-demo-2
+ExecStart=/usr/bin/node server/share.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

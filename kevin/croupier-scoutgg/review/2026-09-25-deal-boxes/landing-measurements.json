@@ -1,0 +1,189 @@
+{
+  "sourceFrame": [
+    1080,
+    1920
+  ],
+  "cardSize": [
+    63,
+    85
+  ],
+  "method": "Final decoded frame; connected white component containing the expected card centre. This checks landing alignment, not hand anatomy or video quality.",
+  "deals": [
+    {
+      "id": "deal_pos1",
+      "source": "/media/deal/pos1.mp4",
+      "expectedCentre": [
+        110,
+        1025
+      ],
+      "visibleWhiteCardBounds": [
+        78,
+        982,
+        140,
+        1066
+      ],
+      "measuredCentreErrorPx": [
+        -1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos2",
+      "source": "/media/deal/pos2.mp4",
+      "expectedCentre": [
+        253,
+        1075
+      ],
+      "visibleWhiteCardBounds": [
+        223,
+        1032,
+        285,
+        1116
+      ],
+      "measuredCentreErrorPx": [
+        1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos3",
+      "source": "/media/deal/pos3.mp4",
+      "expectedCentre": [
+        396,
+        1105
+      ],
+      "visibleWhiteCardBounds": [
+        364,
+        1062,
+        426,
+        1146
+      ],
+      "measuredCentreErrorPx": [
+        -1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos4",
+      "source": "/media/deal/pos4.mp4",
+      "expectedCentre": [
+        540,
+        1115
+      ],
+      "visibleWhiteCardBounds": [
+        508,
+        1072,
+        570,
+        1156
+      ],
+      "measuredCentreErrorPx": [
+        -1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos5",
+      "source": "/media/deal/pos5.mp4",
+      "expectedCentre": [
+        684,
+        1105
+      ],
+      "visibleWhiteCardBounds": [
+        652,
+        1062,
+        714,
+        1146
+      ],
+      "measuredCentreErrorPx": [
+        -1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos6",
+      "source": "/media/deal/pos6.mp4",
+      "expectedCentre": [
+        827,
+        1075
+      ],
+      "visibleWhiteCardBounds": [
+        797,
+        1032,
+        859,
+        1116
+      ],
+      "measuredCentreErrorPx": [
+        1.0,
+        -1.0
+      ],
+      "measuredSizePx": [
+        63,
+        85
+      ]
+    },
+    {
+      "id": "deal_pos7",
+      "source": "/media/deal/pos7.mp4",
+      "expectedCentre": [
+        970,
+        1025
+      ],
+      "visibleWhiteCardBounds": [
+        939,
+        982,
+        1000,
+        1066
+      ],
+      "measuredCentreErrorPx": [
+        -0.5,
+        -1.0
+      ],
+      "measuredSizePx": [
+        62,
+        85
+      ]
+    },
+    {
+      "id": "deal_posdealer",
+      "source": "/media/deal/posdealer.mp4",
+      "expectedCentre": [
+        540,
+        895
+      ],
+      "visibleWhiteCardBounds": [
+        507,
+        850,
+        570,
+        936
+      ],
+      "measuredCentreErrorPx": [
+        -1.5,
+        -2.0
+      ],
+      "measuredSizePx": [
+        64,
+        87
+      ]
+    }
+  ]
+}

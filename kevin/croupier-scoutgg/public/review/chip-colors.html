@@ -1,0 +1,15 @@
+<!doctype html><html lang="sv"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marker · färgkontroll</title>
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/scout-ui.css">
+<style>html,body{height:auto;overflow:auto}body{margin:0;padding:32px;background:#151515;color:#f2f1ed}h1{font-size:24px}p{color:#aaa69e}.samples{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:20px;max-width:1050px}.sample{background:#302a2a;padding:20px;text-align:center;border-radius:16px}.sample .chip-picker{display:flex;justify-content:center;height:60px}.sample button{border-radius:50%}.sample svg{width:100%;height:230px}.labels{font-size:12px;color:#b5aa96} @media(max-width:700px){.samples{grid-template-columns:repeat(2,minmax(140px,1fr))}body{padding:14px}.sample{padding:10px}}</style>
+<h1>Samma marker på väljaren och duken</h1><p>Varje valör visas i väljaren, som huvudinsats och i båda sidospelen. Högen innehåller tre marker.</p><div class="samples"></div>
+<script type="module">
+import{createTableBoxes}from'/table-boxes.js';
+for(const value of [5,10,25,50,100,500]){
+ const sample=document.createElement('section');sample.className='sample';sample.dataset.value=value;
+ sample.innerHTML=`<div class="chip-picker"><button data-chip="${value}" aria-label="Marker ${value} dollar">${value}</button></div><div class="labels">Väljare · PP / 21+3 · huvudinsats</div><svg viewBox="-105 -70 210 200" aria-label="${value} på duken"></svg>`;
+ document.querySelector('.samples').append(sample);
+ const boxes=createTableBoxes(sample.querySelector('svg'),{deal:[{id:'deal_pos1',kort:{cx:0,cy:-108}}]},()=>{});
+ for(let i=1;i<=3;i++)boxes.setBets([{main:value*i,pp:value*i,tp:value*i}]);
+ boxes.setEnabled(false);
+}
+</script></html>

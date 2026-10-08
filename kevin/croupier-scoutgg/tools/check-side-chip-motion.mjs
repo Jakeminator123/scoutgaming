@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';import {DatabaseSync} from 'node:sqlite';import assert from 'node:assert/strict';import {writeFileSync} from 'node:fs';
+// Only the disposable local QA database. Never set a shoe on a deployed server.
+const file='/tmp/astrid-win-feedback-20260926.sqlite',room='win-check-'+Date.now(),base='http://127.0.0.1:8634',dest='review/2026-09-26-side-chip-motion';
+function shoe(cards){const db=new DatabaseSync(file),r=JSON.parse(db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(room).state);r.game.shoe.cards.splice(-cards.length,cards.length,...cards.reverse());db.prepare('UPDATE shared_rooms SET state=? WHERE id=?').run(JSON.stringify(r),room);db.close();}
+const c=(r,s)=>({r,s});const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+ const contexts=await Promise.all([browser.newContext({viewport:{width:390,height:844}}),browser.newContext({viewport:{width:1280,height:900}})]);const [winner,loser]=await Promise.all(contexts.map(c=>c.newPage()));const errors=[];
+ for(const p of [winner,loser]){p.on('pageerror',e=>errors.push(e.message));await p.addInitScript(()=>{window.winEvents=[];document.addEventListener('DOMContentLoaded',()=>new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1&&n.matches('.win-toast'))window.winEvents.push(n.textContent);}).observe(document.body,{childList:true,subtree:true}));});}
+ for(const [p,seat,name] of [[winner,4,'Winner'],[loser,5,'Other']]){await p.goto(base+'/?session='+room);await p.getByRole('button',{name:`Select box ${seat}`,exact:true}).click();await p.locator('#enter').click();await p.locator('#playerName').fill(name);await p.locator('#enter').click();await p.waitForFunction(()=>document.querySelector('#gate').classList.contains('off'));}
+ shoe([c('10','♥'),c('8','♠'),c('8','♠'),c('7','♣'),c('8','♠'),c('10','♦'),c('10','♥')]);
+ for(const [p,seat] of [[winner,4],[loser,5]])for(const name of [`Bet on box ${seat}`,`Perfect Pairs on box ${seat}`,`21+3 on box ${seat}`])await p.getByRole('button',{name,exact:true}).click();
+ await winner.locator('#dealNow').click();await loser.locator('#dealNow').click();assert.equal(await winner.locator('.win-toast').count(),0);assert.equal(await winner.locator('[data-deal-id="deal_pos4"] [data-field="pp"] .side-chip').getAttribute('data-amount'),'5');
+ await winner.waitForFunction(()=>document.querySelectorAll('.win-toast').length===2,{},{timeout:60000});
+ const side='[data-deal-id="deal_pos4"]';
+ assert.equal(await winner.locator(side+' [data-field="pp"] .side-chip').getAttribute('data-chip-count'),'26');
+ assert.equal(await winner.locator(side+' [data-field="tp"] .side-chip').getAttribute('data-chip-count'),'101');
+ assert.equal(await winner.locator(side+' [data-field="tp"] .chip-stack-layer').count(),12);
+ assert.ok(await winner.locator(side+' .chip-profit-drop').count()>0);
+ await winner.screenshot({path:dest+'/mobile-building.png',fullPage:true});
+ await loser.waitForFunction(()=>[...document.querySelectorAll('[data-deal-id="deal_pos5"] .side-loss .side-chip')].filter(n=>getComputedStyle(n).opacity==='0').length===2);
+ assert.equal(await loser.locator('[data-deal-id="deal_pos5"] .wager-chip').getAttribute('visibility'),'visible');
+ await loser.screenshot({path:dest+'/lost-chips.png',fullPage:true});
+ assert.equal(await loser.locator('.win-toast').count(),0);assert.equal(await winner.locator('[data-deal-id="deal_pos4"] [data-field="pp"] .side-chip').getAttribute('data-amount'),'130');assert.equal(await winner.locator('[data-deal-id="deal_pos4"] [data-field="tp"] .side-chip').getAttribute('data-amount'),'505');assert.match(await winner.locator('#winToasts').textContent(),/125\.00/);assert.match(await winner.locator('#winToasts').textContent(),/500\.00/);assert.equal(await winner.locator('#demoBalance').textContent(),'$985.00');await winner.screenshot({path:dest+'/mobile-side-win.png',fullPage:true,animations:'disabled'});await winner.waitForTimeout(5000);await winner.screenshot({path:dest+'/mobile-piles.png',fullPage:true,animations:'disabled'});await winner.setViewportSize({width:1280,height:900});await winner.screenshot({path:dest+'/desktop-piles.png',fullPage:true,animations:'disabled'});
+ const end=Date.now()+90000;while(Date.now()<end){if(await winner.locator('#nextRound').isVisible())break;for(const p of [winner,loser]){const el=p.locator('[data-action="stand"]');if(await el.isVisible()&&await el.isEnabled())await el.click();}await winner.waitForTimeout(300);}
+ assert.ok(await winner.locator('#nextRound').isVisible());assert.equal(await winner.locator('#demoBalance').textContent(),'$1,620.00');assert.deepEqual(await winner.evaluate(()=>window.winEvents),['PERFECT PAIRS · BOX 4+$125.00','21+3 · BOX 4+$500.00']);assert.deepEqual(await loser.evaluate(()=>window.winEvents),[]);
+ await winner.locator('#nextRound').click();await winner.waitForFunction(()=>document.querySelector('#gameControls').dataset.phase==='bets');
+ assert.equal(await winner.locator('.side-win').count(),0);await loser.waitForFunction(()=>document.querySelectorAll('.side-loss').length===0);
+ shoe([c('A','♠'),c('10','♣'),c('K','♥'),c('Q','♦')]);await winner.getByRole('button',{name:'Bet on box 4',exact:true}).click();await winner.locator('#dealNow').click();
+ await winner.waitForFunction(()=>window.winEvents.some(t=>t==='BLACKJACK+$7.50'),{},{timeout:60000});assert.deepEqual(await loser.evaluate(()=>window.winEvents),[]);assert.equal(await winner.locator('#demoBalance').textContent(),'$1,627.50');await winner.screenshot({path:dest+'/desktop-blackjack.png',fullPage:true,animations:'disabled'});
+ await winner.reload();await winner.waitForTimeout(1200);assert.deepEqual(await winner.evaluate(()=>window.winEvents),[]);assert.deepEqual(errors,[]);writeFileSync(dest+'/browser.json',JSON.stringify({losingChipsFade:true,visibleWinningLayers:12,ppChipCount:26,tpChipCount:101,nextRoundClears:true,ownerOnly:true,awardsAtReveal:true,pp:{stake:5,pile:130,profit:125},tp:{stake:5,pile:505,profit:500},beforeSettlement:985,afterSettlement:1620,noLossToast:true,blackjackProfit:7.5,blackjackBalance:1627.5,noRefreshReplay:true,errors},null,2));console.log('Two-player side-win reveal, profit piles, no losing-player alerts, settlement and refresh verified');
+}finally{await browser.close();}

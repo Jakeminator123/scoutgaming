@@ -1,0 +1,265 @@
+{
+  "base": "http://127.0.0.1:8634",
+  "network": {
+    "downloadMbps": 4,
+    "rttMs": 120,
+    "cpuSlowdown": 4
+  },
+  "firstVideoMs": 10533,
+  "preparedMs": 43944,
+  "roundComplete": true,
+  "visibleRebufferEvents": [],
+  "errors": [],
+  "requests": {
+    "idle/still.mp4": 1,
+    "deal/pos4.mp4": 1,
+    "deal/posdealer.mp4": 1,
+    "repliker/goodluck_1.mp4": 1,
+    "repliker/bust_1.mp4": 1,
+    "repliker/double_1.mp4": 1,
+    "repliker/sidebet_2.mp4": 1,
+    "repliker/insurance_1.mp4": 1,
+    "repliker/dealerblackjack_1.mp4": 1,
+    "repliker/blackjack_1.mp4": 1,
+    "repliker/dealerbust_1.mp4": 1,
+    "repliker/win_1.mp4": 1,
+    "repliker/push_1.mp4": 1,
+    "repliker/lose_1.mp4": 1,
+    "idle/blink.mp4": 1
+  },
+  "stats": {
+    "events": [
+      {
+        "type": "playing",
+        "at": 10422.100000023842,
+        "currentTime": 0.001101,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 13520.5,
+        "currentTime": 0.000135,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 16602.900000095367,
+        "currentTime": 0.00044,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 19684.800000071526,
+        "currentTime": 0.000744,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 22765.800000071526,
+        "currentTime": 0.000134,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 25849.100000023842,
+        "currentTime": 0.000123,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 28932.600000023842,
+        "currentTime": 0.000781,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 32017.600000023842,
+        "currentTime": 0.00075,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 35094.10000002384,
+        "currentTime": 0.000453,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 38171.800000071526,
+        "currentTime": 0.000089,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 41249.10000002384,
+        "currentTime": 0.000531,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 44329.800000071526,
+        "currentTime": 0.000508,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 47408.5,
+        "currentTime": 0.000081,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 50485.5,
+        "currentTime": 0.0005,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 53562.10000002384,
+        "currentTime": 0.000084,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 54653.300000071526,
+        "currentTime": 0,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 54657.10000002384,
+        "currentTime": 0.194605,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 56316.90000009537,
+        "currentTime": 0.056,
+        "url": "/media/repliker/goodluck_1.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 56325.300000071526,
+        "currentTime": 0.056,
+        "url": "/media/repliker/goodluck_1.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 59775.10000002384,
+        "currentTime": 0.0565,
+        "url": "/media/deal/pos4.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 59781.300000071526,
+        "currentTime": 0.056885,
+        "url": "/media/deal/pos4.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 63174.60000002384,
+        "currentTime": 0.0855,
+        "url": "/media/deal/posdealer.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 63182.90000009537,
+        "currentTime": 0.086107,
+        "url": "/media/deal/posdealer.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 65927.10000002384,
+        "currentTime": 0.0545,
+        "url": "/media/deal/pos4.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 65933.30000007153,
+        "currentTime": 0.054883,
+        "url": "/media/deal/pos4.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 69322.10000002384,
+        "currentTime": 0.0735,
+        "url": "/media/deal/posdealer.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 69332.60000002384,
+        "currentTime": 0.075847,
+        "url": "/media/deal/posdealer.mp4",
+        "shown": false
+      },
+      {
+        "type": "waiting",
+        "at": 72119.5,
+        "currentTime": 0.085,
+        "url": "/media/repliker/blackjack_1.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 72129.20000004768,
+        "currentTime": 0.085,
+        "url": "/media/repliker/blackjack_1.mp4",
+        "shown": false
+      },
+      {
+        "type": "playing",
+        "at": 76962.10000002384,
+        "currentTime": 0.000095,
+        "url": "/media/idle/still.mp4",
+        "shown": false
+      }
+    ],
+    "frames": 1553,
+    "maxFrameGap": 466.64800000000105,
+    "lastFrame": 77241.262,
+    "video": [
+      {
+        "width": 1080,
+        "height": 1920,
+        "quality": {
+          "dropped": 0,
+          "total": 112
+        }
+      },
+      {
+        "width": 1080,
+        "height": 1920,
+        "quality": {
+          "dropped": 0,
+          "total": 11
+        }
+      }
+    ]
+  }
+}

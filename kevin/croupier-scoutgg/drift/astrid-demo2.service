@@ -1,0 +1,22 @@
+# Användartjänst (systemd --user) för Astrid demo 2.0 — kräver ingen sudo.
+# Installeras av drift/installera.sh till ~/.config/systemd/user/.
+#
+#   systemctl --user status astrid-demo2        läge
+#   journalctl --user -u astrid-demo2 -f        logg, live
+#   systemctl --user restart astrid-demo2       efter ny kod (drift/deploy.sh gör det)
+
+[Unit]
+Description=Astrid lipsync-demo 2.0 (chatt -> Gemini -> Cartesia -> MuseTalk på RunPod Serverless)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/astrid-lipsync-demo-2
+ExecStart=/usr/bin/node server/server.mjs
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+# Nycklar, PORT och SESSION_URL läses av servern ur .env i arbetskatalogen.
+
+[Install]
+WantedBy=default.target

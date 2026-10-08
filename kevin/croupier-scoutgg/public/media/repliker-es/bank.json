@@ -1,0 +1,359 @@
+{
+ "greeting_1_es": {
+  "event": "greeting",
+  "text": "Buenas noches y bienvenido a la mesa. Soy Astrid, siéntese donde prefiera.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Good evening, and welcome to the table. I'm Astrid, take any seat you like."
+ },
+ "greeting_2_es": {
+  "event": "greeting",
+  "text": "Adelante, bienvenido. Tome asiento: las cartas están recién barajadas y la mesa es toda suya.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Welcome in. Pull up a chair, the cards are fresh and the table is yours."
+ },
+ "greeting_3_es": {
+  "event": "greeting",
+  "text": "Una cara nueva en la mesa. Bienvenido, soy Astrid y esta noche seré su crupier.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "A new face at the table. Welcome, I'm Astrid, and I'll be dealing for you tonight."
+ },
+ "placebets_1_es": {
+  "event": "placebets",
+  "text": "Se abren las apuestas. Coloquen sus fichas cuando quieran.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Bets are open. Place your chips whenever you're ready."
+ },
+ "placebets_2_es": {
+  "event": "placebets",
+  "text": "Nueva ronda, cartas nuevas. La casilla de apuestas es toda suya.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "New round, fresh cards. The betting circle is all yours."
+ },
+ "placebets_3_es": {
+  "event": "placebets",
+  "text": "La mesa está abierta. Tómense su tiempo y hagan sus apuestas.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "The table is open. Take your time, and place your bets."
+ },
+ "goodluck_1_es": {
+  "event": "goodluck",
+  "text": "No va más. Allá van las cartas.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "No more bets. Here come the cards."
+ },
+ "goodluck_2_es": {
+  "event": "goodluck",
+  "text": "Apuestas cerradas. Mucha suerte a todos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Bets are closed. Good luck, everyone."
+ },
+ "goodluck_3_es": {
+  "event": "goodluck",
+  "text": "No va más. Veamos qué nos trae el sabot.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "That's all the bets. Let's see what the shoe has for us."
+ },
+ "sidebet_1_es": {
+  "event": "sidebet",
+  "text": "Su apuesta lateral ha entrado. Esa se paga al momento.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Your side bet comes in. That one pays straight away."
+ },
+ "sidebet_2_es": {
+  "event": "sidebet",
+  "text": "La apuesta lateral es ganadora. Buena forma de empezar la mano.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Side bet's a winner. Nice way to start the hand."
+ },
+ "sidebet_3_es": {
+  "event": "sidebet",
+  "text": "Y entra la apuesta lateral. Cobrada antes incluso de empezar.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "And the side bet lands. Paid before we've even begun."
+ },
+ "insurance_1_es": {
+  "event": "insurance",
+  "text": "Tengo un as. ¿Alguien quiere seguro?",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Ace showing. Would anyone like insurance?"
+ },
+ "insurance_2_es": {
+  "event": "insurance",
+  "text": "Tengo un as a la vista. El seguro está abierto y paga dos a uno.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "I have an ace. Insurance is open, and it pays two to one."
+ },
+ "insurance_3_es": {
+  "event": "insurance",
+  "text": "As a la vista, así que se ofrece seguro. La decisión es suya.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Ace up, so insurance is on offer. Entirely your call."
+ },
+ "double_1_es": {
+  "event": "double",
+  "text": "Dobla la apuesta. Una carta, y solo una.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Doubling down. One card, and one card only."
+ },
+ "double_2_es": {
+  "event": "double",
+  "text": "Doblamos, entonces. Aquí tiene su carta.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Double it is. Here's your one card."
+ },
+ "double_3_es": {
+  "event": "double",
+  "text": "Apuesta doblada. Una sola carta lo decide.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Doubled. One card to settle it."
+ },
+ "bust_1_es": {
+  "event": "bust",
+  "text": "Se ha pasado de veintiuno, lo siento. Esa mano termina aquí.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Over twenty-one, I'm afraid. That hand is done."
+ },
+ "bust_2_es": {
+  "event": "bust",
+  "text": "Se ha pasado. Qué mala suerte con esa carta.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "That's a bust. Unlucky card."
+ },
+ "bust_3_es": {
+  "event": "bust",
+  "text": "Demasiado, lo siento. Esa se la lleva la banca.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Too many, I'm sorry. That one goes to the house."
+ },
+ "blackjack_1_es": {
+  "event": "blackjack",
+  "text": "¡Blackjack! Muy bien jugado. Se paga tres a dos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Blackjack! Beautifully done. That pays three to two."
+ },
+ "blackjack_2_es": {
+  "event": "blackjack",
+  "text": "Blackjack nada más repartir. Se paga tres a dos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Blackjack, straight off the deal. Paid three to two."
+ },
+ "blackjack_3_es": {
+  "event": "blackjack",
+  "text": "Así se empieza una mano. Blackjack, tres a dos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Now that's how you open a hand. Blackjack, three to two."
+ },
+ "dealerblackjack_1_es": {
+  "event": "dealerblackjack",
+  "text": "La banca tiene blackjack. Lo siento por todos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Dealer has blackjack. I'm sorry, everyone."
+ },
+ "dealerblackjack_2_es": {
+  "event": "dealerblackjack",
+  "text": "Esta vez el blackjack es para la banca. Le pasa hasta al mejor.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Blackjack for the house this time. It happens to the best of us."
+ },
+ "dealerblackjack_3_es": {
+  "event": "dealerblackjack",
+  "text": "Me temo que tengo blackjack. Esta ronda es para la banca.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "I'm afraid it's blackjack for me. That round goes to the house."
+ },
+ "dealerbust_1_es": {
+  "event": "dealerbust",
+  "text": "¡La banca se pasa! Todos los que siguen en juego cobran.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Dealer busts! Everyone still in the hand gets paid."
+ },
+ "dealerbust_2_es": {
+  "event": "dealerbust",
+  "text": "Demasiado para mí. La banca se pasa. Enhorabuena a toda la mesa.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Too many for me. The house busts. Congratulations, table."
+ },
+ "dealerbust_3_es": {
+  "event": "dealerbust",
+  "text": "Y la banca se pasa de veintiuno. Ganan todos.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "And that's over twenty-one for the dealer. Winners all round."
+ },
+ "win_1_es": {
+  "event": "win",
+  "text": "Bien jugado. Esa mano es suya.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Well played. That hand is yours."
+ },
+ "win_2_es": {
+  "event": "win",
+  "text": "Esta vez me ha ganado. Enhorabuena.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "You beat me on that one. Congratulations."
+ },
+ "win_3_es": {
+  "event": "win",
+  "text": "Mano ganadora, pagada íntegramente.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "A winning hand. Paid in full."
+ },
+ "push_1_es": {
+  "event": "push",
+  "text": "Mismo total. Es un empate, su apuesta se queda con usted.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Same total. It's a push, your stake stays with you."
+ },
+ "push_2_es": {
+  "event": "push",
+  "text": "Estamos igualados. Empate: nadie gana y nadie pierde.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "We're level. A push, nobody wins and nobody loses."
+ },
+ "push_3_es": {
+  "event": "push",
+  "text": "Empate. Recupera su apuesta.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Push. Your bet comes back."
+ },
+ "lose_1_es": {
+  "event": "lose",
+  "text": "Gana la banca. Esa mano es para la casa.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Dealer wins. That one goes to the house."
+ },
+ "lose_2_es": {
+  "event": "lose",
+  "text": "Esta vez no, me temo. La banca aguanta.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Not this time, I'm afraid. The house holds."
+ },
+ "lose_3_es": {
+  "event": "lose",
+  "text": "Ha estado cerca, pero esta ronda es para la banca.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Close, but the house has it this round."
+ },
+ "peek_1_es": {
+  "event": "peek",
+  "text": "Un momento, compruebo si tengo blackjack.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "One moment while I check for blackjack."
+ },
+ "peek_2_es": {
+  "event": "peek",
+  "text": "La banca comprueba si tiene blackjack.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Dealer checks for blackjack."
+ },
+ "peek_3_es": {
+  "event": "peek",
+  "text": "Compruebo si hay blackjack. No escondo nada en la manga.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Checking for blackjack. Nothing up my sleeve."
+ },
+ "farewell_1_es": {
+  "event": "farewell",
+  "text": "Gracias por jugar. Ha sido un placer repartirle las cartas.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Thank you for playing. It was a pleasure dealing for you."
+ },
+ "farewell_2_es": {
+  "event": "farewell",
+  "text": "¿Ya se retira por esta noche? Gracias, ha sido un placer tenerle en la mesa.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "All done for tonight? Thank you, it was lovely having you at the table."
+ },
+ "farewell_3_es": {
+  "event": "farewell",
+  "text": "Buenas noches, y gracias por la compañía en mi mesa.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Good night, and thank you for the company at my table."
+ },
+ "chatter1_1_es": {
+  "event": "chatter1",
+  "text": "Noche tranquila en la mesa. Son mis favoritas.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Quiet night at the table. Those are my favourite."
+ },
+ "chatter1_2_es": {
+  "event": "chatter1",
+  "text": "Ocho barajas, mezcladas de nuevo en cada ronda. Cada mano empieza de cero.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Eight decks, shuffled fresh every round. Every hand starts from nothing."
+ },
+ "chatter1_3_es": {
+  "event": "chatter1",
+  "text": "He repartido muchas manos en esta mesa. Nunca hay dos iguales.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "I've dealt a lot of hands at this table. No two ever play out the same."
+ },
+ "chatter2_1_es": {
+  "event": "chatter2",
+  "text": "Tómese su tiempo. Las cartas no se van a ninguna parte.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Take your time. The cards aren't going anywhere."
+ },
+ "chatter2_2_es": {
+  "event": "chatter2",
+  "text": "Sin ninguna prisa. Piénselo con calma.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "No rush at all. Think it over."
+ },
+ "chatter2_3_es": {
+  "event": "chatter2",
+  "text": "Cuando usted quiera. La decisión es suya.",
+  "sprak": "es",
+  "rost": "8f57cf2c-e650-4e10-a784-cd93d23ee7f4",
+  "engelska": "Whenever you're ready. The decision is yours."
+ }
+}

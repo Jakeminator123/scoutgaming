@@ -1,0 +1,87 @@
+{
+  "frameConvention": "Zero-based decoded frame index; frame 0 is t=0. Source rate is 24 fps.",
+  "method": "Manual frame-by-frame inspection. Contact is the first visible intersection of the incoming card with the unshifted projected resting-card footprint, BEFORE the wrist turn. This measures screen contact, not 3D forces or finger-depth accuracy. The yellow footprint is review-only.",
+  "fps": 24,
+  "seats": {
+    "1": {
+      "contactFrame": 39,
+      "clearFrame": 68,
+      "contact": 1.625,
+      "clear": 2.8333333333333335,
+      "previousStartFrame": 64,
+      "earlierByFrames": 25,
+      "source": "public/media/deal/pos1.mp4",
+      "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff"
+    },
+    "2": {
+      "contactFrame": 38,
+      "clearFrame": 63,
+      "contact": 1.5833333333333333,
+      "clear": 2.625,
+      "previousStartFrame": 59,
+      "earlierByFrames": 21,
+      "source": "public/media/deal/pos2.mp4",
+      "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb"
+    },
+    "3": {
+      "contactFrame": 34,
+      "clearFrame": 64,
+      "contact": 1.4166666666666667,
+      "clear": 2.6666666666666665,
+      "previousStartFrame": 60,
+      "earlierByFrames": 26,
+      "source": "public/media/deal/pos3.mp4",
+      "sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d"
+    },
+    "4": {
+      "contactFrame": 31,
+      "clearFrame": 64,
+      "contact": 1.2916666666666667,
+      "clear": 2.6666666666666665,
+      "previousStartFrame": 61,
+      "earlierByFrames": 30,
+      "source": "public/media/deal/pos4.mp4",
+      "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3"
+    },
+    "5": {
+      "contactFrame": 27,
+      "clearFrame": 60,
+      "contact": 1.125,
+      "clear": 2.5,
+      "previousStartFrame": 56,
+      "earlierByFrames": 29,
+      "source": "public/media/deal/pos5.mp4",
+      "sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e"
+    },
+    "6": {
+      "contactFrame": 26,
+      "clearFrame": 60,
+      "contact": 1.0833333333333333,
+      "clear": 2.5,
+      "previousStartFrame": 57,
+      "earlierByFrames": 31,
+      "source": "public/media/deal/pos6.mp4",
+      "sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4"
+    },
+    "7": {
+      "contactFrame": 31,
+      "clearFrame": 67,
+      "contact": 1.2916666666666667,
+      "clear": 2.7916666666666665,
+      "previousStartFrame": 62,
+      "earlierByFrames": 31,
+      "source": "public/media/deal/pos7.mp4",
+      "sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55"
+    },
+    "dealer": {
+      "contactFrame": 26,
+      "clearFrame": 51,
+      "contact": 1.0833333333333333,
+      "clear": 2.125,
+      "previousStartFrame": 46,
+      "earlierByFrames": 20,
+      "source": "public/media/deal/posdealer.mp4",
+      "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87"
+    }
+  }
+}

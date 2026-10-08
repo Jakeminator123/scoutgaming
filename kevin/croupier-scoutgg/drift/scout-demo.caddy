@@ -1,0 +1,10 @@
+croupier.scoutgg.dev {
+    encode zstd gzip
+    @lipsyncWorker path /lipsync-worker
+    handle @lipsyncWorker {
+        reverse_proxy 127.0.0.1:8620
+    }
+    handle {
+        reverse_proxy 127.0.0.1:8620
+    }
+}

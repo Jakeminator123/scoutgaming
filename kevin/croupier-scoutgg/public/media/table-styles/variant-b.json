@@ -1,0 +1,18 @@
+{
+  "name": "Variant B",
+  "source": "Astrid-V1-Mobile/Variant-B/Astrid-V1-Mobile-Camera-Review.blend",
+  "sourceSha256": "89775795b3659856ca7618e12aa1a5bd9724d8dea296ee830ed2b49f6d056fda",
+  "assetSha256": "fe02aa4539c2cbd63e00fc200af89390d2ffae752ed7ea129349385fd8ff5b22",
+  "camera": "B - Lower 28 degrees - Camera",
+  "renderSize": [
+    780,
+    1688
+  ],
+  "removed": [
+    "actor reference",
+    "baked betting circles",
+    "baked rules",
+    "shoe"
+  ],
+  "purpose": "Approved table geometry plate for the current Astrid shared game. Live foreground and UI are composited separately."
+}

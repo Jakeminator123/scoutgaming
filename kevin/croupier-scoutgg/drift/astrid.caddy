@@ -1,0 +1,10 @@
+# Fast HTTPS-adress för demot via Caddy (serverns admin lägger in blocket). Ersätter Cloudflare-tunneln:
+# sätt samma adress i .env som SESSION_URL=wss://<adressen> och stäng av astrid-share2.
+#
+# Exemplet använder sslip.io (IP-adressen som värdnamn, inget domänköp); byt mot en riktig domän när den finns.
+# Websockets (rummet på / och GPU-arbetarens uppringning på /lipsync-worker) går rakt igenom reverse_proxy.
+
+37-27-199-225.sslip.io {
+	encode gzip
+	reverse_proxy 127.0.0.1:8600
+}

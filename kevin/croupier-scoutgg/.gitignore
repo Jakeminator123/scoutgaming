@@ -1,0 +1,14 @@
+# nycklar — checka aldrig in
+.env
+# genererade svar, loggar, publik adress
+answers/
+public-url.txt
+tunnel.log
+prov-*.png
+# cloudflared (55 MB, laddas ned separat — se README)
+bin/
+node_modules/
+*.log
+__pycache__/
+*.pyc
+data/

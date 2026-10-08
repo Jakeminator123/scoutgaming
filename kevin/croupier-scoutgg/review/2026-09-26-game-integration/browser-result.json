@@ -1,0 +1,33 @@
+{
+  "errors": [],
+  "desktop": {
+    "balance": "$1,620.00",
+    "returned": "$635.00",
+    "sides": "Box 4: Perfect Pair 25:1 + Suited Three of a Kind 100:1 · $635.00 returned",
+    "hands": "Test Winner · box 4 · 8♠ 8♠ · main/insurance returned $0.00 · side returned $635.00 · PP $5.00 / 21+3 $5.00: Perfect Pair 25:1, Suited Three of a Kind 100:1Test Other · box 5 · 9♥ 7♦ · main/insurance returned $0.00 · side returned $0.00Your round: staked $15.00 · returned $635.00 · net $620.00",
+    "chimes": [
+      659.2999877929688,
+      830.5999755859375,
+      987.7999877929688,
+      1318.5
+    ]
+  },
+  "mobile": {
+    "balance": "$995.00",
+    "returned": "$0.00",
+    "chimes": []
+  },
+  "blackjack": {
+    "returned": "$12.50",
+    "chimes": [
+      659.2999877929688,
+      830.5999755859375,
+      987.7999877929688,
+      1318.5,
+      659.2999877929688,
+      830.5999755859375,
+      987.7999877929688,
+      1318.5
+    ]
+  }
+}

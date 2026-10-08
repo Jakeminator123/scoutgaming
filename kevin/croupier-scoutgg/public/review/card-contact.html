@@ -1,0 +1,19 @@
+<!doctype html><html lang="sv"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kortkontakt – lokal rörelsekontroll</title>
+<link rel="preload" as="image" href="/media/cards/back-scout.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#eee;font:14px system-ui;display:flex;min-height:100vh;justify-content:center;gap:20px}main{position:relative;height:100vh;aspect-ratio:9/16}video,svg{position:absolute;width:100%;height:100%;inset:0;object-fit:contain}svg{pointer-events:none}.playing-card{filter:drop-shadow(0 1px .7px #0005)}aside{padding:24px 12px;width:245px}label{display:block;margin:12px 0}button,select{padding:10px;margin:5px 0;color:inherit;background:#28332d;border:1px solid #9b895d;border-radius:7px}button{display:block;width:100%}output{display:block;margin:16px 0;font-variant-numeric:tabular-nums}.table-box-hit{fill:transparent}.bet-ring,.bet-brackets,.seat-person{fill:none;stroke:#b9a16b;stroke-width:1.6;opacity:.6}.chip-body{fill:#206d64;stroke:#a0c3b3;stroke-width:2}.chip-stitch{fill:none;stroke:#f2e9d4;stroke-width:3;stroke-dasharray:8 5}.chip-value{fill:#fff;font-size:20px;text-anchor:middle}.seat-number{fill:#b9a16b;font-size:17px}.side-wager{fill:#b9a16b}.card-totals{font-family:system-ui}@media(max-width:650px){body{gap:0}main{height:75vh}aside{position:absolute;bottom:0;width:100%;height:25vh;overflow:auto;background:#171d19;padding:8px;display:flex;flex-wrap:wrap;gap:5px}aside h2,aside p{display:none}button{width:auto}label{margin:0}output{margin:0;flex-basis:100%}}
+main{overflow:hidden}main.detail video,main.detail svg{transform:scale(3);transform-origin:var(--cx,50%) var(--cy,58%)}
+</style>
+<main><video id="film" muted playsinline preload="auto"></video><svg id="boxes" viewBox="0 0 1080 1920"></svg><svg id="cards" viewBox="0 0 1080 1920"></svg></main>
+<aside><h2>Kortkontakt</h2><p>Samma renderer och originalklipp som spelet. Ingen spelrunda eller plånbok påverkas.</p>
+<label>Plats <select id="seat"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option value="dealer">Dealer upcard / hit</option><option value="hole">Face-down hole</option><option value="flip">Hole-card flip</option></select></label>
+<label>Inkommande kort <select id="count"><option value="1">Kort 1</option><option value="2">Kort 2</option><option value="3" selected>Kort 3</option><option value="4">Kort 4</option><option value="5">Kort 5</option><option value="6">Kort 6</option></select></label>
+<label><input id="hole" type="checkbox"> Dölj dealerns sista kort</label>
+<label><input id="neighbors" type="checkbox"> Visa grannhänder</label>
+<label><input id="detail" type="checkbox"> Närbild av korten</label>
+<label>Hastighet <select id="speed"><option value="1">Normal</option><option value=".5">Halvfart</option></select></label>
+<button id="play">Spela utdelning</button><button id="pause">Pausa</button>
+<button data-check="before">Före kontakt</button><button data-check="contact">Vid kontakt</button><button data-check="middle">Mitt i glidningen</button><button data-check="white">Första vita framsidan</button><button id="step">Nästa bildruta</button><label>Bildruta <input id="scrub" type="range" min="0" max="78" step="1" value="0"></label><button data-check="clear">Handen släppt</button><button data-check="after">Efter glidningen</button><output id="frame">Laddar…</output>
+</aside>
+<script type="module" src="./card-contact.js"></script></html>

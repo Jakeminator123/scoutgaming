@@ -1,0 +1,10 @@
+{
+  "pendingBetsClear": true,
+  "immediateRelease": true,
+  "canRejoin": true,
+  "leaveDuringDealing": true,
+  "automaticSettlement": true,
+  "finalBalance": 995,
+  "seatsReleased": true,
+  "errors": []
+}

@@ -1,0 +1,6 @@
+{
+  "mediaTime": 1.820603,
+  "expectedTime": 1.852,
+  "drift": 0.03139700000000012,
+  "injectedLoadDelayMs": 1700
+}

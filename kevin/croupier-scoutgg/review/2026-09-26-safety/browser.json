@@ -1,0 +1,34 @@
+[
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "passed": true,
+    "checks": [
+      "join with session cookie",
+      "break button",
+      "refill disabled",
+      "break survives reload",
+      "information page fits viewport",
+      "no page JS errors"
+    ]
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "passed": true,
+    "checks": [
+      "join with session cookie",
+      "break button",
+      "refill disabled",
+      "break survives reload",
+      "information page fits viewport",
+      "no page JS errors"
+    ]
+  }
+]

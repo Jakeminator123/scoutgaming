@@ -1,0 +1,26 @@
+{
+  "losingChipsFade": true,
+  "visibleWinningLayers": 12,
+  "ppChipCount": 26,
+  "tpChipCount": 101,
+  "nextRoundClears": true,
+  "ownerOnly": true,
+  "awardsAtReveal": true,
+  "pp": {
+    "stake": 5,
+    "pile": 130,
+    "profit": 125
+  },
+  "tp": {
+    "stake": 5,
+    "pile": 505,
+    "profit": 500
+  },
+  "beforeSettlement": 985,
+  "afterSettlement": 1620,
+  "noLossToast": true,
+  "blackjackProfit": 7.5,
+  "blackjackBalance": 1627.5,
+  "noRefreshReplay": true,
+  "errors": []
+}

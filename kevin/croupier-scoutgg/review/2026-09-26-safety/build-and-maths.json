@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-09-26T12:39:45.642Z",
+  "baseCommit": "76918e3053fd431fb636c76afc483b758338398b",
+  "node": "v26.0.0",
+  "openssl": "3.6.3",
+  "platform": "darwin",
+  "arch": "arm64",
+  "hashes": {
+    "vendor/croupier/public/blackjack.mjs": "5cdd479dc2b00693042bf6285cc9f01609b02f1e8bc48e86b20f260ddff53920",
+    "vendor/croupier/shoe-game.mjs": "201e9cdea1f86ea0c0f4ea816d8757c0ebe72e9e296d145389cb8430bcf9876b",
+    "server/shared-table.mjs": "acd4b63b8a0b61d89f5d216ac1d17544d2147ba554ea9f3924c12b5391355add",
+    "server/table-service.mjs": "26a564ebc8fa19c3ca3e3a10d46f4fefea0124f26b8a8f3615b547e868b155bf",
+    "server/dealer-policy.mjs": "d4168de985c34560be1e90fe4282af9c8e180f1a94d9c5909f624b51e8f49750",
+    "server/llm.mjs": "1b8cbb25705b993739d963a36a4f43aeed54b07eb3c5f8dc8d3536b7585144d8",
+    "server/astrid.mjs": "86b80117111e99c079353b557dc0a1ee862e0dbb80621696030ea1a53780ae1d",
+    "server/server.mjs": "a91efcaca9185e5583acce744a5e3c15e7ee1c71ff4d62cb172a40f82f9cdd2a",
+    "server/request-safety.mjs": "6953da2fdb82ea5c5ca900008b513810d3d82a7b86988fde458aab00c65c3c55",
+    "server/safety-audit.mjs": "45ce465f92f8ae6e0ea6a38954f0f8ce662258b91791e63c3aece11c64a3adc1",
+    "public/shared-table.js": "e657bc9fa9a1273b1279ef74bf3ff18636b1e07271c79bc0a1dda1c229b923b3",
+    "public/game-events.js": "eefb3cc801a85436736ea94f9c047d0bb9cbb8f8a6ed74dfbcb934547b7ad2fd",
+    "public/app.js": "0ba8c2d0a75833f3a760c307aa547f668784b4399db0013eedaf16ccbb394735",
+    "public/media/manifest.json": "57140743471272229ae187c3a4065bf3099186254b65fa85f07d53d6bb25175f",
+    "public/index.html": "66dfe237bd107c25dd8699d8e1d3235d499056516e6c34d4eaf29013274be2a7",
+    "public/demo-information.html": "655c1b0864bbcb39b6ae59695d18994bd0d210d84b8ea00575d20f65922e5b55",
+    "public/demo-information.css": "56eab33e8676881899629a366c5b285670490b14a40fccf7683104afa6409cc2",
+    "server/serverless.mjs": "7f123f6a276affe778c2e7299feb32068bd3480b985b64ac5dd4bc72f08c6556",
+    "package.json": "693b4e2642357bfd005472b33e6609c740f70a2036740762e2d970db92ff5594",
+    "package-lock.json": "cd31c32d1346df43e6a72cbd27d992ce810847aacef33dd370ec4de9a15a4884"
+  },
+  "maths": {
+    "method": "Exact unordered physical-card combination enumeration for an unconditioned eight-deck opening. Uses actual engine settlement. Does not prove RNG quality or establish main-game RTP.",
+    "perfectPairs": {
+      "totalCombinations": 86320,
+      "rtp": 0.9590361445783132,
+      "categories": {
+        "Perfect Pair 25:1": {
+          "combinations": 1456,
+          "returnPerUnit": 26
+        },
+        "Loss": {
+          "combinations": 79872,
+          "returnPerUnit": 0
+        },
+        "Mixed Pair 6:1": {
+          "combinations": 3328,
+          "returnPerUnit": 7
+        },
+        "Colored Pair 12:1": {
+          "combinations": 1664,
+          "returnPerUnit": 13
+        }
+      }
+    },
+    "twentyOnePlusThree": {
+      "totalCombinations": 11912160,
+      "rtp": 0.9629608735947133,
+      "categories": {
+        "Suited Three of a Kind 100:1": {
+          "combinations": 2912,
+          "returnPerUnit": 101
+        },
+        "Flush 5:1": {
+          "combinations": 700928,
+          "returnPerUnit": 6
+        },
+        "Three of a Kind 30:1": {
+          "combinations": 61568,
+          "returnPerUnit": 31
+        },
+        "Loss": {
+          "combinations": 10753536,
+          "returnPerUnit": 0
+        },
+        "Straight Flush 40:1": {
+          "combinations": 24576,
+          "returnPerUnit": 41
+        },
+        "Straight 10:1": {
+          "combinations": 368640,
+          "returnPerUnit": 11
+        }
+      }
+    },
+    "mainGameRtp": "Not yet independently calculated; depends on complete rules and specified player strategy."
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "1": {
+    "firstWhiteFrame": 51,
+    "sourceFrames": 84,
+    "sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff",
+    "restQuad": [
+      [
+        -32.0,
+        -43.0
+      ],
+      [
+        30.0,
+        -43.0
+      ],
+      [
+        30.0,
+        41.0
+      ],
+      [
+        -32.0,
+        41.0
+      ]
+    ]
+  },
+  "2": {
+    "firstWhiteFrame": 44,
+    "sourceFrames": 80,
+    "sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb",
+    "restQuad": [
+      [
+        -31.0,
+        -43.0
+      ],
+      [
+        31.0,
+        -43.0
+      ],
+      [
+        31.0,
+        41.0
+      ],
+      [
+        -31.0,
+        41.0
+      ]
+    ]
+  },
+  "3": {
+    "firstWhiteFrame": 47,
+    "sourceFrames": 81,
+    "sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d",
+    "restQuad": [
+      [
+        -32.0,
+        -43.0
+      ],
+      [
+        30.0,
+        -43.0
+      ],
+      [
+        30.0,
+        41.0
+      ],
+      [
+        -32.0,
+        41.0
+      ]
+    ]
+  },
+  "4": {
+    "firstWhiteFrame": 47,
+    "sourceFrames": 79,
+    "sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3",
+    "restQuad": [
+      [
+        -32.0,
+        -43.0
+      ],
+      [
+        30.0,
+        -43.0
+      ],
+      [
+        30.0,
+        41.0
+      ],
+      [
+        -32.0,
+        41.0
+      ]
+    ]
+  },
+  "5": {
+    "firstWhiteFrame": 43,
+    "sourceFrames": 74,
+    "sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e",
+    "restQuad": [
+      [
+        -32.0,
+        -43.0
+      ],
+      [
+        30.0,
+        -43.0
+      ],
+      [
+        30.0,
+        41.0
+      ],
+      [
+        -32.0,
+        41.0
+      ]
+    ]
+  },
+  "6": {
+    "firstWhiteFrame": 41,
+    "sourceFrames": 75,
+    "sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4",
+    "restQuad": [
+      [
+        -31.0,
+        -43.0
+      ],
+      [
+        31.0,
+        -43.0
+      ],
+      [
+        31.0,
+        41.0
+      ],
+      [
+        -31.0,
+        41.0
+      ]
+    ]
+  },
+  "7": {
+    "firstWhiteFrame": 44,
+    "sourceFrames": 81,
+    "sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55",
+    "restQuad": [
+      [
+        -32.0,
+        -43.0
+      ],
+      [
+        30.0,
+        -43.0
+      ],
+      [
+        30.0,
+        41.0
+      ],
+      [
+        -32.0,
+        41.0
+      ]
+    ]
+  },
+  "dealer": {
+    "firstWhiteFrame": 37,
+    "sourceFrames": 65,
+    "sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87",
+    "restQuad": [
+      [
+        -34.02,
+        -15.61
+      ],
+      [
+        27.0,
+        -18.0
+      ],
+      [
+        29.26,
+        39.6
+      ],
+      [
+        -31.77,
+        41.99
+      ]
+    ]
+  }
+}
