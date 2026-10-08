@@ -82,6 +82,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | T7 | Nytt mediearbete (keya Vera/Mei) om fullbild | väntar (T1, F3) | nytt | eget mediespår |
 | T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning via `git show origin/test-video-jakob:<fil>`, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas; stannar som filer i grenen | väntar (grenen fanns inte på origin 01:50) | Jakob 8 okt | K |
 | T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar (T8) | Jakob 8 okt | K steg 3 |
+| T10 | Grenens utökade test-klippyta flyttas till egen sida `/control/preview` (Förhandsvisning, lagerprov) på sidmallen, under Studio i menyn; media stannar som filer i grenen, inget till blob/databas; läser dagens projekt, skriver inget | väntar (grenen); brief skrivs när `git show origin/test-video-jakob` går | Jakob 02:39 | K |
+| T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (schemat); kartan kvar | Jakob 02:39 | A5 |
 
 ## L. Lane som produkt
 
@@ -141,6 +143,18 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | O4 | Checklistan (den här filen) är enda uppföljningslistan; matris/lösa trådar/handoff är källor | Jakob bad om en lista |
 | O5 | Terminologibladets Lane-rad uppdateras med Jakobs 8 okt-ord först när F1 är besvarad | "Vissa typer av dealers" kan betyda flera dealers per lane; dagens rad säger en |
 | O6 | Stora uppdrag (C5, L2–L4, N2.2) levereras som promptfil i `random/` som Jakob kör i annan agent; orkestratorn granskar | Jakobs instruktion 8 okt |
+
+## Fem beslut för Jakob (02:40), i prioritetsordning
+
+| # | Beslut | Rekommendation | Låser upp |
+|---|---|---|---|
+| J1 | Lane-modellen (F1 + F5): flera dealers per lane; grundprofil = standardpaket som kopieras | Ja till båda | K steg 2 och 5, lane-typen i koden |
+| J2 | Tre lager (F3): konfiguration och datamodell nu mot dagens klipp; lager-spelaren kommer från `test-video-jakob` när den är klar; ingen ny media i K | Alt 3 | K steg 3 kan börja utan att vänta på grenen |
+| J3 | Spelarens val (F2 + F4): inom paketets tillåtna; sparas i webbläsaren först, konto när export finns | Ja | Nivå 3-ytan, T3–T5 |
+| J4 | Rad 37 + 17b: Händelser och Händelser → klipp blir en sida i K; menyraden Talgranskning döps till Probe | A respektive omdöpning; John ändrar efteråt | K steg 3, spår D |
+| J5 | Rad 47: `test/fuzz-blackjack.mjs` skrivs om mot serverns `web/shoe-game.mjs` (samma invarianter: totals, S17, 3:2, dubbling, försäkring, sidovad) eller tas bort | Skriv om, ~1 agenttimme; ett fuzz mot motorn som äger korten är värt att ha | Undantaget försvinner |
+
+Åtgärder som inte är beslut: radera Vercel `scoutgaming-legacy-frontend` (rad 40), Render manuell deploy, rotera Neon-rollen, stäng #4.
 
 ## Frågor till Jakob (F)
 
