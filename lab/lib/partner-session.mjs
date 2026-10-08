@@ -464,10 +464,18 @@ async function setPassword(request, body, config) {
   return json({ ok: true });
 }
 
+// A test injects a complete configuration. Anything else in the second
+// position (for example Next's route context { params }) is not a
+// configuration and must not replace the server's own.
+export function isPartnerAuthConfig(value) {
+  return !!value && typeof value === 'object' && Array.isArray(value.allowedOrigins)
+    && typeof value.boDb?.prepare === 'function';
+}
+
 export async function handlePartnerAuth(request, injected) {
   try {
     if (!['GET', 'POST'].includes(request.method)) return rejectPartnerMethod();
-    const config = injected ?? await partnerAuthConfig();
+    const config = isPartnerAuthConfig(injected) ? injected : await partnerAuthConfig();
     const prepared = preparePartnerRequest(request, config);
     if (prepared.response) return prepared.response;
     if (prepared.action === 'snapshot') {
