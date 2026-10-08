@@ -129,6 +129,21 @@ test('publishing increases package_revision and an unknown lane id is 422', asyn
   assert.equal(current.revision, 2);
 });
 
+test('publishing lanes carries the operator branding, games and tables forward', async () => {
+  const pool = memoryPool();
+  const { api } = apiFor(pool);
+  await api.handle(request('operator-create-demo', {}));
+  const direct = await createOperatorStore({ sql: pool, scope, now: clock });
+  await direct.publishPackage({ actor: 'partner-admin', operatorId: 'sg-test', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['t1'], branding: { color: '#112233', name: 'North' } });
+  const republished = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
+  assert.equal(republished.status, 200);
+  const body = await republished.json();
+  assert.equal(body.package_revision, 2);
+  assert.deepEqual(body.tables, ['t1']);
+  const current = await direct.getCurrentPackage('sg-test');
+  assert.deepEqual(current.branding, { color: '#112233', name: 'North' });
+});
+
 test('an empty project.lanes list accepts only the default mobile-phone lane', async () => {
   const project = createSeedProject();
   project.lanes = [];

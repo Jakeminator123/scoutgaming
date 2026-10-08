@@ -62,3 +62,7 @@
   .compact form > .check, .compact form > .actions, .compact form > .options { grid-column: 1; grid-row: auto; }
   .compact .actions { align-items: stretch; }
 }
+:global(html[data-theme="light"]) .chat{background:var(--sg-field);border-color:var(--sg-border);color:var(--sg-text)}
+:global(html[data-theme="light"]) .empty strong,:global(html[data-theme="light"]) .astridMessage p,:global(html[data-theme="light"]) .playerMessage p{color:var(--sg-text)}
+:global(html[data-theme="light"]) .empty p,:global(html[data-theme="light"]) .astridMessage>span,:global(html[data-theme="light"]) .playerMessage>span{color:var(--sg-muted)}
+:global(html[data-theme="light"]) .playerMessage,:global(html[data-theme="light"]) .astridMessage{background:var(--sg-surface);border-color:var(--sg-border);color:var(--sg-text)}
