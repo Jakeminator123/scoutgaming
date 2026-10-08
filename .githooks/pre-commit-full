@@ -67,6 +67,7 @@ run_node_tests test/dealer-motion.mjs test/dealer-skin-contact.mjs
 run_node_tests test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigged-discard-state.mjs
 run_node_tests test/dealer-collection.mjs
 run_node_tests test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
+run_node_tests test/dealer-face-calibration.mjs test/dealer-face-skin.mjs test/generations-api.mjs
 run_node_tests test/native-partner-events.mjs test/bo-media-preview.mjs
 run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests test/local-comparison-fixture.mjs test/generation-media.mjs

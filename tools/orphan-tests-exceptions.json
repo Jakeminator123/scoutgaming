@@ -1,0 +1,14 @@
+[
+  {
+    "path": "test/backoffice-lab-browser.mjs",
+    "reason": "Opt-in Playwright acceptance. It starts the local comparison and Lab via lab/start.mjs and is not run in CI (decision matrix row 34)."
+  },
+  {
+    "path": "test/cloud-admin-bootstrap.mjs",
+    "reason": "Green in about 11s locally, but it spawns web/server.mjs, uses a sqlite database, and calls that server over HTTP."
+  },
+  {
+    "path": "test/fuzz-blackjack.mjs",
+    "reason": "Manual fuzz script (node test/fuzz-blackjack.mjs), not a node:test file. Default is 200000 rounds plus 500000 RTP rounds. A 12s run was still inside the fuzz loop and had already counted invariant violations."
+  }
+]
