@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
+import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
 import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
@@ -17,7 +18,8 @@ export const PARTNER_SESSION_PURPOSE = 'partner';
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_SECONDS = 7 * 24 * 60 * 60;
 const messages = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'],
-  [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [429, 'Too many attempts'], [503, 'Authentication unavailable']]);
+  [405, 'Method not allowed'], [409, 'Conflict'], [413, 'Request too large'], [415, 'JSON required'], [422, 'Invalid data'],
+  [429, 'Too many attempts'], [503, 'Authentication unavailable']]);
 const accountProjection = `SELECT u.id,u.username,u.salt,u.hash,u.role,e.epoch
   FROM users u LEFT JOIN bo_auth_epochs e ON e.user_id=u.id WHERE `;
 const reservedSlugs = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
@@ -223,15 +225,27 @@ async function logout(request, body, config) {
   return json({ ok: true }, 200, [partnerCookie('', 0)]);
 }
 
+function partnerAction(pathname, config) {
+  const base = partnerApiBase(config);
+  const bare = base.startsWith('/studio/') ? base.slice('/studio'.length) : base;
+  const matched = [base, bare].find(prefix => pathname.startsWith(`${prefix}/`));
+  return matched ? pathname.slice(matched.length + 1) : '';
+}
+function takeOperatorSlug(url) {
+  const entries = [...url.searchParams];
+  if (entries.length !== 1 || entries[0][0] !== 'operator' || !operatorSlug(entries[0][1])) fail(400);
+  url.search = '';
+  return entries[0][1];
+}
 function preparePartnerRequest(request, config) {
   if (!config) fail(503);
   const url = new URL(request.url);
   let operatorSlugValue;
   if (request.method === 'GET') {
-    const entries = [...url.searchParams];
-    if (entries.length !== 1 || entries[0][0] !== 'operator' || !operatorSlug(entries[0][1])) fail(400);
-    operatorSlugValue = entries[0][1];
-    url.search = '';
+    operatorSlugValue = takeOperatorSlug(url);
+  } else if (request.method === 'POST' && partnerAction(url.pathname, config) === 'branding') {
+    if (url.hash) fail(400);
+    operatorSlugValue = takeOperatorSlug(url);
   } else if (url.search || url.hash) fail(400);
   const next = new Request(url, {
     method: request.method,
@@ -255,13 +269,17 @@ function preparePartnerRequest(request, config) {
   }
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
-  const bare = base.startsWith('/studio/') ? base.slice('/studio'.length) : base;
-  const matched = [base, bare].find(prefix => pathname.startsWith(`${prefix}/`));
-  const action = matched ? pathname.slice(matched.length + 1) : '';
-  if (!['login', 'logout', 'snapshot'].includes(action)) fail(404);
-  const allowed = action === 'snapshot' ? 'GET' : 'POST';
-  if (request.method !== allowed) {
-    return { response: new Response(null, { status: 405, headers: { Allow: allowed, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
+  const action = partnerAction(pathname, config);
+  if (!['login', 'logout', 'snapshot', 'branding'].includes(action)) fail(404);
+  if (action === 'branding') {
+    if (request.method !== 'GET' && request.method !== 'POST') {
+      return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
+    }
+  } else {
+    const allowed = action === 'snapshot' ? 'GET' : 'POST';
+    if (request.method !== allowed) {
+      return { response: new Response(null, { status: 405, headers: { Allow: allowed, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
+    }
   }
   if (request.method === 'POST') {
     const origin = new URL(normalized.url).origin;
@@ -269,6 +287,90 @@ function preparePartnerRequest(request, config) {
       || normalized.headers.has('next-action')) fail(403);
   }
   return { request: normalized, action, operatorSlug: operatorSlugValue };
+}
+
+function sameOperatorScope(left, right) {
+  return !!left && !!right && left.environment === right.environment && left.workspaceId === right.workspaceId;
+}
+async function defaultReadProject() {
+  const { studioNativeRuntime } = await import('./studio-native-runtime.mjs');
+  return (await studioNativeRuntime()).gamePolicy.readSaved();
+}
+async function openBrandingStore(config) {
+  if (config?.store) return config.store;
+  const pool = config?.pool;
+  // { query } cannot BEGIN. Branding opens the pool itself (L24).
+  if (typeof pool?.connect !== 'function' || typeof pool?.query !== 'function') fail(503);
+  let createOperatorStore;
+  try {
+    ({ createOperatorStore } = await import('../../web/storage/operator-store.mjs'));
+  } catch (error) {
+    if (error?.code === 'ERR_MODULE_NOT_FOUND') fail(503);
+    throw error;
+  }
+  if (typeof createOperatorStore !== 'function') fail(503);
+  try {
+    return await createOperatorStore({ sql: pool, scope: config.scope, now: config.now });
+  } catch (error) {
+    if (messages.has(error?.statusCode)) throw error;
+    fail(503);
+  }
+}
+async function brandingResponse(prepared, config) {
+  const session = await authorizePartner(prepared.request, config);
+  const store = await openBrandingStore(config);
+  if (typeof store.getOperatorBySlug !== 'function' || typeof store.resolvePartnerContext !== 'function' || typeof store.getMembership !== 'function') fail(503);
+  const operator = await store.getOperatorBySlug(prepared.operatorSlug);
+  if (!operator || operator.slug !== prepared.operatorSlug) fail(404);
+  if (operator.scope && !sameOperatorScope(operator.scope, session.scope)) fail(403);
+  if (operator.status && operator.status !== 'active') fail(403);
+  const context = await store.resolvePartnerContext({
+    account: { userId: session.accountId, role: 'partner', status: 'active' },
+    operatorSlug: prepared.operatorSlug,
+  });
+  if (!context || context.internalPreview === true) fail(403);
+  if (context.operator?.id !== operator.id || context.account?.userId !== session.accountId) fail(403);
+  if (context.membership?.status !== 'active' || context.operator?.status !== 'active' || context.account?.status !== 'active') fail(403);
+  const membership = await store.getMembership(operator.id, session.accountId);
+  if (!membership || membership.status !== 'active' || (membership.userId && String(membership.userId) !== session.accountId)) fail(403);
+  if (membership.scope && !sameOperatorScope(membership.scope, session.scope)) fail(403);
+  const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
+  const api = createPartnerBrandingApi({
+    store,
+    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
+  });
+  if (prepared.request.method === 'GET') return json(await api.read({ operatorId: operator.id }), 200, [], { vary: true });
+  if (typeof store.getRole !== 'function') fail(503);
+  const role = await store.getRole(operator.id, membership.roleId);
+  const scope = context.scope ?? session.scope;
+  const decided = {
+    ...context,
+    scope,
+    membership: {
+      userId: String(membership.userId),
+      roleId: membership.roleId,
+      status: membership.status,
+      operatorId: operator.id,
+      scope: membership.scope ?? scope,
+    },
+    role: role ? {
+      id: role.id,
+      permissions: role.permissions,
+      operatorId: role.operatorId ?? operator.id,
+      scope: role.scope ?? scope,
+    } : context.role,
+  };
+  if (!allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id })) fail(403);
+  const body = await bodyOf(prepared.request);
+  keys(body, ['expectedRevision', 'branding']);
+  if (!Number.isSafeInteger(body.expectedRevision)) fail(400);
+  const saved = await api.write({
+    operatorId: operator.id,
+    actor: session.user,
+    expectedRevision: body.expectedRevision,
+    branding: body.branding,
+  });
+  return json(saved, 200, [], { vary: true });
 }
 
 export async function handlePartnerAuth(request, injected) {
@@ -286,6 +388,7 @@ export async function handlePartnerAuth(request, injected) {
       });
       return json(snapshot, 200, [], { vary: true });
     }
+    if (prepared.action === 'branding') return await brandingResponse(prepared, config);
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     return await logout(prepared.request, body, config);

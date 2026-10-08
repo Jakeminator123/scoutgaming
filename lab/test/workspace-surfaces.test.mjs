@@ -33,7 +33,7 @@ test('friendly sections keep source view IDs while existing internal tools retai
     assert.equal(route.view, null);
     assert.equal(route.legacyPath.startsWith('/studio'), false);
   }
-  for (const tool of ['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat']) {
+  for (const tool of ['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']) {
     const route = resolveWorkspaceSurfacePath('/control/' + tool);
     assert.equal(route.canonicalPath, '/control/' + tool);
     assert.equal(route.studioPath, '/studio/control/' + tool);
@@ -70,9 +70,11 @@ test('each allowed view has one readable address that reloads to the same view a
 });
 
 test('disconnected control previews are unknown while partner previews and control redirects stay', () => {
-  for (const section of ['pit-bosses', 'presentation', 'table-design', 'roulette', 'baccarat', 'preview', 'statistics', 'reports', 'generations', 'pit', 'theme', 'design', 'test', 'stats', 'gen']) {
+  // /control/preview was Kevin's dead "Provbord" slug; since 1f1c14d6 it is the staff layer preview page.
+  for (const section of ['pit-bosses', 'presentation', 'table-design', 'roulette', 'baccarat', 'statistics', 'reports', 'generations', 'pit', 'theme', 'design', 'test', 'stats', 'gen']) {
     assert.equal(resolveWorkspaceSurfacePath('/control/' + section), null, section);
   }
+  assert.equal(resolveWorkspaceSurfacePath('/control/preview').view, null);
   for (const section of ['roulette', 'baccarat', 'presentation', 'reports', 'statistics', 'preview', 'pit-bosses', 'table-design']) {
     const route = resolveWorkspaceSurfacePath('/partner/demo-north/' + section);
     assert.equal(route.surface, 'partner', section);

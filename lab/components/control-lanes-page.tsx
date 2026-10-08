@@ -1,41 +1,64 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { labBasePath } from '../lib/lab-url.mjs';
-import { defaultPresentationLane, normalizeProject, type StudioProject } from '../lib/studio-model.mjs';
+import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
+import { LaneEditor } from './lane-editor';
 import { PageTemplate } from './page-template';
+import { ProjectConflict } from './project-conflict';
+import { useStudioSession } from './studio-session';
+import type { ConnectionStatus, VideoInventory } from './studio-types';
 
 export type LaneOperatorChoice = { id: string; slug: string; name: string };
 
 const OFFLINE = 'Ingen skrivbar Neon-pool. Fixturen visas. Publicera paket och Skapa SG test game provider är avstängda tills poolen har connect().';
 
-function visibleLanes(project: StudioProject) {
+export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' | 'dealers'>[] | undefined, savedJson: string, dirty: boolean) {
+  let saved: { id?: string }[] = [];
   try {
-    const normalized = normalizeProject(project);
-    if (Array.isArray(normalized.lanes) && normalized.lanes.length) {
-      return normalized.lanes.map(lane => ({ id: lane.id, label: lane.label, dealers: [...lane.dealers] }));
-    }
+    const parsed = JSON.parse(savedJson) as { lanes?: { id?: string }[] };
+    if (Array.isArray(parsed?.lanes)) saved = parsed.lanes;
   } catch {
-    return [];
+    saved = [];
   }
-  const fallback = defaultPresentationLane();
-  return [{ id: fallback.id, label: fallback.label, dealers: [...fallback.dealers] }];
+  const byId = new Map(saved.map(lane => [String(lane.id), JSON.stringify(lane)]));
+  const rows = (lanes ?? []).map(lane => ({
+    id: lane.id,
+    label: lane.label,
+    dealers: [...lane.dealers],
+    unsaved: Boolean(dirty) && byId.get(lane.id) !== JSON.stringify(lane),
+  }));
+  // The publish API validates against the saved project, where no lanes means the
+  // standard lane is allowed. Keep it publishable without a save, as before the editor.
+  if (saved.length === 0 && !rows.some(row => row.id === 'mobile-phone')) {
+    const standard = defaultPresentationLane();
+    rows.unshift({ id: standard.id, label: standard.label, dealers: [...standard.dealers], unsaved: false });
+  }
+  return rows;
 }
 
-export function ControlLanesPage({ initialProject, operators, storeAvailable }: {
+export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable }: {
   initialProject: StudioProject;
+  initialVideos: VideoInventory;
+  initialStatus: ConnectionStatus;
   operators: LaneOperatorChoice[];
   storeAvailable: boolean;
 }) {
-  const lanes = useMemo(() => visibleLanes(initialProject), [initialProject]);
+  const session = useStudioSession({ initialProject, initialVideos, initialStatus });
+  const {
+    project, modelEdit, dirty, saving, save, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
+  } = session;
+  const rows = publishLaneRows(project.lanes, savedJson, dirty);
   const [chosen, setChosen] = useState<string[]>([]);
   const [operatorId, setOperatorId] = useState(() => operators.find(item => item.id === 'sg-test')?.id ?? operators[0]?.id ?? '');
   const [listed, setListed] = useState(operators);
   const [revision, setRevision] = useState<number | null>(null);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [publishError, setPublishError] = useState('');
   const [busy, setBusy] = useState<'publish' | 'create' | ''>('');
   const writesOff = !storeAvailable || Boolean(busy);
+  const publishable = chosen.filter(id => rows.some(row => row.id === id && !row.unsaved));
+  const shownError = [publishError, error].filter(Boolean).join(' ');
 
   async function post(action: string, body: Record<string, unknown>) {
     const response = await fetch(`${labBasePath()}/api/admin/${action}`, {
@@ -50,20 +73,21 @@ export function ControlLanesPage({ initialProject, operators, storeAvailable }: 
 
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!storeAvailable || busy || chosen.length < 1 || !operatorId) return;
-    setBusy('publish'); setError(''); setMessage('');
+    const lanes = chosen.filter(id => rows.some(row => row.id === id && !row.unsaved));
+    if (!storeAvailable || busy || lanes.length < 1 || !operatorId) return;
+    setBusy('publish'); setPublishError(''); setMessage('');
     try {
-      const { response, payload } = await post('operator-package', { operatorId, lanes: chosen });
+      const { response, payload } = await post('operator-package', { operatorId, lanes });
       if (!response.ok) {
-        setError(response.status === 422 ? 'Lane-id:t finns inte i projektet.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
+        setPublishError(response.status === 422 ? 'Lane-id:t finns inte i projektet.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
         return;
       }
       const next = Number(payload?.package_revision ?? payload?.packageRevision);
-      if (!Number.isSafeInteger(next) || next < 1) { setError('Servern svarade utan package_revision.'); return; }
+      if (!Number.isSafeInteger(next) || next < 1) { setPublishError('Servern svarade utan package_revision.'); return; }
       setRevision(next);
       setMessage(`package_revision ${next}`);
     } catch {
-      setError('Publiceringen gick inte igenom.');
+      setPublishError('Publiceringen gick inte igenom.');
     } finally {
       setBusy('');
     }
@@ -71,35 +95,43 @@ export function ControlLanesPage({ initialProject, operators, storeAvailable }: 
 
   async function createDemo() {
     if (!storeAvailable || busy) return;
-    setBusy('create'); setError(''); setMessage('');
+    setBusy('create'); setPublishError(''); setMessage('');
     try {
       const { response, payload } = await post('operator-create-demo', {});
-      if (response.status === 409) { setError('SG test game provider finns redan.'); return; }
+      if (response.status === 409) { setPublishError('SG test game provider finns redan.'); return; }
       const operator = payload?.operator;
-      if (!response.ok || !operator || operator.id !== 'sg-test') { setError('Operatören kunde inte skapas.'); return; }
+      if (!response.ok || !operator || operator.id !== 'sg-test') { setPublishError('Operatören kunde inte skapas.'); return; }
       setListed(current => current.some(item => item.id === operator.id) ? current : [...current, { id: operator.id, slug: operator.slug, name: operator.name }]);
       setOperatorId(operator.id);
       setMessage('SG test game provider är skapad.');
     } catch {
-      setError('Operatören kunde inte skapas.');
+      setPublishError('Operatören kunde inte skapas.');
     } finally {
       setBusy('');
     }
   }
 
-  return <PageTemplate eyebrow="// STUDIO" title="Lanes" intro="Publicera ett operatörspaket. Spelet läser inte paketet i det här steget.">
+  return <PageTemplate
+    eyebrow="// STUDIO"
+    title="Lanes"
+    intro="Sätt ihop en lane av dealers, lager och OpenClaw-läge. Publicera ett operatörspaket. Spelet läser inte paketet i det här steget."
+    primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
+  >
     <div className="sg-page-body">
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
-      {error ? <p role="alert">{error}</p> : null}
+      {shownError ? <p role="alert">{shownError}</p> : null}
       {message ? <p role="status">{message}</p> : null}
+      {notice ? <p role="status">{notice}</p> : null}
       {revision !== null ? <p>Senaste package_revision: {revision}</p> : null}
+      {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
+      <LaneEditor project={project} onEdit={modelEdit} />
       <form onSubmit={event => { void publish(event); }}>
         <fieldset>
           <legend>Lanes i projektet</legend>
-          {lanes.length ? lanes.map(lane => <label key={lane.id}>
-            <input type="checkbox" name="lanes" value={lane.id} checked={chosen.includes(lane.id)} disabled={!storeAvailable}
-              onChange={event => setChosen(current => event.target.checked ? [...current, lane.id] : current.filter(id => id !== lane.id))} />
-            {lane.id} · {lane.label} · {lane.dealers.join(', ')}
+          {rows.length ? rows.map(row => <label key={row.id}>
+            <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={!storeAvailable || row.unsaved}
+              onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
+            {row.id} · {row.label} · {row.dealers.join(', ')}{row.unsaved ? ' (osparad)' : ''}
           </label>) : <p>Projektet har inga lanes.</p>}
         </fieldset>
         <label>Operatör
@@ -107,7 +139,7 @@ export function ControlLanesPage({ initialProject, operators, storeAvailable }: 
             {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
           </select>
         </label>
-        <button className="primary-button" type="submit" disabled={writesOff || chosen.length < 1 || !operatorId}>Publicera paket</button>
+        <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId}>Publicera paket</button>
       </form>
       <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
     </div>

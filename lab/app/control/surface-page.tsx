@@ -62,7 +62,10 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
   if (surface === 'control') {
     const tool = controlToolPath(route.view);
     if (tool) redirect(publicAbsoluteUrl(h, tool));
-    return <ControlWorkspace user={user} initialView={route.view} />;
+    // Översikt must never fail on a snapshot without operators; the fixture always has them.
+    const operators = (Array.isArray(data.snapshot.operators) ? data.snapshot.operators : [])
+      .map(({ id, slug, name }: { id: string; slug: string; name: string }) => ({ id, slug, name }));
+    return <ControlWorkspace user={user} initialView={route.view} operators={operators} />;
   }
   if (route.operatorSlug === null) {
     return <PartnerWorkspace user={user}

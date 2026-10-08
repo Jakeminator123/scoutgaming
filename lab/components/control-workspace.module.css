@@ -28,6 +28,25 @@
 .quickItem { display: flex; flex-direction: column; gap: 6px; }
 .quickItem :global(.sg-btn) { width: 100%; justify-content: space-between; }
 .quickItem p { margin: 0; color: var(--sg-muted, var(--muted)); font-size: 14px; }
+.operators {
+  margin-top: 28px; background: var(--sg-surface, var(--panel));
+  border: 1px solid var(--sg-border, var(--line)); border-radius: 14px; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.operators h2 {
+  font-family: var(--sg-font-display), "Space Grotesk", system-ui, sans-serif;
+  font-size: 18px; font-weight: 600; margin: 0;
+}
+.operators p { margin: 0; color: var(--sg-muted, var(--muted)); font-size: 14px; }
+.operatorPick { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.operatorLabel { display: flex; flex-direction: column; gap: 6px; font-size: 14px; min-width: 220px; }
+.operatorLabel select {
+  font: inherit; color: inherit; background: var(--sg-surface, var(--panel));
+  border: 1px solid var(--sg-border, var(--line)); border-radius: 8px; padding: 8px 10px; min-height: 40px;
+}
+.operatorList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.operatorList li { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; font-size: 14px; }
+.operatorList a { color: var(--sg-accent-text, var(--teal)); }
 .levels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
 .levels > div {
   background: var(--sg-surface, var(--panel)); border: 1px solid var(--sg-border, var(--line));

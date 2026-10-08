@@ -29,7 +29,7 @@ test('password bearer is scalar bounded base64url and never normalized from arbi
   for (const value of ['a'.repeat(31),'a'.repeat(129),'Bearer abc','%20','a.b.c',null,['a'.repeat(32)],{}]) assert.equal(studioPasswordToken(value),null);
 });
 test('new surface login returns preserve only admitted document paths for mounted and standalone Lab', () => {
-  for (const path of ['/control', '/control/voice', '/control/studio', '/control/admin', '/control/ops', '/partner', '/partner/demo-north/overview', '/partner/demo-south/team']) {
+  for (const path of ['/control', '/control/voice', '/control/studio', '/control/admin', '/control/ops', '/control/preview', '/control/lanes', '/partner', '/partner/demo-north/overview', '/partner/demo-south/team']) {
     for (const input of [path, '/studio' + path]) {
       assert.equal(studioLoginReturnTo(input), path);
       assert.equal(studioLoginDestination(input, '/studio/api/auth'), path);

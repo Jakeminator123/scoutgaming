@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { brandingApiBase, PartnerAppearanceLoader } from '../components/partner-appearance-loader.mjs';
+
+test('branding api base sits beside the partner snapshot action', () => {
+  assert.equal(brandingApiBase('/studio/api/partner/snapshot'), '/studio/api/partner');
+  assert.equal(brandingApiBase('/api/partner/snapshot'), '/api/partner');
+  assert.equal(brandingApiBase('/studio/api/partner-preview'), '/studio/api/partner-preview');
+  assert.equal(brandingApiBase(undefined), '');
+});
+
+test('loader renders a status line on the server and no lime before the first read', () => {
+  const html = renderToStaticMarkup(React.createElement(PartnerAppearanceLoader, {
+    apiBase: '/studio/api/partner/snapshot', operatorSlug: 'demo-north',
+  }));
+  assert.match(html, /Hämtar utseende/);
+  assert.doesNotMatch(html, /sg-btn-primary|Spara utseende/);
+});
+
+test('Kevin portal mounts the loader only for a real operator session on the theme view', () => {
+  const source = readFileSync(new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url), 'utf8');
+  assert.match(source, /import \{ PartnerAppearanceLoader \} from '\.\.\/partner-appearance-loader\.mjs'/);
+  assert.match(source, /surface==='partner'&&real&&view==='theme'&&<PartnerAppearanceLoader apiBase=\{apiBase\} operatorSlug=\{snapshot\.operator\.slug\}\/>/);
+  assert.equal((source.match(/PartnerAppearanceLoader/g) || []).length, 2);
+});

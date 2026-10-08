@@ -26,6 +26,18 @@ med `connect()`; `{ query }` ger 503. Spelet läser inte paketet. Klippbibliotek
 `project.clipLabels` via sidans Spara. `dealer-regression` använder `pnpm/action-setup@v6`
 och `actions/upload-artifact@v7`. Kartans L3-ruta är live.
 
+Andra passet samma förmiddag (fyra parallella underagenter): `/control/lanes` har en
+redigerare för `project.lanes[]` (ny lane, dealers 1–4, lager, OpenClaw-läge,
+bolagsjusteringar; Spara projekt är sidans lime, Publicera paket sekundär; id låses vid
+skapande). Översikten listar anslutna bolag ur fixturen med länk till `/partner/{slug}`.
+Partner-API:t har `GET/POST …/branding?operator=` som läser och skriver bolagets utseende
+inom lanens `operatorAdjustable` (revision som CAS, rättighet `presentations.configure`,
+pool med `connect()`); panelen visas i Kevins vy Färger, marker och kort för inloggad
+operatör. Inga roller seedas förrän N2.2, så skrivningen ger 403 i produktion tills dess.
+Död CSS borta, guiden har dagens sidnamn, `returnTo` efter utloggning pekar tillbaka på
+`/control/preview` och `/control/lanes`. Jakob 10:32: `/control/lanes` ersätter Kevins
+gamla alias som ledde till Administration. Promptfiler för L8, C5b och N3 ligger i `random/`.
+
 ## Pass S, 8 oktober 2026 natt: klipplogik steg 3a, Händelser en sida, förhandsvisning
 
 Jakob 02:49: "kör enligt rekommendationerna, bortse från John om det blockar". Beslut 49–59 i

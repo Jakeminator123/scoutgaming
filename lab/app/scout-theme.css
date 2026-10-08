@@ -166,8 +166,7 @@ html[data-theme="light"] {
   cursor: pointer;
 }
 .sg-chip:hover { border-color: var(--sg-strong); color: var(--sg-text); }
-.sg-chip[aria-pressed="true"],
-.sg-chip.is-on {
+.sg-chip[aria-pressed="true"]{
   background: var(--sg-lime);
   color: var(--sg-on-accent);
   border-color: var(--sg-lime);
@@ -297,7 +296,6 @@ html[data-theme="light"] .sg-shell {
   border-bottom-color: var(--sg-border);
   box-shadow: none;
 }
-.sg-shell .studio-shell { color: var(--sg-text); background: transparent; }
 .sg-shell .inspector,
 .sg-shell .workspace,
 .sg-shell .stage-panel {

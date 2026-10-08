@@ -22,5 +22,5 @@ export default async function Page() {
       storeAvailable = false;
     }
   }
-  return <ControlLanesPage initialProject={data.project} operators={operators} storeAvailable={storeAvailable} />;
+  return <ControlLanesPage initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} />;
 }
