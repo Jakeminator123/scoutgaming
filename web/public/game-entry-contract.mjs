@@ -1,4 +1,4 @@
-import { isGameLaneId } from './game-lanes.mjs';
+import { isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
 const dealers = new Set(['vera','astrid','amira','mei']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
@@ -18,7 +18,7 @@ export function approvedGameQuery(input,{origin,includeLaunch = true} = {}) {
   const one = key => source.getAll(key).length === 1 ? source.get(key) : null;
   const values = {dealer:value => dealers.has(value),presentation:value => ['local','original'].includes(value),lane:isGameLaneId,
     performance:value => value === 'staged',motion:value => value === 'smooth60',rehearsal:value => value === '1',
-    table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value)};
+    table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value),operator:isOperatorSlug};
   for (const [key,valid] of Object.entries(values)) {const value = one(key);if (valid(value)) result.set(key,value);}
   const launch = one('launch');
   if (includeLaunch && typeof launch === 'string' && launch.length <= 16384 && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(launch)) result.set('launch',launch);
@@ -48,12 +48,30 @@ export function playerLoginDestination(url) {
   const query = approvedGameQuery(url.searchParams, { origin: url.origin, includeLaunch: false }).toString();
   return '/player-login' + (query ? `?${query}` : '');
 }
+const attributeText = value => value.replace(/[&"'<>]/g,character => ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'})[character]);
+// Branding is operator-written JSON. It is escaped data for the client, never markup.
+function brandingAttribute(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Invalid game presentation');
+  const text = JSON.stringify(value);
+  if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
+  return attributeText(text);
+}
 export function decorateGameEntryHtml(html,env,selection) {
   if (!gameEntryEnabled(env)) return html;
   let attributes = ' data-game-path="/blackjack"';
   if (selection) {
     if (!isGameLaneId(selection.lane) || !dealers.has(selection.dealer) || !['local','original'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
+    const packaged = selection.packageRevision !== undefined || selection.branding !== undefined;
+    if (selection.operator !== undefined) {
+      if (!isOperatorSlug(selection.operator)) throw Error('Invalid game presentation');
+      attributes += ` data-game-operator="${selection.operator}"`;
+      if (packaged) {
+        if (!Number.isSafeInteger(selection.packageRevision) || selection.packageRevision < 1) throw Error('Invalid game presentation');
+        attributes += ` data-game-package-revision="${selection.packageRevision}" data-game-branding="${brandingAttribute(selection.branding)}"`;
+      }
+    } else if (packaged) throw Error('Invalid game presentation');
   }
-  return html.replace(/<html(?=[\s>])/i,'<html'+attributes);
+  // A replacer function: attribute text must never be read as a $-pattern.
+  return html.replace(/<html(?=[\s>])/i,() => '<html'+attributes);
 }

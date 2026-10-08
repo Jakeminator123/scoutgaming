@@ -69,11 +69,22 @@ const { createStudioMediaRuntime, createStudioPublicMediaAvailability } = neonSt
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage,
   dealerIdle: createRegisteredDealerIdle({ pathFor: publicAssetPath, mediaAvailable: createStudioPublicMediaAvailability({ repositoryRoot: mediaRepository }) }) }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+// Operator packages share the Studio pool and scope; a read failure keeps today's entry.
+const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
+const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
+  packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope }) }) : null;
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
   artifacts: (await import('./speech-blob-artifacts.mjs')).createSpeechBlobArtifacts(),
   ...(nativeP6QaRouter?.providerFetch ? { providerFetch:nativeP6QaRouter.providerFetch } : {}),
+});
+const { handlePlayerSurface } = await import('./player-surface.mjs');
+const { createPublicOperatorDirectory } = await import('./public-operators.mjs');
+const publicOperators = createPublicOperatorDirectory({
+  store: studioPolicyRuntime ? await (await import('./storage/operator-store.mjs')).createOperatorStore({
+    sql: storage.pool, scope: studioPolicyRuntime.scope,
+  }) : null,
 });
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
@@ -125,6 +136,7 @@ if (!postgres) db.exec(`
     amount REAL NOT NULL, currency TEXT NOT NULL, meta TEXT, at TEXT NOT NULL
   );
 `);
+if (!postgres) (await import('./player-profile.mjs')).ensureSqliteProfileColumns(db);
 const RATES = { USD: 1, EUR: 0.92, SEK: 10.6 }; // fixed demo rates per USD
 const logTx = (pid, type, amount, currency, meta = '') =>
   db.prepare('INSERT INTO transactions (player_id, type, amount, currency, meta, at) VALUES (?,?,?,?,?,?)')
@@ -685,7 +697,16 @@ const server = createServer(async (req, res) => {
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
   const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
   if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
+  if (pathname.startsWith('/api/operators/')) {
+    if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
+  }
   let authenticated=(await playerSession(req))?.playerId ?? null;
+  if (pathname === '/api/profile') {
+    if (await handlePlayerSurface(req, res, pathname, {
+      db, playerId: authenticated, guest: false,
+      originOk: playerPostOriginOk(req, {gameOrigin, frontendOrigin}),
+    })) return;
+  }
   if (neonStudioEnabled && ['/blackjack','/blackjack/'].includes(pathname) && !authenticated && ['GET','HEAD'].includes(req.method)) {
     res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
     res.end(); return;
@@ -1094,11 +1115,14 @@ const server = createServer(async (req, res) => {
   if (neonStudioEnabled && type === 'text/html') {
     let selection;
     if (['/blackjack','/blackjack/'].includes(pathname)) {
-      try {
-        const { gameLaneSelection } = await import('./public/game-lanes.mjs');
-        const policy = await studioPolicyRuntime.policy.readGameConfiguration();
-        selection = gameLaneSelection(url.searchParams,policy.gameLane,policy.gameLanes);
-      } catch { res.writeHead(503,{'Cache-Control':'no-store'});res.end('Game entry unavailable');return; }
+      let entry;
+      try { entry = await selectGameEntry(url.searchParams); }
+      catch { res.writeHead(503,{'Cache-Control':'no-store'});res.end('Game entry unavailable');return; }
+      if (entry.status === 404) {
+        res.writeHead(404,{'Content-Type':'text/html; charset=utf-8','Content-Length':Buffer.byteLength(OPERATOR_NOT_FOUND_HTML),'Cache-Control':'no-store'});
+        res.end(req.method === 'HEAD' ? undefined : OPERATOR_NOT_FOUND_HTML); return;
+      }
+      selection = entry.selection;
     }
     const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
