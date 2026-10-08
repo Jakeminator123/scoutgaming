@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { calibration } from '../web/public/card-presentation/calibration.mjs';
-import { createCardCursor } from '../web/public/local-card-overlay.mjs';
+import { createCardCursor, localCardSize } from '../web/public/local-card-overlay.mjs';
 import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
@@ -269,3 +269,27 @@ test('four split hands survive reload, hand changes and collection with separate
  round.dealer.push(card('10','♣',4));cards.render(round,visible,true,0);cards.advanceDeal(31/24);
  assert.equal(hole.attrs.display,'inline');assert.equal(hole.attrs['data-card'],'10♣');assert.equal(up.attrs.transform,start);
  });
+
+test('Dragge and Paow cards match their 79 x 106 props with scaled art and their own name; Astrid keeps 63 x 85', () => {
+  assert.deepEqual(localCardSize('astrid'), { width: 63, height: 85 });
+  for (const dealerId of ['dragge', 'paow']) assert.deepEqual(localCardSize(dealerId), { width: 79, height: 106 });
+  const astrid = setup();
+  astrid.cards.render(fixture(), new Set([1, 2, 3]), false, 0);
+  const astridFace = draw(astrid.svg, 1).children[0];
+  assert.equal(all(astridFace).some(n => n.attrs.transform?.startsWith('scale(')), false);
+  assert.ok(all(astrid.svg).some(n => n.attrs['aria-label']?.startsWith('Astrid:')));
+  const svg = new Node('svg'); svg.id = 'paow';
+  const cards = createGameCards(svg, { ...manifest, kort_storlek: { bredd: 79, hojd: 106 }, dealerName: 'Paow' });
+  const round = fixture(); cards.render(round, new Set([1, 2, 3, 4]), false, 0);
+  const face = draw(svg, 1).children[0];
+  const paper = face.children[0], scaled = all(face).find(n => n.attrs.transform?.startsWith('scale('));
+  assert.deepEqual([paper.attrs.width, paper.attrs.height], ['79', '106']);
+  assert.equal(scaled.attrs.transform, `scale(${Math.min(79 / 63, 106 / 85)})`);
+  assert.deepEqual(scaled.children.map(n => n.tag), ['g', 'g', 'text']);
+  const back = all(draw(svg, 4)).find(n => n.tag === 'image');
+  assert.deepEqual([back.attrs.width, back.attrs.height], ['79', '106']);
+  const clip = all(svg).find(n => n.attrs.id === 'paow-felt-face').children[0];
+  assert.deepEqual([clip.attrs.width, clip.attrs.height], ['77', '104']);
+  assert.ok(all(svg).some(n => n.attrs['aria-label']?.startsWith('Paow:')));
+  assert.equal(all(svg).some(n => n.attrs['aria-label']?.startsWith('Astrid:')), false);
+});

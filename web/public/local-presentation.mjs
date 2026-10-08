@@ -4,6 +4,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const response = await fetch('/api/presentation/config', { cache: 'no-store' });
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
+  // A registered bank without speech or idle films (Dragge, Paow) rests on its
+  // baked still and skips game speech. Astrid's bank has both and is unchanged.
+  const bank = (config.inventory.families ?? []).filter(row => row.dealerId === dealerId);
+  const speechless = bank.length > 0 && !bank.some(row => row.eventId.startsWith('speak.'));
+  const restStill = bank.length > 0 && !bank.some(row => row.playbackType === 'idle-pool');
   let upcoming = [], queueVersion;
   const prepare = event => {
     if (!event || queueVersion !== version() || closed) return;
@@ -28,7 +33,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const idle = createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
-  const hold = video => { if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
+  let held = false;
+  const hold = video => { if (!video.videoWidth) return; held = true; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
+  if (restStill) {
+    // The same pose every joined deal film starts and ends on. A held film frame wins.
+    const rest = new Image();
+    rest.onload = () => { if (held || closed) return; still.width = rest.naturalWidth; still.height = rest.naturalHeight; still.getContext('2d').drawImage(rest, 0, 0); };
+    rest.src = `/dealers/${dealerId}/rest.png`;
+  }
   const stop = () => { active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
@@ -96,6 +108,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (action || speech) onBusy(); else resumeIdle();
   }
   async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
+    if (event.type === 'speak' && speechless) {
+      // No 2D fallback before every deal: the line is skipped and receipted.
+      if (queueVersion === version() && upcoming[0]?.type === 'speak' && upcoming[0].line === event.line) { upcoming.shift(); prepare(upcoming[0]); }
+      receipt({ event: 'speech', state: 'skipped', sourceEvent: event, reason: 'Dealern har ingen talbank', renderer: 'none', projectRevision: config.projectRevision || config.revision, configurationSource });
+      return false;
+    }
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
     const requestVersion = version();

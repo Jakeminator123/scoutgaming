@@ -9,6 +9,9 @@ import { dealerHandClip } from './dealer-hand-occlusion.js';
 export function createGameCards(svg, manifest) {
   const positions = new Map(manifest.deal.map(d => [d.id.replace('deal_pos', ''), d.kort]));
   const { bredd: width, hojd: height } = manifest.kort_storlek;
+  // Face art is laid out for Astrid's 63 x 85 props; a larger prop scales it uniformly.
+  const artScale = Math.min(width / 63, height / 85);
+  const dealerName = manifest.dealerName ?? 'Astrid';
   const prefix = `${svg.id || 'cards'}-felt`;
   const defs = svgNode('defs');
   const faceClip = svgNode('clipPath', {id: `${prefix}-face`, clipPathUnits:'userSpaceOnUse'});
@@ -43,11 +46,14 @@ export function createGameCards(svg, manifest) {
       fill: '#eaf1f2', stroke: '#c9c3af', 'stroke-width': .8 }));
     const color = suitColor(card.s);
     const ink = svgNode('g', {'clip-path': `url(#${prefix}-face)`});
+    // The face clip stays in card units; only the art inside it scales.
+    const art = artScale === 1 ? ink : svgNode('g', { transform: `scale(${artScale})` });
     const corner = svgNode('g', { fill: color, 'text-anchor': 'middle', 'font-family': 'Arial', 'font-weight': '700' });
     corner.append(svgNode('text', { x: -19, y: -22, 'font-size': 17 }, card.r), svgNode('text', { x: -19, y: -7, 'font-size': 16 }, card.s));
-    ink.append(corner);
-    const inverted = corner.cloneNode(true); inverted.setAttribute('transform', 'rotate(180)'); ink.append(inverted);
-    ink.append(svgNode('text', { y: 11, 'text-anchor': 'middle', fill: color, 'font-family': 'Georgia', 'font-size': 32 }, card.s));
+    art.append(corner);
+    const inverted = corner.cloneNode(true); inverted.setAttribute('transform', 'rotate(180)'); art.append(inverted);
+    art.append(svgNode('text', { y: 11, 'text-anchor': 'middle', fill: color, 'font-family': 'Georgia', 'font-size': 32 }, card.s));
+    if (art !== ink) ink.append(art);
     group.append(ink);
     return group;
   }
@@ -148,7 +154,7 @@ export function createGameCards(svg, manifest) {
       const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 32 : 60);
       const value = total(hand.cards.filter(c => c.r));
       const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
-        'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
+        'aria-label': `${dealer ? dealerName : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
       badge.append(svgNode('rect', { x: -36, y: split ? -16 : -22, width: 72, height: split ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
         svgNode('text', { y: split ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': split ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
       badges.append(badge);

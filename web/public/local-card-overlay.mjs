@@ -64,12 +64,18 @@ export function createCardCursor(renderer) {
   };
 }
 
-export function createLocalCardOverlay(host) {
+// Astrid's calibrated card is 63 x 85. Dragge's and Paow's H3 props measure
+// 79 x 106 on the same landing centres, so only the size changes.
+const CARD_SIZES = Object.freeze({ dragge: Object.freeze({ width: 79, height: 106 }), paow: Object.freeze({ width: 79, height: 106 }) });
+export const localCardSize = dealerId => Object.hasOwn(CARD_SIZES, dealerId) ? CARD_SIZES[dealerId] : { width: calibration.width, height: calibration.height };
+
+export function createLocalCardOverlay(host, { dealerId = 'astrid', dealerName = 'Astrid' } = {}) {
   const svg = svgNode('svg', { id: 'local-card-overlay', class: 'local-card-overlay', viewBox: '0 0 1080 1920',
     preserveAspectRatio: 'xMidYMid meet', 'aria-label': 'Cards on the recorded table' });
+  const size = localCardSize(dealerId);
   const renderer = createGameCards(svg, {
     deal: Object.entries(calibration.positions).map(([id, kort]) => ({ id: `deal_pos${id}`, kort })),
-    kort_storlek: { bredd: calibration.width, hojd: calibration.height },
+    kort_storlek: { bredd: size.width, hojd: size.height }, dealerName,
   });
   host.append(svg); host.dataset.localCardOverlay = 'true';
   const cursor = createCardCursor(renderer);

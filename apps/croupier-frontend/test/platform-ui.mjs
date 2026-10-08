@@ -352,3 +352,13 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     for (const [key, value] of Object.entries(previous)) {if (value === undefined) delete process.env[key]; else process.env[key] = value;}
   }
 });
+
+test('public dealer media reaches the backend for Dragge and Paow, never for an unknown dealer', () => {
+  for (const dealer of ['astrid', 'dragge', 'paow']) {
+    for (const path of [`/dealers/${dealer}/poster.jpg`, `/dealers/${dealer}/rest.png`, `/dealers/${dealer}/audio/en/bank.json`, `/media/dealers/${dealer}/runtime/presentation/x.mp4`]) {
+      assert.equal(backendPlatformPath(path), true, path);
+      assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), {kind:'backend', destination:config.backendOrigin + path});
+    }
+  }
+  for (const path of ['/dealers/nova/poster.jpg', '/dealers/draggee/rest.png', '/media/dealers/paow/source/x.mp4']) assert.equal(backendPlatformPath(path), false, path);
+});

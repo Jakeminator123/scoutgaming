@@ -478,3 +478,37 @@ test('a newer ownership change discards a late selection before it can start a f
   respond(new Response(JSON.stringify({ video: { id: 'old' }, decision: {} })));
   assert.equal(await pending, false); assert.equal(jobs.length, count);
 });
+
+test('a bank without speech or idle rests on its still and skips game speech without a 2D fallback', async t => {
+  const originalDocument = globalThis.document, originalFetch = globalThis.fetch, originalImage = globalThis.Image;
+  const draws = [], images = [], receipts = [], jobs = [], requests = [], elements = [];
+  const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage: image => draws.push(image) }) }; elements.push(value); return value; };
+  globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
+  globalThis.Image = class { constructor() { images.push(this); } };
+  const video = { id: '0a0a0a0a-0a0a-0a0a-0a0a-0a0a0a0a0a0a', sha256: '0a'.repeat(32), fileName: 'deal_pos4.mp4', available: true, familyId: 'paow/deal.player.centre/box3', role: 'standard' };
+  const inventory = { videos: [video], summary: {}, families: [{ id: video.familyId, dealerId: 'paow', eventId: 'deal.player.centre', situation: 'box3', playbackType: 'once', standardIds: [video.id], variantIds: [] }] };
+  globalThis.fetch = async (url, options) => { requests.push(url); return new Response(JSON.stringify(url.endsWith('/config')
+    ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'paow-config', configurationSource: 'lab/project.json' }
+    : { video, standard: video, projectRevision: 'paow-selection', configurationSource: 'lab/project.json', decision: { requestId: 'paow-request', sourceEvent: JSON.parse(options.body).event, media: { familyId: video.familyId } } })); };
+  const player = { prepareLocalClip() {}, playLocalClip(take, options) { return new Promise((resolve, reject) => { jobs.push({ take, options, resolve });
+    options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true }); }); } };
+  const controller = await createLocalPresentation({ player, host: element(), dealerId: 'paow', version: () => 3,
+    receipt: value => receipts.push(value), onIdle() {}, onBusy() {}, muted: () => false });
+  t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; globalThis.Image = originalImage; });
+  const still = elements.find(value => value.className === 'local-presentation-film local-presentation-still');
+  const status = elements.find(value => value.className === 'local-presentation-status');
+  assert.equal(images.length, 1); assert.equal(images[0].src, '/dealers/paow/rest.png');
+  Object.assign(images[0], { naturalWidth: 1080, naturalHeight: 1920 }); images[0].onload();
+  assert.deepEqual([still.width, still.height, draws.length, draws[0]], [1080, 1920, 1, images[0]]);
+  controller.start(); assert.equal(jobs.length, 0, 'no idle film for a dealer without an idle pool');
+  const deal = { type: 'deal', to: 'box', box: 3, shoeDraw: 7 };
+  controller.prepareSequence([{ type: 'speak', line: 'goodluck' }, deal]);
+  assert.equal(await controller.present({ type: 'speak', line: 'goodluck' }), false);
+  assert.equal(requests.some(url => url.endsWith('/select')), false);
+  assert.equal(status.textContent ?? '', '');
+  assert.deepEqual(receipts.filter(row => row.event === 'speech').map(row => [row.state, row.renderer, row.sourceEvent.line]), [['skipped', 'none', 'goodluck']]);
+  const played = controller.present(deal); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(jobs.length, 1); assert.equal(jobs[0].take.media.sha256, video.sha256);
+  jobs[0].options.hold({ videoWidth: 1080, videoHeight: 1920 }); jobs[0].resolve({ completed: true }); assert.equal(await played, true);
+  images[0].onload(); assert.equal(draws.length, 2, 'a held film frame is never replaced by a late rest still');
+});

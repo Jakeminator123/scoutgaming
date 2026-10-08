@@ -524,7 +524,7 @@ if (localPresentationEnabled) {
       onIdle: () => presentStandardIdle('local-primary-frame'),
       onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
     });
-    localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+    localCards = cardOverlay.createLocalCardOverlay($('#scene'), { dealerId: DEALER.key, dealerName: DEALER.name });
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards.close(); localPresentation.close(); }, { once: true });
   } catch (error) {

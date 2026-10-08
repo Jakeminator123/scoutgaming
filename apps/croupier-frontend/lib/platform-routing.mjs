@@ -73,7 +73,7 @@ const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
-const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
+const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei|dragge|paow)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei|dragge|paow)|game|site)\/runtime)(?:\/|$)/;
 
 // The routing boundary deliberately has no general /api or /bo catch-all.
 // Every group retains the backend's own session, role and request validation.
