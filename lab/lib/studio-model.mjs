@@ -13,13 +13,13 @@ export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'tem
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const LABEL_MAX = 120;
-const LANE_ID = /^[a-z][a-z0-9-]{0,63}$/;
-const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype']);
-const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'active']);
-const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
-const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
-const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
-const MAX_LANES = 32;
+export const LANE_ID = /^[a-z][a-z0-9-]{0,63}$/;
+export const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype']);
+export const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'active']);
+export const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
+export const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
+export const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
+export const MAX_LANES = 32;
 const MAX_CLIP_LABELS = 2048;
 const VALUE_OPS = ['eq', 'ne', 'in', 'exists'];
 const NUMBER_OPS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'exists'];
@@ -161,6 +161,10 @@ function laneErrors(lanes, projectDealerIds) {
     }
   });
   return errors;
+}
+
+export function validateLanes(lanes, dealerIds) {
+  return laneErrors(lanes, dealerIds);
 }
 
 function clipLabelErrors(value) {

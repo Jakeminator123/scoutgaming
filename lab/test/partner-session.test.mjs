@@ -282,4 +282,107 @@ test('the partner index lists only member operators and the route rejects other 
     assert.equal(await response.text(), '');
   }
 });
+
+test('branding requires partner_session, rejects a query-only pool, and keeps the login Origin gate', async () => {
+  const loggedIn = await handlePartnerAuth(loginRequest('north-partner', secret), config);
+  const cookie = `partner_session=${tokenOf(loggedIn)}`;
+  const headers = { host: 'public.example.invalid', cookie };
+  const missing = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    headers: { host: 'public.example.invalid' },
+  }), config);
+  assert.equal(missing.status, 401);
+  assert.equal(missing.headers.get('cache-control'), 'private, no-store');
+  const noOrigin = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
+    body: JSON.stringify({ expectedRevision: 1, branding: {} }),
+  }), config);
+  assert.equal(noOrigin.status, 403);
+  const loginQuery = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/login?operator=demo-north`, {
+    method: 'POST',
+    headers: {
+      host: 'public.example.invalid', origin: publicOrigin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json',
+    },
+    body: JSON.stringify({ user: 'north-partner', pass: secret }),
+  }), config);
+  assert.equal(loginQuery.status, 400);
+  let queries = 0;
+  const unavailable = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, { headers }), {
+    ...config,
+    pool: { async query() { queries += 1; return { rows: [] }; } },
+  });
+  assert.equal(unavailable.status, 503);
+  assert.equal(queries, 0);
+});
+
+test('branding read follows the lane and writing requires presentations.configure', async () => {
+  const loggedIn = await handlePartnerAuth(loginRequest('north-partner', secret), config);
+  const cookie = `partner_session=${tokenOf(loggedIn)}`;
+  const readProject = async () => ({ lanes: [{ id: 'mobile-phone', operatorAdjustable: ['table.color'] }] });
+  function storeFor(permissions) {
+    const published = [];
+    const role = { id: 'partner-admin', permissions, operatorId: northId, scope };
+    const membership = { userId: '42', roleId: role.id, status: 'active', operatorId: northId, scope };
+    const pack = {
+      operatorId: northId, revision: 4, lanes: ['mobile-phone'], games: ['blackjack'], tables: ['table-a'],
+      branding: { color: '#112233', name: 'North' },
+    };
+    return {
+      published,
+      async getOperatorBySlug(slug) { return slug === 'demo-north' ? north : null; },
+      async getMembership() { return { ...membership }; },
+      async getRole() { return { ...role, permissions: [...permissions] }; },
+      async resolvePartnerContext() {
+        return {
+          account: { userId: '42', role: 'partner', status: 'active' },
+          scope,
+          operator: { id: northId, status: 'active', scope },
+          membership: { ...membership },
+          role: { ...role, permissions: [...permissions] },
+        };
+      },
+      async getCurrentPackage() { return { ...pack, lanes: [...pack.lanes], games: [...pack.games], tables: [...pack.tables], branding: { ...pack.branding } }; },
+      async publishPackage(input) {
+        published.push(input);
+        return { ...pack, revision: 5, branding: { ...pack.branding, ...input.branding }, lanes: [...input.lanes], games: [...input.games], tables: [...input.tables] };
+      },
+    };
+  }
+  const reader = storeFor(['overview.read']);
+  const authed = { ...config, store: reader, readProject };
+  const read = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    headers: { host: 'public.example.invalid', cookie },
+  }), authed);
+  assert.equal(read.status, 200);
+  assert.equal(read.headers.get('cache-control'), 'private, no-store');
+  const body = await read.json();
+  assert.deepEqual(body.adjustable, ['table.color']);
+  assert.equal(body.packageRevision, 4);
+  const denied = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    method: 'POST',
+    headers: {
+      host: 'public.example.invalid', origin: publicOrigin, 'sec-fetch-site': 'same-origin',
+      'content-type': 'application/json', cookie,
+    },
+    body: JSON.stringify({ expectedRevision: 4, branding: { color: '#00ff00' } }),
+  }), authed);
+  assert.equal(denied.status, 403);
+  assert.equal(reader.published.length, 0);
+  const writer = storeFor(['overview.read', 'presentations.configure']);
+  const saved = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    method: 'POST',
+    headers: {
+      host: 'public.example.invalid', origin: publicOrigin, 'sec-fetch-site': 'same-origin',
+      'content-type': 'application/json', cookie,
+    },
+    body: JSON.stringify({ expectedRevision: 4, branding: { color: '#00ff00' } }),
+  }), { ...config, store: writer, readProject });
+  assert.equal(saved.status, 200);
+  assert.equal((await saved.json()).packageRevision, 5);
+  assert.equal(writer.published[0].actor, 'north-partner');
+  assert.deepEqual(writer.published[0].lanes, ['mobile-phone']);
+  assert.deepEqual(writer.published[0].games, ['blackjack']);
+  assert.deepEqual(writer.published[0].tables, ['table-a']);
+  assert.equal(writer.published.length, 1);
+});
 });

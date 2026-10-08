@@ -35,8 +35,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | A10 | `test/fuzz-blackjack.mjs` mot `web/shoe-game.mjs` (J5) | klart natt 8 okt (S3): 3 000 rundor ~5 s i kroken, 100 000 gröna; undantaget borta. CI grön `a4288aa7` | beslut 53 | – |
 | A11 | `dealer-regression`: `actions/upload-artifact@v4` och `pnpm/action-setup@v4` kör Node 20 (deprecerat, tvingas till 24) | kod inne (`@v7` / `@v6`); CI omkörs vid push | CI-annotation 8 okt | M |
 | A6 | Chefens register i `.croupier-inbox/chef.json`, låstext "Inbox busy" | kvar, lågprio | matris 34 | M senare |
-| A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | kvar, lågprio | matris 34 | M senare |
-| A8 | `test/backoffice-lab-browser.mjs` opt-in, ej körd | kvar; blir undantag i A4 | matris 34 | M |
+| A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | klart (S4): död CSS borta i 4 filer; `main-nav`, `studio-brand`, `studio-footer` kvar (tester) | matris 34 | – |
+| A8 | `test/backoffice-lab-browser.mjs` opt-in, ej körd | klart: fanns redan som undantag (266/0/2) | matris 34 | – |
 | A9 | Testping #4 stängs | väntar (Jakob) | inbox #4 | – |
 
 ## B. Nivå 1 skal och design
@@ -53,8 +53,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | B8 | Inloggningskortet på sidmallens tokens | klart natt 8 okt (S1); verifiera ljust/mörkt i prod | matris 14 | D |
 | B9 | Namnkrock Talgranskning (meny → Probe, adminflik = betald QA) | klart natt 8 okt (S1) | matris 17b, beslut 52 | D |
 | B10 | Ljust läge på två inre sidor | kvar; verifiera i produktion vilka | matris 3 | D |
-| B11 | `lab/docs/guide.json` använder gamla sidnamn | kvar | matris 25 | M senare |
-| B12 | Dold `<select>` bakom dealerchipsen (gammalt test) | kvar | matris 10 | M senare |
+| B11 | `lab/docs/guide.json` använder gamla sidnamn | klart (S4): dagens menynamn + poster för Förhandsvisning och Lanes | matris 25 | – |
+| B12 | Dold `<select>` bakom dealerchipsen (gammalt test) | klart: fanns inte längre; chips med `aria-pressed` | matris 10 | – |
 
 ## C. Klipplogik: ett system
 
@@ -65,7 +65,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | C3 | Förslag: ett system, flytt av frekvens per klipp, vad användaren förlorar/ersättning | klart: `random/k2-forslag-2026-10-08.md` | brief K steg 2 | K |
 | C4 | Jakobs go på C3 | klart 02:49 ("kör enligt rekommendationerna") | beslut 49–53 | – |
 | C5a | Genomför 3a: rad 37, 17b, lane-typ, klippnamn, fuzz, `/control/preview` | klart natt 8 okt (S1–S4) | K2 | K |
-| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | **väntar på dagtid med Jakob**: kräver rehearsal `?dealer=<namn>&rehearsal=1` två spel i rad på fyra dealers | K2 | K |
+| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | **väntar på dagtid med Jakob**; promptfil `random/prompt-C5b-select-fyra-dealers.md` (Opus) | K2 | K |
 | C6 | Bakgrund och probe in i samma modell | kvar | brief K steg 4 | K |
 | C7 | Varianter/villkor för Vera, Amira, Mei i spelet (L19) | kvar | lösa trådar | K |
 | C8 | Zoner styr spelets bakgrund (L16) | kvar; blir del av D-lagret nedan | lösa trådar | K/T |
@@ -94,13 +94,13 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | L1 | Lagring `operator_packages` med lanes/spel/bord/branding | klart | 005 | – |
-| L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | kvar; efter C5 | lösa trådar | Lane |
+| L2 | Skapa lane av delarna 1–4 i nivå 1 (L1) | kod inne (S1): redigerare på `/control/lanes`, Spara projekt enda lime; id låst efter skapande; verifiera i prod | lösa trådar | Lane |
 | L3 | Exportera/publicera lane till bolag (L2); `publishPackage` har ingen anropare | kod inne (`/control/lanes` + POST); meny + karta live; spelet läser inte paketet (L8) | lösa trådar | Lane |
-| L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kvar | lösa trådar | Lane |
+| L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kod inne (S3): partner-API `branding` GET/POST (CAS, `presentations.configure`, pool) + panel i Kevins vy Färger, marker och kort för riktig session; prod ger 403 tills roller seedas (N2.2); chips kvar | lösa trådar | Lane |
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
-| L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | kvar | matris 44 | Lane |
+| L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | kod inne (S2): fixturens bolag + länk till `/partner/{slug}`; spelare per bolag väntar N2.4; riktig lista väntar N2.2 | matris 44 | Lane |
 | L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
-| L8 | Spelmotorn läser `operator_packages` | kvar | L2 | Lane |
+| L8 | Spelmotorn läser `operator_packages` | promptfil `random/prompt-L8-spelmotorn-laser-paket.md` (Opus/Codex, Jakob kör) | L2 | Lane |
 
 ## N2. Nivå 2 (operatör)
 
@@ -119,8 +119,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | N3.1 | Lobby, profil, historik | klart | – | – |
-| N3.2 | Operatörskontext i lobbyn (L13) | kvar; efter L3 | lösa trådar | Lane |
-| N3.3 | Redigerbar profil | kvar | L13 | N3 |
+| N3.2 | Operatörskontext i lobbyn (L13) | promptfil `random/prompt-N3-spelarens-profil-och-bolag.md` (grok fast) | lösa trådar | Lane |
+| N3.3 | Redigerbar profil | samma promptfil som N3.2 | L13 | N3 |
 | N3.4 | Spelarens val: bordsfärg, bakgrund, dealer (T3–T5) | kvar | nytt | Lane |
 | N3.5 | Render-deploy av `/api/history` och `/bo`-redirects (L7) | väntar (Jakob: manuell deploy) | lösa trådar | – |
 
@@ -132,7 +132,10 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Radera Vercel `scoutgaming-legacy-frontend` (rad 40) | väntar |
 | Jakob | Render manuell deploy `croupier-v2` | väntar |
 | Jakob | Rotera Neon-rollen `croupier_game` | väntar |
-| Jakob | Svar F1–F5 nedan | väntar |
+| Jakob | Svar F1–F5 nedan | besvarade 02:49 via "kör enligt rekommendationerna" |
+| Jakob | Logga in på `www.scoutgaming.tech/control` i Cursor-webbläsaren så orkestratorn kan verifiera B2–B5, B8, T10, L2, L6 live | väntar |
+| Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
+| Jakob | Kör promptfilerna `random/prompt-L8-*.md` (Opus/Codex), `prompt-C5b-*.md` (Opus, med dig), `prompt-N3-*.md` (grok fast) i egna agenter | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |
 | Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan | väntar |
 | Emil | Acceptera GitHub-inbjudan | väntar |

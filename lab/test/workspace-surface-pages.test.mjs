@@ -149,13 +149,17 @@ test('authorized SSR passes only the selected snapshot, view, operator and nativ
 });
 
 test('control shows the overview and disconnected preview addresses are not found', async () => {
-  const loaded = pages(async () => ({ snapshot: { privateFixture: true }, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin' } }));
+  const loaded = pages(async () => ({ snapshot: { privateFixture: true, operators: [
+    { id: 'sg-test', slug: 'sg-test', name: 'SG test game provider', privateField: 'never-pass' },
+  ] }, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin' } }));
   const element = await renderPage(loaded.control, undefined);
   assert.equal(element.type, loaded.ControlWorkspace);
   assert.equal(element.props.user, 'fixture-admin');
   assert.equal(element.props.initialView, 'ops');
-  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'user']);
-  for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['preview'], ['statistics']]) {
+  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'operators', 'user']);
+  assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [{ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }]);
+  // 'preview' left this list in 1f1c14d6: /control/preview is the staff layer-preview page (its own route wins).
+  for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['statistics']]) {
     await assert.rejects(renderPage(loaded.control, path), error => error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404');
   }
 });

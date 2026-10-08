@@ -1,0 +1,22 @@
+.panel {
+  display: grid;
+  gap: 16px;
+  max-width: 28rem;
+  color: var(--sg-text);
+  font-family: var(--sg-font-body), Inter, system-ui, sans-serif;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  gap: 6px;
+}
+
+.panel input[type="text"],
+.panel input:disabled {
+  width: 100%;
+  box-sizing: border-box;
+}

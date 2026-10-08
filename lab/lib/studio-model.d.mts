@@ -30,6 +30,14 @@ export const DEALER_IDS: readonly DealerId[];
 export const SOURCE_TYPES: readonly SourceType[];
 export const TRIGGER_CATEGORIES: readonly TriggerCategory[];
 export const MAX_ALTERNATIVES: number;
+export const LANE_ID: RegExp;
+export const RESERVED_LANE_IDS: ReadonlySet<string>;
+export const BACKGROUND_MODES: ReadonlySet<LaneBackgroundMode>;
+export const OPENCLAW_PHASES: readonly ['idle', 'deal', 'reveal', 'speak', 'probe'];
+export const OPENCLAW_MODES: ReadonlySet<OpenClawMode>;
+export const OPERATOR_ADJUSTABLE: readonly OperatorAdjustable[];
+export const MAX_LANES: number;
+export function validateLanes(lanes: unknown, dealerIds: ReadonlySet<string>): string[];
 export const allowedPathDescriptors: readonly PathDescriptor[];
 export const ALLOWED_PATH_DESCRIPTORS: readonly PathDescriptor[];
 export class StudioValidationError extends Error { errors: string[]; statusCode: number }

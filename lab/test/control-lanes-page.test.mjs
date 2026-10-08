@@ -44,9 +44,15 @@ test('Lanes renders the title and disables write buttons when no store is connec
   assert.doesNotMatch(pageSource, /createOperator|operator-create-demo/);
   assert.match(componentSource, /operator-create-demo/);
   assert.doesNotMatch(componentSource, /useEffect/);
+  assert.match(pageSource, /initialVideos=\{data\.videos\}/);
+  assert.match(pageSource, /initialStatus=\{data\.status\}/);
+  assert.match(pageSource, /operators=\{operators\}/);
+  assert.match(pageSource, /storeAvailable=\{storeAvailable\}/);
   const { ControlLanesPage } = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlLanesPage, {
     initialProject: createSeedProject(),
+    initialVideos: { videos: [] },
+    initialStatus: { configured: false },
     operators: fixtureLaneOperators(),
     storeAvailable: false,
   }));
@@ -56,7 +62,29 @@ test('Lanes renders the title and disables write buttons when no store is connec
   assert.match(html, /Demo North/);
   assert.match(html, /Demo South/);
   assert.match(html, /Ingen skrivbar Neon-pool/);
-  assert.equal(html.match(/primary-button/g).length, 1);
-  assert.match(html, /<button class="primary-button"[^>]*disabled[^>]*>Publicera paket<\/button>/);
+  assert.match(html, /Administration → Spel, lanes &amp; bord/);
+  assert.doesNotMatch(html, /\(osparad\)/);
+  assert.match(componentSource, /\(osparad\)/);
+  assert.doesNotMatch(componentSource, /window\.confirm/);
+  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal(html.match(/primary-button/g)?.length ?? 0, 0);
+  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara projekt<\/button>/);
+  assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.match(html, /<button class="sg-btn sg-btn-ghost"[^>]*disabled[^>]*>Skapa SG test game provider<\/button>/);
+});
+
+test('a project without saved lanes still offers the standard lane for publishing, as the API allows', () => {
+  const { publishLaneRows } = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
+  // The vm realm has its own Array; compare through JSON.
+  const plain = value => JSON.parse(JSON.stringify(value));
+  const empty = publishLaneRows([], JSON.stringify({ lanes: [] }), false);
+  assert.deepEqual(plain(empty.map(row => [row.id, row.unsaved])), [['mobile-phone', false]]);
+  const missing = publishLaneRows(undefined, JSON.stringify({}), false);
+  assert.deepEqual(plain(missing.map(row => row.id)), ['mobile-phone']);
+  // An unsaved draft of the standard lane replaces the implicit row instead of duplicating it.
+  const draft = publishLaneRows([{ id: 'mobile-phone', label: 'Utkast', dealers: ['astrid'] }], JSON.stringify({ lanes: [] }), true);
+  assert.deepEqual(plain(draft.map(row => [row.id, row.unsaved])), [['mobile-phone', true]]);
+  // Saved lanes are authoritative: no implicit standard row beside them.
+  const saved = [{ id: 'vip', label: 'VIP', dealers: ['vera'] }];
+  assert.deepEqual(plain(publishLaneRows(saved, JSON.stringify({ lanes: saved }), false).map(row => row.id)), ['vip']);
 });
