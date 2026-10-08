@@ -2674,8 +2674,10 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   dealerSelect.value = DEALER.key;
   dealerSelect.onchange = () => { location.href = dealerVersionPath(dealerSelect.value, dealerV2Route ? 'v2' : 'original', location.search); };
   const lineSelect = panel.querySelector('#rehearsal-line');
-  const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
-  for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
+  // A dealer without a recorded bank (Paow) answers 404. The table still starts.
+  const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const speechless = localPresentationEnabled && !Object.keys(bank).length;
+  for (const id of speechless ? [] : new Set([...VOICE_LINES, ...Object.keys(bank)])) {
     if (astridSpeak&&!astridSpeak.has(id)) continue;
     if (voice.dead.has(id) && !bank[id]) continue;
     lineSelect.add(new Option(id.replaceAll('_', ' '), id));
@@ -2684,6 +2686,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   let rehearsalInitialized = false;
   const update = () => {
     if (!rehearsalInitialized) { status.textContent = 'Preparing the table for rehearsal…'; return; }
+    if (speechless) { status.textContent = `${DEALER.name} has no recorded speech to rehearse.`; return; }
     const id = lineSelect.value;
     if (localPresentationEnabled) {
       status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + ' — shared Studio presentation; exact clip selected at playback.';
@@ -2704,7 +2707,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
     return completed;
   };
   const review = async count => {
-    if (!rehearsalInitialized) return;
+    if (!rehearsalInitialized || speechless) return;
     const controls=[...panel.querySelectorAll('button,select')];
     controls.forEach(control=>control.disabled=true);
     update();
@@ -2725,7 +2728,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   settleRehearsalInitialization = failed => {
     if (failed) { status.textContent = 'The table could not start. Sign in and reload to rehearse.'; return; }
     rehearsalInitialized = true;
-    initialControls.forEach(control => { control.disabled = false; });
+    initialControls.forEach(control => { control.disabled = speechless && control !== dealerSelect; });
     update();
   };
   if (DEALER.key === 'astrid'&&!astridRestart) {
