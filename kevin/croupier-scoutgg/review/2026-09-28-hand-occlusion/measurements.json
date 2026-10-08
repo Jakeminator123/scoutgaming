@@ -1,0 +1,72 @@
+{
+  "1": {
+    "frames": 84,
+    "fps": 24.0,
+    "sha256": "5b9a64e02a112f19624420d9d9fca4f4f3257d3c0d16ffa029895e7c77a70a8d",
+    "master_sha256": "5c23fe9ad68cb3e505b386a215d9eeb3075ede7fdd3d155f429ef6fc81ba05ff",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "2": {
+    "frames": 80,
+    "fps": 24.0,
+    "sha256": "596cc3bb4cb381c0eac2521c011f7177734c5db83142d7e748e3f0f091ffc41e",
+    "master_sha256": "3f9a555f0893f0806900ec32e78e2733dcdc61a399d69cb0e1dfea3ac8fc64fb",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "3": {
+    "frames": 81,
+    "fps": 24.0,
+    "sha256": "f57419df75a07c9c6429478df2507b138d187b6dcbcc6d1fbd92ad92b7513222",
+    "master_sha256": "fcc47560694c0e8f20fd55cb1e2802529686dc0ed374b62e1371732927cb134d",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "4": {
+    "frames": 79,
+    "fps": 24.0,
+    "sha256": "fdf0f906c4f294473a6d27f7c11a7ba2a2557dd78f53b72a7544440728b2e1d4",
+    "master_sha256": "2afa062b4674ff72b2cbc958a359ebf39cec0a48bbe328d95fff65642f7c1ba3",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "5": {
+    "frames": 74,
+    "fps": 24.0,
+    "sha256": "f83af80e37820a523aad6ae41db00b1f8e9460e6eae2a6303a6f9c5f8828ca43",
+    "master_sha256": "7c704054deb8d8ee2e485418553e65b87235ba8edee90b4cb5986d26f8d4226e",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "6": {
+    "frames": 75,
+    "fps": 24.0,
+    "sha256": "d59ee75ea7d9538655ad5e9462b7d0143640a579cd3897e133af955ac75b3aa2",
+    "master_sha256": "69b1402e17ae45392b0f5a77beb99e38e54fb1a17578695bac0f95b116ea21a4",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "7": {
+    "frames": 81,
+    "fps": 24.0,
+    "sha256": "d3476641345f1f87eadeec1e907de9d8d7b21ab7e8a7660515f5a2c7e4b6a9ba",
+    "master_sha256": "041df107fe70fe850e94c7b08726d04ca4ca8a77bc4d722dee4bb636587d5f55",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "dealer": {
+    "frames": 65,
+    "fps": 24.0,
+    "sha256": "0df5e1fdc679412f056ba74c36e23ae7f8f605e335344a1f4f7cf10bbaea8460",
+    "master_sha256": "83dc9b09a09d337d298a3e70eadf376761df260ec0fb425559ee67830fba5e87",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "hole": {
+    "frames": 67,
+    "fps": 24.0,
+    "sha256": "4a04464e6365054c219a042ddfd20138370f0b94959037be4be54dadf4b1c96e",
+    "master_sha256": "a7f2629f471cbab914faef8ddcb59a3f788f4dc688db1a4cd946462b10b49c58",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  },
+  "flip": {
+    "frames": 56,
+    "fps": 24.0,
+    "sha256": "189f67cc15a5d7915cc7a073bbd7653bc1d3147ddb94dd1f00fc05953194427e",
+    "master_sha256": "40f478e650da84a8f2ca30da7b65c5ebea208ef2a543307d64aaad2dae140341",
+    "encoding": "x264 crf 20 of the master (2026-10-08), same frames and timing; tracks unchanged"
+  }
+}
