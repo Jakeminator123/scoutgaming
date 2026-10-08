@@ -21,8 +21,8 @@ journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
 
 ## 8 oktober 2026 eftermiddag: Dragge och Paow som dealer 5 och 6 (grenen `kevin`)
 
-Kevins pass, åtta commits på grenen `kevin` från `ac936377`, inte pushat. Ingen Blob, ingen
-deploy, inga skrivningar i Neon, Render eller Vercel.
+Kevins pass, åtta commits på grenen `kevin` från `ac936377` och därefter rättningar efter
+granskning, inte pushat. Ingen Blob, ingen deploy, inga skrivningar i Neon, Render eller Vercel.
 
 Ändrat. `d996eb1e`: kontraktet, fröet och schemana har `dragge` och `paow` med 16
 standardlinjer var, kopierade från Astrid. Ett sparat projekt med fyra dealers är fortfarande
@@ -48,11 +48,33 @@ Varje film: bildantal, första och sista bild mot vilostillbilden (44–47 dB), 
 ljudpaket identiska med tagningen. `migrate-media-layout --verify` godkänner alla nya rader men
 faller på en rad som redan fallerar på main. Inget klickat i webbläsare eller i produktion.
 
+Rättat efter granskning. `2289920e`: en bank som vilar på stillbilden ger standard-idle när
+vilan syns och ingen action eller tal äger dealern; förut fick talgrinden aldrig sitt kvitto
+och varje chattsvar på Dragges och Paows lanes blev liggande tills det kastades. `e3c73c29`:
+klienten godtar en sparad Dragge- eller Paow-lane med eget id från Lägg till lane; förut
+kastade sidan "Invalid game presentation". `1c20c630`: dealerraden rullar i sidled på mobil i
+stället för att skjuta ut Walk casino och Paow ur bild. `86413ea5` med testerna i `f12ebc73`:
+`?rehearsal=1` för en dealer utan talbank startar bordet och säger att det saknas repliker.
+`0e1ab69a`: Studiohistoriken sparar filen som den låg på disk, inte den normaliserade vyn med
+sex dealers. `8810a71a`: hela spärren kontrollerar Dragges och Paows manifest utan villkor.
+`9833d4e6`: Paows acceptans står som öppet beslut i reglerna. Testat: alla 58 kommandon i
+`.githooks/pre-commit-full` utan stopp vid fel, 1752 tester (1740 gröna, 9 skippade, 3 fel i
+rehearsaltesterna som `f12ebc73` rättar), audits och manifestkontroller gröna; de berörda
+testfilerna därefter 147 av 147. Körningen hade `TMPDIR` utanför `/var`: med macOS standard
+faller två tester även på main i denna klon (arkivets symlänkspärr och huvudvakten i
+`tools/precommit-checks.mjs`). Chromium 375×812 mot en isolerad lokal server: Walk casino syns
+helt och raden rullar till Paow på Veras bord, Astrids mobile-phone-lane och Paows lane; med
+fyra knappar har Veras rad samma lägen som före grenen; Paow med `?rehearsal=1` startar
+bordet; en lane
+`dragge-vip` startar. Chattsvaret på Dragges lane är prövat mot talgrinden i Node, inte i
+webbläsaren (chatten kräver session och AI-tjänst).
+
 Kvar: Blob-publicering (`tools/export-media-blob.mjs`, ny `media/blob-index.json`); en
 källkodspush publicerar inte filmerna. Deployordning Render, sedan Lab, sedan första
 sparningen med sex dealers; äldre kod avvisar ett sådant dokument (`studio_corrupt_game_policy`).
-Har produktionens Administration en sparad lane-katalog måste en admin lägga till båda
-lanerna med samma id och fält. Visuell acceptans på mobil och dator: skarvarna, att kortet
+Har produktionens Administration en sparad lane-katalog måste en admin lägga till en
+porträttlane för Dragge och en för Paow; med kodens id (`mobile-phone-dragge`,
+`mobile-phone-paow`) når dealerraden dem, ett eget id spelas men nås inte från raden. Visuell acceptans på mobil och dator: skarvarna, att kortet
 täcker rekvisitan och läppsynk för alla 51 repliker (take-posterna i `takes.md` är ogranskade).
 Korten ligger över filmen, så handen går under redan utdelade kort; rätt ordning kräver tre
 lager med klientkeying (`test-video-jakob`). REDO-kedjning (in en gång, deals, ut en gång) är
@@ -61,7 +83,9 @@ Paow har inga repliker att rehearsa, så kravet på två rehearsalplays går int
 henne; vilken checklista som ersätter det är ett öppet beslut för Kevin och Jakob, och reglerna
 ovan och i `AGENTS.md` anger ingen ersättning. Svenska repliker väntar på en språkdimension. Kända brister i
 underlaget: fläckig hy i Paows H3-tagningar, en mörk fläck i plattan vänster om skon och en
-liten färgskillnad på kortet där dealdelen slutar. Ej uppdaterat: lobbyns namnlista
+liten färgskillnad på kortet där dealdelen slutar. Grenen bygger på `ac936377`; `origin/main`
+står på `cc3e8814`, och en rebase krockar i denna fil (båda lägger till ett avsnitt för
+8 oktober och ändrar statustabellen). Rebasen är inte gjord. Ej uppdaterat: lobbyns namnlista
 (`player-choices.mjs`), uppladdning till de nya familjerna (`video-intake.mjs`) och texten
 "fyra dealers" i `video-coverage.tsx`.
 

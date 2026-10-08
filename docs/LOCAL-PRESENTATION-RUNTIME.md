@@ -197,7 +197,10 @@ Dragges och Paows filmer är H3:s KLARA-tagningar, förbakade offline över
 porträttplattan: in, deal och ut i en opak film per kort som börjar och slutar i
 vilostillbilden med kortet på platsen. Spelet stannar därför aldrig i H3:s
 utdelningspose (REDO) mellan korten. Den posen är inte `idle.ready`. En bank utan
-idle (Dragge, Paow) visar `/dealers/<id>/rest.png` tills en filmbild hålls. En bank
+idle (Dragge, Paow) visar `/dealers/<id>/rest.png` tills en filmbild hålls. Vilobilden,
+eller sista bilden av en film som spelat klart, är bankens standard-idle: när ingen action
+eller tal äger dealern ger den talgrinden sitt idlekvitto, så chattsvar visas. Bilden från
+en avbruten film är ingen vila och ersätts först av vilobilden. En bank
 utan tal (Paow) hoppar över repliker med kvittot `skipped` i stället för 2D-reserv.
 Ingen av dem har vändning, och Paow har inget hålklipp; där ger saknad familj
 2D-reserv. Varianterna (Dragges repliker, Paows `deal_pos6b`) spelas först när en
@@ -286,8 +289,10 @@ Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 Sparade `gameLanes`/`gameLane` styr renderer, dealer och mediesamling.
 Mobile Phone Lane är förval. Koden har tre porträttlanes: `mobile-phone` (Astrid),
 `mobile-phone-dragge` och `mobile-phone-paow`, var och en med sin dealers bank
-(`/blackjack?lane=mobile-phone-dragge`). En sparad lane-katalog måste ha samma id
-och fält för att spelet ska servera dem. Äldre `original` migreras vid läsning till Mobile;
+(`/blackjack?lane=mobile-phone-dragge`). En sparad lane-katalog serverar dem bara om
+den har en porträttlane för dealern. Lägg till lane får ge den ett eget id (klienten
+godtar ett okänt id när dealern har en porträttlane i koden), men dealerraden länkar
+till kodens id, så samma id behövs för att raden ska nå lanen. Äldre `original` migreras vid läsning till Mobile;
 gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
 En uttryckligen registrerad `indexed-video`-lane kan använda den gemensamma
 indexspelaren för dealerbanken. Ingen automatisk videofallback införs.
