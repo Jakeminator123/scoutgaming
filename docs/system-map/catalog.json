@@ -69,6 +69,15 @@
         "test/table-http.mjs",
         "test/postgres-native-table.mjs",
         "test/cloud-readiness.mjs"
+      ],
+      "plannedRemarks": [
+        {
+          "id": "select-four-dealers",
+          "label": "select för alla fyra dealers",
+          "status": "planned",
+          "plannedRef": "C5b",
+          "purpose": "select ska gälla Astrid, Vera, Amira och Mei."
+        }
       ]
     },
     {
@@ -312,6 +321,78 @@
       ]
     }
   ],
+  "environmentFacts": [
+  {
+    "id": "environment.local-lab-openclaw",
+    "label": "Miljönyckelnamn: local-lab-openclaw",
+    "where": "Lokalt labb",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, lab/.env.example, open-claw/lab/.env.example",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.render-game",
+    "label": "Miljönyckelnamn: render-game",
+    "where": "Katalogtjänst render-game",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, ops/cloud/config.mjs, ops/cloud/gateway.mjs, ops/cloud/start.mjs, ops/cloud/container-entry.mjs, ops/cloud/vercel-ingress.mjs, ops/cloud/storage-export.mjs, web/operator-speech-qa.mjs, web/native-p6-qa-hook.mjs, web/native-ai-qa-runtime.mjs, web/native-ai-qa-private.mjs, web/generated-speech.mjs, web/storage/studio-runtime.mjs, web/storage/studio-game-policy.mjs, web/studio-game-commands.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.render-gpu-relay",
+    "label": "Miljönyckelnamn: render-gpu-relay",
+    "where": "Katalogtjänst render-game",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, services/astrid-gpu-worker/gateway/server.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.render-openclaw-director",
+    "label": "Miljönyckelnamn: render-openclaw-director",
+    "where": "Katalogtjänst director",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, open-claw/lab/deploy/start-director.mjs, open-claw/lab/src/gateway-rpc.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.render-openclaw-gateway",
+    "label": "Miljönyckelnamn: render-openclaw-gateway",
+    "where": "Katalogtjänst gateway",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, open-claw/lab/deploy/gateway-config.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.runpod-gpu-worker",
+    "label": "Miljönyckelnamn: runpod-gpu-worker",
+    "where": "Katalogtjänst runpod",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.vercel-entry",
+    "label": "Miljönyckelnamn: vercel-entry",
+    "where": "Vercel-ingång",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, ops/vercel-entry/build.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.vercel-frontend-production",
+    "label": "Miljönyckelnamn: vercel-frontend-production",
+    "where": "Katalogtjänst frontend",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, apps/croupier-frontend/lib/game-url.ts, apps/croupier-frontend/lib/platform-routing.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.vercel-lab-ui",
+    "label": "Miljönyckelnamn: vercel-lab-ui",
+    "where": "Katalogtjänst studio",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, lab/middleware.ts, lab/lib/remote-ui.mjs, lab/lib/studio-native-runtime.mjs, lab/lib/studio-native-mail.mjs, web/storage/studio-game-policy.mjs, lab/lib/studio-game-authority.mjs, lab/lib/neon-video-registry.mjs, lab/lib/voice-preview.mjs, lab/lib/studio-voice-lines.mjs, lab/lib/openclaw-admin.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  },
+  {
+    "id": "environment.vercel-zones-qa",
+    "label": "Miljönyckelnamn: vercel-zones-qa",
+    "where": "QA-zoner",
+    "source": "docs/environment-variables.json, tools/check-environment-variables.mjs",
+    "verifiedBy": "test/check-environment-variables.mjs"
+  }
+],
   "plans": [
     {
       "label": "Systemkarta och nästa etapp",

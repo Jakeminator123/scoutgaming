@@ -31,8 +31,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | A2 | ffmpeg `.deb`-cache i CI (hängde två gånger 7 okt) | klart `683dd4fd` + `7d523bde` (cache v6). Verifierat i run 37707970447: båda jobben `Cache restored from key: ubuntu-24.04-ffmpeg-7:6.1.1-3ubuntu5`, ingen nedladdning. `dealer-regression` utan cache (matris 46) | brief M p4 | M |
 | A3 | GPU-workflows till `ubuntu-24.04` före 19 okt | klart `f95ed1ef`. `services/astrid-gpu-worker/.github/workflows/checks.yml` har `ubuntu-latest` men körs inte av GitHub | brief M p3 | M |
 | A4 | CI-steg orphan tests + undantagsfil | klart `9dbfe09e`: 259 filer, 0 föräldralösa, 3 undantag (matris 47); grönt i CI | brief M p5 | M |
-| A5 | Systemkartan: trimma miljökontrakt, gul = "granska", `planned`-rutor (T11) | kvar; nästa pass när S-leveransen är grön i CI | matris 42 | eget litet pass |
-| A10 | `test/fuzz-blackjack.mjs` mot `web/shoe-game.mjs` (J5) | klart natt 8 okt (S3): 3 000 rundor ~5 s i kroken, 100 000 gröna; undantaget borta | beslut 53 | – |
+| A5 | Systemkartan: trimma miljökontrakt, gul = "granska", `planned`-rutor (T11) | klart (S5): 10 miljöfakta ur kontrakten, 14 skyddande kvar; gul = svensk granskningstext; 8 planned-rutor | matris 42 | – |
+| A10 | `test/fuzz-blackjack.mjs` mot `web/shoe-game.mjs` (J5) | klart natt 8 okt (S3): 3 000 rundor ~5 s i kroken, 100 000 gröna; undantaget borta. CI grön `a4288aa7` | beslut 53 | – |
+| A11 | `dealer-regression`: `actions/upload-artifact@v4` och `pnpm/action-setup@v4` kör Node 20 (deprecerat, tvingas till 24) | kvar, litet: bump till senaste major när nästa CI-ändring görs | CI-annotation 8 okt | M |
 | A6 | Chefens register i `.croupier-inbox/chef.json`, låstext "Inbox busy" | kvar, lågprio | matris 34 | M senare |
 | A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | kvar, lågprio | matris 34 | M senare |
 | A8 | `test/backoffice-lab-browser.mjs` opt-in, ej körd | kvar; blir undantag i A4 | matris 34 | M |
@@ -86,7 +87,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas | klart natt 8 okt: grenen = fristående Laneverkstad (Python `program/`, stannar på grenen) + `preview/` (Paow, Dragge, 720p, 12 MB) + webbspelare `program/web/` (WebGL-kompositor, greenscreen, lager, `bridge.js` mot `presentation[]`). Grenen rör bara `apps/croupier-frontend` utanför mappen (`/test`, inte portad) | Jakob 8 okt | K |
 | T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar: Jakob arbetar vidare på grenen; `bridge.js` är adaptern att koppla när han säger klart | Jakob 8 okt | K steg 3 |
 | T10 | Grenens utökade test-klippyta som egen sida `/control/preview` | klart natt 8 okt (S4): byte-identisk spegel i `test-videoeditor/`, prepare-steg, sida på sidmallen, filer serveras bara via sessionsskyddad `/preview/[...path]` (ingen publik kopia); verifiera i prod som `LLM` | Jakob 02:39 | K |
-| T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (schemat); kartan kvar | Jakob 02:39 | A5 |
+| T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (S5): N2.2, N2.4, L4, L3, N3.2, N3.4, L8, C5b | Jakob 02:39 | A5 |
 
 ## L. Lane som produkt
 
