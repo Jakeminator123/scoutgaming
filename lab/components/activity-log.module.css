@@ -57,5 +57,13 @@
 .sourceTable { overflow-x: auto; }
 .sourceTable table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .sourceTable th, .sourceTable td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--line, #d3ddd8); }
+.traceLines { display: grid; gap: 6px; margin-top: 12px; }
+.traceLines p, .traceLines summary { margin: 0; font-size: 13px; }
+.traceLines summary { cursor: pointer; }
+.logBlock { margin-top: 22px; }
+.logBlock h2 { margin: 0; font-size: 18px; letter-spacing: -.03em; }
+.logBlock h2 small { font: 12px ui-monospace, monospace; opacity: .6; margin-left: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 8px; }
+.logBlock .filters { margin-top: 10px; }
 @media (max-width: 900px) { .traceStatus { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 500px) { .playbackTrace { padding: 14px; } .traceStatus { grid-template-columns: 1fr; } }
