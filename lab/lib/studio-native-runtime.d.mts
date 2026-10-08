@@ -19,6 +19,13 @@ export interface NativeStudioRuntime {
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
   listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string }>>;
+  listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;
+}
+export interface OperatorDirectoryRole { id: string; label: string; permissions: string[]; delegable: boolean }
+export interface OperatorDirectoryMember { userId: string; username: string | null; roleId: string; status: string; revision: number }
+export interface OperatorDirectoryEntry {
+  id: string; slug: string; name: string; status: string;
+  roles: OperatorDirectoryRole[]; missingRoles: string[]; members: OperatorDirectoryMember[];
 }
 export function studioNativeRuntime(): Promise<NativeStudioRuntime>;
 export function createNativeStudioRequestHandlers(options?: {
