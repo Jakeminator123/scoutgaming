@@ -479,9 +479,10 @@ test('a newer ownership change discards a late selection before it can start a f
   assert.equal(await pending, false); assert.equal(jobs.length, count);
 });
 
-test('a bank without speech or idle rests on its still and skips game speech without a 2D fallback', async t => {
+test('a bank without speech or idle rests on its still, reports that still as standard idle and skips game speech without a 2D fallback', async t => {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch, originalImage = globalThis.Image;
   const draws = [], images = [], receipts = [], jobs = [], requests = [], elements = [];
+  let idles = 0;
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage: image => draws.push(image) }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   globalThis.Image = class { constructor() { images.push(this); } };
@@ -493,22 +494,36 @@ test('a bank without speech or idle rests on its still and skips game speech wit
   const player = { prepareLocalClip() {}, playLocalClip(take, options) { return new Promise((resolve, reject) => { jobs.push({ take, options, resolve });
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true }); }); } };
   const controller = await createLocalPresentation({ player, host: element(), dealerId: 'paow', version: () => 3,
-    receipt: value => receipts.push(value), onIdle() {}, onBusy() {}, muted: () => false });
+    receipt: value => receipts.push(value), onIdle: () => idles++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; globalThis.Image = originalImage; });
   const still = elements.find(value => value.className === 'local-presentation-film local-presentation-still');
   const status = elements.find(value => value.className === 'local-presentation-status');
   assert.equal(images.length, 1); assert.equal(images[0].src, '/dealers/paow/rest.png');
+  controller.start(); assert.equal(idles, 0, 'no standard idle before the rest still is on screen');
   Object.assign(images[0], { naturalWidth: 1080, naturalHeight: 1920 }); images[0].onload();
   assert.deepEqual([still.width, still.height, draws.length, draws[0]], [1080, 1920, 1, images[0]]);
-  controller.start(); assert.equal(jobs.length, 0, 'no idle film for a dealer without an idle pool');
+  assert.equal(idles, 1, 'the drawn rest still is the standard idle the speech gate waits for');
+  controller.start(); assert.equal(jobs.length, 0, 'no idle film for a dealer without an idle pool'); assert.equal(idles, 2);
   const deal = { type: 'deal', to: 'box', box: 3, shoeDraw: 7 };
   controller.prepareSequence([{ type: 'speak', line: 'goodluck' }, deal]);
   assert.equal(await controller.present({ type: 'speak', line: 'goodluck' }), false);
   assert.equal(requests.some(url => url.endsWith('/select')), false);
   assert.equal(status.textContent ?? '', '');
   assert.deepEqual(receipts.filter(row => row.event === 'speech').map(row => [row.state, row.renderer, row.sourceEvent.line]), [['skipped', 'none', 'goodluck']]);
+  controller.state({ action: true }); assert.equal(idles, 2);
   const played = controller.present(deal); await new Promise(resolve => setImmediate(resolve));
   assert.equal(jobs.length, 1); assert.equal(jobs[0].take.media.sha256, video.sha256);
-  jobs[0].options.hold({ videoWidth: 1080, videoHeight: 1920 }); jobs[0].resolve({ completed: true }); assert.equal(await played, true);
+  jobs[0].options.hold({ videoWidth: 1080, videoHeight: 1920, ended: true }); jobs[0].resolve({ completed: true }); assert.equal(await played, true);
   images[0].onload(); assert.equal(draws.length, 2, 'a held film frame is never replaced by a late rest still');
+  assert.equal(idles, 2, 'no standard idle while the action still owns the dealer');
+  controller.state({ action: false }); assert.equal(idles, 3, 'the held last frame is the rest pose once the action ends');
+  assert.equal(draws.length, 2);
+  controller.state({ speech: true }); assert.equal(idles, 3);
+  controller.state({ speech: false }); assert.equal(idles, 4, 'standard idle returns after speech ends');
+  controller.state({ action: true });
+  const interrupted = controller.present(deal); await new Promise(resolve => setImmediate(resolve));
+  jobs[1].options.hold({ videoWidth: 1080, videoHeight: 1920, ended: false }); controller.state({ action: false });
+  assert.equal(await interrupted, false);
+  assert.deepEqual([idles, draws.length, draws.at(-1)], [5, 4, images[0]], 'an interrupted frame is replaced by the rest still before idle is reported');
+  globalThis.document.hidden = true; controller.state({}); assert.equal(idles, 5, 'a hidden page reports no idle');
 });

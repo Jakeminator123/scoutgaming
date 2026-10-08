@@ -34,12 +34,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const idle = createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
-  let held = false;
-  const hold = video => { if (!video.videoWidth) return; held = true; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
-  if (restStill) {
+  // atRest: the still shows the rest pose, either the rest image or the last
+  // frame of a film that played to its end (every joined film ends at rest).
+  let held = false, atRest = false, restLoaded = false;
+  const hold = video => { if (!video.videoWidth) return; held = true; atRest = video.ended === true; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
+  const rest = restStill ? new Image() : null;
+  const showRest = () => { still.width = rest.naturalWidth; still.height = rest.naturalHeight; still.getContext('2d').drawImage(rest, 0, 0); atRest = true; };
+  if (rest) {
     // The same pose every joined deal film starts and ends on. A held film frame wins.
-    const rest = new Image();
-    rest.onload = () => { if (held || closed) return; still.width = rest.naturalWidth; still.height = rest.naturalHeight; still.getContext('2d').drawImage(rest, 0, 0); };
+    rest.onload = () => { restLoaded = true; if (held || closed) return; showRest(); resumeIdle(); };
     rest.src = `/dealers/${dealerId}/rest.png`;
   }
   const stop = () => { active?.abort(); active = null; };
@@ -79,7 +82,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   let idleRun = 0, idleError = null;
   function resumeIdle() {
-    if (dealerId !== 'astrid' || closed || action || speech || document.hidden) return;
+    if (closed || action || speech || document.hidden) return;
+    // A bank that rests on its still is at standard idle once the rest pose is
+    // on screen and nothing owns the dealer. An interrupted film's frame is not
+    // the rest pose, so the rest image replaces it first.
+    if (restStill) {
+      if (!atRest && restLoaded) showRest();
+      if (atRest) { presentationKind = 'idle'; onIdle(); }
+      return;
+    }
+    if (dealerId !== 'astrid') return;
     const clip = idle.snapshot().clip;
     if (!clip || clip.playId === idleRun) return;
     presentationKind = 'idle'; onBusy();
