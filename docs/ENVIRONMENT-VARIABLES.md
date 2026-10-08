@@ -83,15 +83,20 @@ mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar fö
 Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
 
 Var databaserna bor (bekräftat 8 oktober 2026 via Neon MCP): ett enda Neon-projekt,
-`croupier-astrid-background-zones-db` (id `wandering-hill-60561912`, gren `main`,
-Neon-organisationen "Vercel: jakeminator123's projects"), innehåller flera databaser:
+**`croupier-production`** (omdöpt 8 oktober 17:15 från `croupier-astrid-background-zones-db`;
+id `wandering-hill-60561912`, gren `main`, Neon-organisationen "Vercel: jakeminator123's
+projects", dvs. Vercel-styrd), innehåller flera databaser:
 `croupier_game` (schemana `croupier_game`, `croupier_auth`, `croupier_studio` – spelet,
 konton och Studio-policy; det är den `CROUPIER_GAME_DATABASE_URL` pekar på från både
 Render och Vercel), `croupier_game_qa`, `croupier_game_restore_check`,
 `croupier_studio_qa_abc92154cb15` och `neondb` (zonerna, `CROUPIER_ZONES_DATABASE_URL`).
-Projektnamnet speglar alltså inte innehållet. Resursen är kopplad i Vercel till projektet
-`croupier-player-preview-qa` på det personliga teamet, inte till `scoutgaming`, därför visar
-`scoutgaming` → Storage ingenting; produktionen läser den ändå via miljövariabeln.
+Resursen (och Blob-lagret `croupier-media-private`) är kopplad i Vercel till projektet
+`croupier-player-preview-qa` på det personliga teamet `jakeminator123s-projects`. Produktions-
+projektet `scoutgaming` ligger sedan 8 oktober på teamet `scoutgaming`, så dess Storage-flik
+är tom; produktionen läser ändå databasen och blobben via miljövariablerna. Att flytta
+resurserna till teamet `scoutgaming` kräver Vercels "Transfer Database" med "Disconnect all
+projects" först, vilket kan rotera anslutningssträngar – görs bara planerat och efter Jakobs
+uttryckliga beslut, aldrig som bifångst.
 Migration `006-player-profile.sql` kördes där 8 oktober 16:48 (två nya nullbara kolumner,
 4 spelare oförändrade).
 
