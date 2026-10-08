@@ -36,7 +36,10 @@ export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
       const saved = { ...structuredClone(next), revision: `studio-${randomUUID()}` };
       const history = join(dataDir, 'history');
       await mkdir(history, { recursive: true });
-      await writeFile(join(history, `${Date.now()}-${randomUUID()}.json`), JSON.stringify(current, null, 2) + '\n', { flag: 'wx' });
+      // History keeps the bytes that were on disk, not the normalized view load()
+      // returns (which adds missing dealers and lines in memory). No file: the seed.
+      const onDisk = await readFile(file, 'utf8').catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+      await writeFile(join(history, `${Date.now()}-${randomUUID()}.json`), onDisk ?? JSON.stringify(current, null, 2) + '\n', { flag: 'wx' });
       temp = join(dataDir, `${randomUUID()}.tmp`);
       await writeFile(temp, JSON.stringify(saved, null, 2) + '\n', { flag: 'wx' });
       if (compromised) throw new StudioError('Skrivlåset ändrades. Projektet har inte ersatts.', 423);

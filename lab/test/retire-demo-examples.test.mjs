@@ -42,9 +42,7 @@ test('launcher keeps a complete pre-migration revision and migration is not repe
   const old = createLegacyProject(); await writeFile(join(directory, 'project.json'), JSON.stringify(old));
   await prepareProject(directory);
   const history = await readdir(join(directory, 'history'));
-  // History holds the loaded revision: the saved document plus the dealers normalization adds in memory.
-  assert.equal(history.length, 1); assert.deepEqual(JSON.parse(await readFile(join(directory, 'history', history[0]), 'utf8')),
-    normalizeProject(structuredClone(old), { allowIncompatibleAnimations: true, preserveMissingLanes: true }));
+  assert.equal(history.length, 1); assert.deepEqual(JSON.parse(await readFile(join(directory, 'history', history[0]), 'utf8')), old);
   const saved = await readFile(join(directory, 'project.json'), 'utf8');
   await prepareProject(directory); assert.equal(await readFile(join(directory, 'project.json'), 'utf8'), saved);
 });
