@@ -9,6 +9,7 @@ import { createPreviewRuntime, operatorPackageRevision, sectionNotConnected, val
 import { destinationsFor, normalizeView, INTERNAL_LINKS } from './navigation.mjs';
 import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../lib/workspace-surfaces.mjs';
 import { PartnerAppearanceLoader } from '../partner-appearance-loader.mjs';
+import { partnerTeamView } from '../partner-team-loader.mjs';
 import './original.css';
 import './preview.css';
 
@@ -41,7 +42,7 @@ function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}
   const [message,setMessage]=React.useState(''),[error,setError]=React.useState(''),[loading,setLoading]=React.useState(false);
   const request=React.useRef(null),sequence=React.useRef(0),refreshRef=React.useRef(null),runtimeRef=React.useRef(null);
   const notify=React.useCallback(value=>setMessage(value),[]);
-  const runtime=React.useMemo(()=>snapshot?createPreviewRuntime(snapshot,{surface,user,notify,assetUrl,studioUrl:labUrl,refresh:()=>refreshRef.current?.(),teamView:TeamView}):null,[snapshot,surface,user,notify]);
+  const runtime=React.useMemo(()=>snapshot?createPreviewRuntime(snapshot,{surface,user,notify,assetUrl,studioUrl:labUrl,refresh:()=>refreshRef.current?.(),teamView:snapshot.preview===false&&surface==='partner'?partnerTeamView(apiBase,TeamView):TeamView}):null,[snapshot,surface,user,notify,apiBase]);
   runtimeRef.current=runtime;
   const original=React.useMemo(()=>runtime?createOriginalViews(runtime):null,[runtime]);
   const navigation=destinationsFor(surface);
