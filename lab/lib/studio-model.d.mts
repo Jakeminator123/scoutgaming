@@ -1,4 +1,4 @@
-export type DealerId = 'astrid' | 'vera' | 'amira' | 'mei';
+export type DealerId = 'astrid' | 'vera' | 'amira' | 'mei' | 'dragge' | 'paow';
 export type SourceType = 'speak' | 'deal' | 'reveal' | 'settle' | 'turn' | 'idle';
 export type TriggerCategory = 'deterministic' | 'social' | 'temperament';
 export type PredicateOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'includes' | 'all_eq' | 'in' | 'exists';

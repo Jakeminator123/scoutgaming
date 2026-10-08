@@ -18,6 +18,14 @@
     {
       "id": "mei",
       "label": "Mei"
+    },
+    {
+      "id": "dragge",
+      "label": "Dragge"
+    },
+    {
+      "id": "paow",
+      "label": "Paow"
     }
   ],
   "events": [
@@ -1365,6 +1373,518 @@
       "variants": [
         {
           "id": "mei.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "dragge.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "dragge.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "dragge.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "dragge.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "dragge.speak.double.standard",
+      "variants": [
+        {
+          "id": "dragge.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "dragge.speak.other.standard",
+      "variants": [
+        {
+          "id": "dragge.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "dragge.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "dragge.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "dragge.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "dragge.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "dragge.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "dragge.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "dragge.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "dragge.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "dragge.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "dragge.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "dragge.turn.player.standard",
+      "variants": [
+        {
+          "id": "dragge.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "dragge.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "dragge.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "dragge.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "dragge.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "dragge.settle.win.standard",
+      "variants": [
+        {
+          "id": "dragge.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "dragge.settle.push.standard",
+      "variants": [
+        {
+          "id": "dragge.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "dragge.settle.other.standard",
+      "variants": [
+        {
+          "id": "dragge.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "dragge",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "dragge.idle.ready.standard",
+      "variants": [
+        {
+          "id": "dragge.idle.ready.standard",
+          "label": "Vänta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "speak.goodluck",
+      "label": "Standardhälsning",
+      "baselineVariantId": "paow.speak.goodluck.standard",
+      "variants": [
+        {
+          "id": "paow.speak.goodluck.standard",
+          "label": "Standardhälsning",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.goodluck.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "speak.insurance",
+      "label": "Informera",
+      "baselineVariantId": "paow.speak.insurance.standard",
+      "variants": [
+        {
+          "id": "paow.speak.insurance.standard",
+          "label": "Informera",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.insurance.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "speak.double",
+      "label": "Bekräfta",
+      "baselineVariantId": "paow.speak.double.standard",
+      "variants": [
+        {
+          "id": "paow.speak.double.standard",
+          "label": "Bekräfta",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.double.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "speak.other",
+      "label": "Läs spelreplik",
+      "baselineVariantId": "paow.speak.other.standard",
+      "variants": [
+        {
+          "id": "paow.speak.other.standard",
+          "label": "Läs spelreplik",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "speak.other.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "deal.player.left",
+      "label": "Dela vänster",
+      "baselineVariantId": "paow.deal.player.left.standard",
+      "variants": [
+        {
+          "id": "paow.deal.player.left.standard",
+          "label": "Dela vänster",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.left.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "deal.player.centre",
+      "label": "Dela mitten",
+      "baselineVariantId": "paow.deal.player.centre.standard",
+      "variants": [
+        {
+          "id": "paow.deal.player.centre.standard",
+          "label": "Dela mitten",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.centre.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "deal.player.right",
+      "label": "Dela höger",
+      "baselineVariantId": "paow.deal.player.right.standard",
+      "variants": [
+        {
+          "id": "paow.deal.player.right.standard",
+          "label": "Dela höger",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.player.right.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "deal.dealer",
+      "label": "Dela croupier",
+      "baselineVariantId": "paow.deal.dealer.standard",
+      "variants": [
+        {
+          "id": "paow.deal.dealer.standard",
+          "label": "Dela croupier",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "deal.dealer.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "reveal.dealer",
+      "label": "Vänd kort",
+      "baselineVariantId": "paow.reveal.dealer.standard",
+      "variants": [
+        {
+          "id": "paow.reveal.dealer.standard",
+          "label": "Vänd kort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "reveal.dealer.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "turn.player",
+      "label": "Visa tur",
+      "baselineVariantId": "paow.turn.player.standard",
+      "variants": [
+        {
+          "id": "paow.turn.player.standard",
+          "label": "Visa tur",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "turn.player.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "settle.blackjack",
+      "label": "Bekräfta blackjack",
+      "baselineVariantId": "paow.settle.blackjack.standard",
+      "variants": [
+        {
+          "id": "paow.settle.blackjack.standard",
+          "label": "Bekräfta blackjack",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.blackjack.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "settle.dealerBust",
+      "label": "Visa resultat",
+      "baselineVariantId": "paow.settle.dealerBust.standard",
+      "variants": [
+        {
+          "id": "paow.settle.dealerBust.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.dealerBust.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "settle.win",
+      "label": "Bekräfta vinst",
+      "baselineVariantId": "paow.settle.win.standard",
+      "variants": [
+        {
+          "id": "paow.settle.win.standard",
+          "label": "Bekräfta vinst",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.win.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "settle.push",
+      "label": "Visa oavgjort",
+      "baselineVariantId": "paow.settle.push.standard",
+      "variants": [
+        {
+          "id": "paow.settle.push.standard",
+          "label": "Visa oavgjort",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.push.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "settle.other",
+      "label": "Visa resultat",
+      "baselineVariantId": "paow.settle.other.standard",
+      "variants": [
+        {
+          "id": "paow.settle.other.standard",
+          "label": "Visa resultat",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "settle.other.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "paow",
+      "eventId": "idle.ready",
+      "label": "Vänta",
+      "baselineVariantId": "paow.idle.ready.standard",
+      "variants": [
+        {
+          "id": "paow.idle.ready.standard",
           "label": "Vänta",
           "priority": 0,
           "triggerIds": [],

@@ -16,7 +16,7 @@ test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 6
   const p = createSeedProject();
   assert.equal(validateProject(p), p);
   assert.equal(p.gameId, 'blackjack');
-  assert.deepEqual(p.dealers.map(d => d.id), DEALER_IDS);
+  assert.deepEqual(p.dealers.map(d => d.id), ['astrid', 'vera', 'amira', 'mei']);
   assert.equal(p.events.length, 16);
   assert.deepEqual([...new Set(p.events.map(e => e.sourceType))].sort(), [...SOURCE_TYPES].sort());
   assert.equal(p.lines.length, 64);
@@ -42,7 +42,11 @@ test('JSON schema agrees with model variant limits and allowed predicate fields/
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
   assert.equal(schema.properties.lines.minItems, 64);
-  assert.equal(schema.properties.lines.maxItems, 64);
+  assert.equal(schema.properties.lines.maxItems, DEALER_IDS.length * 16);
+  assert.equal(schema.properties.dealers.minItems, 4);
+  assert.equal(schema.properties.dealers.maxItems, DEALER_IDS.length);
+  assert.deepEqual(schema.$defs.dealer.properties.id.enum, DEALER_IDS);
+  assert.deepEqual(schema.$defs.line.properties.dealerId.enum, DEALER_IDS);
   assert.equal(schema.$defs.trigger.oneOf.length, allowedPathDescriptors.length);
   for (const descriptor of allowedPathDescriptors) {
     const entry = schema.$defs.trigger.oneOf.find(item => item.properties.path.const === descriptor.path);
@@ -188,8 +192,33 @@ test('video links are generation IDs only and never change runtime source events
   }
 });
 
+test('a saved four-dealer project stays valid and normalizes to every contract dealer in memory', () => {
+  const saved = createSeedProject(), before = structuredClone(saved);
+  assert.deepEqual(DEALER_IDS, ['astrid', 'vera', 'amira', 'mei', 'dragge', 'paow']);
+  assert.equal(validateProject(saved), saved);
+  assert.throws(() => buildRuntimeCatalog(saved, 'dragge'), /okänd croupier/);
+  const normalized = normalizeProject(saved, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
+  assert.deepEqual(saved, before);
+  assert.deepEqual(normalized.dealers.slice(4), [{ id: 'dragge', label: 'Dragge' }, { id: 'paow', label: 'Paow' }]);
+  assert.equal(normalized.lines.length, 96);
+  assert.deepEqual(normalized.lines.slice(0, 64), saved.lines);
+  for (const dealerId of ['dragge', 'paow']) {
+    const lines = normalized.lines.filter(line => line.dealerId === dealerId);
+    assert.deepEqual(lines.map(line => line.eventId), saved.events.map(event => event.id));
+    assert.ok(lines.every(line => line.variants.length === 1 && line.variants[0].id === `${dealerId}.${line.eventId}.standard`));
+  }
+  assert.equal(normalizeProject(normalized, { preserveMissingLanes: true }), normalized);
+  const five = structuredClone(normalized);
+  five.dealers.pop(); five.lines = five.lines.filter(line => line.dealerId !== 'paow');
+  assert.equal(validateProject(five), five);
+  const missingLine = structuredClone(normalized); missingLine.lines.pop();
+  assert.throws(() => validateProject(missingLine), /lines/);
+  const three = structuredClone(saved); three.dealers.pop(); three.lines = three.lines.filter(line => line.dealerId !== 'mei');
+  assert.throws(() => validateProject(three), /dealers/);
+});
+
 test('all dealer catalogues round-trip through the real legacy engine', () => {
-  const p = createSeedProject();
+  const p = normalizeProject(createSeedProject());
   for (const dealerId of DEALER_IDS) {
     const catalog = buildRuntimeCatalog(p, dealerId);
     assert.deepEqual(validateCatalog(catalog), { valid: true, errors: [] });

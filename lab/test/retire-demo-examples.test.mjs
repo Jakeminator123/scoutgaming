@@ -3,18 +3,19 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject, normalizeProject, validateProject } from '../lib/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
 import { prepareProject } from '../start.mjs';
 
 test('new defaults retain every event and dealer, with no demo triggers or unused assets', () => {
   const fresh = createSeedProject(), old = createLegacyProject();
-  assert.deepEqual(fresh.events, old.events); assert.deepEqual(fresh.dealers, old.dealers);
-  assert.equal(fresh.triggers.length, 0); assert.equal(fresh.lines.length, 64);
+  // The saved four-dealer project gains Dragge and Paow only through normalization.
+  assert.deepEqual(fresh.events, old.events); assert.deepEqual(fresh.dealers.slice(0, 4), old.dealers);
+  assert.equal(fresh.triggers.length, 0); assert.equal(fresh.lines.length, 96);
   assert.ok(fresh.lines.every(line => line.variants.length === 1 && line.variants[0].id === line.baselineVariantId));
   assert.ok(fresh.assets.every(asset => fresh.lines.some(line => line.variants.some(row => row.assetId === asset.id))));
-  const cleaned = retireDemoExamples(old); validateProject(cleaned);
+  const cleaned = retireDemoExamples(normalizeProject(old)); validateProject(cleaned);
   for (const key of ['assets', 'triggers', 'lines']) assert.deepEqual(cleaned[key], fresh[key]);
   assert.deepEqual(retireDemoExamples(cleaned), cleaned);
 });
@@ -41,7 +42,9 @@ test('launcher keeps a complete pre-migration revision and migration is not repe
   const old = createLegacyProject(); await writeFile(join(directory, 'project.json'), JSON.stringify(old));
   await prepareProject(directory);
   const history = await readdir(join(directory, 'history'));
-  assert.equal(history.length, 1); assert.deepEqual(JSON.parse(await readFile(join(directory, 'history', history[0]), 'utf8')), old);
+  // History holds the loaded revision: the saved document plus the dealers normalization adds in memory.
+  assert.equal(history.length, 1); assert.deepEqual(JSON.parse(await readFile(join(directory, 'history', history[0]), 'utf8')),
+    normalizeProject(structuredClone(old), { allowIncompatibleAnimations: true, preserveMissingLanes: true }));
   const saved = await readFile(join(directory, 'project.json'), 'utf8');
   await prepareProject(directory); assert.equal(await readFile(join(directory, 'project.json'), 'utf8'), saved);
 });

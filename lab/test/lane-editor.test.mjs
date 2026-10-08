@@ -81,9 +81,9 @@ test('a dealer outside project.dealers is rejected and lanes stay unchanged', ()
   const project = createSeedProject();
   const before = structuredClone(project.lanes);
   const lane = structuredClone(project.lanes[0]);
-  lane.dealers = ['paow'];
-  lane.layers.dealer.default = 'paow';
-  lane.layers.dealer.allowed = ['paow'];
+  lane.dealers = ['nova'];
+  lane.layers.dealer.default = 'nova';
+  lane.layers.dealer.allowed = ['nova'];
   const applied = modelEdit(project, current => replaceLane(current, lane.id, lane));
   assert.match(applied.error, /okänd dealer/);
   assert.equal(applied.project, project);

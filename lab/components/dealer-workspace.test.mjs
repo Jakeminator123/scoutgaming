@@ -75,7 +75,7 @@ test('focused workspace uses dealer chips, three categories and links instead of
   const html = renderToStaticMarkup(tree);
   assert.equal(nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer').length, 0);
   const chips = nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip');
-  assert.equal(chips.length, 4);
+  assert.equal(chips.length, 6);
   assert.equal(chips.filter(node => node.props['aria-pressed'] === true).length, 1);
   const nav = nodes(tree, node => node.type === 'nav')[0];
   assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);

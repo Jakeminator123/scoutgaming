@@ -133,9 +133,8 @@ function laneErrors(lanes, projectDealerIds) {
     const labelMessage = textError(lane.label, 80);
     if (labelMessage) fail(`${at}.label`, labelMessage);
     const laneDealers = new Set();
-    // Same cap as project.dealers in lab/schemas/studio.schema.json (exactly four today). New dealers
-    // such as Paow and Dragge raise both caps together.
-    if (!Array.isArray(lane.dealers) || lane.dealers.length < 1 || lane.dealers.length > 4) fail(`${at}.dealers`, 'ska ha 1–4 dealers');
+    // Same cap as project.dealers in lab/schemas/studio.schema.json: every contract dealer.
+    if (!Array.isArray(lane.dealers) || lane.dealers.length < 1 || lane.dealers.length > DEALER_IDS.length) fail(`${at}.dealers`, `ska ha 1–${DEALER_IDS.length} dealers`);
     else lane.dealers.forEach((dealerId, dealerIndex) => {
       if (typeof dealerId !== 'string' || !projectDealerIds.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `okänd dealer ${typeof dealerId === 'string' ? dealerId : ''}`);
       else if (laneDealers.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `dubblerat ID ${dealerId}`);
@@ -226,6 +225,29 @@ export class StudioValidationError extends Error {
   }
 }
 
+// Saved projects from before Dragge and Paow hold four dealers and 64 lines.
+// Normalization adds each missing contract dealer with its seed standard lines,
+// in memory only, like the default lane. Nothing is written until a save.
+function missingSeedDealers(project) {
+  if (!Array.isArray(project.dealers) || !Array.isArray(project.lines)) return [];
+  const present = new Set(project.dealers.map(dealer => dealer?.id));
+  return seed.dealers.filter(dealer => !present.has(dealer.id));
+}
+
+function addSeedDealers(project, dealers) {
+  const lineKeys = new Set(project.lines.map(line => `${line?.dealerId}/${line?.eventId}`));
+  const added = new Set(dealers.map(dealer => dealer.id));
+  const lines = clone(seed.lines.filter(line => added.has(line.dealerId) && !lineKeys.has(`${line.dealerId}/${line.eventId}`)));
+  project.dealers.push(...clone(dealers));
+  project.lines.push(...lines);
+  // The seed lines use the shared standard assets; restore one only if a saved project dropped it.
+  if (Array.isArray(project.assets)) {
+    const assetIds = new Set(project.assets.map(asset => asset?.id));
+    const used = new Set(lines.flatMap(line => line.variants.map(variant => variant.assetId)));
+    project.assets.push(...clone(seed.assets.filter(asset => used.has(asset.id) && !assetIds.has(asset.id))));
+  }
+}
+
 function needsLegacyVariantMigration(project) {
   return Array.isArray(project.legacyClipPolicy) && project.legacyClipPolicy.some(row => LEGACY_VARIANT_DEALERS.includes(row?.dealerId));
 }
@@ -237,9 +259,11 @@ export function normalizeProject(project, options) {
   if (!record(project)) return validateProject(project, validation);
   const migrate = needsLegacyVariantMigration(project);
   const addLanes = !preserveMissingLanes && !Object.hasOwn(project, 'lanes');
-  if (!migrate && !addLanes) return validateProject(project, validation);
+  const addDealers = missingSeedDealers(project);
+  if (!migrate && !addLanes && !addDealers.length) return validateProject(project, validation);
   const next = clone(project);
   if (addLanes) next.lanes = [defaultPresentationLane()];
+  if (addDealers.length) addSeedDealers(next, addDealers);
   if (migrate) applyLegacyStandardVariants(next);
   return validateProject(next, validation);
 }
@@ -292,7 +316,8 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   id(project.revision, 'revision');
   if (project.gameId !== 'blackjack') error('gameId', 'endast blackjack är implementerat; roulette är en platshållare');
   const dealerIds = new Set();
-  if (array(project.dealers, 'dealers', 4, 4)) project.dealers.forEach((dealer, i) => {
+  // A saved four-dealer project stays valid; normalizeProject adds the rest in memory.
+  if (array(project.dealers, 'dealers', 4, DEALER_IDS.length)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
     if (!keys(dealer, ['id', 'label'], at)) return;
     if (!DEALER_IDS.includes(dealer.id)) error(`${at}.id`, 'okänd croupier');
@@ -339,7 +364,8 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!Number.isInteger(asset.durationMs) || asset.durationMs < 200 || asset.durationMs > 10000) error(`${at}.durationMs`, 'ska vara 200–10000 millisekunder');
   });
   const lineIds = new Set(), variantIds = new Set();
-  if (array(project.lines, 'lines', 64, 64)) project.lines.forEach((line, i) => {
+  const lineCount = (Array.isArray(project.dealers) ? project.dealers.length : 0) * seed.events.length;
+  if (array(project.lines, 'lines', lineCount, lineCount)) project.lines.forEach((line, i) => {
     const at = `lines[${i}]`;
     if (!keys(line, ['dealerId', 'eventId', 'label', 'baselineVariantId', 'variants'], at)) return;
     if (!dealerIds.has(line.dealerId)) error(`${at}.dealerId`, 'okänd croupierreferens');
@@ -371,7 +397,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     const baseline = line.variants.find(variant => variant?.id === expectedBaseline);
     if (!baseline || !Array.isArray(baseline.triggerIds) || baseline.triggerIds.length) error(`${at}.baselineVariantId`, 'standardvarianten måste finnas och vara ovillkorlig (utan triggers)');
   });
-  for (const dealerId of DEALER_IDS) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
+  for (const dealerId of dealerIds) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
   if (Object.hasOwn(project, 'lanes')) errors.push(...laneErrors(project.lanes, dealerIds));
   if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
   if (errors.length) throw new StudioValidationError(errors);
@@ -380,7 +406,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
 
 export function buildRuntimeCatalog(project, dealerId) {
   validateProject(project);
-  if (!DEALER_IDS.includes(dealerId)) throw new StudioValidationError(['dealerId: okänd croupier']);
+  if (!DEALER_IDS.includes(dealerId) || !project.dealers.some(dealer => dealer.id === dealerId)) throw new StudioValidationError(['dealerId: okänd croupier']);
   const triggers = new Map(project.triggers.map(trigger => [trigger.id, trigger]));
   const lines = new Map(project.lines.filter(line => line.dealerId === dealerId).map(line => [line.eventId, line]));
   return clone({

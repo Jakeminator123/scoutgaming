@@ -50,12 +50,12 @@ test('select accepts every saved dealer and does not reuse another dealer cache'
   const origin = `http://127.0.0.1:${server.address().port}`;
   const post = dealerId => fetch(`${origin}/api/presentation/select`, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ dealerId, version: 1, mode: 'off', event: { type: 'speak', line: 'win' } }) });
-  for (const dealerId of ['astrid', 'vera', 'amira', 'mei']) {
+  for (const dealerId of ['astrid', 'vera', 'amira', 'mei', 'dragge', 'paow']) {
     const response = await post(dealerId);
     assert.equal(response.status, 200);
     assert.equal((await response.json()).decision.variantId, dealerId);
   }
-  assert.deepEqual(seen, ['astrid', 'vera', 'amira', 'mei']);
-  const rejected = await post('paow');
+  assert.deepEqual(seen, ['astrid', 'vera', 'amira', 'mei', 'dragge', 'paow']);
+  const rejected = await post('nova');
   assert.equal(rejected.status, 400);
 });
