@@ -1,5 +1,9 @@
 # Handoff T10: trelagrad uppspelning blir standard
 
+> **Pekare 8 okt kväll:** detta är bakgrund, inte arbetorder.
+> Läs `random/start-T10-2026-10-08.md` och följ `random/masterplan-t10-konsolidering-2026-10-08.md`.
+> `/control/layers` och `layered` som spelstandard ikväll är ersatta. Ramarna i §0 gäller.
+
 Startprompt för en ny ledaragent. Skriven 8 okt 2026 kl 19:00 av orkestrator 2 efter
 `f3799749`. Jakobs ord samma kväll: *"den trelagrade videouppspelningen ska bli standard.
 Jag vill att man ska kunna växla mellan bakgrundsvideo/bilder och/eller dealer och/eller
