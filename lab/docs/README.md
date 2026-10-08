@@ -446,7 +446,8 @@ Medie-/spelarändringar kräver dealer-audit `--probe`, de obligatoriska
 regressionerna och granskning av alla sex dealers i faktisk rehearsal,
 inklusive två uppspelningar i följd, enligt [AGENTS.md](../../AGENTS.md). Dragge
 granskas på `?lane=mobile-phone-dragge&rehearsal=1`. Paow har inget inspelat tal,
-så hennes dealfilmer granskas på `?lane=mobile-phone-paow`.
+så rehearsal har inga repliker för henne; vilken checklista som ersätter de två
+uppspelningarna för henne är ett öppet beslut för Kevin och Jakob.
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);

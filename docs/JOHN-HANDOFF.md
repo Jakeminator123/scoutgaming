@@ -56,8 +56,10 @@ lanerna med samma id och fält. Visuell acceptans på mobil och dator: skarvarna
 täcker rekvisitan och läppsynk för alla 51 repliker (take-posterna i `takes.md` är ogranskade).
 Korten ligger över filmen, så handen går under redan utdelade kort; rätt ordning kräver tre
 lager med klientkeying (`test-video-jakob`). REDO-kedjning (in en gång, deals, ut en gång) är
-inte byggd. Paow har ingen röst och inget hålklipp, ingen av dem har vändning (2D-reserv), och
-Paow kan inte rehearsas. Svenska repliker väntar på en språkdimension. Kända brister i
+inte byggd. Paow har ingen röst och inget hålklipp, och ingen av dem har vändning (2D-reserv).
+Paow har inga repliker att rehearsa, så kravet på två rehearsalplays går inte att uppfylla för
+henne; vilken checklista som ersätter det är ett öppet beslut för Kevin och Jakob, och reglerna
+ovan och i `AGENTS.md` anger ingen ersättning. Svenska repliker väntar på en språkdimension. Kända brister i
 underlaget: fläckig hy i Paows H3-tagningar, en mörk fläck i plattan vänster om skon och en
 liten färgskillnad på kortet där dealdelen slutar. Ej uppdaterat: lobbyns namnlista
 (`player-choices.mjs`), uppladdning till de nya familjerna (`video-intake.mjs`) och texten
@@ -740,7 +742,7 @@ Alla sex dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
 kalibrering/acceptans; ändrad audio-/videohash ogiltigförklarar visuell approval.
 Ingen approximate-duration-match, gammal talvideo till ny text eller munoverlay.
 Audit `pipeline/audit-dealer-sync.mjs --probe`, obligatoriska regressioner och
-två rehearsalplays per dealer med inspelat tal krävs för media/spelarändring, inte bara hashar.
+två rehearsalplays per dealer krävs för media/spelarändring, inte bara hashar.
 Gamla BO-videopreviews är tysta historikklipp, inte lipsyncmaterial.
 Observation följer faktisk spelflik utan andra playback; valt/laddat ≠ spelat.
 Originalpolicy `legacyClipPolicy` och Astrid `mediaPolicy/idlePolicy` består;
