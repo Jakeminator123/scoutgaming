@@ -101,9 +101,9 @@ lämnades av). Koden läser ingen av dem; `CROUPIER_GAME_DATABASE_URL` och
 `BLOB_READ_WRITE_TOKEN` är fortsatt de auktoritativa värdena och verifierades oförändrade
 (namnjämförelse 44 → 59 namn, bara tillägg; `/api/operators/sg-test` svarade före, under
 och efter). Render berördes inte (egen kopia av `CROUPIER_GAME_DATABASE_URL`).
-Bieffekt: QA-projektet `croupier-player-preview-qa` (kvar på personliga teamet) förlorade
-sin Neon-koppling och därmed `CROUPIER_ZONES_*` i Preview/Development; produktionen har
-aldrig haft dem. Återkoppling kräver att QA-projektet också flyttas till `scoutgaming`.
+Bieffekt: QA-projektet `croupier-player-preview-qa` förlorade sin Neon-koppling och därmed
+`CROUPIER_ZONES_*` i Preview/Development; produktionen har aldrig haft dem. Projektet
+raderades 18:40 samma dag (legacy, inga egna domäner).
 Migration `006-player-profile.sql` kördes där 8 oktober 16:48 (två nya nullbara kolumner,
 4 spelare oförändrade).
 
@@ -298,9 +298,10 @@ i CI eller Vercel.
 Huvudprojektets Preview kan peka mot produktion. Syntetiska spel-/kontoprov
 kräver den separata native-QA-backenden och dess egen databas/hostname.
 De aktuella QA-fronterna heter `croupier-native-qa-abc92154cb15` och
-`croupier-native-studio-qa-abc92154cb15`. Den äldre `croupier-player-preview-qa`
-är en avvecklingskandidat, inte rekommenderad testentré; delade integrations-
-resurser måste kontrolleras före projektradering. Se [driftskartan](CLOUD-MIGRATION.md).
+`croupier-native-studio-qa-abc92154cb15`. Det äldre `croupier-player-preview-qa`
+raderades 8 oktober 18:40 på Jakobs beslut, efter att Neon- och Blob-resurserna
+flyttats till teamet `scoutgaming`; raden `vercel-zones-qa` i registret är historik.
+Se [driftskartan](CLOUD-MIGRATION.md).
 
 Lab läser bara `CROUPIER_ZONES_DATABASE_URL` för zoner. Generella DATABASE_URL/
 POSTGRES_URL är inte reserv för detta. Vercel-konfiguration kopieras inte

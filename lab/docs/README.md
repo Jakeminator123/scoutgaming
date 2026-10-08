@@ -4,9 +4,9 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov från grenen `test-video-jakob`), Lanes `/control/lanes` (publicera paket; Renders `/blackjack?operator=` läser det, Vercels `/play/blackjack` gör det inte än), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
-- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2).
-- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` begränsar lane och dealer till paketet; Vercels `/play/blackjack` gör det inte än. Render-deploy av `POST /api/history` är öppen (L7).
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov; materialet ligger i `test-videoeditor/preview/site`, grenen `test-video-jakob` är raderad), Lanes `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
+- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
@@ -14,14 +14,14 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
 välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov för marker, kort, bord och bakgrund.
 Lane-notisen och meddelandet vid ändring visar den gränsen.
-Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2).
+Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen i vyn Färger, marker och kort; skrivningen kräver rollrättigheten `presentations.configure`.
 Utkasten försvinner vid omladdning eller operatörsbyte.
 
 Begrepp och en kort flödeskarta finns i
 [den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
-Partner-session finns via `/partner/login`. Skrivning av `branding` kräver roller (N2.2).
-Chips och övrig bordsdesign är inte klara (L4), och ett menyval ger ingen behörighet.
+Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
+Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
 **Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet. I molnet öppnar du
 [`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger

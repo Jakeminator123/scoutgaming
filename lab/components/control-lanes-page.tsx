@@ -117,7 +117,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   return <PageTemplate
     eyebrow="// STUDIO"
     title="Lanes"
-    intro="Sätt ihop en lane av dealers, lager och OpenClaw-läge. Publicera ett operatörspaket. Spelet läser paketet på /blackjack?operator=<slug>; spelarens val inom paketet kommer senare."
+    intro="Sätt ihop en lane av dealers, lager och OpenClaw-läge. Publicera ett operatörspaket. Spelet läser paketet på /blackjack?operator=<slug> och spelarens dealerval följer paketet. Kortet Bolag skapar bolag, roller och medlemskap."
     primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
   >
     <div className={`sg-page-body ${styles.page}`}>

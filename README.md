@@ -28,12 +28,14 @@ redirects to the chat tab. `/control/backgrounds` redirects to `/control/zones`.
 
 The Partnerportal is level 2. Operator staff sign in at `/partner/login` and see
 a scoped snapshot. Internal staff without `partner_session` still see the demo
-preview. Players and transactions are not connected (L10). Company appearance
-(`branding`) can be read and written within the lane, but the write requires
-roles (N2.2). The lobby, `/play/profil` and `/play/historik` exist. The profile
-can be edited (display name and language). The lobby shows Spelar hos from
-`?operator=`. Render's `/blackjack?operator=` limits lane and dealer to the
-package; Vercel's `/play/blackjack` does not yet.
+preview. Operators, roles and memberships are created from the Bolag card on
+`/control/lanes`; a new e-mail receives an activation link. Company appearance
+(`branding`, table colour) is read and written within the lane by a member with
+`presentations.configure`. Players and transactions are not connected (N2.4).
+The lobby, `/play/profil` and `/play/historik` exist. The profile can be edited
+(display name and language). The lobby shows Spelar hos from `?operator=`.
+Render's `/blackjack?operator=` and Vercel's `/play/blackjack?operator=` limit
+lane and dealer to the package.
 
 `/studio` is the Next.js basePath of the lab service, not a fourth product and
 not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
@@ -44,9 +46,11 @@ The single `scoutgaming` Vercel project builds the web and lab apps as two
 Services from this repository's main branch, both in Frankfurt. Render owns the
 authoritative game engine and live transport. Lab admin uses native Neon policy
 and private Blob. Isolated QA remains separate. Full AI/GPU acceptance remains open in the migration checklist. Partner sign-in
-and the player lobby exist. T2 and T4 are not done: onboarding, the audit journal
-and game data remain (L2, L10). Render's `/blackjack?operator=` limits lane and
-dealer to the package; Vercel's `/play/blackjack` does not yet.
+and the player lobby exist. T2 and T4 are not done: the audit journal table,
+chips and game data for operators remain (N2.4). Render's `/blackjack?operator=`
+and Vercel's `/play/blackjack?operator=` limit lane and dealer to the package.
+Neon `croupier-production` and Blob `croupier-media-private` live on the
+`scoutgaming` Vercel team and are connected to the project.
 Existing backoffice tools keep their original permissions. Observation follows the game
 player's receipts; a separate lab preview requires an explicit action.
 See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)

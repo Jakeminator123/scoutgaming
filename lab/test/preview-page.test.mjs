@@ -44,7 +44,7 @@ test('Förhandsvisning shows the layer-trial title, intro and source line', () =
   const html = renderToStaticMarkup(React.createElement(ControlPreviewPage));
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<h1>Förhandsvisning<\/h1>/);
-  assert.match(html, /Lagerprov från grenen test-video-jakob: bakgrund, bord och dealer som separata lager \(Paow och Dragge, 720p\)\. Ett prov, inte en spelväg; ingen koppling till spelmotor, saldo eller produktion\./);
-  assert.match(html, /Material: test-videoeditor\/preview\/site \(gren test-video-jakob\), hashar verifierade vid bygget\./);
+  assert.match(html, /Lagerprov: bakgrund, bord och dealer som separata lager \(Paow och Dragge, 720p\)\. Ett prov, inte en spelväg; ingen koppling till spelmotor, saldo eller produktion\./);
+  assert.match(html, /Material: test-videoeditor\/preview\/site, hashar verifierade vid bygget\./);
   assert.match(html, /<iframe[^>]*title="Förhandsvisning · lagerprov"[^>]*src="[^"]*\/preview\/index\.html"/);
 });

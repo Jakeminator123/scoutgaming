@@ -32,10 +32,10 @@ Nivånumret är dokumentation; servern kontrollerar identitet, rättighet, medle
 | Svenska | Engelska | Betyder | I koden i dag |
 |---|---|---|---|
 | Lane | Presentation Lane | Ett paket av dealers, klipp och OpenClaw-rättigheter. Flera dealers kan ingå i samma lane. Grundprofilen är standardpaketet som kopieras. | `project.lanes[]`. Grundprofilen är `defaultPresentationLane` (`mobile-phone`). `lanes` i `operator_packages`. `lissabon-stream-lane` är ett lane-id, inget produktnamn |
-| Operatörspaket | Operator Package | Bolagets konfiguration i `operator_packages`: lanes, spel, bord, branding och en revision per publicering. Renders `/blackjack?operator=` läser paketet. Vercels `/play/blackjack` gör det inte än. | `croupier_studio.operator_packages`, `web/storage/operator-package-reader.mjs` |
-| Tre lager | Three layers | Bakgrund, dealer och bord. Varje lager kan tas bort. I dag finns det bara i förhandsvisningen, inte som spelväg. | `/control/preview`. På lanen: `layers.background`, `layers.dealer`, `layers.table` |
+| Operatörspaket | Operator Package | Bolagets konfiguration i `operator_packages`: lanes, spel, bord, branding och en revision per publicering. Renders `/blackjack?operator=` läser paketet; Vercels `/play/blackjack?operator=` bär slugen genom spelarinloggningen till samma dokument, och dealerraden följer paketet. | `croupier_studio.operator_packages`, `web/storage/operator-package-reader.mjs`, `web/public/app.mjs` (`allowedDealerKeys`) |
+| Tre lager | Three layers | Bakgrund, dealer och bord. Varje lager kan tas bort. Finns som lagerprov på `/control/preview` och som lagerlane i spelet (`?lane=layer-preview`, bakom cookie-flagga). Inte kopplat till klippflödets urval. | `/control/preview`, lane `layer-preview` (`renderer: layered`), `web/public/layered-presentation.mjs`, `/layer-packs/*`. På lanen: `layers.background`, `layers.dealer`, `layers.table` |
 | Presentationsadapter | Presentation Adapter | Översätter spelsignaler till presentationshändelser. | `web/presentation-api.mjs` |
-| Designprofil | Design Profile | Branding och bordsutseende som bolaget får justera inom lanen. `branding` kan läsas och skrivas, men skrivningen kräver roller (N2.2). | `branding` i paketet. Chips återstår (L4) |
+| Designprofil | Design Profile | Branding och bordsutseende som bolaget får justera inom lanen (`adjustable`: `table.color`, `background`, `dealer`, `branding`). `branding` läses och skrivs i partnerportalens vy Färger, marker och kort; skrivningen kräver rollrättigheten `presentations.configure`. | `branding` i paketet, `lab/components/partner-appearance.tsx`. Chips återstår (L4) |
 | Visningsnamn | Clip label | Eget namn på ett klipp, skilt från filnamn och hash. Sparas från Klippbibliotek, 1–80 tecken. | `project.clipLabels` |
 | Standardvariant | Standard variant | `legacyClipPolicy` översätts till varianter vid läsning och ligger kvar på disk tills en admin sparar. `think` blir `turn.player` och `gest` blir `settle.*`. `headTilt`, `deal` och `dealWatch` väljs inte. | `presentation-runtime/legacy-standard-variants.mjs` |
 | Astrid-baslinje | Astrid baseline | 160 anrop (16 händelser × 5 lägen × 2 kontexter) som bevisar att Astrids select-svar är oförändrade. `--write` kräver Jakobs godkännande. | `tools/astrid-select-baseline.mjs`, `test/presentation-select-astrid-baseline.mjs` |
@@ -79,6 +79,25 @@ omdirigerar dit med hela frågesträngen kvar.
 Urvalslägen: Standard (standardklippet), Regler, Slump, OpenClaw (validerat AI-råd),
 Skuggläge (rådet loggas, standard spelas).
 
+## Acceptans och prov
+
+| Svenska | Engelska | Betyder | I koden i dag |
+|---|---|---|---|
+| Rehearsal (repetition) | Rehearsal | Spelklientens acceptansläge: samma spelare som i skarpt läge, men varje dealerreplik spelas två gånger i följd så att läppsynk och bild kan bedömas. Ingen medieändring är godkänd förrän Jakob sett den så; hash, vågform eller grönt test räcker inte. Kräver spelarinloggning. | `?dealer=<namn>&rehearsal=1` på `/play/blackjack` (en länk per dealer: astrid, vera, amira, mei). `?lane=layer-preview&rehearsal=1` provar lagerlanen |
+| Lagerprov | Layer preview | Statisk förhandsvisning av tre lager (Paow, Dragge, 720p) för intern personal. Ett prov, ingen spelväg: ingen spelmotor, saldo, blob eller databas. Materialet ligger i repot sedan 8 okt; grenen `test-video-jakob` är raderad. | `/control/preview`, `test-videoeditor/preview/site`, `/studio/preview/[...path]` |
+| Lagerlane | Layer lane | Lane med `renderer: layered` som kör tre lager i den riktiga spelklienten. Saknat lagerpaket ger `Lagerpaket saknas` och 2D-reserv. | lane `layer-preview`, `web/layer-packs.mjs`, cookie `croupier_layer_preview=1` |
+| 2D-reserv | 2D fallback | Spelet ritar bord och kort utan dealervideo när ett klipp eller lagerpaket saknas. Vera, Amira och Mei spelar så tills Emils paket (T7). | `web/public/app.mjs` |
+| Astrid-baslinje | Astrid baseline | Se Paket och konfiguration. | `tools/astrid-select-baseline.mjs` |
+| Replikset | Speech set | En taländring är alltid ett set: exakt text, inspelat ljud, video, bildindex, kalibrering och godkännandenotering. En annan ljud-/videohash upphäver tidigare visuellt godkännande. | `pipeline/audit-dealer-sync.mjs --probe`, `.githooks/pre-commit` |
+
+## Inbjudan och aktivering
+
+| Svenska | Engelska | Betyder | I koden i dag |
+|---|---|---|---|
+| Inbjudan | Invitation | Admin lägger till en e-postadress som medlem i ett bolag på `/control/lanes` (kortet Bolag). En ny adress får ett partnerkonto med status `invited` och ett aktiveringsmejl; en befintlig partner kopplas direkt som `active`. | `POST /studio/api/admin/operator-membership`, `lab/lib/operator-accounts.mjs` |
+| Aktiveringslänk | Activation link | Länken i mejlet till `/partner/set-password?t=<token>`. Giltig 72 timmar; förbrukas bara när lösenordet sparats, så samma länk kan öppnas igen efter ett tillfälligt fel. Aktiveringen sätter medlemskapet till `active`. | `lab/app/partner/set-password/page.tsx`, `setPassword` i `lab/lib/partner-session.mjs` |
+| Partnersession | Partner session | Operatörens inloggning på `/partner/login`; cookien `partner_session` kan aldrig öppna `/control`, och tvärtom. | `lab/lib/partner-session.mjs` |
+
 ## OpenClaw, AI-lagret
 
 | Svenska | Engelska | Gör | Rör aldrig |
@@ -99,7 +118,7 @@ Sidan heter Agentmodeller (`/control/openclaw`) med fliken Chatt.
 | Bord | Table | Spelresurs med ägare och inställningar | `tables` i paketet |
 | Medlemskap | Membership | Person ↔ operatör, rollprofil, status | `operator_memberships` |
 | Rollprofil | Role Profile | Namngivna rättigheter, t.ex. `team.roles.assign` | `operator_roles`. Sista administratören kan inte tas bort (409) |
-| Produktkonto | Product Account | Inloggning till en av de tre ytorna | `croupier_auth.users` (admin, superadmin, staff, reader), partner- och spelarsessioner |
+| Produktkonto | Product Account | Inloggning till en av de tre ytorna | `croupier_auth.users` (admin, superadmin, staff, reader, partner), partner- och spelarsessioner |
 | Repobehörighet | Repository Permission | GitHub-åtkomst. Ger ingen produktåtkomst, och tvärtom | `Jakeminator123/scoutgaming`, grenar `main`, `john`, `kevin`, `emil` |
 
 ## Kommunikation

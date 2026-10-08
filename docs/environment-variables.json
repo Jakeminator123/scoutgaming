@@ -186,7 +186,7 @@
       "sources": [],
       "project": "croupier-player-preview-qa",
       "team": "jakeminator123s-projects",
-      "connectionStatus": "2026-10-08: the Neon connection (Preview, Development) was removed so the resource could be transferred to team scoutgaming; the CROUPIER_ZONES_* names below are no longer injected into this QA project. Reconnect requires moving the QA project to team scoutgaming or setting the names by hand. Production never had them.",
+      "connectionStatus": "Historical. 2026-10-08 17:25 the Neon connection (Preview, Development) was removed so the resource could be transferred to team scoutgaming; 18:40 the project itself was deleted (legacy, no custom domains). The CROUPIER_ZONES_* names below document what Vercel used to inject; production never had them.",
       "required": [],
       "firstBoot": [],
       "conditional": [
