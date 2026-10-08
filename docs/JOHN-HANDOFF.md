@@ -131,8 +131,9 @@ standardlane `mobile-phone` när nyckeln saknas, ingen läsare ännu. Klipp visa
 `familyId` + roll utan filbyten. Händelser är en sida: `/control/events` utan `?event=` är
 översikten, `/control/tree` omdirigerar 308 med frågesträngen kvar. Menyraden heter Probe, Johns
 fyra etiketter är djuplänkar `/control/administration?tab=`, inloggningskortet ligger på
-sidmallens tokens. `test-videoeditor/` speglar grenen `test-video-jakob` byte-identiskt
-(förhandsvisning Paow/Dragge 720p, 12 MB, webbspelare med WebGL-kompositor); `/control/preview`
+sidmallens tokens. `test-videoeditor/` bär lagerprovets material (ursprungligen grenen
+`test-video-jakob`, byte-identiskt speglad och raderad 8 okt 18:35; förhandsvisning Paow/Dragge 720p,
+12 MB, webbspelare med WebGL-kompositor); `/control/preview`
 visar den bakom adminsessionen via `/preview/[...path]` (ingen publik kopia, media som filer,
 inget till blob eller databas). `test/fuzz-blackjack.mjs` fuzzar serverns `web/shoe-game.mjs`
 (3 000 rundor i kroken, 100 000 gröna). Systemkartan har sidan och handlern; menynamnen är
@@ -170,8 +171,8 @@ pre-commit-krok för varje commit (ffmpeg och jq lokalt). Produktion verifieras 
 
 Kvar: `dealer-regression` installerar ffmpeg och jq utan cache (rad 46). `test/fuzz-blackjack.mjs`
 är ett manuellt skript mot klientmodulen och räknar invariantbrott (rad 47). Johns rader 11, 12,
-14, 17b. Klipplogiken: steg 2-förslaget väntar på Jakobs svar och på granskning av grenen
-`test-video-jakob` (tre lager); se `random/checklista-2026-10-08.md`.
+14, 17b. Klipplogiken: steg 2-förslaget väntar på Jakobs svar; lagerspåret (tre lager) finns som
+lane `layer-preview` (T9) och provas i rehearsal; se `random/checklista-2026-10-08.md`.
 
 ## Sista operatörsadmin, 7 oktober 2026 natt
 

@@ -1,6 +1,6 @@
 {
   "title": "Scoutgaming: tre nivåer, en gemensam produkt",
-  "intro": "Översikt är för intern personal, Partnerportalen för operatörens begränsade val och Spelarytan för spelaren. Dealers & klipp, Administration, Agentmodeller och Operatörschatt är verktyg inom den interna ytan. Utan partner_session visar Partnerportalen exempeldata. Inloggning på /partner/login visar bolagets snapshot. Spellobby, /play/profil och /play/historik finns. Profilen kan redigeras (namn och språk). Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= begränsar lane och dealer till paketet; Vercels /play/blackjack gör det inte än. Börja i /play för att öppna Blackjack; spelmotorn och dess inloggning är samma som tidigare.",
+  "intro": "Översikt är för intern personal, Partnerportalen för operatörens begränsade val och Spelarytan för spelaren. Dealers & klipp, Administration, Agentmodeller och Operatörschatt är verktyg inom den interna ytan. Utan partner_session visar Partnerportalen exempeldata. Inloggning på /partner/login visar bolagets snapshot. Spellobby, /play/profil och /play/historik finns. Profilen kan redigeras (namn och språk). Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= och Vercels /play/blackjack?operator= begränsar lane och dealer till paketet. Börja i /play för att öppna Blackjack; spelmotorn och dess inloggning är samma som tidigare.",
   "steps": [
     {
       "view": "tree",
@@ -35,7 +35,7 @@
   ],
   "boundaries": [
     "En lane samlar presentationsprofilens klipp, varianter, bakgrund, idle och urvalsregler. Spelmotorns signaler går genom presentationsadapter och urval till en uppspelningsplan; spelaren visar video och överlägg. Spelmotorn äger fortfarande kort, regler, saldo och resultat. Operatörspaket betyder tilldelade lanes, spel/bord och tillåtna varumärkesval; paketkopplingen till Partnerportalen återstår.",
-    "Partnerportalens marker, kort och bordsdesign ändrar bara den lokala förhandsvisningen. En tydlig lane-notis visar att den spelkopplingen saknas. Klipp, masker, urvalsregler och publicering är interna arbetsverktyg. Partnerinloggning på /partner/login finns. Bolagets utseende (branding) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2). Lanes kan publicera ett paket. Renders /blackjack?operator= läser det; Vercels /play/blackjack gör det inte än. En operatörsväljare ger ingen behörighet.",
+    "Partnerportalens marker, kort och bordsdesign ändrar bara den lokala förhandsvisningen. En tydlig lane-notis visar att den spelkopplingen saknas. Klipp, masker, urvalsregler och publicering är interna arbetsverktyg. Partnerinloggning på /partner/login finns. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Lanes publicerar ett paket och har kortet Bolag för bolag, roller och medlemskap. Renders /blackjack?operator= och Vercels /play/blackjack?operator= läser paketet. En operatörsväljare ger ingen behörighet.",
     "Konton hanteras i Administration, fliken Konton & roller (?tab=accounts). Övriga djuplänkar är Bord & lanes (?tab=tables), Spelintegritet (?tab=operations) och Betalningar & journal (?tab=finance). Admin använder samma användarnamn eller e-post och lösenord i spelet och på /control; spelare nekas /control. Aktiv eller blockerad spelare med eget spelarlösenord kan få ett nytt lösenord med bekräftelse och anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörer använder invitation och återställningslänkar. Resend är konfigurerat i produktion och transporten är provad mot sandbox; full riktig kontoaktivering och återställning återstår att verifiera.",
     "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Dealers & klipp. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta familjer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
     "Uppspelning och spår observerar en spelare. Anslutning, återanslutning och Ny observation startar aldrig en extra Lab-uppspelning. Separat Lab-preview kräver ett uttryckligt val. Klippval, nedladdning och registrering är inte bevis på uppspelning; native-kvittot måste visa faktisk bild/talstart. Partner-SSE och genererat tal visas som egna tydligt märkta flöden.",
@@ -62,11 +62,11 @@
     },
     {
       "name": "Partnerportal · /partner",
-      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Utan partner_session visas tydligt märkta demonstrationer. Inloggning på /partner/login visar bolagets snapshot. Varje bolag nås på /partner/{operatorSlug}. Bolagets utseende (branding) kan läsas och skrivas inom lanen, men kräver roller (N2.2). Spelare och transaktioner är inte kopplade (L10). Marker, kort och bord är tills vidare lokala prov."
+      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Utan partner_session visas tydligt märkta demonstrationer. Inloggning på /partner/login visar bolagets snapshot. Varje bolag nås på /partner/{operatorSlug}. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Spelare och transaktioner är inte kopplade (N2.4). Marker, kort och bord är tills vidare lokala prov."
     },
     {
       "name": "Spelaryta · /play",
-      "purpose": "Nivå 3: spellobby på /play, egen profil på /play/profil (namn och språk; saldo är serverägt), egen historik på /play/historik och Blackjack på /play/blackjack. Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= begränsar lane och dealer till paketet; Vercels /play/blackjack gör det inte än."
+      "purpose": "Nivå 3: spellobby på /play, egen profil på /play/profil (namn och språk; saldo är serverägt), egen historik på /play/historik och Blackjack på /play/blackjack. Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= och Vercels /play/blackjack?operator= begränsar lane och dealer till paketet."
     },
     {
       "name": "Bakgrundszoner · /control/zones",
@@ -78,11 +78,11 @@
     },
     {
       "name": "Förhandsvisning · /control/preview",
-      "purpose": "Lagerprov från grenen test-video-jakob: bakgrund, bord och dealer som separata lager. Ett prov, inte en spelväg."
+      "purpose": "Lagerprov: bakgrund, bord och dealer som separata lager (materialet ligger i test-videoeditor/preview/site). Ett prov, inte en spelväg; lagerlanen i spelet provas med ?lane=layer-preview&rehearsal=1."
     },
     {
       "name": "Lanes · /control/lanes",
-      "purpose": "Tre kort: Lanes i projektet, Ny lane och Publicera paket. Spara projekt är sidans enda limeknapp. Publicera paket är sekundär. Renders /blackjack?operator= läser det publicerade paketet; Vercels /play/blackjack gör det inte än."
+      "purpose": "Tre kort: Lanes i projektet, Ny lane och Publicera paket. Spara projekt är sidans enda limeknapp. Publicera paket är sekundär. Kortet Bolag skapar bolag, standardroller och medlemskap (ny e-post får aktiveringslänk). Renders /blackjack?operator= och Vercels /play/blackjack?operator= läser det publicerade paketet."
     },
     {
       "name": "Klippbibliotek · /control/videos",
