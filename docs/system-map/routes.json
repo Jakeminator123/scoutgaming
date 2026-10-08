@@ -352,11 +352,21 @@
         "/partner/:operatorSlug"
       ],
       "label": "Skrivande partner-rutter",
-      "serving": "Planerad",
-      "access": "Operatör.",
-      "status": "planned",
-      "plannedRef": "N2.2",
-      "purpose": "Skrivande rutter för /partner/{slug}. Den läsbara förhandsvisningen finns redan."
+      "serving": "Lab service under basePath /studio; partner actions team and branding on /studio/api/partner.",
+      "access": "Operatör med aktivt medlemskap; skrivning kräver team.roles.assign respektive presentations.configure.",
+      "sources": [
+        "lab/lib/partner-session.mjs",
+        "lab/lib/partner-team-api.mjs",
+        "lab/lib/partner-branding-api.mjs",
+        "lab/lib/operator-admin-api.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-team-api.test.mjs",
+        "lab/test/partner-branding-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs"
+      ],
+      "purpose": "Team: lista, koppla befintligt partnerkonto, rollbyte, suspend/reaktivera med CAS och sista-admin-spärr. Branding inom lanens operatorAdjustable. Intern admin skapar bolag, standardroller och medlemskap från kortet Bolag.",
+      "limitation": "Inga roller finns i produktions-Neon förrän intern admin klickar Skapa saknade standardroller för ett bolag. E-postinbjudan (N2.6) pågår."
     },
     {
       "id": "partner-players",
@@ -373,14 +383,23 @@
     {
       "id": "operator-design",
       "paths": [
-        "/partner/:operatorSlug/utseende"
+        "/partner/:operatorSlug/presentation"
       ],
       "label": "Bolagets justeringsyta",
-      "serving": "Planerad",
-      "access": "Operatör.",
-      "status": "planned",
-      "plannedRef": "L4",
-      "purpose": "Bordsfärg, branding och chips inom det lane tillåter."
+      "serving": "Kevins vy Färger, marker och kort i partnerportalen; panelen Utseende inom lanen laddas för en riktig operatörssession.",
+      "access": "Operatör; skrivning kräver presentations.configure.",
+      "sources": [
+        "lab/components/partner-appearance.tsx",
+        "lab/components/partner-appearance-loader.mjs",
+        "lab/lib/partner-branding-api.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-appearance.test.mjs",
+        "lab/test/partner-appearance-loader.test.mjs",
+        "lab/test/partner-branding-api.test.mjs"
+      ],
+      "purpose": "Bordsfärg (branding.color) och övriga brandingnycklar inom det lanens operatorAdjustable tillåter; revision som CAS.",
+      "limitation": "Chips saknas. Bakgrund och dealer visas men skrivs inte. Kevins lokala felt-fält är en annan nyckel än branding.color."
     },
     {
       "id": "lane-publish",
@@ -398,7 +417,7 @@
         "lab/lib/operator-package-api.mjs",
         "lab/lib/operator-admin-api.mjs"
       ],
-      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package. Vercel /play/blackjack does not. Bolag adds existing partner accounts only; no e-mail invitation (N2.6) and no journal table.",
+      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package and Vercel /play/blackjack?operator= forwards to it. Bolag adds existing partner accounts only; e-mail invitation (N2.6) in progress, no journal table.",
       "tests": [
         "lab/test/control-lanes-page.test.mjs",
         "lab/test/control-operator-directory.test.mjs",
@@ -420,20 +439,31 @@
         "apps/croupier-frontend/lib/player-operator.mjs",
         "web/public-operators.mjs"
       ],
-      "purpose": "Lobbyn visar Spelar hos från ?operator= eller localStorage via GET /api/operators/<slug>.",
-      "limitation": "Bara lobbyn. Vercels /play/blackjack begränsar inte lane eller dealer till paketet."
+      "purpose": "Lobbyn visar Spelar hos från ?operator= eller localStorage via GET /api/operators/<slug>; länken Spela blackjack bär ?operator= vidare.",
+      "limitation": "Vercels /play/blackjack?operator= hämtar Renders paketerade dokument (L8b); ogiltig slug tas bort och claims.partner vinner."
     },
     {
       "id": "player-choice",
       "paths": [
+        "/blackjack",
         "/play"
       ],
       "label": "Spelarens val",
-      "serving": "Planerad",
+      "serving": "Render /blackjack sätter data-game-choices ur Studio-projektets lane; panelen Ditt bord i spelklienten; lobbyn visar senaste val.",
       "access": "Spelare.",
-      "status": "planned",
-      "plannedRef": "N3.4",
-      "purpose": "Bord, bakgrund och dealer inom paketets tillåtna."
+      "sources": [
+        "web/game-entry-operator.mjs",
+        "web/public/player-choices.mjs",
+        "web/public/app.mjs",
+        "apps/croupier-frontend/lib/player-choices.mjs"
+      ],
+      "tests": [
+        "test/game-entry-operator.mjs",
+        "test/player-choices.mjs",
+        "apps/croupier-frontend/test/player-profile.mjs"
+      ],
+      "purpose": "Dealer och bordsfärg inom lanen; ordning URL, spelare, bolagets branding.color, lanens default. Valet ligger i localStorage per operatör.",
+      "limitation": "Bakgrund och bord som egna lager ritas inte förrän lagerspelaren finns (T9); mode baked visar Kommer med nya dealerpaket. Valet ligger inte på kontot."
     }
   ],
   "apiGroups": [
