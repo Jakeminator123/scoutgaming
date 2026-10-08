@@ -2,6 +2,15 @@
 
 ## 8 oktober 2026 kväll: T10 — tre val och frysta lane-paket
 
+Produktkoden levererades på main som `813c25a6`; full lokal commit-hook passerade
+och Vercel-deploymenten blev READY. GitHub-jobbet `presentation-studio` hittade
+därefter fyra gamla UI-förväntningar: teknisk offlinecopy, låst lane-checkbox,
+iframe-only-preview och den gamla menyn. De har uppdaterats till det avsedda flödet
+och lagts i full lokal regression. Studio-suiten: 1 029 pass, 0 fail, 2 skip.
+Preview-testet verifierar dessutom att den delade dataläsaren stoppar 401/partner
+innan Studio-data läses. Ny meny, sparad lane och tre väljare har även lästs på
+`www.scoutgaming.tech/control/preview` efter omladdning. Inga mediefiler ändras.
+
 Jakob gav Codex uppdraget att fortsätta efter masterplanen. Astrids godkända
 filmer ska vara kompatibla fullbildslager tills godkända frilagda dealerpaket finns.
 Start och plan finns i `random/start-T10-2026-10-08.md` och

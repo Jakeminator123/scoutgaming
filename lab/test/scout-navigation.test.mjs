@@ -18,11 +18,12 @@ const sidebar = [...groups.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGA
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('sidebar groups stay in Spec 02 order and point at real pages', () => {
-  assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'OpenClaw', 'Drift', 'Åtkomst']);
+test('Studio puts the three main destinations first and preserves the tool and operations pages', () => {
+  assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'Studio · verktyg', 'OpenClaw', 'Drift', 'Åtkomst']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
     [['/control', 'Översikt']],
-    [['/control/clips', 'Dealers & klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser'], ['/control/preview', 'Förhandsvisning'], ['/control/lanes', 'Lanes']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/preview', 'Förhandsvisning'], ['/control/lanes', 'Lanes']],
+    [['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
     [['/control/administration', 'Administration'], ['/control/administration?tab=tables', 'Bord & lanes'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=finance', 'Betalningar & journal'], ['/control/probe', 'Probe']],
     [['/control/administration?tab=accounts', 'Konton & roller'], ['/partner', 'Partners']],
