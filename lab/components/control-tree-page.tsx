@@ -14,10 +14,10 @@ export function ControlTreePage({ initialProject, initialVideos, initialStatus, 
   initialDealerId?: string;
   initialEventId?: string;
 }) {
-  const session = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
+  const session = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, overview: true });
   const { media, videos, project, dealerId, event, line, variant, mode, originals, selectDealer, selectEvent, selectVariant, dealer, error, setError, notice, setNotice } = session;
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
-  return <PageTemplate eyebrow="// STUDIO" title="Händelser → klipp" intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser → klipp" eventHref={eventHref} eventLabel={event.label} />}>
+  return <PageTemplate eyebrow="// STUDIO" title="Händelser" intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} />}>
     <div className="sg-page-body">
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     <StudioBindingNotices project={project} videos={videos} dealerId={dealerId} eventId={event.id} />

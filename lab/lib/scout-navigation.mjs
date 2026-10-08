@@ -12,10 +12,10 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Studio',
     items: Object.freeze([
       Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
-      Object.freeze({ href: '/control/tree', label: 'Händelser → klipp' }),
       Object.freeze({ href: '/control/videos', label: 'Klippbibliotek' }),
       Object.freeze({ href: '/control/zones', label: 'Bakgrundszoner' }),
       Object.freeze({ href: '/control/events', label: 'Händelser' }),
+      Object.freeze({ href: '/control/preview', label: 'Förhandsvisning' }),
     ]),
   }),
   Object.freeze({
@@ -25,18 +25,22 @@ export const SCOUT_NAVIGATION = Object.freeze([
       Object.freeze({ href: '/control/openclaw?tab=chat', label: 'Operatörschatt' }),
     ]),
   }),
-  // One entry until the administration page has tabs; four labels to one page confused the active state.
+  // Bare Administration stays the page without ?tab=. The four labels deep-link a group.
   Object.freeze({
     label: 'Drift',
     items: Object.freeze([
       Object.freeze({ href: '/control/administration', label: 'Administration' }),
+      Object.freeze({ href: '/control/administration?tab=tables', label: 'Bord & lanes' }),
+      Object.freeze({ href: '/control/administration?tab=operations', label: 'Spelintegritet' }),
       Object.freeze({ href: '/control/activity', label: 'Uppspelning' }),
-      Object.freeze({ href: '/control/probe', label: 'Talgranskning' }),
+      Object.freeze({ href: '/control/administration?tab=finance', label: 'Betalningar & journal' }),
+      Object.freeze({ href: '/control/probe', label: 'Probe' }),
     ]),
   }),
   Object.freeze({
     label: 'Åtkomst',
     items: Object.freeze([
+      Object.freeze({ href: '/control/administration?tab=accounts', label: 'Konton & roller' }),
       Object.freeze({ href: '/partner', label: 'Partners' }),
     ]),
   }),
@@ -69,7 +73,8 @@ const legacyPaths = new Map([
   ['/openclaw', '/control/openclaw'],
   ['/operator-chat', '/control/openclaw?tab=chat'],
   ['/control/operator-chat', '/control/openclaw?tab=chat'],
-  ['/tree', '/control/tree'],
+  ['/tree', '/control/events'],
+  ['/control/tree', '/control/events'],
   ['/activity', '/control/activity'],
   ['/guide', '/control/guide'],
 ]);

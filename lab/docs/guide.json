@@ -30,7 +30,7 @@
       "view": "probe",
       "href": "/#probe",
       "title": "5. Prova Astrids egna initiativ",
-      "body": "Probe hör till Astrids initiativ när spelaren är inaktiv och bordet är lugnt. Textprovet i Talgranskning skapar varken ljud eller video (L4). Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns. Sparad policy används inför nästa beslut utan Render-omstart. Modell- och minnesinställningar är avancerade, inte vanliga klippval. Faktisk uppspelning måste verifieras i spelfliken."
+      "body": "Probe hör till Astrids initiativ när spelaren är inaktiv och bordet är lugnt. Textprovet i Probe skapar varken ljud eller video (L4). Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns. Sparad policy används inför nästa beslut utan Render-omstart. Modell- och minnesinställningar är avancerade, inte vanliga klippval. Faktisk uppspelning måste verifieras i spelfliken."
     }
   ],
   "boundaries": [
@@ -73,12 +73,8 @@
       "purpose": "Prova exakta pixelzoner ovanpå dealerfilmer. Separat webbläsarkopia, molnsparning och export. Zonerna styr ännu inte spelets bakgrund (L16). /control/backgrounds leder hit."
     },
     {
-      "name": "Händelser → klipp · /control/tree",
-      "purpose": "En översikt över de verkliga videofamiljerna. Öppna exakt plats eller replik."
-    },
-    {
       "name": "Händelser · /control/events",
-      "purpose": "Spela vald standard eller mappvariant, ställ in urvalspolicy och prova eventdata. Flikarna i adressen är event, triggers och variants. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19)."
+      "purpose": "Utan ?event= visas översikten: dealer, händelser per kategori och klippantal. Med ?event= spelas vald standard eller mappvariant, ställs urvalspolicy in och eventdata provas. /control/tree leder hit och behåller parametrarna. Flikarna i adressen är event, triggers och variants. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19)."
     },
     {
       "name": "Klippbibliotek · /control/videos",
@@ -93,7 +89,7 @@
       "purpose": "Flikarna Agentmodeller och Chatt. Chatt är ?tab=chat, och /control/operator-chat leder dit. Sparning av modellval går genom Studios behörighetskontroll till OpenClaw på Render. Gatewayens separata dashboard finns kvar för avancerad konfiguration."
     },
     {
-      "name": "Talgranskning · /control/probe",
+      "name": "Probe · /control/probe",
       "purpose": "Probe-policy och ett syntetiskt textprov. Textprovet skapar varken ljud eller video (L4). Administrationens sektion Tal och synkgranskning är en annan vy (L6). Verkliga minnen visas endast i den autentiserade spelflikens Minne."
     }
   ],

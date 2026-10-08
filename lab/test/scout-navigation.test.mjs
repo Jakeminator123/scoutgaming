@@ -22,15 +22,15 @@ test('sidebar groups stay in Spec 02 order and point at real pages', () => {
   assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'OpenClaw', 'Drift', 'Åtkomst']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
     [['/control', 'Översikt']],
-    [['/control/clips', 'Dealers & klipp'], ['/control/tree', 'Händelser → klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser'], ['/control/preview', 'Förhandsvisning']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
-    [['/control/administration', 'Administration'], ['/control/activity', 'Uppspelning'], ['/control/probe', 'Talgranskning']],
-    [['/partner', 'Partners']],
+    [['/control/administration', 'Administration'], ['/control/administration?tab=tables', 'Bord & lanes'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=finance', 'Betalningar & journal'], ['/control/probe', 'Probe']],
+    [['/control/administration?tab=accounts', 'Konton & roller'], ['/partner', 'Partners']],
   ]);
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
     ['/control/guide', 'Guide & hjälp'],
   ]);
-  // Every page keeps exactly one menu label; the administration page gets tabs before it gets more.
+  // Deep links may share a path. Each full href stays unique.
   const hrefs = sidebar.map(item => item.href);
   assert.equal(new Set(hrefs).size, hrefs.length);
   assert.deepEqual(SCOUT_LEVELS.map(item => [item.href, item.label]), [
@@ -51,6 +51,10 @@ test('old header destinations stay reachable from the sidebar or the level switc
   for (const href of OLD_HEADER_DESTINATIONS) {
     if (href === '/control/operator-chat') {
       assert.equal(covered.has('/control/openclaw?tab=chat'), true, href);
+      continue;
+    }
+    if (href === '/control/tree') {
+      assert.equal(covered.has('/control/events'), true, href);
       continue;
     }
     assert.equal(covered.has(href), true, href);
@@ -144,6 +148,17 @@ test('openclaw chat query activates operator chat and the bare path activates mo
   assert.match(chat, /aria-current="page"[^>]*>Operatörschatt/);
   assert.doesNotMatch(chat, /aria-current="page"[^>]*>Agentmodeller/);
   assert.match(chat, /href="\/control\/openclaw\?tab=chat"/);
+  assert.equal(scoutNavigationItem('/control/probe')?.label, 'Probe');
+  assert.equal(scoutNavigationItem('/control/tree')?.label, 'Händelser');
+  assert.equal(scoutNavigationItem('/control/administration?tab=tables')?.label, 'Bord & lanes');
+  assert.equal(scoutNavigationItem('/control/administration?tab=operations')?.label, 'Spelintegritet');
+  assert.equal(scoutNavigationItem('/control/administration?tab=finance')?.label, 'Betalningar & journal');
+  assert.equal(scoutNavigationItem('/control/administration?tab=accounts')?.label, 'Konton & roller');
+  assert.equal(scoutNavigationItem('/control/administration?tab=partners')?.label, 'Administration');
+  assert.equal(scoutNavigationItem('/control/administration?tab=media-review')?.label, 'Administration');
+  const accounts = renderToStaticMarkup(loadNavigation('/control/administration', 'tab=accounts').WorkspaceNavigation());
+  assert.match(accounts, /aria-current="page"[^>]*>Konton &amp; roller/);
+  assert.equal((accounts.match(/aria-current="page"/g) ?? []).length, 1);
   assert.match(chat, /Nivå 1 </);
   assert.match(chat, /aria-label="ScoutGamingGroup administration"/);
   const models = renderToStaticMarkup(loadNavigation('/control/openclaw').WorkspaceNavigation());

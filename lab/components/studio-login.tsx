@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginDestination, studioLoginReturnTo, studioPasswordToken } from '../lib/studio-login-client.mjs';
-import styles from './studio-administration.module.css';
+import styles from './studio-login.module.css';
 
 type Props = { authBase:'/studio/api/auth'|'/api/auth'; returnTo?:string; token?:string|null; mode?:'login'|'set-password';fetchImpl?:typeof fetch;resetAvailable?:boolean;gameOrigin?:string };
 export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,resetAvailable = false,gameOrigin }:Props) {
@@ -39,8 +39,8 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
     } catch (error) { if (alive.current) setNotice(error instanceof StudioLoginUiError ? error.message : new StudioLoginUiError().message); }
     finally { delete body.pass; delete body.token; writing.current = false; if (alive.current) setBusy(false); }
   }
-  return <main className={styles.administration} style={{maxWidth:'40rem',margin:'2rem auto',padding:'1rem'}}>
-    <section className={styles.section} aria-busy={!ready || busy}>
+  return <main className={styles.page}>
+    <section className={styles.card} aria-busy={!ready || busy}>
       <h1>{mode === 'set-password' ? 'Välj lösenord' : 'Logga in i Croupier Studio'}</h1>
       {mode === 'login' && <p>Administratörer använder samma Croupier-konto och lösenord i spelet och Studio. Spelarkonton har bara tillgång till spelet. Konton hanteras i Backoffice.</p>}
       {!ready && <p role="status">Inloggningen laddas. Vänta tills formuläret är klart.</p>}
@@ -50,14 +50,14 @@ export function StudioLogin({ authBase,returnTo,token,mode = 'login',fetchImpl,r
         <form className={styles.form} method="post" action={`${authBase}/login`} onSubmit={event => void submit(event,'login')}>
           <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label>
           <label>Lösenord<input name="pass" type="password" autoComplete="current-password" required maxLength={256} disabled={!ready || busy} /></label>
-          <button type="submit" disabled={!ready || busy}>Logga in</button>
+          <button type="submit" className="sg-btn sg-btn-primary" disabled={!ready || busy}>Logga in</button>
         </form>
         {resetAvailable && <details><summary>Glömt lösenordet?</summary><form className={styles.form} method="post" action={`${authBase}/reset-request`} onSubmit={event => void submit(event,'reset-request')}>
-          <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Begär återställningslänk</button>
+          <label>Användarnamn eller e-post<input name="user" autoComplete="username" required maxLength={254} disabled={!ready || busy} /></label><button type="submit" className="sg-btn sg-btn-secondary" disabled={!ready || busy}>Begär återställningslänk</button>
         </form></details>}
       </> : complete ? <><p><a href={gameLoginPath}>Logga in i spelet</a></p><p>Administratör? <a href={loginPath}>Logga in i Studio</a>.</p></> : passwordToken.current ? <form className={styles.form} method="post" action={`${authBase}/set-password`} onSubmit={event => void submit(event,'set-password')}>
         <label>Nytt lösenord (8–128 tecken)<input name="pass" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label>
-        <label>Upprepa lösenordet<input name="confirm" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label><button type="submit" disabled={!ready || busy}>Spara lösenord</button>
+        <label>Upprepa lösenordet<input name="confirm" type="password" minLength={8} maxLength={128} autoComplete="new-password" required disabled={!ready || busy} /></label><button type="submit" className="sg-btn sg-btn-primary" disabled={!ready || busy}>Spara lösenord</button>
       </form> : <p role="alert">Länken saknas eller är ogiltig. Be en administratör om en ny inbjudan eller begär återställning från <a href={loginPath}>inloggningen</a>.</p>}
     </section>
   </main>;

@@ -209,7 +209,6 @@
       "id": "studio-tools",
       "paths": [
         "/control/videos",
-        "/control/tree",
         "/control/activity",
         "/control/events",
         "/control/probe",
@@ -217,10 +216,9 @@
       ],
       "labels": [
         "Klippbibliotek",
-        "Händelser → klipp",
         "Uppspelning",
         "Händelser",
-        "Talgranskning",
+        "Probe",
         "Guide & hjälp"
       ],
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
@@ -228,7 +226,6 @@
       "sources": [
         "lab/app/control-studio-data.tsx:4",
         "lab/app/control/videos/page.tsx:8",
-        "lab/app/control/tree/page.tsx:8",
         "lab/app/control/activity/page.tsx:8",
         "lab/app/control/events/page.tsx:8",
         "lab/app/control/probe/page.tsx:8",
@@ -264,6 +261,25 @@
       "limitation": "Browser/cloud zone save is an editor feature; current guide explicitly says zones do not yet control the game player.",
       "tests": [
         "lab/test/zone-cloud-store.test.mjs"
+      ]
+    },
+    {
+      "id": "layer-preview",
+      "paths": [
+        "/control/preview"
+      ],
+      "localPath": "/control/preview",
+      "label": "Förhandsvisning · lagerprov",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "sources": [
+        "lab/app/control/preview/page.tsx",
+        "lab/components/control-preview-page.tsx",
+        "test-videoeditor/README.md"
+      ],
+      "limitation": "Preview of the three-layer player from branch test-video-jakob (Paow, Dragge, 720p). Media stay as files in test-videoeditor/preview/site and are served through the session-guarded /preview/[...path] handler. Not a game path; no engine, wallet, blob or database.",
+      "tests": [
+        "lab/test/preview-prepare.test.mjs"
       ]
     },
     {
@@ -853,10 +869,20 @@
         "/control/zones"
       ],
       "retired": true,
-      "note": "Old lab/app/<tool>/page.tsx handlers are redirect-only via redirectToPublicControl. Mounted under basePath /studio they are /studio/<tool>.",
+      "note": "Old lab/app/<tool>/page.tsx handlers are redirect-only via redirectToPublicControl. Mounted under basePath /studio they are /studio/<tool>. /tree still lands on /control/tree, which then redirects permanently to /control/events.",
       "sources": [
         "lab/app/control/public-redirect.ts:5"
       ]
+    },
+    {
+      "from": "/control/tree",
+      "to": "/control/events",
+      "status": 308,
+      "queryPolicy": "dealer, event, variant and every other parameter are kept.",
+      "sources": [
+        "lab/app/control/tree/page.tsx"
+      ],
+      "note": "Same pattern as /control/backgrounds to /control/zones: the old address stays and the destination is the live page. Without ?event= the events page is the overview. With ?event= it is the editor."
     }
   ],
   "importantUnknowns": [
@@ -3404,7 +3430,7 @@
       "handlerFile": "lab/app/tree/page.tsx",
       "serving": "Redirect-only lab page. It does not render the tool.",
       "access": "No page authorization in this file. The destination checks internal admin access.",
-      "boundary": "redirectToPublicControl sends this retired path to /control/tree.",
+      "boundary": "redirectToPublicControl sends this retired path to /control/tree, which permanently redirects to /control/events.",
       "groupId": "studio-tools",
       "sources": [
         {
@@ -3726,7 +3752,7 @@
       "handlerFile": "lab/app/control/probe/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
-      "boundary": "StudioPage view probe.",
+      "boundary": "Probe page. The administration tab Talgranskning is a different surface.",
       "groupId": "studio-tools",
       "sources": [
         {
@@ -3761,9 +3787,11 @@
       "app": "studio",
       "handlerFile": "lab/app/control/tree/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
-      "access": "Internal admin.",
-      "boundary": "StudioPage view tree.",
+      "access": "Internal admin. authorizeUiPage runs before the redirect.",
+      "boundary": "Permanent redirect to /control/events. dealer, event, variant and every other query parameter are kept.",
       "groupId": "studio-tools",
+      "redirectOnly": true,
+      "redirectTo": "/control/events",
       "sources": [
         {
           "path": "lab/app/control/tree/page.tsx"
@@ -3803,6 +3831,42 @@
       "sources": [
         {
           "path": "lab/app/control/zones/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-preview",
+      "path": "/control/preview",
+      "publicPath": "/control/preview",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/preview/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "authorizeUiPage only. Embeds the branch preview served by /preview/[...path]. No project write and no game engine.",
+      "groupId": "layer-preview",
+      "sources": [
+        {
+          "path": "lab/app/control/preview/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-preview-files",
+      "path": "/preview/:path+",
+      "publicPath": "/studio/preview/:path+",
+      "methods": ["GET", "HEAD"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/preview/[...path]/route.ts",
+      "serving": "Lab service under basePath /studio. Files from the gitignored lab/preview-build (prepared from test-videoeditor/preview/site), traced into the server bundle.",
+      "access": "Internal admin. authorizeUiPage; 401 redirects to login.",
+      "boundary": "No public copy. Segment allow-list, no traversal; Range and HEAD only after authorization. Cache-Control private, no-store.",
+      "groupId": "layer-preview",
+      "sources": [
+        {
+          "path": "lab/app/preview/[...path]/route.ts"
         }
       ]
     },

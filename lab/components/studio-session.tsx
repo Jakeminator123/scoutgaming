@@ -9,6 +9,7 @@
 // initialVariantId?: string — query variant; unknown values fall back to the line default
 // connectedLane?: boolean — save notice mentions the live lane when true
 // unsavedSocialRef?: ref — social draft included in the beforeunload guard
+// overview?: boolean — dealer query only; event stays in component state until an editor link
 // onInvalidate?: ref — Studio playback reset; tree, guide and activity omit it
 // observation?: { active, step, speechLine, situation } — lab-only event overlay
 // project / setProject: StudioProject — editable project
@@ -58,6 +59,7 @@ import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible, type DealerId, type StudioProject } from '../lib/studio-model.mjs';
 import { videoFitsLine } from '../lib/video-intake.mjs';
 import { publishShellStatus } from './page-template.mjs';
+import { stripLabBasePath } from '../lib/lab-url.mjs';
 import { requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
 import type { ConnectionStatus, DirectorMode, VideoInventory } from './studio-types';
 
@@ -81,6 +83,7 @@ type SessionOptions = {
   unsavedSocialRef?: { readonly current: UnsavedSocialDraft | null };
   onInvalidate?: RefObject<((stopSocial?: boolean) => void) | null>;
   observation?: StudioObservation;
+  overview?: boolean;
 };
 
 export function useStudioSession(options: SessionOptions) {
@@ -122,7 +125,10 @@ export function useStudioSession(options: SessionOptions) {
 
   function replaceSelectionQuery(nextDealer: string, nextEvent: string, nextVariant = '') {
     if (typeof window === 'undefined' || !window.location || !window.history?.replaceState) return;
-    const href = selectionHref(window.location.pathname, window.location.search, nextDealer, nextEvent, nextVariant);
+    const path = stripLabBasePath(window.location.pathname.split(/[?#]/, 1)[0]) || '/';
+    const href = options.overview
+      ? studioHref(path, { dealerId: nextDealer })
+      : selectionHref(window.location.pathname, window.location.search, nextDealer, nextEvent, nextVariant);
     if (`${window.location.pathname}${window.location.search}` === href) return;
     window.history.replaceState(null, '', href);
   }

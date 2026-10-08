@@ -74,7 +74,7 @@ test('tree, guide and activity pages drop the inner studio chrome and link the s
     assert.match(html, /\/\/ STUDIO/, file);
   }
   const tree = renderPage('control-tree-page.tsx');
-  assert.match(tree, /<h1>Händelser → klipp<\/h1>/);
+  assert.match(tree, /<h1>Händelser<\/h1>/);
   assert.doesNotMatch(tree, /Roulette/);
   const guide = renderPage('control-guide-page.tsx');
   assert.match(guide, /<h1>Guide &amp; hjälp<\/h1>/);
@@ -100,6 +100,12 @@ test('managed tree folders are real event links and dealer changes replace the q
     api.selectDealer('vera');
     api.selectDealer('unknown');
     assert.deepEqual(paths, ['/control/tree?dealer=vera&event=speak.goodluck']);
+    globalThis.window.location.pathname = '/control/events';
+    let overview;
+    function Overview() { overview = session.useStudioSession({ ...props, overview: true, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' }); return null; }
+    renderToStaticMarkup(React.createElement(Overview));
+    overview.selectDealer('mei');
+    assert.equal(paths.at(-1), '/control/events?dealer=mei');
   } finally {
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;

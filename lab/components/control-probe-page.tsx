@@ -19,7 +19,7 @@ export function ControlProbePage({ initialProject, initialVideos, initialStatus,
   const { project, updateProject, recordActivity, dirty, saving, save, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject } = session;
   return <PageTemplate
     eyebrow="// DRIFT"
-    title="Talgranskning"
+    title="Probe"
     intro="Astrids egna tal när spelaren är inaktiv. Spara projektet när du ändrat läge, tid eller modell."
     primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
   >

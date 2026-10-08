@@ -245,11 +245,12 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
       : `kör jämförelseläget ${mode === 'off' ? 'Bara standard' : mode === 'shadow' ? 'Skuggläge' : mode === 'rules' ? 'Regler' : 'Slumpvariation'}.`;
   const videoHref = studioHref('/control/videos', { dealerId, eventId: event.id, variantId: variant.id });
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id, variantId: variant.id, tab: editorTab });
+  const overviewHref = studioHref('/control/events', { dealerId });
 
   return <PageTemplate
     eyebrow="// STUDIO"
     title="Händelser"
-    intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} />}
+    intro={<><a href={overviewHref}>Tillbaka till översikten</a><span> · </span><StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} /></>}
     primary={<>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={exportProject}>Exportera projekt</button>
       <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>

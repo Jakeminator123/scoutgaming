@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { GAME_LANES } from '../../web/public/game-lanes.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
@@ -24,6 +24,8 @@ export type StudioAdministrationProps = {
   /** Explicit public game origin from server configuration, never request JSON. */
   gameOrigin?: string;
   sessionAction?: ReactNode;
+  /** Group id from ?tab=. Unknown values open Drift & spelintegritet. */
+  initialGroup?: string;
 };
 type Resource = { payload?: JsonObject; error?: StudioAdminUiError };
 type Resources = Record<string, Resource>;
@@ -504,7 +506,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
 
 export function StudioAdministration(props: StudioAdministrationProps) {
   const client = useMemo(() => createStudioAdminClient(props), [props.apiBase, props.session, props.availableActions, props.fetchImpl, props.gameOrigin, props.readIdentity]);
-  const [group, setGroup] = useState('operations');
+  const [group, setGroup] = useState(() => backofficeGroupId(props.initialGroup));
   const [actor, setActor] = useState<StudioAdminActor | null>(null);
   const [resources, setResources] = useState<Resources>({});
   const [busy, setBusy] = useState(false);
@@ -582,6 +584,11 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     // cancellation. A cancelled draft confirmation leaves the current read intact.
     ++sequence.current; activeRead.current?.abort(); setBusy(true);
     draftForms.current.clear(); changed.current = false; setDirty(false); setNotice(''); setOneTime(null); setResources({}); setGroup(next);
+    if (window.location && window.history?.replaceState) {
+      const params = new URLSearchParams(window.location.search || '');
+      params.set('tab', next);
+      window.history.replaceState(null, '', `${window.location.pathname || '/control/administration'}?${params.toString()}`);
+    }
   }
 
   function discardDrafts() {
