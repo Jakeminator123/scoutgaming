@@ -12,11 +12,12 @@ import { StudioError } from './project-store.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath } from './cloud-media-store.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
 import { normalizePresentationArchive, presentationBankRoot } from '../../tools/media-layout.mjs';
+import { PRESENTATION_BANK_DEALERS } from '../../presentation-runtime/media-families.mjs';
 import { isMediaBlobIndexConfigured, verifiedMediaBlobStorage, getIndexedMediaBlobResponse, readMediaBlobIndex } from './media-blob-index.mjs';
 
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
+const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei', 'dragge', 'paow']);
 const EMIL_SOURCE = ['media', 'dealers', 'astrid', 'runtime', 'presentation'];
 const verified = new Map();
 
@@ -73,11 +74,37 @@ function safeRelativeMediaPath(value, extension) {
     && value.toLowerCase().endsWith(`.${extension}`);
 }
 
+// The other dealers' banks sit beside Astrid's and join only the canonical
+// repository bank set. An explicit archive or snapshot stays a single bank.
+function extraBanks(options) {
+  const selection = selectArchive(options), root = options.repositoryRoot ?? repositoryRoot();
+  if (options.snapshotPath || !selection.path || !isAbsolute(selection.path) || !samePath(resolve(selection.path), presentationBankRoot(root))) return [];
+  return PRESENTATION_BANK_DEALERS.filter(dealerId => dealerId !== 'astrid').map(dealerId => ({ dealerId, path: presentationBankRoot(root, dealerId) }));
+}
+
 async function readEntries(options) {
-  try {
-    const snapshot = await readLabVideoManifest(snapshotPath(options));
-    return { entries: new Map(snapshot.items.map(item => [item.id, item])), families: snapshot.families };
-  } catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
+  let snapshot;
+  try { snapshot = await readLabVideoManifest(snapshotPath(options)); }
+  catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
+  const entries = new Map(snapshot.items.map(item => [item.id, item])), families = [...snapshot.families], banks = new Map(), notes = [];
+  for (const bank of extraBanks(options)) {
+    // A bank without a manifest has no registered media yet. A broken bank is
+    // left out and reported; it never takes Astrid's bank down with it.
+    let manifest;
+    try { manifest = await readLabVideoManifest(join(bank.path, 'lab-video-manifest.json'), bank.dealerId); }
+    catch (error) {
+      if (error.code === 'ENOENT') continue;
+      if (options.strict) throw new RegistryError(503, 'Video inventory unavailable.');
+      notes.push(`Presentationsbanken för ${bank.dealerId} kunde inte läsas och används inte.`); continue;
+    }
+    if (manifest.items.some(item => entries.has(item.id))) {
+      if (options.strict) throw new RegistryError(503, 'Duplicate video identity.');
+      notes.push(`Presentationsbanken för ${bank.dealerId} delar video-ID med en annan bank och används inte.`); continue;
+    }
+    for (const item of manifest.items) { entries.set(item.id, item); banks.set(item.id, bank); }
+    families.push(...manifest.families);
+  }
+  return { entries, families, banks, notes };
 }
 
 function selectArchive(options) {
@@ -91,12 +118,12 @@ function samePath(a, b) {
   return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 }
 
-function bankBlobIdentity(selection,entry,options){
+function bankBlobIdentity(selection,entry,options,dealerId='astrid'){
   const root=options.repositoryRoot??repositoryRoot();
   if(!selection.path||!isAbsolute(selection.path)||!samePath(resolve(selection.path),presentationBankRoot(root)))throw new RegistryError(503,'The active Blob bank requires the canonical video archive.');
-  const placement=mediaDefinitionForPath(entry.relativePath);
+  const placement=mediaDefinitionForPath(entry.relativePath,dealerId);
   if(!placement||placement.definition.id!==entry.familyId||placement.role!==entry.role)throw new RegistryError(503,'Video does not match its registered family.');
-  const logicalPath=`dealers/astrid/runtime/presentation/${entry.relativePath}`;
+  const logicalPath=`dealers/${dealerId}/runtime/presentation/${entry.relativePath}`;
   return {logicalPath,expected:{access:'source',id:entry.id,sha256:entry.sha256,size:entry.size,contentType:'video/mp4',
     pathname:mediaBlobPath(logicalPath.slice(0,logicalPath.lastIndexOf('/')),entry.id,entry.sha256,'mp4')}};
 }
@@ -121,10 +148,10 @@ function cacheKey(path, entry, info) {
   return `${path}:${entry.sha256}:${fingerprint(info)}`;
 }
 
-async function inspectFile(archive, entry) {
+async function inspectFile(archive, entry, dealerId = 'astrid') {
   const relativeFile = entry.relativePath ?? `${entry.id}.${entry.extension ?? 'mp4'}`;
   if (entry.familyId) {
-    const placement = mediaDefinitionForPath(relativeFile);
+    const placement = mediaDefinitionForPath(relativeFile, dealerId);
     if (!placement || placement.definition.id !== entry.familyId || placement.role !== entry.role) throw new RegistryError(403, 'Unsafe local video file.');
   } else if (!safeRelativeMediaPath(relativeFile, entry.extension ?? 'mp4')) throw new RegistryError(403, 'Unsafe local video file.');
   const file = join(archive, ...relativeFile.split('/'));
@@ -154,7 +181,7 @@ function publicEntry(entry, available, integrity, family) {
   };
   if (family) return {
     id: entry.id,
-    label: `Astrid · ${family.situation} · ${entry.role === 'standard' ? 'standard' : 'variant'}`,
+    label: `${family.dealerId[0].toUpperCase()}${family.dealerId.slice(1)} · ${family.situation} · ${entry.role === 'standard' ? 'standard' : 'variant'}`,
     dealer: family.dealerId,
     fileName: basename(entry.relativePath),
     verdict: 'unrated',
@@ -222,8 +249,12 @@ export async function loadVideoRegistry(options = {}) {
       'Standard och varianter kommer från Emils mappar. Variantpolicy sparas i labbprojektet.',
     ],
   };
-  let entries, families = [];
-  try { ({ entries, families } = await readEntries(options)); summary.snapshotReadable = true; }
+  let entries, families = [], banks = new Map();
+  try {
+    let notes;
+    ({ entries, families, banks, notes } = await readEntries(options)); summary.snapshotReadable = true;
+    summary.notes.push(...notes);
+  }
   catch (error) { if (options.strict) throw error; summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
   let uploads = [];
   try { uploads = await (options.readUploads ?? readUploads)(options); }
@@ -249,10 +280,16 @@ export async function loadVideoRegistry(options = {}) {
   catch (error) { if (options.strict) throw error; summary.notes.push('Kategorisering kunde inte läsas. Inga nya klassificeringar används.'); }
   const classified = new Map(classifications.map(item => [item.id, item]));
   const familyById = new Map(families.map(family => [family.id, family]));
+  const bankArchives = new Map();
+  const bankArchive = async bank => {
+    if (!bankArchives.has(bank.dealerId)) bankArchives.set(bank.dealerId, await archiveLocation({ path: bank.path }).catch(() => null));
+    return bankArchives.get(bank.dealerId);
+  };
   // Sequential metadata checks avoid opening hundreds of files at once.
   for (const entry of entries.values()) {
     let available = false, integrity = 'unavailable';
-    const location = entry.classification ? uploadDirectory(options) : archive;
+    const bank = banks.get(entry.id);
+    const location = entry.classification ? uploadDirectory(options) : bank ? (indexedBank ? null : await bankArchive(bank)) : archive;
     if (entry.storage) {
       // Immutable Blob references were hashed on upload. Availability here means
       // configured retrieval; playback still verifies all bytes before serving.
@@ -260,14 +297,14 @@ export async function loadVideoRegistry(options = {}) {
       integrity = available ? 'unchecked' : 'unavailable';
     } else if(indexedBank&&!entry.classification){
       try{
-        const identity=bankBlobIdentity(selection,entry,options);
+        const identity=bankBlobIdentity(selection,entry,options,bank?.dealerId);
         verifiedMediaBlobStorage(identity.logicalPath,identity.expected,options);
         available=isCloudMediaConfigured(options.env??process.env);
         integrity=available?'unchecked':'unavailable';
       }catch{summary.missing+=1;}
     } else if (location) {
       try {
-        const { file, info } = await inspectFile(location, entry);
+        const { file, info } = await inspectFile(location, entry, bank?.dealerId);
         available = true;
         integrity = verified.has(cacheKey(file, entry, info)) ? 'verified' : 'unchecked';
       } catch (error) {
@@ -349,8 +386,8 @@ export async function getVideoResponse(id, request, options = {}) {
   if (typeof id !== 'string' || !UUID.test(id)) return errorResponse(request, 404, 'Unknown video.');
   let handle;
   try {
-    let entry, uploaded, snapshotFailed = false;
-    try { entry = (await readEntries(options)).entries.get(id); }
+    let entry, uploaded, bank, snapshotFailed = false;
+    try { const read = await readEntries(options); entry = read.entries.get(id); bank = read.banks.get(id); }
     catch { snapshotFailed = true; }
     if (!entry) {
       uploaded = (await (options.readUploads ?? readUploads)(options)).find(v => v.id === id);
@@ -361,11 +398,11 @@ export async function getVideoResponse(id, request, options = {}) {
     if (!entry) return errorResponse(request, 404, 'Unknown video.');
     if (uploaded?.storage) return getPrivateMedia(uploaded.storage, request, options);
     if(!uploaded&&isMediaBlobIndexConfigured(options)){
-      const identity=bankBlobIdentity(selectArchive(options),entry,options);
+      const identity=bankBlobIdentity(selectArchive(options),entry,options,bank?.dealerId);
       return getIndexedMediaBlobResponse(identity.logicalPath,identity.expected,request,options);
     }
-    const archive = await archiveLocation(uploaded ? { path: uploadDirectory(options) } : selectArchive(options));
-    const { file, info } = await inspectFile(archive, entry);
+    const archive = await archiveLocation(uploaded ? { path: uploadDirectory(options) } : bank ? { path: bank.path } : selectArchive(options));
+    const { file, info } = await inspectFile(archive, entry, bank?.dealerId);
     // Validate and stream the same open file descriptor, not a second path lookup.
     handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
     const openedInfo = await handle.stat({ bigint: true });

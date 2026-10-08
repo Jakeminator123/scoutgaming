@@ -6,14 +6,19 @@ import {randomUUID} from 'node:crypto';
 import {readMediaLayout,repositoryRoot,presentationBankRoot,resolveMediaPath,validateMediaAliases} from './media-layout.mjs';
 import {hashFile} from './migrate-media-layout.mjs';
 import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../lab/lib/cloud-media-store.mjs';
+import {PRESENTATION_BANK_DEALERS} from '../presentation-runtime/media-families.mjs';
 const identity=hash=>`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
 /** Metadata-only dry run. UUIDs from the saved presentation registry stay exact. */
 export async function planBlobExport({root=repositoryRoot,includeSource=false,layout=readMediaLayout(root)}={}){
   validateMediaAliases(layout);
-  let bank;
-  try{bank=JSON.parse(await readFile(join(presentationBankRoot(root),'lab-video-manifest.json'),'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
-  const ids=new Map((bank?.items??[]).map(item=>['dealers/astrid/runtime/presentation/'+item.relativePath,item.id]));
-  return {schemaVersion:1,namespace:'croupier/media',files:layout.files.filter(row=>(includeSource||row.access==='public'||row.path.startsWith('dealers/astrid/runtime/presentation/'))&&MEDIA_MIME[extname(row.path).slice(1)]&&row.size>0).map(row=>{
+  // Every dealer's presentation bank is exported like Astrid's, with its registry UUIDs.
+  const ids=new Map(),banks=PRESENTATION_BANK_DEALERS.map(dealerId=>`dealers/${dealerId}/runtime/presentation/`);
+  for(const dealerId of PRESENTATION_BANK_DEALERS){
+    let bank;
+    try{bank=JSON.parse(await readFile(join(presentationBankRoot(root,dealerId),'lab-video-manifest.json'),'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
+    for(const item of bank?.items??[])ids.set(`dealers/${dealerId}/runtime/presentation/${item.relativePath}`,item.id);
+  }
+  return {schemaVersion:1,namespace:'croupier/media',files:layout.files.filter(row=>(includeSource||row.access==='public'||banks.some(prefix=>row.path.startsWith(prefix)))&&MEDIA_MIME[extname(row.path).slice(1)]&&row.size>0).map(row=>{
     const canonical=row.canonicalPath??row.path,extension=extname(row.path).slice(1),id=ids.get(row.path)??identity(row.sha256),pathname=mediaBlobPath(dirname(canonical).replaceAll('\\','/'),ids.get(canonical)??identity(row.sha256),row.sha256,extension);
     return {logicalPath:row.path,id,sha256:row.sha256,size:row.size,access:row.access,legacyUrls:row.publicUrl?[row.publicUrl]:[],storage:{provider:'vercel-blob',pathname,sha256:row.sha256,size:row.size,contentType:MEDIA_MIME[extension]}};
   })};

@@ -19,7 +19,7 @@ export interface RegistryVideo {
   addedAt?: string;
   id: string;
   label: string;
-  dealer?: 'astrid' | 'vera' | 'amira' | 'mei';
+  dealer?: 'astrid' | 'vera' | 'amira' | 'mei' | 'dragge' | 'paow';
   fileName: string;
   verdict: 'want' | 'no' | 'unrated';
   bytes: number;
@@ -34,7 +34,7 @@ export interface RegistryVideo {
 }
 export interface MediaFamily {
   id: string;
-  dealerId: 'astrid';
+  dealerId: 'astrid' | 'dragge' | 'paow';
   eventId: string;
   situation: string;
   playbackType: 'once' | 'idle-pool';

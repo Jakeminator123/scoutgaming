@@ -10,11 +10,17 @@ const ROOT_KEYS = ['schemaVersion', 'source', 'families', 'items'];
 const FAMILY_KEYS = ['id', 'dealerId', 'eventId', 'situation', 'playbackType', 'standardIds', 'variantIds'];
 const ITEM_KEYS = ['id', 'familyId', 'role', 'relativePath', 'extension', 'size', 'sha256'];
 
-import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, PRESENTATION_BANKS, presentationBank } from '../../presentation-runtime/media-families.mjs';
 export { MEDIA_FAMILY_DEFINITIONS };
 
-const definitionsById = new Map(MEDIA_FAMILY_DEFINITIONS.map(definition => [definition.id, definition]));
-const standardPaths = new Map(MEDIA_FAMILY_DEFINITIONS.flatMap(definition => definition.standardPaths.map(path => [path, definition])));
+// Every bank uses the same folder names, so a relative path only has a family
+// within one dealer's bank. Callers name the bank; Astrid is the default.
+const banks = new Map(Object.entries(PRESENTATION_BANKS).map(([dealerId, bank]) => [dealerId, {
+  ...bank,
+  definitionsById: new Map(bank.families.map(definition => [definition.id, definition])),
+  standardPaths: new Map(bank.families.flatMap(definition => definition.standardPaths.map(path => [path, definition]))),
+}]));
+const bankFor = dealerId => presentationBank(dealerId) ? banks.get(dealerId) : null;
 
 export class LabVideoManifestError extends Error {
   constructor(message) { super(message); this.name = 'LabVideoManifestError'; }
@@ -38,11 +44,13 @@ export function videoIdFromSha256(sha256) {
   return `${sha256.slice(0, 8)}-${sha256.slice(8, 12)}-${sha256.slice(12, 16)}-${sha256.slice(16, 20)}-${sha256.slice(20, 32)}`;
 }
 
-export function mediaDefinitionForPath(relativePath) {
+export function mediaDefinitionForPath(relativePath, dealerId = 'astrid') {
+  const bank = bankFor(dealerId);
+  if (!bank) return null;
   if (typeof relativePath !== 'string' || relativePath.length > 240 || relativePath.includes('\\') || relativePath.startsWith('/') || relativePath.split('/').some(part => !part || part === '.' || part === '..')) return null;
-  const standard = standardPaths.get(relativePath);
+  const standard = bank.standardPaths.get(relativePath);
   if (standard) return { definition: standard, role: 'standard' };
-  for (const definition of MEDIA_FAMILY_DEFINITIONS) {
+  for (const definition of bank.families) {
     const prefix = `${definition.variantDirectory}/`;
     if (!relativePath.startsWith(prefix)) continue;
     const file = relativePath.slice(prefix.length);
@@ -51,10 +59,13 @@ export function mediaDefinitionForPath(relativePath) {
   return null;
 }
 
-export function validateLabVideoManifest(manifest) {
+export function validateLabVideoManifest(manifest, dealerId = 'astrid') {
+  const bank = bankFor(dealerId);
+  if (!bank) fail('Unknown presentation bank.');
+  const { definitionsById } = bank, definitions = bank.families;
   exactKeys(manifest, ROOT_KEYS, 'manifest');
-  if (manifest.schemaVersion !== 2 || manifest.source !== 'emil/dealklipp-v1') fail('Unsupported lab video manifest.');
-  if (!Array.isArray(manifest.families) || manifest.families.length !== MEDIA_FAMILY_DEFINITIONS.length) fail(`Manifest must contain exactly ${MEDIA_FAMILY_DEFINITIONS.length} media families.`);
+  if (manifest.schemaVersion !== 2 || manifest.source !== bank.source) fail('Unsupported lab video manifest.');
+  if (!Array.isArray(manifest.families) || manifest.families.length !== definitions.length) fail(`Manifest must contain exactly ${definitions.length} media families.`);
   if (!Array.isArray(manifest.items) || manifest.items.length < 1 || manifest.items.length > 10_000) fail('Manifest items are invalid.');
 
   const families = new Map();
@@ -84,14 +95,14 @@ export function validateLabVideoManifest(manifest) {
     if (!SHA256.test(item.sha256) || hashes.has(item.sha256) || item.id !== videoIdFromSha256(item.sha256)) fail(`${at} has an invalid or duplicated content identity.`);
     if (!Number.isSafeInteger(item.size) || item.size < 1 || item.extension !== 'mp4') fail(`${at} has invalid file metadata.`);
     if (paths.has(item.relativePath)) fail(`${at}.relativePath is duplicated.`);
-    const placement = mediaDefinitionForPath(item.relativePath);
+    const placement = mediaDefinitionForPath(item.relativePath, dealerId);
     if (!placement || placement.definition.id !== item.familyId || placement.role !== item.role) fail(`${at} is outside the allowed media roots or family.`);
     if (!families.has(item.familyId)) fail(`${at}.familyId is unknown.`);
     paths.add(item.relativePath); hashes.add(item.sha256); items.set(item.id, item);
   }
 
   const referenced = new Set();
-  for (const definition of MEDIA_FAMILY_DEFINITIONS) {
+  for (const definition of definitions) {
     const family = families.get(definition.id);
     const standards = family.standardIds.map(id => items.get(id));
     const variants = family.variantIds.map(id => items.get(id));
@@ -108,11 +119,11 @@ export function validateLabVideoManifest(manifest) {
   return manifest;
 }
 
-export async function readLabVideoManifest(path) {
+export async function readLabVideoManifest(path, dealerId = 'astrid') {
   const info = await lstat(path);
   if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_MANIFEST_BYTES) fail('Lab video manifest is unavailable.');
   let manifest;
   try { manifest = JSON.parse(await readFile(path, 'utf8')); }
   catch { fail('Lab video manifest is not valid JSON.'); }
-  return validateLabVideoManifest(manifest);
+  return validateLabVideoManifest(manifest, dealerId);
 }

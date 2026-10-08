@@ -14,7 +14,7 @@ export const MEDIA_MIME = { mp4:'video/mp4', webm:'video/webm', mov:'video/quick
 const MIME = MEDIA_MIME;
 const PATH = /^croupier\/(videos|zones)\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/([a-f0-9]{64})\.(mp4|webm)$/;
 const UUID='[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
-const NEW_PATH=new RegExp('^croupier/media/((?:dealers/(?:astrid|vera|amira|mei)|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
+const NEW_PATH=new RegExp('^croupier/media/((?:dealers/(?:astrid|vera|amira|mei|dragge|paow)|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
 const safeSegments=path=>path.split('/').every(part=>part&&part!=='.'&&part!=='..'&&!/[\\%?#:\u0000-\u0020\u007f]/.test(part));
 export function mediaBlobPath(directory,id,sha256,extension){const path=`croupier/media/${directory}/${id}/${sha256}.${extension}`;if(!NEW_PATH.test(path)||!safeSegments(path)||!MIME[extension])fail('Ogiltig logisk mediasökväg.',422);return path;}
 const commonHeaders = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-origin' };

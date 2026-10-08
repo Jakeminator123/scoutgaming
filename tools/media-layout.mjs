@@ -9,7 +9,13 @@ const indexes = new WeakMap();
 const MIME = { '.mp4':'video/mp4', '.webm':'video/webm', '.mp3':'audio/mpeg', '.wav':'audio/wav', '.ogg':'audio/ogg', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon', '.json':'application/json', '.glb':'model/gltf-binary', '.gltf':'model/gltf+json' };
 const safe = path => typeof path === 'string' && path.length > 0 && !path.includes('\\') && !path.includes('\0') && !path.includes(':') && !path.startsWith('/') && path.split('/').every(part => part && part !== '.' && part !== '..');
 const same = (a,b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-export function presentationBankRoot(root = repositoryRoot) { return join(root, PRESENTATION_BANK); }
+// One portrait presentation bank per dealer (presentation-runtime/media-families.mjs
+// names them); Astrid's is the default. This module imports no repository code so
+// disposable server copies can carry it alone.
+export function presentationBankRoot(root = repositoryRoot, dealerId = 'astrid') {
+  if (typeof dealerId !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(dealerId)) throw new Error('Unsafe presentation bank.');
+  return join(root, 'media/dealers', dealerId, 'runtime/presentation');
+}
 export function normalizePresentationArchive(value,root=repositoryRoot){return typeof value==='string'&&isAbsolute(value)&&same(resolve(value),join(root,'emil/dealklipp-v1'))?presentationBankRoot(root):value;}
 /** Internal filesystem consumers only. Public requests must use openPublicMedia. */
 export function resolveMediaAbsolutePath(file, {repositoryRoot:root=repositoryRoot,layout}={}) {
@@ -25,7 +31,7 @@ export function readMediaLayout(root = repositoryRoot) {
   const paths = new Set(), legacy = new Set(), urls = new Set();
   for(const [old,next] of Object.entries(layout.roots)) if(!safe(old)||!safe(next)||!next.startsWith('media/')) throw new Error('Invalid media root.');
   for (const row of layout.files) {
-    if (!safe(row.path) || !/^(dealers\/(astrid|vera|amira|mei)|game|site)\//.test(row.path) || !safe(row.legacyPath) || paths.has(row.path) || legacy.has(row.legacyPath)
+    if (!safe(row.path) || !/^(dealers\/(astrid|vera|amira|mei|dragge|paow)|game|site)\//.test(row.path) || !safe(row.legacyPath) || paths.has(row.path) || legacy.has(row.legacyPath)
       || !/^[a-f0-9]{64}$/.test(row.sha256) || !Number.isSafeInteger(row.size) || row.size < 0 || !['public','source','private'].includes(row.access)) throw new Error('Invalid media entry.');
     paths.add(row.path); legacy.add(row.legacyPath);
     if (row.publicUrl !== undefined && (row.access !== 'public' || urls.has(row.publicUrl) || !row.publicUrl.startsWith('/') || row.publicUrl.includes('\\') || !safe(row.publicUrl.slice(1)))) throw new Error('Invalid public alias.');

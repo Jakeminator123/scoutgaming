@@ -4,14 +4,15 @@ import { access, lstat, open, readFile, readdir, realpath, writeFile } from 'nod
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  MEDIA_FAMILY_DEFINITIONS,
   mediaDefinitionForPath,
   validateLabVideoManifest,
   videoIdFromSha256,
 } from '../lab/lib/lab-video-manifest.mjs';
+import { presentationBank } from '../presentation-runtime/media-families.mjs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_ROOT = resolve(SCRIPT_DIR, '../media/dealers/astrid/runtime/presentation');
+// One bank per dealer; the folder layout inside every bank is the same.
+const bankRoot = dealerId => resolve(SCRIPT_DIR, '../media/dealers', dealerId, 'runtime/presentation');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 
@@ -81,7 +82,9 @@ async function previousIdentities(manifestPath) {
   return identities;
 }
 
-export async function buildLabVideoManifest({ root = DEFAULT_ROOT } = {}) {
+export async function buildLabVideoManifest({ dealerId = 'astrid', root = bankRoot(dealerId) } = {}) {
+  const bank = presentationBank(dealerId);
+  if (!bank) fail(`Unknown presentation bank: ${dealerId}`);
   const canonicalRoot = await safeRoot(root);
   const manifestPath = join(canonicalRoot, 'lab-video-manifest.json');
   const previous = await previousIdentities(manifestPath);
@@ -89,7 +92,7 @@ export async function buildLabVideoManifest({ root = DEFAULT_ROOT } = {}) {
   const items = [];
   const hashes = new Set();
   for (const relativePath of paths) {
-    const placement = mediaDefinitionForPath(relativePath);
+    const placement = mediaDefinitionForPath(relativePath, dealerId);
     if (!placement) fail(`MP4 is outside the allowed media roots: ${relativePath}`);
     const { size, sha256 } = await hashMedia(canonicalRoot, relativePath);
     if (hashes.has(sha256)) fail(`Duplicate media bytes would create a duplicate identity: ${relativePath}`);
@@ -102,12 +105,12 @@ export async function buildLabVideoManifest({ root = DEFAULT_ROOT } = {}) {
   }
 
   const itemByPath = new Map(items.map(item => [item.relativePath, item]));
-  for (const definition of MEDIA_FAMILY_DEFINITIONS) {
+  for (const definition of bank.families) {
     for (const path of definition.standardPaths) if (!itemByPath.has(path)) fail(`Required standard media is missing: ${path}`);
     const info = await lstat(join(canonicalRoot, ...definition.variantDirectory.split('/')));
     if (!info.isDirectory() || info.isSymbolicLink()) fail(`Variant directory is missing or unsafe: ${definition.variantDirectory}`);
   }
-  const families = MEDIA_FAMILY_DEFINITIONS.map(definition => ({
+  const families = bank.families.map(definition => ({
     id: definition.id,
     dealerId: definition.dealerId,
     eventId: definition.eventId,
@@ -116,26 +119,29 @@ export async function buildLabVideoManifest({ root = DEFAULT_ROOT } = {}) {
     standardIds: definition.standardPaths.map(path => itemByPath.get(path).id),
     variantIds: items.filter(item => item.familyId === definition.id && item.role === 'variant').map(item => item.id),
   }));
-  return validateLabVideoManifest({ schemaVersion: 2, source: 'emil/dealklipp-v1', families, items });
+  return validateLabVideoManifest({ schemaVersion: 2, source: bank.source, families, items }, dealerId);
 }
 
-export function manifestJson(manifest) { return `${JSON.stringify(validateLabVideoManifest(manifest), null, 2)}\n`; }
+export function manifestJson(manifest, dealerId = 'astrid') { return `${JSON.stringify(validateLabVideoManifest(manifest, dealerId), null, 2)}\n`; }
 
 async function main(argv) {
-  let check = false, root = DEFAULT_ROOT;
+  let check = false, root = null, dealerId = 'astrid';
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--check') check = true;
     else if (argv[i] === '--root' && argv[i + 1]) root = resolve(argv[++i]);
+    else if (argv[i] === '--dealer' && argv[i + 1]) dealerId = argv[++i];
     else fail(`Unknown argument: ${argv[i]}`);
   }
-  const manifest = await buildLabVideoManifest({ root });
-  const output = manifestJson(manifest);
+  if (!presentationBank(dealerId)) fail(`Unknown presentation bank: ${dealerId}`);
+  root ??= bankRoot(dealerId);
+  const manifest = await buildLabVideoManifest({ dealerId, root });
+  const output = manifestJson(manifest, dealerId);
   const manifestPath = join(resolve(root), 'lab-video-manifest.json');
   if (check) {
     const current = await readFile(manifestPath, 'utf8');
     if (current !== output) fail('lab-video-manifest.json is not deterministic or up to date.');
   } else await writeFile(manifestPath, output, 'utf8');
-  process.stdout.write(`${check ? 'Verified' : 'Wrote'} ${manifest.items.length} media items in ${manifest.families.length} families.\n`);
+  process.stdout.write(`${check ? 'Verified' : 'Wrote'} ${manifest.items.length} ${dealerId} media items in ${manifest.families.length} families.\n`);
 }
 
 if (process.argv[1] && samePath(resolve(process.argv[1]), fileURLToPath(import.meta.url))) {
