@@ -4,14 +4,14 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet; `project.lanes[]` + `/control/lanes` publicerar paket (`publishPackage`, pool med `connect()`); `clipLabels` redigeras i Klippbibliotek; `/control/preview` visar grenens tre-lager-spelare; kvar: C5b (select för fyra dealers, rehearsal med Jakob), bolagsyta L4, spelet läser inte paketet L8. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt förmiddag |
-| Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes `/control/lanes`, fyra adminlänkar, inloggningskort, Bakgrundszoner på mallen, Uppspelning rullar; kvar: ljust läge på inre sidor, filterchips (11) efter 3b | 8 okt förmiddag |
-| Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
-| Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
+| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=`; kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), Vercels spelväg (L8b), spelarens val (N3.4), tre lager i spelet (Jakobs gren). Uppföljning: `random/checklista-2026-10-08.md` | 8 okt middag |
+| Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
+| Nivå 2 /partner | påbörjad — session finns; `branding` läses/skrivs inom lanen med CAS men kräver roller som ingen rutt ännu skapar (N2.2 promptfil); speldata ej | Sista operatörsadmin, Partnerportal |
+| Nivå 3 /play | påbörjad — lobby med `Spelar hos`, redigerbar profil (namn, språk; migration `006` väntar), historikrutt; kvar: spelarens val av dealer/bordsfärg inom paketet (N3.4) | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
 | Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
-| Render croupier-v2 | påbörjad — motor live, deploy väntar | Aktuell leverans |
+| Render croupier-v2 | manuell deploy 8 okt 12:45 med L8/N3 (`/api/profile` svarar 401, `/api/operators/<slug>` läser Neon); `006-player-profile.sql` väntar på körning | Aktuell leverans |
 
 Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)

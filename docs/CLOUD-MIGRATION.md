@@ -29,7 +29,8 @@ tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
 Neon/Blob/Resend. Kod `cef3af5c` är READY på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`;
 Senaste avslutade dokumentleverans `4ed55a56` är READY på
 `dpl_3WvxoXqoraAj3WPBy2zG3pzhQipP`, CI `37451320053` har tre success och fullhook PASS. www, rot, login, spelgenvägar,
-API-spärrar och statiska filer är läsande verifierade. Kevin-chatten har
+API-spärrar och statiska filer är läsande verifierade mot den leveransen.
+8 oktober 2026 är Vercel-projektet `scoutgaming` (web och studio, båda services) deployat från `main`: CI grön på `0019df59` och `7445b5a5`. Inget nytt deployment-id är avläst i den här filen. Kevin-chatten har
 bekräftat sin befintliga adminsession. Kevins importerade backoffice
 (`lab/components/kevin-bo`) på `/partner` har två lägen: intern fixturförhandsvisning och scoped operatörsdata. Det är inte kontrollpanelen.
 Båda webbdelarna använder `fra1`; Git-autobyggen från main är på igen.
@@ -43,8 +44,8 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/preview`, `/control/probe`. `/control/tree` och `/control/operator-chat` omdirigerar. |
-| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Spelare, transaktioner och rapporter är inte anslutna. T2 är påbörjad, inte klar. |
-| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Historiksidan anropar `POST /api/history`. Operatörskontext i lobbyn och redigerbar profil återstår. T4 är öppen. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men kräver roller (N2.2). Spelare, transaktioner och rapporter är inte anslutna. T2 är påbörjad, inte klar. |
+| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` begränsar lane och dealer till paketet; Vercels `/play/blackjack` gör det inte än. Historiksidan anropar `POST /api/history`. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -120,8 +121,9 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   valuta, `/play/historik` anropar `POST /api/history` för egna aggregerade
   resultat, och `/play/blackjack` återanvänder befintlig sessionskontroll,
   sparad lane och signerad launch. Äldre speladresser leder vidare i det
-  gemensamma molnprojektet. Kvar: operatörsbunden katalog, operatörskontext i
-  lobbyn och redigerbar profil. T4 förblir öppen.
+  gemensamma molnprojektet. Lobbyn kan visa Spelar hos från `?operator=`.
+  Profilens namn och språk kan redigeras när `006-player-profile.sql` körts mot spel-Neon.
+  Vercels `/play/blackjack` begränsar inte lane eller dealer. T4 förblir öppen.
 
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
@@ -584,7 +586,7 @@ Ingen generell medieradering eller ny mänsklig synkapproval följer av dedup.
 
 | Tjänst | ID / disk | Ansvar |
 | --- | --- | --- |
-| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 7 oktobers `web/server.mjs` (`/bo`-redirects till `/control`) väntar där; Vercel har redan samma regler. |
+| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. Beteendet är inte live-verifierat. `ops/neon-game/006-player-profile.sql` väntar på körning mot spel-Neon. |
 | croupier-vercel-preview-qa | srv-datj7l893c1s73ar3u50; /var/data, 1 GB | Separat QA/SDK/data/journal/cache |
 | croupier-lab-director | /data/catalog, 1 GB | Katalog/historik/CompanionDB |
 | croupier-lab-openclaw | /data/openclaw, 1 GB | Konfiguration/agentfiler/sessioner/sökDB |
@@ -600,7 +602,7 @@ Karta/envregister anger tjänstebindning/nyckelnamn, aldrig hemliga värden.
 
 | Projekt | Roll |
 | --- | --- |
-| scoutgaming | Enda aktiva produktionsprojektet; web + studio från samma repo/main, region fra1 |
+| scoutgaming | Enda aktiva produktionsprojektet; web + studio från samma repo/main, region fra1. Deployad 8 okt: CI grön `0019df59` och `7445b5a5` |
 | scoutgaming-legacy-frontend | Tidigare croupier-frontend; domänlös reserv med Git-byggen och automatisk domäntilldelning avstängda |
 | croupier-native-qa-abc92154cb15 | Befintlig isolerad testfrontend |
 | croupier-native-studio-qa-abc92154cb15 | Tillhörande isolerad Studio |

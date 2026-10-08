@@ -34,9 +34,9 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview`, Lanes `/control/lanes` (publicera paket; spelet läser det inte än), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med djuplänkar `?tab=`, Uppspelning `/control/activity`, Probe `/control/probe`, Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
-| 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Spelare, transaktioner och rapporter är inte anslutna. |
-| 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Historiksidan anropar `POST /api/history`, se raden under. Operatörsbunden katalog och redigerbar profil återstår. |
+| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview`, Lanes `/control/lanes` (publicera paket; Renders `/blackjack?operator=` läser det, Vercels `/play/blackjack` gör det inte än), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med djuplänkar `?tab=`, Uppspelning `/control/activity`, Probe `/control/probe`, Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
+| 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men kräver roller (N2.2). Spelare, transaktioner och rapporter är inte anslutna. |
+| 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` begränsar lane och dealer till paketet; Vercels `/play/blackjack` gör det inte än. Historiksidan anropar `POST /api/history`, se raden under. |
 | 3 · Spelarresultat | `/api/history` | Spelare. Egna aggregerade resultat. Samma session som `/api/player`. |
 
 ### Lagring
@@ -51,7 +51,7 @@ bakgrund och urvalsregler som spelaren får använda. En lane är varken ett
 spelarkonto, en videofil eller själva spelmotorn. Nuvarande sparade profiler
 och lane-ID:n behålls. Ett **operatörspaket** är vilka lanes, spel/bord och varumärkesval en operatör
 tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
-kan visa ett sparat pakets revision; publicering till spel är inte ansluten.
+kan visa ett sparat pakets revision. Renders `/blackjack?operator=` läser det publicerade paketet. Vercels `/play/blackjack` gör det inte än.
 
 ```mermaid
 flowchart LR
@@ -106,7 +106,7 @@ en giltig direktstart behöver inte gå via lobbyn.
 
 Nivå 2:s marker, kort, bord och bakgrund är **lokala designprov**. Valen kan
 visas i bordets förhandsvisning, men skickas inte till en publicerad lane eller
-spelet. Både en fast lane-notis och återkoppling vid designändring visar detta.
+spelet. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2). Både en fast lane-notis och återkoppling vid designändring visar detta.
 Klipp, masker, urvalsregler och publicering hör till nivå 1. En framtida
 anslutning måste kontrollera operatör, tilldelad lane, sparad revision och
 tillåtna fält på servern; ett dolt menyval eller en slug är ingen behörighet.

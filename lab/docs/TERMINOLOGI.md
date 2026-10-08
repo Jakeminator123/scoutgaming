@@ -31,10 +31,14 @@ Nivånumret är dokumentation; servern kontrollerar identitet, rättighet, medle
 
 | Svenska | Engelska | Betyder | I koden i dag |
 |---|---|---|---|
-| Lane | Presentation Lane | Ett paket med en eller flera dealers sammansatta i ett pussel av klipp (idle, händelseklipp, bakgrund, probe), där man bestämmer vad OpenClaw får göra per händelsetyp och vad som sker automatiskt. Lagren bakgrund, bord och dealer anges per lane. En grundprofil är det standardpaket ett bolag får; bolaget får sedan justera det lanen tillåter (bordsfärg, chips, branding). Återanvändbar, har id (Jakob 8 okt, beslut 49) | `project.lanes[]` i Studio-projektet (från 8 okt natt), id = serverkatalogens `gameLanes`-id (`mobile-phone`); `lanes` (id-lista) i `operator_packages`. Flaggan `lissabon-stream-lane` är ett lane-id, inget produktnamn |
-| Operatörspaket | Operator Package | Kundens samlade konfiguration: tilldelade lanes, spel, bord, branding. En revision per publicering | `croupier_studio.operator_packages`, `web/storage/operator-store.mjs` |
-| Presentationsadapter | Presentation Adapter | Översätter spelsignaler till presentationshändelser | `web/presentation-api.mjs` |
-| Designprofil | Design Profile | Branding och bordsutseende som bolaget får justera | `branding` i paketet; redigeringsyta saknas (L3) |
+| Lane | Presentation Lane | Ett paket av dealers, klipp och OpenClaw-rättigheter. Flera dealers kan ingå i samma lane. Grundprofilen är standardpaketet som kopieras. | `project.lanes[]`. Grundprofilen är `defaultPresentationLane` (`mobile-phone`). `lanes` i `operator_packages`. `lissabon-stream-lane` är ett lane-id, inget produktnamn |
+| Operatörspaket | Operator Package | Bolagets konfiguration i `operator_packages`: lanes, spel, bord, branding och en revision per publicering. Renders `/blackjack?operator=` läser paketet. Vercels `/play/blackjack` gör det inte än. | `croupier_studio.operator_packages`, `web/storage/operator-package-reader.mjs` |
+| Tre lager | Three layers | Bakgrund, dealer och bord. Varje lager kan tas bort. I dag finns det bara i förhandsvisningen, inte som spelväg. | `/control/preview`. På lanen: `layers.background`, `layers.dealer`, `layers.table` |
+| Presentationsadapter | Presentation Adapter | Översätter spelsignaler till presentationshändelser. | `web/presentation-api.mjs` |
+| Designprofil | Design Profile | Branding och bordsutseende som bolaget får justera inom lanen. `branding` kan läsas och skrivas, men skrivningen kräver roller (N2.2). | `branding` i paketet. Chips återstår (L4) |
+| Visningsnamn | Clip label | Eget namn på ett klipp, skilt från filnamn och hash. Sparas från Klippbibliotek, 1–80 tecken. | `project.clipLabels` |
+| Standardvariant | Standard variant | `legacyClipPolicy` översätts till varianter vid läsning och ligger kvar på disk tills en admin sparar. `think` blir `turn.player` och `gest` blir `settle.*`. `headTilt`, `deal` och `dealWatch` väljs inte. | `presentation-runtime/legacy-standard-variants.mjs` |
+| Astrid-baslinje | Astrid baseline | 160 anrop (16 händelser × 5 lägen × 2 kontexter) som bevisar att Astrids select-svar är oförändrade. `--write` kräver Jakobs godkännande. | `tools/astrid-select-baseline.mjs`, `test/presentation-select-astrid-baseline.mjs` |
 
 Adapter, lane och operatörspaket är tre olika saker.
 
@@ -43,7 +47,7 @@ Adapter, lane och operatörspaket är tre olika saker.
 | Del | Standardnamn | Vad | I koden i dag |
 |---|---|---|---|
 | 1 | Viloloop / Idle Loop | Klipp när inget händer: grundloop plus korta variationer med vikter | `idlePolicy`, Dealers & klipp → Idle. Fungerar för Astrid |
-| 2 | Händelseklipp / Event Clip | Klipp för en presentationshändelse: deal, reveal, turn, settle, speak | Ett system, **A**: `events`/`lines`/`variants`/`triggers` + `mediaPolicy` (frekvens per klipp), spelas via `POST /api/presentation/select`; verifierat som produktionsvägen 8 okt (`random/k1-fakta-spelvagen-2026-10-08.md`). `legacyClipPolicy` är originalmotorns bindning för Vera/Amira/Mei och flyttas in som standardvarianter (K steg 3b) |
+| 2 | Händelseklipp / Event Clip | Klipp för en presentationshändelse: deal, reveal, turn, settle, speak | Ett system, **A**: `events`/`lines`/`variants`/`triggers` + `mediaPolicy`, via `POST /api/presentation/select` för alla fyra dealers. `legacyClipPolicy` översätts till standardvarianter vid läsning. Vera, Amira och Mei spelar 2D-reserv där klipp saknas |
 | 3 | Bakgrundslager / Background Layer | Bakgrundsbild eller -video och masker | Bakgrundszoner `/control/zones`; styr inte spelet ännu (L16) |
 | 4 | Probe | Talinitiativ när spelaren är inaktiv | `probePolicy`, `/control/probe`, `web/probe-runtime.mjs`; inte verifierad i produktion (L4) |
 
