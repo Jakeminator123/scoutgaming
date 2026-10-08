@@ -148,6 +148,15 @@ test('table colour paints the felt mark, wallet and chip row and leaves the film
   assert.equal(nodes['video.local-presentation-film'].style.props.color, undefined);
 });
 
+test('the dealer row follows the lane only when an operator package is active', async () => {
+  const source = await (await import('node:fs/promises')).readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+  // Same source-level guard style as test/dealer-version-switcher.mjs: the row must gate on
+  // entrySelection.operator AND choices.dealers, keep the current dealer, and skip the rest.
+  assert.match(source, /const allowedDealerKeys = entrySelection\.operator && Array\.isArray\(entrySelection\.choices\?\.dealers\)/);
+  assert.match(source, /new Set\(\[\.\.\.entrySelection\.choices\.dealers, DEALER\.key\]\) : null;/);
+  assert.match(source, /if \(allowedDealerKeys && !allowedDealerKeys\.has\(dealer\.key\)\) continue;/);
+});
+
 test('the lobby text names the last dealer and table colour', () => {
   assert.equal(lobbyChoiceText(parseStoredChoices(JSON.stringify({ dealer: 'astrid', tableColor: '#112233' }))), 'Dealer Astrid · bord #112233');
   assert.equal(lobbyChoiceText({ dealer: 'mei' }), 'Dealer Mei');

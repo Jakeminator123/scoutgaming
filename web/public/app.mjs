@@ -2564,7 +2564,12 @@ if (playerChoice && entrySelection.choices) {
 }
 
 // Dealer tables are available in the main controls, without a rehearsal URL.
+// With an operator package the row follows the lane's allowed dealers, like the
+// Ditt bord panel; without ?operator= every dealer is listed as before.
+const allowedDealerKeys = entrySelection.operator && Array.isArray(entrySelection.choices?.dealers)
+  ? new Set([...entrySelection.choices.dealers, DEALER.key]) : null;
 for (const dealer of Object.values(DEALERS)) {
+  if (allowedDealerKeys && !allowedDealerKeys.has(dealer.key)) continue;
   const button = document.createElement('button');
   button.type = 'button'; button.dataset.dealer = dealer.key;
   button.setAttribute('aria-label', `${dealer.name}'s table`);
