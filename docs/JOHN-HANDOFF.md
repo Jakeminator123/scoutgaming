@@ -4,8 +4,8 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — idle fungerar; produktionsvägen är kartlagd 8 okt (`random/k1-fakta-spelvagen-2026-10-08.md`: system A spelar, `gameLane: mobile-phone`, full-frame mp4); lane är en id-lista utan skapa/export/bolagsyta (L1–L3). Brief: `random/prompt-klipplogik.md`; uppföljning: `random/checklista-2026-10-08.md` | Kopplingar som saknas |
-| Nivå 1 /control | påbörjad — en kodgeneration: alla sidor på sidmallen inklusive Bakgrundszoner (8 okt), Uppspelning rullar igen (L23), texterna L20–L22 följer koden; ljust läge och Johns rader 11, 12, 14, 17b väntar; lösa trådar mot nivå 2 öppna | Pass M |
+| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet (K1 verifierat mot prod, K2 beslutat 8 okt); `project.lanes[]` finns som typ utan läsare; klippnamn; `/control/preview` visar grenens tre-lager-spelare; kvar: steg 3b (select för fyra dealers, rehearsal med Jakob), lane-export, bolagsyta (L1–L3). Uppföljning: `random/checklista-2026-10-08.md` | Pass S |
+| Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida (rad 37), Probe i menyn (17b), fyra adminlänkar (12), inloggningskort (14), Bakgrundszoner på mallen (43), Uppspelning rullar (L23); kvar: ljust läge på inre sidor, filterchips (11) efter 3b | Pass S |
 | Nivå 2 /partner | påbörjad — session finns; lagret spärrar sista operatörsadmin, men ingen rutt skriver; speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby/profil och historikrutt | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
@@ -17,6 +17,37 @@ Uppdaterad 7 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## Pass S, 8 oktober 2026 natt: klipplogik steg 3a, Händelser en sida, förhandsvisning
+
+Jakob 02:49: "kör enligt rekommendationerna, bortse från John om det blockar". Beslut 49–59 i
+`random/beslutsmatris-2026-10-07.md`; förslag `random/k2-forslag-2026-10-08.md`; fakta
+`random/k1-fakta-spelvagen-2026-10-08.md`; uppföljning `random/checklista-2026-10-08.md`.
+Fyra underagenter parallellt, orkestratorn granskade och rättade.
+
+Ändrat. Studio-projektet har `lanes[]` (presentation lane: dealers, lager bakgrund/bord/dealer,
+OpenClaw-läge per händelsetyp, vad bolaget får ändra) och `clipLabels`; `schemaVersion` kvar på 1,
+standardlane `mobile-phone` när nyckeln saknas, ingen läsare ännu. Klipp visas med svenska namn ur
+`familyId` + roll utan filbyten. Händelser är en sida: `/control/events` utan `?event=` är
+översikten, `/control/tree` omdirigerar 308 med frågesträngen kvar. Menyraden heter Probe, Johns
+fyra etiketter är djuplänkar `/control/administration?tab=`, inloggningskortet ligger på
+sidmallens tokens. `test-videoeditor/` speglar grenen `test-video-jakob` byte-identiskt
+(förhandsvisning Paow/Dragge 720p, 12 MB, webbspelare med WebGL-kompositor); `/control/preview`
+visar den bakom adminsessionen via `/preview/[...path]` (ingen publik kopia, media som filer,
+inget till blob eller databas). `test/fuzz-blackjack.mjs` fuzzar serverns `web/shoe-game.mjs`
+(3 000 rundor i kroken, 100 000 gröna). Systemkartan har sidan och handlern; menynamnen är
+uppdaterade i `AGENTS.md`, `CLAUDE.md`, README-filerna, labbguiden, terminologibladet och driftdokumenten.
+
+Testat: labbtester 954 gröna (2 skippade sedan tidigare), typecheck, systemkartan 0 röda,
+orphan-kontrollen 263 filer, full pre-commit-krok per commit, lab-bygget med prepare-steget.
+Produktion verifieras som `LLM`: `/control/events` med och utan `?event=`, `/control/tree?dealer=astrid&event=idle.ready`
+(308), `/control/probe`, `/control/administration?tab=accounts`, `/control/login` ljust/mörkt,
+`/control/preview` (Paow/Dragge spelas, inget skrivs), `/studio/preview/index.html` utan session
+ska leda till inloggning.
+
+Kvar: K steg 3b (select för alla fyra dealers, `legacyClipPolicy` → standardvarianter) kräver
+rehearsal med Jakob dagtid. Lane-export, bolagets yta, demo-operatör (L1–L3, rad 44). Redigering
+av `clipLabels`. Systemkartans `planned`-rutor (matris 42). Nivå 2-rutter väntar på Kevin.
 
 ## Pass M, 8 oktober 2026 natt
 

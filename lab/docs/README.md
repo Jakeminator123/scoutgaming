@@ -4,7 +4,7 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`, Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration`, Uppspelning `/control/activity`, Talgranskning `/control/probe` och Guide & hjälp `/control/guide`. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov från grenen `test-video-jakob`), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Operatörskontext i lobbyn och redigerbar profil återstår (L13). Render-deploy av `POST /api/history` är öppen (L7).
 
@@ -194,9 +194,10 @@ ocklusion för varje tilltänkt klipp innan användning.
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
-Avancerade verktyg nås genom **Händelser → klipp** (`/control/tree` i molnet,
-`/tree` lokalt). `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, och `chat` på OpenClaw. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Talgranskning, Bakgrundszoner och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
+översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
+dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Probe, Bakgrundszoner och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
@@ -209,7 +210,7 @@ Utvecklarreferenser: [start och arkitektur](../README.md),
 [Schemaöversikt](../schemas/README.md).
 [Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Händelsekategorierna ska överensstämma med projektets seed och motorns källkontrakt.
-Händelser → klipp grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
+Händelsers översikt grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 över samma sex källtyper och 16 ID:n. Den skapar inte nya motorevents.
 Ändrade tekniska ID:n, nya typer eller playback-funktioner kräver ett uttalat

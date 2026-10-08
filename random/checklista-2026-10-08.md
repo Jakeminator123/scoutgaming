@@ -31,7 +31,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | A2 | ffmpeg `.deb`-cache i CI (hängde två gånger 7 okt) | klart `683dd4fd` + `7d523bde` (cache v6). Verifierat i run 37707970447: båda jobben `Cache restored from key: ubuntu-24.04-ffmpeg-7:6.1.1-3ubuntu5`, ingen nedladdning. `dealer-regression` utan cache (matris 46) | brief M p4 | M |
 | A3 | GPU-workflows till `ubuntu-24.04` före 19 okt | klart `f95ed1ef`. `services/astrid-gpu-worker/.github/workflows/checks.yml` har `ubuntu-latest` men körs inte av GitHub | brief M p3 | M |
 | A4 | CI-steg orphan tests + undantagsfil | klart `9dbfe09e`: 259 filer, 0 föräldralösa, 3 undantag (matris 47); grönt i CI | brief M p5 | M |
-| A5 | Systemkartan: trimma miljökontrakt, gul = "granska" | kvar | matris 42 | eget litet pass |
+| A5 | Systemkartan: trimma miljökontrakt, gul = "granska", `planned`-rutor (T11) | kvar; nästa pass när S-leveransen är grön i CI | matris 42 | eget litet pass |
+| A10 | `test/fuzz-blackjack.mjs` mot `web/shoe-game.mjs` (J5) | klart natt 8 okt (S3): 3 000 rundor ~5 s i kroken, 100 000 gröna; undantaget borta | beslut 53 | – |
 | A6 | Chefens register i `.croupier-inbox/chef.json`, låstext "Inbox busy" | kvar, lågprio | matris 34 | M senare |
 | A7 | CSS utanför listan (`studio-shell`, `main-nav` …) | kvar, lågprio | matris 34 | M senare |
 | A8 | `test/backoffice-lab-browser.mjs` opt-in, ej körd | kvar; blir undantag i A4 | matris 34 | M |
@@ -45,11 +46,11 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | B2 | Uppspelning: rullande observationsfönster (L23) | klart `820709dd`; `rolling`-prop, knappar kvar (matris 45); verifiera i prod | matris 39 | M |
 | B3 | Tre texter L20–L22 | klart `a91f92ee`; verifiera `/control` och `/control/guide` i prod | lösa trådar | M |
 | B4 | `/control/zones` på sidmallen, kortad text | klart `815b0b76`; verifiera ljust/mörkt i prod | matris 43 | M |
-| B5 | Händelser + Händelser → klipp en sida | väntar (K steg 2–3) | matris 37 | K |
-| B6 | Klipplistans filterchips och triggerpiller | väntar (efter K steg 3) | matris 11 | D |
-| B7 | Johns fyra etiketter som djuplänkar till adminflikar | väntar (John/9 okt) | matris 12 | D |
-| B8 | Inloggningskortet på sidmallens tokens | väntar (John/9 okt) | matris 14 | D |
-| B9 | Namnkrock Talgranskning (meny → Probe, adminflik = betald QA) | väntar (John/9 okt); rek. nedan | matris 17b | D |
+| B5 | Händelser + Händelser → klipp en sida | klart natt 8 okt (S1): översikt utan `?event=`, `/control/tree` 308 med query kvar; verifiera i prod | matris 37, beslut 52 | K |
+| B6 | Klipplistans filterchips och triggerpiller | väntar (efter K steg 3b) | matris 11 | D |
+| B7 | Johns fyra etiketter som djuplänkar till adminflikar | klart natt 8 okt (S1): `?tab=tables|operations|finance|accounts`; Administration kvar utan parameter | matris 12 | D |
+| B8 | Inloggningskortet på sidmallens tokens | klart natt 8 okt (S1); verifiera ljust/mörkt i prod | matris 14 | D |
+| B9 | Namnkrock Talgranskning (meny → Probe, adminflik = betald QA) | klart natt 8 okt (S1) | matris 17b, beslut 52 | D |
 | B10 | Ljust läge på två inre sidor | kvar; verifiera i produktion vilka | matris 3 | D |
 | B11 | `lab/docs/guide.json` använder gamla sidnamn | kvar | matris 25 | M senare |
 | B12 | Dold `<select>` bakom dealerchipsen (gammalt test) | kvar | matris 10 | M senare |
@@ -60,29 +61,31 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 |---|---|---|---|---|
 | C1 | Fakta: vilket system (A events / B legacyClipPolicy) produktion följer per händelse | klart: **A** (`gameLane: mobile-phone` verifierat mot prod 01:30). B = originalmotorn för Vera/Amira/Mei; `clip-mapping.mjs` är katalog, spelar inte. Frekvens per klipp bor i A (`mediaPolicy.frequencyPercent`) | `random/k1-fakta-spelvagen-2026-10-08.md` | K |
 | C2 | Fakta: lagren i spelklienten i dag (bakgrund/dealer/bord/kort), keyat vs fullbild per dealer | klart: prod-vägen spelar **en full-frame mp4** med bakgrund+dealer+bord inbakade; kort = separat SVG-lager; chips/HUD = DOM. Keyat material finns bara i `/v2`-grenen (Astrid `rgb-over-masks`, Amira `rgb-over-alpha`), som kräver `!localPresentationEnabled`. Vera/Mei: fullbild + ev. handmatte | K1 tabell 2 | K |
-| C3 | Förslag: ett system, flytt av frekvens per klipp, vad användaren förlorar/ersättning | väntar (C1–C2 + Jakobs svar F1–F5) | brief K steg 2 | K |
-| C4 | Jakobs go på C3 | väntar (Jakob) | – | – |
-| C5 | Genomför, en commit per flytt, migrering med version och test | kvar; prompt skrivs av orkestratorn, körs av annan agent, granskas här | brief K steg 3 | K |
+| C3 | Förslag: ett system, flytt av frekvens per klipp, vad användaren förlorar/ersättning | klart: `random/k2-forslag-2026-10-08.md` | brief K steg 2 | K |
+| C4 | Jakobs go på C3 | klart 02:49 ("kör enligt rekommendationerna") | beslut 49–53 | – |
+| C5a | Genomför 3a: rad 37, 17b, lane-typ, klippnamn, fuzz, `/control/preview` | klart natt 8 okt (S1–S4) | K2 | K |
+| C5b | Genomför 3b: select för alla fyra dealers, `legacyClipPolicy` → standardvarianter | **väntar på dagtid med Jakob**: kräver rehearsal `?dealer=<namn>&rehearsal=1` två spel i rad på fyra dealers | K2 | K |
 | C6 | Bakgrund och probe in i samma modell | kvar | brief K steg 4 | K |
 | C7 | Varianter/villkor för Vera, Amira, Mei i spelet (L19) | kvar | lösa trådar | K |
 | C8 | Zoner styr spelets bakgrund (L16) | kvar; blir del av D-lagret nedan | lösa trådar | K/T |
 | C9 | Probe verifierad i produktion (L4) | kvar | lösa trådar | K |
-| C10 | Beskrivande klippnamn: manifestet har bara `id` (uuid), `familyId`, `role`, `relativePath`; UI visar id/siffror. Lägg till visningsnamn (`label`) härlett från familj + roll, redigerbart i Klippbibliotek. Inga filbyten: ny hash ogiltigförklarar godkänd synk | kvar; Jakob 8 okt 01:50 | `lab-video-manifest.json` | K steg 3 eller M |
+| C10 | Beskrivande klippnamn: manifestet har bara `id` (uuid), `familyId`, `role`, `relativePath`; UI visar id/siffror. Lägg till visningsnamn (`label`) härlett från familj + roll, redigerbart i Klippbibliotek. Inga filbyten: ny hash ogiltigförklarar godkänd synk | klart natt 8 okt (S2): `lab/lib/clip-label.mjs`, visas i Klippbibliotek, Dealers & klipp, Händelser; `clipLabels` i projektet utan redigeringsyta ännu | `lab-video-manifest.json` | K |
+| C11 | Redigeringsyta för `clipLabels` (byta namn på ett klipp i Klippbibliotek) | kvar, litet | C10 | M |
 
 ## T. Tre lager (nytt 8 okt: bakgrund, avatar, bord)
 
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | T1 | Inventering: finns lagren redan i klienten (`actor-compositor`, `table-scene` palett, zoner)? | klart: ja som kod (`actor-compositor`, `table-scene` palett per dealer, `rooms[].felt` i `/api/bo/config`), **nej i produktionsvägen** (full-frame mp4). Zon-JSON har ingen läsare i `web/`. Tre lager kräver antingen `/v2`-keyningen för alla dealers eller nytt material (F3) | K1 tabell 2–3 | K |
-| T2 | Datamodell: lane = dealer(s) + idle + dealsekvenser + bakgrund + probe + OpenClaw-rättigheter | väntar (F1–F3) | nytt | K steg 5 |
+| T2 | Datamodell: lane = dealer(s) + idle + dealsekvenser + bakgrund + probe + OpenClaw-rättigheter | klart natt 8 okt (S2): `project.lanes[]` med `layers`, `openclaw`, `operatorAdjustable`; ingen läsare ännu; `project-store` normaliserar inte vid läsning (matris 54) | beslut 49 | K steg 5 |
 | T3 | Bordsfärg som inställning: paket (bolag) → tillåtna val → spelarens val | väntar (F2, F4) | nytt | Lane |
 | T4 | Bakgrund som eget lager valbart för spelaren | väntar (T1) | nytt | Lane |
 | T5 | Dealerbyte för spelaren inom lanens dealers | väntar (F1) | nytt | Lane |
 | T6 | Idle-frekvens ("gäspning") och dealsekvens-varianter som lane-grundinställning | väntar (T1) | nytt | K |
 | T7 | Nytt mediearbete (keya Vera/Mei) om fullbild | väntar (T1, F3) | nytt | eget mediespår |
-| T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning via `git show origin/test-video-jakob:<fil>`, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas; stannar som filer i grenen | väntar (grenen fanns inte på origin 01:50) | Jakob 8 okt | K |
-| T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar (T8) | Jakob 8 okt | K steg 3 |
-| T10 | Grenens utökade test-klippyta flyttas till egen sida `/control/preview` (Förhandsvisning, lagerprov) på sidmallen, under Studio i menyn; media stannar som filer i grenen, inget till blob/databas; läser dagens projekt, skriver inget | väntar (grenen); brief skrivs när `git show origin/test-video-jakob` går | Jakob 02:39 | K |
+| T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas | klart natt 8 okt: grenen = fristående Laneverkstad (Python `program/`, stannar på grenen) + `preview/` (Paow, Dragge, 720p, 12 MB) + webbspelare `program/web/` (WebGL-kompositor, greenscreen, lager, `bridge.js` mot `presentation[]`). Grenen rör bara `apps/croupier-frontend` utanför mappen (`/test`, inte portad) | Jakob 8 okt | K |
+| T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar: Jakob arbetar vidare på grenen; `bridge.js` är adaptern att koppla när han säger klart | Jakob 8 okt | K steg 3 |
+| T10 | Grenens utökade test-klippyta som egen sida `/control/preview` | klart natt 8 okt (S4): byte-identisk spegel i `test-videoeditor/`, prepare-steg, sida på sidmallen, filer serveras bara via sessionsskyddad `/preview/[...path]` (ingen publik kopia); verifiera i prod som `LLM` | Jakob 02:39 | K |
 | T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (schemat); kartan kvar | Jakob 02:39 | A5 |
 
 ## L. Lane som produkt

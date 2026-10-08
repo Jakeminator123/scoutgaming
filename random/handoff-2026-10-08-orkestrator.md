@@ -111,6 +111,13 @@ Tvådagarsregeln: svarar John inte i #2 senast 9 oktober körs rekommendationern
 - Cursor GitHub-appen saknar åtkomst till repot; molnagenter kan inte pusha. Kör lokalt.
 - Vercel preview saknar databasvariabler; bara produktion går att verifiera.
 - `stash@{0}` är ersatt av levererad kod; `git stash drop` när Jakob vill.
+- Hooken kräver `lab/.next/BUILD_ID` (`open-claw/lab/deploy/local-connection.mjs:526`). Ett avbrutet
+  `npm --prefix lab run build` tar bort den; bygg om före commit. Får `next build` ett typfel som
+  `tsc --noEmit` inte ser ("has no exported member") är orsaken Nexts egen cache
+  `lab/.next/cache/.tsbuildinfo`; ta bort den och bygg igen (8 okt natt).
+- Flera underagenter i samma arbetsträd: committa inget förrän alla är klara, hooken testar hela
+  trädet. Ge dem disjunkta filer; delade filer (`scout-navigation.mjs`, `routes.json`) redigerar
+  orkestratorn själv efteråt.
 
 ## Filer per spår
 
