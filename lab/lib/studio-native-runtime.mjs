@@ -18,6 +18,7 @@ import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
+import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -118,10 +119,13 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       project: async () => (await gamePolicy.readSaved()).project,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
+    const operatorAdmin = createOperatorAdminApi({ pool, boDb: store.boDb, scope: config.scope });
+    for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction: work => store.boDb.transaction(work) });
     return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads,
       listLaneOperators: lanePackages.listOperators,
+      listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction: work => store.boDb.transaction(work), ...media });
   } catch {
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }

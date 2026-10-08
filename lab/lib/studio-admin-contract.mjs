@@ -29,7 +29,7 @@ export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
-    'operator-package', 'operator-create-demo']
+    'operator-package', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership']
     .map(action => adminEndpoint('POST', action)),
   // These methods still require the existing opt-in operator gate, owner/budget
   // checks and paid-work authority. A matching descriptor grants none of them.
