@@ -16,7 +16,8 @@ import { newGame, command, gameView } from '../web/shoe-game.mjs';
 const runFile = promisify(execFile);
 const cliPath = fileURLToPath(new URL('../tools/backup-render-state.mjs', import.meta.url));
 async function cli(...args) {
-  const { stdout } = await runFile(process.execPath, [cliPath, ...args], { windowsHide: true, timeout: 15000 });
+  // 45 s: each CLI call spawns Node and hashes the fixture; 15 s tripped under hook load on 8 Oct.
+  const { stdout } = await runFile(process.execPath, [cliPath, ...args], { windowsHide: true, timeout: 45000 });
   return JSON.parse(stdout);
 }
 
