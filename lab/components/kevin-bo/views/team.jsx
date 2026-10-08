@@ -1,4 +1,5 @@
-// Medlemskap for one operator. Preview drafts stay in this component; real mode is read-only.
+// Medlemskap for one operator. Preview drafts stay in this component; real mode is
+// read-only unless a real partner session passes runtime.team (partner-team-loader.mjs).
 import React, { useState } from 'react';
 
 const h = React.createElement;
@@ -65,7 +66,8 @@ function notify(toast, runtime, message) {
 
 export function TeamView({ snapshot, runtime, surface, toast }) {
   const preview = snapshot?.preview === true;
-  const locked = !preview;
+  const live = !preview && runtime?.team ? runtime.team : null;
+  const locked = !preview && !live;
   const operatorId = text(snapshot?.operator?.id);
   const operatorName = text(snapshot?.operator?.name) || '—';
   const [query, setQuery] = useState('');
@@ -76,7 +78,9 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
   const [roleOverrides, setRoleOverrides] = useState({});
   const source = [...(Array.isArray(snapshot?.team) ? snapshot.team : []), ...drafts].filter(member => member && typeof member === 'object' && sameOperator(member, operatorId));
   const choices = roleChoices(snapshot, source, operatorId);
-  const selectedInviteRole = inviteRole || choices[0]?.id || '';
+  const inviteChoices = live ? choices.filter(item => live.inviteRoles.includes(item.id)) : choices;
+  const inviteLocked = locked || Boolean(live && inviteChoices.length === 0);
+  const selectedInviteRole = inviteRole || inviteChoices[0]?.id || '';
   const needle = query.trim().toLowerCase();
   const shown = source.filter(member => {
     if (!needle) return true;
@@ -92,7 +96,7 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
 
   const onInvite = event => {
     event.preventDefault();
-    if (!preview) return;
+    if (locked) return;
     const address = email.trim();
     if (!/^\S+@\S+\.\S+$/.test(address)) {
       notify(toast, runtime, 'Ange en giltig e-postadress. Ingenting har skickats.');
@@ -104,6 +108,10 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
     }
     if (source.some(member => text(member.email).toLowerCase() === address.toLowerCase() || member.id === address)) {
       notify(toast, runtime, 'Den adressen finns redan i listan. Ingenting har skickats.');
+      return;
+    }
+    if (live) {
+      void live.invite(address, selectedInviteRole).then(added => { if (added) setEmail(''); });
       return;
     }
     const role = choices.find(item => item.id === selectedInviteRole) || { id: selectedInviteRole, label: selectedInviteRole };
@@ -120,6 +128,10 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
     notify(toast, runtime, 'Inbjudan sparad lokalt. Ingenting har skickats.');
   };
   const onRole = (member, nextRole) => {
+    if (live) {
+      if (member?.id) void live.role(member, nextRole);
+      return;
+    }
     if (!preview || !member?.id) return;
     setRoleOverrides(current => ({ ...current, [member.id]: nextRole }));
     notify(toast, runtime, 'Rollbyte sparat lokalt. Ingenting har skickats.');
@@ -154,6 +166,8 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
                 const revision = revisionText(member);
                 const optionIds = new Set(choices.map(item => item.id));
                 const options = optionIds.has(selected) || !selected ? choices : [...choices, { id: selected, label: role.label }];
+                const assignable = live ? live.assignable(member) : null;
+                const roleOptions = assignable ? options.filter(item => item.id === selected || assignable.includes(item.id)) : options;
                 return h('tr', { key: `${member.operatorId || ''}:${userId}:${index}` },
                   h('td', null, h('div', { className: 'pl-who' },
                     h('span', { className: 'pl-av' }, name.slice(0, 2).toUpperCase()),
@@ -167,9 +181,9 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
                     className: 'select',
                     'aria-label': `Rollprofil för ${name}`,
                     value: selected,
-                    disabled: locked,
+                    disabled: locked || Boolean(assignable && assignable.length === 0),
                     onChange: event => onRole(member, event.target.value),
-                  }, options.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
+                  }, roleOptions.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
                   h('td', null, operatorName),
                   h('td', null, statusNode(member.status, preview)));
               }))))
@@ -184,7 +198,7 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
               type: 'email',
               autoComplete: 'off',
               value: email,
-              disabled: locked,
+              disabled: inviteLocked,
               onChange: event => setEmail(event.target.value),
             })),
           h('div', { className: 'field' },
@@ -194,11 +208,11 @@ export function TeamView({ snapshot, runtime, surface, toast }) {
               className: 'select',
               'aria-label': 'Rollprofil för inbjudan',
               value: selectedInviteRole,
-              disabled: locked,
+              disabled: inviteLocked,
               onChange: event => setInviteRole(event.target.value),
-            }, choices.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
-          h('button', { id: 'team-invite-submit', className: 'btn primary', type: 'submit', disabled: locked }, 'Bjud in')),
+            }, inviteChoices.map(item => h('option', { key: item.id, value: item.id }, item.label)))),
+          h('button', { id: 'team-invite-submit', className: 'btn primary', type: 'submit', disabled: inviteLocked }, 'Bjud in')),
         h('div', { className: 'note' }, preview
           ? 'Rollerna är målbilden. Den aktuella förhandsvisningen kräver befintlig intern admininloggning; inga partnerkonton eller utökade rättigheter skapas här.'
-          : 'Inbjudan och rollbyte ansluts i nästa steg'))));
+          : live ? live.note : 'Inbjudan och rollbyte ansluts i nästa steg'))));
 }
