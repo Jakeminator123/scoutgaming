@@ -627,6 +627,7 @@
       "maxItems": 32,
       "items": { "$ref": "#/$defs/lane" }
     },
+    "layerAssets": { "type": "array", "maxItems": 128, "items": { "$ref": "#/$defs/layerAsset" } },
     "clipLabels": {
       "description": "Optional display names keyed by clip id. Files and hashes are not renamed.",
       "type": "object",
@@ -636,11 +637,80 @@
     }
   },
   "$defs": {
+    "layerAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "role",
+        "label",
+        "sha256",
+        "size",
+        "contentType",
+        "pathname",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "role": {
+          "enum": [
+            "background",
+            "table"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 134217728
+        },
+        "contentType": {
+          "enum": [
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "video/mp4",
+            "video/webm"
+          ]
+        },
+        "pathname": {
+          "type": "string",
+          "pattern": "^croupier/media/(backgrounds|tables)/"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        }
+      }
+    },
     "lane": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "label", "dealers", "layers", "openclaw", "operatorAdjustable"],
       "properties": {
+        "renderer": { "enum": ["layered", "portrait-video"] },
         "id": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]{0,63}$",
@@ -658,9 +728,9 @@
         "openclaw": { "$ref": "#/$defs/laneOpenClaw" },
         "operatorAdjustable": {
           "type": "array",
-          "maxItems": 4,
+          "maxItems": 5,
           "uniqueItems": true,
-          "items": { "enum": ["table.color", "background", "dealer", "branding"] }
+          "items": { "enum": ["table.color", "table", "background", "dealer", "branding"] }
         },
         "probe": { "$ref": "#/$defs/laneProbe" },
         "idle": { "$ref": "#/$defs/laneIdle" }

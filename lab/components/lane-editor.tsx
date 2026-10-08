@@ -1,4 +1,5 @@
 'use client';
+import {LayerAssetSelect} from './layer-selectors';
 
 import { useState, type FormEvent } from 'react';
 import { PROBE_MODELS } from '../lib/probe-policy.mjs';
@@ -160,10 +161,6 @@ export function LaneEditor({ project, onEdit }: { project: StudioProject; onEdit
 
 function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: StudioLane; onEdit: Edit }) {
   const [label, setLabel] = useState(lane.label);
-  const [backgroundDefault, setBackgroundDefault] = useState(lane.layers.background.default ?? '');
-  const [backgroundAllowed, setBackgroundAllowed] = useState(lane.layers.background.allowed.join('\n'));
-  const [tableDefault, setTableDefault] = useState(lane.layers.table.default ?? '');
-  const [tableAllowed, setTableAllowed] = useState(lane.layers.table.allowed.join('\n'));
   const [zonesText, setZonesText] = useState((lane.layers.background.zones ?? []).join('\n'));
   const [draftColor, setDraftColor] = useState('#1b4332');
   const [idleVariants, setIdleVariants] = useState((lane.idle?.variants ?? []).join('\n'));
@@ -217,18 +214,7 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           {[...BACKGROUND_MODES].map(mode => <option key={mode} value={mode}>{mode}</option>)}
         </select>
       </label>
-      <label className={styles.field}>Standard
-        <input value={backgroundDefault} maxLength={200} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.background.default = value.trim() ? value.trim() : null; }, () => setBackgroundDefault(value));
-        }} />
-      </label>
-      <label className={styles.field}>Tillåtna, en per rad
-        <textarea value={backgroundAllowed} rows={4} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.background.allowed = linesOf(value); }, () => setBackgroundAllowed(value));
-        }} />
-      </label>
+      <LayerAssetSelect role="background" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
       <label className={styles.field}>Zoner, en per rad
         <textarea value={zonesText} rows={4} aria-describedby={`lane-zones-help-${lane.id}`} onChange={event => {
           const value = event.target.value;
@@ -244,18 +230,7 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
     <fieldset className={styles.group}>
       <legend>Bord</legend>
       <label className={styles.check}><input type="checkbox" checked={lane.layers.table.enabled} onChange={event => editLane(draft => { draft.layers.table.enabled = event.target.checked; })} /> På</label>
-      <label className={styles.field}>Standard
-        <input value={tableDefault} maxLength={40} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.table.default = value.trim() ? value.trim() : null; }, () => setTableDefault(value));
-        }} />
-      </label>
-      <label className={styles.field}>Tillåtna, en per rad
-        <textarea value={tableAllowed} rows={4} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.table.allowed = linesOf(value); }, () => setTableAllowed(value));
-        }} />
-      </label>
+      <LayerAssetSelect role="table" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
       <div className={styles.addColor}>
         <label className={styles.field}>Bordsfärger
           <input type="color" value={draftColor} aria-label="Ny bordsfärg" onChange={event => setDraftColor(event.target.value)} />

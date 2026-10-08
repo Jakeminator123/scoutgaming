@@ -1,5 +1,49 @@
 # Aktuell handoff — Scoutgaming
 
+## 8 oktober 2026 kväll: T10 — tre val och frysta lane-paket
+
+Jakob gav Codex uppdraget att fortsätta efter masterplanen. Astrids godkända
+filmer ska vara kompatibla fullbildslager tills godkända frilagda dealerpaket finns.
+Start och plan finns i `random/start-T10-2026-10-08.md` och
+`random/masterplan-t10-konsolidering-2026-10-08.md`; alla tre T10-dokument kom med
+i remote main `ddc58fcb`. Aktivitetsdokumenten fanns redan på main.
+
+- Studio har tre huvudingångar: Dealers & klipp, Förhandsvisning och Lanes.
+  Bibliotek, zoner och händelser är kvar under Studio · verktyg.
+- Förhandsvisning redigerar samma sparade lane som Lanes: dealer, bord och
+  bakgrund, standardval, tillåtna alternativ och synlighet. Exakta befintliga
+  klipp kan provas; Paow/Dragge-provet finns kvar i en utfällbar del.
+- Lagerbiblioteket registrerar bild/video i privata Blob-namnrymder
+  `croupier/media/backgrounds/` och `croupier/media/tables/`. Prepare/commit kräver
+  Studio-session, rätt scope, origin, giltig uppladdningsbiljett, verifierad hash
+  och projektets aktuella revision. Ingen ny SQL-migration behövs: biblioteket
+  ligger i projektdokumentet. Offline saknar uppladdning och molnpublicering.
+- Lanes kan exportera ett validerat JSON-manifest från sparat innehåll.
+  Publicering fryser valda lanes och refererade lager i operatörspaketets
+  reserverade, komprimerade `_scoutPresentation`. Hashen kontrollerar integritet;
+  det är ingen digital signatur. Paketet behåller den befintliga storleksgränsen.
+  Exporten innehåller filreferenser, inte videofiler eller leverantörshemligheter.
+- Partnerns val begränsas till en publicerad lane och dess rättigheter.
+  Spelstart läser frysta presentationsval och delar inte privata biblioteksfiler
+  som bolaget saknar i sitt paket. Kort, saldo och spelutfall förblir serverägda.
+- Tre lager är redigeringsmodellen. Ordinarie opaque dealerfilm förblir fullbild;
+  bakgrund/bord kan inte bytas självständigt bakom dess inbakade pixlar.
+  T9-renderern är fortsatt opt-in. Fler dealers och frilagda standardpaket återstår.
+
+Verifierat separat: TypeScript, riktade kontrakt-/behörighetsprov, privat
+uppladdning med testlager, paketfrysning, delad spelentré, offline save → reload,
+video Range 206 och visuell editor. Full regression körs av leveransens commit-hook.
+`audit-dealer-sync --probe` passerade för samtliga fyra dealerbanker; tidigare
+saknade repliker och mänsklig läppacceptans kvarstår. Inga godkända medier ändrades.
+Webbläsarens klickverktyg fastnade före dispatch: fyra dealers × två spelningar,
+JSON-nedladdning via knapp samt riktiga Blob/Neon/partner-klick är inte godkända
+som end-to-end. Den isolerade serverparet stoppades och dess tillfälliga data raderades.
+
+Vercel-team och projekt verifierades som `scoutgaming`. GitHub API visar repot
+som **public**, trots README:s tidigare private-uppgift. GitGuardian-suite på
+setup-commit `ddae3b5d` är queued; incidentlistan är `not-read`.
+Produktionsdeploy och Render-version ska kontrolleras mot den levererade SHA:n.
+
 ## 8 oktober 2026 kväll: Codex och befintlig checkout
 
 Arbetskatalogen är `C:/Users/jakob/dev/projects/scoutgame`, på `main` i

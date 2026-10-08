@@ -1,3 +1,4 @@
+import { createLayerUploadService } from './layer-upload-service.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
@@ -97,6 +98,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const signer = await store.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
     if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) unavailable();
     const uploads = createStudioUploadService({ repository, scope: config.scope, ticketKey: Buffer.from(signer.v, 'hex'), env });
+    const layerUploads = createLayerUploadService({repository,scope:config.scope,ticketKey:Buffer.from(signer.v,'hex'),env});
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
     const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope,
       gamePolicy, canAssignDealer: gamePolicy.canAssignDealer,voiceLines:createRegisteredVoiceLines({env,repositoryRoot}) });
@@ -125,7 +127,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction: work => store.boDb.transaction(work) });
-    return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads,
+    return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads,
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction: work => store.boDb.transaction(work), ...media });

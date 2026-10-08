@@ -1,3 +1,4 @@
+import {createLayerComposition} from './presentation-composition.mjs';
 import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
@@ -85,16 +86,20 @@ const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
 if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
+const layerComposition = createLayerComposition(document,entrySelection.composition);
 const playerChoice = entrySelection.choices ? resolvePlayerSelection({
   choices: entrySelection.choices,
   search: location.search,
   stored: readChoices(localStorage, entrySelection.operator),
   branding: entrySelection.branding,
   currentDealer: entrySelection.dealer,
+  composition:entrySelection.composition,
 }) : null;
 if (playerChoice) {
   writeChoices(localStorage, entrySelection.operator, playerChoice.nextStored);
   if (playerChoice.tableColor) applyTableColor(document, playerChoice.tableColor);
+  if(playerChoice.backgroundValue)layerComposition?.setBackground(playerChoice.backgroundValue);
+  if(playerChoice.tableValue)layerComposition?.setTable(playerChoice.tableValue);
   if (playerChoice.navigateDealer) location.replace(dealerVersionPath(playerChoice.navigateDealer, dealerV2Route ? 'v2' : 'original', location.search));
 }
 {
@@ -2576,6 +2581,9 @@ if (playerChoice && entrySelection.choices) {
     currentDealer: DEALER.key,
     tableColor: playerChoice.tableColor,
     backgroundValue: playerChoice.backgroundValue,
+    composition:entrySelection.composition,
+    tableValue:playerChoice.tableValue,
+    onTable:id=>{playerChoice.nextStored={...playerChoice.nextStored,tableAsset:id};remember({tableAsset:id});layerComposition?.setTable(id);},
     isBusy: () => !!(round || busy),
     onDealer: key => {
       remember({ dealer: key });
@@ -2590,6 +2598,7 @@ if (playerChoice && entrySelection.choices) {
     onBackground: id => {
       playerChoice.nextStored = { ...playerChoice.nextStored, background: id };
       remember({ background: id });
+      layerComposition?.setBackground(id);
       localPresentation?.setBackground?.(id);
     },
   });

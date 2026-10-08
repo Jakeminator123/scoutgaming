@@ -33,7 +33,7 @@ export function normalizeNativeStudioRequest(request, config) {
   // header. Only exact native endpoint namespaces are repaired; other routes keep
   // their path and remain subject to their own exact routing checks.
   if (config.apiBase === '/studio/api/admin' && config.authBase === '/studio/api/auth'
-    && (/^\/api\/(?:admin|auth|videos)(?:\/|$)/.test(url.pathname)
+    && (/^\/api\/(?:admin|auth|videos|layer-assets)(?:\/|$)/.test(url.pathname)
       || /^\/api\/(?:project|social|clip-controls)$/.test(url.pathname))) {
     url.pathname = '/studio' + url.pathname;
   }

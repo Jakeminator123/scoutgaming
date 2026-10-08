@@ -4,6 +4,39 @@ Skriven 8 okt 2026 av t10-trelager efter live-`/control` + kod.
 Ingång: `random/start-T10-2026-10-08.md`. Bakgrund: `random/handoff-T10-trelager-standard-2026-10-08.md` (`330aec38`).
 Ersätter T10-handoffens mål `/control/layers` och `layered` som spelstandard ikväll.
 
+## Uppdatering efter Jakobs fortsättningsuppdrag till Codex
+
+Jakob vill nu fortsätta konsolideringen och göra tre val till standardmodellen.
+Hans svar: behåll Astrids godkända klipp som kompatibla fullbildslager; frilagda
+paket ska senare kunna få tre självständiga val. Ursprungliga etapper nedan är
+historik, inte en ny tillståndsfråga.
+
+| Del | Levererad förändring | Kvar / verifieringsgräns |
+|---|---|---|
+| A1/A2 | Tre huvudingångar i Studio; specialverktyg i egen grupp och i preview | Specialverktygen är fortfarande synliga. Bibliotekets uppladdning/namnbyte flyttades inte bort |
+| A3 | Privat lagerbibliotek för bild/video, säkra prepare/commit och Blob-paths | Verifierat med isolerade testlager; verklig provider-uppladdning ej klickad |
+| A4 | Samma sparade lane i Preview och Lanes, tre väljare, synlighet och exakt klipprov | Fullbild kan inte friläggas av väljaren. Paow/Dragge kvar som separat prov |
+| A5 | Frysta presentationsval och refererade filer i bolagspaket; begränsade partner-val; JSON-export | Export är manifest. Spelmotorns regler/klippbank fryses inte av detta paket |
+| A6 | Befintliga fyra dealers bevaras | Dealer-CRUD ej implementerad |
+| A7 | Nya lane-profiler har trelager som redigeringsmodell | T9 är fortsatt opt-in; frilagda dealerpaket saknas i den ordinarie produktionsvägen |
+| A8 | Befintlig guide, terminologi och JOHN-HANDOFF uppdateras | Ingen ny tracker skapades |
+
+Uppladdningsmetadata ligger i projektets befintliga JSONB-dokument `layerAssets`,
+så ingen bild-MIME-migration i `media_records` infördes. Paketet ligger i
+`operator_packages.branding._scoutPresentation`, gzip/base64url + SHA-256 inom
+befintliga 8 KiB; hash är integritetskontroll, ingen signatur. Partnern får inte
+skriva den reserverade delen. Paketfrysningen gäller presentationen och dess
+lagertillgångar, inte spelutfall eller varje underliggande dealerklipp.
+
+Isolerat prov visade sparad revision efter omladdning och video Range 206.
+Webbläsarverktyget kunde läsa/visa editorn men klick fastnade före dispatch.
+Rehearsal för fyra dealers med två spelningar, verklig Blob/Neon-publicering
+och full partner/spelare-kedja är därför öppna acceptanspunkter.
+
+Min bedömning 1–10: produktmodellen **9**, samlad editor **8**, fryst paket/export
+**8**, självständiga lager i ordinarie spel **4**, produktionsacceptans **4**.
+Poängen är kvalitativa, inte procent färdigställande.
+
 ## Syfte (Jakobs modell)
 
 ```

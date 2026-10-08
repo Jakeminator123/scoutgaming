@@ -1,3 +1,4 @@
+import {publicPackageBranding,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
@@ -141,7 +142,8 @@ test('publishing lanes carries the operator branding, games and tables forward',
   assert.equal(body.package_revision, 2);
   assert.deepEqual(body.tables, ['t1']);
   const current = await direct.getCurrentPackage('sg-test');
-  assert.deepEqual(current.branding, { color: '#112233', name: 'North' });
+  assert.deepEqual(publicPackageBranding(current.branding), { color: '#112233', name: 'North' });
+  assert.equal(readPackagePresentation(current).projectRevision, body.presentation.projectRevision);
 });
 
 test('an empty project.lanes list accepts only the default mobile-phone lane', async () => {

@@ -19,14 +19,15 @@ export interface LegacyClipBinding { dealerId: DealerId; part: string; clipId: s
 export type OpenClawMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 export type LaneBackgroundMode = 'baked' | 'image' | 'video';
 export type LaneProbeMode = 'off' | 'shadow' | 'active';
-export type OperatorAdjustable = 'table.color' | 'background' | 'dealer' | 'branding';
+export type OperatorAdjustable = 'table.color' | 'table' | 'background' | 'dealer' | 'branding';
 export interface LaneBackgroundLayer { enabled: boolean; mode: LaneBackgroundMode; default: string | null; allowed: string[]; zones?: string[] }
 export interface LaneTableLayer { enabled: boolean; default: string | null; allowed: string[]; colors?: string[] }
 export interface LaneDealerLayer { enabled: boolean; default: string; allowed: string[] }
 export interface LaneProbe { mode: LaneProbeMode; model?: import('./probe-policy.mjs').ProbePolicy['model'] }
 export interface LaneIdle { frequencyPercent?: number; variants?: string[] }
-export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[]; probe?: LaneProbe; idle?: LaneIdle }
-export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; legacyClipPolicy?: LegacyClipBinding[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy; lanes?: StudioLane[]; clipLabels?: Record<string, string> }
+export interface LayerAsset { schemaVersion: 1; id: string; role: 'background' | 'table'; label: string; sha256: string; size: number; contentType: string; pathname: string; width: number; height: number }
+export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[]; renderer?: 'layered' | 'portrait-video'; probe?: LaneProbe; idle?: LaneIdle }
+export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; legacyClipPolicy?: LegacyClipBinding[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy; lanes?: StudioLane[]; layerAssets?: LayerAsset[]; clipLabels?: Record<string, string> }
 export interface PathDescriptor { path: string; label: string; category: TriggerCategory; kind: 'enum' | 'boolean' | 'number' | 'string' | 'array'; values?: Scalar[]; min?: number; max?: number; operators: PredicateOperator[] }
 export interface RuntimeCatalog { schemaVersion: 1; revision: string; sourceNote: string; triggerSources: {id: string; label: string; description: string; status: string}[]; events: (StudioEvent & {baselineVariantId: string; variants: {id: string; label: string; priority: number; when: {all: {path: string; op: PredicateOperator; value: Scalar | Scalar[]}[]}; assetId: string}[]})[]; assets: StudioAsset[] }
 export const DEALER_IDS: readonly DealerId[];

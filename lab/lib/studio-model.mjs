@@ -1,3 +1,4 @@
+import { validateLayerAsset } from '../../web/presentation-layers.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
@@ -23,7 +24,7 @@ export const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'acti
 export const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
 export const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 export const LANE_PROBE_MODES = Object.freeze(['off', 'shadow', 'active']);
-export const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
+export const OPERATOR_ADJUSTABLE = ['table.color', 'table', 'background', 'dealer', 'branding'];
 export const MAX_LANES = 32;
 // Same id rule as validateZones in lab/lib/zone-cloud-store.mjs. The lane stores ids only.
 const ZONE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
@@ -107,6 +108,7 @@ export function defaultPresentationLane() {
   return {
     id: 'mobile-phone',
     label: 'Mobile Phone Lane',
+    renderer: 'layered',
     dealers: ['astrid'],
     layers: {
       background: { enabled: true, mode: 'baked', default: null, allowed: [] },
@@ -126,10 +128,11 @@ function laneErrors(lanes, projectDealerIds) {
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
     // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle'])) return;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer'])) return;
     if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
     else if (ids.has(lane.id)) fail(`${at}.id`, `dubblerat ID ${lane.id}`);
     else ids.add(lane.id);
+    if (lane.renderer !== undefined && !['layered', 'portrait-video'].includes(lane.renderer)) fail(`${at}.renderer`, 'okänd renderare');
     const labelMessage = textError(lane.label, 80);
     if (labelMessage) fail(`${at}.label`, labelMessage);
     const laneDealers = new Set();
@@ -271,7 +274,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -373,6 +376,16 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   });
   for (const dealerId of DEALER_IDS) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
   if (Object.hasOwn(project, 'lanes')) errors.push(...laneErrors(project.lanes, dealerIds));
+  if (Object.hasOwn(project, 'layerAssets')) {
+    if (!Array.isArray(project.layerAssets) || project.layerAssets.length > 128) errors.push('layerAssets: högst 128 lagerfiler');
+    else {
+      const ids = new Set();
+      for (const asset of project.layerAssets) {
+        try { validateLayerAsset(asset); if (ids.has(asset.id)) throw new Error(); ids.add(asset.id); }
+        catch { errors.push('layerAssets: ogiltig eller dubblerad lagerfil'); }
+      }
+    }
+  }
   if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
   if (errors.length) throw new StudioValidationError(errors);
   return project;
