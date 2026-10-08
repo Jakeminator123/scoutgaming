@@ -17,13 +17,14 @@ The public surfaces are not feature-complete:
 | 3 | Player | [/play](https://www.scoutgaming.tech/play), [/play/profil](https://www.scoutgaming.tech/play/profil), [/play/historik](https://www.scoutgaming.tech/play/historik) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
 
 Staff pages share one template: Översikt `/control`, Dealers & klipp
-`/control/clips`, Händelser → klipp `/control/tree`, Klippbibliotek
-`/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events`,
-Agentmodeller `/control/openclaw`, Operatörschatt `/control/openclaw?tab=chat`,
-Administration `/control/administration`, Uppspelning `/control/activity`,
-Talgranskning `/control/probe` and Guide & hjälp `/control/guide`.
-`/control/operator-chat` redirects to the chat tab. `/control/backgrounds`
-redirects to `/control/zones`.
+`/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`,
+Händelser `/control/events` (overview without `?event=`, editor with it),
+Förhandsvisning `/control/preview`, Agentmodeller `/control/openclaw`,
+Operatörschatt `/control/openclaw?tab=chat`, Administration
+`/control/administration` with four deep links to its tabs, Uppspelning
+`/control/activity`, Probe `/control/probe` and Guide & hjälp `/control/guide`.
+`/control/tree` redirects to `/control/events` with its query. `/control/operator-chat`
+redirects to the chat tab. `/control/backgrounds` redirects to `/control/zones`.
 
 The Partnerportal is level 2. Operator staff sign in at `/partner/login` and see
 a scoped snapshot. Internal staff without `partner_session` still see the demo
@@ -55,7 +56,7 @@ node lab/start.mjs --offline --no-open
 `node lab/start.mjs --no-open` starts the existing connected profile.
 Private saved projects, history and players now live
 in `lab/data`, after a verified backup outside Git. See the restoration guide.
-In the cloud the general editor is `/control/tree`. Key names and locations
+In the cloud the general editor is `/control/events`. Key names and locations
 (no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 

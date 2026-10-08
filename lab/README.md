@@ -87,7 +87,7 @@ En ny hash är inte ett visuellt godkännande.
 
 - **Guide (`/guide`):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
-- **Händelser → klipp (`/control/tree`):** välj dealer och presentationssätt: idle/bakgrund,
+- **Händelser, översikten (`/control/events` utan `?event=`; `/control/tree` omdirigerar dit):** välj dealer och presentationssätt: idle/bakgrund,
   engångshandling, exakt tal eller tur/resultat. De fyra grupperna är en vy
   över befintliga sex källtyper och 16 eventgrupper. Vald nod visar exempeldata,
   förväntade källfält och saknade uppgifter, separat från testkontext och

@@ -120,6 +120,27 @@ Underagenter M1 (CI) och M2 (UI) körde parallellt; orkestratorn granskade och r
 | 47 | Orphan-undantag: `test/fuzz-blackjack.mjs` är ett manuellt fuzz-skript mot klientmodulen `web/public/blackjack.mjs` (T1–T3-eran) och räknade 85 820 invariantbrott på 12 s. Servern äger korten (`web/shoe-game.mjs`), så det är inte produktionsrisk, men skriptet är antingen föråldrat eller pekar på något | A: undantag nu, egen granskning senare. B: ta bort skriptet | **A**; Jakob avgör om skriptet ska uppdateras mot `shoe-game` eller tas bort | Öppet |
 | 48 | Commiten för punkt 4 (cache) tog med raden `Orphan tests` i `croupier.yml` eftersom filen stagades hel; skriptet kommer i nästa commit. Mellancommiten är inte CI-ren ensam, pushen som helhet är det | – | Till kännedom | – |
 
+## Rader 49–53, 8 oktober 02:49: Jakob "kör enligt dina rekommendationer, bortse från John om det blockar"
+
+| # | Beslut | Rekommendation som gäller | Status |
+|---|---|---|---|
+| 49 | J1 lane-modell: flera dealers per lane; grundprofil = standardpaket som kopieras | Ja | Lane-typ i projektet i natt (`random/k2-forslag-2026-10-08.md`) |
+| 50 | J2 tre lager: datamodell nu mot dagens klipp; lagerspelaren från `test-video-jakob` när Jakob säger klart; ingen ny media i K | Alt 3 | Grenens lagerprov får `/control/preview` |
+| 51 | J3 spelarens val inom paketets tillåtna; webbläsaren först | Ja | Väntar på lane-export |
+| 52 | J4 rad 37 en sida och 17b menyraden Probe, utan att vänta på John | A + omdöpning | I natt |
+| 53 | J5 `test/fuzz-blackjack.mjs` skrivs om mot `web/shoe-game.mjs` | Skriv om | Gjort natt 8 okt; 100 000 rundor gröna, inget regelbrott i motorn |
+
+## Rader 54–59, natten 8 oktober: underagenternas Tveksamt, avgjort av orkestratorn
+
+| # | Tveksamt | Beslut | Varför |
+|---|---|---|---|
+| 54 | `project.lanes` läggs till av `normalizeProject`/`createSeedProject`, inte av `validateProject`; `project-store` normaliserar inte vid läsning, så ett sparat projekt utan `lanes` saknar nyckeln tills normalize körs | Acceptera nu | Ingen läsare finns; lane-exporten (nästa pass) normaliserar vid läsning. Tak: 32 lanes, 4 dealers per lane (= projektets schema), 2048 `clipLabels` |
+| 55 | Bokmärket `/control/tree?event=` öppnar redigeraren, inte trädet med noden markerad; översiktens nodval överlever inte omladdning | Acceptera | Samma data, ett klick bort; inget som fanns försvinner |
+| 56 | Menyraden Administration ligger kvar bredvid de fyra djuplänkarna; Partnernycklar och adminflikens Talgranskning saknar egen menyrad | Acceptera | Rad 12 B sa fyra etiketter; sidan utan parameter ska fortfarande nås. John får ta bort raden om han vill |
+| 57 | `lab/public/preview/**` hade blivit publika filer av ogranskat material (Paow, Dragge) | Bytt till sessionsskyddad `/preview/[...path]` före commit | Medie-acceptansreglerna; ingenting ogodkänt publikt |
+| 58 | Lokal sidvakt svarar 403 på `Sec-Fetch-Dest: iframe`; same-origin-ramen får dest borttagen före `authorizeUiPage`, cross-site stoppas | Acceptera | Sessionskontrollen körs ändå; samma loopback-undantag lokalt som övriga sidor |
+| 59 | `command(newGame(), {op:'start'}, 100)` utan request-id kastar men sätter `g.shoe` i minnet (`version` 0); `web/native-table.mjs:42-43` rullar tillbaka transaktionen | Inget ingrepp i motorn | Sparat tillstånd ändras inte; fuzzen kräver oförändrat objekt först när skon finns |
+
 ## Avgjort av orkestratorn, till kännedom
 
 | Tveksamt | Vad som gjordes |
