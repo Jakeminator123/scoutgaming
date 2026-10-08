@@ -141,7 +141,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Ta bort `LLM_LOGIN_UN`/`LLM_LOGIN_PW` ur Vercel (ingen kod läser dem; panelgranskning antecknad i `docs/ENVIRONMENT-VARIABLES.md`) | väntar |
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
 | Jakob | Kör promptfilerna L8, C5b, N3 i egna agenter | klart 12:05; alla tre levererade och mergade |
-| Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar |
+| Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar. Orkestratorn kan inte köra den: spel-Neon är marketplace-Neon under Vercel, inte bland de fem MCP-synliga projekten, och `CROUPIER_GAME_DATABASE_URL` är sensitive på Vercel (rätt). Väg: Vercel → scoutgaming → Storage → Neon → Open in Neon → SQL Editor |
+| Jakob | Vercel-projektet flyttat till team `scoutgaming` 8 okt ~16:00 | klart: två prod-deployer byggda under teamet, 44 env-nycklar följde med, repo omlänkat (`.vercel/project.json` team_Scxorb9…). Dokumentationens "projekt `scoutgaming`" stämmer fortfarande |
 | Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | deploy 12:45 verifierad av orkestratorn (`/api/profile` 401, `/api/operators/sg-test` läser Neon). **Ny deploy behövs** för `ac936377` (N3.4 `gameChoices`) och `5912800e`; Vercel tar sig själv. `006` inte körd |
 | Jakob | Efter Render-deploy: `/control/lanes` → Bolag → "Skapa saknade standardroller" för sg-test → lägg till dig som partner-admin | väntar |
 | Jakob | Starta `random/prompt-T9-lagerspelare-bakom-flagga.md` (Opus/Codex) i egen chatt | väntar |
