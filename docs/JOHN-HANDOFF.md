@@ -1,5 +1,42 @@
 # Aktuell handoff — Scoutgaming
 
+## 8 oktober 2026 kväll: övertagande och isolerat Nora-kompositionsprov
+
+Övertagandet återläste lokal och remote main `cad8f6e6` samt GitHub-körning
+`37832989977` (success). Vercelprojekt `scoutgaming` i team `scoutgaming` har
+production target READY på samma SHA; www-aliaset pekar på
+`dpl_4J12tc6ncJg2swjdWKZafFpy7kse`. www svarar 200 och apex 308 till www.
+Render `/__cloud/health` svarar 200/ok men lämnar ingen commit-version.
+GitGuardian-suite är queued; incidentlistan är fortfarande `not-read`.
+
+Jakob gav tre lokala testfiler: bakgrundsvideo (1920×1080), Noras gröna
+dealervideo (1080×1920) och ett transparent PNG-bord (1440×2560).
+Videorna är H.264, 24 fps och 10,042 s utan ljudspår. Byte-identiska kopior
+ligger i Git-ignorerade `lab/preview-build/nora-test/media/`; originalen och
+godkända produktmedier ändrades inte. En lokal testvy använder den befintliga
+WebGL-kompositorn med grön nyckling, mobil 9:16, desktop 16:9 och individuella
+lagerkontroller. Båda videorna spelar och loopar; bordets alpha visar 75,1 %
+helt transparenta pixlar. Lager av/på och schackrutebakgrund har granskats i
+webbläsaren. Bilder finns privat i `lab/data/qa-composition-nora-20261008/`.
+Testvyn är inget aktiverat dealerpaket: handmask, kortkalibrering, repliker och
+acceptans i den faktiska spelaren återstår.
+
+Ett isolerat lokalt produkt-/labbpar behålls för Jakobs interaktiva prov:
+`http://127.0.0.1:4192/preview/nora-test/index.html`. Det startades med
+`node lab/start.mjs --offline --no-open --skip-build`, tom testdatabas och
+externa tjänster avstängda. Ingen ny server får startas parallellt.
+
+Astrids goodluck slutförde två repetitionplays i den gemensamma spelaren.
+Vera-/Amira-query i samma offline-fixtur räknas däremot inte som acceptans av
+dessa dealers: odekorerad HTML saknar serverns lane-dataset och klienten
+faller tillbaka till `mobile-phone`/Astrid/local. Produktionslanens
+Astridbegränsning är avsiktlig; fyradealeracceptansen kvarstår.
+Produktionsprojektet visar dessutom standardförslaget mobile-phone utan en
+uttryckligen sparad lane och med tomt lagerbibliotek. JSON-exportknappen
+startar en nedladdning på 934 byte, men IAB avbryter den före mottagna byte.
+Själva nedladdningsfilen och export → partner → spelare är därför fortfarande
+overifierade. Inga produktionspaket eller konton ändrades i provet.
+
 ## 8 oktober 2026 kväll: T10 — tre val och frysta lane-paket
 
 Produktkoden levererades på main som `813c25a6`; full lokal commit-hook passerade
