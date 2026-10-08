@@ -177,8 +177,11 @@ export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
     let catalogue;
     try { catalogue = validateGameLanes(lanes); }
     catch { throw Error('Invalid game presentation'); }
+    // A known lane id must match. A saved lane with its own id (Lägg till lane)
+    // was validated by the server; its dealer must still have a portrait lane here.
     const lane = catalogue.find(row => row.id === dataset.gameLane);
-    if (!lane || lane.renderer !== 'portrait-video' || lane.dealer !== dataset.gameDealer) throw Error('Invalid game presentation');
+    if (lane ? lane.renderer !== 'portrait-video' || lane.dealer !== dataset.gameDealer
+      : !catalogue.some(row => row.renderer === 'portrait-video' && row.dealer === dataset.gameDealer)) throw Error('Invalid game presentation');
   }
   const selection = { lane: dataset.gameLane, dealer: dataset.gameDealer, presentation: dataset.gamePresentation };
   const packaged = dataset.gamePackageRevision !== undefined || dataset.gameBranding !== undefined;

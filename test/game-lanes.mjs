@@ -104,6 +104,14 @@ test('Dragge and Paow play only on their own portrait lanes and are never indexe
     assert.deepEqual(gameLaneFromDocument({gameLane:lane,gameDealer:dealer,gamePresentation:'local'}),{lane,dealer,presentation:'local'});
     assert.throws(() => gameLaneFromDocument({gameLane:'mobile-phone',gameDealer:dealer,gamePresentation:'local'}));
     assert.throws(() => gameLaneFromDocument({gameLane:'legacy',gameDealer:dealer,gamePresentation:'original'}));
+    // Administration's Lägg till lane copies the dealer's code lane under a new id.
+    const custom = {...GAME_LANES.find(row => row.id === lane), id:`${dealer}-vip`, label:`${dealer} VIP`};
+    const saved = gameLaneConfiguration({gameLanes:[GAME_LANES[0],custom],gameLane:custom.id});
+    const html = decorateGameEntryHtml('<html>',env,gameLaneSelection('',saved.gameLane,saved.gameLanes));
+    const attribute = name => new RegExp(`data-game-${name}="([^"]*)"`).exec(html)?.[1];
+    assert.deepEqual(gameLaneFromDocument({gameLane:attribute('lane'),gameDealer:attribute('dealer'),gamePresentation:attribute('presentation')}),
+      {lane:custom.id,dealer,presentation:'local'});
+    assert.throws(() => gameLaneFromDocument({gameLane:custom.id,gameDealer:'vera',gamePresentation:'local'}));
     const serverLane = GAME_LANES.find(row => row.id === lane);
     assert.deepEqual(gameChoicesForLane([], lane, serverLane).dealers, []);
     const projectLane = {id:lane,layers:{dealer:{default:dealer,allowed:[dealer,'astrid']}}};
