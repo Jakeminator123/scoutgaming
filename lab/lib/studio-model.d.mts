@@ -18,11 +18,14 @@ export interface MediaFamilyPolicy { familyId: string; variants: MediaVariantPol
 export interface LegacyClipBinding { dealerId: DealerId; part: string; clipId: string }
 export type OpenClawMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 export type LaneBackgroundMode = 'baked' | 'image' | 'video';
+export type LaneProbeMode = 'off' | 'shadow' | 'active';
 export type OperatorAdjustable = 'table.color' | 'background' | 'dealer' | 'branding';
-export interface LaneBackgroundLayer { enabled: boolean; mode: LaneBackgroundMode; default: string | null; allowed: string[] }
-export interface LaneTableLayer { enabled: boolean; default: string | null; allowed: string[] }
+export interface LaneBackgroundLayer { enabled: boolean; mode: LaneBackgroundMode; default: string | null; allowed: string[]; zones?: string[] }
+export interface LaneTableLayer { enabled: boolean; default: string | null; allowed: string[]; colors?: string[] }
 export interface LaneDealerLayer { enabled: boolean; default: string; allowed: string[] }
-export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[] }
+export interface LaneProbe { mode: LaneProbeMode; model?: import('./probe-policy.mjs').ProbePolicy['model'] }
+export interface LaneIdle { frequencyPercent?: number; variants?: string[] }
+export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[]; probe?: LaneProbe; idle?: LaneIdle }
 export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; legacyClipPolicy?: LegacyClipBinding[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy; lanes?: StudioLane[]; clipLabels?: Record<string, string> }
 export interface PathDescriptor { path: string; label: string; category: TriggerCategory; kind: 'enum' | 'boolean' | 'number' | 'string' | 'array'; values?: Scalar[]; min?: number; max?: number; operators: PredicateOperator[] }
 export interface RuntimeCatalog { schemaVersion: 1; revision: string; sourceNote: string; triggerSources: {id: string; label: string; description: string; status: string}[]; events: (StudioEvent & {baselineVariantId: string; variants: {id: string; label: string; priority: number; when: {all: {path: string; op: PredicateOperator; value: Scalar | Scalar[]}[]}; assetId: string}[]})[]; assets: StudioAsset[] }
@@ -33,6 +36,7 @@ export const MAX_ALTERNATIVES: number;
 export const LANE_ID: RegExp;
 export const RESERVED_LANE_IDS: ReadonlySet<string>;
 export const BACKGROUND_MODES: ReadonlySet<LaneBackgroundMode>;
+export const LANE_PROBE_MODES: readonly LaneProbeMode[];
 export const OPENCLAW_PHASES: readonly ['idle', 'deal', 'reveal', 'speak', 'probe'];
 export const OPENCLAW_MODES: ReadonlySet<OpenClawMode>;
 export const OPERATOR_ADJUSTABLE: readonly OperatorAdjustable[];

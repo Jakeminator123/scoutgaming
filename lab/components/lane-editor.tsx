@@ -1,14 +1,19 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import {
   BACKGROUND_MODES,
+  LANE_PROBE_MODES,
   OPENCLAW_MODES,
   OPENCLAW_PHASES,
   OPERATOR_ADJUSTABLE,
   defaultPresentationLane,
   validateProject,
   type LaneBackgroundMode,
+  type LaneIdle,
+  type LaneProbe,
+  type LaneProbeMode,
   type OpenClawMode,
   type OperatorAdjustable,
   type StudioLane,
@@ -51,6 +56,13 @@ export function replaceLane(project: StudioProject, id: string, lane: StudioLane
 
 function linesOf(value: string) {
   return value.split('\n').map(item => item.trim()).filter(item => item.length > 0);
+}
+
+function writeIdle(draft: StudioLane, change: (idle: LaneIdle) => void) {
+  const idle: LaneIdle = { ...draft.idle };
+  change(idle);
+  if (idle.frequencyPercent === undefined && idle.variants === undefined) delete draft.idle;
+  else draft.idle = idle;
 }
 
 function layerText(lane: StudioLane) {
@@ -152,7 +164,11 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
   const [backgroundAllowed, setBackgroundAllowed] = useState(lane.layers.background.allowed.join('\n'));
   const [tableDefault, setTableDefault] = useState(lane.layers.table.default ?? '');
   const [tableAllowed, setTableAllowed] = useState(lane.layers.table.allowed.join('\n'));
+  const [zonesText, setZonesText] = useState((lane.layers.background.zones ?? []).join('\n'));
+  const [draftColor, setDraftColor] = useState('#1b4332');
+  const [idleVariants, setIdleVariants] = useState((lane.idle?.variants ?? []).join('\n'));
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const tableColors = lane.layers.table.colors ?? [];
 
   function editLane(change: (draft: StudioLane) => void, accept?: () => void) {
     const next = structuredClone(lane);
@@ -213,6 +229,17 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           editLane(draft => { draft.layers.background.allowed = linesOf(value); }, () => setBackgroundAllowed(value));
         }} />
       </label>
+      <label className={styles.field}>Zoner, en per rad
+        <textarea value={zonesText} rows={4} aria-describedby={`lane-zones-help-${lane.id}`} onChange={event => {
+          const value = event.target.value;
+          editLane(draft => {
+            const zones = linesOf(value);
+            if (zones.length === 0) delete draft.layers.background.zones;
+            else draft.layers.background.zones = zones;
+          }, () => setZonesText(value));
+        }} />
+      </label>
+      <p id={`lane-zones-help-${lane.id}`} className={styles.help}>Zon-id från Bakgrundszoner</p>
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Bord</legend>
@@ -229,6 +256,25 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           editLane(draft => { draft.layers.table.allowed = linesOf(value); }, () => setTableAllowed(value));
         }} />
       </label>
+      <div className={styles.addColor}>
+        <label className={styles.field}>Bordsfärger
+          <input type="color" value={draftColor} aria-label="Ny bordsfärg" onChange={event => setDraftColor(event.target.value)} />
+        </label>
+        <button type="button" className="sg-btn sg-btn-secondary" onClick={() => editLane(draft => {
+          draft.layers.table.colors = [...(draft.layers.table.colors ?? []), draftColor];
+        })}>Lägg till färg</button>
+      </div>
+      {tableColors.length > 0 ? <ul className={styles.swatches}>
+        {tableColors.map(color => <li className={styles.swatch} key={color}>
+          <span className={styles.chip} style={{ background: color }} />
+          <span>{color}</span>
+          <button type="button" className="sg-btn sg-btn-ghost" onClick={() => editLane(draft => {
+            const colors = (draft.layers.table.colors ?? []).filter(item => item !== color);
+            if (colors.length === 0) delete draft.layers.table.colors;
+            else draft.layers.table.colors = colors;
+          })}>Ta bort</button>
+        </li>)}
+      </ul> : null}
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Dealer</legend>
@@ -257,6 +303,59 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           {[...OPENCLAW_MODES].map(mode => <option key={mode} value={mode}>{mode}</option>)}
         </select>
       </label>)}
+    </fieldset>
+    <fieldset className={styles.group}>
+      <legend>Probe</legend>
+      <label className={styles.field}>Läge
+        <select value={lane.probe?.mode ?? ''} onChange={event => {
+          const mode = event.target.value;
+          editLane(draft => {
+            if (!mode) { delete draft.probe; return; }
+            const next: LaneProbe = { mode: mode as LaneProbeMode };
+            if (draft.probe?.model) next.model = draft.probe.model;
+            draft.probe = next;
+          });
+        }}>
+          <option value="">Följer OpenClaw</option>
+          {LANE_PROBE_MODES.map(mode => <option key={mode} value={mode}>{mode}</option>)}
+        </select>
+      </label>
+      <label className={styles.field}>Modell
+        <select value={lane.probe?.model ?? ''} disabled={!lane.probe} onChange={event => {
+          const model = event.target.value;
+          editLane(draft => {
+            if (!draft.probe) return;
+            if (!model) delete draft.probe.model;
+            else draft.probe.model = model as LaneProbe['model'];
+          });
+        }}>
+          <option value="">Ingen egen modell</option>
+          {PROBE_MODELS.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
+        </select>
+      </label>
+      <p className={styles.help}>Saknas probe gäller OpenClaw-läget för probe.</p>
+    </fieldset>
+    <fieldset className={styles.group}>
+      <legend>Idle</legend>
+      <label className={styles.field}>Idle-frekvens
+        <input type="number" min={0} max={100} step={1} inputMode="numeric" value={lane.idle?.frequencyPercent ?? ''} onChange={event => {
+          const raw = event.target.value;
+          editLane(draft => writeIdle(draft, idle => {
+            if (raw === '') delete idle.frequencyPercent;
+            else idle.frequencyPercent = Number(raw);
+          }));
+        }} />
+      </label>
+      <label className={styles.field}>Varianter, en per rad
+        <textarea value={idleVariants} rows={4} onChange={event => {
+          const value = event.target.value;
+          editLane(draft => writeIdle(draft, idle => {
+            const variants = linesOf(value);
+            if (variants.length === 0) delete idle.variants;
+            else idle.variants = variants;
+          }), () => setIdleVariants(value));
+        }} />
+      </label>
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Operatören får justera</legend>

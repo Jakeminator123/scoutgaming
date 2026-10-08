@@ -6042,11 +6042,19 @@
     {
       "id": "operator-package-read",
       "name": "Operatörspaket läst av spelmotorn",
-      "status": "planned",
-      "plannedRef": "L8",
-      "evidence": "Planerad",
+      "evidence": "Kodläst i 19f8073a. Jakob återstartade Render 12:45. Beteendet är inte live-verifierat.",
       "durable": true,
-      "authoritativeFor": "Spelmotorn läser operator_packages. Ingen läsare ännu."
+      "purpose": "Renders /blackjack?operator= läser operator_packages och begränsar lane och dealer. 30 s cache. Okänd eller suspenderad slug är 404.",
+      "limitation": "Bara Renders /blackjack. Vercels /play/blackjack läser inte paketet.",
+      "authoritativeFor": "Renders /blackjack?operator= läser operator_packages och begränsar lane och dealer.",
+      "sources": [
+        {
+          "path": "web/storage/operator-package-reader.mjs"
+        },
+        {
+          "path": "web/game-entry-operator.mjs"
+        }
+      ]
     }
   ],
   "tests": [

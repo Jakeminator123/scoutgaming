@@ -396,7 +396,7 @@
         "lab/components/control-lanes-page.tsx",
         "lab/lib/operator-package-api.mjs"
       ],
-      "limitation": "publishPackage writes operator_packages. The game engine does not read the package yet (L8).",
+      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
       "tests": [
         "lab/test/control-lanes-page.test.mjs",
         "lab/test/operator-package-api.test.mjs"
@@ -409,11 +409,15 @@
         "/play"
       ],
       "label": "Operatörskontext i lobbyn",
-      "serving": "Planerad",
+      "serving": "Vercel service web / Next, project scoutgaming.",
       "access": "Spelare.",
-      "status": "planned",
-      "plannedRef": "N3.2",
-      "purpose": "Lobbyn visar vilket bolag spelaren hör till."
+      "sources": [
+        "apps/croupier-frontend/components/player/player-lobby-operator.tsx",
+        "apps/croupier-frontend/lib/player-operator.mjs",
+        "web/public-operators.mjs"
+      ],
+      "purpose": "Lobbyn visar Spelar hos från ?operator= eller localStorage via GET /api/operators/<slug>.",
+      "limitation": "Bara lobbyn. Vercels /play/blackjack begränsar inte lane eller dealer till paketet."
     },
     {
       "id": "player-choice",
@@ -3950,7 +3954,7 @@
       "handlerFile": "lab/app/control/lanes/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
-      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo with the Neon pool (connect required). Game does not read the package.",
+      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo with the Neon pool (connect required). Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
       "groupId": "studio-tools",
       "sources": [
         {

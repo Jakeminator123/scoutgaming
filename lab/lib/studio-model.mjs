@@ -2,7 +2,7 @@ import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
-import { createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
+import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
 import { applyLegacyStandardVariants, LEGACY_VARIANT_DEALERS } from '../../presentation-runtime/legacy-standard-variants.mjs';
 
@@ -22,8 +22,13 @@ export const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype'
 export const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 export const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
 export const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
+export const LANE_PROBE_MODES = Object.freeze(['off', 'shadow', 'active']);
 export const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
 export const MAX_LANES = 32;
+// Same id rule as validateZones in lab/lib/zone-cloud-store.mjs. The lane stores ids only.
+const ZONE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
+const TABLE_COLOR = /^#[0-9a-f]{6}$/;
+const PROBE_MODEL_IDS = new Set(PROBE_MODELS.map(model => model.id));
 const MAX_CLIP_LABELS = 2048;
 const VALUE_OPS = ['eq', 'ne', 'in', 'exists'];
 const NUMBER_OPS = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'exists'];
@@ -61,9 +66,10 @@ const canonical = value => JSON.stringify(value, function (key, value) {
 });
 const clone = value => structuredClone(value);
 const textError = (value, max) => typeof value !== 'string' || !value.trim() || value.length > max ? `ska vara text med 1–${max} tecken` : '';
-const exactFields = (value, allowed, at, fail) => {
+const exactFields = (value, allowed, at, fail, optional = []) => {
   if (!record(value)) { fail(at, 'ska vara ett objekt'); return false; }
-  for (const key of Object.keys(value)) if (!allowed.includes(key)) fail(at, `okänt fält ${key}`);
+  const known = new Set([...allowed, ...optional]);
+  for (const key of Object.keys(value)) if (!known.has(key)) fail(at, `okänt fält ${key}`);
   for (const key of allowed) if (!Object.hasOwn(value, key)) fail(at, `fältet ${key} saknas`);
   return true;
 };
@@ -73,6 +79,24 @@ const stringList = (value, at, max, fail) => {
   value.forEach((item, index) => {
     const message = textError(item, max);
     if (message) fail(`${at}[${index}]`, message);
+    else if (seen.has(item)) fail(`${at}[${index}]`, `dubblerat värde ${item}`);
+    else seen.add(item);
+  });
+};
+const zoneIdList = (value, at, fail) => {
+  if (!Array.isArray(value) || value.length > 32) { fail(at, 'ska vara en lista med högst 32 zon-id'); return; }
+  const seen = new Set();
+  value.forEach((item, index) => {
+    if (typeof item !== 'string' || !ZONE_ID.test(item)) fail(`${at}[${index}]`, 'ska vara ett zon-id');
+    else if (seen.has(item)) fail(`${at}[${index}]`, `dubblerat värde ${item}`);
+    else seen.add(item);
+  });
+};
+const colorList = (value, at, fail) => {
+  if (!Array.isArray(value) || value.length > 16) { fail(at, 'ska vara en lista med högst 16 färger'); return; }
+  const seen = new Set();
+  value.forEach((item, index) => {
+    if (typeof item !== 'string' || !TABLE_COLOR.test(item)) fail(`${at}[${index}]`, 'ska vara en färg #rrggbb');
     else if (seen.has(item)) fail(`${at}[${index}]`, `dubblerat värde ${item}`);
     else seen.add(item);
   });
@@ -101,7 +125,8 @@ function laneErrors(lanes, projectDealerIds) {
   const ids = new Set();
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail)) return;
+    // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle'])) return;
     if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
     else if (ids.has(lane.id)) fail(`${at}.id`, `dubblerat ID ${lane.id}`);
     else ids.add(lane.id);
@@ -118,7 +143,7 @@ function laneErrors(lanes, projectDealerIds) {
     });
     if (exactFields(lane.layers, ['background', 'table', 'dealer'], `${at}.layers`, fail)) {
       const background = lane.layers.background;
-      if (exactFields(background, ['enabled', 'mode', 'default', 'allowed'], `${at}.layers.background`, fail)) {
+      if (exactFields(background, ['enabled', 'mode', 'default', 'allowed'], `${at}.layers.background`, fail, ['zones'])) {
         if (typeof background.enabled !== 'boolean') fail(`${at}.layers.background.enabled`, 'ska vara true eller false');
         if (!BACKGROUND_MODES.has(background.mode)) fail(`${at}.layers.background.mode`, 'ska vara baked, image eller video');
         if (background.default !== null) {
@@ -126,15 +151,17 @@ function laneErrors(lanes, projectDealerIds) {
           if (message) fail(`${at}.layers.background.default`, message);
         }
         stringList(background.allowed, `${at}.layers.background.allowed`, 200, fail);
+        if (Object.hasOwn(background, 'zones')) zoneIdList(background.zones, `${at}.layers.background.zones`, fail);
       }
       const table = lane.layers.table;
-      if (exactFields(table, ['enabled', 'default', 'allowed'], `${at}.layers.table`, fail)) {
+      if (exactFields(table, ['enabled', 'default', 'allowed'], `${at}.layers.table`, fail, ['colors'])) {
         if (typeof table.enabled !== 'boolean') fail(`${at}.layers.table.enabled`, 'ska vara true eller false');
         if (table.default !== null) {
           const message = textError(table.default, 40);
           if (message) fail(`${at}.layers.table.default`, message);
         }
         stringList(table.allowed, `${at}.layers.table.allowed`, 40, fail);
+        if (Object.hasOwn(table, 'colors')) colorList(table.colors, `${at}.layers.table.colors`, fail);
       }
       const dealer = lane.layers.dealer;
       if (exactFields(dealer, ['enabled', 'default', 'allowed'], `${at}.layers.dealer`, fail)) {
@@ -162,6 +189,14 @@ function laneErrors(lanes, projectDealerIds) {
         else if (seen.has(item)) fail(`${at}.operatorAdjustable[${itemIndex}]`, `dubblerat ID ${item}`);
         else seen.add(item);
       });
+    }
+    if (Object.hasOwn(lane, 'probe') && exactFields(lane.probe, ['mode'], `${at}.probe`, fail, ['model'])) {
+      if (Object.hasOwn(lane.probe, 'mode') && !LANE_PROBE_MODES.includes(lane.probe.mode)) fail(`${at}.probe.mode`, 'ska vara off, shadow eller active');
+      if (Object.hasOwn(lane.probe, 'model') && !PROBE_MODEL_IDS.has(lane.probe.model)) fail(`${at}.probe.model`, 'okänd modell');
+    }
+    if (Object.hasOwn(lane, 'idle') && exactFields(lane.idle, [], `${at}.idle`, fail, ['frequencyPercent', 'variants'])) {
+      if (Object.hasOwn(lane.idle, 'frequencyPercent') && (!Number.isInteger(lane.idle.frequencyPercent) || lane.idle.frequencyPercent < 0 || lane.idle.frequencyPercent > 100)) fail(`${at}.idle.frequencyPercent`, 'ska vara ett heltal 0–100');
+      if (Object.hasOwn(lane.idle, 'variants')) stringList(lane.idle.variants, `${at}.idle.variants`, 200, fail);
     }
   });
   return errors;

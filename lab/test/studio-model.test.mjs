@@ -9,6 +9,7 @@ import {
   StudioValidationError, isAssetCompatible, createSeedProject as createStudioSeed,
   normalizeProject, defaultPresentationLane
 } from '../lib/studio-model.mjs';
+import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 
 test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {
@@ -262,6 +263,21 @@ test('seed is valid with the default lane and a saved project without lanes stay
   assert.equal(schema.required.includes('clipLabels'), false);
   assert.deepEqual(schema.$defs.openClawMode.enum, ['off', 'rules', 'random', 'shadow', 'active']);
   assert.deepEqual(schema.$defs.laneBackground.properties.mode.enum, ['baked', 'image', 'video']);
+  assert.equal(schema.$defs.lane.required.includes('probe'), false);
+  assert.equal(schema.$defs.lane.required.includes('idle'), false);
+  assert.equal(schema.$defs.laneBackground.required.includes('zones'), false);
+  assert.equal(schema.$defs.laneTable.required.includes('colors'), false);
+  assert.equal(schema.$defs.laneBackground.properties.zones.maxItems, 32);
+  assert.equal(schema.$defs.laneBackground.properties.zones.items.pattern, '^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$');
+  assert.equal(schema.$defs.laneTable.properties.colors.maxItems, 16);
+  assert.equal(schema.$defs.laneTable.properties.colors.items.pattern, '^#[0-9a-f]{6}$');
+  assert.deepEqual(schema.$defs.laneProbe.required, ['mode']);
+  assert.deepEqual(schema.$defs.laneProbe.properties.mode.enum, ['off', 'shadow', 'active']);
+  assert.deepEqual(schema.$defs.laneProbe.properties.model.enum, PROBE_MODELS.map(model => model.id));
+  assert.equal(Object.hasOwn(schema.$defs.laneIdle, 'required'), false);
+  assert.equal(schema.$defs.laneIdle.properties.frequencyPercent.minimum, 0);
+  assert.equal(schema.$defs.laneIdle.properties.frequencyPercent.maximum, 100);
+  assert.equal(schema.$defs.laneIdle.properties.variants.maxItems, 32);
   for (const key of Object.keys(seedDocument)) assert.ok(schema.properties[key], key);
   assert.equal(Object.hasOwn(seedDocument, 'lanes'), false);
   const raw = structuredClone(seedDocument);

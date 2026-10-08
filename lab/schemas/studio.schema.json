@@ -661,7 +661,9 @@
           "maxItems": 4,
           "uniqueItems": true,
           "items": { "enum": ["table.color", "background", "dealer", "branding"] }
-        }
+        },
+        "probe": { "$ref": "#/$defs/laneProbe" },
+        "idle": { "$ref": "#/$defs/laneIdle" }
       }
     },
     "laneLayers": {
@@ -682,7 +684,14 @@
         "enabled": { "type": "boolean" },
         "mode": { "enum": ["baked", "image", "video"] },
         "default": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
-        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "zones": {
+          "description": "Optional zone ids from the cloud zone store. The documents themselves stay outside the project.",
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$" }
+        }
       }
     },
     "laneTable": {
@@ -692,7 +701,14 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "default": { "type": ["string", "null"], "minLength": 1, "maxLength": 40 },
-        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 40 } }
+        "allowed": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 40 } },
+        "colors": {
+          "description": "Optional table colors the lane allows, lowercase #rrggbb.",
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^#[0-9a-f]{6}$" }
+        }
       }
     },
     "laneDealer": {
@@ -718,6 +734,30 @@
       }
     },
     "openClawMode": { "enum": ["off", "rules", "random", "shadow", "active"] },
+    "laneProbe": {
+      "description": "Optional per-lane probe. When the object is absent, openclaw.probe applies.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["off", "shadow", "active"] },
+        "model": { "enum": ["gateway-default", "gpt-5.4-mini", "gpt-6-luna", "gpt-5.6-terra"] }
+      }
+    },
+    "laneIdle": {
+      "description": "Optional idle baseline for the lane. No game reader yet.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frequencyPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "variants": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    },
     "mediaFamilyPolicy": {
       "type": "object", "additionalProperties": false, "required": ["familyId", "variants"],
       "properties": {

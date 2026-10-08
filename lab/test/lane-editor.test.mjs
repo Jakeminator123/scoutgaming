@@ -176,3 +176,47 @@ test('the suggestion row separates its values and the page keeps one primary but
   }));
   assert.equal(html.match(/sg-btn-primary/g).length, 1);
 });
+
+test('the editor shows zones, colors, probe and idle, and the page keeps one lime button', () => {
+  const project = createSeedProject();
+  const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project, onEdit() {} }));
+  assert.match(editorHtml, /Zon-id från Bakgrundszoner/);
+  assert.match(editorHtml, /type="color"/);
+  assert.match(editorHtml, /Följer OpenClaw/);
+  assert.match(editorHtml, /Idle-frekvens/);
+  assert.match(editorHtml, /Varianter, en per rad/);
+  assert.doesNotMatch(editorHtml, /sg-btn-primary/);
+  const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
+    initialProject: project,
+    initialVideos: { videos: [] },
+    initialStatus: { configured: false },
+    operators: fixtureLaneOperators(),
+    storeAvailable: false,
+  }));
+  assert.match(html, /Zon-id från Bakgrundszoner/);
+  assert.match(html, /type="color"/);
+  assert.match(html, /Idle-frekvens/);
+  assert.match(html, /Spara projekt/);
+  assert.equal(html.match(/sg-btn-primary/g).length, 1);
+});
+
+test('replaceLane stores the new fields and rejects an invalid table color', () => {
+  const project = createSeedProject();
+  const before = structuredClone(project.lanes);
+  const lane = structuredClone(project.lanes[0]);
+  lane.layers.background.zones = ['zone-a'];
+  lane.layers.table.colors = ['#112233'];
+  lane.probe = { mode: 'shadow', model: 'gateway-default' };
+  lane.idle = { frequencyPercent: 20, variants: ['gasp'] };
+  const applied = modelEdit(project, current => replaceLane(current, lane.id, lane));
+  assert.equal(applied.error, '');
+  assert.deepEqual(applied.project.lanes[0].layers.background.zones, ['zone-a']);
+  assert.deepEqual(applied.project.lanes[0].probe, { mode: 'shadow', model: 'gateway-default' });
+  assert.equal(applied.project.lanes[0].idle.frequencyPercent, 20);
+  const bad = structuredClone(lane);
+  bad.layers.table.colors = ['#ggg'];
+  const rejected = modelEdit(project, current => replaceLane(current, bad.id, bad));
+  assert.match(rejected.error, /lanes\[0\]\.layers\.table\.colors\[0\]/);
+  assert.equal(rejected.project, project);
+  assert.deepEqual(project.lanes, before);
+});

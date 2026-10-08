@@ -74,9 +74,8 @@
         {
           "id": "select-four-dealers",
           "label": "select för alla fyra dealers",
-          "status": "planned",
-          "plannedRef": "C5b",
-          "purpose": "select ska gälla Astrid, Vera, Amira och Mei."
+          "purpose": "POST /api/presentation/select gäller Astrid, Vera, Amira och Mei.",
+          "limitation": "Vera, Amira och Mei spelar 2D-reserv där klipp saknas. Visuell rehearsal kvar."
         }
       ]
     },
