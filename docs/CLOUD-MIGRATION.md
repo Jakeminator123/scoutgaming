@@ -586,7 +586,7 @@ Ingen generell medieradering eller ny mänsklig synkapproval följer av dedup.
 
 | Tjänst | ID / disk | Ansvar |
 | --- | --- | --- |
-| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. `/api/profile` och `/api/operators/<slug>` svarar live. `ops/neon-game/006-player-profile.sql` kördes 8 oktober 16:48 mot databasen `croupier_game` i Neon-projektet `croupier-astrid-background-zones-db`; kolumnerna verifierade, 4 spelare oförändrade. |
+| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. `/api/profile` och `/api/operators/<slug>` svarar live. `ops/neon-game/006-player-profile.sql` kördes 8 oktober 16:48 mot databasen `croupier_game` i Neon-projektet `croupier-production` (hette `croupier-astrid-background-zones-db` till 17:15 samma dag); kolumnerna verifierade, 4 spelare oförändrade. |
 | croupier-vercel-preview-qa | srv-datj7l893c1s73ar3u50; /var/data, 1 GB | Separat QA/SDK/data/journal/cache |
 | croupier-lab-director | /data/catalog, 1 GB | Katalog/historik/CompanionDB |
 | croupier-lab-openclaw | /data/openclaw, 1 GB | Konfiguration/agentfiler/sessioner/sökDB |
