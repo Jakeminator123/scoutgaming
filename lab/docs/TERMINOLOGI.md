@@ -47,9 +47,15 @@ Adapter, lane och operatörspaket är tre olika saker.
 | Del | Standardnamn | Vad | I koden i dag |
 |---|---|---|---|
 | 1 | Viloloop / Idle Loop | Klipp när inget händer: grundloop plus korta variationer med vikter | `idlePolicy`, Dealers & klipp → Idle. Fungerar för Astrid |
-| 2 | Händelseklipp / Event Clip | Klipp för en presentationshändelse: deal, reveal, turn, settle, speak | Ett system, **A**: `events`/`lines`/`variants`/`triggers` + `mediaPolicy`, via `POST /api/presentation/select` för alla fyra dealers. `legacyClipPolicy` översätts till standardvarianter vid läsning. Vera, Amira och Mei spelar 2D-reserv där klipp saknas |
+| 2 | Händelseklipp / Event Clip | Klipp för en presentationshändelse: deal, reveal, turn, settle, speak | Ett system, **A**: `events`/`lines`/`variants`/`triggers` + `mediaPolicy`, via `POST /api/presentation/select` för alla sex dealers. `legacyClipPolicy` översätts till standardvarianter vid läsning. Vera, Amira och Mei spelar 2D-reserv där klipp saknas. Dragge och Paow spelar sina egna porträttbanker; vändning och Paows hålkort ger 2D-reserv |
 | 3 | Bakgrundslager / Background Layer | Bakgrundsbild eller -video och masker | Bakgrundszoner `/control/zones`; styr inte spelet ännu (L16) |
 | 4 | Probe | Talinitiativ när spelaren är inaktiv | `probePolicy`, `/control/probe`, `web/probe-runtime.mjs`; inte verifierad i produktion (L4) |
+
+**Utdelningspose / Deal pose** är H3:s REDO: dealern med handen vid skon, mellan
+in- och utklippet i KLARA-leveranserna för Dragge och Paow. Den är inte **ready**. I
+koden betyder ready vila eller talberedskap (`idle.ready`, `state({ready})`), och
+utdelningsposen får aldrig mappas dit. Dragges och Paows filmer är förbakade från
+vila till vila, så spelet har ännu ingen utdelningspose. REDO-kedjning återstår.
 
 ## Händelser
 

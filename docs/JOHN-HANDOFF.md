@@ -4,7 +4,7 @@
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
-| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla fyra dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
+| Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla sex dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
 | Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
 | Nivå 2 /partner | påbörjad — session finns; `branding` läses/skrivs inom lanen med CAS men kräver roller som ingen rutt ännu skapar (N2.2 promptfil); speldata ej | Sista operatörsadmin, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby med `Spelar hos` och senaste bord/dealer från webbläsaren; redigerbar profil (namn, språk; migration `006` väntar); historikrutt; panelen Ditt bord väljer dealer och bordsfärg inom lanen (N3.4). Bakgrund är avstängd när filmen är inbakad. Valet ligger inte på kontot | Spelaryta |
@@ -12,11 +12,56 @@
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
 | Systemkarta | klart — tre nivåer, CI-spärr; baslinje `8ebb53e2`, grå med 0 röda | Systemkarta |
 | Render croupier-v2 | manuell deploy 8 okt 12:45 med L8/N3 (`/api/profile` svarar 401, `/api/operators/<slug>` läser Neon); `006-player-profile.sql` väntar på körning | Aktuell leverans |
+| Dragge och Paow | påbörjad, lokalt på grenen `kevin` och inte pushat: egna lanes och banker, förbakade dealfilmer, Dragges engelska repliker; kvar: Blob, deploy, visuell acceptans | 8 okt, dealer 5 och 6 |
 
 Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 [Äldre komplett handoff, fryst på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/JOHN-HANDOFF.md)
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
+
+## 8 oktober 2026 eftermiddag: Dragge och Paow som dealer 5 och 6 (grenen `kevin`)
+
+Kevins pass, åtta commits på grenen `kevin` från `ac936377`, inte pushat. Ingen Blob, ingen
+deploy, inga skrivningar i Neon, Render eller Vercel.
+
+Ändrat. `d996eb1e`: kontraktet, fröet och schemana har `dragge` och `paow` med 16
+standardlinjer var, kopierade från Astrid. Ett sparat projekt med fyra dealers är fortfarande
+giltigt; `normalizeProject` lägger till de två i minnet tills nästa sparning. `439df68d`:
+kodlanes `mobile-phone-dragge` och `mobile-phone-paow`; dealerväljaren öppnar dealerns egen
+lane och Lägg till lane frågar efter dealer. Indexlanes och `?dealer=` gäller bara de fyra
+första. `a05e2fdc`: en presentationsbank per dealer i `media/dealers/<id>/runtime/presentation`
+med eget manifest; Astrids bank är oförändrad. `7e0d1aee`: en bank utan idle vilar på
+`/dealers/<id>/rest.png`, en bank utan tal hoppar över repliker med kvittot `skipped`, korten
+är 79×106 för de två. `d7af7e62`, `dd02d7cf`: H3:s KLARA-tagningar förbakade offline över
+porträttplattan, in + deal + ut i en film per kort från vila till vila. Dragge har 9 filmer
+(sju platser, dealer, hål), Paow 8 plus `deal_pos6b` som variant. `a42dc478`: Dragges 17
+engelska repliker med två varianter var (51 filmer), samma bakning och oförändrat ljud, plus
+`bank.json` för rehearsal. Skript och kvitton ligger i `media/dealers/<id>/staging/2026-10-08/`.
+Detta pass: `AGENTS.md`, presentationsguiden, labbguiden, `guide.json` och terminologin
+(utdelningspose mot ready).
+
+Testat: alla kommandon i `.githooks/pre-commit-full` efter varje commit, utan stopp vid fel:
+1722 tester, 10 fel som också fallerar på ren main i klonen (saknade `ws`, `typescript` och
+`.next`); audits och manifestkontroller gröna. Labbtester 999 (997 gröna, 2 skippade),
+typecheck, orphan 0, `audit-dealer-sync --probe` PASS, Astrids select-baslinje oförändrad.
+Varje film: bildantal, första och sista bild mot vilostillbilden (44–47 dB), ingen grön kant,
+ljudpaket identiska med tagningen. `migrate-media-layout --verify` godkänner alla nya rader men
+faller på en rad som redan fallerar på main. Inget klickat i webbläsare eller i produktion.
+
+Kvar: Blob-publicering (`tools/export-media-blob.mjs`, ny `media/blob-index.json`); en
+källkodspush publicerar inte filmerna. Deployordning Render, sedan Lab, sedan första
+sparningen med sex dealers; äldre kod avvisar ett sådant dokument (`studio_corrupt_game_policy`).
+Har produktionens Administration en sparad lane-katalog måste en admin lägga till båda
+lanerna med samma id och fält. Visuell acceptans på mobil och dator: skarvarna, att kortet
+täcker rekvisitan och läppsynk för alla 51 repliker (take-posterna i `takes.md` är ogranskade).
+Korten ligger över filmen, så handen går under redan utdelade kort; rätt ordning kräver tre
+lager med klientkeying (`test-video-jakob`). REDO-kedjning (in en gång, deals, ut en gång) är
+inte byggd. Paow har ingen röst och inget hålklipp, ingen av dem har vändning (2D-reserv), och
+Paow kan inte rehearsas. Svenska repliker väntar på en språkdimension. Kända brister i
+underlaget: fläckig hy i Paows H3-tagningar, en mörk fläck i plattan vänster om skon och en
+liten färgskillnad på kortet där dealdelen slutar. Ej uppdaterat: lobbyns namnlista
+(`player-choices.mjs`), uppladdning till de nya familjerna (`video-intake.mjs`) och texten
+"fyra dealers" i `video-coverage.tsx`.
 
 ## 8 oktober 2026 middag: paketet når spelet, select för fyra dealers, spelarprofil
 
@@ -510,9 +555,10 @@ kortgrund, källproveniens och kalibrering består.
 
 Admin create/remove är revisionsstyrda. Aktiv lane kräver ersättare eller `null`
 för sista lane; då stoppas ny Blackjack-start tills lane läggs till. Nya porträttlanes
-delar Astrids bank/policy. Ny renderer/mediebank behöver adapter/verifierad media;
-fria URL:er nekas. Lane-borttagning raderar inte delade medier.
-Separat lane-publicering, nya dealers/spel och granskad svarskatalog är inte därmed byggda.
+delar den valda dealerns bank/policy (Astrid, Dragge eller Paow). Ny renderer/mediebank
+behöver adapter/verifierad media; fria URL:er nekas. Lane-borttagning raderar inte delade medier.
+Separat lane-publicering, nya spel och granskad svarskatalog är inte därmed byggda.
+Dragge och Paow finns lokalt på grenen `kevin`, se passet 8 oktober eftermiddag.
 
 | Utförd åtgärd | Exakt omfattning / slutbevis |
 | --- | --- |
@@ -690,11 +736,11 @@ CRAIG-reset och native playerpasswordbyte behåller rätt identitet/saldo/histor
 Rendercancel kvitteras före OK. Självrollbyte/radering och sista-admin-race skyddas.
 Engångstokens förbrukas atomiskt; hemliga partnerresultat är tillfälliga, inte listmetadata.
 
-Alla fyra dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
+Alla sex dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
 kalibrering/acceptans; ändrad audio-/videohash ogiltigförklarar visuell approval.
 Ingen approximate-duration-match, gammal talvideo till ny text eller munoverlay.
 Audit `pipeline/audit-dealer-sync.mjs --probe`, obligatoriska regressioner och
-två rehearsalplays per dealer krävs för media/spelarändring, inte bara hashar.
+två rehearsalplays per dealer med inspelat tal krävs för media/spelarändring, inte bara hashar.
 Gamla BO-videopreviews är tysta historikklipp, inte lipsyncmaterial.
 Observation följer faktisk spelflik utan andra playback; valt/laddat ≠ spelat.
 Originalpolicy `legacyClipPolicy` och Astrid `mediaPolicy/idlePolicy` består;

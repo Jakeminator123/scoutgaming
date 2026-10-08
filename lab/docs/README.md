@@ -70,7 +70,9 @@ Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
 
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
-de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
+de ärver inte Astrids idle/Probe-inställningar. Dragge och Paow har var sin
+porträttbank och lane men inga klippval i Dealers & klipp ännu; deras standardfilmer
+och varianter kommer ur bankens eget manifest. Fasta repliker är inspelat
 exakt tal. Probe i Talgranskning är ett textprov (L4). Det skapar inte ljud
 eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
@@ -87,14 +89,16 @@ API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
 klipparbete finns under Dealer & klipp. E-postmallar är förhandsvisningar.
 Andra dealers visar bara de klippkategorier som stöds; Astrids Probe, bakgrund
-och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
+och familjeuppladdning visas inte som verktyg för Vera, Amira, Mei, Dragge eller Paow.
 
 **Lanes:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En lane väljer vilken
 presentation och mediesamling som används. Mobile Phone Lane är enda
 standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Administration →
 Spel, lanes & bord kan en admin lägga till porträttlanes, välja aktiv lane
-och ta bort lanes. De nya porträttlanerna delar Astrids bank och inställningar.
+och ta bort lanes. En ny porträttlane delar den valda dealerns bank och inställningar
+(Astrid, Dragge eller Paow). Dragge och Paow har var sin kodlane, `mobile-phone-dragge`
+och `mobile-phone-paow`.
 Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
 Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
@@ -428,7 +432,7 @@ filvägar, event-ID:n eller speldata. Spelmotorn äger kort, saldo och resultat.
 Native-eventrepliker behåller sin exakta mappning enligt chattavsnittet ovan.
 
 Vid ändringar i gränssnitt eller spelare gäller följande regressionskrav:
-behåll den gemensamma spelaren för alla fyra dealers och serialisera taljobben.
+behåll den gemensamma spelaren för alla sex dealers och serialisera taljobben.
 Ny preview ska pausa och återställa föregående preview; navigation, unmount
 och pagehide ska släppa media. Återkomst från BFCache ska ge en användbar aktuell
 vy utan dold fortsatt uppspelning. Huvudbild och matte är ett synkat kompositpar.
@@ -439,8 +443,10 @@ Behåll tangentbordsflöden, synligt fokus och `prefers-reduced-motion`.
 Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
 
 Medie-/spelarändringar kräver dealer-audit `--probe`, de obligatoriska
-regressionerna och granskning av alla fyra dealers i faktisk rehearsal,
-inklusive två uppspelningar i följd, enligt [AGENTS.md](../../AGENTS.md).
+regressionerna och granskning av alla sex dealers i faktisk rehearsal,
+inklusive två uppspelningar i följd, enligt [AGENTS.md](../../AGENTS.md). Dragge
+granskas på `?lane=mobile-phone-dragge&rehearsal=1`. Paow har inget inspelat tal,
+så hennes dealfilmer granskas på `?lane=mobile-phone-paow`.
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);

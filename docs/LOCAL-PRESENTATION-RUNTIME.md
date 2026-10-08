@@ -184,11 +184,24 @@ med samma triggers, regler, slump och Director-kontrakt som Händelser (`/contro
 Labbets tidigare moduler återexporterar den gemensamma implementationen.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
-från `media/dealers/astrid/runtime/presentation`. En film äger ytan i taget. Den tidigare Astridmotorn,
+från dealerns egen bank `media/dealers/<id>/runtime/presentation`. Banker finns för
+Astrid, Dragge och Paow; deras familjer står i `presentation-runtime/media-families.mjs`
+och manifestet byggs med `node pipeline/build-lab-video-manifest.mjs --dealer <id>`.
+Astrids bank är oförändrad. En film äger ytan i taget. Den tidigare Astridmotorn,
 dess talmedia och supervisor laddas inte i det lokala läget. Lab monterar ingen
 parallell följningsspelare för någon dealer vid anslutning, återanslutning
 eller **Ny observation**. En separat Lab-preview kräver ett uttryckligt val
 och har egna kvitton; fristående editorprov är fortfarande möjliga.
+
+Dragges och Paows filmer är H3:s KLARA-tagningar, förbakade offline över
+porträttplattan: in, deal och ut i en opak film per kort som börjar och slutar i
+vilostillbilden med kortet på platsen. Spelet stannar därför aldrig i H3:s
+utdelningspose (REDO) mellan korten. Den posen är inte `idle.ready`. En bank utan
+idle (Dragge, Paow) visar `/dealers/<id>/rest.png` tills en filmbild hålls. En bank
+utan tal (Paow) hoppar över repliker med kvittot `skipped` i stället för 2D-reserv.
+Ingen av dem har vändning, och Paow har inget hålklipp; där ger saknad familj
+2D-reserv. Varianterna (Dragges repliker, Paows `deal_pos6b`) spelas först när en
+sparad `mediaPolicy` väljer dem.
 
 Det autentiserade `/api/presentation/select` slår upp dealinstruktionen i
 serverns publicerade `native_presentations` för aktuell spelare och version.
@@ -200,7 +213,8 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 Personalens arbetsyta är `/control`. `/partner` är antingen intern fixturförhandsvisning eller operatörens inloggade snapshot. Native administration använder
 befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
-klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
+klippflöden för Vera, Astrid, Amira och Mei och behåller Studiofamiljerna.
+Dragge och Paow syns som dealerchips men har inga klippval där ännu. Äldre
 BO-tilldelningar är historik och används inte som parallell policykälla.
 Endast en exakt match i dealer, situation/destination och registrerad fil
 kan importeras uttryckligen till Lab-utkastet. Osäkra tal-/stagedkopplingar
@@ -253,9 +267,15 @@ Genererat tal visar sin egen besluts-/genererings-/uppspelningskedja. Partner-SS
 separata statusar från spelarens faktiska kvitto.
 
 Hela 1080×1920-filmen visas med `object-fit: contain`, även på dator.
-Spelkorten är auktoritativa 2D-överlägg. Råfilmerna har ännu ingen kalibrerad
-pickup/release/land-kontakt; DOM-kortets landningskvitto anger uttryckligen
-`calibratedContact: false`. Filmens slut är inte bevis för handkontakt.
+Spelkorten är auktoritativa 2D-överlägg ovanpå filmen. Astrids tio standardfilmer
+(sju platser, dealer, hål och vändning) har mätt kontakt: deras SHA-256 står i
+`web/public/card-presentation/calibration.mjs`, kortet följer filmens bildtid och
+landningskvittot anger `calibratedContact: true` när filmen spelat klart förbi den
+mätta kontaktbilden i `card-table-layout.js`. Varianter och övriga filmer, bland dem alla
+Dragges och Paows, har ingen mätt kontakt: kortet visas statiskt när filmen slutat
+och kvittot anger `calibratedContact: false`. Dragges och Paows kort är 79×106 på
+Astrids landningspunkter. Upplockning och insamling är inte kalibrerade. Ett
+kvitto eller filmens slut är inte visuellt godkänd handkontakt.
 Saknat eller otillgängligt exakt klipp ger synlig **2D-reserv**.
 
 Inspelade fria chattsvar är text-only när deras exakta text/video-paket inte
@@ -264,7 +284,10 @@ inbäddat ljud. Genererad läppsynk kräver fortsatt mänsklig granskning.
 Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 
 Sparade `gameLanes`/`gameLane` styr renderer, dealer och mediesamling.
-Mobile Phone Lane är förval. Äldre `original` migreras vid läsning till Mobile;
+Mobile Phone Lane är förval. Koden har tre porträttlanes: `mobile-phone` (Astrid),
+`mobile-phone-dragge` och `mobile-phone-paow`, var och en med sin dealers bank
+(`/blackjack?lane=mobile-phone-dragge`). En sparad lane-katalog måste ha samma id
+och fält för att spelet ska servera dem. Äldre `original` migreras vid läsning till Mobile;
 gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
 En uttryckligen registrerad `indexed-video`-lane kan använda den gemensamma
 indexspelaren för dealerbanken. Ingen automatisk videofallback införs.
@@ -290,6 +313,6 @@ bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
 inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
-`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `presentation-runtime/`.
+`media/dealers/<id>/runtime/presentation/lab-video-manifest.json` (Astrid, Dragge, Paow) och `presentation-runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.
