@@ -87,7 +87,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | T6 | Idle-frekvens ("gäspning") och dealsekvens-varianter som lane-grundinställning | väntar (T1) | nytt | K |
 | T7 | Nytt mediearbete (keya Vera/Mei) om fullbild | väntar (T1, F3) | nytt | eget mediespår |
 | T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas | klart natt 8 okt: grenen = fristående Laneverkstad (Python `program/`, stannar på grenen) + `preview/` (Paow, Dragge, 720p, 12 MB) + webbspelare `program/web/` (WebGL-kompositor, greenscreen, lager, `bridge.js` mot `presentation[]`). Grenen rör bara `apps/croupier-frontend` utanför mappen (`/test`, inte portad) | Jakob 8 okt | K |
-| T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar: Jakob arbetar vidare på grenen; `bridge.js` är adaptern att koppla när han säger klart | Jakob 8 okt | K steg 3 |
+| T9 | Lagerflöde: dealer-overlay + bord + bakgrund som lager i spelet | promptfil `random/prompt-T9-lagerspelare-bakom-flagga.md` (Opus/Codex): lane `layer-preview` med renderer `layered`, Paow/Dragge-paketet bakom flagga, `bridge.js` matas med serverns `presentation[]`, dagens Astrid-väg byte-identisk. Astrid-overlay (variant/idle/tal) kräver keyat Astrid-material (T7) | Jakob 8 okt 15:09 | K steg 3 |
 | T10 | Grenens utökade test-klippyta som egen sida `/control/preview` | sidan live, men iframen var vit i prod 8 okt 10:53: `/studio/preview/index.html` 404 eftersom `previewBuildDirectory` räknades från bundlat `import.meta.url`. Rättat till cwd-regeln (samma som zone-reference); verifiera igen efter deploy | Jakob 02:39 | K |
 | T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (S5): N2.2, N2.4, L4, L3, N3.2, N3.4, L8, C5b | Jakob 02:39 | A5 |
 
@@ -109,8 +109,8 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | N2.1 | Inloggning, scopad snapshot, medlemskap läsbart, spärr sista admin i lagret | klart | matris 36 | – |
-| N2.2 | Skrivande rutter: skapa bolag, roll, medlemskap (L11), pool med `connect()` (L24) | väntar (Kevins svar #3) | lösa trådar | N2 |
-| N2.3 | Team-vyns serverkoppling: inbjudan, rollbyte, suspend (L5) | väntar (Kevin, Jakobs godkännande) | lösa trådar | N2 |
+| N2.2 | Skrivande rutter: skapa bolag, roll, medlemskap (L11), pool med `connect()` (L24) | kod på `main` `5912800e` (PR #5, fast-forward): admin-POST `operator-create/role/membership`, kortet Bolag på `/control/lanes`, standardroller partner-admin/editor/viewer, sista-admin-spärr, CAS. Kevin godkänner rollnamn/behörigheter i efterhand (#3). **Efter deploy:** klicka "Skapa saknade standardroller" för sg-test och lägg till en partner-admin | lösa trådar | N2 |
+| N2.3 | Team-vyns serverkoppling: inbjudan, rollbyte, suspend (L5) | kod på `main` `5912800e`: partner-action `team` GET/POST, Kevins `team.jsx` anropar API:t i riktig session (+25/−11, additivt). Inbjudan = koppla befintligt partnerkonto; e-post (N2.6) kvar | lösa trådar | N2 |
 | N2.4 | Spelare, transaktioner, rapporter från spelmotorn (L10) | kvar | lösa trådar | N2 |
 | N2.5 | Journal för operatörsskrivningar (L12) | kvar | lösa trådar | N2 |
 | N2.6 | Inbjudan/återställning för rollen `partner` (L14) | kvar | lösa trådar | N2 |
@@ -142,7 +142,9 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
 | Jakob | Kör promptfilerna L8, C5b, N3 i egna agenter | klart 12:05; alla tre levererade och mergade |
 | Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar |
-| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | återstartat 12:45 (L8/N3 i koden). Inte beteendeverifierat. `006` inte körd |
+| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | deploy 12:45 verifierad av orkestratorn (`/api/profile` 401, `/api/operators/sg-test` läser Neon). **Ny deploy behövs** för `ac936377` (N3.4 `gameChoices`) och `5912800e`; Vercel tar sig själv. `006` inte körd |
+| Jakob | Efter Render-deploy: `/control/lanes` → Bolag → "Skapa saknade standardroller" för sg-test → lägg till dig som partner-admin | väntar |
+| Jakob | Starta `random/prompt-T9-lagerspelare-bakom-flagga.md` (Opus/Codex) i egen chatt | väntar |
 | Jakob | Rehearsal lokalt: `/blackjack?dealer=<namn>&rehearsal=1`, Play twice, fyra dealers | väntar |
 | Jakob | `LAB_PARTNER_*` vs `BETTALOTTO_PARTNER_*`: vilket namn gäller? | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |
