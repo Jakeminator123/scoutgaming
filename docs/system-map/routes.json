@@ -599,6 +599,9 @@
       "id": "authoritative-game",
       "paths": [
         "POST /api/player",
+        "GET /api/profile",
+        "PATCH /api/profile",
+        "GET /api/operators/{slug}",
         "POST /api/table",
         "POST /api/deposit",
         "POST /api/balance",
@@ -4040,7 +4043,7 @@
       "handlerFile": "apps/croupier-frontend/app/play/page.tsx",
       "serving": "Vercel service web / Next, project scoutgaming.",
       "access": "Player. Spellobby reads the player session and shows Blackjack, profile and history when the session is authenticated.",
-      "boundary": "Server component. Session and POST /api/player go through the platform backend proxy. Signed launch is not handled here.",
+      "boundary": "Server component. Session and POST /api/player go through the platform backend proxy. ?operator= or localStorage croupier.operator shows Spelar hos via GET /api/operators/<slug>. Signed launch is not handled here.",
       "groupId": "player-area",
       "sources": [
         {
@@ -4058,7 +4061,7 @@
       "handlerFile": "apps/croupier-frontend/app/play/profil/page.tsx",
       "serving": "Vercel service web / Next, project scoutgaming.",
       "access": "Player with a session. Otherwise redirect to /player-login?returnTo=/play/profil.",
-      "boundary": "Server component for the signed-in profile. No profile editing. Session and POST /api/player use the platform backend proxy.",
+      "boundary": "Server component for the signed-in profile. Display name and locale use GET and PATCH /api/profile. Balance and currency stay read-only. Session and POST /api/player use the platform backend proxy.",
       "groupId": "player-area",
       "sources": [
         {

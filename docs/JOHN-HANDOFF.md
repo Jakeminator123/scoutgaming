@@ -244,8 +244,21 @@ alla i `apps/croupier-frontend` ovanpå befintliga `GET /api/auth/session` och
 `POST /api/history` för egna aggregerade resultat. `/api/v1/history` är
 partner-API. Spelmotor och signerad direktstart är oförändrade.
 Testat före resultatrutten: `apps/croupier-frontend/test/player-area.mjs` 6, `platform-ui` 13,
-`game-entry` 12, `tsc --noEmit` grön. Kvar: operatörskontext i lobbyn
-och redigerbar profil. Tomt resultat betyder inga avslutade rundor, inte en saknad rutt.
+`game-entry` 12, `tsc --noEmit` grön. Tomt resultat betyder inga avslutade rundor, inte en saknad rutt.
+
+## Spelaryta, 8 oktober 2026
+
+`/play/profil` har ett formulär för visningsnamn (2–40 tecken, inga styrtecken) och språk (`sv`/`en`).
+`PATCH /api/profile` skriver bara `display_name` och `locale` på den inloggade spelaren.
+Saldo och valuta är text. Produktions-Neon saknar kolumnerna tills Jakob kör
+`ops/neon-game/006-player-profile.sql` mot speldatabasen (`croupier_game`, inte zones).
+Då visar profilsidan "Inte tillgängligt än". Lokal SQLite får kolumnerna vid start.
+Lobbyn visar "Spelar hos" från `?operator=` eller `localStorage['croupier.operator']`
+via `GET /api/operators/<slug>` (`{slug, name}`, aktiv, cache 60 s). Utan Studio-pool
+gäller fixturen, bland annat `sg-test`. Länken Spela Blackjack bär `?operator=` till
+`/play/blackjack`; L8:s `approvedGameQuery` behåller den.
+Testat här: `player-area`, `player-profile`, `platform-ui`, `game-entry`, `player-profile-api`, `public-operators`, `game-entry-contract`, `tsc --noEmit`, `fuzz-blackjack` 3000 rundor.
+Ingen commit i den här passningen.
 
 ## Partnerportal, 7 oktober 2026
 

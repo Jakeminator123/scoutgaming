@@ -1,3 +1,6 @@
+import {PlayerLobbyOperator} from './player-lobby-operator';
+import {PlayerProfileForm} from './player-profile-form';
+
 type PlayerField = {label: string, value: string};
 type PlayerPill = {label: string, status: string};
 type PlayerLink = {href: string, label: string};
@@ -16,6 +19,9 @@ export type PlayerAreaModel = {
   empty: string | null;
   historyLines: string[];
   clientLabel: string | null;
+  profileForm: {displayName: string, locale: 'sv' | 'en'} | null;
+  profileNote: string | null;
+  operator: {slug: string, name: string} | null;
 };
 
 function PrimaryAction({primary}: {primary: PlayerAreaModel['primary']}) {
@@ -31,7 +37,9 @@ export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
       <h1 className="mt-3 text-4xl font-semibold">{model.title}</h1>
       <p className="mt-4 text-slate-300">{model.intro}</p>
       {model.notice ? <p role="status" className="mt-6 inline-block rounded-full border border-white/15 px-3 py-1 text-sm text-slate-200">{model.notice}</p> : null}
-      {model.fields.length ? <dl className="mt-6 space-y-2">{model.fields.map(field => <div key={field.label} className="flex flex-wrap gap-2 text-slate-200"><dt className="text-slate-400">{field.label}</dt><dd>{field.value}</dd></div>)}</dl> : null}
+      {model.profileNote ? <p role="status" className="mt-6 text-slate-300">{model.profileNote}</p> : null}
+      {model.profileForm ? <PlayerProfileForm displayName={model.profileForm.displayName} locale={model.profileForm.locale} /> : null}
+      {model.fields.length ? <dl className="mt-6 space-y-2">{model.fields.map(field => <div key={field.label} className="flex flex-wrap gap-2 text-slate-200"><dt className="text-slate-400">{field.label}</dt><dd data-field={field.label}>{field.value}</dd></div>)}</dl> : null}
       {model.sentence ? <p className="mt-6 text-slate-300">{model.sentence}</p> : null}
       {model.empty ? <p role="status" className="mt-6 text-slate-300">{model.empty}</p> : null}
       {model.historyLines.length ? <ul className="mt-6 space-y-2 text-slate-200">{model.historyLines.map(line => <li key={line}>{line}</li>)}</ul> : null}
@@ -40,7 +48,7 @@ export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
         <p className="text-sm uppercase tracking-widest text-emerald-300">{model.clientLabel}</p>
         <h2 id="blackjack-title" className="mt-4 text-2xl font-semibold">Blackjack</h2>
         <p className="mt-3 text-slate-300">Klassiskt kortspel med videodealer.</p>
-        <PrimaryAction primary={model.primary} />
+        <PlayerLobbyOperator initial={model.operator} playHref={model.primary?.href ?? '/play/blackjack'} playLabel={model.primary?.label ?? 'Spela Blackjack'} directPlay={!model.primary?.href.startsWith('/player-login')} />
       </section> : <PrimaryAction primary={model.primary} />}
       {model.pills.length ? <p className="mt-6 flex flex-wrap gap-2">{model.pills.map(pill => <span key={pill.label} className="rounded-full border border-white/15 px-3 py-1 text-sm text-slate-300">{pill.label} · {pill.status}</span>)}</p> : null}
     </div>

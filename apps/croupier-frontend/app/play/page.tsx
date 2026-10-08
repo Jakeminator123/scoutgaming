@@ -5,7 +5,10 @@ import {playerAreaPage, playerAreaRequest} from '@/lib/player-area.mjs';
 export const dynamic = 'force-dynamic';
 export const metadata = {title: 'Spellobby · Spelaryta · Scoutgaming'};
 
-export default async function PlayerLobbyPage() {
-  const page = await playerAreaPage(playerAreaRequest('/play', await headers()), process.env, 'lobby');
+export default async function PlayerLobbyPage({searchParams}: {searchParams?: Promise<Record<string, string | string[] | undefined>>}) {
+  const query = searchParams ? await searchParams : {};
+  const operator = typeof query.operator === 'string' ? query.operator : '';
+  const path = operator ? `/play?operator=${encodeURIComponent(operator)}` : '/play';
+  const page = await playerAreaPage(playerAreaRequest(path, await headers()), process.env, 'lobby');
   return <PlayerAreaDocument model={page.model} />;
 }
