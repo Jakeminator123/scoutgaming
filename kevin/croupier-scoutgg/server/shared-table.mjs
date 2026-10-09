@@ -1,0 +1,355 @@
+import {catalogEventForStep,CATALOG_COMMIT} from '../public/runtime-event-links.js';
+import { DatabaseSync } from 'node:sqlite';
+import { createHash, randomUUID } from 'node:crypto';
+import { command, gameView, newGame } from '../vendor/croupier/shoe-game.mjs';
+import {createTransactions} from './transactions.mjs';
+import {readOperations} from './operations.mjs';
+import {readBackofficeWorkspace} from './bo-workspace.mjs';
+import { createGameAudit } from './game-audit.mjs';
+import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
+import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
+import {DEFAULT_LIMITS} from './studio-tables.mjs';
+
+const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
+const sum = b => b.main+b.pp+b.tp;
+const money = n => `$${n.toLocaleString('en-US')}`;
+// The table's limits on every box: a main bet from min to max, side bets up to sideMax.
+function checkLimits(bets,L) {
+  for(const b of bets) {
+    if(b.main>L.max)throw new Error(`Maximum ${money(L.max)} per bet`);
+    if(b.pp>L.sideMax||b.tp>L.sideMax)throw new Error(`Side bets up to ${money(L.sideMax)}`);
+    if(b.main>0&&b.main<L.min)throw new Error(`Minimum ${money(L.min)} per box`);
+  }
+}
+export function sessionName(value='astrid') {
+  if (typeof value!=='string' || !/^[a-zA-Z0-9_-]{1,40}$/.test(value)) throw new Error('Invalid table link');
+  return value.toLowerCase();
+}
+export function cleanPlayerName(value) {
+  const name=String(value??'').normalize('NFC').trim().replace(/\s+/g,' ');
+  if (!/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} '.-]{0,17}$/u.test(name)) throw new Error('Enter a name using 1 to 18 letters or numbers');
+  return name;
+}
+const keyFor=token=>createHash('sha256').update(token).digest('hex');
+
+// limitsFor(room): the betting limits that room plays with (studio-tables.mjs); the default is the demo's original.
+// languageFor(room): the dealer language a new room opens in (a studio table's choice); players can still change it.
+// readyFor(room): a ready dealer's take lengths (meta.json frames) when the room is his studio table, else null.
+export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null}={}) {
+  const db=new DatabaseSync(filename);
+  db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS shared_players (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, seen REAL NOT NULL, last_return REAL, PRIMARY KEY(room,token));
+    CREATE TABLE IF NOT EXISTS shared_settlements (room TEXT NOT NULL, round_id TEXT NOT NULL, player_id TEXT NOT NULL, receipt TEXT NOT NULL, PRIMARY KEY(room,round_id,player_id));
+    CREATE INDEX IF NOT EXISTS shared_settlement_player ON shared_settlements(room,player_id);
+    CREATE TABLE IF NOT EXISTS demo_breaks (token TEXT PRIMARY KEY, until_ms INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS shared_requests (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, input TEXT NOT NULL, PRIMARY KEY(room,token,id));`);
+  const audit=createGameAudit(db,now),transactions=createTransactions(db,now),contexts=new WeakMap();
+  const languages=availableLanguages(manifest);
+  const clipByEvent=(event,language)=>speechForEvent(manifest,event,language);
+  const load=id=>{const row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);const r=row?JSON.parse(row.state):{language:languages.includes(languageFor(id))?languageFor(id):undefined,game:newGame(),version:0,owners:Array(7).fill(null),bets:emptyBets(),history:{},ready:[],phase:'bets',deadline:null,actionDeadline:null,insurance:{},plan:null,round:null};contexts.set(r,{id,parent:null,engine:null});return r;};
+  const save=(id,r)=>{audit.sync(id,r.game);return db.prepare('INSERT INTO shared_rooms VALUES (?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(id,JSON.stringify(r));};
+  const players=id=>db.prepare('SELECT * FROM shared_players WHERE room=?').all(id);
+  const pausedUntil=token=>db.prepare('SELECT until_ms FROM demo_breaks WHERE token=?').get(token)?.until_ms??0;
+  const player=(id,token)=>db.prepare('SELECT * FROM shared_players WHERE room=? AND token=?').get(id,token);
+  const amount=(id,p,delta,kind,roundId=null)=>{
+    const before=db.prepare('SELECT id,name,balance FROM shared_players WHERE room=? AND id=?').get(id,p);
+    db.prepare('UPDATE shared_players SET balance=ROUND(balance+?,2) WHERE room=? AND id=?').run(delta,id,p);
+    const after=db.prepare('SELECT balance FROM shared_players WHERE room=? AND id=?').get(id,p).balance;
+    transactions.record(id,before,roundId,kind,before.balance,after);
+  };
+  const owned=(r,p)=>r.owners.flatMap((owner,i)=>owner===p?[i]:[]);
+  const move=(r,op,extra={})=>{
+    const context=contexts.get(r),prior=r.game.shoe?.id,drawn=r.game.shoe?.dealt??1;
+    audit.sync(context.id,r.game);
+    const result=command(r.game,{op,version:r.game.version,requestId:randomUUID(),...extra},Number.MAX_SAFE_INTEGER).view;
+    audit.sync(context.id,r.game);
+    context.engine=audit.event(context.id,r.roundId,`engine.${op}`,{...extra,cause:context.parent?{eventId:context.parent,source:'player request'}:{source:'automatic table progression'},shoeId:r.game.shoe.id,version:r.game.version,draws:r.game.shoe.proof?.draws.filter(d=>d.position>(prior===r.game.shoe.id?drawn:1))??[],phase:result.round?.phase??'collected'},context.parent);
+    return result;
+  };
+  // A ready dealer's takes join (REDO to REDO): he reaches for the shoe once, deals the run of cards back to back
+  // and returns to rest after the last. Each card gets its own take length, not Astrid's filmed slot, and the
+  // step says which variant ('i' opens a run, 'u' closes it) so every viewer plays the same frames.
+  function readyTimeline(steps,ready) {
+    const dealing=s=>s?.clip&&(s.kind==='deal'||s.kind==='reveal');
+    // Some takes start or end at REST instead of REDO (Paow's hole card ends at rest, her filmed turn goes rest to
+    // rest): meta lists them, so a take after one reaches for the shoe again and none jumps between the two poses.
+    const take=s=>s.track??s.seat,restEnd=s=>(ready.restEnd??[]).includes(take(s)),restStart=s=>(ready.restStart??[]).includes(take(s));
+    const joined=(a,b)=>dealing(a)&&dealing(b)&&!restEnd(a)&&!restStart(b);
+    let at=steps[0].startAt;
+    steps.forEach((s,i)=>{
+      const length=s.endAt-s.startAt;s.startAt=at;
+      if(dealing(s)){
+        s.variant=(joined(steps[i-1],s)||restStart(s)?'':'i')+(joined(s,steps[i+1])||restEnd(s)?'':'u');
+        // Emil's rest takes (deal_pos<p>vila): a card that ends the run (a hit, the last card) lets go of the shoe on
+        // film and lands at rest, instead of the REDO take plus the walk back. Its own card track is '<take>v'.
+        const t=take(s),rest=s.variant.endsWith('u')&&ready.frames[t]?.[`-${s.variant.slice(0,-1)}v`];
+        if(rest){s.variant=s.variant.slice(0,-1)+'v';s.track=`${t}v`;}
+        const frames=ready.frames[t]?.[`-${s.variant}`];
+        if(frames){s.endAt=at+frames/24*1000;s.clip={...s.clip,dur:frames/24};}else s.endAt=at+length;
+      }else s.endAt=at+length;
+      at=s.endAt+(s.clip&&!joined(s,steps[i+1])?80:0);
+    });
+    return at;
+  }
+  function sequence(r,before,{opening=false,prefix=[]}={}) {
+    // The dealer's turn opens on the hole-card flip with nothing before it. The other players learn of a plan on
+    // their next poll (700 ms), so a 700 ms lead would start the flip before they have it and they would join it
+    // halfway. Give that plan time for one more poll; a player's own move keeps the short lead.
+    const draws=planDraws(before,r.round,opening);
+    const steps=[];let at=now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:700);
+    const addClip=(clip,meta={})=>{if(!clip)return;const duration=Math.max(.1,Number(clip.dur)||3)*1000;steps.push({...meta,kind:meta.kind??'speech',clip:{id:clip.id,event:clip.event,url:clip.url,dur:duration/1000,text:clip.text,sound:!['deal','reveal','hands'].includes(meta.kind)},startAt:at,endAt:at+duration});at+=duration+80;};
+    prefix.forEach(e=>addClip(clipByEvent(e,r.language)));
+    // Before the first card a ready dealer shows both hands empty (Serhiy): his take goes rest to rest.
+    const ready=readyFor(contexts.get(r).id),hands=ready?.hands;
+    if(opening&&hands&&ready.dir)addClip({id:'hands',event:'hands',url:`${ready.dir}hands.mp4`,dur:hands/24},{kind:'hands'});
+    for(const s of draws) {
+      if(s.kind==='deal')addClip(manifest.deal.find(c=>c.id===s.clipId),{kind:'deal',seat:s.seat,track:s.track,shoeDraw:s.shoeDraw});
+      else if(s.kind==='speech')addClip(clipByEvent(s.event,r.language));
+      else {const flip=manifest.deal.find(c=>c.id==='deal_flip');if(flip)addClip(flip,{kind:'reveal',seat:'dealer',track:'flip',shoeDraw:r.round.holeDraw});else steps.push({kind:'reveal',startAt:at,endAt:at});}
+    }
+    if(opening&&r.round.hands.some(h=>h.sideReturn>0))addClip(clipByEvent('sidebet',r.language));
+    if(r.round.phase==='insurance')addClip(clipByEvent('insurance',r.language));
+    if(r.round.phase==='settled')addClip(clipByEvent(outcomeSpeech(r.round),r.language));
+    if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
+    for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
+    if(ready&&steps.length)at=readyTimeline(steps,ready);
+    r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at};
+    const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
+    r.actionDeadline=at+actionMs;
+    r.version++;
+  }
+  function start(id,r) {
+    if(r.phase!=='bets'||!r.bets.some(b=>b.main))throw new Error('Place your bets please');
+    for(const p of players(id))if(owned(r,p.id).reduce((n,i)=>n+sum(r.bets[i]),0)>p.balance)throw new Error('Insufficient demo balance');
+    r.roundId=randomUUID();
+    audit.event(id,r.roundId,'round.started',{owners:[...r.owners],bets:structuredClone(r.bets),triggerEvent:contexts.get(r).parent});
+    const L=limitsFor(id);checkLimits(r.bets,L);
+    r.round=move(r,'start',{bets:r.bets,limits:{min:L.min,max:L.max,sideMax:L.sideMax}}).round;
+    r.lastBets??={};for(const p of players(id)){const mine=Object.fromEntries(owned(r,p.id).filter(i=>r.bets[i].main).map(i=>[i,{...r.bets[i]}]));if(Object.keys(mine).length)r.lastBets[p.id]=mine;}
+    for(const p of players(id)){const stake=owned(r,p.id).reduce((n,i)=>n+sum(r.bets[i]),0);if(stake)amount(id,p.id,-stake,'stake',r.roundId);}
+    r.phase='round';r.deadline=null;r.insurance={};r.history={};r.ready=[];
+    sequence(r,null,{opening:true,prefix:['goodluck']});
+  }
+  function insurance(id,r) {
+    const pending=new Set(r.round.hands.map(h=>r.owners[h.box]));
+    if([...pending].some(p=>!Object.hasOwn(r.insurance,p)))return;
+    const before=structuredClone(r.round),takeBoxes=[];
+    for(const h of r.round.hands)if(r.insurance[r.owners[h.box]])takeBoxes.push(h.box);
+    r.round=move(r,'insurance',{takeBoxes}).round;
+    for(const h of before.hands)if(takeBoxes.includes(h.box))amount(id,r.owners[h.box],-h.stake/2,'insurance',r.roundId);
+    sequence(r,before);
+  }
+  function action(id,r,act) {
+    const before=structuredClone(r.round),stake=r.round.hands[r.round.active].stake;
+    r.round=move(r,'act',{action:act}).round;
+    if(['double','split'].includes(act))amount(id,r.owners[before.hands[before.active].box],-stake,act,r.roundId);
+    sequence(r,before,{prefix:act==='double'?['double']:[]});
+  }
+  function resetRound(r) {
+    for(const [pid,keep] of Object.entries(r.boxesAfterRound??{}))for(const i of owned(r,pid))if(!keep.includes(i))r.owners[i]=null;
+    r.boxesAfterRound={};
+    r.phase='bets';r.round=null;r.plan=null;r.bets=emptyBets();r.ready=[];r.history={};r.deadline=null;r.insurance={};r.leaving=[];r.actionDeadline=null;
+  }
+  function releaseSeats(r,playerId) {
+    for(const i of owned(r,playerId)){r.owners[i]=null;r.bets[i]={main:0,pp:0,tp:0};}
+    r.ready=r.ready.filter(x=>x!==playerId);delete r.history[playerId];
+    r.leaving=(r.leaving??[]).filter(x=>x!==playerId);r.version++;
+    if(r.phase==='settled'&&!r.owners.some(Boolean))resetRound(r);
+    if(r.phase==='bets'&&!r.bets.some(b=>b.main))r.deadline=null;
+  }
+  function advance(id,r) {
+    const time=now();r.leaving??=[];
+    for(const p of players(id))if(time-p.seen>120000&&owned(r,p.id).length){
+      if(r.phase==='round'){if(!r.leaving.includes(p.id)){r.leaving.push(p.id);r.version++;}}
+      else releaseSeats(r,p.id);
+    }
+    if(r.phase==='bets')for(const p of players(id))if(pausedUntil(p.token)>time){
+      for(const i of owned(r,p.id))r.bets[i]={main:0,pp:0,tp:0};
+      r.ready=r.ready.filter(x=>x!==p.id);delete r.history[p.id];
+    }
+    if(r.phase==='bets'&&!r.bets.some(b=>b.main))r.deadline=null;
+    if(r.phase==='bets'&&r.deadline&&time>=r.deadline)start(id,r);
+    if(r.phase==='round'&&time>=r.plan.endAt) {
+      if(r.round.phase==='settled') {
+        for(const p of players(id)) {
+          const hands=r.round.hands.filter(h=>r.owners[h.box]===p.id);
+          if(!hands.length)continue;
+          const returned=hands.reduce((n,h)=>n+h.result+h.sideReturn,0);
+          const staked=hands.reduce((n,h)=>n+h.stake+h.pp+h.tp+(h.insured||0),0);
+          const receipt={roundId:r.roundId??r.plan.id,settledAt:time,returned,staked,net:returned-staked,hands};
+          db.prepare('INSERT INTO shared_settlements VALUES (?,?,?,?)').run(id,receipt.roundId,p.id,JSON.stringify(receipt));
+          audit.event(id,r.roundId,'wallet.settlement',{playerId:p.id,name:p.name,...receipt});
+          amount(id,p.id,returned,'payout',receipt.roundId);db.prepare('UPDATE shared_players SET last_return=? WHERE room=? AND id=?').run(returned,id,p.id);
+        }
+        move(r,'collect');r.phase='settled';r.version++;r.actionDeadline=null;
+      } else if(r.round.phase==='insurance') {
+        let changed=false;
+        for(const owner of r.owners)if(owner&&!Object.hasOwn(r.insurance,owner)&&(time>=r.actionDeadline||r.leaving.includes(owner))){r.insurance[owner]=false;changed=true;}
+        if(changed)insurance(id,r);
+      } else if(time>=r.actionDeadline||r.leaving.includes(r.owners[r.round.hands[r.round.active]?.box]))action(id,r,'stand');
+    }
+    if(r.phase!=='round')for(const playerId of [...r.leaving])releaseSeats(r,playerId);
+  }
+  function view(id,r,token) {
+    const L=limitsFor(id);
+    const all=players(id),me=all.find(p=>p.token===token);
+    const roster=all.filter(p=>owned(r,p.id).length).map(p=>({id:p.id,name:p.name,seats:owned(r,p.id),online:now()-p.seen<15000,ready:r.ready.includes(p.id)}));
+    const insuranceDue=r.phase==='round'&&r.round?.phase==='insurance'&&me&&r.round.hands.some(h=>r.owners[h.box]===me.id)&&!Object.hasOwn(r.insurance,me.id);
+    return {limits:{name:L.name,tableName:L.tableName??null,min:L.min,max:L.max,sideMax:L.sideMax,chips:L.chips,refill:L.balance},session:id,language:dealerLanguage(r.language),availableLanguages:languages,pausedUntil:pausedUntil(token),roundId:r.roundId??null,actionMs,version:r.version,serverNow:now(),demo:true,phase:r.phase,players:roster,owners:r.owners,bets:r.bets,round:r.round,shoe:gameView(r.game).shoe,plan:r.plan,deadline:r.deadline,actionDeadline:r.actionDeadline,insuranceDue:Boolean(insuranceDue),me:me?{id:me.id,name:me.name,leaving:(r.leaving??[]).includes(me.id),balance:me.balance,seats:owned(r,me.id),boxesAfterRound:r.boxesAfterRound?.[me.id]??null,repeatable:Object.keys(r.lastBets?.[me.id]??{}).some(i=>owned(r,me.id).includes(Number(i))),lastReturn:me.last_return,lastSettlement:JSON.parse(db.prepare('SELECT receipt FROM shared_settlements WHERE room=? AND player_id=? ORDER BY rowid DESC LIMIT 1').get(id,me.id)?.receipt??'null')}:null};
+  }
+  function readGameState(room='astrid',token=null,displayName=null) {
+    const id=sessionName(room),row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);
+    if(!row)return null;
+    const r=JSON.parse(row.state);
+    const cleanName=String(displayName??'').normalize('NFC').trim().replace(/\s+/g,' ').slice(0,18);
+    const me=(token?player(id,keyFor(token)):null)??(cleanName?db.prepare('SELECT * FROM shared_players WHERE room=? AND name=? COLLATE NOCASE').get(id,cleanName):null);
+    const dealing=Boolean(r.plan&&r.plan.endAt>now());
+    const current=dealing?r.plan.before:r.round;
+    const boxes=me?r.owners.flatMap((owner,i)=>owner===me.id?[i]:[]):[];
+    const hands=(current?.hands??[]).filter(hand=>boxes.includes(hand.box)).map(hand=>({
+      box:7-hand.box,   // shown box number, first base = 1 (public/box-label.js)
+      cards:hand.cards.map(card=>String(card.r)),
+      total:total(hand.cards),
+    }));
+    const phase=dealing?'dealing':current?.phase??(r.phase==='bets'?'betting':r.phase);
+    const settled=!dealing&&phase==='settled';
+    const dealerCards=(settled?current?.dealer??[]:(current?.dealer??[]).slice(0,1)).map(card=>String(card.r));
+    const activeHand=phase==='decisions'?current?.hands?.[current.active]:null;
+    return Object.freeze({
+      phase,
+      playerName:me?.name??null,
+      boxes:boxes.map(box=>7-box),
+      hands,
+      dealerCards,
+      dealerTotal:settled?total(current.dealer):null,
+      activeBox:activeHand?7-activeHand.box:null,
+      roundId:r.roundId??null,
+    });
+  }
+  function run(token,input) {
+    const id=sessionName(input.session),key=keyFor(token);let welcome;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const r=load(id);command(r.game,{op:'state'},0);
+      let p=player(id,key);
+      if(p)db.prepare('UPDATE shared_players SET seen=? WHERE room=? AND token=?').run(now(),id,key);
+      advance(id,r);
+      const op=input.op??'state';
+      if(op!=='state') {
+        if(typeof input.requestId!=='string'||!input.requestId||input.requestId.length>100)throw new Error('Request ID required');
+        const previous=db.prepare('SELECT input FROM shared_requests WHERE room=? AND token=? AND id=?').get(id,key,input.requestId);
+        if(previous){if(previous.input!==JSON.stringify(input))throw new Error('Request ID reused with different input');}
+        else {
+          const context=contexts.get(r);context.parent=audit.event(id,r.phase==='bets'?null:r.roundId,'player.'+op,{playerId:p?.id??null,name:p?.name??null,requestId:input.requestId,action:input.action??null,seat:input.seat??null,field:input.field??null,chip:input.chip??null,take:input.take??null});
+          // Betting on separate owned boxes commutes. Only a hand decision needs
+          // the exact snapshot; otherwise one guest could block another's chip.
+          if(op==='act'&&input.version!==r.version)throw new Error('Table changed. Please try again');
+          const paused=pausedUntil(key)>now();
+          if(paused&&(['join','refill','bet','undo','doubleBets','allSeats','repeat','ready'].includes(op)||(op==='act'&&input.action!=='stand')||(op==='insurance'&&input.take)))throw new Error('Your demo break is active for 24 hours');
+          if(op==='pause'){
+            db.prepare('INSERT INTO demo_breaks VALUES (?,?) ON CONFLICT(token) DO UPDATE SET until_ms=MAX(until_ms,excluded.until_ms)').run(key,now()+86400000);
+            for(const {id:other} of db.prepare('SELECT id FROM shared_rooms').all()){
+              const room=other===id?r:load(other);advance(other,room);save(other,room);
+            }
+          } else if(op==='join') {
+            if(p&&(r.leaving??[]).includes(p.id))throw new Error('Your current hand is finishing before you leave');
+            const name=cleanPlayerName(input.name),seats=input.seats;
+            if(!Array.isArray(seats)||!seats.length||seats.length>7||new Set(seats).size!==seats.length||seats.some(i=>!Number.isInteger(i)||i<0||i>6))throw new Error('Choose one or more boxes');
+            if(seats.some(i=>r.owners[i]&&r.owners[i]!==p?.id))throw new Error('That box was just taken. Choose another');
+            if(players(id).some(x=>x.id!==p?.id&&owned(r,x.id).length&&x.name.toLowerCase()===name.toLowerCase()))throw new Error('That name is already at this table');
+            if(!p) {
+              const previousWallet=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='demo_tables'").get();
+              // A studio table opens with its preset's balance; only the original demo room carries a solo-wallet balance over.
+              const L=limitsFor(id),balance=previousWallet&&!L.preset?db.prepare('SELECT balance FROM demo_tables WHERE session=?').get(key)?.balance??L.balance:L.balance;
+              const uid=randomUUID();db.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,NULL)').run(id,key,uid,name,balance,now());p=player(id,key);transactions.record(id,p,null,'opening_credit',0,balance);welcome={session:id,name,text:`Hi ${name}, how are you today?`};
+            } else db.prepare('UPDATE shared_players SET name=? WHERE room=? AND token=?').run(name,id,key);
+            // feedback #7: mid-round, a box that still holds a hand is released after the round, never refused
+            const inPlay=new Set(r.phase==='bets'?[]:(r.round?.hands??[]).map(h=>h.box));
+            const later=[];
+            for(const i of owned(r,p.id))if(!seats.includes(i)){if(inPlay.has(i)){later.push(i);continue;}if(sum(r.bets[i]))throw new Error('Clear your bets before changing boxes');r.owners[i]=null;}
+            r.boxesAfterRound??={};if(later.length)r.boxesAfterRound[p.id]=[...seats].sort();else delete r.boxesAfterRound[p.id];
+            for(const i of seats)r.owners[i]=p.id;
+          } else {
+            if(!p||!owned(r,p.id).length)throw new Error('Choose your boxes and enter your name first');
+            if(r.leaving.includes(p.id)&&op!=='leave')throw new Error('Your current hand is finishing before you leave');
+            const own=owned(r,p.id),busy=r.plan&&now()<r.plan.endAt;
+            if(op==='language') {
+              if(!languages.includes(input.language))throw new Error('Choose an available dealer language');
+              if(r.phase!=='bets'||r.bets.some(b=>sum(b)>0))throw new Error('Change dealer language before placing bets');
+              r.language=input.language;
+              audit.event(id,null,'presentation.language',{language:r.language,playerId:p.id},context.parent);
+            }
+            else if(op==='refill')amount(id,p.id,limitsFor(id).balance,'demo_refill');
+            else if(op==='leave') {
+              if(r.phase==='round'){if(!r.leaving.includes(p.id))r.leaving.push(p.id);advance(id,r);}
+              else releaseSeats(r,p.id);
+            } else if(['bet','undo','clear','doubleBets','allSeats','repeat'].includes(op)) {
+              if(r.phase!=='bets')throw new Error('Betting is closed');
+              if(r.ready.includes(p.id))throw new Error('You are ready for this round');
+              const prior=structuredClone(r.bets),next=structuredClone(r.bets);
+              if(op==='bet') {
+                // CH: a seated player opens a free box by putting a main bet on it, as at a real table
+                if(own.length&&!own.includes(input.seat)&&input.field==='main'&&Number.isInteger(input.seat)&&input.seat>=0&&input.seat<7&&!r.owners[input.seat]){r.owners[input.seat]=p.id;own.push(input.seat);}
+                if(!own.includes(input.seat)||!['main','pp','tp'].includes(input.field))throw new Error('Choose one of your boxes');
+                if(!limitsFor(id).chips.includes(input.chip))throw new Error('Choose a chip from this table');
+                if(input.field!=='main'&&!next[input.seat].main)throw new Error('Place your bets please');
+                next[input.seat][input.field]+=input.chip;
+              } else if(op==='repeat') {
+                // Repeat bet: last round's stakes back on the boxes this player still owns
+                const last=Object.entries(r.lastBets?.[p.id]??{}).filter(([i])=>own.includes(Number(i)));
+                if(!last.length)throw new Error('No previous bet to repeat');
+                for(const [i,b] of last)next[i]={...b};
+              } else if(op==='undo') {
+                const old=r.history[p.id]?.pop();if(old)for(const i of own)next[i]=old[i];
+              } else for(const i of own)for(const f of ['main','pp','tp']) {
+                if(op==='clear')next[i][f]=0;
+                if(op==='doubleBets')next[i][f]*=2;
+                if(op==='allSeats'&&f==='main'){if(!limitsFor(id).chips.includes(input.chip))throw new Error('Choose a chip from this table');next[i].main+=input.chip;}
+              }
+              checkLimits(next,limitsFor(id));
+              if(own.reduce((n,i)=>n+sum(next[i]),0)>p.balance)throw new Error('Insufficient demo balance');
+              if(op!=='undo'){(r.history[p.id]??=[]).push(prior);r.history[p.id]=r.history[p.id].slice(-100);}
+              r.bets=next;if(!r.deadline&&next.some(b=>b.main))r.deadline=now()+betMs;
+              if(!next.some(b=>b.main))r.deadline=null;
+            } else if(op==='ready') {
+              if(r.phase!=='bets'||!own.some(i=>r.bets[i].main))throw new Error('Place your bets please');
+              if(!r.ready.includes(p.id))r.ready.push(p.id);
+              const seated=players(id).filter(x=>owned(r,x.id).length&&now()-x.seen<15000);
+              if(seated.every(x=>r.ready.includes(x.id)))start(id,r);
+            } else if(op==='act') {
+              if(busy||r.phase!=='round'||r.round.phase!=='decisions')throw new Error('Wait for your turn');
+              const h=r.round.hands[r.round.active];if(r.owners[h.box]!==p.id)throw new Error('It is another player’s turn');
+              if(['double','split'].includes(input.action)&&h.stake>p.balance)throw new Error('Insufficient demo balance');
+              action(id,r,input.action);
+            } else if(op==='insurance') {
+              if(busy||r.phase!=='round'||r.round.phase!=='insurance'||typeof input.take!=='boolean'||Object.hasOwn(r.insurance,p.id)||!r.round.hands.some(h=>own.includes(h.box)))throw new Error('Insurance is not available');
+              const cost=r.round.hands.filter(h=>own.includes(h.box)).reduce((n,h)=>n+h.stake/2,0);
+              if(input.take&&cost>p.balance)throw new Error('Insufficient demo balance');
+              r.insurance[p.id]=input.take;insurance(id,r);
+            } else if(op==='next') {
+              if(r.phase!=='settled'||busy)throw new Error('The round is still in progress');
+              resetRound(r);
+            } else throw new Error('Unknown table command');
+          }
+          r.version++;db.prepare('INSERT INTO shared_requests VALUES (?,?,?,?)').run(id,key,input.requestId,JSON.stringify(input));
+        }
+      }
+      save(id,r);const snapshot=view(id,r,key);db.exec('COMMIT');
+      if(welcome)Promise.resolve().then(()=>onWelcome(welcome)).catch(()=>{});
+      return snapshot;
+    }catch(e){db.exec('ROLLBACK');throw e;}
+  }
+  function tick(){for(const {id} of db.prepare('SELECT id FROM shared_rooms').all()){
+    db.exec('BEGIN IMMEDIATE');try{const r=load(id);advance(id,r);save(id,r);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');}
+  }}
+  // snapshot: a visitor without a guest cookie (not seated yet) sees the table as a guest.
+  return{run,tick,readGameState,hasRoom:room=>Boolean(db.prepare('SELECT 1 FROM shared_rooms WHERE id=?').get(String(room).toLowerCase())),language:session=>load(sessionName(session)).language,snapshot:(session,token)=>{const id=sessionName(session);return view(id,load(id),token?keyFor(token):null);},presentationContext:(room='astrid')=>{
+    const row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(sessionName(room));
+    const r=row?JSON.parse(row.state):null;
+    return {room,language:dealerLanguage(r?.language),roundId:r?.roundId??null,parent:db.prepare('SELECT seq FROM audit_events WHERE room=? ORDER BY seq DESC LIMIT 1').get(room)?.seq??null,sessionRevision:String(r?.version??0),roundRevision:`${r?.roundId??'none'}:${r?.version??0}`,phase:r?.plan&&r.plan.endAt>now()?'dealing':r?.round?.phase??r?.phase??'idle'};
+  },recordSpeechDecision:record=>{
+    if(!record.room)return;
+    const payload=Object.fromEntries(['requestId','decision','responseId','sessionRevision','roundRevision'].map(k=>[k,String(record[k]??'').slice(0,128)]));
+    audit.event(sessionName(record.room),record.roundId??null,'presentation.speech_choice',payload,record.parent??null);
+  },backoffice:(input={})=>input.view==='workspace'?{...readBackofficeWorkspace(db,now),manifest}:input.view==='operations'?readOperations(db,now):input.view==='transactions'?transactions.read(input):audit.read(input),paused:token=>pausedUntil(keyFor(token))>now(),close:()=>db.close()};
+}
