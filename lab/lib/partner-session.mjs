@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
 import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
 import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
@@ -8,6 +8,7 @@ import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
+import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
 
 // Opaque partner sessions are stored in the existing lab_sessions table.
 // The digest is purpose-prefixed so a lab_session or bo_jwt value can never
@@ -29,6 +30,7 @@ function fail(statusCode = 400) {
   throw Object.assign(new Error('partner_request_rejected'), { statusCode });
 }
 const digest = value => createHash('sha256').update(value).digest('hex');
+const passwordTokenKey = value => `studio-sha256:${digest(value)}`;
 export function partnerSessionDigest(token) {
   return digest(`purpose:${PARTNER_SESSION_PURPOSE}:${token}`);
 }
@@ -85,7 +87,8 @@ export function rejectPartnerMethod() {
 function failure(error) {
   const status = messages.has(error?.statusCode) ? error.statusCode : 503;
   if (status === 405) return rejectPartnerMethod();
-  return json({ error: messages.get(status) }, status);
+  const reason = status === 409 && PARTNER_TEAM_CONFLICTS.includes(error?.reason) ? error.reason : null;
+  return json(reason ? { error: messages.get(status), reason } : { error: messages.get(status) }, status);
 }
 async function bodyOf(request) {
   if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) fail(415);
@@ -243,7 +246,7 @@ function preparePartnerRequest(request, config) {
   let operatorSlugValue;
   if (request.method === 'GET') {
     operatorSlugValue = takeOperatorSlug(url);
-  } else if (request.method === 'POST' && partnerAction(url.pathname, config) === 'branding') {
+  } else if (request.method === 'POST' && ['branding', 'team'].includes(partnerAction(url.pathname, config))) {
     if (url.hash) fail(400);
     operatorSlugValue = takeOperatorSlug(url);
   } else if (url.search || url.hash) fail(400);
@@ -270,8 +273,8 @@ function preparePartnerRequest(request, config) {
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
   const action = partnerAction(pathname, config);
-  if (!['login', 'logout', 'snapshot', 'branding'].includes(action)) fail(404);
-  if (action === 'branding') {
+  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'set-password'].includes(action)) fail(404);
+  if (action === 'branding' || action === 'team') {
     if (request.method !== 'GET' && request.method !== 'POST') {
       return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
@@ -316,7 +319,8 @@ async function openBrandingStore(config) {
     fail(503);
   }
 }
-async function brandingResponse(prepared, config) {
+// Session, operator and the caller's active membership, read fresh for this request.
+async function partnerOperatorContext(prepared, config) {
   const session = await authorizePartner(prepared.request, config);
   const store = await openBrandingStore(config);
   if (typeof store.getOperatorBySlug !== 'function' || typeof store.resolvePartnerContext !== 'function' || typeof store.getMembership !== 'function') fail(503);
@@ -334,16 +338,13 @@ async function brandingResponse(prepared, config) {
   const membership = await store.getMembership(operator.id, session.accountId);
   if (!membership || membership.status !== 'active' || (membership.userId && String(membership.userId) !== session.accountId)) fail(403);
   if (membership.scope && !sameOperatorScope(membership.scope, session.scope)) fail(403);
-  const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
-  const api = createPartnerBrandingApi({
-    store,
-    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
-  });
-  if (prepared.request.method === 'GET') return json(await api.read({ operatorId: operator.id }), 200, [], { vary: true });
+  return { session, store, operator, context, membership };
+}
+async function decidedPartnerContext({ session, store, operator, context, membership }) {
   if (typeof store.getRole !== 'function') fail(503);
   const role = await store.getRole(operator.id, membership.roleId);
   const scope = context.scope ?? session.scope;
-  const decided = {
+  return {
     ...context,
     scope,
     membership: {
@@ -360,7 +361,20 @@ async function brandingResponse(prepared, config) {
       scope: role.scope ?? scope,
     } : context.role,
   };
-  if (!allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id })) fail(403);
+}
+async function brandingResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const { session, store, operator } = found;
+  const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
+  const api = createPartnerBrandingApi({
+    store,
+    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
+  });
+  const decided = await decidedPartnerContext(found);
+  const { scope } = decided;
+  const canConfigure = allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
+  if (prepared.request.method === 'GET') return json({ ...await api.read({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
+  if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);
   keys(body, ['expectedRevision', 'branding']);
   if (!Number.isSafeInteger(body.expectedRevision)) fail(400);
@@ -372,11 +386,97 @@ async function brandingResponse(prepared, config) {
   });
   return json(saved, 200, [], { vary: true });
 }
+// Invite links an existing partner account, or creates an invited one (N2.6).
+async function teamResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const { session, store } = found;
+  if (!['listRoles', 'listMemberships', 'upsertMembership'].every(name => typeof store[name] === 'function')) fail(503);
+  const decided = await decidedPartnerContext(found);
+  const api = createPartnerTeamApi({
+    store, boDb: config.boDb, gameDb: config.gameDb, journal: config.journal,
+    mail: config.mail, now: config.now, publicOrigin: config.publicOrigin ?? config.allowedOrigins?.[0],
+  });
+  if (prepared.request.method === 'GET') return json(await api.read(decided), 200, [], { vary: true });
+  if (!api.writable(decided)) fail(403);
+  const body = await bodyOf(prepared.request);
+  return json(await api.write(decided, { actor: session.user, body }), 200, [], { vary: true });
+}
+
+// Invite and reset links are single-use. A partner with a hash can only replace
+// it when the token kind is reset. Membership writes use the operator store;
+// a failure rolls the credential transaction back and returns invited rows.
+async function setPassword(request, body, config) {
+  keys(body, ['token', 'password']);
+  if (typeof body.token !== 'string' || !/^[A-Za-z0-9_-]{32,128}$/.test(body.token)) fail(400);
+  if (typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 128
+    || /[\u0000-\u001f\u007f-\u009f]/u.test(body.password)) fail(422);
+  if (typeof config.rateLimit !== 'function' || typeof config.clientAddress !== 'function' || typeof config.boDb?.transaction !== 'function') fail(503);
+  const clientKey = await config.clientAddress(request);
+  if (!text(clientKey, 256)) fail(503);
+  if (await config.rateLimit({ clientKey, user: body.token, action: 'set-password' }) !== true) fail(503);
+  const now = typeof config.now === 'function' ? config.now : Date.now;
+  const store = await openBrandingStore(config);
+  if (!['listOperators', 'listMemberships', 'upsertMembership'].every(name => typeof store[name] === 'function')) fail(503);
+  const activated = [];
+  try {
+    await config.boDb.transaction(async () => {
+      const tokens = await config.boDb.prepare("DELETE FROM tokens WHERE (token=? OR token=?) AND exp>=? AND kind IN ('invite','reset') RETURNING username,kind")
+        .all(passwordTokenKey(body.token), body.token, Math.floor(now() / 1000));
+      if (tokens.length !== 1) fail(400);
+      const target = await config.boDb.prepare('SELECT id,username,role,hash FROM users WHERE username=? FOR UPDATE').get(tokens[0].username);
+      if (!target?.id) fail(400);
+      if (target.role !== 'partner') fail(403);
+      const hasHash = typeof target.hash === 'string' && target.hash.length > 0;
+      if (hasHash && tokens[0].kind !== 'reset') fail(403);
+      const salt = randomBytes(16).toString('hex');
+      const hash = scryptSync(body.password, salt, 64).toString('hex');
+      const changed = await config.boDb.prepare('UPDATE users SET salt=?,hash=? WHERE username=? RETURNING id').all(salt, hash, tokens[0].username);
+      if (changed.length !== 1) fail(503);
+      await config.boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(target.id);
+      await config.boDb.prepare('DELETE FROM tokens WHERE username=?').run(tokens[0].username);
+      const userId = String(target.id);
+      const actor = text(String(target.username || ''), 128) ? String(target.username) : userId;
+      const operators = await store.listOperators();
+      if (!Array.isArray(operators)) fail(503);
+      for (const operator of operators) {
+        const memberships = await store.listMemberships(operator.id);
+        if (!Array.isArray(memberships)) fail(503);
+        for (const membership of memberships) {
+          if (String(membership?.userId) !== userId || membership.status !== 'invited') continue;
+          const saved = await store.upsertMembership({
+            actor, operatorId: operator.id, userId, roleId: membership.roleId, status: 'active', expectedRevision: membership.revision,
+          });
+          activated.push({ actor, operatorId: operator.id, userId, roleId: membership.roleId, revision: saved?.revision });
+        }
+      }
+    });
+  } catch (error) {
+    for (const item of activated) {
+      try {
+        await store.upsertMembership({
+          actor: item.actor, operatorId: item.operatorId, userId: item.userId, roleId: item.roleId,
+          status: 'invited', expectedRevision: item.revision,
+        });
+      } catch { /* Password transaction rolled back; retrying the same link converges. */ }
+    }
+    if (error?.statusCode === 400 || error?.statusCode === 403) throw error;
+    fail(503);
+  }
+  return json({ ok: true });
+}
+
+// A test injects a complete configuration. Anything else in the second
+// position (for example Next's route context { params }) is not a
+// configuration and must not replace the server's own.
+export function isPartnerAuthConfig(value) {
+  return !!value && typeof value === 'object' && Array.isArray(value.allowedOrigins)
+    && typeof value.boDb?.prepare === 'function';
+}
 
 export async function handlePartnerAuth(request, injected) {
   try {
     if (!['GET', 'POST'].includes(request.method)) return rejectPartnerMethod();
-    const config = injected ?? await partnerAuthConfig();
+    const config = isPartnerAuthConfig(injected) ? injected : await partnerAuthConfig();
     const prepared = preparePartnerRequest(request, config);
     if (prepared.response) return prepared.response;
     if (prepared.action === 'snapshot') {
@@ -389,8 +489,10 @@ export async function handlePartnerAuth(request, injected) {
       return json(snapshot, 200, [], { vary: true });
     }
     if (prepared.action === 'branding') return await brandingResponse(prepared, config);
+    if (prepared.action === 'team') return await teamResponse(prepared, config);
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
+    if (prepared.action === 'set-password') return await setPassword(prepared.request, body, config);
     return await logout(prepared.request, body, config);
   } catch (error) {
     return failure(error);

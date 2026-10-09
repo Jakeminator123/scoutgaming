@@ -351,13 +351,13 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>En ny porträttlane delar den valda dealerns klipp och inställningar.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
-            ...(PORTRAIT_LANES.find(lane => lane.dealer === value(form, 'dealer')) ?? PORTRAIT_LANES[0]), id: value(form, 'id'), label: value(form, 'name'),
+          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>Välj en dealer som är sparad under Dealers & klipp. Skapa samma lane-ID i Lanes och välj bord och bakgrund i Sammansättning.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
+            ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'), dealer: value(form, 'dealer') || 'astrid', mediaCollection: `${value(form, 'dealer') || 'astrid'}-presentation`,
           } }), true)}>
             <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
             <label>Dealer<select name="dealer" defaultValue={PORTRAIT_LANES[0].dealer} disabled={busy}>{PORTRAIT_LANES.map(lane => <option key={lane.dealer} value={lane.dealer}>{lane.dealer}</option>)}</select></label>
             <label>Lane-ID<input name="id" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} placeholder="min-lane" disabled={busy} /></label>
-            <button disabled={busy}>Lägg till lane med porträttvideo</button>
+            <label>Dealer-id<input name="dealer" defaultValue="astrid" required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" disabled={busy}/></label><button disabled={busy}>Lägg till lane med porträttvideo</button>
           </form></details>}
           {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera befintliga lanes · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas sista lanen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
             lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,

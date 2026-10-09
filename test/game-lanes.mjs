@@ -5,9 +5,11 @@ import { GAME_LANES, gameLaneSelection, gameLaneConfiguration, gameLaneFromDocum
 import { decorateGameEntryHtml, playerLoginDestination } from '../web/public/game-entry-contract.mjs';
 import { validateDocumentValue } from '../web/storage/studio-contract.mjs';
 
-test('Mobile is the default lane; retired dealer URLs cannot reactivate Kevin', () => {
+test('mobile is default and layer-preview is opt-in', () => {
   assert.deepEqual(gameLaneSelection('', 'mobile-phone'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
   assert.deepEqual(gameLaneSelection('', 'original'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
+  assert.deepEqual(gameLaneSelection('?lane=layer-preview', 'mobile-phone'), { lane: 'layer-preview', dealer: 'paow', presentation: 'layered' });
+  assert.deepEqual(gameLaneSelection('?lane=layer-preview&dealer=dragge', 'mobile-phone'), { lane: 'layer-preview', dealer: 'dragge', presentation: 'layered' });
   for (const dealer of ['vera','astrid','amira','mei']) {
     assert.equal(gameLaneSelection('?dealer='+dealer, 'mobile-phone').dealer,'astrid');
     assert.equal(gameLaneSelection('?dealer='+dealer, 'mobile-phone').presentation,'local');
@@ -78,7 +80,7 @@ test('a presentation lane only narrows the dealers its server lane can render', 
   assert.equal(laneDealerSelection('?dealer=astrid',legacy,{default:'amira',allowed:['mei','vera']}),'amira');
   assert.equal(laneDealerSelection('?dealer=mei&dealer=vera',legacy,{default:'amira',allowed:['mei','vera']}),'amira');
   assert.equal(laneDealerSelection('',legacy,{default:'amira',allowed:[]}),'amira');
-  assert.equal(laneDealerSelection('',legacy,{default:'paow',allowed:['x']}),null);
+  assert.equal(laneDealerSelection('',legacy,{default:'x',allowed:['x']}),null);
   assert.equal(laneDealerSelection('',legacy,null),null);
   assert.throws(() => laneDealerSelection('',{...legacy,renderer:'remote-script'},{default:'vera',allowed:[]}));
 });
@@ -157,4 +159,15 @@ test('local for another dealer is allowed only when that lane is portrait-video 
   assert.throws(() => gameLaneFromDocument({ gameLane: 'vera-phone', gameDealer: 'mei', gamePresentation: 'local' }, [vera]));
   assert.throws(() => validateGameLanes([{ ...vera, mediaCollection: 'astrid-presentation' }]));
   assert.throws(() => validateGameLanes([{ ...vera, mediaCollection: 'legacy-dealers' }]));
+});
+
+test('layered presentation is accepted only on layer-preview', () => {
+  assert.deepEqual(gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'paow', gamePresentation: 'layered' }), {
+    lane: 'layer-preview', dealer: 'paow', presentation: 'layered',
+  });
+  assert.deepEqual(gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'dragge', gamePresentation: 'layered' }), {
+    lane: 'layer-preview', dealer: 'dragge', presentation: 'layered',
+  });
+  assert.throws(() => gameLaneFromDocument({ gameLane: 'mobile-phone', gameDealer: 'astrid', gamePresentation: 'layered' }));
+  assert.throws(() => gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'astrid', gamePresentation: 'layered' }));
 });

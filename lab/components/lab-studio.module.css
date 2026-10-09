@@ -13,3 +13,9 @@
 .sectionHeader h2 { margin: 0; }
 @media (max-width: 900px) { .editor { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 720px) { .main { padding: 8px 16px 32px; } .save { justify-content: flex-start; } }
+
+.contentNav { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 12px 0 20px; font-size: 14px; }
+.contentNav a { color: var(--teal); padding: 8px 0; }
+.customGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; }
+.customGrid article { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); }
+.help pre { white-space: pre-wrap; overflow-wrap: anywhere; }

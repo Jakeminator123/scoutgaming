@@ -1,5 +1,6 @@
+import {validateComposition} from './presentation-composition.mjs';
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
-const dealers = new Set(['vera','astrid','amira','mei','dragge','paow']);
+const dealers = new Set(['vera','astrid','amira','mei','paow','dragge','nora']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
 export function publicGamePath(env = {}) {
@@ -16,7 +17,7 @@ export function approvedGameQuery(input,{origin,includeLaunch = true} = {}) {
   const source = input instanceof URLSearchParams ? input : new URLSearchParams(input);
   const result = new URLSearchParams();
   const one = key => source.getAll(key).length === 1 ? source.get(key) : null;
-  const values = {dealer:value => dealers.has(value),presentation:value => ['local','original'].includes(value),lane:isGameLaneId,
+  const values = {dealer:value => dealers.has(value),presentation:value => ['local','original','layered'].includes(value),lane:isGameLaneId,
     performance:value => value === 'staged',motion:value => value === 'smooth60',rehearsal:value => value === '1',
     table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value),operator:isOperatorSlug};
   for (const [key,valid] of Object.entries(values)) {const value = one(key);if (valid(value)) result.set(key,value);}
@@ -56,12 +57,14 @@ function brandingAttribute(value) {
   if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
   return attributeText(text);
 }
-export function decorateGameEntryHtml(html,env,selection) {
-  if (!gameEntryEnabled(env)) return html;
-  let attributes = ' data-game-path="/blackjack"';
+export function decorateGameEntryHtml(html,env,selection,{offline = false} = {}) {
+  if (!gameEntryEnabled(env) && offline !== true) return html;
+  let attributes = gameEntryEnabled(env) ? ' data-game-path="/blackjack"' : '';
   if (selection) {
-    if (!isGameLaneId(selection.lane) || !dealers.has(selection.dealer) || !['local','original'].includes(selection.presentation)) throw Error('Invalid game presentation');
+    if (!isGameLaneId(selection.lane) || !dealers.has(selection.dealer) || !['local','original','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
+    if(selection.dealer==='nora'){if(selection.presentation!=='local'||selection.localDealer!=='nora')throw Error('Invalid game presentation');
+      attributes+=' data-game-local-dealer="nora"';}
     const packaged = selection.packageRevision !== undefined || selection.branding !== undefined;
     if (selection.operator !== undefined) {
       if (!isOperatorSlug(selection.operator)) throw Error('Invalid game presentation');
@@ -71,6 +74,11 @@ export function decorateGameEntryHtml(html,env,selection) {
         attributes += ` data-game-package-revision="${selection.packageRevision}" data-game-branding="${brandingAttribute(selection.branding)}"`;
       }
     } else if (packaged) throw Error('Invalid game presentation');
+    if (selection.composition !== undefined) {
+      const text=JSON.stringify(validateComposition(selection.composition));
+      if(text.length>32000)throw Error('Invalid game presentation');
+      attributes+=` data-game-composition="${attributeText(text)}"`;
+    }
     if (selection.choices !== undefined) {
       assertGameChoices(selection.choices);
       const text = JSON.stringify(selection.choices);

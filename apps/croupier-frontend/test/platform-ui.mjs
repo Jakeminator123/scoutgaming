@@ -260,6 +260,13 @@ test('prepared player uses the actual shared player and redirects retired BO doc
   try {
     const prepared = await preparePlatformUi({env, output: directory});
     assert.ok(prepared.files.includes('/app.mjs'));
+    assert.ok(prepared.files.includes('/composition-settings.mjs'));
+    assert.ok(prepared.files.includes('/presentation-composition.mjs'));
+    for (const name of ['compositor.js', 'geometry.js']) {
+      assert.ok(prepared.files.includes('/composition-runtime/' + name));
+      assert.equal(await readFile(join(directory, 'public/composition-runtime', name), 'utf8'),
+        await readFile(new URL('../../../test-videoeditor/program/web/' + name, import.meta.url), 'utf8'));
+    }
     assert.ok(prepared.files.every(path => !path.startsWith('/bo/')));
     assert.ok(prepared.files.includes('/casino.mjs'));
     assert.ok(prepared.files.includes('/vendor/three/GLTFLoader.js'));

@@ -54,7 +54,11 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     value.gameLanes = lanes.gameLanes;
     value.gameLane = body.lane;
   });
-  change('game-lanes/create', ['definition'], (value, body) => {
+  change('game-lanes/create', ['definition'], async (value, body) => {
+    if (body.definition?.dealer === 'nora') {
+      const savedProject = await repository.readDocument('project');
+      if (!savedProject?.value?.dealers?.some(row => row.id === 'nora')) fail(422);
+    }
     const lanes = gameLaneConfiguration(value);
     let next;
     try { next = validateGameLanes([...lanes.gameLanes, body.definition]); } catch { fail(); }

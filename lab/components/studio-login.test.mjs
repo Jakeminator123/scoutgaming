@@ -164,3 +164,21 @@ test('native login page binds handoff completion to configured game origin',asyn
     assert.equal(tree.props.gameOrigin,gameOrigin);assert.equal(tree.props.authBase,authBase);assert.equal(tree.props.returnTo,returnTo);
   }
 });
+
+test('partner set-password posts token and password to the partner auth base', async () => {
+  for (const authBase of ['/studio/api/partner', '/api/partner']) {
+    const h = harness(), writes = [], token = 'c'.repeat(43);
+    const props = { authBase, mode: 'set-password', token, fetchImpl: async (url, init) => { writes.push({ url, body: JSON.parse(init.body) }); return Response.json({ ok: true }); } };
+    let tree = h.render(props); h.effects(); tree = h.render(props);
+    assert.match(renderToStaticMarkup(tree), new RegExp(`action="${authBase}/set-password"`));
+    forms(tree)[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ pass: 'partner-password', confirm: 'partner-password' }) });
+    await flush();
+    tree = h.render(props);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].url, `${authBase}/set-password`);
+    assert.deepEqual(writes[0].body, { token, password: 'partner-password' });
+    assert.match(renderToStaticMarkup(tree), /Logga in i partnerportalen/);
+    assert.doesNotMatch(renderToStaticMarkup(tree), /Administratör|partner-password/);
+    h.unmount();
+  }
+});

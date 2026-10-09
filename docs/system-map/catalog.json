@@ -151,7 +151,7 @@
       "environment": "qa",
       "host": "Render + egna Vercel-/Neon-scopes",
       "url": "https://croupier-vercel-preview-qa.onrender.com",
-      "purpose": "Isolerad testserver, avläst LIVE på ee060804 5oktober00:14UTC. AI/tal/GPU/kamera fortsatt OFF; Cartesia-/RunPod-nycklar saknas. Native-QA har två Vercelbyggen: croupier-native-qa-abc92154cb15 och croupier-native-studio-qa-abc92154cb15. Den kvarvarande QA-disken är avsiktlig. Äldre croupier-player-preview-qa är en separat avvecklingskandidat med anslutna lagringsintegrationer; se CLOUD-MIGRATION.",
+      "purpose": "Isolerad testserver, avläst LIVE på ee060804 5oktober00:14UTC. AI/tal/GPU/kamera fortsatt OFF; Cartesia-/RunPod-nycklar saknas. Native-QA har två Vercelbyggen: croupier-native-qa-abc92154cb15 och croupier-native-studio-qa-abc92154cb15. Den kvarvarande QA-disken är avsiktlig. Det äldre Vercel-projektet croupier-player-preview-qa raderades 8 oktober 2026 efter att Neon och Blob flyttats till teamet scoutgaming; se CLOUD-MIGRATION.",
       "status": "documented",
       "sources": [
         "docs/JOHN-HANDOFF.md",

@@ -167,3 +167,60 @@ test('the wrong revision is 409 and a key outside the lane is 422', async () => 
   assert.equal(pool.packageCount(), 1);
   assert.equal((await store.getCurrentPackage(operatorId)).revision, 1);
 });
+
+import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import { defaultPresentationLane } from '../lib/studio-model.mjs';
+import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { layerAssetPath, validatePresentationPackage } from '../../web/presentation-layers.mjs';
+
+const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
+function makePresentation(layered=true) {
+  const assets=[['table',tableId,'Bordbild','image/png'],['background',backgroundId,'Bakgrundsfilm','video/webm']].map(([role,id,label,contentType])=>{
+    const asset={schemaVersion:1,id,role,label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};
+    return {...asset,pathname:layerAssetPath(asset)};
+  });
+  const lane={...defaultPresentationLane(),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
+    layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','vera']}},
+    ...(layered?{composition:defaultCompositionSettings()}: {})};
+  return validatePresentationPackage({schemaVersion:1,projectRevision:'test-r1',lanes:[lane],assets});
+}
+
+test('canonical package rejects incompatible baked layer choices while retaining approved playback',async()=>{
+  const presentation=makePresentation(false);
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  let writes=0;
+  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}},readProject:async()=>assert.fail('published package must be authoritative')});
+  assert.deepEqual((await api.read({operatorId})).adjustable,['dealer','branding']);
+  for(const branding of [{table:tableId},{background:backgroundId},{color:'#112233'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===422);
+  assert.equal(writes,0);
+  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',dealer:'vera'}});
+  assert.equal(saved.presentation.lanes[0].layers.dealer.default,'astrid');
+  assert.equal(writes,1);
+});
+test('canonical separate layers accept exact assigned assets and preserve games and room IDs',async()=>{
+  const presentation=makePresentation();
+  let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async input=>{current={...input,revision:current.revision+1};return current;}},readProject:async()=>assert.fail('no live catalogue fallback')});
+  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{background:'foreign-asset'}}),error=>error.statusCode===422);
+  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'vera'}});
+  assert.equal(saved.packageRevision,2);
+  assert.equal(saved.branding.table,tableId);
+  assert.equal(saved.presentation.assets.find(asset=>asset.id===tableId).contentType,'image/png');
+  assert.deepEqual(current.games,['blackjack']);
+  assert.deepEqual(current.tables,['room-1']);
+  assert.deepEqual(current.lanes,['mobile-phone']);
+});
+
+test('a package changed after the read is rejected by the atomic publisher',async()=>{
+  const presentation=makePresentation();
+  const current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
+  let attempts=0;
+  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>structuredClone(current),publishPackage:async input=>{
+    attempts++;
+    assert.equal(input.expectedRevision,1);
+    throw Object.assign(Error('changed while awaiting publication'),{statusCode:409});
+  }},readProject:async()=>assert.fail('no live fallback')});
+  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{dealer:'vera'}}),error=>error.statusCode===409);
+  assert.equal(attempts,1);
+  assert.equal(current.revision,1);
+});

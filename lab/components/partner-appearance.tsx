@@ -1,13 +1,16 @@
 'use client';
 
+import type {PresentationPackage} from '../../web/presentation-layers.mjs';
 import { useState } from 'react';
 import styles from './partner-appearance.module.css';
+import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
 
 // Lane token table.color is stored on the package as branding.color.
 const TABLE_COLOR_KEY = 'color';
 const BRANDING_FIELDS = ['name', 'logo', 'wordmark', 'primary', 'accent'] as const;
 const ADJUSTMENTS = [
   ['table.color', 'Bordsfärg'],
+  ['table', 'Bord'],
   ['background', 'Bakgrund'],
   ['dealer', 'Dealer'],
   ['branding', 'Branding'],
@@ -28,6 +31,8 @@ export type PartnerAppearanceInitial = {
   lanes: readonly string[];
   branding: Readonly<Record<string, unknown>>;
   adjustable: readonly string[];
+  presentation?: PresentationPackage;
+  canConfigure?: boolean;
 };
 
 function textOf(branding: Readonly<Record<string, unknown>>, key: string) {
@@ -43,19 +48,26 @@ function expandHex(value: string) {
 function brandingFields(branding: Readonly<Record<string, unknown>>) {
   const keys = [...BRANDING_FIELDS] as string[];
   for (const key of Object.keys(branding)) {
-    if (key !== TABLE_COLOR_KEY && typeof branding[key] === 'string' && !keys.includes(key)) keys.push(key);
+    if (![TABLE_COLOR_KEY,'background','table','dealer','lane'].includes(key) && typeof branding[key] === 'string' && !keys.includes(key)) keys.push(key);
   }
   return Object.fromEntries(keys.map(key => [key, textOf(branding, key)]));
 }
 
-export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
+export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'all' }: {
   initial: PartnerAppearanceInitial;
   apiBase: string;
   operatorSlug: string;
+  section?: 'all'|'theme'|'design'|'background'|'dealers';
 }) {
-  const allowed = new Set(initial.adjustable);
+  const [laneId,setLaneId]=useState(initial.presentation?.lanes.find(row=>row.id===initial.branding.lane)?.id??initial.presentation?.lanes[0]?.id??'');
+  const lane=initial.presentation?.lanes.find(row=>row.id===laneId);
+  const allowed = new Set<string>(lane?effectivePartnerAdjustments(lane):initial.adjustable);
+  const editable=initial.canConfigure!==false;
+  const fields=ADJUSTMENTS.filter(([id])=>section==='all'||section==='theme'&&id==='branding'||section==='design'&&['table','table.color'].includes(id)||section==='background'&&id==='background'||section==='dealers'&&id==='dealer');
+  const [choices,setChoices]=useState<Record<string,string>>(()=>Object.fromEntries(['background','table','dealer'].map(role=>[role,textOf(initial.branding,role)])));
+
   const [revision, setRevision] = useState(initial.packageRevision);
-  const [color, setColor] = useState(textOf(initial.branding, TABLE_COLOR_KEY));
+  const [color, setColor] = useState(textOf(initial.branding, TABLE_COLOR_KEY)||lane?.layers.table.colors?.[0]||'#000000');
   const [texts, setTexts] = useState<Record<string, string>>(() => brandingFields(initial.branding));
   const [problem, setProblem] = useState('');
   const [saved, setSaved] = useState('');
@@ -64,9 +76,12 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
   const picker = colorHex ? expandHex(color) : '#000000';
 
   async function save() {
-    const branding: Record<string, string> = {};
-    if (allowed.has('table.color')) branding[TABLE_COLOR_KEY] = color;
-    if (allowed.has('branding')) {
+    const branding: Record<string, string|null> = {};
+    if(!editable)return;
+    if(lane){branding.lane=lane.id;for(const role of ['background','table','dealer'] as const)if(fields.some(([id])=>id===role)&&allowed.has(role))branding[role]=choices[role]||null;}
+
+    if (fields.some(([id])=>id==='table.color')&&allowed.has('table.color')) branding[TABLE_COLOR_KEY] = expandHex(color).toLowerCase();
+    if (fields.some(([id])=>id==='branding')&&allowed.has('branding')) {
       for (const [key, value] of Object.entries(texts)) branding[key] = value;
     }
     setBusy(true);
@@ -100,10 +115,18 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
   return (
     <section className={styles.panel}>
       <p>Revision {revision}</p>
-      <p>Lanes {initial.lanes.join(', ')}</p>
+      {initial.presentation?<label>Lane<select value={laneId} onChange={event=>{
+        setLaneId(event.target.value);const next=initial.presentation?.lanes.find(row=>row.id===event.target.value);
+        setChoices(Object.fromEntries(['background','table','dealer'].map(role=>[role,next?.layers[role as 'background'|'table'|'dealer'].default??''])));
+        setColor(next?.layers.table.colors?.[0]??'#000000');
+      }}>{initial.presentation.lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:<p>Lanes {initial.lanes.join(', ')}</p>}
+
       {saved ? <p role="status">Sparad revision {saved}</p> : null}
       {problem ? <p role="alert">{problem}</p> : null}
-      {ADJUSTMENTS.map(([id, label]) => {
+      {!editable?<p>Din roll kan läsa paketet. Ändring kräver rättigheten att konfigurera presentationer.</p>:null}
+      {lane&&!lane.composition?<p>Fullbildsklipp: bord och bakgrund är inbakade och kan inte bytas separat.</p>:null}
+      <fieldset disabled={!editable||busy} style={{border:0,padding:0,margin:0,display:'grid',gap:16}}>
+      {fields.map(([id, label]) => {
         if (!allowed.has(id)) {
           return (
             <label key={id} className={styles.row}>
@@ -113,6 +136,7 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
           );
         }
         if (id === 'table.color') {
+          if(lane?.layers.table.colors?.length)return <label key={id} className={styles.row}>{label}<select value={color} onChange={event=>setColor(event.target.value)}>{lane.layers.table.colors.map(value=><option key={value} value={value}>{value}</option>)}</select></label>;
           return (
             <div key={id} className={styles.row}>
               <label>
@@ -140,14 +164,13 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
             </div>
           );
         }
-        return (
-          <label key={id} className={styles.row}>
-            {label}
-            <input type="text" aria-label={label} value="" readOnly />
-          </label>
-        );
+        const layer=lane?.layers[id as 'background'|'table'|'dealer'];
+        return <label key={id} className={styles.row}>{label}<select aria-label={label} disabled={!layer} value={choices[id]??''} onChange={event=>setChoices(current=>({...current,[id]:event.target.value}))}>
+          <option value="">Lanens standard</option>{layer?.allowed.map(value=><option key={value} value={value}>{initial.presentation?.assets.find(asset=>asset.id===value)?.label??value}</option>)}
+        </select></label>;
       })}
-      <button type="button" className="sg-btn sg-btn-primary" disabled={busy} onClick={save}>Spara utseende</button>
+      </fieldset>
+      <button type="button" className="sg-btn sg-btn-primary" disabled={!editable||busy||!fields.some(([id])=>allowed.has(id))} onClick={save}>Spara utseende</button>
     </section>
   );
 }

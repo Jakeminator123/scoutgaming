@@ -1,3 +1,4 @@
+import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
@@ -15,7 +16,7 @@ function fixture() {
     return { all: async () => state.rows, get: async () => ({ id: 7, username: 'someone', n: 1 }),
       run: async (...args) => { state.writes.push({ sql, args }); return { changes: 1 }; } };
   }, transaction: work => work() };
-  const repository = { readDocument: async () => structuredClone(state.document), async saveDocument(kind, options) {
+  const repository = { readDocument: async kind => kind === 'project' ? {value:state.project??createSeedProject()} : structuredClone(state.document), async saveDocument(kind, options) {
     state.writes.push({ kind, options });
     if (state.document.revision !== options.expectedRevision) throw Object.assign(Error('Conflict'), { statusCode: 409 });
     state.document = { revision: 'studio-new', value: options.value }; return state.document;
@@ -158,4 +159,12 @@ test('players expose an exact boolean password capability without changing accou
   assert.deepEqual(result.players.map(row=>row.passwordChangeAllowed),[true,true,false,false]);
   assert.match(f.state.reads.at(-1),/EXISTS\(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id\)/);
   assert.deepEqual(f.state.writes,[]);
+});
+
+test('Nora catalogue registration requires her saved dealer identity and staff role',async()=>{
+ const f=fixture(),body={definition:{...GAME_LANES[0],id:'nora-room',label:'Nora',dealer:'nora',mediaCollection:'nora-presentation'},expectedRevision:'studio-original'};
+ await assert.rejects(f.call('POST','game-lanes/create',body));assert.equal(f.state.writes.length,0);
+ f.state.project=addDealer(createSeedProject(),'nora','Nora');
+ await assert.rejects(f.data.handlers.get('POST /studio/api/admin/game-lanes/create')({...f.context(body),actor:{user:'viewer',role:'reader'}}),e=>e.statusCode===403);
+ await f.call('POST','game-lanes/create',body);assert.equal(f.state.document.value.gameLanes.at(-1).dealer,'nora');
 });

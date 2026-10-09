@@ -4,6 +4,7 @@ import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
 import { controlToolPath } from '@/lib/control-workspace.mjs';
+import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-native-runtime.mjs';
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
@@ -21,6 +22,27 @@ function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null 
   const host = read('x-forwarded-host') || read('host');
   const safeHost = /^[A-Za-z0-9.-]+(?::\d{1,5})?$/.test(host) ? host : 'invalid';
   return `${proto}://${safeHost}/partner/login`;
+}
+
+type ListedOperator = { id: string; slug: string; name: string };
+
+// Fixture operators only while the native store is offline. An empty store stays empty.
+async function controlOperators(fallback: ListedOperator[]) {
+  if (!nativeStudioAdminEnabled()) return fallback;
+  try {
+    const native = await studioNativeRuntime();
+    if (typeof native.listLaneOperators !== 'function') return fallback;
+    const listed = await native.listLaneOperators();
+    if (!Array.isArray(listed)) return fallback;
+    const operators: ListedOperator[] = [];
+    for (const operator of listed) {
+      if (!operator || typeof operator.id !== 'string' || typeof operator.slug !== 'string' || typeof operator.name !== 'string') return fallback;
+      operators.push({ id: operator.id, slug: operator.slug, name: operator.name });
+    }
+    return operators;
+  } catch {
+    return fallback;
+  }
 }
 
 function statusOf(error: unknown) {
@@ -63,8 +85,9 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
     const tool = controlToolPath(route.view);
     if (tool) redirect(publicAbsoluteUrl(h, tool));
     // Översikt must never fail on a snapshot without operators; the fixture always has them.
-    const operators = (Array.isArray(data.snapshot.operators) ? data.snapshot.operators : [])
-      .map(({ id, slug, name }: { id: string; slug: string; name: string }) => ({ id, slug, name }));
+    const fallback = (Array.isArray(data.snapshot.operators) ? data.snapshot.operators : [])
+      .map(({ id, slug, name }: ListedOperator) => ({ id, slug, name }));
+    const operators = await controlOperators(fallback);
     return <ControlWorkspace user={user} initialView={route.view} operators={operators} />;
   }
   if (route.operatorSlug === null) {

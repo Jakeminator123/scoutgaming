@@ -44,8 +44,8 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/preview`, `/control/probe`. `/control/tree` och `/control/operator-chat` omdirigerar. |
-| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men kräver roller (N2.2). Spelare, transaktioner och rapporter är inte anslutna. T2 är påbörjad, inte klar. |
-| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` begränsar lane och dealer till paketet; Vercels `/play/blackjack` gör det inte än. Historiksidan anropar `POST /api/history`. T4 är öppen. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
+| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Historiksidan anropar `POST /api/history`. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -586,7 +586,7 @@ Ingen generell medieradering eller ny mänsklig synkapproval följer av dedup.
 
 | Tjänst | ID / disk | Ansvar |
 | --- | --- | --- |
-| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. Beteendet är inte live-verifierat. `ops/neon-game/006-player-profile.sql` väntar på körning mot spel-Neon. |
+| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. `/api/profile` och `/api/operators/<slug>` svarar live. `ops/neon-game/006-player-profile.sql` kördes 8 oktober 16:48 mot databasen `croupier_game` i Neon-projektet `croupier-production` (hette `croupier-astrid-background-zones-db` till 17:15 samma dag); kolumnerna verifierade, 4 spelare oförändrade. |
 | croupier-vercel-preview-qa | srv-datj7l893c1s73ar3u50; /var/data, 1 GB | Separat QA/SDK/data/journal/cache |
 | croupier-lab-director | /data/catalog, 1 GB | Katalog/historik/CompanionDB |
 | croupier-lab-openclaw | /data/openclaw, 1 GB | Konfiguration/agentfiler/sessioner/sökDB |
@@ -606,7 +606,7 @@ Karta/envregister anger tjänstebindning/nyckelnamn, aldrig hemliga värden.
 | scoutgaming-legacy-frontend | Tidigare croupier-frontend; domänlös reserv med Git-byggen och automatisk domäntilldelning avstängda |
 | croupier-native-qa-abc92154cb15 | Befintlig isolerad testfrontend |
 | croupier-native-studio-qa-abc92154cb15 | Tillhörande isolerad Studio |
-| croupier-player-preview-qa | Äldre testfront med Blob/Neonintegrationer; kandidat efter ägar-/konsumentkontroll |
+| croupier-player-preview-qa | **Raderat 8 okt 18:40** på Jakobs beslut (legacy; inga egna domäner). Hade förlorat Neon-kopplingen 17:25 när Neon `croupier-production` och Blob `croupier-media-private` flyttades till teamet `scoutgaming` (se `ENVIRONMENT-VARIABLES.md`) |
 
 Ett repo/en produktionssajt finns genom ett projekt med två Services.
 Det gamla croupier-lab-ui-ID:t bär nu hela projektet, vilket bevarar dess

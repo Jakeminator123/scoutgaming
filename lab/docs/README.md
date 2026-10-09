@@ -4,26 +4,69 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov från grenen `test-video-jakob`), Lanes `/control/lanes` (publicera paket; Renders `/blackjack?operator=` läser det, Vercels `/play/blackjack` gör det inte än), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
-- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2).
-- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` begränsar lane och dealer till paketet; Vercels `/play/blackjack` gör det inte än. Render-deploy av `POST /api/history` är öppen (L7).
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Sammansättning**, **Innehåll** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
+- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
-**En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
+**En presentation är en återanvändbar profil** med dealer, bord och bakgrund. Tekniskt heter den presentationslane och skiljer sig från spelets spellane.
+Börja i **Sammansättning**. Öppna Innehåll för klipp och exakta spelar-/dealerpositioner; fortsätt till Publicering när presentationen är sparad.
+Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
+Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
+På Innehåll kan du lägga till **Nora** som egen dealer och spara projektet.
+Hon får 16 egna, tomma händelsekopplingar; ingen Astridfilm eller inspelad replik följer med.
+Skapa därefter en spellane för Nora under Drift → Bord & spelrum och välj samma dealer-id.
+Lägg in hennes filmer i Klippbibliotek med rätt dealer, händelse och typ. Varje film
+har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
+Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
+
+I Sammansättning väljer du dealerklipp, bakgrund och bord i samma presentation.
+Förhandsvisa klipp är ett provval och ändrar ingen koppling till spelets händelser.
+Utdelning skiljer Spelarplats 1–7 från dealerns öppna och dolda kort.
+En position utan klipp hoppas över i spelet utan ersättningsfilm och stoppar inte
+publicering. Kortet visas fortfarande av spelmotorn. Vänster/mitten/höger är
+tekniska grupper för platser 1–2, 3–5 och 6–7; välj den exakta spelarplatsen. Hand- och
+kortnummer hör till den exakta händelsen; saknad platskoppling visas som saknad.
+Lagerbiblioteket tar bild/video när den sparade studion är ansluten. Videoeditorn
+visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
+Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
+Placeringarna sparas i lanen och fryses i bolagspaketet. **Exportera paket (JSON)**
+är ett manifest med filreferenser; medier följer inte med som en nedladdad ZIP.
+Partnerns designval och spelarens medier begränsas till det publicerade paketet.
+
+Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.
+Fullbildsklipp behåller sina egna bord och bakgrunder. Noras vänteloop kräver
+hennes egen sparade idle-baseline och spelas ljudlöst; saknad Nora-film lånar
+inget från Astrid. Befintlig live AI-chatt är fortsatt avgränsad till originaldealers.
+Nora och nya lagerinställningar kan sparas till produktion först när Render
+svarar med rätt presentationskapacitet; ett avvisat sparande lämnar utkastet kvar.
+Render måste uppdateras separat om automatisk deploy är avstängd.
+Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet finns kvar.
+
+
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
-välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov för marker, kort, bord och bakgrund.
-Lane-notisen och meddelandet vid ändring visar den gränsen.
-Bolagets utseende (`branding`) kan läsas och skrivas inom lanen, men skrivningen kräver roller (N2.2).
-Utkasten försvinner vid omladdning eller operatörsbyte.
+välja tilldelat innehåll och tillåtna designval. Inloggad nivå 2 läser det frysta
+operatörspaketets dealer, bord och bakgrund, inklusive bild- och videoformat.
+Bord, Bakgrund och Presentationslanes visar paketets tillåtna inställningar;
+Färger, marker och kort visar dess branding. Skrivning kräver
+`presentations.configure`, rätt revision och val inom samma tilldelade lane.
+Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
+Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
+Provbord länkar till den riktiga spelklienten med operatör och lane.
+Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
+visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
 Begrepp och en kort flödeskarta finns i
 [den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
-Partner-session finns via `/partner/login`. Skrivning av `branding` kräver roller (N2.2).
-Chips och övrig bordsdesign är inte klara (L4), och ett menyval ger ingen behörighet.
+Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
+Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet. I molnet öppnar du
+**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen.
+Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
+tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
+API och tillgångar under basePath behålls. I molnet öppnar du
 [`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
@@ -43,7 +86,7 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
-Från Översikt når du **Dealers & klipp**, **Administration** och **OpenClaw** (flikarna Agentmodeller och Chatt).
+Från Översikt når du **Innehåll**, **Administration** och **OpenClaw** (flikarna Agentmodeller och Chatt).
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
@@ -52,12 +95,14 @@ Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
 verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
 är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
 medan spelbolagets egen personal bara får tillgång till sin organisation.
-Välj dealer på Dealers & klipp och arbeta i **Idle**, **Kort & deal** eller
-**Fasta repliker**. Bakgrundszoner och Talgranskning är länkar, inte flikar.
+Välj dealer på Innehåll och arbeta i **Grundloop**, **Utdelning** eller
+**Repliker**. Grundloop upprepar idle-klipp: basklippet visar vila/andning,
+variationerna kan till exempel visa att dealern kliar sig i huvudet.
+Vikter, urvalsregler, tester och diagnostik öppnas vid behov under Avancerat.
 Uppladdning hör till
 klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
 tekniska detaljer är sekundära verktyg; avancerade regler och diagnostik
-ligger under Verktyg.
+ligger under Avancerat i respektive vy.
 
 Klippöversikten visar kompakta situationskort med **Spela standard** och
 **Inställningar**. Sök efter namn, replik eller plats; öppna **Filer** för
@@ -70,13 +115,10 @@ Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
 
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
-de ärver inte Astrids idle/Probe-inställningar. Dragge och Paow har var sin
-porträttbank och lane men inga klippval i Dealers & klipp ännu; deras standardfilmer
-och varianter kommer ur bankens eget manifest. Fasta repliker är inspelat
-exakt tal. Probe i Talgranskning är ett textprov (L4). Det skapar inte ljud
-eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
+de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
+exakt tal. **Tal vid inaktivitet** ligger under Studio. Det separata textprovet
+skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
-Bakgrundsytans molnsparning är inte bevis på spelintegration.
 
 Administration visar 11 sektioner under drift/spelintegritet, spel/lanes/bord,
 konton, partner, betalningar/journal och talgranskning. Lägga till, ta bort och
@@ -87,11 +129,11 @@ de saknar verifierad koppling till den aktuella spelvägen. Policyn
 Äldre sparade värden,
 API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
-klipparbete finns under Dealer & klipp. E-postmallar är förhandsvisningar.
-Andra dealers visar bara de klippkategorier som stöds; Astrids Probe, bakgrund
-och familjeuppladdning visas inte som verktyg för Vera, Amira, Mei, Dragge eller Paow.
+klipparbete finns under Innehåll. E-postmallar är förhandsvisningar.
+Andra dealers visar bara de klippkategorier som stöds; Astrids talinitiativ
+och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 
-**Lanes:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
+**Publicering:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En lane väljer vilken
 presentation och mediesamling som används. Mobile Phone Lane är enda
 standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Administration →
@@ -120,8 +162,9 @@ och saldo flyttas eller återställs inte för provet.
 lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
 **Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
 och nivå 3 (`/play`). Utan `partner_session` visas demonstrationer.
-Inloggad operatör ser sitt bolags snapshot. Paket, spelare och design är inte
-kopplade till spelet (L2, L3, L10).
+Inloggad operatör ser sitt bolags snapshot och det publicerade lane-paketet.
+Tillåtna branding- och lagerval sparas på paketet. Spelare, transaktioner och
+rapporter från spelmotorn är ännu inte anslutna till partnerportalen (N2.4).
 **Spelare, nivå 3** får använda
 spelet och nekas `/control`. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
@@ -168,40 +211,16 @@ historik och är inte produktionspolicy.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
-**Bakgrundszoner:** öppna **Bakgrund** på Astrids klippsida och dess zoneditor
-(`/control/zones` i molnet, `/zones` lokalt). Rita en pixelruta på
-1080×1920-startbilden, skapa ett tvåsekunders blinkklipp eller lägg in en
-MP4/WebM med exakt rutans storlek. Välj **Automatisk · högst 2/minut** i zonens
-Uppspelning om klippet ska starta själv: första start inom 10 sekunder,
-sedan minst 30 sekunder plus 0–10 sekunders slump mellan starter. Klippet
-spelas klart före nästa start. Välj **Hela tiden** för oavbruten loop eller
-**Av** för att dölja det. Finjustera X, Y, bredd och höjd i zonens panel och
-välj **Spara pixelruta**. Om storleken ändras behålls det gamla klippet för
-nedladdning, men visas inte förrän du skapar eller lägger in ett klipp med de
-nya måtten. Blinkklippet är en enkel ljuseffekt för prov, inte en mask som
-automatiskt känner igen lampans pixlar. Välj en snäv ruta runt själva lampan
-så att glöden inte spiller över väggen. Byt underliggande Astrid-film för att granska zonen
-mot olika tagningar; zonens timer är oberoende av dealerklippet. Alla
-provfilmer visas i samma 1080×1920-ruta, så en 612×1088-film skalas
-proportionellt och zonen behåller samma relativa läge. Kamerans faktiska
-registrering behöver ändå kontrolleras i varje tagning. Rutan är masken;
-ljusläget blandar bort
-svarta pixlar, medan normalläget visar filmens egen alfakanal om den finns.
-**Webbläsarkopia** sparar koordinater och klipp i din lokala webbläsarprofil.
-**Spara till molnet** sparar koordinater i zonernas separata Neon-databas och
-klipp i privat Blob när ytan visar att molnlagringen är konfigurerad.
-**Läs från molnet** öppnar molnvyn och behåller webbläsarkopian. Exportera JSON
-och ladda ned klippen om du behöver en separat specifikation eller backup.
-Automatisk gäller i Labbets förhandsvisning;
-zonerna styr ännu inte spelets spelare (L16). Kontrollera kameraregistrering och
-ocklusion för varje tilltänkt klipp innan användning.
+**Bord och bakgrund:** välj eller ladda upp bild/video i Sammansättning.
+Greenscreen-dealern, bordet och bakgrunden kan spelas som separata lager.
+Bakgrundszoner har tagits bort ur arbetsflödet; tidigare sparade zondata bevaras.
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Probe, Bakgrundszoner och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Innehåll leder till Tal vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).

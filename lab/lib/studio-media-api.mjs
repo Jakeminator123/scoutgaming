@@ -2,12 +2,15 @@ import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
+import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'} });
-export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mutationTransaction} = {}) {
+export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mutationTransaction, baseOverride} = {}) {
   if (typeof authorize !== 'function' || !config || !['/api/admin','/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
-  const scope = validateStudioScope(config.scope), base = config.apiBase === '/api/admin' ? '/api/videos' : '/studio/api/videos';
+  const scope = validateStudioScope(config.scope), prefix = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
+  if (baseOverride !== undefined && baseOverride !== `${prefix}/layer-assets`) fail('studio_invalid_configuration');
+  const base = baseOverride ?? `${prefix}/videos`;
   async function principalFor(request) {
     const session = await authorize(request);
     if (!session || !['admin','superadmin'].includes(session.role)
@@ -48,7 +51,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         }
         fail('studio_invalid_request',400);
       }
-      if (path === `${base}/classify` && request.method === 'POST') {
+      if (baseOverride === undefined && path === `${base}/classify` && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin
           || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
         const body = await readStudioDocumentJson(request);
@@ -65,9 +68,10 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
             // uploads are classified with prior metadata + exact bytes + row CAS.
             if (!current || current.sha256 !== body.sha256 || current.classification.familyId
               || canonicalStudioJson(body.previous) !== canonicalStudioJson(current.classification)) fail('studio_conflict',409);
+            await requireSavedVideoDealer(repository,body.metadata?.dealerId);
             await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.metadata,actor});
-          });
-        });
+          }, {presentationMutation:{metadata:body.metadata}});
+        }, {presentationMutation:{metadata:body.metadata}});
         return json(await videoRegistry());
       }
       if (request.method === 'POST' && path === base) fail('studio_media_upload_not_ready');

@@ -49,14 +49,14 @@ export function IdleReactions(props: Props) {
         const offered = props.mode === 'active' && typeof result.videoId === 'string' && ttl > 0 && ttl <= 30000
           && current.current.onOffer({ videoId: result.videoId, requestId: input.requestId, expiresAt: performance.now() + ttl });
         current.current.onActivity({ source: 'lab', stage: 'decision', status: 'observed', runId: input.requestId,
-          title: 'Idle · reaktion på observerad chatt', owner: 'Labbets idle-rådgivare',
+          title: 'Grundloop · reaktion på chatt', owner: 'Grundloopens klippval',
           reason: offered ? 'Tillåten reaktion erbjuden. Spel och färdigt tal har företräde; detta är inte ett uppspelningskvitto.'
-            : 'Basloopen behålls. Skuggläge, ingen tillåten reaktion, gammalt råd eller tjänst utan rätt kontextkontrakt spelar ingen variant.',
+            : 'Grundloopen fortsätter. Skuggläge, ingen tillåten reaktion, gammalt råd eller tjänst utan rätt kontextkontrakt spelar ingen variant.',
           data: { sourceRef: result.sourceRef, provider: result.provider, videoId: result.videoId, wouldChooseId: result.wouldChooseId,
             offered: Boolean(offered), playbackConfirmed: false, contextReceipt: result.contextReceipt } });
       } catch {
         if (!controller.signal.aborted) current.current.onActivity({ source: 'lab', stage: 'decision', status: 'failed', runId: input.requestId,
-          title: 'Idle-råd saknas · basloop fortsätter', owner: 'Labbets idle-rådgivare',
+          title: 'Klippval saknas · grundloopen fortsätter', owner: 'Grundloopens klippval',
           reason: 'Ingen automatisk omkörning. Spel och tal fortsätter oberoende av rådgivaren.' });
       } finally { clearTimeout(timer); if (pending.current === controller) pending.current = null; }
     })();

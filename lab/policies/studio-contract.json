@@ -150,7 +150,7 @@
     },
     {
       "id": "probe",
-      "label": "Probe",
+      "label": "Tal vid inaktivitet",
       "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i labbet; spelmotorns event-ID:n är oförändrade."
     },
     {
@@ -166,7 +166,7 @@
     {
       "id": "presentation-lane",
       "label": "Lane / presentationsprofil",
-      "definition": "En sammanhållen uppsättning klipp, varianter, bakgrund, idle och urvalsregler. Befintliga lane-ID:n och sparade profiler behålls. Tilldelning till verkliga operatörer från Partnerportalen återstår."
+      "definition": "Återanvändbar profil med dealers, klipp, bord, bakgrund och urvalsval. Sparade lanes publiceras i ett bolagspaket. Spelkopplingen kräver också en matchande spellane."
     },
     {
       "id": "presentation-director",

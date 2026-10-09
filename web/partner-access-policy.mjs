@@ -108,3 +108,36 @@ export function allowsPartnerRoleAssignment(context, assignment) {
     && [...currentRole.permissions, ...nextRole.permissions]
       .every(permission => context.role.permissions.includes(permission));
 }
+
+// An invitation links an existing partner account to a pre-existing, delegable
+// role in this operator. It never creates an account or a role, and the role
+// cannot carry a permission the inviter lacks.
+export function allowsPartnerInviteRole(context, role) {
+  return allowsPartnerResource(context, 'team.invite', role)
+    && validRole(role, context.scope, context.operator.id)
+    && own(role, ['delegable']) && role.delegable === true
+    && role.permissions.every(permission => context.role.permissions.includes(permission));
+}
+
+export function allowsPartnerInvite(context, invitation) {
+  if (!own(invitation, ['account', 'nextRole'])) return false;
+  const { account, nextRole } = invitation;
+  return allowsPartnerInviteRole(context, nextRole)
+    && own(account, ['userId', 'role']) && id(account.userId) && account.role === 'partner'
+    && account.userId !== context.account.userId;
+}
+
+// Suspension and reactivation move another member between active and suspended.
+// Their role must be delegable and within the actor's permissions, so protected
+// staff cannot be locked out through this path.
+export function allowsPartnerSuspension(context, change) {
+  if (!own(change, ['membership', 'currentRole', 'nextStatus'])) return false;
+  const { membership, currentRole, nextStatus } = change;
+  if (!allowsPartnerResource(context, 'team.suspend', membership)) return false;
+  const from = nextStatus === 'suspended' ? 'active' : nextStatus === 'active' ? 'suspended' : null;
+  return from !== null && own(membership, ['userId', 'roleId', 'status']) && id(membership.userId)
+    && membership.userId !== context.account.userId && membership.status === from
+    && validRole(currentRole, context.scope, context.operator.id) && membership.roleId === currentRole.id
+    && own(currentRole, ['delegable']) && currentRole.delegable === true
+    && currentRole.permissions.every(permission => context.role.permissions.includes(permission));
+}

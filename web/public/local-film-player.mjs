@@ -1,6 +1,6 @@
 // Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
 // to the verified asset; motion must use presented mediaTime, never wall time.
-export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, hold = () => {} }) {
+export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {} }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
@@ -28,9 +28,12 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     if (!video.requestVideoFrameCallback) { finish(new Error('Presented frame callbacks unavailable')); return; }
     const presentedFrame = (_, metadata) => {
       if (terminal) return;
-      if (!presented) { presented = true; video.style.visibility = ''; emit('presented'); }
-      try { onFrame?.(metadata.mediaTime); } catch (error) { finish(error); return; }
-      if (!terminal && onFrame) frame = video.requestVideoFrameCallback(presentedFrame);
+      try {
+        const composed = renderFrame?.(video, metadata) === true;
+        if (!presented) { presented = true; video.style.visibility = composed ? 'hidden' : ''; emit('presented'); }
+        onFrame?.(metadata.mediaTime);
+      } catch (error) { finish(error); return; }
+      if (!terminal && (onFrame || renderFrame)) frame = video.requestVideoFrameCallback(presentedFrame);
     };
     frame = video.requestVideoFrameCallback(presentedFrame);
     signal?.addEventListener('abort', abort, { once: true });

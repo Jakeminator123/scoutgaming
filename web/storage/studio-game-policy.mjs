@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
+import { isPresentationRoom } from '../presentation-room-contract.mjs';
 import { normalizeProject } from '../../lab/lib/studio-model.mjs';
 import {
   StudioStorageError, studioStorageFailure, validateStudioScope, validateRevision,
@@ -52,9 +53,10 @@ export function validateStudioGameAdministration(input) {
         || clipId.includes('..') || !object(record))) invalid();
   }
   for (const room of value.rooms) {
-    if (!exact(room, ['id', 'name', 'scene', 'felt', 'dealer', 'state'])
-      || !['id', 'name', 'scene', 'felt'].every(key => text(room[key], key === 'scene' ? 300 : 100))
-      || roomIds.has(room.id) || !dealerIds.includes(room.dealer) || !['live', 'preview', 'pending'].includes(room.state)) invalid();
+    const legacy = exact(room, ['id', 'name', 'scene', 'felt', 'dealer', 'state'])
+      && ['id', 'name', 'scene', 'felt'].every(key => text(room[key], key === 'scene' ? 300 : 100))
+      && dealerIds.includes(room.dealer) && ['live', 'preview', 'pending'].includes(room.state);
+    if ((!legacy && !isPresentationRoom(room)) || roomIds.has(room.id)) invalid();
     roomIds.add(room.id);
   }
   const tournamentIds = new Set();
@@ -97,6 +99,8 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const project = validateDocumentValue('project', projectDocument.value, validateRevision(projectDocument.revision));
       const administration = validateStudioGameAdministration(administrationDocument.value);
       validateRevision(administrationDocument.revision);
+      if (gameLaneConfiguration(administration).gameLanes.some(lane => lane.dealer === 'nora')
+        && !project.dealers.some(dealer => dealer.id === 'nora')) fail('studio_invalid_game_policy', 422);
       // Old tier names do not make retired indexed assets dependencies of a
       // portrait lane. Indexed adapters keep their exact availability checks.
       const indexed = gameLaneConfiguration(administration).gameLanes.filter(lane => lane.renderer === 'indexed-video');
@@ -141,7 +145,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const next = { ...saved, [kind]: { kind, revision: expectedRevision, value: proposed } };
       validate(next.project, next.administration, idle, { write: true });
       return repo.saveDocument(kind, { value: proposed, expectedRevision, actor });
-    });
+    }, { presentationMutation: {kind,value:proposed} });
   }
   const api = {
     scope, readSaved,

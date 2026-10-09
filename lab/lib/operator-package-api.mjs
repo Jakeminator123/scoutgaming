@@ -1,5 +1,8 @@
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
 import { defaultPresentationLane, normalizeProject } from './studio-model.mjs';
+import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
+import { validateGameLanes } from '../../web/public/game-lanes.mjs';
+import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -49,18 +52,24 @@ function publicOperator(operator) {
   return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status };
 }
 
-export function createOperatorPackageApi({ pool, scope, project, now = () => Date.now(), storeFactory } = {}) {
+export function createOperatorPackageApi({ pool, scope, project, gameLanes, now = () => Date.now(), storeFactory } = {}) {
   const handlers = new Map();
   async function store() {
     return openWritableOperatorStore({ pool, scope, now, storeFactory });
   }
-  async function allowedLaneIds() {
-    const current = typeof project === 'function' ? await project() : project;
-    return presentationLaneIds(current);
-  }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
     exactKeys(context.body, ['operatorId', 'lanes']);
-    const lanes = selectedLanes(context.body.lanes, await allowedLaneIds());
+    const saved = normalizeProject(typeof project === 'function' ? await project() : project);
+    const lanes = selectedLanes(context.body.lanes, presentationLaneIds(saved));
+    const source = saved.lanes?.length ? saved : { ...saved, lanes: [defaultPresentationLane()] };
+    const presentation = buildPresentationPackage(source, lanes, saved.layerAssets ?? []);
+    const noraLanes = presentation.lanes.filter(lane => lane.layers.dealer.allowed.includes('nora'));
+    if (noraLanes.length) {
+      let catalogue;
+      try { catalogue = validateGameLanes(typeof gameLanes === 'function' ? await gameLanes() : gameLanes); }
+      catch { fail(422); }
+      if (noraLanes.some(lane => !catalogue.some(server => server.id === lane.id && server.dealer === 'nora' && server.renderer === 'portrait-video'))) fail(422);
+    }
     const operators = await store();
     // Publishing lanes must not wipe what the operator saved through the partner
     // branding API; games and tables are carried forward the same way.
@@ -68,10 +77,11 @@ export function createOperatorPackageApi({ pool, scope, project, now = () => Dat
     const published = await operators.publishPackage({
       actor: context.actor.user,
       operatorId: context.body.operatorId,
+      expectedRevision: current?.revision ?? null,
       lanes,
       games: current?.games?.length ? [...current.games] : ['blackjack'],
       tables: current ? [...current.tables] : [],
-      branding: current ? structuredClone(current.branding) : {},
+      branding: withPackagePresentation(current?.branding ?? {}, presentation),
     });
     return {
       ok: true,
@@ -81,6 +91,7 @@ export function createOperatorPackageApi({ pool, scope, project, now = () => Dat
       lanes: [...published.lanes],
       games: [...published.games],
       tables: [...published.tables],
+      presentation,
     };
   });
   handlers.set('POST /studio/api/admin/operator-create-demo', async context => {

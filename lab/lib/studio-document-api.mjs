@@ -76,7 +76,7 @@ export function createStudioDocumentApi({ repository, authorize, config, validat
         const current = await authorize(request);
         if (documentSession(current,scope) !== actor || current.role !== role) fail('studio_request_rejected',403);
         return store.save(body[field],body.expectedRevision);
-      });
+      }, {presentationMutation:{kind:field === 'project' ? 'project' : 'social-policy',value:body[field]}});
       return json({[field]:saved});
     } catch (error) { return nativeStudioErrorResponse(error); }
   } });

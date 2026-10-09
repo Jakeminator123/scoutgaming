@@ -1,3 +1,4 @@
+import {createLayerComposition} from './presentation-composition.mjs';
 import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
@@ -47,6 +48,7 @@ const CLIP = {
 // Each dealer is a complete asset set (streams, voice, scene, table art) and
 // a rail anchor: the v-fraction where her table's rail top sits in her video.
 const DEALERS = {
+  nora: { key: 'nora', base: 'dealers/nora', anchor: 0.878, name: 'Nora' },
   vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
             scene: 'dealers/astrid/scene.png', sceneWK: 2.63602, sceneHK: 1.11831,
@@ -63,17 +65,20 @@ const DEALERS = {
   paow:   { key: 'paow',   base: 'dealers/paow',   anchor: 0.878, name: 'Paow' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
-const DEALER = DEALERS[entrySelection.dealer];
-const localPresentationEnabled = entrySelection.presentation === 'local';
+const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };
+const layeredPresentationEnabled = entrySelection.presentation === 'layered';
+const localPresentationEnabled = entrySelection.presentation === 'local' || layeredPresentationEnabled;
 if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
+if (entrySelection.lane === 'layer-preview') document.title = 'Layer Preview Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;
 if (localPresentationEnabled) {
-  document.documentElement.dataset.presentation = 'local';
+  document.documentElement.dataset.presentation = layeredPresentationEnabled ? 'layered' : 'local';
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/local-presentation.css'; document.head.append(css);
   $('#supervisor')?.removeAttribute('src');
   $('#supervisor')?.load();
 }
+document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let speechPoseGate = null;
@@ -85,17 +90,21 @@ let legacyClipConfiguration = null;
 const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
-if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
+if (dealerV2Route && !localPresentationEnabled && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
+const layerComposition = createLayerComposition(document,entrySelection.composition);
 const playerChoice = entrySelection.choices ? resolvePlayerSelection({
   choices: entrySelection.choices,
   search: location.search,
   stored: readChoices(localStorage, entrySelection.operator),
   branding: entrySelection.branding,
   currentDealer: entrySelection.dealer,
+  composition:entrySelection.composition,
 }) : null;
 if (playerChoice) {
   writeChoices(localStorage, entrySelection.operator, playerChoice.nextStored);
   if (playerChoice.tableColor) applyTableColor(document, playerChoice.tableColor);
+  if(playerChoice.backgroundValue)layerComposition?.setBackground(playerChoice.backgroundValue);
+  if(playerChoice.tableValue)layerComposition?.setTable(playerChoice.tableValue);
   if (playerChoice.navigateDealer) location.replace(dealerVersionPath(playerChoice.navigateDealer, dealerV2Route ? 'v2' : 'original', location.search));
 }
 {
@@ -516,21 +525,39 @@ speechPoseGate = createSpeechPoseGate({
 });
 if (localPresentationEnabled) {
   try {
-    const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([import('./performance-player.mjs'), import('./local-presentation.mjs'), import('./local-card-overlay.mjs')]);
-    performancePlayer = new PerformancePlayer({ host: $('#scene') });
-    localPresentation = await createLocalPresentation({ player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
-      version: () => tableVersion, muted: () => voice.muted,
-      receipt: entry => nativeObservation.emit('playback', entry),
-      onIdle: () => presentStandardIdle('local-primary-frame'),
-      onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
-    });
-    localCards = cardOverlay.createLocalCardOverlay($('#scene'), { dealerId: DEALER.key, dealerName: DEALER.name });
+    if (layeredPresentationEnabled) {
+      const { createLayeredPresentation } = await import('./layered-presentation.mjs');
+      localPresentation = await createLayeredPresentation({
+        host: $('#scene'),
+        dealerId: DEALER.key,
+        rehearsal: new URLSearchParams(location.search).get('rehearsal') === '1',
+        receipt: entry => nativeObservation.emit('playback', entry),
+        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'layered-owner'),
+      });
+      localCards = null;
+    } else {
+      const [{ PerformancePlayer }, { createLocalPresentation }, cardOverlay] = await Promise.all([
+        import('./performance-player.mjs'),
+        import('./local-presentation.mjs'),
+        import('./local-card-overlay.mjs'),
+      ]);
+      performancePlayer = new PerformancePlayer({ host: $('#scene') });
+      localPresentation = await createLocalPresentation({
+        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
+        version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
+        receipt: entry => nativeObservation.emit('playback', entry),
+        onIdle: () => presentStandardIdle('local-primary-frame'),
+        onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
+      });
+      localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+    }
     localPresentation.start();
-    window.addEventListener('pagehide', () => { localCards.close(); localPresentation.close(); }, { once: true });
+    window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
   } catch (error) {
-    console.error('[local presentation]', error.message);
+    console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
-    status.textContent = 'Lokal video kunde inte startas · 2D-reserv'; $('#scene').append(status);
+    status.textContent = layeredPresentationEnabled ? 'Lagerpaket saknas · 2D-reserv' : 'Lokal video kunde inte startas · 2D-reserv';
+    $('#scene').append(status);
   }
 }
 queueMicrotask(() => {
@@ -909,6 +936,16 @@ async function tableCommand(op, extra = {}) {
         if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
         throw e;
       }
+    }
+  }
+  if (layeredPresentationEnabled && Array.isArray(out.presentation)) {
+    const consumed = localPresentation?.consume?.({ roundId: String(out.version), presentation: out.presentation });
+    if (consumed?.unsupported?.length) {
+      nativeObservation.emit('playback', {
+        event: 'layered-unsupported',
+        count: consumed.unsupported.length,
+        types: [...new Set(consumed.unsupported.map(item => item.type))],
+      });
     }
   }
   tableVersion = out.version;
@@ -2549,6 +2586,9 @@ if (playerChoice && entrySelection.choices) {
     currentDealer: DEALER.key,
     tableColor: playerChoice.tableColor,
     backgroundValue: playerChoice.backgroundValue,
+    composition:entrySelection.composition,
+    tableValue:playerChoice.tableValue,
+    onTable:id=>{playerChoice.nextStored={...playerChoice.nextStored,tableAsset:id};remember({tableAsset:id});layerComposition?.setTable(id);},
     isBusy: () => !!(round || busy),
     onDealer: key => {
       remember({ dealer: key });
@@ -2563,12 +2603,19 @@ if (playerChoice && entrySelection.choices) {
     onBackground: id => {
       playerChoice.nextStored = { ...playerChoice.nextStored, background: id };
       remember({ background: id });
+      layerComposition?.setBackground(id);
+      localPresentation?.setBackground?.(id);
     },
   });
 }
 
 // Dealer tables are available in the main controls, without a rehearsal URL.
+// With an operator package the row follows the lane's allowed dealers, like the
+// Ditt bord panel; without ?operator= every dealer is listed as before.
+const allowedDealerKeys = entrySelection.operator && Array.isArray(entrySelection.choices?.dealers)
+  ? new Set([...entrySelection.choices.dealers, DEALER.key]) : null;
 for (const dealer of Object.values(DEALERS)) {
+  if (allowedDealerKeys && !allowedDealerKeys.has(dealer.key)) continue;
   const button = document.createElement('button');
   button.type = 'button'; button.dataset.dealer = dealer.key;
   button.setAttribute('aria-label', `${dealer.name}'s table`);
@@ -2586,7 +2633,7 @@ for (const dealer of Object.values(DEALERS)) {
   };
   $('#dealer-options').appendChild(button);
 }
-installDealerVersionSwitcher({ dealer: DEALER.key, version: dealerV2Route ? 'v2' : 'original', isBusy: () => !!round || busy });
+if (!localPresentationEnabled) installDealerVersionSwitcher({ dealer: DEALER.key, version: dealerV2Route ? 'v2' : 'original', isBusy: () => !!round || busy });
 
 
 buildChips();

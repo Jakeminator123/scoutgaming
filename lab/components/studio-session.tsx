@@ -17,7 +17,7 @@
 // modelEdit(edit): replace the project or surface the thrown error
 // dirty: boolean — project JSON differs from the last saved JSON
 // saving: boolean — save request in flight
-// save(): Promise<void> — PUT /api/project
+// save(): Promise<boolean> — true only when the current draft was saved; false on error, duplicate request or newer edits
 // exportProject(): void — download the project JSON
 // error / setError: string — visible error
 // notice / setNotice: string — visible confirmation
@@ -88,19 +88,26 @@ type SessionOptions = {
 
 export function useStudioSession(options: SessionOptions) {
   const { initialProject, initialVideos, initialStatus, connectedLane = false, observation } = options;
-  const [project, setProject] = useState(initialProject);
+  const [project, setProjectState] = useState(initialProject);
   const [conflict, setConflict] = useState(false);
   const [videos, setVideos] = useState(initialVideos);
   const [originals, setOriginals] = useState<OriginalMediaCatalog | null>(null);
   const [refreshingVideos, setRefreshingVideos] = useState(false);
   const projectRef = useRef(project);
-  projectRef.current = project;
+  // The ref advances with each mutation, before React renders. Both sequential
+  // functional edits and async save callbacks therefore see the newest draft.
+  const setProject = useCallback((change: StudioProject | ((current: StudioProject) => StudioProject)) => {
+    const next = typeof change === 'function' ? change(projectRef.current) : change;
+    projectRef.current = next;
+    setProjectState(next);
+  }, []);
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialProject));
   const [dealerId, setDealerId] = useState<DealerId>(() => resolveStudioDealerId(initialProject, options.initialDealerId));
   const [eventId, setEventId] = useState(() => resolveStudioEventId(initialProject, options.initialEventId));
   const [variantId, setVariantId] = useState(() => options.initialVariantId ?? '');
   const [mode, setMode] = useState<DirectorMode>('off');
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
@@ -157,7 +164,7 @@ export function useStudioSession(options: SessionOptions) {
     setNotice('');
   }
   function modelEdit(edit: (value: StudioProject) => StudioProject) {
-    try { setProject(edit(project)); options.onInvalidate?.current?.(); setError(''); setNotice(''); }
+    try { setProject(current => edit(current)); options.onInvalidate?.current?.(); setError(''); setNotice(''); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Ändringen kunde inte göras.'); }
   }
   async function refreshVideos() {
@@ -168,24 +175,28 @@ export function useStudioSession(options: SessionOptions) {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Videomapparna kunde inte läsas.'); }
     finally { setRefreshingVideos(false); }
   }
-  async function save() {
-    if (saving) return;
+  async function save(): Promise<boolean> {
+    if (savingRef.current) return false;
+    savingRef.current = true;
     options.onInvalidate?.current?.();
     setSaving(true); setError(''); setNotice('');
-    const submitted = project;
+    const submitted = projectRef.current;
     try {
       const response = await requestJson<{ project: StudioProject }>('/api/project', { method: 'PUT', body: JSON.stringify({ project: submitted, expectedRevision: submitted.revision }) });
       if (!response.project) throw new Error('Servern returnerade inte det sparade projektet.');
+      const unchanged = projectRef.current === submitted;
       setSavedJson(JSON.stringify(response.project));
+      setConflict(false);
       setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
-      setNotice(connectedLane
-        ? 'Sparat. Spelet läser nya deal- och replikval vid nästa händelse och Probe inför nästa beslut. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.'
-        : 'Projektet är sparat. Probe läser policyn inför nästa beslut.');
+      setNotice(!unchanged ? 'Sparat. Nyare ändringar finns kvar i utkastet.' : connectedLane
+        ? 'Sparat. Ladda om spelfliken mellan händer efter ändrad grundloop eller originalmotorns klippval.'
+        : 'Projektet är sparat.');
       recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat', owner: 'Du / projektlagringen',
         reason: 'Regler och kopplingar sparades.',
         data: { revision: response.project.revision } });
-    } catch (cause) { if ((cause as { statusCode?: number })?.statusCode === 409) setConflict(true); setError(cause instanceof Error ? cause.message : 'Projektet kunde inte sparas.'); }
-    finally { setSaving(false); }
+      return unchanged;
+    } catch (cause) { if ((cause as { statusCode?: number })?.statusCode === 409) setConflict(true); setError(cause instanceof Error ? cause.message : 'Projektet kunde inte sparas.'); return false; }
+    finally { savingRef.current = false; setSaving(false); }
   }
   function exportProject() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }));

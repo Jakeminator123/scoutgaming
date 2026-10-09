@@ -2,19 +2,22 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
-import { kindForEvent, MAX_VIDEO_BYTES, type VideoMetadata } from '../lib/video-intake.mjs';
-import { mediaSituationLabel } from '../lib/media-family-policy.mjs';
+import { kindForEvent, MAX_VIDEO_BYTES, type VideoCompositing, type VideoMetadata } from '../lib/video-intake.mjs';
+import { clipSituationLabel } from '../lib/clip-label.mjs';
+import { VideoCompositingFields } from './video-metadata-fields';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
 import styles from './video-intake.module.css';
 
-export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
-  project: StudioProject; inventory: VideoInventory;
-  onUploaded: (inventory: VideoInventory) => void;
-  onOpen: (eventId: string, situation: string) => void;
+export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyId, onUploaded, onOpen, onBusyChange, disabled = false }: {
+  project: StudioProject; inventory: VideoInventory; dealerId?: string; initialFamilyId?: string; disabled?: boolean;
+  onUploaded: (inventory: VideoInventory, videoId?: string) => void;
+  onOpen?: (eventId: string, situation: string) => void; onBusyChange?: (busy: boolean) => void;
 }) {
-  const [familyId, setFamilyId] = useState('');
+  const families = (inventory.families ?? []).filter(row => !dealerId || row.dealerId === dealerId);
+  const [familyId, setFamilyId] = useState(families.some(row => row.id === initialFamilyId) ? initialFamilyId! : '');
+  const [compositing, setCompositing] = useState<VideoCompositing>({ mode: 'opaque' });
   const [label, setLabel] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [localUrl, setLocalUrl] = useState('');
@@ -24,20 +27,20 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const input = useRef<HTMLInputElement>(null);
+  const busyCallback = useRef(onBusyChange); busyCallback.current = onBusyChange;
   const request = useRef<XMLHttpRequest | null>(null);
   const nativeRequest = useRef<AbortController | null>(null);
-  const families = inventory.families ?? [];
   const family = families.find(row => row.id === familyId);
   useEffect(() => {
     if (!file) { setLocalUrl(''); return; }
     const url = URL.createObjectURL(file); setLocalUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  useEffect(() => () => {request.current?.abort();nativeRequest.current?.abort();}, []);
+  useEffect(() => () => {request.current?.abort();nativeRequest.current?.abort();busyCallback.current?.(false);}, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy || !file || !family) return;
+    if (disabled || busy || !file || !family) return;
     if (file.size > MAX_VIDEO_BYTES || !/\.(mp4|webm)$/i.test(file.name)) {
       setError('Välj MP4 eller WebM, högst 128 MB.'); return;
     }
@@ -47,9 +50,9 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
       familyId: family.id, dealerId: family.dealerId, eventId: family.eventId,
       situation: family.playbackType === 'idle-pool' ? '' : family.situation,
       kind: kindForEvent(definition), role: 'alternative', playback: 'once',
-      label: label.trim() || file.name, notes: '',
+      label: label.trim() || clipSituationLabel(family.eventId, family.situation), notes: '', compositing,
     };
-    setBusy(true); setError(''); setNotice(''); setSaved(null); setProgress(0);
+    setBusy(true); onBusyChange?.(true); setError(''); setNotice(''); setSaved(null); setProgress(0);
     const controller = new AbortController();nativeRequest.current = controller;
     let stored = false;
     try {
@@ -80,35 +83,33 @@ export function FamilyVideoUpload({ project, inventory, onUploaded, onOpen }: {
       controller.signal.throwIfAborted();
       const video = next.videos.find(row => row.id === result.id && row.familyId === family.id && row.available);
       if (!video) throw new Error('Filen är sparad men familjen kunde inte återläsas. Läs om biblioteket.');
-      onUploaded(next); setSaved(video);
-      setNotice(`${result.duplicate ? 'Klippet fanns redan' : 'Klippet är sparat'} i ${mediaSituationLabel(family.situation)}. Välj nedan hur det får användas.`);
+      onUploaded(next, video.id); setSaved(video); onOpen?.(family.eventId, family.situation);
+      setNotice(result.duplicate ? 'Klippet fanns redan.' : 'Klippet sparat.');
       setFile(null); if (input.current) input.current.value = '';
     } catch (cause) { setError(`${stored ? 'Uppladdningen är sparad. ' : ''}${cause instanceof Error ? cause.message : 'Kunde inte spara klippet.'}`); }
-    finally { setBusy(false); request.current = null;nativeRequest.current = null; }
+    finally { setBusy(false); onBusyChange?.(false); request.current = null;nativeRequest.current = null; }
   }
   return <section className={styles.upload} aria-label="Ladda upp en variant">
-    <h2>Ladda upp en variant</h2>
-    <p>Välj fil och exakt användning. Se klippet här och välj sedan frekvens eller villkor. Filen sparas i studions videobank.</p>
-    <form onSubmit={submit}><fieldset disabled={busy} className={styles.form}>
+    <form onSubmit={submit}><fieldset disabled={busy || disabled} className={styles.form}>
       <label className="field">MP4 eller WebM · högst 128 MB<input ref={input} type="file" accept="video/mp4,video/webm,.mp4,.webm" required onChange={event => {
         const chosen = event.target.files?.[0] ?? null; setFile(chosen); setSaved(null); setNotice(''); setError('');
-        if (chosen) setLabel(chosen.name.slice(0, 120));
+        if (chosen && !label) setLabel(family ? clipSituationLabel(family.eventId, family.situation) : '');
       }} /></label>
-      <label className="field">Klippets namn<input value={label} maxLength={120} required onChange={event => setLabel(event.target.value)} /></label>
+      <label className="field">Klippets namn<input value={label} placeholder={family ? clipSituationLabel(family.eventId, family.situation) : "Klippets namn"} maxLength={120} onChange={event => setLabel(event.target.value)} /></label>
       <label className="field">Var ska klippet användas?<select required value={familyId} onChange={event => setFamilyId(event.target.value)}>
-        <option value="">Välj kortplats, exakt replik eller idle</option>
-        {families.map(row => <option key={row.id} value={row.id}>{row.playbackType === 'idle-pool' ? 'Idle · vänteläge' : `${row.eventId.startsWith('speak.') ? 'Replik' : row.eventId === 'reveal.dealer' ? 'Vänd dolt kort' : 'Kort'} · ${mediaSituationLabel(row.situation)}`}</option>)}
+        <option value="">Välj kortplats, replik eller grundloop</option>
+        {families.map(row => <option key={row.id} value={row.id}>{clipSituationLabel(row.eventId, row.situation)}</option>)}
       </select></label>
+      <VideoCompositingFields value={compositing} onChange={setCompositing} />
       {localUrl ? <video src={localUrl} controls playsInline preload="metadata" aria-label="Förhandsvisa vald fil" style={{ width: '100%', maxHeight: 420 }} /> : null}
-      <p className="helper">Nya varianter är manuella tills du aktiverar dem och sparar inställningarna. Originalklippet behålls. Tal måste matcha den exakta repliken.</p>
-      <button type="submit" className="primary-button" disabled={busy || !file || !family}>{busy ? 'Sparar…' : 'Ladda upp och spara klipp'}</button>
+      {!families.length ? <p role="status">Inga egna klippfamiljer registrerade för vald dealer. Lägg in klippet via Klippbibliotek.</p> : null}
+      <button type="submit" className="primary-button" disabled={disabled || busy || !file || !family}>{busy ? 'Sparar…' : 'Spara klipp'}</button>
     </fieldset></form>
     {busy ? <p role="status">{progress === 100 ? 'Filen är överförd. Väntar på sparat kvitto…' : `Laddar upp${progress === null ? '…' : ` · ${progress} %`}`}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
     {saved ? <div><video key={saved.id} src={saved.previewUrl} controls playsInline preload="metadata" aria-label="Förhandsvisa sparat klipp" style={{ width: '100%', maxHeight: 420 }} />
-      <p>{saved.label} · {(saved.bytes / 1024 / 1024).toFixed(2)} MB · sparat och återläst</p>
-      <button type="button" className="primary-button" onClick={() => onOpen(saved.eventId!, saved.situation!)}>Välj hur klippet ska användas →</button>
+      <p>{saved.label}</p>
     </div> : null}
   </section>;
 }

@@ -1,0 +1,83 @@
+.card {
+  display: grid;
+  gap: 16px;
+  background: var(--sg-surface);
+  color: var(--sg-text);
+  border: 1px solid var(--sg-border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.card h2,
+.operator h3 {
+  margin: 0;
+  font-family: var(--sg-font-display), "Space Grotesk", system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.card h2 { font-size: 18px; }
+.operator h3 { font-size: 15px; }
+.card p { margin: 0; line-height: 1.45; }
+.muted { color: var(--sg-muted); font-weight: 400; }
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  min-width: 12rem;
+  max-width: 24rem;
+}
+
+.field input,
+.field select,
+.members select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--sg-field-line);
+  background: var(--sg-field);
+  color: var(--sg-text);
+  font: inherit;
+}
+
+.operators { display: grid; gap: 16px; }
+
+.operator {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sg-border);
+}
+
+.scroll { overflow-x: auto; }
+
+.members {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.members th,
+.members td {
+  padding: 8px 10px 8px 0;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sg-border);
+}
+
+.members th { font-size: 13px; font-weight: 600; color: var(--sg-muted); }
+.members small { display: block; color: var(--sg-muted); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.actions :global(.sg-btn) { width: fit-content; max-width: 100%; }

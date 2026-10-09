@@ -12,8 +12,9 @@ const { transformSync } = require('next/dist/build/swc');
 const empty = () => null;
 const marker = name => props => React.createElement('div', { 'data-component': name, 'data-dealer': props.dealerId });
 function harness(file, initialStates = [], overrides = {}) {
-  const values = [...initialStates]; let cursor = 0;
-  const fakeReact = { ...React, useEffect() {}, useCallback: callback => callback,
+  const values = [...initialStates], refs = [], effects = []; let cursor = 0, refCursor = 0, effectCursor = 0;
+  const runtimeWindow = overrides.window ?? {location:{hash:''}};
+  const fakeReact = { ...React, useEffect(run,deps) { const index=effectCursor++; const previous=effects[index]; const changed=!previous||!deps||deps.some((value,key)=>value!==previous.deps?.[key]); effects[index]={...previous,run,deps,changed}; }, useCallback: callback => callback, useRef(initial) { return refs[refCursor++] ??= {current:initial}; },
     useState(initial) {
       const index = cursor++;
       if (!(index in values)) values[index] = typeof initial === 'function' ? initial() : initial;
@@ -24,21 +25,25 @@ function harness(file, initialStates = [], overrides = {}) {
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const mocks = {
     './activity-log': { ActivityLog: marker('observation') },
+    './dealer-registration': {DealerRegistration: empty},
     './idle-policy-editor': { IdlePolicyEditor: marker('idle') },
     './family-video-library': { FamilyVideoLibrary: marker('families') },
     './legacy-clip-editor': { LegacyClipEditor: marker('legacy') },
     './family-video-upload': { FamilyVideoUpload: marker('upload') },
     './media-family-editor': { MediaFamilyEditor: empty },
     './probe-editor': { ProbeEditor: empty }, './project-conflict': { ProjectConflict: empty },
-    './studio-types': { requestJson() { throw new Error('Unexpected request'); } },
+    './studio-types': { studioHref(path, selection={}) { const query = new URLSearchParams(); for (const [key, value] of Object.entries(selection)) if(value) query.set(({dealerId:'dealer',eventId:'event',variantId:'variant'})[key] ?? key,value); return query.size ? path+'?'+query : path; }, requestJson() { throw new Error('Unexpected request'); } },
     ...overrides,
   };
+  if (overrides['./studio-types']) mocks['./studio-types'] = { studioHref(path, selection={}) { const query=new URLSearchParams(); for(const [key,value] of Object.entries(selection)) if(value) query.set(({dealerId:'dealer',eventId:'event',variantId:'variant'})[key]??key,value); return query.size?path+'?'+query:path; }, ...overrides['./studio-types'] };
   const module = { exports: {} };
-  vm.runInNewContext(output.code, { module, exports: module.exports, structuredClone,
-    window: { location: { hash: '' } },
+  vm.runInNewContext(output.code, { module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    window: runtimeWindow,
     require: name => name === 'react' ? fakeReact : name.endsWith('.module.css') ? { __esModule: true, default: {} } : mocks[name] ?? require(name),
   });
-  return { render(props) { cursor = 0; return Object.values(module.exports)[0](props); }, values };
+  return { render(props) { cursor=refCursor=effectCursor=0; return Object.values(module.exports)[0](props); }, values,
+    flushEffects() { const pending=effects.filter(effect=>effect.changed); for(const effect of pending)effect.cleanup?.(); for(const effect of pending){effect.changed=false;effect.cleanup=effect.run();} },
+  };
 }
 function nodes(node, predicate) {
   if (!node || typeof node !== 'object') return [];
@@ -62,7 +67,7 @@ test('cloud idle refresh reads the shared registry even when imported media has 
   });
   const p = props(); p.initialVideos.summary = { archiveSource:'emil-default' };
   const tree = h.render(p);
-  const refresh = nodes(tree, node => node.type === 'button' && node.props.children === 'Läs in nya idle-klipp')[0];
+  const refresh = nodes(tree, node => node.type === 'button' && node.props.children === 'Uppdatera klipplistan')[0];
   refresh.props.onClick();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls,[['/api/videos',undefined]]);
@@ -78,13 +83,13 @@ test('focused workspace uses dealer chips, three categories and links instead of
   assert.equal(chips.length, 6);
   assert.equal(chips.filter(node => node.props['aria-pressed'] === true).length, 1);
   const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
-  assert.match(html, /href="\/control\/zones"/);
-  assert.match(html, /Öppna Bakgrundszoner →/);
-  assert.match(html, /href="\/control\/probe"/);
-  assert.match(html, /Öppna Probe →/);
-  assert.match(html, /href="\/control\/activity"/);
-  assert.match(html, /Öppna Uppspelning →/);
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
+  assert.match(html, /href="\/control\/preview\?dealer=astrid"/);
+  assert.match(html, /Sammansättning →/);
+  assert.match(html, /href="\/control\/probe\?dealer=astrid"/);
+  assert.match(html, /Tal vid inaktivitet →/);
+  assert.match(html, /href="\/control\/activity\?dealer=astrid"/);
+  assert.match(html, /Uppspelning och logg →/);
   assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0, 'playback log is a link, not an embed');
 });
@@ -104,8 +109,8 @@ test('draft survives dealer chip and category changes', () => {
   assert.equal(nodes(tree, node => node.props?.inventory && !node.props?.section).length, 0, 'Astrid family tools not rendered for Vera');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
-  assert.match(html, /href="\/control\/zones"/);
-  assert.match(html, /href="\/control\/activity"/);
+  assert.match(html, /href="\/control\/preview\?dealer=vera"/);
+  assert.match(html, /href="\/control\/activity\?dealer=vera"/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'V Vera');
 });
@@ -124,12 +129,12 @@ test('another dealer keeps idle tools and the draft without a probe tab', () => 
   pressDealer(tree, 'Vera');
   tree = h.render(p);
   const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
   assert.equal(nodes(nav, node => node.type === 'button' && node.props.children === 'Probe').length, 0);
-  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Idle');
+  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Grundloop');
   assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
-  assert.match(renderToStaticMarkup(tree), /href="\/control\/probe"/);
+  assert.match(renderToStaticMarkup(tree), /href="\/control\/probe\?dealer=vera"/);
   assert.equal(h.values[0], draft);
 });
 
@@ -139,4 +144,58 @@ test('save still uses revisions and beforeunload; navigation does not replace pr
   assert.match(source, /window\.addEventListener\('beforeunload', guard\)/);
   assert.match(source, /current === submitted \? response\.project/);
   assert.doesNotMatch(source, /history\.pushState|router\.push|setProject\(initialProject\)/);
+});
+
+function navigationHarness() {
+  const p=props(),guards=new Map(),assigned=[],requests=[];let finish;
+  const runtimeWindow={location:{hash:'',search:'',href:'https://local.test/control/clips',assign(href){const event={preventDefault(){this.blocked=true;}};guards.get('beforeunload')?.(event);assigned.push({href,blocked:Boolean(event.blocked)});}},
+    addEventListener(name,callback){guards.set(name,callback);},removeEventListener(name,callback){if(guards.get(name)===callback)guards.delete(name);},
+    history:{replaceState(){}},
+  };
+  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow,'./studio-types':{requestJson(...args){requests.push(args);return new Promise((resolve,reject)=>{finish={resolve,reject};});}}});
+  h.render(p);h.flushEffects();
+  const draft=structuredClone(h.values[0]);draft.clipLabels={'named-clip':'Ej sparat'};h.values[0]=draft;
+  const tree=h.render(p);h.flushEffects();
+  const links=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('/control/'));
+  return {h,p,draft,links,assigned,requests,finish:()=>finish};
+}
+const click=link=>link.props.onClick({preventDefault(){}});
+
+test('save and continue waits for the clean render to replace the old beforeunload guard and ignores double clicks',async()=>{
+  const n=navigationHarness();
+  click(n.links[0]);click(n.links[1]);
+  assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
+  n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[]);
+  n.finish().resolve({project:{...n.draft,revision:'saved-revision'}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(n.assigned,[],'save completion alone must not navigate using the dirty closure');
+  n.h.render(n.p);n.h.flushEffects();
+  assert.deepEqual(n.assigned,[{href:n.links[0].props.href,blocked:false}]);
+});
+
+test('pending content navigation is cancelled by newer edits, upload or conflict',async()=>{
+  for(const blocker of ['new-edit','upload','conflict']){
+    const n=navigationHarness();click(n.links[0]);
+    n.finish().resolve({project:{...n.draft,revision:'saved-revision'}});
+    await new Promise(resolve=>setImmediate(resolve));
+    if(blocker==='new-edit')n.h.values[0]={...n.h.values[0],clipLabels:{'named-clip':'Nyare ändring'}};
+    if(blocker==='upload')n.h.values[13]=true;
+    if(blocker==='conflict')n.h.values[10]=true;
+    n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[],blocker);
+    if(blocker==='upload')n.h.values[13]=false;
+    if(blocker==='conflict')n.h.values[10]=false;
+    n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[],'clearing blocker must not revive an old navigation');
+  }
+});
+
+test('content links refuse navigation during a save and after a failed CAS request',async()=>{
+  const n=navigationHarness();click(n.links[0]);
+  const tree=n.h.render(n.p);n.h.flushEffects();
+  click(nodes(tree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);
+  assert.equal(n.requests.length,1);
+  n.finish().reject(Object.assign(new Error('revision conflict'),{statusCode:409}));
+  await new Promise(resolve=>setImmediate(resolve));
+  const failedTree=n.h.render(n.p);n.h.flushEffects();
+  assert.equal(n.h.values[10],true);assert.deepEqual(n.assigned,[]);
+  click(nodes(failedTree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
 });

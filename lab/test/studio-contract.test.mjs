@@ -17,7 +17,8 @@ test('canonical manifest, seed, schema and runtime classifications agree for eve
   assert.deepEqual(contract.dealers, seed.dealers.map(d=>d.id));
   assert.deepEqual(contract.events.map(e=>({id:e.id,sourceType:e.sourceType})),seed.events.map(e=>({id:e.id,sourceType:e.sourceType})));
   assert.deepEqual(schema.properties.eventId.enum,contract.events.map(e=>e.id));
-  assert.deepEqual(schema.properties.dealerId.enum,contract.dealers);
+  assert.equal(schema.properties.dealerId.pattern,'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$');
+  assert.doesNotThrow(()=>validateVideoMetadata({...metadata,dealerId:'nora'}));
   assert.deepEqual(schema.properties.kind.enum,Object.keys(contract.videoKinds));
   assert.deepEqual(schema.properties.role.enum,Object.keys(contract.roles));
   assert.deepEqual(schema.properties.playback.enum,contract.playback.supported);
@@ -33,7 +34,7 @@ test('canonical manifest, seed, schema and runtime classifications agree for eve
 });
 test('unknown, unclassified, wrong kind/dealer/group, imprecise and proposed loop metadata fail closed',()=>{
   assert.equal(videoFitsLine({},'astrid','idle.ready'),false);
-  for(const patch of [{kind:'gesture'},{dealerId:'other'},{eventId:'new.event'},{situation:''},{situation:'box5'},{playback:'loop'},{random:true}]) assert.throws(()=>validateVideoMetadata({...metadata,...patch}));
+  for(const patch of [{kind:'gesture'},{dealerId:'../other'},{eventId:'new.event'},{situation:''},{situation:'box5'},{playback:'loop'},{random:true}]) assert.throws(()=>validateVideoMetadata({...metadata,...patch}));
   assert.equal(videoFitsLine({classification:metadata},'vera',metadata.eventId),false);
   assert.equal(videoFitsLine({classification:metadata},'astrid','idle.ready'),false);
   assert.equal(videoFitsEvent({classification:metadata},{type:'deal',to:'box',box:1}),false);

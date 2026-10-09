@@ -1,6 +1,8 @@
 import type { VideoMetadata } from './video-intake.mjs';
 export interface VideoRegistryOptions {
   archiveDir?: string | null; snapshotPath?: string; uploadDir?: string;
+  project?: import('./studio-model.mjs').StudioProject;
+  projectStore?: {load(): Promise<import('./studio-model.mjs').StudioProject>};
   strict?: boolean; repositoryRoot?: string; indexPath?: string; cacheDir?: string;
   env?: Record<string, string | undefined>;
   readUploads?(options: VideoRegistryOptions): Promise<any[]>;
@@ -19,7 +21,7 @@ export interface RegistryVideo {
   addedAt?: string;
   id: string;
   label: string;
-  dealer?: 'astrid' | 'vera' | 'amira' | 'mei' | 'dragge' | 'paow';
+  dealer?: string;
   fileName: string;
   verdict: 'want' | 'no' | 'unrated';
   bytes: number;

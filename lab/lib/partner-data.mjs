@@ -2,6 +2,8 @@ import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
 import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartner, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
+import { readPackagePresentation, publicPackageBranding } from '../../web/storage/presentation-package.mjs';
+import { partnerPackageProfiles } from './partner-package-view.mjs';
 
 const disconnected = Object.freeze(['players', 'transactions', 'reports']);
 
@@ -156,7 +158,10 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     : [teamRow(membership, await roleFor(operators, operator.id, context), session, operator.id)];
   const pack = await operators.getCurrentPackage(operator.id);
   if (pack?.operatorId && pack.operatorId !== operator.id) fail(403);
-  const presentations = parseList(pack?.presentations ?? pack?.lanes).map(item => owned(item, operator.id, ['name', 'dealer', 'language', 'background', 'status'])).filter(Boolean);
+  const presentation = readPackagePresentation(pack);
+  const branding = publicPackageBranding(pack?.branding);
+  const presentations = presentation ? partnerPackageProfiles(presentation, branding, operator.id)
+    : parseList(pack?.presentations ?? pack?.lanes).map(item => owned(item, operator.id, ['name', 'dealer', 'language', 'background', 'status'])).filter(Boolean);
   const tables = parseList(pack?.tables).map(item => owned(item, operator.id, ['name', 'game', 'status', 'playerCount', 'presentationId'])).filter(Boolean);
   const revision = revisionOf(pack);
   const current = { id: operator.id, slug: operator.slug, name: operator.name, ...(revision ? { packageRevision: revision } : {}) };
@@ -167,6 +172,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     operator: current,
     operators: choices.map(item => ({ id: item.id, slug: item.slug, name: item.name })),
     presentations,
+    ...(presentation ? { presentation, branding } : {}),
     tables,
     team,
     summary: { activeTables: tables.length, playersToday: 0, roundsToday: 0 },

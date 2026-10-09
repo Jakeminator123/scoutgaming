@@ -1,14 +1,14 @@
 'use client';
 import { useState } from 'react';
 import type { VideoInventory } from './studio-types';
-import { clipLabel } from '../lib/clip-label.mjs';
+import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { mediaFamilyFolder, mediaSituationLabel } from '../lib/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
 import type { StudioProject } from '../lib/studio-model.mjs';
 
 const familiesFor = (inventory: VideoInventory, dealerId: string) => (inventory.families ?? []).filter(family => family.dealerId === dealerId);
 const matchesGroup = (eventId: string, type: string) => eventId.startsWith(`${type}.`) || type === 'deal' && eventId === 'reveal.dealer';
-const familyLabel = (family: { eventId: string; situation: string }) => family.eventId === 'reveal.dealer' ? 'Vänd croupierns dolda kort' : mediaSituationLabel(family.situation);
+const familyLabel = (family: { eventId: string; situation: string }) => clipSituationLabel(family.eventId, family.situation);
 
 export function FamilyNavigation({ inventory, project, dealerId, selectedFamilyId, eventId, filter, onOpen }: {
   inventory: VideoInventory; project: StudioProject; dealerId: string; selectedFamilyId?: string; eventId: string; filter: string;
@@ -43,11 +43,8 @@ export function FamilyOverview({ inventory, project, dealerId, onOpen, hrefFor }
   </section>;
 }
 
-const namedClip = (video: { id: string; familyId?: string; role?: string; relativePath?: string; fileName?: string; classification?: { label?: string } } | undefined, id: string, role: string, clipLabels?: Record<string, string>) => {
-  const legacy = video?.classification?.label || video?.fileName || id;
-  const name = clipLabel({ id: video?.id ?? id, familyId: video?.familyId, role: video?.role ?? role, relativePath: video?.relativePath }, clipLabels);
-  return { name, legacy, text: name === legacy ? legacy : `${name} · ${legacy}` };
-};
+const namedClip = (video: { id: string; familyId?: string; role?: string; relativePath?: string; fileName?: string; classification?: { label?: string } } | undefined, id: string, role: string, clipLabels?: Record<string, string>) =>
+  clipLabel({ id: video?.id ?? id, familyId: video?.familyId, role: video?.role ?? role, relativePath: video?.relativePath }, clipLabels);
 
 export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, refreshing, familyType, clipLabels }: {
   inventory: VideoInventory; dealerId: string; onOpen: (eventId: string, situation: string) => void; onRefresh: () => void; refreshing: boolean; familyType?: 'deal' | 'speak'; clipLabels?: Record<string, string>;
@@ -56,36 +53,39 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
   const [previewId, setPreviewId] = useState('');
   const needle = filter.trim().toLocaleLowerCase('sv');
   const videosById = new Map(inventory.videos.map(video => [video.id, video]));
-  const families = (inventory.families ?? []).filter(family => family.dealerId === dealerId
-    && (!familyType || matchesGroup(family.eventId, familyType))
-    && (`${mediaFamilyFolder(family)} ${familyLabel(family)} ${family.situation}`.toLocaleLowerCase('sv').includes(needle)
-      || [...family.standardIds, ...family.variantIds].some(id => {
+  const dealerFamilies = (inventory.families ?? []).filter(family => family.dealerId === dealerId && (!familyType || matchesGroup(family.eventId, familyType)));
+  const families = dealerFamilies.filter(family =>
+    `${mediaFamilyFolder(family)} ${familyLabel(family)} ${family.situation}`.toLocaleLowerCase('sv').includes(needle)
+    || [...family.standardIds, ...family.variantIds].some(id => {
+      const video = videosById.get(id);
+      return `${namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels)} ${video?.label ?? ''} ${video?.fileName ?? ''} ${id}`.toLocaleLowerCase('sv').includes(needle);
+    }));
+  const preview = videosById.get(previewId);
+  const previewName = preview ? namedClip(preview, preview.id, preview.role ?? 'standard', clipLabels) : '';
+  const dealFamilies = families.filter(family => matchesGroup(family.eventId, 'deal'));
+  const positionGroups = [
+    ...Array.from({ length: 7 }, (_, box) => ({ id: `box${box}`, label: `Spelarplats ${box + 1}`, families: dealFamilies.filter(family => family.situation === `box${box}`) })),
+    { id: 'dealer', label: 'Dealer', families: dealFamilies.filter(family => ['dealer-up', 'dealer-hole'].includes(family.situation)) },
+  ];
+  function card(family: typeof families[number], position = false) {
+    const ids = [...family.standardIds, ...family.variantIds];
+    return <article key={family.id} className={styles.situation} data-family-id={family.id} data-situation={family.situation}>
+      <header className={styles.cardHeader}><h3>{position && /^box[0-6]$/.test(family.situation) ? 'Kort till spelaren' : familyLabel(family)}</h3></header>
+      <div className={styles.cardActions}>{ids.map((id, index) => {
         const video = videosById.get(id);
-        const named = namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels);
-        return video && `${named.text} ${video.label} ${video.fileName} ${video.id}`.toLocaleLowerCase('sv').includes(needle);
-      })));
-  const selectedVideo = videosById.get(previewId);
-  const preview = selectedVideo?.available ? selectedVideo : undefined;
-  const previewNamed = preview ? namedClip(preview, preview.id, preview.role ?? 'standard', clipLabels) : undefined;
-  const previewName = previewNamed?.text;
-  return <section aria-label="Videomappar"><div className={styles.libraryHeader}><div><h2>{familyType === 'deal' ? 'Kort & deal' : familyType === 'speak' ? 'Fasta repliker / ljud' : 'Dina videomappar'}</h2><p className={styles.count}>{families.length} situationer · välj klipp eller inställningar</p></div><button className="text-button" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Läser…' : 'Läs in nya filer'}</button></div>
-    <details className={styles.situation}><summary>Lägg till eller stäng av klipp</summary>
-      <p>Välj <strong>Ladda upp klipp</strong> för att lägga till en MP4 eller WebM i rätt familj. Öppna sedan Inställningar för att aktivera varianten. Idleklipp läggs till i Idle-policyn.</p>
-      <p>I Deal anger du frekvens per variant i procent. Resten använder standardklippet. Sätt <strong>0 %</strong> för att stänga av varianten. I Idle väljer du <strong>Manuell</strong>; i Repliker stänger du av alla variantval. Spara inställningarna. Klippet finns kvar för förhandsvisning.</p>
-      <p>Gränssnittet kan inte radera råfiler eller flytta dem mellan familjer. Mappen avgör vilken plats eller replik filmen hör till.</p>
-    </details>
-    <label className={styles.search}>Hitta klipp eller mapp<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Sök namn, replik eller plats…" /></label>
-    {preview ? <div className={styles.situation}><strong>{previewName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${previewName}`} /><button className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
-    <div className={styles.libraryGrid}>{families.map(family => {
-      const standardId = family.standardIds.find(id => videosById.get(id)?.available);
-      return <article key={family.id} className={styles.situation}>
-        <header className={styles.cardHeader}><h3>{familyLabel(family)}</h3><small>{family.standardIds.length} standard · {family.variantIds.length} varianter</small></header>
-        <div className={styles.cardActions}><button type="button" disabled={!standardId} aria-label={`Spela standard · ${familyLabel(family)}`} onClick={() => standardId && setPreviewId(standardId)}>Spela standard</button><button type="button" aria-label={`Inställningar · ${familyLabel(family)}`} onClick={() => onOpen(family.eventId, family.situation)}>Inställningar</button></div>
-        <details className={styles.files}><summary>Filer · {family.standardIds.length + family.variantIds.length}</summary><code>{mediaFamilyFolder(family)}/</code>
-          {[...family.standardIds, ...family.variantIds].map(id => { const video = videosById.get(id); const named = namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels); return <button key={id} type="button" className="text-button" title={id} disabled={!video?.available} onClick={() => setPreviewId(id)}>{named.text} · {family.standardIds.includes(id) ? 'standard' : video?.source === 'upload' ? 'uppladdad variant' : 'variant/'}{video?.available ? ' · Spela' : ' · saknas'}</button>; })}
-        </details>
-      </article>;
-    })}</div>
-    {!families.length ? <p>Inga mappar matchar sökningen.</p> : null}
+        const name = namedClip(video, id, family.standardIds.includes(id) ? 'standard' : 'variant', clipLabels);
+        return <button key={id} type="button" title={video?.fileName ?? id} disabled={!video?.available} aria-label={`Spela ${name}`} onClick={() => setPreviewId(id)}>{name}{family.standardIds.includes(id) ? '' : ` · ${index - family.standardIds.length + 1}`}{!video?.available ? ' · saknas' : ''}</button>;
+      })}<button type="button" aria-label={`Inställningar · ${familyLabel(family)}`} onClick={() => onOpen(family.eventId, family.situation)}>Inställningar</button></div>
+      <details className={styles.files}><summary>Avancerat · filer och identitet</summary><code>{family.id}</code><code>{mediaFamilyFolder(family)}/</code>
+        {ids.map(id => <p key={id}><code>{videosById.get(id)?.fileName ?? id}</code><br /><code>{id}</code></p>)}
+      </details>
+    </article>;
+  }
+  return <section aria-label="Klipp och situationer">
+    <div className={styles.libraryHeader}><label className={styles.search}>Hitta klipp<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Namn, replik eller spelarplats…" /></label><button type="button" className="text-button" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Läser…' : 'Uppdatera klipp'}</button></div>
+    {preview?.available ? <div className={styles.situation}><strong>{previewName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${previewName}`} /><button type="button" className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
+    {familyType !== 'speak' ? <div className={styles.positionGrid} aria-label="Spelarpositioner och dealer">{positionGroups.filter(group => !needle || group.families.length).map(group => <section className={styles.position} key={group.id} data-position={group.id}><h2>{group.label}</h2>{group.families.length ? group.families.map(family => card(family, true)) : <p className="helper">Exakt klippkoppling saknas.</p>}</section>)}</div> : null}
+    <div className={styles.libraryGrid}>{families.filter(family => !matchesGroup(family.eventId, 'deal')).map(family => card(family))}</div>
+    {!families.length && needle ? <p>Inga klipp matchar sökningen.</p> : null}
   </section>;
 }

@@ -1,11 +1,11 @@
 // UI classification only. Never infer a runtime binding from a clip's duration.
 export const DEALER_WORKSPACE_SECTIONS = Object.freeze([
-  { id: 'idle', label: 'Idle' },
-  { id: 'deal', label: 'Kort & deal' },
-  { id: 'clips', label: 'Fasta repliker / ljud' },
+  { id: 'idle', label: 'Grundloop' },
+  { id: 'deal', label: 'Utdelning' },
+  { id: 'clips', label: 'Repliker' },
 ]);
 // Former tabs that became their own pages. Old bookmarks still land there.
-const MOVED_SECTIONS = Object.freeze({ background: '/control/zones', probe: '/control/probe', stream: '/control/activity' });
+const MOVED_SECTIONS = Object.freeze({ background: '/control/preview', probe: '/control/probe', stream: '/control/activity' });
 const idleParts = new Set(['idle', 'headTilt', 'think', 'gest']);
 const dealParts = new Set(['deal', 'dealWatch', 'box0', 'box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'dealer-up', 'dealer-hole']);
 export function workspaceLocation(hash) {

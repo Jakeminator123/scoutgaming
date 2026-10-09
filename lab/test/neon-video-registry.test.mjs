@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
 import {loadVideoRegistry,getVideoResponse} from '../lib/video-registry.mjs';
 
@@ -47,6 +48,7 @@ async function fixture(t) {
   });
   const archive = join(root, 'media/dealers/astrid/runtime/presentation'); await mkdir(archive, {recursive:true});
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
+  seedSavedVideoProject(pool,scope);
   const objects = new Map(), items = [], files = [], layout = [];
   for (const family of MEDIA_FAMILY_DEFINITIONS) for (const relativePath of family.standardPaths) {
     const bytes = Buffer.from(`0000ftypisom00000fixture:${relativePath}`), sha256 = createHash('sha256').update(bytes).digest('hex'), id = videoIdFromSha256(sha256);

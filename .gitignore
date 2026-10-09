@@ -30,3 +30,6 @@ media/.migration/
 
 # Local env backups made while consolidating .env files (never commit)
 /random/env-backup-*/
+
+# Skärmbilder från agentarbete; lokala, inte i Git
+/random/bilder-*/

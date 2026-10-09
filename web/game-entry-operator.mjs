@@ -6,6 +6,8 @@
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
 import { gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
+import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
+import { resolvePackageRoom } from './presentation-room-contract.mjs';
 
 export const OPERATOR_NOT_FOUND_HTML = '<!doctype html><html lang="sv"><head><meta charset="utf-8">'
   + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bolaget finns inte</title></head>'
@@ -31,17 +33,22 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     warned.add(key);
     log(message);
   }
-  function withChoices(selection, saved, gameLanes) {
+  function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane) {
     const serverLane = gameLanes.find(row => row.id === selection.lane);
-    return { ...selection, choices: gameChoicesForLane(saved?.project?.lanes, selection.lane, serverLane) };
+    if(selection.dealer==='nora'&&(!saved.project?.dealers?.some(row=>row.id==='nora')||serverLane?.renderer!=='portrait-video'||serverLane.dealer!=='nora'))throw Object.assign(Error('presentation_dealer_unavailable'),{statusCode:503});
+    return { ...selection, ...(selection.dealer==='nora'?{localDealer:'nora'}:{}),choices: gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane) };
   }
   // { status: 200, selection } or { status: 404 }. Policy failures reject, as today.
   return async function selectGameEntry(query) {
-    const params = query instanceof URLSearchParams ? query : new URLSearchParams(query);
+    const params = new URLSearchParams(query);
+    const tables = params.getAll('table');
+    const explicitTable = tables.length > 0;
+    if (explicitTable && (tables.length !== 1 || !/^[a-z][a-z0-9-]{0,63}$/.test(tables[0]))) return { status: 404 };
     const slug = requestedOperator(params);
     // N3.4: gameChoices follows the active presentation lane even before a
     // company is selected. Lane, dealer and presentation stay on the catalogue
     // rules, and this path still does not query operator storage.
+    if (explicitTable && (slug === undefined || slug === null)) return { status: 404 };
     if (slug === undefined) {
       const saved = await policy.readSaved();
       const { gameLane, gameLanes } = gameLaneConfiguration(saved.administration);
@@ -52,22 +59,45 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     const { gameLane, gameLanes } = gameLaneConfiguration(saved.administration);
     const base = gameLaneSelection(params, gameLane, gameLanes);
     // Unreadable operator storage: today's entry, no guess about the slug.
-    if (context === null) return { status: 200, selection: withChoices(base, saved, gameLanes) };
-    if (!context.operator) return { status: 404 };
+    if (context === null) {
+      if (explicitTable) throw Object.assign(Error('presentation_room_unavailable'), { statusCode: 503 });
+      return { status: 200, selection: withChoices(base, saved, gameLanes) };
+    }
+    if (!context.operator || explicitTable && context.operator.status === 'suspended') return { status: 404 };
     const current = context.package;
-    if (!current) return { status: 200, selection: withChoices({ ...base, operator: slug }, saved, gameLanes) };
+    if (!current) return explicitTable ? { status: 404 } : { status: 200, selection: withChoices({ ...base, operator: slug }, saved, gameLanes) };
+    const room = explicitTable ? resolvePackageRoom({ administration: saved.administration, package: current, operatorId: context.operator.id, roomId: tables[0] }) : null;
+    if (explicitTable && (!room || room.state !== 'live' || !gameLanes.some(lane => lane.id === room.gameLaneId))) return { status: 404 };
+    if (room) params.set('lane', room.gameLaneId);
     let selection = base;
-    if (packageLaneIds(current.lanes, gameLanes).length) selection = gameLaneSelection(params, gameLane, gameLanes, current.lanes);
+    const frozen = readPackagePresentation(current);
+    if (room) selection = gameLaneSelection(params, gameLane, gameLanes, [room.gameLaneId]);
+    else if (packageLaneIds(current.lanes, gameLanes).length) selection = gameLaneSelection(params, gameLane, gameLanes, current.lanes);
     else warnOnce(`lanes:${slug}:${current.revision}`,
       `[operator-package] ${slug} r${current.revision}: no package lane in the saved catalogue; using ${selection.lane}`);
     const lane = gameLanes.find(row => row.id === selection.lane);
-    const presentationLane = Array.isArray(saved.project?.lanes) ? saved.project.lanes.find(row => row?.id === selection.lane) : undefined;
+    if (room && selection.lane !== room.gameLaneId) throw Object.assign(Error('presentation_room_unavailable'), { statusCode: 503 });
+    const presentationLane = (frozen?.lanes ?? saved.project?.lanes)?.find(row => row?.id === (room?.presentationLaneId ?? selection.lane));
+    if(frozen && !presentationLane) throw Object.assign(new Error('presentation_lane_unavailable'),{statusCode:503});
     if (presentationLane) {
       const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer);
       if (dealer) selection = { ...selection, dealer };
+      else if(frozen)throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
-    return { status: 200, selection: withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: current.branding }, saved, gameLanes) };
+    const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: publicPackageBranding(current.branding) },
+      frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane);
+    if(frozen) {
+      const layers=presentationLane.layers;
+      next.composition={schemaVersion:1,
+        background:{enabled:layers.background.enabled,mode:layers.background.mode,allowed:layers.background.allowed,default:layers.background.default},
+        table:{enabled:layers.table.enabled,allowed:layers.table.allowed,default:layers.table.default},
+        dealer:{enabled:layers.dealer.enabled,compatibility:presentationLane.composition?'per-clip':'full-frame'},
+        ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
+        assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
+    }
+    if (room) next.roomId = room.id;
+    return {status:200,selection:next};
   };
 }

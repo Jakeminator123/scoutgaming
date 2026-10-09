@@ -1,12 +1,478 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
+
+Kompatibilitetsdelen inför rumsschema 2 med separata presentationLaneId och
+gameLaneId. En uttrycklig /play/blackjack?operator=<slug>&table=<rum-id> kräver
+ett live-rum som ägs av bolaget, finns i dess paket och binder en befintlig
+spellane till en fryst presentation. Okänt/främmande/inaktivt rum ger 404;
+otillgänglig lagring ger 503. Ingen reserv-lane väljs för en uttrycklig rumslänk.
+Äldre ingång utan table och äldre sparade rum behåller sitt läsbeteende.
+
+Publishern använder nu operatörslås och expectedRevision under samma SQL-
+transaktion. Det delade repository-klientgränssnittet behåller scope och
+återställer administration, historik, audit och paket även när ett fångat
+valideringsfel uppstår. N2:s redan levererade revisionsargument får därmed
+atomiskt konfliktskydd. Ingen SQL-migration behövs.
+
+Runtime annonserar capability v2 (rooms: operator-owned-v2). Native Studio
+kräver den före nya rumsskrivningar. Denna leverans aktiverar endast läsare
+och transaktionsstöd; rum-writer och dess UI levereras separat. Render måste
+uppdateras till denna etapp innan den nya rumfunktionen kan användas.
+
+Verifierat: rum/entry/policy/readiness-regressioner 81/81 PASS; oberoende
+CAS-granskning 40/40 PASS efter två rättade transaktionsfall. Offline-ingång
+27/27 PASS; generation-media 3/3 och local-comparison 2/2 PASS. Tempfixturen
+kopierar entry-kontraktets publika modulberoenden och lämnar inga servrar kvar.
+Astrid, Vera, Amira och Mei spelades lokalt två gånger var på faktisk player-
+väg med rätt dealer och utan JavaScript-fel. Åtta privata bilder och kvitton
+finns utanför Git. Oförändrade media och sync-probe PASS; ingen ny läppsynk-
+acceptans eller produktionsrepetition hävdas av detta.
+
+Föregående Studio-etapp 3d4faaf3 har grön exakt-SHA CI 37935300051 och Vercel
+production READY. N2-etapp 82d01ecf är pushad; dess CI/utrullning verifieras
+separat. Renders exakta SHA är ännu inte verifierad. Webbläsarstyrningen
+felar i verktygets anslutning; den inloggade produktionsfliken har inte klickats.
+
+Nästa stopptest: Johns spelbolag → separat dealer Johanna → Nora-filens egna
+Johanna-mediaregistrering som grundloop + bakgrundsfilm + PNG-bord → redigerbar
+sammansättning → publicerat rum → faktisk spelklient, med bild per steg och
+två idlevarv. Generiskt registrerat dealerstöd och fryst idle-descriptor byggs
+som nästa etapp; ingen Johanna-specialkod eller omdöpning av Noras post.
+
+
+## 9 oktober 2026: N2-paket och verifierad legacyutrensning
+
+Genomfört efter avstämning med **Förenkla menyer och förhandsvisning**.
+Den tekniska roten `/studio` återexporterade `/control/clips`; den ger nu
+308 till samma publika klippadress med bevarad query. BasePath/API består.
+
+Inloggad operatör ser fryst paketdata för dealer, bord och bakgrund, med
+tillgångarnas verkliga bild/videoformat. Bord, Bakgrund, Presentationslanes,
+branding och Provbord använder paketvyn; de gamla lokala SVG-/bildproven
+visas bara i den märkta fixturen. Provbord länkar till riktiga spelklienten.
+Ändring kräver rätt roll, revision och val inom samma tilldelade lane.
+Godkända fullbildsklipp behålls; nya separata bord/bakgrund/färg avvisas där.
+Äldre paket utan fryst lagerformat kräver återpublicering före UI-redigering.
+Partner-writer skickar nu expectedRevision till publisher; atomiskt CAS-substrat
+levereras av den andra agenten i dess separata etapp. Rum-ID:n bevaras.
+Marker/kort-design är nästa steg; spelvärden, kort och saldo ägs av spelmotorn.
+
+Raderat lokalt och från produktkällan: tio filer, 259 423 byte:
+- `lab/components/background-zones.tsx` och dess CSS; sparad zondata/API består.
+- Åtta JS/MJS-kopior i `apps/croupier-frontend/public/kevin-cards/`; den tomma
+  katalogen är borttagen. Aktiv `web/public/card-presentation`, kortbilder
+  och URL-alias består.
+
+Mailmallarna har en verklig referens i Kevin-originalvyn och behålls.
+Fristående editor/viewer har dokumenterad användning och behålls.
+Inga runtimebibliotek har bevisats överflödiga. Ingen mediefil eller
+produktionsdatabas har ändrats; inget privat arkiv har lästs.
+
+Verifierat: slutligt Lab-build och TypeScript PASS; paket/scope/roll,
+bakade lager, MIME-format, snapshot, permanent redirect och stale-read-tester PASS.
+Hela delade Lab-arbetskopian gav 1 142 PASS, 2 SKIP, 0 FAIL (1 144 tester);
+den innehåller också andra agenters ännu separata rumstester.
+Originalfyras `audit-dealer-sync --probe` PASS. Detta är inte nytt
+lip-sync-godkännande. Produktions-CI/utrullning har eget kvitto efter push.
+Den privata systemkartan är uppdaterad som Canvas.
+
+
+## 9 oktober 2026: samlad Studio-etapp för löpande leverans
+
+**Publicerad som 3d4faaf3; exakt-SHA CI grön och Vercel production READY.**
+Studio har Sammansättning, Innehåll och Publicering. Drift, AI & chatt och
+Administration är utfällbara grupper; Bolag & team ligger på
+`/control/lanes?tab=companies`. Sammansättning samlar preview och lageruppladdning;
+avancerade reglage finns kvar. Egna klippnamn bevaras, standardnamn är svenska.
+Grundloop, sju spelarplatser och dealerns öppna/dolda/vända kort hålls åtskilda.
+
+Spara och fortsätt väntar på en ren render och bevarar nyare utkast.
+Publicering låser dubbelklick. Native inloggning behåller tillåten tab/lane-query;
+äldre remoteUi-handoff tar fortfarande bort query. Direkt upload behåller
+tekniskt kvitto, hash, revisions- och avbrottsskydd utan extra previewgodkännande.
+
+Tom exakt utdelningsposition ger `position_clip_missing`/`skipped`, ingen
+reservfilm. Spelmotorns kort fortsätter visas i 2D. Detta gäller också Noras
+registrerade positionsfilm med `available:false`; annat speechbeteende ändras
+inte. Publicering kräver inte kompletta positionsuppsättningar.
+Vänster/mitten/höger är fortfarande tekniska eventgrupper: platser 1–2, 3–5,
+6–7. De är inte grundloopar och ingen godtycklig positionsersättning införs.
+
+Verifierat före commit:
+- Lab produktionsbygge och TypeScript passerade.
+- Hela Studio-sviten: 1 099 PASS, 2 SKIP, 0 FAIL (1 101 tester).
+- Isolerad webbläsare: meny/tangentbord, 390/768/1440 px utan sidöverflöde,
+  verklig PUT → sparning → sidhopp → omladdning, exakt box3 till Händelser och
+  separerad bolagsvy; inga JavaScript-fel eller utkastdialoger.
+- Runtime/kort/lager och saknade positioner har riktade regressioner; sista
+  P2-korrigeringen har 45/45 PASS. Originalfyras sync-probe PASS, media oförändrade.
+- Oberoende granskning hittade och ledde till rättade spar-/dubbelklicks- och
+  saknad-fil-fall. Lip-sync eller produktionsrepetition är inte godkänd av dessa tester.
+
+**Återstår:** produktionskontroll och riktig skapa-spelrum-kedja med Nora/Johanna.
+Originalfyras lokala dubbelrepetition är verifierad i nästa kompatibilitetsdel
+ovan. Ingen rumfunktion eller ny SQL-migration ingick i 3d4faaf3. Johns Nivå 2-brief/skiss
+finns i teaminbox #9. Ingen kandidatmapp från separat legacygranskning har raderats.
+
+## 9 oktober 2026: arbetsplan för Sammansättning som nav
+
+**Status: genomförande pågår; etapper levereras efter verifiering.** Jakob har valt Sammansättning med tre
+videolager som nav. Överflödiga vyer, självklara texter och bekräftelser tas bort;
+avancerade funktioner behålls utfällbara. Inspirationsdokumentet kommer senare
+och är vägledande, inte en bindande detaljspecifikation. Jakob har aktiverat måluppdraget och begärt löpande main-leveranser för
+granskning i produktion. Ingen ny tracker skapas.
+
+### Avsedd struktur och beteende
+
+| Arbetsyta | Samlar | Standardbeteende |
+| --- | --- | --- |
+| Studio → Sammansättning | Dealer, bord, bakgrund, exakta provklipp | Gemensam stor preview; val och uppladdning vid respektive lager |
+| Studio → Innehåll | Dealers & klipp, bibliotek, händelser, tal vid inaktivitet | Vald dealer följer med; Grundloop, Utdelning och Repliker; detaljer i paneler |
+| Studio → Publicering | Presentationslanes, bolagspaket, export, spelkoppling | Samma sparade presentation; tydlig separat publicering |
+| Drift | Bord/spelrum, uppspelning, spelintegritet, betalningar/journal | Operativa verktyg samlade, med nuvarande åtkomstkontroller |
+| AI & chatt | Agentmodeller och operatörschatt | Två undervyer inom samma grupp |
+| Administration | Bolag/team, konton/roller, partners | En förvaltningsyta; relevant bolagsval nås även vid publicering |
+
+Översikt och Guide är lågprioriterade fasta länkar. Två layoutalternativ provas:
+utfällbara Studio-undervyer i vänstermenyn, eller en Studio-ingång med tre flikar
+på sidan. Ordvalet Publicering är ett arbetsnamn; presentationslane, spellane och
+spelrum får inte blandas ihop i datamodell eller användarflöde.
+
+- Direkt förhandsvisning utan manuellt godkännande. Uppladdning: välj fil,
+  automatisk teknisk kontroll, filen vald i preview. Fel visas vid berört lager.
+- Samordnat Spara och fortsätt ersätter onödiga sidhoppsspärrar där det går.
+  CAS/revisionskontroll och konfliktåterhämtning måste skydda osparade ändringar.
+- Kortnamn beskriver handling eller replik: exempel Lugn blick, Leende,
+  Första kortet, Välkommen till bordet. Dealer/kategori visas separat.
+  Befintliga egna namn bevaras; originalfilnamn, ID och hash finns under Avancerat.
+- Grundloop behåller viktade Basklipp och Variationer. Tal vid inaktivitet är
+  en annan funktion. Förhandsvisa klipp är ett provval, ingen runtimekoppling.
+- Menytexter, hjälptext och tomma förklaringsblock rensas. Tekniska felmeddelanden,
+  behörighetskontroller, upload-biljetter/hashar och capability-skydd bevaras.
+- Radera ersatta UI-komponenter först efter referens-/användningskontroll.
+  Befintliga alias, sparad zondata, media och kompatibilitetsläsning består
+  tills deras beroenden är verifierat avvecklade.
+
+### Genomförande i ordning
+
+| Etapp | Arbete | Klart när |
+| --- | --- | --- |
+| 1. Meny och nav | Gemensam skalstruktur, valt sammanhang och utfällning | Aktiv undervy, tangentbord, omladdning, bakåtknapp och djup-/querylänkar fungerar |
+| 2. Sammansättning och innehåll | Lagerpaneler, direkta provval, enhetlig dealeruppladdning inklusive greenscreen | Upload → preview → spara → omladdning fungerar; avbruten upload och revisionskonflikt förlorar inget utkast |
+| 3. Texter, namn och legacy | Renodla paneler, synliga namn och oanvänd UI-kod | Alla befintliga funktioner går att nå, ID/replik/kortplats och egna namn är oförändrade |
+| 4. Publicering och spelrum | Koppla presentation till kompatibel spellane och rum | Paket/behörighet valideras; upprepat klick skapar inga dubbletter; komplett isolerat flöde till spelaren verifierat |
+| 5. Dokumentation och leverans | Uppdatera guide, ordlista, teknisk referens och denna handoff | Menynamn/route/flöde stämmer; relevanta tester, visuell QA och exakt-SHA driftkontroller redovisade var för sig |
+
+Etapp 4 börjar med att fastställa API-kontraktet: återanvänd kompatibel spellane
+eller skapa en ny, och skapa därefter ett faktiskt rum. Detta är inte bara en
+knapptext. Nora kräver egen kompatibel spellane; live-AI-chatt för Nora ingår inte.
+
+### Arbetsfördelning och verifiering
+
+Samordnaren äger integration, utkast/sparning, publiceringskontrakt och gemensamma
+dokument. Underagent A arbetar med meny/skal; B med klipp- och lagerpaneler;
+C gör en separat granskning av städning, terminologi och tillgänglighet.
+Högst tre underagenter samtidigt; exakta filclaims innan ändringar, samordnaren
+äger .git vid integration. Ingen branch eller worktree skapas.
+
+Relevanta filer: lab/lib/scout-navigation.mjs, lab/components/workspace-navigation.tsx,
+control-preview-page.tsx, composition-preview.tsx, layer-library.tsx,
+family-video-upload.tsx, video-metadata-fields.tsx, control-lanes-page.tsx och
+lane-editor.tsx under lab/components. Navigationstester finns under lab/test.
+Dokument ändras i lab/docs/README.md, lab/docs/TERMINOLOGI.md,
+docs/LOCAL-PRESENTATION-RUNTIME.md och denna handoff tillsammans med respektive etapp.
+CLOUD-MIGRATION uppdateras bara för verifierade ändringar i befintliga poster.
+
+Standard i editorn är tre lager; fullbildsfilmer fortsätter fungera som fullbild
+och döljer separata bord/bakgrund. Ny default i spelruntime kräver egen verifiering:
+originalfyra dealers, två uppspelningar vardera, Nora och hela paket → partner →
+spelare. Visuell lip-sync-acceptans är inte ett hinder för vanlig upload/preview
+men kan inte ersättas med hashkontroll vid ändrat spelmaterial.
+
+Planunderlag kontrollerat mot main 40b2931 och kort överlämning från chatt "1".
+Skapa spelrum från presentationslane saknas; CUA-visuell slutkontroll och Nora-
+produktionsacceptans är fortfarande öppna. Den ursprungliga planeringsvändan ändrade ingen produktkod; den aktuella
+implementationens testresultat står i leveransavsnittet ovan. Säkerhetsläsning vid start:
+12 öppna GitGuardian-incidenter; platsmetadata delvis och historisk skanning
+ofullständig, aktiv övervakning. Ingen incident har ändrats.
+
+Jakobs modellkrav: minst GPT-6.1 Sol med extra hög tankegrad för underagenter.
+Samordnaren hanterar integration och svårare avvägningar.
+John och hans agent har fått originalskissen och Nivå 2-uppdraget via
+[teaminbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9).
+Utdelning ska uttryckligen behålla separata spelarplatser och dealerpositioner.
+Svenska visningsord dokumenteras i ordlistans kolumn Svenska.
+
+## 9 oktober 2026: samlad Studio-meny och enklare sammansättning
+
+Jakobs meny- och begreppsbeslut är genomfört med underlag från chatten
+”Kartlägg terminologi och kontrollmen”. Ett Studio samlar Dealers & klipp,
+Klippbibliotek, Sammansättning, Lanes, Händelser och Tal vid inaktivitet.
+Zoningångarna går till Sammansättning; gamla zondata och tekniska ID:n bevaras.
+Översikt visar fyra steg: dealer/klipp → sammansättning → lane → spelrum/bord.
+
+Grundloop är idle-loop med Basklipp och Variationer. De befintliga basklippen
+väljs fortfarande viktat; inget ”reservklipp” har införts. Vikter, tester,
+spelvägar och diagnostik öppnas under Avancerat. Utdelning och Repliker
+är övriga klippflikar. Probe heter Tal vid inaktivitet och ligger under Studio;
+den befintliga Astrid-begränsningen framgår. Inga ändringar av spelruntime,
+mediefiler, sparad produktionspolicy, databas eller AI-behörighet.
+
+Sammansättning och Lanes skickar valt lane-id mellan vyerna. Osparade utkast
+stoppar nästa länkhopp. Publicering, bolag, JSON-export och avancerade urval finns
+kvar. Spelkoppling leder till Administration → Bord. En knapp som automatiskt
+skapar ett spelrum från en presentationslane ingår ännu inte.
+
+Verifierat: Studio 1 061 PASS, 0 FAIL, 2 SKIP; Lab-bygge och TypeScript PASS.
+Dealer-audit --probe matchar originalfyra utan medieändring. Oberoende kodgranskning
+hittade ingen blockerare; gammal guidehänvisning rättad. Slutlig fullregression
+körs före commit; exakt-SHA CI/Vercel redovisas vid leverans.
+CUA-startfel finns kvar, så ny visuell granskning i inloggad produktion är inte gjord.
+Noras produktionsfiler, fyradealerrepetition och hela lane → rum → spelare-flödet
+återstår att acceptera.
+
+Föregående Nora-leverans 260e439a hade grön CI 37918069540 och Vercel READY på
+exakt SHA. Efter Jakobs andra Render-redeploy svarade /api/presentation/capabilities
+200 med Nora/per-clip. Renders exakta commit-SHA har fortfarande inte lästs.
+
+
+## 9 oktober 2026: kortare aktiv terminologi
+
+`lab/docs/TERMINOLOGI.md` är nu en kort ordlista med matriser och textflöde,
+cirka 25 % färre ord. Presentationslane skiljs från spellane; Nora,
+fullbild/greenscreen, samlad Studio-meny och acceptansgränser finns med.
+Grundloop, Basklipp, Variation, Sammansättning och Tal vid inaktivitet
+är samordnade med Studio-ombyggnaden; gamla zoningångar pekar på Sammansättning.
+Historiska GitLab-/snapshotreferenser, dubbleringar och tekniska
+legacyöversättningar har tagits bort ur ordlistan. Dokumentändringen innehåller
+ingen produktkod. Den lämnas till den samlade Studio-integrationen: separat
+commit stoppades av ett test mot den samtidigt ändrade zoningången.
+
+De två PDF-underlagen från 6 oktober och en identisk Desktop-kopia har
+arkiverats privat med ursprungliga sökvägar, storlekar och SHA-256 i manifest.
+Tre av tre arkivhashar matchar; inget underlag har raderats.
+Tabeller, kodblock, relativa länkar och kvarvarande guideankare är kontrollerade.
+Produktionsstatus och visuell spelacceptans påverkas inte av dokumentändringen.
+
+## 9 oktober 2026: Nora och videoeditorn integreras i Control
+
+Jakobs val är **egen dealer Nora**. Dealerregistrering på `/control/clips`
+skapar 16 egna tomma baselines. Native upload/classify kräver sparad registrering
+och rätt behörighet; ingen Astridmedia kopieras. Filmens metadata väljer fullbild
+eller greenscreen med bounded key-inställningar. Övriga framtida dealer-id kan
+beskrivas i modellen, men runtime och utrullningskontroll godkänner nu bara Nora
+utöver originalfyra; detta är inte ett generellt live-dealerlöfte.
+
+Förhandsvisning använder samma compositor som det lokala Nora-provet: dealer,
+bild/video för bord och bakgrund, mobil/desktopplaceringar, två uppspelningar
+och tillfälligt trefilsprov. Placeringar sparas i lanen och fryses i bolagspaketet.
+Actual game-player använder det exakta valda klippets frame/clock och metadata.
+Fullbild undertrycker separata lager. Publicerade lager läses enbart via
+bolagspaketets befintliga tillgångsväg. Nora idle kräver exakt egen sparad
+idle-baseline och spelas muted; ingen Astridfallback. Live AI-chatt för Nora
+är inte tillagd; originalfyra behåller sin befintliga chattväg.
+
+**Utrullningsgrind:** Render autoDeploy är avstängd och dess SHA är inte verifierad.
+Native Studio måste få en betrodd capability från Render före nya Nora-/lager-
+skrivningar i gemensam Neon, även inuti repository.transaction. Gamla
+projektoperationer behöver inget capability-anrop. Render uppdateras separat;
+Vercel READY räcker inte för spelacceptans. Ingen produktionsdata har ändrats.
+
+Lokalt: Studio **1 057 PASS, 0 FAIL, 2 SKIP**. Slutligt Lab-bygge, TypeScript
+och Vercelfrontend-bygge med spelarflagga och isolerade buildvärden passerade.
+Riktade runtimeprov: 101 PASS; Native utrullnings-/saveprov: 83 PASS;
+Blobexport: 6 PASS. Dealer sync `--probe` matchar baslinjen för originalfyra.
+Ordinarie fullregression körs av commithook; exakt-SHA CI/deploy-resultat
+redovisas vid leveransen. Mänsklig lip-sync-acceptans kvarstår.
+
+**Sandbox:** default-exec och CUA misslyckas före start. Sandboxloggen visar
+os error 32 vid ACL-validering av Codex `node_repl.exe`. Flera Codex-processer
+och två chattar finns. Read-only Windows Restart Manager bekräftade åtta
+node_repl-resursanvändare under samma Codex/ChatGPT-processkedja; det pekar
+inte ut ett ensamt blockerande filhandtag eller en specifik chatt. Inga belägg
+för att dev-servrar, git push, Parsec eller Tailscale orsakar detta. Båda
+fjärrverktygen används enligt Jakob och har lämnats igång. Hypotes/fynd är
+sparade i privat Codex-minne. Ingen omstart eller sandboxreparation är verifierad.
+Ett isolerat produkt/Lab-par byggdes och stoppades inför fullregression.
+Sessionvakten nekade korrekt ett tests andra par medan QA-paret var igång;
+QA-portarna 4192/4194 är nu fria. Inga parallella produktpar startades.
+CUA är därför blockerande för nya visuella spelrepetitioner, inte för skaltester.
+
+
+## 9 oktober 2026: smidigt GitGuardian-läsflöde
+
+`node tools/security-status.mjs` läser nu GitHub-status och GitGuardian-incidenter
+parallellt i en kompakt rapport. Befintlig DPAPI-koppling återanvänds; inga nya
+nycklar eller rättigheter. Projektets Codex-konfiguration registrerar den
+befintliga stdio-servern med `read_security_status`, `read_source_binding` och
+`read_repo_incidents`. `codex mcp get gitguardian --json` verifierar registreringen;
+en redan öppen chatt kan behöva laddas om för att få de nya verktygen.
+
+Live mot remote main `ef5ff919`: komplett incidentlista, 17 incidenter varav 12
+öppna och 5 ignorerade. 6 öppna incidenter saknar fil/rad; luckan är synlig.
+Repositoryövervakning är active/monitored=true. GitHub-suite är queued utan
+check runs på direktpush-committen. Senaste helhistorikskanning 2 oktober är
+`too_large`; aktiv övervakning och läst incidentlista bevisar inte full historik
+eller en lyckad skanning av exakt senaste SHA. Ingen incident har ändrats.
+
+Verifiering: 34/34 riktade säkerhets-/MCP-tester PASS, riktig stdio/API-läsning
+och Codex MCP-registrering verifierad.
+Återstående: bedöm de öppna incidenterna separat; utred saknade platser om de
+behövs. Ingen ny CI-installation eller bakgrundsövervakning infördes.
+
+## 8 oktober 2026 kväll: övertagande och isolerat Nora-kompositionsprov
+
+Övertagandet återläste lokal och remote main `cad8f6e6` samt GitHub-körning
+`37832989977` (success). Vercelprojekt `scoutgaming` i team `scoutgaming` har
+production target READY på samma SHA; www-aliaset pekar på
+`dpl_4J12tc6ncJg2swjdWKZafFpy7kse`. www svarar 200 och apex 308 till www.
+Render `/__cloud/health` svarar 200/ok men lämnar ingen commit-version.
+GitGuardian-suite är queued; incidentlistan är fortfarande `not-read`.
+
+Jakob gav tre lokala testfiler: bakgrundsvideo (1920×1080), Noras gröna
+dealervideo (1080×1920) och ett transparent PNG-bord (1440×2560).
+Videorna är H.264, 24 fps och 10,042 s utan ljudspår. Byte-identiska kopior
+ligger i Git-ignorerade `lab/preview-build/nora-test/media/`; originalen och
+godkända produktmedier ändrades inte. En lokal testvy använder den befintliga
+WebGL-kompositorn med grön nyckling, mobil 9:16, desktop 16:9 och individuella
+lagerkontroller. Båda videorna spelar och loopar; bordets alpha visar 75,1 %
+helt transparenta pixlar. Lager av/på och schackrutebakgrund har granskats i
+webbläsaren. Bilder finns privat i `lab/data/qa-composition-nora-20261008/`.
+Testvyn är inget aktiverat dealerpaket: handmask, kortkalibrering, repliker och
+acceptans i den faktiska spelaren återstår.
+
+Ett isolerat lokalt produkt-/labbpar behålls för Jakobs interaktiva prov:
+`http://127.0.0.1:4192/preview/nora-test/index.html`. Det startades med
+`node lab/start.mjs --offline --no-open --skip-build`, tom testdatabas och
+externa tjänster avstängda. Ingen ny server får startas parallellt.
+
+Astrids goodluck slutförde två repetitionplays i den gemensamma spelaren.
+Vera-/Amira-query i samma offline-fixtur räknas däremot inte som acceptans av
+dessa dealers: odekorerad HTML saknar serverns lane-dataset och klienten
+faller tillbaka till `mobile-phone`/Astrid/local. Produktionslanens
+Astridbegränsning är avsiktlig; fyradealeracceptansen kvarstår.
+Produktionsprojektet visar dessutom standardförslaget mobile-phone utan en
+uttryckligen sparad lane och med tomt lagerbibliotek. JSON-exportknappen
+startar en nedladdning på 934 byte, men IAB avbryter den före mottagna byte.
+Själva nedladdningsfilen och export → partner → spelare är därför fortfarande
+overifierade. Inga produktionspaket eller konton ändrades i provet.
+
+## 8 oktober 2026 kväll: T10 — tre val och frysta lane-paket
+
+Produktkoden levererades på main som `813c25a6`; full lokal commit-hook passerade
+och Vercel-deploymenten blev READY. GitHub-jobbet `presentation-studio` hittade
+därefter fyra gamla UI-förväntningar: teknisk offlinecopy, låst lane-checkbox,
+iframe-only-preview och den gamla menyn. De har uppdaterats till det avsedda flödet
+och lagts i full lokal regression. Studio-suiten: 1 029 pass, 0 fail, 2 skip.
+Preview-testet verifierar dessutom att den delade dataläsaren stoppar 401/partner
+innan Studio-data läses. Ny meny, sparad lane och tre väljare har även lästs på
+`www.scoutgaming.tech/control/preview` efter omladdning. Inga mediefiler ändras.
+
+Jakob gav Codex uppdraget att fortsätta efter masterplanen. Astrids godkända
+filmer ska vara kompatibla fullbildslager tills godkända frilagda dealerpaket finns.
+Start och plan finns i `random/start-T10-2026-10-08.md` och
+`random/masterplan-t10-konsolidering-2026-10-08.md`; alla tre T10-dokument kom med
+i remote main `ddc58fcb`. Aktivitetsdokumenten fanns redan på main.
+
+- Studio har tre huvudingångar: Dealers & klipp, Förhandsvisning och Lanes.
+  Bibliotek, zoner och händelser är kvar under Studio · verktyg.
+- Förhandsvisning redigerar samma sparade lane som Lanes: dealer, bord och
+  bakgrund, standardval, tillåtna alternativ och synlighet. Exakta befintliga
+  klipp kan provas; Paow/Dragge-provet finns kvar i en utfällbar del.
+- Lagerbiblioteket registrerar bild/video i privata Blob-namnrymder
+  `croupier/media/backgrounds/` och `croupier/media/tables/`. Prepare/commit kräver
+  Studio-session, rätt scope, origin, giltig uppladdningsbiljett, verifierad hash
+  och projektets aktuella revision. Ingen ny SQL-migration behövs: biblioteket
+  ligger i projektdokumentet. Offline saknar uppladdning och molnpublicering.
+- Lanes kan exportera ett validerat JSON-manifest från sparat innehåll.
+  Publicering fryser valda lanes och refererade lager i operatörspaketets
+  reserverade, komprimerade `_scoutPresentation`. Hashen kontrollerar integritet;
+  det är ingen digital signatur. Paketet behåller den befintliga storleksgränsen.
+  Exporten innehåller filreferenser, inte videofiler eller leverantörshemligheter.
+- Partnerns val begränsas till en publicerad lane och dess rättigheter.
+  Spelstart läser frysta presentationsval och delar inte privata biblioteksfiler
+  som bolaget saknar i sitt paket. Kort, saldo och spelutfall förblir serverägda.
+- Tre lager är redigeringsmodellen. Ordinarie opaque dealerfilm förblir fullbild;
+  bakgrund/bord kan inte bytas självständigt bakom dess inbakade pixlar.
+  T9-renderern är fortsatt opt-in. Fler dealers och frilagda standardpaket återstår.
+
+Verifierat separat: TypeScript, riktade kontrakt-/behörighetsprov, privat
+uppladdning med testlager, paketfrysning, delad spelentré, offline save → reload,
+video Range 206 och visuell editor. Full regression körs av leveransens commit-hook.
+`audit-dealer-sync --probe` passerade för samtliga fyra dealerbanker; tidigare
+saknade repliker och mänsklig läppacceptans kvarstår. Inga godkända medier ändrades.
+Webbläsarens klickverktyg fastnade före dispatch: fyra dealers × två spelningar,
+JSON-nedladdning via knapp samt riktiga Blob/Neon/partner-klick är inte godkända
+som end-to-end. Den isolerade serverparet stoppades och dess tillfälliga data raderades.
+
+Vercel-team och projekt verifierades som `scoutgaming`. GitHub API visar repot
+som **public**, trots README:s tidigare private-uppgift. GitGuardian-suite på
+setup-commit `ddae3b5d` är queued; incidentlistan är `not-read`.
+Produktionsdeploy och Render-version ska kontrolleras mot den levererade SHA:n.
+
+## 8 oktober 2026 kväll: Codex och befintlig checkout
+
+Arbetskatalogen är `C:/Users/jakob/dev/projects/scoutgame`, på `main` i
+`Jakeminator123/scoutgaming`. Efter Cursor-agentens leverans hämtades remote main:
+`ddc58fcb`, utan divergens. Ingen ny checkout eller flytt av lokala filer gjordes.
+De 60 inventerade filerna i `random/` och 16 `.env`-filerna behöll samma SHA-256;
+hemliga värden ingår inte i rapporten eller Git.
+
+`.codex/config.toml` ger projektet `workspace-write`, nätåtkomst, automatisk
+granskning av utökade behörigheter och Windows-sandbox `elevated`. Modellval och
+inloggningar ärvs från användaren. Git använder `.githooks`, fast-forward-only pull
+och prune vid fetch. Codex-CLI uppdaterades via Volta från 0.150.0 till 0.161.0;
+enbart det föråldrade `mcp_servers.vercel.type` togs bort ur användarkonfigurationen.
+
+Verifierat: TOML, faktisk laddning från rätt cwd, installation, auth, sandbox,
+HTTP-åtkomst och WebSocket-handshake via `codex doctor`, samt filbevarande.
+Repoets fulla pre-commit-kontroller körs vid commit. Systemkartan har 0 röda fel
+men gul baslinjedrift. GitGuardian-suite väntar; incidentlistan är inte läst.
+Valfria CLI-varningar kvar: desktopvariabel för `node_repl`, Defender-exkluderingar
+ej verifierade och `TERM=dumb` vid icke-interaktiv körning. Produktservrar startades
+inte. T10 är fortsatt en plan; detta arbete ändrar ingen spel- eller medialogik.
+
+## 8 oktober 2026 eftermiddag: T9 layer-preview bakom flagga
+
+Spelvägen har ett opt-in-spår för tre lager utan att röra Astrids ordinarie local-väg:
+ny server-lane `layer-preview` (`renderer: layered`, default dealer `paow`) och ny
+Render-rutt `/layer-packs/*` som bara svarar när entrén har satt cookie-flaggan
+`croupier_layer_preview=1`. Rutten serverar runtime-moduler från
+`test-videoeditor/program/web` och manifest/media från `lab/preview-build`, med
+`Range`-stöd och `Cross-Origin-Resource-Policy: same-origin`.
+
+Klienten har ny modul `web/public/layered-presentation.mjs` som monterar canvas i
+`#scene`, laddar `/layer-packs/<dealer>/manifest.json` och matar `bridge.consume`
+med serverns `presentation[]` från `/api/table`. `unsupported[]` (exempelvis `speak`)
+loggas som kvitto i observationsflödet och kastas inte. Om paket saknas visas
+`Lagerpaket saknas · 2D-reserv` och ordinarie DOM/SVG-kort fortsätter.
+
+`gameChoices` för `layer-preview` öppnar dealer-val `paow/dragge` och bakgrundsval
+från katalog-ID:t; panelen Ditt bord använder samma lagring som N3.4.
+`#dealer-options` listar fortfarande bara dealers i `DEALERS`-objektet, alltså inte
+Paow/Dragge där ännu; de syns i Ditt bord-panelen.
+
+## 8 oktober 2026 sen eftermiddag: e-postinbjudan för operatörspersonal
+
+`invite` i partner-API:t och `operator-membership` med e-post skapar ett partnerkonto utan
+hash, en engångstoken (samma `tokens`-tabell och `studio-sha256:`-hash som Studio) och
+medlemskap `invited` när adressen saknas; ett befintligt partnerkonto kopplas `active` utan
+mejl. Mejlet (Resend, rubrik "Inbjudan – operatörspersonal, nivå 2") bär bolagsnamn, roll och
+länk till `/partner/set-password?t=`. Svaret är alltid `{ invited: true }`; högst 5 per aktör och
+timme, sedan 429. `POST /api/partner/set-password` konsumerar token, sätter scrypt-hash, bumpar
+auth-epoch och aktiverar inbjudna medlemskap; Studio:s set-password och login vägrar fortfarande
+roll `partner`. Journalen loggar maskad e-post. Översikten `/control` läser riktiga bolag via
+`listLaneOperators()` när native admin är på. Inte klickat i webbläsare; inget riktigt mejl skickat.
+Kvar: glömt-lösenord för partner, journaltabell.
+
 ## Nuläge per funktion
 
 | Funktion | Status | Avsnitt |
 | --- | --- | --- |
 | Klipplogik och lane | påbörjad — system A är det enda urvalssystemet och `select` gäller alla sex dealers (Astrid bevisat oförändrad, baslinje 160 anrop); `project.lanes[]` redigeras och publiceras på `/control/lanes`; lanen bär zoner, bordsfärger, probe och idle som valfria fält; Render läser paketet på `/blackjack?operator=` och Vercel `/play/blackjack?operator=` hämtar det dokumentet (L8b); kvar: rehearsal Vera/Amira/Mei (2D-reserv tills nya paket), tre lager i spelet (Jakobs gren), klick i prod. Uppföljning: `random/checklista-2026-10-08.md` | 8 okt eftermiddag |
 | Nivå 1 /control | påbörjad — en kodgeneration på sidmallen; Händelser en sida, Probe i menyn, Lanes med lane-redigerare, Översikt med anslutna bolag, Uppspelning är loggen, ljust läge rättat på fyra ytor; kvar: filterchips (11), Probe verifierad i prod (C9) | 8 okt middag |
-| Nivå 2 /partner | påbörjad — session finns; `branding` läses/skrivs inom lanen med CAS men kräver roller som ingen rutt ännu skapar (N2.2 promptfil); speldata ej | Sista operatörsadmin, Partnerportal |
+| Nivå 2 /partner | påbörjad — session finns; team och branding skrivs (revision som CAS, sista-admin-spärr i lagret); Bolag på `/control/lanes` skapar bolag, roller och medlemskap; e-postinbjudan skapar inbjudet partnerkonto + engångslänk till `/partner/set-password`, kontot kan sedan logga in på `/partner/login` (5 inbjudningar per aktör och timme); Översikten listar riktiga bolag ur Neon när lagret är på; kvar: journaltabell, glömt-lösenord för partner, speldata, prod-klick | Skrivande partnerrutter, Partnerportal |
 | Nivå 3 /play | påbörjad — lobby med `Spelar hos` och senaste bord/dealer från webbläsaren; redigerbar profil (namn, språk; migration `006` väntar); historikrutt; panelen Ditt bord väljer dealer och bordsfärg inom lanen (N3.4). Bakgrund är avstängd när filmen är inbakad. Valet ligger inte på kontot | Spelaryta |
 | Tester och dokumentation | klart 7 okt natt — körare för lösa tester, dokumentation mot kod (D1–D32); 8 okt: CI-steget Orphan tests, ffmpeg från cache, GPU-workflows på `ubuntu-24.04` | Pass M |
 | Studio-migrationer | klart — 001–005 applicerade på produktions-Neon 7 okt; CI-spärr före deploy | Partnerportal |
@@ -19,75 +485,27 @@ Uppdaterad 8 oktober 2026. Detta är den enda löpande handoffen.
 bevarar samtliga tidigare statusnotiser och kvittoplatser. Privata bevis,
 journaler och backups ligger kvar; detta är dokumentstädning, inte nya order.
 
-## 8 oktober 2026 eftermiddag: Dragge och Paow som dealer 5 och 6 (grenen `kevin`)
+## Skrivande partnerrutter, 8 oktober 2026 eftermiddag: bolag, roller, team (N2.2, N2.3)
 
-Kevins pass, åtta commits på grenen `kevin` från `ac936377` och därefter rättningar efter
-granskning, inte pushat. Ingen Blob, ingen deploy, inga skrivningar i Neon, Render eller Vercel.
-
-Ändrat. `d996eb1e`: kontraktet, fröet och schemana har `dragge` och `paow` med 16
-standardlinjer var, kopierade från Astrid. Ett sparat projekt med fyra dealers är fortfarande
-giltigt; `normalizeProject` lägger till de två i minnet tills nästa sparning. `439df68d`:
-kodlanes `mobile-phone-dragge` och `mobile-phone-paow`; dealerväljaren öppnar dealerns egen
-lane och Lägg till lane frågar efter dealer. Indexlanes och `?dealer=` gäller bara de fyra
-första. `a05e2fdc`: en presentationsbank per dealer i `media/dealers/<id>/runtime/presentation`
-med eget manifest; Astrids bank är oförändrad. `7e0d1aee`: en bank utan idle vilar på
-`/dealers/<id>/rest.png`, en bank utan tal hoppar över repliker med kvittot `skipped`, korten
-är 79×106 för de två. `d7af7e62`, `dd02d7cf`: H3:s KLARA-tagningar förbakade offline över
-porträttplattan, in + deal + ut i en film per kort från vila till vila. Dragge har 9 filmer
-(sju platser, dealer, hål), Paow 8 plus `deal_pos6b` som variant. `a42dc478`: Dragges 17
-engelska repliker med två varianter var (51 filmer), samma bakning och oförändrat ljud, plus
-`bank.json` för rehearsal. Skript och kvitton ligger i `media/dealers/<id>/staging/2026-10-08/`.
-Detta pass: `AGENTS.md`, presentationsguiden, labbguiden, `guide.json` och terminologin
-(utdelningspose mot ready).
-
-Testat: alla kommandon i `.githooks/pre-commit-full` efter varje commit, utan stopp vid fel:
-1722 tester, 10 fel som också fallerar på ren main i klonen (saknade `ws`, `typescript` och
-`.next`); audits och manifestkontroller gröna. Labbtester 999 (997 gröna, 2 skippade),
-typecheck, orphan 0, `audit-dealer-sync --probe` PASS, Astrids select-baslinje oförändrad.
-Varje film: bildantal, första och sista bild mot vilostillbilden (44–47 dB), ingen grön kant,
-ljudpaket identiska med tagningen. `migrate-media-layout --verify` godkänner alla nya rader men
-faller på en rad som redan fallerar på main. Inget klickat i webbläsare eller i produktion.
-
-Rättat efter granskning. `2289920e`: en bank som vilar på stillbilden ger standard-idle när
-vilan syns och ingen action eller tal äger dealern; förut fick talgrinden aldrig sitt kvitto
-och varje chattsvar på Dragges och Paows lanes blev liggande tills det kastades. `e3c73c29`:
-klienten godtar en sparad Dragge- eller Paow-lane med eget id från Lägg till lane; förut
-kastade sidan "Invalid game presentation". `1c20c630`: dealerraden rullar i sidled på mobil i
-stället för att skjuta ut Walk casino och Paow ur bild. `86413ea5` med testerna i `f12ebc73`:
-`?rehearsal=1` för en dealer utan talbank startar bordet och säger att det saknas repliker.
-`0e1ab69a`: Studiohistoriken sparar filen som den låg på disk, inte den normaliserade vyn med
-sex dealers. `8810a71a`: hela spärren kontrollerar Dragges och Paows manifest utan villkor.
-`9833d4e6`: Paows acceptans står som öppet beslut i reglerna. Testat: alla 58 kommandon i
-`.githooks/pre-commit-full` utan stopp vid fel, 1752 tester (1740 gröna, 9 skippade, 3 fel i
-rehearsaltesterna som `f12ebc73` rättar), audits och manifestkontroller gröna; de berörda
-testfilerna därefter 147 av 147. Körningen hade `TMPDIR` utanför `/var`: med macOS standard
-faller två tester även på main i denna klon (arkivets symlänkspärr och huvudvakten i
-`tools/precommit-checks.mjs`). Chromium 375×812 mot en isolerad lokal server: Walk casino syns
-helt och raden rullar till Paow på Veras bord, Astrids mobile-phone-lane och Paows lane; med
-fyra knappar har Veras rad samma lägen som före grenen; Paow med `?rehearsal=1` startar
-bordet; en lane
-`dragge-vip` startar. Chattsvaret på Dragges lane är prövat mot talgrinden i Node, inte i
-webbläsaren (chatten kräver session och AI-tjänst).
-
-Kvar: Blob-publicering (`tools/export-media-blob.mjs`, ny `media/blob-index.json`); en
-källkodspush publicerar inte filmerna. Deployordning Render, sedan Lab, sedan första
-sparningen med sex dealers; äldre kod avvisar ett sådant dokument (`studio_corrupt_game_policy`).
-Har produktionens Administration en sparad lane-katalog måste en admin lägga till en
-porträttlane för Dragge och en för Paow; med kodens id (`mobile-phone-dragge`,
-`mobile-phone-paow`) når dealerraden dem, ett eget id spelas men nås inte från raden. Visuell acceptans på mobil och dator: skarvarna, att kortet
-täcker rekvisitan och läppsynk för alla 51 repliker (take-posterna i `takes.md` är ogranskade).
-Korten ligger över filmen, så handen går under redan utdelade kort; rätt ordning kräver tre
-lager med klientkeying (`test-video-jakob`). REDO-kedjning (in en gång, deals, ut en gång) är
-inte byggd. Paow har ingen röst och inget hålklipp, och ingen av dem har vändning (2D-reserv).
-Paow har inga repliker att rehearsa, så kravet på två rehearsalplays går inte att uppfylla för
-henne; vilken checklista som ersätter det är ett öppet beslut för Kevin och Jakob, och reglerna
-ovan och i `AGENTS.md` anger ingen ersättning. Svenska repliker väntar på en språkdimension. Kända brister i
-underlaget: fläckig hy i Paows H3-tagningar, en mörk fläck i plattan vänster om skon och en
-liten färgskillnad på kortet där dealdelen slutar. Grenen bygger på `ac936377`; `origin/main`
-står på `cc3e8814`, och en rebase krockar i denna fil (båda lägger till ett avsnitt för
-8 oktober och ändrar statustabellen). Rebasen är inte gjord. Ej uppdaterat: lobbyns namnlista
-(`player-choices.mjs`), uppladdning till de nya familjerna (`video-intake.mjs`) och texten
-"fyra dealers" i `video-coverage.tsx`.
+Byggt på 005 och `ac936377` utan att vänta på Kevins svar (#3); ingen migration. Väntar på orkestratorns granskning.
+Nivå 1: POST `operator-create` (bolag med standardrollerna `partner-admin`, `partner-editor`,
+`partner-viewer`), `operator-role` (kända behörigheter; `team.roles.assign` bara på `partner-admin`)
+och `operator-membership` (befintligt konto med roll `partner`, revision som CAS, sista-admin-spärr).
+Kortet Bolag på `/control/lanes` listar bolag och medlemmar, skapar bolag, lägger till medlem via
+användarnamn, byter roll och stänger av. Äldre bolag som `sg-test` får rollerna med Skapa saknade
+standardroller; först med ett medlemskap som `partner-admin` eller `partner-editor` slutar
+branding-skrivningen ge 403. Nivå 2: `GET/POST /api/partner/team?operator=` (GET kräver `team.read`,
+POST dessutom `team.roles.assign`). Bjud in kopplar ett befintligt partnerkonto via e-post; ingen
+e-post skickas (N2.6). `partner-admin` är inte delegerbar, så operatören kan inte utse, degradera eller
+stänga av administratörer. Kevins `team.jsx` har ett additivt `runtime.team`; utan det renderas vyn
+som förut. Bjud in och rollbyte anropar API:t i riktig session; avstängning finns i API:t och i Bolag,
+inte i Kevins vy. Journaltabell saknas: varje skrivning ger en serverloggrad `[operator-journal]`
+(at, actor, action, operatorId, target, ingen e-post). Testat: lab `npm test` (två webbläsartester
+hoppas över som förut), `npm run typecheck`, `npm --prefix lab run build`, hela
+`.githooks/pre-commit-full` (Kevins portaltest, `test/operator-store.mjs`,
+`test/partner-access-policy.mjs`), systemkartan utan fel. Kvar: e-postinbjudan och accept-steg,
+journaltabell; en admin-409 skiljer inte sista-admin från revisionskrock; låstimeout i partner-API:t
+blir 503. Kevin godkänner rollnamn, standardbehörigheter, placering och journalformat.
 
 ## 8 oktober 2026 middag: paketet når spelet, select för fyra dealers, spelarprofil
 
@@ -147,8 +565,9 @@ standardlane `mobile-phone` när nyckeln saknas, ingen läsare ännu. Klipp visa
 `familyId` + roll utan filbyten. Händelser är en sida: `/control/events` utan `?event=` är
 översikten, `/control/tree` omdirigerar 308 med frågesträngen kvar. Menyraden heter Probe, Johns
 fyra etiketter är djuplänkar `/control/administration?tab=`, inloggningskortet ligger på
-sidmallens tokens. `test-videoeditor/` speglar grenen `test-video-jakob` byte-identiskt
-(förhandsvisning Paow/Dragge 720p, 12 MB, webbspelare med WebGL-kompositor); `/control/preview`
+sidmallens tokens. `test-videoeditor/` bär lagerprovets material (ursprungligen grenen
+`test-video-jakob`, byte-identiskt speglad och raderad 8 okt 18:35; förhandsvisning Paow/Dragge 720p,
+12 MB, webbspelare med WebGL-kompositor); `/control/preview`
 visar den bakom adminsessionen via `/preview/[...path]` (ingen publik kopia, media som filer,
 inget till blob eller databas). `test/fuzz-blackjack.mjs` fuzzar serverns `web/shoe-game.mjs`
 (3 000 rundor i kroken, 100 000 gröna). Systemkartan har sidan och handlern; menynamnen är
@@ -186,8 +605,8 @@ pre-commit-krok för varje commit (ffmpeg och jq lokalt). Produktion verifieras 
 
 Kvar: `dealer-regression` installerar ffmpeg och jq utan cache (rad 46). `test/fuzz-blackjack.mjs`
 är ett manuellt skript mot klientmodulen och räknar invariantbrott (rad 47). Johns rader 11, 12,
-14, 17b. Klipplogiken: steg 2-förslaget väntar på Jakobs svar och på granskning av grenen
-`test-video-jakob` (tre lager); se `random/checklista-2026-10-08.md`.
+14, 17b. Klipplogiken: steg 2-förslaget väntar på Jakobs svar; lagerspåret (tre lager) finns som
+lane `layer-preview` (T9) och provas i rehearsal; se `random/checklista-2026-10-08.md`.
 
 ## Sista operatörsadmin, 7 oktober 2026 natt
 

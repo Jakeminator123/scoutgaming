@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { StudioError } from './project-store.mjs';
+import { isDealerId } from '../../web/dealer-identity.mjs';
 
 const MAX_BYTES = 1024 * 1024 * 1024;
 const pending = new Map();
@@ -14,9 +15,10 @@ export const MEDIA_MIME = { mp4:'video/mp4', webm:'video/webm', mov:'video/quick
 const MIME = MEDIA_MIME;
 const PATH = /^croupier\/(videos|zones)\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\/([a-f0-9]{64})\.(mp4|webm)$/;
 const UUID='[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
-const NEW_PATH=new RegExp('^croupier/media/((?:dealers/(?:astrid|vera|amira|mei|dragge|paow)|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
+const NEW_PATH=new RegExp('^croupier/media/((?:dealers/[a-z][a-z0-9-]{0,39}|game|site)/(?:source|runtime|review|staging)/(?:[^/]+/)*|backgrounds/|tables/)('+UUID+')/([a-f0-9]{64})\\.([a-z0-9]+)$');
+const validDealerPath=path=>!path.startsWith('croupier/media/dealers/')||isDealerId(path.split('/')[3]);
 const safeSegments=path=>path.split('/').every(part=>part&&part!=='.'&&part!=='..'&&!/[\\%?#:\u0000-\u0020\u007f]/.test(part));
-export function mediaBlobPath(directory,id,sha256,extension){const path=`croupier/media/${directory}/${id}/${sha256}.${extension}`;if(!NEW_PATH.test(path)||!safeSegments(path)||!MIME[extension])fail('Ogiltig logisk mediasökväg.',422);return path;}
+export function mediaBlobPath(directory,id,sha256,extension){const path=`croupier/media/${directory}/${id}/${sha256}.${extension}`;if(!NEW_PATH.test(path)||!safeSegments(path)||!validDealerPath(path)||!MIME[extension])fail('Ogiltig logisk mediasökväg.',422);return path;}
 const commonHeaders = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-origin' };
 const fail = (message, status = 503) => { throw new StudioError(message, status); };
 export function privateContentTypeMatches(actual,expected){
@@ -32,7 +34,7 @@ export function isCloudMediaConfigured(env = process.env) {
 /** Persist this server-owned reference, never a client-supplied URL or token. */
 export function validatePrivateMedia(record) {
   const old=typeof record?.pathname==='string'&&PATH.exec(record.pathname),current=typeof record?.pathname==='string'&&NEW_PATH.exec(record.pathname);
-  const match=old?{hash:old[2],extension:old[3]}:current&&safeSegments(record.pathname)?{hash:current[3],extension:current[4]}:null;
+  const match=old?{hash:old[2],extension:old[3]}:current&&safeSegments(record.pathname)&&validDealerPath(record.pathname)?{hash:current[3],extension:current[4]}:null;
   if (!match || Object.keys(record).some(key => !['provider', 'pathname', 'sha256', 'size', 'contentType'].includes(key))
     || record.provider !== 'vercel-blob' || record.sha256 !== match.hash
     || !MIME[match.extension] || record.contentType !== MIME[match.extension] || !Number.isSafeInteger(record.size)

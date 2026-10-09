@@ -16,7 +16,7 @@ import type { UploadBinding } from './video-upload';
 import { ClipNameEditor, VideoLibrary } from './video-library';
 
 export function ControlVideosPage({
-  initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, connectedLane = false,
+  initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialSituation, connectedLane = false,
 }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
@@ -24,6 +24,7 @@ export function ControlVideosPage({
   initialDealerId?: string;
   initialEventId?: string;
   initialVariantId?: string;
+  initialSituation?: string;
   connectedLane?: boolean;
 }) {
   const session = useStudioSession({
@@ -75,18 +76,20 @@ export function ControlVideosPage({
     }
   }
 
-  function openEvent(id: string) {
-    window.location.assign(studioHref('/control/events', { dealerId, eventId: id }));
+  function openEvent(id: string, situation?: string) {
+    const href = studioHref('/control/events', { dealerId, eventId: id });
+    window.location.assign(situation ? `${href}&situation=${encodeURIComponent(situation)}` : href);
   }
 
   return (
     <PageTemplate
       eyebrow="// STUDIO"
       title="Klippbibliotek"
-      intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Klippbibliotek" eventHref={eventHref} eventLabel={event.label} />}
+
       primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
       <div className="sg-page-body">
+      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/control/probe','Tal vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
       <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       {incompatibleBindings.length ? (
@@ -132,9 +135,9 @@ export function ControlVideosPage({
           </label>
         </div>
       )}
-      <fieldset disabled={saving || !connectedLane}>
-        <LegacyClipEditor project={project} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
-      </fieldset>
+      <details><summary>Avancerat · befintliga klippkopplingar</summary><fieldset disabled={saving || !connectedLane}>
+        <LegacyClipEditor project={project} dealerId={dealerId} showLegacyReview={false} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
+      </fieldset></details>
       {media.managed && named ? (
         <div className={styles.binding}>
           <label className={styles.field}>
@@ -142,7 +145,7 @@ export function ControlVideosPage({
             <select value={named.id} onChange={change => setNamedId(change.target.value)}>
               {dealerClips.map(video => {
                 const fileName = video.fileName || video.relativePath?.split('/').at(-1) || video.id;
-                return <option key={video.id} value={video.id}>{clipLabel({ id: video.id, label: video.label, familyId: video.familyId, role: video.role, relativePath: video.relativePath }, project.clipLabels)} · {fileName}</option>;
+                return <option key={video.id} value={video.id}>{clipLabel({ id: video.id, label: video.label, familyId: video.familyId, role: video.role, relativePath: video.relativePath }, project.clipLabels)}</option>;
               })}
             </select>
           </label>
@@ -150,9 +153,11 @@ export function ControlVideosPage({
         </div>
       ) : null}
       {media.managed
-        ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} clipLabels={project.clipLabels} onOpen={id => openEvent(id)} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} />
+        ? <FamilyVideoLibrary inventory={videos} dealerId={dealerId} clipLabels={project.clipLabels} onOpen={(id, situation) => openEvent(id, situation)} onRefresh={() => void refreshVideos()} refreshing={refreshingVideos} />
         : (
           <VideoLibrary
+            key={`${dealerId}/${event.id}/${initialEventId === event.id ? initialSituation ?? '' : ''}`}
+            initialSituation={initialEventId === event.id ? initialSituation : undefined}
             originals={originals}
             onInventory={next => { setVideos(next); }}
             project={project}

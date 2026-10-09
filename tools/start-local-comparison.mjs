@@ -73,6 +73,7 @@ function isolatedEnv(runDir, ports) {
   return Object.assign(env, {
     NODE_OPTIONS: `--import=data:text/javascript;base64,${Buffer.from(preload).toString('base64')}`,
     CROUPIER_QA_ALLOWED_PORTS: ports.join(','), NEXT_TELEMETRY_DISABLED: '1',
+    CROUPIER_LAB_BASE_PATH: '', CROUPIER_STUDIO_NATIVE_ADMIN: '0', CROUPIER_STUDIO_NEON_POLICY: '0',
     CROUPIER_ENV_FILE: join(runDir, 'disabled-agent.env'), RESEND_API_KEY: '', AXEL_AGENT_TOKEN: '',
     AXEL_AGENT_URL: 'http://localhost:1/disabled', GENERATIONS_READ_TOKENS: '',
     LAB_REMOTE_URL: '', LAB_REMOTE_TOKEN: '', LAB_API_TOKEN: '',
@@ -172,6 +173,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
       labChild = await startChild([join(labDir, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)], {
         cwd: labDir, env: { ...env, NODE_ENV: 'production', PORT: String(labPort),
           CROUPIER_GAME_ORIGIN: gameUrl,
+          LAB_STUDIO_DATA_DIR: studioDir,
           CROUPIER_DATA_DIR: dataDir,
           BETTALOTTO_PARTNER_BASE_URL: gameUrl, BETTALOTTO_PARTNER_KEY_ID: credentials.partner.keyId,
           BETTALOTTO_PARTNER_SECRET: credentials.partner.secret, BETTALOTTO_PARTNER_PLAYER_ID: credentials.partner.playerId,
@@ -184,7 +186,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   try {
     await Promise.all([dataDir, studioDir, env.LAB_DATA_DIR, ...(!generationDirectory ? [env.LAB_VIDEO_ARCHIVE] : [])].map(dir => fsPromises.mkdir(dir, { recursive: true })));
     await prepareStudio?.(studioDir);
-    await prepare?.(session);
+    await prepare?.({...session,environment:extra=>({...session.environment(extra),...env})});
     const seed = new DatabaseSync(join(dataDir, 'craig.db'));
     try {
       seed.exec('CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,email TEXT,salt TEXT,hash TEXT,role TEXT NOT NULL,created_at TEXT NOT NULL)');

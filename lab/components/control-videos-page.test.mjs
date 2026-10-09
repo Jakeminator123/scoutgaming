@@ -58,7 +58,7 @@ test('clip library drops the inner sidebar, roulette and chat shortcuts', () => 
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<button[^>]*>Spara projekt<\/button>/);
   assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
-  assert.match(html, /Dina videomappar/);
+  assert.match(html, /aria-label="Klipp och situationer"/);
   assert.doesNotMatch(html, /Koppling för:/);
   assert.doesNotMatch(html, /Dina videor\. Ordning från början/);
 });
@@ -82,7 +82,7 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
     initialEventId: 'speak.goodluck',
     initialVariantId: 'vera.speak.goodluck.extra',
   });
-  assert.match(html, /Dina videor\. Ordning från början/);
+  assert.match(html, /aria-label="Vald videokoppling"/);
   assert.match(html, /Koppling för: Vera · Lycka till · Kvällshälsning/);
   assert.match(html, /Händelse[\s\S]{0,120}<select/);
   assert.match(html, /Variant[\s\S]{0,120}<select/);
@@ -91,7 +91,7 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
   assert.match(html, /videokopplingar behöver kategoriseras eller kopplas loss/);
   assert.doesNotMatch(html, /Granska i Videobanken/);
   assert.doesNotMatch(html, /Dina videomappar/);
-  assert.match(html, /Klippflöden och äldre kopplingar/);
+  assert.match(html, /Klipp och kopplingar/);
   assert.match(html, /V Vera/);
 });
 
@@ -102,8 +102,9 @@ test('clip library shows one display-name override and keeps the single save but
   const html = render({ initialProject: project, initialVideos: astridVideos });
   const fileName = clip.fileName;
   assert.match(html, new RegExp(`value="Eget namn"`));
-  assert.match(html, new RegExp(`${fileName} · ${clip.id}`));
-  assert.match(html, new RegExp(`Eget namn · ${fileName}`));
+  assert.match(html, new RegExp(fileName));
+  assert.match(html, new RegExp(clip.id));
+  assert.match(html, />Eget namn</);
   assert.match(html, /Visningsnamn/);
   assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
   assert.equal(html.match(/>Spara projekt</g)?.length, 1);
@@ -129,7 +130,8 @@ test('an unmanaged clip keeps the override in the library detail without a secon
     initialEventId: 'speak.goodluck',
   });
   assert.match(html, /value="Kvällsnamn"/);
-  assert.match(html, /kvall\.mp4 · 11111111-1111-4111-8111-111111111111/);
+  assert.match(html, /kvall\.mp4/);
+  assert.match(html, /11111111-1111-4111-8111-111111111111/);
   assert.match(html, /<h2>Kvällsnamn<\/h2>/);
   assert.match(html, /<strong>Kvällsnamn<\/strong>/);
   assert.match(html, /Originalnamn/);

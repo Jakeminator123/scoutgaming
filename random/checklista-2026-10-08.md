@@ -82,12 +82,13 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | T1 | Inventering: finns lagren redan i klienten (`actor-compositor`, `table-scene` palett, zoner)? | klart: ja som kod (`actor-compositor`, `table-scene` palett per dealer, `rooms[].felt` i `/api/bo/config`), **nej i produktionsvägen** (full-frame mp4). Zon-JSON har ingen läsare i `web/`. Tre lager kräver antingen `/v2`-keyningen för alla dealers eller nytt material (F3) | K1 tabell 2–3 | K |
 | T2 | Datamodell: lane = dealer(s) + idle + dealsekvenser + bakgrund + probe + OpenClaw-rättigheter | klart natt 8 okt (S2): `project.lanes[]` med `layers`, `openclaw`, `operatorAdjustable`; ingen läsare ännu; `project-store` normaliserar inte vid läsning (matris 54) | beslut 49 | K steg 5 |
 | T3 | Bordsfärg som inställning: paket (bolag) → tillåtna val → spelarens val | kod inne (N3.4): DOM/SVG (filt-märke, plånbok, marker). Filmen och 3D-filten oförändrade. Inte på kontot | F2, F4 | Lane |
-| T4 | Bakgrund som eget lager valbart för spelaren | kod inne som val, avstängt med texten Kommer med nya dealerpaket när `mode` är `baked`. Ingen ritare | T1 | Lane |
-| T5 | Dealerbyte för spelaren inom lanens dealers | kod inne (N3.4): knappar bara för `gameChoices.dealers`, samma adressväg som `?dealer=`. Gamla dealer-raden listar fortfarande alla fyra | F1 | Lane |
+| T4 | Bakgrund som eget lager valbart för spelaren | kod inne i T9-spåret: `layer-preview` sätter `background.mode=image` och katalogens bakgrund-ID i `gameChoices`; layered-spelaren anropar `player.setScene/setAssets` via Ditt bord-valet. Mobile-lanen oförändrad (`baked`). | T9 | Lane |
+| T5 | Dealerbyte för spelaren inom lanens dealers | kod inne i T9-spåret: `layer-preview` tillåter `paow/dragge` via `gameChoices.dealers`, samma panel Ditt bord och adressväg. `#dealer-options` visar dem inte ännu (de finns inte i `DEALERS`). | T9 | Lane |
 | T6 | Idle-frekvens ("gäspning") och dealsekvens-varianter som lane-grundinställning | väntar (T1) | nytt | K |
 | T7 | Nytt mediearbete (keya Vera/Mei) om fullbild | väntar (T1, F3) | nytt | eget mediespår |
 | T8 | Granska Jakobs gren `test-video-jakob` (tre lager, ofullständig): bara läsning, ingen checkout, ingen merge. Media där ska **inte** in i blob eller databas | klart natt 8 okt: grenen = fristående Laneverkstad (Python `program/`, stannar på grenen) + `preview/` (Paow, Dragge, 720p, 12 MB) + webbspelare `program/web/` (WebGL-kompositor, greenscreen, lager, `bridge.js` mot `presentation[]`). Grenen rör bara `apps/croupier-frontend` utanför mappen (`/test`, inte portad) | Jakob 8 okt | K |
-| T9 | Lagerflöde för Astrid: variant/idle/deal/talsynk spelar en dealer-overlay, inte hela filmen; bordsfärg ändrar bara bordslagret; varje lager kan tas bort | väntar: Jakob arbetar vidare på grenen; `bridge.js` är adaptern att koppla när han säger klart | Jakob 8 okt | K steg 3 |
+| T10 | Trelagrad uppspelning blir standard: växla bakgrund/dealer/bord, lagerbibliotek för nya bord/dealerpaket/avatarer, spelarens val sparas | handoff skriven 19:00: `random/handoff-T10-trelager-standard-2026-10-08.md` (startprompt för ny ledaragent, Jakobs beslut 18:49 "fria händer") | T9 | ny agent |
+| T9 | Lagerflöde: dealer-overlay + bord + bakgrund som lager i spelet | kod inne lokalt: lane `layer-preview` (`renderer: layered`), ny route `/layer-packs/*` bakom cookie-flagga från entry, ny klient `layered-presentation.mjs` som monterar canvas och matar `bridge.consume` med `/api/table`-presentation. Saknat paket ger `Lagerpaket saknas` + 2D-reserv. Astrids ordinarie local-väg lämnad orörd (byte-identitetstest + baslinje 160 gröna); keyad Astrid-overlay (T7) kvar separat. **Inte sett i webbläsare**: offline-paret kräver spelinloggning och saknar Neon-policy så lanen når inte datasetet; provas i Jakobs rehearsal med `?lane=layer-preview&rehearsal=1`. `/layer-packs` verifierat lokalt: 404 utan cookie, 200 med, traversal 404 | prompt T9 + verifiering | K steg 3 |
 | T10 | Grenens utökade test-klippyta som egen sida `/control/preview` | sidan live, men iframen var vit i prod 8 okt 10:53: `/studio/preview/index.html` 404 eftersom `previewBuildDirectory` räknades från bundlat `import.meta.url`. Rättat till cwd-regeln (samma som zone-reference); verifiera igen efter deploy | Jakob 02:39 | K |
 | T11 | Systemschema `random/systemschema-2026-10-08.md`; kartan får `planned`-rutor i pass A5 | klart (S5): N2.2, N2.4, L4, L3, N3.2, N3.4, L8, C5b | Jakob 02:39 | A5 |
 
@@ -101,7 +102,7 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | L4 | Bolagets justeringsyta: bordsfärg, branding, chips (L3) | kod inne (S3): partner-API `branding` GET/POST (CAS, `presentations.configure`, pool) + panel i Kevins vy Färger, marker och kort för riktig session; prod ger 403 tills roller seedas (N2.2); chips kvar | lösa trådar | Lane |
 | L5 | Demo-operatör "SG test game provider" i fixturen | kod inne (`sg-test` i partner-fixturen + knapp Skapa mot Neon); nord/syd kvar | matris 44 | Lane |
 | L6 | Rullgardin anslutna bolag på Översikt, spelare per bolag | live i prod 8 okt 10:52 (S2): fixturens tre bolag + länk till `/partner/{slug}`; spelare per bolag väntar N2.4; riktig lista väntar N2.2 | matris 44 | Lane |
-| L7 | Adminens val av riktigt bolag (L15) | kvar | lösa trådar | Lane |
+| L7 | Adminens val av riktigt bolag (L15) | kod inne (W2): Översikten läser `listLaneOperators()` ur Neon när native admin är på; fixtur offline | lösa trådar | Lane |
 | L8 | Spelmotorn läser `operator_packages` | kod inne `19f8073a` på Render (återstart 12:45, inte beteendeverifierat; 30 s cache, okänd slug 404). L8b: Vercel `/play/blackjack?operator=` hämtar samma dokument. Ogiltig slug och `claims.partner` når inte paketet. Inte klickat i prod. Neon-rättighet inte bevisad | L2 | Lane |
 
 ## N2. Nivå 2 (operatör)
@@ -109,11 +110,11 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | # | Punkt | Status | Källa | Spår |
 |---|---|---|---|---|
 | N2.1 | Inloggning, scopad snapshot, medlemskap läsbart, spärr sista admin i lagret | klart | matris 36 | – |
-| N2.2 | Skrivande rutter: skapa bolag, roll, medlemskap (L11), pool med `connect()` (L24) | väntar (Kevins svar #3) | lösa trådar | N2 |
-| N2.3 | Team-vyns serverkoppling: inbjudan, rollbyte, suspend (L5) | väntar (Kevin, Jakobs godkännande) | lösa trådar | N2 |
+| N2.2 | Skrivande rutter: skapa bolag, roll, medlemskap (L11), pool med `connect()` (L24) | kod på `main` `5912800e` (PR #5, fast-forward): admin-POST `operator-create/role/membership`, kortet Bolag på `/control/lanes`, standardroller partner-admin/editor/viewer, sista-admin-spärr, CAS. Kevin godkänner rollnamn/behörigheter i efterhand (#3). **Efter deploy:** klicka "Skapa saknade standardroller" för sg-test och lägg till en partner-admin | lösa trådar | N2 |
+| N2.3 | Team-vyns serverkoppling: inbjudan, rollbyte, suspend (L5) | kod på `main` `5912800e`: partner-action `team` GET/POST, Kevins `team.jsx` anropar API:t i riktig session (+25/−11, additivt). Inbjudan = koppla befintligt partnerkonto; e-post (N2.6) kvar | lösa trådar | N2 |
 | N2.4 | Spelare, transaktioner, rapporter från spelmotorn (L10) | kvar | lösa trådar | N2 |
 | N2.5 | Journal för operatörsskrivningar (L12) | kvar | lösa trådar | N2 |
-| N2.6 | Inbjudan/återställning för rollen `partner` (L14) | kvar | lösa trådar | N2 |
+| N2.6 | Inbjudan/återställning för rollen `partner` (L14) | inbjudan kod inne (W2+W3): inbjudet konto + engångslänk till `/partner/set-password`, mejl via Resend, 5/h, kontot loggar in på `/partner/login`. Återställning (glömt lösenord) för partner kvar | lösa trådar | N2 |
 | N2.7 | Speech-QA 501 (L6) | struket tills vidare (avstängd betald funktion) | lösa trådar | – |
 
 ## N3. Nivå 3 (spelare)
@@ -141,12 +142,19 @@ filmen. Jakobs gren `test-video-jakob` visar riktningen; inte redo för main.
 | Jakob | Ta bort `LLM_LOGIN_UN`/`LLM_LOGIN_PW` ur Vercel (ingen kod läser dem; panelgranskning antecknad i `docs/ENVIRONMENT-VARIABLES.md`) | väntar |
 | Jakob | Beslut 10:32: ja, `/control/lanes` ersätter Kevins gamla alias (→ Administration) | klart |
 | Jakob | Kör promptfilerna L8, C5b, N3 i egna agenter | klart 12:05; alla tre levererade och mergade |
-| Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | väntar |
-| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | återstartat 12:45 (L8/N3 i koden). Inte beteendeverifierat. `006` inte körd |
-| Jakob | Rehearsal lokalt: `/blackjack?dealer=<namn>&rehearsal=1`, Play twice, fyra dealers | väntar |
+| Jakob | Kör `ops/neon-game/006-player-profile.sql` mot spel-Neon (`croupier_game`) | **klart 16:48, körd av orkestratorn via Neon MCP.** Databasen hittades som databas `croupier_game` i Neon-projektet `croupier-astrid-background-zones-db`, omdöpt 17:15 till **`croupier-production`** (Vercel-styrd org, därför via Vercel-panelen). Verifierat: `display_name`/`locale` finns, 4 spelare oförändrade, `/api/profile` svarar. Dokumenterat i `docs/ENVIRONMENT-VARIABLES.md` |
+| Jakob | Flytta Neon- och Blob-resurserna i Vercel från `croupier-player-preview-qa` (personliga teamet) till `scoutgaming` | **klart 17:25, utfört av orkestratorn i Jakobs webbvy på hans ord ("styr kopplingen och gör allt").** Neon `croupier-production`: koppling till QA-projektet borttagen → Transfer Database → team `scoutgaming` → Connect to Project `scoutgaming` (Prod+Preview, prefix `CROUPIER_NEON`, ingen auto-gren). Blob `croupier-media-private`: Transfer Store → Connect (prefix `CROUPIER_MEDIA`, utan nytt rw-token). `CROUPIER_GAME_DATABASE_URL` och `BLOB_READ_WRITE_TOKEN` oförändrade; 18 nya injicerade namn registrerade; `/api/operators/sg-test` svarade hela tiden. **Bieffekt**: QA-projektet förlorade `CROUPIER_ZONES_*` (Preview/Dev); återkoppling kräver att QA-projektet också flyttas – Jakobs val |
+| Jakob | Vercel-projektet flyttat till team `scoutgaming` 8 okt ~16:00 | klart: två prod-deployer byggda under teamet, 44 env-nycklar följde med, repo omlänkat (`.vercel/project.json` team_Scxorb9…). Dokumentationens "projekt `scoutgaming`" stämmer fortfarande |
+| Jakob | Render `croupier-v2` → Manual Deploy → Deploy latest commit (L8 + N3 + C5b) | deploy 12:45 verifierad av orkestratorn (`/api/profile` 401, `/api/operators/sg-test` läser Neon). **Ny deploy behövs** för `ac936377` (N3.4 `gameChoices`) och `5912800e`; Vercel tar sig själv. `006` inte körd |
+| Jakob | Efter Render-deploy: `/control/lanes` → Bolag → "Skapa saknade standardroller" för sg-test → lägg till dig som partner-admin | **klart 18:06, orkestratorn i Jakobs webbvy**: standardrollerna fanns (3), Jakob inbjuden som `partner-admin` på sin commit-adress (konto 8, status `invited`, aktiveringstoken giltig till 11 okt 18:06). Aktiveringen föll 18:15 med "Inloggningstjänsten är tillfälligt otillgänglig" → se raden under |
+| Orkestratorn | Partner-API:t svarade 503 på **alla** rutter i prod (login, snapshot, branding, team, set-password) | **rättat `e97f32df` 18:32**: routen exporterade `handlePartnerAuth` direkt så Nexts `{ params }` togs för konfigurationen (TypeError → 503) sedan `919817e8` 7 okt. Partnerinloggning har alltså aldrig fungerat i prod förrän nu. Routen passerar bara `request`; biblioteket tar bara emot en riktig konfiguration (`isPartnerAuthConfig`); testet som låste felet vänt. **Jakob: öppna samma aktiveringslänk igen** efter deploy |
+| Orkestratorn | Radera grenen `test-video-jakob` och Vercel-projektet `croupier-player-preview-qa` (Jakobs ord 18:20) | **klart 18:35/18:40**. Grenar på GitHub: `main`, `kevin`, `john`, `emil`. QA-projektet hade inga egna domäner. Docs, guide, karta och UI-strängar uppdaterade; `test-videoeditor/preview/site` är lagerprovets källa |
+| Jakob | Starta `random/prompt-T9-lagerspelare-bakom-flagga.md` (Opus/Codex) i egen chatt | klart (T9 på main, `d7f2aea8`) |
+| Jakob | Rehearsal i prod: `https://www.scoutgaming.tech/blackjack?dealer=<namn>&rehearsal=1` för astrid, vera, amira, mei (Play twice) samt `/play/blackjack?lane=layer-preview&rehearsal=1`. Begreppet finns nu i `lab/docs/TERMINOLOGI.md` → Acceptans och prov | väntar |
 | Jakob | `LAB_PARTNER_*` vs `BETTALOTTO_PARTNER_*`: vilket namn gäller? | väntar |
 | John | Rader 11, 12, 14, 17b; terminologibladet | väntar, tvådagarsregel → 9 okt |
-| Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan | väntar |
+| Kevin | Rad 7, T1–T3; acceptera GitHub-inbjudan; fem beslut om roller i `random/beslut-kevin-2026-10-08.md` | väntar |
+| Emil | Fyra beslut om nästa dealerpaket i `random/beslut-emil-2026-10-08.md`; standard i `random/meddelande-kevin-emil-2026-10-08.md` | väntar |
 | Emil | Acceptera GitHub-inbjudan | väntar |
 
 ## Beslut av orkestrator 2 (till kännedom, en rad i matrisen när de verkställs)

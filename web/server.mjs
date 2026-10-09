@@ -37,6 +37,9 @@ import { join, normalize, extname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
+import { createLayerPacksRoute } from './layer-packs.mjs';
+import { compositionRuntimeResponse } from './composition-runtime.mjs';
+import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../..');
@@ -58,8 +61,21 @@ const storage = postgres ? createPostgresStore({ connectionString: process.env.C
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
-const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = neonStudioEnabled
-  ? await import('./public/game-entry-contract.mjs') : {};
+const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = await import('./public/game-entry-contract.mjs');
+const { gameLaneSelection } = await import('./public/game-lanes.mjs');
+// Offline documents still give the player a server-owned, validated adapter.
+// Only the four original asset sets opt into the indexed playback path.
+const offlineOriginalDealers = new Set(['astrid', 'vera', 'amira', 'mei']);
+const offlineOriginalLane = { schemaVersion: 1, id: 'legacy', label: 'Original dealers', renderer: 'indexed-video', dealer: 'vera', mediaCollection: 'legacy-dealers' };
+function offlineGameSelection(query) {
+  const params = new URLSearchParams(query);
+  const dealer = params.getAll('dealer').length === 1 ? params.get('dealer') : null;
+  const lane = params.getAll('lane').length === 1 ? params.get('lane') : null;
+  const local = dealer === 'astrid' && params.getAll('presentation').length === 1 && params.get('presentation') === 'local';
+  if (!offlineOriginalDealers.has(dealer) || ['mobile-phone', 'layer-preview'].includes(lane) || local) return gameLaneSelection(params);
+  params.set('lane', offlineOriginalLane.id);
+  return gameLaneSelection(params, offlineOriginalLane.id, [offlineOriginalLane]);
+}
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy, createRegisteredDealerIdle } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
@@ -73,6 +89,10 @@ const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...s
 const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope }) }) : null;
+const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
+  packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
+  privateMedia:(await import('../lab/lib/cloud-media-store.mjs')).getPrivateMedia,
+}) : null;
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
@@ -434,6 +454,7 @@ const port = Number(process.env.PORT ?? 4173);
 // 0.0.0.0 locally so phones on the LAN can open the demo; behind a reverse
 // proxy set HOST=127.0.0.1 so the port is not exposed publicly.
 const host = process.env.HOST ?? '0.0.0.0';
+const layerPacksRoute = createLayerPacksRoute();
 // Source files change constantly while this is being built; Chrome happily
 // serves a cached app.mjs for a reload, so a change looks like it did nothing.
 // Media (clips, audio, art) is content-addressed enough to keep caching.
@@ -651,6 +672,11 @@ const server = createServer(async (req, res) => {
   try {
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method}));
+  if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
+  const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
+  if(compositionModule){res.writeHead(compositionModule.status,Object.fromEntries(compositionModule.headers));res.end(req.method==='HEAD'?undefined:Buffer.from(await compositionModule.arrayBuffer()));return;}
+  if (await layerPacksRoute(req, res, pathname)) return;
   if (pathname === '/api/studio-game/command') {
     if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
     const request = new Request(`${process.env.CROUPIER_PUBLIC_ORIGIN}${req.url}`, { method: req.method, headers: req.headers,
@@ -784,7 +810,7 @@ const server = createServer(async (req, res) => {
     finally{res.removeListener('close',disconnected);}
     return;
   }
-  if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
+  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
@@ -1053,6 +1079,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   const url = new URL(req.url, 'http://x');
+  if (publishedLayerAssets && url.pathname.startsWith('/api/presentation/layers/')) {
+    const response=await publishedLayerAssets(new Request(gameOrigin+req.url,{method:req.method,headers:req.headers}));
+    if(response){res.writeHead(response.status,Object.fromEntries(response.headers));if(!response.body){res.end();return;}
+      const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
+  }
   const gameRedirect = neonStudioEnabled ? gameEntryRedirect(new URL(req.url,gameOrigin),process.env) : null;
   if (gameRedirect) {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }
@@ -1126,6 +1157,11 @@ const server = createServer(async (req, res) => {
     }
     const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
+    res.end(req.method === 'HEAD' ? undefined : html); return;
+  }
+  if (!neonStudioEnabled && path === '/index.html') {
+    const html = decorateGameEntryHtml(readSync(file, 'utf8'), process.env, offlineGameSelection(url.searchParams), { offline: true });
+    res.writeHead(200, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(html), ...noStore(file) });
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);

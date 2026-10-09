@@ -82,6 +82,31 @@ kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
 mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
 Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
 
+Var databaserna bor (bekräftat 8 oktober 2026 via Neon MCP): ett enda Neon-projekt,
+**`croupier-production`** (omdöpt 8 oktober 17:15 från `croupier-astrid-background-zones-db`;
+id `wandering-hill-60561912`, gren `main`, Neon-organisationen "Vercel: jakeminator123's
+projects", dvs. Vercel-styrd), innehåller flera databaser:
+`croupier_game` (schemana `croupier_game`, `croupier_auth`, `croupier_studio` – spelet,
+konton och Studio-policy; det är den `CROUPIER_GAME_DATABASE_URL` pekar på från både
+Render och Vercel), `croupier_game_qa`, `croupier_game_restore_check`,
+`croupier_studio_qa_abc92154cb15` och `neondb` (zonerna, `CROUPIER_ZONES_DATABASE_URL`).
+Resursen och Blob-lagret `croupier-media-private` (787 MB, region arn1) flyttades
+8 oktober 17:25 på Jakobs beslut från det personliga teamet `jakeminator123s-projects`
+till teamet `scoutgaming` (Vercel "Transfer Database" respektive "Transfer Store") och
+kopplades till produktionsprojektet `scoutgaming` (Production + Preview, Sensitive, ingen
+automatisk Neon-gren per deploy). Kopplingarna fick egna prefix så att de handsatta
+nycklarna inte rörs: Neon injicerar 16 namn `CROUPIER_NEON_*` och Blob injicerar
+`CROUPIER_MEDIA_STORE_ID` + `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` (read-write-token-rutan
+lämnades av). Koden läser ingen av dem; `CROUPIER_GAME_DATABASE_URL` och
+`BLOB_READ_WRITE_TOKEN` är fortsatt de auktoritativa värdena och verifierades oförändrade
+(namnjämförelse 44 → 59 namn, bara tillägg; `/api/operators/sg-test` svarade före, under
+och efter). Render berördes inte (egen kopia av `CROUPIER_GAME_DATABASE_URL`).
+Bieffekt: QA-projektet `croupier-player-preview-qa` förlorade sin Neon-koppling och därmed
+`CROUPIER_ZONES_*` i Preview/Development; produktionen har aldrig haft dem. Projektet
+raderades 18:40 samma dag (legacy, inga egna domäner).
+Migration `006-player-profile.sql` kördes där 8 oktober 16:48 (två nya nullbara kolumner,
+4 spelare oförändrade).
+
 Render: `CROUPIER_DATABASE=postgres` kräver `CROUPIER_GAME_DATABASE_URL` till
 en separat TLS-skyddad game-databas, färdiginstallerat `product-v1`-schema och
 verifierad import. `sqlite` är kompatibilitetsstandard; en game-URL utan
@@ -154,7 +179,11 @@ och `CROUPIER_VERCEL_INGRESS_SECRET`. Isolerad auth/SQL/HTTPS/restart är
 godkänd; faktisk produktionsimport, policy-/aliasbyte och diskfri omstart är
 verifierade. Produktionskonton har inte använts för nya syntetiska authprov.
 `RESEND_API_KEY` och `CROUPIER_STUDIO_MAIL_FROM` på Vercel-Studio krävs tillsammans
-för riktiga invite/resend/reset-mail. Avsändaren är en explicit e-postadress
+för riktiga invite/resend/reset-mail. Sedan 8 oktober 2026 gäller samma två nycklar
+och `CROUPIER_PUBLIC_ORIGIN` även inbjudan av operatörspersonal (partner-API:t `team`
+`invite` och admin-åtgärden `operator-membership` med e-post): länken byggs mot den
+publika originen till `/partner/set-password`; utan mejlnycklar skapas kontot men inget
+mejl går, och svaret avslöjar inte det. Inga nya variabelnamn. Avsändaren är en explicit e-postadress
 på en ägd och providerverifierad domän; ingen äldre hårdkodad avsändare används.
 Saknad leveransadapter gör dessa actions otillgängliga; befintliga
 inloggningar kräver inte en mailnyckel och tokenläckage till UI är inte fallback.
@@ -269,9 +298,10 @@ i CI eller Vercel.
 Huvudprojektets Preview kan peka mot produktion. Syntetiska spel-/kontoprov
 kräver den separata native-QA-backenden och dess egen databas/hostname.
 De aktuella QA-fronterna heter `croupier-native-qa-abc92154cb15` och
-`croupier-native-studio-qa-abc92154cb15`. Den äldre `croupier-player-preview-qa`
-är en avvecklingskandidat, inte rekommenderad testentré; delade integrations-
-resurser måste kontrolleras före projektradering. Se [driftskartan](CLOUD-MIGRATION.md).
+`croupier-native-studio-qa-abc92154cb15`. Det äldre `croupier-player-preview-qa`
+raderades 8 oktober 18:40 på Jakobs beslut, efter att Neon- och Blob-resurserna
+flyttats till teamet `scoutgaming`; raden `vercel-zones-qa` i registret är historik.
+Se [driftskartan](CLOUD-MIGRATION.md).
 
 Lab läser bara `CROUPIER_ZONES_DATABASE_URL` för zoner. Generella DATABASE_URL/
 POSTGRES_URL är inte reserv för detta. Vercel-konfiguration kopieras inte

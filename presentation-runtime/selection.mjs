@@ -8,6 +8,7 @@ import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
 import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
 import { isLegacyClipReference, legacySituationLine, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
+import { mediaSituationForEvent } from './media-family-resolver.mjs';
 
 export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
   let url;
@@ -127,16 +128,20 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   let videoGenerationId = variant.videoGenerationId;
   if (videoGenerationId) {
     videoRegistry ??= await loadVideoRegistry();
-    if (media.managed ? !mediaVideoForEvent(videoRegistry, body.dealerId, event.id, prepared.event, videoGenerationId) : !videoFitsEvent(videoRegistry.videos.find(v => v.id === videoGenerationId), prepared.event)) {
+    const video = videoRegistry.videos.find(v => v.id === videoGenerationId);
+    const unavailablePosition = body.dealerId === 'nora' && prepared.event.type === 'deal' && video?.available === false;
+    if (unavailablePosition || (media.managed ? !mediaVideoForEvent(videoRegistry, body.dealerId, event.id, prepared.event, videoGenerationId) : !videoFitsEvent(video, prepared.event))) {
       videoGenerationId = null;
       result.trace.push({ stage: 'video', status: 'fallback', detail: 'Videons exakta situation/replik matchar inte exempel-eventet. Visar variantens 2D-reserv.' });
     }
   }
   const selectedVideo = videoRegistry.videos.find(video => video.id === videoGenerationId);
-  const mediaReceipt = media.managed ? { familyId: media.family?.id ?? null, situation: media.family?.situation ?? null,
+  const missingPosition = !videoGenerationId && prepared.event.type === 'deal'
+    && (media.managed || body.dealerId === 'nora') && mediaSituationForEvent(event.id, prepared.event) !== null;
+  const mediaReceipt = media.managed || missingPosition ? { familyId: media.family?.id ?? null, situation: media.family?.situation ?? (missingPosition ? mediaSituationForEvent(event.id, prepared.event) : null),
     videoId: videoGenerationId, fileName: selectedVideo?.fileName ?? null, sha256: selectedVideo?.sha256 ?? null,
-    standard: variant.id === media.line.baselineVariantId, reason: videoGenerationId ? 'exact_family' : 'no_exact_video_2d' } : null;
-  if (mediaReceipt) result.trace.push({ stage: 'media-family', status: videoGenerationId ? 'selected' : 'fallback', detail: videoGenerationId ? `${mediaReceipt.familyId} → ${mediaReceipt.fileName}` : 'Ingen video för exakt situation. 2D-reserven används.' });
+    standard: variant.id === media.line.baselineVariantId, reason: videoGenerationId ? 'exact_family' : missingPosition ? 'position_clip_missing' : 'no_exact_video_2d' } : null;
+  if (mediaReceipt) result.trace.push({ stage: 'media-family', status: videoGenerationId ? 'selected' : missingPosition ? 'skipped' : 'fallback', detail: videoGenerationId ? `${mediaReceipt.familyId} → ${mediaReceipt.fileName}` : missingPosition ? 'Ingen video för exakt utdelningsposition. Händelsens video hoppas över; serverns kort visas utan dealerfilm.' : 'Ingen video för exakt situation. 2D-reserven används.' });
   return {
     decision: { requestId: prepared.requestId, variantId: variant.id, reason: result.gate.reason, mode: body.mode, sourceEvent: prepared.event, media: mediaReceipt, context: prepared.context, simulated: !observed, presentationReplay: observed },
     trace: result.trace, eligible: result.eligible, variant, asset: result.asset,

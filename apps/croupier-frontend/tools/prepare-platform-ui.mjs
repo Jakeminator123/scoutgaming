@@ -51,6 +51,13 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
       }
     }
   }
+  // Distribute the exact shared compositor source used by Studio; no media is copied.
+  for(const name of ['compositor.js','geometry.js']){
+    const target=join(output,'public','composition-runtime',name);
+    await mkdir(dirname(target),{recursive:true});
+    await writeFile(target,await readFile(join(repo,'test-videoeditor/program/web',name)));
+    files.push('/composition-runtime/'+name);
+  }
   // Optional player styles are selected dynamically by the existing player.
   for (const entry of await readdir(join(repo, 'web/public'), {withFileTypes: true})) {
     if (!entry.isFile() || !entry.name.endsWith('.css')) continue;

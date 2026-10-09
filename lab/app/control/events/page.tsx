@@ -20,6 +20,7 @@ export default async function Page(props: { searchParams: Promise<Record<string,
     initialEventId={eventId}
     initialVariantId={firstQueryValue(query.variant)}
     initialTab={firstQueryValue(query.tab)}
+    initialSituation={firstQueryValue(query.situation)}
     connectedLane={process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'}
   />;
 }

@@ -72,8 +72,8 @@ const PLAYER = new Set(['/api/player', '/api/profile', '/api/table', '/api/depos
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
-const LAB_API = /^\/studio\/api\/(?:project|videos|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
-const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei|dragge|paow)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei|dragge|paow)|game|site)\/runtime)(?:\/|$)/;
+const LAB_API = /^\/studio\/api\/(?:project|videos|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
+const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
 
 // The routing boundary deliberately has no general /api or /bo catch-all.
 // Every group retains the backend's own session, role and request validation.
@@ -86,6 +86,7 @@ export function backendPlatformPath(value) {
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(path)
     || /^\/api\/(?:probe|chat\/memory|astrid\/(?:observation|transcription)|generated-speech)(?:\/|$)/.test(path)
+    || /^\/api\/presentation\/layers\/[a-z][a-z0-9-]{0,62}\/[a-f0-9-]{36}$/.test(path)
     || /^\/api\/presentation\/videos\/[a-zA-Z0-9_-]+$/.test(path)
     || /^\/bo\/(?:gen|thumbs|img)\//.test(path)
     || ['/speech-stream', '/lipsync-worker'].includes(path)
@@ -138,7 +139,7 @@ export function platformRoute(url, config) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
-    || /^\/studio\/api\/(?:videos|clip-controls)(?:\/|$)/.test(path))) {
+    || /^\/studio\/api\/(?:videos|clip-controls|layer-assets)(?:\/|$)/.test(path))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
   }
   if (backendPlatformPath(path)) return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };

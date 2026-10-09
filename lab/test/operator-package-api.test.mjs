@@ -1,45 +1,18 @@
+import {publicPackageBranding,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://studio.example';
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const session = { user: 'lane-actor', role: 'admin', scope };
 const clock = () => 1_700_000_000_000;
 
-function memoryPool() {
-  const tables = { operators: [], operator_packages: [] };
-  const pgError = code => Object.assign(new Error('fixture'), { code });
-  async function query(text, values = []) {
-    const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
-    const [environment, workspace] = values;
-    const scoped = name => tables[name].filter(row => row.environment_id === environment && row.workspace_id === workspace);
-    if (tag === 'list-operators') return { rows: scoped('operators').sort((a, b) => a.slug.localeCompare(b.slug)) };
-    if (tag === 'create-operator') {
-      if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], slug: values[3], name: values[4], status: values[5], created_at_ms: values[6] };
-      tables.operators.push(row);
-      return { rows: [row] };
-    }
-    if (tag === 'publish-package') {
-      if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
-      const revision = scoped('operator_packages').filter(row => row.operator_id === values[2]).reduce((max, row) => Math.max(max, Number(row.package_revision)), 0) + 1;
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
-      tables.operator_packages.push(row);
-      return { rows: [row] };
-    }
-    if (tag === 'current-package') {
-      const rows = scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1);
-      return { rows };
-    }
-    throw new Error(`untagged query: ${text}`);
-  }
-  const pool = { query, async connect() { return { query, release() {} }; } };
-  return pool;
-}
+const memoryPool = operatorMemoryPool;
 
 function apiFor(pool, project = createSeedProject(), storeFactory) {
   const lane = createOperatorPackageApi({ pool, scope, project, now: clock, storeFactory });
@@ -141,7 +114,8 @@ test('publishing lanes carries the operator branding, games and tables forward',
   assert.equal(body.package_revision, 2);
   assert.deepEqual(body.tables, ['t1']);
   const current = await direct.getCurrentPackage('sg-test');
-  assert.deepEqual(current.branding, { color: '#112233', name: 'North' });
+  assert.deepEqual(publicPackageBranding(current.branding), { color: '#112233', name: 'North' });
+  assert.equal(readPackagePresentation(current).projectRevision, body.presentation.projectRevision);
 });
 
 test('an empty project.lanes list accepts only the default mobile-phone lane', async () => {
@@ -151,4 +125,29 @@ test('an empty project.lanes list accepts only the default mobile-phone lane', a
   await api.handle(request('operator-create-demo', {}));
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['vip-table'] }))).status, 422);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 200);
+});
+
+test('Nora publication requires her matching saved game lane before opening the operator store', async () => {
+  const project = addDealer(createSeedProject(), 'nora', 'Nora');
+  const lane = defaultPresentationLane();
+  lane.dealers.push('nora');
+  lane.layers.dealer.default = 'nora';
+  lane.layers.dealer.allowed.push('nora');
+  project.lanes = [lane];
+  let writes = 0;
+  const storeFactory = async () => { writes++; return {
+    getCurrentPackage: async () => null,
+    publishPackage: async record => ({...record,revision:1}),
+  }; };
+  const context = {body:{operatorId:'north',lanes:[lane.id]},actor:{user:'staff'}};
+  for(const gameLanes of [undefined,[{schemaVersion:1,id:lane.id,label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]]) {
+    const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes,storeFactory});
+    await assert.rejects(api.handlers.get('POST /studio/api/admin/operator-package')(context), error => error.statusCode === 422);
+  }
+  assert.equal(writes,0);
+  const gameLanes=[{schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}];
+  const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes:async()=>gameLanes,storeFactory});
+  const published=await api.handlers.get('POST /studio/api/admin/operator-package')(context);
+  assert.equal(writes,1);
+  assert.equal(published.presentation.lanes[0].layers.dealer.default,'nora');
 });

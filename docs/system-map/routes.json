@@ -277,7 +277,7 @@
         "lab/components/control-preview-page.tsx",
         "test-videoeditor/README.md"
       ],
-      "limitation": "Preview of the three-layer player from branch test-video-jakob (Paow, Dragge, 720p). Media stay as files in test-videoeditor/preview/site and are served through the session-guarded /preview/[...path] handler. Not a game path; no engine, wallet, blob or database.",
+      "limitation": "Shared saved lane editor and private background/table library. Existing full-frame dealer clips remain opaque; separate Paow/Dragge preview stays under /preview. Publication freezes presentation choices; game outcomes and wallets remain server-owned.",
       "tests": [
         "lab/test/preview-prepare.test.mjs"
       ]
@@ -352,11 +352,21 @@
         "/partner/:operatorSlug"
       ],
       "label": "Skrivande partner-rutter",
-      "serving": "Planerad",
-      "access": "Operatör.",
-      "status": "planned",
-      "plannedRef": "N2.2",
-      "purpose": "Skrivande rutter för /partner/{slug}. Den läsbara förhandsvisningen finns redan."
+      "serving": "Lab service under basePath /studio; partner actions team and branding on /studio/api/partner.",
+      "access": "Operatör med aktivt medlemskap; skrivning kräver team.roles.assign respektive presentations.configure.",
+      "sources": [
+        "lab/lib/partner-session.mjs",
+        "lab/lib/partner-team-api.mjs",
+        "lab/lib/partner-branding-api.mjs",
+        "lab/lib/operator-admin-api.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-team-api.test.mjs",
+        "lab/test/partner-branding-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs"
+      ],
+      "purpose": "Team: lista, koppla befintligt partnerkonto, rollbyte, suspend/reaktivera med CAS och sista-admin-spärr. Branding inom lanens operatorAdjustable. Intern admin skapar bolag, standardroller och medlemskap från kortet Bolag.",
+      "limitation": "Inga roller finns i produktions-Neon förrän intern admin klickar Skapa saknade standardroller för ett bolag. E-postinbjudan (N2.6) pågår."
     },
     {
       "id": "partner-players",
@@ -373,14 +383,23 @@
     {
       "id": "operator-design",
       "paths": [
-        "/partner/:operatorSlug/utseende"
+        "/partner/:operatorSlug/presentation"
       ],
       "label": "Bolagets justeringsyta",
-      "serving": "Planerad",
-      "access": "Operatör.",
-      "status": "planned",
-      "plannedRef": "L4",
-      "purpose": "Bordsfärg, branding och chips inom det lane tillåter."
+      "serving": "Kevins vy Färger, marker och kort i partnerportalen; panelen Utseende inom lanen laddas för en riktig operatörssession.",
+      "access": "Operatör; skrivning kräver presentations.configure.",
+      "sources": [
+        "lab/components/partner-appearance.tsx",
+        "lab/components/partner-appearance-loader.mjs",
+        "lab/lib/partner-branding-api.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-appearance.test.mjs",
+        "lab/test/partner-appearance-loader.test.mjs",
+        "lab/test/partner-branding-api.test.mjs"
+      ],
+      "purpose": "Bordsfärg (branding.color) och övriga brandingnycklar inom det lanens operatorAdjustable tillåter; revision som CAS.",
+      "limitation": "Chips saknas. Bakgrund och dealer visas men skrivs inte. Kevins lokala felt-fält är en annan nyckel än branding.color."
     },
     {
       "id": "lane-publish",
@@ -394,14 +413,18 @@
       "sources": [
         "lab/app/control/lanes/page.tsx",
         "lab/components/control-lanes-page.tsx",
-        "lab/lib/operator-package-api.mjs"
+        "lab/components/control-operator-directory.tsx",
+        "lab/lib/operator-package-api.mjs",
+        "lab/lib/operator-admin-api.mjs"
       ],
-      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
+      "limitation": "publishPackage writes operator_packages. Render /blackjack?operator= reads the package and Vercel /play/blackjack?operator= forwards to it. Bolag adds existing partner accounts only; e-mail invitation (N2.6) in progress, no journal table.",
       "tests": [
         "lab/test/control-lanes-page.test.mjs",
-        "lab/test/operator-package-api.test.mjs"
+        "lab/test/control-operator-directory.test.mjs",
+        "lab/test/operator-package-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs"
       ],
-      "purpose": "Publicera lane-id:n till ett bolag. Demo-operatör SG test skapas bara på klick."
+      "purpose": "Publicera lane-id:n till ett bolag. Demo-operatör SG test skapas bara på klick. Kortet Bolag skapar bolag med standardroller och lägger till, byter roll på eller stänger av medlemmar."
     },
     {
       "id": "lobby-operator",
@@ -416,20 +439,31 @@
         "apps/croupier-frontend/lib/player-operator.mjs",
         "web/public-operators.mjs"
       ],
-      "purpose": "Lobbyn visar Spelar hos från ?operator= eller localStorage via GET /api/operators/<slug>.",
-      "limitation": "Bara lobbyn. Vercels /play/blackjack begränsar inte lane eller dealer till paketet."
+      "purpose": "Lobbyn visar Spelar hos från ?operator= eller localStorage via GET /api/operators/<slug>; länken Spela blackjack bär ?operator= vidare.",
+      "limitation": "Vercels /play/blackjack?operator= hämtar Renders paketerade dokument (L8b); ogiltig slug tas bort och claims.partner vinner."
     },
     {
       "id": "player-choice",
       "paths": [
+        "/blackjack",
         "/play"
       ],
       "label": "Spelarens val",
-      "serving": "Planerad",
+      "serving": "Render /blackjack sätter data-game-choices ur Studio-projektets lane; panelen Ditt bord i spelklienten; lobbyn visar senaste val.",
       "access": "Spelare.",
-      "status": "planned",
-      "plannedRef": "N3.4",
-      "purpose": "Bord, bakgrund och dealer inom paketets tillåtna."
+      "sources": [
+        "web/game-entry-operator.mjs",
+        "web/public/player-choices.mjs",
+        "web/public/app.mjs",
+        "apps/croupier-frontend/lib/player-choices.mjs"
+      ],
+      "tests": [
+        "test/game-entry-operator.mjs",
+        "test/player-choices.mjs",
+        "apps/croupier-frontend/test/player-profile.mjs"
+      ],
+      "purpose": "Dealer och bordsfärg inom lanen; ordning URL, spelare, bolagets branding.color, lanens default. Valet ligger i localStorage per operatör.",
+      "limitation": "Bakgrund och bord som egna lager ritas inte förrän lagerspelaren finns (T9); mode baked visar Kommer med nya dealerpaket. Valet ligger inte på kontot."
     }
   ],
   "apiGroups": [
@@ -514,7 +548,10 @@
         "game-lanes/create",
         "game-lanes/remove",
         "operator-package",
-        "operator-create-demo"
+        "operator-create-demo",
+        "operator-create",
+        "operator-role",
+        "operator-membership"
       ],
       "operatorRoute": "GET/POST/DELETE speech-qa additionally requires the operator speech-QA gate",
       "sources": [
@@ -524,12 +561,14 @@
         "lab/lib/studio-access-policy.mjs",
         "lab/lib/studio-admin-data.mjs",
         "lab/lib/operator-package-api.mjs",
+        "lab/lib/operator-admin-api.mjs",
         "web/public/game-lanes.mjs"
       ],
       "tests": [
         "lab/test/studio-admin-api.test.mjs",
         "lab/test/studio-admin-data.test.mjs",
         "lab/test/operator-package-api.test.mjs",
+        "lab/test/operator-admin-api.test.mjs",
         "test/studio-game-authority.mjs",
         "test/studio-game-commands.mjs",
         "test/game-lanes.mjs"
@@ -745,14 +784,26 @@
       "paths": [
         "GET /studio/api/partner/snapshot",
         "POST /studio/api/partner/login",
-        "POST /studio/api/partner/logout"
+        "POST /studio/api/partner/logout",
+        "GET/POST /studio/api/partner/branding?operator={slug}",
+        "GET/POST /studio/api/partner/team?operator={slug}",
+        "POST /studio/api/partner/set-password"
       ],
-      "serving": "Lab route under basePath /studio. Login and logout are POST. The snapshot is GET. Other exported methods are rejected.",
-      "access": "Operator staff with role partner. A partner_session cookie is separate from the internal admin session. Snapshot data is limited to active memberships.",
+      "serving": "Lab route under basePath /studio. Login, logout and set-password are POST. The snapshot is GET. Branding and team are GET and POST. Other exported methods are rejected.",
+      "access": "Operator staff with role partner. A partner_session cookie is separate from the internal admin session. Snapshot data is limited to active memberships. Team GET needs team.read; team POST (invite by e-mail, role, suspend, reactivate) also needs team.roles.assign, a membership revision and the store's last-administrator lock. Invite links an existing partner account or creates an invited one with a single-use token and sends mail to /partner/set-password; at most 5 invitations per actor and hour; the response never reveals whether the address existed. set-password consumes the token, sets the scrypt hash, bumps the auth epoch and activates invited memberships; Studio login still refuses role partner.",
       "sources": [
         "lab/app/api/partner/[...action]/route.ts",
         "lab/lib/partner-session.mjs",
-        "lab/lib/partner-data.mjs"
+        "lab/lib/partner-data.mjs",
+        "lab/lib/partner-branding-api.mjs",
+        "lab/lib/partner-team-api.mjs",
+        "web/partner-access-policy.mjs"
+      ],
+      "tests": [
+        "lab/test/partner-session.test.mjs",
+        "lab/test/partner-team-api.test.mjs",
+        "lab/test/partner-team-loader.test.mjs",
+        "test/partner-access-policy.mjs"
       ]
     }
   ],
@@ -2862,6 +2913,37 @@
       ]
     },
     {
+      "id": "studio-api-layer-assets",
+      "path": "/api/layer-assets/:path*",
+      "publicPath": "/studio/api/layer-assets/:path*",
+      "methods": [
+        "GET",
+        "HEAD",
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/layer-assets/[[...path]]/route.ts",
+      "serving": "Vercel native Lab; library and prepare/commit upload",
+      "access": "Live scoped admin; exact same-origin writes and reauthorization before mutation",
+      "boundary": "Private immutable Blob paths and SHA verification. Assets are registered by CAS in the existing project JSON document; no SQL migration. Published game assets resolve only within the operator package.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/lib/layer-asset-api.mjs",
+          "line": 1
+        },
+        {
+          "path": "lab/lib/layer-upload-service.mjs",
+          "line": 1
+        }
+      ],
+      "tests": [
+        "test/layer-asset-store.mjs",
+        "test/presentation-layers.mjs"
+      ]
+    },
+    {
       "id": "studio-api-videos-upload",
       "path": "/api/videos/upload",
       "publicPath": "/studio/api/videos/upload",
@@ -3663,8 +3745,8 @@
       "app": "studio",
       "handlerFile": "lab/app/api/partner/[...action]/route.ts",
       "serving": "Lab API under basePath /studio.",
-      "access": "Operator staff. POST login and logout, GET snapshot. Every other exported method is rejected.",
-      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership.",
+      "access": "Operator staff. POST login and logout, GET snapshot, GET/POST branding and team with ?operator={slug}. Every other exported method is rejected.",
+      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership. Team writes need team.roles.assign, a membership revision (CAS) and keep at least one operator administrator.",
       "groupId": "partner-api",
       "sources": [
         {
@@ -3954,7 +4036,7 @@
       "handlerFile": "lab/app/control/lanes/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
-      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo with the Neon pool (connect required). Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
+      "boundary": "studioUiInitialData guards the page. Writes go through POST operator-package / operator-create-demo / operator-create / operator-role / operator-membership with the Neon pool (connect required). Render /blackjack?operator= reads the package. Vercel /play/blackjack does not.",
       "groupId": "studio-tools",
       "sources": [
         {
@@ -3981,6 +4063,27 @@
       ]
     },
     {
+      "id": "game-layer-packs",
+      "path": "/layer-packs/:path+",
+      "publicPath": "/layer-packs/:path+",
+      "methods": ["GET", "HEAD"],
+      "kind": "api",
+      "app": "game",
+      "handlerFile": "web/layer-packs.mjs",
+      "serving": "Render game service. Runtime modules come from test-videoeditor/program/web and lane media/manifests from lab/preview-build.",
+      "access": "Player session lane flag. Without cookie croupier_layer_preview=1 the route responds 404.",
+      "boundary": "No traversal, reviewed file types only, byte-range support and Cross-Origin-Resource-Policy same-origin.",
+      "groupId": "layer-preview",
+      "sources": [
+        {
+          "path": "web/layer-packs.mjs"
+        },
+        {
+          "path": "web/server.mjs"
+        }
+      ]
+    },
+    {
       "id": "studio-partner-login",
       "path": "/partner/login",
       "publicPath": "/partner/login",
@@ -3995,6 +4098,24 @@
       "sources": [
         {
           "path": "lab/app/partner/login/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-partner-set-password",
+      "path": "/partner/set-password",
+      "publicPath": "/partner/set-password",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/partner/set-password/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Public single-use invitation link for role partner (?t=token). Unavailable native configuration returns notFound.",
+      "boundary": "Posts token and password to POST /api/partner/set-password only. Not an operator slug; never a login returnTo (studioLoginReturnTo maps it to /studio).",
+      "groupId": "partner-preview",
+      "sources": [
+        {
+          "path": "lab/app/partner/set-password/page.tsx"
         }
       ]
     },

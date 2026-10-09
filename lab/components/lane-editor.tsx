@@ -1,16 +1,16 @@
 'use client';
+import {LayerAssetSelect} from './layer-selectors';
+import {labUrl} from '../lib/lab-url.mjs';
 
 import { useState, type FormEvent } from 'react';
 import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import {
-  BACKGROUND_MODES,
   LANE_PROBE_MODES,
   OPENCLAW_MODES,
   OPENCLAW_PHASES,
   OPERATOR_ADJUSTABLE,
   defaultPresentationLane,
   validateProject,
-  type LaneBackgroundMode,
   type LaneIdle,
   type LaneProbe,
   type LaneProbeMode,
@@ -21,7 +21,10 @@ import {
 } from '../lib/studio-model.mjs';
 import styles from './lane-editor.module.css';
 
-export const LANE_ID_HELP = 'Id ska vara samma som ett lane-id under Administration → Spel, lanes & bord för att spelet ska kunna köra lanen.';
+export const LANE_ID_HELP = 'Använd samma lane-id under Drift → Bord & spelrum för att koppla utseendet till spelet.';
+const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'Automatiskt'};
+const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'Tal vid inaktivitet'};
+const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
 
 type Edit = (edit: (current: StudioProject) => StudioProject) => void;
 
@@ -70,17 +73,12 @@ function layerText(lane: StudioLane) {
   return `Bakgrund ${mark(lane.layers.background.enabled)}, bord ${mark(lane.layers.table.enabled)}, dealer ${mark(lane.layers.dealer.enabled)}`;
 }
 
-function openClawText(lane: StudioLane) {
-  return `OpenClaw ${OPENCLAW_PHASES.map(phase => `${phase} ${lane.openclaw[phase]}`).join(', ')}`;
-}
-
 function LaneSummary({ lane }: { lane: StudioLane }) {
   const items: [string, string][] = [
     ['Id', lane.id],
     ['Namn', lane.label],
     ['Dealers', lane.dealers.join(', ')],
     ['Lager', layerText(lane)],
-    ['OpenClaw', openClawText(lane)],
   ];
   return <dl className={styles.summary}>
     {items.map(([term, value], index) => <div className={styles.summaryItem} key={term}>
@@ -102,9 +100,11 @@ function applyWhenValid(project: StudioProject, onEdit: Edit, change: (current: 
   after();
 }
 
-export function LaneEditor({ project, onEdit }: { project: StudioProject; onEdit: Edit }) {
+export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect, navigationBlocked=false }: { project: StudioProject; onEdit: Edit; selectedId?:string; onSelect?:(id:string)=>void; navigationBlocked?:boolean }) {
   const lanes = project.lanes ?? [];
-  const [selectedId, setSelectedId] = useState('');
+  const [localSelectedId, setLocalSelectedId] = useState('');
+  const selectedId=controlledId??localSelectedId;
+  function setSelectedId(id:string){setLocalSelectedId(id);onSelect?.(id);}
   const [draftId, setDraftId] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
   const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
@@ -127,12 +127,12 @@ export function LaneEditor({ project, onEdit }: { project: StudioProject; onEdit
 
   return <>
     <section className={styles.card} aria-labelledby="lanes-in-project">
-      <h2 id="lanes-in-project">Lanes i projektet</h2>
+      <h2 id="lanes-in-project">Presentation</h2>
       {lanes.length === 0 ? <div className={styles.suggestion}>
-        <p>Ingen lane i projektet. Förslag:</p>
+        <p>Ingen sparad presentation.</p>
         <LaneSummary lane={suggestion} />
         <IdHelp id="default-lane-id-help" />
-        <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Lägg till standardlane</button>
+        <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Skapa standardpresentation</button>
       </div> : <ul className={styles.laneList}>
         {lanes.map(lane => <li key={lane.id}>
           <button type="button" className={styles.pick} aria-pressed={selected?.id === lane.id} onClick={() => setSelectedId(lane.id)}>
@@ -140,10 +140,10 @@ export function LaneEditor({ project, onEdit }: { project: StudioProject; onEdit
           </button>
         </li>)}
       </ul>}
-      {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} /> : null}
+      {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} navigationBlocked={navigationBlocked} /> : null}
     </section>
-    <form className={styles.card} onSubmit={addNew} aria-labelledby="new-lane-title">
-      <h2 id="new-lane-title">Ny lane</h2>
+    <details className={styles.card}><summary>Ny presentation</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
+      <h2 id="new-lane-title">Skapa presentation</h2>
       <div className={styles.create}>
         <label className={styles.field}>Id
           <input value={draftId} aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} />
@@ -151,20 +151,15 @@ export function LaneEditor({ project, onEdit }: { project: StudioProject; onEdit
         <label className={styles.field}>Namn
           <input value={draftLabel} maxLength={80} onChange={event => setDraftLabel(event.target.value)} />
         </label>
-        <button type="submit" className="sg-btn sg-btn-secondary">Ny lane</button>
+        <button type="submit" className="sg-btn sg-btn-secondary">Skapa presentation</button>
       </div>
       <IdHelp id="new-lane-id-help" />
-    </form>
+    </form></details>
   </>;
 }
 
-function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: StudioLane; onEdit: Edit }) {
+function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: StudioProject; lane: StudioLane; onEdit: Edit; navigationBlocked:boolean }) {
   const [label, setLabel] = useState(lane.label);
-  const [backgroundDefault, setBackgroundDefault] = useState(lane.layers.background.default ?? '');
-  const [backgroundAllowed, setBackgroundAllowed] = useState(lane.layers.background.allowed.join('\n'));
-  const [tableDefault, setTableDefault] = useState(lane.layers.table.default ?? '');
-  const [tableAllowed, setTableAllowed] = useState(lane.layers.table.allowed.join('\n'));
-  const [zonesText, setZonesText] = useState((lane.layers.background.zones ?? []).join('\n'));
   const [draftColor, setDraftColor] = useState('#1b4332');
   const [idleVariants, setIdleVariants] = useState((lane.idle?.variants ?? []).join('\n'));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -192,71 +187,33 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
 
   return <div className={styles.fields}>
     <h3>{lane.label}</h3>
-    <p className={styles.idLine}>Id <strong>{lane.id}</strong></p>
-    <IdHelp id={`lane-id-help-${lane.id}`} />
+    <a className="sg-btn sg-btn-secondary" aria-disabled={navigationBlocked} onClick={event=>{if(navigationBlocked)event.preventDefault();}} href={labUrl(`/control/preview?lane=${encodeURIComponent(lane.id)}`)}>Ändra sammansättning →</a>
+    {navigationBlocked?<p className={styles.help}>Spara dina ändringar innan du öppnar sammansättningen.</p>:null}
     <label className={styles.field}>Namn
       <input value={label} maxLength={80} onChange={event => {
         const value = event.target.value;
         editLane(draft => { draft.label = value; }, () => setLabel(value));
       }} />
     </label>
-    <fieldset className={styles.group}>
-      <legend>Dealers</legend>
+    <details className={styles.advanced}><summary>Dealers som får ingå i lanen</summary><fieldset className={styles.group}>
+      <legend>Dealers i lanen</legend>
       <div className={styles.checks}>
         {project.dealers.map(dealer => <label className={styles.check} key={dealer.id}>
           <input type="checkbox" checked={lane.dealers.includes(dealer.id)} onChange={event => toggleDealer(dealer.id, event.target.checked)} />
           {dealer.label}
         </label>)}
       </div>
-    </fieldset>
+    </fieldset></details>
     <fieldset className={styles.group}>
       <legend>Bakgrund</legend>
       <label className={styles.check}><input type="checkbox" checked={lane.layers.background.enabled} onChange={event => editLane(draft => { draft.layers.background.enabled = event.target.checked; })} /> På</label>
-      <label className={styles.field}>Läge
-        <select value={lane.layers.background.mode} onChange={event => editLane(draft => { draft.layers.background.mode = event.target.value as LaneBackgroundMode; })}>
-          {[...BACKGROUND_MODES].map(mode => <option key={mode} value={mode}>{mode}</option>)}
-        </select>
-      </label>
-      <label className={styles.field}>Standard
-        <input value={backgroundDefault} maxLength={200} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.background.default = value.trim() ? value.trim() : null; }, () => setBackgroundDefault(value));
-        }} />
-      </label>
-      <label className={styles.field}>Tillåtna, en per rad
-        <textarea value={backgroundAllowed} rows={4} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.background.allowed = linesOf(value); }, () => setBackgroundAllowed(value));
-        }} />
-      </label>
-      <label className={styles.field}>Zoner, en per rad
-        <textarea value={zonesText} rows={4} aria-describedby={`lane-zones-help-${lane.id}`} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => {
-            const zones = linesOf(value);
-            if (zones.length === 0) delete draft.layers.background.zones;
-            else draft.layers.background.zones = zones;
-          }, () => setZonesText(value));
-        }} />
-      </label>
-      <p id={`lane-zones-help-${lane.id}`} className={styles.help}>Zon-id från Bakgrundszoner</p>
+      <LayerAssetSelect role="background" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Bord</legend>
       <label className={styles.check}><input type="checkbox" checked={lane.layers.table.enabled} onChange={event => editLane(draft => { draft.layers.table.enabled = event.target.checked; })} /> På</label>
-      <label className={styles.field}>Standard
-        <input value={tableDefault} maxLength={40} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.table.default = value.trim() ? value.trim() : null; }, () => setTableDefault(value));
-        }} />
-      </label>
-      <label className={styles.field}>Tillåtna, en per rad
-        <textarea value={tableAllowed} rows={4} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => { draft.layers.table.allowed = linesOf(value); }, () => setTableAllowed(value));
-        }} />
-      </label>
-      <div className={styles.addColor}>
+      <LayerAssetSelect role="table" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
+      <details className={styles.advanced}><summary>Bordsfärger för bolaget</summary><div className={styles.addColor}>
         <label className={styles.field}>Bordsfärger
           <input type="color" value={draftColor} aria-label="Ny bordsfärg" onChange={event => setDraftColor(event.target.value)} />
         </label>
@@ -274,16 +231,17 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
             else draft.layers.table.colors = colors;
           })}>Ta bort</button>
         </li>)}
-      </ul> : null}
+      </ul> : null}</details>
     </fieldset>
     <fieldset className={styles.group}>
-      <legend>Dealer</legend>
+      <legend>Dealer vid start och tillåtna byten</legend>
       <label className={styles.check}><input type="checkbox" checked={lane.layers.dealer.enabled} onChange={event => editLane(draft => { draft.layers.dealer.enabled = event.target.checked; })} /> På</label>
-      <label className={styles.field}>Standard
+      <label className={styles.field}>Vid start
         <select value={lane.layers.dealer.default} onChange={event => editLane(draft => { draft.layers.dealer.default = event.target.value; })}>
           {lane.dealers.map(id => <option key={id} value={id}>{project.dealers.find(dealer => dealer.id === id)?.label ?? id}</option>)}
         </select>
       </label>
+      <p className={styles.help}>Tillåtna dealerbyten</p>
       <div className={styles.checks}>
         {lane.dealers.map(id => <label className={styles.check} key={id}>
           <input type="checkbox" checked={lane.layers.dealer.allowed.includes(id)} onChange={event => editLane(draft => {
@@ -296,16 +254,16 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
         </label>)}
       </div>
     </fieldset>
-    <fieldset className={styles.group}>
-      <legend>OpenClaw</legend>
-      {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phase}
+    <details className={styles.advanced}><summary>Avancerat: automatik och variationer</summary><fieldset className={styles.group}>
+      <legend>OpenClaw väljer klipp</legend>
+      {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phaseLabels[phase]??phase}
         <select value={lane.openclaw[phase]} onChange={event => editLane(draft => { draft.openclaw[phase] = event.target.value as OpenClawMode; })}>
-          {[...OPENCLAW_MODES].map(mode => <option key={mode} value={mode}>{mode}</option>)}
+          {[...OPENCLAW_MODES].map(mode => <option key={mode} value={mode}>{modeLabels[mode]??mode}</option>)}
         </select>
       </label>)}
     </fieldset>
     <fieldset className={styles.group}>
-      <legend>Probe</legend>
+      <legend>Tal vid inaktivitet</legend>
       <label className={styles.field}>Läge
         <select value={lane.probe?.mode ?? ''} onChange={event => {
           const mode = event.target.value;
@@ -317,7 +275,7 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           });
         }}>
           <option value="">Följer OpenClaw</option>
-          {LANE_PROBE_MODES.map(mode => <option key={mode} value={mode}>{mode}</option>)}
+          {LANE_PROBE_MODES.map(mode => <option key={mode} value={mode}>{modeLabels[mode]??mode}</option>)}
         </select>
       </label>
       <label className={styles.field}>Modell
@@ -333,11 +291,11 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           {PROBE_MODELS.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
         </select>
       </label>
-      <p className={styles.help}>Saknas probe gäller OpenClaw-läget för probe.</p>
+      <p className={styles.help}>Välj när OpenClaw får föreslå eller styra tal vid inaktivitet. <a href={labUrl('/control/probe')}>Öppna inställningar för tal vid inaktivitet</a></p>
     </fieldset>
     <fieldset className={styles.group}>
-      <legend>Idle</legend>
-      <label className={styles.field}>Idle-frekvens
+      <legend>Grundloopens variationer</legend>
+      <label className={styles.field}>Variationsfrekvens (%)
         <input type="number" min={0} max={100} step={1} inputMode="numeric" value={lane.idle?.frequencyPercent ?? ''} onChange={event => {
           const raw = event.target.value;
           editLane(draft => writeIdle(draft, idle => {
@@ -346,7 +304,7 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           }));
         }} />
       </label>
-      <label className={styles.field}>Varianter, en per rad
+      <label className={styles.field}>Variations-id, ett per rad
         <textarea value={idleVariants} rows={4} onChange={event => {
           const value = event.target.value;
           editLane(draft => writeIdle(draft, idle => {
@@ -356,9 +314,9 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
           }), () => setIdleVariants(value));
         }} />
       </label>
-    </fieldset>
-    <fieldset className={styles.group}>
-      <legend>Operatören får justera</legend>
+    </fieldset></details>
+    <details className={styles.advanced}><summary>Bolagets val och tekniska inställningar</summary><fieldset className={styles.group}>
+      <legend>Bolaget får ändra</legend>
       <div className={styles.checks}>
         {OPERATOR_ADJUSTABLE.map(item => <label className={styles.check} key={item}>
           <input type="checkbox" checked={lane.operatorAdjustable.includes(item)} onChange={event => editLane(draft => {
@@ -367,14 +325,16 @@ function LaneFields({ project, lane, onEdit }: { project: StudioProject; lane: S
             else selected.delete(item);
             draft.operatorAdjustable = OPERATOR_ADJUSTABLE.filter(entry => selected.has(entry));
           })} />
-          {item}
+          {adjustmentLabels[item]??item}
         </label>)}
       </div>
     </fieldset>
+    <p className={styles.idLine}>Lane-id <strong>{lane.id}</strong></p>
+    <IdHelp id={`lane-id-help-${lane.id}`} />
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
-      <p>Ta bort lane {lane.id}?</p>
-      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort lane</button>
+      <p>Ta bort presentation {lane.id}?</p>
+      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>
       <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
-    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort lane</button>}
+    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort presentation</button>}</details>
   </div>;
 }

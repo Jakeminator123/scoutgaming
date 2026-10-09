@@ -1,3 +1,6 @@
+import { validateLayerAsset } from '../../web/presentation-layers.mjs';
+import { isDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
+import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
@@ -23,7 +26,7 @@ export const OPENCLAW_MODES = new Set(['off', 'rules', 'random', 'shadow', 'acti
 export const OPENCLAW_PHASES = ['idle', 'deal', 'reveal', 'speak', 'probe'];
 export const BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 export const LANE_PROBE_MODES = Object.freeze(['off', 'shadow', 'active']);
-export const OPERATOR_ADJUSTABLE = ['table.color', 'background', 'dealer', 'branding'];
+export const OPERATOR_ADJUSTABLE = ['table.color', 'table', 'background', 'dealer', 'branding'];
 export const MAX_LANES = 32;
 // Same id rule as validateZones in lab/lib/zone-cloud-store.mjs. The lane stores ids only.
 const ZONE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
@@ -107,6 +110,7 @@ export function defaultPresentationLane() {
   return {
     id: 'mobile-phone',
     label: 'Mobile Phone Lane',
+    renderer: 'layered',
     dealers: ['astrid'],
     layers: {
       background: { enabled: true, mode: 'baked', default: null, allowed: [] },
@@ -126,15 +130,19 @@ function laneErrors(lanes, projectDealerIds) {
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
     // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle'])) return;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition'])) return;
+    if (Object.hasOwn(lane, 'composition')) {
+      try { validateCompositionSettings(lane.composition); }
+      catch { fail(`${at}.composition`, 'ogiltiga lagerplaceringar'); }
+    }
     if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
     else if (ids.has(lane.id)) fail(`${at}.id`, `dubblerat ID ${lane.id}`);
     else ids.add(lane.id);
+    if (lane.renderer !== undefined && !['layered', 'portrait-video'].includes(lane.renderer)) fail(`${at}.renderer`, 'okänd renderare');
     const labelMessage = textError(lane.label, 80);
     if (labelMessage) fail(`${at}.label`, labelMessage);
     const laneDealers = new Set();
-    // Same cap as project.dealers in lab/schemas/studio.schema.json: every contract dealer.
-    if (!Array.isArray(lane.dealers) || lane.dealers.length < 1 || lane.dealers.length > DEALER_IDS.length) fail(`${at}.dealers`, `ska ha 1–${DEALER_IDS.length} dealers`);
+    if (!Array.isArray(lane.dealers) || lane.dealers.length < 1 || lane.dealers.length > MAX_DEALERS) fail(`${at}.dealers`, `ska ha 1–${MAX_DEALERS} dealers`);
     else lane.dealers.forEach((dealerId, dealerIndex) => {
       if (typeof dealerId !== 'string' || !projectDealerIds.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `okänd dealer ${typeof dealerId === 'string' ? dealerId : ''}`);
       else if (laneDealers.has(dealerId)) fail(`${at}.dealers[${dealerIndex}]`, `dubblerat ID ${dealerId}`);
@@ -272,6 +280,23 @@ export function createSeedProject() {
   return normalizeProject({ ...clone(seed), idlePolicy: createDefaultIdlePolicy(), probePolicy: createDefaultProbePolicy() });
 }
 
+// Registration creates empty bindings for each existing event. Animation-only
+// fallbacks are shared; another dealer's recorded film or speech never is.
+export function addDealer(project, dealerId, dealerLabel) {
+  validateProject(project);
+  if (!isDealerId(dealerId) || project.dealers.some(row => row.id === dealerId)) throw new StudioValidationError(['dealers: ogiltigt eller upptaget dealer-id']);
+  const next = clone(project);
+  next.dealers.push({id: dealerId, label: dealerLabel});
+  for (const event of next.events) {
+    const template = seed.lines.find(line => line.eventId === event.id);
+    const baseline = template.variants.find(variant => variant.id === template.baselineVariantId);
+    const id = `${dealerId}.${event.id}.standard`;
+    next.lines.push({dealerId, eventId:event.id, label:template.label, baselineVariantId:id,
+      variants:[{id,label:'Standard',priority:0,triggerIds:[],assetId:baseline.assetId,videoGenerationId:null}]});
+  }
+  return validateProject(next);
+}
+
 // Illustration choices must not reverse a published deal or hide a reveal.
 // This is NOT media acceptance: exact dealer/line/take validation belongs to
 // a separately reviewed production adapter, not this synthetic motion layer.
@@ -295,7 +320,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -316,13 +341,13 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   id(project.revision, 'revision');
   if (project.gameId !== 'blackjack') error('gameId', 'endast blackjack är implementerat; roulette är en platshållare');
   const dealerIds = new Set();
-  // A saved four-dealer project stays valid; normalizeProject adds the rest in memory.
-  if (array(project.dealers, 'dealers', 4, DEALER_IDS.length)) project.dealers.forEach((dealer, i) => {
+  if (array(project.dealers, 'dealers', DEALER_IDS.length, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
     if (!keys(dealer, ['id', 'label'], at)) return;
-    if (!DEALER_IDS.includes(dealer.id)) error(`${at}.id`, 'okänd croupier');
+    if (!isDealerId(dealer.id)) error(`${at}.id`, 'ogiltigt croupier-id');
     duplicate(dealerIds, dealer.id, `${at}.id`); label(dealer.label, `${at}.label`);
   });
+  for (const dealerId of DEALER_IDS) if (!dealerIds.has(dealerId)) error('dealers', `kompatibilitetsdealer saknas: ${dealerId}`);
   const eventIds = new Set();
   if (array(project.events, 'events', seed.events.length, seed.events.length)) project.events.forEach((event, i) => {
     const at = `events[${i}]`;
@@ -364,8 +389,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!Number.isInteger(asset.durationMs) || asset.durationMs < 200 || asset.durationMs > 10000) error(`${at}.durationMs`, 'ska vara 200–10000 millisekunder');
   });
   const lineIds = new Set(), variantIds = new Set();
-  const lineCount = (Array.isArray(project.dealers) ? project.dealers.length : 0) * seed.events.length;
-  if (array(project.lines, 'lines', lineCount, lineCount)) project.lines.forEach((line, i) => {
+  if (array(project.lines, 'lines', dealerIds.size * seed.events.length, dealerIds.size * seed.events.length)) project.lines.forEach((line, i) => {
     const at = `lines[${i}]`;
     if (!keys(line, ['dealerId', 'eventId', 'label', 'baselineVariantId', 'variants'], at)) return;
     if (!dealerIds.has(line.dealerId)) error(`${at}.dealerId`, 'okänd croupierreferens');
@@ -399,6 +423,16 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   });
   for (const dealerId of dealerIds) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
   if (Object.hasOwn(project, 'lanes')) errors.push(...laneErrors(project.lanes, dealerIds));
+  if (Object.hasOwn(project, 'layerAssets')) {
+    if (!Array.isArray(project.layerAssets) || project.layerAssets.length > 128) errors.push('layerAssets: högst 128 lagerfiler');
+    else {
+      const ids = new Set();
+      for (const asset of project.layerAssets) {
+        try { validateLayerAsset(asset); if (ids.has(asset.id)) throw new Error(); ids.add(asset.id); }
+        catch { errors.push('layerAssets: ogiltig eller dubblerad lagerfil'); }
+      }
+    }
+  }
   if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
   if (errors.length) throw new StudioValidationError(errors);
   return project;
@@ -406,7 +440,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
 
 export function buildRuntimeCatalog(project, dealerId) {
   validateProject(project);
-  if (!DEALER_IDS.includes(dealerId) || !project.dealers.some(dealer => dealer.id === dealerId)) throw new StudioValidationError(['dealerId: okänd croupier']);
+  if (!project.dealers.some(row => row.id === dealerId)) throw new StudioValidationError(['dealerId: okänd croupier']);
   const triggers = new Map(project.triggers.map(trigger => [trigger.id, trigger]));
   const lines = new Map(project.lines.filter(line => line.dealerId === dealerId).map(line => [line.eventId, line]));
   return clone({

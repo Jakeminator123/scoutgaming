@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
@@ -251,4 +252,66 @@ test('native media listing is scope-bound, complete, validated and never seeds o
     return client;
   };
   await assert.rejects(repo.listMedia(), rejection('studio_corrupt_media', 503));
+});
+
+
+test('a shared SQL facade is writable only in its live same-scope transaction and cannot escape or hide failure', async () => {
+  const pool = createStudioMemoryPool(), repo = repository(pool), other = createStudioRepository({ pool, scope: { ...scope, workspaceId: 'other' } });
+  await initialize(repo);
+  await assert.rejects(repo.withTransactionClient(() => {}), rejection('studio_invalid_transaction', 503));
+  let escaped;
+  await repo.transaction(async () => {
+    await repo.withTransactionClient(async client => {
+      escaped = client;
+      const result = await client.query('/* studio:read-document */ SELECT kind,revision,value,updated_at FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3', [scope.environment, scope.workspaceId, 'administration']);
+      assert.equal(result.rows[0].revision, 'initial');
+    });
+  });
+  await assert.rejects(escaped.query('SELECT 1'), rejection('studio_invalid_transaction', 503));
+  await assert.rejects(repo.transaction(() => repo.withTransactionClient(() => {}), { readOnly: true }), rejection('studio_invalid_transaction', 503));
+  await assert.rejects(repo.transaction(() => other.withTransactionClient(() => {})), rejection('studio_invalid_transaction', 503));
+  const before = pool.snapshot();
+  await assert.rejects(repo.transaction(async () => {
+    const saved = await repo.readDocument('administration');
+    await repo.saveDocument('administration', { value: { rooms: [{ id: 'changed' }] }, expectedRevision: saved.revision, actor: 'tester' });
+    try { await repo.withTransactionClient(async () => { throw new StudioStorageError('studio_conflict', 409); }); } catch {}
+  }), rejection('studio_conflict', 409));
+  assert.deepEqual(pool.snapshot(), before);
+});
+
+
+test('shared SQL cannot replace either bound scope parameter and caught rejection rolls back', async () => {
+  const pool = createStudioMemoryPool(), repo = repository(pool);
+  await initialize(repo);
+  const otherScope = { ...scope, workspaceId: 'workspace-south' };
+  await createStudioRepository({ pool, scope: otherScope }).initializeDocument('administration', { value: { rooms: ['private-south'] }, actor: 'tester', revision: 'south' });
+  const before = pool.snapshot();
+  for (const parameters of [[scope.environment, otherScope.workspaceId, 'administration'], ['foreign-env', scope.workspaceId, 'administration']]) {
+    await assert.rejects(repo.transaction(async () => {
+      const saved = await repo.readDocument('administration');
+      await repo.saveDocument('administration', { value: { rooms: ['should-rollback'] }, expectedRevision: saved.revision, actor: 'tester' });
+      try {
+        await repo.withTransactionClient(client => client.query('/* studio:read-document */ SELECT kind,revision,value,updated_at FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3', parameters));
+        assert.fail('cross-scope query was accepted');
+      } catch (error) { assert.equal(error.code, 'studio_scope_mismatch'); }
+    }), rejection('studio_scope_mismatch', 409));
+    assert.deepEqual(pool.snapshot(), before);
+  }
+});
+
+test('caught publisher input validation on a shared client rolls back earlier document/history/audit', async () => {
+  const pool = createStudioMemoryPool(), repo = repository(pool);
+  await initialize(repo); const before = pool.snapshot();
+  await assert.rejects(repo.transaction(async () => {
+    const saved = await repo.readDocument('administration');
+    await repo.saveDocument('administration', { value: { rooms: ['changed'] }, expectedRevision: saved.revision, actor: 'tester' });
+    await repo.withTransactionClient(async client => {
+      const operators = await createOperatorStore({ sql: client, scope, transaction: work => repo.withTransactionClient(work) });
+      try {
+        await operators.publishPackage({ actor: 'tester', operatorId: 'north', lanes: ['mobile-phone', 'mobile-phone'], games: ['blackjack'], tables: [], branding: {} });
+        assert.fail('invalid duplicate lanes were accepted');
+      } catch (error) { assert.equal(error.code, 'studio_invalid_data'); }
+    });
+  }), rejection('studio_invalid_data', 422));
+  assert.deepEqual(pool.snapshot(), before);
 });

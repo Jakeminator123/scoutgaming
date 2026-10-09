@@ -4,7 +4,7 @@ import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { stripTypeScriptTypes } from 'node:module';
 import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
-import { handlePartnerAuth, authorizePartner, partnerSessionDigest } from '../lib/partner-session.mjs';
+import { handlePartnerAuth, authorizePartner, isPartnerAuthConfig, partnerSessionDigest } from '../lib/partner-session.mjs';
 import { partnerWorkspaceData, partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
 
 const routeUrl = new URL('../app/api/partner/[...action]/route.ts', import.meta.url);
@@ -272,8 +272,18 @@ test('the partner index lists only member operators and the route rejects other 
   await assert.rejects(() => partnerWorkspaceInitialData(new Request('http://public.example.invalid/studio/partner', {
     headers: { host: 'public.example.invalid', origin: 'https://evil.invalid', cookie },
   }), { config: withStore(store), store }), error => error.statusCode === 403);
-  assert.equal(route.POST, handlePartnerAuth);
-  assert.equal(route.GET, handlePartnerAuth);
+  // Next calls GET/POST as (request, { params }). The route must not hand that
+  // context to handlePartnerAuth as a configuration (production 503 on every
+  // partner request until 8 Oct 2026), and the library must not accept it.
+  assert.notEqual(route.POST, handlePartnerAuth);
+  assert.notEqual(route.GET, handlePartnerAuth);
+  assert.equal(route.GET.length, 1);
+  assert.equal(route.POST.length, 1);
+  const nextContext = { params: Promise.resolve({ action: ['login'] }) };
+  const viaLibrary = await handlePartnerAuth(loginRequest('north-partner', secret), nextContext);
+  assert.equal(viaLibrary.status, 503, 'route context is not a configuration; without native env the server config is unavailable');
+  assert.equal(isPartnerAuthConfig(nextContext), false);
+  assert.equal(isPartnerAuthConfig(config), true);
   for (const method of ['PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']) {
     const response = await route[method](new Request(`${publicOrigin}/studio/api/partner/login`, { method }));
     assert.equal(response.status, 405, method);
@@ -357,6 +367,7 @@ test('branding read follows the lane and writing requires presentations.configur
   assert.equal(read.headers.get('cache-control'), 'private, no-store');
   const body = await read.json();
   assert.deepEqual(body.adjustable, ['table.color']);
+  assert.equal(body.canConfigure, false);
   assert.equal(body.packageRevision, 4);
   const denied = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     method: 'POST',
@@ -385,4 +396,26 @@ test('branding read follows the lane and writing requires presentations.configur
   assert.deepEqual(writer.published[0].tables, ['table-a']);
   assert.equal(writer.published.length, 1);
 });
+});
+
+import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {defaultPresentationLane} from '../lib/studio-model.mjs';
+test('scoped snapshot projects the frozen lane format and never substitutes the live project',async()=>{
+  const loggedIn=await handlePartnerAuth(loginRequest('north-partner',secret),config);
+  const cookie=`partner_session=${tokenOf(loggedIn)}`;
+  const presentation={schemaVersion:1,projectRevision:'frozen-r1',lanes:[{...defaultPresentationLane(),label:'Publicerad North'}],assets:[]};
+  const store={...memoryStore(),getCurrentPackage:async()=>({operatorId:northId,revision:7,lanes:['mobile-phone'],tables:['room-1'],branding:withPackagePresentation({name:'North'},presentation)})};
+  const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),withStore(store));
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.presentations[0].name,'Publicerad North');
+  assert.equal(body.presentations[0].dealer,'astrid');
+  assert.equal(body.presentations[0].operatorId,northId);
+  assert.equal(body.presentations[0].compatibility,'full-frame');
+  assert.deepEqual(body.presentations[0].layers.table.allowed,[]);
+  assert.equal(body.presentation.projectRevision,'frozen-r1');
+  assert.equal(body.packageRevision,'7');
+  assert.equal(JSON.stringify(body).includes('_scoutPresentation'),false);
+  assert.equal(body.tables[0].id,'room-1');
+  assert.equal(body.tables[0].operatorId,northId);
 });

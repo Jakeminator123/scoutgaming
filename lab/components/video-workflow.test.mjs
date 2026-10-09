@@ -103,7 +103,7 @@ test('idle minute keeps base loops alive and rejects late start/finish after sto
     button(h.render(), 'Spela en minut').props.onClick();
     const video = byType(h.render(), 'video'), oldElement = video.props.ref.current;
     assert.equal(video.props.loop, true, 'base lasts until its planned segment ends, not just one MP4 iteration');
-    if (reason === 'stop') button(h.render(), 'Stoppa idleprovet').props.onClick();
+    if (reason === 'stop') button(h.render(), 'Stoppa').props.onClick();
     else { h.props.blocked = true; h.render(); }
     video.props.onPlaying({ currentTarget: oldElement });
     video.props.onEnded({ currentTarget: oldElement });

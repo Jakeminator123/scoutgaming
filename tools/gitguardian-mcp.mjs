@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 // Dependency-free MCP stdio, JSON-RPC JSON lines. Startup/initialize/list do
-// not read the protected token or call GitGuardian. Two read-only tools only.
+// not read the protected token or call GitGuardian. Read-only tools only.
 import {createInterface} from 'node:readline';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createGitGuardianReader} from './gitguardian-read.mjs';
+import {collectSecurityStatus} from './security-status.mjs';
 
-const toolNames=['read_source_binding','read_repo_incidents'];
+const toolNames=['read_source_binding','read_repo_incidents','read_security_status'];
 export const GITGUARDIAN_MCP_TOOLS=Object.freeze(toolNames.map(name=>({name,
   description:name==='read_source_binding'?'Verify GitGuardian source30689542 binds Jakeminator123/scoutgaming. Metadata only.':
+    name==='read_security_status'?'Read remote main checks and repository incidents in one compact report. Coverage gaps stay explicit. No secrets or mutations.':
     'Read every incident status for source30689542, with paginated file/line metadata. No secrets, snippets or mutations.',
   inputSchema:{type:'object',properties:{},additionalProperties:false},
   annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true}})));
 const protocols=['2025-11-25','2025-06-18','2025-03-26','2024-11-05'];
-export function createGitGuardianRpc({reader=createGitGuardianReader()}={}){
+export function createGitGuardianRpc({reader=createGitGuardianReader(),readSecurityStatus=()=>collectSecurityStatus({readIncidents:()=>reader.readRepoIncidents()})}={}){
   let initialized=false;
   const error=(id,code,message)=>({jsonrpc:'2.0',id,error:{code,message}});
   return async value=>{
@@ -33,10 +35,11 @@ export function createGitGuardianRpc({reader=createGitGuardianReader()}={}){
       const p=value.params,a=p?.arguments??{};
       if(!p||!toolNames.includes(p.name)||!a||typeof a!=='object'||Array.isArray(a)||Object.keys(a).length
         ||Object.keys(p).some(k=>!['name','arguments','_meta'].includes(k)))return error(id,-32602,'Invalid params');
-      let data;try{data=await reader[p.name==='read_source_binding'?'readSourceBinding':'readRepoIncidents']();}
+      let data;try{data=await (p.name==='read_security_status'?readSecurityStatus():reader[p.name==='read_source_binding'?'readSourceBinding':'readRepoIncidents']());}
       catch{data={safeCode:'gg_read_unavailable',incidentCoverage:'not-read'};}
       result={content:[{type:'text',text:JSON.stringify(data)}],structuredContent:data,
-        isError:Boolean(data.safeCode||data.coverageGaps?.length)};
+        isError:Boolean(data.safeCode||data.coverageGaps?.length||(p.name==='read_security_status'&&
+          (data.githubCoverage==='unavailable'||data.incidentCoverage!=='complete-for-source')))};
     }else return error(id,-32601,'Method not found');
     return{jsonrpc:'2.0',id,result};
   };

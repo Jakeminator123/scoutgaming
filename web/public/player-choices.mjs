@@ -6,7 +6,7 @@
 import { isOperatorSlug } from './game-lanes.mjs';
 
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
-const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei' });
+const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge', nora: 'Nora' });
 
 export function choicesStorageKey(operator) {
   return `croupier.choices.${isOperatorSlug(operator) ? operator : 'default'}`;
@@ -20,6 +20,7 @@ export function parseStoredChoices(raw) {
   const stored = {};
   if (typeof value.dealer === 'string') stored.dealer = value.dealer;
   if (typeof value.tableColor === 'string') stored.tableColor = value.tableColor;
+  if (typeof value.tableAsset === 'string') stored.tableAsset=value.tableAsset;
   if (typeof value.background === 'string') stored.background = value.background;
   return stored;
 }
@@ -53,20 +54,24 @@ function one(params, key) {
 // URL wins over the player, the player over the company's colour, the company
 // over the lane default. A value outside gameChoices is dropped from storage.
 // Background is stored only; this pass does not paint it.
-export function resolvePlayerSelection({ choices, search = '', stored = {}, branding = null, currentDealer = '' } = {}) {
+export function resolvePlayerSelection({ choices, search = '', stored = {}, branding = null, currentDealer = '', composition = null } = {}) {
   const dealers = Array.isArray(choices?.dealers) ? choices.dealers : [];
   const colors = Array.isArray(choices?.tableColors) ? choices.tableColors : [];
   const background = choices?.background && typeof choices.background === 'object' ? choices.background : {};
   const allowedBackground = Array.isArray(background.allowed) ? background.allowed : [];
-  const baked = background.mode === 'baked';
+  const baked = background.mode === 'baked' || composition?.dealer.compatibility === 'full-frame';
   const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
   const urlDealer = dealers.includes(one(params, 'dealer')) ? one(params, 'dealer') : '';
   const urlColor = colors.includes(one(params, 'table')) ? one(params, 'table') : '';
   const storedDealer = dealers.includes(stored?.dealer) ? stored.dealer : '';
   const storedColor = colors.includes(stored?.tableColor) ? stored.tableColor : '';
+  const tableAssets=composition?.table?.allowed??[];
+  const tableValue=tableAssets.includes(stored?.tableAsset)?stored.tableAsset:tableAssets.includes(branding?.table)?branding.table:composition?.table?.default??null;
+  const companyBackground=allowedBackground.includes(branding?.background)?branding.background:background.default??null;
   const storedBackground = !baked && allowedBackground.includes(stored?.background) ? stored.background : '';
   const companyColor = TABLE_COLOR.test(branding?.color) && (colors.length === 0 || colors.includes(branding.color)) ? branding.color : '';
   const laneColor = colors.includes(choices?.tableDefault) ? choices.tableDefault : '';
+  const companyDealer=dealers.includes(branding?.dealer)?branding.dealer:'';
   let dealer = currentDealer;
   let navigateDealer = null;
   if (urlDealer) {
@@ -76,17 +81,20 @@ export function resolvePlayerSelection({ choices, search = '', stored = {}, bran
     dealer = storedDealer;
     if (storedDealer !== currentDealer) navigateDealer = storedDealer;
   }
+  if(!urlDealer&&!storedDealer&&companyDealer&&companyDealer!==currentDealer){dealer=companyDealer;navigateDealer=companyDealer;}
   const nextStored = {};
   if (urlDealer || storedDealer) nextStored.dealer = urlDealer || storedDealer;
   if (urlColor || storedColor) nextStored.tableColor = urlColor || storedColor;
   if (storedBackground) nextStored.background = storedBackground;
+  if(tableAssets.includes(stored?.tableAsset))nextStored.tableAsset=stored.tableAsset;
   return {
     dealer,
     navigateDealer,
     tableColor: urlColor || storedColor || companyColor || laneColor || null,
     backgroundDisabled: baked,
-    backgroundValue: storedBackground || null,
-    applyBackground: false,
+    backgroundValue: baked?null:storedBackground || companyBackground,
+    ...(composition?{tableValue}:{}),
+    applyBackground: Boolean(composition&&!baked),
     nextStored,
   };
 }
@@ -117,7 +125,7 @@ function choiceButton(document, label, pressed) {
 
 export function mountPlayerChoices(document, {
   choices, names = DEALER_NAMES, currentDealer, tableColor, backgroundValue,
-  isBusy = () => false, onDealer, onTableColor, onBackground,
+  isBusy = () => false, onDealer, onTableColor, onBackground, onTable, tableValue, composition,
 } = {}) {
   const anchor = document.querySelector?.('#table-pick');
   if (!choices || !anchor) return null;
@@ -168,20 +176,31 @@ export function mountPlayerChoices(document, {
     panel.append(tableRow);
   }
 
+  if(composition) {
+    const row=document.createElement('div');row.className='choice-row';
+    const label=document.createElement('span');label.textContent='Bord';row.append(label);
+    if(composition.dealer.compatibility==='full-frame') {const button=choiceButton(document,'Ingår i dealerfilmen',false);button.disabled=true;row.append(button);}
+    else for(const id of composition.table.allowed) {
+      const button=choiceButton(document,composition.assets.find(asset=>asset.id===id)?.label??id,id===tableValue);
+      button.dataset.tableAsset=id;button.onclick=()=>{if(isBusy()){status.textContent='Avsluta rundan innan du byter bord.';return;}for(const other of row.querySelectorAll('button'))other.setAttribute('aria-pressed',String(other===button));onTable?.(id);};row.append(button);
+    }
+    panel.append(row);
+  }
   const backgroundRow = document.createElement('div');
   backgroundRow.className = 'choice-row';
   const backgroundLabel = document.createElement('span');
   backgroundLabel.textContent = 'Bakgrund';
   backgroundRow.append(backgroundLabel);
-  if (choices.background?.mode === 'baked') {
+  if (choices.background?.mode === 'baked'||composition?.dealer.compatibility==='full-frame') {
     const button = choiceButton(document, 'Kommer med nya dealerpaket', false);
     button.disabled = true;
     backgroundRow.append(button);
   } else {
     for (const id of choices.background?.allowed ?? []) {
-      const button = choiceButton(document, id, id === backgroundValue);
+      const button = choiceButton(document, composition?.assets.find(asset=>asset.id===id)?.label??id, id === backgroundValue);
       button.dataset.background = id;
       button.onclick = () => {
+        if(isBusy()){status.textContent='Avsluta rundan innan du byter bakgrund.';return;}
         for (const other of backgroundRow.querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === button));
         onBackground?.(id);
       };

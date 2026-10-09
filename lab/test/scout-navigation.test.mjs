@@ -7,89 +7,83 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
-// Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
 const OLD_HEADER_DESTINATIONS = Object.freeze([
   '/control', '/control/clips', '/control/administration', '/control/openclaw',
   '/control/operator-chat', '/control/tree', '/control/activity', '/control/guide',
 ]);
-
 const groups = SCOUT_NAVIGATION;
 const sidebar = [...groups.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('sidebar groups stay in Spec 02 order and point at real pages', () => {
-  assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'OpenClaw', 'Drift', 'Åtkomst']);
+test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
+  assert.deepEqual(groups.map(group => group.label), ['Studio', 'Drift', 'AI & chatt', 'Administration']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control', 'Översikt']],
-    [['/control/clips', 'Dealers & klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser'], ['/control/preview', 'Förhandsvisning'], ['/control/lanes', 'Lanes']],
+    [['/control/preview', 'Sammansättning'], ['/control/clips', 'Innehåll'], ['/control/lanes', 'Publicering']],
+    [['/control/administration?tab=tables', 'Bord & spelrum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
-    [['/control/administration', 'Administration'], ['/control/administration?tab=tables', 'Bord & lanes'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=finance', 'Betalningar & journal'], ['/control/probe', 'Probe']],
-    [['/control/administration?tab=accounts', 'Konton & roller'], ['/partner', 'Partners']],
+    [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Konton & roller'], ['/control/administration?tab=partners', 'Partners']],
   ]);
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
-    ['/control/guide', 'Guide & hjälp'],
+    ['/control', 'Översikt'], ['/control/guide', 'Guide & hjälp'],
   ]);
-  // Deep links may share a path. Each full href stays unique.
-  const hrefs = sidebar.map(item => item.href);
-  assert.equal(new Set(hrefs).size, hrefs.length);
+  assert.equal(new Set(sidebar.map(item => item.href)).size, sidebar.length);
+  assert.equal(new Set(groups.map(group => group.id)).size, groups.length);
   assert.deepEqual(SCOUT_LEVELS.map(item => [item.href, item.label]), [
     ['/control', '1 · Admin'], ['/partner', '2 · Spelbolag'], ['/play', '3 · Spelare'],
   ]);
   for (const item of sidebar) {
     const href = item.href.split('?')[0];
-    const page = href === '/control' ? 'control/[[...path]]/page.tsx'
-      : href === '/partner' ? 'partner/[[...path]]/page.tsx'
-      : `${href.slice(1)}/page.tsx`;
+    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
     assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, item.href);
   }
-  assert.match(readFileSync(new URL('../../apps/croupier-frontend/app/play/page.tsx', import.meta.url), 'utf8'), /export default/);
 });
 
-test('old header destinations stay reachable from the sidebar or the level switcher', () => {
-  const covered = new Set([...sidebar.map(item => item.href), ...SCOUT_LEVELS.map(item => item.href)]);
-  for (const href of OLD_HEADER_DESTINATIONS) {
-    if (href === '/control/operator-chat') {
-      assert.equal(covered.has('/control/openclaw?tab=chat'), true, href);
-      continue;
-    }
-    if (href === '/control/tree') {
-      assert.equal(covered.has('/control/events'), true, href);
-      continue;
-    }
-    assert.equal(covered.has(href), true, href);
+test('old direct routes and content aliases retain pages and a visible navigation destination', () => {
+  const covered = new Set(sidebar.map(item => item.href));
+  for (const href of [...OLD_HEADER_DESTINATIONS, '/control/videos', '/control/events', '/control/probe']) {
+    const active = scoutNavigationItem(href, '');
+    assert.equal(covered.has(active?.href), true, href);
+    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
+    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, href);
   }
-  assert.equal(covered.has('/partner'), true);
-  assert.equal(covered.has('/play'), true);
+  for (const href of ['/control/videos', '/control/events', '/control/probe', '/control/tree']) {
+    assert.equal(sidebar.some(item => item.href === href), false, href);
+    assert.equal(scoutNavigationItem(`${href}?dealer=astrid&event=idle.ready`, '')?.label, 'Innehåll');
+  }
+  assert.equal(SCOUT_LEVELS.some(item => item.href === '/partner'), true);
+  assert.equal(SCOUT_LEVELS.some(item => item.href === '/play'), true);
 });
 
-test('active item resolves for empty and /studio base paths and keeps the first shared label', () => {
+test('active item resolves public and native paths with content aliases and the administration default', () => {
   for (const base of ['', '/studio']) {
-    assert.equal(scoutNavigationItem('/control', base)?.label, 'Översikt');
-    assert.equal(scoutNavigationItem(`${base}/control`.replace('//', '/'), base)?.label, 'Översikt');
-    assert.equal(scoutNavigationItem('/control/clips', base)?.label, 'Dealers & klipp');
-    assert.equal(scoutNavigationItem(`${base}/control/clips`.replace('//', '/'), base)?.label, 'Dealers & klipp');
-    assert.equal(scoutNavigationItem('/activity', base)?.label, 'Uppspelning');
-    assert.equal(scoutNavigationItem(`${base}/activity`.replace('//', '/'), base)?.label, 'Uppspelning');
-    assert.equal(scoutNavigationItem('/control/administration', base)?.label, 'Administration');
-    assert.equal(scoutNavigationItem('/control/zones', base)?.label, 'Bakgrundszoner');
-    assert.equal(scoutNavigationItem('/control/events', base)?.label, 'Händelser');
+    for (const [path, label] of [
+      ['/control', 'Översikt'], ['/control/clips', 'Innehåll'], ['/activity', 'Uppspelning'],
+      ['/control/administration', 'Spelintegritet'], ['/control/zones', 'Sammansättning'],
+      ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Innehåll'],
+      ['/control/administration?tab=not-a-group', 'Spelintegritet'],
+      ['/control/administration?tab=media-review', 'Innehåll'],
+    ]) {
+      assert.equal(scoutNavigationItem(path, base)?.label, label, path);
+      assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
+    }
     assert.equal(scoutNavigationItem('/studio/studio/videos', base), null);
   }
-  assert.equal(scoutNavigationItem('/', '')?.label, 'Dealers & klipp');
-  assert.equal(scoutNavigationItem('/studio', '/studio')?.label, 'Dealers & klipp');
+  assert.equal(scoutNavigationItem('/', '')?.label, 'Innehåll');
+  assert.equal(scoutNavigationItem('/studio', '/studio')?.label, 'Innehåll');
   assert.equal(scoutNavigationItem('/studio', ''), null);
   for (const base of [null, {}, [], '/studio/', '/other']) assert.equal(scoutNavigationItem('/control/clips', base), null);
 });
 
-function loadNavigation(pathname, search = '') {
+function loadNavigation(pathname, search = '', hooks = React) {
   const file = 'workspace-navigation.tsx';
   const url = new URL(`../components/${file}`, import.meta.url);
   const output = transformSync(readFileSync(url, 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const localRequire = createRequire(url), module = { exports: {} };
-  vm.runInNewContext(output.code, {
+  vm.runInNewContext(`${output.code}\nmodule.exports.NavigationGroup = NavigationGroup;`, {
     module, exports: module.exports, structuredClone,
     require: name => {
+      if (name === 'react') return hooks;
       if (name === 'next/navigation') return { usePathname: () => pathname, useSearchParams: () => new URLSearchParams(search) };
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./')) return new Proxy({}, { get: () => () => null });
@@ -99,9 +93,9 @@ function loadNavigation(pathname, search = '') {
   return module.exports;
 }
 
-test('login pages render without the staff menu under empty and /studio base paths', () => {
+test('login and password pages render without a staff menu under either base path', () => {
   for (const base of ['', '/studio']) {
-    for (const path of ['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login']) {
+    for (const path of ['/login', '/set-password', '/control/login', '/control/set-password', '/partner/login', '/partner/set-password']) {
       assert.equal(isScoutAuthPath(`${base}${path}`, base), true, `${base}${path}`);
       assert.equal(isScoutAuthPath(`${base}${path}/`, base), true, `${base}${path}/`);
     }
@@ -110,59 +104,105 @@ test('login pages render without the staff menu under empty and /studio base pat
   }
   assert.equal(isScoutAuthPath('/login', '/studio'), true);
   assert.equal(isScoutAuthPath('/studio/login', ''), false);
-  // usePathname() never includes the basePath, so the shell sees the bare path.
   for (const path of ['/control/login', '/control/set-password', '/login']) {
     const { WorkspaceNavigation } = loadNavigation(path);
     assert.equal(renderToStaticMarkup(React.createElement(WorkspaceNavigation, null, React.createElement('main', null, 'login-form'))), '<main>login-form</main>', path);
   }
 });
 
-test('partner documents render no staff shell and administration highlights only the first label', () => {
+test('partner pages retain their own shell and the staff shell retains its shared status', () => {
   for (const path of ['/partner', '/studio/partner', '/partner/demo-north/overview', '/studio/partner/demo-south/team']) {
-    const { WorkspaceNavigation } = loadNavigation(path);
-    assert.equal(renderToStaticMarkup(WorkspaceNavigation()), '', path);
+    assert.equal(renderToStaticMarkup(loadNavigation(path).WorkspaceNavigation()), '', path);
   }
   const { WorkspaceNavigation, ShellStatus } = loadNavigation('/control/administration');
   const html = renderToStaticMarkup(WorkspaceNavigation());
-  assert.match(html, /aria-current="page"[^>]*>Administration/);
+  assert.match(html, /aria-current="page"[^>]*>Spelintegritet/);
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /status-marker/);
   const withStatus = renderToStaticMarkup(React.createElement(ShellStatus.Provider, { value: 'status-marker' }, React.createElement(WorkspaceNavigation)));
   assert.match(withStatus, /status-marker/);
-  const source = readFileSync(new URL('../components/workspace-navigation.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /onClick|onNavigate|next\/link|history\.(?:pushState|replaceState)/);
   assert.doesNotMatch(html, /type="search"|Sök dealer, klipp, bord, konto…|Inte ansluten ännu/);
 });
 
-test('openclaw chat query activates operator chat and the bare path activates model settings', () => {
-  for (const base of ['', '/studio']) {
-    assert.equal(scoutNavigationItem('/control/openclaw', base)?.label, 'Agentmodeller');
-    assert.equal(scoutNavigationItem('/control/openclaw?tab=chat', base)?.label, 'Operatörschatt');
-    assert.equal(scoutNavigationItem('/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', base)?.label, 'Operatörschatt');
-    assert.equal(scoutNavigationItem('/control/openclaw?dealer=astrid', base)?.label, 'Agentmodeller');
-    assert.equal(scoutNavigationItem('/operator-chat', base)?.label, 'Operatörschatt');
-    assert.equal(scoutNavigationItem('/control/operator-chat', base)?.label, 'Operatörschatt');
-    assert.equal(scoutNavigationItem(`${base}/control/openclaw?tab=chat`.replace('//', '/'), base)?.label, 'Operatörschatt');
+test('query-specific links win without losing the chat alias or selecting publicering for bolag', () => {
+  const cases = [
+    ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Operatörschatt'],
+    ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Operatörschatt'],
+    ['/control/operator-chat', 'Operatörschatt'], ['/control/lanes?lane=t10', 'Publicering'],
+    ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
+    ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
+    ['/control/administration?tab=tables', 'Bord & spelrum'],
+    ['/control/administration?tab=operations', 'Spelintegritet'],
+    ['/control/administration?tab=finance', 'Betalningar & journal'],
+    ['/control/administration?tab=accounts', 'Konton & roller'],
+    ['/control/administration?tab=partners', 'Partners'],
+  ];
+  for (const base of ['', '/studio']) for (const [path, label] of cases) {
+    assert.equal(scoutNavigationItem(path, base)?.label, label, path);
+    assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
   }
-  const chat = renderToStaticMarkup(loadNavigation('/control/openclaw', 'tab=chat&dealer=astrid').WorkspaceNavigation());
-  assert.match(chat, /aria-current="page"[^>]*>Operatörschatt/);
-  assert.doesNotMatch(chat, /aria-current="page"[^>]*>Agentmodeller/);
-  assert.match(chat, /href="\/control\/openclaw\?tab=chat"/);
-  assert.equal(scoutNavigationItem('/control/probe')?.label, 'Probe');
-  assert.equal(scoutNavigationItem('/control/tree')?.label, 'Händelser');
-  assert.equal(scoutNavigationItem('/control/administration?tab=tables')?.label, 'Bord & lanes');
-  assert.equal(scoutNavigationItem('/control/administration?tab=operations')?.label, 'Spelintegritet');
-  assert.equal(scoutNavigationItem('/control/administration?tab=finance')?.label, 'Betalningar & journal');
-  assert.equal(scoutNavigationItem('/control/administration?tab=accounts')?.label, 'Konton & roller');
-  assert.equal(scoutNavigationItem('/control/administration?tab=partners')?.label, 'Administration');
-  assert.equal(scoutNavigationItem('/control/administration?tab=media-review')?.label, 'Administration');
-  const accounts = renderToStaticMarkup(loadNavigation('/control/administration', 'tab=accounts').WorkspaceNavigation());
-  assert.match(accounts, /aria-current="page"[^>]*>Konton &amp; roller/);
-  assert.equal((accounts.match(/aria-current="page"/g) ?? []).length, 1);
-  assert.match(chat, /Nivå 1 </);
-  assert.match(chat, /aria-label="ScoutGamingGroup administration"/);
-  const models = renderToStaticMarkup(loadNavigation('/control/openclaw').WorkspaceNavigation());
-  assert.match(models, /aria-current="page"[^>]*>Agentmodeller/);
-  assert.doesNotMatch(models, /aria-current="page"[^>]*>Operatörschatt/);
-  assert.equal((models.match(/aria-current="page"/g) ?? []).length, 1);
+});
+
+test('reload on a deep route expands only its work group and marks exactly one sublink', () => {
+  for (const [pathname, search, groupId, label] of [
+    ['/control/preview', 'lane=t10', 'studio', 'Sammansättning'],
+    ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Innehåll'],
+    ['/control/administration', 'tab=tables', 'operations', 'Bord &amp; spelrum'],
+    ['/control/openclaw', 'tab=chat&dealer=astrid', 'ai', 'Operatörschatt'],
+    ['/control/lanes', 'tab=companies&lane=t10', 'administration', 'Bolag &amp; team'],
+  ]) {
+    const html = renderToStaticMarkup(loadNavigation(pathname, search).WorkspaceNavigation());
+    assert.match(html, new RegExp(`id="scout-navigation-${groupId}"[^>]*aria-expanded="true"`), pathname);
+    assert.match(html, new RegExp(`aria-current="page"[^>]*>${label}`), pathname);
+    assert.equal((html.match(/aria-expanded="true"/g) ?? []).length, 1, pathname);
+    assert.equal((html.match(/hidden=""/g) ?? []).length, 3, pathname);
+    assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1, pathname);
+    for (const group of groups) {
+      assert.match(html, new RegExp(`aria-controls="scout-navigation-${group.id}-items"`));
+      assert.match(html, new RegExp(`id="scout-navigation-${group.id}-items"[^>]*aria-labelledby="scout-navigation-${group.id}"`));
+    }
+  }
+});
+
+test('group controls toggle without navigation and reopen on route changes including same-group queries', () => {
+  let state, previousDeps, pendingEffect;
+  const hooks = { ...React,
+    useState: initial => {
+      if (state === undefined) state = initial;
+      return [state, value => { state = typeof value === 'function' ? value(state) : value; }];
+    },
+    useEffect: (effect, deps) => {
+      if (!previousDeps || deps.some((value, index) => value !== previousDeps[index])) pendingEffect = effect;
+      previousDeps = [...deps];
+    },
+  };
+  const { NavigationGroup } = loadNavigation('/control/clips', '', hooks);
+  const group = groups.find(item => item.id === 'studio');
+  function render(active, routeKey) {
+    let tree = NavigationGroup({ group, active, routeKey });
+    if (pendingEffect) { const effect = pendingEffect; pendingEffect = null; effect(); tree = NavigationGroup({ group, active, routeKey }); }
+    return tree.props.children;
+  }
+  let [button, panel] = render(null, '/control');
+  assert.equal(button.type, 'button');
+  assert.equal(button.props.type, 'button');
+  assert.equal(button.props.onKeyDown, undefined, 'native button semantics support Enter and Space');
+  assert.equal(button.props['aria-expanded'], false);
+  assert.equal(panel.props.hidden, true);
+  button.props.onClick();
+  [button, panel] = render(null, '/control');
+  assert.equal(button.props['aria-expanded'], true);
+  assert.equal(panel.props.hidden, false);
+  button.props.onClick();
+  [button, panel] = render(group.items[1], '/control/clips?dealer=astrid');
+  assert.equal(button.props['aria-expanded'], true);
+  button.props.onClick();
+  [button, panel] = render(group.items[1], '/control/clips?dealer=astrid');
+  assert.equal(button.props['aria-expanded'], false, 'the active group can still be collapsed');
+  [button, panel] = render(group.items[1], '/control/clips?dealer=astrid&tab=deal');
+  assert.equal(button.props['aria-expanded'], true, 'a query change reopens the current group');
+  button.props.onClick();
+  [button, panel] = render(group.items[0], '/control/preview?lane=t10');
+  assert.equal(button.props['aria-expanded'], true, 'Back/Forward or a new subroute reopens the group');
 });
