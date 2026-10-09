@@ -80,11 +80,11 @@ test('Astrid keeps the media-family editor and a Villkor tab', () => {
   assert.match(html, /aria-label="Välj dealer"/);
 });
 
-test('idle points at Dealers & klipp instead of the idle policy editor', () => {
+test('Grundloop links to content without duplicating the policy editor', () => {
   const html = render({ initialDealerId: 'astrid', initialEventId: 'idle.ready' });
   assert.match(html, /href="\/control\/clips#idle"/);
-  assert.match(html, /Redigera idle i Dealers &amp; klipp/);
-  assert.doesNotMatch(html, /Grundloop/);
+  assert.match(html, /Grundloop och klipp/);
+  assert.doesNotMatch(html, /Spela en minut/);
 });
 
 test('Vera variants are stored but not used by the game yet', () => {

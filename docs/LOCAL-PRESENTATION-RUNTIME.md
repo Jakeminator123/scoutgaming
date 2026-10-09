@@ -139,7 +139,7 @@ inställningar och dealerns spelarchatt är skilda roller.
 
 **Gemensamma visningsnamn:** Händelsekategori (tidigare Eventgrupp),
 Klippuppsättning (tidigare Linje), Villkor (Trigger), Urvalsregler (Policy).
-Tekniska event-ID:n, schemafält och `line`-nycklar ändras inte av namnbytet.
+Grundloop är det svenska namnet för idle. Basklipp och variationer är innehåll i samma vänteläge, inte ett andra parallellt system. Tekniska event-ID:n, schemafält och `line`-nycklar ändras inte av namnbytet.
 En presentationshändelse gäller det som ska visas; en administrativ händelse
 gäller exempelvis kontoåtkomst och hör inte till klippurvalet.
 Ordlistans källa är `lab/policies/studio-contract.json` och visas i användarguiden.
@@ -176,6 +176,17 @@ inställningspanelen i stället för Kevins lokala SVG-/bildprototyper. Provbord
 länkar till `/play/blackjack?operator=...&table=...`, med vanlig spelarinloggning.
 `presentations.configure`, operatörsscope, exakt paketrevision och den enskilda
 lanens allowed/default/operatorAdjustable gäller fortfarande vid varje skrivning.
+Dealerval måste dessutom fungera i samtliga publicerade kompatibla live-rum för
+presentationen. Samma klient/transaktion låser scope och operatör, läser aktuell
+administrationsrevision, kontrollerar medlemskap/roll igen och sparar via paket-CAS.
+Behörighetsfel och revisionskonflikt behåller 403 respektive 409; ett misslyckat
+commit rullar tillbaka. Klientens kvitto uppdaterar både snapshot och revision.
+
+Presentationens dealer/bord/bakgrund/färg gäller bara dess branding.lane i
+spelklienten. Utan uttryckligt lane-ID gäller befintlig första-presentation-default;
+andra rum använder sin egen frysta presentation. Bolagsgemensam branding bevaras.
+Storlek och placering ägs av nivå 1 och fryses i paketet; nivå 2 inför ingen
+separat geometriöverlagring.
 `composition` följer spelklientens per-clip-gräns. Fullbildslanes behåller sina
 medier och avvisar nya val av separat bord/bakgrund/bordsfärg. Äldre paket utan
 fryst lagerformat måste återpubliceras före redigering i dessa vyer.
@@ -188,6 +199,32 @@ Rum-writern beskrivs ovan; en paketsträng ensam bevisar inget ägarskap.
 `lab/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
 `/control/clips` och behåller query. Tidigare återexporterades klippsidan direkt;
 dubbelinnehållet var samma React-vy. BasePath, API och tillgångar består.
+
+## Render: skilj deploystatus från tillgänglighet
+
+En misslyckad ny deploy kan lämna den tidigare fungerande instansen i trafik.
+Därför bevisar en senare HTTP 200 inte att den misslyckade versionen blev frisk;
+jämför deploy-ID och commit-SHA i Render. Se [Renders deploymodell](https://render.com/docs/deploys).
+GitHubs tidigare timeout vid ffmpeg/jq-installation är en separat CI-händelse.
+
+Kontroll den 9 oktober: publik health gav 200 och presentationscapability v3,
+men ingen commit-SHA. Befintliga verktyg ger ännu inte privata Render-deployloggar
+eller liveinställningar; orsaken till det rapporterade första felet är obelagd.
+`ops/cloud/process-group.mjs` väntar högst 30 sekunder per delprocess på web och
+Studio innan gatewayens publika port startas. Processernas stdout/stderr ignoreras,
+och `container-entry.mjs` ger ett generiskt startfel. Detta är en möjlig
+starttidsgräns och en diagnostiklucka, inte bevis på den aktuella felorsaken.
+
+För insyn och omdeploy: anslut det officiella [Render MCP](https://render.com/docs/mcp-server)
+med OAuth enligt avsnittet Codex Desktop and CLI och välj rätt Render-workspace.
+Det ger verktyg för deployhistorik, enskilda deploykvitton, filtrerade loggar och
+ny deploy. Bekräfta att vald tjänst är croupier-v2. Dela inga API-nycklar i chatten.
+En deploy-hook ensam ger inte samma logg- och historikåtkomst.
+
+Nästa felsökningsunderlag är det misslyckade och lyckade deploy-ID:t, deras SHA
+samt första felkoden/tidsstämpeln. Mät startstegen innan tidsgränser ändras.
+Vid bättre diagnostik ska endast sanerade steg, tider, exitkoder och version
+loggas; inga miljövärden, authheaders eller anslutningssträngar.
 
 ## Lokal byggcache och runtime
 

@@ -1,5 +1,66 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: sammanhängande sammansättning och partnerns val
+
+Kod färdig lokalt efter e00543b0; full regression, CI och utrullningskvitton återstår före slutleverans.
+Nivå 1:s Sammansättning är huvudeditorn för Dealer, Bord och Bakgrund.
+Storlek och placering visas öppet, separat för Mobil och Desktop. Valet Dealer
+ändrar sparad startdealer; Förhandsvisa klipp är fortfarande enbart ett prov.
+Grundloop och idle är samma vänteläge. Basklipp och Variationer beskriver
+innehåll i det läget; en egen dealer publiceras med ett fryst basklipp.
+Astrids befintliga avancerade urval och originalklipp bevaras.
+
+Den faktiska inbyggda guiden i lab/docs/guide.json hade kvar Nora-specifik
+manuell rumsguidning och uppgift om att rumskapande återstod. Den rättas
+samtidigt med README, terminologi och studio-contract.json. Tekniska idle-ID:n
+ändras inte. Separata lager ersätter inte fullbildsklippets inbakade pixlar.
+
+Verifierat fel i nivå 2: ett tillåtet dealerval kunde sparas men inte stödjas
+av rummets spellane, varpå spelaren fortsatte med den tidigare dealern.
+Rättningen ger samma tillåtna urval i UI och server, med kompatibilitet
+i samtliga berörda publicerade live-rum, samt färsk behörighet/revision under
+befintlig transaktion. Nivå 2 får inga egna geometriöverlagringar eller nya
+paketformat; storlek och placering hör till den publicerade N1-sammansättningen.
+
+Ytterligare reproducerat N2/runtimefel: val för en presentation kunde läcka
+som bord/bakgrund/dealer till ett rum med annan presentation, trots att N2
+visade det andra rummets egna standardval. Rättningen avgränsar dessa
+presentationsval till matchande branding.lane och bevarar bolagsgemensamt
+utseende och det frysta paketet. Denna del ändrar web/game-entry-operator.mjs
+och kräver separat Render-utrullning; Vercel READY räcker inte som kvitto.
+
+Lokalt verifierat: N2:s samlade serverfria svit 93/93 PASS; N1:s riktade svit
+31/31, guide/Grundloop 12/12 och uppdaterat Händelser-test 6/6 PASS.
+Slutlig gemensam TypeScript och Lab-build PASS. Oberoende granskning hittade
+två fel som rättades före frysning: transaktionen maskerade 403/409 som 503,
+och sparad färg kunde tappas vid återval av första presentationen. Nya native-
+och tillståndsbaserade UI-regressioner täcker båda. Sync-probe matchar baslinjen;
+mediernas bytes och mänskliga läppsynkacceptans har inte ändrats.
+
+N1:s isolerade UI-slutprov PASS: sju assertiongrupper, 1440/768/390 utan
+överflöde och noll React-, console-, media- eller dialogfel. Verklig lokal
+GET/PUT/full omladdning använder oförändrad SSR/inventory och egen tempdata;
+dealer-default/allowed, lager-ID, båda formatens placering och orörd andra
+presentation verifieras. Frilagd/fullbild-preview provas separat med explicit
+klientinventory och exakt hashkontrollerade originalmedier. Det senare är
+previewbevis, inte serverinventering eller produktionsacceptans. Två tidigare
+privata SSR-fixturfel och ett felaktigt Pausa-antagande rättades i provskriptet;
+ingen produktkod eller felassertion ändrades för att få provet grönt.
+Tre nya tydligt isolerade bilder läggs till skrivbordsgalleriet; de tidigare
+23 originalbilderna bevaras. Lokalt QA-par stängdes i finally.
+
+Johns spelbolag saknar fortfarande partner-medlem. /partner utan partnersession
+visar en uttryckligt märkt demonstration; den är inte bevis på Johns liveåtkomst.
+Ingen användare, inbjudan, e-post eller authgenväg skapas för detta prov.
+Produktionsspelarens separata manuella inloggning och två grundloopvarv återstår.
+
+Render svarar HTTP 200/capability v3 men exakta deploy-SHA och privata felloggar
+saknas. Ett misslyckat nytt bygge kan lämna föregående version i trafik.
+Den lokala startkedjans 30-sekundersgränser och bortvalda child-processloggar
+är möjliga felsökningspunkter, inte en bevisad felorsak. Ändra inte timeouter
+utan deploy-ID, SHA och tidsstämplat första fel. Teknisk vägledning finns i
+LOCAL-PRESENTATION-RUNTIME.md. GitHubs ffmpeg-installationstimeout är separat.
+
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
 Senaste kodleveransen 88e590e7327f379d56022eebcb891843058a0732 är pushad till GitHub main, har normal fullhook PASS, grön exakt-SHA CI 37963723334 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_DMuc47ugqtd2Wz8rmq8PexbFaZAv. Kanonisk player-login gav HTTP 200 med neutral titel/text efter deploy.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
-import { createPartnerBrandingApi, TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
+import { createPartnerBrandingApi as createApi, TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
 
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const clock = () => 1_700_000_000_000;
@@ -224,3 +224,12 @@ test('a package changed after the read is rejected by the atomic publisher',asyn
   assert.equal(attempts,1);
   assert.equal(current.revision,1);
 });
+
+function createPartnerBrandingApi(options) {
+  const readAdministration=async()=>{
+    const pack=await options.store.getCurrentPackage(operatorId);
+    return {revision:'admin-fixture',value:{gameLane:'indexed',gameLanes:[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'}],
+      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId,gameLaneId:'indexed',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
+  };
+  return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
+}

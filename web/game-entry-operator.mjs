@@ -98,7 +98,13 @@ export function createGameEntrySelector({ policy, packages = null, log = console
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
-    const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: publicPackageBranding(current.branding) },
+    const branding=publicPackageBranding(current.branding);
+    // Company branding is shared; layer choices belong to one frozen presentation.
+    // Without an explicit lane, the existing first-presentation default applies.
+    if(frozen&&(branding.lane??frozen.lanes[0].id)!==presentationLane.id) {
+      for(const key of ['dealer','table','background','color','tableColor'])delete branding[key];
+    }
+    const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding },
       frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane,
       frozen?.schemaVersion === 2 ? frozen.registeredDealers : saved.project?.dealers);
     if(frozen) {

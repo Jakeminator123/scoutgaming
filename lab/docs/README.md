@@ -11,7 +11,7 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
 **En presentation är en återanvändbar profil** med dealer, bord och bakgrund. Tekniskt heter den presentationslane och skiljer sig från spelets spellane.
-Börja i **Sammansättning**. Öppna Innehåll för klipp och exakta spelar-/dealerpositioner; fortsätt till Publicering när presentationen är sparad.
+Börja i **Sammansättning**: välj presentation och byt Dealer, Bord och Bakgrund i samma lagerpanel. **Storlek och placering** är öppet från start; Mobil och Desktop har egna inställningar. Spara och fortsätt till **Publicering**.
 Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
 På Innehåll kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
@@ -21,8 +21,8 @@ media-ID utan att ta över en annan dealers registrering. Varje film
 har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 
-I Sammansättning väljer du dealerklipp, bakgrund och bord i samma presentation.
-Förhandsvisa klipp är ett provval och ändrar ingen koppling till spelets händelser.
+I Sammansättning ändrar **Dealer** presentationens startdealer. **Förhandsvisa klipp** byter endast provfilm. **Grundloop och klipp** öppnar Innehåll för det sparade basklippet och andra händelser.
+**Grundloop** är det svenska namnet på `idle`, inte en separat inställning. Basklippet återkommer när dealern väntar; variationer är korta avbrott där stöd finns. En egen dealer publiceras med sitt valda, frysta basklipp. Astrids befintliga avancerade variationer och viktning finns kvar.
 Utdelning skiljer Spelarplats 1–7 från dealerns öppna och dolda kort.
 En position utan klipp hoppas över i spelet utan ersättningsfilm och stoppar inte
 publicering. Kortet visas fortfarande av spelmotorn. Vänster/mitten/höger är
@@ -37,7 +37,7 @@ I **Publicering** väljer du bolag och sparad presentation, anger rumsnamn och v
 **Skapa spelrum**. En kompatibel spellane återanvänds eller skapas automatiskt.
 Rummet och paketet sparas tillsammans; **Öppna spelrummet** leder till rätt bolag
 och rum i spelklienten. Paketval och manuell spellaneredigering finns under
-**Avancerat: paket och spellanes**. Partnerns val begränsas till det publicerade paketet.
+**Avancerat: paket och spellanes**. Nivå 2 kräver partnerinloggning och aktivt medlemskap; där kan personalen välja publicerade, kompatibla alternativ som bolaget får ändra. Geometrin följer den publicerade N1-sammansättningen. Ett bolag utan medlemmar får ingen N2-inloggning automatiskt.
 
 Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.
 Fullbildsklipp behåller sina egna bord och bakgrunder. En egen dealers grundloop
@@ -98,7 +98,7 @@ Administration och AI & chatt nås i sidomenyn.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
-arbetsytor ligger under **Spelbolag & spelare → Nivå 2**. Demo North och
+arbetsytor nås via **2 · Spelbolag** i sidhuvudet. Demo North och
 Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
 verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
 är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
@@ -114,7 +114,7 @@ ligger under Avancerat i respektive vy.
 
 Klippöversikten visar kompakta situationskort med **Spela standard** och
 **Inställningar**. Sök efter namn, replik eller plats; öppna **Filer** för
-enskilda filmer och mappinformation. Idle visar en rad per variant med
+enskilda filmer och mappinformation. Grundloop visar en rad per variation med
 användningen bredvid filnamnet. Öppna raden för beskrivning och tider;
 fördelning, enminutsprov och hjälp ligger i egna utfällbara avsnitt.
 Kategorierna och Administration delar samma lugna färger och knappar.
@@ -273,7 +273,7 @@ Driftens aktiverade funktioner och återstående liveprov följs i
 För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
 stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
 
-## Idle i Händelser
+## Grundloop och händelseklipp
 
 Astrids Händelser-sida och native-följning använder nu samma exakta mediefamilj:
 `box0` → `deal_pos1`, …, `box6` → `deal_pos7`, samt exakt `speak.line` →
@@ -308,7 +308,7 @@ inte filmens nya byteinnehåll till molnet.
 
 ### Astrids Deal-frekvenser
 
-I Administration/Lab → Kort och samma familj i avancerade labbet anger du procent för
+I **Innehåll → Astrid → Utdelning**, eller samma familj på Händelser, anger du procent för
 varje variant. Andelen gäller varje kort till just den platsen; återstoden
 använder standardfilen. 0 % behåller klippet för manuellt prov. Summan får
 vara högst 100 %. Ett saknat klipps andel går till standard. Högst fyra
@@ -332,7 +332,7 @@ en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
 Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
-Välj **Astrid → Idle** för den förenklade idleeditorn. Den har tre delar:
+Välj **Innehåll → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
 `idle_glance`, `idle_insulted`, `idle_smile`, `idle_yawn` och

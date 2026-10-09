@@ -9,6 +9,7 @@ import { createPreviewRuntime, operatorPackageRevision, sectionNotConnected, val
 import { destinationsFor, normalizeView, INTERNAL_LINKS } from './navigation.mjs';
 import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../lib/workspace-surfaces.mjs';
 import { PartnerAppearanceLoader } from '../partner-appearance-loader.mjs';
+import { partnerPackageProfiles } from '../../lib/partner-package-view.mjs';
 import { PartnerPackageView } from '../partner-package-view.mjs';
 import { partnerTeamView } from '../partner-team-loader.mjs';
 import './original.css';
@@ -132,7 +133,13 @@ function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}
         {surface==='internal'&&target&&<div className="kevin-internal-link"><span>Detta arbetsverktyg hör till intern personal.</span><a href={labUrl(target[0])}>{target[1]} →</a></div>}
         {surface==='partner'&&!real&&['theme','design','background','bj','dealers','test'].includes(view)&&<section className="kevin-lane-status" aria-label="Presentationslane och spelkoppling"><div><strong>Visad presentationslane: {snapshot.presentations.map(profile=>profile.name).join(', ')||'Ingen tilldelad presentationslane'} <span>· exempel</span></strong><p>Ingen publicerad presentationslane är ansluten till denna förhandsvisning. Marker, kort, bord och bakgrund kan provas lokalt men skickas inte till spelet.</p></div><span className="kevin-connection-label">Spelkoppling saknas</span><p>Operatören väljer bland tilldelade, godkända presentationslanes. Klipp, masker, urvalsregler och publicering hanteras i Kontrollpanelen.</p></section>}
         {page&&!disconnected&&<h2 className="kevin-shell-heading">{page.label}</h2>}
-        <ViewBoundary key={`${view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView original={original} runtime={runtime} view={view} notify={notify} apiBase={apiBase}/></ViewBoundary>
+        <ViewBoundary key={`${view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView original={original} runtime={runtime} view={view} notify={notify} apiBase={apiBase} onAppearanceSaved={saved=>setSnapshot(current=>{
+          if(current?.preview!==false||current.operator.id!==saved.operatorId||!saved.presentation)return current;
+          const previous=Number(current.packageRevision??current.operator.packageRevision);
+          if(Number.isSafeInteger(previous)&&saved.packageRevision<=previous)return current;
+          return {...current,packageRevision:String(saved.packageRevision),operator:{...current.operator,packageRevision:String(saved.packageRevision)},
+            branding:saved.branding,presentation:saved.presentation,presentations:partnerPackageProfiles(saved.presentation,saved.branding,current.operator.id)};
+        })}/></ViewBoundary>
       </main>
       {message&&<div className="toast" role="status">{message}</div>}
     </div>}
@@ -151,11 +158,11 @@ function DisconnectedSection({snapshot,view}) {
   return <div className="page-b kevin-disconnected"><section className="panel"><div className="empty"><h2>{title}</h2><p>{body}</p><a className="btn primary" href={destination}>{action}</a></div></section></div>;
 }
 
-function PreviewView({original,runtime,view,notify,apiBase}) {
+function PreviewView({original,runtime,view,notify,apiBase,onAppearanceSaved}) {
   const [tables,setTables]=React.useState(runtime.data.tables),[attention,setAttention]=React.useState([]);
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false&&['theme','design','background','dealers','test'].includes(view))return <>
     <PartnerPackageView snapshot={runtime.snapshot} view={view}/>
-    {view!=='test'&&<PartnerAppearanceLoader apiBase={apiBase} operatorSlug={runtime.snapshot.operator.slug} section={view}/>}
+    {view!=='test'&&<PartnerAppearanceLoader apiBase={apiBase} operatorSlug={runtime.snapshot.operator.slug} section={view} onSaved={onAppearanceSaved}/>}
   </>;
   if(DISCONNECTED[view]&&sectionNotConnected(runtime.snapshot,dataSection(view)))return <DisconnectedSection snapshot={runtime.snapshot} view={view}/>;
   if(view==='team'&&typeof runtime.teamView==='function'){

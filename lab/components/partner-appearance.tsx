@@ -1,7 +1,7 @@
 'use client';
 
 import type {PresentationPackage} from '../../web/presentation-layers.mjs';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import styles from './partner-appearance.module.css';
 import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
 
@@ -33,6 +33,7 @@ export type PartnerAppearanceInitial = {
   adjustable: readonly string[];
   presentation?: PresentationPackage;
   canConfigure?: boolean;
+  dealerChoices?: Readonly<Record<string, readonly string[]>>;
 };
 
 function textOf(branding: Readonly<Record<string, unknown>>, key: string) {
@@ -53,18 +54,21 @@ function brandingFields(branding: Readonly<Record<string, unknown>>) {
   return Object.fromEntries(keys.map(key => [key, textOf(branding, key)]));
 }
 
-export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'all' }: {
+export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'all', onSaved }: {
   initial: PartnerAppearanceInitial;
   apiBase: string;
   operatorSlug: string;
   section?: 'all'|'theme'|'design'|'background'|'dealers';
+  onSaved?: (saved: PartnerAppearanceInitial) => void;
 }) {
   const [laneId,setLaneId]=useState(initial.presentation?.lanes.find(row=>row.id===initial.branding.lane)?.id??initial.presentation?.lanes[0]?.id??'');
   const lane=initial.presentation?.lanes.find(row=>row.id===laneId);
   const allowed = new Set<string>(lane?effectivePartnerAdjustments(lane):initial.adjustable);
   const editable=initial.canConfigure!==false;
+  const dealerChoices=initial.dealerChoices?.[laneId]??[];
+  if(lane&&!dealerChoices.length)allowed.delete('dealer');
   const fields=ADJUSTMENTS.filter(([id])=>section==='all'||section==='theme'&&id==='branding'||section==='design'&&['table','table.color'].includes(id)||section==='background'&&id==='background'||section==='dealers'&&id==='dealer');
-  const [choices,setChoices]=useState<Record<string,string>>(()=>Object.fromEntries(['background','table','dealer'].map(role=>[role,textOf(initial.branding,role)])));
+  const [choices,setChoices]=useState<Record<string,string>>(()=>Object.fromEntries(['background','table','dealer'].map(role=>[role,initial.branding.lane===laneId||!initial.branding.lane?textOf(initial.branding,role):''])));
 
   const [revision, setRevision] = useState(initial.packageRevision);
   const [color, setColor] = useState(textOf(initial.branding, TABLE_COLOR_KEY)||lane?.layers.table.colors?.[0]||'#000000');
@@ -72,18 +76,20 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'a
   const [problem, setProblem] = useState('');
   const [saved, setSaved] = useState('');
   const [busy, setBusy] = useState(false);
+  const busyRef=useRef(false);
   const colorHex = HEX.test(color);
   const picker = colorHex ? expandHex(color) : '#000000';
 
   async function save() {
     const branding: Record<string, string|null> = {};
-    if(!editable)return;
+    if(!editable||busyRef.current)return;
     if(lane){branding.lane=lane.id;for(const role of ['background','table','dealer'] as const)if(fields.some(([id])=>id===role)&&allowed.has(role))branding[role]=choices[role]||null;}
 
     if (fields.some(([id])=>id==='table.color')&&allowed.has('table.color')) branding[TABLE_COLOR_KEY] = expandHex(color).toLowerCase();
     if (fields.some(([id])=>id==='branding')&&allowed.has('branding')) {
       for (const [key, value] of Object.entries(texts)) branding[key] = value;
     }
+    busyRef.current=true;
     setBusy(true);
     setProblem('');
     setSaved('');
@@ -99,15 +105,18 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'a
         setProblem('Någon annan har sparat. Ladda om.');
         return;
       }
-      if (!response.ok || typeof payload?.packageRevision !== 'number') {
+      if (!response.ok || payload?.operatorId!==initial.operatorId || !Number.isSafeInteger(payload?.packageRevision) || payload.packageRevision<=revision
+        || !payload.branding || !Array.isArray(payload.lanes) || (initial.presentation&&!payload.presentation)) {
         setProblem(typeof payload?.error === 'string' ? payload.error : 'Kunde inte spara.');
         return;
       }
       setRevision(payload.packageRevision);
       setSaved(String(payload.packageRevision));
+      onSaved?.({...payload,canConfigure:initial.canConfigure});
     } catch {
       setProblem('Kunde inte spara.');
     } finally {
+      busyRef.current=false;
       setBusy(false);
     }
   }
@@ -115,11 +124,12 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'a
   return (
     <section className={styles.panel}>
       <p>Revision {revision}</p>
-      {initial.presentation?<label>Lane<select value={laneId} onChange={event=>{
+      {initial.presentation?<label>Presentation<select disabled={!editable||busy} value={laneId} onChange={event=>{
+        if(busyRef.current)return;
         setLaneId(event.target.value);const next=initial.presentation?.lanes.find(row=>row.id===event.target.value);
-        setChoices(Object.fromEntries(['background','table','dealer'].map(role=>[role,next?.layers[role as 'background'|'table'|'dealer'].default??''])));
-        setColor(next?.layers.table.colors?.[0]??'#000000');
-      }}>{initial.presentation.lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:<p>Lanes {initial.lanes.join(', ')}</p>}
+        setChoices(Object.fromEntries(['background','table','dealer'].map(role=>[role,(initial.branding.lane??initial.presentation?.lanes[0]?.id)===next?.id?textOf(initial.branding,role):''])));
+        setColor((initial.branding.lane??initial.presentation?.lanes[0]?.id)===next?.id?textOf(initial.branding,TABLE_COLOR_KEY)||next?.layers.table.colors?.[0]||'#000000':next?.layers.table.colors?.[0]??'#000000');
+      }}>{initial.presentation.lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:<p>Presentationer {initial.lanes.join(', ')}</p>}
 
       {saved ? <p role="status">Sparad revision {saved}</p> : null}
       {problem ? <p role="alert">{problem}</p> : null}
@@ -131,7 +141,7 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'a
           return (
             <label key={id} className={styles.row}>
               {label}
-              <input value={DENIED} disabled readOnly />
+              <input value={id==='dealer'&&lane?.operatorAdjustable.includes('dealer')&&!dealerChoices.length?'Inget spelbart dealerval i de publicerade rummen':DENIED} disabled readOnly />
             </label>
           );
         }
@@ -165,8 +175,12 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'a
           );
         }
         const layer=lane?.layers[id as 'background'|'table'|'dealer'];
-        return <label key={id} className={styles.row}>{label}<select aria-label={label} disabled={!layer} value={choices[id]??''} onChange={event=>setChoices(current=>({...current,[id]:event.target.value}))}>
-          <option value="">Lanens standard</option>{layer?.allowed.map(value=><option key={value} value={value}>{initial.presentation?.assets.find(asset=>asset.id===value)?.label??value}</option>)}
+        const values=id==='dealer'?dealerChoices:layer?.allowed??[];
+        const labelOf=(value:string)=>initial.presentation?.assets.find(asset=>asset.id===value)?.label
+          ??(initial.presentation?.schemaVersion===2?initial.presentation.registeredDealers.find(dealer=>dealer.id===value)?.label:undefined)
+          ??({astrid:'Astrid',vera:'Vera',amira:'Amira',mei:'Mei'} as Record<string,string>)[value]??value;
+        return <label key={id} className={styles.row}>{label}<select aria-label={label} disabled={!layer||!values.length} value={choices[id]??''} onChange={event=>setChoices(current=>({...current,[id]:event.target.value}))}>
+          <option value="">Standard{layer?.default?`: ${labelOf(layer.default)}`:''}</option>{values.map(value=><option key={value} value={value}>{labelOf(value)}</option>)}
         </select></label>;
       })}
       </fieldset>
