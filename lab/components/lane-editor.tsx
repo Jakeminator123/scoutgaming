@@ -150,7 +150,7 @@ export function LaneEditor({ project, onEdit: onModelEdit, selectedId: controlle
         <label className={styles.field}>Id
           <input value={draftId} aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} />
         </label>
-        <label className={styles.field}>Namn
+        <label className={styles.field}>Namn på ny presentation
           <input value={draftLabel} maxLength={80} onChange={event => setDraftLabel(event.target.value)} />
         </label>
         <button type="submit" className="sg-btn sg-btn-secondary">Skapa presentation</button>
@@ -191,7 +191,7 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
     <h3>{lane.label}</h3>
     <a className="sg-btn sg-btn-secondary" aria-disabled={navigationBlocked} onClick={event=>{if(navigationBlocked)event.preventDefault();}} href={labUrl(`/control/preview?lane=${encodeURIComponent(lane.id)}`)}>Ändra sammansättning →</a>
     {navigationBlocked?<p className={styles.help}>Spara dina ändringar innan du öppnar sammansättningen.</p>:null}
-    <label className={styles.field}>Namn
+    <label className={styles.field}>Presentationens namn
       <input value={label} maxLength={80} onChange={event => {
         const value = event.target.value;
         editLane(draft => { draft.label = value; }, () => setLabel(value));
