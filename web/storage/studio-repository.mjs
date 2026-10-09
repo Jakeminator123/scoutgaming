@@ -115,6 +115,24 @@ export function createStudioRepository({ pool, scope } = {}) {
       WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid`, [id])).rows[0]);
   }
   const api = {
+    async withTransactionClient(work) {
+      const active = context.getStore();
+      if (typeof work !== 'function' || !active || active.closed || active.readOnly
+        || active.pool !== pool || active.scopeKey !== scopeKey || active.failed) {
+        throw poison(new StudioStorageError('studio_invalid_transaction', 503));
+      }
+      const client = Object.freeze({ query: async (text, values = []) => {
+        if (context.getStore() !== active || active.closed || active.failed) throw poison(new StudioStorageError('studio_invalid_transaction', 503));
+        // Shared SQL follows the repository's scope-first parameter convention.
+        // Trusted adapters own SQL structure; callers cannot substitute a tenant.
+        if (typeof text !== 'string' || !Array.isArray(values) || values.length < 2
+          || values[0] !== scope.environment || values[1] !== scope.workspaceId) {
+          throw poison(new StudioStorageError('studio_scope_mismatch', 409));
+        }
+        try { return await active.client.query(text, [...values]); } catch (error) { throw poison(error); }
+      } });
+      try { return await work(client); } catch (error) { throw poison(error); }
+    },
     scope, transaction,
     readDocument(kind) {
       return operation(() => validateDocumentKind(kind), checked => loadDocument(checked), true);

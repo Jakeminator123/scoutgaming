@@ -39,3 +39,14 @@ test('server marker changes player links without new browser flags and keeps off
   globalThis.document.documentElement.dataset = {};
   assert.equal(dealerVersionPath('mei','original'),'/?dealer=mei');
 });
+
+test('offline decoration opts in to validated dealer metadata without claiming the Neon game URL', () => {
+  const html = '<html lang="en"><body></body></html>';
+  const selection = { lane: 'legacy', dealer: 'mei', presentation: 'original' };
+  const decorated = decorateGameEntryHtml(html, {}, selection, { offline: true });
+  assert.match(decorated, /data-game-lane="legacy" data-game-dealer="mei" data-game-presentation="original"/);
+  assert.doesNotMatch(decorated, /data-game-path=/);
+  assert.equal(decorateGameEntryHtml(html, {}, selection), html);
+  assert.throws(() => decorateGameEntryHtml(html, {}, { ...selection, dealer: '" onclick="bad' }, { offline: true }));
+  assert.match(decorateGameEntryHtml(html, env, selection, { offline: true }), /data-game-path="\/blackjack"/);
+});

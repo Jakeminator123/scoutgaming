@@ -77,6 +77,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, now 
     const published = await operators.publishPackage({
       actor: context.actor.user,
       operatorId: context.body.operatorId,
+      expectedRevision: current?.revision ?? null,
       lanes,
       games: current?.games?.length ? [...current.games] : ['blackjack'],
       tables: current ? [...current.tables] : [],

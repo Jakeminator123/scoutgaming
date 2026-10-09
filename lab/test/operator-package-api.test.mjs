@@ -5,42 +5,14 @@ import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createSeedProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://studio.example';
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const session = { user: 'lane-actor', role: 'admin', scope };
 const clock = () => 1_700_000_000_000;
 
-function memoryPool() {
-  const tables = { operators: [], operator_packages: [] };
-  const pgError = code => Object.assign(new Error('fixture'), { code });
-  async function query(text, values = []) {
-    const tag = /\/\* operator-store:([a-z-]+) \*\//.exec(text)?.[1];
-    const [environment, workspace] = values;
-    const scoped = name => tables[name].filter(row => row.environment_id === environment && row.workspace_id === workspace);
-    if (tag === 'list-operators') return { rows: scoped('operators').sort((a, b) => a.slug.localeCompare(b.slug)) };
-    if (tag === 'create-operator') {
-      if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], slug: values[3], name: values[4], status: values[5], created_at_ms: values[6] };
-      tables.operators.push(row);
-      return { rows: [row] };
-    }
-    if (tag === 'publish-package') {
-      if (!scoped('operators').some(row => row.operator_id === values[2])) throw pgError('23503');
-      const revision = scoped('operator_packages').filter(row => row.operator_id === values[2]).reduce((max, row) => Math.max(max, Number(row.package_revision)), 0) + 1;
-      const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], package_revision: revision, lanes: values[3], games: values[4], tables: values[5], branding: values[6], published_at_ms: values[7] };
-      tables.operator_packages.push(row);
-      return { rows: [row] };
-    }
-    if (tag === 'current-package') {
-      const rows = scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1);
-      return { rows };
-    }
-    throw new Error(`untagged query: ${text}`);
-  }
-  const pool = { query, async connect() { return { query, release() {} }; } };
-  return pool;
-}
+const memoryPool = operatorMemoryPool;
 
 function apiFor(pool, project = createSeedProject(), storeFactory) {
   const lane = createOperatorPackageApi({ pool, scope, project, now: clock, storeFactory });

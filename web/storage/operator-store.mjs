@@ -126,10 +126,10 @@ function queryRunner(sql) {
 
 // sql is async (text, values) => rows, or a client with sql.query(text, values).
 // The same bound-parameter shape as the other Postgres stores. Not a template tag.
-export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
+export async function createOperatorStore({ sql, scope, now = Date.now, transaction = null } = {}) {
   scope = validateStudioScope(scope);
   const run = queryRunner(sql);
-  if (typeof now !== 'function') fail('studio_invalid_configuration', 503);
+  if (typeof now !== 'function' || transaction !== null && typeof transaction !== 'function') fail('studio_invalid_configuration', 503);
   const parameters = [scope.environment, scope.workspaceId];
   async function query(text, values = []) {
     let result;
@@ -287,6 +287,16 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
   // admin and both commit (write skew) unless the check and the write share
   // one connection: lock the operator, then read, then write.
   async function withOperatorLock(work) {
+    if (transaction) return transaction(async client => {
+      const run = queryRunner(client);
+      return work(async (text, values = []) => {
+        let result;
+        try { result = await run(text, [...parameters, ...values]); } catch (error) { throw studioStorageFailure(error); }
+        if (Array.isArray(result)) return result;
+        if (Array.isArray(result?.rows)) return result.rows;
+        fail('studio_storage_unavailable');
+      });
+    });
     if (typeof sql?.connect !== 'function') fail('studio_invalid_configuration', 503);
     let client, begun = false;
     try {
@@ -451,13 +461,28 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
     });
   }
   async function publishPackage(input = {}) {
-    actorOf(input);
-    const operatorId = idText(ownValue(input, 'operatorId'));
-    const lanes = canonicalIdList(ownValue(input, 'lanes'));
-    const games = canonicalIdList(ownValue(input, 'games'));
-    const tables = canonicalIdList(ownValue(input, 'tables'));
-    const branding = canonicalBranding(ownValue(input, 'branding'));
-    const row = (await query(`/* operator-store:publish-package */
+    return withOperatorLock(async txQuery => {
+      // Validation is part of the transaction callback, so a caught local error
+      // poisons a shared repository mutation just like an SQL/CAS failure.
+      actorOf(input);
+      const operatorId = idText(ownValue(input, 'operatorId'));
+      const lanes = canonicalIdList(ownValue(input, 'lanes'));
+      const games = canonicalIdList(ownValue(input, 'games'));
+      const tables = canonicalIdList(ownValue(input, 'tables'));
+      const branding = canonicalBranding(ownValue(input, 'branding'));
+      const expectedRevision = optionalOwn(input, 'expectedRevision');
+      if (expectedRevision !== undefined && expectedRevision !== null) integer(expectedRevision, 1, 'studio_invalid_data', 422);
+      if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
+      if (expectedRevision !== undefined) {
+        const rows = await txQuery(`/* operator-store:current-package */
+          SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms
+          FROM croupier_studio.operator_packages
+          WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+          ORDER BY package_revision DESC LIMIT 1`, [operatorId]);
+        const current = rows[0] ? packageRow(rows[0]) : null;
+        if ((current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
+      }
+      const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
         (environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms)
       SELECT $1,$2,$3,COALESCE((SELECT MAX(package_revision) FROM croupier_studio.operator_packages
@@ -465,7 +490,8 @@ export async function createOperatorStore({ sql, scope, now = Date.now } = {}) {
       RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms`,
     [operatorId, lanes, games, tables, branding, clock()]))[0];
     if (!row) fail('studio_storage_unavailable');
-    return packageRow(row);
+      return packageRow(row);
+    });
   }
   return Object.freeze({
     scope, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,

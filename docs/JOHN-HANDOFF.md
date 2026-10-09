@@ -1,5 +1,46 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
+
+Kompatibilitetsdelen inför rumsschema 2 med separata presentationLaneId och
+gameLaneId. En uttrycklig /play/blackjack?operator=<slug>&table=<rum-id> kräver
+ett live-rum som ägs av bolaget, finns i dess paket och binder en befintlig
+spellane till en fryst presentation. Okänt/främmande/inaktivt rum ger 404;
+otillgänglig lagring ger 503. Ingen reserv-lane väljs för en uttrycklig rumslänk.
+Äldre ingång utan table och äldre sparade rum behåller sitt läsbeteende.
+
+Publishern använder nu operatörslås och expectedRevision under samma SQL-
+transaktion. Det delade repository-klientgränssnittet behåller scope och
+återställer administration, historik, audit och paket även när ett fångat
+valideringsfel uppstår. N2:s redan levererade revisionsargument får därmed
+atomiskt konfliktskydd. Ingen SQL-migration behövs.
+
+Runtime annonserar capability v2 (rooms: operator-owned-v2). Native Studio
+kräver den före nya rumsskrivningar. Denna leverans aktiverar endast läsare
+och transaktionsstöd; rum-writer och dess UI levereras separat. Render måste
+uppdateras till denna etapp innan den nya rumfunktionen kan användas.
+
+Verifierat: rum/entry/policy/readiness-regressioner 81/81 PASS; oberoende
+CAS-granskning 40/40 PASS efter två rättade transaktionsfall. Offline-ingång
+27/27 PASS; generation-media 3/3 och local-comparison 2/2 PASS. Tempfixturen
+kopierar entry-kontraktets publika modulberoenden och lämnar inga servrar kvar.
+Astrid, Vera, Amira och Mei spelades lokalt två gånger var på faktisk player-
+väg med rätt dealer och utan JavaScript-fel. Åtta privata bilder och kvitton
+finns utanför Git. Oförändrade media och sync-probe PASS; ingen ny läppsynk-
+acceptans eller produktionsrepetition hävdas av detta.
+
+Föregående Studio-etapp 3d4faaf3 har grön exakt-SHA CI 37935300051 och Vercel
+production READY. N2-etapp 82d01ecf är pushad; dess CI/utrullning verifieras
+separat. Renders exakta SHA är ännu inte verifierad. Webbläsarstyrningen
+felar i verktygets anslutning; den inloggade produktionsfliken har inte klickats.
+
+Nästa stopptest: Johns spelbolag → separat dealer Johanna → Nora-filens egna
+Johanna-mediaregistrering som grundloop + bakgrundsfilm + PNG-bord → redigerbar
+sammansättning → publicerat rum → faktisk spelklient, med bild per steg och
+två idlevarv. Generiskt registrerat dealerstöd och fryst idle-descriptor byggs
+som nästa etapp; ingen Johanna-specialkod eller omdöpning av Noras post.
+
+
 ## 9 oktober 2026: N2-paket och verifierad legacyutrensning
 
 Genomfört efter avstämning med **Förenkla menyer och förhandsvisning**.
@@ -39,7 +80,7 @@ Den privata systemkartan är uppdaterad som Canvas.
 
 ## 9 oktober 2026: samlad Studio-etapp för löpande leverans
 
-**Implementerad och lokalt verifierad; produktionskvittot uppdateras efter push.**
+**Publicerad som 3d4faaf3; exakt-SHA CI grön och Vercel production READY.**
 Studio har Sammansättning, Innehåll och Publicering. Drift, AI & chatt och
 Administration är utfällbara grupper; Bolag & team ligger på
 `/control/lanes?tab=companies`. Sammansättning samlar preview och lageruppladdning;
@@ -69,9 +110,9 @@ Verifierat före commit:
 - Oberoende granskning hittade och ledde till rättade spar-/dubbelklicks- och
   saknad-fil-fall. Lip-sync eller produktionsrepetition är inte godkänd av dessa tester.
 
-**Återstår:** commit-hook, exakt-SHA CI/deployment och produktionskontroll;
-riktig skapa-spelrum-kedja och full Nora/fyradealer-repetition. Ingen rumfunktion
-eller ny schema-/databas-migration ingår i denna etapp. Johns Nivå 2-brief/skiss
+**Återstår:** produktionskontroll och riktig skapa-spelrum-kedja med Nora/Johanna.
+Originalfyras lokala dubbelrepetition är verifierad i nästa kompatibilitetsdel
+ovan. Ingen rumfunktion eller ny SQL-migration ingick i 3d4faaf3. Johns Nivå 2-brief/skiss
 finns i teaminbox #9. Ingen kandidatmapp från separat legacygranskning har raderats.
 
 ## 9 oktober 2026: arbetsplan för Sammansättning som nav

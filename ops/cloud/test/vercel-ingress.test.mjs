@@ -161,7 +161,7 @@ test('actual isolated Render gateway forwards public feature metadata only to th
     });req.on('error',reject);req.end();
   });
   const result=await get('/api/presentation/capabilities');assert.equal(result.status,200);
-  assert.deepEqual(JSON.parse(result.body),{schemaVersion:1,registeredDealerIds:['nora'],compositing:'per-clip'});
+  assert.deepEqual(JSON.parse(result.body),{schemaVersion:2,registeredDealerIds:['nora'],compositing:'per-clip',rooms:'operator-owned-v2'});
   assert.equal(result.headers['cache-control'],'no-store');assert.equal((await get('/api/presentation/capabilities','HEAD')).body,'');
   assert.equal((await get('/api/presentation/config')).status,421);
   assert.equal((await get('/api/presentation/capabilities','POST')).status,421);assert.equal(calls,2);

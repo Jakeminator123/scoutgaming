@@ -17,7 +17,8 @@ function documentFeatures(kind, value) {
       ? value.gameLanes.map(row => row?.dealer).filter(id => id === 'nora') : [];
   const composition = Boolean(kind === 'project' && Array.isArray(value?.lanes)
     && value.lanes.some(lane => object(lane) && Object.hasOwn(lane, 'composition')));
-  return { required: dealers.length > 0 || composition, dealers, composition };
+  const rooms = Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.schemaVersion === 2));
+  return { required: dealers.length > 0 || composition || rooms, dealers, composition, rooms };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -32,6 +33,7 @@ function mutationFeatures(input) {
     required: features.some(value => value.required),
     dealers: [...new Set(features.flatMap(value => value.dealers))],
     composition: features.some(value => value.composition),
+    rooms: features.some(value => value.rooms),
   };
 }
 function trustedOrigin(env) {
@@ -58,8 +60,9 @@ async function boundedCapabilities(response) {
       chunks.push(Buffer.from(value));
     }
     const value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    if (!object(value) || Object.keys(value).sort().join(',') !== 'compositing,registeredDealerIds,schemaVersion'
-      || value.schemaVersion !== 1 || value.compositing !== 'per-clip'
+    const expectedKeys = value?.schemaVersion === 2 ? 'compositing,registeredDealerIds,rooms,schemaVersion' : 'compositing,registeredDealerIds,schemaVersion';
+    if (!object(value) || Object.keys(value).sort().join(',') !== expectedKeys
+      || ![1, 2].includes(value.schemaVersion) || value.schemaVersion === 2 && value.rooms !== 'operator-owned-v2' || value.compositing !== 'per-clip'
       || !Array.isArray(value.registeredDealerIds) || value.registeredDealerIds.length !== 1
       || value.registeredDealerIds[0] !== 'nora') fail();
     return value;
@@ -71,6 +74,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
   function covered(features, active) {
     return !features.required || Boolean(active?.verified
       && (!features.composition || active.features.composition)
+      && (!features.rooms || active.features.rooms)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -90,7 +94,8 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       });
       if (response.url && response.url !== endpoint) fail();
       const capabilities = await boundedCapabilities(response);
-      if (features.dealers.some(id => !capabilities.registeredDealerIds.includes(id))) fail();
+      if (features.dealers.some(id => !capabilities.registeredDealerIds.includes(id))
+        || features.rooms && capabilities.rooms !== 'operator-owned-v2') fail();
     } catch {
       try { await response?.body?.cancel(); } catch { /* Keep only the fixed public code. */ }
       fail();

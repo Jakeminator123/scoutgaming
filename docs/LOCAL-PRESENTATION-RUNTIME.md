@@ -16,6 +16,25 @@ Spara och fortsätt. Filregistreringens prepare/Blob/commit och revisionsskydd
 är kvar även när användaren bara behöver välja fil en gång.
 
 
+## Rum och pakettransaktion, 9 oktober 2026
+
+Rumsschema 2 skiljer presentationslane från spellane: {schemaVersion:2,id,
+name,operatorId,presentationLaneId,gameLaneId,state}. Ägaren i administrationen,
+paketets tables/lanes, fryst presentation och verklig spellane måste stämma.
+Explicit table-query kräver live-rum; annars 404 eller 503, aldrig en annan
+lane som reserv. Äldre rum och ingångar utan table läses fortsatt.
+
+Runtime capability v2 annonserar rooms=operator-owned-v2. Native-grinden
+tillåter tidigare v1-funktioner men kräver v2 före rumsskrivning, även rollback.
+Room-writer/UI är en separat leverans efter kompatibilitetsläsaren på Render.
+
+OperatorStore.publishPackage låser operatören innan aktuell revision jämförs
+och ny paketrevision läggs in. expectedRevision=null kräver första paketet.
+withTransactionClient används bara inom samma aktiva skrivtransaktion/scope;
+scopefel, databasfel och fångade publiceringsvalideringsfel poisonar hela
+transaktionen. Inga provideranrop får ske under SQL-låset.
+
+
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
 Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
 [anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
