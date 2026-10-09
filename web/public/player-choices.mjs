@@ -6,7 +6,7 @@
 import { isOperatorSlug } from './game-lanes.mjs';
 
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
-const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge' });
+const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge', nora: 'Nora' });
 
 export function choicesStorageKey(operator) {
   return `croupier.choices.${isOperatorSlug(operator) ? operator : 'default'}`;

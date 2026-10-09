@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server.js';
 import { createStudioDocumentApi } from '../lib/studio-document-api.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
+import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 import { createSocialPolicy } from '../lib/social-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
@@ -166,4 +168,54 @@ test('Next stripped document routes use the logical public request for GET, PUT,
   }
   assert.equal((await api.handle(new NextRequest(origin+'/api/project',{method:'PUT',headers:{...headers,'content-type':'application/json'},body:JSON.stringify({...body,actor:'forged'})}))).status,400);
   assert.equal(pool.snapshot().history.length,2);
+});
+
+test('Native Nora composition saves preflight before outer product SQL; old saves never fetch and old Render preserves data', async () => {
+  const pool=createStudioMemoryPool(),raw=createStudioRepository({pool,scope});
+  const initial=await raw.initializeDocument('project',{value:createSeedProject(),actor:'migration'});
+  let productLocked=false,activeSql=0,fetches=0,ready=false;
+  const originalConnect=pool.connect.bind(pool);
+  pool.connect=async()=>{
+    const client=await originalConnect(),originalQuery=client.query.bind(client);
+    let begun=false;
+    client.query=async(sql,...args)=>{
+      if(/^BEGIN\b/.test(sql)){begun=true;activeSql++;}
+      try{return await originalQuery(sql,...args);}
+      finally{if(/^(COMMIT|ROLLBACK)\b/.test(sql)&&begun){activeSql--;begun=false;}}
+    };
+    return client;
+  };
+  const repository=wrapNativePresentationRepository(raw,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async()=>{
+    assert.equal(productLocked,false);assert.equal(activeSql,0,'HTTP must precede all SQL BEGINs');fetches++;
+    return ready ? Response.json({schemaVersion:1,registeredDealerIds:['nora'],compositing:'per-clip'}) : new Response(null,{status:503});
+  }});
+  const api=createStudioDocumentApi({repository,config,
+    authorize:async()=>({user:'Operator',role:'admin',scope}),
+    validateProjectBindings:async()=>{},
+    mutationTransaction:(work,options)=>repository.withMutationContext(async()=>{
+      productLocked=true;try{return await work();}finally{productLocked=false;}
+    },options.presentationMutation),
+  });
+  const oldDraft=structuredClone(initial.value);oldDraft.events[0].label='Old baseline field';
+  const old=await api.handle(request(undefined,{method:'PUT',body:{project:oldDraft,expectedRevision:initial.revision}}));
+  assert.equal(old.status,200);assert.equal(fetches,0);
+  const saved=await raw.readDocument('project'),draft=addDealer(saved.value,'nora','Nora');
+  if(!draft.lanes?.length)draft.lanes=[defaultPresentationLane()];
+  draft.lanes[0].composition=defaultCompositionSettings();
+  const before=pool.snapshot(),connects=pool.connects;
+  const denied=await api.handle(request(undefined,{method:'PUT',body:{project:draft,expectedRevision:saved.revision}}));
+  assert.equal(denied.status,503);
+  assert.deepEqual(await denied.json(),{error:PRESENTATION_RUNTIME_UPDATE_MESSAGE,code:PRESENTATION_RUNTIME_UPDATE_REQUIRED});
+  assert.equal(pool.connects,connects,'missing runtime capability must not begin a write transaction');
+  assert.equal(pool.snapshot().history.length,before.history.length);assert.equal(pool.snapshot().audits.length,before.audits.length);
+  assert.deepEqual((await raw.readDocument('project')).value,saved.value);assert.equal(fetches,1);
+  ready=true;
+  const accepted=await api.handle(request(undefined,{method:'PUT',body:{project:draft,expectedRevision:saved.revision}}));
+  assert.equal(accepted.status,200);assert.equal(fetches,2);
+  const value=(await accepted.json()).project;
+  assert.equal(value.dealers.some(row=>row.id==='nora'),true);
+  assert.deepEqual(value.lanes[0].composition,draft.lanes[0].composition);
+  assert.deepEqual((await raw.readDocument('project')).value,value);
+  assert.equal(pool.snapshot().history.length,before.history.length+1);
+  assert.equal(pool.snapshot().audits.at(-1).actor,'Operator');assert.equal(activeSql,0);
 });

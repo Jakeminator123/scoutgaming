@@ -1,6 +1,6 @@
 import {validateComposition} from './presentation-composition.mjs';
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
-const dealers = new Set(['vera','astrid','amira','mei','paow','dragge']);
+const dealers = new Set(['vera','astrid','amira','mei','paow','dragge','nora']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
 export function publicGamePath(env = {}) {
@@ -63,6 +63,8 @@ export function decorateGameEntryHtml(html,env,selection) {
   if (selection) {
     if (!isGameLaneId(selection.lane) || !dealers.has(selection.dealer) || !['local','original','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
+    if(selection.dealer==='nora'){if(selection.presentation!=='local'||selection.localDealer!=='nora')throw Error('Invalid game presentation');
+      attributes+=' data-game-local-dealer="nora"';}
     const packaged = selection.packageRevision !== undefined || selection.branding !== undefined;
     if (selection.operator !== undefined) {
       if (!isOperatorSlug(selection.operator)) throw Error('Invalid game presentation');

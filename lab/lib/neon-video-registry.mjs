@@ -4,6 +4,7 @@ import { canonicalStudioJson, StudioStorageError, studioStorageFailure, validate
 import { getVideoResponse, loadVideoRegistry } from './video-registry.mjs';
 import { isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
 import { isMediaBlobIndexConfigured } from './media-blob-index.mjs';
+import { savedVideoDealerIds } from './video-dealer-registration.mjs';
 
 // The deployed immutable bank is preserved. New review records/classification
 // come from Neon exclusively; an unavailable database never means an empty bank.
@@ -19,11 +20,13 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     // Ignore both retired local upload and classification files.
     readUploads: async () => {
       try {
+        const dealerIds = await savedVideoDealerIds(repository);
         const records = await repository.listMedia({ limit: 5000 });
         return records.map(row => {
           validateRevision(row.revision);
           const { revision, updatedAt, ...record } = row;
           const checked = validateStudioMedia(record);
+          if (!dealerIds.has(checked.classification.dealerId)) throw new StudioStorageError('studio_dealer_not_registered',503);
           const storage = validatePrivateMedia({ provider: 'vercel-blob',
             pathname: checked.pathname, sha256: checked.sha256, size: checked.size, contentType: checked.contentType });
           return { id: checked.id, sha256: checked.sha256, size: checked.size,

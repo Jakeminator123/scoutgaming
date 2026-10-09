@@ -342,20 +342,20 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json' }
+  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {nora: ownIdle} }
     : { video: selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: selected.familyId } } }), { headers: { 'content-type': 'application/json' } });
   let proofs = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); } };
-  const controller = await createLocalPresentation({ player, host: element(), dealerId: 'astrid', version: () => 2,
+  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, version: () => 2,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
@@ -477,4 +477,44 @@ test('a newer ownership change discards a late selection before it can start a f
   const count = jobs.length;
   respond(new Response(JSON.stringify({ video: { id: 'old' }, decision: {} })));
   assert.equal(await pending, false); assert.equal(jobs.length, count);
+});
+
+test('Nora repeats only her exact configured silent idle, and stale frames cannot reopen the gate', async t => {
+  const ownIdle = {id:'nora-bound-idle',fileName:'nora-idle.mp4',sha256:'b'.repeat(64),src:'/api/presentation/videos/nora-bound-idle',
+    compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
+  const compositionCalls=[];
+  const composition={prepareClip:async key=>compositionCalls.push(key),renderFrame:()=>true,hold(){}};
+  const fixture=await controllerFixture(t,{dealerId:'nora',ownIdle,composition});
+  fixture.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(fixture.jobs.length,1);assert.equal(fixture.jobs[0].take.media.src,ownIdle.src);
+  assert.equal(fixture.jobs[0].options.muted,true);assert.equal(fixture.proofs,0);
+  fixture.jobs[0].options.onReceipt({state:'presented'});assert.equal(fixture.proofs,1);
+  fixture.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(fixture.jobs.length,2);assert.equal(fixture.jobs[1].take.media.src,ownIdle.src);
+  assert.equal(fixture.jobs[1].options.muted,true);assert.deepEqual(compositionCalls,[ownIdle.compositing,ownIdle.compositing]);
+  fixture.controller.state({action:true});assert.equal(fixture.jobs[1].options.signal.aborted,true);
+  fixture.jobs[1].options.onReceipt({state:'presented'});assert.equal(fixture.proofs,1);
+});
+
+test('Nora without a saved exact idle never borrows Astrid media',async t=>{
+  const missing=await controllerFixture(t,{dealerId:'nora'});missing.controller.start();
+  assert.equal(missing.jobs.length,0);assert.match(missing.status.textContent,/Ingen egen idlefilm/);
+});
+
+test('Nora never spins on an idle failure',async t=>{
+  const failed=await controllerFixture(t,{dealerId:'nora',ownIdle:{id:'own',fileName:'own.mp4',sha256:'a'.repeat(64)}});
+  failed.controller.start();assert.equal(failed.jobs.length,1);
+  failed.jobs[0].reject(new Error('own idle unavailable'));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(failed.jobs.length,1);assert.equal(failed.status.textContent,'Idle: own idle unavailable');
+});
+
+test('composed output follows every presented source frame before the receipt without changing card time',async t=>{
+  const {media,host}=filmFixture(t),owner=new AbortController(),events=[];
+  const result=playLocalFilm({host,src:'/own-exact',signal:owner.signal,
+    renderFrame:(source,metadata)=>{assert.equal(source,media[0]);events.push(['picture',metadata.mediaTime]);return true;},
+    onFrame:time=>events.push(['card',time]),onReceipt:row=>events.push(['receipt',row.state])});
+  media[0].emit('playing');media[0].frame(0);media[0].frame(31/24);
+  assert.equal(media[0].style.visibility,'hidden');
+  assert.deepEqual(events,[['receipt','start'],['picture',0],['receipt','presented'],['card',0],['picture',31/24],['card',31/24]]);
+  owner.abort();await assert.rejects(result,{name:'AbortError'});assert.equal(media[0].frames.size,0);
 });

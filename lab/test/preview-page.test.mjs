@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import {createSeedProject} from '../lib/studio-model.mjs';
+import {createSeedProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -47,11 +47,11 @@ test('Förhandsvisning edits three saved lane choices and keeps the separated de
   }));
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<h1>Förhandsvisning<\/h1>/);
-  assert.match(html, /Välj dealer, bord och bakgrund/);
+  assert.match(html, /Sätt ihop dealer, bord och bakgrund/);
   assert.match(html, /aria-label="Tre lager"/);
   assert.match(html, /<legend>Bord<\/legend>/);
   assert.match(html, /<legend>Bakgrund<\/legend>/);
-  assert.match(html, /Godkända fullbildsklipp innehåller bord och bakgrund/);
+  assert.match(html, /Fullbildsklippet behåller sin bild/);
   assert.match(html, /Frilagda dealerpaket · Paow och Dragge/);
   assert.match(html, /<button[^>]*disabled[^>]*>Spara lane<\/button>/);
   assert.match(html, /<iframe[^>]*title="Förhandsvisning · lagerprov"[^>]*src="[^"]*\/preview\/index\.html"/);
@@ -84,4 +84,24 @@ test('shared preview data authorization rejects unauthenticated and partner acce
   role='admin';unauthenticated=false;
   const data=await shared.studioUiInitialData(request);
   assert.equal(reads,2);assert.equal(data.status.provider,'neon');assert.equal(data.project.dealers.length,4);
+});
+
+test('registered Nora gets her own clip preview and intake link without borrowing Astrid media',()=>{
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
+  const project=addDealer(createSeedProject(),'nora','Nora');
+  const lane=defaultPresentationLane();lane.dealers.push('nora');lane.layers.dealer.allowed.push('nora');lane.layers.dealer.default='nora';
+  project.lanes=[lane];
+  const original=structuredClone(project);
+  const videos=[
+    {id:'nora-test',label:'Nora greenscreenprov',available:true,dealer:'nora',previewUrl:'/api/videos/nora-test',classification:{dealerId:'nora',eventId:'speak.goodluck',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}},
+    {id:'astrid-other',label:'ASTRID_SPEECH_SHOULD_NOT_BORROW',available:true,dealer:'astrid',previewUrl:'/api/videos/astrid-other'},
+    {id:'nora-missing',label:'UNAVAILABLE_NORA_TAKE',available:false,dealer:'nora',previewUrl:'/api/videos/nora-missing'},
+  ];
+  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos},initialStatus:{provider:'neon'}}));
+  assert.match(html,/<option value="nora" selected="">Nora<\/option>/);
+  assert.match(html,/Nora greenscreenprov/);
+  assert.doesNotMatch(html,/ASTRID_SPEECH_SHOULD_NOT_BORROW|UNAVAILABLE_NORA_TAKE/);
+  assert.match(html,/\/control\/videos\?dealer=nora&amp;event=speak.goodluck/);
+  assert.match(html,/Tröskel 0.23 · Mjukhet 0.15/);
+  assert.deepEqual(project,original);
 });

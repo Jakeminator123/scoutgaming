@@ -10,3 +10,12 @@ network_access = true
 
 [windows]
 sandbox = "elevated"
+
+# Existing DPAPI-protected connection; no token in configuration or output.
+[mcp_servers.gitguardian]
+command = "node"
+args = ["tools/gitguardian-mcp.mjs"]
+cwd = "C:/Users/jakob/dev/projects/scoutgame"
+enabled_tools = ["read_security_status", "read_source_binding", "read_repo_incidents"]
+default_tools_approval_mode = "writes"
+tool_timeout_sec = 120

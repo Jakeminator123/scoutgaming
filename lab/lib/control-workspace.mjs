@@ -23,6 +23,8 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
+  { href: '/control/preview', title: 'Videoeditor · tre lager', text: 'Välj dealerklipp, bakgrund och bord. Prova greenscreen, placering och mobil eller desktop.' },
+  { href: '/control/lanes', title: 'Lanes och bolagspaket', text: 'Spara tillåtna val och publicera kompositionen till ett spelbolag.' },
   { href: '/control/administration', title: 'Lanes, bord & konton', text: 'Skapa och välj lane under Spel, lanes & bord. Hantera personal, spelarkonton och partneråtkomst i samma administration.' },
   { href: '/control/clips', title: 'Dealers & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker och klippval.' },
   { href: '/control/events', title: 'Händelser', text: 'Översikt utan valt event. Öppna ett event för att koppla klipp, villkor och urvalsregler.' },

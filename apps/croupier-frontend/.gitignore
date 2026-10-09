@@ -34,3 +34,7 @@ runtime-ui/
 /public/presentation-runtime/
 /public/lab/
 /public/bo/
+
+/public/card-presentation/
+
+/public/composition-runtime/

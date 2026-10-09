@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server.js';
 import { createStudioMediaApi } from '../lib/studio-media-api.mjs';
@@ -25,6 +26,7 @@ const request = (path = '/studio/api/videos', method = 'GET', body, headers = {}
 });
 async function fixture(options = {}) {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({pool,scope});
+  seedSavedVideoProject(pool,scope);
   const classification = {dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Existing clip',notes:''};
   const record = {id:mediaId,sha256,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/astrid/review/uploads/${mediaId}/${sha256}.mp4`,classification};
   await repository.registerMedia(record,{actor:'migration'});

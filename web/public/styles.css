@@ -1112,3 +1112,6 @@ body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); 
 #scene[data-dealer-layer-enabled="false"] .local-presentation-film,
 #scene[data-dealer-layer-enabled="false"] #dealer-wrap,
 #scene[data-dealer-layer-enabled="false"] #dealer-hands-wrap {visibility:hidden;}
+
+.presentation-composed-film {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;}
+#scene[data-presentation-clip-mode="green-screen"] .local-presentation-still {visibility:hidden;}

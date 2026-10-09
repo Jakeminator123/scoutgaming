@@ -2,7 +2,7 @@ import {publicPackageBranding,readPackagePresentation} from '../../web/storage/p
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 
@@ -153,4 +153,29 @@ test('an empty project.lanes list accepts only the default mobile-phone lane', a
   await api.handle(request('operator-create-demo', {}));
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['vip-table'] }))).status, 422);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 200);
+});
+
+test('Nora publication requires her matching saved game lane before opening the operator store', async () => {
+  const project = addDealer(createSeedProject(), 'nora', 'Nora');
+  const lane = defaultPresentationLane();
+  lane.dealers.push('nora');
+  lane.layers.dealer.default = 'nora';
+  lane.layers.dealer.allowed.push('nora');
+  project.lanes = [lane];
+  let writes = 0;
+  const storeFactory = async () => { writes++; return {
+    getCurrentPackage: async () => null,
+    publishPackage: async record => ({...record,revision:1}),
+  }; };
+  const context = {body:{operatorId:'north',lanes:[lane.id]},actor:{user:'staff'}};
+  for(const gameLanes of [undefined,[{schemaVersion:1,id:lane.id,label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]]) {
+    const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes,storeFactory});
+    await assert.rejects(api.handlers.get('POST /studio/api/admin/operator-package')(context), error => error.statusCode === 422);
+  }
+  assert.equal(writes,0);
+  const gameLanes=[{schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}];
+  const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes:async()=>gameLanes,storeFactory});
+  const published=await api.handlers.get('POST /studio/api/admin/operator-package')(context);
+  assert.equal(writes,1);
+  assert.equal(published.presentation.lanes[0].layers.dealer.default,'nora');
 });

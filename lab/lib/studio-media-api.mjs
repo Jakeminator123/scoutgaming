@@ -2,6 +2,7 @@ import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
+import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'} });
@@ -67,9 +68,10 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
             // uploads are classified with prior metadata + exact bytes + row CAS.
             if (!current || current.sha256 !== body.sha256 || current.classification.familyId
               || canonicalStudioJson(body.previous) !== canonicalStudioJson(current.classification)) fail('studio_conflict',409);
+            await requireSavedVideoDealer(repository,body.metadata?.dealerId);
             await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.metadata,actor});
-          });
-        });
+          }, {presentationMutation:{metadata:body.metadata}});
+        }, {presentationMutation:{metadata:body.metadata}});
         return json(await videoRegistry());
       }
       if (request.method === 'POST' && path === base) fail('studio_media_upload_not_ready');

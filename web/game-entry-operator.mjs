@@ -34,7 +34,8 @@ export function createGameEntrySelector({ policy, packages = null, log = console
   }
   function withChoices(selection, saved, gameLanes) {
     const serverLane = gameLanes.find(row => row.id === selection.lane);
-    return { ...selection, choices: gameChoicesForLane(saved?.project?.lanes, selection.lane, serverLane) };
+    if(selection.dealer==='nora'&&(!saved.project?.dealers?.some(row=>row.id==='nora')||serverLane?.renderer!=='portrait-video'||serverLane.dealer!=='nora'))throw Object.assign(Error('presentation_dealer_unavailable'),{statusCode:503});
+    return { ...selection, ...(selection.dealer==='nora'?{localDealer:'nora'}:{}),choices: gameChoicesForLane(saved?.project?.lanes, selection.lane, serverLane) };
   }
   // { status: 200, selection } or { status: 404 }. Policy failures reject, as today.
   return async function selectGameEntry(query) {
@@ -68,17 +69,19 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (presentationLane) {
       const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer);
       if (dealer) selection = { ...selection, dealer };
+      else if(frozen)throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
     const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: publicPackageBranding(current.branding) },
-      frozen?{project:{lanes:frozen.lanes}}:saved,gameLanes);
+      frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes);
     if(frozen) {
       const layers=presentationLane.layers;
       next.composition={schemaVersion:1,
         background:{enabled:layers.background.enabled,mode:layers.background.mode,allowed:layers.background.allowed,default:layers.background.default},
         table:{enabled:layers.table.enabled,allowed:layers.table.allowed,default:layers.table.default},
-        dealer:{enabled:layers.dealer.enabled,compatibility:'full-frame'},
+        dealer:{enabled:layers.dealer.enabled,compatibility:presentationLane.composition?'per-clip':'full-frame'},
+        ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
         assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
     }
     return {status:200,selection:next};

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, validateStudioMedia } from '../../web/storage/studio-contract.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath, validatePrivateMedia } from './cloud-media-store.mjs';
 import { MAX_VIDEO_BYTES } from './video-intake.mjs';
+import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
 const exact = (value,keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
@@ -52,6 +53,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       const id = randomUUID();
       const record = validateStudioMedia({id,sha256:body.sha256,size:body.size,contentType:body.contentType,
         classification:body.classification,pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,body.contentType.slice(6))});
+      await requireSavedVideoDealer(repository,record.classification.dealerId);
       const expiresAt = now()+TTL;
       // Exact immutable path, bounded MIME/bytes/time, no overwrite. This short
       // client capability cannot authorize reads, deletes or another pathname.
@@ -67,6 +69,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
       const record = grant(body.ticket,actor), storage = validatePrivateMedia({provider:'vercel-blob',
         pathname:record.pathname,sha256:record.sha256,size:record.size,contentType:record.contentType});
+      await requireSavedVideoDealer(repository,record.classification.dealerId);
       // getPrivateMedia hashes every newly fetched complete object, validates
       // exact private URL/type/size and serves this prefix from the same bytes.
       const response = await privateMedia(storage,new Request(request.url,{headers:{Range:'bytes=0-31'}}),mediaOptions);
@@ -77,6 +80,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       if (!validHeader) fail('studio_invalid_media_format',415);
       return mutationTransaction(async () => {
         if (typeof stillAuthorized !== 'function' || await stillAuthorized() !== true) fail('studio_request_rejected',403);
+        await requireSavedVideoDealer(repository,record.classification.dealerId);
         const existing = await repository.getMedia(record.id);
         if (existing) {
           if (['sha256','size','contentType','pathname'].some(field => existing[field] !== record[field])) fail('studio_conflict',409);
@@ -86,7 +90,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
         // On DB/commit ambiguity preserve immutable bytes for explicit retry.
         // Never delete a potentially referenced object merely because a response failed.
         return {id:record.id,duplicate:result.duplicate};
-      });
+      }, {presentationMutation:{metadata:record.classification}});
     },
   });
 }

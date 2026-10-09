@@ -6,7 +6,13 @@ import { StudioError } from './project-store.mjs';
 import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
 import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath } from './cloud-media-store.mjs';
+import { BASE_DEALER_IDS, registeredDealerIds } from '../../web/dealer-identity.mjs';
 const MAX_INDEX_BYTES = 8 * 1024 * 1024;
+async function localDealerIds(options) {
+  const project = options.projectStore ? await options.projectStore.load() : options.project;
+  if (project === undefined) return new Set(BASE_DEALER_IDS);
+  try { return registeredDealerIds(project); } catch { throw new StudioError('Dealerregistret kunde inte läsas.',503); }
+}
 
 export function uploadDirectory(options = {}) {
   const lab = basename(process.cwd()) === 'lab' ? process.cwd() : join(process.cwd(), 'lab');
@@ -26,10 +32,12 @@ export async function readUploads(options = {}) {
     if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_INDEX_BYTES) throw new Error('Invalid index');
     const data = JSON.parse(await readFile(file, 'utf8'));
     if (data.schemaVersion !== 1 || !Array.isArray(data.videos) || data.videos.length > 5000) throw new Error('Invalid index');
-    const ids = new Set();
+    const ids = new Set(), dealers = await localDealerIds(options);
     for (const v of data.videos) {
       if (!/^[a-f0-9-]{36}$/.test(v.id) || ids.has(v.id) || !/^[a-f0-9]{64}$/.test(v.sha256) || !Number.isSafeInteger(v.size) || v.size < 16 || v.size > MAX_VIDEO_BYTES || !['mp4', 'webm'].includes(v.extension)) throw new Error('Invalid record');
-      validateVideoMetadata(v.classification, { allowLegacySituation: true }); ids.add(v.id);
+      validateVideoMetadata(v.classification, { allowLegacySituation: true });
+      if (!dealers.has(v.classification.dealerId)) throw new Error('Dealer is not registered');
+      ids.add(v.id);
       if (v.storage !== undefined) {
         validatePrivateMedia(v.storage);
         if (![ `croupier/videos/${v.id}/${v.sha256}.${v.extension}`,mediaBlobPath(`dealers/${v.classification.dealerId}/review/uploads`,v.id,v.sha256,v.extension)].includes(v.storage.pathname)
@@ -53,6 +61,7 @@ export async function uploadVideo(request, options = {}) {
   let metadata;
   try { metadata = validateVideoMetadata(JSON.parse(decodeURIComponent(header))); }
   catch (error) { throw new StudioError(error instanceof SyntaxError || error instanceof URIError ? 'Ogiltig kategorisering.' : error.message); }
+  if (!(await localDealerIds(options)).has(metadata.dealerId)) throw new StudioError('Välj en registrerad dealer.',422);
   const type = request.headers.get('content-type')?.split(';')[0];
   const extension = { 'video/mp4': 'mp4', 'video/webm': 'webm' }[type];
   if (!extension) throw new StudioError('Välj en MP4- eller WebM-video.', 415);
@@ -84,6 +93,7 @@ export async function uploadVideo(request, options = {}) {
     try { release = await lockfile.lock(dir, { lockfilePath: join(dir, '.index.lock'), retries: 0, onCompromised: () => { compromised = true; } }); }
     catch (error) { if (error.code === 'ELOCKED') throw new StudioError('En annan video sparas. Försök igen.', 423); throw error; }
     const videos = await readUploads(options), sha256 = hash.digest('hex');
+    if (!(await localDealerIds(options)).has(metadata.dealerId)) throw new StudioError('Välj en registrerad dealer.',422);
     // Same bytes and classification are idempotent; different classifications may share source footage.
     const existing = videos.find(v => v.sha256 === sha256 && JSON.stringify(v.classification) === JSON.stringify(metadata));
     if (existing) {

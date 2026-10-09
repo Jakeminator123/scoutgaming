@@ -38,7 +38,7 @@ export function LayerLibrary({project,dirty,onRegistered,available=true}:{projec
     } catch(cause){setError(cause instanceof Error?cause.message:'Uppladdningen misslyckades.');}
     finally{setBusy(false);}
   }
-  return <details><summary>Lagerbibliotek · {project.layerAssets?.length??0} filer</summary>
+  return <details open><summary>Lägg till bakgrund eller bord · {project.layerAssets?.length??0} filer</summary>
     <form onSubmit={event=>void upload(event)}><fieldset disabled={busy||dirty||!available}>
       <label className="field">Lager<select value={role} onChange={event=>setRole(event.target.value as typeof role)}><option value="background">Bakgrund</option><option value="table">Bord</option></select></label>
       <label className="field">Namn<input name="label" maxLength={80} required/></label>

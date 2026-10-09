@@ -12,7 +12,7 @@ export function LayerAssetSelect({role,lane,assets,onChange,permissions=true}:{r
       if(role==='background'&&!event.target.value)next.layers.background.mode='baked';
       if(role==='background'&&event.target.value)next.layers.background.mode=rows.find(row=>row.id===event.target.value)?.contentType.startsWith('video/')?'video':'image';
     })}><option value="">{role==='background'?'Inbakad / ingen separat bakgrund':'Inbakat / inget separat bord'}</option>
-      {rows.filter(row=>permissions||layer.allowed.includes(row.id)).map(asset=><option key={asset.id} value={asset.id}>{asset.label}</option>)}
+      {rows.filter(row=>permissions||layer.allowed.includes(row.id)).map(asset=><option key={asset.id} value={asset.id}>{asset.label} · {asset.contentType.startsWith('video/')?'Video':'Bild'} · {asset.width} × {asset.height}</option>)}
     </select></label>
     {!rows.length?<small>Ladda upp {title.toLowerCase()} i Förhandsvisning.</small>:null}
     {permissions?<details><summary>Tillåtna alternativ ({layer.allowed.length})</summary>{rows.map(asset=><label className="check-field" key={asset.id}>

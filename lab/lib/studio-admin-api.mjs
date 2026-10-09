@@ -1,8 +1,10 @@
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
 const MAX_BODY = 64 * 1024;
+const administrationMutations = new Set(['voiceline-review','tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
@@ -126,7 +128,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       };
       // Render revalidates inside its own product transaction. Local mutations
       // hold that same product lock while validating current identity and writing.
-      const result = localMutation ? await mutationTransaction(invoke) : await invoke();
+      const presentationOptions = administrationMutations.has(endpoint.action)
+        ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
+          ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
+        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project'] } : undefined;
+      const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
       // Mail is an effect of committed identity state. Never send a token whose
       // surrounding transaction may still roll back or hold the product lock.
@@ -134,6 +140,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       return json(result, 200, readIdentity);
     } catch (error) {
       const status = publicErrors.has(error?.statusCode) ? error.statusCode : 500;
+      if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
+        return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
+      }
       return json({ error: publicErrors.get(status) }, status);
     }
   }

@@ -2,6 +2,7 @@ import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import schema from '../schemas/video.schema.json' with { type: 'json' };
 import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
+import { isDealerId } from '../../web/dealer-identity.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
@@ -18,7 +19,7 @@ export function validateVideoMetadata(input, { allowLegacySituation = false } = 
   const allowed = Object.keys(schema.properties);
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !allowed.includes(k))) throw new Error('Ogiltiga videofält.');
   const event = seed.events.find(e => e.id === input.eventId);
-  if (!seed.dealers.some(d => d.id === input.dealerId) || !event) throw new Error('Välj dealer och event.');
+  if (!isDealerId(input.dealerId) || !event) throw new Error('Välj dealer och event.');
   if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
   if (input.playback !== undefined && !contract.playback.supported.includes(input.playback)) throw new Error('Labbet stöder endast en gång (once). Loop är ännu ett förslag.');
   if (input.kind !== kindForEvent(event)) throw new Error('Videotypen passar inte eventet.');
@@ -36,7 +37,18 @@ export function validateVideoMetadata(input, { allowLegacySituation = false } = 
   if (situations.length && !input.situation && (!allowLegacySituation || event.sourceType === 'speak')) throw new Error('Välj exakt situation eller replik. Hela eventgruppen är inte ett videofack.');
   if (input.situation && !situations.includes(input.situation)) throw new Error('Situationen passar inte eventet.');
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
+  if (input.compositing !== undefined) validateVideoCompositing(input.compositing);
   return { ...input, label: input.label.trim(), notes: input.notes.trim() };
+}
+export function validateVideoCompositing(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ogiltig friläggning.');
+  const expected = value.mode === 'opaque' ? ['mode'] : ['despill', 'mode', 'softness', 'threshold'];
+  if (!['opaque', 'green-screen'].includes(value.mode) || Object.keys(value).sort().join(',') !== expected.join(',')) throw new Error('Ogiltig friläggning.');
+  if (value.mode === 'green-screen' && ['threshold', 'softness', 'despill'].some(key => !Number.isFinite(value[key]) || value[key] < (key === 'softness' ? 0.001 : 0) || value[key] > 1)) throw new Error('Ogiltiga värden för grön nyckling.');
+  return structuredClone(value);
+}
+export function videoCompositing(video) {
+  return video?.classification?.compositing === undefined ? {mode: 'opaque'} : validateVideoCompositing(video.classification.compositing);
 }
 // Classification is operator supplied. This checks declared compatibility, not visual quality.
 export function videoFitsLine(video, dealerId, eventId) {

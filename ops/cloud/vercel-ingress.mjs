@@ -15,6 +15,11 @@ export function vercelIngressRequest(request, ingress) {
   if (!ingress) return { accepted: true, transported: false };
   const transportHost = new URL(ingress.transportOrigin).host, publicHost = new URL(ingress.publicOrigin).host;
   if (request.headers.host === transportHost && request.method === 'GET' && request.url === '/__cloud/health') return { accepted: true, transported: false, health: true };
+  // Read-only feature metadata carries no cookies or credentials to the game.
+  if (request.headers.host === transportHost && ['GET', 'HEAD'].includes(request.method)
+      && request.url === '/api/presentation/capabilities' && !request.headers.upgrade) {
+    return { accepted: true, transported: true, headers: { host: publicHost } };
+  }
   // Existing document bookmarks lead to the canonical UI. This does not
   // accept API calls, credentials, launch tickets or a second game origin.
   if (request.headers.host === transportHost && request.method === 'GET' && !request.headers['x-croupier-vercel-secret']) {

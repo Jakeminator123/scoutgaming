@@ -1,4 +1,5 @@
 import { createLayerUploadService } from './layer-upload-service.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
@@ -76,7 +77,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
-  env = process.env,
+  env = process.env, fetchImpl = fetch,
 } = {}) {
   if (!config) unavailable();
   poolFactory ??= async connectionString => {
@@ -88,7 +89,18 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const store = storeFactory({ pool });
     await store.db.assertInstalled({ source: await readFile(resolve(schemaRoot(), 'neon-game/product-schema.sql'), 'utf8') });
     await schemaCheck(pool);
-    const repository = repositoryFactory({ pool, scope: config.scope });
+    const repository = wrapNativePresentationRepository(repositoryFactory({ pool, scope: config.scope }), { env, fetchImpl });
+    const mutationTransaction = async (work, options = {}) => {
+      const descriptors = options.presentationMutation === undefined ? [] : [structuredClone(options.presentationMutation)];
+      const documents = [...(options.presentationDocuments ?? [])];
+      for (const kind of documents) {
+        if (!['project','administration'].includes(kind)) unavailable();
+        const saved = await repository.readDocument(kind);
+        if (!saved) unavailable();
+        descriptors.push({kind,value:saved.value});
+      }
+      return repository.withMutationContext(() => store.boDb.transaction(work), descriptors);
+    };
     const repositoryRoot = resolve(schemaRoot(), '..');
     const dealerIdle = createRegisteredDealerIdle({ repositoryRoot, mediaAvailable: createStudioPublicMediaAvailability({ env, repositoryRoot }),
       pathFor: (base, file) => resolveMediaPath(`web/public/${base}/${file}`, { repositoryRoot }) });
@@ -119,6 +131,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const lanePackages = createOperatorPackageApi({
       pool, scope: config.scope,
       project: async () => (await gamePolicy.readSaved()).project,
+      gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const operatorAdmin = createOperatorAdminApi({
@@ -126,11 +139,11 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
-      publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction: work => store.boDb.transaction(work) });
+      publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads,
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
-      mutationTransaction: work => store.boDb.transaction(work), ...media });
+      mutationTransaction, ...media });
   } catch {
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }
     unavailable();
@@ -153,7 +166,11 @@ export async function studioNativeRuntime() {
 }
 export function nativeStudioErrorResponse(error) {
   const status = [400,401,403,404,405,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
-  return Response.json({ error: status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' },
+  const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
+  const body = readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
+    code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }
+    : { error: status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' };
+  return Response.json(body,
     { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 }
 

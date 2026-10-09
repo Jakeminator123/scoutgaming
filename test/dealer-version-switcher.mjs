@@ -142,3 +142,16 @@ test('rehearsal cannot start before server-owned table initialization and stays 
     if(failed)assert.match(context.status.textContent,/table could not start/);
   }
 });
+
+test('named Nora keeps her explicit own lane and package on the local path without borrowing Vera',t=>{
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
+  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local',gameDealer:'nora',gameLane:'nora-lane'}}},configurable:true});
+  t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
+  for(const version of ['original','v2']){
+    const path=new URL(dealerVersionPath('nora',version,'?operator=north&lane=nora-lane&dealer=nora&launch=private&rehearsal=1'),'https://game.invalid');
+    assert.equal(path.pathname,'/blackjack');assert.equal(path.searchParams.get('dealer'),'nora');
+    assert.equal(path.searchParams.get('presentation'),'local');assert.equal(path.searchParams.get('lane'),'nora-lane');
+    assert.equal(path.searchParams.get('operator'),'north');assert.equal(path.searchParams.has('launch'),false);
+  }
+  assert.equal(new URL(dealerVersionPath('nora','v2'),'https://game.invalid').searchParams.get('lane'),'nora-lane');
+});

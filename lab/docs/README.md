@@ -4,23 +4,38 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov; materialet ligger i `test-videoeditor/preview/site`, grenen `test-video-jakob` är raderad), Lanes `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Sidorna delar en mall: Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (videoeditor för dealer, bord och bakgrund; äldre provmaterial ligger i `test-videoeditor/preview/site`, grenen `test-video-jakob` är raderad), Lanes `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med fyra djuplänkar till flikarna, Uppspelning `/control/activity`, Probe `/control/probe` och Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser med frågesträngen kvar. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`.
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
 **En lane är en presentationsprofil**, inte en spelmotor eller en enskild film.
-Studioflödet är **Dealers & klipp → Förhandsvisning → Lanes**. I Förhandsvisning
-väljer du dealer, bord och bakgrund i samma sparade lane. Lagerbiblioteket tar
-bild/video för bord och bakgrund när den sparade studion är ansluten. Spara lanen,
-välj den på Lanes och använd **Exportera lanes (JSON)** eller **Publicera paket**
-till ett bolag. JSON-filen är ett manifest med filreferenser; medier följer inte
-med som en nedladdad ZIP. Bolagspaketet fryser tillåtna lager och dealer-val.
-Partnerns designval begränsas till en lane och de rättigheter som publicerats.
-Godkända fullbildsfilmer innehåller redan bord och bakgrund; de separata valen
-ändrar inte filmens pixlar. Frilagda dealerpaket behöver fortfarande godkännas
-i spelets repetition. Paow/Dragge-provet finns kvar under Förhandsvisning.
+Studioflödet är **Dealers & klipp → Klippbibliotek → Förhandsvisning → Lanes**.
+På Dealers & klipp kan du lägga till **Nora** som egen dealer och spara projektet.
+Hon får 16 egna, tomma händelsekopplingar; ingen Astridfilm eller inspelad replik följer med.
+Skapa därefter en spellane för Nora under Administration → Bord och välj samma dealer-id.
+Lägg in hennes filmer i Klippbibliotek med rätt dealer, händelse och typ. Varje film
+har ett eget val **Fullbild / Greenscreen** med tröskel, mjukhet och färgspill.
+Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
+
+I Förhandsvisning väljer du dealerklipp, bakgrund och bord i samma lane.
+Lagerbiblioteket tar bild/video när den sparade studion är ansluten. Videoeditorn
+visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
+Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
+Placeringarna sparas i lanen och fryses i bolagspaketet. **Exportera lanes (JSON)**
+är ett manifest med filreferenser; medier följer inte med som en nedladdad ZIP.
+Partnerns designval och spelarens medier begränsas till det publicerade paketet.
+
+Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.
+Fullbildsklipp behåller sina egna bord och bakgrunder. Noras vänteloop kräver
+hennes egen sparade idle-baseline och spelas ljudlöst; saknad Nora-film lånar
+inget från Astrid. Befintlig live AI-chatt är fortsatt avgränsad till originaldealers.
+Nora och nya lagerinställningar kan sparas till produktion först när Render
+svarar med rätt presentationskapacitet; ett avvisat sparande lämnar utkastet kvar.
+Render måste uppdateras separat om automatisk deploy är avstängd.
+Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet finns kvar.
+
 
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
 välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov för marker, kort, bord och bakgrund.
