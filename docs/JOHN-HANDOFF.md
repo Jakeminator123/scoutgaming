@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Implementationen är committad lokalt i 72891be6; push och produktionsacceptans
+Implementationen finns i 72891be6 och slutputs i b12653e4; push och produktionsacceptans
 återstår. Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt
 rum, kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
 Publicering visar ett sammanhängande rumflöde och utfällbara avancerade val.
@@ -10,7 +10,7 @@ N2:s provlänkar använder verkliga bolagsägda rum även när presentation och
 spellane har olika ID. Gamla JSON-exporten och Nora-specifik manuell
 rumguidning är borttagna; namnfält för ny och befintlig presentation skiljs åt.
 
-Verifierat: normal fullhook för 72891be6 PASS, paket/capture/publisher 104/104,
+Verifierat: normal fullhook för 72891be6 och b12653e4 PASS, paket/capture/publisher 104/104,
 N2-rum 17/17 och slutlig UI-puts 37/37. Gemensam TypeScript och Lab-build PASS.
 Isolerad UI-QA visar verkligt sparande, återläsning, tangentbordsnavigation och
 layout i 1440/768/390 utan JavaScript-fel.
@@ -26,8 +26,7 @@ orörda och sync-probe PASS; ingen ny mänsklig läppsynkacceptans hävdas.
 
 Render behöver denna nya kod med förhandlad capability v3 för Johanna.
 Nuvarande omdeploy verifierar HTTP 200 health och capability v2, inte den ännu
-opushade etappen. Exakt Render-SHA är inte verifierad. Johns spelbolag och
-Johanna har ännu inte skapats i produktions-Neon. En separat Edge-session är
+opushade etappen. Exakt Render-SHA är inte verifierad. Johns spelbolag (johns-spelbolag) är skapat via produktions-UI med standardroller och verifierat efter omladdning. Johanna är ännu inte skapad. En separat Edge-session är
 manuellt inloggad av Jakob; bilder sparas privat för varje meningsfullt steg.
 Spellobbyn finns på /play men spelarinloggning är separat från Studio.
 Nästa: leverans, Render v3 och klickdemo Johns spelbolag → Johanna med Nora-
