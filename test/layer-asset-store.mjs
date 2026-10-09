@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
-import {createSeedProject} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../lab/lib/studio-model.mjs';
+import {AsyncLocalStorage} from 'node:async_hooks';
+import {wrapNativePresentationRepository} from '../lab/lib/presentation-runtime-readiness.mjs';
+import {presentationCapabilitiesForVersion} from '../web/presentation-capability-contract.mjs';
 import {createLayerUploadService} from '../lab/lib/layer-upload-service.mjs';
 import {createLayerAssetApi} from '../lab/lib/layer-asset-api.mjs';
 const scope={environment:'test',workspaceId:'layers'},actor='layer-admin';
@@ -51,4 +54,100 @@ test('library API keeps native role, scope and Origin gates; IDs cannot escape t
   const foreign=createLayerAssetApi({...runtime,authorize:async()=>({user:actor,role:'admin',scope:{...scope,workspaceId:'other'}})});
   assert.equal((await foreign.handle(new Request('https://public.example/studio/api/layer-assets'))).status,403);
   assert.equal((await api.handle(new Request('https://public.example/studio/api/layer-assets/upload',{method:'POST',headers:{origin:'https://evil.example','content-type':'application/json'},body:'{}'}))).status,403);
+});
+
+async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
+  const pool=createStudioMemoryPool(),rawRepository=createStudioRepository({pool,scope});
+  await rawRepository.initializeDocument('project',{actor,value:addDealer(createSeedProject(),'johanna','Johanna')});
+  const sqlContext=new AsyncLocalStorage(),events=[],descriptors=[],capabilities=[];
+  let tokens=0,blobReads=0,principal={user:actor,role:'admin',scope};
+  const repository=wrapNativePresentationRepository(rawRepository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},
+    fetchImpl:async(url,options)=>{
+      assert.notEqual(sqlContext.getStore(),true,'capability HTTP must finish before product/studio SQL');
+      capabilities.push({url,version:options.headers['X-Presentation-Capability-Version']});events.push('capability');
+      await onPreflight?.({rawRepository,pool,capabilities,revoke:()=>principal={...principal,role:'reader'}});
+      return Response.json(presentationCapabilitiesForVersion(capabilityVersion));
+    }});
+  const uploads=createLayerUploadService({repository,scope,ticketKey:new Uint8Array(32).fill(7),env,
+    clientToken:async()=>{tokens++;return 'fixture-capability';},privateMedia:async record=>{
+      assert.notEqual(sqlContext.getStore(),true,'Blob verification must finish before product/studio SQL');
+      assert.match(record.pathname,/^croupier\/media\/tables\//);blobReads++;events.push('blob');return new Response(prefix);
+    }});
+  const mutationTransaction=(work,options={})=>{
+    const snapshot=structuredClone(options.presentationMutation);descriptors.push(snapshot);
+    return repository.withMutationContext(()=>sqlContext.run(true,async()=>{
+      events.push('product-begin');await onLock?.({rawRepository,pool});return work();
+    }),snapshot);
+  };
+  const api=createLayerAssetApi({config,repository,layerUploads:uploads,mutationTransaction,authorize:async()=>principal});
+  const post=body=>api.handle(new Request('https://public.example/studio/api/layer-assets/upload',{method:'POST',
+    headers:{origin:'https://public.example','sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)}));
+  const prepare={operation:'prepare',sha256:'a'.repeat(64),size:128,contentType:'image/png',role:'table',label:'Bord · Svart och guld',width:1440,height:2560};
+  const prepared=await post(prepare);assert.equal(prepared.status,200);const grant=await prepared.json();
+  return {api,pool,rawRepository,repository,post,prepare,grant,events,descriptors,capabilities,
+    counts:()=>({tokens,blobReads}),commit:()=>post({operation:'commit',ticket:grant.ticket})};
+}
+
+test('native Johanna layer commit preflights the real project and verified grant before SQL; same-ticket retry is idempotent',async()=>{
+  const f=await nativeLayerFixture(),before=f.pool.snapshot();
+  const committed=await f.commit();assert.equal(committed.status,200);const first=await committed.json();
+  assert.equal(first.duplicate,false);assert.equal(first.id,f.grant.id);
+  assert.equal(first.project.layerAssets[0].pathname,f.grant.pathname);
+  assert.deepEqual(f.capabilities,[{url:'https://render.example.invalid/api/presentation/capabilities',version:'3'}]);
+  assert.deepEqual(f.events,['blob','capability','product-begin']);
+  const descriptor=f.descriptors[0];assert.equal(descriptor.kind,'project');
+  assert.ok(descriptor.value.dealers.some(row=>row.id==='johanna'));
+  assert.deepEqual(descriptor.value.layerAssets,first.project.layerAssets);
+  assert.equal(descriptor.value.layerAssets[0].sha256,f.prepare.sha256);
+  const after=f.pool.snapshot();assert.equal(after.history.length,before.history.length+1);assert.equal(after.audits.length,before.audits.length+1);
+  const replay=await f.commit();assert.equal(replay.status,200);const duplicate=await replay.json();
+  assert.equal(duplicate.id,first.id);assert.equal(duplicate.duplicate,true);assert.equal(duplicate.project.layerAssets.length,1);
+  assert.deepEqual(f.pool.snapshot(),after);assert.deepEqual(f.counts(),{tokens:1,blobReads:2});
+});
+
+test('native layer commit rejects missing v3 before any product transaction or project write',async()=>{
+  const f=await nativeLayerFixture({capabilityVersion:2}),before=f.pool.snapshot();
+  const response=await f.commit();assert.equal(response.status,503);
+  assert.equal((await response.json()).code,'studio_presentation_runtime_update_required');
+  assert.deepEqual(f.events,['blob','capability']);assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('native layer commit reauthorizes inside the product lock after capability preflight',async()=>{
+  const f=await nativeLayerFixture({onPreflight:async({revoke})=>revoke()}),before=f.pool.snapshot();
+  const response=await f.commit();assert.equal(response.status,403);
+  assert.deepEqual(f.events,['blob','capability','product-begin']);assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('native layer revision CAS preserves a project edited during preflight; the same ticket retries safely',async()=>{
+  const f=await nativeLayerFixture({onPreflight:async({rawRepository,capabilities})=>{
+    if(capabilities.length!==1)return;
+    const saved=await rawRepository.readDocument('project'),value=structuredClone(saved.value);
+    value.dealers.find(row=>row.id==='johanna').label='Johanna edited during preflight';
+    await rawRepository.saveDocument('project',{expectedRevision:saved.revision,value,actor});
+  }});
+  const first=await f.commit();assert.equal(first.status,409);
+  const raced=await f.rawRepository.readDocument('project');assert.equal(raced.value.layerAssets,undefined);
+  assert.equal(raced.value.dealers.find(row=>row.id==='johanna').label,'Johanna edited during preflight');
+  const retried=await f.commit();assert.equal(retried.status,200);const receipt=await retried.json();
+  assert.equal(receipt.id,f.grant.id);assert.equal(receipt.duplicate,false);assert.equal(receipt.project.layerAssets.length,1);
+  assert.equal(receipt.project.dealers.find(row=>row.id==='johanna').label,'Johanna edited during preflight');
+  assert.deepEqual(f.counts(),{tokens:1,blobReads:2});
+});
+
+test('native layer audit failure rolls back project, history and audit; exact-ticket retry remains available',async()=>{
+  const f=await nativeLayerFixture(),before=f.pool.snapshot();f.pool.failNext('audit');
+  const failed=await f.commit();assert.equal(failed.status,503);assert.deepEqual(f.pool.snapshot(),before);
+  const retried=await f.commit();assert.equal(retried.status,200);assert.equal((await retried.json()).id,f.grant.id);
+  assert.equal((await f.rawRepository.readDocument('project')).value.layerAssets.length,1);
+  assert.equal(f.counts().tokens,1);
+});
+
+test('concurrent native commits of one ticket register one layer UUID and return one duplicate receipt',async()=>{
+  const f=await nativeLayerFixture(),before=f.pool.snapshot();
+  const responses=await Promise.all([f.commit(),f.commit()]);assert.ok(responses.every(response=>response.status===200));
+  const receipts=await Promise.all(responses.map(response=>response.json()));
+  assert.deepEqual(receipts.map(row=>row.duplicate).sort(),[false,true]);assert.ok(receipts.every(row=>row.id===f.grant.id));
+  assert.equal((await f.rawRepository.readDocument('project')).value.layerAssets.length,1);
+  const after=f.pool.snapshot();assert.equal(after.history.length,before.history.length+1);assert.equal(after.audits.length,before.audits.length+1);
+  assert.equal(f.counts().tokens,1);
 });

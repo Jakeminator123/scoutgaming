@@ -76,6 +76,15 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
         : record.contentType === 'image/jpeg' ? header[0] === 255 && header[1] === 216 && header[2] === 255
         : record.contentType === 'image/webp' && header.toString('ascii',0,4) === 'RIFF' && header.toString('ascii',8,12) === 'WEBP';
       if (!validHeader) fail('studio_invalid_media_format',415);
+      // Capture the real project and exact verified grant before either SQL lock.
+      // The native gate must cover this write without fetching under a lock.
+      const captured = await repository.readDocument('project');
+      if (!captured) fail('studio_document_missing',404);
+      const capturedAssets = captured.value.layerAssets ?? [];
+      const capturedExisting = capturedAssets.find(asset => asset.id === record.id);
+      if (capturedExisting && canonicalStudioJson(capturedExisting) !== canonicalStudioJson(record)) fail('studio_conflict',409);
+      const presentationMutation = {kind:'project',value:{...captured.value,
+        layerAssets:capturedExisting ? capturedAssets : [...capturedAssets,record]}};
       return mutationTransaction(async () => {
         if (typeof stillAuthorized !== 'function' || await stillAuthorized() !== true) fail('studio_request_rejected',403);
         return repository.transaction(async () => {
@@ -87,11 +96,12 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
             if (canonicalStudioJson(existing) !== canonicalStudioJson(record)) fail('studio_conflict',409);
             return {id:record.id,duplicate:true,project:saved.value};
           }
+          if (saved.revision !== captured.revision) fail('studio_conflict',409);
           const next = await repository.saveDocument('project',{expectedRevision:saved.revision,
             value:{...saved.value,layerAssets:[...assets,record]},actor});
           return {id:record.id,duplicate:false,project:next.value};
-        });
-      });
+        }, {presentationMutation});
+      }, {presentationMutation});
     },
   });
 }
