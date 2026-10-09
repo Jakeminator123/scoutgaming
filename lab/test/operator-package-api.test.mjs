@@ -1,4 +1,4 @@
-import {publicPackageBranding,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {publicPackageBranding,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
@@ -127,27 +127,161 @@ test('an empty project.lanes list accepts only the default mobile-phone lane', a
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 200);
 });
 
-test('Nora publication requires her matching saved game lane before opening the operator store', async () => {
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
-  const lane = defaultPresentationLane();
-  lane.dealers.push('nora');
-  lane.layers.dealer.default = 'nora';
-  lane.layers.dealer.allowed.push('nora');
-  project.lanes = [lane];
-  let writes = 0;
-  const storeFactory = async () => { writes++; return {
-    getCurrentPackage: async () => null,
-    publishPackage: async record => ({...record,revision:1}),
-  }; };
-  const context = {body:{operatorId:'north',lanes:[lane.id]},actor:{user:'staff'}};
-  for(const gameLanes of [undefined,[{schemaVersion:1,id:lane.id,label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]]) {
-    const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes,storeFactory});
-    await assert.rejects(api.handlers.get('POST /studio/api/admin/operator-package')(context), error => error.statusCode === 422);
-  }
+test('a registered extra cannot publish through a legacy adapter merely by presenting a matching game lane',async()=>{
+  const project=addDealer(createSeedProject(),'nora','Nora'),lane=defaultPresentationLane();
+  lane.dealers=['nora'];lane.layers.dealer.default='nora';lane.layers.dealer.allowed=['nora'];project.lanes=[lane];
+  let writes=0;
+  const api=createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes:[{schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}],
+    storeFactory:async()=>{writes++;throw Error('must not publish without own captured registry');}});
+  await assert.rejects(api.handlers.get('POST /studio/api/admin/operator-package')({body:{operatorId:'north',lanes:[lane.id]},actor:session}),e=>e.statusCode===503);
   assert.equal(writes,0);
-  const gameLanes=[{schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}];
-  const api = createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes:async()=>gameLanes,storeFactory});
-  const published=await api.handlers.get('POST /studio/api/admin/operator-package')(context);
-  assert.equal(writes,1);
-  assert.equal(published.presentation.lanes[0].layers.dealer.default,'nora');
+});
+
+import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
+const nativeScope={environment:'frozen-publisher-fixture',workspaceId:'isolated'};
+const mediaId='10000000-0000-4000-8000-000000000001',mediaHash='a'.repeat(64);
+// SQL facade fixture only: exercises the actual repository/publisher transaction
+// and rollback paths. Real PostgreSQL isolation remains a separate integration.
+function nativePool(){
+  let state={documents:new Map(),media:new Map(),packages:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
+  const calls=[],faults=new Set(),clone=v=>structuredClone(v),key=values=>JSON.stringify(values.slice(0,3));
+  const result=(rows=[],command='SELECT')=>({rows:clone(rows),command});
+  const pool={calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
+    async connect(){
+      const clientId=++sequence;let working,readOnly,unlock;
+      return {release(){unlock?.();},async query(sql,values=[]){
+        const marker=/\/\* (?:studio|operator-store):([a-z-]+) \*\//.exec(sql)?.[1]??sql.split(/\s/)[0];
+        calls.push({clientId,marker,sql,values:clone(values)});
+        if(faults.delete(marker))throw Error('private forced fixture failure');
+        if(sql.startsWith('BEGIN')){readOnly=sql.includes('READ ONLY');working=clone(state);return result([],'BEGIN');}
+        if(sql.startsWith('SET LOCAL'))return result([],'SET');
+        if(sql.includes('pg_advisory_xact_lock')){const previous=tail;tail=new Promise(resolve=>unlock=resolve);await previous;working=clone(state);return result();}
+        if(sql==='COMMIT'||sql==='ROLLBACK'){if(sql==='COMMIT'&&!readOnly)state=working;working=undefined;unlock?.();unlock=null;return result([],sql);}
+        assert.ok(working,'domain reads/writes use a live scoped client');
+        const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
+        if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1}]:[]);
+        if(marker==='current-package')return result(packages().sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
+        if(marker==='publish-package'){
+          const row={environment_id:values[0],workspace_id:values[1],operator_id:values[2],package_revision:Math.max(0,...packages().map(row=>row.package_revision))+1,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]};
+          working.packages.push(row);return result([row]);
+        }
+        if(marker==='read-document')return result(working.documents.has(key(values))?[working.documents.get(key(values))]:[]);
+        if(marker==='read-media')return result(working.media.has(key(values))?[working.media.get(key(values))]:[]);
+        if(marker==='list-media')return result([...working.media.values()].filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]).slice(0,values[2]));
+        if(marker==='insert-document'||marker==='save-document'){
+          if(marker==='save-document'&&working.documents.get(key(values))?.revision!==values[5])return result();
+          const row={environment_id:values[0],workspace_id:values[1],kind:values[2],revision:values[3],value:JSON.parse(values[4]),updated_at:'2026-10-09T12:00:00Z'};
+          working.documents.set(key(values),row);return result([row]);
+        }
+        if(marker==='insert-media'||marker==='classify-media'){
+          if(marker==='classify-media'&&working.media.get(key(values))?.revision!==values[5])return result();
+          const row={environment_id:values[0],workspace_id:values[1],id:values[2],revision:values[3],record:JSON.parse(values[4]),updated_at:'2026-10-09T12:00:00Z'};
+          working.media.set(key(values),row);return result([row]);
+        }
+        if(marker==='audit'){working.audits.push(clone(values));return result();}
+        if(marker==='history'){working.history.push(clone(values));return result();}
+        throw Error('unexpected fixture marker '+marker);
+      }};
+    },
+    async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const value=await client.query(sql,values);await client.query('COMMIT');return value;}finally{client.release();}}
+  };return pool;
+}
+async function nativeFixture({dealer='johanna'}={}){
+  const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
+  const project=addDealer(createSeedProject(),dealer,dealer==='johanna'?'Johanna':'Nora'),lane=defaultPresentationLane();
+  lane.id='johns-presentation';lane.dealers=[dealer];lane.layers.dealer.default=dealer;lane.layers.dealer.allowed=[dealer];project.lanes=[lane];
+  project.lines.find(row=>row.dealerId===dealer&&row.eventId==='idle.ready').variants[0].videoGenerationId=mediaId;
+  const classification={dealerId:dealer,eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen dealerfilm',notes:'',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}};
+  const record={id:mediaId,sha256:mediaHash,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/${dealer}/review/uploads/${mediaId}/${mediaHash}.mp4`,classification};
+  const administration={rooms:[],gameLane:'johns-game',gameLanes:[{schemaVersion:1,id:'johns-game',label:'Johns',renderer:'portrait-video',dealer,mediaCollection:dealer+'-presentation'}],
+    tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
+  await repository.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});
+  await repository.initializeDocument('administration',{value:administration,revision:'admin-initial',actor:'tester'});
+  await repository.registerMedia(record,{actor:'tester'});
+  let io=0,changeDuringVerification=async()=>{};
+  const videoRegistry={
+    async loadCaptured(snapshot){
+      io++;const reads=pool.calls.filter(row=>row.marker==='BEGIN'||row.marker==='COMMIT'||row.marker==='ROLLBACK');
+      assert.equal(reads.at(-1).marker,'COMMIT','provider work follows completed SQL reads');
+      return {videos:snapshot.mediaRows.map(row=>({id:row.id,sha256:row.sha256,bytes:row.size,dealer:row.classification.dealerId,available:true,classification:row.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
+    },
+    async verifyCapturedMedia(preconditions){io++;assert.equal(preconditions[0].record.id,record.id);await changeDuringVerification();}
+  };
+  const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
+  const context={body:{operatorId:'north',lanes:[lane.id]},actor:{user:'tester'},scope:nativeScope};
+  const prepare=()=>api.preparations.get('POST /studio/api/admin/operator-package')(context);
+  const publish=prepared=>api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})});
+  const direct=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
+  return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
+}
+test('native package publishing freezes Johanna own UUID and exact metadata with provider work before the bound writer',async()=>{
+  const f=await nativeFixture(),prepared=await f.prepare(),offset=f.pool.calls.length;
+  const result=await f.publish(prepared);assert.equal(result.presentation.schemaVersion,2);assert.equal(result.packageRevision,1);assert.equal(f.io(),2);
+  assert.equal(result.presentation.registeredDealers[0].id,'johanna');assert.equal(result.presentation.registeredDealers[0].idle.id,mediaId);
+  const writes=f.pool.calls.slice(offset);assert.equal(new Set(writes.map(row=>row.clientId)).size,1);
+  assert.deepEqual(writes.find(row=>row.marker==='read-media').values.slice(0,2),[nativeScope.environment,nativeScope.workspaceId]);
+  assert.equal(writes.some(row=>row.marker==='publish-package'),true);
+  const current=await f.direct.getCurrentPackage('north');assert.deepEqual(readPackagePresentation(current),result.presentation);
+  const saved=await f.repository.readDocument('project');saved.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers[0].idle.id,mediaId);
+});
+test('native publication rejects project/admin/package or exact selected-media drift after provider I/O without a package write',async()=>{
+  for(const kind of ['project','administration','package','media']){
+    const f=await nativeFixture();f.setDuring(async()=>{
+      if(kind==='package')await f.direct.publishPackage({actor:'partner',operatorId:'north',lanes:[f.lane.id],games:['blackjack'],tables:[],branding:{name:'Concurrent brand'}});
+      else if(kind==='media'){const media=await f.repository.getMedia(mediaId);await f.repository.classifyMedia(mediaId,{sha256:mediaHash,expectedRevision:media.revision,metadata:{...f.record.classification,label:'Changed intake'},actor:'tester'});}
+      else{const saved=await f.repository.readDocument(kind);await f.repository.saveDocument(kind,{value:saved.value,expectedRevision:saved.revision,actor:'tester'});}
+    });
+    const prepared=await f.prepare(),before=f.pool.snapshot().packages;
+    await assert.rejects(f.publish(prepared),e=>e.statusCode===409);assert.deepEqual(f.pool.snapshot().packages,before);
+  }
+});
+test('native publication uses server-read current package revision and preserves partner branding/games/tables',async()=>{
+  const f=await nativeFixture();
+  await f.direct.publishPackage({actor:'partner',operatorId:'north',lanes:[f.lane.id],games:['blackjack'],tables:['legacy'],branding:{name:'Johns',color:'#123456'}});
+  const prepared=await f.prepare();assert.equal(prepared.expectedPackageRevision,1);
+  const result=await f.publish(prepared);assert.equal(result.packageRevision,2);assert.deepEqual(result.tables,['legacy']);
+  assert.deepEqual(publicPackageBranding((await f.direct.getCurrentPackage('north')).branding),{name:'Johns',color:'#123456'});
+});
+test('native preparation requires own idle and cannot write if provider verification fails',async()=>{
+  const f=await nativeFixture(),saved=await f.repository.readDocument('project');
+  saved.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+  await assert.rejects(f.prepare(),e=>e.code==='studio_dealer_idle_required');assert.equal(f.pool.snapshot().packages.length,0);
+  const other=await nativeFixture();other.setDuring(async()=>{throw Object.assign(new Error('studio_media_storage_unavailable'),{statusCode:503});});
+  await assert.rejects(other.prepare(),e=>e.statusCode===503);assert.equal(other.pool.snapshot().packages.length,0);
+});
+test('native Nora also freezes an exact own idle and does not inherit Johanna or a same-ID lane constraint',async()=>{
+  const f=await nativeFixture({dealer:'nora'}),result=await f.publish();
+  assert.equal(result.presentation.registeredDealers[0].id,'nora');assert.equal(result.presentation.registeredDealers[0].idle.classification.dealerId,'nora');
+  assert.notEqual(f.lane.id,f.administration.gameLane);
+});
+test('advanced republication refuses removing an in-use presentation or changing its room dealer, then preserves a valid binding',async()=>{
+  const f=await nativeFixture(),first=await f.publish();
+  const room={schemaVersion:2,id:'room-10000000-0000-4000-8000-000000000002',name:'Johns',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
+  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'Johns'},first.presentation)});
+  const saved=await f.repository.readDocument('project'),other=defaultPresentationLane();other.id='other-presentation';saved.value.lanes.push(other);
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+  const context={...f.context,body:{operatorId:'north',lanes:[other.id]}};
+  const prepared=await f.api.preparations.get('POST /studio/api/admin/operator-package')(context);
+  await assert.rejects(f.api.handlers.get('POST /studio/api/admin/operator-package')({...context,prepared}),e=>e.statusCode===409);
+  assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
+  const changed=await f.repository.readDocument('project');
+  changed.value.lanes[0].dealers=['astrid'];changed.value.lanes[0].layers.dealer.default='astrid';changed.value.lanes[0].layers.dealer.allowed=['astrid'];
+  await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
+  await assert.rejects(f.publish(),e=>e.statusCode===409,'a valid new default cannot retarget an existing Johanna room');
+  assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
+  const restore=await f.repository.readDocument('project');
+  restore.value.lanes[0].dealers=['johanna'];restore.value.lanes[0].layers.dealer.default='johanna';restore.value.lanes[0].layers.dealer.allowed=['johanna'];
+  await f.repository.saveDocument('project',{value:restore.value,expectedRevision:restore.revision,actor:'tester'});
+  const valid=await f.publish();assert.equal(valid.packageRevision,3);assert.deepEqual(valid.tables,[room.id]);
+});
+test('native SQL failure rolls back publisher and forged or mismatched preparations cannot cross intent boundaries',async()=>{
+  const f=await nativeFixture(),prepared=await f.prepare(),before=f.pool.snapshot();
+  await assert.rejects(f.publish({...prepared}),e=>e.statusCode===422);
+  await assert.rejects(f.api.handlers.get('POST /studio/api/admin/operator-package')({...f.context,body:{operatorId:'other',lanes:[f.lane.id]},prepared}),e=>e.statusCode===422);
+  f.pool.failNext('publish-package');await assert.rejects(f.publish(prepared),e=>e.statusCode===503);
+  assert.deepEqual(f.pool.snapshot(),before);
 });

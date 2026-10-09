@@ -8,20 +8,21 @@ export function effectivePartnerAdjustments(lane) {
   });
 }
 
-export function partnerLaneState(lane, branding = {}, assets = []) {
+export function partnerLaneState(lane, branding = {}, assets = [], registeredDealers = []) {
   const selected = branding.lane === lane.id;
   const layers = Object.fromEntries(['background', 'dealer', 'table'].map(role => {
     const layer = lane.layers[role];
     const choice = selected && layer.allowed.includes(branding[role]) ? branding[role] : layer.default;
+    const dealerLabel = role === 'dealer' ? registeredDealers.find(row => row.id === choice)?.label : null;
     const asset = role === 'dealer' ? null : assets.find(item => item.id === choice && item.role === role);
-    return [role, { ...layer, selected: choice, label: asset?.label ?? choice ?? 'Inget lager', ...(asset ? { contentType: asset.contentType, width: asset.width, height: asset.height } : {}) }];
+    return [role, { ...layer, selected: choice, label: asset?.label ?? dealerLabel ?? choice ?? 'Inget lager', ...(asset ? { contentType: asset.contentType, width: asset.width, height: asset.height } : {}) }];
   }));
   return { id: lane.id, name: lane.label, compatibility: lane.composition ? 'per-clip' : 'full-frame', layers, adjustable: effectivePartnerAdjustments(lane) };
 }
 
 export function partnerPackageProfiles(presentation, branding, operatorId) {
   return presentation.lanes.map(lane => {
-    const state = partnerLaneState(lane, { ...branding, lane: branding?.lane ?? presentation.lanes[0].id }, presentation.assets);
+    const state = partnerLaneState(lane, { ...branding, lane: branding?.lane ?? presentation.lanes[0].id }, presentation.assets, presentation.registeredDealers);
     return { ...state, operatorId, dealer: state.layers.dealer.selected, background: state.layers.background.label, table: state.layers.table.label, status: 'published' };
   });
 }

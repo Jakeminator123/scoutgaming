@@ -405,7 +405,7 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   const cookie=`partner_session=${tokenOf(loggedIn)}`;
   const presentation={schemaVersion:1,projectRevision:'frozen-r1',lanes:[{...defaultPresentationLane(),label:'Publicerad North'}],assets:[]};
   const store={...memoryStore(),getCurrentPackage:async()=>({operatorId:northId,revision:7,lanes:['mobile-phone'],tables:['room-1'],branding:withPackagePresentation({name:'North'},presentation)})};
-  const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),withStore(store));
+  const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
   const body=await response.json();
   assert.equal(body.presentations[0].name,'Publicerad North');
@@ -416,6 +416,39 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   assert.equal(body.presentation.projectRevision,'frozen-r1');
   assert.equal(body.packageRevision,'7');
   assert.equal(JSON.stringify(body).includes('_scoutPresentation'),false);
-  assert.equal(body.tables[0].id,'room-1');
+  assert.deepEqual(body.tables,[]);
+  assert.equal(body.roomBindings,'operator-owned-v2');
+});
+
+for (const schemaVersion of [1,2]) test('partner tables use actual room ownership with presentation v'+schemaVersion,async()=>{
+  const loggedIn=await handlePartnerAuth(loginRequest('north-partner',secret),config);
+  const cookie=`partner_session=${tokenOf(loggedIn)}`;
+  const presentation={schemaVersion,projectRevision:'frozen-rooms-r1',...(schemaVersion===2?{registeredDealers:[]}:{}),
+    lanes:[{...defaultPresentationLane(),id:'published-portrait',label:'Publicerad presentation'}],assets:[]};
+  const room=(id,operatorId,state='live')=>({schemaVersion:2,id,name:id==='room-live'?'Johns blackjack':id,
+    operatorId,presentationLaneId:'published-portrait',gameLaneId:'actual-portrait',state});
+  const administration={gameLane:'actual-portrait',gameLanes:[{schemaVersion:1,id:'actual-portrait',label:'Runtime',
+    renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+    rooms:[room('room-live',northId),room('room-preview',northId,'preview'),room('room-foreign','other-company'),
+      room('room-not-in-package',northId)]};
+  const pack={operatorId:northId,revision:9,lanes:['published-portrait'],
+    tables:['room-live','room-preview','room-foreign','room-missing'],branding:withPackagePresentation({},presentation)};
+  const store={...memoryStore(),getCurrentPackage:async()=>pack};
+  const request=new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}});
+  const body=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
+  assert.deepEqual(body.tables.map(row=>row.id),['room-live','room-preview']);
+  assert.equal(body.tables[0].name,'Johns blackjack');
   assert.equal(body.tables[0].operatorId,northId);
+  assert.equal(body.tables[0].presentationId,'published-portrait');
+  assert.equal(body.summary.activeTables,1);
+  const incompatible=structuredClone(administration);
+  incompatible.gameLanes[0].dealer='vera';
+  incompatible.gameLanes[0].mediaCollection='vera-presentation';
+  const rejected=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
+    config:{...config,readAdministration:async()=>incompatible}});
+  assert.deepEqual(rejected.tables,[]);
+  assert.equal(rejected.summary.activeTables,0);
+  await assert.rejects(partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
+    config:{...config,readAdministration:async()=>{throw Object.assign(Error('unavailable'),{statusCode:503});}}}),
+    error=>error.statusCode===503);
 });

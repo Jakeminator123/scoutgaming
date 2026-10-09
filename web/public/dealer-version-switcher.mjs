@@ -1,11 +1,14 @@
+import { BASE_DEALER_IDS, validatePublicRegisteredDealers } from './dealer-identity.mjs';
 // Separate presentation routes share the same origin, session and game API.
 import {approvedGameQuery} from './game-entry-contract.mjs';
 export const V2_DEALERS = ['astrid', 'amira'];
 export function dealerVersionPath(dealer, version, observerSearch = '') {
-  const key = ['vera', 'astrid', 'amira', 'mei', 'nora'].includes(dealer) ? dealer : 'vera';
+  let registry = []; try { registry = validatePublicRegisteredDealers(JSON.parse(globalThis.document?.documentElement?.dataset.gameRegisteredDealers ?? '[]')); } catch {}
+  const extra = registry.some(row=>row.id===dealer);
+  const key = BASE_DEALER_IDS.includes(dealer) || extra ? dealer : 'vera';
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
-  const noraLane=key==='nora' ? previous.get('lane') || (globalThis.document?.documentElement?.dataset.gameDealer==='nora' ? globalThis.document.documentElement.dataset.gameLane : null) : null;
+  const ownLane=extra ? previous.get('lane') || (globalThis.document?.documentElement?.dataset.gameDealer===key ? globalThis.document.documentElement.dataset.gameLane : null) : null;
   // The clean Blackjack URL carries its saved presentation in the document.
   // An explicit dealer change must not keep a lane override that forces Astrid.
   if (!previous.has('presentation') && (previous.get('lane') === 'mobile-phone'
@@ -20,9 +23,12 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   if(version !== 'v2' && previous.get('presentation') === 'local')query.set('presentation','local');
   if(previous.has('rehearsal'))query.set('rehearsal','1');
   const originalPath = globalThis.document?.documentElement?.dataset.gamePath === '/blackjack' ? '/blackjack' : '/';
-  if(key==='nora'){
-    previous.set('dealer','nora');previous.set('presentation','local');
-    if(noraLane && noraLane!=='mobile-phone')previous.set('lane',noraLane);
+  if(extra){
+    previous.set('dealer',key);previous.set('presentation','local');
+    if(ownLane)previous.set('lane',ownLane);
+    const dataset=globalThis.document?.documentElement?.dataset;
+    if(!previous.has('operator')&&dataset?.gameOperator)previous.set('operator',dataset.gameOperator);
+    if(!previous.has('table')&&dataset?.gameRoomId)previous.set('table',dataset.gameRoomId);
     return originalPath+'?'+approvedGameQuery(previous,{origin:globalThis.location?.origin,includeLaunch:false});
   }
   if (originalPath === '/blackjack' && !(version === 'v2' && V2_DEALERS.includes(key))) {

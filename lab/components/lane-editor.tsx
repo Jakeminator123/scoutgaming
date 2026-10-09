@@ -21,7 +21,7 @@ import {
 } from '../lib/studio-model.mjs';
 import styles from './lane-editor.module.css';
 
-export const LANE_ID_HELP = 'Använd samma lane-id under Drift → Bord & spelrum för att koppla utseendet till spelet.';
+export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';
 const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'Automatiskt'};
 const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'Tal vid inaktivitet'};
 const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
@@ -100,11 +100,12 @@ function applyWhenValid(project: StudioProject, onEdit: Edit, change: (current: 
   after();
 }
 
-export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect, navigationBlocked=false }: { project: StudioProject; onEdit: Edit; selectedId?:string; onSelect?:(id:string)=>void; navigationBlocked?:boolean }) {
+export function LaneEditor({ project, onEdit: onModelEdit, selectedId: controlledId, onSelect, navigationBlocked=false, disabled=false }: { project: StudioProject; onEdit: Edit; selectedId?:string; onSelect?:(id:string)=>void; navigationBlocked?:boolean; disabled?:boolean }) {
+  const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const lanes = project.lanes ?? [];
   const [localSelectedId, setLocalSelectedId] = useState('');
   const selectedId=controlledId??localSelectedId;
-  function setSelectedId(id:string){setLocalSelectedId(id);onSelect?.(id);}
+  function setSelectedId(id:string){if(disabled)return;setLocalSelectedId(id);onSelect?.(id);}
   const [draftId, setDraftId] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
   const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
@@ -112,6 +113,7 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
 
   function addNew(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (disabled) return;
     const id = draftId.trim();
     const label = draftLabel.trim();
     applyWhenValid(project, onEdit, current => addLane(current, id, label), () => {
@@ -122,16 +124,16 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
   }
 
   function addSuggested() {
+    if (disabled) return;
     applyWhenValid(project, onEdit, current => addDefaultLane(current), () => setSelectedId(suggestion.id));
   }
 
-  return <>
+  return <fieldset className={styles.editor} disabled={disabled} aria-label="Presentationsinställningar">
     <section className={styles.card} aria-labelledby="lanes-in-project">
       <h2 id="lanes-in-project">Presentation</h2>
       {lanes.length === 0 ? <div className={styles.suggestion}>
         <p>Ingen sparad presentation.</p>
         <LaneSummary lane={suggestion} />
-        <IdHelp id="default-lane-id-help" />
         <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Skapa standardpresentation</button>
       </div> : <ul className={styles.laneList}>
         {lanes.map(lane => <li key={lane.id}>
@@ -140,7 +142,7 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
           </button>
         </li>)}
       </ul>}
-      {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} navigationBlocked={navigationBlocked} /> : null}
+      {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} navigationBlocked={navigationBlocked || disabled} /> : null}
     </section>
     <details className={styles.card}><summary>Ny presentation</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
       <h2 id="new-lane-title">Skapa presentation</h2>
@@ -155,7 +157,7 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
       </div>
       <IdHelp id="new-lane-id-help" />
     </form></details>
-  </>;
+  </fieldset>;
 }
 
 function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: StudioProject; lane: StudioLane; onEdit: Edit; navigationBlocked:boolean }) {
@@ -330,7 +332,6 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
       </div>
     </fieldset>
     <p className={styles.idLine}>Lane-id <strong>{lane.id}</strong></p>
-    <IdHelp id={`lane-id-help-${lane.id}`} />
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
       <p>Ta bort presentation {lane.id}?</p>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>

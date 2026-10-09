@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## Pågående nästa etapp: generiskt dealerpaket och Skapa spelrum
+
+Arbetskopian innehåller egen dealer med fryst grundloop, atomisk rumpublicering
+och automatiskt återanvänd/skapat spellane. Översikt börjar i Sammansättning;
+Publicering visar ett sammanhängande rumflöde och utfällbara avancerade val.
+Den gamla JSON-exportknappen är borttagen. N2:s provlänkar använder verkliga
+bolagsägda rum även när presentation och spellane har olika ID.
+
+Riktade paket/capture/publisher-tester 104/104, N2-rumtester 17/17 och tidigare
+UI/controller 36/36 PASS. Gemensam TypeScript och Lab-build PASS. Isolerad UI-QA visar verkligt sparande,
+återläsning, tangentbordsnavigation och layout i 1440/768/390 utan JavaScript-fel.
+Slutlig fullhook, Johanna-playerrepetition och ny leverans återstår.
+Render behöver nästa etapp med förhandlad capability v3 för Johanna. Nuvarande
+omdeploy verifierar v2-stöd, inte ännu opushad kod. Johns spelbolag och Johanna
+har ännu inte skapats i produktions-Neon. Den vanliga webbläsaranslutningen fallerar, men en separat Edge-session är nu
+manuellt inloggad av Jakob. Första produktionsbilden är sparad privat;
+Johns/Johanna-klickdemon börjar efter verifierad ny leverans.
+
 ## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
 
 Kompatibilitetsdelen inför rumsschema 2 med separata presentationLaneId och
@@ -30,8 +48,12 @@ finns utanför Git. Oförändrade media och sync-probe PASS; ingen ny läppsynk-
 acceptans eller produktionsrepetition hävdas av detta.
 
 Föregående Studio-etapp 3d4faaf3 har grön exakt-SHA CI 37935300051 och Vercel
-production READY. N2-etapp 82d01ecf är pushad; dess CI/utrullning verifieras
-separat. Renders exakta SHA är ännu inte verifierad. Webbläsarstyrningen
+production READY. N2-etapp 82d01ecf har CI 37942515170 success och Vercel READY
+dpl_BV8qAas8ydphvL4zVk1JpLFxibWw. Kompatibilitetsetapp 3f70016a har fullhook
+PASS, CI 37943725684 success och Vercel production READY
+dpl_Ag2MCARdKiPcs8EY2R25mn5g5odj. Jakob meddelade Render-omdeploy; därefter
+verifierades HTTP 200 health och capability v2 med operator-owned-v2.
+Renders exakta SHA är ännu inte verifierad. Webbläsarstyrningen
 felar i verktygets anslutning; den inloggade produktionsfliken har inte klickats.
 
 Nästa stopptest: Johns spelbolag → separat dealer Johanna → Nora-filens egna

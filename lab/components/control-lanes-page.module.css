@@ -71,3 +71,6 @@
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 .actions :global(.sg-btn) { width: fit-content; max-width: 100%; }
+
+.selection { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 16px; }
+.selection .field { max-width: none; min-width: 0; }

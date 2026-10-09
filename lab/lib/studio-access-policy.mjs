@@ -49,7 +49,7 @@ export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['apikeys/launch', 'admin', ['game-authority']],
   ['apikeys/credit', 'admin', ['game-authority']],
   ['speech-qa', 'admin', ['operator-speech-qa-gate']],
-  ['operator-package', 'admin'],
+  ['operator-package', 'admin'], ['presentation-room', 'admin'],
   ['operator-create-demo', 'admin'],
   ['operator-create', 'admin'], ['operator-role', 'admin'], ['operator-membership', 'admin'],
 ].map(([id, minimumRole, requirements = []]) => Object.freeze({

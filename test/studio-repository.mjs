@@ -315,3 +315,60 @@ test('caught publisher input validation on a shared client rolls back earlier do
   }), rejection('studio_invalid_data', 422));
   assert.deepEqual(pool.snapshot(), before);
 });
+
+test('presentation snapshot reads project, administration and full media on one read-only MVCC client', async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool);
+  const project=createSeedProject();
+  await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});
+  await initialize(repo);
+  const media={id:'10000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,contentType:'video/mp4',
+    pathname:'croupier/media/dealers/astrid/review/uploads/10000000-0000-4000-8000-000000000001/'+ 'a'.repeat(64)+'.mp4',
+    classification:{dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Exact',notes:''}};
+  await repo.registerMedia(media,{actor:'tester'});
+  const before=pool.snapshot(),offset=pool.calls.length,captured=await repo.readPresentationSnapshot();
+  assert.deepEqual(captured.scope,scope);assert.equal(captured.projectDocument.revision,project.revision);
+  assert.equal(captured.administrationDocument.revision,'initial');assert.equal(captured.mediaRows[0].id,media.id);
+  assert.equal(Object.isFrozen(captured.mediaRows[0].classification),true);
+  assert.deepEqual(pool.snapshot(),before,'snapshot does not write or audit');
+  const reads=pool.calls.slice(offset);
+  assert.equal(new Set(reads.map(row=>row.client)).size,1);
+  assert.match(reads[0].sql,/BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY/);
+  assert.equal(reads.some(row=>row.sql.includes('pg_advisory')),false);
+  assert.deepEqual(reads.filter(row=>['read-document','list-media'].includes(row.marker)).map(row=>row.values.slice(0,2)),[scope,scope,scope].map(s=>[s.environment,s.workspaceId]));
+});
+test('presentation snapshot reuses an active write client and rejects cross-scope nesting',async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool),project=createSeedProject();
+  await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
+  const count=pool.connects;
+  await repo.transaction(async bound=>{
+    await bound.saveDocument('administration',{value:{rooms:['uncommitted']},expectedRevision:'initial',actor:'tester'});
+    const snapshot=await bound.readPresentationSnapshot();assert.deepEqual(snapshot.administrationDocument.value.rooms,['uncommitted']);
+  });
+  assert.equal(pool.connects,count+1);
+  const other=createStudioRepository({pool,scope:{...scope,workspaceId:'other'}});
+  await assert.rejects(repo.transaction(()=>other.readPresentationSnapshot()),rejection('studio_scope_mismatch',409));
+});
+test('presentation snapshot does not mix a later document version into an earlier read-only snapshot',async()=>{
+  const original=createStudioMemoryPool(),project=createSeedProject();let changed=false;
+  const pool={connect:async()=>{
+    const client=await original.connect();return {release:()=>client.release(),query:async(sql,values)=>{
+      const result=await client.query(sql,values);
+      if(sql.includes('studio:read-document')&&values[2]==='project'&&!changed){
+        changed=true;original.corruptDocument(scope,'administration',row=>({...row,revision:'later',value:{rooms:['later']}}));
+      }
+      return result;
+    }};
+  }};
+  const repo=repository(pool);
+  await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
+  const snapshot=await repo.readPresentationSnapshot();
+  assert.equal(snapshot.administrationDocument.revision,'initial');assert.deepEqual(snapshot.administrationDocument.value.rooms,[]);
+  assert.equal((await repo.readDocument('administration')).revision,'later');
+});
+test('missing or unreadable capture documents/media fail closed without partial snapshots',async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool);
+  await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_document_missing',503));
+  const project=createSeedProject();await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
+  pool.failNext('list-media');await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_storage_unavailable',503));
+  assert.equal(pool.connects,pool.releases);
+});

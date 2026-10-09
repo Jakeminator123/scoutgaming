@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { partnerLaneState } from '../lib/partner-package-view.mjs';
+import { isGameLaneId } from '../../web/public/game-lanes.mjs';
 
 const h = React.createElement;
 const labels = { dealer: 'Dealer', table: 'Bord', background: 'Bakgrund' };
@@ -14,9 +15,11 @@ export function PartnerPackageView({ snapshot, view }) {
   return h('section', { className: 'page-b', 'aria-label': 'Tilldelade lane-paket' },
     h('p', null, 'Bord, dealer och bakgrund kommer från paketet som publicerats i nivå 1. Operatören kan ändra de val som paketet tillåter.'),
     ...presentation.lanes.map(lane => {
-      const state = partnerLaneState(lane, branding, presentation.assets);
+      const state = partnerLaneState(lane, branding, presentation.assets, presentation.registeredDealers);
       const fallback = state.compatibility === 'full-frame';
       const params = new URLSearchParams({ operator: snapshot.operator.slug, lane: lane.id });
+      const rooms = (snapshot.tables ?? []).filter(room => room.operatorId === snapshot.operator.id
+        && room.presentationId === lane.id && room.status === 'active' && isGameLaneId(room.id));
       return h('article', { className: 'panel', key: lane.id },
         h('h3', null, state.name),
         h('p', null, fallback ? 'Fullbildsklipp · bord och bakgrund är inbakade. Separata lager kan användas när ett ersättningspaket har godkänts i nivå 1.' : 'Tre separata lager · bord, dealer och bakgrund.'),
@@ -25,7 +28,11 @@ export function PartnerPackageView({ snapshot, view }) {
           const text = !layer.enabled ? 'Avstängt i paketet' : fallback && role !== 'dealer' ? 'Inbakat i dealerklippet' : `${layer.label}${layer.contentType ? ` · ${layer.contentType} · ${layer.width} × ${layer.height}` : ''}`;
           return [h('dt', { key: `${role}-label` }, labels[role]), h('dd', { key: role }, text)];
         })),
-        view === 'test' ? h('a', { className: 'btn', href: `/play/blackjack?${params}` }, 'Öppna spelbord med detta paket') : null);
+        view === 'test' ? snapshot.roomBindings === 'operator-owned-v2' || presentation.schemaVersion === 2
+          ? rooms.length ? h('div', null, ...rooms.map(room => h('a', { key: room.id, className: 'btn',
+            href: '/play/blackjack?' + new URLSearchParams({ operator: snapshot.operator.slug, table: room.id }) }, room.name)))
+            : h('p', null, 'Inget publicerat spelrum för presentationen.')
+          : h('a', { className: 'btn', href: `/play/blackjack?${params}` }, 'Öppna spelbord med detta paket') : null);
     }),
     view === 'theme' ? h('p', null, 'Marker och kort har ännu inga publicerade operatörsval. Spelmotorn styr värden, kort och saldo.') : null);
 }

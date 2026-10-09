@@ -89,6 +89,17 @@ const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...s
 const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope }) }) : null;
+const frozenDealerContext = studioPolicyRuntime ? await (async () => {
+  const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('./storage/frozen-dealer-presentation.mjs');
+  return createFrozenDealerPresentationContext({
+    readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
+    readPresentation: (await import('./storage/presentation-package.mjs')).readPackagePresentation,
+    privateMedia: (record, request) => (import('../lab/lib/cloud-media-store.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+      trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
+        new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
+        ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+  });
+})() : null;
 const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
   packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
   privateMedia:(await import('../lab/lib/cloud-media-store.mjs')).getPrivateMedia,
@@ -672,7 +683,7 @@ const server = createServer(async (req, res) => {
   try {
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
-  const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method}));
+  const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method,headers:req.headers??{}}));
   if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
   const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
   if(compositionModule){res.writeHead(compositionModule.status,Object.fromEntries(compositionModule.headers));res.end(req.method==='HEAD'?undefined:Buffer.from(await compositionModule.arrayBuffer()));return;}
@@ -812,7 +823,7 @@ const server = createServer(async (req, res) => {
   }
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
-      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
+      presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
           if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
           const owner=await chatSessionOwner(request,playerId);

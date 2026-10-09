@@ -123,3 +123,20 @@ test('the page navigation exception cannot relax API, Origin, forwarded host/pro
   assert.throws(()=>normalizeNativeStudioPageRequest(new Request(labOrigin+'/administration',{method:'POST',headers:navigation,body:'mutation'}),config),error=>error.statusCode===403);
   assert.throws(()=>normalizeNativeStudioRequest(new Request('http://studio.example.invalid/api/auth/session'),config),error=>error.statusCode===403);
 });
+
+
+test('only the room preparation GET retains two exact query keys through the public rewrite', async () => {
+  const query = '?operatorId=north&presentationLaneId=vip-presentation';
+  const request = normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + query, { headers: forwarded }), config);
+  assert.equal(request.url, publicOrigin + '/studio/api/admin/presentation-room' + query);
+  assert.equal(request.headers.get('cookie'), forwarded.cookie);
+  assert.doesNotThrow(() => assertNativeStudioRequest(request, config));
+  let reads = 0;
+  const api = createStudioAdminApi({ authorize: async () => ({ user: 'fixture', role: 'admin', scope }), allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts,
+    handlers: new Map([['GET /studio/api/admin/presentation-room', async context => { reads++; assert.equal(new URL(context.request.url).search, query); return { ok: true }; }]]) });
+  assert.equal((await api.handle(request)).status, 200); assert.equal(reads, 1);
+  for (const [method, extra] of [['POST', query], ['GET', query + '&x=1'], ['GET', query + '&operatorId=other'], ['GET', '?operatorId=north'], ['GET', '?operatorId=north&presentationLaneId=constructor']]) {
+    assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + extra, { method, headers: forwarded }), config), error => error.statusCode === 403);
+  }
+  assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + query, { headers: { ...forwarded, origin: 'https://evil.invalid' } }), config), error => error.statusCode === 403);
+});

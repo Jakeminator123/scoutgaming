@@ -1,3 +1,5 @@
+import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
+
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 
 // Next's route Request may omit its configured basePath. The transport URL
@@ -9,7 +11,7 @@ export function normalizeNativeStudioRequest(request, config) {
   const url = new URL(request.url), [publicOrigin, labOrigin] = config.allowedOrigins;
   if (config.allowedOrigins.length !== 2 || !config.allowedOrigins.includes(url.origin)
     || !config.publicHosts.includes(url.host) || url.username || url.password
-    || url.pathname.includes('%') || url.search || url.hash) reject();
+    || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) || url.hash) reject();
   const publicHost = new URL(publicOrigin).host;
   const forwarded = request.headers.get('x-forwarded-host');
   const host = request.headers.get('host');

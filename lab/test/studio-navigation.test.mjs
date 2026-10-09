@@ -207,8 +207,9 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect) };
   const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
-  assert.match(html, /Spelrum &amp; bord/);
-  assert.match(html, /Dealers &amp; klipp/);
+  assert.match(html, /Sammansättning/);
+  assert.match(html, /Innehåll/);
+  assert.match(html, /Publicering/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();

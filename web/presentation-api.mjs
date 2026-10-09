@@ -1,3 +1,4 @@
+import { BASE_DEALER_IDS, isDealerId } from './dealer-identity.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
@@ -21,7 +22,7 @@ const publicVideo = item => item ? {
   src: `/api/presentation/videos/${item.id}`,
   ...(item.classification?.compositing ? { compositing: structuredClone(item.classification.compositing) } : {}),
 } : null;
-const supportedDealers = new Set(['vera', 'astrid', 'amira', 'mei', 'nora']);
+
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 
@@ -42,14 +43,14 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
-  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, legacyOptions, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, legacyOptions, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
   return async function handle(req, res, pathname, playerId) {
-    const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method}));
+    const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method,headers:req.headers??{}}));
     if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return true;}
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
     if (publicModules.has(pathname) && req.method === 'GET') {
@@ -67,6 +68,13 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
       }
       if (!playerId) fail('Sign in required', 401);
+      if (pathname.startsWith('/api/presentation/registered-idle/')) {
+        if (!frozenDealerContext) fail('Frozen presentation unavailable',503);
+        const response = await frozenDealerContext.response(new Request((env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost')+(req.url||pathname), { method: req.method, headers: req.headers }));
+        res.writeHead(response.status, Object.fromEntries(response.headers));
+        if (response.body) Readable.fromWeb(response.body).on('error', () => res.destroy()).pipe(res); else res.end();
+        return true;
+      }
       if (pathname.startsWith('/api/presentation/videos/')) {
         if (!['GET', 'HEAD'].includes(req.method)) fail('GET or HEAD required', 405);
         const id = pathname.slice('/api/presentation/videos/'.length);
@@ -83,9 +91,16 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         return true;
       }
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
+        const query = new URL(req.url||pathname,'http://localhost').searchParams;
+        if (query.size) {
+          const keys = ['operatorSlug','roomId','packageRevision','dealerId'];
+          if (!frozenDealerContext || query.size !== 4 || keys.some(key=>query.getAll(key).length!==1) || !/^[1-9][0-9]{0,15}$/.test(query.get('packageRevision')||'')) fail('Invalid presentation context');
+          json(200, { ...await frozenDealerContext.configuration({operatorSlug:query.get('operatorSlug'),roomId:query.get('roomId'),packageRevision:Number(query.get('packageRevision')),dealerId:query.get('dealerId')}),
+            inventory:{videos:[],families:[]},defaultMode:'off' }); return true;
+        }
         const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
         json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: project.idlePolicy, inventory,
-          dealerIdle: { nora: publicVideo(ownDealerIdle(project, inventory, 'nora')) },
+          dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>!BASE_DEALER_IDS.includes(dealer.id)).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
@@ -114,7 +129,22 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         finally { res.removeListener('close', disconnected); }
         return true;
       }
-      if (!modes.has(body.mode) || !Number.isInteger(body.version) || !supportedDealers.has(body.dealerId)) fail('Invalid presentation request');
+      if (!modes.has(body.mode) || !Number.isInteger(body.version) || !isDealerId(body.dealerId)) fail('Invalid presentation request');
+      if (body.presentationContext !== undefined) {
+        if (!frozenDealerContext || body.presentationContext.dealerId !== body.dealerId) fail('Invalid presentation context');
+        const frozen = await frozenDealerContext.resolve(body.presentationContext);
+        const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
+        if (['deal','reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
+        const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
+        // Package v2 freezes registered idle only. Other media cannot silently
+        // follow an edited Studio registry after publication; native cards stay
+        // authoritative and continue in 2D until that media has a frozen format.
+        const positional = sourceEvent.type === 'deal';
+        json(200,{owner:'web',projectRevision:frozen.projectRevision,configurationSource:'operator-package-v2',video:null,standard:null,
+          decision:{requestId:randomUUID(),sourceEvent,media:{familyId:null,reason:positional?'position_clip_missing':'frozen_clip_missing',
+            situation:positional?(sourceEvent.to==='dealer'?(sourceEvent.faceDown?'dealer-hole':'dealer-up'):'box'+sourceEvent.box):''}}});
+        return true;
+      }
       const [loaded, inventory] = await Promise.all([store.load(), registryLoader()]);
       const project = normalizeProject(loaded, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
       if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
@@ -146,7 +176,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         }
         json(200, await decisions.get(key));
       } finally { res.removeListener('close', disconnected); }
-    } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable' }); }
+    } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
     return true;
   };
 }

@@ -260,6 +260,8 @@ test('prepared player uses the actual shared player and redirects retired BO doc
   try {
     const prepared = await preparePlatformUi({env, output: directory});
     assert.ok(prepared.files.includes('/app.mjs'));
+      assert.ok(prepared.files.includes('/dealer-identity.mjs'));
+      assert.equal(await readFile(join(directory,'public','dealer-identity.mjs'),'utf8'),await readFile(new URL('../../../web/public/dealer-identity.mjs',import.meta.url),'utf8'));
     assert.ok(prepared.files.includes('/composition-settings.mjs'));
     assert.ok(prepared.files.includes('/presentation-composition.mjs'));
     for (const name of ['compositor.js', 'geometry.js']) {
@@ -358,4 +360,12 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   } finally {
     for (const [key, value] of Object.entries(previous)) {if (value === undefined) delete process.env[key]; else process.env[key] = value;}
   }
+});
+
+test('frozen registered idle has one exact backend address and preserves the existing player/transport headers',()=>{
+  const path='/api/presentation/registered-idle/north/room-johanna/7/johanna';
+  assert.equal(backendPlatformPath(path),true);assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'backend',destination:config.backendOrigin+path});
+  const headers=platformBackendHeaders(new Headers({cookie:'player_session=fixture',range:'bytes=0-15','x-presentation-capability-version':'3'}),config);
+  assert.equal(headers.get('cookie'),'player_session=fixture');assert.equal(headers.get('range'),'bytes=0-15');assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
+  for(const bad of ['/api/presentation/registered-idle','/api/presentation/registered-idle/north/room/7','/api/presentation/registered-idle/north/room/0/johanna',path+'/',path+'/record','/api/presentation/registered-idle/north/room/7/%6aohanna','/api/presentation/registered-idle/north/room/7/../johanna'])assert.equal(backendPlatformPath(bad),false,bad);
 });

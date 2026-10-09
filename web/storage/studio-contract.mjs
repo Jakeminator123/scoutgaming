@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { validateProject } from '../../lab/lib/studio-model.mjs';
 import { validateSocialPolicy } from '../../open-claw/lab/src/social.mjs';
-import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../../lab/lib/video-intake.mjs';
+import { validateManagedStudioMedia } from '../managed-media-contract.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
 
 export const STUDIO_DOCUMENT_KINDS = Object.freeze(['project', 'social-policy', 'administration']);
@@ -153,15 +153,8 @@ export function validateStudioMedia(record) {
     if (canonicalStudioJson(copy) !== canonicalStudioJson(expected)) throw new StudioStorageError('studio_invalid_retained_media',422);
     return copy;
   }
-  if (!copy || Array.isArray(copy) || Object.keys(copy).sort().join(',') !== 'classification,contentType,id,pathname,sha256,size'
-    || !uuid.test(copy.id) || !sha.test(copy.sha256) || !Number.isSafeInteger(copy.size)
-    || copy.size < 16 || copy.size > MAX_VIDEO_BYTES || !['video/mp4', 'video/webm'].includes(copy.contentType)) throw new StudioStorageError('studio_invalid_media', 422);
-  try { copy.classification = validateVideoMetadata(copy.classification); }
+  try { return validateManagedStudioMedia(copy); }
   catch { throw new StudioStorageError('studio_invalid_media', 422); }
-  const extension = copy.contentType.slice(6);
-  const expected = `croupier/media/dealers/${copy.classification.dealerId}/review/uploads/${copy.id}/${copy.sha256}.${extension}`;
-  if (copy.pathname !== expected) throw new StudioStorageError('studio_invalid_media', 422);
-  return copy;
 }
 
 export function validateMediaId(value) {

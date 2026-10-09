@@ -221,3 +221,46 @@ test('authenticated Nora lane creation requires preflight before product SQL and
     assert.equal(writes,1);assert.equal(fetches,2);assert.equal(state.gameLanes.at(-1).dealer,'nora');
   }
 });
+
+test('trusted preparation verifies provider data outside product SQL and supplies only server context to the locked handler', async () => {
+  let inside = false, prepared = 0, invoked = 0;
+  const proof = Object.freeze({ presentation: Object.freeze({ schemaVersion: 2, registeredDealers: [] }), source: 'server-capture' });
+  const key = 'POST ' + path('operator-package');
+  const configured = api({ handlers: new Map([[key, context => {
+    assert.equal(inside, true); assert.equal(context.prepared, proof); assert.equal(context.body.prepared, 'untrusted-request');
+    invoked++; return { ok: true };
+  }]]), preparations: new Map([[key, async context => {
+    assert.equal(inside, false); assert.equal(Object.hasOwn(context, 'prepared'), false); prepared++; await Promise.resolve(); return proof;
+  }]]), mutationTransaction: async (work, options) => {
+    assert.equal(options.presentationMutation.value, proof.presentation, 'format features come from the trusted frozen capture');
+    inside = true; try { return await work(); } finally { inside = false; }
+  } });
+  const response = await configured.handle(request('operator-package', { body: JSON.stringify({ operatorId: 'north', lanes: ['vip'], prepared: 'untrusted-request' }) }));
+  assert.equal(response.status, 200); assert.equal(prepared, 1); assert.equal(invoked, 1);
+});
+
+test('authorization revocation after provider preparation is rechecked under the product lock and never invokes the writer', async () => {
+  for (const change of ['identity', 'role', 'scope']) {
+    let principal = session, inside = false, writes = 0;
+    const key = 'POST ' + path('operator-package');
+    const configured = api({ authorize: () => principal, handlers: new Map([[key, () => { writes++; return { ok: true }; }]]),
+      preparations: new Map([[key, async () => {
+        assert.equal(inside, false);
+        principal = change === 'identity' ? { ...session, user: 'another' } : change === 'role' ? { ...session, role: 'reader' } : { ...session, scope: { ...session.scope, workspaceId: 'foreign' } };
+        return { presentation: { schemaVersion: 1 } };
+      }]]), mutationTransaction: async work => { inside = true; try { return await work(); } finally { inside = false; } } });
+    assert.equal((await configured.handle(request('operator-package'))).status, 403); assert.equal(writes, 0);
+  }
+});
+
+test('preparation registration cannot widen the route contract and request denial precedes provider work', async () => {
+  const key = 'POST ' + path('room'); let preparations = 0;
+  for (const invalid of [new Map([['GET ' + path('players'), () => ({})]]), new Map([['POST ' + path('unknown'), () => ({})]]),
+    new Map([['POST ' + path('apikeys/credit'), () => ({})]]), new Map([[key, null]])]) {
+    assert.throws(() => api({ preparations: invalid }), /Unknown admin preparation/);
+  }
+  const entries = new Map([[key, () => { preparations++; return { server: true }; }]]), configured = api({ preparations: entries });
+  entries.set(key, () => { throw Error('Caller cannot replace snapshotted preparation'); });
+  assert.equal((await configured.handle(request('room', { headers: { origin: 'https://evil.example', 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } }))).status, 403);
+  assert.equal(preparations, 0); assert.equal((await configured.handle(request())).status, 200); assert.equal(preparations, 1);
+});

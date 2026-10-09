@@ -26,13 +26,42 @@ lane som reserv. Äldre rum och ingångar utan table läses fortsatt.
 
 Runtime capability v2 annonserar rooms=operator-owned-v2. Native-grinden
 tillåter tidigare v1-funktioner men kräver v2 före rumsskrivning, även rollback.
-Room-writer/UI är en separat leverans efter kompatibilitetsläsaren på Render.
+Skapa spelrum kör förberedande mediakontroller före skrivtransaktionen och
+kontrollerar därefter projekt-, administrations- och paketrevision samt använda
+mediarecords under samma scope. Rum, eventuell ny spellane och paket skrivs
+atomiskt. Samma idempotencyKey återger ett verifierat befintligt resultat;
+ändrad avsikt ger konflikt. Separata presentationLaneId och gameLaneId är giltiga.
 
 OperatorStore.publishPackage låser operatören innan aktuell revision jämförs
 och ny paketrevision läggs in. expectedRevision=null kräver första paketet.
 withTransactionClient används bara inom samma aktiva skrivtransaktion/scope;
 scopefel, databasfel och fångade publiceringsvalideringsfel poisonar hela
 transaktionen. Inga provideranrop får ske under SQL-låset.
+
+
+## Egna dealers och fryst grundloop
+
+Neon lagrar sparat projekt, administration, mediaregister och bolagspaketens
+revisioner. Privat Blob lagrar själva filmerna och bilderna. UI-utkast är inte
+publicering. Registrering, rättigheter och aktuellt paket läses på servern.
+
+Paket v1 och dess envelope behåller sin tidigare byteform. Paket v2 lägger till
+registeredDealers med eget ID, visningsnamn och normal sexfälts-mediarecord för
+grundloopen. Fältet fryser UUID, SHA-256, storlek, MIME, sökväg och klassificering
+inklusive klippets metadata. Providerkontroll sker efter en sammanhängande
+read-only snapshot och före SQL-skrivlås. Ingen klient skickar en egen betrodd
+mediareferens till publishern.
+
+Capability-endpointens standardsvar är v2. Headern
+X-Presentation-Capability-Version: 3 förhandlar stöd för saved-registry-idle-v1
+och operator-package-v2. Varje v2-paket kräver detta stöd, även om listan är tom.
+Originalfyras oförändrade v1-paket kräver inte formatbyte.
+
+Spelklienten hämtar en publicerad egen grundloop genom rum, bolag, aktuell
+paketrevision och dealer. En äldre flik får revisionskonflikt efter ompublicering.
+Ingen tyst övergång till senaste Studio-klipp sker. Händelseklipp utan fryst
+media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
+ägares tilldelade rum och länkar med operator + table.
 
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
@@ -69,7 +98,7 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Dealers & klipp `/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Förhandsvisning `/control/preview` (lagerprov, material i `test-videoeditor/preview/site`), Lanes `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med djuplänkar `?tab=`, Uppspelning `/control/activity`, Probe `/control/probe`, Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
+| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Innehåll `/control/clips`, Klippbibliotek `/control/videos`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Sammansättning `/control/preview` (lagerprov, material i `test-videoeditor/preview/site`), Publicering `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med djuplänkar `?tab=`, Uppspelning `/control/activity`, Tal vid inaktivitet `/control/probe`, Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
 | 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; ny e-post får aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). |
 | 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet; dealerraden följer paketet. Acceptans av dealermedia i rehearsal: `?dealer=<namn>&rehearsal=1`. Historiksidan anropar `POST /api/history`, se raden under. |
 | 3 · Spelarresultat | `/api/history` | Spelare. Egna aggregerade resultat. Samma session som `/api/player`. |
@@ -97,7 +126,7 @@ flowchart LR
   D --> P["Uppspelningsplan: exakta klipp och ordning"]
   P --> V["Spelare + kompositor: video och överlägg"]
   V --> U["Nivå 3: spelarens spel"]
-  L -. "Tilldelning återstår" .-> O["Nivå 2: partnerns begränsade val"]
+  L -->|"Publicerat paket"| O["Nivå 2: partnerns begränsade val"]
 ```
 
 Diagrammets namn beskriver ansvar. Det inför inga nya tjänster eller påstår
@@ -144,7 +173,7 @@ namn, dealer, tre lager och tillgångarnas MIME-typ kommer från samma format so
 spelklienten. Snapshoten exponerar inte det komprimerade `_scoutPresentation`.
 Bord, Bakgrund, Presentationslanes och branding använder den anslutna
 inställningspanelen i stället för Kevins lokala SVG-/bildprototyper. Provbord
-länkar till `/play/blackjack?operator=...&lane=...`, med vanlig spelarinloggning.
+länkar till `/play/blackjack?operator=...&table=...`, med vanlig spelarinloggning.
 `presentations.configure`, operatörsscope, exakt paketrevision och den enskilda
 lanens allowed/default/operatorAdjustable gäller fortfarande vid varje skrivning.
 `composition` följer spelklientens per-clip-gräns. Fullbildslanes behåller sina
@@ -153,7 +182,8 @@ fryst lagerformat måste återpubliceras före redigering i dessa vyer.
 Marker/kort har ännu inga publicerade designval; deras lokala prototyper visas
 bara i den tydligt märkta fixturen. Klipp, masker, urvalsregler och publicering
 hör till nivå 1. `package.tables` behåller sina befintliga rum-ID:n; denna
-anpassning inför ingen rum-writer eller ny ägarbestämning från dessa ID:n.
+projektion kontrollerar faktiskt ägarskap och kompatibel spellane i administrationen.
+Rum-writern beskrivs ovan; en paketsträng ensam bevisar inget ägarskap.
 
 `lab/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
 `/control/clips` och behåller query. Tidigare återexporterades klippsidan direkt;

@@ -147,7 +147,7 @@ test('actual isolated Render gateway forwards public feature metadata only to th
   const web=createServer(async(req,res)=>{
     calls++;assert.equal(req.headers.host,'preview.example.test');assert.equal(req.headers.cookie,undefined);
     assert.equal(req.headers.authorization,undefined);assert.equal(req.headers['x-croupier-vercel-secret'],undefined);
-    const response=presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method}));
+    const response=presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method,headers:req.headers}));
     assert.ok(response);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(req.method==='HEAD'?undefined:await response.text());
   });
   web.listen(0,'127.0.0.1');await once(web,'listening');
@@ -155,8 +155,8 @@ test('actual isolated Render gateway forwards public feature metadata only to th
     {webPort:web.address().port,vercelIngress:ingress,labInternalSecret:'isolated-lab-secret-'.repeat(3)});
   gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
   t.after(()=>{gateway.closeAllConnections();gateway.close();web.closeAllConnections();web.close();});
-  const get=(path,method='GET')=>new Promise((resolve,reject)=>{
-    const req=httpRequest({host:'127.0.0.1',port:gateway.address().port,method,path,headers:{host:'isolated.onrender.com',cookie:'fixture-cookie',authorization:'Bearer fixture'}},res=>{
+  const get=(path,method='GET',headers={})=>new Promise((resolve,reject)=>{
+    const req=httpRequest({host:'127.0.0.1',port:gateway.address().port,method,path,headers:{host:'isolated.onrender.com',cookie:'fixture-cookie',authorization:'Bearer fixture',...headers}},res=>{
       let body='';res.on('data',chunk=>body+=chunk);res.on('end',()=>resolve({status:res.statusCode,body,headers:res.headers}));
     });req.on('error',reject);req.end();
   });
@@ -164,5 +164,16 @@ test('actual isolated Render gateway forwards public feature metadata only to th
   assert.deepEqual(JSON.parse(result.body),{schemaVersion:2,registeredDealerIds:['nora'],compositing:'per-clip',rooms:'operator-owned-v2'});
   assert.equal(result.headers['cache-control'],'no-store');assert.equal((await get('/api/presentation/capabilities','HEAD')).body,'');
   assert.equal((await get('/api/presentation/config')).status,421);
-  assert.equal((await get('/api/presentation/capabilities','POST')).status,421);assert.equal(calls,2);
+  const v3=await get('/api/presentation/capabilities','GET',{'x-presentation-capability-version':'3'});assert.equal(v3.status,200);assert.equal(JSON.parse(v3.body).schemaVersion,3);assert.equal(v3.headers.vary,'X-Presentation-Capability-Version');
+  assert.equal((await get('/api/presentation/registered-idle/north/room-johanna/7/johanna')).status,421);
+  assert.equal((await get('/api/presentation/capabilities','POST')).status,421);assert.equal(calls,3);
+});
+
+test('frozen idle never gets the public capability exception and requires complete existing Vercel transport authentication',()=>{
+  const path='/api/presentation/registered-idle/north/room-johanna/7/johanna';
+  const direct={url:path,method:'GET',headers:{host:'isolated.onrender.com',cookie:'player_session=fixture',range:'bytes=0-15'}};
+  assert.deepEqual(vercelIngressRequest(direct,ingress),{accepted:false,transported:false});
+  const transported=vercelIngressRequest({...request(path,{range:'bytes=0-15'}),method:'GET'},ingress);assert.equal(transported.accepted,true);assert.equal(transported.headers.range,'bytes=0-15');assert.equal(transported.headers.cookie,'player_session=isolated');
+  for(const extra of [{'x-croupier-vercel-secret':undefined},{'x-croupier-public-origin':'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'}])assert.equal(vercelIngressRequest({...request(path,extra),method:'GET'},ingress).accepted,false);
+  assert.equal(vercelIngressRequest({...request(path+'/record'),method:'GET'},ingress).accepted,false);
 });

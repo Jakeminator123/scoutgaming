@@ -114,3 +114,32 @@ test('active bank and new Neon preview use verified private Blob bytes with HEAD
   objects.clear();
   assert.equal((await registry.response(randomUUID(),req(randomUUID()))).status,404);
 });
+
+test('captured inventory never rereads a later Studio registry or classification, including media byte verification',async t=>{
+  const {repository,registry,newMedia}=await fixture(t),{record}=await newMedia();
+  await repository.initializeDocument('administration',{value:{rooms:[]},revision:'admin-capture',actor:'tester'});
+  const snapshot=await repository.readPresentationSnapshot();
+  const captured=snapshot.mediaRows.find(row=>row.id===record.id);
+  await repository.classifyMedia(record.id,{sha256:record.sha256,expectedRevision:captured.revision,metadata:{...record.classification,label:'Later label'},actor:'tester'});
+  const beforeReads=repository.readDocument;
+  // This separately constructed adapter proves loadCaptured cannot consult
+  // current DB registration/media even when the repository methods are broken.
+  const {env,options}=await fixture(t);
+  const adapter=createNeonVideoRegistry({repository:{scope,listMedia:async()=>{throw Error('latest media forbidden');},readDocument:async()=>{throw Error('latest project forbidden');}},scope,env,options});
+  const inventory=await adapter.loadCaptured(snapshot);
+  assert.equal(inventory.videos.find(row=>row.id===record.id).classification.label,record.classification.label);
+  assert.equal((await registry.load()).videos.find(row=>row.id===record.id).classification.label,'Later label');
+  await registry.verifyCapturedMedia([{record,revision:captured.revision,id:record.id}]);
+  assert.equal(repository.readDocument,beforeReads);
+});
+test('captured inventory rejects foreign scope/registration and unavailable selected immutable bytes',async t=>{
+  const {repository,registry,newMedia,objects}=await fixture(t),{record}=await newMedia();
+  await repository.initializeDocument('administration',{value:{rooms:[]},revision:'admin-capture',actor:'tester'});
+  const snapshot=await repository.readPresentationSnapshot();
+  await assert.rejects(registry.loadCaptured({...snapshot,scope:{...scope,workspaceId:'other'}}),e=>e.statusCode===409);
+  const tampered=structuredClone(snapshot);tampered.mediaRows[0].classification.dealerId='johanna';
+  await assert.rejects(registry.loadCaptured(tampered),e=>e.statusCode===503||e.statusCode===422);
+  // A fresh UUID/path avoids the verified readback cache of the prior upload.
+  objects.delete(record.pathname);
+  await assert.rejects(registry.verifyCapturedMedia([{record,id:record.id,revision:snapshot.mediaRows[0].revision}]),e=>e.code==='studio_media_storage_unavailable');
+});

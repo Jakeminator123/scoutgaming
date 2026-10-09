@@ -67,7 +67,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       'vendor/three/three.core.min.js',
       'vendor/three/GLTFLoader.js', 'vendor/three/BufferGeometryUtils.js',
       'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
-      'astrid-camera-audio-worklet.mjs',
+      'astrid-camera-audio-worklet.mjs', 'dealer-identity.mjs',
     ]) assert.ok(names.includes(required), `missing ${required}`);
     const total = (await Promise.all(names.map(async name => (await stat(join(directory, name))).size)))
       .reduce((sum, size) => sum + size, 0);
@@ -86,6 +86,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
         assert.ok(names.includes(path), `${name} imports missing ${path}`);
       }
     }
+    assert.equal(await readFile(join(directory,'dealer-identity.mjs'),'utf8'),await readFile(new URL('../../../web/public/dealer-identity.mjs',import.meta.url),'utf8'));
     const login = await readFile(join(directory, 'blackjack-entry.mjs'), 'utf8');
     const modal = await readFile(join(directory, 'auth-modal.mjs'), 'utf8');
     assert.match(login, /const destination = '\/frontend-preview\/game\/\?dealer=astrid&presentation=local'/);
