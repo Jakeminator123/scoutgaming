@@ -63,17 +63,17 @@ test('overview lists fixture operators alphabetically and keeps the single lime 
     assert.ok(at > cursor, name);
     cursor = at;
   }
-  assert.match(html, /Lanes, bord &amp; konton/);
+  assert.match(html, /Spelrum &amp; bord/);
   assert.match(html, /Dealers &amp; klipp/);
   assert.match(html, /Händelser/);
-  assert.match(html, /Klippbibliotek/);
-  assert.match(html, /Agentmodeller/);
-  assert.match(html, /Uppspelning/);
+  assert.match(html, /Sammansättning/);
+  assert.match(html, /href="\/control\/lanes"/);
+  assert.match(html, /href="\/control\/administration\?tab=tables"/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.match(html, /href="\/partner">Öppna spelbolagens arbetsytor →/);
   assert.match(html, /Nivå 3 · Spelare/);
   assert.match(html, /href="\/play">Öppna spelarytan →/);
-  assert.match(html, /Operatörens personal loggar in på \/partner\/login/);
+  assert.equal((html.match(/class="quickItem"/g) ?? []).length, 4);
 });
 
 test('overview without operators says the fixture is empty and keeps the level links', () => {

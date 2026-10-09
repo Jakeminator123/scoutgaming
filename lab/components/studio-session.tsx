@@ -179,8 +179,8 @@ export function useStudioSession(options: SessionOptions) {
       setSavedJson(JSON.stringify(response.project));
       setProject(current => current === submitted ? response.project : { ...current, revision: response.project.revision });
       setNotice(connectedLane
-        ? 'Sparat. Spelet läser nya deal- och replikval vid nästa händelse och Probe inför nästa beslut. Ladda om spelfliken efter ändrad idlepolicy, när handen är avslutad.'
-        : 'Projektet är sparat. Probe läser policyn inför nästa beslut.');
+        ? 'Sparat. Ladda om spelfliken mellan händer efter ändrad grundloop eller originalmotorns klippval.'
+        : 'Projektet är sparat.');
       recordActivity({ source: 'config', stage: 'configuration', status: 'completed', title: 'Projekt sparat', owner: 'Du / projektlagringen',
         reason: 'Regler och kopplingar sparades.',
         data: { revision: response.project.revision } });

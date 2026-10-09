@@ -37,17 +37,17 @@ function loadTs(fileUrl,overrides={}) {
   return module.exports;
 }
 
-test('Förhandsvisning edits three saved lane choices and keeps the separated dealer trial available', () => {
+test('Sammansättning edits three saved lane choices and keeps the separated dealer trial available', () => {
   const pageSource = readFileSync(new URL('../app/control/preview/page.tsx', import.meta.url), 'utf8');
-  assert.match(pageSource, /title: 'Förhandsvisning · Croupier Studio'/);
+  assert.match(pageSource, /title: 'Sammansättning · Croupier Studio'/);
   assert.match(pageSource, /studioUiInitialData\(/);
   const { ControlPreviewPage } = loadTs(new URL('../components/control-preview-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlPreviewPage,{
     initialProject:createSeedProject(),initialVideos:{videos:[]},initialStatus:{configured:false},
   }));
   assert.match(html, /\/\/ STUDIO/);
-  assert.match(html, /<h1>Förhandsvisning<\/h1>/);
-  assert.match(html, /Sätt ihop dealer, bord och bakgrund/);
+  assert.match(html, /<h1>Sammansättning<\/h1>/);
+  assert.match(html, /Välj dealer, bord och bakgrund/);
   assert.match(html, /aria-label="Tre lager"/);
   assert.match(html, /<legend>Bord<\/legend>/);
   assert.match(html, /<legend>Bakgrund<\/legend>/);
@@ -104,4 +104,31 @@ test('registered Nora gets her own clip preview and intake link without borrowin
   assert.match(html,/\/control\/videos\?dealer=nora&amp;event=speak.goodluck/);
   assert.match(html,/Tröskel 0.23 · Mjukhet 0.15/);
   assert.deepEqual(project,original);
+});
+
+
+test('a requested second lane keeps its dealer and its lane id when continuing to publication',()=>{
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
+  const project=addDealer(createSeedProject(),'nora','Nora');
+  const nora=defaultPresentationLane();nora.id='nora-evening';nora.label='Nora kväll';nora.dealers=['nora'];nora.layers.dealer={enabled:true,default:'nora',allowed:['nora']};
+  project.lanes.push(nora);
+  const render=initialLaneId=>renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialLaneId}));
+  const html=render(nora.id);
+  assert.match(html,/<option value="nora-evening" selected="">Nora kväll<\/option>/);
+  assert.match(html,/<option value="nora" selected="">Nora<\/option>/);
+  assert.match(html,/href="[^"]*\/control\/lanes\?lane=nora-evening"/);
+  assert.doesNotMatch(html,/control\/zones|Bakgrundszoner/);
+  assert.match(render('unknown-lane'),/href="[^"]*\/control\/lanes\?lane=mobile-phone"/);
+});
+
+test('unsaved composition prevents the next-step link from discarding the draft',()=>{
+  const project=createSeedProject();
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url),{
+    react:{useState:value=>[typeof value==='function'?value():value,()=>{}],useRef:value=>({current:value}),useEffect:()=>{}},
+    './studio-session':{useStudioSession:()=>({project,dirty:true,saving:false})},
+  });
+  const tree=ControlPreviewPage({initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false}});
+  function find(node){if(!node||typeof node!=='object')return null;if(node.type==='a'&&node.props.href?.includes('/control/lanes?lane='))return node;for(const child of [node.props?.children].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
+  const next=find(tree);assert.ok(next);assert.equal(next.props['aria-disabled'],true);
+  let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});assert.equal(prevented,true);
 });

@@ -349,7 +349,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>Välj en dealer som är sparad under Dealers & klipp. Skapa samma lane-ID i Lanes och välj bord och bakgrund i Förhandsvisning.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
+          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>Välj en dealer som är sparad under Dealers & klipp. Skapa samma lane-ID i Lanes och välj bord och bakgrund i Sammansättning.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
             ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'), dealer: value(form, 'dealer') || 'astrid', mediaCollection: `${value(form, 'dealer') || 'astrid'}-presentation`,
           } }), true)}>
             <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>

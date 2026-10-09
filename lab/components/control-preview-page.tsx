@@ -16,10 +16,10 @@ const roles:Role[]=['dealer','table','background'];
 const labels={dealer:'Dealer',table:'Bord',background:'Bakgrund'};
 const defaultKey:VideoCompositing={mode:'green-screen',threshold:0.23,softness:0.15,despill:0};
 
-export function ControlPreviewPage({initialProject,initialVideos,initialStatus}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus}) {
+export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string}) {
   const session=useStudioSession({initialProject,initialVideos,initialStatus});
   const {project,modelEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
-  const [laneId,setLaneId]=useState(project.lanes?.[0]?.id??'mobile-phone'),[clipId,setClipId]=useState('');
+  const [laneId,setLaneId]=useState(initialLaneId??project.lanes?.[0]?.id??'mobile-phone'),[clipId,setClipId]=useState('');
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile');
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState(''),[localKey,setLocalKey]=useState(true);
   const objectUrls=useRef<Partial<Record<Role,string>>>({});
@@ -60,39 +60,41 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus}:
     </label>)}</fieldset>;
   }
   const uploadHref=studioHref('/control/videos',{dealerId:lane.layers.dealer.default,eventId:clip?.classification?.eventId??project.events[0]?.id});
-  return <PageTemplate eyebrow="// STUDIO" title="Förhandsvisning" intro="Sätt ihop dealer, bord och bakgrund. Varje klipp behåller sina händelser, OpenClaw-val och automatiken."
+  return <PageTemplate eyebrow="// STUDIO" title="Sammansättning" intro="Välj dealer, bord och bakgrund. Spela upp, justera och spara som en lane."
     primary={<button className="sg-btn sg-btn-primary" disabled={!dirty||saving} onClick={()=>void save()}>{saving?'Sparar…':'Spara lane'}</button>}>
     <div className="sg-page-body">
       {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
-      <label className="field">Lane<select value={lane.id} onChange={event=>{setLaneId(event.target.value);setClipId('');}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+      <p>1. Sätt ihop → 2. Spara lane → 3. Välj variationer och publicera</p>
+      <label className="field">Arbeta med lane<select value={lane.id} onChange={event=>{setLaneId(event.target.value);setClipId('');}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%, 320px),1fr))',gap:24}}>
         <section aria-label="Tre lager">
           <label className="field">Dealer<select value={lane.layers.dealer.default} onChange={event=>{const next=structuredClone(lane),id=event.target.value;next.layers.dealer.default=id;if(!next.dealers.includes(id))next.dealers.push(id);if(!next.layers.dealer.allowed.includes(id))next.layers.dealer.allowed.push(id);edit(next);setClipId('');}}>{project.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
           <p><a href={studioHref('/control/clips',{dealerId:lane.layers.dealer.default})}>Lägg till eller konfigurera en dealer</a> · <a href={uploadHref}>Ladda upp dealerklipp</a></p>
-          {lane.layers.dealer.default==='nora'?<p role="status">Nora behöver en egen spellane med dealer-id nora under <a href={labUrl('/control/administration?tab=tables')}>Administration → Bord</a>. Välj sedan den lanen här. Publiceringen kontrollerar att spelaren använder Nora.</p>:null}
+          {lane.layers.dealer.default==='nora'?<details><summary>Koppla Nora till spelet</summary><p>Skapa en spellane för Nora under <a href={labUrl('/control/administration?tab=tables')}>Administration → Bord</a> med samma lane-id som här: <strong>{lane.id}</strong>.</p></details>:null}
           <LayerAssetSelect role="table" lane={lane} assets={project.layerAssets??[]} onChange={edit}/>
           <LayerAssetSelect role="background" lane={lane} assets={project.layerAssets??[]} onChange={edit}/>
-          <fieldset><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
+          <details><summary>Visning och greenscreen</summary><fieldset><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
           <label className="check-field"><input type="checkbox" checked={settings.tableFront} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
           <p>{compositing?'Greenscreen nycklas för detta klipp. Bord och bakgrund spelas som egna kanaler.':'Fullbildsklippet behåller sin bild. För separata lager väljer du greenscreen i dealerklippets filinställningar.'}</p>
-          <details><summary>Greenscreen · klippets inställningar</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbild utan nyckling.</p>}<a href={uploadHref}>Ändra i klippbiblioteket</a></details>
+          <details><summary>Greenscreen · klippets inställningar</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbild utan nyckling.</p>}<a href={uploadHref}>Ändra i klippbiblioteket</a></details></details>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',margin:'16px 0'}}><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div>
           <details><summary>Placering · {layout==='mobile'?'Mobil':'Desktop'}</summary>{roles.map(placementControls)}<button className="sg-btn sg-btn-secondary" onClick={()=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),[layout]:defaultCompositionSettings()[layout]};edit(next);}}>Återställ placering</button></details>
-          <p><a className="sg-btn sg-btn-secondary" href={labUrl('/control/lanes')}>Tillåtna val och publicering → Lanes</a></p>
+          <p><a className="sg-btn sg-btn-secondary" aria-disabled={dirty||saving} onClick={event=>{if(dirty||saving)event.preventDefault();}} href={labUrl(`/control/lanes?lane=${encodeURIComponent(lane.id)}`)}>Nästa: variationer och publicering →</a></p>
+          {dirty?<p role="status">Spara lanen innan du går vidare.</p>:null}
         </section>
         <section aria-label="Komposition">
           <label className="field">Provklipp<select value={clip?.id??''} disabled={!clips.length} onChange={event=>setClipId(event.target.value)}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
           {!clips.length&&!localMedia.dealer?<p>Ladda upp ett klipp för {project.dealers.find(row=>row.id===lane.layers.dealer.default)?.label??lane.layers.dealer.default}, eller prova en lokal film nedan.</p>:null}
           {temporary?<p role="status"><strong>Tillfälligt filprov.</strong> Lokala filer finns bara i denna flik och följer inte med när lanen sparas eller publiceras.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing}/>
-          <p>Granska även två uppspelningar i spelets repetition innan ett nytt dealerpaket godkänns.</p>
+
         </section>
       </div>
       <details><summary>Snabbprov med tre lokala filer</summary><p>Prova dealerfilm, bord och bakgrund direkt. Registrera sedan filerna i klippbiblioteket och lagerbiblioteket för att använda dem i spelet.</p><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16}}>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><label className="check-field"><input type="checkbox" checked={localKey} onChange={event=>setLocalKey(event.target.checked)}/>Nyckla grön bakgrund i lokal dealerfilm</label><button className="sg-btn sg-btn-secondary" disabled={!temporary} onClick={clearLocal}>Till sparade filer</button>{localError?<p role="alert">{localError}</p>:null}</details>
       <LayerLibrary available={initialStatus.provider==='neon'} project={project} dirty={dirty} onRegistered={next=>{setProject(next);setSavedJson(JSON.stringify(next));setNotice('Lagerfilen är sparad. Välj den i lanen och spara.');}}/>
-      <details><summary>Frilagda dealerpaket · Paow och Dragge</summary><iframe loading="lazy" title="Förhandsvisning · lagerprov" src={labUrl('/preview/index.html')} style={{display:'block',width:'100%',height:'88vh',minHeight:720,border:0}}/></details>
-      <details><summary>Avancerade verktyg</summary><p><a href={labUrl('/control/videos')}>Klippbibliotek</a> · <a href={labUrl('/control/zones')}>Bakgrundszoner</a> · <a href={labUrl('/control/events')}>Händelser och villkor</a></p></details>
+      <details><summary>Avancerat: referensprov och spelkontroll</summary><p>Granska nya dealerpaket med två uppspelningar i spelets repetition.</p><details><summary>Frilagda dealerpaket · Paow och Dragge</summary><iframe loading="lazy" title="Förhandsvisning · lagerprov" src={labUrl('/preview/index.html')} style={{display:'block',width:'100%',height:'88vh',minHeight:720,border:0}}/></details>
+      <p><a href={labUrl('/control/videos')}>Klippbibliotek</a> · <a href={labUrl('/control/events')}>Händelser och villkor</a></p></details>
     </div>
   </PageTemplate>;
 }

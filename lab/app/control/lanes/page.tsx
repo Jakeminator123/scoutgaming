@@ -1,3 +1,4 @@
+import { firstQueryValue } from '@/components/studio-types';
 import { ControlLanesPage, type LaneOperatorChoice } from '@/components/control-lanes-page';
 import type { OperatorDirectory } from '@/components/control-operator-directory';
 import { STANDARD_OPERATOR_ROLES } from '@/lib/operator-admin-api.mjs';
@@ -8,7 +9,8 @@ import { loadControlStudio } from '../../control-studio-data';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Lanes · Croupier Studio' };
 
-export default async function Page() {
+export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = props?.searchParams ? await props.searchParams : {};
   const data = await loadControlStudio('/control/lanes');
   let operators: LaneOperatorChoice[] = fixtureLaneOperators();
   let storeAvailable = false;
@@ -39,5 +41,5 @@ export default async function Page() {
       }
     }
   }
-  return <ControlLanesPage initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
+  return <ControlLanesPage initialLaneId={firstQueryValue(query.lane)} initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
 }

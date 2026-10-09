@@ -34,20 +34,20 @@
 .variant { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); }
 .variant > button { align-self: start; }
 .variantDetails { min-width: 0; }
-.variantDetails summary { display: flex; gap: 10px; align-items: baseline; cursor: pointer; color: var(--text); padding: 4px 0; list-style: none; }
-.variantDetails summary::-webkit-details-marker { display: none; }
-.variantDetails summary::before { content: '›'; color: var(--muted); }
-.variantDetails[open] summary::before { content: '⌄'; }
-.variantDetails summary strong { flex: 1; min-width: 0; }
-.variantDetails summary strong { overflow-wrap: anywhere; }
-.variantDetails summary small { margin: 0; text-align: right; max-width: 45%; }
+.variantDetails > summary { display: flex; gap: 10px; align-items: baseline; cursor: pointer; color: var(--text); padding: 4px 0; list-style: none; }
+.variantDetails > summary::-webkit-details-marker { display: none; }
+.variantDetails > summary::before { content: '›'; color: var(--muted); }
+.variantDetails[open] > summary::before { content: '⌄'; }
+.variantDetails > summary strong { flex: 1; min-width: 0; }
+.variantDetails > summary strong { overflow-wrap: anywhere; }
+.variantDetails > summary small { margin: 0; text-align: right; max-width: 45%; }
 .variantSettings { display: grid; gap: 10px; padding: 16px 0 4px; }
 .variantSettings > label { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 180px); align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
 .variant select, .variant input, .previewControls input, .timing input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; background: var(--bg); color: var(--text); }
 .variantSettings > .description { grid-template-columns: minmax(0, 1fr); gap: 5px; }
 .description span, .useHelp { color: var(--muted); font-size: 11px; line-height: 1.5; }
 .useHelp { grid-column: 1 / -1; margin: 0; }
-.timing { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
+.timing { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
 .timing label { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; font-size: 11px; color: var(--muted); }
 .timing label > span:first-child { grid-column: 1 / -1; }
 .timing input { grid-column: 1; }
@@ -62,7 +62,7 @@
 .log time { color: var(--muted); font-variant-numeric: tabular-nums; }
 .actualLog li { display: block; }
 .actualLog:empty { display: none; }
-.player { grid-column: 2; grid-row: 1 / span 3; position: sticky; top: 88px; display: grid; gap: 12px; }
+.player { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 88px; display: grid; gap: 12px; }
 .player > div { display: grid; gap: 4px; }
 .player video { display: block; width: 100%; height: 360px; max-height: 45vh; object-fit: contain; border-radius: 6px; background: var(--bg); }
 .player :global(.text-button) { justify-self: start; }
@@ -84,9 +84,9 @@
 }
 @media (max-width: 600px) {
   .baseList { grid-template-columns: minmax(0, 1fr); }
-  .variantDetails summary { flex-wrap: wrap; gap: 3px 8px; }
-  .variantDetails summary strong { flex-basis: calc(100% - 24px); }
-  .variantDetails summary small { margin-left: 14px; text-align: left; max-width: 100%; }
+  .variantDetails > summary { flex-wrap: wrap; gap: 3px 8px; }
+  .variantDetails > summary strong { flex-basis: calc(100% - 24px); }
+  .variantDetails > summary small { margin-left: 14px; text-align: left; max-width: 100%; }
   .section, .player { padding: 14px; }
   .timing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .variantSettings > label { grid-template-columns: minmax(0, 1fr); }
@@ -94,3 +94,10 @@
   .log li { grid-template-columns: 40px minmax(0, 1fr); }
   .log li > span { grid-column: 2; }
 }
+
+.baseChoice { display: flex; align-items: end; gap: 12px; }
+.baseChoice :global(.field) { flex: 1; margin: 0; }
+.baseChoice > button { flex-shrink: 0; }
+.interval label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muted); }
+.interval input { width: 80px; }
+@media (max-width: 600px) { .baseChoice { align-items: stretch; flex-direction: column; } .baseChoice > button { align-self: start; } }

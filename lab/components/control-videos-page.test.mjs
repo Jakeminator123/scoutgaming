@@ -91,7 +91,7 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
   assert.match(html, /videokopplingar behöver kategoriseras eller kopplas loss/);
   assert.doesNotMatch(html, /Granska i Videobanken/);
   assert.doesNotMatch(html, /Dina videomappar/);
-  assert.match(html, /Klippflöden och äldre kopplingar/);
+  assert.match(html, /Klipp och kopplingar/);
   assert.match(html, /V Vera/);
 });
 

@@ -66,13 +66,13 @@ test('Lanes renders the title and disables write buttons when no store is connec
   const laneChoice=html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
   assert.ok(laneChoice);
   assert.doesNotMatch(laneChoice,/disabled/,'offline can select saved lanes for export while publishing stays disabled');
-  assert.match(html, /Administration → Spel, lanes &amp; bord/);
+  assert.match(html, /Administration → Bord/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(componentSource, /\(osparad\)/);
   assert.doesNotMatch(componentSource, /window\.confirm/);
   assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
   assert.equal(html.match(/primary-button/g)?.length ?? 0, 0);
-  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara projekt<\/button>/);
+  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara lanes<\/button>/);
   assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.match(html, /<button class="sg-btn sg-btn-ghost"[^>]*disabled[^>]*>Skapa SG test game provider<\/button>/);
 });
@@ -91,4 +91,17 @@ test('a project without saved lanes still offers the standard lane for publishin
   // Saved lanes are authoritative: no implicit standard row beside them.
   const saved = [{ id: 'vip', label: 'VIP', dealers: ['vera'] }];
   assert.deepEqual(plain(publishLaneRows(saved, JSON.stringify({ lanes: saved }), false).map(row => row.id)), ['vip']);
+});
+
+
+test('a lane selected in composition is selected for editing and publishing, with a matching return link',()=>{
+  const {ControlLanesPage}=loadTs(new URL('../components/control-lanes-page.tsx',import.meta.url));
+  const project=createSeedProject();
+  const second=structuredClone(project.lanes[0]);second.id='evening';second.label='Kväll';project.lanes.push(second);
+  const html=renderToStaticMarkup(React.createElement(ControlLanesPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialLaneId:'evening',operators:fixtureLaneOperators(),storeAvailable:false}));
+  assert.match(html,/<h3>Kväll<\/h3>/);
+  assert.match(html,/href="[^"]*\/control\/preview\?lane=evening"/);
+  assert.match(html,/<input[^>]*name="lanes"[^>]*checked=""[^>]*value="evening"/);
+  assert.match(html,/Administration → Bord: <strong>evening<\/strong>/);
+  assert.doesNotMatch(html,/Bakgrundszoner|control\/zones|package_revision/);
 });

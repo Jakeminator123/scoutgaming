@@ -194,7 +194,7 @@ test('old internal tool documents authorize then lead to the real tool with one 
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
   for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration'],
-    ['media', '/control/videos'], ['presentation-events', '/control/events'], ['team', '/control/administration'], ['backgrounds', '/control/zones']]) {
+    ['media', '/control/videos'], ['presentation-events', '/control/events'], ['team', '/control/administration'], ['backgrounds', '/control/preview']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);

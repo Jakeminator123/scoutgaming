@@ -1,5 +1,56 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: samlad Studio-meny och enklare sammansättning
+
+Jakobs meny- och begreppsbeslut är genomfört med underlag från chatten
+”Kartlägg terminologi och kontrollmen”. Ett Studio samlar Dealers & klipp,
+Klippbibliotek, Sammansättning, Lanes, Händelser och Tal vid inaktivitet.
+Zoningångarna går till Sammansättning; gamla zondata och tekniska ID:n bevaras.
+Översikt visar fyra steg: dealer/klipp → sammansättning → lane → spelrum/bord.
+
+Grundloop är idle-loop med Basklipp och Variationer. De befintliga basklippen
+väljs fortfarande viktat; inget ”reservklipp” har införts. Vikter, tester,
+spelvägar och diagnostik öppnas under Avancerat. Utdelning och Repliker
+är övriga klippflikar. Probe heter Tal vid inaktivitet och ligger under Studio;
+den befintliga Astrid-begränsningen framgår. Inga ändringar av spelruntime,
+mediefiler, sparad produktionspolicy, databas eller AI-behörighet.
+
+Sammansättning och Lanes skickar valt lane-id mellan vyerna. Osparade utkast
+stoppar nästa länkhopp. Publicering, bolag, JSON-export och avancerade urval finns
+kvar. Spelkoppling leder till Administration → Bord. En knapp som automatiskt
+skapar ett spelrum från en presentationslane ingår ännu inte.
+
+Verifierat: Studio 1 061 PASS, 0 FAIL, 2 SKIP; Lab-bygge och TypeScript PASS.
+Dealer-audit --probe matchar originalfyra utan medieändring. Oberoende kodgranskning
+hittade ingen blockerare; gammal guidehänvisning rättad. Slutlig fullregression
+körs före commit; exakt-SHA CI/Vercel redovisas vid leverans.
+CUA-startfel finns kvar, så ny visuell granskning i inloggad produktion är inte gjord.
+Noras produktionsfiler, fyradealerrepetition och hela lane → rum → spelare-flödet
+återstår att acceptera.
+
+Föregående Nora-leverans 260e439a hade grön CI 37918069540 och Vercel READY på
+exakt SHA. Efter Jakobs andra Render-redeploy svarade /api/presentation/capabilities
+200 med Nora/per-clip. Renders exakta commit-SHA har fortfarande inte lästs.
+
+
+## 9 oktober 2026: kortare aktiv terminologi
+
+`lab/docs/TERMINOLOGI.md` är nu en kort ordlista med matriser och textflöde,
+cirka 25 % färre ord. Presentationslane skiljs från spellane; Nora,
+fullbild/greenscreen, samlad Studio-meny och acceptansgränser finns med.
+Grundloop, Basklipp, Variation, Sammansättning och Tal vid inaktivitet
+är samordnade med Studio-ombyggnaden; gamla zoningångar pekar på Sammansättning.
+Historiska GitLab-/snapshotreferenser, dubbleringar och tekniska
+legacyöversättningar har tagits bort ur ordlistan. Dokumentändringen innehåller
+ingen produktkod. Den lämnas till den samlade Studio-integrationen: separat
+commit stoppades av ett test mot den samtidigt ändrade zoningången.
+
+De två PDF-underlagen från 6 oktober och en identisk Desktop-kopia har
+arkiverats privat med ursprungliga sökvägar, storlekar och SHA-256 i manifest.
+Tre av tre arkivhashar matchar; inget underlag har raderats.
+Tabeller, kodblock, relativa länkar och kvarvarande guideankare är kontrollerade.
+Produktionsstatus och visuell spelacceptans påverkas inte av dokumentändringen.
+
 ## 9 oktober 2026: Nora och videoeditorn integreras i Control
 
 Jakobs val är **egen dealer Nora**. Dealerregistrering på `/control/clips`

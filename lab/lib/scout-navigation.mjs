@@ -12,14 +12,11 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Studio',
     items: Object.freeze([
       Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
-      Object.freeze({ href: '/control/preview', label: 'Förhandsvisning' }),
-      Object.freeze({ href: '/control/lanes', label: 'Lanes' }),
-    ]),
-  }),
-  Object.freeze({ label: 'Studio · verktyg', items: Object.freeze([
       Object.freeze({ href: '/control/videos', label: 'Klippbibliotek' }),
-      Object.freeze({ href: '/control/zones', label: 'Bakgrundszoner' }),
+      Object.freeze({ href: '/control/preview', label: 'Sammansättning' }),
+      Object.freeze({ href: '/control/lanes', label: 'Lanes' }),
       Object.freeze({ href: '/control/events', label: 'Händelser' }),
+      Object.freeze({ href: '/control/probe', label: 'Tal vid inaktivitet' }),
     ]), }),
   Object.freeze({
     label: 'OpenClaw',
@@ -37,7 +34,6 @@ export const SCOUT_NAVIGATION = Object.freeze([
       Object.freeze({ href: '/control/administration?tab=operations', label: 'Spelintegritet' }),
       Object.freeze({ href: '/control/activity', label: 'Uppspelning' }),
       Object.freeze({ href: '/control/administration?tab=finance', label: 'Betalningar & journal' }),
-      Object.freeze({ href: '/control/probe', label: 'Probe' }),
     ]),
   }),
   Object.freeze({
@@ -69,7 +65,9 @@ const legacyPaths = new Map([
   ['/', '/control/clips'],
   ['/clips', '/control/clips'],
   ['/videos', '/control/videos'],
-  ['/zones', '/control/zones'],
+  ['/zones', '/control/preview'],
+  ['/control/zones', '/control/preview'],
+  ['/control/backgrounds', '/control/preview'],
   ['/events', '/control/events'],
   ['/probe', '/control/probe'],
   ['/administration', '/control/administration'],

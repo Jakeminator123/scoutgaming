@@ -38,12 +38,12 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/clips', 'Dealers & klipp');
   expectLabel('/videos', 'Klippbibliotek');
   expectLabel('/control/videos', 'Klippbibliotek');
-  expectLabel('/zones', 'Bakgrundszoner');
-  expectLabel('/control/zones', 'Bakgrundszoner');
+  expectLabel('/zones', 'Sammansättning');
+  expectLabel('/control/zones', 'Sammansättning');
   expectLabel('/events', 'Händelser');
   expectLabel('/control/events', 'Händelser');
-  expectLabel('/probe', 'Probe');
-  expectLabel('/control/probe', 'Probe');
+  expectLabel('/probe', 'Tal vid inaktivitet');
+  expectLabel('/control/probe', 'Tal vid inaktivitet');
   expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Administration');
   expectLabel('/openclaw', 'Agentmodeller');
@@ -205,7 +205,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect) };
   const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
-  assert.match(html, /Lanes, bord &amp; konton/);
+  assert.match(html, /Spelrum &amp; bord/);
   assert.match(html, /Dealers &amp; klipp/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
