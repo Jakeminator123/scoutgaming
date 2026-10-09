@@ -24,6 +24,7 @@ function harness(file, initialStates = [], overrides = {}) {
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const mocks = {
     './activity-log': { ActivityLog: marker('observation') },
+    './dealer-registration': {DealerRegistration: empty},
     './idle-policy-editor': { IdlePolicyEditor: marker('idle') },
     './family-video-library': { FamilyVideoLibrary: marker('families') },
     './legacy-clip-editor': { LegacyClipEditor: marker('legacy') },

@@ -1,5 +1,71 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: Nora och videoeditorn integreras i Control
+
+Jakobs val är **egen dealer Nora**. Dealerregistrering på `/control/clips`
+skapar 16 egna tomma baselines. Native upload/classify kräver sparad registrering
+och rätt behörighet; ingen Astridmedia kopieras. Filmens metadata väljer fullbild
+eller greenscreen med bounded key-inställningar. Övriga framtida dealer-id kan
+beskrivas i modellen, men runtime och utrullningskontroll godkänner nu bara Nora
+utöver originalfyra; detta är inte ett generellt live-dealerlöfte.
+
+Förhandsvisning använder samma compositor som det lokala Nora-provet: dealer,
+bild/video för bord och bakgrund, mobil/desktopplaceringar, två uppspelningar
+och tillfälligt trefilsprov. Placeringar sparas i lanen och fryses i bolagspaketet.
+Actual game-player använder det exakta valda klippets frame/clock och metadata.
+Fullbild undertrycker separata lager. Publicerade lager läses enbart via
+bolagspaketets befintliga tillgångsväg. Nora idle kräver exakt egen sparad
+idle-baseline och spelas muted; ingen Astridfallback. Live AI-chatt för Nora
+är inte tillagd; originalfyra behåller sin befintliga chattväg.
+
+**Utrullningsgrind:** Render autoDeploy är avstängd och dess SHA är inte verifierad.
+Native Studio måste få en betrodd capability från Render före nya Nora-/lager-
+skrivningar i gemensam Neon, även inuti repository.transaction. Gamla
+projektoperationer behöver inget capability-anrop. Render uppdateras separat;
+Vercel READY räcker inte för spelacceptans. Ingen produktionsdata har ändrats.
+
+Lokalt: Studio **1 057 PASS, 0 FAIL, 2 SKIP**. Slutligt Lab-bygge, TypeScript
+och Vercelfrontend-bygge med spelarflagga och isolerade buildvärden passerade.
+Riktade runtimeprov: 101 PASS; Native utrullnings-/saveprov: 83 PASS;
+Blobexport: 6 PASS. Dealer sync `--probe` matchar baslinjen för originalfyra.
+Ordinarie fullregression körs av commithook; exakt-SHA CI/deploy-resultat
+redovisas vid leveransen. Mänsklig lip-sync-acceptans kvarstår.
+
+**Sandbox:** default-exec och CUA misslyckas före start. Sandboxloggen visar
+os error 32 vid ACL-validering av Codex `node_repl.exe`. Flera Codex-processer
+och två chattar finns. Read-only Windows Restart Manager bekräftade åtta
+node_repl-resursanvändare under samma Codex/ChatGPT-processkedja; det pekar
+inte ut ett ensamt blockerande filhandtag eller en specifik chatt. Inga belägg
+för att dev-servrar, git push, Parsec eller Tailscale orsakar detta. Båda
+fjärrverktygen används enligt Jakob och har lämnats igång. Hypotes/fynd är
+sparade i privat Codex-minne. Ingen omstart eller sandboxreparation är verifierad.
+Ett isolerat produkt/Lab-par byggdes och stoppades inför fullregression.
+Sessionvakten nekade korrekt ett tests andra par medan QA-paret var igång;
+QA-portarna 4192/4194 är nu fria. Inga parallella produktpar startades.
+CUA är därför blockerande för nya visuella spelrepetitioner, inte för skaltester.
+
+
+## 9 oktober 2026: smidigt GitGuardian-läsflöde
+
+`node tools/security-status.mjs` läser nu GitHub-status och GitGuardian-incidenter
+parallellt i en kompakt rapport. Befintlig DPAPI-koppling återanvänds; inga nya
+nycklar eller rättigheter. Projektets Codex-konfiguration registrerar den
+befintliga stdio-servern med `read_security_status`, `read_source_binding` och
+`read_repo_incidents`. `codex mcp get gitguardian --json` verifierar registreringen;
+en redan öppen chatt kan behöva laddas om för att få de nya verktygen.
+
+Live mot remote main `ef5ff919`: komplett incidentlista, 17 incidenter varav 12
+öppna och 5 ignorerade. 6 öppna incidenter saknar fil/rad; luckan är synlig.
+Repositoryövervakning är active/monitored=true. GitHub-suite är queued utan
+check runs på direktpush-committen. Senaste helhistorikskanning 2 oktober är
+`too_large`; aktiv övervakning och läst incidentlista bevisar inte full historik
+eller en lyckad skanning av exakt senaste SHA. Ingen incident har ändrats.
+
+Verifiering: 34/34 riktade säkerhets-/MCP-tester PASS, riktig stdio/API-läsning
+och Codex MCP-registrering verifierad.
+Återstående: bedöm de öppna incidenterna separat; utred saknade platser om de
+behövs. Ingen ny CI-installation eller bakgrundsövervakning infördes.
+
 ## 8 oktober 2026 kväll: övertagande och isolerat Nora-kompositionsprov
 
 Övertagandet återläste lokal och remote main `cad8f6e6` samt GitHub-körning

@@ -48,6 +48,7 @@ const CLIP = {
 // Each dealer is a complete asset set (streams, voice, scene, table art) and
 // a rail anchor: the v-fraction where her table's rail top sits in her video.
 const DEALERS = {
+  nora: { key: 'nora', base: 'dealers/nora', anchor: 0.878, name: 'Nora' },
   vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
             scene: 'dealers/astrid/scene.png', sceneWK: 2.63602, sceneHK: 1.11831,
@@ -85,7 +86,7 @@ let legacyClipConfiguration = null;
 const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
 if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scene.png';
-if (dealerV2Route && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
+if (dealerV2Route && !localPresentationEnabled && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
 const layerComposition = createLayerComposition(document,entrySelection.composition);
 const playerChoice = entrySelection.choices ? resolvePlayerSelection({
   choices: entrySelection.choices,
@@ -539,7 +540,7 @@ if (localPresentationEnabled) {
       performancePlayer = new PerformancePlayer({ host: $('#scene') });
       localPresentation = await createLocalPresentation({
         player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
-        version: () => tableVersion, muted: () => voice.muted,
+        version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
         receipt: entry => nativeObservation.emit('playback', entry),
         onIdle: () => presentStandardIdle('local-primary-frame'),
         onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
@@ -547,7 +548,7 @@ if (localPresentationEnabled) {
       localCards = cardOverlay.createLocalCardOverlay($('#scene'));
     }
     localPresentation.start();
-    window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); }, { once: true });
+    window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
   } catch (error) {
     console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
@@ -2628,7 +2629,7 @@ for (const dealer of Object.values(DEALERS)) {
   };
   $('#dealer-options').appendChild(button);
 }
-installDealerVersionSwitcher({ dealer: DEALER.key, version: dealerV2Route ? 'v2' : 'original', isBusy: () => !!round || busy });
+if (!localPresentationEnabled) installDealerVersionSwitcher({ dealer: DEALER.key, version: dealerV2Route ? 'v2' : 'original', isBusy: () => !!round || busy });
 
 
 buildChips();

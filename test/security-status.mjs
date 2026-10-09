@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {projectGitHubSecurityStatus,collectGitHubSecurityStatus,unwrapGitHubSecurityJson,githubSecurityRequests,
-  SECURITY_REPOSITORY,gitguardianBrowserReadPlan} from '../tools/security-status.mjs';
+  SECURITY_REPOSITORY,gitguardianBrowserReadPlan,collectSecurityStatus} from '../tools/security-status.mjs';
 
 const sha='1'.repeat(40),marker=['scanner','sensitive','do-not-print'].join('-');
 const cli=fileURLToPath(new URL('../tools/security-status.mjs',import.meta.url));
@@ -151,4 +151,83 @@ test('existing-browser fallback is an exact repo-scoped read plan, never an inci
     const report=JSON.parse(e.stdout);return report.safeCode==='security_status_cli_arguments_required'&&report.incidentCoverage==='not-read';});
   const report=projectGitHubSecurityStatus(input({checkRuns:packet('check_runs',[gg({output:{text:marker}})])}));
   assert.equal(report.browserReadFallback.apiIncidentCoverage,'not-read');assert.ok(!JSON.stringify(report).includes(marker));
+});
+
+const incidentReport=extra=>({repository:SECURITY_REPOSITORY,workspaceId:795524,sourceId:30689542,
+  sourceBinding:'verified',incidentCoverage:'complete-for-source',locationCoverage:'complete-for-source',
+  incidents:[],coverageGaps:[],...extra});
+const incidentRow=(id,status='TRIGGERED',extra={})=>({id,status,repository:SECURITY_REPOSITORY,
+  incidentURL:`https://dashboard.gitguardian.com/workspace/795524/incidents/${id}`,file:null,line:null,...extra});
+const queuedGithub=async url=>url.includes('/check-runs?')?packet('check_runs'):
+  url.includes('/check-suites?')?packet('check_suites',[{app:{slug:'gitguardian'},status:'queued',conclusion:null}]):packet('statuses');
+
+test('combined live report deduplicates locations, counts all statuses and separates queued checks from incident coverage',async()=>{
+  const report=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,now:()=>1000,
+    readIncidents:async()=>incidentReport({locationCoverage:'partial',secret:marker,incidents:[
+      incidentRow(11,'TRIGGERED',{file:'test/fixture.mjs',line:9,secret:marker}),
+      incidentRow(11,'TRIGGERED',{file:'test/fixture.mjs',line:9}),
+      incidentRow(11,'TRIGGERED',{file:'test/fixture.mjs',line:12}),
+      incidentRow(12,'ASSIGNED'),incidentRow(13,'IGNORED'),incidentRow(14,'RESOLVED')],
+      coverageGaps:[{safeCode:'gg_read_location_metadata_unavailable',incidentId:12,message:marker}]})});
+  assert.equal(report.incidentCoverage,'complete-for-source');assert.equal(report.suites[0].status,'queued');
+  assert.deepEqual(report.incidentCounts,{observedTotal:4,open:2,ignored:1,resolved:1,openWithoutLocation:1});
+  assert.equal(report.openIncidents.length,2);assert.equal(report.openIncidents[0].locations.length,2);
+  assert.ok(!report.attention.includes('gitguardian_incident_list_not_read'));
+  assert.ok(report.attention.includes('gitguardian_check_pending'));
+  assert.ok(report.attention.includes('gitguardian_open_incidents'));
+  assert.ok(report.attention.includes('gitguardian_location_metadata_incomplete'));
+  assert.ok(!JSON.stringify(report).includes(marker));
+});
+
+test('GitHub and incident reader failures retain the independent working read without raw errors',async()=>{
+  const githubDown=await collectSecurityStatus({commitSha:sha,fetchJson:async()=>{throw Error(marker);},
+    readIncidents:async()=>incidentReport(),now:()=>1000});
+  assert.equal(githubDown.githubCoverage,'unavailable');assert.equal(githubDown.incidentCoverage,'complete-for-source');
+  assert.deepEqual(githubDown.incidentCounts,{observedTotal:0,open:0,ignored:0,resolved:0,openWithoutLocation:0});
+  const apiDown=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,
+    readIncidents:async()=>{throw Error(marker);},now:()=>1000});
+  assert.equal(apiDown.githubCoverage,'complete-for-this-commit');assert.equal(apiDown.incidentCoverage,'not-read');
+  assert.equal(apiDown.incidentCounts,null);assert.ok(apiDown.attention.includes('gitguardian_incident_list_incomplete'));
+  assert.ok(!JSON.stringify([githubDown,apiDown]).includes(marker));
+});
+
+test('combined report refuses foreign or malformed incident metadata and preserves actual partial coverage',async()=>{
+  for(const r of [incidentReport({sourceId:99}),incidentReport({incidents:[incidentRow(11,'UNKNOWN')]}),
+    incidentReport({incidents:[incidentRow(11,'TRIGGERED',{incidentURL:'https://example.com/'+marker})]}),
+    incidentReport({sourceBinding:'not-verified'})]){
+    const report=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,readIncidents:async()=>r,now:()=>1000});
+    assert.equal(report.incidentCoverage,'not-read');assert.equal(report.incidentCounts,null);
+    assert.ok(!JSON.stringify(report).includes(marker));
+  }
+  const partial=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,now:()=>1000,
+    readIncidents:async()=>incidentReport({incidentCoverage:'partial',locationCoverage:'not-read',
+      incidents:[incidentRow(11)],coverageGaps:[{safeCode:'gg_read_pagination_incomplete'}]})});
+  assert.equal(partial.incidentCoverage,'partial');assert.equal(partial.incidentCounts.observedTotal,1);
+  assert.ok(partial.attention.includes('gitguardian_incident_list_incomplete'));
+});
+
+test('combined report keeps inactive monitoring visible and redacts unknown source scan fields',async()=>{
+  const report=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,now:()=>1000,
+    readIncidents:async()=>incidentReport({monitoring:{status:'disabled',monitored:false,
+      lastHistoricalScan:{status:marker,time:marker,failing_reason:marker}}})});
+  assert.deepEqual(report.monitoring,{status:'disabled',monitored:false,lastHistoricalScan:{status:null,time:null}});
+  assert.ok(report.attention.includes('gitguardian_repository_monitoring_inactive'));
+  assert.ok(!JSON.stringify(report).includes(marker));
+});
+
+test('a too-large historical scan cannot be mistaken for complete repository history coverage',async()=>{
+  const report=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,now:()=>1000,
+    readIncidents:async()=>incidentReport({monitoring:{status:'active',monitored:true,
+      lastHistoricalScan:{status:'too_large',time:'2026-10-02T08:31:15.035432Z'}}})});
+  assert.equal(report.incidentCoverage,'complete-for-source');
+  assert.ok(report.attention.includes('gitguardian_historical_scan_incomplete'));
+  assert.ok(!report.attention.includes('gitguardian_repository_monitoring_inactive'));
+});
+
+test('a safe API failure envelope never becomes a zero-incident inventory',async()=>{
+  const report=await collectSecurityStatus({commitSha:sha,fetchJson:queuedGithub,now:()=>1000,
+    readIncidents:async()=>incidentReport({sourceBinding:'not-verified',incidentCoverage:'not-read',locationCoverage:'not-read',
+      coverageGaps:[{safeCode:'gg_read_http_unavailable',statusCode:403}]})});
+  assert.equal(report.incidentCounts,null);assert.equal(report.incidentCoverage,'not-read');
+  assert.deepEqual(report.incidentIssues,[{safeCode:'gg_read_http_unavailable',statusCode:403}]);
 });

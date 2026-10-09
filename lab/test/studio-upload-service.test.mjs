@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import assert from 'node:assert/strict';
 import { createHash,createHmac } from 'node:crypto';
 import { mkdtemp,rm } from 'node:fs/promises';
@@ -26,6 +27,7 @@ async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fix
   const cacheDir=await mkdtemp(join(tmpdir(),'croupier-upload-service-'));
   t.after(() => {assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-upload-service-/);return rm(cacheDir,{recursive:true,force:true});});
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope}),objects=new Map(),tokenCalls=[];
+  seedSavedVideoProject(pool,scope);
   const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-read-write-secret'},options={cacheDir,blobClient:{
     async get(path) {
       const content=objects.get(path);if(!content)return null;

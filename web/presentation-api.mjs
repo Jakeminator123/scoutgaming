@@ -1,3 +1,5 @@
+import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
+import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -14,6 +16,12 @@ import { legacyClipControls } from '../lab/lib/legacy-clip-inventory.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `presentation-runtime/${name}.mjs`]));
 publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
+const publicVideo = item => item ? {
+  id: item.id, sha256: item.sha256, fileName: item.fileName,
+  src: `/api/presentation/videos/${item.id}`,
+  ...(item.classification?.compositing ? { compositing: structuredClone(item.classification.compositing) } : {}),
+} : null;
+const supportedDealers = new Set(['vera', 'astrid', 'amira', 'mei', 'nora']);
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 
@@ -41,6 +49,8 @@ export function createPresentationApi({ db, env = process.env, store = createPro
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
   return async function handle(req, res, pathname, playerId) {
+    const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method}));
+    if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return true;}
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
     if (publicModules.has(pathname) && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': pathname.endsWith('.json') ? 'application/json' : 'text/javascript', 'Cache-Control': 'no-store' });
@@ -75,6 +85,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
         const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
         json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: project.idlePolicy, inventory,
+          dealerIdle: { nora: publicVideo(ownDealerIdle(project, inventory, 'nora')) },
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
@@ -103,7 +114,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         finally { res.removeListener('close', disconnected); }
         return true;
       }
-      if (!modes.has(body.mode) || !Number.isInteger(body.version) || typeof body.dealerId !== 'string') fail('Invalid presentation request');
+      if (!modes.has(body.mode) || !Number.isInteger(body.version) || !supportedDealers.has(body.dealerId)) fail('Invalid presentation request');
       const [loaded, inventory] = await Promise.all([store.load(), registryLoader()]);
       const project = normalizeProject(loaded, { allowIncompatibleAnimations: true, preserveMissingLanes: true });
       if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
@@ -124,7 +135,6 @@ export function createPresentationApi({ db, env = process.env, store = createPro
             const video = inventory.videos.find(item => item.id === result.videoGenerationId);
             const family = inventory.families.find(item => item.id === video?.familyId);
             const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
-            const publicVideo = item => item ? { id: item.id, sha256: item.sha256, fileName: item.fileName, src: `/api/presentation/videos/${item.id}` } : null;
             return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
           });
         // A QA transport closes over the actual authenticated HTTP request.

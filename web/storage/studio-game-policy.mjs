@@ -97,6 +97,8 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const project = validateDocumentValue('project', projectDocument.value, validateRevision(projectDocument.revision));
       const administration = validateStudioGameAdministration(administrationDocument.value);
       validateRevision(administrationDocument.revision);
+      if (gameLaneConfiguration(administration).gameLanes.some(lane => lane.dealer === 'nora')
+        && !project.dealers.some(dealer => dealer.id === 'nora')) fail('studio_invalid_game_policy', 422);
       // Old tier names do not make retired indexed assets dependencies of a
       // portrait lane. Indexed adapters keep their exact availability checks.
       const indexed = gameLaneConfiguration(administration).gameLanes.filter(lane => lane.renderer === 'indexed-video');
@@ -141,7 +143,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const next = { ...saved, [kind]: { kind, revision: expectedRevision, value: proposed } };
       validate(next.project, next.administration, idle, { write: true });
       return repo.saveDocument(kind, { value: proposed, expectedRevision, actor });
-    });
+    }, { presentationMutation: {kind,value:proposed} });
   }
   const api = {
     scope, readSaved,

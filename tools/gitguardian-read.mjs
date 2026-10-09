@@ -80,6 +80,15 @@ function bindingSource(row){
   need(int(row.open_incidents_count)&&int(row.closed_incidents_count),'gg_read_source_counts_unknown');
   return{open:row.open_incidents_count,closed:row.closed_incidents_count};
 }
+function sourceMonitoring(row){
+  const states=new Set(['active','disabled','archived','unreachable','deleted_on_remote']);
+  const scans=new Set(['launched','pending','running','finished','failed','canceled','too_large','timeout','skipped',
+    'pending_timeout','running_failed','running_cancelled']);
+  return{status:states.has(row.monitoring_status)?row.monitoring_status:null,
+    monitored:typeof row.monitored==='boolean'?row.monitored:null,
+    lastHistoricalScan:row.last_scan?{status:scans.has(row.last_scan.status)?row.last_scan.status:null,
+      time:date(row.last_scan.date)?row.last_scan.date:null}:null};
+}
 function incidentMetadata(row){
   need(plain(row)&&id(row.id)&&knownStatus.has(row.status)&&date(row.date),'gg_read_incident_schema_unknown');
   const incidentURL=`https://dashboard.gitguardian.com/workspace/${GITGUARDIAN_BINDING.workspaceId}/incidents/${row.id}`;
@@ -124,8 +133,8 @@ export function createGitGuardianReader({fetchImpl=fetch,tokenProvider=readProte
   const common=()=>({workspaceId:GITGUARDIAN_BINDING.workspaceId,sourceId:GITGUARDIAN_BINDING.sourceId,
     repository:GITGUARDIAN_BINDING.repository,observedAtMs:now()});
   async function readSourceBinding(){
-    try{bindingSource((await get(base+sourcePath,new Set())).data);return{purpose:'gitguardian-source-binding-v1',...common(),
-      sourceBinding:'verified',incidentCoverage:'not-read'};}
+    try{const row=(await get(base+sourcePath,new Set())).data;bindingSource(row);return{purpose:'gitguardian-source-binding-v1',...common(),
+      sourceBinding:'verified',monitoring:sourceMonitoring(row),incidentCoverage:'not-read'};}
     catch(e){return{purpose:'gitguardian-source-binding-v1',...common(),sourceBinding:'not-verified',incidentCoverage:'not-read',coverageGaps:[safeFailure(e)]};}
   }
   async function readRepoIncidents(){
@@ -133,7 +142,8 @@ export function createGitGuardianReader({fetchImpl=fetch,tokenProvider=readProte
       incidentCoverage:'not-read',locationCoverage:'not-read',pagesRead:{incidents:0,locations:0},incidents:[],coverageGaps:[]};
     const allowed=new Set(),incidentRows=[];let counts;
     try{
-      counts=bindingSource((await get(base+sourcePath,allowed)).data);report.sourceBinding='verified';
+      const source=(await get(base+sourcePath,allowed)).data;counts=bindingSource(source);report.sourceBinding='verified';
+      report.monitoring=sourceMonitoring(source);
       await pages(base+incidentPath+'?per_page=100',allowed,incidentMetadata,async rows=>{
         for(const row of rows){need(!allowed.has(row.id),'gg_read_incident_observation_changed');allowed.add(row.id);incidentRows.push(row);}
         report.incidents=[...incidentRows];report.incidentCoverage='partial';report.pagesRead.incidents++;});

@@ -37,7 +37,10 @@ filöverlapp, mottagarkvittens, frigöring och historikens storleksgränser.
 ## GitGuardian vid start och leverans
 
 Läs säkerhetsstatus vid start och före commit/push enligt `AGENTS.md`.
-`node tools/security-status.mjs` gör en läsande GitHub-kontroll med befintlig
+`node tools/security-status.mjs` ger nu en samlad rapport från GitHub och den
+befintliga skyddade GitGuardian-kopplingen. MCP `gitguardian.read_security_status`
+ger samma rapport; registreringen finns i projektets `.codex/config.toml`.
+`--github-only` gör enbart GitHub-kontrollen med befintlig
 CLI-åtkomst. Om den saknas används GitHub-connectorns `github_fetch`: läs
 `branches/main`, frys SHA och läs `check-runs`, `check-suites` samt `status`.
 `node tools/security-status.mjs --mcp --ref <full-sha>` visar rätt GET-adresser.
@@ -59,7 +62,12 @@ exakt repo-namnet och välj det; filterkopplingen verifierades 2026-10-03 och sk
 kontrolleras igen vid läsning. Läs endast avgränsade ID/status/repo/fil/rad/tid,
 aldrig hela rader, sidtext eller screenshots med hemliga utdrag. Ändra inga
 incidenter, sparade vyer eller rättigheter. Redovisa lästa sidor och luckor;
-kommandot skriver en läsplan, och hela API-incidentlistan är fortfarande `not-read`.
+kommandot skriver en läsplan, och webbläsarreservvägen ger ingen full API-täckning.
+
+Rapporten visar öppna incidenter med unika fil/radreferenser och tydliga luckor.
+Aktiv repositoryövervakning, PR-kontroller på en viss SHA och historiska skanningar
+är separata uppgifter. `queued` på direktpush-main behöver inte betyda trasig
+övervakning; `too_large` betyder att helhistorikskanningen inte slutfördes.
 
 Verifiering av redaktion och ofullständig täckning:
 `node --test test/security-status.mjs`.

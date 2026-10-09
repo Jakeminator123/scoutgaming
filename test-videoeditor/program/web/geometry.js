@@ -12,3 +12,15 @@ export function backgroundRect(scene,asset,dims) {
   const width=asset.width*s,height=asset.height*s;
   return [(dims[0]-width)/2+t.x*dims[0],(dims[1]-height)/2+t.y*dims[1],width,height];
 }
+
+// Published compositions place the table independently of dealer framing.
+// Old preview scenes retain their existing reference-plane coordinates.
+export function tableRect(scene, asset, geometry) {
+  const {dims, x, y, s} = geometry, t = scene.tablePlacement;
+  if (t) {
+    const width = t.width * dims[0];
+    return [(dims[0] - width) / 2 + t.x * dims[0], t.y * dims[1], width, width * asset.height / asset.width];
+  }
+  const transform = scene.tableTransform, width = transform.width * 1080 * s;
+  return [x + transform.x * 1080 * s, y + transform.y * 1920 * s, width, width * asset.height / asset.width];
+}

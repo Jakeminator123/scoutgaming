@@ -2,9 +2,10 @@
 import {approvedGameQuery} from './game-entry-contract.mjs';
 export const V2_DEALERS = ['astrid', 'amira'];
 export function dealerVersionPath(dealer, version, observerSearch = '') {
-  const key = ['vera', 'astrid', 'amira', 'mei'].includes(dealer) ? dealer : 'vera';
+  const key = ['vera', 'astrid', 'amira', 'mei', 'nora'].includes(dealer) ? dealer : 'vera';
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
+  const noraLane=key==='nora' ? previous.get('lane') || (globalThis.document?.documentElement?.dataset.gameDealer==='nora' ? globalThis.document.documentElement.dataset.gameLane : null) : null;
   // The clean Blackjack URL carries its saved presentation in the document.
   // An explicit dealer change must not keep a lane override that forces Astrid.
   if (!previous.has('presentation') && (previous.get('lane') === 'mobile-phone'
@@ -19,6 +20,11 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   if(version !== 'v2' && previous.get('presentation') === 'local')query.set('presentation','local');
   if(previous.has('rehearsal'))query.set('rehearsal','1');
   const originalPath = globalThis.document?.documentElement?.dataset.gamePath === '/blackjack' ? '/blackjack' : '/';
+  if(key==='nora'){
+    previous.set('dealer','nora');previous.set('presentation','local');
+    if(noraLane && noraLane!=='mobile-phone')previous.set('lane',noraLane);
+    return originalPath+'?'+approvedGameQuery(previous,{origin:globalThis.location?.origin,includeLaunch:false});
+  }
   if (originalPath === '/blackjack' && !(version === 'v2' && V2_DEALERS.includes(key))) {
     previous.set('dealer',key);
     return originalPath+'?'+approvedGameQuery(previous,{origin:globalThis.location?.origin,includeLaunch:false});

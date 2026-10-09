@@ -5,7 +5,7 @@ export const GAME_LANES = Object.freeze([
   Object.freeze({ schemaVersion: 1, id: 'mobile-phone', label: 'Mobile Phone Lane', renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }),
 ]);
 const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'paow', mediaCollection: 'layer-packs-preview' });
-const dealers = ['vera', 'astrid', 'amira', 'mei', 'paow', 'dragge'];
+const dealers = ['vera', 'astrid', 'amira', 'mei', 'paow', 'dragge', 'nora'];
 const layerPreviewDealers = ['paow', 'dragge'];
 export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
 export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
@@ -23,7 +23,7 @@ export function validateGameLanes(value) {
       || typeof lane.label !== 'string' || !lane.label.trim() || lane.label.length > 80
       || /[\u0000-\u001f\u007f-\u009f<>]/u.test(lane.label) || !dealers.includes(lane.dealer)
       || !(lane.renderer === 'portrait-video' && lane.mediaCollection === `${lane.dealer}-presentation`
-        || lane.renderer === 'indexed-video' && lane.mediaCollection === 'legacy-dealers'
+        || lane.renderer === 'indexed-video' && lane.dealer !== 'nora' && lane.mediaCollection === 'legacy-dealers'
         || lane.renderer === 'layered' && lane.id === 'layer-preview' && lane.mediaCollection === 'layer-packs-preview' && lane.dealer === 'paow')) throw Error('Invalid lane definition');
     ids.add(lane.id);
     return { ...lane };
@@ -87,7 +87,7 @@ export function laneDealerSelection(query, lane, dealerLayer) {
 }
 
 const packageRevisionPattern = /^[1-9][0-9]{0,15}$/;
-const CHOICE_DEALERS = Object.freeze(['vera', 'astrid', 'amira', 'mei', 'paow', 'dragge']);
+const CHOICE_DEALERS = Object.freeze(['vera', 'astrid', 'amira', 'mei', 'paow', 'dragge', 'nora']);
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const CHOICE_BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 // Same layers as lab/lib/studio-model.mjs defaultPresentationLane. web does not import lab.
@@ -119,7 +119,7 @@ export function gameChoicesFromDocument(text) {
 export function assertGameChoices(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Invalid game presentation');
   if (Object.keys(value).length !== 5 || !['dealers', 'dealerDefault', 'tableColors', 'tableDefault', 'background'].every(key => Object.hasOwn(value, key))) throw Error('Invalid game presentation');
-  const dealers = choiceList(value.dealers, id => CHOICE_DEALERS.includes(id), 4);
+  const dealers = choiceList(value.dealers, id => CHOICE_DEALERS.includes(id), 5);
   if (!dealers || (value.dealerDefault !== null && !dealers.includes(value.dealerDefault))) throw Error('Invalid game presentation');
   const tableColors = choiceList(value.tableColors, color => TABLE_COLOR.test(color), 16);
   if (!tableColors || (value.tableDefault !== null && !tableColors.includes(value.tableDefault))) throw Error('Invalid game presentation');
@@ -192,7 +192,8 @@ export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
   if (!dataset?.gameLane) return gameLaneSelection('');
   if (!isGameLaneId(dataset.gameLane) || !dealers.includes(dataset.gameDealer)
     || !['local', 'original', 'layered'].includes(dataset.gamePresentation)) throw Error('Invalid game presentation');
-  if (dataset.gamePresentation === 'local' && dataset.gameDealer !== 'astrid') {
+  if(dataset.gameDealer==='nora'&&(dataset.gamePresentation!=='local'||dataset.gameLocalDealer!=='nora'))throw Error('Invalid game presentation');
+  if (dataset.gamePresentation === 'local' && !['astrid','nora'].includes(dataset.gameDealer)) {
     let catalogue;
     try { catalogue = validateGameLanes(lanes); }
     catch { throw Error('Invalid game presentation'); }

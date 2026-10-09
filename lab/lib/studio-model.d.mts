@@ -1,4 +1,4 @@
-export type DealerId = 'astrid' | 'vera' | 'amira' | 'mei';
+export type DealerId = string;
 export type SourceType = 'speak' | 'deal' | 'reveal' | 'settle' | 'turn' | 'idle';
 export type TriggerCategory = 'deterministic' | 'social' | 'temperament';
 export type PredicateOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'includes' | 'all_eq' | 'in' | 'exists';
@@ -26,7 +26,7 @@ export interface LaneDealerLayer { enabled: boolean; default: string; allowed: s
 export interface LaneProbe { mode: LaneProbeMode; model?: import('./probe-policy.mjs').ProbePolicy['model'] }
 export interface LaneIdle { frequencyPercent?: number; variants?: string[] }
 export interface LayerAsset { schemaVersion: 1; id: string; role: 'background' | 'table'; label: string; sha256: string; size: number; contentType: string; pathname: string; width: number; height: number }
-export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[]; renderer?: 'layered' | 'portrait-video'; probe?: LaneProbe; idle?: LaneIdle }
+export interface StudioLane { id: string; label: string; dealers: string[]; layers: { background: LaneBackgroundLayer; table: LaneTableLayer; dealer: LaneDealerLayer }; openclaw: { idle: OpenClawMode; deal: OpenClawMode; reveal: OpenClawMode; speak: OpenClawMode; probe: OpenClawMode }; operatorAdjustable: OperatorAdjustable[]; renderer?: 'layered' | 'portrait-video'; composition?: import('../../web/public/composition-settings.mjs').CompositionSettings; probe?: LaneProbe; idle?: LaneIdle }
 export interface StudioProject { schemaVersion: 1; revision: string; gameId: 'blackjack'; dealers: {id: DealerId; label: string}[]; events: StudioEvent[]; triggers: StudioTrigger[]; lines: StudioLine[]; assets: StudioAsset[]; idlePolicy?: IdlePolicy; mediaPolicy?: MediaFamilyPolicy[]; legacyClipPolicy?: LegacyClipBinding[]; probePolicy?: import('./probe-policy.mjs').ProbePolicy; lanes?: StudioLane[]; layerAssets?: LayerAsset[]; clipLabels?: Record<string, string> }
 export interface PathDescriptor { path: string; label: string; category: TriggerCategory; kind: 'enum' | 'boolean' | 'number' | 'string' | 'array'; values?: Scalar[]; min?: number; max?: number; operators: PredicateOperator[] }
 export interface RuntimeCatalog { schemaVersion: 1; revision: string; sourceNote: string; triggerSources: {id: string; label: string; description: string; status: string}[]; events: (StudioEvent & {baselineVariantId: string; variants: {id: string; label: string; priority: number; when: {all: {path: string; op: PredicateOperator; value: Scalar | Scalar[]}[]}; assetId: string}[]})[]; assets: StudioAsset[] }
@@ -57,3 +57,5 @@ export function removeVariant(project: StudioProject, dealerId: DealerId, eventI
 export function removeTrigger(project: StudioProject, triggerId: string): StudioProject;
 export function renameEvent(project: StudioProject, eventId: string, label: string): StudioProject;
 export function renameLine(project: StudioProject, dealerId: DealerId, eventId: string, label: string): StudioProject;
+
+export function addDealer(project: StudioProject, id: string, label: string): StudioProject;

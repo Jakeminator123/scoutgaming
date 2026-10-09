@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 const origin = 'https://studio.example';
 const path = action => `/studio/api/admin/${action}`;
 const session = { user: 'Jakob', role: 'superadmin', scope: { environment: 'isolated-fixture', workspaceId: 'qa' } };
@@ -181,4 +182,42 @@ test('Render-authoritative operations refresh session without holding a local DB
     handlers: new Map([['POST ' + path('apikeys/credit'), () => { invoked++; return { ok: true }; }]]),
     gates: new Map([['game-authority', () => true]]) });
   assert.equal((await configured.handle(request('apikeys/credit'))).status, 200); assert.equal(invoked, 1);
+});
+
+test('authenticated Nora lane creation requires preflight before product SQL and preserves state on old Render', async () => {
+  for (const absent of [() => new Response(null,{status:404}), () => new Response(null,{status:503}), () => Response.json({schemaVersion:0})]) {
+    let state={gameLane:'mobile-phone',gameLanes:[{id:'mobile-phone',dealer:'astrid'}]}, writes=0, fetches=0, inside=false, current=session, ready=false;
+    const before=structuredClone(state);
+    const repository={
+      async saveDocument(_kind,options){assert.equal(inside,true);writes++;state=structuredClone(options.value);return{revision:'studio-next'};},
+      transaction:work=>work(repository),
+    };
+    const wrapped=wrapNativePresentationRepository(repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async()=>{
+      assert.equal(inside,false,'no capability HTTP while SQL is active');fetches++;
+      return ready ? Response.json({schemaVersion:1,registeredDealerIds:['nora'],compositing:'per-clip'}) : absent();
+    }});
+    const configured=api({authorize:()=>current,handlers:new Map([['POST '+path('game-lanes/create'),async context=>{
+      const value=structuredClone(state);value.gameLanes.push(context.body.definition);
+      return wrapped.transaction(repo=>repo.saveDocument('administration',{value,actor:context.actor.user}),
+        {presentationMutation:{kind:'administration',value}});
+    }]]),mutationTransaction:async(work,options)=>{
+      assert.deepEqual(options.presentationDocuments,['administration']);
+      const descriptors=[{kind:'administration',value:structuredClone(state)},options.presentationMutation];
+      return wrapped.withMutationContext(async()=>{
+        inside=true;try{return await work();}finally{inside=false;}
+      },descriptors);
+    }});
+    const body=JSON.stringify({definition:{schemaVersion:1,id:'nora-room',label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}});
+    current={...session,role:'reader'};
+    assert.equal((await configured.handle(request('game-lanes/create',{body}))).status,403);
+    assert.equal(fetches,0);assert.equal(writes,0);
+    current=session;
+    const denied=await configured.handle(request('game-lanes/create',{body}));
+    assert.equal(denied.status,503);
+    assert.deepEqual(await denied.json(),{error:PRESENTATION_RUNTIME_UPDATE_MESSAGE,code:PRESENTATION_RUNTIME_UPDATE_REQUIRED});
+    assert.deepEqual(state,before);assert.equal(writes,0);assert.equal(fetches,1);
+    ready=true;
+    assert.equal((await configured.handle(request('game-lanes/create',{body}))).status,200);
+    assert.equal(writes,1);assert.equal(fetches,2);assert.equal(state.gameLanes.at(-1).dealer,'nora');
+  }
 });

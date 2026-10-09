@@ -38,6 +38,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 import { createLayerPacksRoute } from './layer-packs.mjs';
+import { compositionRuntimeResponse } from './composition-runtime.mjs';
+import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../..');
@@ -657,6 +659,10 @@ const server = createServer(async (req, res) => {
   try {
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method}));
+  if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
+  const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
+  if(compositionModule){res.writeHead(compositionModule.status,Object.fromEntries(compositionModule.headers));res.end(req.method==='HEAD'?undefined:Buffer.from(await compositionModule.arrayBuffer()));return;}
   if (await layerPacksRoute(req, res, pathname)) return;
   if (pathname === '/api/studio-game/command') {
     if (!studioGameCommand) { res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end('{"error":"studio_game_command_unavailable"}'); return; }
@@ -791,7 +797,7 @@ const server = createServer(async (req, res) => {
     finally{res.removeListener('close',disconnected);}
     return;
   }
-  if (pathname.startsWith('/api/presentation/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
+  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db,
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{

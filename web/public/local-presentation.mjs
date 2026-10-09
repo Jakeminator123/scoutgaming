@@ -1,6 +1,6 @@
 import { createLiveIdleController } from '../../presentation-runtime/live-idle.mjs';
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, muted }) {
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, muted, composition = null }) {
   const response = await fetch('/api/presentation/config', { cache: 'no-store' });
   if (!response.ok) throw new Error('Local presentation configuration unavailable');
   const config = await response.json();
@@ -25,10 +25,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   control.value = mode;
   control.className = 'local-presentation-mode'; host.append(control);
-  const idle = createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, seed: crypto.getRandomValues(new Uint32Array(1))[0],
+  const idle = createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
-  const hold = video => { if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
+  const hold = video => { composition?.hold(video); if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
   const stop = () => { active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
@@ -57,21 +57,40 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
     try {
+      if(composition)await composition.prepareClip(video.compositing);
+      if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       await player.playLocalClip({ media: { src: video.src || `/api/presentation/videos/${video.id}`, sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
+        renderFrame: composition ? source => composition.renderFrame(source) : undefined,
         onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, fileName: video.fileName, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
   let idleRun = 0, idleError = null;
+  function resumeOwnIdle() {
+    if (dealerId !== 'nora' || closed || action || speech || document.hidden || idleRun) return;
+    const video = config.dealerIdle?.nora;
+    if (!video) { status.textContent = 'Ingen egen idlefilm · 2D-reserv'; return; }
+    presentationKind = 'idle'; onBusy();
+    const epoch = ++serial; idleRun = epoch;
+    void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
+      reason: 'saved_exact_baseline', projectRevision: config.projectRevision || config.revision, configurationSource },
+      onFrame: () => { if (epoch !== serial || closed) return;
+        if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
+        onIdle(); },
+    }).then(() => { if (epoch !== serial || closed) return; idleRun = 0; resumeOwnIdle(); })
+      .catch(error => { if (epoch !== serial || closed) return;
+        idleError = `Idle: ${error.message}`; status.textContent = idleError; });
+  }
   function resumeIdle() {
+    if (dealerId === 'nora') { resumeOwnIdle(); return; }
     if (dealerId !== 'astrid' || closed || action || speech || document.hidden) return;
     const clip = idle.snapshot().clip;
     if (!clip || clip.playId === idleRun) return;
     presentationKind = 'idle'; onBusy();
     idleRun = clip.playId; const epoch = ++serial;
-    const video = config.inventory.videos.find(item => item.id === clip.videoId);
+    const video = config.inventory.videos.find(item => item.id === clip.videoId && item.dealer === dealerId);
     if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
     void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;

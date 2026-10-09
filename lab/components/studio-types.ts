@@ -17,7 +17,7 @@ export interface VideoEntry {
   addedAt?: string;
   id: string;
   label: string;
-  dealer?: 'astrid' | 'vera' | 'amira' | 'mei';
+  dealer?: string;
   fileName: string;
   verdict: 'want' | 'no' | 'unrated';
   bytes: number;
@@ -33,7 +33,7 @@ export interface VideoEntry {
 
 export interface MediaFamily {
   id: string;
-  dealerId: 'astrid';
+  dealerId: string;
   eventId: string;
   situation: string;
   playbackType: 'once' | 'idle-pool';

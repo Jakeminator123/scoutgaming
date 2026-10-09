@@ -6,6 +6,7 @@ import {promisify} from 'node:util';
 import {readFile,lstat} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createGitGuardianReader,GITGUARDIAN_BINDING} from './gitguardian-read.mjs';
 
 export const SECURITY_REPOSITORY='Jakeminator123/scoutgaming';
 export function gitguardianBrowserReadPlan(){
@@ -134,10 +135,77 @@ async function githubCliJson(url){
     return unwrapGitHubSecurityJson(r.stdout);
   }catch{fail('security_status_github_cli_access_unavailable');}
 }
+// Commit checks and repository incidents have independent coverage.
+export async function collectSecurityStatus({fetchJson=githubCliJson,commitSha,
+  readIncidents=()=>createGitGuardianReader().readRepoIncidents(),now=Date.now}={}){
+  const [githubResult,incidentResult]=await Promise.allSettled([
+    collectGitHubSecurityStatus({fetchJson,commitSha,now}),Promise.resolve().then(readIncidents)]);
+  const github=githubResult.status==='fulfilled'?githubResult.value:{repository:SECURITY_REPOSITORY,
+    commitSha:sha(commitSha)?commitSha:null,githubCoverage:'unavailable',checks:[],suites:[],
+    attention:['github_security_status_unavailable']};
+  const report={...github,purpose:'gitguardian-combined-security-status-v1',observedAtMs:now(),
+    incidentCoverage:'not-read',locationCoverage:'not-read',sourceBinding:'not-verified',
+    incidentCounts:null,openIncidents:[],incidentIssues:[],monitoring:null};
+  delete report.browserReadFallback;delete report.incidentAccessRequired;
+  try{
+    const r=incidentResult.status==='fulfilled'?incidentResult.value:null;
+    need(r?.repository===SECURITY_REPOSITORY&&r.workspaceId===GITGUARDIAN_BINDING.workspaceId
+      &&r.sourceId===GITGUARDIAN_BINDING.sourceId,'security_status_incident_binding_unavailable');
+    need(['not-read','partial','complete-for-source'].includes(r.incidentCoverage)
+      &&['not-read','partial','complete-for-source'].includes(r.locationCoverage)
+      &&['not-verified','verified'].includes(r.sourceBinding)&&Array.isArray(r.incidents)
+      &&Array.isArray(r.coverageGaps),'security_status_incident_metadata_unavailable');
+    need(r.incidentCoverage!=='complete-for-source'||r.sourceBinding==='verified','security_status_incident_binding_unavailable');
+    const incidents=new Map(),statuses=new Set(['TRIGGERED','ASSIGNED','IGNORED','RESOLVED']);
+    for(const row of r.incidents){
+      const url=`https://dashboard.gitguardian.com/workspace/${GITGUARDIAN_BINDING.workspaceId}/incidents/${row.id}`;
+      need(int(row.id)&&row.id>0&&statuses.has(row.status)&&row.incidentURL===url
+        &&row.repository===SECURITY_REPOSITORY,'security_status_incident_metadata_unavailable');
+      const prior=incidents.get(row.id);
+      need(!prior||prior.status===row.status,'security_status_incident_metadata_unavailable');
+      const item=prior??{id:row.id,status:row.status,incidentURL:url,locations:[]};
+      const file=typeof row.file==='string'&&safeFile(row.file.replaceAll(' ','_'))?row.file:null,line=int(row.line)&&row.line>0?row.line:null;
+      if(file&&line&&!item.locations.some(x=>x.file===file&&x.line===line))item.locations.push({file,line});
+      incidents.set(row.id,item);
+    }
+    const all=[...incidents.values()],open=all.filter(x=>x.status==='TRIGGERED'||x.status==='ASSIGNED');
+    if(r.monitoring){
+      const m=r.monitoring,states=new Set(['active','disabled','archived','unreachable','deleted_on_remote']);
+      const scans=new Set(['launched','pending','running','finished','failed','canceled','too_large','timeout','skipped',
+        'pending_timeout','running_failed','running_cancelled']);
+      const time=m.lastHistoricalScan?.time;
+      report.monitoring={status:states.has(m.status)?m.status:null,monitored:typeof m.monitored==='boolean'?m.monitored:null,
+        lastHistoricalScan:m.lastHistoricalScan?{status:scans.has(m.lastHistoricalScan.status)?m.lastHistoricalScan.status:null,
+          time:typeof time==='string'&&/^\d{4}-\d{2}-\d{2}T[0-9:.+Z-]+$/.test(time)&&Number.isFinite(Date.parse(time))?time:null}:null};
+    }
+    report.sourceBinding=r.sourceBinding;report.incidentCoverage=r.incidentCoverage;
+    report.locationCoverage=r.locationCoverage;
+    report.incidentCounts=r.incidentCoverage==='not-read'?null:{observedTotal:all.length,open:open.length,
+      ignored:all.filter(x=>x.status==='IGNORED').length,resolved:all.filter(x=>x.status==='RESOLVED').length,
+      openWithoutLocation:open.filter(x=>!x.locations.length).length};
+    report.openIncidents=open;
+    report.incidentIssues=r.coverageGaps.map(g=>({
+      safeCode:/^gg_read_[a-z0-9_]+$/.test(g?.safeCode??'')?g.safeCode:'gg_read_unavailable',
+      ...(int(g?.statusCode)&&g.statusCode<=599?{statusCode:g.statusCode}:{}),
+      ...(int(g?.incidentId)&&incidents.has(g.incidentId)?{incidentId:g.incidentId}:{})}));
+  }catch{
+    Object.assign(report,{sourceBinding:'not-verified',incidentCoverage:'not-read',locationCoverage:'not-read',
+      incidentCounts:null,openIncidents:[],monitoring:null,incidentIssues:[{safeCode:'gg_read_incident_metadata_unavailable'}]});
+  }
+  report.attention=report.attention.filter(x=>x!=='gitguardian_incident_list_not_read');
+  if(report.incidentCoverage!=='complete-for-source')report.attention.push('gitguardian_incident_list_incomplete');
+  if(report.monitoring?.monitored===false||(report.monitoring?.status&&report.monitoring.status!=='active'))
+    report.attention.push('gitguardian_repository_monitoring_inactive');
+  if(['failed','canceled','too_large','timeout','skipped','pending_timeout','running_failed','running_cancelled']
+    .includes(report.monitoring?.lastHistoricalScan?.status))report.attention.push('gitguardian_historical_scan_incomplete');
+  if(report.incidentCounts?.open)report.attention.push('gitguardian_open_incidents');
+  if(report.locationCoverage!=='complete-for-source')report.attention.push('gitguardian_location_metadata_incomplete');
+  return report;
+}
 async function cli(args){
   const values={};for(let i=0;i<args.length;i++){
-    const a=args[i];need(['--mcp','--browser','--ref','--from-json'].includes(a)&&!Object.hasOwn(values,a),'security_status_cli_arguments_required');
-    values[a]=a==='--mcp'||a==='--browser'?true:args[++i];
+    const a=args[i];need(['--mcp','--browser','--github-only','--ref','--from-json'].includes(a)&&!Object.hasOwn(values,a),'security_status_cli_arguments_required');
+    values[a]=['--mcp','--browser','--github-only'].includes(a)?true:args[++i];
   }
   const commitSha=values['--ref'];need(commitSha===undefined||sha(commitSha),'security_status_exact_commit_required');
   if(values['--browser']){need(Object.keys(values).length===1,'security_status_cli_arguments_required');return gitguardianBrowserReadPlan();}
@@ -155,7 +223,8 @@ async function cli(args){
     const report=projectGitHubSecurityStatus(input);need(!commitSha||report.commitSha===commitSha,'security_status_snapshot_commit_changed');
     return{...report,source:'provided-snapshot'};
   }
-  return{...await collectGitHubSecurityStatus({fetchJson:githubCliJson,commitSha}),source:'github-live-cli'};
+  return{...await (values['--github-only']?collectGitHubSecurityStatus({fetchJson:githubCliJson,commitSha}):
+    collectSecurityStatus({commitSha})),source:values['--github-only']?'github-live-cli':'github-and-gitguardian-live-cli'};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   try{console.log(JSON.stringify(await cli(process.argv.slice(2))));}

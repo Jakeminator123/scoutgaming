@@ -42,7 +42,7 @@ test('JSON schema agrees with model variant limits and allowed predicate fields/
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
   assert.equal(schema.properties.lines.minItems, 64);
-  assert.equal(schema.properties.lines.maxItems, 64);
+  assert.equal(schema.properties.lines.maxItems, 512);
   assert.equal(schema.$defs.trigger.oneOf.length, allowedPathDescriptors.length);
   for (const descriptor of allowedPathDescriptors) {
     const entry = schema.$defs.trigger.oneOf.find(item => item.properties.path.const === descriptor.path);

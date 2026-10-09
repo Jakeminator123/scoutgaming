@@ -1,4 +1,4 @@
-import {stageGeometry,backgroundRect} from './geometry.js';
+import {stageGeometry,backgroundRect,tableRect} from './geometry.js';
 /* One WebGL compositor, one decoded dealer frame, multiple complementary passes.
  * No AI segmentation; split mask is an explicit authoring aid. */
 export class Compositor {
@@ -94,10 +94,11 @@ export class Compositor {
       this.draw(actor,rect,{key:{...scene.key,enabled:scene.key.enabled&&scene.key.mode==='alpha'},mask:scene.key.mode==='alpha'?mask:null,debug:scene.key.mode==='alpha'?2:0});return;
     }
     const actorPass=p=>{if(scene.show.dealer)this.draw(actor,rect,{key:scene.key,mask,hand,pass:p,splitY:scene.splitY});};
-    if(scene.layerMode==='split')actorPass(1);
-    const table=get('table');if(scene.show.table&&table?.el)this.draw(table.el,sceneRect(table,scene.tableTransform));
+    if(scene.tableFront===true)actorPass(0);
+    else if(scene.layerMode==='split')actorPass(1);
+    const table=get('table');if(scene.show.table&&table?.el)this.draw(table.el,tableRect(scene,table,{dims,s,x,y}));
     this.paintCards(cards,metadata,scene.anchors);if(scene.show.cards)this.draw(this.cardCanvas,rect);
-    actorPass(scene.layerMode==='split'?2:0);
+    if(scene.tableFront!==true)actorPass(scene.layerMode==='split'?2:0);
     for(const [role,transform] of [['foreground','foregroundTransform'],['overlay','overlayTransform']]){
       const a=get(role);if(scene.show[role]&&a?.el)this.draw(a.el,sceneRect(a,scene[transform]));}
   }
@@ -143,10 +144,11 @@ class CanvasFallback {
     const bg=get('background');if(scene.show.background&&bg?.el)draw(bg.el,backgroundRect(scene,bg,dims));
     const ready=this.prepare(actor,scene,assets),actorRect=[x,y,1080*s,1920*s];
     if(scene.key.mode!=='composite'){if(ready)draw(scene.key.mode==='alpha'?this.alpha:actor,actorRect);return;}
-    if(ready&&scene.show.dealer&&scene.layerMode==='split')draw(this.body,actorRect);
-    const table=get('table');if(scene.show.table&&table?.el)draw(table.el,rect(table,scene.tableTransform));
+    if(ready&&scene.show.dealer&&scene.tableFront===true)draw(this.full,actorRect);
+    else if(ready&&scene.show.dealer&&scene.layerMode==='split')draw(this.body,actorRect);
+    const table=get('table');if(scene.show.table&&table?.el)draw(table.el,tableRect(scene,table,{dims,s,x,y}));
     if(scene.show.cards)draw(cards,actorRect);
-    if(ready&&scene.show.dealer)draw(scene.layerMode==='split'?this.hands:this.full,actorRect);
+    if(ready&&scene.show.dealer&&scene.tableFront!==true)draw(scene.layerMode==='split'?this.hands:this.full,actorRect);
     for(const role of ['foreground','overlay']){const a=get(role);if(a?.el&&scene.show[role])draw(a.el,rect(a,scene[role+'Transform']));}
   }
 }

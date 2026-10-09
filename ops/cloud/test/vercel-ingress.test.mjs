@@ -5,6 +5,7 @@ import {proxyHeaders} from '../gateway.mjs';
 import {createCloudGateway} from '../gateway.mjs';
 import {createServer, request as httpRequest} from 'node:http';
 import {once} from 'node:events';
+import {presentationCapabilitiesResponse} from '../../../web/presentation-capabilities.mjs';
 
 const env = {CROUPIER_VERCEL_TRANSPORT_ORIGIN: 'https://isolated.onrender.com', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3)};
 const ingress = readVercelIngressConfig(env);
@@ -128,4 +129,40 @@ test('real HTTP gateway preserves media ranges and streams SSE, checking Lab acc
   } finally {
     for (const server of servers.reverse()) {server.closeAllConnections(); await new Promise(resolve => server.close(resolve));}
   }
+});
+
+test('only exact GET/HEAD feature metadata crosses public Render ingress and drops all credentials',()=>{
+  const direct=(url,method='GET',headers={})=>({url,method,headers:{host:'isolated.onrender.com',...headers}});
+  for(const method of ['GET','HEAD'])assert.deepEqual(vercelIngressRequest(direct('/api/presentation/capabilities',method,{cookie:'fixture-private',authorization:'Bearer fixture'}),ingress),
+    {accepted:true,transported:true,headers:{host:'preview.example.test'}});
+  for(const url of ['/api/presentation/capabilities?dealer=nora','/api/presentation/capabilities/','/api/presentation/%63apabilities','/api/presentation/capabilities/media','/api/presentation/config','/api/presentation/select','/api/presentation/layers/north/asset'])
+    assert.equal(vercelIngressRequest(direct(url),ingress).accepted,false,url);
+  for(const method of ['POST','PUT','DELETE'])assert.equal(vercelIngressRequest(direct('/api/presentation/capabilities',method),ingress).accepted,false);
+  assert.equal(vercelIngressRequest(direct('/api/presentation/capabilities','GET',{upgrade:'websocket'}),ingress).accepted,false);
+  assert.equal(vercelIngressRequest(direct('/api/presentation/capabilities','GET',{host:'evil.test'}),ingress).accepted,false);
+});
+
+test('actual isolated Render gateway forwards public feature metadata only to the new backend',async t=>{
+  let calls=0;
+  const web=createServer(async(req,res)=>{
+    calls++;assert.equal(req.headers.host,'preview.example.test');assert.equal(req.headers.cookie,undefined);
+    assert.equal(req.headers.authorization,undefined);assert.equal(req.headers['x-croupier-vercel-secret'],undefined);
+    const response=presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method}));
+    assert.ok(response);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(req.method==='HEAD'?undefined:await response.text());
+  });
+  web.listen(0,'127.0.0.1');await once(web,'listening');
+  const gateway=createCloudGateway({singleOrigin:true,gameOrigin:ingress.publicOrigin,boOrigin:ingress.publicOrigin,labOrigin:ingress.publicOrigin,streaming:true},
+    {webPort:web.address().port,vercelIngress:ingress,labInternalSecret:'isolated-lab-secret-'.repeat(3)});
+  gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+  t.after(()=>{gateway.closeAllConnections();gateway.close();web.closeAllConnections();web.close();});
+  const get=(path,method='GET')=>new Promise((resolve,reject)=>{
+    const req=httpRequest({host:'127.0.0.1',port:gateway.address().port,method,path,headers:{host:'isolated.onrender.com',cookie:'fixture-cookie',authorization:'Bearer fixture'}},res=>{
+      let body='';res.on('data',chunk=>body+=chunk);res.on('end',()=>resolve({status:res.statusCode,body,headers:res.headers}));
+    });req.on('error',reject);req.end();
+  });
+  const result=await get('/api/presentation/capabilities');assert.equal(result.status,200);
+  assert.deepEqual(JSON.parse(result.body),{schemaVersion:1,registeredDealerIds:['nora'],compositing:'per-clip'});
+  assert.equal(result.headers['cache-control'],'no-store');assert.equal((await get('/api/presentation/capabilities','HEAD')).body,'');
+  assert.equal((await get('/api/presentation/config')).status,421);
+  assert.equal((await get('/api/presentation/capabilities','POST')).status,421);assert.equal(calls,2);
 });

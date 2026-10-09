@@ -1,3 +1,4 @@
+import {validateCompositionSettings} from './public/composition-settings.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
 export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
 export const LAYER_ASSET_TYPES = Object.freeze({
@@ -8,7 +9,7 @@ export const MAX_LAYER_ASSET_BYTES = 128 * 1024 * 1024;
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const hash = /^[a-f0-9]{64}$/;
 const token = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
-const dealers = new Set(['astrid', 'vera', 'amira', 'mei']);
+const dealers = new Set(['astrid', 'vera', 'amira', 'mei', 'nora']);
 const reject = () => { throw Object.assign(new Error('studio_invalid_presentation'), { statusCode: 422 }); };
 const plain = value => value && typeof value === 'object' && !Array.isArray(value)
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
@@ -55,11 +56,11 @@ function layer(value, role) {
   return structuredClone(value);
 }
 export function validatePresentationLane(value) {
-  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer']);
+  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition']);
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
-  const ids = list(value.dealers, id => dealers.has(id), 4);
+  const ids = list(value.dealers, id => dealers.has(id), 5);
   if (!ids.length || value.renderer !== undefined && !['layered', 'portrait-video'].includes(value.renderer)) reject();
   exact(value.layers, ['background', 'dealer', 'table']);
   const layers = Object.fromEntries(['background', 'dealer', 'table'].map(role => [role, layer(value.layers[role], role)]));
@@ -79,6 +80,7 @@ export function validatePresentationLane(value) {
       || value.idle.frequencyPercent < 0 || value.idle.frequencyPercent > 100)) reject();
     if (value.idle.variants !== undefined) list(value.idle.variants, id => typeof id === 'string' && id.length <= 200);
   }
+  if(value.composition!==undefined)validateCompositionSettings(value.composition);
   return { ...structuredClone(value), layers };
 }
 export function validatePresentationPackage(value) {
@@ -103,7 +105,7 @@ export function validatePresentationPackage(value) {
 export function buildPresentationPackage(project, selectedLaneIds, library) {
   const selected = list(selectedLaneIds, id => typeof id === 'string' && token.test(id));
   const lanes = selected.map(id => project.lanes?.find(lane => lane.id === id));
-  if (lanes.some(lane => !lane)) reject();
+  if (lanes.some(lane => !lane || lane.dealers.some(id=>!project.dealers?.some(dealer=>dealer.id===id)))) reject();
   const used = new Set(lanes.flatMap(lane => LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed)));
   return validatePresentationPackage({ schemaVersion: 1, projectRevision: project.revision, lanes,
     assets: library.filter(asset => used.has(asset.id)) });
