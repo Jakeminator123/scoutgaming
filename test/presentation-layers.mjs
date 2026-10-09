@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
+import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../web/storage/presentation-package.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
@@ -26,6 +27,25 @@ test('publication freezes lane data and only referenced assets; subsequent Studi
   assert.deepEqual(readPackagePresentation(pack),presentation);assert.equal(presentation.assets.length,2);
   assert.deepEqual(publicPackageBranding(pack.branding),{name:'North'});
 });
+test('an incomplete three-layer Nora can be published and entered through her own compatible lane', async () => {
+  const project = addDealer(fixture().project, 'nora', 'Nora'), lane = project.lanes[0];
+  lane.dealers = ['nora']; lane.layers.dealer.default = 'nora'; lane.layers.dealer.allowed = ['nora'];
+  lane.composition = defaultCompositionSettings();
+  for (const line of project.lines.filter(row => row.dealerId === 'nora' && row.eventId.startsWith('deal.'))) {
+    assert.equal(line.variants[0].videoGenerationId, null);
+  }
+  assert.doesNotThrow(() => validateProject(project));
+  const presentation = buildPresentationPackage(project, [lane.id], project.layerAssets);
+  const pack = { lanes: [lane.id], revision: 1, branding: withPackagePresentation({}, presentation) };
+  assert.deepEqual(readPackagePresentation(pack), presentation);
+  const administration = { gameLane: lane.id, gameLanes: [{ schemaVersion: 1, id: lane.id, label: 'Nora', renderer: 'portrait-video', dealer: 'nora', mediaCollection: 'nora-presentation' }] };
+  const select = createGameEntrySelector({ policy: { readSaved: async () => ({ project, administration }), readGameConfiguration: async () => administration },
+    packages: { resolve: async () => ({ operator: { id: 'north' }, package: pack }) } });
+  const result = await select('?operator=north');
+  assert.equal(result.status, 200); assert.equal(result.selection.dealer, 'nora'); assert.equal(result.selection.localDealer, 'nora');
+  assert.equal(result.selection.composition.dealer.enabled, true); assert.equal(result.selection.composition.dealer.compatibility, 'per-clip');
+});
+
 test('wrong roles, unknown/default assets, duplicate IDs, paths and unsafe MIME are refused',()=>{
   const {project}=fixture();
   for(const mutate of [p=>p.lanes[0].layers.background.allowed.push(p.layerAssets[1].id),p=>p.lanes[0].layers.table.default='missing',p=>p.layerAssets.push(p.layerAssets[0])]){

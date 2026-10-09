@@ -7,7 +7,7 @@ const events = readFileSync(new URL('./control-events-page.tsx', import.meta.url
 const preview = readFileSync(new URL('./events-preview.tsx', import.meta.url), 'utf8');
 
 test('idle editor presents one base loop with variations and preserves advanced controls', () => {
-  for (const label of ['Grundloop', 'Basklipp', 'Variationer', 'Spela en minut', 'Avancerat · basklipp och fördelning', 'Avancerat · slump och gränser', 'Avancerat · uppspelningsplan']) assert.match(source, new RegExp(label));
+  for (const label of ['Basklipp', 'Variationer', 'Spela en minut', 'Avancerat · basklipp och fördelning', 'Avancerat · slump och gränser', 'Avancerat · uppspelningsplan']) assert.match(source, new RegExp(label));
   for (const owner of ['Manuell', 'Automatisk', 'Regelstyrd', 'OpenClaw']) assert.match(source, new RegExp(owner));
   assert.match(source, /idle\/variant\//);
   assert.doesNotMatch(source, /Huvudloop|Reservloop/);

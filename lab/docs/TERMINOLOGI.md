@@ -18,34 +18,42 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 
 ## Begrepp
 
-| Term | Betydelse |
-|---|---|
-| Spelmotor | Äger kort, regler, saldo och utfall. Körs på Render. |
-| Spelhändelse / spelsignal | Förändring i spelet respektive information till presentationen. |
-| Presentationsadapter | Översätter spelsignaler till presentationshändelser. |
-| Presentationshändelse | Instruktion: `idle`, `deal`, `reveal`, `turn`, `settle` eller `speak`. |
-| Administrationshändelse | Ändrad roll, konto eller publicerat paket; skiljs från spel- och presentationshändelser. |
-| Presentationsregissör | Ansvar för tillåtet klippurval och uppspelningsplan; ingen ny tjänst. |
-| Presentationslane | Återanvändbar profil med dealers, klipp, lager och urvalsval. Lane i Studio. |
-| Spellane | Spelväg med renderer och dealer som klienten stöder. Lane i Administration. |
-| Operatörspaket | Bolagets publicerade lanes, spel, bord, branding och revision. |
-| Designprofil / varumärke | Utseende och tillåtna designval. Varumärket är ingen behörighetsgräns. |
-| Tre lager / mask | Bakgrund, dealer och bord respektive avgränsning av synliga bilddelar. |
-| Fullbild / Greenscreen | Inbakad bild respektive klipp som kan friläggas med sparade inställningar. |
-| Mediafil / mediaregister | Filens bytes respektive ID, metadata och filreferens. |
-| Visningsnamn | Klippets läsbara namn, skilt från filnamn och ID. |
-| Händelseklipp | Klipp för en situation, exempelvis utdelning eller replik. |
-| Grundloop / basklipp / variation | Idle-vänteläget, dess lugna huvudklipp respektive kort avbrott som en huvudrörelse. En grundloop kan ha flera sparade basklipp. |
-| Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
-| Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
-| Händelsekategori / situation | Redigeringsgrupp respektive sammanhang: plats, utfall eller exakt replik. |
-| Villkor / urvalsregler | Krav för att få väljas respektive hur valet görs bland tillåtna alternativ. |
-| Replik-ID / replikset | Exakt tal-ID respektive text, ljud, video, bildindex, kalibrering och godkännandenotering. |
-| Uppspelningsplan | Klipp, lager, ordning och synkpunkter för spelklienten. |
-| Uppspelningskvitto | Spelarens rapport om urval, start, bild, slut eller avbrott. Urval är inte uppspelning. |
-| Rehearsal / repetition | Visuell granskning i riktiga spelklienten med två uppspelningar i följd. |
-| 2D-reserv | Bord och kort visas utan dealervideo när media eller lagerpaket saknas. |
-| Tal vid inaktivitet | Astrids talinitiativ när spelaren är inaktiv och bordet är lugnt. Teknisk benämning: Probe. |
+| Teknisk/engelsk term | Svenska | Betydelse |
+|---|---|---|
+| Game engine | Spelmotor | Äger kort, regler, saldo och utfall. Körs på Render. |
+| Game event / signal | Spelhändelse / spelsignal | Förändring i spelet respektive information till presentationen. |
+| Presentation adapter | Presentationsadapter | Översätter spelsignaler till presentationshändelser. |
+| Presentation event | Presentationshändelse | Instruktion: `idle`, `deal`, `reveal`, `turn`, `settle` eller `speak`. |
+| Admin event | Administrationshändelse | Ändrad roll, konto eller publicerat paket; skiljs från spel- och presentationshändelser. |
+| Presentation director | Presentationsregissör | Ansvar för tillåtet klippurval och uppspelningsplan; ingen ny tjänst. |
+| Presentation lane | Presentation / presentationsprofil | Återanvändbar profil med dealers, klipp, lager och urvalsval. Tekniskt presentationslane; ID ändras inte när visningsnamnet översätts. |
+| Game lane | Spellane | Spelväg med renderer och dealer som klienten stöder. Lane i Administration. |
+| Operator package | Operatörspaket | Bolagets publicerade lanes, spel, bord, branding och revision. |
+| Branding | Designprofil / varumärke | Utseende och tillåtna designval. Varumärket är ingen behörighetsgräns. |
+| Layers / mask | Tre lager / mask | Bakgrund, dealer och bord respektive avgränsning av synliga bilddelar. |
+| Full-frame / chroma key | Fullbild / grönskärm | Inbakad bild respektive klipp som kan friläggas med sparade inställningar. |
+| Media asset / registry | Mediafil / mediaregister | Filens bytes respektive ID, metadata och filreferens. |
+| Display name / clipLabels | Visningsnamn | Klippets läsbara namn, skilt från filnamn och ID. |
+| Event clip | Händelseklipp | Klipp för en situation, exempelvis utdelning eller replik. |
+| Idle loop / base clip / variant | Grundloop / basklipp / variation | Idle-vänteläget, dess lugna huvudklipp respektive kort avbrott som en huvudrörelse. En grundloop kan ha flera sparade basklipp. |
+| Clip set | Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
+| Default / variant | Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
+| Event group / situation | Händelsekategori / situation | Redigeringsgrupp respektive sammanhang: plats, utfall eller exakt replik. |
+| Trigger / policy | Villkor / urvalsregler | Krav för att få väljas respektive hur valet görs bland tillåtna alternativ. |
+| Speech line ID / speech set | Replik-ID / replikset | Exakt tal-ID respektive text, ljud, video, bildindex, kalibrering och godkännandenotering. |
+| Playback plan | Uppspelningsplan | Klipp, lager, ordning och synkpunkter för spelklienten. |
+| Playback receipt | Uppspelningskvitto | Spelarens rapport om urval, start, bild, slut eller avbrott. Urval är inte uppspelning. |
+| Rehearsal | Repetition | Visuell granskning i riktiga spelklienten med två uppspelningar i följd. |
+| 2D fallback | 2D-reserv | Bord och kort visas utan dealervideo när media eller lagerpaket saknas. |
+| Probe | Tal vid inaktivitet | Astrids talinitiativ när spelaren är inaktiv och bordet är lugnt. Teknisk benämning: Probe. |
+| box0–box6 | Spelarplats 1–7 | Separata kortdestinationer i modellen; visningen räknar från 1. Tom position hoppas över utan reservfilm. |
+| deal.player.left / centre / right | Utdelningsgrupp vänster / mitten / höger | Tekniska eventgrupper för platser 1–2, 3–5 respektive 6–7; exakt box avgör destination. Inte grundloopar. |
+| dealer-up / dealer-hole | Dealerns öppna / dolda kort | Skilda kortdestinationer; ett generellt utdelningsklipp ersätter inte dessa. |
+| reveal | Visa dealerns dolda kort | Eget moment efter utdelningen. |
+| handIndex / card | Hand / kortnummer | Exakta värden följer spelhändelsen; ändras inte vid namnbyte. |
+| Preview clip | Förhandsvisa klipp | Lokalt provval; publicerar eller binder inget runtimeklipp. |
+| Composition | Sammansättning | Redigering av dealer, bord och bakgrund i en presentation. |
+| Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
 
 Äldre UI-ord Eventgrupp, Linje, Trigger och Policy ska ersättas med
 **Händelsekategori, Klippuppsättning, Villkor och Urvalsregler**.
@@ -73,9 +81,9 @@ OpenClaw ändrar inte kort, regler, saldo eller utfall.
 
 | Term | Betydelse / plats |
 |---|---|
-| Operatör / bolag | Kundorganisation med stabilt ID och läsbar slug. Bolag på Lanes. |
-| Bord / Spelrum & bord | Spelresurs med ägare och inställningar respektive arbetsvyn för bord och matchande spellane. Administration → Bord & lanes. |
-| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Bolag på Lanes. |
+| Operatör / bolag | Kundorganisation med stabilt ID och läsbar slug. Administration → Bolag & team. |
+| Bord / Spelrum & bord | Spelresurs med ägare och inställningar respektive arbetsvyn för bord och matchande spellane. Drift → Bord & spelrum. |
+| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Administration → Bolag & team. |
 | Inbjudan / aktiveringslänk | Ny partner aktiveras via `/partner/set-password`; befintlig partner kopplas direkt. |
 | Partnersession | Inloggning på `/partner/login`; öppnar inte Kontrollrum. |
 | Produktkonto | Produktinloggning. Spelare och intern personal hanteras under Konton & roller. |
@@ -85,46 +93,46 @@ Bolagets partnerpersonal och intern adminpersonal hanteras separat.
 
 ## Flöde
 
-```text
-Klippbibliotek → Dealers & klipp → Sammansättning → Lanes → Spelrum & bord
-mediafiler      grundloop,        dealer, bord,     spara/   koppla bord och
-                utdelning,        bakgrund          publicera spellane
-                repliker                          bolagspaket
-                                                     │
-                                Partnerns tillåtna designval
-                                                     │
-                                                     ▼
-                                              Spelklienten
 
-Spelmotor ──spelsignal──► Presentationsregissör ──plan──► Spelklient
-                              ▲       │                    │
-                publicerad lane       └─ OpenClaw-råd       ▼
-                                                     Uppspelningskvitton
+```text
+Nivå 1: Innehåll ↔ Sammansättning → Publicering → bolagspaket (version)
+        positioner,   dealer, bord,                   │
+        repliker      bakgrund                        ▼
+Nivå 2:                              Partnerns tillåtna designval
+                                                       │
+Nivå 3:                                        Spelklienten
+
+Presentation → kompatibel spellane → spelrum/bord
+Spelmotor → spelsignal → presentationsregissör → uppspelningsplan
+                                                       │
+                                              uppspelningskvitto
 ```
 
-En ny spellane måste också finnas under Administration → Bord & lanes.
+En ny spellane måste också finnas under Drift → Bord & spelrum.
 Spelklienten sköter uppspelning och scenkomposition. Fullbildsklipp behåller
 inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 ## Meny och adresser
 
-| Studio-sida | Adress | Vad sidan innehåller |
+| Studio / undervy | Adress | Vad sidan innehåller |
 |---|---|---|
-| Dealers & klipp | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
+| Innehåll | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
 | Sammansättning | `/control/preview` | Dealer, bord och bakgrund; spela upp, placera och spara som lane. |
-| Lanes | `/control/lanes` | Presentationsprofiler, bolag, medlemskap och paketpublicering. |
+| Publicering | `/control/lanes` | Presentationsprofiler, bolag, medlemskap och paketpublicering. |
 | Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
 | Tal vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
 
 | Övrig meny | Innehåll |
 |---|---|
 | Översikt | `/control`: snabbval och bolagsarbetsytor. |
-| OpenClaw | Agentmodeller; Operatörschatt är intern OpenClaw-chatt på `?tab=chat`. |
-| Drift | Administration, Bord & lanes, Spelintegritet, Uppspelning, Betalningar & journal. |
-| Åtkomst / hjälp | Konton & roller, Partners; Guide & hjälp i sidfoten. |
+| AI & chatt | Agentmodeller; Operatörschatt är intern OpenClaw-chatt på `?tab=chat`. |
+| Drift | Bord & spelrum, Spelintegritet, Uppspelning, Betalningar & journal. |
+| Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Konton & roller, Partners; Guide & hjälp i sidfoten. |
 
-Studio är ett menyområde. Sammansättning ersätter namnet Förhandsvisning;
+Studio har tre huvudval: Sammansättning, Innehåll och Publicering.
+Klippbibliotek, Händelser och Tal vid inaktivitet nås som undervyer från Innehåll.
+Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
 aktiv menypunkt. Avancerade inställningar ligger under utfällbara fördjupningar.
 

@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createPresentationApi, presentationInput } from '../web/presentation-api.mjs';
 import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
@@ -90,6 +90,48 @@ const directorProject = () => {
   for (const line of project.lines) for (const variant of line.variants) variant.videoGenerationId = null;
   return project;
 };
+test('Nora with empty positional clips can test every committed destination without borrowing Astrid video', async () => {
+  const project = addDealer(createSeedProject(), 'nora', 'Nora'), inventory = await loadVideoRegistry();
+  const events = Array.from({ length: 7 }, (_, box) => ({ ...source, box, shoeDraw: box + 1, clip: { action: box < 2 ? 'deal-left' : box < 5 ? 'deal-centre' : 'deal-right' } }));
+  for (const faceDown of [false, true]) events.push({ type: 'deal', to: 'dealer', box: null, handIndex: null, shoeDraw: events.length + 1, faceDown, card: faceDown ? null : { r: 'Q', s: '♥' }, clip: { action: 'deal-dealer' } });
+  const handler = createPresentationApi({ db: { prepare: () => ({ get: async () => ({ version: 2, payload: JSON.stringify(events) }) }) },
+    env: {}, store: { load: async () => project }, registryLoader: async () => inventory });
+  for (const event of events) {
+    const response = await presentationFixtureRequest(handler, 'nora-fixture', { dealerId: 'nora', version: 2, mode: 'off', event: { ...event, card: { r: 'K', s: '♦' } } });
+    assert.equal(response.status, 200); assert.equal(response.body.video, null); assert.equal(response.body.standard, null);
+    assert.equal(response.body.decision.media.reason, 'position_clip_missing');
+    assert.deepEqual(response.body.decision.sourceEvent, event, 'missing media cannot change committed or hidden cards');
+  }
+});
+
+test('an explicitly unavailable Nora positional baseline is skipped; available deals and other events keep their behavior', async () => {
+  for (const [event, eventId, kind, situation, available] of [
+    [source, 'deal.player.centre', 'action', 'box3', false],
+    [source, 'deal.player.centre', 'action', 'box3', true],
+    [{ type: 'speak', line: 'goodluck' }, 'speak.goodluck', 'speech', 'goodluck', false],
+  ]) {
+    const project = addDealer(createSeedProject(), 'nora', 'Nora');
+    const id = '00000000-0000-4000-8000-000000000003';
+    const baseline = project.lines.find(line => line.dealerId === 'nora' && line.eventId === eventId).variants[0];
+    baseline.videoGenerationId = id;
+    const video = { id, dealer: 'nora', fileName: 'nora-own-baseline.mp4', sha256: 'b'.repeat(64), available,
+      classification: { dealerId: 'nora', eventId, kind, role: 'standard', situation, playback: 'once', label: 'Nora', notes: '' } };
+    const inventory = { videos: [video], families: [] };
+    const handler = createPresentationApi({ db: { prepare: () => ({ get: async () => ({ version: 2, payload: JSON.stringify([event]) }) }) },
+      env: {}, store: { load: async () => project }, registryLoader: async () => inventory });
+    const response = await presentationFixtureRequest(handler, 'nora-fixture', { dealerId: 'nora', version: 2, mode: 'off', event });
+    assert.equal(response.status, 200); assert.deepEqual(response.body.decision.sourceEvent, event);
+    if (event.type === 'deal' && !available) {
+      assert.equal(response.body.videoGenerationId, null); assert.equal(response.body.video, null); assert.equal(response.body.standard, null);
+      assert.equal(response.body.decision.media.reason, 'position_clip_missing'); assert.equal(response.body.decision.media.situation, 'box3');
+      assert.equal(response.body.trace.some(step => step.stage === 'media-family' && step.status === 'skipped'), true);
+    } else {
+      assert.equal(response.body.videoGenerationId, id); assert.equal(response.body.video.id, id);
+      assert.equal(response.body.decision.media, null, 'this fix cannot change available positions or unrelated legacy event receipts');
+    }
+  }
+});
+
 test('owned Director factory is per authenticated request and receives saved policy and committed card projection', async () => {
   let saved = directorProject(),calls = 0;const transports = [],contexts = [];
   const db = { prepare: () => ({ get: async () => ({ version:2,payload:JSON.stringify([source]) }) }) };
@@ -342,14 +384,14 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {nora: ownIdle} }
-    : { video: selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: selected.familyId } } }), { headers: { 'content-type': 'application/json' } });
+    : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { headers: { 'content-type': 'application/json' } });
   let proofs = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
@@ -358,7 +400,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, version: () => 2,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
+  return { controller, jobs, receipts, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
 }
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
@@ -374,6 +416,24 @@ test('native configuration and actual film receipts preserve their saved project
     assert.equal(row.projectRevision, 'studio-selection-fixture'); assert.equal(row.configurationSource, 'lab/project.json');
     assert.equal(row.requestId, 'selection-fixture');
   }
+});
+
+test('a missing exact position skips every video, keeps the committed card and does not report a playback error', async t => {
+  const { controller, jobs, receipts, status, setMissingPosition } = await controllerFixture(t, { missingPosition: true });
+  const selected = [], presented = [];
+  assert.equal(await controller.present(source, { onSelected: (...args) => selected.push(args), onPresented: () => presented.push(true) }), false);
+  assert.equal(jobs.length, 0, 'even a supplied standard must not replace a missing positional clip');
+  assert.deepEqual(selected, []); assert.deepEqual(presented, []); assert.equal(status.textContent, '');
+  const deal = receipts.filter(row => row.event === 'deal');
+  assert.deepEqual(deal.map(row => row.state), ['selected', 'skipped']);
+  assert.equal(deal[1].reason, 'position_clip_missing'); assert.equal(deal[1].situation, 'box3');
+  assert.equal(deal[1].projectRevision, 'studio-selection-fixture'); assert.equal(deal[1].requestId, 'selection-fixture');
+  assert.deepEqual(deal[1].sourceEvent, source);
+  setMissingPosition(false);
+  const next = controller.present({ ...source, box: 4, shoeDraw: 8 });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(jobs.length, 1, 'a skipped position must not block the next recorded event');
+  jobs[0].resolve({ completed: true }); assert.equal(await next, true);
 });
 
 test('a film error keeps the selection correlation when reporting a 2D fallback, never an end receipt', async t => {

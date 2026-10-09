@@ -56,7 +56,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     const name = clipLabel({ id: videoId, familyId: video?.familyId ?? policy.familyId, role, relativePath: video?.relativePath }, clipLabels);
     const ids = role === 'standard' ? family?.standardIds ?? policy.base.map(item => item.videoId) : family?.variantIds ?? policy.variants.map(item => item.videoId);
     const ordinal = Math.max(1, ids.indexOf(videoId) + 1);
-    const defaultName = /^[a-f0-9-]{32,36}$/i.test(file) ? `${role === 'standard' ? 'Basklipp' : 'Variation'} ${ordinal}` : file;
+    const defaultName = name === 'Variation' ? `Variation ${ordinal}` : name;
     return { text: clipLabels?.[videoId]?.trim() ? name : defaultName, title: `${file} · ${videoId}` };
   };
   const estimate = useMemo(() => idleShareEstimate(policy), [policy]);
@@ -166,7 +166,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
   return <div className={styles.editor}>
     <section className={styles.section}>
-      <div className={styles.sectionHeading}><span>1</span><div><h3>Grundloop</h3><p>Idle-loop med lugna basklipp där dealern sitter och andas.</p></div></div>
+      <h3>Basklipp</h3>
       {!family ? <p className={styles.warning}>Klippen för grundloopen kunde inte hittas.</p> : null}
       <div className={styles.baseChoice}><label className="field">Basklipp<select value={primary.videoId} onChange={event => setPrimary(event.target.value)}>{policy.base.map(item => <option key={item.videoId} value={item.videoId} title={shown(item.videoId).title}>{shown(item.videoId).text}</option>)}</select></label><button type="button" className="text-button" onClick={() => play(primary.videoId)} disabled={blocked || !byId.get(primary.videoId)?.available}>Spela basklipp</button></div>
       <details className={styles.help}><summary>Avancerat · basklipp och fördelning</summary>
@@ -177,9 +177,9 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     </section>
 
     <section className={styles.section}>
-      <div className={styles.sectionHeading}><span>2</span><div><h3>Variationer</h3><p>Korta rörelser, till exempel att klia sig i huvudet. Sedan fortsätter grundloopen.</p></div></div>
+      <h3>Variationer</h3>
       <label className={styles.search}>Hitta variation<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Sök namn, rörelse eller styrning…" /></label>
-      {unconfigured.length ? <details className={styles.help}><summary>Lägg till variation · {unconfigured.length} tillgängliga klipp</summary><div className={styles.variantList}><p>Välj klipp och hur det ska startas. Högst {MAX_IDLE_VARIANTS} variationer.</p>{unconfigured.map(id => <button type="button" className="text-button" key={id} title={shown(id).title} disabled={blocked || policy.variants.length >= MAX_IDLE_VARIANTS || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {shown(id).text}</button>)}</div></details> : null}
+      {unconfigured.length ? <details className={styles.help}><summary>Lägg till variation · {unconfigured.length} tillgängliga klipp</summary><div className={styles.variantList}>{unconfigured.map(id => <button type="button" className="text-button" key={id} title={shown(id).title} disabled={blocked || policy.variants.length >= MAX_IDLE_VARIANTS || !byId.get(id)?.available} onClick={() => void addVariant(id)}>Lägg till {shown(id).text}</button>)}</div></details> : null}
       {importError ? <p role="alert" className={styles.warning}>{importError}</p> : null}
       <div className={styles.variantList}>{visibleVariants.map(item => <div className={styles.variant} key={item.videoId}>
         <details className={styles.variantDetails}><summary title={shown(item.videoId).title}><strong>{shown(item.videoId).text}</strong><small>{usageDescription(item)}</small></summary><div className={styles.variantSettings}>
@@ -198,7 +198,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     </section>
 
     <section className={styles.player} aria-label="Idleklippspelare">
-      <div><span className="eyebrow">FÖRHANDSVISNING</span><strong title={shown(previewId).title}>{shown(previewId).text}</strong><small>Spela basklipp och automatiska variationer här.</small></div>
+      <div><strong title={shown(previewId).title}>{shown(previewId).text}</strong></div>
       {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
         onBusyChange(true);

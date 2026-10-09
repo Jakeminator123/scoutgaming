@@ -75,7 +75,7 @@ test('Astrid keeps the media-family editor and a Villkor tab', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };
   const html = render({ initialVideos: inventory, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' });
-  assert.match(html, /MATERIAL FÖR SITUATIONEN/);
+  assert.match(html, /<h2>Klipp<\/h2>/);
   assert.match(html, /role="tab"[^>]*>Villkor/);
   assert.match(html, /aria-label="Välj dealer"/);
 });

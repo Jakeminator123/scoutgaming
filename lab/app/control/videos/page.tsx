@@ -16,6 +16,7 @@ export default async function Page(props: { searchParams: Promise<Record<string,
       initialDealerId={firstQueryValue(query.dealer)}
       initialEventId={firstQueryValue(query.event)}
       initialVariantId={firstQueryValue(query.variant)}
+      initialSituation={firstQueryValue(query.situation)}
       connectedLane={process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'}
     />
   );

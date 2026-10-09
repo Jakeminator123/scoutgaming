@@ -57,6 +57,7 @@ const directory = {
 };
 function page(extra) {
   return renderToStaticMarkup(React.createElement(ControlLanesPage, {
+    initialTab: 'companies',
     initialProject: createSeedProject(),
     initialVideos: { videos: [] },
     initialStatus: { configured: true },
@@ -69,7 +70,7 @@ const buttons = html => [...html.matchAll(/<button class="([^"]+)"[^>]*>([^<]+)<
 
 test('the Bolag card lists companies, members and roles with secondary buttons only', () => {
   const html = page({ directory });
-  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal((html.match(/sg-btn-primary/g)?.length ?? 0), 0);
   assert.match(html, /<h2 id="operator-directory">Bolag<\/h2>/);
   assert.match(html, /E-post/);
   assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
@@ -91,7 +92,7 @@ test('without a store the card says so, and without the prop the page renders as
   const offline = page({ directory: null, storeAvailable: false });
   assert.match(offline, /Bolag, roller och medlemskap kräver en skrivbar Neon-pool/);
   assert.equal(offline.includes('Skapa bolag'), false);
-  assert.equal(offline.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal((offline.match(/sg-btn-primary/g)?.length ?? 0), 0);
   assert.equal(page({}).includes('operator-directory'), false);
   const alone = renderToStaticMarkup(React.createElement(ControlOperatorDirectory, { directory: { standardRoles, operators: [] } }));
   assert.match(alone, /Inga bolag ännu\./);

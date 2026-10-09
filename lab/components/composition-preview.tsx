@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
+import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 import {sceneForComposition,type CompositionSettings} from '../../web/public/composition-settings.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};
@@ -16,9 +17,11 @@ type CanvasActor=HTMLCanvasElement&{src?:string};
 export function CompositionPreview({dealer,background,table,settings,layout,show,compositing}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing}) {
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0);
-  const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState('Välj ett dealerklipp.'),[error,setError]=useState(''),[loaded,setLoaded]=useState(false),[playing,setPlaying]=useState(false);
-  const sourceKey=JSON.stringify([dealer,background,table]);
-  useEffect(()=>{scene.current=sceneForComposition(settings,layout,!compositing&&show.dealer?{...show,background:false,table:false}:show,compositing?{...compositing,mode:'composite',enabled:true}:undefined);},[settings,layout,show,compositing]);
+  const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState('Välj ett klipp eller ett lager.'),[error,setError]=useState(''),[loaded,setLoaded]=useState(false),[playing,setPlaying]=useState(false);
+  const visible=compositionPreviewLayers(show,compositing,Boolean(dealer));
+  const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
+  const sourceKey=JSON.stringify(sources);
+  useEffect(()=>{scene.current=sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined);},[settings,layout,show,compositing]);
 
   useEffect(()=>{
     const stage=canvas.current;if(!stage)return;stage.width=1080;stage.height=1920;
@@ -26,7 +29,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     const abort=new AbortController(),elements:MediaElement[]=[],assets=new Map<string,Asset>();
     const actor=document.createElement('canvas') as CanvasActor;actor.width=1080;actor.height=1920;
     const context=actor.getContext('2d');
-    ready.current=false;setMediaInfo('');setLoaded(false);setPlaying(false);setError('');setStatus(dealer?'Laddar kanaler…':'Välj ett dealerklipp.');remaining.current=0;
+    ready.current=false;setMediaInfo('');setLoaded(false);setPlaying(false);setError('');setStatus(Object.values(sources).some(Boolean)?'Laddar…':'Välj ett klipp eller ett lager.');remaining.current=0;
     const pause=()=>{Object.values(videos.current).forEach(video=>video.pause());if(active)setPlaying(false);};
     function decode(element:MediaElement,event:string) {
       return new Promise<void>((resolve,reject)=>{
@@ -53,12 +56,12 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     }
     const visibility=()=>{if(document.hidden){remaining.current=0;pause();}};document.addEventListener('visibilitychange',visibility);
     async function init(){
-      if(!dealer)return;
+      if(!Object.values(sources).some(Boolean))return;
       const moduleUrl=labUrl('/preview/compositor.js');
-      const [{Compositor}]=await Promise.all([import(/* webpackIgnore: true */ moduleUrl),load('dealer',dealer),load('background',background),load('table',table)]);
+      const [{Compositor}]=await Promise.all([import(/* webpackIgnore: true */ moduleUrl),load('dealer',sources.dealer),load('background',sources.background),load('table',sources.table)]);
       if(!active)return;
       renderer.current=new Compositor(stage,(message:string)=>{if(active)setError(message);}) as Renderer;
-      ready.current=true;setLoaded(true);setStatus('Kanalerna är redo.');
+      ready.current=true;setLoaded(true);setStatus('Redo.');
       function render(time:number){
         if(!active)return;
         try{
@@ -79,22 +82,22 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
 
   async function play(count?:number){
     if(!ready.current)return;
-    const token=generation.current,channels=Object.values(videos.current);
+    const token=generation.current,channels=Object.values(videos.current);setError('');
     if(count){remaining.current=count;channels.forEach(video=>{video.currentTime=0;});}else if(!remaining.current)remaining.current=1;
-    try{await Promise.all(channels.map(video=>video.play()));if(token!==generation.current)return;setPlaying(true);setStatus(count===2?'Spelar dealerklippet två gånger med parallella lager.':'Spelar alla videokanaler.');}
+    try{await Promise.all(channels.map(video=>video.play()));if(token!==generation.current)return;setPlaying(true);setStatus(count===2?'Spelar två gånger.':'Spelar.');}
     catch{channels.forEach(video=>video.pause());if(token!==generation.current)return;setPlaying(false);setError('Videorna kunde inte starta. Försök igen.');}
   }
-  function pause(){Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus('Alla videokanaler är pausade.');}
+  function pause(){Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus('Pausad.');}
   return <div>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
-      <canvas key={sourceKey} ref={canvas} aria-label={`${layout==='mobile'?'Mobil 9:16':'Desktop 16:9'} · dealer, bord och bakgrund`} style={{display:'block',width:'100%',maxWidth:layout==='mobile'?'min(100%, 39.375vh)':undefined,aspectRatio:layout==='mobile'?'9 / 16':'16 / 9'}}/>
+      <canvas key={sourceKey} ref={canvas} aria-label={`${layout==='mobile'?'Mobil 9:16':'Desktop 16:9'} · dealer, bord och bakgrund`} style={{display:'block',width:'100%',maxWidth:layout==='mobile'?'min(100%, 45vh)':undefined,aspectRatio:layout==='mobile'?'9 / 16':'16 / 9'}}/>
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
-      <button className="sg-btn sg-btn-secondary" disabled={!loaded} onClick={()=>playing?pause():void play()}>{playing?'Pausa alla kanaler':'Spela alla kanaler'}</button>
-      <button className="sg-btn sg-btn-secondary" disabled={!loaded} onClick={()=>void play(2)}>Spela två gånger</button>
+      <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?'Pausa':'Spela'}</button>
+
     </div>
     <p role="status">{status}</p>{error?<p role="alert">{error}</p>:null}
-    <pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre>
-    <small>{dealer?.label??'Ingen dealer'} · {background?.label??'Ingen separat bakgrund'} · {table?.label??'Inget separat bord'}</small>
+    <details><summary>Avancerat · uppspelning</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer} onClick={()=>void play(2)}>Spela två gånger</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
+    <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small>
   </div>;
 }

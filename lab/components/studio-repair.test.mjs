@@ -64,7 +64,10 @@ test('manifest-owned studio displays real files and zero folder variants instead
   const project = createSeedProject(), before = JSON.stringify(project);
   const html = renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
   assert.match(html, /Standard och varianter/);
-  assert.match(html, /goodluck.mp4/);
+  const realClip = inventory.videos.find(video => video.relativePath === 'repliker/goodluck/goodluck.mp4');
+  assert.ok(realClip);
+  assert.ok(html.includes('title="' + realClip.id + '"'), 'friendly clip name retains the manifest-owned identity');
+  assert.match(html, /Lycka till/);
   assert.match(html, /0 varianter — standardfilen används/);
   assert.doesNotMatch(html, /Rodnande tack|Lekfull dubbelvink|Välkommen tillbaka · tyska|Lägg till variant/);
   assert.equal(JSON.stringify(project), before);

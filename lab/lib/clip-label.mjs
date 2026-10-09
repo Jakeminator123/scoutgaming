@@ -2,10 +2,10 @@ import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-famil
 
 // Display names only. Never rename files, hashes or family ids.
 const ACTIONS = {
-  deal: 'Deal',
-  reveal: 'Reveal',
-  speak: 'Tal',
-  idle: 'Idle',
+  deal: 'Ge kort',
+  reveal: 'Vänd kort',
+  speak: 'Replik',
+  idle: 'Grundloop',
   turn: 'Tur',
   settle: 'Resultat',
 };
@@ -16,24 +16,24 @@ const SEATS = {
   'player.right': 'spelare höger',
 };
 const SITUATIONS = {
-  'dealer-hole': 'dealerns hålkort',
-  'dealer-up': 'dealerns öppna kort',
+  'dealer-hole': 'Dolt kort',
+  'dealer-up': 'Öppet kort',
   ready: 'redo',
   goodluck: 'lycka till',
   insurance: 'försäkring',
   double: 'dubbling',
   blackjack: 'blackjack',
-  bust: 'bust',
+  bust: 'Över 21',
   chatter1: 'prat 1',
   chatter2: 'prat 2',
   dealerblackjack: 'dealerns blackjack',
-  dealerbust: 'dealer bust',
+  dealerbust: 'Dealern över 21',
   farewell: 'avsked',
-  greeting: 'hälsning',
+  greeting: 'Välkomsthälsning',
   lose: 'förlust',
   peek: 'titt',
   placebets: 'lägg insatser',
-  push: 'push',
+  push: 'Lika',
   sidebet: 'sidospel',
   win: 'vinst',
 };
@@ -42,7 +42,7 @@ const situationText = situation => {
   if (Object.hasOwn(SITUATIONS, situation)) return SITUATIONS[situation];
   // Studio shows box0 as plats 1 (mediaSituationLabel and the hand row both add 1).
   const box = /^box([0-6])$/.exec(situation);
-  if (box) return `box ${Number(box[1]) + 1}`;
+  if (box) return `Spelarplats ${Number(box[1]) + 1}`;
   return situation;
 };
 
@@ -62,6 +62,12 @@ function labelFromFamily(familyId, role) {
   const dot = eventId.indexOf('.');
   const action = dot === -1 ? eventId : eventId.slice(0, dot);
   const rest = dot === -1 ? '' : eventId.slice(dot + 1);
+  if (action === 'speak' && Object.hasOwn(SITUATIONS, situation)) return withRole(clipSituationLabel(eventId, situation), role);
+  if (action === 'idle' && situation === 'ready') return role === 'variant' ? 'Variation' : 'Lugn blick';
+  if (action === 'deal' && /^box[0-6]$/.test(situation)) return withRole(`Ge kort · ${situationText(situation)}`, role);
+  if (['deal', 'reveal'].includes(action) && ['dealer-up', 'dealer-hole'].includes(situation)) {
+    return withRole(`${action === 'reveal' ? 'Vänd dolt kort' : situation === 'dealer-up' ? 'Ge öppet kort' : 'Ge dolt kort'} · Dealer`, role);
+  }
   const bits = [Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : action];
   if (rest && Object.hasOwn(SEATS, rest)) bits.push(SEATS[rest]);
   else if (rest && rest !== 'dealer' && rest !== 'other' && rest !== situation) bits.push(rest);
@@ -122,6 +128,11 @@ export function clipLabel(clip, overrides) {
   const id = clip && typeof clip.id === 'string' ? clip.id : '';
   const override = overrides && id && typeof overrides[id] === 'string' ? overrides[id] : '';
   if (override.trim() && override.length <= CLIP_LABEL_MAX && !CONTROL_CHARS.test(override)) return override;
+  if (clip?.familyId?.includes('/idle.ready/')) {
+    const path = clip?.relativePath ?? '';
+    if (/idle_breath/.test(path)) return 'Andas lugnt';
+    if (/idle_still/.test(path)) return 'Lugn blick';
+  }
   const fromFamily = labelFromFamily(clip?.familyId, clip?.role);
   if (fromFamily) return fromFamily;
   const fromPath = labelFromPath(clip?.relativePath, clip?.role);
@@ -129,4 +140,15 @@ export function clipLabel(clip, overrides) {
   if (typeof clip?.label === 'string' && clip.label.trim()) return clip.label;
   if (id.trim()) return id.trim();
   return 'Klipp';
+}
+
+// Display only: retain the original situation in select values and callbacks.
+export function clipSituationLabel(eventId, situation) {
+  if (/^box[0-6]$/.test(situation)) return situationText(situation);
+  if (eventId === 'reveal.dealer' && situation === 'dealer-hole') return 'Dealer · vänd dolt kort';
+  if (situation === 'dealer-up') return 'Dealer · öppet kort';
+  if (situation === 'dealer-hole') return 'Dealer · dolt kort';
+  if (eventId === 'idle.ready') return 'Grundloop';
+  const label = situationText(situation);
+  return label ? label[0].toLocaleUpperCase('sv') + label.slice(1) : eventId;
 }

@@ -14,13 +14,19 @@
   font-family: var(--sg-font-mono), "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px; letter-spacing: 0.08em; color: var(--sg-faint);
 }
-.nav { display: flex; flex-direction: column; gap: 14px; }
-.group { display: flex; flex-direction: column; gap: 2px; }
-.groupLabel {
-  font-family: var(--sg-font-mono), "JetBrains Mono", ui-monospace, monospace;
-  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sg-faint);
-  padding: 0 12px 6px;
+.nav { display: flex; flex-direction: column; gap: 6px; }
+.group { display: flex; flex-direction: column; gap: 4px; }
+.groupButton, .groupButtonActive {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--sg-muted); font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
 }
+.groupButton:hover, .groupButtonActive:hover { background: var(--sg-hover); color: var(--sg-text); }
+.groupButtonActive { color: var(--sg-text); }
+.chevron { flex: 0 0 auto; color: var(--sg-faint); transition: transform 160ms ease; }
+.groupButton[aria-expanded="true"] .chevron, .groupButtonActive[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+.groupItems { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; margin-left: 12px; border-left: 1px solid var(--sg-line-2); }
+.groupItems[hidden] { display: none; }
 .item, .itemActive {
   display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 8px;
   color: var(--sg-muted); position: relative; text-decoration: none; font-size: 14px;
@@ -53,6 +59,12 @@
 }
 .levelOn { background: var(--sg-seg-on-bg); color: var(--sg-seg-on-text); }
 
+.item:focus-visible, .itemActive:focus-visible, .groupButton:focus-visible, .groupButtonActive:focus-visible,
+.level:focus-visible, .levelOn:focus-visible, .brand:focus-visible {
+  outline: 2px solid var(--sg-mark); outline-offset: 3px;
+}
+.footer .item, .footer .itemActive { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
 @media (max-width: 900px) {
   .shell { flex-direction: column; }
   .sidebar { width: 100%; flex-basis: auto; height: auto; position: relative; border-right: 0; border-bottom: 1px solid var(--sg-line-2); }

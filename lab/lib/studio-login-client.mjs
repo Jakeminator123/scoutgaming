@@ -1,20 +1,36 @@
 import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
 
-// Exact current document routes only: no prefixes, query strings or fragments.
+// Exact current document routes only; query values are narrowly allowlisted below.
 // Keep login and bearer-entry pages out of this list to avoid auth redirect loops.
 const returns = new Set(['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
 const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
+function publicationReturn(value) {
+  if (typeof value !== 'string' || value.length > 300 || /[#\\\x00-\x20]/.test(value)) return null;
+  const parts = value.split('?');
+  if (parts.length !== 2 || !['/control/lanes', '/studio/control/lanes'].includes(parts[0])) return null;
+  const query = new URLSearchParams(parts[1]);
+  if (!query.size || query.size > 2) return null;
+  for (const [key, entry] of query) {
+    if (query.getAll(key).length !== 1) return null;
+    if (key === 'tab' && ['publish', 'companies'].includes(entry)) continue;
+    if (key === 'lane' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(entry)) continue;
+    return null;
+  }
+  return '/control/lanes?' + query.toString();
+}
 export function studioLoginReturnTo(value) {
   if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/studio';
   if (returns.has(value) || handoff.test(value)) return value;
+  const publication = publicationReturn(value);
+  if (publication) return publication;
   return resolveWorkspaceSurfacePath(value)?.publicPath || '/studio';
 }
 export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   const target = studioLoginReturnTo(value);
   if (authBase !== '/api/auth') return target;
   if (returns.has(target)) return target.slice('/studio'.length) || '/';
-  if (resolveWorkspaceSurfacePath(target)) return target;
+  if (resolveWorkspaceSurfacePath(target) || publicationReturn(target)) return target;
   // Host-only authentication must not be forwarded to a different origin.
   return '/';
 }

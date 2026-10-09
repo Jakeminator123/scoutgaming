@@ -7,11 +7,16 @@ import { nativeStudioAdminEnabled, studioNativeRuntime } from '@/lib/studio-nati
 import { loadControlStudio } from '../../control-studio-data';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Lanes · Croupier Studio' };
+export const metadata = { title: 'Publicering · Croupier Studio' };
 
 export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = props?.searchParams ? await props.searchParams : {};
-  const data = await loadControlStudio('/control/lanes');
+  const returnQuery = new URLSearchParams();
+  for (const key of ['tab', 'lane']) {
+    const value = firstQueryValue(query[key]);
+    if (value) returnQuery.set(key, value);
+  }
+  const data = await loadControlStudio('/control/lanes' + (returnQuery.size ? '?' + returnQuery : ''));
   let operators: LaneOperatorChoice[] = fixtureLaneOperators();
   let storeAvailable = false;
   let directory: OperatorDirectory | null = null;
@@ -41,5 +46,5 @@ export default async function Page(props: { searchParams: Promise<Record<string,
       }
     }
   }
-  return <ControlLanesPage initialLaneId={firstQueryValue(query.lane)} initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
+  return <ControlLanesPage initialTab={firstQueryValue(query.tab) === 'companies' ? 'companies' : 'publish'} initialLaneId={firstQueryValue(query.lane)} initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
 }

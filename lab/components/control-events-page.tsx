@@ -9,7 +9,7 @@ import { takeObservedStep } from '../lib/observed-step-store.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible } from '../lib/studio-model.mjs';
 import type { DealerId, StudioAsset, StudioProject } from '../lib/studio-model.mjs';
-import { videoFitsLine } from '../lib/video-intake.mjs';
+import { videoFitsLine, situationsForEvent } from '../lib/video-intake.mjs';
 import { EventsCatalog } from './events-catalog';
 import { EventsInspector, eventsEditorTab, type EventsEditorTab } from './events-inspector';
 import { describeSocialActivity, EventsIdleNotice, EventsPreview, readableLogReason } from './events-preview';
@@ -35,7 +35,7 @@ function consumeObservedStep() {
   return strictObservedStep;
 }
 
-export function ControlEventsPage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialTab, connectedLane = false }: {
+export function ControlEventsPage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialTab, initialSituation, connectedLane = false }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -43,11 +43,14 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
   initialEventId?: string;
   initialVariantId?: string;
   initialTab?: string;
+  initialSituation?: string;
   connectedLane?: boolean;
 }) {
   const [observedStep, setObservedStep] = useState<PresentationStep | null>(null);
-  const [exampleSpeechLine, setExampleSpeechLine] = useState('placebets');
-  const [exampleSituation, setExampleSituation] = useState('');
+  const initialDefinition = initialProject.events.find(row => row.id === initialEventId);
+  const validInitialSituation = initialDefinition && initialSituation && situationsForEvent(initialDefinition).includes(initialSituation) ? initialSituation : '';
+  const [exampleSpeechLine, setExampleSpeechLine] = useState(validInitialSituation || 'placebets');
+  const [exampleSituation, setExampleSituation] = useState(validInitialSituation);
   const [editorTab, setEditorTab] = useState<EventsEditorTab>(() => eventsEditorTab(initialTab));
   const [testToolsOpen, setTestToolsOpen] = useState(false);
   const [focusSocial, setFocusSocial] = useState(false);
@@ -113,7 +116,7 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
       dealerId: selection?.dealerId ?? dealerId,
       eventId: selection?.eventId ?? event.id,
       variantId: selection?.variantId ?? variant.id,
-      tab,
+      tab, situation: exampleSituation || undefined,
     });
     window.history.replaceState(null, '', href);
   }
@@ -173,6 +176,12 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
     setObservedStep(null);
     setExampleSituation(situation);
     selectStoredEvent(id);
+    if (window.history?.replaceState) window.history.replaceState(null, '', studioHref('/control/events', { dealerId, eventId: id, situation: situation || undefined, tab: editorTab }));
+  }
+  function chooseSituation(situation: string) {
+    if (!situationsForEvent(event).includes(situation)) return;
+    setExampleSituation(situation); setVariantId(''); invalidateSimulation();
+    if (window.history?.replaceState) window.history.replaceState(null, '', studioHref('/control/events', { dealerId, eventId: event.id, situation, tab: editorTab }));
   }
   function changeTestContext(next: TestContext) { setContext(next); invalidateSimulation(); }
   async function simulate() {
@@ -279,9 +288,9 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
           observed={Boolean(observedEvent)}
           originals={originals}
           dealerId={dealerId}
-          onSituation={situation => { setExampleSituation(situation); setVariantId(''); invalidateSimulation(); }}
-          onSpeechLine={lineId => { setExampleSpeechLine(lineId); invalidateSimulation(); }}
-          onOpenSpeech={() => { openEvent('speak.other'); setExampleSpeechLine('placebets'); }}
+          onSituation={chooseSituation}
+          onSpeechLine={lineId => { setExampleSpeechLine(lineId); chooseSituation(lineId); }}
+          onOpenSpeech={() => { openEvent('speak.other', 'placebets'); setExampleSpeechLine('placebets'); }}
           observedStep={observedStep}
           onClearObserved={() => { setObservedStep(null); invalidateSimulation(); }}
           activityHref={studioHref('/control/activity', { dealerId, eventId: event.id })}
