@@ -46,10 +46,16 @@ Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet fi
 
 
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
-välja tilldelat innehåll och tillåtna designval. Nivå 2 visar ännu lokala prov för marker, kort, bord och bakgrund.
-Lane-notisen och meddelandet vid ändring visar den gränsen.
-Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen i vyn Färger, marker och kort; skrivningen kräver rollrättigheten `presentations.configure`.
-Utkasten försvinner vid omladdning eller operatörsbyte.
+välja tilldelat innehåll och tillåtna designval. Inloggad nivå 2 läser det frysta
+operatörspaketets dealer, bord och bakgrund, inklusive bild- och videoformat.
+Bord, Bakgrund och Presentationslanes visar paketets tillåtna inställningar;
+Färger, marker och kort visar dess branding. Skrivning kräver
+`presentations.configure`, rätt revision och val inom samma tilldelade lane.
+Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
+Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
+Provbord länkar till den riktiga spelklienten med operatör och lane.
+Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
+visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
 Begrepp och en kort flödeskarta finns i
 [den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
@@ -57,7 +63,10 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen, inte en fjärde produkt och inte namnet i gränssnittet. I molnet öppnar du
+**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen.
+Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
+tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
+API och tillgångar under basePath behålls. I molnet öppnar du
 [`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
@@ -151,8 +160,9 @@ och saldo flyttas eller återställs inte för provet.
 lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
 **Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
 och nivå 3 (`/play`). Utan `partner_session` visas demonstrationer.
-Inloggad operatör ser sitt bolags snapshot. Paket, spelare och design är inte
-kopplade till spelet (L2, L3, L10).
+Inloggad operatör ser sitt bolags snapshot och det publicerade lane-paketet.
+Tillåtna branding- och lagerval sparas på paketet. Spelare, transaktioner och
+rapporter från spelmotorn är ännu inte anslutna till partnerportalen (N2.4).
 **Spelare, nivå 3** får använda
 spelet och nekas `/control`. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.

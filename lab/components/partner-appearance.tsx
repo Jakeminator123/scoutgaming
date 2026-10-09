@@ -3,6 +3,7 @@
 import type {PresentationPackage} from '../../web/presentation-layers.mjs';
 import { useState } from 'react';
 import styles from './partner-appearance.module.css';
+import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
 
 // Lane token table.color is stored on the package as branding.color.
 const TABLE_COLOR_KEY = 'color';
@@ -31,6 +32,7 @@ export type PartnerAppearanceInitial = {
   branding: Readonly<Record<string, unknown>>;
   adjustable: readonly string[];
   presentation?: PresentationPackage;
+  canConfigure?: boolean;
 };
 
 function textOf(branding: Readonly<Record<string, unknown>>, key: string) {
@@ -51,14 +53,17 @@ function brandingFields(branding: Readonly<Record<string, unknown>>) {
   return Object.fromEntries(keys.map(key => [key, textOf(branding, key)]));
 }
 
-export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
+export function PartnerAppearance({ initial, apiBase, operatorSlug, section = 'all' }: {
   initial: PartnerAppearanceInitial;
   apiBase: string;
   operatorSlug: string;
+  section?: 'all'|'theme'|'design'|'background'|'dealers';
 }) {
-  const [laneId,setLaneId]=useState(String(initial.branding.lane??initial.presentation?.lanes[0]?.id??''));
+  const [laneId,setLaneId]=useState(initial.presentation?.lanes.find(row=>row.id===initial.branding.lane)?.id??initial.presentation?.lanes[0]?.id??'');
   const lane=initial.presentation?.lanes.find(row=>row.id===laneId);
-  const allowed = new Set(lane?.operatorAdjustable??initial.adjustable);
+  const allowed = new Set<string>(lane?effectivePartnerAdjustments(lane):initial.adjustable);
+  const editable=initial.canConfigure!==false;
+  const fields=ADJUSTMENTS.filter(([id])=>section==='all'||section==='theme'&&id==='branding'||section==='design'&&['table','table.color'].includes(id)||section==='background'&&id==='background'||section==='dealers'&&id==='dealer');
   const [choices,setChoices]=useState<Record<string,string>>(()=>Object.fromEntries(['background','table','dealer'].map(role=>[role,textOf(initial.branding,role)])));
 
   const [revision, setRevision] = useState(initial.packageRevision);
@@ -72,10 +77,11 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
 
   async function save() {
     const branding: Record<string, string|null> = {};
-    if(lane){branding.lane=lane.id;for(const role of ['background','table','dealer'] as const)if(allowed.has(role))branding[role]=choices[role]||null;}
+    if(!editable)return;
+    if(lane){branding.lane=lane.id;for(const role of ['background','table','dealer'] as const)if(fields.some(([id])=>id===role)&&allowed.has(role))branding[role]=choices[role]||null;}
 
-    if (allowed.has('table.color')) branding[TABLE_COLOR_KEY] = expandHex(color).toLowerCase();
-    if (allowed.has('branding')) {
+    if (fields.some(([id])=>id==='table.color')&&allowed.has('table.color')) branding[TABLE_COLOR_KEY] = expandHex(color).toLowerCase();
+    if (fields.some(([id])=>id==='branding')&&allowed.has('branding')) {
       for (const [key, value] of Object.entries(texts)) branding[key] = value;
     }
     setBusy(true);
@@ -117,7 +123,10 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
 
       {saved ? <p role="status">Sparad revision {saved}</p> : null}
       {problem ? <p role="alert">{problem}</p> : null}
-      {ADJUSTMENTS.map(([id, label]) => {
+      {!editable?<p>Din roll kan läsa paketet. Ändring kräver rättigheten att konfigurera presentationer.</p>:null}
+      {lane&&!lane.composition?<p>Fullbildsklipp: bord och bakgrund är inbakade och kan inte bytas separat.</p>:null}
+      <fieldset disabled={!editable||busy} style={{border:0,padding:0,margin:0,display:'grid',gap:16}}>
+      {fields.map(([id, label]) => {
         if (!allowed.has(id)) {
           return (
             <label key={id} className={styles.row}>
@@ -160,7 +169,8 @@ export function PartnerAppearance({ initial, apiBase, operatorSlug }: {
           <option value="">Lanens standard</option>{layer?.allowed.map(value=><option key={value} value={value}>{initial.presentation?.assets.find(asset=>asset.id===value)?.label??value}</option>)}
         </select></label>;
       })}
-      <button type="button" className="sg-btn sg-btn-primary" disabled={busy} onClick={save}>Spara utseende</button>
+      </fieldset>
+      <button type="button" className="sg-btn sg-btn-primary" disabled={!editable||busy||!fields.some(([id])=>allowed.has(id))} onClick={save}>Spara utseende</button>
     </section>
   );
 }

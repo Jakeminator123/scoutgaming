@@ -58,7 +58,7 @@ test('corrupt, oversized or mismatched snapshots fail closed and cannot leak int
   for(const mutate of [p=>p.branding._scoutPresentation.sha256='b'.repeat(64),p=>p.branding._scoutPresentation.data='a'.repeat(6501),p=>p.lanes.push('other')]){const next=structuredClone(pack);mutate(next);assert.throws(()=>readPackagePresentation(next),error=>error.statusCode===503);}
 });
 test('partner can choose only within the frozen lane and cannot replace the server-authored snapshot',async()=>{
-  const {pack,presentation}=fixture();let current=pack;
+  const {pack,presentation}=fixture();presentation.lanes[0].composition=defaultCompositionSettings();pack.branding=withPackagePresentation(publicPackageBranding(pack.branding),presentation);let current=pack;
   const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})},readProject:async()=>{throw Error('mutable project must not be read');}});
   const view=await api.read({operatorId:'north'});assert.deepEqual(view.presentation,presentation);assert.equal(view.branding._scoutPresentation,undefined);
   for(const branding of [{background:asset('background',3).id},{table:presentation.assets[0].id},{_scoutPresentation:{}},{lane:'unknown'},{color:'#ffffff'}])await assert.rejects(api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding}),error=>error.statusCode===422);

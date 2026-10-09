@@ -167,3 +167,15 @@ test('fixture preview keeps the internal banner and a real operator snapshot use
   assert.equal(validatePreviewSnapshot({ ...realSnapshot(), mode:'live', accessClass:'partner' }).accessClass, 'partner');
   assert.throws(() => makeRuntime('partner', { ...realSnapshot(), viewer:{ user:'someone-else' } }));
 });
+
+test('real partner presentation destinations use assigned packages instead of local prototype editors',()=>{
+  for(const view of ['theme','design','background','dealers','test']){
+    const html=renderPortal({initialSnapshot:realSnapshot(),initialView:view});
+    assert.match(html,/saknar det publicerade trelagersformatet/,view);
+    assert.doesNotMatch(html.slice(html.indexOf('<main '),html.indexOf('</main>')),/Saved board designs|CasinoBackground|Vald lokalt|kevin-lane-status|<svg|Apply theme|Reset theme/,view);
+    assert.equal((html.match(/Hämtar utseende/g)||[]).length,view==='test'?0:1,view);
+  }
+  const fixtureHtml=renderPortal({initialSnapshot:fixture,initialView:'theme'});
+  assert.match(fixtureHtml,/Intern förhandsvisning/);
+  assert.match(fixtureHtml,/ingen publicerad presentationslane|Ingen publicerad presentationslane/);
+});
