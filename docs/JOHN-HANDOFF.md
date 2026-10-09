@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: sammanhängande sammansättning och partnerns val
 
-Kod färdig lokalt efter e00543b0; full regression, CI och utrullningskvitton återstår före slutleverans.
+Kodleverans 35eb07b29b704c4df9dbf93e46479341bbc68bcd är pushad till GitHub main. Normal fullhook PASS: 2 020 tester, 2 011 PASS, 9 SKIP, 0 FAIL. Exakt-SHA CI 37971486777 är SUCCESS med alla tre jobb godkända utan omkörning. Vercel production READY på dpl_EBfdHp1Y43sjEjToyqfs4gX5u1dZ (scoutgaming-24cxi2fl1-scoutgaming.vercel.app); separat kontroll av www.scoutgaming.tech gav samma deployment. Render-version och produktionsacceptans är separata öppna kontroller.
 Nivå 1:s Sammansättning är huvudeditorn för Dealer, Bord och Bakgrund.
 Storlek och placering visas öppet, separat för Mobil och Desktop. Valet Dealer
 ändrar sparad startdealer; Förhandsvisa klipp är fortfarande enbart ett prov.
@@ -46,7 +46,7 @@ klientinventory och exakt hashkontrollerade originalmedier. Det senare är
 previewbevis, inte serverinventering eller produktionsacceptans. Två tidigare
 privata SSR-fixturfel och ett felaktigt Pausa-antagande rättades i provskriptet;
 ingen produktkod eller felassertion ändrades för att få provet grönt.
-Tre nya tydligt isolerade bilder läggs till skrivbordsgalleriet; de tidigare
+Tre nya tydligt isolerade bilder finns i skrivbordsgalleriet; de tidigare
 23 originalbilderna bevaras. Lokalt QA-par stängdes i finally.
 
 Johns spelbolag saknar fortfarande partner-medlem. /partner utan partnersession
@@ -61,9 +61,20 @@ Den lokala startkedjans 30-sekundersgränser och bortvalda child-processloggar
 utan deploy-ID, SHA och tidsstämplat första fel. Teknisk vägledning finns i
 LOCAL-PRESENTATION-RUNTIME.md. GitHubs ffmpeg-installationstimeout är separat.
 
+Nästa agents avgränsade fortsättning:
+1. Kontrollera exakt Render-SHA för 35eb07b2 eller en verifierad efterföljare.
+   Hämta det första misslyckade deploykvitto/loggutdraget innan eventuell
+   starttidsfix. Anslutningsväg finns i LOCAL-PRESENTATION-RUNTIME.md.
+2. Efter Jakobs manuella spelarinloggning: prova befintliga Johannas blackjack,
+   tre lager och två hela grundloopar; spara bilder. Inga riktiga insatser.
+3. N2-produktion kräver verklig partner-medlem och inloggning. Skapa inte en
+   godtycklig medlem eller skicka en inbjudan utan rätt konto/mottagare och
+   Jakobs instruktion. Därefter verifieras val→spara→omladdning→rätt spelrum.
+   Uppdatera samma handoff och Desktopgalleri; skapa inte demoobjekten igen.
+
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Senaste kodleveransen 88e590e7327f379d56022eebcb891843058a0732 är pushad till GitHub main, har normal fullhook PASS, grön exakt-SHA CI 37963723334 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_DMuc47ugqtd2Wz8rmq8PexbFaZAv. Kanonisk player-login gav HTTP 200 med neutral titel/text efter deploy.
+Tidigare kodleverans 88e590e7327f379d56022eebcb891843058a0732 är pushad till GitHub main, har normal fullhook PASS, grön exakt-SHA CI 37963723334 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_DMuc47ugqtd2Wz8rmq8PexbFaZAv. Kanonisk player-login gav HTTP 200 med neutral titel/text efter deploy.
 Den innehåller 72891be6 (generiskt dealerpaket/rum) och b12653e4 (sista UI-puts).
 Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt rum,
 kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
@@ -139,7 +150,7 @@ Sync-probe matchar oförändrad baseline; mänsklig läppsynkacceptans är separ
 GitGuardian: 17 lästa incidenter, 12 öppna, locationCoverage partial;
 aktiv övervakning och ofullständig historisk skanning. Ingen ren säkerhetsstatus hävdas.
 
-Privat klickbar bildfil: C:/Users/jakob/Desktop/Johns-spelbolag-bilder.html — 23 bilder, 21 produktionssteg och två tydligt avskilda isolerade QA-bilder.
+Privat klickbar bildfil: C:/Users/jakob/Desktop/Johns-spelbolag-bilder.html — 26 bilder, 21 produktionssteg och fem tydligt avskilda isolerade QA-bilder. De tre senaste visar de nya N1-kontrollerna i 1440/768/390.
 Originalbilder och production-demo-browser-persistent.mjs ligger utanför Git:
 C:/Users/jakob/.codex/visualizations/2026/10/09/01a1208f-20d2-7f03-837f-7f7fab0ae5f9/.
 Beständig Edge-demoprofil finns där; läs/exportera aldrig authfiler eller
