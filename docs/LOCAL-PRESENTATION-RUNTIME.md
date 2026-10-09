@@ -120,12 +120,25 @@ runtime behåller sitt befintliga `/blackjack`-kontrakt.
 Signerad launch använder samma serverkontroll och game-session som tidigare;
 en giltig direktstart behöver inte gå via lobbyn.
 
-Nivå 2:s marker, kort, bord och bakgrund är **lokala designprov**. Valen kan
-visas i bordets förhandsvisning, men skickas inte till en publicerad lane eller
-spelet. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`; övriga designval är fortfarande lokala prov. Både en fast lane-notis och återkoppling vid designändring visar detta.
-Klipp, masker, urvalsregler och publicering hör till nivå 1. En framtida
-anslutning måste kontrollera operatör, tilldelad lane, sparad revision och
-tillåtna fält på servern; ett dolt menyval eller en slug är ingen behörighet.
+Inloggad nivå 2 projicerar `readPackagePresentation` från bolagets frysta paket;
+namn, dealer, tre lager och tillgångarnas MIME-typ kommer från samma format som
+spelklienten. Snapshoten exponerar inte det komprimerade `_scoutPresentation`.
+Bord, Bakgrund, Presentationslanes och branding använder den anslutna
+inställningspanelen i stället för Kevins lokala SVG-/bildprototyper. Provbord
+länkar till `/play/blackjack?operator=...&lane=...`, med vanlig spelarinloggning.
+`presentations.configure`, operatörsscope, exakt paketrevision och den enskilda
+lanens allowed/default/operatorAdjustable gäller fortfarande vid varje skrivning.
+`composition` följer spelklientens per-clip-gräns. Fullbildslanes behåller sina
+medier och avvisar nya val av separat bord/bakgrund/bordsfärg. Äldre paket utan
+fryst lagerformat måste återpubliceras före redigering i dessa vyer.
+Marker/kort har ännu inga publicerade designval; deras lokala prototyper visas
+bara i den tydligt märkta fixturen. Klipp, masker, urvalsregler och publicering
+hör till nivå 1. `package.tables` behåller sina befintliga rum-ID:n; denna
+anpassning inför ingen rum-writer eller ny ägarbestämning från dessa ID:n.
+
+`lab/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
+`/control/clips` och behåller query. Tidigare återexporterades klippsidan direkt;
+dubbelinnehållet var samma React-vy. BasePath, API och tillgångar består.
 
 ## Lokal byggcache och runtime
 

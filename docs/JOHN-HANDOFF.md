@@ -1,5 +1,42 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: N2-paket och verifierad legacyutrensning
+
+Genomfört efter avstämning med **Förenkla menyer och förhandsvisning**.
+Den tekniska roten `/studio` återexporterade `/control/clips`; den ger nu
+308 till samma publika klippadress med bevarad query. BasePath/API består.
+
+Inloggad operatör ser fryst paketdata för dealer, bord och bakgrund, med
+tillgångarnas verkliga bild/videoformat. Bord, Bakgrund, Presentationslanes,
+branding och Provbord använder paketvyn; de gamla lokala SVG-/bildproven
+visas bara i den märkta fixturen. Provbord länkar till riktiga spelklienten.
+Ändring kräver rätt roll, revision och val inom samma tilldelade lane.
+Godkända fullbildsklipp behålls; nya separata bord/bakgrund/färg avvisas där.
+Äldre paket utan fryst lagerformat kräver återpublicering före UI-redigering.
+Partner-writer skickar nu expectedRevision till publisher; atomiskt CAS-substrat
+levereras av den andra agenten i dess separata etapp. Rum-ID:n bevaras.
+Marker/kort-design är nästa steg; spelvärden, kort och saldo ägs av spelmotorn.
+
+Raderat lokalt och från produktkällan: tio filer, 259 423 byte:
+- `lab/components/background-zones.tsx` och dess CSS; sparad zondata/API består.
+- Åtta JS/MJS-kopior i `apps/croupier-frontend/public/kevin-cards/`; den tomma
+  katalogen är borttagen. Aktiv `web/public/card-presentation`, kortbilder
+  och URL-alias består.
+
+Mailmallarna har en verklig referens i Kevin-originalvyn och behålls.
+Fristående editor/viewer har dokumenterad användning och behålls.
+Inga runtimebibliotek har bevisats överflödiga. Ingen mediefil eller
+produktionsdatabas har ändrats; inget privat arkiv har lästs.
+
+Verifierat: slutligt Lab-build och TypeScript PASS; paket/scope/roll,
+bakade lager, MIME-format, snapshot, permanent redirect och stale-read-tester PASS.
+Hela delade Lab-arbetskopian gav 1 142 PASS, 2 SKIP, 0 FAIL (1 144 tester);
+den innehåller också andra agenters ännu separata rumstester.
+Originalfyras `audit-dealer-sync --probe` PASS. Detta är inte nytt
+lip-sync-godkännande. Produktions-CI/utrullning har eget kvitto efter push.
+Den privata systemkartan är uppdaterad som Canvas.
+
+
 ## 9 oktober 2026: samlad Studio-etapp för löpande leverans
 
 **Implementerad och lokalt verifierad; produktionskvittot uppdateras efter push.**

@@ -1,4 +1,5 @@
 import { defaultPresentationLane } from './studio-model.mjs';
+import { effectivePartnerAdjustments } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../web/storage/presentation-package.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
@@ -80,7 +81,7 @@ export function createPartnerBrandingApi({ store, readProject } = {}) {
   }
   async function present(pack) {
     const presentation = readPackagePresentation(pack);
-    const saved = presentation ? { lanes: presentation.lanes } : await savedProject();
+    const saved = presentation ? { lanes: presentation.lanes.map(lane => ({ ...lane, operatorAdjustable: effectivePartnerAdjustments(lane) })) } : await savedProject();
     return { ...view(pack, adjustableForPackage(pack.lanes, saved)), ...(presentation ? { presentation } : {}) };
   }
   return Object.freeze({
@@ -102,8 +103,8 @@ export function createPartnerBrandingApi({ store, readProject } = {}) {
         if (!lane) fail(422);
         const base=normalizePresentationBranding({...current.branding,lane:laneId},presentation);
         const merged = {...base,...branding};
-        const rights = new Set(lane.operatorAdjustable);
-        gateKeys(branding,lane.operatorAdjustable);
+        const rights = new Set(effectivePartnerAdjustments(lane));
+        gateKeys(branding,[...rights]);
         for (const role of ['background', 'table', 'dealer']) {
           if (Object.hasOwn(branding,role) && !rights.has(role)) fail(422);
           if (merged[role] !== undefined && merged[role] !== null && !lane.layers[role].allowed.includes(merged[role])) fail(422);
@@ -120,6 +121,7 @@ export function createPartnerBrandingApi({ store, readProject } = {}) {
         published = await store.publishPackage({
           actor,
           operatorId,
+          expectedRevision: current.revision,
           lanes: [...current.lanes],
           games: [...current.games],
           tables: [...current.tables],

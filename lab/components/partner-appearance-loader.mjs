@@ -9,7 +9,7 @@ export function brandingApiBase(apiBase) {
 
 // Plain .mjs with createElement so Kevin's portal test can require it from Node.
 // The panel itself (tsx) is loaded only in the browser, after the first read.
-export function PartnerAppearanceLoader({ apiBase, operatorSlug }) {
+export function PartnerAppearanceLoader({ apiBase, operatorSlug, section = 'all' }) {
   const [state, setState] = React.useState({ status: 'loading' });
   const base = brandingApiBase(apiBase);
   React.useEffect(() => {
@@ -30,6 +30,7 @@ export function PartnerAppearanceLoader({ apiBase, operatorSlug }) {
         if (typeof payload?.packageRevision !== 'number' || !Array.isArray(payload.adjustable) || !Array.isArray(payload.lanes)) {
           setState({ status: 'hidden' }); return;
         }
+        if (!payload.presentation) { setState({ status: 'legacy' }); return; }
         setState({ status: 'ready', initial: payload, Panel: panel.PartnerAppearance });
       } catch {
         if (!cancelled) setState({ status: 'hidden' });
@@ -37,13 +38,14 @@ export function PartnerAppearanceLoader({ apiBase, operatorSlug }) {
     })();
     return () => { cancelled = true; };
   }, [base, operatorSlug]);
-  if (state.status === 'hidden') return null;
+  if (state.status === 'hidden') return React.createElement('p', { role: 'alert', className: 'kevin-appearance-state' }, 'Paketets inställningar kunde inte hämtas. Ladda om eller kontrollera din åtkomst.');
+  if (state.status === 'legacy') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, 'Inställningarna öppnas när intern personal har publicerat paketet med tre lager.');
   if (state.status === 'loading') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, 'Hämtar utseende…');
   if (state.status === 'none') {
     return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' },
-      'Inget operatörspaket är publicerat än. Intern personal publicerar under Lanes.');
+      'Inget operatörspaket är publicerat än. Intern personal publicerar under Publicering.');
   }
   return React.createElement('section', { className: 'kevin-appearance', 'aria-label': 'Utseende inom lanen' },
     React.createElement('h3', null, 'Utseende inom lanen'),
-    React.createElement(state.Panel, { initial: state.initial, apiBase: base, operatorSlug }));
+    React.createElement(state.Panel, { initial: state.initial, apiBase: base, operatorSlug, section }));
 }

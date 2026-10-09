@@ -28,7 +28,7 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Presentation director | Presentationsregissör | Ansvar för tillåtet klippurval och uppspelningsplan; ingen ny tjänst. |
 | Presentation lane | Presentation / presentationsprofil | Återanvändbar profil med dealers, klipp, lager och urvalsval. Tekniskt presentationslane; ID ändras inte när visningsnamnet översätts. |
 | Game lane | Spellane | Spelväg med renderer och dealer som klienten stöder. Lane i Administration. |
-| Operator package | Operatörspaket | Bolagets publicerade lanes, spel, bord, branding och revision. |
+| Operator package | Operatörspaket / lane-paket | Bolagets publicerade presentationer med dealer, bord och bakgrund, tillåtna operatörsval, spel/bord och revision. |
 | Branding | Designprofil / varumärke | Utseende och tillåtna designval. Varumärket är ingen behörighetsgräns. |
 | Layers / mask | Tre lager / mask | Bakgrund, dealer och bord respektive avgränsning av synliga bilddelar. |
 | Full-frame / chroma key | Fullbild / grönskärm | Inbakad bild respektive klipp som kan friläggas med sparade inställningar. |
@@ -81,14 +81,18 @@ OpenClaw ändrar inte kort, regler, saldo eller utfall.
 
 | Term | Betydelse / plats |
 |---|---|
-| Operatör / bolag | Kundorganisation med stabilt ID och läsbar slug. Administration → Bolag & team. |
+| Operatör / bolag | Spelbolaget som tar emot tilldelade lane-paket från nivå 1; organisation med stabilt ID och läsbar slug. Publicering → Bolag & team. |
 | Bord / Spelrum & bord | Spelresurs med ägare och inställningar respektive arbetsvyn för bord och matchande spellane. Drift → Bord & spelrum. |
-| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Administration → Bolag & team. |
+| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Publicering → Bolag & team. |
 | Inbjudan / aktiveringslänk | Ny partner aktiveras via `/partner/set-password`; befintlig partner kopplas direkt. |
 | Partnersession | Inloggning på `/partner/login`; öppnar inte Kontrollrum. |
 | Produktkonto | Produktinloggning. Spelare och intern personal hanteras under Konton & roller. |
 
-Partnerns designval kräver `presentations.configure` och begränsas till paketet.
+Partnerns designval kräver `presentations.configure` och begränsas till paketets
+enskilda lane. Bord och bakgrund kan vara bild eller video. Fullbildsklipp
+behåller inbakade lager tills ett separat ersättningspaket har godkänts.
+Marker/kort har ännu inget publicerat designkontrakt; deras värden och utfall
+ägs av spelmotorn.
 Bolagets partnerpersonal och intern adminpersonal hanteras separat.
 
 ## Flöde

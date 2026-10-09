@@ -370,10 +370,11 @@ async function brandingResponse(prepared, config) {
     store,
     readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
   });
-  if (prepared.request.method === 'GET') return json(await api.read({ operatorId: operator.id }), 200, [], { vary: true });
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
-  if (!allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id })) fail(403);
+  const canConfigure = allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
+  if (prepared.request.method === 'GET') return json({ ...await api.read({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
+  if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);
   keys(body, ['expectedRevision', 'branding']);
   if (!Number.isSafeInteger(body.expectedRevision)) fail(400);
