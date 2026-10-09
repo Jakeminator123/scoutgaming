@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0d">
+<title>Astrid | Live Blackjack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/scout-ui.css">
+<link rel="stylesheet" href="/table-style.css">
+<link rel="stylesheet" href="/game-design.css">
+<link rel="stylesheet" href="/side-panel.css">
+<link rel="preload" as="image" href="/media/cards/back-scout.png">
+</head>
+<body>
+<main class="app">
+  <nav class="studio" id="studio" aria-label="Dealer and room"><h2>Dealer</h2><div class="studio-dealers" id="studioDealers"></div><h2>Room</h2><div class="studio-rooms" id="studioRooms"></div><p class="studio-note" id="studioNote"></p></nav>
+  <section class="stage" id="stage" aria-label="Astrid at the table">
+    <!-- Stillbilden ligger underst; två videor växlar ovanpå. Alla klipp börjar och slutar i stillbilden,
+         så varje byte är osynligt. -->
+    <img class="still" src="/media/startbild.png" alt="Astrid at the blackjack table">
+    <video class="v" id="va" playsinline webkit-playsinline preload="auto" muted></video>
+    <video class="v" id="vb" playsinline webkit-playsinline preload="auto" muted></video>
+    <svg id="feltPrint" class="felt-print" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><text x="540" y="871" textLength="649" lengthAdjust="spacingAndGlyphs" class="felt-print-big">BLACKJACK PAYS 3 TO 2</text><text x="540" y="901" textLength="353" lengthAdjust="spacingAndGlyphs" class="felt-print-small">Dealer stands on all 17s</text><text x="540" y="940" textLength="535" lengthAdjust="spacingAndGlyphs" class="felt-print-mid">INSURANCE PAYS 2 TO 1</text><path d="M170 960 Q540 1014 910 960" class="felt-print-arc"/></svg>
+    <svg id="feltBrand" class="felt-brand" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-hidden="true" hidden><defs><filter id="feltInk" color-interpolation-filters="sRGB"><feFlood class="felt-ink"/><feComposite in2="SourceAlpha" operator="in"/></filter></defs><g transform="matrix(1 0 0 .8 0 206.4)"><image id="feltLogo" x="360" y="994" width="360" height="76" preserveAspectRatio="xMidYMid meet" filter="url(#feltInk)" hidden/><text id="feltWordmark" class="felt-wordmark" x="540" y="1048" text-anchor="middle">scout/gaming</text></g></svg>
+    <svg id="tableBoxes" class="table-boxes" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" role="group" aria-label="Betting boxes"></svg>
+    <svg id="gameCards" class="game-cards" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-label="Cards on the table"></svg>
+    <div class="game-frame"><div class="game-dock" id="gameDock">
+      <section id="gameControls" class="game-controls" aria-label="Blackjack with demo funds" hidden>
+        <div class="dock-status"><p id="gameStatus" role="status">Connecting to the table...</p><div id="roundTimer" class="round-timer" hidden><span id="timerLabel">Closes in</span> <b id="timerValue">20</b><span>s</span><i class="dock-progress"></i></div></div>
+        <p id="sideBetResult" role="status" hidden></p>
+        <div id="betControls"><div class="chip-picker" role="group" aria-label="Choose a chip"><button data-chip="5" aria-label="Chip 5 dollars" aria-pressed="true">5</button><button data-chip="10" aria-label="Chip 10 dollars" aria-pressed="false">10</button><button data-chip="25" aria-label="Chip 25 dollars" aria-pressed="false">25</button><button data-chip="50" aria-label="Chip 50 dollars" aria-pressed="false">50</button><button data-chip="100" aria-label="Chip 100 dollars" aria-pressed="false">100</button><button data-chip="500" aria-label="Chip 500 dollars" aria-pressed="false">500</button></div></div>
+        <div id="betActions" class="game-buttons"><button id="undoBet" class="quiet">↶ Undo</button><button id="clearBets" class="quiet">Clear</button><button id="doubleBets" class="quiet">2× bets</button><button id="repeatBet" class="quiet">↻ Repeat</button><button id="dealNow" class="primary">Deal now →</button></div>
+        <div id="actionControls" class="action-rail" hidden>
+          <button data-action="double"><span>2×</span><small>Double</small></button><button data-action="hit"><span>+</span><small>Hit</small></button><button data-action="stand"><span>−</span><small>Stand</small></button><button data-action="split"><span>↔</span><small>Split</small></button>
+        </div>
+        <div id="insuranceControls" class="insurance-panel" hidden><p>Insurance costs half your main bets and pays 2 to 1 if Astrid has blackjack. It covers your boxes only.</p><div class="game-buttons"><button data-insurance="yes" class="quiet">Insurance <span id="insuranceCost"></span></button><button data-insurance="no" class="quiet">No thanks</button></div><small id="insuranceHint"></small></div>
+        <div id="roundResult" hidden><strong id="roundNet"></strong><p id="roundReturn"></p><ul id="roundBoxes"></ul></div>
+        <div class="settled-actions"><button id="nextRound" class="primary" hidden>Next round →</button></div>
+        <button id="reconnectTable" hidden>Reconnect</button>
+      </section>
+      <footer class="table-wallet"><div class="wallet"><div><small>Balance <button id="refillDemo" class="demo-refill" disabled>+ $1,000 demo</button></small><strong id="demoBalance">…</strong></div><div><small>Your bet</small><strong id="totalStake">$0.00</strong></div><div><small id="lastReturnLabel">Last return</small><strong id="lastReturn">-</strong></div></div></footer>
+    </div></div>
+    <header class="table-header">
+      <div class="brand-lockup"><img id="tableLogo" class="table-logo" alt="" hidden><div class="brand-name"><img src="/brand/scout-mark.svg" alt="" width="27" height="27"><span id="brandWordmark">scout/gaming</span></div><p>Privé Blackjack · $5 – $2,000 · Astrid</p><span class="dealer-badge">AI dealer</span></div>
+      <div class="table-settings"><button id="changeSeats" class="icon-button" aria-label="Change boxes" title="Change boxes">Boxes</button><button id="muteAudio" class="icon-button" aria-label="Mute audio" aria-pressed="false">Sound on</button>
+        <details class="audio-settings"><summary aria-label="Table settings">Settings</summary><div class="settings-popover"><h3>Table settings</h3><label>Dealer <select id="dealerPick" aria-describedby="dealerPickNote"></select></label><p id="dealerPickNote">Only changes the dealer you see. Change between rounds.</p><label>Dealer language <select id="dealerLanguage" aria-describedby="dealerLanguageHint" disabled><option value="sv">🇸🇪 Svenska</option><option value="en">🇬🇧 English</option><option value="es">🇪🇸 Español</option><option value="fr">🇫🇷 Français</option><option value="zh">🇨🇳 中文</option></select></label><p id="dealerLanguageHint">Join the table to choose Astrid’s language.</p><label>Brand <select id="presentationBrand"><option value="scout">Scout</option><option value="nrk">Norrsken</option><option value="bfj">BetFjord</option><option value="aur">Aurora</option></select></label><p id="presentationStatus"></p><button id="allSeats" class="quiet">Bet on all my boxes</button><div class="table-meta"><span id="here">-</span><span id="shoeCount">8 decks</span></div><label>Voice <input id="voiceVolume" type="range" min="0" max="100" value="100"></label><label>Ambience <input id="ambienceVolume" type="range" min="0" max="100" value="16"></label><label>Game sounds <input id="effectsVolume" type="range" min="0" max="100" value="65"></label><p>Betting closes 20 seconds after the first bet, or when everyone is ready.</p><p>Decisions have 15 seconds after dealing. At expiry, the server stands or declines insurance.</p></div></details>
+      </div>
+    </header>
+    <div class="caption" id="caption" aria-live="polite"></div>
+    <div class="status" id="status"></div>
+    <button class="sound-chip" id="soundChip" hidden>🔈 Tap for sound</button>
+    <div class="gate off" id="gate" data-step="boxes">
+      <div class="gate-card">
+        <p class="gate-kicker">SCOUT / GAMING · PRIVÉ</p>
+        <h1>Join Astrid</h1>
+        <p class="gate-sub">Your table. Your company.</p>
+        <div id="entryBoxes"><h2>Take your place</h2><p>Tap Play to sit down. Want a particular box? Tap it on the felt first.</p></div>
+        <div id="entryName" hidden><h2>Choose a nickname</h2><label for="playerName">Your nickname</label><input id="playerName" autocomplete="off" maxlength="18" placeholder="e.g. Kevin"><p>Other players at this table will see your nickname.</p></div>
+        <p id="selectedBoxes" class="selected-boxes"></p><p id="entryError" role="alert"></p>
+        <div class="entry-actions"><button id="entryBack" class="ghost" hidden>Back</button><button id="changeName" class="ghost" hidden>Change nickname</button><button id="enter" disabled>Play</button></div>
+        <small class="entry-note">Demo funds only. Share this table link to play together.</small>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side"><section class="table-company"><header><h2>At this table</h2><button id="copyTableLink">Invite a friend</button></header><div id="playersAtTable" aria-live="polite"></div></section>
+    <header class="side-head">
+      <div>
+        <button class="ghost" id="toggleChat" aria-expanded="false">Table chat</button>
+        <span class="thinking" id="thinking"></span>
+      </div>
+      <a class="ghost" href="/demo-information.html" target="_blank" rel="noopener">Demo information</a><button id="leaveTable" class="ghost" hidden>Leave table</button><button id="pauseDemo" class="ghost">Take a break</button>
+      <button class="ghost" id="toggleEvents" aria-expanded="false" hidden>Game events</button>
+    </header>
+    <p class="playback-state" id="playbackState" role="status">Connecting to the game...</p>
+
+    <details class="hand-details sidebar-hands"><summary>Hands &amp; results</summary><div id="handList"></div></details>
+    <div class="events" id="events" hidden>
+      <p class="events-hint">Clip library. The game selects each deal and voice line.</p>
+      <label class="preview-mode"><input type="checkbox" id="previewMode"> Preview deals on the felt</label>
+      <h3>Voice lines</h3>
+      <div class="grid" id="lines"></div>
+      <h3>Dealing</h3>
+      <p class="events-hint">Preview deals between rounds. The centre is box 4.</p>
+      <div class="grid" id="deals"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <form class="compose" id="form" autocomplete="off">
+      <input id="who" readonly placeholder="Name" maxlength="18" aria-label="Your name">
+      <input id="input" placeholder="Say something to Astrid..." maxlength="280" aria-label="Message">
+      <button id="send" type="submit">Send</button>
+    </form>
+  </aside>
+</main>
+<script type="module" src="/app.js"></script>
+<script type="module" src="/table-style.js"></script>
+<script type="module" src="/studio-table.js"></script>
+<script type="module" src="/settings-dismiss.js"></script>
+<script type="module" src="/demo-info-panel.js"></script>
+<script type="module" src="/phone-dock-fit.js"></script>
+<script type="module" src="/panel-toggle.js"></script>
+<script type="module" src="/settings-rooms.js"></script>
+<script type="module" src="/chip-drag.js"></script>
+</body>
+</html>
