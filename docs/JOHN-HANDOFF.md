@@ -33,15 +33,42 @@ fixturer användes; detta verifierar inte produktions-Neon. Originalmedia är
 orörda och sync-probe PASS; ingen ny mänsklig läppsynkacceptans hävdas.
 
 Produktion: Johns spelbolag (johns-spelbolag) är skapat via UI med standardroller
-och verifierat efter omladdning. Johanna är ännu inte skapad. Sex produktions-
-bilder samt separata lokala QA-bilder finns privat utanför Git.
-Render svarar fortfarande capability v2 även när v3 efterfrågas. Jakob är
-ombedd att manuellt deploya 8f0dfff6 på croupier-v2; senare ändringar i denna
-etapp rör bara test/handoff. Exakt Render-SHA är inte verifierad.
-Edge är manuellt inloggat i Studio. Separat spelarinloggning är öppnad i samma
-fönster och väntar på Jakob; inga lösenord har lästs. Spellobbyn finns på /play.
-Nästa: Render v3 och klickdemo Johanna med Nora-filens egna media-
-registrering → tre lager → publicerat rum → faktisk idleloop. Spara bild per steg.
+och verifierat efter omladdning. Inga medlemmar eller inbjudningar har skapats.
+Johanna (johanna) har en egen mediaregistrering av dealer-nora.mp4:
+f1e92965-940b-4722-9910-063ff409d110, kopplad till
+johanna.idle.ready.standard och sparad som Johanna · Grundloop med greenscreen.
+Noras originalpost och källfil är orörda. Presentationen johns-johanna
+(Johns spelbolag · Johanna) är sparad med enbart Johanna som tillåten/startdealer.
+
+Borduppladdningen gav HTTP 503 från POST /studio/api/layer-assets/upload
+den 9 oktober 16:14:54 UTC. Autentiserad GET av lagerbiblioteket efter omladdning
+gav HTTP 200 och assets: []. Ingen bordpost är registrerad; en okopplad Blob
+kan finnas kvar. Uppladdningsbiljetten är förlorad efter omladdning och utgången;
+återuppta inte den genom att gissa ID eller radera okända objekt.
+Serverfri reproduktion med verkliga service/nativeguard visar att lagerservicen
+inte lämnade projektunderlag till runtimekontrollen. Korrigeringen lämnar nu
+verkligt projekt och verifierad mediapost före SQL; behörighet och revision
+kontrolleras igen under lås. 66/66 riktade tester PASS inklusive idempotens,
+parallella upprepningar, behörighetsändring, revisionskonflikt och rollback.
+Sync-probe matchar oförändrad baseline; mänsklig läppsynkacceptans är separat.
+Bakgrund, rum och paket är ännu inte skapade.
+
+Render svarar nu capability v3 med rooms: operator-owned-v2,
+registeredDealerMode: saved-registry-idle-v1 och frozenDealerIdle:
+operator-package-v2. Den tidigare runtime-spärren är hävd. Exakt Render-SHA
+är fortfarande inte verifierad. Ingen ny Render-deploy behövs för enbart
+Studio-lagerservice; verifiera detta mot den slutliga ändringen.
+
+Edge är manuellt inloggat i Studio genom en separat beständig demoprofil;
+profilens authfiler får inte läsas/exporteras. /control är den publika
+Studio-adressen; /studio är teknisk basePath, ingen fjärde produkt.
+Separat spelarinloggning återstår; inga lösenord har lästs. Spellobbyn finns på /play.
+Privat klickbar bildfil: C:/Users/jakob/Desktop/Johns-spelbolag-bilder.html,
+16 bilder inklusive tydligt avskilda isolerade QA-bilder. Originalbilder och
+demohjälpare ligger utanför Git i den aktuella chattens visualizations-katalog.
+Nästa: verifiera/publicera lagerfix → bord och bakgrund → spara sammansättning
+→ välj Johns spelbolag uttryckligen i Publicering → skapa bolagsägt rum/paket
+→ faktisk spelklient med två idlevarv. Spara bild per steg. Målet är inte klart.
 
 ## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
 
