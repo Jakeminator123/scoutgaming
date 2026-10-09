@@ -1,22 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
-## Pågående nästa etapp: generiskt dealerpaket och Skapa spelrum
+## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Arbetskopian innehåller egen dealer med fryst grundloop, atomisk rumpublicering
-och automatiskt återanvänd/skapat spellane. Översikt börjar i Sammansättning;
+Implementationen är committad lokalt i 72891be6; push och produktionsacceptans
+återstår. Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt
+rum, kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
 Publicering visar ett sammanhängande rumflöde och utfällbara avancerade val.
-Den gamla JSON-exportknappen är borttagen. N2:s provlänkar använder verkliga
-bolagsägda rum även när presentation och spellane har olika ID.
+N2:s provlänkar använder verkliga bolagsägda rum även när presentation och
+spellane har olika ID. Gamla JSON-exporten och Nora-specifik manuell
+rumguidning är borttagna; namnfält för ny och befintlig presentation skiljs åt.
 
-Riktade paket/capture/publisher-tester 104/104, N2-rumtester 17/17 och tidigare
-UI/controller 36/36 PASS. Gemensam TypeScript och Lab-build PASS. Isolerad UI-QA visar verkligt sparande,
-återläsning, tangentbordsnavigation och layout i 1440/768/390 utan JavaScript-fel.
-Slutlig fullhook, Johanna-playerrepetition och ny leverans återstår.
-Render behöver nästa etapp med förhandlad capability v3 för Johanna. Nuvarande
-omdeploy verifierar v2-stöd, inte ännu opushad kod. Johns spelbolag och Johanna
-har ännu inte skapats i produktions-Neon. Den vanliga webbläsaranslutningen fallerar, men en separat Edge-session är nu
-manuellt inloggad av Jakob. Första produktionsbilden är sparad privat;
-Johns/Johanna-klickdemon börjar efter verifierad ny leverans.
+Verifierat: normal fullhook för 72891be6 PASS, paket/capture/publisher 104/104,
+N2-rum 17/17 och slutlig UI-puts 37/37. Gemensam TypeScript och Lab-build PASS.
+Isolerad UI-QA visar verkligt sparande, återläsning, tangentbordsnavigation och
+layout i 1440/768/390 utan JavaScript-fel.
+
+Isolerad faktisk spelklient: Johanna spelade två kompletta muted grundloopar
+med exakt källhash och media-ID. Ändrad paketrevision gav 409 och krävde
+omladdning. Box 4 utan video gav position_clip_missing/skipped medan två
+serverägda kort visades i 2D. Astrid, Vera, Amira och Mei spelade goodluck två
+gånger var med media-/framekvitton och utan JavaScript-fel. Båda lokala
+serverparen stoppades sekventiellt och tempdata rensades. Privata transport-
+fixturer användes; detta verifierar inte produktions-Neon. Originalmedia är
+orörda och sync-probe PASS; ingen ny mänsklig läppsynkacceptans hävdas.
+
+Render behöver denna nya kod med förhandlad capability v3 för Johanna.
+Nuvarande omdeploy verifierar HTTP 200 health och capability v2, inte den ännu
+opushade etappen. Exakt Render-SHA är inte verifierad. Johns spelbolag och
+Johanna har ännu inte skapats i produktions-Neon. En separat Edge-session är
+manuellt inloggad av Jakob; bilder sparas privat för varje meningsfullt steg.
+Spellobbyn finns på /play men spelarinloggning är separat från Studio.
+Nästa: leverans, Render v3 och klickdemo Johns spelbolag → Johanna med Nora-
+filens egna mediaregistrering → tre lager → publicerat rum → faktisk idleloop.
 
 ## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
 

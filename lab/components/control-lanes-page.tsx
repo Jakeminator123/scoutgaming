@@ -93,7 +93,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     try {
       const { response, payload } = await post('operator-package', { operatorId, lanes });
       if (!response.ok) {
-        setPublishError(response.status === 422 ? 'Kontrollera lagerfiler och tillåtna val. Nora kräver en egen spellane med dealer-id nora under Drift → Bord & spelrum. Spara sedan presentationen.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
+        setPublishError(response.status === 422 ? 'Kontrollera lagerfiler, vald grundloop och tillåtna val. Spara presentationen och försök igen.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
         return;
       }
       const next = Number(payload?.package_revision ?? payload?.packageRevision);
