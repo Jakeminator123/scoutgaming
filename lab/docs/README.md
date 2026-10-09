@@ -14,10 +14,10 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 Börja i **Sammansättning**. Öppna Innehåll för klipp och exakta spelar-/dealerpositioner; fortsätt till Publicering när presentationen är sparad.
 Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
-På Innehåll kan du lägga till **Nora** som egen dealer och spara projektet.
-Hon får 16 egna, tomma händelsekopplingar; ingen Astridfilm eller inspelad replik följer med.
-Skapa därefter en spellane för Nora under Drift → Bord & spelrum och välj samma dealer-id.
-Lägg in hennes filmer i Klippbibliotek med rätt dealer, händelse och typ. Varje film
+På Innehåll kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
+Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
+och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett nytt
+media-ID utan att ta över en annan dealers registrering. Varje film
 har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 
@@ -31,16 +31,22 @@ kortnummer hör till den exakta händelsen; saknad platskoppling visas som sakna
 Lagerbiblioteket tar bild/video när den sparade studion är ansluten. Videoeditorn
 visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
-Placeringarna sparas i lanen och fryses i bolagspaketet. **Exportera paket (JSON)**
-är ett manifest med filreferenser; medier följer inte med som en nedladdad ZIP.
-Partnerns designval och spelarens medier begränsas till det publicerade paketet.
+Placeringarna sparas i presentationen och fryses i bolagspaketet.
+
+I **Publicering** väljer du bolag och sparad presentation, anger rumsnamn och väljer
+**Skapa spelrum**. En kompatibel spellane återanvänds eller skapas automatiskt.
+Rummet och paketet sparas tillsammans; **Öppna spelrummet** leder till rätt bolag
+och rum i spelklienten. Paketval och manuell spellaneredigering finns under
+**Avancerat: paket och spellanes**. Partnerns val begränsas till det publicerade paketet.
 
 Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.
-Fullbildsklipp behåller sina egna bord och bakgrunder. Noras vänteloop kräver
-hennes egen sparade idle-baseline och spelas ljudlöst; saknad Nora-film lånar
-inget från Astrid. Befintlig live AI-chatt är fortsatt avgränsad till originaldealers.
-Nora och nya lagerinställningar kan sparas till produktion först när Render
-svarar med rätt presentationskapacitet; ett avvisat sparande lämnar utkastet kvar.
+Fullbildsklipp behåller sina egna bord och bakgrunder. En egen dealers grundloop
+kräver ett eget sparat basklipp och spelas ljudlöst. Publiceringen fryser exakt
+media-ID, filhash och grönskärmsinställningar. En senare utkaständring ändrar inte
+det publicerade klippet. Händelsefilmer för egna dealers som inte ingår i det frysta
+paketet hoppas över; spelets kort fortsätter visas. Live AI-chatt är fortsatt
+avgränsad till originaldealers. Egen dealer och fryst grundloop kräver motsvarande
+stöd på Render; ett avvisat sparande lämnar utkastet kvar.
 Render måste uppdateras separat om automatisk deploy är avstängd.
 Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet finns kvar.
 
@@ -53,7 +59,8 @@ Färger, marker och kort visar dess branding. Skrivning kräver
 `presentations.configure`, rätt revision och val inom samma tilldelade lane.
 Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
 Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
-Provbord länkar till den riktiga spelklienten med operatör och lane.
+Provbord länkar till den riktiga spelklienten med bolag och faktiskt tilldelat,
+aktivt spelrum. Ett äldre paket utan sådant rum behöver kompletteras via Publicering.
 Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
 visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
@@ -86,7 +93,8 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
-Från Översikt når du **Innehåll**, **Administration** och **OpenClaw** (flikarna Agentmodeller och Chatt).
+Översikt har snabbvalen **Sammansättning**, **Innehåll** och **Publicering**.
+Administration och AI & chatt nås i sidomenyn.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
@@ -195,7 +203,9 @@ OpenClaw-sidan finns på `/control/openclaw` och visar agenternas modellval.
 Sparning går genom labbets behörighetskontroll till OpenClaw på Render.
 Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.
 Vanliga sparade klippval kräver ingen Render-omstart;
-idleändringar kräver omladdning av spelfliken mellan händer.
+idleändringar i den lokala uppspelningsvägen kräver omladdning mellan händer.
+För en publicerad egen dealer krävs först ompublicering av paketet och sedan
+omladdning. Enbart omladdning behåller den publicerade grundloopen.
 
 Under klippens uppladdning väljer du exakt familj och originalklipp.
 **Ladda upp och spara klipp** lagrar filmen i videobanken. Välj sedan hur

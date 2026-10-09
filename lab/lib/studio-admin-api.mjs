@@ -1,4 +1,4 @@
-import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint } from './studio-admin-contract.mjs';
+import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
@@ -49,16 +49,20 @@ async function readObject(request) {
 }
 
 /** Dependency-only factory. It neither installs routes nor creates an identity/store. */
-export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, handlers, gates = new Map(), apiBase = '/studio/api/admin', mutationTransaction }) {
+export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, handlers, gates = new Map(), preparations = new Map(), apiBase = '/studio/api/admin', mutationTransaction }) {
   if (!['/studio/api/admin', '/api/admin'].includes(apiBase)) throw new TypeError('Invalid admin API base');
-  if (typeof authorize !== 'function' || !(handlers instanceof Map) || !(gates instanceof Map)
+  if (typeof authorize !== 'function' || !(handlers instanceof Map) || !(gates instanceof Map) || !(preparations instanceof Map)
     || !Array.isArray(allowedOrigins) || !allowedOrigins.length || !Array.isArray(publicHosts) || !publicHosts.length) throw new TypeError('Explicit admin dependencies required');
   const origins = new Set(allowedOrigins);
   const hosts = new Set(publicHosts);
   for (const origin of origins) { const url = new URL(origin); if (url.origin !== origin || url.username || url.password || !['http:', 'https:'].includes(url.protocol)) throw new TypeError('Invalid allowed origin'); }
   for (const host of hosts) { if (typeof host !== 'string' || new URL(`https://${host}`).host !== host || /[\s/@?#]/.test(host)) throw new TypeError('Invalid public host'); }
   // Snapshot trusted registrations so later mutation cannot widen this factory.
-  const registered = new Map(handlers); const requirements = new Map(gates);
+  const registered = new Map(handlers); const requirements = new Map(gates); const preparedHandlers = new Map(preparations);
+  for (const [key, prepare] of preparedHandlers) {
+    const endpoint = STUDIO_ADMIN_ENDPOINTS.find(endpoint => `${endpoint.method} ${endpoint.path}` === key);
+    if (!endpoint || endpoint.method !== 'POST' || renderActions.has(endpoint.action) || typeof prepare !== 'function' || !registered.has(key)) throw new TypeError('Unknown admin preparation');
+  }
   for (const [key, handler] of registered) {
     if (typeof handler !== 'function' || !STUDIO_ADMIN_ENDPOINTS.some(endpoint => `${endpoint.method} ${endpoint.path}` === key)) throw new TypeError('Unknown admin handler');
   }
@@ -74,7 +78,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       const url = new URL(request.url);
       if (!hosts.has(url.host) || !origins.has(url.origin) || url.username || url.password) throw failure(403);
       for (const header of ['host', 'x-forwarded-host']) { const value = request.headers.get(header); if (value !== null && value !== url.host) throw failure(403); }
-      if (url.pathname.includes('%') || url.pathname.includes('\\') || url.search || url.hash) throw failure(404);
+      if (url.pathname.includes('%') || url.pathname.includes('\\') || url.search && !isPresentationRoomReadQuery(request.method, url) || url.hash) throw failure(404);
       if (!url.pathname.startsWith(`${apiBase}/`)) throw failure(404);
       const canonicalPath = `/studio/api/admin${url.pathname.slice(apiBase.length)}`;
       const matches = STUDIO_ADMIN_ENDPOINTS.filter(endpoint => endpoint.path === canonicalPath);
@@ -120,18 +124,24 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       for (const requirement of endpoint.handlerRequirements) {
         if (await requirements.get(requirement)(context) !== true) throw failure(403);
       }
+      // Provider verification uses trusted server data before either SQL lock.
+      // Authorization is refreshed again inside the product transaction.
+      const prepare = preparedHandlers.get(`${endpoint.method} ${endpoint.path}`);
+      const invocation = prepare ? Object.freeze({ ...context, prepared: await prepare(context) }) : context;
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
-        const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(context);
+        const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
         if (value === undefined || value instanceof Response) throw failure(503);
         return value;
       };
       // Render revalidates inside its own product transaction. Local mutations
       // hold that same product lock while validating current identity and writing.
-      const presentationOptions = administrationMutations.has(endpoint.action)
+      const presentationOptions = endpoint.action === 'presentation-room'
+        ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2 }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
+        : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
-        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project'] } : undefined;
+        : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
       // Mail is an effect of committed identity state. Never send a token whose

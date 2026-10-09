@@ -24,12 +24,12 @@ function adminEndpoint(method, action) {
 
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
   ...['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts',
-    'apikeys', 'users', 'players', 'transactions','emails','shoes'].map(action => adminEndpoint('GET', action)),
+    'apikeys', 'users', 'players', 'transactions','emails','shoes', 'presentation-room'].map(action => adminEndpoint('GET', action)),
   ...['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
-    'operator-package', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership']
+    'operator-package', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership']
     .map(action => adminEndpoint('POST', action)),
   // These methods still require the existing opt-in operator gate, owner/budget
   // checks and paid-work authority. A matching descriptor grants none of them.
@@ -60,4 +60,16 @@ export function studioAdminEndpoint(method, pathname) {
 export function studioAuthEndpoint(method, pathname) {
   return typeof method === 'string' && typeof pathname === 'string'
     ? authEndpoints.get(`${method} ${pathname}`) ?? null : null;
+}
+
+
+// A narrowly read-only preparation query. Other endpoints keep exact paths
+// and no query parameters; this helper grants no role or Origin exception.
+export function isPresentationRoomReadQuery(method, url) {
+  if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;
+  const keys = [...url.searchParams.keys()];
+  return keys.length === 2 && keys.includes('operatorId') && keys.includes('presentationLaneId')
+    && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(url.searchParams.get('operatorId'))
+    && /^[a-z][a-z0-9-]{0,63}$/.test(url.searchParams.get('presentationLaneId'))
+    && !['original', 'constructor', 'prototype'].includes(url.searchParams.get('presentationLaneId'));
 }

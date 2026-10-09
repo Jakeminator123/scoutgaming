@@ -1,3 +1,6 @@
+import { isPresentationRoomLaneCompatible } from './storage/frozen-presentation-capture.mjs';
+import { BASE_DEALER_IDS, isRegisteredDealer } from './dealer-identity.mjs';
+import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
 // path. gameChoices is still attached from the active presentation lane so
@@ -33,10 +36,17 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     warned.add(key);
     log(message);
   }
-  function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane) {
+  function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane, registry = saved.project?.dealers) {
     const serverLane = gameLanes.find(row => row.id === selection.lane);
-    if(selection.dealer==='nora'&&(!saved.project?.dealers?.some(row=>row.id==='nora')||serverLane?.renderer!=='portrait-video'||serverLane.dealer!=='nora'))throw Object.assign(Error('presentation_dealer_unavailable'),{statusCode:503});
-    return { ...selection, ...(selection.dealer==='nora'?{localDealer:'nora'}:{}),choices: gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane) };
+    const extra = !BASE_DEALER_IDS.includes(selection.dealer) && serverLane?.renderer !== 'layered';
+    if (extra && (!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer)) {
+      throw Object.assign(Error('presentation_dealer_unavailable'), { statusCode: 503 });
+    }
+    const choices = gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane);
+    const allowed = new Set([...choices.dealers, selection.dealer]);
+    const registeredDealers = (registry ?? []).filter(row => !BASE_DEALER_IDS.includes(row.id) && allowed.has(row.id)).map(({ id, label }) => ({ id, label }));
+    return { ...selection, ...(selection.presentation === 'local' && selection.dealer !== 'astrid' ? { localDealer: selection.dealer } : {}),
+      ...(registeredDealers.length ? { registeredDealers } : {}), choices };
   }
   // { status: 200, selection } or { status: 404 }. Policy failures reject, as today.
   return async function selectGameEntry(query) {
@@ -71,6 +81,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (room) params.set('lane', room.gameLaneId);
     let selection = base;
     const frozen = readPackagePresentation(current);
+    if (frozen?.schemaVersion === 2) validateFrozenRegisteredDealers(frozen.registeredDealers, { dealerIds: [...new Set(frozen.lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))] });
     if (room) selection = gameLaneSelection(params, gameLane, gameLanes, [room.gameLaneId]);
     else if (packageLaneIds(current.lanes, gameLanes).length) selection = gameLaneSelection(params, gameLane, gameLanes, current.lanes);
     else warnOnce(`lanes:${slug}:${current.revision}`,
@@ -79,6 +90,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (room && selection.lane !== room.gameLaneId) throw Object.assign(Error('presentation_room_unavailable'), { statusCode: 503 });
     const presentationLane = (frozen?.lanes ?? saved.project?.lanes)?.find(row => row?.id === (room?.presentationLaneId ?? selection.lane));
     if(frozen && !presentationLane) throw Object.assign(new Error('presentation_lane_unavailable'),{statusCode:503});
+    if (room && !isPresentationRoomLaneCompatible(lane, presentationLane)) throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
     if (presentationLane) {
       const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer);
       if (dealer) selection = { ...selection, dealer };
@@ -87,7 +99,8 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
     const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding: publicPackageBranding(current.branding) },
-      frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane);
+      frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane,
+      frozen?.schemaVersion === 2 ? frozen.registeredDealers : saved.project?.dealers);
     if(frozen) {
       const layers=presentationLane.layers;
       next.composition={schemaVersion:1,

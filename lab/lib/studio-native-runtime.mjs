@@ -19,6 +19,9 @@ import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from '.
 import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
+import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './presentation-room-api.mjs';
+import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { readFile } from 'node:fs/promises';
@@ -59,7 +62,7 @@ export function assertNativeStudioRequest(request, config) {
   request = normalizeNativeStudioRequest(request, config);
   const url = new URL(request.url);
   if (!config.allowedOrigins.includes(url.origin) || !config.publicHosts.includes(url.host)
-    || url.username || url.password || url.pathname.includes('%') || url.search || url.hash) denied();
+    || url.username || url.password || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) || url.hash) denied();
   for (const header of ['host','x-forwarded-host']) {
     const host = request.headers.get(header); if (host !== null && host !== url.host) denied();
   }
@@ -91,7 +94,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     await schemaCheck(pool);
     const repository = wrapNativePresentationRepository(repositoryFactory({ pool, scope: config.scope }), { env, fetchImpl });
     const mutationTransaction = async (work, options = {}) => {
-      const descriptors = options.presentationMutation === undefined ? [] : [structuredClone(options.presentationMutation)];
+      const descriptors = options.presentationMutation === undefined ? [] : structuredClone(Array.isArray(options.presentationMutation) ? options.presentationMutation : [options.presentationMutation]);
       const documents = [...(options.presentationDocuments ?? [])];
       for (const kind of documents) {
         if (!['project','administration'].includes(kind)) unavailable();
@@ -128,17 +131,29 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       // Use Vercel's trusted connection header only; caller-supplied forwarded
       // chains cannot create unlimited login-rate buckets.
       clientAddress: request => request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() || 'shared-unknown' });
+    const videoRegistry = Object.freeze({ loadCaptured: media.videoRegistryCaptured, verifyCapturedMedia: media.verifyCapturedMedia });
+    const preparations = new Map();
     const lanePackages = createOperatorPackageApi({
-      pool, scope: config.scope,
+      pool, repository, videoRegistry, scope: config.scope,
       project: async () => (await gamePolicy.readSaved()).project,
       gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
+    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
+      // Verify the negotiated format before reporting readiness. This metadata
+      // never substitutes for the saved dealer registry or frozen media record.
+      runtimeCapabilities: presentation => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation?.schemaVersion === 2 ? 3 : 2),
+        [PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
+    });
+    for (const service of [lanePackages, rooms]) {
+      for (const [key, prepare] of service.preparations ?? []) { if (preparations.has(key)) unavailable(); preparations.set(key, prepare); }
+    }
+    for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
     const operatorAdmin = createOperatorAdminApi({
       pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    const api = createStudioAdminApi({ authorize, handlers, gates, allowedOrigins: config.allowedOrigins,
+    const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads,
       listLaneOperators: lanePackages.listOperators,

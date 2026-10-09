@@ -16,15 +16,15 @@ import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 function asset(role,n){const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
-function fixture(){
-  const project=addDealer(createSeedProject(),'nora','Nora'),lane=defaultPresentationLane(),background=asset('background',1),table=asset('table',2);
-  lane.id='nora-lane';lane.dealers=['nora'];lane.layers.dealer={enabled:true,default:'nora',allowed:['nora']};
+function fixture(dealerId='nora',label='Nora'){
+  const project=addDealer(createSeedProject(),dealerId,label),lane=defaultPresentationLane(),background=asset('background',1),table=asset('table',2);
+  lane.id=`${dealerId}-lane`;lane.dealers=[dealerId];lane.layers.dealer={enabled:true,default:dealerId,allowed:[dealerId]};
   lane.layers.background={enabled:true,mode:'image',default:background.id,allowed:[background.id]};
   lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=defaultCompositionSettings();
   project.lanes=[lane];project.layerAssets=[background,table];
-  const serverLane={schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'};
+  const serverLane={schemaVersion:1,id:lane.id,label,renderer:'portrait-video',dealer:dealerId,mediaCollection:`${dealerId}-presentation`};
   const administration={gameLane:lane.id,gameLanes:[serverLane]};
-  const presentation=buildPresentationPackage(project,[lane.id],project.layerAssets);
+  const presentation=buildPresentationPackage(project,[lane.id],project.layerAssets,dealerId==='nora'?{}:{registeredDealers:[{id:dealerId,label,idle:null}]});
   const pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[],branding:withPackagePresentation({},presentation)};
   const descriptor={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},background:lane.layers.background,table:lane.layers.table,settings:lane.composition,
     assets:presentation.assets.map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/north/${id}`}))};
@@ -63,12 +63,12 @@ test('published Nora requires a saved named registry and ignores query requests 
   administration.gameLanes=[ownLane];
   const html=decorateGameEntryHtml('<html></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection);
   assert.match(html,/data-game-local-dealer="nora"/);
-  assert.equal(gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local',gameLocalDealer:'nora'}).dealer,'nora');
+  assert.equal(gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local',gameLocalDealer:'nora',gameRegisteredDealers:JSON.stringify([{id:'nora',label:'Nora'}])}).dealer,'nora');
   assert.throws(()=>gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local'}));
   project.dealers=project.dealers.filter(row=>row.id!=='nora');
   await assert.rejects(select('operator=north'),error=>error.statusCode===503);
   assert.throws(()=>buildPresentationPackage(project,['nora-lane'],project.layerAssets));
-  assert.throws(()=>validateGameLanes([{...administration.gameLanes[0],dealer:'unregistered',mediaCollection:'unregistered-presentation'}]));
+  assert.doesNotThrow(()=>validateGameLanes([{...administration.gameLanes[0],dealer:'unregistered',mediaCollection:'unregistered-presentation'}])); // syntax is not server registration
 });
 test('runtime serves only the two shared code files and refuses data, queries and writes',async()=>{
   const response=await compositionRuntimeResponse(new Request('https://local/composition-runtime/compositor.js'));
@@ -130,11 +130,53 @@ test('authenticated config projects only an exactly bound own Nora idle with ret
   video.dealer='astrid';assert.equal((await get('own-fixture')).body.dealerIdle.nora,null);
 });
 
-test('other prepared registered identities cannot dispatch the runtime selector',async()=>{
-  let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return addDealer(createSeedProject(),'future','Future');}},
-    registryLoader:async()=>({videos:[],families:[]}),select:async()=>{selects++;throw Error('must not dispatch');}});
-  const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'future',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
-  const res={writeHead(status){this.status=status;},end(body){this.body=JSON.parse(body);}};
-  await handler(req,res,'/api/presentation/select','own-fixture');assert.equal(res.status,400);
-  assert.equal(reads,0);assert.equal(selects,0);
+test('runtime selection accepts exactly saved registered dealers and rejects syntax-only identities',async()=>{
+  for(const registered of [true,false]){
+    let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return registered?addDealer(createSeedProject(),'johanna','Johanna'):createSeedProject();}},
+      registryLoader:async()=>({videos:[],families:[]}),db:{prepare:()=>({get:async()=>null})},select:async({dealerId})=>{selects++;assert.equal(dealerId,'johanna');return {status:'skipped',reason:'no_exact_media'};}});
+    const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'johanna',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
+    const res={once(){},removeListener(){},writeHead(status){this.status=status;},end(body){this.body=JSON.parse(body);}};
+    await handler(req,res,'/api/presentation/select','own-fixture');assert.equal(res.status,registered?200:400);
+    assert.equal(reads,1);assert.equal(selects,registered?1:0);
+  }
+});
+
+test('published Johanna follows her own room and frozen display label through actual HTML and document choices',async()=>{
+  const f=fixture('johanna','Johanna vid publicering');
+  const presentation=buildPresentationPackage(f.project,[f.lane.id],f.project.layerAssets,{registeredDealers:[{id:'johanna',label:'Johanna vid publicering',idle:null}]});
+  const pack={...f.pack,tables:['room-johanna'],branding:withPackagePresentation({},presentation)};
+  const room={schemaVersion:2,id:'room-johanna',name:'Johannas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
+  f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='johanna');
+  const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
+  const {selection}=await select('operator=north&table=room-johanna&dealer=astrid');
+  assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'johanna',label:'Johanna vid publicering'}]);
+  assert.deepEqual(selection.choices.dealers,['johanna']);assert.equal(selection.packageRevision,1);
+  const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
+  for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
+  const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'johanna');assert.equal(restored.roomId,room.id);
+  assert.equal(restored.registeredDealers[0].label,'Johanna vid publicering');assert.deepEqual(restored.choices.dealers,['johanna']);
+  for(const change of [()=>dataset.gameRegisteredDealers='[]',()=>dataset.gameLocalDealer='nora']){const before={...dataset};change();assert.throws(()=>gameLaneFromDocument(dataset));Object.assign(dataset,before);}
+  f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
+  await assert.rejects(select('operator=north&table=room-johanna'),error=>error.statusCode===503||error.statusCode===404);
+});
+
+test('presentation API forwards the opt-in capability header and preserves default v2 without reading Studio',async()=>{
+  const handler=createPresentationApi({store:{load:async()=>{throw Error('must not read');}},registryLoader:async()=>{throw Error('must not read');}});
+  for(const [headers,version]of [[{},2],[{'x-presentation-capability-version':'3'},3]]){
+    const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=JSON.parse(body);}};
+    await handler({method:'GET',url:'/api/presentation/capabilities',headers},res,'/api/presentation/capabilities',null);
+    assert.equal(res.status,200);assert.equal(res.body.schemaVersion,version);assert.equal(res.headers.vary,'X-Presentation-Capability-Version');
+  }
+});
+
+test('actual published room entry rejects a drifted portrait lane even when both dealers remain frozen and allowed',async()=>{
+  const f=fixture('johanna','Johanna');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
+  f.lane.dealers=['johanna','nora'];f.lane.layers.dealer.allowed=['johanna','nora'];
+  const presentation=buildPresentationPackage(f.project,[f.lane.id],f.project.layerAssets,{registeredDealers:[{id:'johanna',label:'Johanna',idle:null},{id:'nora',label:'Nora',idle:null}]});
+  const pack={...f.pack,tables:['room-overlap'],branding:withPackagePresentation({},presentation)};
+  f.administration.rooms=[{schemaVersion:2,id:'room-overlap',name:'Overlap',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'}];
+  const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
+  assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'johanna');
+  f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
+  await assert.rejects(select('operator=north&table=room-overlap&dealer=nora'),error=>error.statusCode===503&&error.message==='presentation_dealer_mismatch');
 });

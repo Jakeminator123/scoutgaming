@@ -42,15 +42,13 @@ function render(props) {
   return renderToStaticMarkup(React.createElement(ControlWorkspace, props));
 }
 
-test('overview lists fixture operators alphabetically and keeps the single lime action', () => {
+test('overview lists fixture operators alphabetically and makes composition primary with three Studio destinations', () => {
   const operators = [...PARTNER_PREVIEW_OPERATORS].reverse().map(item => ({
     id: item.id, slug: item.slug, name: item.name, privateField: 'never-pass',
   }));
   const html = render({ user: 'fixture-admin', operators });
   assert.match(html, /SG test game provider/);
   assert.match(html, /href="\/partner\/sg-test"/);
-  assert.match(html, /Spelare: inte anslutet \(N2\.4\)/);
-  assert.equal((html.match(/Spelare: inte anslutet \(N2\.4\)/g) ?? []).length, 3);
   assert.equal((html.match(/sg-btn-primary/g) ?? []).length, 1);
   assert.match(html, /<a class="sg-btn sg-btn-secondary" href="\/partner\/demo-north">Öppna arbetsyta →<\/a>/);
   assert.match(html, /<option value="demo-north" selected="">Demo North<\/option>/);
@@ -63,23 +61,22 @@ test('overview lists fixture operators alphabetically and keeps the single lime 
     assert.ok(at > cursor, name);
     cursor = at;
   }
-  assert.match(html, /Spelrum &amp; bord/);
-  assert.match(html, /Dealers &amp; klipp/);
-  assert.match(html, /Händelser/);
-  assert.match(html, /Sammansättning/);
+  assert.match(html, /<a class="sg-btn sg-btn-primary" href="\/control\/preview">/);
+  assert.match(html, /Innehåll/);
+  assert.match(html, /Publicering/);
+  assert.doesNotMatch(html, /Konfigurera spelets bord|N2\.4/);
   assert.match(html, /href="\/control\/lanes"/);
-  assert.match(html, /href="\/control\/administration\?tab=tables"/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.match(html, /href="\/partner">Öppna spelbolagens arbetsytor →/);
   assert.match(html, /Nivå 3 · Spelare/);
   assert.match(html, /href="\/play">Öppna spelarytan →/);
-  assert.equal((html.match(/class="quickItem"/g) ?? []).length, 4);
+  assert.equal((html.match(/class="quickItem"/g) ?? []).length, 3);
 });
 
-test('overview without operators says the fixture is empty and keeps the level links', () => {
+test('overview without operators shows an empty company list and keeps the level links', () => {
   const html = render({ user: 'fixture-admin' });
   assert.match(html, /Anslutna bolag/);
-  assert.match(html, /Inga bolag i fixturen\./);
+  assert.match(html, /Inga bolag ännu\./);
   assert.doesNotMatch(html, /<select|Öppna arbetsyta/);
   assert.match(html, /href="\/partner">Öppna spelbolagens arbetsytor →/);
   assert.match(html, /href="\/play">Öppna spelarytan →/);

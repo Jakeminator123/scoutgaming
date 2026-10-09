@@ -12,7 +12,6 @@ export function DealerRegistration({project,onEdit,disabled=false,onAdded}:{proj
   return <details><summary>Lägg till dealer</summary><form onSubmit={submit}><fieldset disabled={disabled}>
     <label className="field">Dealerns namn<input required maxLength={120} value={name} onChange={event=>{setName(event.target.value);if(!idEdited)setId(event.target.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));}}/></label>
     <label className="field">Dealer-id<input required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" value={id} onChange={event=>{setIdEdited(true);setId(event.target.value);}}/></label>
-    <p>Nya dealers får egna, tomma klippkopplingar. Spara projektet och lägg sedan in filmer i Klippbibliotek. Välj bakgrund och bord i Förhandsvisning.</p>
-    <button className="sg-btn sg-btn-secondary" type="submit">Lägg till dealer i utkastet</button>
+    <button className="sg-btn sg-btn-secondary" type="submit">Lägg till</button>
     </fieldset>{error?<p role="alert">{error}</p>:null}</form></details>;
 }

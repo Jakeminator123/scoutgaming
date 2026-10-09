@@ -129,16 +129,16 @@ test('unsaved lanes are marked until the project is clean', () => {
   assert.equal(clean.every(row => row.unsaved === false), true);
 });
 
-test('the editor shows the default lane suggestion, the administration hint and one save button on the page', () => {
+test('the editor keeps the default lane suggestion and ID format while rooms are created from Publicering', () => {
   const source = readFileSync(new URL('../components/lane-editor.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /window\.confirm/);
-  assert.equal(LANE_ID_HELP, 'Använd samma lane-id under Drift → Bord & spelrum för att koppla utseendet till spelet.');
+  assert.equal(LANE_ID_HELP, 'Unikt id: små bokstäver, siffror och bindestreck.');
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
   assert.match(editorHtml, /Skapa standardpresentation/);
   assert.match(editorHtml, /mobile-phone/);
-  assert.match(editorHtml, /Drift → Bord &amp; spelrum/);
+  assert.match(editorHtml, /Unikt id: små bokstäver, siffror och bindestreck/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
@@ -150,13 +150,14 @@ test('the editor shows the default lane suggestion, the administration hint and 
   // No saved lanes: the publish list still offers the standard lane, which the API accepts.
   assert.match(html, /<input type="checkbox" name="lanes" checked="" value="mobile-phone"\/>Mobile Phone Lane · Astrid<\/label>/);
   assert.doesNotMatch(html, /\(osparad\)/);
-  assert.match(html, /Drift → Bord &amp; spelrum/);
-  assert.equal(html.match(/sg-btn-primary/g).length, 1);
+  assert.doesNotMatch(html, /Använd samma lane-id/);
+  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.match(html, /Skapa spelrum/);
   assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
 });
 
-test('the suggestion row separates its values and the page keeps one primary button', () => {
+test('the suggestion row separates values and only the editable ID has format help', () => {
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
@@ -164,8 +165,8 @@ test('the suggestion row separates its values and the page keeps one primary but
   assert.match(editorHtml, /<dd>mobile-phone<\/dd>[\s\S]*·[\s\S]*<dd>Mobile Phone Lane<\/dd>/);
   const splitAt = editorHtml.indexOf('Skapa presentation</h2>');
   assert.ok(splitAt > 0);
-  const help = 'Drift → Bord &amp; spelrum';
-  assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 1);
+  const help = LANE_ID_HELP;
+  assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 0);
   assert.equal(editorHtml.slice(splitAt).split(help).length - 1, 1);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
@@ -174,7 +175,8 @@ test('the suggestion row separates its values and the page keeps one primary but
     operators: fixtureLaneOperators(),
     storeAvailable: false,
   }));
-  assert.equal(html.match(/sg-btn-primary/g).length, 1);
+  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.match(html, /Skapa spelrum/);
 });
 
 test('the editor retires zones and groups advanced automation while preserving colors and idle settings', () => {
@@ -198,7 +200,8 @@ test('the editor retires zones and groups advanced automation while preserving c
   assert.match(html, /type="color"/);
   assert.match(html, /Variationsfrekvens/);
   assert.match(html, /Spara presentationer/);
-  assert.equal(html.match(/sg-btn-primary/g).length, 1);
+  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.match(html, /Skapa spelrum/);
 });
 
 test('replaceLane stores the new fields and rejects an invalid table color', () => {
@@ -220,4 +223,14 @@ test('replaceLane stores the new fields and rejects an invalid table color', () 
   assert.match(rejected.error, /lanes\[0\]\.layers\.table\.colors\[0\]/);
   assert.equal(rejected.project, project);
   assert.deepEqual(project.lanes, before);
+});
+
+test('publication locks all editor fields while a dirty navigation lock still permits editing', () => {
+  const project=createSeedProject();
+  const locked=renderToStaticMarkup(React.createElement(LaneEditor,{project,onEdit(){},disabled:true}));
+  assert.match(locked, /<fieldset[^>]*disabled=""[^>]*aria-label="Presentationsinställningar"/);
+  assert.match(locked, /aria-disabled="true"/);
+  const dirty=renderToStaticMarkup(React.createElement(LaneEditor,{project,onEdit(){},navigationBlocked:true}));
+  assert.doesNotMatch(dirty.split('>')[0], /disabled=/);
+  assert.match(dirty, /aria-disabled="true"/);
 });

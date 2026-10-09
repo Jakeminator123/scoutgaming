@@ -1,4 +1,6 @@
 import {validateCompositionSettings} from './public/composition-settings.mjs';
+import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
+import {validateManagedStudioMedia} from './managed-media-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
 export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
 export const LAYER_ASSET_TYPES = Object.freeze({
@@ -30,6 +32,15 @@ function list(value, check, max = 32) {
     || Object.keys(value).length !== value.length || value.length > max || new Set(value).size !== value.length || value.some(item => !check(item))) reject();
   return [...value];
 }
+function dataArray(value, max) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length > max
+    || Object.getOwnPropertySymbols(value).length || Object.getOwnPropertyNames(value).length !== value.length + 1
+    || Object.keys(value).length !== value.length) reject();
+  for (let index = 0; index < value.length; index++) {
+    if (!Object.hasOwn(Object.getOwnPropertyDescriptor(value, index) ?? {}, 'value')) reject();
+  }
+  return value;
+}
 const assetId = value => typeof value === 'string' && uuid.test(value);
 export function layerAssetPath(asset) {
   const extension = Object.hasOwn(LAYER_ASSET_TYPES,asset.contentType)?LAYER_ASSET_TYPES[asset.contentType]:null;
@@ -44,26 +55,27 @@ export function validateLayerAsset(value) {
   text(value.label);
   return structuredClone(value);
 }
-function layer(value, role) {
+function layer(value, role, authorisedDealers = dealers) {
   exact(value, ['enabled', 'default', 'allowed'], role === 'background' ? ['mode', 'zones'] : role === 'table' ? ['colors'] : []);
   if (typeof value.enabled !== 'boolean') reject();
-  const allowed = list(value.allowed, role === 'dealer' ? id => dealers.has(id) : assetId);
+  const allowed = list(value.allowed, role === 'dealer' ? id => authorisedDealers.has(id) : assetId);
   if (value.default !== null && !allowed.includes(value.default)) reject();
-  if (role === 'dealer' && (!allowed.length || !dealers.has(value.default))) reject();
+  if (role === 'dealer' && (!allowed.length || !authorisedDealers.has(value.default))) reject();
   if (role === 'background' && !['baked', 'image', 'video'].includes(value.mode)) reject();
   if (value.zones !== undefined) list(value.zones, id => typeof id === 'string' && token.test(id));
   if (value.colors !== undefined) list(value.colors, color => typeof color === 'string' && /^#[a-f0-9]{6}$/.test(color));
   return structuredClone(value);
 }
-export function validatePresentationLane(value) {
+export function validatePresentationLane(value, {dealerIds = [...dealers]} = {}) {
+  const authorisedDealers = new Set(list(dealerIds, isDealerId, MAX_DEALERS));
   exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition']);
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
-  const ids = list(value.dealers, id => dealers.has(id), 5);
+  const ids = list(value.dealers, id => authorisedDealers.has(id), MAX_DEALERS);
   if (!ids.length || value.renderer !== undefined && !['layered', 'portrait-video'].includes(value.renderer)) reject();
   exact(value.layers, ['background', 'dealer', 'table']);
-  const layers = Object.fromEntries(['background', 'dealer', 'table'].map(role => [role, layer(value.layers[role], role)]));
+  const layers = Object.fromEntries(['background', 'dealer', 'table'].map(role => [role, layer(value.layers[role], role, authorisedDealers)]));
   if (layers.dealer.allowed.some(id => !ids.includes(id))) reject();
   exact(value.openclaw, ['idle', 'deal', 'reveal', 'speak', 'probe']);
   if (Object.values(value.openclaw).some(mode => !['off', 'rules', 'random', 'shadow', 'active'].includes(mode))) reject();
@@ -83,13 +95,44 @@ export function validatePresentationLane(value) {
   if(value.composition!==undefined)validateCompositionSettings(value.composition);
   return { ...structuredClone(value), layers };
 }
+/** All and only extras in the selected frozen lane union have an entry.
+ * A descriptor is storage metadata, never authority to register a runtime ID. */
+export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
+  const expected = list(dealerIds, isDealerId, MAX_DEALERS).filter(id => !BASE_DEALER_IDS.includes(id));
+  dataArray(entries, MAX_DEALERS);
+  const checked = [], seen = new Set();
+  for (const entry of entries) {
+    exact(entry, ['id', 'label', 'idle']);
+    if (!expected.includes(entry.id) || seen.has(entry.id) || typeof entry.label !== 'string'
+      || !entry.label.trim() || entry.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(entry.label)) reject();
+    seen.add(entry.id);
+    let idle = null;
+    if (entry.idle !== null) {
+      try { idle = validateManagedStudioMedia(entry.idle); } catch { reject(); }
+      const metadata = idle.classification;
+      if (metadata.dealerId !== entry.id || metadata.eventId !== 'idle.ready' || metadata.kind !== 'idle'
+        || (metadata.playback ?? 'once') !== 'once') reject();
+    }
+    checked.push({id:entry.id, label:entry.label, idle});
+  }
+  if (seen.size !== expected.length) reject();
+  return checked;
+}
 export function validatePresentationPackage(value) {
-  exact(value, ['schemaVersion', 'projectRevision', 'lanes', 'assets']);
-  if (value.schemaVersion !== 1 || typeof value.projectRevision !== 'string'
+  const v2 = value && typeof value === 'object' && Object.getOwnPropertyDescriptor(value, 'schemaVersion')?.value === 2;
+  exact(value, ['schemaVersion', 'projectRevision', 'lanes', 'assets', ...(v2 ? ['registeredDealers'] : [])]);
+  if (![1, 2].includes(value.schemaVersion) || typeof value.projectRevision !== 'string'
     || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(value.projectRevision)
     || !Array.isArray(value.lanes) || !value.lanes.length || value.lanes.length > 32
     || !Array.isArray(value.assets) || value.assets.length > 128) reject();
-  const lanes = value.lanes.map(validatePresentationLane), assets = value.assets.map(validateLayerAsset);
+  let registry = [];
+  if (v2) {
+    dataArray(value.registeredDealers, MAX_DEALERS);
+    dataArray(value.lanes, 32); dataArray(value.assets, 128);
+    registry = validateFrozenRegisteredDealers(value.registeredDealers, {dealerIds:value.registeredDealers.map(row => row && typeof row === 'object' ? Object.getOwnPropertyDescriptor(row, 'id')?.value : null)});
+  }
+  const authorised = v2 ? [...BASE_DEALER_IDS, ...registry.map(row => row.id)] : [...dealers];
+  const lanes = value.lanes.map(lane => validatePresentationLane(lane, {dealerIds:authorised})), assets = value.assets.map(validateLayerAsset);
   if (new Set(lanes.map(row => row.id)).size !== lanes.length || new Set(assets.map(row => row.id)).size !== assets.length) reject();
   const byId = new Map(assets.map(asset => [asset.id, asset]));
   const used = new Set();
@@ -100,15 +143,18 @@ export function validatePresentationPackage(value) {
     }
   }
   if (assets.some(asset => !used.has(asset.id))) reject();
-  return { schemaVersion: 1, projectRevision: value.projectRevision, lanes, assets };
+  const selectedDealers = [...new Set(lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
+  if (v2) registry = validateFrozenRegisteredDealers(registry, {dealerIds:selectedDealers});
+  return { schemaVersion:value.schemaVersion, projectRevision:value.projectRevision, lanes, assets, ...(v2 ? {registeredDealers:registry} : {}) };
 }
-export function buildPresentationPackage(project, selectedLaneIds, library) {
+export function buildPresentationPackage(project, selectedLaneIds, library, options = {}) {
   const selected = list(selectedLaneIds, id => typeof id === 'string' && token.test(id));
   const lanes = selected.map(id => project.lanes?.find(lane => lane.id === id));
   if (lanes.some(lane => !lane || lane.dealers.some(id=>!project.dealers?.some(dealer=>dealer.id===id)))) reject();
   const used = new Set(lanes.flatMap(lane => LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed)));
-  return validatePresentationPackage({ schemaVersion: 1, projectRevision: project.revision, lanes,
-    assets: library.filter(asset => used.has(asset.id)) });
+  const v2 = Object.hasOwn(options, 'registeredDealers');
+  return validatePresentationPackage({ schemaVersion:v2 ? 2 : 1, projectRevision:project.revision, lanes,
+    assets:library.filter(asset => used.has(asset.id)), ...(v2 ? {registeredDealers:options.registeredDealers} : {}) });
 }
 export function presentationLaneFromPackage(pack, id) {
   const checked = validatePresentationPackage(pack);

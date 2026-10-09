@@ -1,0 +1,27 @@
+.card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--sg-border);
+  border-radius: 14px;
+  background: var(--sg-surface);
+  color: var(--sg-text);
+}
+
+.card h2 { margin: 0; font-family: var(--sg-font-display), system-ui, sans-serif; font-size: 18px; font-weight: 600; }
+.card p { margin: 0; line-height: 1.45; }
+.context { color: var(--sg-muted); font-size: 14px; }
+.form { display: grid; gap: 16px; }
+.field { display: grid; gap: 6px; max-width: 24rem; font-size: 14px; }
+.field input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--sg-field-line);
+  border-radius: 8px;
+  background: var(--sg-field);
+  color: var(--sg-text);
+  font: inherit;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions :global(.sg-btn) { width: fit-content; max-width: 100%; }

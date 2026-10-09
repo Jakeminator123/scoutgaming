@@ -1,0 +1,11 @@
+import type {StudioProject} from '../../lab/lib/studio-model.mjs';
+import type {VideoRegistry} from '../../lab/lib/video-registry.mjs';
+import type {PresentationPackage} from '../presentation-layers.mjs';
+import type {FrozenMediaRow, FrozenMediaPrecondition} from './frozen-dealer-idle.mjs';
+export interface PresentationSnapshot {scope:Readonly<{environment:string; workspaceId:string}>; projectDocument:{kind:'project';revision:string;value:StudioProject;updatedAt?:string}; administrationDocument:{kind:'administration';revision:string;value:Record<string,unknown>;updatedAt?:string}; mediaRows:readonly FrozenMediaRow[]}
+export function captureFrozenPresentation(input:{snapshot:PresentationSnapshot;selectedLaneIds:readonly string[];inventory:VideoRegistry|null;requiredIdleDealerIds?:readonly string[]}):{presentation:PresentationPackage;mediaPreconditions:readonly FrozenMediaPrecondition[];projectRevision:string;administrationRevision:string};
+export function selectedRegisteredIdleDefaults(project:StudioProject, selectedLaneIds:readonly string[]):string[];
+export function assertCapturedPresentationMedia(repository:{getMedia(id:string):Promise<FrozenMediaRow|null>}, preconditions:readonly FrozenMediaPrecondition[]):Promise<void>;
+
+export function isPresentationRoomLaneCompatible(gameLane:unknown,presentationLane:unknown):boolean;
+export function assertPublishedRoomBindings(input:{administration:any;operatorId:string;currentPackage:any;presentation:PresentationPackage}):void;

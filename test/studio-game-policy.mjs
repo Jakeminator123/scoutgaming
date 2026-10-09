@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { StudioStorageError } from '../web/storage/studio-contract.mjs';
@@ -193,4 +193,17 @@ test('read-only project adapter forbids unauthenticated writes and snapshots the
 test('saved projection revisions are scoped even if document contents and source revision ids match', async () => {
   const first = await fixture(), second = await fixture({ fixtureScope: { environment: 'test', workspaceId: 'another-workspace' } });
   assert.notEqual((await first.policy.readSaved()).revision, (await second.policy.readSaved()).revision);
+});
+
+test('generic portrait syntax cannot authorize a dealer absent from the saved Studio registry',async()=>{
+  for(const registered of [true,false]){
+    const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+    const project=registered?addDealer(createSeedProject(),'johanna','Johanna'):createSeedProject();
+    await repository.initializeDocument('project',{value:project,revision:'project-original',actor:'import'});
+    const admin={...administration(),gameLane:'portrait-johanna',gameLanes:[{schemaVersion:1,id:'portrait-johanna',label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}]};
+    await repository.initializeDocument('administration',{value:admin,revision:'admin-original',actor:'import'});
+    const policy=createStudioGamePolicy({repository,scope,dealerIdle:idle});
+    if(registered){const saved=await policy.readGameConfiguration();assert.equal(saved.gameLanes[0].dealer,'johanna');}
+    else await assert.rejects(policy.readGameConfiguration(),rejected('studio_corrupt_game_policy'));
+  }
 });

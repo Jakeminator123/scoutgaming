@@ -18,7 +18,8 @@ export function vercelIngressRequest(request, ingress) {
   // Read-only feature metadata carries no cookies or credentials to the game.
   if (request.headers.host === transportHost && ['GET', 'HEAD'].includes(request.method)
       && request.url === '/api/presentation/capabilities' && !request.headers.upgrade) {
-    return { accepted: true, transported: true, headers: { host: publicHost } };
+    return { accepted: true, transported: true, headers: { host: publicHost,
+      ...(request.headers['x-presentation-capability-version'] === undefined ? {} : {'x-presentation-capability-version':request.headers['x-presentation-capability-version']}) } };
   }
   // Existing document bookmarks lead to the canonical UI. This does not
   // accept API calls, credentials, launch tickets or a second game origin.

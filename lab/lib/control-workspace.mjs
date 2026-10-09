@@ -23,8 +23,7 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
-  { href: '/control/clips', title: '1 · Dealers & klipp', text: 'Välj dealer, basklipp och variationer. Lägg till egna dealerfilmer.' },
-  { href: '/control/preview', title: '2 · Sammansättning', text: 'Sätt ihop dealer, bord och bakgrund. Spela upp och spara som lane.' },
-  { href: '/control/lanes', title: '3 · Lanes', text: 'Välj tillåtna variationer och publicera till ett spelbolag.' },
-  { href: '/control/administration?tab=tables', title: '4 · Spelrum & bord', text: 'Konfigurera spelets bord och koppla en matchande spellane.' },
+  { href: '/control/preview', title: 'Sammansättning' },
+  { href: '/control/clips', title: 'Innehåll' },
+  { href: '/control/lanes', title: 'Publicering' },
 ].map(item => Object.freeze(item)));

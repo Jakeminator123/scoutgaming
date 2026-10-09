@@ -48,7 +48,6 @@ const CLIP = {
 // Each dealer is a complete asset set (streams, voice, scene, table art) and
 // a rail anchor: the v-fraction where her table's rail top sits in her video.
 const DEALERS = {
-  nora: { key: 'nora', base: 'dealers/nora', anchor: 0.878, name: 'Nora' },
   vera:   { key: 'vera',   base: 'dealer',         anchor: 0.855, name: 'Vera' },
   astrid: { key: 'astrid', base: 'dealers/astrid', anchor: 0.878, name: 'Astrid',
             scene: 'dealers/astrid/scene.png', sceneWK: 2.63602, sceneHK: 1.11831,
@@ -61,6 +60,7 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
+for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name:label,registered:true};
 const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };
 const layeredPresentationEnabled = entrySelection.presentation === 'layered';
 const localPresentationEnabled = entrySelection.presentation === 'local' || layeredPresentationEnabled;
@@ -539,7 +539,7 @@ if (localPresentationEnabled) {
       ]);
       performancePlayer = new PerformancePlayer({ host: $('#scene') });
       localPresentation = await createLocalPresentation({
-        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key,
+        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection,
         version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
         receipt: entry => nativeObservation.emit('playback', entry),
         onIdle: () => presentStandardIdle('local-primary-frame'),
@@ -552,7 +552,8 @@ if (localPresentationEnabled) {
   } catch (error) {
     console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
-    status.textContent = layeredPresentationEnabled ? 'Lagerpaket saknas · 2D-reserv' : 'Lokal video kunde inte startas · 2D-reserv';
+    if(error.code==='studio_presentation_idle_package_changed'){ status.textContent=error.message+' '; const reload=document.createElement('button');reload.type='button';reload.textContent='Ladda om';reload.onclick=()=>location.reload();status.append(reload); }
+    else status.textContent = layeredPresentationEnabled ? 'Lagerpaket saknas · 2D-reserv' : 'Lokal video kunde inte startas · 2D-reserv';
     $('#scene').append(status);
   }
 }
@@ -2616,7 +2617,9 @@ for (const dealer of Object.values(DEALERS)) {
   button.type = 'button'; button.dataset.dealer = dealer.key;
   button.setAttribute('aria-label', `${dealer.name}'s table`);
   button.setAttribute('aria-pressed', String(dealer.key === DEALER.key));
-  const portrait = document.createElement('img'); portrait.src = `${dealer.base}/poster.jpg`; portrait.alt = '';
+  const portrait = document.createElement(dealer.registered ? 'span' : 'img');
+  if (dealer.registered) { portrait.textContent = dealer.name.slice(0,1); portrait.setAttribute('aria-hidden','true'); }
+  else { portrait.src = `${dealer.base}/poster.jpg`; portrait.alt = ''; }
   const name = document.createElement('span'); name.textContent = dealer.name;
   button.append(portrait, name);
   button.onclick = () => {
@@ -2717,7 +2720,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
   dealerSelect.value = DEALER.key;
   dealerSelect.onchange = () => { location.href = dealerVersionPath(dealerSelect.value, dealerV2Route ? 'v2' : 'original', location.search); };
   const lineSelect = panel.querySelector('#rehearsal-line');
-  const bank = await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
+  const bank = DEALER.registered && localPresentationEnabled ? {} : await fetch(`${DEALER.base}/audio/en/bank.json`).then(r => r.json());
   for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
     if (astridSpeak&&!astridSpeak.has(id)) continue;
     if (voice.dead.has(id) && !bank[id]) continue;

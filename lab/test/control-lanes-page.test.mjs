@@ -63,15 +63,14 @@ test('Lanes renders the title and disables write buttons when no store is connec
   assert.match(html, /Demo North/);
   assert.match(html, /Demo South/);
   assert.match(html, /Publicering kräver anslutning till den sparade studion/);
-  assert.match(html, />Exportera paket \(JSON\)<\/button>/);
   const laneChoice=html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
   assert.ok(laneChoice);
   assert.doesNotMatch(laneChoice,/disabled/,'offline can select saved lanes for export while publishing stays disabled');
-  assert.match(html, /Drift → Bord &amp; spelrum/);
+  assert.match(html, /<summary>Avancerat: paket och spellanes<\/summary>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(componentSource, /\(osparad\)/);
   assert.doesNotMatch(componentSource, /window\.confirm/);
-  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Skapa spelrum<\/button>/);
   assert.equal(html.match(/primary-button/g)?.length ?? 0, 0);
   assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara presentationer<\/button>/);
   assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
@@ -103,7 +102,8 @@ test('a lane selected in composition is selected for editing and publishing, wit
   assert.match(html,/<h3>Kväll<\/h3>/);
   assert.match(html,/href="[^"]*\/control\/preview\?lane=evening"/);
   assert.match(html,/<input[^>]*name="lanes"[^>]*checked=""[^>]*value="evening"/);
-  assert.match(html,/Drift → Bord &amp; spelrum: <strong>evening<\/strong>/);
+  assert.match(html,/<option value="evening" selected="">Kväll<\/option>/);
+  assert.match(html,/SG test game provider · Kväll/);
   assert.doesNotMatch(html,/Bakgrundszoner|control\/zones|package_revision/);
 });
 

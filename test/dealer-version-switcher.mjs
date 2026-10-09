@@ -145,7 +145,7 @@ test('rehearsal cannot start before server-owned table initialization and stays 
 
 test('named Nora keeps her explicit own lane and package on the local path without borrowing Vera',t=>{
   const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
-  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local',gameDealer:'nora',gameLane:'nora-lane'}}},configurable:true});
+  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local',gameDealer:'nora',gameLane:'nora-lane',gameRegisteredDealers:JSON.stringify([{id:'nora',label:'Nora'}])}}},configurable:true});
   t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
   for(const version of ['original','v2']){
     const path=new URL(dealerVersionPath('nora',version,'?operator=north&lane=nora-lane&dealer=nora&launch=private&rehearsal=1'),'https://game.invalid');
@@ -154,4 +154,23 @@ test('named Nora keeps her explicit own lane and package on the local path witho
     assert.equal(path.searchParams.get('operator'),'north');assert.equal(path.searchParams.has('launch'),false);
   }
   assert.equal(new URL(dealerVersionPath('nora','v2'),'https://game.invalid').searchParams.get('lane'),'nora-lane');
+});
+
+test('any server-registered dealer keeps her own room without introducing an original or comparison adapter',t=>{
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
+  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local',gameDealer:'johanna',gameLane:'portrait-johanna-123',gameOperator:'north',gameRoomId:'room-johanna',gameRegisteredDealers:JSON.stringify([{id:'johanna',label:'Johanna'}])}}},configurable:true});
+  t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
+  for(const version of ['original','v2']){const url=new URL(dealerVersionPath('johanna',version,'?rehearsal=1&launch=private'),'https://game.invalid');assert.equal(url.pathname,'/blackjack');assert.deepEqual(Object.fromEntries(url.searchParams),{dealer:'johanna',presentation:'local',operator:'north',table:'room-johanna',rehearsal:'1',lane:'portrait-johanna-123'});}
+  const unregistered=new URL(dealerVersionPath('unknown','original'),'https://game.invalid');assert.equal(unregistered.searchParams.get('dealer'),'vera');
+});
+
+test('registered local rehearsal initializes without a nonexistent legacy bank and original dealers keep their own bank',async()=>{
+  const statement=rehearsalSource.match(/const bank = [^\n]+;/)?.[0];assert.ok(statement);
+  for(const registered of [false,true]){
+    const fetched=[];const bank=await vm.runInNewContext('(async()=>{'+statement+' return bank;})()',{
+      DEALER:{base:registered?'assets':'dealers/astrid',registered},localPresentationEnabled:true,
+      fetch:async url=>{fetched.push(url);return {json:async()=>({goodluck:{text:'Recorded Astrid line'}})};}
+    });
+    assert.equal(fetched.length,registered?0:1);if(registered)assert.deepEqual(Object.keys(bank),[]);else {assert.equal(fetched[0],'dealers/astrid/audio/en/bank.json');assert.equal(bank.goodluck.text,'Recorded Astrid line');}
+  }
 });

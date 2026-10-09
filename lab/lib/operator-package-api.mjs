@@ -1,7 +1,10 @@
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
 import { defaultPresentationLane, normalizeProject } from './studio-model.mjs';
 import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
-import { validateGameLanes } from '../../web/public/game-lanes.mjs';
+import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../web/storage/frozen-presentation-capture.mjs';
 import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
@@ -52,47 +55,82 @@ function publicOperator(operator) {
   return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status };
 }
 
-export function createOperatorPackageApi({ pool, scope, project, gameLanes, now = () => Date.now(), storeFactory } = {}) {
+export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory } = {}) {
   const handlers = new Map();
   async function store() {
     return openWritableOperatorStore({ pool, scope, now, storeFactory });
   }
+  const preparedValues = new WeakSet();
+  const preparations = new Map();
+  async function prepare(context) {
+    exactKeys(context.body, ['operatorId', 'lanes']);
+    const operatorId = context.body.operatorId;
+    if (typeof operatorId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(operatorId)) fail(422);
+    // Clone the intent before any asynchronous read/provider verification.
+    const wanted = structuredClone(context.body.lanes);
+    if (!repository) return null;
+    if (!repository.readPresentationSnapshot || !repository.transaction || !repository.withTransactionClient
+      || canonicalStudioJson(validateStudioScope(repository.scope)) !== canonicalStudioJson(validateStudioScope(scope))) fail(503);
+    const snapshot = await repository.readPresentationSnapshot();
+    const saved = normalizeProject(snapshot.projectDocument.value);
+    const lanes = selectedLanes(wanted, presentationLaneIds(saved));
+    const source = saved.lanes?.length ? saved : {...saved, lanes:[defaultPresentationLane()]};
+    const hasExtras = source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id)));
+    if (hasExtras && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) {
+      throw new StudioStorageError('studio_media_registry_unavailable');
+    }
+    // This package revision is a server-read CAS precondition, never a guessed
+    // null. Reading it before I/O ensures concurrent branding cannot be erased.
+    const operators = await store();
+    const current = await operators.getCurrentPackage(operatorId);
+    const inventory = hasExtras ? await videoRegistry.loadCaptured(snapshot) : null;
+    const captured = captureFrozenPresentation({snapshot, selectedLaneIds:lanes, inventory,
+      requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, lanes)});
+    if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
+    const value = Object.freeze({operatorId, lanes:Object.freeze([...lanes]), ...captured, expectedPackageRevision:current?.revision ?? null});
+    preparedValues.add(value);
+    return value;
+  }
+  preparations.set('POST /studio/api/admin/operator-package', prepare);
+  function result(published, presentation) {
+    return {ok:true, operatorId:published.operatorId, packageRevision:published.revision, package_revision:published.revision,
+      lanes:[...published.lanes], games:[...published.games], tables:[...published.tables], presentation};
+  }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
     exactKeys(context.body, ['operatorId', 'lanes']);
+    if (repository) {
+      const prepared = context.prepared === undefined ? await prepare(context) : context.prepared;
+      if (!preparedValues.has(prepared) || prepared.operatorId !== context.body.operatorId
+        || canonicalStudioJson(prepared.lanes) !== canonicalStudioJson(context.body.lanes)) fail(422);
+      return repository.transaction(() => repository.withTransactionClient(async client => {
+        const operators = await createOperatorStore({sql:client, scope, now, transaction:work => repository.withTransactionClient(work)});
+        const projectDocument = await repository.readDocument('project'), administrationDocument = await repository.readDocument('administration');
+        const current = await operators.getCurrentPackage(prepared.operatorId);
+        if (projectDocument?.revision !== prepared.projectRevision || administrationDocument?.revision !== prepared.administrationRevision
+          || (current?.revision ?? null) !== prepared.expectedPackageRevision) throw new StudioStorageError('studio_conflict', 409);
+        await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
+        assertPublishedRoomBindings({administration:administrationDocument.value, operatorId:prepared.operatorId,
+          currentPackage:current, presentation:prepared.presentation});
+        const published = await operators.publishPackage({actor:context.actor.user, operatorId:prepared.operatorId,
+          expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
+          games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
+          branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation)});
+        return result(published, prepared.presentation);
+      }));
+    }
+    // Local fixture/legacy adapters retain original-four behavior. A registered
+    // extra dealer requires the native saved snapshot and immutable media path.
     const saved = normalizeProject(typeof project === 'function' ? await project() : project);
     const lanes = selectedLanes(context.body.lanes, presentationLaneIds(saved));
-    const source = saved.lanes?.length ? saved : { ...saved, lanes: [defaultPresentationLane()] };
+    const source = saved.lanes?.length ? saved : {...saved, lanes:[defaultPresentationLane()]};
+    if (source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id))))
+      throw new StudioStorageError('studio_media_registry_unavailable');
     const presentation = buildPresentationPackage(source, lanes, saved.layerAssets ?? []);
-    const noraLanes = presentation.lanes.filter(lane => lane.layers.dealer.allowed.includes('nora'));
-    if (noraLanes.length) {
-      let catalogue;
-      try { catalogue = validateGameLanes(typeof gameLanes === 'function' ? await gameLanes() : gameLanes); }
-      catch { fail(422); }
-      if (noraLanes.some(lane => !catalogue.some(server => server.id === lane.id && server.dealer === 'nora' && server.renderer === 'portrait-video'))) fail(422);
-    }
-    const operators = await store();
-    // Publishing lanes must not wipe what the operator saved through the partner
-    // branding API; games and tables are carried forward the same way.
-    const current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
-    const published = await operators.publishPackage({
-      actor: context.actor.user,
-      operatorId: context.body.operatorId,
-      expectedRevision: current?.revision ?? null,
-      lanes,
-      games: current?.games?.length ? [...current.games] : ['blackjack'],
-      tables: current ? [...current.tables] : [],
-      branding: withPackagePresentation(current?.branding ?? {}, presentation),
-    });
-    return {
-      ok: true,
-      operatorId: published.operatorId,
-      packageRevision: published.revision,
-      package_revision: published.revision,
-      lanes: [...published.lanes],
-      games: [...published.games],
-      tables: [...published.tables],
-      presentation,
-    };
+    const operators = await store(), current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
+    const published = await operators.publishPackage({actor:context.actor.user, operatorId:context.body.operatorId,
+      expectedRevision:current?.revision ?? null, lanes, games:current?.games?.length ? [...current.games] : ['blackjack'],
+      tables:current ? [...current.tables] : [], branding:withPackagePresentation(current?.branding ?? {}, presentation)});
+    return result(published, presentation);
   });
   handlers.set('POST /studio/api/admin/operator-create-demo', async context => {
     exactKeys(context.body, []);
@@ -105,7 +143,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, now 
     return { ok: true, operator: publicOperator(created) };
   });
   return Object.freeze({
-    handlers,
+    handlers, preparations,
     listOperators: async () => {
       const listed = await (await store()).listOperators();
       return listed.filter(operator => operator.status !== 'suspended').map(operator => ({

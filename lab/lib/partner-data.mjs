@@ -4,6 +4,10 @@ import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartner, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
 import { readPackagePresentation, publicPackageBranding } from '../../web/storage/presentation-package.mjs';
 import { partnerPackageProfiles } from './partner-package-view.mjs';
+import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
+import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
+import { listPackageRooms } from '../../web/presentation-room-contract.mjs';
+import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 
 const disconnected = Object.freeze(['players', 'transactions', 'reports']);
 
@@ -59,6 +63,14 @@ async function openOperatorStore(config) {
     scope: config.scope,
     now: config.now,
   });
+}
+async function roomAdministration(config) {
+  if (typeof config.readAdministration === 'function') return config.readAdministration();
+  if (typeof config.pool?.connect !== 'function') fail(503);
+  const repository = createStudioRepository({ pool: config.pool, scope: config.scope });
+  const document = await repository.readDocument('administration');
+  if (!document) fail(503);
+  return document.value;
 }
 async function membershipFor(store, operatorId, userId) {
   if (typeof store.getMembership !== 'function') fail(503);
@@ -162,7 +174,15 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
   const branding = publicPackageBranding(pack?.branding);
   const presentations = presentation ? partnerPackageProfiles(presentation, branding, operator.id)
     : parseList(pack?.presentations ?? pack?.lanes).map(item => owned(item, operator.id, ['name', 'dealer', 'language', 'background', 'status'])).filter(Boolean);
-  const tables = parseList(pack?.tables).map(item => owned(item, operator.id, ['name', 'game', 'status', 'playerCount', 'presentationId'])).filter(Boolean);
+  const administration = presentation ? await roomAdministration(resolved) : null;
+  const gameLanes = presentation ? gameLaneConfiguration(administration).gameLanes : [];
+  const tables = presentation
+    ? listPackageRooms({ administration, package: pack, operatorId: operator.id })
+      .filter(room => isPresentationRoomLaneCompatible(gameLanes.find(lane => lane.id === room.gameLaneId),
+        presentation.lanes.find(lane => lane.id === room.presentationLaneId)))
+      .map(room => ({ id: room.id, name: room.name, operatorId: room.operatorId, game: 'blackjack',
+        status: room.state === 'live' ? 'active' : room.state, presentationId: room.presentationLaneId }))
+    : parseList(pack?.tables).map(item => owned(item, operator.id, ['name', 'game', 'status', 'playerCount', 'presentationId'])).filter(Boolean);
   const revision = revisionOf(pack);
   const current = { id: operator.id, slug: operator.slug, name: operator.name, ...(revision ? { packageRevision: revision } : {}) };
   const choices = visible.some(item => item.id === operator.id) ? visible : [current, ...visible];
@@ -172,10 +192,10 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     operator: current,
     operators: choices.map(item => ({ id: item.id, slug: item.slug, name: item.name })),
     presentations,
-    ...(presentation ? { presentation, branding } : {}),
+    ...(presentation ? { presentation, branding, roomBindings: 'operator-owned-v2' } : {}),
     tables,
     team,
-    summary: { activeTables: tables.length, playersToday: 0, roundsToday: 0 },
+    summary: { activeTables: presentation ? tables.filter(table => table.status === 'active').length : tables.length, playersToday: 0, roundsToday: 0 },
   };
 }
 

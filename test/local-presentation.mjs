@@ -384,23 +384,23 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
-  const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [];
+  const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/config') ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {nora: ownIdle} }
-    : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { headers: { 'content-type': 'application/json' } });
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
+    : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); } };
-  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, version: () => 2,
+  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => 2,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
+  return { controller, jobs, receipts, requests, elements, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
 }
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
@@ -577,4 +577,44 @@ test('composed output follows every presented source frame before the receipt wi
   assert.equal(media[0].style.visibility,'hidden');
   assert.deepEqual(events,[['receipt','start'],['picture',0],['receipt','presented'],['card',0],['picture',31/24],['card',31/24]]);
   owner.abort();await assert.rejects(result,{name:'AbortError'});assert.equal(media[0].frames.size,0);
+});
+
+test('published Johanna repeats her frozen silent idle, checks the exact package before cached playback and stops on 409',async t=>{
+  const ownIdle={id:'johanna-frozen',fileName:'Johannas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-johanna/7/johanna',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
+  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,1);
+  assert.deepEqual(f.jobs[0].take.media,{src:ownIdle.src,sha256:ownIdle.sha256});assert.equal(f.jobs[0].options.muted,true);
+  f.jobs[0].options.onReceipt({state:'presented'});f.jobs[0].resolve({completed:true});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,2);assert.equal(f.jobs[1].options.muted,true);assert.equal(f.proofs,1);
+  for(const request of f.requests){const url=new URL(request.url,'https://game.invalid');assert.equal(url.pathname,'/api/presentation/config');assert.deepEqual(Object.fromEntries(url.searchParams),{operatorSlug:'north',roomId:'room-johanna',packageRevision:'7',dealerId:'johanna'});assert.equal(request.options.cache,'no-store');}
+  assert.equal(f.requests.length,3,'configuration plus two distinct per-play authority reads');
+  f.setConfigStatus(409);f.jobs[1].resolve({completed:true});await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,2);
+  assert.match(f.status.textContent,/Ladda om spelet/);const reload=f.elements.find(element=>element.textContent==='Ladda om');assert.equal(typeof reload.onclick,'function');
+  const before=f.requests.length;assert.equal(await f.controller.present(source),false);f.controller.start();f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));assert.equal(f.requests.length,before);assert.equal(f.jobs.length,2);
+});
+
+test('Johanna with empty exact positions forwards only her package context and keeps the committed card in 2D',async t=>{
+  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7},missingPosition:true});
+  assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
+  const payload=JSON.parse(f.requests.find(request=>request.url==='/api/presentation/select').options.body);
+  assert.deepEqual(payload.presentationContext,{operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'});
+  assert.deepEqual(payload.event,source);assert.equal(payload.context,undefined);
+  assert.equal(f.receipts.find(receipt=>receipt.state==='skipped').renderer,'2d');assert.equal(f.receipts.some(receipt=>receipt.state==='end'),false);
+});
+
+test('a separately saved Johanna skips each empty exact position and preserves server-owned hidden and visible cards',async()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna'),inventory=await loadVideoRegistry();
+  const events=Array.from({length:7},(_,box)=>({...source,box,shoeDraw:box+1,clip:{action:box<2?'deal-left':box<5?'deal-centre':'deal-right'}}));
+  for(const faceDown of [false,true])events.push({type:'deal',to:'dealer',box:null,handIndex:null,shoeDraw:events.length+1,faceDown,card:faceDown?null:{r:'Q',s:'♥'},clip:{action:'deal-dealer'}});
+  const handler=createPresentationApi({db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify(events)})})},env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
+  for(const event of events){const response=await presentationFixtureRequest(handler,'johanna-fixture',{dealerId:'johanna',version:2,mode:'off',event:{...event,card:{r:'A',s:'♣'}}});assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.video,null);assert.equal(response.body.standard,null);assert.equal(response.body.decision.media.reason,'position_clip_missing');assert.deepEqual(response.body.decision.sourceEvent,event);}
+});
+
+test('a stale committed card does not claim a package change, while an exact package conflict latches until reload',async t=>{
+  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7}}),fetchConfig=globalThis.fetch;
+  let code=null,requests=0;
+  globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?(requests++,Response.json({error:'Stale presentation',...(code?{code}: {})},{status:409})):fetchConfig(url,options);
+  assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/2D-reserv/);assert.doesNotMatch(f.status.textContent,/paketet har ändrats/);
+  code='studio_presentation_idle_package_changed';assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/Ladda om spelet/);
+  assert.equal(await f.controller.present(source),false);assert.equal(requests,2);
 });

@@ -134,6 +134,24 @@ export function createStudioRepository({ pool, scope } = {}) {
       try { return await work(client); } catch (error) { throw poison(error); }
     },
     scope, transaction,
+    readPresentationSnapshot() {
+      // A single MVCC snapshot binds dealer registration, selected UUIDs and
+      // classification. Nested reads reuse the current scoped write client.
+      return operation(() => null, async () => {
+        const projectDocument = await loadDocument('project');
+        const administrationDocument = await loadDocument('administration');
+        if (!projectDocument || !administrationDocument) fail('studio_document_missing', 503);
+        const rows = (await query(`/* studio:list-media */ SELECT id,revision,record,updated_at FROM croupier_studio.media_records
+          WHERE environment_id=$1 AND workspace_id=$2 ORDER BY id LIMIT $3`, [5001])).rows;
+        if (rows.length > 5000) fail('studio_media_limit_exceeded', 503);
+        const mediaRows = rows.map(row => media(row));
+        const freeze = value => {
+          if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
+          return value;
+        };
+        return freeze({scope, projectDocument, administrationDocument, mediaRows});
+      }, true);
+    },
     readDocument(kind) {
       return operation(() => validateDocumentKind(kind), checked => loadDocument(checked), true);
     },

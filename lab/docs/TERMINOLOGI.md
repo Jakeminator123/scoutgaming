@@ -27,7 +27,7 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Admin event | Administrationshändelse | Ändrad roll, konto eller publicerat paket; skiljs från spel- och presentationshändelser. |
 | Presentation director | Presentationsregissör | Ansvar för tillåtet klippurval och uppspelningsplan; ingen ny tjänst. |
 | Presentation lane | Presentation / presentationsprofil | Återanvändbar profil med dealers, klipp, lager och urvalsval. Tekniskt presentationslane; ID ändras inte när visningsnamnet översätts. |
-| Game lane | Spellane | Spelväg med renderer och dealer som klienten stöder. Lane i Administration. |
+| Game lane | Spellane | Spelväg med renderer och dealer. Skapa spelrum återanvänder eller skapar kompatibel spellane automatiskt; manuell redigering finns under Avancerat. |
 | Operator package | Operatörspaket / lane-paket | Bolagets publicerade presentationer med dealer, bord och bakgrund, tillåtna operatörsval, spel/bord och revision. |
 | Branding | Designprofil / varumärke | Utseende och tillåtna designval. Varumärket är ingen behörighetsgräns. |
 | Layers / mask | Tre lager / mask | Bakgrund, dealer och bord respektive avgränsning av synliga bilddelar. |
@@ -54,6 +54,8 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Preview clip | Förhandsvisa klipp | Lokalt provval; publicerar eller binder inget runtimeklipp. |
 | Composition | Sammansättning | Redigering av dealer, bord och bakgrund i en presentation. |
 | Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
+| Room / table | Spelrum / spelbord | Bolagsägd spelresurs som kopplar fryst presentation till en verklig spellane. De två lane-ID:na behöver inte vara lika. |
+| Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |
 
 Äldre UI-ord Eventgrupp, Linje, Trigger och Policy ska ersättas med
 **Händelsekategori, Klippuppsättning, Villkor och Urvalsregler**.
@@ -82,7 +84,7 @@ OpenClaw ändrar inte kort, regler, saldo eller utfall.
 | Term | Betydelse / plats |
 |---|---|
 | Operatör / bolag | Spelbolaget som tar emot tilldelade lane-paket från nivå 1; organisation med stabilt ID och läsbar slug. Publicering → Bolag & team. |
-| Bord / Spelrum & bord | Spelresurs med ägare och inställningar respektive arbetsvyn för bord och matchande spellane. Drift → Bord & spelrum. |
+| Bord / spelrum | Bolagsägd spelresurs. Skapas från Publicering tillsammans med paketet. Drift → Bord & spelrum visar den tekniska administrationen. |
 | Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Publicering → Bolag & team. |
 | Inbjudan / aktiveringslänk | Ny partner aktiveras via `/partner/set-password`; befintlig partner kopplas direkt. |
 | Partnersession | Inloggning på `/partner/login`; öppnar inte Kontrollrum. |
@@ -112,7 +114,8 @@ Spelmotor → spelsignal → presentationsregissör → uppspelningsplan
                                               uppspelningskvitto
 ```
 
-En ny spellane måste också finnas under Drift → Bord & spelrum.
+Skapa spelrum i Publicering återanvänder eller skapar en kompatibel spellane.
+Manuell administration av spellanes finns kvar under Avancerat.
 Spelklienten sköter uppspelning och scenkomposition. Fullbildsklipp behåller
 inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
@@ -123,7 +126,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Innehåll | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
 | Sammansättning | `/control/preview` | Dealer, bord och bakgrund; spela upp, placera och spara som lane. |
-| Publicering | `/control/lanes` | Presentationsprofiler, bolag, medlemskap och paketpublicering. |
+| Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. Avancerade paket- och spellaneval är utfällbara. |
 | Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
 | Tal vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
 
@@ -140,21 +143,24 @@ Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
 aktiv menypunkt. Avancerade inställningar ligger under utfällbara fördjupningar.
 
-`operatorSlug` väljer bolag, `lane` presentationsval och `dealer` dealer.
+`operatorSlug` väljer bolag. Studios `lane` väljer presentation, medan spelarens
+äldre `lane`-query väljer spellane. Ny rumslänk använder `operator` + `table`.
+`dealer` väljer dealer inom tillåtna val.
 En slug ger ingen behörighet. Händelser visar översikt utan `?event=` och
 redigerare med `?event=`. `?variant=` används på Händelser och Klippbibliotek.
 `#idle`, `#deal`, `#clips` väljer Grundloop, Utdelning respektive Repliker. Administrationens sidomenylänkar
 väljer `?tab=tables|operations|finance|accounts`; inne på sidan finns även
 Partnernycklar och Talgranskning.
 
-Spelstart: `/play/blackjack?operator=<slug>`. Render läser samma bolagspaket
-på `/blackjack?operator=<slug>`.
+Spelrum: `/play/blackjack?operator=<slug>&table=<rum-id>`. Render läser samma
+bolagspaket på `/blackjack?operator=<slug>&table=<rum-id>`. Äldre ingång utan
+table finns kvar. Okänt, inaktivt eller främmande rum ger inte någon reserv-lane.
 
 ## Acceptans och prov
 
 | Område | Gäller nu |
 |---|---|
 | Bild och tal | Granska med `?dealer=<namn>&rehearsal=1`. Ändrad ljud-/videohash upphäver godkännandet. Kvitto, hash och grönt test ersätter inte visuell acceptans. |
-| Nora | Egen dealer med egna filmer och matchande spellane; ingen lånad Astridfilm. Nya Nora-/lagerinställningar kräver rätt Renderkapacitet. Live AI-chatt för Nora återstår. |
+| Egna dealers, exempelvis Nora och Johanna | Eget registrerat basklipp krävs. Publicerat paket fryser grundloopen; ej frysta händelsefilmer hoppas över. Spelrum kopplar rätt spellane automatiskt. Kräver rätt Renderkapacitet. Live AI-chatt återstår. |
 | Tal vid inaktivitet | Textprovet skapar ingen röst eller video; produktionsacceptans återstår. Äldre zondata är separat från Sammansättningens bakgrundsfilmer. |
 | Partnerportal | Bolagsåtkomst och paketens designval finns. Spelare, transaktioner och rapporter från spelmotorn återstår. |

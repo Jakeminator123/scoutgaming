@@ -56,3 +56,28 @@ test('old package requests republication rather than pretending that prototype a
   assert.match(html,/saknar det publicerade trelagersformatet/);
   assert.doesNotMatch(html,/Öppna spelbord|<svg|Dark Hall/);
 });
+
+for (const schemaVersion of [1,2]) test('owned room preview ignores guessed runtime lanes with presentation v'+schemaVersion,()=>{
+  const presentation={...makePresentation(),schemaVersion,...(schemaVersion===2?{registeredDealers:[]}: {})};
+  presentation.lanes[0].id='presentation-distinct-from-runtime';
+  const row=(id,operatorId,status='active')=>({id,name:id,operatorId,status,presentationId:presentation.lanes[0].id});
+  const snapshot={operator:{id:'north-id',slug:'north'},roomBindings:'operator-owned-v2',presentation,tables:[
+    row('room-live','north-id'),row('room-other-owner','south-id'),row('room-preview','north-id','preview'),
+    {...row('room-other-presentation','north-id'),presentationId:'other'}]};
+  const html=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test'}));
+  assert.match(html,/\/play\/blackjack\?operator=north&amp;table=room-live/);
+  assert.doesNotMatch(html,/lane=|room-other-owner|room-preview|room-other-presentation/);
+  const empty=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot:{...snapshot,tables:[]},view:'test'}));
+  assert.match(empty,/Inget publicerat spelrum/);
+  assert.doesNotMatch(empty,/\/play\/blackjack/);
+});
+
+test('registered dealer label comes from the frozen package while selection keeps the ID',()=>{
+  const lane=structuredClone(makePresentation().lanes[0]);
+  lane.dealers=['johanna'];lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};
+  const presentation={schemaVersion:2,lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna Studio',idle:null}]};
+  const state=partnerPackageProfiles(presentation,{},'north-id')[0];
+  assert.equal(state.dealer,'johanna');assert.equal(state.layers.dealer.label,'Johanna Studio');
+  const html=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot:{operator:{id:'north-id',slug:'north'},presentation},view:'design'}));
+  assert.match(html,/Johanna Studio/);
+});

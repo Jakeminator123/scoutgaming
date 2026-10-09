@@ -38,6 +38,6 @@ export function createStudioMediaRuntime({ repository, scope, env = process.env,
     // The ordinary legacy resolver continues to describe its disk project.
     return { ...result, runtime: { ...result.runtime, source: STUDIO_GAME_CONFIGURATION_SOURCE } };
   };
-  return Object.freeze({ videoRegistry: videos.load, videoResponse: videos.response, legacyControls: controls,
+  return Object.freeze({ videoRegistry: videos.load, videoRegistryCaptured: videos.loadCaptured, verifyCapturedMedia: videos.verifyCapturedMedia, videoResponse: videos.response, legacyControls: controls,
     validateProjectBindings: createStudioProjectBindings({ videoRegistry: videos.load, legacyControls: controls }) });
 }

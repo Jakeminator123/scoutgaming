@@ -175,7 +175,7 @@ test('fixed Native response exposes actionable code without exception or provide
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   const body = await response.json();
   assert.equal(body.code, CODE);
-  assert.equal(body.error, 'Spelservern beh\u00f6ver uppdateras innan Nora eller tre lager kan sparas. Ditt utkast \u00e4r kvar.');
+  assert.equal(body.error, 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.');
   assert.equal(JSON.stringify(body).includes('PRIVATE'), false);
 });
 
@@ -251,4 +251,41 @@ test('a room capability cannot be reused after rollback or smuggled into a weake
   capable = true;
   await assert.rejects(input.wrapped.withMutationContext(save, { kind: 'project', value: project() }), blocked);
   assert.equal(input.writes.length, 1);
+});
+
+test('generic saved-registry dealer writes negotiate v3; the legacy Nora list grants no registry authority', async () => {
+  const cap3 = { schemaVersion: 3, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2',
+    registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' };
+  const input = fixture({ fetcher: async () => Response.json(cap3) });
+  const genericProject = { dealers: [...dealers, 'johanna'].map(id => ({ id })), lanes: [] };
+  await input.wrapped.saveDocument('project', { value: genericProject });
+  await input.wrapped.saveDocument('administration', { value: { gameLanes: [{ dealer: 'johanna', renderer: 'portrait-video' }] } });
+  await input.wrapped.registerMedia({ classification: { dealerId: 'johanna' } });
+  assert.equal(input.writes.length, 3);
+  for (const [, options] of input.fetches) assert.equal(options.headers['X-Presentation-Capability-Version'], '3');
+  for (const cap of [capability, { schemaVersion: 2, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2' }]) {
+    const old = fixture({ fetcher: async () => Response.json(cap) });
+    await assert.rejects(old.wrapped.saveDocument('project', { value: genericProject }), blocked); assert.equal(old.writes.length, 0);
+  }
+});
+
+test('schema2 package format requires v3 even when no extra dealer is included; no SQL begins on downgrade', async () => {
+  const descriptor = { kind: 'presentation-package', value: { schemaVersion: 2, registeredDealers: [] } };
+  let begun = 0;
+  const old = fixture(); old.repository.transaction = async work => { begun++; return work(old.repository); };
+  await assert.rejects(old.wrapped.transaction(async () => {}, { presentationMutation: descriptor }), blocked);
+  assert.equal(begun, 0); assert.equal(old.fetches[0][1].headers['X-Presentation-Capability-Version'], '3');
+  const cap3 = { schemaVersion: 3, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2',
+    registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' };
+  const modern = fixture({ fetcher: async () => Response.json(cap3) }); modern.repository.transaction = async work => { begun++; return work(modern.repository); };
+  await modern.wrapped.transaction(async () => {}, { presentationMutation: descriptor }); assert.equal(begun, 1);
+});
+
+test('legacy mutation context cannot introduce generic or frozen-package features from inside SQL', async () => {
+  const input = fixture();
+  await input.wrapped.withMutationContext(async () => {
+    await assert.rejects(input.wrapped.registerMedia({ classification: { dealerId: 'johanna' } }), blocked);
+    await assert.rejects(input.wrapped.transaction(async () => {}, { presentationMutation: { kind: 'presentation-package', value: { schemaVersion: 2 } } }), blocked);
+  }, { kind: 'project', value: project() });
+  assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
