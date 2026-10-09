@@ -553,3 +553,24 @@ test('two concurrent admin demotions serialize on the operator lock', async () =
   assert.ok(otherWait !== -1 && otherWait < firstCommit);
   assert.ok(secondAcquire > firstCommit);
 });
+
+
+test('all package publishers share the operator lock and CAS prevents lost tables after a concurrent publish', async () => {
+  const sql = memorySql(), store = await open(north, sql);
+  await seed(store);
+  const input = { operatorId: 'operator-unibet', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['room-first'], branding: { name: 'North' }, actor, expectedRevision: null };
+  const first = await store.publishPackage(input); assert.equal(first.revision, 1);
+  sql.holdUntilWaiters = 1;
+  const results = await Promise.allSettled([
+    store.publishPackage({ ...input, tables: ['room-first', 'room-new'], expectedRevision: 1 }),
+    store.publishPackage({ ...input, branding: { name: 'stale' }, expectedRevision: 1 }),
+  ]);
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(results.filter(result => result.status === 'rejected' && result.reason.code === 'studio_conflict').length, 1);
+  assert.equal(sql.tables.operator_packages.length, 2);
+  assert.equal((await store.getCurrentPackage(input.operatorId)).revision, 2);
+  assert.equal(sql.trace.filter(row => row.event === 'lock-acquired').length >= 3, true);
+  const before = structuredClone(sql.tables.operator_packages);
+  await assert.rejects(store.publishPackage({ ...input, expectedRevision: null }), refusal('studio_conflict'));
+  assert.deepEqual(sql.tables.operator_packages, before);
+});

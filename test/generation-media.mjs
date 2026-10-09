@@ -93,6 +93,10 @@ test('retired generation aliases cannot fall through to static files through Win
     await copyFile(new URL('public/astrid-voice-profile.mjs', source), join(web, 'public/astrid-voice-profile.mjs'));
     await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
     await copyFile(new URL('public/chat-response.mjs', source), join(web, 'public/chat-response.mjs'));
+    // Offline game documents use the same validated entry/composition contracts.
+    for (const name of ['game-entry-contract.mjs', 'game-lanes.mjs', 'presentation-composition.mjs', 'composition-settings.mjs']) {
+      await copyFile(new URL('public/' + name, source), join(web, 'public', name));
+    }
     await writeFile(join(web, 'public/bo/generations.json'), JSON.stringify([{ id: known }]));
     await writeFile(join(directory, `${known}.mp4`), 'synthetic known media');
     await writeFile(join(directory, `${unknown}.mp4`), 'synthetic uncatalogued media');

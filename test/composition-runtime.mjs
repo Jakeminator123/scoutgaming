@@ -109,7 +109,7 @@ test('public capability metadata is exact and cannot read data, select media or 
     const req={method,url:'/api/presentation/capabilities'+query},res={writeHead(s,h){this.status=s;this.headers=h;},end(body){this.body=body;}};
     assert.equal(await handler(req,res,'/api/presentation/capabilities',null),true);assert.equal(res.status,status);
     assert.equal(res.headers['cache-control'],'no-store');
-    if(method==='GET'&&status===200)assert.deepEqual(JSON.parse(res.body),{schemaVersion:1,registeredDealerIds:['nora'],compositing:'per-clip'});
+    if(method==='GET'&&status===200)assert.deepEqual(JSON.parse(res.body),{schemaVersion:2,registeredDealerIds:['nora'],compositing:'per-clip',rooms:'operator-owned-v2'});
     else assert.equal(res.body,method==='HEAD'?undefined:'');
   }
   assert.equal(reads,0);assert.equal(presentationCapabilitiesResponse(new Request('https://local/api/presentation/capabilities/media')),null);

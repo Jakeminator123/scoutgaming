@@ -228,3 +228,27 @@ test('verified feature permissions do not leak to another concurrent mutation', 
   assert.equal(input.fetches.length,1); release(); await first;
   assert.equal(input.writes.length,1);
 });
+
+const roomV2 = { schemaVersion: 2, id: 'room-one', name: 'Room', operatorId: 'north', presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'live' };
+const capabilityV2 = { ...capability, schemaVersion: 2, rooms: 'operator-owned-v2' };
+test('v2 capability stays compatible with old presentation writes while old Render blocks new rooms before SQL', async () => {
+  const input = fixture({ fetcher: async () => Response.json(capabilityV2) });
+  for (const write of writesForNewFeatures) await write(input.wrapped);
+  await input.wrapped.saveDocument('administration', { value: { rooms: [roomV2] } });
+  assert.equal(input.writes.length, writesForNewFeatures.length + 1);
+  for (const response of [capability, { ...capabilityV2, rooms: 'unknown' }, { ...capabilityV2, trusted: true }]) {
+    const old = fixture({ fetcher: async () => Response.json(response) });
+    await assert.rejects(old.wrapped.transaction(repo => repo.saveDocument('administration', { value: { rooms: [roomV2] } }),
+      { fixture: true, presentationMutation: { kind: 'administration', value: { rooms: [roomV2] } } }), blocked);
+    assert.equal(old.writes.length, 0);
+  }
+});
+test('a room capability cannot be reused after rollback or smuggled into a weaker transaction descriptor', async () => {
+  let capable = true;
+  const input = fixture({ fetcher: async () => Response.json(capable ? capabilityV2 : capability) });
+  const save = () => input.wrapped.saveDocument('administration', { value: { rooms: [roomV2] } });
+  await save(); capable = false; await assert.rejects(save(), blocked); assert.equal(input.writes.length, 1);
+  capable = true;
+  await assert.rejects(input.wrapped.withMutationContext(save, { kind: 'project', value: project() }), blocked);
+  assert.equal(input.writes.length, 1);
+});

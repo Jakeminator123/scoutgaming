@@ -61,8 +61,21 @@ const storage = postgres ? createPostgresStore({ connectionString: process.env.C
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
-const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = neonStudioEnabled
-  ? await import('./public/game-entry-contract.mjs') : {};
+const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = await import('./public/game-entry-contract.mjs');
+const { gameLaneSelection } = await import('./public/game-lanes.mjs');
+// Offline documents still give the player a server-owned, validated adapter.
+// Only the four original asset sets opt into the indexed playback path.
+const offlineOriginalDealers = new Set(['astrid', 'vera', 'amira', 'mei']);
+const offlineOriginalLane = { schemaVersion: 1, id: 'legacy', label: 'Original dealers', renderer: 'indexed-video', dealer: 'vera', mediaCollection: 'legacy-dealers' };
+function offlineGameSelection(query) {
+  const params = new URLSearchParams(query);
+  const dealer = params.getAll('dealer').length === 1 ? params.get('dealer') : null;
+  const lane = params.getAll('lane').length === 1 ? params.get('lane') : null;
+  const local = dealer === 'astrid' && params.getAll('presentation').length === 1 && params.get('presentation') === 'local';
+  if (!offlineOriginalDealers.has(dealer) || ['mobile-phone', 'layer-preview'].includes(lane) || local) return gameLaneSelection(params);
+  params.set('lane', offlineOriginalLane.id);
+  return gameLaneSelection(params, offlineOriginalLane.id, [offlineOriginalLane]);
+}
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy, createRegisteredDealerIdle } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
@@ -1144,6 +1157,11 @@ const server = createServer(async (req, res) => {
     }
     const html=decorateGameEntryHtml(readSync(file,'utf8'),process.env,selection);
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
+    res.end(req.method === 'HEAD' ? undefined : html); return;
+  }
+  if (!neonStudioEnabled && path === '/index.html') {
+    const html = decorateGameEntryHtml(readSync(file, 'utf8'), process.env, offlineGameSelection(url.searchParams), { offline: true });
+    res.writeHead(200, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(html), ...noStore(file) });
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);

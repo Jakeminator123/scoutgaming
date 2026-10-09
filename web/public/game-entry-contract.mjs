@@ -57,9 +57,9 @@ function brandingAttribute(value) {
   if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
   return attributeText(text);
 }
-export function decorateGameEntryHtml(html,env,selection) {
-  if (!gameEntryEnabled(env)) return html;
-  let attributes = ' data-game-path="/blackjack"';
+export function decorateGameEntryHtml(html,env,selection,{offline = false} = {}) {
+  if (!gameEntryEnabled(env) && offline !== true) return html;
+  let attributes = gameEntryEnabled(env) ? ' data-game-path="/blackjack"' : '';
   if (selection) {
     if (!isGameLaneId(selection.lane) || !dealers.has(selection.dealer) || !['local','original','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
