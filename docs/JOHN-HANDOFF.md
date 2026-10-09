@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: fortsatt konsolidering och verklig produktionsgräns
 
-Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma checkout till GitHub main. **Produktionsacceptansen är nu 1 av 3 avslutad.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
+Senaste kodleverans 71176ebbe9a8705740fa5e12ab9d92c6b1b6b364 är pushad från samma checkout till GitHub main; N1-förenklingen levererades i cca9d3527a0451f037616a79571e0d415e13f10c. **Ett produktionsversionskvitto är verifierat; spelar- och partnerproven återstår. Nya ingressrättningen väntar på Render.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
 
 - Sammansättning har Dealer/Bord/Bakgrund som en kompakt lagerinspektör. Filval och geometri ligger tillsammans; Mobil och Desktop har separata värden och återställning. Uploadpaneler förblir monterade, och spar-/konfliktlås bevaras.
 - Mobilmenyn är kollapsad från start, med Escape/fokus och fria tabsteg. Aktuell sidlänk laddar inte om utkast. Mobilscenens reproducerade klicköverlapp är rättad.
@@ -11,29 +11,29 @@ Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma chec
 
 | Verifiering | Kvitto | Status |
 | --- | --- | --- |
-| Fullhook | 2 043 tester: 2 034 PASS, 9 SKIP, 0 FAIL | PASS |
-| Kod-SHA CI | 37982801692, alla tre jobb | SUCCESS |
-| Vercel production och www | dpl_6YjURKF7XHuHKw1p8E7ibZf6rxbJ; scoutgaming-ms8eue4gd-scoutgaming.vercel.app; exakt SHA kopplad via GitHubs Vercel-status | READY, samma deployment |
+| Fullhook, senaste kodleverans | 2 046 tester: 2 037 PASS, 9 SKIP, 0 FAIL | PASS |
+| Kod-SHA CI | 37988543940, exakt 71176ebbe9a8705740fa5e12ab9d92c6b1b6b364; presentation-studio, lipsync-worker och dealer-regression | Alla tre SUCCESS |
+| Vercel production och www | dpl_65sg7mawaNAqh6c55vf2KDAdfX8Q; scoutgaming-3i4xsbbsy-scoutgaming.vercel.app; exakt 71176ebb kopplad via GitHubs Vercel-status och två scoped CLI-inspektioner | READY, samma deployment |
 | TypeScript och Lab-build | Normal och isolerad build | PASS |
 | Verklig isolerad UI-QA | 1440/768/390 px, keyboard, Meny/Escape/fokus, PUT/GET/full omladdning, båda format och annan presentation bevarade; inga sid-/konsolfel | PASS |
 | Produktionseditorn, läskontroll | Befintliga Johns/Johanna är Sparad; Bord → Dealer fungerar, scenen visar Johanna/bord/bakgrund. Inga värden ändrade eller sparade; bild visuellt granskad | PASS; ingen spelaracceptans |
-| Riktade regressioner | Översikt/nav 42, mobilnav 45, preview 16, gateway/ingress/runtime/WebSocket 51; oberoende kodgranskning | PASS |
+| Riktade regressioner | Översikt/nav 42, mobilnav 45, preview 16 i N1-etappen; senaste transport/runtime/UI/WS/version 90/90 och oberoende ingressgranskning | PASS |
 | Dealer-sync --probe | Samtliga fyra mediabaslinjer matchar | PASS; mänsklig läppsynkacceptans separat öppen |
-| Samma privata bildgalleri | 31 bilder; tidigare 30 kort och originalbildhashar bevarade. Förstoring i originalstorlek, keyboard/fokus och mobil verifierade | PASS |
+| Samma privata bildgalleri | 32 bilder; samtliga tidigare 31 kort bytebevarade och originalbildhashar verifierade. Ny bild visar felet efter verklig Render 2aef765c och skiljer uppspelningsfel från paketmetadata. 32 originalstorleksdialoger, keyboard/fokus och 390 px utan överflöde eller sidfel | PASS |
 
 | Återstående produktionskontroll | Faktiskt resultat | Krävs för att avsluta |
 | --- | --- | --- |
-| 1. Aktiv Render-version | 9 oktober 20:10:37 UTC: /__cloud/version ger 200/schemaVersion 1/provider render och exakt 2aef765cdcbbac5358b6e13d2fd4c1d5647e521f. Samma SHA har CI 37984230871 SUCCESS, alla tre jobb; www READY dpl_J87rSNEKWbwEhSCzw6yqrBBr6ZKv | PASS för aktiv runtime-SHA. Privat deploy-ID/tidigare första felrad är fortsatt okända; ingen timeoutfix har gjorts |
+| 1. Aktiv Render-version | 9 oktober 20:10:37 UTC: /__cloud/version ger 200/schemaVersion 1/provider render och exakt 2aef765cdcbbac5358b6e13d2fd4c1d5647e521f. Samma SHA har CI 37984230871 SUCCESS, alla tre jobb; www READY dpl_J87rSNEKWbwEhSCzw6yqrBBr6ZKv | PASS för läst runtime-SHA 2aef765c; ny ingresskod ännu inte aktiv där. Efter utrullning krävs 71176ebb eller verifierad efterföljare. Privat deploy-ID/tidigare första felrad fortsatt okända; ingen timeoutfix gjord |
 | 2. Spelarens Johanna-rum | Även efter verifierad Render 2aef765c: spelarlogin 200/authenticated, rummets HTML 503; bild 20:15:16 UTC visar generiskt fel och 0 videor/loopar. Fryst paket-API 20:29:52 UTC ger 200/operator-package-v2, rätt bolag/rum/Johanna, paketrevision 1 och originalklippets hash. Reproducerad rotorsak: signerad operator-HTML utan launch avvisas med 421 i ingressen, vilket Vercel översätter till 503 | Samma inloggade flik, rätt bolag/rum/paket/Johanna och tre lager; två hela grundloopar i faktisk spelare |
 | 3. Partnerns sparning | Korrekt same-origin partnerlogin ger 401. Vanlig auktoriserad N1-läsning visar att LLM är aktiv admin och Johns bolag har 0 medlemmar. Partnerlogin kräver kontorollen partner; korrekt partnerkonto och avsett medlemskap saknas | Befintligt partnerkonto med aktivt medlemskap och presentations.configure i Johns spelbolag. Val → spara → omladdning → rätt rum; N1-geometri bevarad och konflikt avvisad |
 
 Aktiv Render-version är nu verifierad som **2aef765cdcbbac5358b6e13d2fd4c1d5647e521f** via det sanerade versionskvittot. Spelarprovet återupptas i samma inloggade flik och befintliga Johanna-rum. Partnerlogin har återprovats mot den nya runtime-versionen och ger fortsatt 401 för de angivna uppgifterna. Roll- och medlemskontrollerna bevaras; ingen medlem, kontoroll, inbjudan, insats eller speldata har ändrats.
 
-Ingressrättningen är fryst lokalt: endast signerad canonical GET/HEAD på exakt /blackjack, Accept text/html, giltig operator och godkända odubblerade queryvärden får passera utan launch. Host, origin, proto, hemlig signering och vanlig spelarautentisering består. Riktig platformUiDocument → platformBackendHeaders → gateway → Web verifieras med isolerad HTTP-fixtur; 90/90 berörda transport/runtime/UI/WS/versiontester PASS och oberoende granskning utan blockerande fynd. Ny regression ingår i fullhook. Produktionsuppspelning får godkännas först efter ny faktisk Render-version och två naturliga hela loopar i samma flik.
+Ingressrättningen är levererad på main i 71176ebb: endast signerad canonical GET/HEAD på exakt /blackjack, Accept text/html, giltig operator och godkända odubblerade queryvärden får passera utan launch. Host, origin, proto, hemlig signering och vanlig spelarautentisering består. Riktig platformUiDocument → platformBackendHeaders → gateway → Web verifieras med isolerad HTTP-fixtur; 90/90 berörda transport/runtime/UI/WS/versiontester PASS och oberoende granskning utan blockerande fynd. Ny regression ingår i fullhook. CI 37988543940 har tre SUCCESS-jobb; Vercel och www är READY på samma deployment. Render kvitterade fortfarande 2aef765c den 9 oktober 20:45:55 UTC. Ny utrullning av exakt 71176ebb har begärts; verktygen saknar Renderåtkomst. Produktionsuppspelning får godkännas först efter ny faktisk Render-version och två naturliga hela loopar i samma flik. Tre observerade naturliga tidsomslag krävs: första startgränsen och därefter två kompletta varv, med faktisk currentTime/duration och visuella lagerbilder.
 
 Vercel-connectorernas teamläsning nekas (403), men scoped CLI-inspektion fungerar. Lokal ingresskonfiguration saknar användbar nyckel för direkt serverläsning. Ingen token/grant har skapats. Browserverktygets sandboxstart är trasig; den tidigare chattens levande Edgehjälpare förmedlar snäva produktionsläsningar utan profilomstart.
 
-Separat GitGuardianläsning på kod-SHA: 17 observerade, 12 öppna incidenter; source binding verifierad och monitoring aktiv. Location coverage är partial och historisk scan too_large. Queued suite är inte ett rent säkerhetskvitto. Inga incidenter ignorerade eller lösta i denna etapp.
+Separat GitGuardianläsning efter push på kod-SHA 71176ebbe9a8705740fa5e12ab9d92c6b1b6b364: 17 observerade, 12 öppna incidenter; source binding verifierad och monitoring aktiv. Location coverage är partial och historisk scan too_large. Queued suite är inte ett rent säkerhetskvitto. Inga incidenter ignorerade eller lösta i denna etapp.
 
 ## 9 oktober 2026: sammanhängande sammansättning och partnerns val
 
