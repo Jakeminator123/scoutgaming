@@ -7,7 +7,7 @@ const tools = Object.freeze({
   players: '/control/administration', tx: '/control/administration', team: '/control/administration',
   api: '/control/administration', bj: '/control/administration', dealers: '/control/administration',
   shoes: '/control/administration', tables: '/control/administration',
-  background: '/control/zones', voice: '/control/clips#clips', clips: '/control/clips#deal',
+  background: '/control/preview', voice: '/control/clips#clips', clips: '/control/clips#deal',
   media: '/control/videos', archive: '/control/videos', tree: '/control/events',
 });
 
@@ -23,12 +23,8 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
-  { href: '/control/preview', title: 'Videoeditor · tre lager', text: 'Välj dealerklipp, bakgrund och bord. Prova greenscreen, placering och mobil eller desktop.' },
-  { href: '/control/lanes', title: 'Lanes och bolagspaket', text: 'Spara tillåtna val och publicera kompositionen till ett spelbolag.' },
-  { href: '/control/administration', title: 'Lanes, bord & konton', text: 'Skapa och välj lane under Spel, lanes & bord. Hantera personal, spelarkonton och partneråtkomst i samma administration.' },
-  { href: '/control/clips', title: 'Dealers & klipp', text: 'Välj dealer och arbeta med Idle, Kort & deal, Fasta repliker och klippval.' },
-  { href: '/control/events', title: 'Händelser', text: 'Översikt utan valt event. Öppna ett event för att koppla klipp, villkor och urvalsregler.' },
-  { href: '/control/videos', title: 'Klippbibliotek', text: 'Granska registrerat material. Klippinställningar hör till respektive dealer i Dealers & klipp.' },
-  { href: '/control/openclaw', title: 'Agentmodeller', text: 'Välj modell per OpenClaw-agent.' },
-  { href: '/control/activity', title: 'Uppspelning', text: 'Följ händelser och kvitton från den anslutna spelytan.' },
+  { href: '/control/clips', title: '1 · Dealers & klipp', text: 'Välj dealer, basklipp och variationer. Lägg till egna dealerfilmer.' },
+  { href: '/control/preview', title: '2 · Sammansättning', text: 'Sätt ihop dealer, bord och bakgrund. Spela upp och spara som lane.' },
+  { href: '/control/lanes', title: '3 · Lanes', text: 'Välj tillåtna variationer och publicera till ett spelbolag.' },
+  { href: '/control/administration?tab=tables', title: '4 · Spelrum & bord', text: 'Konfigurera spelets bord och koppla en matchande spellane.' },
 ].map(item => Object.freeze(item)));

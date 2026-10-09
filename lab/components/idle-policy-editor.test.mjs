@@ -6,10 +6,11 @@ const source = readFileSync(new URL('./idle-policy-editor.tsx', import.meta.url)
 const events = readFileSync(new URL('./control-events-page.tsx', import.meta.url), 'utf8');
 const preview = readFileSync(new URL('./events-preview.tsx', import.meta.url), 'utf8');
 
-test('idle editor exposes one simple three-step workflow and the four explicit owners', () => {
-  for (const label of ['Grundloop', 'Korta variationer', 'Prova en minut']) assert.match(source, new RegExp(label));
+test('idle editor presents one base loop with variations and preserves advanced controls', () => {
+  for (const label of ['Grundloop', 'Basklipp', 'Variationer', 'Spela en minut', 'Avancerat · basklipp och fördelning', 'Avancerat · slump och gränser', 'Avancerat · uppspelningsplan']) assert.match(source, new RegExp(label));
   for (const owner of ['Manuell', 'Automatisk', 'Regelstyrd', 'OpenClaw']) assert.match(source, new RegExp(owner));
   assert.match(source, /idle\/variant\//);
+  assert.doesNotMatch(source, /Huvudloop|Reservloop/);
 });
 
 test('idle preview has deterministic evidence and yields playback ownership', () => {

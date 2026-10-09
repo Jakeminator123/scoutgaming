@@ -437,3 +437,23 @@ test('legacy auth aliases retain queries with exactly one configured Next basePa
     }
   }
 });
+
+test('retired zone entries redirect to public composition without a doubled basePath', async () => {
+  const { publicAbsoluteUrl } = require('../lib/lab-url.mjs');
+  const publicRedirect = load('../app/control/public-redirect.ts', {
+    'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
+    'next/navigation': navigation,
+    '@/lib/lab-url.mjs': { publicAbsoluteUrl },
+  });
+  for (const file of ['../app/control/zones/page.tsx', '../app/zones/page.tsx']) {
+    const page = load(file, {
+      '../public-redirect': publicRedirect,
+      '../control/public-redirect': publicRedirect,
+    });
+    await assert.rejects(page.default(), error => {
+      assert.equal(navigation.getURLFromRedirectError(error), 'https://game.fixture.invalid/control/preview');
+      assert.equal(navigation.getRedirectStatusCodeFromError(error), 307);
+      return true;
+    });
+  }
+});

@@ -18,14 +18,13 @@ const sidebar = [...groups.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGA
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('Studio puts the three main destinations first and preserves the tool and operations pages', () => {
-  assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'Studio · verktyg', 'OpenClaw', 'Drift', 'Åtkomst']);
+test('Studio groups composition and inactivity tools without a second tools menu', () => {
+  assert.deepEqual(groups.map(group => group.label), ['', 'Studio', 'OpenClaw', 'Drift', 'Åtkomst']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
     [['/control', 'Översikt']],
-    [['/control/clips', 'Dealers & klipp'], ['/control/preview', 'Förhandsvisning'], ['/control/lanes', 'Lanes']],
-    [['/control/videos', 'Klippbibliotek'], ['/control/zones', 'Bakgrundszoner'], ['/control/events', 'Händelser']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/videos', 'Klippbibliotek'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Lanes'], ['/control/events', 'Händelser'], ['/control/probe', 'Tal vid inaktivitet']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
-    [['/control/administration', 'Administration'], ['/control/administration?tab=tables', 'Bord & lanes'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=finance', 'Betalningar & journal'], ['/control/probe', 'Probe']],
+    [['/control/administration', 'Administration'], ['/control/administration?tab=tables', 'Bord & lanes'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/administration?tab=accounts', 'Konton & roller'], ['/partner', 'Partners']],
   ]);
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
@@ -73,7 +72,7 @@ test('active item resolves for empty and /studio base paths and keeps the first 
     assert.equal(scoutNavigationItem('/activity', base)?.label, 'Uppspelning');
     assert.equal(scoutNavigationItem(`${base}/activity`.replace('//', '/'), base)?.label, 'Uppspelning');
     assert.equal(scoutNavigationItem('/control/administration', base)?.label, 'Administration');
-    assert.equal(scoutNavigationItem('/control/zones', base)?.label, 'Bakgrundszoner');
+    assert.equal(scoutNavigationItem('/control/zones', base)?.label, 'Sammansättning');
     assert.equal(scoutNavigationItem('/control/events', base)?.label, 'Händelser');
     assert.equal(scoutNavigationItem('/studio/studio/videos', base), null);
   }
@@ -149,7 +148,7 @@ test('openclaw chat query activates operator chat and the bare path activates mo
   assert.match(chat, /aria-current="page"[^>]*>Operatörschatt/);
   assert.doesNotMatch(chat, /aria-current="page"[^>]*>Agentmodeller/);
   assert.match(chat, /href="\/control\/openclaw\?tab=chat"/);
-  assert.equal(scoutNavigationItem('/control/probe')?.label, 'Probe');
+  assert.equal(scoutNavigationItem('/control/probe')?.label, 'Tal vid inaktivitet');
   assert.equal(scoutNavigationItem('/control/tree')?.label, 'Händelser');
   assert.equal(scoutNavigationItem('/control/administration?tab=tables')?.label, 'Bord & lanes');
   assert.equal(scoutNavigationItem('/control/administration?tab=operations')?.label, 'Spelintegritet');

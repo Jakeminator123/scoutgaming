@@ -63,7 +63,7 @@ test('cloud idle refresh reads the shared registry even when imported media has 
   });
   const p = props(); p.initialVideos.summary = { archiveSource:'emil-default' };
   const tree = h.render(p);
-  const refresh = nodes(tree, node => node.type === 'button' && node.props.children === 'Läs in nya idle-klipp')[0];
+  const refresh = nodes(tree, node => node.type === 'button' && node.props.children === 'Uppdatera klipplistan')[0];
   refresh.props.onClick();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls,[['/api/videos',undefined]]);
@@ -79,13 +79,13 @@ test('focused workspace uses dealer chips, three categories and links instead of
   assert.equal(chips.length, 4);
   assert.equal(chips.filter(node => node.props['aria-pressed'] === true).length, 1);
   const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
-  assert.match(html, /href="\/control\/zones"/);
-  assert.match(html, /Öppna Bakgrundszoner →/);
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
+  assert.match(html, /href="\/control\/preview"/);
+  assert.match(html, /Sammansättning →/);
   assert.match(html, /href="\/control\/probe"/);
-  assert.match(html, /Öppna Probe →/);
+  assert.match(html, /Tal vid inaktivitet →/);
   assert.match(html, /href="\/control\/activity"/);
-  assert.match(html, /Öppna Uppspelning →/);
+  assert.match(html, /Uppspelning och logg →/);
   assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0, 'playback log is a link, not an embed');
 });
@@ -105,7 +105,7 @@ test('draft survives dealer chip and category changes', () => {
   assert.equal(nodes(tree, node => node.props?.inventory && !node.props?.section).length, 0, 'Astrid family tools not rendered for Vera');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
-  assert.match(html, /href="\/control\/zones"/);
+  assert.match(html, /href="\/control\/preview"/);
   assert.match(html, /href="\/control\/activity"/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'V Vera');
@@ -125,9 +125,9 @@ test('another dealer keeps idle tools and the draft without a probe tab', () => 
   pressDealer(tree, 'Vera');
   tree = h.render(p);
   const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Idle', 'Kort & deal', 'Fasta repliker / ljud']);
+  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
   assert.equal(nodes(nav, node => node.type === 'button' && node.props.children === 'Probe').length, 0);
-  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Idle');
+  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Grundloop');
   assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
   assert.match(renderToStaticMarkup(tree), /href="\/control\/probe"/);

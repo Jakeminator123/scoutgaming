@@ -132,13 +132,13 @@ test('unsaved lanes are marked until the project is clean', () => {
 test('the editor shows the default lane suggestion, the administration hint and one save button on the page', () => {
   const source = readFileSync(new URL('../components/lane-editor.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /window\.confirm/);
-  assert.equal(LANE_ID_HELP, 'Id ska vara samma som ett lane-id under Administration → Spel, lanes & bord för att spelet ska kunna köra lanen.');
+  assert.equal(LANE_ID_HELP, 'Använd samma lane-id under Administration → Bord för att koppla utseendet till spelet.');
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
   assert.match(editorHtml, /Lägg till standardlane/);
   assert.match(editorHtml, /mobile-phone/);
-  assert.match(editorHtml, /Administration → Spel, lanes &amp; bord/);
+  assert.match(editorHtml, /Administration → Bord/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
@@ -148,9 +148,9 @@ test('the editor shows the default lane suggestion, the administration hint and 
   }));
   assert.match(html, /Lägg till standardlane/);
   // No saved lanes: the publish list still offers the standard lane, which the API accepts.
-  assert.match(html, /<input type="checkbox" name="lanes" value="mobile-phone"\/>mobile-phone · Mobile Phone Lane · astrid<\/label>/);
+  assert.match(html, /<input type="checkbox" name="lanes" value="mobile-phone"\/>Mobile Phone Lane · Astrid<\/label>/);
   assert.doesNotMatch(html, /\(osparad\)/);
-  assert.match(html, /Administration → Spel, lanes &amp; bord/);
+  assert.match(html, /Administration → Bord/);
   assert.equal(html.match(/sg-btn-primary/g).length, 1);
   assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
@@ -164,7 +164,7 @@ test('the suggestion row separates its values and the page keeps one primary but
   assert.match(editorHtml, /<dd>mobile-phone<\/dd>[\s\S]*·[\s\S]*<dd>Mobile Phone Lane<\/dd>/);
   const splitAt = editorHtml.indexOf('Ny lane</h2>');
   assert.ok(splitAt > 0);
-  const help = 'Administration → Spel, lanes &amp; bord';
+  const help = 'Administration → Bord';
   assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 1);
   assert.equal(editorHtml.slice(splitAt).split(help).length - 1, 1);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
@@ -177,14 +177,15 @@ test('the suggestion row separates its values and the page keeps one primary but
   assert.equal(html.match(/sg-btn-primary/g).length, 1);
 });
 
-test('the editor shows zones, colors, probe and idle, and the page keeps one lime button', () => {
+test('the editor retires zones and groups advanced automation while preserving colors and idle settings', () => {
   const project = createSeedProject();
   const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project, onEdit() {} }));
-  assert.match(editorHtml, /Zon-id från Bakgrundszoner/);
+  assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
+  assert.match(editorHtml, /Avancerat: automatik och variationer/);
   assert.match(editorHtml, /type="color"/);
   assert.match(editorHtml, /Följer OpenClaw/);
-  assert.match(editorHtml, /Idle-frekvens/);
-  assert.match(editorHtml, /Varianter, en per rad/);
+  assert.match(editorHtml, /Variationsfrekvens/);
+  assert.match(editorHtml, /Variations-id, ett per rad/);
   assert.doesNotMatch(editorHtml, /sg-btn-primary/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: project,
@@ -193,10 +194,10 @@ test('the editor shows zones, colors, probe and idle, and the page keeps one lim
     operators: fixtureLaneOperators(),
     storeAvailable: false,
   }));
-  assert.match(html, /Zon-id från Bakgrundszoner/);
+  assert.doesNotMatch(html, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
   assert.match(html, /type="color"/);
-  assert.match(html, /Idle-frekvens/);
-  assert.match(html, /Spara projekt/);
+  assert.match(html, /Variationsfrekvens/);
+  assert.match(html, /Spara lanes/);
   assert.equal(html.match(/sg-btn-primary/g).length, 1);
 });
 

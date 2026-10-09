@@ -42,16 +42,16 @@ const props = { initialProject: project, initialVideos: { videos: [] }, initialS
 test('speech review keeps the probe editor, a disabled save button and no old studio chrome', () => {
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlProbePage, props));
-  assert.match(html, /\/\/ DRIFT/);
-  assert.match(html, /<h1>Probe<\/h1>/);
-  assert.match(html, /Astrids egna tal när spelaren är inaktiv/);
-  assert.match(html, /aria-label="Probe för Astrid"/);
+  assert.match(html, /\/\/ STUDIO/);
+  assert.match(html, /<h1>Tal vid inaktivitet<\/h1>/);
+  assert.match(html, /stödet gäller Astrid/);
+  assert.match(html, /aria-label="Tal vid inaktivitet för Astrid"/);
   assert.match(html, /<button[^>]*class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara projekt<\/button>/);
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|studio-footer|Croupier Lab|sg-pill|Osparade ändringar/);
   const bare = { ...project };
   delete bare.probePolicy;
   const fallback = renderToStaticMarkup(React.createElement(ControlProbePage, { ...props, initialProject: bare }));
-  assert.match(fallback, /aria-label="Probe för Astrid"/);
+  assert.match(fallback, /aria-label="Tal vid inaktivitet för Astrid"/);
 });
 
 test('probe route loads studio data for /control/probe and tolerates a missing searchParams argument', () => {
@@ -60,6 +60,6 @@ test('probe route loads studio data for /control/probe and tolerates a missing s
   assert.match(source, /props\?\.searchParams/);
   assert.match(source, /firstQueryValue\(query\.dealer\)/);
   assert.match(source, /firstQueryValue\(query\.event\)/);
-  assert.match(source, /title: 'Probe · Croupier Studio'/);
+  assert.match(source, /title: 'Tal vid inaktivitet · Croupier Studio'/);
   assert.match(source, /dynamic = 'force-dynamic'/);
 });

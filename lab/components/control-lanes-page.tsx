@@ -2,7 +2,7 @@
 
 import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
 import { useState, type FormEvent } from 'react';
-import { labBasePath } from '../lib/lab-url.mjs';
+import { labBasePath, labUrl } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { LaneEditor } from './lane-editor';
@@ -40,7 +40,8 @@ export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' 
   return rows;
 }
 
-export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory }: {
+export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId }: {
+  initialLaneId?: string;
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -53,7 +54,9 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     project, modelEdit, dirty, saving, save, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
   } = session;
   const rows = publishLaneRows(project.lanes, savedJson, dirty);
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [selectedLaneId, setSelectedLaneId] = useState(initialLaneId ?? project.lanes?.[0]?.id ?? 'mobile-phone');
+  const selectedLane = project.lanes?.find(lane => lane.id === selectedLaneId) ?? project.lanes?.[0];
+  const [chosen, setChosen] = useState<string[]>(() => initialLaneId && rows.some(row => row.id === initialLaneId) ? [initialLaneId] : []);
   const [operatorId, setOperatorId] = useState(() => operators.find(item => item.id === 'sg-test')?.id ?? operators[0]?.id ?? '');
   const [listed, setListed] = useState(operators);
   const [revision, setRevision] = useState<number | null>(null);
@@ -87,9 +90,9 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
         return;
       }
       const next = Number(payload?.package_revision ?? payload?.packageRevision);
-      if (!Number.isSafeInteger(next) || next < 1) { setPublishError('Servern svarade utan package_revision.'); return; }
+      if (!Number.isSafeInteger(next) || next < 1) { setPublishError('Serverns publiceringskvitto saknas.'); return; }
       setRevision(next);
-      setMessage(`package_revision ${next}`);
+      setMessage(`Paketet är publicerat. Version ${next}.`);
     } catch {
       setPublishError('Publiceringen gick inte igenom.');
     } finally {
@@ -128,40 +131,42 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   return <PageTemplate
     eyebrow="// STUDIO"
     title="Lanes"
-    intro="Sätt ihop en lane av dealers, lager och OpenClaw-läge. Publicera ett operatörspaket. Spelet läser paketet på /blackjack?operator=<slug> och spelarens dealerval följer paketet. Kortet Bolag skapar bolag, roller och medlemskap."
-    primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
+    intro="Spara en uppsättning med dealer, bord och bakgrund. Välj tillåtna variationer och publicera för ett bolag."
+    primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara lanes'}</button>}
   >
     <div className={`sg-page-body ${styles.page}`}>
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
       {shownError ? <p role="alert">{shownError}</p> : null}
       {message ? <p role="status">{message}</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
-      {revision !== null ? <p>Senaste package_revision: {revision}</p> : null}
+      {revision !== null ? <p>Senast publicerade version: {revision}</p> : null}
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
-      <LaneEditor project={project} onEdit={modelEdit} />
+      <LaneEditor project={project} onEdit={modelEdit} selectedId={selectedLaneId} onSelect={setSelectedLaneId} navigationBlocked={dirty||saving} />
       <section className={styles.card} aria-labelledby="publish-package">
-        <h2 id="publish-package">Publicera paket</h2>
+        <h2 id="publish-package">Publicera för ett bolag</h2>
+        <p>Välj vilka sparade lanes bolaget ska kunna använda.</p>
         <form className={styles.form} onSubmit={event => { void publish(event); }}>
           <fieldset className={styles.choices}>
             <legend>Lanes</legend>
             {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
               <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={row.unsaved}
                 onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
-              {row.id} · {row.label} · {row.dealers.join(', ')}{row.unsaved ? ' (osparad)' : ''}
+              {row.label} · {row.dealers.map(id=>project.dealers.find(dealer=>dealer.id===id)?.label??id).join(', ')}{row.unsaved ? ' (osparad)' : ''}
             </label>) : <p>Projektet har inga lanes.</p>}
           </fieldset>
-          <label className={styles.field}>Operatör
+          <label className={styles.field}>Bolag
             <select value={operatorId} disabled={!storeAvailable || !listed.length} onChange={event => setOperatorId(event.target.value)}>
               {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
             </select>
           </label>
           <div className={styles.actions}>
-            <button className="sg-btn sg-btn-secondary" type="button" disabled={publishable.length < 1 || dirty} onClick={exportLanes}>Exportera lanes (JSON)</button>
             <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId}>Publicera paket</button>
-            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
+
           </div>
         </form>
+        <details><summary>Avancerat: export och testbolag</summary><div className={styles.actions}><button className="sg-btn sg-btn-secondary" type="button" disabled={publishable.length < 1 || dirty} onClick={exportLanes}>Exportera lanes (JSON)</button><button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button></div></details>
       </section>
+      <section className={styles.card} aria-labelledby="lane-game-link"><h2 id="lane-game-link">Använd lanen i spelet</h2><p>Koppla samma lane-id till rätt dealer under Administration → Bord{selectedLane?<>: <strong>{selectedLane.id}</strong></>:null}. Publicering sparar utseende och val för bolaget. Spelkopplingen görs separat.</p><a className="sg-btn sg-btn-secondary" aria-disabled={dirty||saving} onClick={event=>{if(dirty||saving)event.preventDefault();}} href={labUrl('/control/administration?tab=tables')}>Öppna Administration → Bord</a>{dirty?<p>Spara dina ändringar innan du går vidare.</p>:null}</section>
       {directory !== undefined ? <ControlOperatorDirectory directory={directory}
         onCreated={operator => setListed(current => current.some(item => item.id === operator.id) ? current : [...current, operator])} /> : null}
     </div>

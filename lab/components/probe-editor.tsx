@@ -27,25 +27,25 @@ export function ProbeEditor({policy,onChange,onActivity}:{policy:ProbePolicy;onC
     try{
       const response=await requestJson<Result>('/api/probe',{method:'POST',body:JSON.stringify({caseId,policy,forgotten})});
       setResult(response);
-      onActivity?.({source:'config',stage:'decision',status:'completed',title:'Probe · syntetiskt textprov',owner:'Astrids talroll',
+      onActivity?.({source:'config',stage:'decision',status:'completed',title:'Tal vid inaktivitet · textprov',owner:'Astrids talroll',
         reason:PROBE_REASONS[response.reason]??response.reason,data:{caseId,model:policy.model,choice:response.choice,metrics:response.metrics}});
     }catch(cause){setError(cause instanceof Error?cause.message:'Provet misslyckades.');}
     finally{setBusy(false);}
   }
-  return <section className={styles.panel} aria-label="Probe för Astrid">
-    <div><span className="eyebrow">ASTRID · EGNA TALINITIATIV</span><h1>Probe</h1><p>En kort personlig replik när spelaren är inaktiv och bordet är lugnt. Astrid kan också välja att vara tyst.</p></div>
-    <div className={styles.modes} role="group" aria-label="Probe-läge">{([['off','Av'],['text','Textprov'],['automatic','Automatiskt']] as const).map(([mode,label])=><button type="button" key={mode} aria-pressed={policy.mode===mode} onClick={()=>edit({mode})}>{label}</button>)}</div>
+  return <section className={styles.panel} aria-label="Tal vid inaktivitet för Astrid">
+    <div><span className="eyebrow">ASTRID · EGNA TALINITIATIV</span><h2>Astrids talinitiativ</h2><p>En kort personlig replik när spelaren är inaktiv och bordet är lugnt. Astrid kan också välja att vara tyst.</p></div>
+    <div className={styles.modes} role="group" aria-label="Läge för tal vid inaktivitet">{([['off','Av'],['text','Textprov'],['automatic','Automatiskt · OpenClaw']] as const).map(([mode,label])=><button type="button" key={mode} aria-pressed={policy.mode===mode} onClick={()=>edit({mode})}>{label}</button>)}</div>
     <div className={styles.grid}>
       <label className="field">Inaktivitet före ett initiativ (sekunder)<input type="number" min={1} max={3600} value={policy.inactivityMs/1000} onChange={e=>edit({inactivityMs:Number(e.target.value)*1000})}/></label>
       <label className="field">Minsta paus mellan initiativ (sekunder)<input type="number" min={1} max={86400} value={policy.cooldownMs/1000} onChange={e=>edit({cooldownMs:Number(e.target.value)*1000})}/></label>
-      <label className="field">Modell för Astrids chatt och Probe<select value={policy.model} onChange={e=>edit({model:e.target.value as ProbePolicy['model']})}>{PROBE_MODELS.map(model=><option key={model.id} value={model.id}>{model.label}</option>)}</select><small>Gäller Astrids vanliga chattsvar, Probe och minnesutdrag. Samma val sparas i båda labben.</small></label>
+      <label className="field">AI-modell<select value={policy.model} onChange={e=>edit({model:e.target.value as ProbePolicy['model']})}>{PROBE_MODELS.map(model=><option key={model.id} value={model.id}>{model.label}</option>)}</select><small>Samma modell används för Astrids chatt och talinitiativ.</small></label>
     </div>
-    <div>
+    <details><summary>Snabbinställning och uppspelningshjälp</summary>
       <button type="button" className="text-button" onClick={()=>edit({mode:'automatic',inactivityMs:5000,cooldownMs:15000,probability:1,maxPerHour:12})}>Snabbt inaktivitetsprov</button>
       <p>Väljer Automatiskt, 5 sekunders inaktivitet, 15 sekunders paus, 100 % sannolikhet och högst 12 initiativ per timme. Spara för att använda värdena i spelet. Du kan också välja en egen väntetid, ned till 1 sekund.</p>
       <p>Tiden anger när Astrid får börja förbereda svaret. Att skapa repliken, rösten och talfilmen tar ytterligare tid. Ha spelfliken synlig, ljudet på och Tillåt Astrids egna talinitiativ ikryssat under Minne. Efter ett obesvarat initiativ väntar hon tills du blir aktiv igen; hon kan även välja tystnad om ett lämpligt minne saknas.</p>
-    </div>
-    <details><summary>Fler inställningar</summary><div className={styles.grid}>
+    </details>
+    <details><summary>Avancerat · urval och minne</summary><div className={styles.grid}>
       <label className="field">Sannolikhet per tillfälle (%)<input type="number" min={0} max={100} value={Math.round(policy.probability*100)} onChange={e=>edit({probability:Number(e.target.value)/100})}/></label>
       <label className="field">Högst initiativ per timme<input type="number" min={1} max={12} value={policy.maxPerHour} onChange={e=>edit({maxPerHour:Number(e.target.value)})}/></label>
       <label className="field">Paus för samma anekdot (dagar)<input type="number" min={1} max={30} value={policy.anecdoteCooldownDays} onChange={e=>edit({anecdoteCooldownDays:Number(e.target.value)})}/></label>
@@ -53,7 +53,7 @@ export function ProbeEditor({policy,onChange,onActivity}:{policy:ProbePolicy;onC
       <label className="field">Högst sparade fakta<input type="number" min={1} max={20} value={policy.maxFacts} onChange={e=>edit({maxFacts:Number(e.target.value)})}/></label>
       <label><input type="checkbox" checked={policy.memoryEnabled} onChange={e=>edit({memoryEnabled:e.target.checked})}/> Använd belagda långtidsminnen</label>
     </div><p>Högst ett obesvarat initiativ tills spelaren blir aktiv igen. Korttidsminnet rymmer 30 meddelanden, totalt högst 8 000 tecken.</p><p>Reasoning använder Gatewayns nivå. Installerad version 2026.9.5 stöder modellval per anrop, men saknar HTTP-stöd för att välja reasoning-nivå.</p></details>
-    <div className={styles.trial}><h2>Prova en probe</h2><p>Textprovet använder syntetiska spelare. Det skapar varken röst eller video.</p>
+    <details className={styles.trial}><summary>Prova text och tal</summary><p>Textprovet använder syntetiska spelare. Det skapar varken röst eller video.</p>
       <label className="field">Spelarkontext<select value={caseId} onChange={e=>{setCaseId(e.target.value);setForgotten([]);setResult(null);}}>{fixtures.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
       <button type="button" className="primary-button" disabled={busy||policy.mode==='off'} onClick={()=>void run()}>{busy?'Astrid funderar…':'Prova text'}</button>
       {policy.mode==='off'?<p>Välj Textprov för att prova repliker.</p>:null}
@@ -63,7 +63,7 @@ export function ProbeEditor({policy,onChange,onActivity}:{policy:ProbePolicy;onC
       <p>Spelarens riktiga minnen och ”Glöm” finns under Minne i den anslutna spelfliken.</p>
       {productOrigin?<a className="text-button" href={`${productOrigin}/?dealer=astrid&presentation=local&rehearsal=1&probeCase=${encodeURIComponent(caseId)}&probeModel=${encodeURIComponent(policy.model)}`} target="_blank" rel="noreferrer">Öppna separat talprov i Astrids spelare ↗</a>:<p>Anslut ett lokalt referensspel för att öppna det separata talprovet.</p>}
       <details><summary>Modellbeslut och mätvärden</summary><pre>{JSON.stringify(result??{},null,2)}</pre><p>Ett textbeslut är inget uppspelningskvitto. Talprov kräver ett uttryckligt knapptryck i spelfliken och använder Victoria samt den vanliga läppsynkvägen.</p></details>
-    </div>
-    <p>Spara inställningarna för att ändra spelet. Probe läser senaste sparade version inför varje beslut och avbryter inaktuellt arbete.</p>
+    </details>
+    <p>Spara för att använda inställningarna i spelet. Spelaren behöver också tillåta egna talinitiativ.</p>
   </section>;
 }
