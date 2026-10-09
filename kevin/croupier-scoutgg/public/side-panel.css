@@ -1,0 +1,56 @@
+/* The table's side panel in Table Studio's Scout design (John, 9 Oct): ink panels, lime for what is active,
+   Space Grotesk headings, Figtree text, no champagne/gold here (the felt and chips keep Privé's). Loaded last. */
+.side {
+  --sp-ink: #0b0c0e; --sp-panel: #141517; --sp-raise: #1a1b1e; --sp-line: rgba(255,255,255,.08); --sp-line2: rgba(255,255,255,.14);
+  --sp-text: #f2f1ed; --sp-dim: #a9aaa5; --sp-mute: #7c7d78; --sp-lime: #d4f83a; --sp-lime-hover: #e1ff63;
+  background: var(--sp-ink); border-left-color: var(--sp-line); color: var(--sp-text);
+  font-family: Figtree, system-ui, sans-serif;
+}
+.side .table-company { border-bottom-color: var(--sp-line); }
+.side .table-company h2 { font: 500 11px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .16em; color: var(--sp-lime); }
+.side #copyTableLink { background: transparent; color: var(--sp-text); border: 1px solid var(--sp-line2); border-radius: 30px; padding: 6px 12px; font: 600 12px Figtree, system-ui, sans-serif; }
+.side #copyTableLink:hover { border-color: var(--sp-lime); color: var(--sp-lime); }
+.side .player-tag { background: var(--sp-panel); color: var(--sp-dim); border: 1px solid var(--sp-line); border-radius: 30px; padding: 4px 10px; font: 500 12px Figtree, system-ui, sans-serif; }
+.side .player-tag[data-mine=true] { color: var(--sp-text); border-color: var(--sp-lime); }
+.side .player-tag[data-online=true]::before { background: var(--sp-lime); }
+.side .side-head { border-bottom-color: var(--sp-line); gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+@media (min-width: 821px) { .side .side-head > div { display: contents; } }
+.side .ghost { color: var(--sp-text); background: var(--sp-panel); border: 1px solid var(--sp-line); border-radius: 10px; padding: 8px 12px;
+  font: 600 13px Figtree, system-ui, sans-serif; text-decoration: none; }
+.side .ghost:hover { border-color: var(--sp-line2); background: var(--sp-raise); }
+.side .ghost[aria-expanded="true"] { border-color: var(--sp-lime); color: var(--sp-ink); background: var(--sp-lime); }
+.side .thinking { color: var(--sp-lime); }
+/* Less text: the connection line goes, and the hand log sits folded under the buttons. */
+.side .playback-state { display: none; }
+.side .sidebar-hands { color: var(--sp-mute); font: 500 11px/1.4 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .06em; padding: 8px 16px; margin: 0; }
+.side .sidebar-hands summary { color: var(--sp-dim); }
+.side .sidebar-hands[open] summary { color: var(--sp-lime); }
+.side .msg { background: var(--sp-panel); border: 1px solid var(--sp-line); color: var(--sp-text); }
+.side .msg .name { color: var(--sp-mute); font-family: "JetBrains Mono", ui-monospace, monospace; }
+.side .her { background: var(--sp-raise); border-color: var(--sp-line2); }
+.side .her .name { color: var(--sp-lime); }
+.side .compose { border-top-color: var(--sp-line); }
+.side .compose input { background: var(--sp-panel); border-color: var(--sp-line); color: var(--sp-text); border-radius: 12px; font-family: Figtree, system-ui, sans-serif; }
+.side .compose input:focus { border-color: var(--sp-lime); }
+.side .compose button { background: var(--sp-lime); color: var(--sp-ink); border-radius: 10px; font: 700 14px Figtree, system-ui, sans-serif; }
+.side .compose button:hover { background: var(--sp-lime-hover); }
+@media (max-width: 820px) { .side { background: rgba(11,12,14,.94); } }
+
+/* Phones with the chat open: the five buttons wrapped into three rows (161 px), which left the chat log 12 px
+   and pushed the message field under the screen edge. One compact row that scrolls sideways instead, and the
+   rest of the dock goes to the conversation and the field. */
+@media (max-width: 820px) {
+  .side.chat-open { display: flex; flex-direction: column; }
+  .side.chat-open .side-head { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 12px; scrollbar-width: none; flex: none; }
+  .side.chat-open .side-head::-webkit-scrollbar { display: none; }
+  .side.chat-open .side-head > div { display: contents; }
+  .side.chat-open .side-head .ghost { flex: none; width: auto; padding: 7px 11px; font-size: 12px; white-space: nowrap; }
+  .side.chat-open .sidebar-hands { display: none; }
+  .side.chat-open .log { flex: 1 1 auto; min-height: 36px; max-height: none; }
+  .side.chat-open .compose { flex: none; padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+}
+/* Short phones scroll the page down to the panel (it sits in the flow there): no docked height cap on it. */
+@media (max-width: 820px) and (max-height: 700px) {
+  .side.chat-open { max-height: none !important; }
+  .side.chat-open .log { min-height: 120px; }
+}
