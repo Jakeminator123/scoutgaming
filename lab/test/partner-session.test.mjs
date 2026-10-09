@@ -452,3 +452,113 @@ for (const schemaVersion of [1,2]) test('partner tables use actual room ownershi
     config:{...config,readAdministration:async()=>{throw Object.assign(Error('unavailable'),{statusCode:503});}}}),
     error=>error.statusCode===503);
 });
+
+
+import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
+import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
+import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
+import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
+
+async function nativeBrandingFixture() {
+  const base=createStudioMemoryPool(),trace=[];
+  const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
+  const lane={...defaultPresentationLane(),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
+  lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
+  const presentation={schemaVersion:2,projectRevision:'frozen-native',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna fryst',idle:null},{id:'nora',label:'Nora fryst',idle:null}]};
+  let state={operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
+    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
+    memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
+    packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
+  let beforeWrite=null,clientSequence=0;
+  const copy=value=>structuredClone(value);
+  const result=(rows=[],command='SELECT')=>({rows:copy(rows),command});
+  function operatorQuery(sql,values,source) {
+    const tag=/operator-store:([a-z-]+)/.exec(sql)?.[1];
+    const rows=key=>source[key].filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]);
+    if(tag==='operator-by-slug')return result(rows('operators').filter(row=>row.slug===values[2]));
+    if(tag==='operator-by-id'||tag==='lock-operator')return result(rows('operators').filter(row=>row.operator_id===values[2]));
+    if(tag==='get-role')return result(rows('roles').filter(row=>row.operator_id===values[2]&&row.role_id===values[3]));
+    if(tag==='get-membership')return result(rows('memberships').filter(row=>row.operator_id===values[2]&&row.user_id===values[3]));
+    if(tag==='current-package')return result(rows('packages').filter(row=>row.operator_id===values[2]).sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
+    if(tag==='publish-package') {
+      const revision=Math.max(0,...rows('packages').filter(row=>row.operator_id===values[2]).map(row=>row.package_revision))+1;
+      const row=scoped({operator_id:values[2],package_revision:revision,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]});
+      source.packages.push(row);return result([row],'INSERT');
+    }
+    throw Error('unsupported native operator fixture query '+tag);
+  }
+  const pool={trace,base,snapshot:()=>copy(state),
+    async query(sql,values=[]) {trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
+    async connect() {
+      const client=await base.connect(),id=++clientSequence;let working,readonly;
+      return {release:()=>client.release(),async query(sql,values=[]) {
+        const tag=/operator-store:([a-z-]+)/.exec(sql)?.[1]??/studio:([a-z-]+)/.exec(sql)?.[1]??sql.split(/\s/)[0];
+        trace.push({client:id,tag,sql,values:copy(values)});
+        if(sql.startsWith('BEGIN')) {readonly=sql.includes('READ ONLY');if(!readonly&&beforeWrite){const change=beforeWrite;beforeWrite=null;change();}working=copy(state);}
+        if(sql.includes('operator-store:'))return operatorQuery(sql,values,working);
+        const response=await client.query(sql,values);
+        if(sql==='COMMIT'&&!readonly&&response.command!=='ROLLBACK')state=working;
+        if(sql==='COMMIT'||sql==='ROLLBACK')working=null;
+        return response;
+      }};
+    },
+  };
+  const repository=createStudioRepository({pool,scope});
+  const administration={rooms:[{schemaVersion:2,id:'room-native',name:'Johannas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-johanna',state:'live'}],
+    gameLane:'portrait-johanna',gameLanes:[{schemaVersion:1,id:'portrait-johanna',label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],
+    tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
+  await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
+  const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project')};
+  const login=await handlePartnerAuth(loginRequest('north-partner',secret),nativeConfig),cookie='partner_session='+tokenOf(login);
+  const get=()=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
+  const post=(dealer='johanna',expectedRevision=1)=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
+    method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
+    body:JSON.stringify({expectedRevision,branding:{lane:lane.id,dealer}})}),nativeConfig);
+  trace.length=0;
+  return {pool,repository,presentation,administration,get,post,changeBeforeWrite:change=>{beforeWrite=change;},
+    revoke:()=>{state.memberships[0].status='suspended';},
+    changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
+}
+
+test('native N2 saves on one scoped client and frozen dealer choice reaches the actual room',async()=>{
+  const f=await nativeBrandingFixture(),read=await f.get();assert.equal(read.status,200,JSON.stringify(f.pool.trace.map(row=>row.tag)));
+  assert.deepEqual((await read.json()).dealerChoices,{'johanna-published':['johanna']});
+  f.pool.trace.length=0;
+  const response=await f.post();assert.equal(response.status,200);const saved=await response.json();
+  assert.equal(saved.packageRevision,2);assert.equal(saved.branding.dealer,'johanna');
+  const write=f.pool.trace.find(row=>row.tag==='publish-package'),locked=f.pool.trace.filter(row=>row.client===write.client);
+  assert.equal(locked.filter(row=>row.sql?.startsWith('BEGIN')).length,1,'no nested BEGIN');
+  for(const tag of ['lock-operator','get-membership','get-role','read-document','current-package','publish-package'])assert.ok(locked.some(row=>row.tag===tag),tag+' on same client');
+  assert.equal(locked.at(-1).tag,'COMMIT');
+  const store=await createOperatorStore({sql:f.pool,scope,now:()=>now}),pack=await store.getCurrentPackage(northId);
+  const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:{lanes:[],dealers:[]},administration:f.administration})},
+    packages:{resolve:async()=>({operator:{id:northId,status:'active'},package:pack})}});
+  const {selection}=await select('operator=demo-north&table=room-native');
+  const actual=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
+  assert.equal(actual.dealer,'johanna');assert.equal(selection.roomId,'room-native');assert.equal(selection.packageRevision,2);
+  assert.deepEqual(selection.composition.settings,f.presentation.lanes[0].composition);
+});
+test('native N2 never saves Nora while the published portrait room renders Johanna',async()=>{
+  const f=await nativeBrandingFixture(),before=f.pool.snapshot();
+  assert.equal((await f.post('nora')).status,409);assert.deepEqual(f.pool.snapshot(),before);
+  assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
+});
+test('native stale administration during save returns 409 and rolls back on the real repository',async()=>{
+  const f=await nativeBrandingFixture();f.changeBeforeWrite(f.changeAdmin);
+  assert.equal((await f.post()).status,409);assert.equal(f.pool.snapshot().packages.length,1);
+  assert.ok(f.pool.trace.some(row=>row.tag==='ROLLBACK'));assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
+});
+test('native membership revoked after preflight returns 403 and rolls back before publish',async()=>{
+  const f=await nativeBrandingFixture();f.changeBeforeWrite(f.revoke);
+  assert.equal((await f.post()).status,403);assert.equal(f.pool.snapshot().packages.length,1);
+  assert.ok(f.pool.trace.some(row=>row.tag==='ROLLBACK'));assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
+});
+test('native package publish failure rolls back and retry preserves the original frozen envelope',async()=>{
+  const f=await nativeBrandingFixture(),before=f.pool.snapshot();f.changeBeforeWrite(()=>{f.pool.base.commitRollback=true;});
+  const failed=await f.post();assert.equal(failed.status,503);assert.deepEqual(f.pool.snapshot(),before);assert.ok(f.pool.trace.some(row=>row.tag==='publish-package'),'failure follows actual publish, before commit');
+  assert.equal((await f.post()).status,200);assert.equal(f.pool.snapshot().packages.length,2);
+  assert.deepEqual(JSON.parse(f.pool.snapshot().packages[1].branding)._scoutPresentation,JSON.parse(before.packages[0].branding)._scoutPresentation);
+});

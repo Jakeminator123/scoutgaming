@@ -35,7 +35,7 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Media asset / registry | Mediafil / mediaregister | Filens bytes respektive ID, metadata och filreferens. |
 | Display name / clipLabels | Visningsnamn | Klippets läsbara namn, skilt från filnamn och ID. |
 | Event clip | Händelseklipp | Klipp för en situation, exempelvis utdelning eller replik. |
-| Idle loop / base clip / variant | Grundloop / basklipp / variation | Idle-vänteläget, dess lugna huvudklipp respektive kort avbrott som en huvudrörelse. En grundloop kan ha flera sparade basklipp. |
+| Idle / base clip / idle variant | Grundloop / basklipp / variation | Grundloop och idle är samma vänteläge. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott. Astrids avancerade policy kan ha flera basklipp; en egen dealer publiceras med ett fryst basklipp. |
 | Clip set | Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
 | Default / variant | Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
 | Event group / situation | Händelsekategori / situation | Redigeringsgrupp respektive sammanhang: plats, utfall eller exakt replik. |
@@ -52,7 +52,7 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | reveal | Visa dealerns dolda kort | Eget moment efter utdelningen. |
 | handIndex / card | Hand / kortnummer | Exakta värden följer spelhändelsen; ändras inte vid namnbyte. |
 | Preview clip | Förhandsvisa klipp | Lokalt provval; publicerar eller binder inget runtimeklipp. |
-| Composition | Sammansättning | Redigering av dealer, bord och bakgrund i en presentation. |
+| Composition | Sammansättning | Nivå 1:s gemensamma redigering av dealer, bord, bakgrund samt storlek och placering per format. Geometrin fryses vid publicering; nivå 2 väljer tillåtna, kompatibla alternativ. |
 | Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
 | Room / table | Spelrum / spelbord | Bolagsägd spelresurs som kopplar fryst presentation till en verklig spellane. De två lane-ID:na behöver inte vara lika. |
 | Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |
@@ -125,7 +125,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 |---|---|---|
 | Innehåll | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
-| Sammansättning | `/control/preview` | Dealer, bord och bakgrund; spela upp, placera och spara som lane. |
+| Sammansättning | `/control/preview` | Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, spela och spara presentationen. |
 | Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. Avancerade paket- och spellaneval är utfällbara. |
 | Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
 | Tal vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |

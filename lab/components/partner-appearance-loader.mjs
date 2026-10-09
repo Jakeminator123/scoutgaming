@@ -9,7 +9,7 @@ export function brandingApiBase(apiBase) {
 
 // Plain .mjs with createElement so Kevin's portal test can require it from Node.
 // The panel itself (tsx) is loaded only in the browser, after the first read.
-export function PartnerAppearanceLoader({ apiBase, operatorSlug, section = 'all' }) {
+export function PartnerAppearanceLoader({ apiBase, operatorSlug, section = 'all', onSaved }) {
   const [state, setState] = React.useState({ status: 'loading' });
   const base = brandingApiBase(apiBase);
   React.useEffect(() => {
@@ -47,5 +47,8 @@ export function PartnerAppearanceLoader({ apiBase, operatorSlug, section = 'all'
   }
   return React.createElement('section', { className: 'kevin-appearance', 'aria-label': 'Utseende inom lanen' },
     React.createElement('h3', null, 'Utseende inom lanen'),
-    React.createElement(state.Panel, { initial: state.initial, apiBase: base, operatorSlug, section }));
+    React.createElement(state.Panel, { initial: state.initial, apiBase: base, operatorSlug, section, onSaved:saved=>{
+      setState(current=>current.status==='ready'&&current.initial.operatorId===saved.operatorId?{...current,initial:saved}:current);
+      onSaved?.(saved);
+    } }));
 }

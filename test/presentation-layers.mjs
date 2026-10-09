@@ -4,7 +4,7 @@ import {addDealer,createSeedProject,defaultPresentationLane,validateProject} fro
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../web/storage/presentation-package.mjs';
-import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
+import {createPartnerBrandingApi as createApi} from '../lab/lib/partner-branding-api.mjs';
 import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
@@ -73,7 +73,7 @@ test('switching or republishing a lane removes incompatible old design choices w
   second.layers.table={enabled:true,default:null,allowed:[],colors:['#654321']};
   second.operatorAdjustable=['dealer'];
   const expanded={...presentation,lanes:[...presentation.lanes,second]};
-  let current={...pack,lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
+  let current={...pack,tables:['room-main','room-vip'],lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
   const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})},readProject:async()=>{throw Error('not the mutable project');}});
   await assert.rejects(api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding:{lane:'vip-table',background:presentation.assets[0].id}}),error=>error.statusCode===422);
   const result=await api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding:{lane:'vip-table',dealer:'astrid'}});
@@ -119,3 +119,12 @@ test('opaque dealer footage preserves its pixels; hiding it exposes only the cho
   composition.replace(descriptor);
   assert.equal(mounted.size,0,'turning the dealer back on removes independent planes');
 });
+
+function createPartnerBrandingApi(options) {
+  const readAdministration=async()=>{
+    const pack=await options.store.getCurrentPackage('north');
+    return {revision:'admin-fixture',value:{gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId:'north',gameLaneId:'mobile-phone',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
+  };
+  return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
+}

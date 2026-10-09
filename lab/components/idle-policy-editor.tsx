@@ -151,7 +151,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
         probe.onerror = () => reject(new Error('Videons längd kunde inte läsas.'));
         probe.src = video.previewUrl;
       });
-      if (!Number.isInteger(durationMs) || durationMs < 200 || durationMs > 60000) throw new Error('Idleklippet måste vara mellan 0,2 och 60 sekunder.');
+      if (!Number.isInteger(durationMs) || durationMs < 200 || durationMs > 60000) throw new Error('Klippet måste vara mellan 0,2 och 60 sekunder.');
       onChange({ ...policy, variants: [...policy.variants, { videoId, durationMs, use: 'manual', automatic: null, description: '' }] });
     } catch (error) { setImportError(error instanceof Error ? error.message : 'Kunde inte läsa videon.'); }
     finally { probe.removeAttribute('src'); probe.load(); }
@@ -197,7 +197,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
       <details className={styles.help}><summary>Om automatiken</summary><p>Automatik följer ditt intervall. Manuell betyder att klippet bara startas med Spela. OpenClaw väljer utifrån nya chattmeddelanden, högst en reaktion per minut. Tal och spelhandlingar går före.</p><p>Mediekälla: <code>idle/variant/</code>.</p></details>
     </section>
 
-    <section className={styles.player} aria-label="Idleklippspelare">
+    <section className={styles.player} aria-label="Spelare för grundloop">
       <div><strong title={shown(previewId).title}>{shown(previewId).text}</strong></div>
       {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
@@ -209,9 +209,9 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
       <div className={styles.previewControls}><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => stop()}>Stoppa</button></div>
       <details className={styles.help}><summary>Avancerat · uppspelningsplan</summary><p>Förhandsvisningen styr inte spelet. Samma slumpfrö ger samma planerade förlopp.</p>
         <div className={styles.previewControls}><label>Slumpfrö<input type="number" min={0} max={4294967295} value={seed} onChange={event => { stop('Slumpfrö ändrades'); setSeed(Math.max(0, Number(event.target.value))); }} /></label><button type="button" className="text-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj plan' : 'Visa plan'}</button></div>
-        {showPlan ? <><div className={styles.timeline} aria-label="Förhandsvisning av idleförlopp">{plan.map((segment, index) => <span key={`${segment.startMs}-${index}`} className={segment.kind === 'variant' ? styles.variantSegment : styles.baseSegment} style={{ width: `${(segment.endMs - segment.startMs) / 600}%` }} title={`${Math.round(segment.startMs / 100) / 10}s · ${shown(segment.videoId).text}`} />)}</div><ol className={styles.log}>{events.length ? events.map((entry, index) => <li key={`${entry.at}-${entry.label}-${index}`}><time>{(entry.at / 1000).toFixed(1)} s</time><code>{entry.label}</code><span title={shown(entry.videoId).title}>{shown(entry.videoId).text}</span></li>) : <li>Inga automatiska variationer under minuten.</li>}</ol></> : null}
+        {showPlan ? <><div className={styles.timeline} aria-label="Förhandsvisning av grundloop">{plan.map((segment, index) => <span key={`${segment.startMs}-${index}`} className={segment.kind === 'variant' ? styles.variantSegment : styles.baseSegment} style={{ width: `${(segment.endMs - segment.startMs) / 600}%` }} title={`${Math.round(segment.startMs / 100) / 10}s · ${shown(segment.videoId).text}`} />)}</div><ol className={styles.log}>{events.length ? events.map((entry, index) => <li key={`${entry.at}-${entry.label}-${index}`}><time>{(entry.at / 1000).toFixed(1)} s</time><code>{entry.label}</code><span title={shown(entry.videoId).title}>{shown(entry.videoId).text}</span></li>) : <li>Inga automatiska variationer under minuten.</li>}</ol></> : null}
       </details>
-      {actualLog.length ? <details className={styles.help}><summary>Uppspelningslogg</summary><ol className={`${styles.log} ${styles.actualLog}`} aria-label="Faktisk idleuppspelning">{actualLog.map((entry, index) => <li key={index}>{entry}</li>)}</ol></details> : null}
+      {actualLog.length ? <details className={styles.help}><summary>Uppspelningslogg</summary><ol className={`${styles.log} ${styles.actualLog}`} aria-label="Faktisk uppspelning av grundloop">{actualLog.map((entry, index) => <li key={index}>{entry}</li>)}</ol></details> : null}
     </section>
   </div>;
 }

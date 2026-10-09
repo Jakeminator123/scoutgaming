@@ -179,3 +179,32 @@ test('real partner presentation destinations use assigned packages instead of lo
   assert.match(fixtureHtml,/Intern förhandsvisning/);
   assert.match(fixtureHtml,/ingen publicerad presentationslane|Ingen publicerad presentationslane/);
 });
+
+
+import {defaultPresentationLane} from '../../lib/studio-model.mjs';
+test('verified own-operator saved receipt updates the real package view without replacing team, rooms or fixture design state',()=>{
+  const output={exports:{}},slots=[];let cursor=0;
+  const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},
+    useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},useMemo:work=>work(),useCallback:work=>work,useEffect:()=>{}};
+  new Function('require','module','exports',portalCode)(name=>{
+    if(name==='react')return hooks;
+    if(name.endsWith('.css'))return {};
+    if(name==='./assets.mjs')return {assetUrl:()=>undefined};
+    if(name==='./original-views.jsx')return {createOriginalViews};
+    return (name.startsWith('.')?portalRequire:require)(name);
+  },output,output.exports);
+  const snapshot={...realSnapshot(),packageRevision:'7',operator:{...realSnapshot().operator,packageRevision:'7'},
+    team:[{id:'staff',operatorId:'op-1'}],tables:[{id:'room-owned',operatorId:'op-1'}]};
+  const props={surface:'partner',initialSnapshot:snapshot,apiBase:'/studio/api/partner/snapshot',user:'test',initialView:'dealers'};
+  const session=output.exports.KevinBackoffice(props).type;
+  const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
+  const view=()=>{cursor=0;return walk(session(props)).find(node=>node.type?.name==='PreviewView');};
+  const before=view().props.runtime.snapshot;
+  const lane=defaultPresentationLane();lane.dealers=['astrid','vera'];lane.layers.dealer.allowed=['astrid','vera'];
+  const receipt={operatorId:'op-1',packageRevision:8,branding:{lane:lane.id,dealer:'vera'},presentation:{schemaVersion:1,projectRevision:'frozen-r1',lanes:[lane],assets:[]}};
+  view().props.onAppearanceSaved({...receipt,operatorId:'other'});assert.deepEqual(view().props.runtime.snapshot,before);
+  view().props.onAppearanceSaved(receipt);const after=view().props.runtime.snapshot;
+  assert.equal(after.packageRevision,'8');assert.equal(after.operator.packageRevision,'8');assert.equal(after.presentations[0].dealer,'vera');
+  assert.deepEqual(after.team,before.team);assert.deepEqual(after.tables,before.tables);assert.deepEqual(after.operators,before.operators);
+  view().props.onAppearanceSaved({...receipt,packageRevision:7,branding:{dealer:'astrid'}});assert.deepEqual(view().props.runtime.snapshot,after);
+});

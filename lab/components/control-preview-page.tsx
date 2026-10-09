@@ -91,9 +91,9 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function placementControls(role:Role){
     const placement=settings[layout][role],size=role==='table'?'width':'scale',values=placement as unknown as Record<string,number>;
-    return <fieldset key={role} disabled={saving}><legend>{labels[role]} · placering</legend>{([size,'x','y'] as const).map(key=><label className="field" key={key}>
-      {key==='scale'?'Skala':key==='width'?'Bredd':key==='x'?'Sidled':'Höjd'} · {values[key].toFixed(2)}
-      <input type="range" aria-label={`${labels[role]} ${key==='scale'?'skala':key==='width'?'bredd':key==='x'?'sidled':'höjd'}`} min={key==='scale'||key==='width'?0.1:-2} max={key==='scale'||key==='width'?4:2} step="0.01" value={values[key]} onChange={event=>setPlacement(role,key,Number(event.target.value))}/>
+    return <fieldset className={styles.placementControls} key={role} disabled={saving}><legend>{labels[role]}</legend>{([size,'x','y'] as const).map(key=><label className="field" key={key}>
+      {key==='scale'?'Storlek':key==='width'?'Bredd':key==='x'?'Sidled':'Upp/ned'} · {key==='scale'||key==='width'?Math.round(values[key]*100)+' %':values[key].toFixed(2)}
+      <input type="range" aria-label={`${labels[role]} ${key==='scale'?'storlek':key==='width'?'bredd':key==='x'?'sidled':'upp/ned'}`} min={key==='scale'||key==='width'?0.1:-2} max={key==='scale'||key==='width'?4:2} step="0.01" value={values[key]} onChange={event=>setPlacement(role,key,Number(event.target.value))}/>
     </label>)}</fieldset>;
   }
   function layerPanel(role:'table'|'background'){
@@ -115,12 +115,11 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <div className={styles.toolbar}>
         <label className="field">Presentation<select value={lane.id} disabled={saving||uploading} onChange={event=>{setLaneId(event.target.value);setClipId('');const url=new URL(window.location.href);url.searchParams.set('lane',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-        <div className={styles.formats}><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div>
+        <div className={styles.formats} role="group" aria-label="Format"><span>Format</span><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div>
       </div>
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
-          <label className="field">Förhandsvisa klipp<select value={clip?.id??''} disabled={!clips.length||saving||uploading} onChange={event=>{clearRole('dealer');setClipId(event.target.value);}}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{clipName(row)}</option>)}</select></label>
-          {fullFrame?<p>Fullbild</p>:null}
+          {fullFrame?<p>Inbakat bord och bakgrund · välj frilagt klipp för separata lager.</p>:null}
           {temporary?<p role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing}/>
           {localError?<p role="alert">{localError}</p>:null}
@@ -128,15 +127,15 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         <section className={styles.controls} aria-label="Tre lager">
           <section className={styles.layer}>
             <label className="field">Dealer<select value={lane.layers.dealer.default} disabled={saving||uploading} onChange={event=>{const next=structuredClone(lane),id=event.target.value;next.layers.dealer.default=id;if(!next.dealers.includes(id))next.dealers.push(id);if(!next.layers.dealer.allowed.includes(id))next.layers.dealer.allowed.push(id);clearRole('dealer');edit(next);setClipId('');}}>{project.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+            <label className="field">Förhandsvisa klipp<select value={clip?.id??''} disabled={!clips.length||saving||uploading} onChange={event=>{clearRole('dealer');setClipId(event.target.value);}}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{clipName(row)}</option>)}</select></label>
             <details><summary>Ladda upp dealerklipp</summary>{ownFamilies?<FamilyVideoUpload key={lane.layers.dealer.default} project={project} inventory={videos} disabled={saving||uploading||conflict} dealerId={lane.layers.dealer.default} initialFamilyId={initialFamilyId} onBusyChange={busy=>markUpload('dealer',busy)} onUploaded={(next,id)=>{setVideos(next);if(id)setClipId(id);clearRole('dealer');}}/>:<VideoUpload key={lane.layers.dealer.default} project={project} dealerId={lane.layers.dealer.default} eventId={uploadEventId} initialSituation={clip?.classification?.situation} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload('dealer',busy)} lockDealer previewOnly open onUploaded={(next,video)=>{setVideos(next);setClipId(video.id);clearRole('dealer');}}/>}</details>
-            <a href={contentHref} onClick={event=>{event.preventDefault();void continueTo(contentHref);}}>Dealer och innehåll →</a>
+            <a href={contentHref} onClick={event=>{event.preventDefault();void continueTo(contentHref);}}>Grundloop och klipp →</a>
           </section>
-          {!fullFrame?(['table','background'] as const).map(layerPanel):null}
-          <details className={styles.layer}><summary>Placering · {layout==='mobile'?'Mobil':'Desktop'}</summary>{(fullFrame?(['dealer'] as Role[]):roles).map(placementControls)}<button className="sg-btn sg-btn-secondary" disabled={saving} onClick={()=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),[layout]:defaultCompositionSettings()[layout]};edit(next);}}>Återställ placering</button></details>
+          {(['table','background'] as const).map(layerPanel)}
+          <details className={styles.layer+' '+styles.placement} open><summary>Storlek och placering · {layout==='mobile'?'Mobil 9:16':'Desktop 16:9'}</summary>{(fullFrame?(['dealer'] as Role[]):roles).map(placementControls)}<button className="sg-btn sg-btn-secondary" disabled={saving} onClick={()=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),[layout]:defaultCompositionSettings()[layout]};edit(next);}}>Återställ placering</button></details>
         </section>
       </div>
       <details className={styles.advanced}><summary>Avancerat</summary><div>
-        {fullFrame?<details><summary>Bord och bakgrund för greenscreen</summary>{(['table','background'] as const).map(layerPanel)}</details>:null}
         <fieldset disabled={saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbildsklippet behåller sin bild.</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>

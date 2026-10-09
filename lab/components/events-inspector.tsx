@@ -115,7 +115,7 @@ export function EventsInspector({
   if (managed) {
     return <div>
       <div className="inspector-tabs" role="tablist" aria-label="Redigera event">
-        <button type="button" role="tab" aria-selected={editorTab !== 'triggers'} onClick={() => onTab('variants')}>{isIdleEditor ? 'Vänteläge' : 'Standard och varianter'}</button>
+        <button type="button" role="tab" aria-selected={editorTab !== 'triggers'} onClick={() => onTab('variants')}>{isIdleEditor ? 'Grundloop' : 'Standard och varianter'}</button>
         <button type="button" role="tab" aria-selected={editorTab === 'triggers'} onClick={() => onTab('triggers')}>Villkor</button>
       </div>
       {editorTab === 'triggers' ? <aside className="inspector">

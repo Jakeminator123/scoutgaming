@@ -30,12 +30,12 @@
       "kind": "reaction"
     },
     "idle": {
-      "label": "Vänteläge",
+      "label": "Grundloop",
       "kind": "idle"
     }
   },
   "videoKinds": {
-    "idle": "Idle / vänteläge",
+    "idle": "Grundloop",
     "action": "Action / korthandling",
     "speech": "Tal / exakt replik",
     "reaction": "Reaktion / tur / resultat"
@@ -51,7 +51,7 @@
     "default": "once",
     "loop": {
       "status": "proposed",
-      "description": "Inte aktiverat i labbspelaren. Kräver separat loop- och avbrottsgranskning."
+      "description": "Godtycklig loopning är inte aktiverad i den generella klippspelaren. Grundloopens särskilda uppspelning och egen dealers publicerade basklipp har separata loop- och avbrottskontrakt."
     }
   },
   "selection": {
@@ -200,6 +200,11 @@
       "id": "access-level",
       "label": "Åtkomstnivå",
       "definition": "Nivå 1 intern Kontrollpanel, nivå 2 operatörens Partnerportal, nivå 3 Spelaryta. Servern avgör konto, medlemskap och resursrättighet; adress och menyval ger aldrig åtkomst."
+    },
+    {
+      "id": "idle",
+      "label": "Grundloop",
+      "definition": "Vänteläget som tekniskt heter idle. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott där urvals- och uppspelningsstöd finns. Grundloop och idle är inte två separata inställningar."
     }
   ],
   "events": [

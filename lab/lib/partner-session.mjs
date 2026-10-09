@@ -4,7 +4,9 @@ import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
 import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
@@ -366,10 +368,44 @@ async function brandingResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);
   const { session, store, operator } = found;
   const { createPartnerBrandingApi } = await import('./partner-branding-api.mjs');
-  const api = createPartnerBrandingApi({
-    store,
-    readProject: typeof config.readProject === 'function' ? config.readProject : defaultReadProject,
-  });
+  const repository=config.store?null:createStudioRepository({pool:config.pool,scope:config.scope});
+  const readAdministration=async()=>{
+    if(typeof config.readAdministration==='function') {
+      const value=await config.readAdministration();
+      if(value?.value&&typeof value.revision==='string')return value;
+      return {value,revision:createHash('sha256').update(JSON.stringify(value)).digest('hex')};
+    }
+    if(!repository)fail(503);
+    return repository.readDocument('administration');
+  };
+  const reauthorize=async source=>{
+    const current=await partnerOperatorContext(prepared,{...config,store:source});
+    const decided=await decidedPartnerContext(current);
+    if(current.operator.id!==operator.id||current.session.accountId!==session.accountId
+      ||!sameOperatorScope(decided.scope,session.scope))fail(403);
+    return allowsPartnerResource(decided,'presentations.configure',{scope:session.scope,operatorId:operator.id});
+  };
+  const withWriteContext=async work=>{
+    if(config.store)return work({store,readAdministration,reauthorize:()=>reauthorize(store)});
+    return repository.transaction(()=>repository.withTransactionClient(async client=>{
+      try {
+      // Same order as other Studio writers: scope lock, then operator row lock.
+      // Membership/role mutations take this row lock too, before changing grants.
+      const locked=await client.query(
+        '/* operator-store:lock-operator */ SELECT operator_id FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE',
+        [config.scope.environment,config.scope.workspaceId,operator.id]);
+      if(!locked.rows.length)fail(404);
+      const source=await createOperatorStore({sql:client,scope:config.scope,now:config.now,
+        transaction:callback=>repository.withTransactionClient(callback)});
+      return await work({store:source,readAdministration,reauthorize:()=>reauthorize(source)});
+      } catch(error) {
+        if(Number.isInteger(error?.statusCode))throw new StudioStorageError('partner_request_rejected',error.statusCode);
+        throw error;
+      }
+    }));
+  };
+  const api = createPartnerBrandingApi({store,readAdministration,withWriteContext,
+    readProject:typeof config.readProject==='function'?config.readProject:defaultReadProject});
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
   const canConfigure = allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id });

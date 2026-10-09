@@ -92,14 +92,12 @@ export function EventsIdleNotice({ refreshing, onRefresh }: { refreshing: boolea
   return <>
     <div className="event-heading">
       <div>
-        <span className="eyebrow">VÄNTELÄGE</span>
-        <h2>Idle · basloop och variationer</h2>
-        <p>Basloop och korta variationer redigeras och provas i Dealers &amp; klipp.</p>
+        <h2>Grundloop</h2>
       </div>
       <button type="button" className="text-button" disabled={refreshing} onClick={onRefresh}>{refreshing ? 'Läser…' : 'Läs in nya filer'}</button>
     </div>
     <p className={styles.idleLink}>
-      <a className="text-button" href={labUrl('/control/clips#idle')}>Redigera idle i Dealers & klipp →</a>
+      <a className="text-button" href={labUrl('/control/clips#idle')}>Grundloop och klipp →</a>
     </p>
   </>;
 }
@@ -260,7 +258,7 @@ export function EventsPreview({
           </div>
           <button className="text-button" type="button" onClick={onShowChat}>Visa chatten ↓</button>
         </> : isIdleCopy
-          ? <span>Idle redigeras och provas i Dealers &amp; klipp. Ett socialt svar här är ett separat labbsvar.</span>
+          ? <span>Grundloop redigeras i Innehåll. Sociala svar provas separat.</span>
           : <span><strong>Spela valt klipp</strong> visar ditt material direkt. <strong>Testa event</strong> {frequencyHint}</span>}
       </div>
     </div>

@@ -6,6 +6,8 @@ export interface PartnerBrandingView {
   lanes: string[];
   branding: Record<string, unknown>;
   adjustable: string[];
+  presentation?: import('../../web/presentation-layers.mjs').PresentationPackage;
+  dealerChoices?: Record<string,string[]>;
 }
 
 export interface PartnerPackageRecord {
@@ -24,6 +26,7 @@ export function createPartnerBrandingApi(options: {
     getCurrentPackage(operatorId: string): Promise<PartnerPackageRecord | null>;
     publishPackage(input: {
       actor: string;
+      expectedRevision: number;
       operatorId: string;
       lanes: readonly string[];
       games: readonly string[];
@@ -32,6 +35,12 @@ export function createPartnerBrandingApi(options: {
     }): Promise<PartnerPackageRecord>;
   };
   readProject(): Promise<unknown>;
+  readAdministration():Promise<{revision:string;value:unknown}>;
+  withWriteContext<T>(work:(context:{
+    store:Parameters<typeof createPartnerBrandingApi>[0]['store'];
+    readAdministration():Promise<{revision:string;value:unknown}>;
+    reauthorize():Promise<boolean>;
+  })=>Promise<T>):Promise<T>;
 }): {
   read(input: { operatorId: string }): Promise<PartnerBrandingView>;
   write(input: {

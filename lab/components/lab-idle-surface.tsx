@@ -26,7 +26,7 @@ export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, sta
         if (kind === 'base' && standardBase) callback.current.onReady(true);
       });
     };
-    const fail = () => { if (!live || terminal) return; terminal = true; callback.current.onReady(false); emit('failed', 'Idleklippet kunde inte spelas.'); };
+    const fail = () => { if (!live || terminal) return; terminal = true; callback.current.onReady(false); emit('failed', 'Grundloopens klipp kunde inte spelas.'); };
     const ended = () => { if (!live || terminal || repeat || !started || !element.ended) return; terminal = true; callback.current.onReady(false); emit('completed'); };
     callback.current.onReady(false);
     element.addEventListener('playing', start); element.addEventListener('ended', ended); element.addEventListener('error', fail);

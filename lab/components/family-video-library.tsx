@@ -17,7 +17,7 @@ export function FamilyNavigation({ inventory, project, dealerId, selectedFamilyI
   const families = (inventory.families ?? []).filter(family => family.dealerId === dealerId
     && `${mediaFamilyFolder(family)} ${familyLabel(family)}`.toLowerCase().includes(filter.trim().toLowerCase()));
   return <div className="event-tree" aria-label="Videomappar och spelsignaler"><div className="tree-title"><span>VIDEOMAPPAR</span><span>{families.length}</span></div>
-    {([['deal', 'Kort till plats'], ['speak', 'Exakt replik'], ['idle', 'Vänteläge']] as const).map(([type, title]) => <div className="event-group" key={type}><div className="event-group-title">{title}</div>
+    {([['deal', 'Kort till plats'], ['speak', 'Exakt replik'], ['idle', 'Grundloop']] as const).map(([type, title]) => <div className="event-group" key={type}><div className="event-group-title">{title}</div>
       {families.filter(family => matchesGroup(family.eventId, type)).map(family => <button type="button" key={family.id} className={`event-node ${family.id === selectedFamilyId ? 'active' : ''}`} aria-pressed={family.id === selectedFamilyId} onClick={() => onOpen(family.eventId, family.situation)}><i /><span className="event-node-label">{familyLabel(family)}<small>{mediaFamilyFolder(family)} · {family.variantIds.length} varianter</small></span></button>)}
     </div>)}
     <details><summary>Övriga spelsignaler</summary>{project.events.filter(event => ['turn', 'settle', 'reveal'].includes(event.sourceType) && !familiesFor(inventory, dealerId).some(family => family.eventId === event.id) && event.label.toLowerCase().includes(filter.toLowerCase())).map(event => <button type="button" className={`event-node ${event.id === eventId ? 'active' : ''}`} key={event.id} onClick={() => onOpen(event.id, '')}>{event.label}</button>)}</details>
@@ -29,7 +29,7 @@ export function FamilyOverview({ inventory, project, dealerId, onOpen, hrefFor }
   onOpen?: (eventId: string, situation: string) => void;
   hrefFor?: (eventId: string, situation: string) => string;
 }) {
-  const groups = [['deal', 'Kort till rätt plats'], ['speak', 'Exakta repliker'], ['idle', 'Vänteläge']] as const;
+  const groups = [['deal', 'Kort till rätt plats'], ['speak', 'Exakta repliker'], ['idle', 'Grundloop']] as const;
   return <section aria-label="Händelser och videomappar"><p className="helper">Välj en destination eller replik för att spela dess standardklipp och se varianterna som faktiskt finns.</p>
     {groups.map(([type, title]) => <section key={type} className={styles.situation}><h2>{title}</h2><div className={styles.overviewGrid}>{(inventory.families ?? []).filter(family => family.dealerId === dealerId && matchesGroup(family.eventId, type)).map(family => {
       const href = hrefFor?.(family.eventId, family.situation);

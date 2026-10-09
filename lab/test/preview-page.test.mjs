@@ -8,6 +8,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {createSeedProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -135,16 +137,23 @@ test('unsaved composition invokes guarded save before the next-step navigation',
 });
 
 function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]}}={}) {
-  const project=initialProject??createSeedProject(),state=[],refs=[],effects=[];let stateIndex=0,refIndex=0,saves=0;
+  const project=initialProject??createSeedProject(),state=[],refs=[],effects=[],savedProjects=[];let stateIndex=0,refIndex=0,saves=0;
   const session={project,projectRef:{current:project},videos:inventory,setVideos:value=>{session.videos=value;},savedJson:JSON.stringify(project),dirty,saving:false,conflict,
-    save:async()=>{saves++;if(saveResult)session.dirty=false;return saveResult;},
+    save:async()=>{saves++;savedProjects.push(structuredClone(session.projectRef.current));if(saveResult)session.dirty=false;return saveResult;},
+    modelEdit:edit=>{const next=structuredClone(edit(session.projectRef.current));session.project=next;session.projectRef.current=next;session.dirty=JSON.stringify(next)!==session.savedJson;},
     setSavedJson:value=>{session.savedJson=value;},setProject:value=>{session.project=value;},setConflict:value=>{session.conflict=value;},setError:value=>{session.error=value;},setNotice:value=>{session.notice=value;}};
   const hooks={useState:initial=>{const index=stateIndex++;if(!Object.hasOwn(state,index))state[index]=typeof initial==='function'?initial():initial;return [state[index],value=>{state[index]=typeof value==='function'?value(state[index]):value;}];},
     useRef:initial=>{const index=refIndex++;return refs[index]??=({current:initial});},useEffect:callback=>effects.push(callback)};
-  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url),{react:hooks,'./studio-session':{useStudioSession:()=>session}});
+  // The SWC fixture runs UI callbacks in a VM, while model validators run in
+  // the parent realm. Clone at this test boundary to match one browser realm.
+  const model=require('../lib/studio-model.mjs');
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url),{
+    react:hooks,'./studio-session':{useStudioSession:()=>session},
+    '../lib/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
+  });
   function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'}});}
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const found=find(child,predicate);if(found)return found;}return null;}
-  return {session,render,find,effects,saves:()=>saves};
+  return {session,render,find,effects,savedProjects,saves:()=>saves};
 }
 
 test('save and continue navigates only after a clean rendered save, and repeated clicks share one request',async()=>{
@@ -235,4 +244,89 @@ test('composition idle preview stays within the chosen dealer and respects an ex
   harness.find(tree,node=>node.type==='select'&&node.props.value==='nora-idle').props.onChange({target:{value:'nora-card'}});
   const selected=harness.find(harness.render(),node=>node.type?.name==='CompositionPreview');
   assert.equal(selected.props.dealer.url,'/nora/card');assert.deepEqual(project,before);
+});
+
+
+test('opaque clips keep all primary layer selectors discoverable while the preview retains full-frame protection',()=>{
+  const inventory={videos:[{id:'opaque-astrid',dealer:'astrid',available:true,previewUrl:'/opaque-astrid',label:'Astrid original'}]};
+  const harness=previewHarness({inventory,dirty:false}),tree=harness.render();
+  const controls=harness.find(tree,node=>node.type==='section'&&node.props['aria-label']==='Tre lager');
+  const advanced=harness.find(tree,node=>node.type==='details'&&node.props.className==='advanced');
+  assert.ok(controls);
+  for(const role of ['table','background']){
+    assert.ok(harness.find(controls,node=>node.type?.name==='LayerAssetSelect'&&node.props.role===role));
+    assert.equal(harness.find(advanced,node=>node.type?.name==='LayerAssetSelect'&&node.props.role===role),null);
+  }
+  const dealerPanel=harness.find(controls,node=>node.type==='section'&&harness.find(node,child=>child.type==='select'&&child.props.value==='astrid'));
+  assert.ok(harness.find(dealerPanel,node=>node.type==='select'&&node.props.value==='opaque-astrid'));
+  const placement=harness.find(controls,node=>node.type==='details'&&node.props.className?.includes('placement'));
+  assert.equal(placement.props.open,true);
+  assert.ok(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Dealer storlek'));
+  assert.equal(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Bord bredd'),null);
+  const preview=harness.find(tree,node=>node.type?.name==='CompositionPreview');
+  assert.deepEqual(compositionPreviewLayers(preview.props.show,preview.props.compositing,Boolean(preview.props.dealer)),{dealer:true,background:false,table:false});
+  assert.equal(harness.session.dirty,false);
+});
+
+test('dealer choice is saved as the presentation default and allowed dealer, while a later preview clip leaves that binding intact',async()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna'),other=structuredClone(project.lanes[0]);other.id='vip';other.label='VIP';project.lanes.push(other);
+  const inventory={videos:[
+    {id:'johanna-idle',dealer:'johanna',available:true,previewUrl:'/johanna/idle',label:'Johanna grundloop',classification:{dealerId:'johanna',eventId:'idle.ready',role:'standard',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}},
+    {id:'johanna-card',dealer:'johanna',available:true,previewUrl:'/johanna/card',label:'Johanna kort',classification:{dealerId:'johanna',eventId:'deal.dealer',role:'standard'}},
+  ]};
+  const harness=previewHarness({project,inventory,dirty:false}),original=structuredClone(project);
+  let tree=harness.render();
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'johanna'}});
+  tree=harness.render();
+  const selected=harness.session.project.lanes[0];
+  assert.equal(selected.layers.dealer.default,'johanna');assert.ok(selected.dealers.includes('johanna'));assert.ok(selected.layers.dealer.allowed.includes('johanna'));
+  assert.deepEqual(harness.session.project.lanes[1],original.lanes[1]);assert.deepEqual(project,original);assert.equal(harness.session.dirty,true);
+  const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/clips?dealer=johanna'));
+  assert.equal(content.props.children,'Grundloop och klipp \u2192');
+  const beforePreview=structuredClone(harness.session.project);
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='johanna-idle').props.onChange({target:{value:'johanna-card'}});
+  tree=harness.render();
+  assert.equal(harness.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,'/johanna/card');
+  assert.deepEqual(harness.session.project,beforePreview);
+  const save=harness.find(tree,node=>node.type==='button'&&node.props.children==='Spara');
+  assert.equal(save.props.disabled,false);save.props.onClick();await Promise.resolve();
+  assert.equal(harness.savedProjects.length,1);
+  assert.equal(harness.savedProjects[0].lanes[0].layers.dealer.default,'johanna');
+  assert.ok(harness.savedProjects[0].lanes[0].layers.dealer.allowed.includes('johanna'));
+  assert.deepEqual(harness.savedProjects[0].lanes[1],original.lanes[1]);
+});
+
+test('open placement controls edit and reset only the selected format while preserving the exact clip and other presentation draft',()=>{
+  const project=createSeedProject();project.lanes[0].composition=defaultCompositionSettings();project.lanes[0].label='Mitt utkast';
+  project.lanes[0].composition.mobile.dealer.scale=.75;project.lanes[0].composition.desktop.dealer.scale=1.5;
+  const inventory={videos:[{id:'astrid-green',dealer:'astrid',available:true,previewUrl:'/astrid-green',label:'Astrid greenscreen',classification:{dealerId:'astrid',eventId:'idle.ready',role:'standard',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}}]};
+  const harness=previewHarness({project,inventory,dirty:false}),original=structuredClone(project);
+  let tree=harness.render();
+  const range=(node,name)=>harness.find(node,child=>child.type==='input'&&child.props['aria-label']===name);
+  assert.equal(range(tree,'Dealer storlek').props.value,.75);
+  assert.ok(range(tree,'Bord bredd'));assert.ok(range(tree,'Bakgrund storlek'));
+  const format=harness.find(tree,node=>node.type==='div'&&node.props.role==='group'&&node.props['aria-label']==='Format');
+  assert.ok(format);
+  harness.find(format,node=>node.type==='button'&&node.props.children==='Desktop 16:9').props.onClick();
+  tree=harness.render();
+  assert.equal(range(tree,'Dealer storlek').props.value,1.5);
+  range(tree,'Dealer storlek').props.onChange({target:{value:'1.7'}});
+  tree=harness.render();
+  range(tree,'Bord sidled').props.onChange({target:{value:'0.25'}});
+  tree=harness.render();
+  range(tree,'Bakgrund upp/ned').props.onChange({target:{value:'-0.16'}});
+  tree=harness.render();
+  const desktop=structuredClone(harness.session.project.lanes[0].composition.desktop);
+  assert.equal(desktop.dealer.scale,1.7);assert.equal(desktop.table.x,.25);assert.equal(desktop.background.y,-.16);
+  assert.deepEqual(harness.session.project.lanes[0].composition.mobile,original.lanes[0].composition.mobile);
+  assert.equal(harness.session.project.lanes[0].label,'Mitt utkast');
+  harness.find(tree,node=>node.type==='button'&&node.props.children==='Mobil 9:16').props.onClick();
+  tree=harness.render();
+  assert.equal(range(tree,'Dealer storlek').props.value,.75);
+  harness.find(tree,node=>node.type==='button'&&node.props.children==='\u00c5terst\u00e4ll placering').props.onClick();
+  tree=harness.render();
+  assert.deepEqual(harness.session.project.lanes[0].composition.mobile,defaultCompositionSettings().mobile);
+  assert.deepEqual(harness.session.project.lanes[0].composition.desktop,desktop);
+  assert.equal(harness.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,'/astrid-green');
+  assert.deepEqual(project,original);
 });
