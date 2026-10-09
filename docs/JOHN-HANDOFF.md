@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: fortsatt konsolidering och verklig produktionsgräns
 
-Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma checkout till GitHub main. **Produktionsacceptansen är fortfarande 0 av 3 avslutad.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
+Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma checkout till GitHub main. **Produktionsacceptansen är nu 1 av 3 avslutad.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
 
 - Sammansättning har Dealer/Bord/Bakgrund som en kompakt lagerinspektör. Filval och geometri ligger tillsammans; Mobil och Desktop har separata värden och återställning. Uploadpaneler förblir monterade, och spar-/konfliktlås bevaras.
 - Mobilmenyn är kollapsad från start, med Escape/fokus och fria tabsteg. Aktuell sidlänk laddar inte om utkast. Mobilscenens reproducerade klicköverlapp är rättad.
@@ -23,11 +23,13 @@ Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma chec
 
 | Återstående produktionskontroll | Faktiskt resultat | Krävs för att avsluta |
 | --- | --- | --- |
-| 1. Aktiv Render-version | Publik health/capability ger ingen SHA. Ingen befintlig Render CLI/MCP-åtkomst. CLOUD-MIGRATION anger autoDeployTrigger off, ännu inte livebekräftat | Manuell deploy av verifierad kod-SHA på croupier-v2, därefter matchande /__cloud/version. Deploy-ID och första fasta felrad behövs vid misslyckad deploy |
-| 2. Spelarens Johanna-rum | Ordinarie inloggning ger 200/authenticated; befintligt rum ger 503 och “Spelet kunde inte öppnas”. Sparad produktionsbild visar inga lager, media-listan är tom | Samma inloggade flik, rätt bolag/rum/paket/Johanna och tre lager; två hela grundloopar i faktisk spelare |
-| 3. Partnerns sparning | Angivna kontot avvisas med 401 vid korrekt same-origin partnerlogin; rätt konto och avsett medlemskap är inte fastställda | Befintligt partnerkonto med aktivt medlemskap och presentations.configure i Johns spelbolag. Val → spara → omladdning → rätt rum; N1-geometri bevarad och konflikt avvisad |
+| 1. Aktiv Render-version | 9 oktober 20:10:37 UTC: /__cloud/version ger 200/schemaVersion 1/provider render och exakt 2aef765cdcbbac5358b6e13d2fd4c1d5647e521f. Samma SHA har CI 37984230871 SUCCESS, alla tre jobb; www READY dpl_J87rSNEKWbwEhSCzw6yqrBBr6ZKv | PASS för aktiv runtime-SHA. Privat deploy-ID/tidigare första felrad är fortsatt okända; ingen timeoutfix har gjorts |
+| 2. Spelarens Johanna-rum | Även efter verifierad Render 2aef765c: spelarlogin 200/authenticated, rummets HTML 503; bild 20:15:16 UTC visar generiskt fel och 0 videor/loopar. Fryst paket-API 20:29:52 UTC ger 200/operator-package-v2, rätt bolag/rum/Johanna, paketrevision 1 och originalklippets hash. Reproducerad rotorsak: signerad operator-HTML utan launch avvisas med 421 i ingressen, vilket Vercel översätter till 503 | Samma inloggade flik, rätt bolag/rum/paket/Johanna och tre lager; två hela grundloopar i faktisk spelare |
+| 3. Partnerns sparning | Korrekt same-origin partnerlogin ger 401. Vanlig auktoriserad N1-läsning visar att LLM är aktiv admin och Johns bolag har 0 medlemmar. Partnerlogin kräver kontorollen partner; korrekt partnerkonto och avsett medlemskap saknas | Befintligt partnerkonto med aktivt medlemskap och presentations.configure i Johns spelbolag. Val → spara → omladdning → rätt rum; N1-geometri bevarad och konflikt avvisad |
 
-Nästa driftsättning: croupier-v2, srv-datg3j6gekts73amgli0, verifierad kod-SHA **cca9d3527a0451f037616a79571e0d415e13f10c**. Öppna Render Deploys → Manual Deploy → Deploy a specific commit. Efter Live jämförs versionskvittot innan spelprovet återupptas. Roll- och medlemskontrollerna bevaras; ingen medlem, kontoroll, inbjudan, insats eller speldata har ändrats.
+Aktiv Render-version är nu verifierad som **2aef765cdcbbac5358b6e13d2fd4c1d5647e521f** via det sanerade versionskvittot. Spelarprovet återupptas i samma inloggade flik och befintliga Johanna-rum. Partnerlogin har återprovats mot den nya runtime-versionen och ger fortsatt 401 för de angivna uppgifterna. Roll- och medlemskontrollerna bevaras; ingen medlem, kontoroll, inbjudan, insats eller speldata har ändrats.
+
+Ingressrättningen är fryst lokalt: endast signerad canonical GET/HEAD på exakt /blackjack, Accept text/html, giltig operator och godkända odubblerade queryvärden får passera utan launch. Host, origin, proto, hemlig signering och vanlig spelarautentisering består. Riktig platformUiDocument → platformBackendHeaders → gateway → Web verifieras med isolerad HTTP-fixtur; 90/90 berörda transport/runtime/UI/WS/versiontester PASS och oberoende granskning utan blockerande fynd. Ny regression ingår i fullhook. Produktionsuppspelning får godkännas först efter ny faktisk Render-version och två naturliga hela loopar i samma flik.
 
 Vercel-connectorernas teamläsning nekas (403), men scoped CLI-inspektion fungerar. Lokal ingresskonfiguration saknar användbar nyckel för direkt serverläsning. Ingen token/grant har skapats. Browserverktygets sandboxstart är trasig; den tidigare chattens levande Edgehjälpare förmedlar snäva produktionsläsningar utan profilomstart.
 
