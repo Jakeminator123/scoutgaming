@@ -1,0 +1,217 @@
+:root {
+  --bg: #0b0b0d; --panel: #131316; --panel2: #1a1a1f; --line: #26262c; --ink: #ece9e4; --dim: #8d8983;
+  --gold: #c9a227; --gold-soft: rgba(201, 162, 39, .35); --err: #e08a7a;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 15px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+button { font: inherit; cursor: pointer; }
+
+/* Dator: scenen i 9:16 till vänster, chatten till höger. Mobil: scenen fyller skärmen, chatten ovanpå. */
+.app { height: 100dvh; display: grid; grid-template-columns: auto minmax(320px, 420px); justify-content: center; gap: 0; }
+
+.stage { position: relative; height: 100dvh; aspect-ratio: 9 / 16; background: #000; overflow: hidden; }
+.stage .still, .stage .v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center top; }
+.stage::before { content: ""; position: absolute; inset: -30px; background: var(--plate-bg, none) center bottom / cover no-repeat; filter: blur(22px) brightness(.45); }
+.stage .v { opacity:0; z-index:0; transform:translateZ(0); backface-visibility:hidden; }
+.stage .v.on { opacity:1; z-index:1; }
+
+/* Same 1080 × 1920 frame as the footage. Do not crop the outer seats on tall phones. */
+.table-boxes { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.table-box { color: #b6a57c; cursor: pointer; outline: none; }
+.table-box-hit { fill: transparent; pointer-events: all; }
+.bet-ring, .bet-brackets, .seat-person { fill: none; stroke: currentColor; stroke-width: 1.8; pointer-events: none; opacity: .7; }
+.bet-brackets { opacity: .42; stroke-width: 1.4; }
+.seat-person { stroke-width: 2.4; opacity: .7; }
+.seat-number, .side-wager { fill: currentColor; font: 18px Georgia, serif; opacity: .7; pointer-events: none; }
+.side-wager { font: 16px system-ui; }
+.wager-chip { pointer-events: none; }
+.chip-body { fill: #1a6456; stroke: #b0b696; stroke-width: 2; }
+.chip-stitch { fill: none; stroke: #eee4c6; stroke-width: 4; stroke-dasharray: 8 8; }
+.chip-value { fill: #fff6dc; font: 600 23px system-ui; }
+.table-box:is(:hover, :focus-visible, .is-active, .is-turn) { color: #f1d69c; }
+.table-box:is(:focus-visible, .is-active, .is-turn) .bet-ring { opacity: 1; stroke-width: 3; }
+.table-box[aria-disabled="true"] { cursor: default; }
+.game-cards { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.playing-card { filter: drop-shadow(0 1px .7px #0005); }
+.game-frame { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: min(100%, 56.25dvh); aspect-ratio: 9/16; pointer-events: none; z-index: 3; }
+.game-controls { position: absolute; top: 68%; left: 4%; right: 4%; pointer-events: auto; text-align: center; }
+.wallet { display: flex; align-items: center; gap: 22px; text-align: left; padding: 10px 14px; border: 1px solid #bca77530; background: #0c1e1dd9; border-radius: 13px; }
+.wallet div { display: grid; gap: 1px; }
+.wallet small { color: #b9ab8c; letter-spacing: .15em; font-size: 9px; }
+.wallet strong { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.wallet > span { font-size: 10px; color: #aaa58f; margin-left: auto; }
+#gameStatus { margin: 8px 0; min-height: 22px; font-size: 13px; color: #e2d3b3; text-shadow: 0 1px 3px #000; }
+.game-buttons, .bet-tools { display: flex; justify-content: center; align-items: center; gap: 7px; }
+.game-buttons { margin-top: 8px; }
+.game-controls button, .game-controls select { min-height: 40px; border: 1px solid #c0a67660; border-radius: 10px; background: #0c2422e8; color: #f3e7cc; padding: 7px 13px; font: 500 13px system-ui; }
+.game-controls button.primary { background: #dbc18a; color: #172624; border-color: #ead3a0; font-weight: 650; min-width: 102px; }
+button:disabled { cursor: default; opacity: .42; }
+.game-controls button.quiet { font-size: 12px; }
+.chip-picker { display: flex; gap: 8px; }
+.chip-picker button { padding: 0; min-width: 42px; width: 42px; height: 42px; border-radius: 50%; border: 4px dashed #bdb6a4; background: #195b50; box-shadow: inset 0 0 0 2px #0e3933; }
+.chip-picker button[aria-pressed="true"] { border-color: #f7e6b5; outline: 2px solid #c9a75c; outline-offset: 2px; }
+.chip-picker button:nth-child(2) { background: #81424b; box-shadow: inset 0 0 0 2px #492631; }
+.chip-picker button:nth-child(3) { background: #3c4445; }
+.hand-details { margin-top: 9px; color: #c6b991; font-size: 11px; }
+.hand-details summary { cursor: pointer; }
+#handList { max-height: 140px; overflow: auto; border-radius: 10px; background: #10211ff2; }
+.game-controls .hand-summary { display: block; width: 100%; text-align: left; border: 0; font-size: 12px; min-height: 34px; }
+.game-controls .hand-summary.current { color: #f6d89a; }
+.preview-mode { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #d9c59b; }
+[hidden] { display: none !important; }
+
+.chips { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 3; pointer-events: none; }
+.chip { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; background: rgba(0,0,0,.55); padding: 5px 10px; border-radius: 999px; color: var(--dim); }
+.chip.badge { color: var(--gold); border: 1px solid var(--gold-soft); }
+
+.caption {
+  position: absolute; left: 6%; right: 6%; bottom: 20%; z-index: 3; text-align: center;
+  font-size: clamp(14px, 2.1vh, 19px); line-height: 1.35; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.9);
+  background: rgba(0,0,0,.42); padding: 8px 12px; border-radius: 10px; opacity: 0; transition: opacity .25s;
+}
+.caption.on { opacity: 1; }
+.status { position: absolute; left: 50%; transform: translateX(-50%); top: 52px; z-index: 3; font-size: 12px; color: var(--gold);
+  background: rgba(0,0,0,.6); padding: 5px 12px; border-radius: 999px; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+.status.on { opacity: 1; }
+.sound-chip { position: absolute; right: 12px; bottom: 12px; z-index: 4; background: rgba(0,0,0,.7); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; font-size: 13px; }
+
+.gate { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 18%;
+  background: linear-gradient(to bottom, rgba(0,0,0,.1), rgba(0,0,0,.72) 70%); }
+.gate.off { display: none; }
+.gate-card { text-align: center; padding: 0 24px; }
+.gate-kicker { margin: 0; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
+.gate h1 { margin: 4px 0 6px; font-weight: 400; font-size: 44px; letter-spacing: .04em; font-family: Georgia, "Times New Roman", serif; }
+.gate-sub { margin: 0 0 20px; color: #cfcac2; }
+.gate button, .compose button { background: var(--gold); color: #1a1508; border: 0; border-radius: 12px; padding: 13px 26px; font-weight: 600; }
+
+.side { display: flex; flex-direction: column; height: 100dvh; min-height: 0; border-left: 1px solid var(--line); background: var(--panel); }
+.side-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.thinking { margin-left: 10px; font-size: 12px; color: var(--gold); }
+.playback-state { margin: 0; padding: 4px 16px 8px; font-size: 12px; color: var(--gold); }
+.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.ghost[aria-expanded="true"] { border-color: var(--gold-soft); color: var(--gold); }
+
+.events { padding: 10px 16px 14px; border-bottom: 1px solid var(--line); max-height: 45dvh; overflow-y: auto; }
+.events-hint { margin: 0 0 8px; color: var(--dim); font-size: 12px; }
+.events h3 { margin: 10px 0 6px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.grid button { background: var(--panel2); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 7px 9px; text-align: left; font-size: 13px; line-height: 1.25; }
+.grid button small { display: block; color: var(--dim); font-size: 11px; }
+.grid button:hover { border-color: var(--gold-soft); }
+
+.log { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+.demo-info { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px 16px; font-size: 13px; line-height: 1.5; }
+.demo-info h1 { font-size: 17px; margin: 6px 0 8px; } .demo-info h2 { font-size: 14px; margin: 14px 0 4px; }
+.demo-info-close { margin-bottom: 4px; }
+.msg { max-width: 86%; padding: 8px 12px; border-radius: 14px; white-space: pre-wrap; word-break: break-word; }
+.msg .name { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 2px; }
+.me { align-self: flex-end; background: #2b2b33; border-bottom-right-radius: 4px; }
+.them { align-self: flex-end; background: var(--panel2); border: 1px solid var(--line); border-bottom-right-radius: 4px; }
+.her { align-self: flex-start; background: #17150f; border: 1px solid #2f2915; border-bottom-left-radius: 4px; }
+.her .name { color: var(--gold); }
+.meta { font-size: 11px; color: var(--dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.sys { align-self: center; color: var(--dim); font-size: 12px; text-align: center; }
+.err { align-self: center; color: var(--err); font-size: 13px; }
+
+.compose { display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.compose input { background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 11px 12px; font: inherit; min-width: 0; }
+.compose input:focus { outline: none; border-color: #3b3b44; }
+#who { flex: 0 0 92px; }
+#input { flex: 1; }
+.compose button { padding: 0 18px; }
+
+/* Mobil / smalt: scenen fyller skärmen, sidopanelen blir ett halvgenomskinligt lager nederst. */
+@media (max-width: 820px) {
+  .app { display: block; }
+  .stage { width: 100vw; height: 100dvh; aspect-ratio: auto; }
+  .side { position: fixed; left: 0; right: 0; bottom: 0; height: auto; max-height: 52dvh; border: 0; z-index: 6;
+    background: linear-gradient(to bottom, rgba(11,11,13,0), rgba(11,11,13,.86) 18%); }
+  .side-head { border: 0; padding: 18px 14px 4px; }
+  .log { max-height: 26dvh; padding: 6px 14px; mask-image: linear-gradient(to bottom, transparent, #000 22%); }
+  .demo-info { max-height: 40dvh; padding: 8px 14px; background: rgba(12,13,16,.96); border-radius: 12px; position: relative; z-index: 5; }
+  .msg { background: rgba(20,20,24,.78); }
+  .her { background: rgba(23,21,15,.85); }
+  .events { max-height: 34dvh; background: rgba(11,11,13,.92); }
+  .compose { border: 0; }
+  .caption { bottom: auto; top: 34%; pointer-events: none; }
+  .app:not(.seated) .side { display: none; }   /* grinden först — chatten visas när man satt sig */
+}
+
+/* Phones: fade the 9:16 frame's floor into the blurred room band below it, so no hard edge shows where the plate ends. */
+@media (max-width: 820px) {
+  .stage { --frame-h: calc(100vw * 16 / 9); }
+  .stage .still, .stage .v { -webkit-mask-image: linear-gradient(to bottom, #000 calc(var(--frame-h) - 110px), transparent var(--frame-h));
+    mask-image: linear-gradient(to bottom, #000 calc(var(--frame-h) - 110px), transparent var(--frame-h)); }
+}
+/* Desktop: the room, blurred and dimmed, fills the page around the three columns (Table Studio's play screen). */
+@media (min-width: 821px) {
+  .app { position: relative; isolation: isolate; }
+  .app::before { content: ""; position: fixed; inset: -60px; z-index: -1; pointer-events: none;
+    background: var(--plate-bg, none) center / cover no-repeat; filter: blur(36px) brightness(.4); }
+}
+
+/* Keep controls below the filmed card landings and the mobile chat closed until requested. */
+.caption { bottom: auto; top: 65%; padding: 5px 10px; font-size: 12px; pointer-events: none; }
+@media (max-width: 820px) {
+  .side { background: #0e1415f5; max-height: 75dvh; }
+  .side-head { padding: 8px 14px; }
+  .side:not(.chat-open) .log, .side:not(.chat-open) .compose { display: none; }
+  .side.dock-fit { overflow-y: auto; overscroll-behavior: contain; }
+  .side.chat-open .table-company { display: none; }   /* room for the chat without covering the chips */
+  .playback-state { font-size: 10px; padding-bottom: 6px; }
+  .game-controls { top: 68%; }
+  .caption { top: min(65vw * 16 / 9, 65%); }
+}
+@media (max-height: 730px) and (min-width: 821px) {
+  .game-controls { top: 67%; }
+  .wallet { padding: 5px 10px; }
+  #gameStatus { margin: 3px 0; }
+  .hand-details { margin-top: 3px; }
+}
+
+/* Green-screen dealer: the room is the still, cards sit on it, the keyed dealer is on top. */
+.stage.keyed-dealer .v, .stage.keyed-dealer .v.on { opacity: 0; }
+.stage .dealer-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center top; z-index: 3; pointer-events: none; }
+
+/* Left studio panel: dealer faces and the room behind a keyed dealer. */
+.app { grid-template-columns: 184px auto minmax(320px, 420px); }
+.studio { height: 100dvh; overflow-y: auto; padding: 16px 14px; border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 10px; }
+.studio h2 { margin: 6px 0 0; font: 600 11px/1 system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.studio-dealers, .studio-rooms { display: grid; gap: 8px; }
+.studio-dealers { grid-template-columns: 1fr 1fr; }
+.studio button { display: grid; gap: 5px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); color: var(--ink); font-size: 12px; text-align: center; }
+.studio button img { width: 100%; display: block; border-radius: 7px; }
+.studio-face img { aspect-ratio: 1; object-fit: cover; }
+.studio-room img { aspect-ratio: 180 / 117; object-fit: cover; }
+.studio button[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-soft); }
+.studio button:hover:not(:disabled) { border-color: var(--gold-soft); }
+.studio button:disabled { opacity: .35; cursor: default; }
+.studio-note { margin: 0; font-size: 12px; color: var(--dim); }
+@media (max-width: 820px) {
+  /* Phone: a slim rail of faces and rooms on the left edge, over the room. It starts below the header, so the
+     table line and the "AI dealer" badge (bottom ~90 px on a 360 px phone) are never covered. */
+  .studio { position: fixed; left: 6px; top: 100px; z-index: 7; width: 52px; height: auto; max-height: 70dvh; padding: 6px; gap: 6px; border: 0; border-radius: 12px; background: rgba(14,20,21,.72); }
+  .studio h2, .studio-note, .studio button span { display: none; }
+  .studio-dealers { grid-template-columns: 1fr; }
+  .studio button { padding: 2px; border-radius: 8px; }
+  .studio-face img { border-radius: 50%; }
+  .studio-room img { aspect-ratio: 1; }
+  .studio-room:disabled { display: none; }
+}
+
+/* side panel closed: the table and dealer picker only (tester feedback) */
+.app.panel-closed .side { display: none; }
+.app.panel-closed { grid-template-columns: 184px auto; }
+.panel-hide { font-size: 18px; line-height: 1; padding: 4px 10px; }
+.panel-show { position: fixed; top: 14px; right: 14px; z-index: 20; padding: 9px 14px; border-radius: 20px; border: 1px solid #ffffff2e; background: #0e1415e6; color: #f2f1ed; font: 600 13px Figtree, Arial, sans-serif; cursor: pointer; }
+@media (max-width: 820px) { .app.panel-closed { grid-template-columns: none; } .panel-show { top: 64px; right: 10px; padding: 7px 12px; } }
+
+/* Room choices live in Settings (CH); on desktop Settings opens over the chat column, not the table */
+.settings-rooms h4 { margin: 4px 0 6px; font: 600 11px/1 system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.settings-popover .studio-rooms { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px; }
+.settings-popover .studio-room { width: 100%; min-width: 0; }
+.settings-popover .studio-room img { width: 100%; }
+.settings-popover .studio-room img { aspect-ratio: 16 / 10; }
+.settings-popover .studio-note { font-size: 11px; margin: 6px 0 0; }
