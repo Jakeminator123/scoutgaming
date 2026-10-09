@@ -2,15 +2,36 @@
 
 ## 9 oktober 2026: fortsatt konsolidering och verklig produktionsgräns
 
-Pågående etapp i samma checkout på main. Översikt skiljer nu livebolag, tom live-lista, driftfel och demonstration; valt livebolag följer partner- och spelarlänkar. Gamla administrationslänkar går till relevanta befintliga flikar. Guide och terminologi har rättats för rumpublicering, serverägda bord och Bolag & team.
+Kodleverans cca9d3527a0451f037616a79571e0d415e13f10c är pushad från samma checkout till GitHub main. **Produktionsacceptansen är fortfarande 0 av 3 avslutad.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
 
-Sammansättning har en kompakt Dealer/Bord/Bakgrund-inspektör, med filval och geometri per lager/format. Panelerna förblir monterade under uppladdning, och spar-/konfliktlås bevaras. Mobilmenyn är kollapsad från start och tangentbordstillgänglig; aktuell sidlänk laddar inte om utkastet.
+- Sammansättning har Dealer/Bord/Bakgrund som en kompakt lagerinspektör. Filval och geometri ligger tillsammans; Mobil och Desktop har separata värden och återställning. Uploadpaneler förblir monterade, och spar-/konfliktlås bevaras.
+- Mobilmenyn är kollapsad från start, med Escape/fokus och fria tabsteg. Aktuell sidlänk laddar inte om utkast. Mobilscenens reproducerade klicköverlapp är rättad.
+- Översikt skiljer livebolag, tom live-lista, driftfel och demonstration. Valt livebolag följer nivå 2/3-länkar. Gamla administrationslänkar går till befintliga relevanta flikar; guide och terminologi är rättade.
+- Nytt sanerat Renderkvitto /__cloud/version visar efter utrullning hostingens frysta, exakta 40-hex commit-SHA. Saknad metadata ger 503; inga secrets eller klientstyrda versioner exponeras.
 
-Nytt sanerat Renderkvitto /__cloud/version är implementerat och oberoende granskat: hostingens frysta commit-SHA, inga secrets eller klientstyrd version. Riktade sviter PASS: översikt/nav 42, mobilnav 45, preview 16, gateway/ingress/runtime/WebSocket 51. TypeScript och normal samt isolerad Lab-build PASS. Verklig isolerad UI-QA PASS vid 1440/768/390 px: lagerbyte, tangentbord, mobilmeny/Escape/fokus, verklig PUT/GET och full omladdning, båda formatens geometri och den andra presentationen bevarade. Inga konsol- eller sidfel. Mobilscenens reproducerade klicköverlapp är rättad. Samma privata bildgalleri har nu 30 bilder; samtliga tidigare 27 kort och originalbilder är oförändrade. Fullhook och leverans återstår; ingen ny produktionsacceptans hävdas.
+| Verifiering | Kvitto | Status |
+| --- | --- | --- |
+| Fullhook | 2 043 tester: 2 034 PASS, 9 SKIP, 0 FAIL | PASS |
+| Kod-SHA CI | 37982801692, alla tre jobb | SUCCESS |
+| Vercel production och www | dpl_6YjURKF7XHuHKw1p8E7ibZf6rxbJ; scoutgaming-ms8eue4gd-scoutgaming.vercel.app; exakt SHA kopplad via GitHubs Vercel-status | READY, samma deployment |
+| TypeScript och Lab-build | Normal och isolerad build | PASS |
+| Verklig isolerad UI-QA | 1440/768/390 px, keyboard, Meny/Escape/fokus, PUT/GET/full omladdning, båda format och annan presentation bevarade; inga sid-/konsolfel | PASS |
+| Produktionseditorn, läskontroll | Befintliga Johns/Johanna är Sparad; Bord → Dealer fungerar, scenen visar Johanna/bord/bakgrund. Inga värden ändrade eller sparade; bild visuellt granskad | PASS; ingen spelaracceptans |
+| Riktade regressioner | Översikt/nav 42, mobilnav 45, preview 16, gateway/ingress/runtime/WebSocket 51; oberoende kodgranskning | PASS |
+| Dealer-sync --probe | Samtliga fyra mediabaslinjer matchar | PASS; mänsklig läppsynkacceptans separat öppen |
+| Samma privata bildgalleri | 31 bilder; tidigare 30 kort och originalbildhashar bevarade. Förstoring i originalstorlek, keyboard/fokus och mobil verifierade | PASS |
 
-Produktionskontroll med ordinarie inloggning: spelarsession 200/authenticated, men befintliga Johannas blackjack ger HTTP 503 och “Spelet kunde inte öppnas”. Den sparade produktionsbilden visar ingen dealer eller lager, och media-listan är tom. Två hela loopar är därför inte verifierade. Partnerinloggningen avvisar det angivna kontot (401 med korrekt same-origin-request); ett faktiskt partnerkonto med medlemskap behöver väljas. Ingen kontoroll, medlem, inbjudan, insats eller speldata ändrad. Befintligt bolag, Johanna, rum och paket har bevarats.
+| Återstående produktionskontroll | Faktiskt resultat | Krävs för att avsluta |
+| --- | --- | --- |
+| 1. Aktiv Render-version | Publik health/capability ger ingen SHA. Ingen befintlig Render CLI/MCP-åtkomst. CLOUD-MIGRATION anger autoDeployTrigger off, ännu inte livebekräftat | Manuell deploy av verifierad kod-SHA på croupier-v2, därefter matchande /__cloud/version. Deploy-ID och första fasta felrad behövs vid misslyckad deploy |
+| 2. Spelarens Johanna-rum | Ordinarie inloggning ger 200/authenticated; befintligt rum ger 503 och “Spelet kunde inte öppnas”. Sparad produktionsbild visar inga lager, media-listan är tom | Samma inloggade flik, rätt bolag/rum/paket/Johanna och tre lager; två hela grundloopar i faktisk spelare |
+| 3. Partnerns sparning | Angivna kontot avvisas med 401 vid korrekt same-origin partnerlogin; rätt konto och avsett medlemskap är inte fastställda | Befintligt partnerkonto med aktivt medlemskap och presentations.configure i Johns spelbolag. Val → spara → omladdning → rätt rum; N1-geometri bevarad och konflikt avvisad |
 
-Vercel-connectorns miljömetadata nekas (403), men scoped CLI-inspektion fungerar och visar www som production READY. Detta är inte ett Render-SHA-kvitto. Render har ingen tillgänglig befintlig CLI/MCP-koppling. CLOUD-MIGRATION anger autoDeployTrigger off; inställningen behöver livebekräftas och senaste verifierade main driftsättas manuellt på croupier-v2. Lokal ingresskonfiguration saknar användbar nyckel för direkt serverläsning. Ingen token/grant skapas eller behörighet ändras. Browserverktygets sandboxstart är trasig; den tidigare agentens levande Edgehjälpare förmedlade det snäva produktionsprovet utan att stänga fliken.
+Nästa driftsättning: croupier-v2, srv-datg3j6gekts73amgli0, verifierad kod-SHA **cca9d3527a0451f037616a79571e0d415e13f10c**. Öppna Render Deploys → Manual Deploy → Deploy a specific commit. Efter Live jämförs versionskvittot innan spelprovet återupptas. Roll- och medlemskontrollerna bevaras; ingen medlem, kontoroll, inbjudan, insats eller speldata har ändrats.
+
+Vercel-connectorernas teamläsning nekas (403), men scoped CLI-inspektion fungerar. Lokal ingresskonfiguration saknar användbar nyckel för direkt serverläsning. Ingen token/grant har skapats. Browserverktygets sandboxstart är trasig; den tidigare chattens levande Edgehjälpare förmedlar snäva produktionsläsningar utan profilomstart.
+
+Separat GitGuardianläsning på kod-SHA: 17 observerade, 12 öppna incidenter; source binding verifierad och monitoring aktiv. Location coverage är partial och historisk scan too_large. Queued suite är inte ett rent säkerhetskvitto. Inga incidenter ignorerade eller lösta i denna etapp.
 
 ## 9 oktober 2026: sammanhängande sammansättning och partnerns val
 
