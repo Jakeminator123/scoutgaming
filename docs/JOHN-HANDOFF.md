@@ -2,18 +2,26 @@
 
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Implementationen finns i 72891be6 och slutputs i b12653e4; push och produktionsacceptans
-återstår. Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt
-rum, kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
+Kodleveransen 8f0dfff6 är pushad till GitHub main och Vercel production READY.
+Den innehåller 72891be6 (generiskt dealerpaket/rum) och b12653e4 (sista UI-puts).
+Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt rum,
+kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
 Publicering visar ett sammanhängande rumflöde och utfällbara avancerade val.
 N2:s provlänkar använder verkliga bolagsägda rum även när presentation och
 spellane har olika ID. Gamla JSON-exporten och Nora-specifik manuell
 rumguidning är borttagna; namnfält för ny och befintlig presentation skiljs åt.
 
-Verifierat: normal fullhook för 72891be6 och b12653e4 PASS, paket/capture/publisher 104/104,
-N2-rum 17/17 och slutlig UI-puts 37/37. Gemensam TypeScript och Lab-build PASS.
+Verifierat: normal fullhook för 72891be6 och b12653e4 PASS; den senare
+sammanlagt 2 010 tester, 2 001 PASS och 9 SKIP. Paket/capture/publisher 104/104,
+N2-rum 17/17, UI-puts 37/37, gemensam TypeScript och Lab-build PASS.
 Isolerad UI-QA visar verkligt sparande, återläsning, tangentbordsnavigation och
 layout i 1440/768/390 utan JavaScript-fel.
+
+CI 37952326479 på 8f0dfff6: presentation-studio och lipsync-worker PASS,
+dealer-regression föll på en Windows-specifik gzip-fixture. Payload/SHA var
+identiska; endast gzip-headerns OS-byte 9 skiljde Linux (3) från Windows (10).
+Testjämförelsen normaliserar nu just denna byte; produktionsencoder och
+paketformat förblir oförändrade. 34/34 riktade tester PASS. Nästa leverans verifierar korrigeringen i CI.
 
 Isolerad faktisk spelklient: Johanna spelade två kompletta muted grundloopar
 med exakt källhash och media-ID. Ändrad paketrevision gav 409 och krävde
@@ -24,13 +32,16 @@ serverparen stoppades sekventiellt och tempdata rensades. Privata transport-
 fixturer användes; detta verifierar inte produktions-Neon. Originalmedia är
 orörda och sync-probe PASS; ingen ny mänsklig läppsynkacceptans hävdas.
 
-Render behöver denna nya kod med förhandlad capability v3 för Johanna.
-Nuvarande omdeploy verifierar HTTP 200 health och capability v2, inte den ännu
-opushade etappen. Exakt Render-SHA är inte verifierad. Johns spelbolag (johns-spelbolag) är skapat via produktions-UI med standardroller och verifierat efter omladdning. Johanna är ännu inte skapad. En separat Edge-session är
-manuellt inloggad av Jakob; bilder sparas privat för varje meningsfullt steg.
-Spellobbyn finns på /play men spelarinloggning är separat från Studio.
-Nästa: leverans, Render v3 och klickdemo Johns spelbolag → Johanna med Nora-
-filens egna mediaregistrering → tre lager → publicerat rum → faktisk idleloop.
+Produktion: Johns spelbolag (johns-spelbolag) är skapat via UI med standardroller
+och verifierat efter omladdning. Johanna är ännu inte skapad. Sex produktions-
+bilder samt separata lokala QA-bilder finns privat utanför Git.
+Render svarar fortfarande capability v2 även när v3 efterfrågas. Jakob är
+ombedd att manuellt deploya 8f0dfff6 på croupier-v2; senare ändringar i denna
+etapp rör bara test/handoff. Exakt Render-SHA är inte verifierad.
+Edge är manuellt inloggat i Studio. Separat spelarinloggning är öppnad i samma
+fönster och väntar på Jakob; inga lösenord har lästs. Spellobbyn finns på /play.
+Nästa: godkänd CI, Render v3 och klickdemo Johanna med Nora-filens egna media-
+registrering → tre lager → publicerat rum → faktisk idleloop. Spara bild per steg.
 
 ## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
 

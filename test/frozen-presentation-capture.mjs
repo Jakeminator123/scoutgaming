@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {gunzipSync} from 'node:zlib';
 import {createSeedProject, addDealer, defaultPresentationLane} from '../lab/lib/studio-model.mjs';
 import {buildPresentationPackage, validatePresentationPackage} from '../web/presentation-layers.mjs';
 import {encodePresentationPackage, decodePresentationPackage, readPackagePresentation, withPackagePresentation} from '../web/storage/presentation-package.mjs';
@@ -21,8 +22,15 @@ test('v1 canonical bytes and gzip envelope remain exactly compatible with the pr
   const project=createSeedProject();project.revision='v1-frozen-fixture';
   const legacy=buildPresentationPackage(project,[project.lanes[0].id],[]);
   const envelope=encodePresentationPackage(legacy);
-  assert.deepEqual(envelope,{format:'croupier-lanes-v1',encoding:'gzip-base64url',sha256:'cb46fe439c10e9584e978b784812c83043bec71084e88824eb3121318f359784',
-    data:'H4sIAAAAAAAACpVQMW7DMAz8SnCzXCCrt-4tUHToEmSgLDpRLEsGJTttA_-9oJ02bbZuvCN5d-QFlDOXjHq3NwgUWcsLHFNg0RqUi3iHvYF3qNEn6wNXwzFFhq5YDqjxvNCbF6U3T3TtfSwaF1hquoOkMTpFFEI6s1s9Hbc0hoI6jiEYcCQbtFdkZIM-OUYNSx07zOaa66_Ir4Q_Yt_cneBsUBT-K8U8G6SBYxPorIuaQR2a4ic90zsVvOFBklUitS0MhKe7-TwwdTdiVRcqSR7daczXgLs16UOTQhIYWKHofDzomcLRsegf1h_rb_aL8Ymb8sqTzz5F1Ji2VSvpk2PV-vcyymLfHLmnN5Z1Zjt_ATlQy4kEAgAA'});
+  const historicalEnvelope={format:'croupier-lanes-v1',encoding:'gzip-base64url',sha256:'cb46fe439c10e9584e978b784812c83043bec71084e88824eb3121318f359784',
+    data:'H4sIAAAAAAAACpVQMW7DMAz8SnCzXCCrt-4tUHToEmSgLDpRLEsGJTttA_-9oJ02bbZuvCN5d-QFlDOXjHq3NwgUWcsLHFNg0RqUi3iHvYF3qNEn6wNXwzFFhq5YDqjxvNCbF6U3T3TtfSwaF1hquoOkMTpFFEI6s1s9Hbc0hoI6jiEYcCQbtFdkZIM-OUYNSx07zOaa66_Ir4Q_Yt_cneBsUBT-K8U8G6SBYxPorIuaQR2a4ic90zsVvOFBklUitS0MhKe7-TwwdTdiVRcqSR7daczXgLs16UOTQhIYWKHofDzomcLRsegf1h_rb_aL8Ymb8sqTzz5F1Ji2VSvpk2PV-vcyymLfHLmnN5Z1Zjt_ATlQy4kEAgAA'};
+  const compressed=Buffer.from(envelope.data,'base64url'), historicalCompressed=Buffer.from(historicalEnvelope.data,'base64url');
+  assert.deepEqual(gunzipSync(compressed),gunzipSync(historicalCompressed));
+  // Only gzip header byte 9 identifies the producing OS (Unix=3, Windows=10).
+  // Keep canonical payload/SHA and every other compressed byte exact.
+  const normalizedCompressed=Buffer.from(compressed);normalizedCompressed[9]=historicalCompressed[9];
+  assert.deepEqual({...envelope,data:normalizedCompressed.toString('base64url')},historicalEnvelope);
+  assert.deepEqual(decodePresentationPackage(historicalEnvelope),legacy);
   assert.deepEqual(decodePresentationPackage(envelope),legacy);
 });
 test('v2 idle UUID, shader metadata, own label and immutable bytes survive envelope round-trip and later Studio edits',()=>{
