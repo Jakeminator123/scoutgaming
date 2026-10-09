@@ -1,5 +1,21 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Studioflöde, 9 oktober 2026
+
+Sammansättning (/control/preview) är navet. Innehåll (/control/clips) samlar
+klipp och når bibliotek, händelser samt talinställningar med dealer/situation.
+Publicering (/control/lanes) fryser sparade presentationer i bolagspaket.
+Bolag och team nås på /control/lanes?tab=companies; ingen separat datakopia skapas.
+Presentationslane och spellane behåller sina tekniska ID:n. Spelarplatser box0–6
+och dealer-up/dealer-hole är skilda destinationer; UI-översättningen ändrar inte
+handIndex, card, replik-ID eller mediasynk.
+
+useStudioSession.save() returnerar true endast när aktuell draft kvitterats.
+Dubbelanrop, fel, revisionskonflikt eller redigering under väntan stoppar
+Spara och fortsätt. Filregistreringens prepare/Blob/commit och revisionsskydd
+är kvar även när användaren bara behöver välja fil en gång.
+
+
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
 Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
 [anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).

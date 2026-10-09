@@ -66,10 +66,12 @@ test('missing exact media cannot borrow another box, original default, upcard or
   const registry = inventory();
   registry.videos.find(video => video.fileName === 'deal_pos3.mp4').available = false;
   registry.videos.find(video => video.fileName === 'deal_hole.mp4').available = false;
-  for (const [id, event] of [[group(2), deal(2)], ['deal.dealer', { type: 'deal', to: 'dealer', box: null, handIndex: null, faceDown: true, clip: { action: 'deal-dealer' } }], ['speak.other', { type: 'speak', line: 'not_recorded' }]]) {
+  for (const [id, event] of [[group(2), deal(2)], ['deal.dealer', { type: 'deal', to: 'dealer', box: null, handIndex: null, faceDown: true, card: null, clip: { action: 'deal-dealer' } }], ['speak.other', { type: 'speak', line: 'not_recorded' }]]) {
     const result = await simulateStudio(body(id, event), options(registry));
     assert.equal(result.videoGenerationId, null);
-    assert.equal(result.decision.media.reason, 'no_exact_video_2d');
+    assert.equal(result.decision.media.reason, event.type === 'deal' ? 'position_clip_missing' : 'no_exact_video_2d');
+    assert.equal(result.trace.some(step => step.stage === 'media-family' && step.status === 'skipped'), event.type === 'deal');
+    assert.deepEqual(result.decision.sourceEvent, event);
     assert.equal(result.eligible.length, 1);
   }
   assert.equal(mediaVideoForEvent(registry, 'astrid', group(2), deal(2), registry.videos.find(v => v.fileName === 'deal_pos4.mp4').id), null);

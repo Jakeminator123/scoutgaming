@@ -14,15 +14,15 @@ function manifestClip(familyId, role) {
 
 test('eight manifest families get stable Swedish names and keep the clip id', () => {
   const cases = [
-    ['astrid/deal.player.left/box0', 'variant', 'Deal · spelare vänster · box 1 · variant'],
-    ['astrid/reveal.dealer/dealer-hole', 'standard', 'Reveal · dealerns hålkort'],
-    ['astrid/deal.dealer/dealer-up', 'standard', 'Deal · dealerns öppna kort'],
-    ['astrid/deal.dealer/dealer-hole', 'standard', 'Deal · dealerns hålkort'],
-    ['astrid/deal.player.right/box6', 'standard', 'Deal · spelare höger · box 7'],
-    ['astrid/deal.player.centre/box2', 'variant', 'Deal · spelare mitten · box 3 · variant'],
-    ['astrid/speak.goodluck/goodluck', 'standard', 'Tal · lycka till'],
-    ['astrid/speak.other/placebets', 'standard', 'Tal · lägg insatser'],
-    ['astrid/idle.ready/ready', 'variant', 'Idle · redo · variant'],
+    ['astrid/deal.player.left/box0', 'variant', 'Ge kort · Spelarplats 1 · variant'],
+    ['astrid/reveal.dealer/dealer-hole', 'standard', 'Vänd dolt kort · Dealer'],
+    ['astrid/deal.dealer/dealer-up', 'standard', 'Ge öppet kort · Dealer'],
+    ['astrid/deal.dealer/dealer-hole', 'standard', 'Ge dolt kort · Dealer'],
+    ['astrid/deal.player.right/box6', 'standard', 'Ge kort · Spelarplats 7'],
+    ['astrid/deal.player.centre/box2', 'variant', 'Ge kort · Spelarplats 3 · variant'],
+    ['astrid/speak.goodluck/goodluck', 'standard', 'Lycka till'],
+    ['astrid/speak.other/placebets', 'standard', 'Lägg insatser'],
+    ['astrid/idle.ready/ready', 'variant', 'Variation'],
   ];
   for (const [familyId, role, expected] of cases) {
     const clip = manifestClip(familyId, role);
@@ -35,16 +35,16 @@ test('eight manifest families get stable Swedish names and keep the clip id', ()
 
 test('unknown tokens stay visible, path is only a fallback, and the label is never empty', () => {
   assert.equal(clipLabel({ familyId: 'astrid/wave.hand/hello', role: 'standard' }), 'wave · hand · hello');
-  assert.equal(clipLabel({ familyId: 'astrid/deal.player.left/box9', role: 'standard' }), 'Deal · spelare vänster · box9');
-  assert.equal(clipLabel({ relativePath: 'deal/deal_flip/deal_flip.mp4' }), 'Reveal · dealerns hålkort');
-  assert.equal(clipLabel({ relativePath: 'deal/deal_pos1/variant/box_1_variant.mp4' }), 'Deal · spelare vänster · box 1 · variant');
+  assert.equal(clipLabel({ familyId: 'astrid/deal.player.left/box9', role: 'standard' }), 'Ge kort · spelare vänster · box9');
+  assert.equal(clipLabel({ relativePath: 'deal/deal_flip/deal_flip.mp4' }), 'Vänd dolt kort · Dealer');
+  assert.equal(clipLabel({ relativePath: 'deal/deal_pos1/variant/box_1_variant.mp4' }), 'Ge kort · Spelarplats 1 · variant');
   assert.equal(clipLabel({ relativePath: 'okand/mapp/fil.mp4', role: 'variant' }), 'fil.mp4 · variant');
   assert.equal(clipLabel({ id: 'bare-id' }), 'bare-id');
   assert.equal(clipLabel(null), 'Klipp');
-  assert.equal(clipLabel({ id: 'bare-id', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }, { 'bare-id': 'x'.repeat(81) }), 'Reveal · dealerns hålkort');
+  assert.equal(clipLabel({ id: 'bare-id', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }, { 'bare-id': 'x'.repeat(81) }), 'Vänd dolt kort · Dealer');
   assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn' }), 'Arkivnamn');
   assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn' }, { 'bare-id': 'Eget' }), 'Eget');
-  assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }), 'Reveal · dealerns hålkort');
+  assert.equal(clipLabel({ id: 'bare-id', label: 'Arkivnamn', familyId: 'astrid/reveal.dealer/dealer-hole', role: 'standard' }), 'Vänd dolt kort · Dealer');
 });
 
 test('assignClipLabel stores a name, drops a blank override, and rejects text over 80', () => {

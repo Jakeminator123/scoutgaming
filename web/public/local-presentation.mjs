@@ -129,10 +129,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       result = await selected.json();
       if (token !== serial || requestVersion !== version() || signal?.aborted) return false;
       receipt({ event: kind, state: 'selected', ...result.decision, sourceEvent: result.decision.sourceEvent, renderer: 'performance-local', provider: result.provider, mode, projectRevision: result.projectRevision, configurationSource });
-      if (!result.video) throw new Error('Exakt film saknas');
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
       else upcoming = [];
+      if (kind === 'deal' && !result.video && result.decision.media?.reason === 'position_clip_missing') {
+        receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: 'position_clip_missing', renderer: '2d',
+          requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
+          projectRevision: result.projectRevision, configurationSource });
+        return false;
+      }
+      if (!result.video) throw new Error('Exakt film saknas');
       let attempt = 0;
       const owns = current => current === attempt && token === serial && requestVersion === version() && !signal?.aborted;
       const play = async video => {

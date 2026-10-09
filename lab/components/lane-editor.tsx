@@ -21,7 +21,7 @@ import {
 } from '../lib/studio-model.mjs';
 import styles from './lane-editor.module.css';
 
-export const LANE_ID_HELP = 'Använd samma lane-id under Administration → Bord för att koppla utseendet till spelet.';
+export const LANE_ID_HELP = 'Använd samma lane-id under Drift → Bord & spelrum för att koppla utseendet till spelet.';
 const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'Automatiskt'};
 const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'Tal vid inaktivitet'};
 const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
@@ -127,12 +127,12 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
 
   return <>
     <section className={styles.card} aria-labelledby="lanes-in-project">
-      <h2 id="lanes-in-project">Välj lane</h2>
+      <h2 id="lanes-in-project">Presentation</h2>
       {lanes.length === 0 ? <div className={styles.suggestion}>
-        <p>Ingen lane i projektet. Förslag:</p>
+        <p>Ingen sparad presentation.</p>
         <LaneSummary lane={suggestion} />
         <IdHelp id="default-lane-id-help" />
-        <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Lägg till standardlane</button>
+        <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Skapa standardpresentation</button>
       </div> : <ul className={styles.laneList}>
         {lanes.map(lane => <li key={lane.id}>
           <button type="button" className={styles.pick} aria-pressed={selected?.id === lane.id} onClick={() => setSelectedId(lane.id)}>
@@ -142,8 +142,8 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
       </ul>}
       {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} navigationBlocked={navigationBlocked} /> : null}
     </section>
-    <details className={styles.card}><summary>Skapa en ny lane</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
-      <h2 id="new-lane-title">Ny lane</h2>
+    <details className={styles.card}><summary>Ny presentation</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
+      <h2 id="new-lane-title">Skapa presentation</h2>
       <div className={styles.create}>
         <label className={styles.field}>Id
           <input value={draftId} aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} />
@@ -151,7 +151,7 @@ export function LaneEditor({ project, onEdit, selectedId: controlledId, onSelect
         <label className={styles.field}>Namn
           <input value={draftLabel} maxLength={80} onChange={event => setDraftLabel(event.target.value)} />
         </label>
-        <button type="submit" className="sg-btn sg-btn-secondary">Ny lane</button>
+        <button type="submit" className="sg-btn sg-btn-secondary">Skapa presentation</button>
       </div>
       <IdHelp id="new-lane-id-help" />
     </form></details>
@@ -332,9 +332,9 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
     <p className={styles.idLine}>Lane-id <strong>{lane.id}</strong></p>
     <IdHelp id={`lane-id-help-${lane.id}`} />
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
-      <p>Ta bort lane {lane.id}?</p>
-      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort lane</button>
+      <p>Ta bort presentation {lane.id}?</p>
+      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>
       <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
-    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort lane</button>}</details>
+    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort presentation</button>}</details>
   </div>;
 }

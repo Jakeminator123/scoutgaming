@@ -1,49 +1,43 @@
 {
   "title": "Scoutgaming: tre nivåer, en gemensam produkt",
-  "intro": "Översikt är för intern personal, Partnerportalen för operatörens begränsade val och Spelarytan för spelaren. Dealers & klipp, Administration, Agentmodeller och Operatörschatt är verktyg inom den interna ytan. Utan partner_session visar Partnerportalen exempeldata. Inloggning på /partner/login visar bolagets snapshot. Spellobby, /play/profil och /play/historik finns. Profilen kan redigeras (namn och språk). Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= och Vercels /play/blackjack?operator= begränsar lane och dealer till paketet. Börja i /play för att öppna Blackjack; spelmotorn och dess inloggning är samma som tidigare.",
+  "intro": "Kontrollrummet är nivå 1. Börja i Sammansättning och öppna Innehåll för klipp, händelser och talinställningar. Publicering fryser presentationer i ett bolagspaket. Partnerportalen är nivå 2 och begränsar operatörens val till paketet och rättigheterna. Spelarytan är nivå 3; spelmotorn äger kort, saldo och utfall.",
   "steps": [
-    {
-      "view": "lab",
-      "href": "/control/clips",
-      "title": "1. Välj dealer och klipp",
-      "body": "Lägg till en dealer eller välj en befintlig. Grundloop upprepar idle-klipp: ett basklipp för vila och andning, med valbara variationer. Utdelning och Repliker samlar övriga klipp. Egna filer laddas upp i Klippbibliotek."
-    },
     {
       "view": "videos",
       "href": "/control/preview",
-      "title": "2. Sätt ihop dealer, bord och bakgrund",
-      "body": "Välj de tre lagren i Sammansättning, spela upp och justera placering. Spara lanen innan du går vidare. Fullbildsklipp behåller sin inbakade bild; välj ett greenscreen-klipp för separata lager. Lokala filprov laddas inte upp eller publiceras."
+      "title": "1. Sätt ihop presentationen",
+      "body": "Välj eller ladda upp dealerklipp, bord och bakgrund. Spela och justera placeringen. Fullbildsklipp behåller sin inbakade bild; grönskärmsklipp använder separata lager. Provklippet ändrar ingen runtimekoppling. Lokala filprov sparas inte."
+    },
+    {
+      "view": "lab",
+      "href": "/control/clips",
+      "title": "2. Koppla klipp till rätt moment",
+      "body": "Grundloop innehåller Basklipp och Variationer. Utdelning skiljer spelarplatser från dealerns öppna och dolda kort. Repliker har exakt talidentitet. Öppna Klippbibliotek, Händelser eller Tal vid inaktivitet härifrån; avancerade val finns vid sitt arbetsmoment."
     },
     {
       "view": "tree",
       "href": "/control/lanes",
-      "title": "3. Spara val och publicera lane",
-      "body": "Bestäm tillåtna dealers, bord, bakgrunder och urval. Publicera det sparade paketet till ett bolag. Vald lane följer med mellan Lanes och Sammansättning. Avancerade inställningar och export finns i utfällbara delar."
+      "title": "3. Publicera för bolaget",
+      "body": "Publicera sparade presentationer och tillåtna val i ett versionsbundet bolagspaket. Vald presentation följer med från Sammansättning. Bolag, team och roller hanteras under Administration → Bolag & team."
     },
     {
       "view": "administration",
       "href": "/control/administration?tab=tables",
-      "title": "4. Koppla spelets bord",
-      "body": "Konfigurera bord och en matchande spellane i Administration. Nora behöver en egen spellane med Nora som dealer. Att skapa spelrum direkt från en presentationslane är ännu inte ett färdigt enstegsflöde."
-    },
-    {
-      "view": "probe",
-      "href": "/control/probe",
-      "title": "Automatik vid väntan",
-      "body": "Händelser styr klippval efter spelhändelser. Tal vid inaktivitet låter Astrid ta initiativ genom OpenClaw. Välj läge och väntetid; textprov och avancerade minnesval öppnas vid behov. Stödet omfattar ännu inte Noras livechatt."
+      "title": "4. Koppla till spelrum och bord",
+      "body": "Kontrollera en kompatibel spellane under Drift → Bord & spelrum. Nora behöver en egen spellane med Nora som dealer. Enstegsflödet för att skapa ett verkligt spelrum från presentationen återstår i nästa etapp."
     }
   ],
   "boundaries": [
     "En lane samlar presentationsprofilens klipp, varianter, bakgrund, idle och urvalsregler. Spelmotorns signaler går genom presentationsadapter och urval till en uppspelningsplan; spelaren visar video och överlägg. Spelmotorn äger fortfarande kort, regler, saldo och resultat. Operatörspaket betyder tilldelade lanes, spel/bord och tillåtna varumärkesval; Partnerns val begränsas till det publicerade paketet.",
-    "Partnerportalens marker, kort och bordsdesign ändrar bara den lokala förhandsvisningen. En tydlig lane-notis visar att den spelkopplingen saknas. Klipp, masker, urvalsregler och publicering är interna arbetsverktyg. Partnerinloggning på /partner/login finns. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Lanes publicerar ett paket och har kortet Bolag för bolag, roller och medlemskap. Renders /blackjack?operator= och Vercels /play/blackjack?operator= läser paketet. En operatörsväljare ger ingen behörighet.",
-    "Konton hanteras i Administration, fliken Konton & roller (?tab=accounts). Övriga djuplänkar är Bord & lanes (?tab=tables), Spelintegritet (?tab=operations) och Betalningar & journal (?tab=finance). Admin använder samma användarnamn eller e-post och lösenord i spelet och på /control; spelare nekas /control. Aktiv eller blockerad spelare med eget spelarlösenord kan få ett nytt lösenord med bekräftelse och anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörer använder invitation och återställningslänkar. Resend är konfigurerat i produktion och transporten är provad mot sandbox; full riktig kontoaktivering och återställning återstår att verifiera.",
-    "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Dealers & klipp. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta familjer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
+    "Partnerportalens marker, kort och bordsdesign ändrar bara den lokala förhandsvisningen. En tydlig lane-notis visar att den spelkopplingen saknas. Klipp, masker, urvalsregler och publicering är interna arbetsverktyg. Partnerinloggning på /partner/login finns. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Publicering publicerar paket. Administration → Bolag & team hanterar bolag, roller och medlemskap. Renders /blackjack?operator= och Vercels /play/blackjack?operator= läser paketet. En operatörsväljare ger ingen behörighet.",
+    "Konton hanteras i Administration, fliken Konton & roller (?tab=accounts). Övriga djuplänkar är Bord & spelrum (?tab=tables), Spelintegritet (?tab=operations) och Betalningar & journal (?tab=finance). Admin använder samma användarnamn eller e-post och lösenord i spelet och på /control; spelare nekas /control. Aktiv eller blockerad spelare med eget spelarlösenord kan få ett nytt lösenord med bekräftelse och anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörer använder invitation och återställningslänkar. Resend är konfigurerat i produktion och transporten är provad mot sandbox; full riktig kontoaktivering och återställning återstår att verifiera.",
+    "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Innehåll. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta familjer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
     "Uppspelning och spår observerar en spelare. Anslutning, återanslutning och Ny observation startar aldrig en extra Lab-uppspelning. Separat Lab-preview kräver ett uttryckligt val. Klippval, nedladdning och registrering är inte bevis på uppspelning; native-kvittot måste visa faktisk bild/talstart. Partner-SSE och genererat tal visas som egna tydligt märkta flöden.",
     "Bakgrund och bord väljs som hela bild- eller videolager i Sammansättning. Äldre zondata bevaras, men zonredigeraren ingår inte i arbetsflödet.",
     "Händelser grupperar sex källtyper i 16 händelsekategorier. En grupp kan innehålla flera exakta situationer: box 0–6 väljer deal_pos1–7, medan kortvärde och handIndex behålls som eventdata. Box anger plats och tillåten serveridentitet hålls separat; vänster/mitten/höger är inte ett filmval.",
     "Mottagna event behåller sin destination och replik. Ett manuellt exempel kan ändras med situationsväljaren. En saknad exakt Astrid-film ger ett synligt fel i personalytan; spelaren lånar inte en annan plats eller replik.",
     "Standard och varianter kommer från manifestet. Oförändrade gamla demoexempel rensas vid start med en historikrevision som återgång. Egna ändringar och deras beroenden bevaras. Vera, Amira och Mei behåller sin befintliga gemensamma originalspelare.",
-    "Astrids Deal-klipp har en gemensam frekvenseditor i Dealers & klipp och Händelser: procent per variant och exakt utdelningsplats, högst 100 procent totalt. Resten använder standardfilen. 0 procent är manuellt prov. Sparade frekvenser används i Regler, Slump och OpenClaw utan modellanrop; Standard och Skuggläge spelar standard. Saknade klipps andelar går till standard, inte andra varianter. Äldre sparade urval bevaras tills en frekvens ändras och sparas för den platsen. Då ersätter frekvensstyrningen det äldre urvalet för hela platsen; andra varianter utan procent blir manuella. Språk, sociala exempel och temperament ingår inte i frekvensvalet.",
+    "Astrids Deal-klipp har en gemensam frekvenseditor i Innehåll och Händelser: procent per variant och exakt utdelningsplats, högst 100 procent totalt. Resten använder standardfilen. 0 procent är manuellt prov. Sparade frekvenser används i Regler, Slump och OpenClaw utan modellanrop; Standard och Skuggläge spelar standard. Saknade klipps andelar går till standard, inte andra varianter. Äldre sparade urval bevaras tills en frekvens ändras och sparas för den platsen. Då ersätter frekvensstyrningen det äldre urvalet för hela platsen; andra varianter utan procent blir manuella. Språk, sociala exempel och temperament ingår inte i frekvensvalet.",
     "Idleeditorn skiljer basloop, automatisk variation, OpenClaw och manuellt prov. Regelstyrd idle har ännu ingen ansluten trigger. Beskriv När passar klippet? med högst 80 tecken; beskrivningen följer klippet till OpenClaw. Kaffeklippet läggs till som manuell variant. Grundvikt och schemats uppskattning räknar inte in tal eller modellreaktioner. Färdigt tal avbryter idle och återgår till neutral startposition; ingen lång idle-kö byggs. Spela en minut provar bara grundloopar och tidsstyrda variationer.",
     "Box anger plats, inte person. Produktens OpenClaw-adapter får säkert displayName, upptagna boxar, synliga kort och publicerade events. Den får inte rått playerId, framtida sko eller dolt hålkort. En fullständig identitetslista för flera olika spelare per bord är inte implementerad.",
     "Bordschatten i spelfliken använder autentiserad session, publika kort och serverbundet minne. OpenClaw genererar svaret; med uttryckligt generated-speech-läge ger Cartesia Victoria ljud och RunPod matchande Astrid-video. Paketet får förberedas under deal men visas först vid ny renderad standardposition. Händelserepliker behåller sitt exakta native-event och blandas inte ihop med fri chatt. Inspelade chattsvar utan verifierad exakt text/video är text-only. Genererad läppsynk är preview, inte visuellt godkänd.",
@@ -74,15 +68,15 @@
     },
     {
       "name": "Sammansättning · /control/preview",
-      "purpose": "Välj dealer, bord och bakgrund. Spela upp, justera mobil/desktop och spara samma lane som på Lanes. Ladda upp bild/video för bord och bakgrund här. Ett tillfälligt lokalt filprov sparas inte med lanen."
+      "purpose": "Studio-navet: välj dealer, bord och bakgrund, ladda upp vid respektive lager och förhandsvisa direkt. Spara och fortsätt inväntar sparresultat. Fullbildsläget döljer separata lager; lokala filprov är tillfälliga."
     },
     {
-      "name": "Lanes · /control/lanes",
-      "purpose": "Tre kort: Lanes i projektet, Ny lane och Publicera paket. Spara projekt är sidans enda limeknapp. Publicera paket är sekundär. Kortet Bolag skapar bolag, standardroller och medlemskap (ny e-post får aktiveringslänk). Renders /blackjack?operator= och Vercels /play/blackjack?operator= läser det publicerade paketet."
+      "name": "Publicering · /control/lanes",
+      "purpose": "Välj sparade presentationer och bolag, publicera paket och se versionskvittot. Avancerade presentationsinställningar och JSON-export finns kvar. Bolag och team hanteras separat på /control/lanes?tab=companies."
     },
     {
       "name": "Klippbibliotek · /control/videos",
-      "purpose": "Bläddra, ladda upp och granska klipp i samma exakta familjer som Dealers & klipp och spelet använder."
+      "purpose": "Bläddra, ladda upp och granska klipp i samma exakta familjer som Innehåll och spelet använder."
     },
     {
       "name": "Uppspelning · /control/activity",

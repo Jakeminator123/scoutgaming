@@ -39,7 +39,8 @@ test('Next SSR emits one basePath while public login returnTo survives unchanged
 test('malformed and foreign return targets cannot alter the SSR redirect destination', () => {
   for (const value of [null, [], {}, '/studio/administration?token=private', '/studio/studio',
     'https://attacker.invalid', '//attacker.invalid', '/studio\\login', '/studio/%2f..',
-    '/studio#secret', '/blackjack', '/studio\r\nLocation: https://attacker.invalid']) {
+    '/studio/control/lanes?tab=foreign', '/studio/control/lanes?token=private', '/studio/control/lanes?lane=x&lane=y',
+    '/studio/control/lanes?lane=https%3A%2F%2Fattacker.invalid', '/studio#secret', '/blackjack', '/studio\r\nLocation: https://attacker.invalid']) {
     const target = nextStudioLoginRedirect(value);
     const url = new URL(addPathPrefix(target, '/studio'), 'https://qa.example.invalid');
     assert.equal(url.pathname, '/studio/login');
@@ -107,7 +108,7 @@ test('actual native page guard returns every current view after public, standalo
       './studio-native-request.mjs': { normalizeNativeStudioPageRequest },
       './next-page-navigation.mjs': { nextStudioLoginRedirect },
     });
-    for (const returnTo of studioReturns) {
+    for (const returnTo of [...studioReturns, '/studio/control/lanes?tab=companies', '/studio/control/lanes?lane=evening']) {
       const appPath = returnTo.slice('/studio'.length) || '/';
       for (const [host, extra] of [['game.fixture.invalid', {}], ['studio.fixture.invalid', {}],
         ['studio.fixture.invalid', {'x-forwarded-host': 'game.fixture.invalid'}]]) {
@@ -116,13 +117,14 @@ test('actual native page guard returns every current view after public, standalo
         await assert.rejects(guard.authorizeUiPage(request), error => {
           const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
           assert.equal(login.pathname, basePath + '/login');
-          assert.equal(login.searchParams.get('returnTo'), returnTo);
+          assert.equal(login.searchParams.get('returnTo'), returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo);
           assert.equal(login.searchParams.size, 1);
           return true;
         });
         const normalized = new URL(authorized.at(-1));
         assert.equal(normalized.protocol, 'https:');
-        assert.equal(normalized.pathname, basePath + (appPath === '/' ? '' : appPath) || '/');
+        assert.equal(normalized.pathname, basePath + (appPath === '/' ? '' : appPath.split('?')[0]) || '/');
+        assert.equal(normalized.search, '', 'view query never changes the authorization request');
         if (extra['x-forwarded-host']) assert.equal(normalized.host, 'game.fixture.invalid');
       }
     }

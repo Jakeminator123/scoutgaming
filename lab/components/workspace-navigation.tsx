@@ -13,9 +13,30 @@ import './page-template.module.css';
 export const ShellStatus = createContext<ReactNode>(null);
 
 type ScoutLink = { href: string; label: string };
+type ScoutGroup = { id: string; label: string; items: readonly ScoutLink[] };
 
 function ItemLink({ item, active }: { item: ScoutLink; active: boolean }) {
-  return <a key={item.label} className={active ? styles.itemActive : styles.item} href={labUrl(item.href)} aria-current={active ? 'page' : undefined}>{item.label}</a>;
+  return <a className={active ? styles.itemActive : styles.item} href={labUrl(item.href)} aria-current={active ? 'page' : undefined}>{item.label}</a>;
+}
+
+function NavigationGroup({ group, active, routeKey }: { group: ScoutGroup; active: ScoutLink | null; routeKey: string }) {
+  const current = group.items.some(item => item === active);
+  const [expanded, setExpanded] = useState(current);
+  useEffect(() => { if (current) setExpanded(true); }, [current, routeKey]);
+  const labelId = `scout-navigation-${group.id}`;
+  const panelId = `${labelId}-items`;
+  return <div className={styles.group}>
+    <button type="button" id={labelId} className={current ? styles.groupButtonActive : styles.groupButton}
+      aria-expanded={expanded} aria-controls={panelId} onClick={() => setExpanded(value => !value)}>
+      <span>{group.label}</span>
+      <svg className={styles.chevron} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="m6 4 4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+    <div className={styles.groupItems} id={panelId} hidden={!expanded} aria-labelledby={labelId}>
+      {group.items.map(item => <ItemLink key={item.href} item={item} active={active === item} />)}
+    </div>
+  </div>;
 }
 
 function LevelLink({ item, current }: { item: ScoutLink & { id: string }; current: boolean }) {
@@ -34,8 +55,9 @@ function StatusSlot() {
 function Shell({ pathname, search, children }: { pathname: string; search: string; children?: ReactNode }) {
   const surface = resolveWorkspaceSurfacePath(pathname);
   const located = surface?.legacyPath ?? pathname;
-  const current = scoutNavigationItem(search ? `${located}?${search}` : located);
-  const overview = SCOUT_NAVIGATION[0].items[0];
+  const routeKey = search ? `${located}?${search}` : located;
+  const current = scoutNavigationItem(routeKey);
+  const overview = SCOUT_FOOTER_NAVIGATION.find(item => item.href === '/control') ?? null;
   const active = current ?? (surface?.surface === 'control' && !surface.legacyPath ? overview : null);
   const level = scoutLevel(pathname) ?? 'admin';
   const section = active?.label ?? (level === 'player' ? 'Spelare' : 'Översikt');
@@ -44,16 +66,13 @@ function Shell({ pathname, search, children }: { pathname: string; search: strin
     <aside className={styles.sidebar}>
       <a className={styles.brand} href="/control" aria-label="ScoutGamingGroup · Administration">
         <span className={styles.wordmark}>scout<b>/</b>gaming</span>
-        <span className={styles.product}>CROUPIER STUDIO · AI LIVE CASINO</span>
+        <span className={styles.product}>CROUPIER STUDIO</span>
       </a>
       <nav className={styles.nav} aria-label="ScoutGamingGroup administration">
-        {SCOUT_NAVIGATION.map(group => <div className={styles.group} key={group.label || 'overview'}>
-          {group.label ? <p className={styles.groupLabel}>{group.label}</p> : null}
-          {group.items.map(item => ItemLink({ item, active: active === item }))}
-        </div>)}
+        {SCOUT_NAVIGATION.map(group => <NavigationGroup key={group.id} group={group} active={active} routeKey={routeKey} />)}
       </nav>
       <div className={styles.footer}>
-        {SCOUT_FOOTER_NAVIGATION.map(item => ItemLink({ item, active: active === item }))}
+        {SCOUT_FOOTER_NAVIGATION.map(item => <ItemLink key={item.href} item={item} active={active === item} />)}
       </div>
     </aside>
     <div className={styles.column}>

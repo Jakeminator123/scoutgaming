@@ -19,14 +19,14 @@ export function DealFrequencyEditor({ family, inventory, project, onPolicy }: {
   const unavailableShare = saved.filter(row => !inventory.videos.some(video => video.id === row.videoId && video.available && family.variantIds.includes(video.id)))
     .reduce((sum, row) => sum + (row.frequencyPercent ?? 0), 0);
   return <section className={styles.policy} aria-label="Utdelningsklippens frekvens">
-    <h3>Hur ofta ska varianterna väljas?</h3>
-    <p className="helper">Ange procent för varje kort som delas till den här platsen. 20 % betyder ungefär en av fem gånger över tid. 0 % behåller klippet som manuellt prov.</p>
+    <h3>Frekvens</h3>
+    <p className="helper">0 % = manuellt prov. Resterande andel använder standardklippet.</p>
     {legacy ? <p className="notice subtle">Ett äldre urval finns sparat för den här platsen. Första frekvensändringen ersätter det urvalet för hela platsen när du sparar. Sätt procent för varje variant du vill använda.</p> : null}
     {ids.map(id => {
       const video = inventory.videos.find(item => item.id === id);
       const fileName = video?.fileName ?? 'Tidigare variant · filen saknas';
       const derived = clipLabel({ id, familyId: video?.familyId ?? family.id, role: video?.role ?? 'variant', relativePath: video?.relativePath }, project.clipLabels);
-      const clipName = derived === fileName ? fileName : `${derived} · ${fileName}`;
+      const clipName = derived;
       const available = Boolean(video?.available && family.variantIds.includes(id));
       const policy = mediaVariantPolicy(project, family, id);
       const percent = policy.frequencyPercent ?? 0;
@@ -46,6 +46,6 @@ export function DealFrequencyEditor({ family, inventory, project, onPolicy }: {
       </div>;
     })}
     <p className={styles.empty}><strong>Standardklippet: {legacy ? 'tidigare urval gäller tills du sparar en frekvens' : `${100 - total + unavailableShare} %`}</strong></p>
-    <p className="helper">Spara inställningarna. Spelet läser dem vid nästa klippval. Frekvenserna används i Regler, Slump och OpenClaw utan modellanrop. Bara standard spelar alltid standard; Skuggläge visar standard med ett provbeslut. Klippets destination och kortdata styrs av servern.</p>
+    <details><summary>Avancerat · frekvens och spelval</summary><p>Frekvenser gäller den exakta kortplatsen. Högst fyra aktiva varianter. Kortvärde och handindex kommer från servern.</p><p>Regler, Slump och OpenClaw använder samma frekvensval. Bara standard väljer alltid standard; Skuggläge visar standard med ett provbeslut.</p></details>
   </section>;
 }

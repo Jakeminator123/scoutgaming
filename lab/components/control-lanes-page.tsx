@@ -1,7 +1,7 @@
 'use client';
 
 import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { labBasePath, labUrl } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
@@ -40,8 +40,9 @@ export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' 
   return rows;
 }
 
-export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId }: {
+export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialTab = 'publish' }: {
   initialLaneId?: string;
+  initialTab?: 'publish' | 'companies';
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -56,14 +57,17 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const rows = publishLaneRows(project.lanes, savedJson, dirty);
   const [selectedLaneId, setSelectedLaneId] = useState(initialLaneId ?? project.lanes?.[0]?.id ?? 'mobile-phone');
   const selectedLane = project.lanes?.find(lane => lane.id === selectedLaneId) ?? project.lanes?.[0];
-  const [chosen, setChosen] = useState<string[]>(() => initialLaneId && rows.some(row => row.id === initialLaneId) ? [initialLaneId] : []);
+  const compositionHref = labUrl('/control/preview' + (selectedLane ? '?lane=' + encodeURIComponent(selectedLane.id) : ''));
+  const [chosen, setChosen] = useState<string[]>(() => initialLaneId && rows.some(row => row.id === initialLaneId) ? [initialLaneId] : rows[0] ? [rows[0].id] : []);
   const [operatorId, setOperatorId] = useState(() => operators.find(item => item.id === 'sg-test')?.id ?? operators[0]?.id ?? '');
   const [listed, setListed] = useState(operators);
   const [revision, setRevision] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [publishError, setPublishError] = useState('');
   const [busy, setBusy] = useState<'publish' | 'create' | ''>('');
-  const writesOff = !storeAvailable || Boolean(busy);
+  const writeLock = useRef(false);
+  const companiesOnly = initialTab === 'companies';
+  const writesOff = !storeAvailable || Boolean(busy) || saving;
   const publishable = chosen.filter(id => rows.some(row => row.id === id && !row.unsaved));
   const shownError = [publishError, error].filter(Boolean).join(' ');
 
@@ -81,12 +85,13 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const lanes = chosen.filter(id => rows.some(row => row.id === id && !row.unsaved));
-    if (!storeAvailable || busy || lanes.length < 1 || !operatorId) return;
+    if (!storeAvailable || writeLock.current || busy || saving || conflict || lanes.length < 1 || !operatorId) return;
+    writeLock.current = true;
     setBusy('publish'); setPublishError(''); setMessage('');
     try {
       const { response, payload } = await post('operator-package', { operatorId, lanes });
       if (!response.ok) {
-        setPublishError(response.status === 422 ? 'Kontrollera lagerfiler och tillåtna val. Nora kräver en egen spellane med dealer-id nora under Administration → Bord. Spara sedan lanen.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
+        setPublishError(response.status === 422 ? 'Kontrollera lagerfiler och tillåtna val. Nora kräver en egen spellane med dealer-id nora under Drift → Bord & spelrum. Spara sedan presentationen.' : response.status === 409 ? 'Publiceringen krockade. Ladda om och försök igen.' : 'Publiceringen gick inte igenom.');
         return;
       }
       const next = Number(payload?.package_revision ?? payload?.packageRevision);
@@ -96,6 +101,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     } catch {
       setPublishError('Publiceringen gick inte igenom.');
     } finally {
+      writeLock.current = false;
       setBusy('');
     }
   }
@@ -111,7 +117,8 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   }
 
   async function createDemo() {
-    if (!storeAvailable || busy) return;
+    if (!storeAvailable || writeLock.current || busy || saving) return;
+    writeLock.current = true;
     setBusy('create'); setPublishError(''); setMessage('');
     try {
       const { response, payload } = await post('operator-create-demo', {});
@@ -124,15 +131,15 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     } catch {
       setPublishError('Operatören kunde inte skapas.');
     } finally {
+      writeLock.current = false;
       setBusy('');
     }
   }
 
   return <PageTemplate
     eyebrow="// STUDIO"
-    title="Lanes"
-    intro="Spara en uppsättning med dealer, bord och bakgrund. Välj tillåtna variationer och publicera för ett bolag."
-    primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara lanes'}</button>}
+    title={companiesOnly ? 'Bolag & team' : 'Publicering'}
+    primary={companiesOnly ? undefined : <button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara presentationer'}</button>}
   >
     <div className={`sg-page-body ${styles.page}`}>
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
@@ -141,18 +148,18 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
       {notice ? <p role="status">{notice}</p> : null}
       {revision !== null ? <p>Senast publicerade version: {revision}</p> : null}
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
-      <LaneEditor project={project} onEdit={modelEdit} selectedId={selectedLaneId} onSelect={setSelectedLaneId} navigationBlocked={dirty||saving} />
+      {!companiesOnly ? <>
+      <div className={styles.actions}><a className="sg-btn sg-btn-secondary" aria-disabled={dirty || saving} onClick={event => { if (dirty || saving) event.preventDefault(); }} href={compositionHref}>Till sammansättning</a></div>
       <section className={styles.card} aria-labelledby="publish-package">
         <h2 id="publish-package">Publicera för ett bolag</h2>
-        <p>Välj vilka sparade lanes bolaget ska kunna använda.</p>
         <form className={styles.form} onSubmit={event => { void publish(event); }}>
           <fieldset className={styles.choices}>
-            <legend>Lanes</legend>
+            <legend>Presentationer</legend>
             {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
               <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={row.unsaved}
-                onChange={event => setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} />
+                onChange={event => { setSelectedLaneId(row.id); setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id)); }} />
               {row.label} · {row.dealers.map(id=>project.dealers.find(dealer=>dealer.id===id)?.label??id).join(', ')}{row.unsaved ? ' (osparad)' : ''}
-            </label>) : <p>Projektet har inga lanes.</p>}
+            </label>) : <p>Skapa en presentation i Sammansättning.</p>}
           </fieldset>
           <label className={styles.field}>Bolag
             <select value={operatorId} disabled={!storeAvailable || !listed.length} onChange={event => setOperatorId(event.target.value)}>
@@ -164,10 +171,12 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
 
           </div>
         </form>
-        <details><summary>Avancerat: export och testbolag</summary><div className={styles.actions}><button className="sg-btn sg-btn-secondary" type="button" disabled={publishable.length < 1 || dirty} onClick={exportLanes}>Exportera lanes (JSON)</button><button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button></div></details>
+        <details><summary>Avancerat: export och testbolag</summary><div className={styles.actions}><button className="sg-btn sg-btn-secondary" type="button" disabled={publishable.length < 1 || dirty} onClick={exportLanes}>Exportera paket (JSON)</button><button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button></div></details>
       </section>
-      <section className={styles.card} aria-labelledby="lane-game-link"><h2 id="lane-game-link">Använd lanen i spelet</h2><p>Koppla samma lane-id till rätt dealer under Administration → Bord{selectedLane?<>: <strong>{selectedLane.id}</strong></>:null}. Publicering sparar utseende och val för bolaget. Spelkopplingen görs separat.</p><a className="sg-btn sg-btn-secondary" aria-disabled={dirty||saving} onClick={event=>{if(dirty||saving)event.preventDefault();}} href={labUrl('/control/administration?tab=tables')}>Öppna Administration → Bord</a>{dirty?<p>Spara dina ändringar innan du går vidare.</p>:null}</section>
-      {directory !== undefined ? <ControlOperatorDirectory directory={directory}
+      <section className={styles.card} aria-labelledby="lane-game-link"><h2 id="lane-game-link">Spelkoppling</h2><p>Koppla presentationen till en kompatibel spellane under Drift → Bord & spelrum{selectedLane?<>: <strong>{selectedLane.id}</strong></>:null}. </p><a className="sg-btn sg-btn-secondary" aria-disabled={dirty||saving} onClick={event=>{if(dirty||saving)event.preventDefault();}} href={labUrl('/control/administration?tab=tables')}>Öppna bord & spelrum</a>{dirty?<p>Spara ändringarna för att fortsätta.</p>:null}</section>
+      <details className={styles.card}><summary>Avancerade presentationsinställningar</summary><LaneEditor project={project} onEdit={modelEdit} selectedId={selectedLaneId} onSelect={setSelectedLaneId} navigationBlocked={dirty||saving} /></details>
+      </> : null}
+      {companiesOnly && directory !== undefined ? <ControlOperatorDirectory directory={directory}
         onCreated={operator => setListed(current => current.some(item => item.id === operator.id) ? current : [...current, operator])} /> : null}
     </div>
   </PageTemplate>;

@@ -9,16 +9,21 @@ import { nextStudioLoginRedirect } from './next-page-navigation.mjs';
 async function nativeUi(request: Request) {
   const config = nativeStudioAdminConfiguration();
   if (!config) throw Object.assign(new Error('studio_native_unavailable'), {statusCode: 503});
-  const normalized = normalizeNativeStudioPageRequest(request, config);
+  // Page query only restores navigation; it is never part of the auth request.
+  const requested = new URL(request.url);
+  const returnSearch = requested.search;
+  requested.search = '';
+  const normalized = normalizeNativeStudioPageRequest(new Request(requested, request), config);
   assertNativeStudioRequest(normalized, config);
   const native = await studioNativeRuntime();
   let session;
   try { session = await native.authorize(normalized); }
   catch (error) {
     if ((error as {statusCode?:number})?.statusCode === 401) {
-      const path = new URL(normalized.url).pathname;
+      const url = new URL(normalized.url);
+      const path = url.pathname;
       const returnTo = path === '/studio' || path.startsWith('/studio/') ? path : `/studio${path === '/' ? '' : path}`;
-      redirect(nextStudioLoginRedirect(returnTo));
+      redirect(nextStudioLoginRedirect(returnTo + returnSearch));
     }
     throw error;
   }
@@ -29,9 +34,10 @@ async function nativeUi(request: Request) {
 function login(error: unknown, request: Request) {
   if ((error as {statusCode?: number})?.statusCode !== 401) throw error;
   const config = remoteUiConfiguration();
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const path = url.pathname;
   const next = path.startsWith('/studio') ? path : `/studio${path === '/' ? '' : path}`;
-  redirect(`${config!.publicOrigin}/api/auth/lab/start?next=${encodeURIComponent(next)}`);
+  redirect(`${config!.publicOrigin}/api/auth/lab/start?next=${encodeURIComponent(next + url.search)}`);
 }
 
 export async function authorizeUiPage(request: Request) {

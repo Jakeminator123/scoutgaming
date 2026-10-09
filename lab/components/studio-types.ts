@@ -102,12 +102,13 @@ export const viewPaths: Record<StudioView, string> = {
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
 
 // Public control URL plus dealer, event, an optional variant and an optional allowlisted tab.
-export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string } = {}) {
+export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string; situation?: string } = {}) {
   const base = path.split(/[?#]/, 1)[0];
   const params = new URLSearchParams();
   if (selection.dealerId) params.set('dealer', selection.dealerId);
   if (selection.eventId) params.set('event', selection.eventId);
   if (selection.variantId) params.set('variant', selection.variantId);
+  if (selection.situation) params.set('situation', selection.situation);
   if (selection.tab === 'chat' || (selection.tab && EDITOR_TABS.has(selection.tab))) params.set('tab', selection.tab);
   const query = params.toString();
   return labUrl(query ? `${base}?${query}` : base);
@@ -122,8 +123,10 @@ export function selectionHref(pathname: string, search: string, dealerId: string
   const onEvents = path === '/events' || path.endsWith('/events');
   const onVideos = path === '/videos' || path.endsWith('/videos');
   const onOpenClaw = path === '/openclaw' || path.endsWith('/openclaw');
+  const previous = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const situation = previous.get('event') === eventId ? previous.get('situation') ?? undefined : undefined;
   const nextTab = onEvents && EDITOR_TABS.has(tab) ? tab : onOpenClaw && tab === 'chat' ? tab : undefined;
-  return studioHref(path, { dealerId, eventId, variantId: onEvents || onVideos ? variantId : undefined, tab: nextTab });
+  return studioHref(path, { dealerId, eventId, variantId: onEvents || onVideos ? variantId : undefined, tab: nextTab, situation });
 }
 
 export function firstQueryValue(value: string | string[] | undefined) {

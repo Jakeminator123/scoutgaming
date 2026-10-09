@@ -34,23 +34,23 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
     assert.equal(scoutNavigationItem(path, '/studio')?.label, label, path);
     assert.equal(scoutNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio')?.label, label, path);
   };
-  expectLabel('/', 'Dealers & klipp');
-  expectLabel('/control/clips', 'Dealers & klipp');
-  expectLabel('/videos', 'Klippbibliotek');
-  expectLabel('/control/videos', 'Klippbibliotek');
+  expectLabel('/', 'Innehåll');
+  expectLabel('/control/clips', 'Innehåll');
+  expectLabel('/videos', 'Innehåll');
+  expectLabel('/control/videos', 'Innehåll');
   expectLabel('/zones', 'Sammansättning');
   expectLabel('/control/zones', 'Sammansättning');
-  expectLabel('/events', 'Händelser');
-  expectLabel('/control/events', 'Händelser');
-  expectLabel('/probe', 'Tal vid inaktivitet');
-  expectLabel('/control/probe', 'Tal vid inaktivitet');
-  expectLabel('/clips', 'Dealers & klipp');
-  expectLabel('/administration', 'Administration');
+  expectLabel('/events', 'Innehåll');
+  expectLabel('/control/events', 'Innehåll');
+  expectLabel('/probe', 'Innehåll');
+  expectLabel('/control/probe', 'Innehåll');
+  expectLabel('/clips', 'Innehåll');
+  expectLabel('/administration', 'Spelintegritet');
   expectLabel('/openclaw', 'Agentmodeller');
   expectLabel('/operator-chat', 'Operatörschatt');
   expectLabel('/control/operator-chat', 'Operatörschatt');
-  expectLabel('/tree', 'Händelser');
-  expectLabel('/control/tree', 'Händelser');
+  expectLabel('/tree', 'Innehåll');
+  expectLabel('/control/tree', 'Innehåll');
   expectLabel('/activity', 'Uppspelning');
   expectLabel('/guide', 'Guide & hjälp');
 });
@@ -69,7 +69,7 @@ test('exact active-page lookup handles canonical paths and rejects a doubled stu
 
 test('unknown, malformed and injected paths have no active item or default destination', () => {
   const resolved = new Map([
-    ['/videos?token=secret', 'Klippbibliotek'],
+    ['/videos?token=secret', 'Innehåll'],
   ]);
   for (const basePath of ['', '/studio']) {
     for (const path of [null, undefined, 1, {}, [], 'constructor', '__proto__', '', '/unknown',
@@ -81,8 +81,8 @@ test('unknown, malformed and injected paths have no active item or default desti
       const item = scoutNavigationItem(path, basePath);
       const label = typeof path === 'string' ? resolved.get(path) : undefined;
       if (label && basePath === '') assert.equal(item?.label, label, `${basePath}: ${path}`);
-      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Klippbibliotek', path);
-      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Klippbibliotek', path);
+      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Innehåll', path);
+      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Innehåll', path);
       else assert.equal(item, null, `${basePath}: ${String(path)}`);
     }
   }
@@ -125,10 +125,10 @@ test('internal menu keeps native Studio anchors and adds public control and part
         ...SCOUT_FOOTER_NAVIGATION.map(item => labUrl(item.href)),
         ...SCOUT_LEVELS.map(item => labUrl(item.href))]);
       assert.doesNotMatch(html, /onClick|onNavigate/);
-      assert.equal(links.filter(link => link === labUrl('/control/administration')).length, 1);
+      assert.equal(links.filter(link => link === labUrl('/control/administration?tab=operations')).length, 1);
       assert.match(html, /aria-label="ScoutGamingGroup administration"/);
       assert.match(html, /Nivå 1 </);
-      assert.match(html, /CROUPIER STUDIO · AI LIVE CASINO/);
+      assert.match(html, /CROUPIER STUDIO/);
       assert.doesNotMatch(html, /<details|<summary[^>]*>Verktyg/);
       assert.match(html, /aria-current="page"[^>]*>Uppspelning/);
       assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
@@ -187,8 +187,10 @@ test('control landing and imported views highlight the control entrance through 
 
 test('the global menu cannot introduce SPA history that bypasses existing beforeunload draft guards', () => {
   const source = readFileSync(new URL('../components/workspace-navigation.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /next\/link|router\.(?:push|replace)|history\.(?:pushState|replaceState)|onNavigate|onClick/);
+  assert.doesNotMatch(source, /next\/link|router\.(?:push|replace)|history\.(?:pushState|replaceState)|onNavigate/);
   assert.match(source, /href=\{labUrl\(item\.href\)\}/);
+  const anchors = [...source.matchAll(/<a\b[\s\S]*?>/g)].map(match => match[0]);
+  for (const anchor of anchors) assert.doesNotMatch(anchor, /onClick|onNavigate/);
 });
 
 function visit(node, callback) {
@@ -264,7 +266,7 @@ test('both real page guards protect dirty project drafts on native leave and cle
       };
       const component = loadComponent(file, { react: hooks }, browser)[name];
       const tree = component({ initialProject: project, initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
-      const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload'));
+      const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload') && effect.toString().includes('addEventListener'));
       assert.equal(guardEffects.length, 1);
       const release = guardEffects[0]();
       assert.equal(browser.dispatchEvent(new Event('beforeunload', { cancelable: true })), !dirty);

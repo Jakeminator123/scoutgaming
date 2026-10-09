@@ -1,5 +1,131 @@
 # Aktuell handoff — Scoutgaming
 
+## 9 oktober 2026: samlad Studio-etapp för löpande leverans
+
+**Implementerad och lokalt verifierad; produktionskvittot uppdateras efter push.**
+Studio har Sammansättning, Innehåll och Publicering. Drift, AI & chatt och
+Administration är utfällbara grupper; Bolag & team ligger på
+`/control/lanes?tab=companies`. Sammansättning samlar preview och lageruppladdning;
+avancerade reglage finns kvar. Egna klippnamn bevaras, standardnamn är svenska.
+Grundloop, sju spelarplatser och dealerns öppna/dolda/vända kort hålls åtskilda.
+
+Spara och fortsätt väntar på en ren render och bevarar nyare utkast.
+Publicering låser dubbelklick. Native inloggning behåller tillåten tab/lane-query;
+äldre remoteUi-handoff tar fortfarande bort query. Direkt upload behåller
+tekniskt kvitto, hash, revisions- och avbrottsskydd utan extra previewgodkännande.
+
+Tom exakt utdelningsposition ger `position_clip_missing`/`skipped`, ingen
+reservfilm. Spelmotorns kort fortsätter visas i 2D. Detta gäller också Noras
+registrerade positionsfilm med `available:false`; annat speechbeteende ändras
+inte. Publicering kräver inte kompletta positionsuppsättningar.
+Vänster/mitten/höger är fortfarande tekniska eventgrupper: platser 1–2, 3–5,
+6–7. De är inte grundloopar och ingen godtycklig positionsersättning införs.
+
+Verifierat före commit:
+- Lab produktionsbygge och TypeScript passerade.
+- Hela Studio-sviten: 1 099 PASS, 2 SKIP, 0 FAIL (1 101 tester).
+- Isolerad webbläsare: meny/tangentbord, 390/768/1440 px utan sidöverflöde,
+  verklig PUT → sparning → sidhopp → omladdning, exakt box3 till Händelser och
+  separerad bolagsvy; inga JavaScript-fel eller utkastdialoger.
+- Runtime/kort/lager och saknade positioner har riktade regressioner; sista
+  P2-korrigeringen har 45/45 PASS. Originalfyras sync-probe PASS, media oförändrade.
+- Oberoende granskning hittade och ledde till rättade spar-/dubbelklicks- och
+  saknad-fil-fall. Lip-sync eller produktionsrepetition är inte godkänd av dessa tester.
+
+**Återstår:** commit-hook, exakt-SHA CI/deployment och produktionskontroll;
+riktig skapa-spelrum-kedja och full Nora/fyradealer-repetition. Ingen rumfunktion
+eller ny schema-/databas-migration ingår i denna etapp. Johns Nivå 2-brief/skiss
+finns i teaminbox #9. Ingen kandidatmapp från separat legacygranskning har raderats.
+
+## 9 oktober 2026: arbetsplan för Sammansättning som nav
+
+**Status: genomförande pågår; etapper levereras efter verifiering.** Jakob har valt Sammansättning med tre
+videolager som nav. Överflödiga vyer, självklara texter och bekräftelser tas bort;
+avancerade funktioner behålls utfällbara. Inspirationsdokumentet kommer senare
+och är vägledande, inte en bindande detaljspecifikation. Jakob har aktiverat måluppdraget och begärt löpande main-leveranser för
+granskning i produktion. Ingen ny tracker skapas.
+
+### Avsedd struktur och beteende
+
+| Arbetsyta | Samlar | Standardbeteende |
+| --- | --- | --- |
+| Studio → Sammansättning | Dealer, bord, bakgrund, exakta provklipp | Gemensam stor preview; val och uppladdning vid respektive lager |
+| Studio → Innehåll | Dealers & klipp, bibliotek, händelser, tal vid inaktivitet | Vald dealer följer med; Grundloop, Utdelning och Repliker; detaljer i paneler |
+| Studio → Publicering | Presentationslanes, bolagspaket, export, spelkoppling | Samma sparade presentation; tydlig separat publicering |
+| Drift | Bord/spelrum, uppspelning, spelintegritet, betalningar/journal | Operativa verktyg samlade, med nuvarande åtkomstkontroller |
+| AI & chatt | Agentmodeller och operatörschatt | Två undervyer inom samma grupp |
+| Administration | Bolag/team, konton/roller, partners | En förvaltningsyta; relevant bolagsval nås även vid publicering |
+
+Översikt och Guide är lågprioriterade fasta länkar. Två layoutalternativ provas:
+utfällbara Studio-undervyer i vänstermenyn, eller en Studio-ingång med tre flikar
+på sidan. Ordvalet Publicering är ett arbetsnamn; presentationslane, spellane och
+spelrum får inte blandas ihop i datamodell eller användarflöde.
+
+- Direkt förhandsvisning utan manuellt godkännande. Uppladdning: välj fil,
+  automatisk teknisk kontroll, filen vald i preview. Fel visas vid berört lager.
+- Samordnat Spara och fortsätt ersätter onödiga sidhoppsspärrar där det går.
+  CAS/revisionskontroll och konfliktåterhämtning måste skydda osparade ändringar.
+- Kortnamn beskriver handling eller replik: exempel Lugn blick, Leende,
+  Första kortet, Välkommen till bordet. Dealer/kategori visas separat.
+  Befintliga egna namn bevaras; originalfilnamn, ID och hash finns under Avancerat.
+- Grundloop behåller viktade Basklipp och Variationer. Tal vid inaktivitet är
+  en annan funktion. Förhandsvisa klipp är ett provval, ingen runtimekoppling.
+- Menytexter, hjälptext och tomma förklaringsblock rensas. Tekniska felmeddelanden,
+  behörighetskontroller, upload-biljetter/hashar och capability-skydd bevaras.
+- Radera ersatta UI-komponenter först efter referens-/användningskontroll.
+  Befintliga alias, sparad zondata, media och kompatibilitetsläsning består
+  tills deras beroenden är verifierat avvecklade.
+
+### Genomförande i ordning
+
+| Etapp | Arbete | Klart när |
+| --- | --- | --- |
+| 1. Meny och nav | Gemensam skalstruktur, valt sammanhang och utfällning | Aktiv undervy, tangentbord, omladdning, bakåtknapp och djup-/querylänkar fungerar |
+| 2. Sammansättning och innehåll | Lagerpaneler, direkta provval, enhetlig dealeruppladdning inklusive greenscreen | Upload → preview → spara → omladdning fungerar; avbruten upload och revisionskonflikt förlorar inget utkast |
+| 3. Texter, namn och legacy | Renodla paneler, synliga namn och oanvänd UI-kod | Alla befintliga funktioner går att nå, ID/replik/kortplats och egna namn är oförändrade |
+| 4. Publicering och spelrum | Koppla presentation till kompatibel spellane och rum | Paket/behörighet valideras; upprepat klick skapar inga dubbletter; komplett isolerat flöde till spelaren verifierat |
+| 5. Dokumentation och leverans | Uppdatera guide, ordlista, teknisk referens och denna handoff | Menynamn/route/flöde stämmer; relevanta tester, visuell QA och exakt-SHA driftkontroller redovisade var för sig |
+
+Etapp 4 börjar med att fastställa API-kontraktet: återanvänd kompatibel spellane
+eller skapa en ny, och skapa därefter ett faktiskt rum. Detta är inte bara en
+knapptext. Nora kräver egen kompatibel spellane; live-AI-chatt för Nora ingår inte.
+
+### Arbetsfördelning och verifiering
+
+Samordnaren äger integration, utkast/sparning, publiceringskontrakt och gemensamma
+dokument. Underagent A arbetar med meny/skal; B med klipp- och lagerpaneler;
+C gör en separat granskning av städning, terminologi och tillgänglighet.
+Högst tre underagenter samtidigt; exakta filclaims innan ändringar, samordnaren
+äger .git vid integration. Ingen branch eller worktree skapas.
+
+Relevanta filer: lab/lib/scout-navigation.mjs, lab/components/workspace-navigation.tsx,
+control-preview-page.tsx, composition-preview.tsx, layer-library.tsx,
+family-video-upload.tsx, video-metadata-fields.tsx, control-lanes-page.tsx och
+lane-editor.tsx under lab/components. Navigationstester finns under lab/test.
+Dokument ändras i lab/docs/README.md, lab/docs/TERMINOLOGI.md,
+docs/LOCAL-PRESENTATION-RUNTIME.md och denna handoff tillsammans med respektive etapp.
+CLOUD-MIGRATION uppdateras bara för verifierade ändringar i befintliga poster.
+
+Standard i editorn är tre lager; fullbildsfilmer fortsätter fungera som fullbild
+och döljer separata bord/bakgrund. Ny default i spelruntime kräver egen verifiering:
+originalfyra dealers, två uppspelningar vardera, Nora och hela paket → partner →
+spelare. Visuell lip-sync-acceptans är inte ett hinder för vanlig upload/preview
+men kan inte ersättas med hashkontroll vid ändrat spelmaterial.
+
+Planunderlag kontrollerat mot main 40b2931 och kort överlämning från chatt "1".
+Skapa spelrum från presentationslane saknas; CUA-visuell slutkontroll och Nora-
+produktionsacceptans är fortfarande öppna. Den ursprungliga planeringsvändan ändrade ingen produktkod; den aktuella
+implementationens testresultat står i leveransavsnittet ovan. Säkerhetsläsning vid start:
+12 öppna GitGuardian-incidenter; platsmetadata delvis och historisk skanning
+ofullständig, aktiv övervakning. Ingen incident har ändrats.
+
+Jakobs modellkrav: minst GPT-6.1 Sol med extra hög tankegrad för underagenter.
+Samordnaren hanterar integration och svårare avvägningar.
+John och hans agent har fått originalskissen och Nivå 2-uppdraget via
+[teaminbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9).
+Utdelning ska uttryckligen behålla separata spelarplatser och dealerpositioner.
+Svenska visningsord dokumenteras i ordlistans kolumn Svenska.
+
 ## 9 oktober 2026: samlad Studio-meny och enklare sammansättning
 
 Jakobs meny- och begreppsbeslut är genomfört med underlag från chatten
