@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
+import { labUrl } from '../lib/lab-url.mjs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
@@ -80,7 +81,7 @@ function loadNavigation(pathname, search = '', hooks = React) {
   const url = new URL(`../components/${file}`, import.meta.url);
   const output = transformSync(readFileSync(url, 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const localRequire = createRequire(url), module = { exports: {} };
-  vm.runInNewContext(`${output.code}\nmodule.exports.NavigationGroup = NavigationGroup;`, {
+  vm.runInNewContext(`${output.code}\nmodule.exports.NavigationGroup = NavigationGroup; module.exports.MobileNavigation = MobileNavigation; module.exports.ItemLink = ItemLink;`, {
     module, exports: module.exports, structuredClone,
     require: name => {
       if (name === 'react') return hooks;
@@ -205,4 +206,65 @@ test('group controls toggle without navigation and reopen on route changes inclu
   button.props.onClick();
   [button, panel] = render(group.items[0], '/control/preview?lane=t10');
   assert.equal(button.props['aria-expanded'], true, 'Back/Forward or a new subroute reopens the group');
+});
+
+
+test('mobile menu starts collapsed and closes with Escape or its native button while returning focus', () => {
+  let state = false, focused = 0;
+  const ref = { current: { focus: () => focused++, getClientRects: () => [1] } };
+  const hooks = { ...React, useRef: () => ref, useState: () => [state, value => { state = value; }] };
+  const { MobileNavigation } = loadNavigation('/control/preview', 'lane=preserved', hooks);
+  const render = () => MobileNavigation({ brand: 'Scout', children: 'existing grouped links' });
+  let tree = render();
+  let button = tree.props.children[0].props.children[1];
+  let panel = tree.props.children[1];
+  assert.equal(button.type, 'button');
+  assert.equal(button.props.type, 'button');
+  assert.equal(button.props.onKeyDown, undefined, 'Enter and Space use native button semantics');
+  assert.equal(button.props['aria-expanded'], false);
+  assert.equal(button.props['aria-controls'], panel.props.id);
+  assert.equal(panel.props['data-open'], false);
+  button.props.onClick();
+  tree = render();
+  button = tree.props.children[0].props.children[1];
+  assert.equal(button.props['aria-expanded'], true);
+  let prevented = 0;
+  tree.props.onKeyDown({ key: 'Tab', preventDefault: () => prevented++, stopPropagation() {} });
+  assert.equal(state, true);
+  assert.equal(prevented, 0, 'Tab remains free, without a focus trap');
+  tree.props.onKeyDown({ key: 'Escape', preventDefault: () => prevented++, stopPropagation() {} });
+  assert.equal(state, false);
+  assert.equal(focused, 1);
+  assert.equal(prevented, 1);
+  render().props.children[0].props.children[1].props.onClick();
+  render().props.children[0].props.children[1].props.onClick();
+  assert.equal(state, false);
+  assert.equal(focused, 2);
+  ref.current.getClientRects = () => [];
+  render().props.children[0].props.children[1].props.onClick();
+  render().props.onKeyDown({ key: 'Escape', preventDefault: () => assert.fail('hidden desktop toggle must not receive focus'), stopPropagation() {} });
+  assert.equal(focused, 2);
+});
+
+test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
+  const { ItemLink } = loadNavigation('/control/preview');
+  const composition = groups[0].items[0], content = groups[0].items[1];
+  for (const routeKey of ['/control/preview?lane=saved', '/studio/control/preview?lane=saved']) {
+    const current = ItemLink({ item: composition, active: true, routeKey });
+    assert.equal(current.type, 'span');
+    assert.equal(current.props['aria-current'], 'page');
+    assert.equal(current.props.href, undefined);
+  }
+  const contextual = ItemLink({ item: content, active: true, routeKey: '/control/events?dealer=astrid' });
+  assert.equal(contextual.type, 'a');
+  assert.equal(contextual.props.href, labUrl('/control/clips'));
+  assert.equal(contextual.props.onClick, undefined);
+});
+
+
+test('server-rendered navigation keeps the mobile disclosure closed without reading viewport state', () => {
+  const html = renderToStaticMarkup(loadNavigation('/control/preview', 'lane=draft').WorkspaceNavigation());
+  assert.match(html, /aria-expanded="false" aria-controls="scout-mobile-navigation"[^>]*>Meny/);
+  assert.match(html, /id="scout-mobile-navigation"[^>]*data-open="false"/);
+  assert.doesNotMatch(html, /role="dialog"|aria-modal/);
 });

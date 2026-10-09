@@ -11,7 +11,7 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
 **En presentation är en återanvändbar profil** med dealer, bord och bakgrund. Tekniskt heter den presentationslane och skiljer sig från spelets spellane.
-Börja i **Sammansättning**: välj presentation och byt Dealer, Bord och Bakgrund i samma lagerpanel. **Storlek och placering** är öppet från start; Mobil och Desktop har egna inställningar. Spara och fortsätt till **Publicering**.
+Börja i **Sammansättning**: välj presentation och öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
 Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
 På Innehåll kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
@@ -93,7 +93,7 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
-Översikt har snabbvalen **Sammansättning**, **Innehåll** och **Publicering**.
+Översikt har snabbvalen **Sammansättning**, **Innehåll** och **Publicering**. På mobil öppnar **Meny** de samlade verktygen; Escape stänger och återför fokus. Val av anslutet bolag följer länkarna till partnern och spelarytan. En otillgänglig bolagslista visas som ett driftfel; demonstrationsbolag märks separat.
 Administration och AI & chatt nås i sidomenyn.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,

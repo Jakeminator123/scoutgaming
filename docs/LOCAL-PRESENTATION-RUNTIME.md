@@ -207,6 +207,8 @@ Därför bevisar en senare HTTP 200 inte att den misslyckade versionen blev fris
 jämför deploy-ID och commit-SHA i Render. Se [Renders deploymodell](https://render.com/docs/deploys).
 GitHubs tidigare timeout vid ffmpeg/jq-installation är en separat CI-händelse.
 
+`GET /__cloud/version` ger efter utrullning {schemaVersion: 1, provider: "render", commitSha} från Renders värdhanterade `RENDER_GIT_COMMIT`, fryst vid gatewaystart. Endast exakt 40 hextecken accepteras; saknad/felaktig metadata ger 503 med render_version_unavailable. Svaret cachas inte. HEAD ger samma status utan kropp. Klientheaders och query-parametrar kan inte ersätta versionen. Kvitto visar aktiv runtime-SHA; deploy-ID och misslyckade byggloggar hämtas fortfarande i Render. En 404/421 från äldre runtime bevisar inte att senaste kod är utrullad.
+
 Kontroll den 9 oktober: publik health gav 200 och presentationscapability v3,
 men ingen commit-SHA. Befintliga verktyg ger ännu inte privata Render-deployloggar
 eller liveinställningar; orsaken till det rapporterade första felet är obelagd.

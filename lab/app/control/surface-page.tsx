@@ -26,22 +26,22 @@ function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null 
 
 type ListedOperator = { id: string; slug: string; name: string };
 
-// Fixture operators only while the native store is offline. An empty store stays empty.
+// Demonstrations are explicit. A failed live read must never look like connected companies.
 async function controlOperators(fallback: ListedOperator[]) {
-  if (!nativeStudioAdminEnabled()) return fallback;
+  if (!nativeStudioAdminEnabled()) return { operators: fallback, operatorStatus: 'demo' as const };
   try {
     const native = await studioNativeRuntime();
-    if (typeof native.listLaneOperators !== 'function') return fallback;
+    if (typeof native.listLaneOperators !== 'function') throw new Error('operator_list_unavailable');
     const listed = await native.listLaneOperators();
-    if (!Array.isArray(listed)) return fallback;
+    if (!Array.isArray(listed)) throw new Error('operator_list_unavailable');
     const operators: ListedOperator[] = [];
     for (const operator of listed) {
-      if (!operator || typeof operator.id !== 'string' || typeof operator.slug !== 'string' || typeof operator.name !== 'string') return fallback;
+      if (!operator || typeof operator.id !== 'string' || typeof operator.slug !== 'string' || typeof operator.name !== 'string') throw new Error('operator_list_unavailable');
       operators.push({ id: operator.id, slug: operator.slug, name: operator.name });
     }
-    return operators;
+    return { operators, operatorStatus: 'live' as const };
   } catch {
-    return fallback;
+    return { operators: [], operatorStatus: 'unavailable' as const };
   }
 }
 
@@ -84,11 +84,11 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
   if (surface === 'control') {
     const tool = controlToolPath(route.view);
     if (tool) redirect(publicAbsoluteUrl(h, tool));
-    // Översikt must never fail on a snapshot without operators; the fixture always has them.
+    // A missing fixture list is empty; live errors receive their own visible state.
     const fallback = (Array.isArray(data.snapshot.operators) ? data.snapshot.operators : [])
       .map(({ id, slug, name }: ListedOperator) => ({ id, slug, name }));
-    const operators = await controlOperators(fallback);
-    return <ControlWorkspace user={user} initialView={route.view} operators={operators} />;
+    const companies = await controlOperators(fallback);
+    return <ControlWorkspace user={user} initialView={route.view} {...companies} />;
   }
   if (route.operatorSlug === null) {
     return <PartnerWorkspace user={user}

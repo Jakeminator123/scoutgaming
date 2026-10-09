@@ -50,7 +50,7 @@
     },
     {
       "name": "Partnerportal · /partner",
-      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Utan partner_session visas tydligt märkta demonstrationer. Inloggning på /partner/login visar bolagets snapshot. Varje bolag nås på /partner/{operatorSlug}. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Spelare och transaktioner är inte kopplade (N2.4). Marker, kort och bord är tills vidare lokala prov."
+      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Utan partner_session visas tydligt märkta demonstrationer. Inloggning på /partner/login visar bolagets snapshot. Varje bolag nås på /partner/{operatorSlug}. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Spelare och transaktioner är inte kopplade (N2.4). Publicerade bord och bakgrunder sparas på servern inom paketets rättigheter. Marker och kort i den märkta demonstrationen är lokala prov."
     },
     {
       "name": "Spelaryta · /play",
@@ -66,7 +66,7 @@
     },
     {
       "name": "Publicering · /control/lanes",
-      "purpose": "Välj sparade presentationer och bolag, publicera paket och se versionskvittot. Avancerade presentationsinställningar och JSON-export finns kvar. Bolag och team hanteras separat på /control/lanes?tab=companies."
+      "purpose": "Välj bolag och sparad presentation, ange rumsnamn och välj Skapa spelrum. Rum och paket sparas tillsammans; versionskvittot visar publiceringen. Paket- och spellaneval finns under Avancerat. Bolag och team hanteras under Administration → Bolag & team på /control/lanes?tab=companies."
     },
     {
       "name": "Klippbibliotek · /control/videos",

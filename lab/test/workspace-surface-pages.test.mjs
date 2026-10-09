@@ -28,11 +28,12 @@ function load(file, overrides) {
 
 function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = async () => {
   throw Object.assign(new Error('partner session should not authorize this request'), { statusCode: 500 });
-}) {
+}, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
   function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
   const shared = load('../app/control/surface-page.tsx', {
+    '../../lib/studio-native-runtime.mjs': nativeRuntime,
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
     '@/components/kevin-bo/kevin-backoffice': { KevinBackoffice },
@@ -65,7 +66,7 @@ function canonicalControlPath(error, basePath) {
   const location = redirectLocation(error, basePath);
   const url = new URL(location);
   assert.equal(url.pathname.startsWith('/studio'), false);
-  return url.pathname + url.hash;
+  return url.pathname + url.search + url.hash;
 }
 
 test('real catch-all pages use exact public login returns and one Next basePath after authorization 401', async () => {
@@ -156,7 +157,8 @@ test('control shows the overview and disconnected preview addresses are not foun
   assert.equal(element.type, loaded.ControlWorkspace);
   assert.equal(element.props.user, 'fixture-admin');
   assert.equal(element.props.initialView, 'ops');
-  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'operators', 'user']);
+  assert.equal(element.props.operatorStatus, 'demo');
+  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'operatorStatus', 'operators', 'user']);
   assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [{ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }]);
   // 'preview' left this list in 1f1c14d6: /control/preview is the staff layer-preview page (its own route wins).
   for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['statistics']]) {
@@ -193,8 +195,8 @@ test('neither workspace renders a missing identity even if the adapter returns a
 test('old internal tool documents authorize then lead to the real tool with one basePath', async () => {
   let reads = 0;
   const loaded = pages(async () => { reads++; return { session: { user: 'fixture-admin' } }; });
-  for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration'],
-    ['media', '/control/videos'], ['presentation-events', '/control/events'], ['team', '/control/administration'], ['backgrounds', '/control/preview']]) {
+  for (const [section, destination] of [['voice', '/control/clips#clips'], ['clips', '/control/clips#deal'], ['lanes', '/control/administration?tab=tables'],
+    ['media', '/control/videos'], ['presentation-events', '/control/events'], ['team', '/control/administration?tab=accounts'], ['backgrounds', '/control/preview']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.control, [section]), error => {
         assert.equal(canonicalControlPath(error, basePath), destination);
@@ -250,5 +252,36 @@ test('legacy control entrances redirect once to canonical public control tools',
         return true;
       });
     }
+  }
+});
+
+
+test('live company reads distinguish verified empty stores from failures and never substitute demos', async () => {
+  const demo = { id: 'demo-north', slug: 'demo-north', name: 'Demo North' };
+  const live = { id: 'live-one', slug: 'live-one', name: 'Live One', privateField: 'never-pass' };
+  for (const [listed, expectedStatus, expectedOperators] of [[[], 'live', []], [[live], 'live', [{ id: live.id, slug: live.slug, name: live.name }]], [null, 'unavailable', []], [[{ id: 'invalid' }], 'unavailable', []]]) {
+    const loaded = pages(async () => ({ session: { user: 'fixture-admin' }, snapshot: { operators: [demo] } }), undefined, undefined,
+      { nativeStudioAdminEnabled: () => true, studioNativeRuntime: async () => ({ listLaneOperators: async () => listed }) });
+    const element = await renderPage(loaded.control);
+    assert.equal(element.props.operatorStatus, expectedStatus);
+    assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), expectedOperators);
+  }
+  for (const runtime of [async () => { throw new Error('private failure detail'); }, async () => ({}), async () => ({ listLaneOperators: async () => { throw new Error('private failure detail'); } })]) {
+    const loaded = pages(async () => ({ session: { user: 'fixture-admin' }, snapshot: { operators: [demo] } }), undefined, undefined,
+      { nativeStudioAdminEnabled: () => true, studioNativeRuntime: runtime });
+    const element = await renderPage(loaded.control);
+    assert.equal(element.props.operatorStatus, 'unavailable');
+    assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), []);
+    assert.doesNotMatch(JSON.stringify(element.props), /private failure detail|Demo North/);
+  }
+});
+
+test('retired internal task links select the relevant existing administrative workflow', async () => {
+  const loaded = pages(async () => ({ session: { user: 'fixture-admin' } }));
+  for (const [section, tab] of [['players', 'accounts'], ['team', 'accounts'], ['transactions', 'finance'], ['game-tables', 'tables'], ['lanes', 'tables'], ['shoes', 'operations'], ['legacy-rooms', 'tables'], ['integration', 'partners']]) {
+    await assert.rejects(renderPage(loaded.control, [section]), error => {
+      assert.equal(canonicalControlPath(error, ''), `/control/administration?tab=${tab}`);
+      return true;
+    });
   }
 });

@@ -88,7 +88,7 @@ export async function main(args = process.argv.slice(2), env = process.env,
     }
     for (const path of Object.values(config.paths)) await mkdir(path, { recursive: true, mode: 0o700 });
     children = await startChildren(transformChildSpecifications(childSpecifications(config, env, { labInternalSecret })), { signal: abort.signal });
-    gateway = createCloudGateway(config, { labInternalSecret, vercelIngress: config.vercelIngress });
+    gateway = createCloudGateway(config, { labInternalSecret, vercelIngress: config.vercelIngress, renderGitCommit: env.RENDER_GIT_COMMIT });
     await openCheckedGateway(gateway, config, { signal: abort.signal });
     console.log('Cloud pilot listening after local access checks; public deployment acceptance remains outstanding.');
     const interrupted = new Promise(resolveDone => {

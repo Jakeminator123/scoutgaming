@@ -116,11 +116,17 @@ export function nativeP6QaRouterRequest(incoming, qa) {
 // One platform port, three exact public hostnames. The original Host and Origin
 // reach the child; rewriting them to loopback would defeat application checks.
 export function createCloudGateway(config, { labInternalSecret, sessionCheck = checkLabSession,
-  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress } = {}) {
+  webPort = WEB_PORT, labPort = LAB_PORT, vercelIngress = config.vercelIngress, renderGitCommit } = {}) {
   if (typeof labInternalSecret !== 'string' || Buffer.byteLength(labInternalSecret) < 32) {
     throw new Error('The cloud Lab gateway requires an internal secret.');
   }
   const labHost = new URL(config.labOrigin).host;
+  // Snapshot only Render's parent-process deployment metadata, never request data.
+  const commitSha = typeof renderGitCommit === 'string' && renderGitCommit.length === 40 && /^[a-fA-F0-9]{40}$/.test(renderGitCommit)
+    ? renderGitCommit.toLowerCase() : null;
+  const versionBody = JSON.stringify(commitSha
+    ? { schemaVersion: 1, provider: 'render', commitSha }
+    : { error: 'render_version_unavailable' });
   if (vercelIngress && (!config.singleOrigin || vercelIngress.publicOrigin !== config.gameOrigin)) {
     throw new Error('Vercel ingress requires the canonical single-origin layout.');
   }
@@ -141,6 +147,16 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return; }
     if (ingress.health) { outgoing.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); outgoing.end('ok'); return; }
+    if (ingress.version || (incoming.url === '/__cloud/version' && ['GET', 'HEAD'].includes(incoming.method)
+      && !incoming.headers.upgrade && upstreamForHost(incoming.headers.host, config))) {
+      outgoing.writeHead(commitSha ? 200 : 503, { 'Content-Type': 'application/json',
+        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      outgoing.end(incoming.method === 'HEAD' ? undefined : versionBody); return;
+    }
+    const versionPath = routePath(incoming.url, config);
+    if (versionPath === '/__cloud/version' || versionPath?.startsWith('/__cloud/version/')) {
+      outgoing.writeHead(421, { 'Cache-Control': 'no-store' }); outgoing.end(); return;
+    }
     if (ingress.redirect) { outgoing.writeHead(307, {Location:ingress.redirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); outgoing.end(); return; }
     if (ingress.transported) incoming.headers = ingress.headers;
     if (ingress.session) {

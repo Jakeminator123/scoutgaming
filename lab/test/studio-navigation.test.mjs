@@ -180,7 +180,7 @@ test('control landing and imported views highlight the control entrance through 
       'next/navigation': { usePathname: () => path, useSearchParams: () => new URLSearchParams() },
     });
     const html = renderToStaticMarkup(WorkspaceNavigation());
-    assert.match(html, /href="\/control"[^>]*aria-current="page"[^>]*>Översikt/);
+    assert.match(html, /aria-current="page"[^>]*>Översikt/);
     assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   }
 });

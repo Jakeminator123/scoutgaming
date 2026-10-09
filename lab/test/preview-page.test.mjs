@@ -259,8 +259,8 @@ test('opaque clips keep all primary layer selectors discoverable while the previ
   }
   const dealerPanel=harness.find(controls,node=>node.type==='section'&&harness.find(node,child=>child.type==='select'&&child.props.value==='astrid'));
   assert.ok(harness.find(dealerPanel,node=>node.type==='select'&&node.props.value==='opaque-astrid'));
-  const placement=harness.find(controls,node=>node.type==='details'&&node.props.className?.includes('placement'));
-  assert.equal(placement.props.open,true);
+  const placement=harness.find(dealerPanel,node=>node.type==='fieldset'&&node.props.className==='placementControls');
+  assert.ok(placement);
   assert.ok(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Dealer storlek'));
   assert.equal(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Bord bredd'),null);
   const preview=harness.find(tree,node=>node.type?.name==='CompositionPreview');
@@ -296,9 +296,9 @@ test('dealer choice is saved as the presentation default and allowed dealer, whi
   assert.deepEqual(harness.savedProjects[0].lanes[1],original.lanes[1]);
 });
 
-test('open placement controls edit and reset only the selected format while preserving the exact clip and other presentation draft',()=>{
+test('per-layer placement controls edit and reset only the selected format while preserving the exact clip and other presentation draft',()=>{
   const project=createSeedProject();project.lanes[0].composition=defaultCompositionSettings();project.lanes[0].label='Mitt utkast';
-  project.lanes[0].composition.mobile.dealer.scale=.75;project.lanes[0].composition.desktop.dealer.scale=1.5;
+  project.lanes[0].composition.mobile.dealer.scale=.75;project.lanes[0].composition.desktop.dealer.scale=1.5;project.lanes[0].composition.mobile.table.x=.19;project.lanes[0].composition.mobile.background.y=-.12;
   const inventory={videos:[{id:'astrid-green',dealer:'astrid',available:true,previewUrl:'/astrid-green',label:'Astrid greenscreen',classification:{dealerId:'astrid',eventId:'idle.ready',role:'standard',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}}]};
   const harness=previewHarness({project,inventory,dirty:false}),original=structuredClone(project);
   let tree=harness.render();
@@ -323,10 +323,65 @@ test('open placement controls edit and reset only the selected format while pres
   harness.find(tree,node=>node.type==='button'&&node.props.children==='Mobil 9:16').props.onClick();
   tree=harness.render();
   assert.equal(range(tree,'Dealer storlek').props.value,.75);
-  harness.find(tree,node=>node.type==='button'&&node.props.children==='\u00c5terst\u00e4ll placering').props.onClick();
+  harness.find(tree,node=>node.type==='button'&&[node.props.children].flat().join('')==='Återställ dealer').props.onClick();
   tree=harness.render();
-  assert.deepEqual(harness.session.project.lanes[0].composition.mobile,defaultCompositionSettings().mobile);
+  assert.deepEqual(harness.session.project.lanes[0].composition.mobile.dealer,defaultCompositionSettings().mobile.dealer);
+  assert.deepEqual(harness.session.project.lanes[0].composition.mobile.table,original.lanes[0].composition.mobile.table);
+  assert.deepEqual(harness.session.project.lanes[0].composition.mobile.background,original.lanes[0].composition.mobile.background);
   assert.deepEqual(harness.session.project.lanes[0].composition.desktop,desktop);
   assert.equal(harness.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,'/astrid-green');
   assert.deepEqual(project,original);
+});
+
+test('layer inspector supports keyboard selection and keeps each choice with its format-specific placement',()=>{
+  const harness=previewHarness({dirty:false}),original=structuredClone(harness.session.project);
+  let tree=harness.render();
+  const tab=label=>harness.find(tree,node=>node.props?.role==='tab'&&node.props.children===label);
+  const panel=role=>harness.find(tree,node=>node.props?.role==='tabpanel'&&node.props.id==='composition-panel-'+role);
+  assert.equal(tab('Dealer').props['aria-selected'],true);assert.equal(tab('Dealer').props.tabIndex,0);
+  assert.equal(panel('dealer').props.hidden,false);assert.equal(panel('table').props.hidden,true);
+  let focused=0,prevented=0;
+  tab('Bord').props.ref({focus(){focused++;}});
+  tab('Dealer').props.onKeyDown({key:'ArrowRight',preventDefault(){prevented++;}});
+  tree=harness.render();
+  assert.equal(focused,1);assert.equal(prevented,1);
+  assert.equal(tab('Bord').props['aria-selected'],true);assert.equal(tab('Dealer').props.tabIndex,-1);
+  assert.equal(panel('table').props.hidden,false);assert.equal(panel('dealer').props.hidden,true);
+  assert.ok(harness.find(panel('table'),node=>node.type?.name==='LayerAssetSelect'&&node.props.role==='table'));
+  assert.ok(harness.find(panel('table'),node=>node.type==='input'&&node.props['aria-label']==='Bord bredd'));
+  assert.equal(harness.find(panel('table'),node=>node.type==='input'&&node.props['aria-label']==='Dealer storlek'),null);
+  tab('Bord').props.onKeyDown({key:'End',preventDefault(){}});
+  tree=harness.render();assert.equal(tab('Bakgrund').props['aria-selected'],true);
+  tab('Bakgrund').props.onKeyDown({key:'ArrowRight',preventDefault(){}});
+  tree=harness.render();assert.equal(tab('Dealer').props['aria-selected'],true);
+  tab('Dealer').props.onKeyDown({key:'ArrowLeft',preventDefault(){}});
+  tree=harness.render();assert.equal(tab('Bakgrund').props['aria-selected'],true);
+  tab('Bakgrund').props.onKeyDown({key:'Home',preventDefault(){}});
+  tree=harness.render();assert.equal(tab('Dealer').props['aria-selected'],true);
+  assert.deepEqual(harness.session.project,original);assert.equal(harness.session.dirty,false);
+});
+
+test('switching layers preserves mounted upload controls and its receipt while the upload guard stays active',async()=>{
+  const harness=previewHarness({dirty:false});let tree=harness.render();
+  const panel=role=>harness.find(tree,node=>node.props?.role==='tabpanel'&&node.props.id==='composition-panel-'+role);
+  const library=()=>harness.find(panel('table'),node=>node.type?.name==='LayerLibrary');
+  const uploaded=library();uploaded.props.onBusyChange(true);
+  tree=harness.render();
+  harness.find(tree,node=>node.props?.role==='tab'&&node.props.children==='Bakgrund').props.onClick();
+  tree=harness.render();
+  assert.equal(panel('table').props.hidden,true);assert.equal(panel('background').props.hidden,false);
+  assert.equal(library().type,uploaded.type);assert.equal(library().key,uploaded.key);assert.equal(library().props.disabled,true);
+  // The inactive panel remains present, so its original callback can finish.
+  const remote=JSON.parse(harness.session.savedJson),asset={schemaVersion:1,id:'11111111-2222-4333-8444-555555555555',role:'table',label:'Bevarat bord',sha256:'a'.repeat(64),size:24,contentType:'image/png',width:640,height:360};
+  asset.pathname=layerAssetPath(asset);remote.layerAssets=[asset];remote.revision='tab-upload';
+  uploaded.props.onRegistered(remote,asset.id);
+  tree=harness.render();
+  assert.equal(harness.session.project.lanes[0].layers.table.default,asset.id);
+  harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/lanes?lane=')).props.onClick({preventDefault(){}});
+  await Promise.resolve();assert.equal(harness.saves(),0);
+  uploaded.props.onBusyChange(false);tree=harness.render();
+  assert.equal(library().props.disabled,false);
+  harness.find(tree,node=>node.type==='button'&&node.props.children==='Spara').props.onClick();
+  await Promise.resolve();assert.equal(harness.saves(),1);
+  assert.equal(harness.savedProjects[0].lanes[0].layers.table.default,asset.id);
 });
