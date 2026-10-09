@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Kodleveransen 8f0dfff6 är pushad till GitHub main och Vercel production READY.
+Kodleveransen c83a47b6 är pushad till GitHub main, har grön exakt-SHA CI 37954178357 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_GrXvw6ayJeagoW4pzYGXFDxnVTxP.
 Den innehåller 72891be6 (generiskt dealerpaket/rum) och b12653e4 (sista UI-puts).
 Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt rum,
 kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
@@ -21,7 +21,7 @@ CI 37952326479 på 8f0dfff6: presentation-studio och lipsync-worker PASS,
 dealer-regression föll på en Windows-specifik gzip-fixture. Payload/SHA var
 identiska; endast gzip-headerns OS-byte 9 skiljde Linux (3) från Windows (10).
 Testjämförelsen normaliserar nu just denna byte; produktionsencoder och
-paketformat förblir oförändrade. 34/34 riktade tester PASS. Nästa leverans verifierar korrigeringen i CI.
+paketformat förblir oförändrade. 34/34 riktade tester PASS. Leveransen verifierade korrigeringen i Linux-CI på c83a47b6; alla tre jobb passerade.
 
 Isolerad faktisk spelklient: Johanna spelade två kompletta muted grundloopar
 med exakt källhash och media-ID. Ändrad paketrevision gav 409 och krävde
@@ -40,7 +40,7 @@ ombedd att manuellt deploya 8f0dfff6 på croupier-v2; senare ändringar i denna
 etapp rör bara test/handoff. Exakt Render-SHA är inte verifierad.
 Edge är manuellt inloggat i Studio. Separat spelarinloggning är öppnad i samma
 fönster och väntar på Jakob; inga lösenord har lästs. Spellobbyn finns på /play.
-Nästa: godkänd CI, Render v3 och klickdemo Johanna med Nora-filens egna media-
+Nästa: Render v3 och klickdemo Johanna med Nora-filens egna media-
 registrering → tre lager → publicerat rum → faktisk idleloop. Spara bild per steg.
 
 ## 9 oktober 2026: rumsläsare, atomisk publicering och lokal repetition
