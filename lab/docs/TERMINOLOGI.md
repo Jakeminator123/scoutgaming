@@ -83,9 +83,9 @@ OpenClaw ändrar inte kort, regler, saldo eller utfall.
 
 | Term | Betydelse / plats |
 |---|---|
-| Operatör / bolag | Spelbolaget som tar emot tilldelade lane-paket från nivå 1; organisation med stabilt ID och läsbar slug. Publicering → Bolag & team. |
+| Operatör / bolag | Spelbolaget som tar emot tilldelade lane-paket från nivå 1; organisation med stabilt ID och läsbar slug. Administration → Bolag & team. |
 | Bord / spelrum | Bolagsägd spelresurs. Skapas från Publicering tillsammans med paketet. Drift → Bord & spelrum visar den tekniska administrationen. |
-| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Publicering → Bolag & team. |
+| Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Administration → Bolag & team. |
 | Inbjudan / aktiveringslänk | Ny partner aktiveras via `/partner/set-password`; befintlig partner kopplas direkt. |
 | Partnersession | Inloggning på `/partner/login`; öppnar inte Kontrollrum. |
 | Produktkonto | Produktinloggning. Spelare och intern personal hanteras under Konton & roller. |

@@ -15,6 +15,8 @@ export function vercelIngressRequest(request, ingress) {
   if (!ingress) return { accepted: true, transported: false };
   const transportHost = new URL(ingress.transportOrigin).host, publicHost = new URL(ingress.publicOrigin).host;
   if (request.headers.host === transportHost && request.method === 'GET' && request.url === '/__cloud/health') return { accepted: true, transported: false, health: true };
+  if (request.headers.host === transportHost && ['GET', 'HEAD'].includes(request.method)
+      && request.url === '/__cloud/version' && !request.headers.upgrade) return { accepted: true, transported: false, version: true };
   // Read-only feature metadata carries no cookies or credentials to the game.
   if (request.headers.host === transportHost && ['GET', 'HEAD'].includes(request.method)
       && request.url === '/api/presentation/capabilities' && !request.headers.upgrade) {

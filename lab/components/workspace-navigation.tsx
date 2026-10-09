@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutLevel, scoutNavigationItem } from '../lib/scout-navigation.mjs';
@@ -15,7 +15,9 @@ export const ShellStatus = createContext<ReactNode>(null);
 type ScoutLink = { href: string; label: string };
 type ScoutGroup = { id: string; label: string; items: readonly ScoutLink[] };
 
-function ItemLink({ item, active }: { item: ScoutLink; active: boolean }) {
+function ItemLink({ item, active, routeKey }: { item: ScoutLink; active: boolean; routeKey: string }) {
+  const currentPath = routeKey.split('?')[0].replace(/^\/studio(?=\/)/, '');
+  if (active && currentPath === item.href.split('?')[0]) return <span className={styles.itemActive} aria-current="page">{item.label}</span>;
   return <a className={active ? styles.itemActive : styles.item} href={labUrl(item.href)} aria-current={active ? 'page' : undefined}>{item.label}</a>;
 }
 
@@ -34,13 +36,30 @@ function NavigationGroup({ group, active, routeKey }: { group: ScoutGroup; activ
       </svg>
     </button>
     <div className={styles.groupItems} id={panelId} hidden={!expanded} aria-labelledby={labelId}>
-      {group.items.map(item => <ItemLink key={item.href} item={item} active={active === item} />)}
+      {group.items.map(item => <ItemLink key={item.href} item={item} active={active === item} routeKey={routeKey} />)}
     </div>
   </div>;
 }
 
 function LevelLink({ item, current }: { item: ScoutLink & { id: string }; current: boolean }) {
   return <a key={item.id} className={current ? styles.levelOn : styles.level} href={labUrl(item.href)} aria-current={current ? 'true' : undefined}>{item.label}</a>;
+}
+
+function MobileNavigation({ brand, children }: { brand: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const close = () => { setOpen(false); toggle.current?.focus(); };
+  const escape = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Escape' || !open || !toggle.current?.getClientRects().length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    close();
+  };
+  return <aside className={styles.sidebar} onKeyDown={escape}>
+    <div className={styles.mobileHeading}>{brand}<button ref={toggle} type="button" className={styles.menuToggle}
+      aria-expanded={open} aria-controls="scout-mobile-navigation" onClick={() => open ? close() : setOpen(true)}>{open ? 'Stäng meny' : 'Meny'}</button></div>
+    <div id="scout-mobile-navigation" className={styles.menuPanel} data-open={open}>{children}</div>
+  </aside>;
 }
 
 // Rendered as an element so its hooks run inside React even when the shell itself is called as a plain function.
@@ -63,18 +82,17 @@ function Shell({ pathname, search, children }: { pathname: string; search: strin
   const section = active?.label ?? (level === 'player' ? 'Spelare' : 'Översikt');
   // Full page navigation retains native unsaved-draft protection, including Back/Forward.
   return <div className={`${styles.shell} sg-shell`}>
-    <aside className={styles.sidebar}>
-      <a className={styles.brand} href="/control" aria-label="ScoutGamingGroup · Administration">
+    <MobileNavigation brand={<a className={styles.brand} href="/control" aria-label="ScoutGamingGroup · Administration">
         <span className={styles.wordmark}>scout<b>/</b>gaming</span>
         <span className={styles.product}>CROUPIER STUDIO</span>
-      </a>
+      </a>}>
       <nav className={styles.nav} aria-label="ScoutGamingGroup administration">
         {SCOUT_NAVIGATION.map(group => <NavigationGroup key={group.id} group={group} active={active} routeKey={routeKey} />)}
       </nav>
       <div className={styles.footer}>
-        {SCOUT_FOOTER_NAVIGATION.map(item => <ItemLink key={item.href} item={item} active={active === item} />)}
+        {SCOUT_FOOTER_NAVIGATION.map(item => <ItemLink key={item.href} item={item} active={active === item} routeKey={routeKey} />)}
       </div>
-    </aside>
+    </MobileNavigation>
     <div className={styles.column}>
       <header className={styles.topbar}>
         <p className={styles.crumb}>{level === 'player' ? 'Nivå 3' : 'Nivå 1'} <span className={styles.sep} aria-hidden="true">/</span> <strong>{section}</strong></p>

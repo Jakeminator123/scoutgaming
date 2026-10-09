@@ -44,7 +44,7 @@ run_node_tests lab/test/zone-reference.test.mjs lab/test/zone-cloud-store.test.m
 run_node_tests lab/test/openclaw-admin.test.mjs open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
 run_node_tests test/bo-lab-auth.mjs
 run_node_tests test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
-run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
+run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/version.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
 run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 node tools/check-environment-variables.mjs
 run_node_tests test/check-environment-variables.mjs

@@ -27,6 +27,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const [laneId,setLaneId]=useState(initialLaneId??project.lanes?.[0]?.id??'mobile-phone'),[clipId,setClipId]=useState('');
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState(''),[localKey,setLocalKey]=useState(true);
+  const [activeRole,setActiveRole]=useState<Role>('dealer');
+  const layerTabs=useRef<Partial<Record<Role,HTMLButtonElement>>>({});
   const objectUrls=useRef<Partial<Record<Role,string>>>({}),savedBaseline=useRef(savedJson),continuing=useRef(false),uploadLock=useRef(false),uploads=useRef(new Set<string>());
   savedBaseline.current=savedJson;
   const lanes=project.lanes?.length?project.lanes:[defaultPresentationLane()];
@@ -91,15 +93,16 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function placementControls(role:Role){
     const placement=settings[layout][role],size=role==='table'?'width':'scale',values=placement as unknown as Record<string,number>;
-    return <fieldset className={styles.placementControls} key={role} disabled={saving}><legend>{labels[role]}</legend>{([size,'x','y'] as const).map(key=><label className="field" key={key}>
-      {key==='scale'?'Storlek':key==='width'?'Bredd':key==='x'?'Sidled':'Upp/ned'} · {key==='scale'||key==='width'?Math.round(values[key]*100)+' %':values[key].toFixed(2)}
+    return <fieldset className={styles.placementControls} key={role} disabled={saving}><legend>Storlek och placering <span>{layout==='mobile'?'Mobil 9:16':'Desktop 16:9'}</span></legend>{([size,'x','y'] as const).map(key=><label className="field" key={key}>
+      <span className={styles.rangeLabel}><span>{key==='scale'?'Storlek':key==='width'?'Bredd':key==='x'?'Sidled':'Upp/ned'}</span><output>{key==='scale'||key==='width'?Math.round(values[key]*100)+' %':values[key].toFixed(2)}</output></span>
       <input type="range" aria-label={`${labels[role]} ${key==='scale'?'storlek':key==='width'?'bredd':key==='x'?'sidled':'upp/ned'}`} min={key==='scale'||key==='width'?0.1:-2} max={key==='scale'||key==='width'?4:2} step="0.01" value={values[key]} onChange={event=>setPlacement(role,key,Number(event.target.value))}/>
-    </label>)}</fieldset>;
+    </label>)}<button className={'sg-btn sg-btn-secondary '+styles.reset} disabled={saving} onClick={()=>{const next=structuredClone(lane),composition=structuredClone(settings);Object.assign(composition[layout][role],defaultCompositionSettings()[layout][role]);next.composition=composition;edit(next);}}>Återställ {labels[role].toLowerCase()}</button></fieldset>;
   }
   function layerPanel(role:'table'|'background'){
-    return <section className={styles.layer} key={role} aria-label={labels[role]}>
+    return <section className={styles.layer} key={role} id={`composition-panel-${role}`} role="tabpanel" aria-labelledby={`composition-tab-${role}`} hidden={activeRole!==role} tabIndex={0}>
       <fieldset disabled={saving}><LayerAssetSelect role={role} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
-      <LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/>
+      {fullFrame?<p className={styles.hint}>Inbakat i dealerklippet · välj ett frilagt klipp för att placera {labels[role].toLowerCase()}.</p>:placementControls(role)}
+      <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
     </section>;
   }
   const publicationHref=labUrl(`/control/lanes?lane=${encodeURIComponent(lane.id)}`);
@@ -115,24 +118,28 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <div className={styles.toolbar}>
         <label className="field">Presentation<select value={lane.id} disabled={saving||uploading} onChange={event=>{setLaneId(event.target.value);setClipId('');const url=new URL(window.location.href);url.searchParams.set('lane',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-        <div className={styles.formats} role="group" aria-label="Format"><span>Format</span><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button className="sg-btn sg-btn-secondary" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div>
+        <span className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</span>
       </div>
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
-          {fullFrame?<p>Inbakat bord och bakgrund · välj frilagt klipp för separata lager.</p>:null}
-          {temporary?<p role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
+          <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
+          {fullFrame?<p className={styles.hint}>Inbakat bord och bakgrund · välj frilagt klipp för separata lager.</p>:null}
+          {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing}/>
           {localError?<p role="alert">{localError}</p>:null}
         </section>
         <section className={styles.controls} aria-label="Tre lager">
-          <section className={styles.layer}>
+          <div className={styles.layerTabs} role="tablist" aria-label="Välj lager">{roles.map(role=><button key={role} ref={element=>{layerTabs.current[role]=element??undefined;}} id={`composition-tab-${role}`} role="tab" aria-selected={activeRole===role} aria-controls={`composition-panel-${role}`} tabIndex={activeRole===role?0:-1} onClick={()=>setActiveRole(role)} onKeyDown={event=>{let index=roles.indexOf(role);if(event.key==='ArrowRight')index=(index+1)%roles.length;else if(event.key==='ArrowLeft')index=(index+roles.length-1)%roles.length;else if(event.key==='Home')index=0;else if(event.key==='End')index=roles.length-1;else return;event.preventDefault();setActiveRole(roles[index]);layerTabs.current[roles[index]]?.focus();}}>{labels[role]}</button>)}</div>
+          <section className={styles.layer} id="composition-panel-dealer" role="tabpanel" aria-labelledby="composition-tab-dealer" hidden={activeRole!=='dealer'} tabIndex={0}>
             <label className="field">Dealer<select value={lane.layers.dealer.default} disabled={saving||uploading} onChange={event=>{const next=structuredClone(lane),id=event.target.value;next.layers.dealer.default=id;if(!next.dealers.includes(id))next.dealers.push(id);if(!next.layers.dealer.allowed.includes(id))next.layers.dealer.allowed.push(id);clearRole('dealer');edit(next);setClipId('');}}>{project.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+            <p className={styles.hint}>Startdealer · sparas i presentationen.</p>
+            {placementControls('dealer')}
             <label className="field">Förhandsvisa klipp<select value={clip?.id??''} disabled={!clips.length||saving||uploading} onChange={event=>{clearRole('dealer');setClipId(event.target.value);}}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{clipName(row)}</option>)}</select></label>
-            <details><summary>Ladda upp dealerklipp</summary>{ownFamilies?<FamilyVideoUpload key={lane.layers.dealer.default} project={project} inventory={videos} disabled={saving||uploading||conflict} dealerId={lane.layers.dealer.default} initialFamilyId={initialFamilyId} onBusyChange={busy=>markUpload('dealer',busy)} onUploaded={(next,id)=>{setVideos(next);if(id)setClipId(id);clearRole('dealer');}}/>:<VideoUpload key={lane.layers.dealer.default} project={project} dealerId={lane.layers.dealer.default} eventId={uploadEventId} initialSituation={clip?.classification?.situation} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload('dealer',busy)} lockDealer previewOnly open onUploaded={(next,video)=>{setVideos(next);setClipId(video.id);clearRole('dealer');}}/>}</details>
+            <p className={styles.hint}>Klippvalet är bara ett prov.</p>
+            <details className={styles.upload}><summary>Ladda upp dealerklipp</summary>{ownFamilies?<FamilyVideoUpload key={lane.layers.dealer.default} project={project} inventory={videos} disabled={saving||uploading||conflict} dealerId={lane.layers.dealer.default} initialFamilyId={initialFamilyId} onBusyChange={busy=>markUpload('dealer',busy)} onUploaded={(next,id)=>{setVideos(next);if(id)setClipId(id);clearRole('dealer');}}/>:<VideoUpload key={lane.layers.dealer.default} project={project} dealerId={lane.layers.dealer.default} eventId={uploadEventId} initialSituation={clip?.classification?.situation} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload('dealer',busy)} lockDealer previewOnly open onUploaded={(next,video)=>{setVideos(next);setClipId(video.id);clearRole('dealer');}}/>}</details>
             <a href={contentHref} onClick={event=>{event.preventDefault();void continueTo(contentHref);}}>Grundloop och klipp →</a>
           </section>
           {(['table','background'] as const).map(layerPanel)}
-          <details className={styles.layer+' '+styles.placement} open><summary>Storlek och placering · {layout==='mobile'?'Mobil 9:16':'Desktop 16:9'}</summary>{(fullFrame?(['dealer'] as Role[]):roles).map(placementControls)}<button className="sg-btn sg-btn-secondary" disabled={saving} onClick={()=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),[layout]:defaultCompositionSettings()[layout]};edit(next);}}>Återställ placering</button></details>
         </section>
       </div>
       <details className={styles.advanced}><summary>Avancerat</summary><div>
