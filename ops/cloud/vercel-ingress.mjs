@@ -1,4 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
+import { approvedGameQuery } from '../../web/public/game-entry-contract.mjs';
+import { isOperatorSlug } from '../../web/public/game-lanes.mjs';
 import { exactPlatformOrigin, backendPlatformPath, canonicalPlatformPath } from '../../apps/croupier-frontend/lib/platform-routing.mjs';
 
 export function readVercelIngressConfig(env = process.env) {
@@ -34,6 +36,8 @@ export function vercelIngressRequest(request, ingress) {
     const destination=documents.get(rawPath);
     if(destination){
       const target=new URL(destination,ingress.publicOrigin),source=new URL(request.url,ingress.transportOrigin);
+      // Operator documents without a launch need the signed UI proxy, never the anonymous bookmark redirect.
+      if (rawPath === '/blackjack' && source.searchParams.has('operator') && !source.searchParams.has('launch')) return {accepted:false,transported:false};
       if(rawPath==='/bo/login.html'){
         const value=source.searchParams.get('returnTo');
         if(value && (['/studio','/studio/administration','/control','/control/administration'].includes(value) || /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/.test(value)))target.searchParams.set('returnTo',value);
@@ -53,11 +57,20 @@ export function vercelIngressRequest(request, ingress) {
   const launch = path && (['/', '/game', '/game/'].includes(path)
     || ingress.canonicalGame && ['/blackjack','/blackjack/'].includes(path) && ['GET','HEAD'].includes(request.method))
     && new URL(request.url, ingress.publicOrigin).searchParams.has('launch');
+  // The canonical UI proxies a player's operator document without a launch ticket.
+  // Keep this exact HTML path behind every existing signed transport check.
+  const operatorQuery = path === '/blackjack' ? new URL(request.url, ingress.publicOrigin).searchParams : null;
+  const approvedOperatorQuery = operatorQuery ? approvedGameQuery(operatorQuery, { origin: ingress.publicOrigin, includeLaunch: false }) : null;
+  const operatorDocument = ingress.canonicalGame && path === '/blackjack' && request.url.split('?', 1)[0] === '/blackjack'
+    && ['GET', 'HEAD'].includes(request.method) && !request.headers.upgrade && request.headers.accept === 'text/html'
+    && operatorQuery?.getAll('operator').length === 1 && isOperatorSlug(operatorQuery.get('operator'))
+    && operatorQuery.size === approvedOperatorQuery.size
+    && [...operatorQuery].every(([name, value]) => approvedOperatorQuery.get(name) === value);
   const session = path === '/__vercel/lab/session';
   if (request.headers.host !== transportHost || request.headers['x-croupier-public-origin'] !== ingress.publicOrigin
       || bytes.length !== key.length || !timingSafeEqual(bytes, key)
       || request.headers['x-forwarded-host'] !== publicHost || request.headers['x-forwarded-proto'] !== 'https'
-      || !(backendPlatformPath(request.url) || launch || session)
+      || !(backendPlatformPath(request.url) || launch || operatorDocument || session)
       || (session && request.method !== 'GET')) return { accepted: false, transported: false };
   const headers = {...request.headers, host: publicHost};
   delete headers['x-croupier-vercel-secret']; delete headers['x-croupier-public-origin'];
