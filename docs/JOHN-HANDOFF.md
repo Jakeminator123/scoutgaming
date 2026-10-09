@@ -2,7 +2,7 @@
 
 ## 9 oktober 2026: generiskt dealerpaket och Skapa spelrum
 
-Kodleveransen c83a47b6 är pushad till GitHub main, har grön exakt-SHA CI 37954178357 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_GrXvw6ayJeagoW4pzYGXFDxnVTxP.
+Senaste kodleveransen 88e590e7327f379d56022eebcb891843058a0732 är pushad till GitHub main, har normal fullhook PASS, grön exakt-SHA CI 37963723334 och Vercel production READY. Separat domänkontroll av www.scoutgaming.tech pekar på samma deployment dpl_DMuc47ugqtd2Wz8rmq8PexbFaZAv. Kanonisk player-login gav HTTP 200 med neutral titel/text efter deploy.
 Den innehåller 72891be6 (generiskt dealerpaket/rum) och b12653e4 (sista UI-puts).
 Egen dealer får en fryst grundloop. Rumpublicering sparar bolagsägt rum,
 kompatibel spellane och paket atomiskt. Översikt börjar i Sammansättning;
@@ -60,7 +60,7 @@ https://www.scoutgaming.tech/play/blackjack?operator=johns-spelbolag&table=room-
 Den öppnar separat spelarinloggning med operator och table bevarade.
 Studio-inloggning räcker inte. Jakob är tillfrågad om manuell inloggning;
 produktionsuppspelning och två idlevarv är ännu inte verifierade. Målet är inte klart.
-Den gamla generella inloggningstexten nämnde alltid Astrid; den görs neutral
+Den gamla generella inloggningstexten nämnde alltid Astrid; den är nu neutral
 utan ändring av autentisering eller konto-/speldata.
 
 Lageruppladdningens tidigare HTTP 503 är nu rättad och provad i produktion.
@@ -78,7 +78,7 @@ Sync-probe matchar oförändrad baseline; mänsklig läppsynkacceptans är separ
 GitGuardian: 17 lästa incidenter, 12 öppna, locationCoverage partial;
 aktiv övervakning och ofullständig historisk skanning. Ingen ren säkerhetsstatus hävdas.
 
-Privat klickbar bildfil: C:/Users/jakob/Desktop/Johns-spelbolag-bilder.html.
+Privat klickbar bildfil: C:/Users/jakob/Desktop/Johns-spelbolag-bilder.html — 23 bilder, 21 produktionssteg och två tydligt avskilda isolerade QA-bilder.
 Originalbilder och production-demo-browser-persistent.mjs ligger utanför Git:
 C:/Users/jakob/.codex/visualizations/2026/10/09/01a1208f-20d2-7f03-837f-7f7fab0ae5f9/.
 Beständig Edge-demoprofil finns där; läs/exportera aldrig authfiler eller
