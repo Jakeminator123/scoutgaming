@@ -6,6 +6,7 @@ import {
   type PresentationRoomContext, type PresentationRoomController, type PresentationRoomReceipt,
 } from '../lib/presentation-room-client.mjs';
 import styles from './presentation-room-create.module.css';
+import { labUrl } from '../lib/lab-url.mjs';
 
 export type PresentationRoomCreateProps = PresentationRoomContext & {
   onCreated?: (receipt: PresentationRoomReceipt) => void;
@@ -56,7 +57,12 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     : !projectSaved ? 'Spara presentationen först.'
       : !operator || !presentation ? 'Välj bolag och presentation.'
         : current ? state.message : null;
-  const refresh = current && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
+  const staleProject = current && Boolean(state.preflight && state.preflight.projectRevision !== projectRevision);
+  const packageConflict = current && state.preflight?.reason === 'presentation_package_conflict';
+  const needsComposition = current && ['presentation_lane_incompatible', 'presentation_package_too_large'].includes(state.preflight?.reason ?? '');
+  const reloadHref = labUrl('/control/lanes?' + new URLSearchParams({ operator: operator?.id ?? '', lane: presentation?.id ?? '' }));
+  const compositionHref = labUrl('/control/preview?' + new URLSearchParams({ lane: presentation?.id ?? '' }));
+  const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = ready && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
 
@@ -64,7 +70,8 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   return <section className={styles.card} aria-label="Spelrum">
     <h2>Spelrum</h2>
     {operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
-    <p>Ett spelrum öppnar det publicerade paketet för valt bolag. Återanvänd rummet när du ändrar presentationens lager eller klipp.</p>
+    <p>Ett spelrum är spelarens ingång till bolagets publicerade paket. Bord är bildlagret i scenen. Återanvänd rummet när du ändrar presentationens lager eller klipp.</p>
+    {operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
       : rooms && !receipt ? <p>Inget publicerat spelrum för den här presentationen ännu.</p> : null}
     <details><summary>Skapa nytt spelrum</summary>
@@ -75,7 +82,11 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
           disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => controller.setName(event.target.value)} autoComplete="off" />
       </label>
       <div className={styles.actions}>
-        {refresh ? <button className="sg-btn sg-btn-primary" type="button" disabled={!enabled}
+        {staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}
+          onClick={event => { if (!enabled) event.preventDefault(); }}>Läs in aktuella uppgifter</a>
+          : needsComposition ? <a className="sg-btn sg-btn-primary" href={compositionHref} aria-disabled={!enabled}
+            onClick={event => { if (!enabled) event.preventDefault(); }}>Kontrollera sammansättningen</a>
+          : refresh ? <button className="sg-btn sg-btn-primary" type="button" disabled={!enabled}
           onClick={() => { if (enabled) void controller.refresh(); }}>Uppdatera uppgifter</button>
           : receipt ? <a className="sg-btn sg-btn-primary" href={receipt.playUrl}>Öppna spelrummet</a>
             : <button className="sg-btn sg-btn-primary" type="submit" disabled={!canCreate || busy}>

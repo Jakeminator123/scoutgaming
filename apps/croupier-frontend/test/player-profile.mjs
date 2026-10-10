@@ -101,20 +101,21 @@ test('lobby operator choice prefers the query, then storage, and drops an unknow
   assert.equal(clearedOperatorLocation('/play?operator=sg-test'), '/play');
 });
 
-test('lobby names the last dealer and table colour from the same browser key', () => {
+test('legacy stored choices remain readable while the lobby uses verified room and dealer names', () => {
   const stored = parseStoredChoices(JSON.stringify({ dealer: 'astrid', tableColor: '#112233', background: 'stad' }));
   assert.equal(choicesStorageKey('sg-test'), 'croupier.choices.sg-test');
   assert.equal(choicesStorageKey(''), 'croupier.choices.default');
   assert.equal(lobbyChoiceText(stored), 'Dealer Astrid · bord #112233');
-  assert.equal(lobbyChoiceText(parseStoredChoices('{"dealer":"vera"}')), 'Dealer Vera');
   assert.equal(lobbyChoiceText(parseStoredChoices('{"dealer":"ghost"}')), '');
   const source = readFileSync(new URL('../components/player/player-lobby-operator.tsx', import.meta.url), 'utf8');
-  assert.match(source, /data-player-choice/);
-  assert.match(source, /lobbyChoiceText\(readChoices/);
+  assert.match(source, /readChoices\(window.localStorage,slug\)/);
+  assert.match(source, /loadRoomCatalogue\(slug/);
   assert.match(source, /Spelar hos/);
-  const choice = source.indexOf('data-player-choice');
-  const company = source.indexOf('Spelar hos');
-  assert.equal(choice > company, true);
+  assert.match(source, /room.dealers.map/);
+  assert.match(source, /dealer.label/);
+  assert.doesNotMatch(source, /lobbyChoiceText|DEALER_NAMES|data-player-choice/);
+  // Real rendering, stale-choice filtering, room-bound links and empty state
+  // are exercised by player-lobby.mjs against the shared rooms contract.
 });
 
 test('profile and public operator paths stay on the game backend', () => {

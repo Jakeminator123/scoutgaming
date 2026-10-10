@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## 10 oktober 2026: bolagets lobby och rätt dealer i spelrummet
+
+Efter Jakobs redeploy verifierades Render /__cloud/version på exakt 3d00d0a2655f25d9dd0816fbb2acd15c2603461e och runtime capability v4. Den nya etappen nedan tillkommer efter den versionen; CI och driftsättning ska kontrolleras separat efter push.
+
+**Ansvar:** N1 äger dealerbibliotek, alla klippsekvenser, bakgrunder, statiska bord och bolagens paket. N2 granskar sitt bolag och ändrar mindre uttryckligen tillåtna val via partnerområdet/API. Spelaren går via bolagets lobby, väljer spelrum och tillåtna dealer-/miljöval och öppnar blackjack. Rum är den spelbara ingången; bord som medielager är en statisk bild. En teknisk lane är rummets uppspelningskonfiguration, inte en ytterligare dealer.
+
+- Den tomma Amira-scenen reproducerades med ett publicerat portrait-video-rum: HTML valde local medan Amiras media kräver originalmotorn. Det tomma lokala lagret dolde då den gamla scenen. Uppspelningsmotorn väljs nu efter faktiskt vald dealer: Vera/Amira/Mei använder original, Astrid och egna dealers använder local. Rum, bolag, revision och tillåtna val behålls.
+- Ny publik, endast läsande /api/operators/:slug/rooms-katalog använder samma publicerade paket och verkliga behörighetsurval som spelstarten. Den visar bara bolagets egna öppna rum och spelbara dealers. Fullbildsfilmer erbjuder inga fristående lager; egna dealers får sådana val bara när grundloopen och dess viktade basklipp stöder komposition. Mediaadresser eller intern konfiguration exponeras inte.
+- /play?operator=sg-test visar riktiga rumskort med paketets dealer-, bords- och bakgrundsval samt explicit tomval. Startlänken behåller operator, table och dealer; lagerval valideras igen vid spelstart. Tom lista och driftfel blir tydliga meddelanden. Spelet har Till lobbyn och Välj dealer.
+- Innehåll skiljer biblioteket från spelbara rum. Dealer följer med till Sammansättning som uttryckligt sammanhang, med matchande presentation eller en tydlig åtgärd för startdealer. Ett provval ändrar inte paketets tilldelningar. Publicering länkar till bolagets lobby.
+- En separat verklig importlucka rättades: spelservern släpper nu igenom exakt /web/public/dealer-identity.mjs som den lokala idlemodulen importerar. HTTP-regression följer hela verkliga importgrafen och nekar privata/felaktiga adresser.
+
+Verifierat före commit: riktade runtime-, katalog-, lagerbehörighets-, ingress- och UI-tester PASS. Lab- och frontendproduktionsbyggen samt TypeScript PASS. Isolerad verklig lobby vid 1440 och 390 px: rätt rum/dealerval/startadress, tom-/felvy, ingen overflow eller sidfel. Alla fyra originaldealers visar rätt idle och klarar två goodluck-uppspelningar i spelklienten; Astrids film avkodar 87 frames per klipp. Mediebaslinjerna matchar med audit-dealer-sync --probe. Inga mediabytes eller kalibreringar ändrades; detta är inte ny läppsynkacceptans.
+
+Studio-kontexten är verifierad vid 1440 och 390 px med fungerande lagerflikar, rätt Amira-sammanhang, inga sidfel, assetfel eller overflow. Ett första QA-prov blandade /studio-bygge med offline-root; nytt normalt offlinebygge och prov löste den lokala startmismatchen. Johanna med en enda grundloop räcker fortfarande för hennes första prov. Inget nytt konto, mejl, insats, produktionspaket eller produktionsdatabas ändrades i dessa tester. Exakt produktionsrum och partnerns sparprov återstår tills ny kod körs med ordinarie inloggad åtkomst.
+
+Produktionsvyn visade också Mobile Phone Lane + SG test game provider med generiskt rumspreflightfel och tidigare publiceringskonflikt. Bolagsspecifika paketval/kvitton/fel och faktisk publicerad revision/presentationslista rättas. Saknade publicerade presentationer visas för uttrycklig avmarkering; osparade val filtreras aldrig bort tyst. Preflight skiljer konflikt, för stort paket och inkompatibilitet. Befintliga rumslänkar och serverns bindningsskydd består. 85 riktade backend-/UI-prov PASS, oberoende granskning utan kvarstående blockerande fynd. Exakt underorsak till produktionsrummets gamla generiska fel är inte fastställd innan ny runtime kan visa rätt orsak.
+
+Jakobs förtydligade mål fortsätter efter denna stabilisering: sammanhållen N1 med Dealer/klipp → tre lager → provspela före publicering → bolagstilldelning. Något fullständigt administrativt provspelsflöde före publicering är ännu inte levererat i denna etapp.
+
+Säkerhetsläsning före leverans på 3d00d0a2: GitGuardian 17 observerade/12 öppna, aktiv monitorering, partial location coverage och historisk scan too_large. Inga incidentåtgärder. Ordinarie fullhook och exakt-SHA CI körs vid leverans; resultat ska redovisas separat från produktionsacceptans.
+
+
 ## 10 oktober 2026: egna dealerklipp i partnerpaket och gemensam uppspelning
 
 Övertagandet började från ren main/origin på c8c986c0c67e48c3c501305cc7492fbcd39c24fb. Föregående agent bekräftade sparat, committat och pushat arbete. Den här etappen är kod och isolerad verifiering; Johannas befintliga produktionspaket är inte automatiskt återpublicerat.

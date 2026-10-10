@@ -380,3 +380,14 @@ test('frozen event media has one exact authenticated backend route',()=>{
   assert.equal(headers.get('cookie'),'player_session=fixture');assert.equal(headers.get('range'),'bytes=0-15');
   for(const bad of [path+'/',path+'/record',path.replace('/7/','/0/'),path.replace('/johanna/','/%6aohanna/'),path.replace(/83$/,'xyz'),path.replace('/north/','/../')]) assert.equal(backendPlatformPath(bad),false,bad);
 });
+
+
+test('published room catalogue uses an exact operator route through existing backend transport',()=>{
+  const path='/api/operators/sg-test/rooms';
+  assert.equal(backendPlatformPath(path),true);
+  assert.deepEqual(platformRoute(new URL(path,config.publicOrigin),config),{kind:'backend',destination:config.backendOrigin+path});
+  const headers=platformBackendHeaders(new Headers({cookie:'player_session=fixture','x-croupier-vercel-secret':'spoof'}),config);
+  assert.equal(headers.get('cookie'),'player_session=fixture');
+  assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
+  for(const bad of [path+'/',path+'/private','/api/operators/sg-test/packages','/api/operators/sg-test/draft','/api/operators/%73g-test/rooms','/api/operators/sg-test/../rooms','/api/operators//rooms'])assert.equal(backendPlatformPath(bad),false,bad);
+});

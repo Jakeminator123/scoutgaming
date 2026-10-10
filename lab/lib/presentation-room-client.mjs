@@ -10,7 +10,7 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 const revision = identifier;
 const packageRevision = value => Number.isSafeInteger(value) && value > 0;
 const roomName = value => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 100 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
-const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible']);
+const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large']);
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
 export class PresentationRoomError extends Error {
@@ -100,7 +100,9 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
 function readinessMessage(prepared, context) {
   if (prepared.projectRevision !== context.projectRevision) return 'Presentationen har ändrats. Ladda om sidan.';
   if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan rummet kan skapas.';
-  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen kan inte användas i ett spelrum.';
+  if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar sammansättning. Kontrollera vald grundloop, dealer och lager i Sammansättning och spara.';
+  if (prepared.reason === 'presentation_package_conflict') return 'Paketet kan inte uppdateras eftersom uppgifter har ändrats eller ett befintligt spelrum påverkas. Läs in bolagets aktuella paket och kontrollera presentationerna.';
+  if (prepared.reason === 'presentation_package_too_large') return 'Paketet är för stort. Minska presentationens innehåll eller paketets urval och försök igen.';
   return prepared.ready ? null : 'Spelrummet kan inte skapas ännu.';
 }
 const empty = Object.freeze({ key: null, name: '', status: 'idle', preflight: null, receipt: null, message: null });

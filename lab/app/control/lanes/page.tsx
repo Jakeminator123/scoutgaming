@@ -12,7 +12,7 @@ export const metadata = { title: 'Publicering · Croupier Studio' };
 export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = props?.searchParams ? await props.searchParams : {};
   const returnQuery = new URLSearchParams();
-  for (const key of ['tab', 'lane']) {
+  for (const key of ['tab', 'lane', 'operator']) {
     const value = firstQueryValue(query[key]);
     if (value) returnQuery.set(key, value);
   }
@@ -46,5 +46,5 @@ export default async function Page(props: { searchParams: Promise<Record<string,
       }
     }
   }
-  return <ControlLanesPage initialTab={firstQueryValue(query.tab) === 'companies' ? 'companies' : 'publish'} initialLaneId={firstQueryValue(query.lane)} initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
+  return <ControlLanesPage initialTab={firstQueryValue(query.tab) === 'companies' ? 'companies' : 'publish'} initialLaneId={firstQueryValue(query.lane)} initialOperatorId={firstQueryValue(query.operator)} initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} operators={operators} storeAvailable={storeAvailable} directory={directory} />;
 }

@@ -1,62 +1,109 @@
 'use client';
 
-import {useEffect, useState} from 'react';
-import {
-  OPERATOR_STORAGE_KEY, clearedOperatorLocation, operatorChoice, operatorLoginPath, operatorPlayPath,
-  operatorPublicView, operatorSlugFromSearch,
-} from '@/lib/player-operator.mjs';
-import {lobbyChoiceText, readChoices} from '@/lib/player-choices.mjs';
+import {useEffect,useState,type MouseEvent} from 'react';
+import {OPERATOR_STORAGE_KEY,clearedOperatorLocation,operatorChoice} from '@/lib/player-operator.mjs';
+import {readChoices} from '@/lib/player-choices.mjs';
+import {loadRoomCatalogue,rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection} from '@/lib/player-lobby.mjs';
+import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../web/public/operator-rooms-contract.mjs';
 
-type Operator = {slug: string, name: string};
+type Operator={slug:string;name:string};
+type CatalogueState={status:'loading'|'unscoped'|'not-found'|'unavailable';slug:string}|{status:'ready';slug:string;catalog:PublicOperatorRooms};
+const selectClass='mt-2 block w-full rounded-lg border border-white/20 bg-[#14252d] px-3 py-3 text-white';
 
-export function PlayerLobbyOperator({
-  initial, playHref, playLabel, directPlay,
-}: {
-  initial: Operator | null;
-  playHref: string;
-  playLabel: string;
-  directPlay: boolean;
+export function PlayerRoomCard({catalog,room,stored,directPlay}:{catalog:PublicOperatorRooms;room:PublicOperatorRoom;stored:Partial<RoomSelection>;directPlay:boolean}) {
+  const [selected,setSelected]=useState(()=>roomSelection(room,stored));
+  const [error,setError]=useState('');
+  if(!selected)return null;
+  const dealer=room.dealers.find(row=>row.id===selected.dealer)!;
+  const launch=roomLaunch(catalog,room.id,selected,{directPlay});
+  if(!launch)return null;
+  function choose(patch:Partial<RoomSelection>){setSelected(current=>roomSelection(room,{...current,...patch}));setError('');}
+  function remember(event:MouseEvent<HTMLAnchorElement>) {
+    try {
+      if(rememberRoomSelection(window.localStorage,catalog.operator.slug,launch!.choices))return;
+    } catch {if(!launch!.choices.tableAsset&&!launch!.choices.background)return;}
+    event.preventDefault();setError('Dina miljöval kunde inte sparas. Tillåt lokal lagring i webbläsaren och försök igen.');
+  }
+  const table=dealer.table.allowed.find(row=>row.id===selected.tableAsset);
+  const background=dealer.background.allowed.find(row=>row.id===selected.background);
+  return <article className="rounded-2xl border border-white/15 bg-white/5 p-5 sm:p-6" aria-labelledby={room.id+'-title'}>
+    <p className="text-xs uppercase tracking-widest text-emerald-300">Blackjack · spelrum</p>
+    <h3 id={room.id+'-title'} className="mt-2 text-2xl font-semibold">{room.name}</h3>
+    <p className="mt-1 text-sm text-slate-400">Miljö: {room.presentation.label}</p>
+    <fieldset className="mt-5 space-y-4"><legend className="sr-only">Välj dealer och miljö i {room.name}</legend>
+      <label className="block text-sm text-slate-200">Dealer
+        <select className={selectClass} value={selected.dealer} onChange={event=>choose({dealer:event.target.value})}>
+          {room.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
+        </select>
+      </label>
+      {!dealer.independentLayers?<p className="rounded-lg bg-black/20 p-3 text-sm text-slate-300">Bord och bakgrund ingår i {dealer.label}s dealerfilm.</p>:<>
+        {dealer.table.enabled&&dealer.table.allowed.length>0?<label className="block text-sm text-slate-200">Bordets utseende
+          <select className={selectClass} value={selected.tableAsset??''} onChange={event=>choose({tableAsset:event.target.value})}>
+            {dealer.table.default===null?<option value="">Inget bord</option>:null}
+            {dealer.table.allowed.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
+          </select>
+        </label>:null}
+        {dealer.background.enabled&&dealer.background.allowed.length>0?<label className="block text-sm text-slate-200">Bakgrund
+          <select className={selectClass} value={selected.background??''} onChange={event=>choose({background:event.target.value})}>
+            {dealer.background.default===null?<option value="">Ingen bakgrund</option>:null}
+            {dealer.background.allowed.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
+          </select>
+          <span className="mt-1 block text-xs text-slate-400">{dealer.background.mode==='video'?'Bakgrunden loopas under spelet.':'Bakgrundsbild under spelet.'}</span>
+        </label>:null}
+      </>}
+    </fieldset>
+    <p className="mt-5 border-t border-white/10 pt-4 text-sm text-slate-300" aria-live="polite">
+      {dealer.label}{table?' · '+table.label:''}{background?' · '+background.label:''}
+    </p>
+    {error?<p role="alert" className="mt-3 text-sm text-amber-200">{error}</p>:null}
+    <a href={launch.href} onClick={remember} onAuxClick={remember} className="mt-4 block rounded-lg bg-emerald-300 px-5 py-3 text-center font-semibold text-slate-950">
+      {directPlay?'Spela med ':'Logga in och spela med '}{dealer.label}
+    </a>
+    <p className="mt-2 text-xs text-slate-400">Dealern börjar i grundloop när spelrummet öppnas.</p>
+  </article>;
+}
+
+export function PlayerRoomCatalogue({catalog,stored={},directPlay}:{catalog:PublicOperatorRooms;stored?:Partial<RoomSelection>;directPlay:boolean}) {
+  return catalog.rooms.length?<div className="mt-6 grid gap-5 lg:grid-cols-2">
+    {catalog.rooms.map(room=><PlayerRoomCard key={catalog.operator.slug+':'+catalog.packageRevision+':'+room.id} catalog={catalog} room={room} stored={stored} directPlay={directPlay}/>)}
+  </div>:<p role="status" className="mt-6 rounded-xl border border-white/15 p-5 text-slate-300">
+    {catalog.operator.name} har inga öppna spelrum ännu.
+  </p>;
+}
+
+export function PlayerLobbyOperator({initial,directPlay}:{
+  initial:Operator|null;playHref:string;playLabel:string;directPlay:boolean;
 }) {
-  const [operator, setOperator] = useState<Operator | null>(initial);
-  const [choiceText, setChoiceText] = useState('');
-  useEffect(() => {
-    const stored = window.localStorage.getItem(OPERATOR_STORAGE_KEY);
-    const slug = operator?.slug || operatorChoice({search: window.location.search, stored});
-    setChoiceText(lobbyChoiceText(readChoices(window.localStorage, slug)));
-  }, [operator?.slug]);
-  useEffect(() => {
-    const stored = window.localStorage.getItem(OPERATOR_STORAGE_KEY);
-    const slug = operatorChoice({search: window.location.search, stored});
-    if (!slug) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await fetch(`/api/operators/${encodeURIComponent(slug)}`, {headers: {accept: 'application/json'}});
-        const body = response.ok ? await response.json() : null;
-        if (cancelled) return;
-        const view = operatorPublicView(body, slug);
-        if (!view) {
-          if (operatorSlugFromSearch(window.location.search)) setOperator(null);
-          return;
-        }
-        window.localStorage.setItem(OPERATOR_STORAGE_KEY, view.slug);
-        setOperator(view);
-      } catch {
-        if (!cancelled && !initial) setOperator(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [initial]);
-
-  const href = operator ? (directPlay ? operatorPlayPath(operator.slug) : operatorLoginPath(operator.slug)) : playHref;
-  function clearOperator() {
-    window.localStorage.removeItem(OPERATOR_STORAGE_KEY);
+  const [state,setState]=useState<CatalogueState>({status:initial?'loading':'unscoped',slug:initial?.slug??''});
+  const [stored,setStored]=useState<Partial<RoomSelection>>({});
+  const [retry,setRetry]=useState(0);
+  useEffect(()=>{
+    let savedOperator:string|null=null;
+    try{savedOperator=window.localStorage.getItem(OPERATOR_STORAGE_KEY);}catch{}
+    const slug=operatorChoice({search:window.location.search,stored:savedOperator??initial?.slug??null});
+    if(!slug){setState({status:'unscoped',slug:''});return;}
+    const controller=new AbortController();let active=true;
+    setState({status:'loading',slug});
+    try{setStored(readChoices(window.localStorage,slug));}catch{setStored({});}
+    void loadRoomCatalogue(slug,{signal:controller.signal}).then(result=>{
+      if(!active)return;
+      setState({...result,slug});
+      if(result.status==='ready')try{window.localStorage.setItem(OPERATOR_STORAGE_KEY,result.catalog.operator.slug);}catch{}
+    });
+    return()=>{active=false;controller.abort();};
+  },[initial?.slug,retry]);
+  function clearOperator(){
+    try{window.localStorage.removeItem(OPERATOR_STORAGE_KEY);}catch{}
     window.location.assign(clearedOperatorLocation(window.location.href));
   }
-  return <>
-    {operator ? <p className="mt-6 text-slate-200" data-operator>Spelar hos: {operator.name}</p> : null}
-    {choiceText ? <p className="mt-2 text-sm text-slate-300" data-player-choice>{choiceText}</p> : null}
-    {operator ? <button type="button" data-operator-clear className="mt-3 text-sm text-slate-300 underline" onClick={clearOperator}>Byt bolag</button> : null}
-    <a href={href} className="mt-7 inline-block rounded-lg bg-emerald-300 px-6 py-3 font-semibold text-slate-950">{playLabel}</a>
-  </>;
+  const operator=state.status==='ready'?state.catalog.operator:initial?.slug===state.slug?initial:null;
+  return <div className="mt-6">
+    {operator?<p className="text-slate-200" data-operator>Spelar hos: <strong>{operator.name}</strong></p>:null}
+    {state.slug?<button type="button" className="mt-2 text-sm text-slate-400 underline" onClick={clearOperator}>Lämna bolagets lobby</button>:null}
+    {state.status==='loading'?<p role="status" className="mt-6 text-slate-300">Hämtar publicerade spelrum…</p>:null}
+    {state.status==='unscoped'?<p role="status" className="mt-6 rounded-xl border border-white/15 p-5 text-slate-300">Öppna länken till ditt spelbolags lobby för att se dess rum och välja dealer.</p>:null}
+    {state.status==='not-found'?<p role="status" className="mt-6 text-slate-300">Det här spelbolagets lobby är inte tillgänglig. Kontrollera länken från spelbolaget.</p>:null}
+    {state.status==='unavailable'?<div className="mt-6"><p role="alert" className="text-amber-200">Spelrummen kan inte hämtas just nu. Försök igen om en stund.</p><button type="button" className="mt-3 rounded-lg border border-white/25 px-4 py-2" onClick={()=>setRetry(value=>value+1)}>Försök igen</button></div>:null}
+    {state.status==='ready'?<PlayerRoomCatalogue catalog={state.catalog} stored={stored} directPlay={directPlay}/>:null}
+  </div>;
 }

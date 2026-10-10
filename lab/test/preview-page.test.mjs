@@ -406,3 +406,33 @@ test('composition makes dealer permission changes explicit and never silently en
   for(const name of ['Vera','Amira','Mei'])assert.equal(permission(name).props.checked,false);
   assert.equal(harness.session.dirty,true);
 });
+
+test('dealer context opens an existing matching presentation without changing allowed dealers',()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna');
+  const common=defaultPresentationLane(),own=structuredClone(common);
+  common.layers.dealer.allowed=['astrid','johanna'];common.dealers=['astrid','johanna'];
+  own.id='johanna-room';own.label='Johannas miljö';own.layers.dealer.default='johanna';
+  own.layers.dealer.allowed=['johanna'];own.dealers=['johanna'];project.lanes=[common,own];
+  const before=JSON.stringify(project);
+  const {initialCompositionLaneId,ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
+  assert.equal(initialCompositionLaneId(project,undefined,'johanna'),'johanna-room');
+  assert.equal(initialCompositionLaneId(project,common.id,'johanna'),common.id,'explicit presentation wins');
+  assert.equal(initialCompositionLaneId(project,undefined,'unknown'),common.id);
+  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'johanna'}));
+  assert.match(html,/<option value="johanna-room" selected="">Johannas miljö<\/option>/);
+  assert.match(html,/<option value="johanna" selected="">Johanna<\/option>/);
+  assert.equal(JSON.stringify(project),before);
+  const page=readFileSync(new URL('../app/control/preview/page.tsx',import.meta.url),'utf8');
+  assert.match(page,/initialDealerId=\{firstQueryValue\(query.dealer\)\}/);
+});
+
+test('a library dealer outside the selected presentation has an explicit inclusion action',()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna');
+  const before=JSON.stringify(project);
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
+  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'johanna'}));
+  assert.match(html,/Du valde Johanna i dealerbiblioteket/);
+  assert.match(html,/Dealern ingår inte i den här presentationen ännu/);
+  assert.match(html,/Använd Johanna som startdealer/);
+  assert.equal(JSON.stringify(project),before);
+});

@@ -65,8 +65,8 @@ export function resolvePlayerSelection({ choices, search = '', stored = {}, bran
   const urlColor = colors.includes(one(params, 'table')) ? one(params, 'table') : '';
   const storedDealer = dealers.includes(stored?.dealer) ? stored.dealer : '';
   const storedColor = colors.includes(stored?.tableColor) ? stored.tableColor : '';
-  const tableAssets=composition?.table?.allowed??[];
-  const tableValue=tableAssets.includes(stored?.tableAsset)?stored.tableAsset:tableAssets.includes(branding?.table)?branding.table:composition?.table?.default??null;
+  const tableAssets=composition?.dealer.compatibility==='full-frame'?[]:composition?.table?.allowed??[];
+  const tableValue=tableAssets.includes(stored?.tableAsset)?stored.tableAsset:tableAssets.includes(branding?.table)?branding.table:composition?.dealer.compatibility==='full-frame'?null:composition?.table?.default??null;
   const companyBackground=allowedBackground.includes(branding?.background)?branding.background:background.default??null;
   const storedBackground = !baked && allowedBackground.includes(stored?.background) ? stored.background : '';
   const companyColor = TABLE_COLOR.test(branding?.color) && (colors.length === 0 || colors.includes(branding.color)) ? branding.color : '';
@@ -179,7 +179,7 @@ export function mountPlayerChoices(document, {
   if(composition) {
     const row=document.createElement('div');row.className='choice-row';
     const label=document.createElement('span');label.textContent='Bord';row.append(label);
-    if(composition.dealer.compatibility==='full-frame') {const button=choiceButton(document,'Ingår i dealerfilmen',false);button.disabled=true;row.append(button);}
+    if(composition.dealer.compatibility==='full-frame') {const button=choiceButton(document,'Ingår i dealerns scen',false);button.disabled=true;row.append(button);}
     else for(const id of composition.table.allowed) {
       const button=choiceButton(document,composition.assets.find(asset=>asset.id===id)?.label??id,id===tableValue);
       button.dataset.tableAsset=id;button.onclick=()=>{if(isBusy()){status.textContent='Avsluta rundan innan du byter bord.';return;}for(const other of row.querySelectorAll('button'))other.setAttribute('aria-pressed',String(other===button));onTable?.(id);};row.append(button);
@@ -192,7 +192,7 @@ export function mountPlayerChoices(document, {
   backgroundLabel.textContent = 'Bakgrund';
   backgroundRow.append(backgroundLabel);
   if (choices.background?.mode === 'baked'||composition?.dealer.compatibility==='full-frame') {
-    const button = choiceButton(document, 'Kommer med nya dealerpaket', false);
+    const button = choiceButton(document, composition?.dealer.compatibility==='full-frame' ? 'Ingår i dealerns scen' : 'Kommer med nya dealerpaket', false);
     button.disabled = true;
     backgroundRow.append(button);
   } else {

@@ -1,6 +1,7 @@
 export type GameLaneId = string;
 export type GameLane = { schemaVersion: 1; id: string; label: string; renderer: 'portrait-video' | 'indexed-video' | 'layered'; dealer: string; mediaCollection: `${string}-presentation` | 'legacy-dealers' | 'layer-packs-preview' };
 export const GAME_LANES: readonly Readonly<GameLane>[];
+export function gamePresentationForDealer(dealerId: string, renderer: GameLane['renderer']): 'local' | 'original' | 'layered';
 export function isGameLaneId(value: unknown): value is string;
 export function isGameLane(value: unknown, lanes?: readonly GameLane[]): value is GameLaneId;
 export function isOperatorSlug(value: unknown): value is string;

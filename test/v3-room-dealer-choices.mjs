@@ -10,10 +10,10 @@ import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
 
-function fixture({schemaVersion=3}={}) {
+function fixture({schemaVersion=3,includeLegacy=false}={}) {
   const project=addDealer(addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'nora','Nora'),'foreign','Foreign draft');
-  const lane=project.lanes[0];lane.id='johns-presentation';lane.dealers=['johanna','nora'];
-  lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
+  const lane=project.lanes[0];lane.id='johns-presentation';lane.dealers=['johanna','nora',...(includeLegacy?['amira','vera','mei','astrid']:[])];
+  lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
   lane.operatorAdjustable=['dealer','branding'];
   const mediaRows=['johanna','nora'].map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
@@ -104,4 +104,22 @@ test('partner can save either frozen v3 dealer and the chosen identity reaches t
   await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'johanna'}}),error=>error.statusCode===409);
   const reverted=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:2,branding:{dealer:'johanna'}});
   assert.equal(reverted.branding.dealer,'johanna');assert.equal(reverted.packageRevision,3);
+});
+
+test('a mixed frozen v3 room selects the indexed adapter for legacy faces and returns to local for its own dealers',async()=>{
+  const f=fixture({includeLegacy:true}),before=f.pack();
+  for(const [dealer,presentation]of [['amira','original'],['nora','local'],['vera','original'],['johanna','local'],['mei','original'],['astrid','local']]){
+    const result=await f.select('operator=north&table=room-johns&dealer='+dealer);
+    const {selection}=clientDocument(result.selection);
+    assert.equal(selection.dealer,dealer);assert.equal(selection.presentation,presentation);
+    assert.equal(selection.operator,'north');assert.equal(selection.roomId,'room-johns');assert.equal(selection.lane,'portrait-johanna');assert.equal(selection.packageRevision,1);
+    assert.deepEqual(selection.choices.dealers,['johanna','nora','amira','vera','mei','astrid']);
+    if(presentation==='original'){
+      assert.equal(selection.localDealer,undefined);assert.equal(selection.composition.dealer.compatibility,'full-frame');
+      assert.equal(selection.choices.background.mode,'baked');assert.deepEqual(selection.choices.background.allowed,[]);
+    }
+  }
+  const rejected=await f.select('operator=north&table=room-johns&dealer=foreign');
+  assert.equal(rejected.selection.dealer,'johanna');
+  assert.deepEqual(f.pack(),before);
 });

@@ -31,7 +31,7 @@ function PrimaryAction({primary}: {primary: PlayerAreaModel['primary']}) {
 
 export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
   return <main className="min-h-screen bg-[#0b151b] px-6 py-14 text-white">
-    <div className="mx-auto max-w-3xl">
+    <div className={model.surface==='lobby'?'mx-auto max-w-5xl':'mx-auto max-w-3xl'}>
       <a href="/" className="text-sm text-slate-300">← Scoutgaming</a>
       <p className="mt-12 text-sm uppercase tracking-widest text-emerald-300">{model.eyebrow}</p>
       <h1 className="mt-3 text-4xl font-semibold">{model.title}</h1>
@@ -47,7 +47,7 @@ export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
       {model.surface === 'lobby' ? <section className="mt-9 rounded-2xl border border-white/15 bg-white/5 p-8" aria-labelledby="blackjack-title">
         <p className="text-sm uppercase tracking-widest text-emerald-300">{model.clientLabel}</p>
         <h2 id="blackjack-title" className="mt-4 text-2xl font-semibold">Blackjack</h2>
-        <p className="mt-3 text-slate-300">Klassiskt kortspel med videodealer.</p>
+        <p className="mt-3 text-slate-300">Välj ett publicerat rum, dealer och miljö. Ett rum är din ingång till spelet; valen kommer från spelbolagets paket.</p>
         <PlayerLobbyOperator initial={model.operator} playHref={model.primary?.href ?? '/play/blackjack'} playLabel={model.primary?.label ?? 'Spela Blackjack'} directPlay={!model.primary?.href.startsWith('/player-login')} />
       </section> : <PrimaryAction primary={model.primary} />}
       {model.pills.length ? <p className="mt-6 flex flex-wrap gap-2">{model.pills.map(pill => <span key={pill.label} className="rounded-full border border-white/15 px-3 py-1 text-sm text-slate-300">{pill.label} · {pill.status}</span>)}</p> : null}

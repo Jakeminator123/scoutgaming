@@ -264,7 +264,7 @@ test('native admin preflight requests room capability before entering the produc
 
 
 test('replacing the selected definition cannot break an existing room bound to another game lane', async () => {
-  const f = await fixture(); await f.create(await f.payload());
+  const f = await fixture(), created = await f.create(await f.payload());
   const admin = await f.repository.readDocument('administration');
   await f.repository.saveDocument('administration', { value: { ...admin.value, gameLane: 'mobile-phone', gameLanes: [
     { schemaVersion: 1, id: 'mobile-phone', label: 'Mobile', dealer: 'astrid', renderer: 'portrait-video', mediaCollection: 'astrid-presentation' },
@@ -273,7 +273,9 @@ test('replacing the selected definition cannot break an existing room bound to a
   const project = await f.repository.readDocument('project'); const changed = clone(project.value);
   changed.lanes[1].dealers = ['vera']; changed.lanes[1].layers.dealer = { enabled: true, default: 'vera', allowed: ['vera'] };
   await f.repository.saveDocument('project', { value: changed, expectedRevision: project.revision, actor: session.user });
-  assert.equal((await f.prepare()).reason, 'presentation_lane_incompatible');
+  const ready = await f.prepare();assert.equal(ready.reason, 'presentation_package_conflict');assert.equal(ready.ready,false);
+  assert.deepEqual(ready.rooms,[{id:created.room.id,name:created.room.name,playUrl:created.playUrl}],
+    'a blocked new publication must still list the valid current published room');
   const body = await f.payload({ idempotencyKey: '0ddd0000-1111-4222-8333-444444444444', name: 'Changed dealer' }), before = f.pool.snapshot();
   await assert.rejects(f.create(body), status(409)); assert.deepEqual(f.pool.snapshot(), before);
 });
@@ -418,7 +420,7 @@ test('an ambiguous compatible catalogue creates one deterministic lane, a later 
   changed.gameLanes.find(row => row.id === first.room.gameLaneId).dealer = 'vera';
   changed.gameLanes.find(row => row.id === first.room.gameLaneId).mediaCollection = 'vera-presentation';
   await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: saved.revision, value: changed });
-  const ready = await f.prepare(); assert.equal(ready.reason, 'presentation_lane_incompatible');
+  const ready = await f.prepare(); assert.equal(ready.reason, 'presentation_package_conflict');
   const body = await f.payload({ idempotencyKey: '0ccc0000-1111-4222-8333-444444444444', name: 'Collision' }), before = f.pool.snapshot();
   await assert.rejects(f.create(body), status(409)); assert.deepEqual(f.pool.snapshot(), before);
 });
@@ -442,7 +444,7 @@ test('a selected generic idle cannot silently replace the idle of another frozen
   const changed = idleRecord('johanna', '00000000-0000-4000-8000-000000000002'); f.pool.setMedia(changed, 'media-new');
   const line = next.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = changed.id;
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: saved.revision, value: next });
-  const ready = await f.prepare('north', second.id); assert.equal(ready.ready, false); assert.equal(ready.reason, 'presentation_lane_incompatible');
+  const ready = await f.prepare('north', second.id); assert.equal(ready.ready, false); assert.equal(ready.reason, 'presentation_package_conflict');
   const project = await f.repository.readDocument('project'), admin = await f.repository.readDocument('administration'), before = f.pool.snapshot();
   await assert.rejects(f.create({ operatorId: 'north', presentationLaneId: second.id, name: 'No implicit idle replacement', idempotencyKey: '0bbb0000-1111-4222-8333-444444444444',
     expectedProjectRevision: project.revision, expectedAdministrationRevision: admin.revision, expectedPackageRevision: 1 }), status(409));
@@ -480,7 +482,7 @@ test('adding Johanna cannot silently migrate an unrelated legacy Nora presentati
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: current.revision, value: project });
   const legacy = buildPresentationPackage(project, [nora.id], []);
   await f.publish({ actor: session.user, operatorId: 'north', lanes: [nora.id], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Legacy Nora' }, legacy) });
-  const ready = await f.prepare('north', f.lane.id); assert.equal(ready.reason, 'presentation_lane_incompatible');
+  const ready = await f.prepare('north', f.lane.id); assert.equal(ready.reason, 'presentation_package_conflict');
   const projectDocument = await f.repository.readDocument('project'), admin = await f.repository.readDocument('administration'), before = f.pool.snapshot();
   await assert.rejects(f.create({ operatorId: 'north', presentationLaneId: f.lane.id, name: 'No automatic migration', idempotencyKey: key,
     expectedProjectRevision: projectDocument.revision, expectedAdministrationRevision: admin.revision, expectedPackageRevision: 1 }), status(409));
@@ -545,4 +547,29 @@ test('room listing exposes only live published rooms of this operator and presen
   draft.rooms.find(item=>item.id===room.room.id).state='preview';
   await f.repository.saveDocument('administration',{value:draft,expectedRevision:saved.revision,actor:session.user});
   assert.deepEqual((await f.prepare()).rooms,[]);
+});
+
+
+test('a saved Amira-Johanna-Astrid presentation can add a room while preserving the current Johanna package and room', async () => {
+  const f=await registeredFixture(), first=await f.create(await f.registeredPayload());
+  const initial=f.pool.snapshot().packages.at(-1), previous=readPackagePresentation({lanes:JSON.parse(initial.lanes),branding:JSON.parse(initial.branding)});
+  const saved=await f.repository.readDocument('project'), project=clone(saved.value), mobile=project.lanes.find(lane=>lane.id==='mobile-phone');
+  mobile.dealers=['amira','johanna','astrid'];mobile.layers.dealer={enabled:true,default:'amira',allowed:[...mobile.dealers]};
+  mobile.composition=defaultCompositionSettings();
+  await f.repository.saveDocument('project',{actor:session.user,expectedRevision:saved.revision,value:project});
+  const prepared=await f.prepare('north','mobile-phone');assert.equal(prepared.ready,true);assert.equal(prepared.reason,null);
+  const created=await f.create({operatorId:'north',presentationLaneId:'mobile-phone',name:'Jackes spelrum',
+    idempotencyKey:'0eee0000-1111-4222-8333-444444444444',expectedProjectRevision:prepared.projectRevision,
+    expectedAdministrationRevision:prepared.administrationRevision,expectedPackageRevision:prepared.packageRevision});
+  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+  const frozen=readPackagePresentation(pack);
+  assert.deepEqual(frozen.lanes.find(lane=>lane.id==='johns-johanna'),previous.lanes[0]);
+  assert.deepEqual(frozen.registeredDealers,previous.registeredDealers);assert.deepEqual(frozen.playback,previous.playback);
+  assert.deepEqual(new Set(pack.tables),new Set([first.room.id,created.room.id]));
+  const administration=(await f.repository.readDocument('administration')).value;
+  const select=createGameEntrySelector({policy:{readSaved:async()=>({project,administration}),readGameConfiguration:async()=>administration},
+    packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
+  const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'amira');
+  assert.deepEqual(entry.selection.choices.dealers,['amira','johanna','astrid']);
+  assert.equal((await select(new URL(first.playUrl,origin).search)).selection.dealer,'johanna');
 });

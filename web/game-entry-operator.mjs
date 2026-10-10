@@ -8,7 +8,7 @@ import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mj
 // lane only narrow lanes and dealers the catalogue already renders; they
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
-import { gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
+import { gamePresentationForDealer, gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
 import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
 import { resolvePackageRoom } from './presentation-room-contract.mjs';
 
@@ -42,10 +42,15 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (extra && (!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer && !portraitDealerIds.includes(selection.dealer))) {
       throw Object.assign(Error('presentation_dealer_unavailable'), { statusCode: 503 });
     }
+    const presentation = serverLane ? gamePresentationForDealer(selection.dealer, serverLane.renderer) : selection.presentation;
     const choices = gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane, { portraitDealerIds });
+    if (presentation === 'original') {
+      choices.background = { ...choices.background, mode:'baked', allowed:[], default:null };
+      choices.tableColors = []; choices.tableDefault = null;
+    }
     const allowed = new Set([...choices.dealers, selection.dealer]);
     const registeredDealers = (registry ?? []).filter(row => !BASE_DEALER_IDS.includes(row.id) && allowed.has(row.id)).map(({ id, label }) => ({ id, label }));
-    return { ...selection, ...(selection.presentation === 'local' && selection.dealer !== 'astrid' ? { localDealer: selection.dealer } : {}),
+    return { ...selection, presentation, ...(presentation === 'local' && selection.dealer !== 'astrid' ? { localDealer: selection.dealer } : {}),
       ...(registeredDealers.length ? { registeredDealers } : {}), choices };
   }
   // { status: 200, selection } or { status: 404 }. Policy failures reject, as today.
@@ -114,7 +119,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
       next.composition={schemaVersion:1,
         background:{enabled:layers.background.enabled,mode:layers.background.mode,allowed:layers.background.allowed,default:layers.background.default},
         table:{enabled:layers.table.enabled,allowed:layers.table.allowed,default:layers.table.default},
-        dealer:{enabled:layers.dealer.enabled,compatibility:presentationLane.composition?'per-clip':'full-frame'},
+        dealer:{enabled:layers.dealer.enabled,compatibility:next.presentation !== 'original' && presentationLane.composition?'per-clip':'full-frame'},
         ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
         assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
     }

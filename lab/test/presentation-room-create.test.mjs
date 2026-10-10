@@ -206,7 +206,7 @@ function componentHarness(controller) {
       queued.push(() => { old?.cleanup?.(); effects[i] = { deps, cleanup: fn() }; });
     } } };
   const module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, require: name => name === 'react' ? react : name.endsWith('.module.css')
+  vm.runInNewContext(compiled.code, { module, exports: module.exports, URLSearchParams, require: name => name === 'react' ? react : name.endsWith('.module.css')
     ? { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) } : name.includes('presentation-room-client')
       ? { createPresentationRoomController: () => controller, presentationRoomContextKey } : require(name) });
   return { render(props = context) { cursor = 0; queued = []; const tree = module.exports.PresentationRoomCreate(props); for (const effect of queued) effect(); return tree; },
@@ -235,7 +235,7 @@ test('component delivers only a current verified receipt once, reports busy and 
   assert.equal(h.requests.length, 2); ui.render(props); assert.equal(busy.at(-1), true);
   h.reply(1, prepared()); await tick(); const payload = JSON.parse(h.requests[2].options.body); h.reply(2, created(payload)); await tick();
   tree = ui.render(props); ui.render(props); assert.equal(receipts.length, 1); assert.equal(busy.at(-1), false);
-  assert.equal(find(tree, 'a').props.href, created(payload).playUrl); ui.unmount(); assert.equal(busy.at(-1), false);
+  assert.equal(find(tree, 'a').props.href, '/play?operator=sg-test'); assert.ok(renderToStaticMarkup(tree).includes(created(payload).playUrl.replaceAll('&','&amp;'))); ui.unmount(); assert.equal(busy.at(-1), false);
 });
 test('component renders a changed selection immediately empty and never delivers the previous late receipt', async () => {
   const h = fixture(), ui = componentHarness(h.controller), receipts = [];
@@ -299,7 +299,9 @@ test('room list opens the existing room before creating and hides stale links on
   h.reply(0,prepared(context,{rooms:[room],packageRevision:1}));await tick();
   let tree=ui.render(context),html=renderToStaticMarkup(tree);
   assert.match(html,/<ul aria-label="Befintliga spelrum">/);
-  assert.equal(find(tree,'a').props.href,room.playUrl);
+  assert.equal(find(tree,'a').props.href,'/play?operator=sg-test');
+  assert.ok(html.includes(room.playUrl.replaceAll('&','&amp;')));
+  assert.match(html,/Öppna bolagets spellobby/);
   assert.match(html,/<details><summary>Skapa nytt spelrum<\/summary>/);
   assert.equal(h.requests.length,1,'viewing existing rooms performs no create request');
   const other={...context,operator:{id:'other',slug:'other',name:'Annat bolag'}};
@@ -312,4 +314,32 @@ test('room creation accepts the exact v4 capability for frozen event packages',a
   const h=fixture();await h.ready(context,{capabilities:{...capability,schemaVersion:4,frozenDealerEvents:'operator-package-v3'}});
   assert.equal(h.controller.getSnapshot().status,'ready');
   assert.equal(h.controller.getSnapshot().preflight.capabilities.schemaVersion,4);
+});
+
+test('preflight causes provide distinct recovery without silently creating or republishing', async () => {
+  for (const [extra, label, href] of [
+    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/control/lanes?operator=sg-test&lane=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/control/lanes?operator=sg-test&lane=portrait-live'],
+    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/control/preview?lane=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/control/preview?lane=portrait-live'],
+  ]) {
+    const h = fixture(), ui = componentHarness(h.controller);
+    ui.render(context); h.reply(0, prepared(context, extra)); await tick();
+    const tree = ui.render(context), html = renderToStaticMarkup(tree);
+    assert.match(html, new RegExp(label)); assert.doesNotMatch(html, /Uppdatera uppgifter/);
+    assert.equal(find(tree, 'a').props.href, labBasePath() + href);
+    find(tree, 'form').props.onSubmit({ preventDefault() {} });
+    assert.equal(h.requests.length, 1, 'a blocked preflight never submits');
+    assert.equal(h.keys, 0); ui.unmount();
+  }
+});
+
+test('a valid existing room stays visible when changed draft content blocks another room creation', async () => {
+  const h = fixture(), ui = componentHarness(h.controller);
+  const room = { id, name: 'Befintligt rum', playUrl: '/play/blackjack?operator=sg-test&table=' + id };
+  ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', packageRevision: 1, rooms: [room] })); await tick();
+  const html = renderToStaticMarkup(ui.render(context));
+  assert.match(html, /Öppna Befintligt rum/); assert.match(html, /Öppna bolagets spellobby/);
+  assert.doesNotMatch(html, /Inget publicerat spelrum/); assert.equal(h.requests.length, 1);
+  ui.unmount();
 });
