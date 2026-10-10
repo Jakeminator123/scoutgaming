@@ -4,6 +4,8 @@
 
 Övertagandet började från ren main/origin på c8c986c0c67e48c3c501305cc7492fbcd39c24fb. Föregående agent bekräftade sparat, committat och pushat arbete. Den här etappen är kod och isolerad verifiering; Johannas befintliga produktionspaket är inte automatiskt återpublicerat.
 
+Kodversion fd576e32a9503ba6b5638ebf2fed38bc433c80bb är committad med ordinarie fullhook PASS: 2138 tester, 2129 PASS, 9 SKIP, 0 FAIL. Arbetskopian var ren efter commit. Slutligt Lab-bygge efter BO-städningen PASS; CI och hosting verifieras separat efter push.
+
 **Målbild:** N1 publicerar bolagets tillåtna dealers, bord och bakgrunder. Ett **rum** är bolagets spelbara ingång till en publicerad sammansättning och en teknisk spellane. N2 väljer inom paketet; spelaren öppnar rummets blackjack. Dealerklippet styrs separat, bakgrunden loopar eller är en bild, och bordet är statiskt. Gamla fullbildsklipp blir inte frilagda av lagringen.
 
 - Paket v3 fryser egna dealers explicita händelsekopplingar, klipp, mediahashar, kompositinställningar och valfri egen idlepolicy. Val, standardreserv och medieadresser tillhör samma publicerade dealer/rum/revision. Befintliga v1/v2 läses fortsatt.
