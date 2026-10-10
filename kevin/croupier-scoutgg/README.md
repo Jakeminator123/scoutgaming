@@ -138,6 +138,11 @@ Byts klipp: `python verktyg/bygg-manifest.py`.
 | `npm run prova:serverless` | GPU:n direkt: kallstart → klipp → varmt klipp |
 | `npm run terminera` | terminerar endpointens arbetare (efter ett nytt GPU-bygge) |
 | `python verktyg/bygg-manifest.py` | bygger om `manifest.json` när klipp byts |
+| `node tools/export-jakob-package.mjs --media public/media --out <dir> --schema <video.schema.json>` | offline-export av Dragge, Paow och Mårten i Jakobs leveransformat (se nedan) |
+
+### Export till Jakobs leveransformat
+
+`tools/export-jakob-package.mjs` läser `public/media` (bara läsning) och skriver per dealer `dealer/<id>/`: `deal_pos1..7`, `deal_posdealer`, `deal_hole`, `deal_flip` (standardtagningen, byte för byte), `VILA.png`, `REDO.png`, `idle/`, `repliker/<språk>/` (tyst MP4 med samma videoström + `.wav`), `klippinfo.json` (Emils fält plus ett `kevin`-objekt med allt Jakobs format saknar), `classification.json` (ett objekt per klipp enligt `lab/schemas/video.schema.json` på main) och `SHA256SUMS.txt`. Körvarianterna (`-i`, `-u`, `-iu`, `-v`, `-iv`) och repliker utan event (`greet_*`, `banter`, `remark_*`, `table_*`) ligger under `extra/`. Rummen hamnar i `bakgrund/`. Plats 1..7 = box 0..6. Verktyget kontrollerar varje fil med ffprobe (H.264, 1080×1920, konstant 24 fps, inget ljud, ingen rotation) och avslutar med fel om något avviker. Kör det utanför scout-hel1; demons kod och media rörs inte.
 
 ## Drift på en server
 
