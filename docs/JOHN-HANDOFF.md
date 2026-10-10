@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## 10 oktober 2026: partnerkonto kopplat och tydligt trelagersflöde
+
+Det av Jakob angivna befintliga partnerkontot är nu kopplat till **Johns spelbolag** med den uttryckligen godkända rollen **Partner editor** och aktivt medlemskap. Ordinarie POST /studio/api/admin/operator-membership med användarnamn gav 200/ok; en separat omläsning visar bolagets enda medlem, userId 8, revision 1, partner-editor, active och presentations.configure. Ingen inbjudan eller e-post skickades av denna koppling. Kontot självt har fortfarande active: 0 och behöver aktiveras innan partnerinloggningen och det verkliga sparprovet kan slutföras. Full e-postadress och de sanerade produktionskvittona hålls utanför Git.
+
+**Produktionsacceptansen är fortsatt 2 av 3 kontroller.** Det tidigare hindret "saknar medlem" är löst; kontoaktivering och partnerns val → spara → omladdning → rätt rum återstår. N1-geometri och konfliktskydd ska verifieras i det provet. Spelrum, Johanna, publicerat paket, mediabytes och spelarens session har inte ändrats i denna etapp.
+
+Det faktiska användarflödet är:
+
+1. **Innehåll**: välj Johanna, redigera och spara klippen och deras händelsekopplingar. Ett val i förhandsvisningen är bara ett provval.
+2. **Sammansättning**: återanvänd johns-johanna, välj **Dealer**, **Bord** och **Bakgrund**, justera **Storlek och placering** för både **Mobil** och **Desktop**. Frilagd/greenscreen dealerfilm behövs för tre synliga lager.
+3. Välj **Spara och fortsätt**. Detta sparar utkastet; det ändrar inte redan publicerat paket.
+4. **Publicering**: välj Johns spelbolag och den befintliga presentationen. För befintligt **Johannas blackjack**, använd **Avancerat: paket och spellanes → Publicera paket**. Skapa inte ett nytt spelrum.
+5. Öppna befintligt /play/blackjack?operator=johns-spelbolag&table=room-06f0722d-74bf-49ca-8546-f6328ac69909.
+
+**Viktig faktisk begränsning:** detta är tre lager som sätts samman i spelklienten, inte en exporterad videofil. För den egna dealern Johanna fryser publiceringen det sparade basklippet/grundloopen med hash och greenscreeninställningar. Alla egna redigerade händelsefilmer följer ännu inte med i paketet. Guiden får därför inte utlova "alla valda klipp" i produktion; det kräver separat stöd i paketet och spelaren. Se lab/docs/README.md och web/storage/frozen-dealer-idle.mjs. Tidigare tvåvarvsbevis och den senare femsekundersluckan är oförändrade.
+
+Dokumentationsbas före denna uppdatering: main 5efc447e50ee0b544081055655fa82a88633fdbd, CI 37992902840 med tre SUCCESS-jobb och www/production på samma READY dpl_B459FeeRrEr3iDnRYK6gUrSK7QsA, verifierat 9 oktober. Säkerhetsläsning 10 oktober på samma SHA: 17 observerade/12 öppna GitGuardianincidenter, partial location coverage och historisk scan too_large; inga incidentåtgärder utförda.
+
 ## 9 oktober 2026: fortsatt konsolidering och verklig produktionsgräns
 
 Senaste kodleverans 71176ebbe9a8705740fa5e12ab9d92c6b1b6b364 är pushad från samma checkout till GitHub main; N1-förenklingen levererades i cca9d3527a0451f037616a79571e0d415e13f10c. **2 av 3 angivna produktionskontroller är verifierade: aktiv runtime och två naturliga Johanna-varv. Partnerns sparprov återstår.** Johns spelbolag, Johanna, det befintliga rummet och dess frysta paket återanvänds.
