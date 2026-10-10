@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createGameCards } from '../public/game-cards.js';
 import { DEAL_CONTACT } from '../public/card-table-layout.js';
 import { dealerHandClip } from '../public/dealer-hand-occlusion.js';
+import { firstFaceTime } from '../public/card-face-projection.js';
 
 // Minimal SVG tree: records removals, including re-appending an existing node.
 // This tests renderer lifetime/occlusion, not browser paint or video decoding.
@@ -134,6 +135,13 @@ test('each card locks on finger-release and stays identical through the final fr
     }
     cards.endDeal();cards.sourceStarted('idle');assert.equal(snapshot(),expected);
   }
+});
+
+test('a card the table shows a frame before its first face-up video frame is pinned to that pose, not drawn at rest',()=>{
+  const {svg,cards}=setup(),round={phase:'decisions',active:0,holeDraw:null,dealer:[],hands:[{box:3,cards:[card('K','♥',1)]}]};
+  cards.beginDeal('4',1);cards.advanceDeal(firstFaceTime('4')-1/24);
+  cards.render(round,new Set([1]),true,0);
+  assert.equal(draw(svg,1).children[1].attrs.visibility,'visible');
 });
 
 function splitFixture() {
