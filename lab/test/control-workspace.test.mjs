@@ -43,7 +43,7 @@ function render(props) {
   return renderToStaticMarkup(React.createElement(ControlWorkspace, props));
 }
 
-test('overview lists fixture operators alphabetically and makes composition primary with three Studio destinations', () => {
+test('overview lists fixture operators alphabetically and makes Dealers and clips primary with three Studio destinations', () => {
   const operators = [...PARTNER_PREVIEW_OPERATORS].reverse().map(item => ({
     id: item.id, slug: item.slug, name: item.name, privateField: 'never-pass',
   }));
@@ -62,8 +62,8 @@ test('overview lists fixture operators alphabetically and makes composition prim
     assert.ok(at > cursor, name);
     cursor = at;
   }
-  assert.match(html, /<a class="sg-btn sg-btn-primary" href="\/control\/preview">/);
-  assert.match(html, /Innehåll/);
+  assert.match(html, /<a class="sg-btn sg-btn-primary" href="\/control\/clips">/);
+  assert.match(html, /Dealers &amp; klipp/);
   assert.match(html, /Publicering/);
   assert.doesNotMatch(html, /Konfigurera spelets bord|N2\.4/);
   assert.match(html, /href="\/control\/lanes"/);

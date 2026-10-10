@@ -193,18 +193,17 @@ test('registered upload uses the latest draft and keeps its lane choice unsaved 
   assert.equal(harness.session.savedJson,JSON.stringify(remote));assert.notEqual(JSON.stringify(harness.session.project),harness.session.savedJson);
 });
 
-test('Nora without own families uses a locked generic upload and previews its receipt without runtime binding',()=>{
+test('composition links own dealer upload and sequencing to Dealers and clips without mounting upload editors', async () => {
   const project=addDealer(createSeedProject(),'nora','Nora');project.lanes[0].dealers.push('nora');project.lanes[0].layers.dealer.allowed.push('nora');project.lanes[0].layers.dealer.default='nora';
-  const inventory={videos:[],families:[{id:'astrid/idle.ready/ready',dealerId:'astrid',eventId:'idle.ready',situation:'',playbackType:'idle-pool',standardIds:[],variantIds:[]}]};
-  const harness=previewHarness({project,inventory}),tree=harness.render(),original=structuredClone(project);
-  const upload=harness.find(tree,node=>node.type?.name==='VideoUpload');
-  assert.ok(upload);assert.equal(upload.props.dealerId,'nora');assert.equal(upload.props.lockDealer,true);assert.equal(upload.props.previewOnly,true);
-  assert.equal(upload.props.eventId,'idle.ready');assert.equal(harness.find(tree,node=>node.type?.name==='FamilyVideoUpload'),null);
-  const video={id:'nora-upload-receipt',label:'Nora nytt klipp',dealer:'nora',available:true,previewUrl:'/api/videos/nora-upload-receipt',classification:{dealerId:'nora',eventId:'idle.ready',situation:'',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}};
-  upload.props.onUploaded({...inventory,videos:[video]},video,{role:'standard',selection:{rules:true,model:true,random:true},triggerIds:[]});
-  const rerender=harness.render(),preview=harness.find(rerender,node=>node.type?.name==='CompositionPreview');
-  assert.equal(preview.props.dealer.url,'/api/videos/nora-upload-receipt');assert.equal(preview.props.compositing.mode,'green-screen');
-  assert.deepEqual(harness.session.project,original);
+  const harness=previewHarness({project}),tree=harness.render(),original=structuredClone(project),navigations=[];
+  assert.equal(harness.find(tree,node=>['VideoUpload','FamilyVideoUpload'].includes(node.type?.name)),null);
+  const link=harness.find(tree,node=>node.type==='a'&&node.props.href==='/control/clips?dealer=nora');
+  assert.ok(link);globalThis.window={location:{assign:href=>navigations.push(href)}};
+  try {
+    link.props.onClick({preventDefault(){}});await new Promise(setImmediate);harness.render();harness.effects[1]();
+    assert.equal(harness.saves(),1);assert.deepEqual(navigations,['/control/clips?dealer=nora']);
+    assert.deepEqual(harness.session.project,original);
+  } finally {delete globalThis.window;}
 });
 
 test('composition initially previews the selected dealer exact idle baseline and uses display names without writing any binding',()=>{
@@ -282,7 +281,7 @@ test('dealer choice is saved as the presentation default and allowed dealer, whi
   assert.equal(selected.layers.dealer.default,'johanna');assert.ok(selected.dealers.includes('johanna'));assert.ok(selected.layers.dealer.allowed.includes('johanna'));
   assert.deepEqual(harness.session.project.lanes[1],original.lanes[1]);assert.deepEqual(project,original);assert.equal(harness.session.dirty,true);
   const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/clips?dealer=johanna'));
-  assert.equal(content.props.children,'Grundloop och klipp \u2192');
+  assert.equal(content.props.children,'Dealerklipp, grundloop och händelser \u2192');
   const beforePreview=structuredClone(harness.session.project);
   harness.find(tree,node=>node.type==='select'&&node.props.value==='johanna-idle').props.onChange({target:{value:'johanna-card'}});
   tree=harness.render();

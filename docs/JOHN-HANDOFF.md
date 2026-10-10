@@ -1,4 +1,13 @@
 # Aktuell handoff — Scoutgaming
+## 10 oktober 2026: en redigeringsplats i Studio och rättad lagertestfixtur
+
+Studio börjar nu med Dealers & klipp, sedan Sammansättning och Publicering. Val, namn, skapande och avancerade uppspelningsinställningar finns i Sammansättning; Publicering monterar inte längre en andra presentationseditor. Dealerfliken länkar till den valda dealerns klippredigering. Bord och bakgrunder laddas fortsatt upp i sina lagerflikar. Aktiva policyvärden och behörigheter bevaras.
+
+06a732c301b8e9421d3511726b6875621dc8fb0d är pushad och verifierad READY/PROMOTED på Vercel dpl_6sohKF37RwMmSpHqppr6YwCrXaG5 med www och apex. GitHub-run 38059670963 passerade dealer-regression och lipsync-worker, men Studio fann fem gamla testförväntningar på fristående lager i indexed-video. Fixturen använder nu verklig v3-capture med frilagda egna dealers för positiva lagerprov. Separat negativ regression behåller fullbildsdealerns inbakade scen. De berörda partnerflödena registreras även uttryckligen i fullhook.
+
+Verifierat efter rättningen: hela Lab-sviten 1266 tester, 1264 PASS, 2 SKIP, 0 FAIL; riktade UI- och partnerprov PASS. Normalt offlineproduktionsbygge och verklig Studio vid 1440/390 px PASS, inga sidfel, assetfel eller overflow. Skärmbilderna är visuellt granskade. Render visade fortfarande 3d00d0a2; ny rumskatalog och det exakta produktionsrummet är inte livegodkända. Nästa leverans behöver exakt-SHA CI och verifierad Render-version.
+
+Fortsatt arbete: riktig isolerad Provspela-åtgärd från sparad Sammansättning före bolag/publicering. Den skall återanvända blackjackmotorn med separat minnesdatabas och adminbunden session, utan spelarens saldo eller produktionspreferenser. Detta är ännu inte en levererad funktion. Säkerhetsläsning på 06a732c3: 17 observerade/12 öppna, aktiv monitorering, partiella incidentplatser och historisk scan too_large; inga incidentåtgärder.
 
 ## 10 oktober 2026: bolagets lobby och rätt dealer i spelrummet
 

@@ -23,7 +23,7 @@ export function legacyControlView(hash) {
 }
 
 export const CONTROL_TOOLS = Object.freeze([
+  { href: '/control/clips', title: 'Dealers & klipp' },
   { href: '/control/preview', title: 'Sammansättning' },
-  { href: '/control/clips', title: 'Innehåll' },
   { href: '/control/lanes', title: 'Publicering' },
 ].map(item => Object.freeze(item)));

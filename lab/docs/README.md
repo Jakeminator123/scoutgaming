@@ -4,7 +4,7 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Sammansättning**, **Innehåll** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Dealers & klipp**, **Sammansättning** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
@@ -22,11 +22,12 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 - **Spelrum**: den spelbara länken som kopplar bolaget till en publicerad presentation.
 
 Tekniskt heter en presentation presentationslane. En spellane är spelmotorns interna väg; du behöver inte skapa den manuellt.
-Börja i **Sammansättning**: välj presentation och öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
-Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
-Innehåll är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
+Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelseklipp. Öppna sedan **Sammansättning**, där du väljer, skapar och namnger presentationen. Öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
+Klippbibliotek, Händelser och Tal vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
+Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
+Sammansättning är den enda editorn för presentationen. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Under Avancerat i Sammansättning finns bevarade uppspelningspolicyer, bordsfärger och vilka mindre ändringar bolaget får göra. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
-På Innehåll kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
+På Dealers & klipp kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
 Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
 och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett nytt
 media-ID utan att ta över en annan dealers registrering. Varje film
@@ -35,7 +36,7 @@ Greenscreen är en filinställning och bevisar inte att klippet är visuellt god
 En egen dealer kan tas bort med **Ta bort dealer ur utkastet** när ingen presentation i utkastet använder den. Då tas identiteten, händelsekopplingarna och dess grundloopschema bort ur utkastet. Spara efteråt. Grunddealers skyddas, och filmer samt publicerade paket finns kvar. Om spelet fortfarande hänvisar till dealern kan servern neka sparningen; borttagningen avpublicerar inte ett aktivt spelrum.
 
 I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i presentationen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
-**Förhandsvisa klipp** byter endast provfilm. **Grundloop och klipp** öppnar Innehåll för det sparade basklippet och andra händelser.
+**Förhandsvisa klipp** byter endast provfilm. **Dealerklipp, grundloop och händelser** öppnar Dealers & klipp för det sparade basklippet och andra händelser.
 **Grundloop** är det svenska namnet på `idle`, inte en separat inställning. Utan eget schema loopar dealerns valda basklipp. För en egen dealer öppnar **Anpassa grundloop** samma editor för basklipp och variationer som Astrid använder, med en separat policy för just den dealern.
 Välj **Automatik** för intervall, slumpmarginal, minsta paus och högst antal per minut. **OpenClaw** väljer bland uttryckligt tillåtna variationer med deras beskrivningar när anslutningen och presentationens inställningar tillåter det. **Bara manuellt** startar inga automatiska variationer. För en egen dealers idlevariation kan du välja **Regler**. Under **Händelser → Grundloop** skapar du en variant med samma klipp, tillåter Regler och kopplar ett villkor för själva utdelningen eller vändningen; chattvillkor används inte här. Välj också **Regler** i spelets **Klippval**. Endast matchande sparade villkor kan utlösa variationen, utan separat tidsintervall. Grunddealers använder fortsatt sina befintliga val.
 Klipplängden hämtas från den exakta filmen. Spara inställningarna och publicera partnerpaketet igen; spelet använder samma grundloopsstyrning men blandar aldrig olika dealers scheman eller filmer.
@@ -117,7 +118,7 @@ Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
 en teknisk webbpublicering och har inget med sparknappen i labbet att göra.
 
-Översikt har snabbvalen **Sammansättning**, **Innehåll** och **Publicering**. På mobil öppnar **Meny** de samlade verktygen; Escape stänger och återför fokus. Val av anslutet bolag följer länkarna till partnern och spelarytan. En otillgänglig bolagslista visas som ett driftfel; demonstrationsbolag märks separat.
+Översikt har snabbvalen **Dealers & klipp**, **Sammansättning** och **Publicering**. På mobil öppnar **Meny** de samlade verktygen; Escape stänger och återför fokus. Val av anslutet bolag följer länkarna till partnern och spelarytan. En otillgänglig bolagslista visas som ett driftfel; demonstrationsbolag märks separat.
 Administration och AI & chatt nås i sidomenyn.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
@@ -127,7 +128,7 @@ Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
 verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
 är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
 medan spelbolagets egen personal bara får tillgång till sin organisation.
-Välj dealer på Innehåll och arbeta i **Grundloop**, **Utdelning** eller
+Välj dealer på Dealers & klipp och arbeta i **Grundloop**, **Utdelning** eller
 **Repliker**. Grundloop upprepar idle-klipp: basklippet visar vila/andning,
 variationerna kan till exempel visa att dealern kliar sig i huvudet.
 Vikter, urvalsregler, tester och diagnostik öppnas vid behov under Avancerat.
@@ -161,7 +162,7 @@ de saknar verifierad koppling till den aktuella spelvägen. Policyn
 Äldre sparade värden,
 API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
-klipparbete finns under Innehåll. E-postmallar är förhandsvisningar.
+klipparbete finns under Dealers & klipp. E-postmallar är förhandsvisningar.
 Andra dealers visar bara de klippkategorier som stöds; Astrids talinitiativ
 och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 
@@ -236,7 +237,7 @@ klippet får användas och tryck **Spara inställningar** för att behålla
 urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
 idlepolicy eller originalmotorns klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
-Äldre BO-val är bevarad historik och visas inte som importerbara val i Innehåll.
+Äldre BO-val är bevarad historik och visas inte som importerbara val i Dealers & klipp.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
 Äldre lokala data i `lab/data` bevaras som
 historik och är inte produktionspolicy.
@@ -252,7 +253,7 @@ tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslu
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Innehåll leder till Tal vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Tal vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
@@ -332,7 +333,7 @@ inte filmens nya byteinnehåll till molnet.
 
 ### Astrids Deal-frekvenser
 
-I **Innehåll → Astrid → Utdelning**, eller samma familj på Händelser, anger du procent för
+I **Dealers & klipp → Astrid → Utdelning**, eller samma familj på Händelser, anger du procent för
 varje variant. Andelen gäller varje kort till just den platsen; återstoden
 använder standardfilen. 0 % behåller klippet för manuellt prov. Summan får
 vara högst 100 %. Ett saknat klipps andel går till standard. Högst fyra
@@ -356,7 +357,7 @@ en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
 Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
 
-Välj **Innehåll → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
+Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
 består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
 `idle_glance`, `idle_insulted`, `idle_smile`, `idle_yawn` och

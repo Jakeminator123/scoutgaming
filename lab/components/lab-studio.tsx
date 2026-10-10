@@ -175,7 +175,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   return <div className={styles.shell}>
     <PageTemplate
       eyebrow="// STUDIO"
-      title="Innehåll"
+      title="Dealers & klipp"
       primary={uploadAvailable
         ? <button type="button" className="sg-btn sg-btn-primary" disabled={uploading} onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button>
         : <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>}

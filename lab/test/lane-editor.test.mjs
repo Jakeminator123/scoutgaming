@@ -12,7 +12,7 @@ import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-function loadTs(fileUrl) {
+function loadTs(fileUrl, overrides = {}) {
   const source = readFileSync(fileUrl, 'utf8');
   const output = transformSync(source, { filename: fileURLToPath(fileUrl), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
@@ -21,6 +21,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -28,7 +29,7 @@ function loadTs(fileUrl) {
           const path = fileURLToPath(candidate);
           if (!existsSync(path)) continue;
           if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) return localRequire(path);
-          return loadTs(pathToFileURL(path));
+          return loadTs(pathToFileURL(path), overrides);
         }
       }
       return localRequire(name);
@@ -39,7 +40,7 @@ function loadTs(fileUrl) {
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
 const page = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
-const { addLane, addDefaultLane, removeLane, replaceLane, LaneEditor, LANE_ID_HELP } = editor;
+const { addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, CompositionSettings, LANE_ID_HELP } = editor;
 const { publishLaneRows } = page;
 
 function modelEdit(project, edit) {
@@ -135,8 +136,8 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
   assert.equal(LANE_ID_HELP, 'Unikt id: små bokstäver, siffror och bindestreck.');
   const empty = createSeedProject();
   empty.lanes = [];
-  const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
-  assert.match(editorHtml, /Skapa standardpresentation/);
+  const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
+  assert.match(editorHtml, /Skapa standardsammansättning/);
   assert.match(editorHtml, /mobile-phone/);
   assert.match(editorHtml, /Unikt id: små bokstäver, siffror och bindestreck/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
@@ -146,7 +147,8 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
     operators: fixtureLaneOperators(),
     storeAvailable: false,
   }));
-  assert.match(html, /Skapa standardpresentation/);
+  assert.doesNotMatch(html, /Skapa standardsammansättning|Sammansättningens namn/);
+  assert.match(html, /vald sammansättning/);
   // No saved lanes: the standard remains available, but a company must be
   // explicitly selected before assigning it to a package.
   const standardChoice = html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
@@ -156,7 +158,7 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
   assert.match(html, /<option value="" selected="">Välj bolag<\/option>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.doesNotMatch(html, /Använd samma lane-id/);
-  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.doesNotMatch(html, /Spara presentationer/);
   assert.match(html, /Skapa spelrum/);
   assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
@@ -165,10 +167,10 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
 test('the suggestion row separates values and only the editable ID has format help', () => {
   const empty = createSeedProject();
   empty.lanes = [];
-  const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project: empty, onEdit() {} }));
+  const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
   assert.match(editorHtml, /<dt>Id<\/dt><dd>mobile-phone<\/dd>/);
   assert.match(editorHtml, /<dd>mobile-phone<\/dd>[\s\S]*·[\s\S]*<dd>Mobile Phone Lane<\/dd>/);
-  const splitAt = editorHtml.indexOf('Skapa presentation</h2>');
+  const splitAt = editorHtml.indexOf('Skapa sammansättning</h2>');
   assert.ok(splitAt > 0);
   const help = LANE_ID_HELP;
   assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 0);
@@ -180,13 +182,13 @@ test('the suggestion row separates values and only the editable ID has format he
     operators: fixtureLaneOperators(),
     storeAvailable: false,
   }));
-  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.doesNotMatch(html, /Spara presentationer/);
   assert.match(html, /Skapa spelrum/);
 });
 
 test('the editor retires zones and groups advanced automation while preserving colors and idle settings', () => {
   const project = createSeedProject();
-  const editorHtml = renderToStaticMarkup(React.createElement(LaneEditor, { project, onEdit() {} }));
+  const editorHtml = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {} }));
   assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
   assert.match(editorHtml, /Avancerat: automatik och variationer/);
   assert.match(editorHtml, /type="color"/);
@@ -202,10 +204,9 @@ test('the editor retires zones and groups advanced automation while preserving c
     storeAvailable: false,
   }));
   assert.doesNotMatch(html, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.match(html, /type="color"/);
-  assert.match(html, /Variationsfrekvens/);
-  assert.match(html, /Spara presentationer/);
-  assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
+  assert.doesNotMatch(html, /type="color"|Variationsfrekvens|Spara presentationer/);
+  assert.match(html, /vald sammansättning/);
+  assert.doesNotMatch(html, /Spara presentationer/);
   assert.match(html, /Skapa spelrum/);
 });
 
@@ -230,12 +231,85 @@ test('replaceLane stores the new fields and rejects an invalid table color', () 
   assert.deepEqual(project.lanes, before);
 });
 
-test('publication locks all editor fields while a dirty navigation lock still permits editing', () => {
-  const project=createSeedProject();
-  const locked=renderToStaticMarkup(React.createElement(LaneEditor,{project,onEdit(){},disabled:true}));
-  assert.match(locked, /<fieldset[^>]*disabled=""[^>]*aria-label="Presentationsinställningar"/);
-  assert.match(locked, /aria-disabled="true"/);
-  const dirty=renderToStaticMarkup(React.createElement(LaneEditor,{project,onEdit(){},navigationBlocked:true}));
-  assert.doesNotMatch(dirty.split('>')[0], /disabled=/);
-  assert.match(dirty, /aria-disabled="true"/);
+test('composition metadata and policies are disabled during writes without exposing a second layer editor', () => {
+  const project = createSeedProject();
+  const metadata = renderToStaticMarkup(React.createElement(CompositionMetadata, { project, selectedId: project.lanes[0].id, onSelect() {}, onEdit() {}, disabled: true }));
+  assert.match(metadata, /<fieldset[^>]*disabled=""[^>]*aria-label="Välj och namnge sammansättning"/);
+  const locked = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {}, disabled: true }));
+  assert.match(locked, /<fieldset[^>]*disabled=""[^>]*aria-label="Avancerade sammansättningsinställningar"/);
+  assert.doesNotMatch(locked, /Dealer vid start|Tillåtna dealerbyten|Ändra sammansättning|<legend>Bakgrund<|<legend>Bord</);
+});
+
+function compositionControls(initialProject = createSeedProject(), disabled = false) {
+  let project = structuredClone(initialProject), selectedId = project.lanes?.[0]?.id ?? '', error = '';
+  const slots = []; let cursor = 0;
+  const hooks = { ...React, useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial;
+    return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; } };
+  const controls = loadTs(new URL('../components/lane-editor.tsx', import.meta.url), { react: hooks });
+  const onEdit = change => { const result = modelEdit(project, change); project = result.project; error = result.error; };
+  const onSelect = id => { selectedId = id; };
+  const find = (node, predicate) => {
+    if (!node || typeof node !== 'object') return null;
+    if (predicate(node)) return node;
+    for (const child of React.Children.toArray(node.props?.children)) { const result = find(child, predicate); if (result) return result; }
+    return null;
+  };
+  return { get project() { return project; }, get selectedId() { return selectedId; }, get error() { return error; }, find,
+    metadata() { cursor = 0; return controls.CompositionMetadata({ project, onEdit, selectedId, onSelect, disabled }); },
+    settings() { cursor = 0; return controls.CompositionSettings({ project, lane: project.lanes.find(row => row.id === selectedId), onEdit, disabled }); },
+  };
+}
+
+test('composition metadata creates and selects explicitly while renaming preserves every policy and other composition', () => {
+  const project = createSeedProject();
+  project.lanes[0].probe = { mode: 'shadow', model: 'gateway-default' };
+  project.lanes[0].idle = { frequencyPercent: 31, variants: ['exact-own-clip'] };
+  project.lanes[0].layers.table.colors = ['#112233'];
+  const before = structuredClone(project), h = compositionControls(project);
+  let tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.value === project.lanes[0].label).props.onChange({ target: { value: 'Ny scen' } });
+  assert.equal(h.error, '');
+  assert.deepEqual(h.project, { ...before, lanes: [{ ...before.lanes[0], label: 'Ny scen' }] });
+  tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.required && node.props.maxLength === 80).props.onChange({ target: { value: 'Kvällsscenen' } });
+  h.find(tree, node => node.type === 'input' && node.props['aria-describedby'] === 'new-lane-id-help').props.onChange({ target: { value: 'evening' } });
+  tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  assert.equal(h.error, ''); assert.equal(h.selectedId, 'evening');
+  assert.equal(h.project.lanes.length, 2); assert.equal(h.project.lanes[1].label, 'Kvällsscenen');
+  assert.deepEqual(h.project.lanes[0], { ...before.lanes[0], label: 'Ny scen' });
+  assert.deepEqual(project, before, 'the original saved snapshot stays unchanged');
+});
+
+test('duplicate composition IDs fail without changing the existing scene or selection', () => {
+  const h = compositionControls(), before = structuredClone(h.project), originalId = h.selectedId;
+  let tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.required && node.props.maxLength === 80).props.onChange({ target: { value: 'Duplicate' } });
+  h.find(tree, node => node.type === 'input' && node.props['aria-describedby'] === 'new-lane-id-help').props.onChange({ target: { value: originalId } });
+  tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  assert.ok(h.error); assert.deepEqual(h.project, before); assert.equal(h.selectedId, originalId);
+});
+
+test('moved policy and colour controls edit exact existing fields without changing layer or dealer assignments', () => {
+  const h = compositionControls(), original = structuredClone(h.project), lane = original.lanes[0];
+  let tree = h.settings();
+  const firstMode = h.find(tree, node => node.type === 'select');
+  firstMode.props.onChange({ target: { value: 'shadow' } });
+  tree = h.settings(); h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
+  assert.equal(h.error, '');
+  assert.deepEqual(h.project.lanes[0].openclaw, { ...lane.openclaw, idle: 'shadow' });
+  assert.deepEqual(h.project.lanes[0].layers.table.colors, [...(lane.layers.table.colors ?? []), '#1b4332']);
+  assert.deepEqual(h.project.lanes[0].dealers, lane.dealers);
+  assert.deepEqual(h.project.lanes[0].layers.dealer, lane.layers.dealer);
+  assert.deepEqual(h.project.lanes[0].operatorAdjustable, lane.operatorAdjustable);
+  assert.deepEqual(h.project.lanes[0].composition, lane.composition);
+});
+
+test('disabled composition controls reject direct callbacks as well as disabling native inputs', () => {
+  const h = compositionControls(createSeedProject(), true), before = structuredClone(h.project);
+  let tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.value === before.lanes[0].label).props.onChange({ target: { value: 'Blocked' } });
+  h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  tree = h.settings(); h.find(tree, node => node.type === 'select').props.onChange({ target: { value: 'shadow' } });
+  h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
+  assert.deepEqual(h.project, before);
 });

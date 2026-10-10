@@ -66,13 +66,13 @@ test('Lanes renders the title and disables write buttons when no store is connec
   const laneChoice=html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
   assert.ok(laneChoice);
   assert.match(laneChoice,/disabled/,'pick an explicit company before editing its package selection');
-  assert.match(html, /<summary>Avancerat: bolag och spellanes<\/summary>/);
+  assert.match(html, /<summary>Avancerat: bolag och spelrum<\/summary>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(componentSource, /\(osparad\)/);
   assert.doesNotMatch(componentSource, /window\.confirm/);
   assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Skapa spelrum<\/button>/);
   assert.equal(html.match(/primary-button/g)?.length ?? 0, 0);
-  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara presentationer<\/button>/);
+  assert.doesNotMatch(html, /Spara presentationer|Presentationens namn|Variationsfrekvens/);
   assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.match(html, /<button class="sg-btn sg-btn-ghost"[^>]*disabled[^>]*>Skapa SG test game provider<\/button>/);
 });
@@ -99,7 +99,7 @@ test('a composition link selects the presentation without silently adding it to 
   const project=createSeedProject();
   const second=structuredClone(project.lanes[0]);second.id='evening';second.label='Kväll';project.lanes.push(second);
   const html=renderToStaticMarkup(React.createElement(ControlLanesPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialLaneId:'evening',operators:[{id:'john',slug:'john',name:'John',publishedPackage:{revision:7,lanes:['mobile-phone']}}],storeAvailable:false}));
-  assert.match(html,/<h3>Kväll<\/h3>/);
+  assert.match(html,/vald sammansättning/);
   assert.match(html,/href="[^"]*\/control\/preview\?lane=evening"/);
   assert.doesNotMatch(html.match(/<input[^>]*name="lanes"[^>]*value="evening"[^>]*>/)?.[0] ?? '',/checked/);
   assert.match(html,/<input[^>]*name="lanes"[^>]*checked=""[^>]*value="mobile-phone"/);

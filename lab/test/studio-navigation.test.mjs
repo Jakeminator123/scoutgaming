@@ -34,23 +34,23 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
     assert.equal(scoutNavigationItem(path, '/studio')?.label, label, path);
     assert.equal(scoutNavigationItem(path === '/' ? '/studio' : `/studio${path}`, '/studio')?.label, label, path);
   };
-  expectLabel('/', 'Innehåll');
-  expectLabel('/control/clips', 'Innehåll');
-  expectLabel('/videos', 'Innehåll');
-  expectLabel('/control/videos', 'Innehåll');
+  expectLabel('/', 'Dealers & klipp');
+  expectLabel('/control/clips', 'Dealers & klipp');
+  expectLabel('/videos', 'Dealers & klipp');
+  expectLabel('/control/videos', 'Dealers & klipp');
   expectLabel('/zones', 'Sammansättning');
   expectLabel('/control/zones', 'Sammansättning');
-  expectLabel('/events', 'Innehåll');
-  expectLabel('/control/events', 'Innehåll');
-  expectLabel('/probe', 'Innehåll');
-  expectLabel('/control/probe', 'Innehåll');
-  expectLabel('/clips', 'Innehåll');
+  expectLabel('/events', 'Dealers & klipp');
+  expectLabel('/control/events', 'Dealers & klipp');
+  expectLabel('/probe', 'Dealers & klipp');
+  expectLabel('/control/probe', 'Dealers & klipp');
+  expectLabel('/clips', 'Dealers & klipp');
   expectLabel('/administration', 'Spelintegritet');
   expectLabel('/openclaw', 'Agentmodeller');
   expectLabel('/operator-chat', 'Operatörschatt');
   expectLabel('/control/operator-chat', 'Operatörschatt');
-  expectLabel('/tree', 'Innehåll');
-  expectLabel('/control/tree', 'Innehåll');
+  expectLabel('/tree', 'Dealers & klipp');
+  expectLabel('/control/tree', 'Dealers & klipp');
   expectLabel('/activity', 'Uppspelning');
   expectLabel('/guide', 'Guide & hjälp');
 });
@@ -69,7 +69,7 @@ test('exact active-page lookup handles canonical paths and rejects a doubled stu
 
 test('unknown, malformed and injected paths have no active item or default destination', () => {
   const resolved = new Map([
-    ['/videos?token=secret', 'Innehåll'],
+    ['/videos?token=secret', 'Dealers & klipp'],
   ]);
   for (const basePath of ['', '/studio']) {
     for (const path of [null, undefined, 1, {}, [], 'constructor', '__proto__', '', '/unknown',
@@ -81,8 +81,8 @@ test('unknown, malformed and injected paths have no active item or default desti
       const item = scoutNavigationItem(path, basePath);
       const label = typeof path === 'string' ? resolved.get(path) : undefined;
       if (label && basePath === '') assert.equal(item?.label, label, `${basePath}: ${path}`);
-      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Innehåll', path);
-      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Innehåll', path);
+      else if (basePath === '/studio' && path === '/studio/videos?token=secret') assert.equal(item?.label, 'Dealers & klipp', path);
+      else if (basePath === '/studio' && path === '/videos?token=secret') assert.equal(item?.label, 'Dealers & klipp', path);
       else assert.equal(item, null, `${basePath}: ${String(path)}`);
     }
   }
@@ -208,7 +208,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
   assert.match(html, /Sammansättning/);
-  assert.match(html, /Innehåll/);
+  assert.match(html, /Dealers &amp; klipp/);
   assert.match(html, /Publicering/);
   assert.match(html, /Nivå 2 · Spelbolag/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
