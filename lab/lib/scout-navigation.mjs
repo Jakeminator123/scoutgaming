@@ -6,8 +6,8 @@ export const SCOUT_NAVIGATION = Object.freeze([
     id: 'studio',
     label: 'Studio',
     items: Object.freeze([
+      Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
       Object.freeze({ href: '/control/preview', label: 'Sammansättning' }),
-      Object.freeze({ href: '/control/clips', label: 'Innehåll' }),
       Object.freeze({ href: '/control/lanes', label: 'Publicering' }),
     ]),
   }),

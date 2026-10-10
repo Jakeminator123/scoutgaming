@@ -9,8 +9,7 @@ import {PageTemplate} from './page-template.mjs';
 import {useStudioSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
-import {FamilyVideoUpload} from './family-video-upload';
-import {VideoUpload} from './video-upload';
+import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
 import {studioHref,type VideoInventory,type ConnectionStatus} from './studio-types';
@@ -31,7 +30,7 @@ export function initialCompositionLaneId(project:StudioProject,laneId?:string,de
 
 export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string}) {
   const session=useStudioSession({initialProject,initialVideos,initialStatus});
-  const {project,projectRef,videos,setVideos,modelEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
+  const {project,projectRef,videos,modelEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState(''),[localKey,setLocalKey]=useState(true);
@@ -124,20 +123,18 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const publicationHref=labUrl(`/control/lanes?lane=${encodeURIComponent(lane.id)}`);
   const contentHref=studioHref('/control/clips',{dealerId:lane.layers.dealer.default});
   const uploadHref=studioHref('/control/videos',{dealerId:lane.layers.dealer.default,eventId:clip?.classification?.eventId??project.events[0]?.id});
-  const ownFamilies=videos.families?.some(row=>row.dealerId===lane.layers.dealer.default)??false;
-  const uploadEventId=clip?.classification?.eventId??project.events.find(row=>row.id==='idle.ready')?.id??project.events[0].id;
-  const initialFamilyId=clip?.familyId??videos.families?.find(row=>row.dealerId===lane.layers.dealer.default&&row.playbackType==='idle-pool')?.id;
   return <PageTemplate eyebrow="// STUDIO" title="Sammansättning"
     primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current)void save();}}>{saving?'Sparar…':'Spara'}</button><a className="sg-btn sg-btn-primary" aria-disabled={saving||uploading||conflict} href={publicationHref} onClick={event=>{event.preventDefault();void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
     <div className="sg-page-body">
       {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
-      <div className={styles.toolbar}>
-        <label className="field">Presentation<select value={lane.id} disabled={saving||uploading} onChange={event=>{setLaneId(event.target.value);setClipId('');const url=new URL(window.location.href);url.searchParams.set('lane',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-        <span className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</span>
-      </div>
+      <CompositionMetadata project={project} onEdit={modelEdit} selectedId={lane.id} disabled={saving||uploading||conflict} onSelect={id=>{
+        if(uploadLock.current||saving||conflict)return;setLaneId(id);setClipId('');
+        const url=new URL(window.location.href);url.searchParams.set('lane',id);window.history.replaceState(null,'',url.pathname+url.search);
+      }}/>
+      <p className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</p>
       <p className={styles.hint}>En presentation samlar dealer, bord och bakgrund samt vilka alternativ partnern får välja. Spara utkastet här och publicera partnerpaketet i nästa steg.</p>
-      {contentDealer&&contentDealer.id!==lane.layers.dealer.default?<aside className={styles.hint} aria-label="Dealer från Innehåll">
+      {contentDealer&&contentDealer.id!==lane.layers.dealer.default?<aside className={styles.hint} aria-label="Dealer från klippbiblioteket">
         <p>Du valde {contentDealer.label} i dealerbiblioteket. {lane.layers.dealer.allowed.includes(contentDealer.id)
           ? 'Dealern är tillåten i den här presentationen, men är inte startdealer.'
           : 'Dealern ingår inte i den här presentationen ännu. Välj en befintlig presentation ovan eller lägg till dealern här.'}</p>
@@ -169,13 +166,14 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
             {placementControls('dealer')}
             <label className="field">Förhandsvisa klipp<select value={clip?.id??''} disabled={!clips.length||saving||uploading} onChange={event=>{clearRole('dealer');setClipId(event.target.value);}}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{clipName(row)}</option>)}</select></label>
             <p className={styles.hint}>Klippvalet är bara ett prov.</p>
-            <details className={styles.upload}><summary>Ladda upp dealerklipp</summary>{ownFamilies?<FamilyVideoUpload key={lane.layers.dealer.default} project={project} inventory={videos} disabled={saving||uploading||conflict} dealerId={lane.layers.dealer.default} initialFamilyId={initialFamilyId} onBusyChange={busy=>markUpload('dealer',busy)} onUploaded={(next,id)=>{setVideos(next);if(id)setClipId(id);clearRole('dealer');}}/>:<VideoUpload key={lane.layers.dealer.default} project={project} dealerId={lane.layers.dealer.default} eventId={uploadEventId} initialSituation={clip?.classification?.situation} disabled={saving||uploading||conflict} onBusyChange={busy=>markUpload('dealer',busy)} lockDealer previewOnly open onUploaded={(next,video)=>{setVideos(next);setClipId(video.id);clearRole('dealer');}}/>}</details>
-            <a href={contentHref} onClick={event=>{event.preventDefault();void continueTo(contentHref);}}>Grundloop och klipp →</a>
+            <a className="sg-btn sg-btn-secondary" href={contentHref} onClick={event=>{event.preventDefault();void continueTo(contentHref);}}>Dealerklipp, grundloop och händelser →</a>
+            <p className={styles.hint}>Ladda upp och ordna dealerns klipp i Dealers &amp; klipp. Här väljer du hur dealern visas tillsammans med bord och bakgrund.</p>
           </section>
           {(['table','background'] as const).map(layerPanel)}
         </section>
       </div>
       <details className={styles.advanced}><summary>Avancerat</summary><div>
+        {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={saving||uploading||conflict}/>:null}
         <fieldset disabled={saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbildsklippet behåller sin bild.</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>

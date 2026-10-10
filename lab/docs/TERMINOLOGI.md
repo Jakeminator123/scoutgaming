@@ -106,7 +106,7 @@ Bolagets partnerpersonal och intern adminpersonal hanteras separat.
 
 
 ```text
-Nivå 1: Innehåll ↔ Sammansättning → Publicering → bolagspaket (version)
+Nivå 1: Dealers & klipp ↔ Sammansättning → Publicering → bolagspaket (version)
         positioner,   dealer, bord,                   │
         repliker      bakgrund                        ▼
 Nivå 2:                              Partnerns tillåtna designval
@@ -131,10 +131,10 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 | Studio / undervy | Adress | Vad sidan innehåller |
 |---|---|---|
-| Innehåll | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
+| Dealers & klipp | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
-| Sammansättning | `/control/preview` | Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, spela och spara presentationen. |
-| Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. Avancerade paket- och spellaneval är utfällbara. |
+| Sammansättning | `/control/preview` | Välj, skapa och namnge presentationen. Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, förhandsvisa klipp och spara. |
+| Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. All redigering av sammansättningen finns på Sammansättning; avancerad rumsadministration öppnas kontextuellt. |
 | Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
 | Tal vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
 
@@ -145,8 +145,8 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Drift | Bord & spelrum, Spelintegritet, Uppspelning, Betalningar & journal. |
 | Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Konton & roller, Partners; Guide & hjälp i sidfoten. |
 
-Studio har tre huvudval: Sammansättning, Innehåll och Publicering.
-Klippbibliotek, Händelser och Tal vid inaktivitet nås som undervyer från Innehåll.
+Studio har tre huvudval: Dealers & klipp, Sammansättning och Publicering.
+Klippbibliotek, Händelser och Tal vid inaktivitet nås som undervyer från Dealers & klipp.
 Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
 aktiv menypunkt. Avancerade inställningar ligger under utfällbara fördjupningar.

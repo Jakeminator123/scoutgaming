@@ -4,7 +4,6 @@ import { useRef, useState, type FormEvent } from 'react';
 import { labBasePath, labUrl } from '../lib/lab-url.mjs';
 import { defaultPresentationLane, type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
-import { LaneEditor } from './lane-editor';
 import { PresentationRoomCreate } from './presentation-room-create';
 import { PageTemplate } from './page-template';
 import styles from './control-lanes-page.module.css';
@@ -64,7 +63,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
 }) {
   const session = useStudioSession({ initialProject, initialVideos, initialStatus });
   const {
-    project, modelEdit, dirty, saving, save, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
+    project, dirty, saving, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject,
   } = session;
   const rows = publishLaneRows(project.lanes, savedJson, dirty);
   const [selectedLaneId, setSelectedLaneId] = useState(initialLaneId ?? project.lanes?.[0]?.id ?? 'mobile-phone');
@@ -158,7 +157,6 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   return <PageTemplate
     eyebrow="// STUDIO"
     title={companiesOnly ? 'Bolag & team' : 'Publicering'}
-    primary={companiesOnly ? undefined : <button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || interactionBusy} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara presentationer'}</button>}
   >
     <div className={`sg-page-body ${styles.page}`}>
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
@@ -216,13 +214,13 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
         projectSaved={!dirty && !conflict} storeAvailable={storeAvailable} disabled={Boolean(busy) || saving || conflict}
         onBusyChange={setRoomBusy} onCreated={receipt => updatePackage(receipt.room.operatorId, current => ({ ...current, revision: receipt.packageRevision, needsRefresh: true, message: '', error: '' }))} />
       <details className={styles.card}>
-        <summary>Avancerat: bolag och spellanes</summary>
+        <summary>Avancerat: bolag och spelrum</summary>
         <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
         <a className="sg-btn sg-btn-secondary" aria-disabled={dirty || interactionBusy}
           onClick={event => { if (dirty || interactionBusy) event.preventDefault(); }}
           href={labUrl('/control/administration?tab=tables')}>Öppna bord & spelrum</a>
       </details>
-      <details className={styles.card}><summary>Avancerade presentationsinställningar</summary><LaneEditor project={project} onEdit={modelEdit} selectedId={selectedLaneId} onSelect={setSelectedLaneId} navigationBlocked={dirty||interactionBusy} disabled={interactionBusy} /></details>
+      <p>Dealer, bord, bakgrund och uppspelningsinställningar redigeras i <a href={compositionHref} aria-disabled={dirty||interactionBusy} onClick={event=>{if(dirty||interactionBusy)event.preventDefault();}}>vald sammansättning</a>.</p>
       </> : null}
       {companiesOnly && directory !== undefined ? <ControlOperatorDirectory directory={directory}
         onCreated={operator => setListed(current => current.some(item => item.id === operator.id) ? current : [...current, operator])} /> : null}

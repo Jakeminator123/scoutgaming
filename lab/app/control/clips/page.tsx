@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { LabStudio } from '@/components/lab-studio';
 import { studioUiInitialData } from '@/lib/ui-server';
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Innehåll · Croupier Studio' };
+export const metadata = { title: 'Dealers & klipp · Croupier Studio' };
 export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = props?.searchParams ? await props.searchParams : {};
   const h = await headers();

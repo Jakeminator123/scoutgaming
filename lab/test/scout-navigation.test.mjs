@@ -20,7 +20,7 @@ const { transformSync } = require('next/dist/build/swc');
 test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
   assert.deepEqual(groups.map(group => group.label), ['Studio', 'Drift', 'AI & chatt', 'Administration']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/preview', 'Sammansättning'], ['/control/clips', 'Innehåll'], ['/control/lanes', 'Publicering']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
     [['/control/administration?tab=tables', 'Bord & spelrum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
     [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Konton & roller'], ['/control/administration?tab=partners', 'Partners']],
@@ -50,7 +50,7 @@ test('old direct routes and content aliases retain pages and a visible navigatio
   }
   for (const href of ['/control/videos', '/control/events', '/control/probe', '/control/tree']) {
     assert.equal(sidebar.some(item => item.href === href), false, href);
-    assert.equal(scoutNavigationItem(`${href}?dealer=astrid&event=idle.ready`, '')?.label, 'Innehåll');
+    assert.equal(scoutNavigationItem(`${href}?dealer=astrid&event=idle.ready`, '')?.label, 'Dealers & klipp');
   }
   assert.equal(SCOUT_LEVELS.some(item => item.href === '/partner'), true);
   assert.equal(SCOUT_LEVELS.some(item => item.href === '/play'), true);
@@ -59,19 +59,19 @@ test('old direct routes and content aliases retain pages and a visible navigatio
 test('active item resolves public and native paths with content aliases and the administration default', () => {
   for (const base of ['', '/studio']) {
     for (const [path, label] of [
-      ['/control', 'Översikt'], ['/control/clips', 'Innehåll'], ['/activity', 'Uppspelning'],
+      ['/control', 'Översikt'], ['/control/clips', 'Dealers & klipp'], ['/activity', 'Uppspelning'],
       ['/control/administration', 'Spelintegritet'], ['/control/zones', 'Sammansättning'],
-      ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Innehåll'],
+      ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Dealers & klipp'],
       ['/control/administration?tab=not-a-group', 'Spelintegritet'],
-      ['/control/administration?tab=media-review', 'Innehåll'],
+      ['/control/administration?tab=media-review', 'Dealers & klipp'],
     ]) {
       assert.equal(scoutNavigationItem(path, base)?.label, label, path);
       assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
     }
     assert.equal(scoutNavigationItem('/studio/studio/videos', base), null);
   }
-  assert.equal(scoutNavigationItem('/', '')?.label, 'Innehåll');
-  assert.equal(scoutNavigationItem('/studio', '/studio')?.label, 'Innehåll');
+  assert.equal(scoutNavigationItem('/', '')?.label, 'Dealers & klipp');
+  assert.equal(scoutNavigationItem('/studio', '/studio')?.label, 'Dealers & klipp');
   assert.equal(scoutNavigationItem('/studio', ''), null);
   for (const base of [null, {}, [], '/studio/', '/other']) assert.equal(scoutNavigationItem('/control/clips', base), null);
 });
@@ -148,7 +148,7 @@ test('query-specific links win without losing the chat alias or selecting public
 test('reload on a deep route expands only its work group and marks exactly one sublink', () => {
   for (const [pathname, search, groupId, label] of [
     ['/control/preview', 'lane=t10', 'studio', 'Sammansättning'],
-    ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Innehåll'],
+    ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Dealers &amp; klipp'],
     ['/control/administration', 'tab=tables', 'operations', 'Bord &amp; spelrum'],
     ['/control/openclaw', 'tab=chat&dealer=astrid', 'ai', 'Operatörschatt'],
     ['/control/lanes', 'tab=companies&lane=t10', 'administration', 'Bolag &amp; team'],
@@ -248,7 +248,7 @@ test('mobile menu starts collapsed and closes with Escape or its native button w
 
 test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
   const { ItemLink } = loadNavigation('/control/preview');
-  const composition = groups[0].items[0], content = groups[0].items[1];
+  const composition = groups[0].items.find(item => item.href === '/control/preview'), content = groups[0].items.find(item => item.href === '/control/clips');
   for (const routeKey of ['/control/preview?lane=saved', '/studio/control/preview?lane=saved']) {
     const current = ItemLink({ item: composition, active: true, routeKey });
     assert.equal(current.type, 'span');

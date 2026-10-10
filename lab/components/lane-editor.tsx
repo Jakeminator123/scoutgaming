@@ -1,5 +1,4 @@
 'use client';
-import {LayerAssetSelect} from './layer-selectors';
 import {labUrl} from '../lib/lab-url.mjs';
 
 import { useState, type FormEvent } from 'react';
@@ -100,121 +99,62 @@ function applyWhenValid(project: StudioProject, onEdit: Edit, change: (current: 
   after();
 }
 
-export function LaneEditor({ project, onEdit: onModelEdit, selectedId: controlledId, onSelect, navigationBlocked=false, disabled=false }: { project: StudioProject; onEdit: Edit; selectedId?:string; onSelect?:(id:string)=>void; navigationBlocked?:boolean; disabled?:boolean }) {
+export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, onSelect, disabled = false }: {
+  project: StudioProject; onEdit: Edit; selectedId: string; onSelect: (id: string) => void; disabled?: boolean;
+}) {
   const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const lanes = project.lanes ?? [];
-  const [localSelectedId, setLocalSelectedId] = useState('');
-  const selectedId=controlledId??localSelectedId;
-  function setSelectedId(id:string){if(disabled)return;setLocalSelectedId(id);onSelect?.(id);}
+  const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
   const [draftId, setDraftId] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
-  const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
-  const suggestion = defaultPresentationLane();
-
   function addNew(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (disabled) return;
-    const id = draftId.trim();
-    const label = draftLabel.trim();
+    event.preventDefault(); if (disabled) return;
+    const id = draftId.trim(), label = draftLabel.trim();
     applyWhenValid(project, onEdit, current => addLane(current, id, label), () => {
-      setDraftId('');
-      setDraftLabel('');
-      setSelectedId(id);
+      setDraftId(''); setDraftLabel(''); onSelect(id);
     });
   }
-
-  function addSuggested() {
-    if (disabled) return;
-    applyWhenValid(project, onEdit, current => addDefaultLane(current), () => setSelectedId(suggestion.id));
+  function rename(value: string) {
+    if (!selected || disabled) return;
+    onEdit(current => { const lane = current.lanes?.find(item => item.id === selected.id);
+      return lane ? replaceLane(current, lane.id, { ...lane, label: value }) : current; });
   }
-
-  return <fieldset className={styles.editor} disabled={disabled} aria-label="Presentationsinställningar">
-    <section className={styles.card} aria-labelledby="lanes-in-project">
-      <h2 id="lanes-in-project">Presentation</h2>
-      {lanes.length === 0 ? <div className={styles.suggestion}>
-        <p>Ingen sparad presentation.</p>
-        <LaneSummary lane={suggestion} />
-        <button type="button" className="sg-btn sg-btn-secondary" onClick={addSuggested}>Skapa standardpresentation</button>
-      </div> : <ul className={styles.laneList}>
-        {lanes.map(lane => <li key={lane.id}>
-          <button type="button" className={styles.pick} aria-pressed={selected?.id === lane.id} onClick={() => setSelectedId(lane.id)}>
-            <LaneSummary lane={lane} />
-          </button>
-        </li>)}
-      </ul>}
-      {selected ? <LaneFields key={selected.id} project={project} lane={selected} onEdit={onEdit} navigationBlocked={navigationBlocked || disabled} /> : null}
+  return <fieldset className={styles.editor} disabled={disabled} aria-label="Välj och namnge sammansättning">
+    <section className={styles.card}>
+      {selected ? <div className={styles.create}>
+        <label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{lane.label}</option>)}</select></label>
+        <label className={styles.field}>Sammansättningens namn<input value={selected.label} maxLength={80} onChange={event => rename(event.target.value)} /></label>
+      </div> : <div className={styles.suggestion}>
+        <p>Ingen sparad sammansättning.</p><LaneSummary lane={defaultPresentationLane()} />
+        <button type="button" className="sg-btn sg-btn-secondary" onClick={() => { if (!disabled) applyWhenValid(project, onEdit, addDefaultLane, () => onSelect(defaultPresentationLane().id)); }}>Skapa standardsammansättning</button>
+      </div>}
     </section>
-    <details className={styles.card}><summary>Ny presentation</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
-      <h2 id="new-lane-title">Skapa presentation</h2>
-      <div className={styles.create}>
-        <label className={styles.field}>Id
-          <input value={draftId} aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} />
-        </label>
-        <label className={styles.field}>Namn på ny presentation
-          <input value={draftLabel} maxLength={80} onChange={event => setDraftLabel(event.target.value)} />
-        </label>
-        <button type="submit" className="sg-btn sg-btn-secondary">Skapa presentation</button>
-      </div>
-      <IdHelp id="new-lane-id-help" />
+    <details className={styles.card}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
+      <h2 id="new-lane-title">Skapa sammansättning</h2><div className={styles.create}>
+        <label className={styles.field}>Namn på ny sammansättning<input value={draftLabel} required maxLength={80} onChange={event => setDraftLabel(event.target.value)} /></label>
+        <label className={styles.field}>Tekniskt ID<input value={draftId} required aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} /></label>
+        <button type="submit" className="sg-btn sg-btn-secondary">Skapa sammansättning</button>
+      </div><IdHelp id="new-lane-id-help" />
     </form></details>
   </fieldset>;
 }
 
-function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: StudioProject; lane: StudioLane; onEdit: Edit; navigationBlocked:boolean }) {
-  const [label, setLabel] = useState(lane.label);
+export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabled = false }: {
+  project: StudioProject; lane: StudioLane; onEdit: Edit; disabled?: boolean;
+}) {
+  const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const [draftColor, setDraftColor] = useState('#1b4332');
   const [idleVariants, setIdleVariants] = useState((lane.idle?.variants ?? []).join('\n'));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const tableColors = lane.layers.table.colors ?? [];
-
   function editLane(change: (draft: StudioLane) => void, accept?: () => void) {
-    const next = structuredClone(lane);
-    change(next);
+    if (disabled) return;
+    const next = structuredClone(lane); change(next);
     try { replaceLane(project, lane.id, next); }
     catch (cause) { onEdit(() => { throw cause; }); return; }
-    accept?.();
-    onEdit(current => replaceLane(current, lane.id, next));
+    accept?.(); onEdit(current => replaceLane(current, lane.id, next));
   }
-
-  function toggleDealer(dealerId: string, checked: boolean) {
-    editLane(draft => {
-      const selected = new Set(draft.dealers);
-      if (checked) selected.add(dealerId);
-      else selected.delete(dealerId);
-      draft.dealers = project.dealers.map(item => item.id).filter(id => selected.has(id));
-      draft.layers.dealer.allowed = draft.layers.dealer.allowed.filter(id => selected.has(id));
-      if (draft.dealers.length > 0 && !draft.dealers.includes(draft.layers.dealer.default)) draft.layers.dealer.default = draft.dealers[0];
-    });
-  }
-
-  return <div className={styles.fields}>
-    <h3>{lane.label}</h3>
-    <a className="sg-btn sg-btn-secondary" aria-disabled={navigationBlocked} onClick={event=>{if(navigationBlocked)event.preventDefault();}} href={labUrl(`/control/preview?lane=${encodeURIComponent(lane.id)}`)}>Ändra sammansättning →</a>
-    {navigationBlocked?<p className={styles.help}>Spara dina ändringar innan du öppnar sammansättningen.</p>:null}
-    <label className={styles.field}>Presentationens namn
-      <input value={label} maxLength={80} onChange={event => {
-        const value = event.target.value;
-        editLane(draft => { draft.label = value; }, () => setLabel(value));
-      }} />
-    </label>
-    <details className={styles.advanced}><summary>Dealers som får ingå i presentationen</summary><fieldset className={styles.group}>
-      <legend>Dealers i presentationen</legend>
-      <div className={styles.checks}>
-        {project.dealers.map(dealer => <label className={styles.check} key={dealer.id}>
-          <input type="checkbox" checked={lane.dealers.includes(dealer.id)} onChange={event => toggleDealer(dealer.id, event.target.checked)} />
-          {dealer.label}
-        </label>)}
-      </div>
-    </fieldset></details>
-    <fieldset className={styles.group}>
-      <legend>Bakgrund</legend>
-      <label className={styles.check}><input type="checkbox" checked={lane.layers.background.enabled} onChange={event => editLane(draft => { draft.layers.background.enabled = event.target.checked; })} /> På</label>
-      <LayerAssetSelect role="background" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
-    </fieldset>
-    <fieldset className={styles.group}>
-      <legend>Bord</legend>
-      <label className={styles.check}><input type="checkbox" checked={lane.layers.table.enabled} onChange={event => editLane(draft => { draft.layers.table.enabled = event.target.checked; })} /> På</label>
-      <LayerAssetSelect role="table" lane={lane} assets={project.layerAssets??[]} onChange={next=>onEdit(current=>replaceLane(current,lane.id,next))} />
+  return <fieldset className={styles.editor} disabled={disabled} aria-label="Avancerade sammansättningsinställningar">
       <details className={styles.advanced}><summary>Bordsfärger för bolaget</summary><div className={styles.addColor}>
         <label className={styles.field}>Bordsfärger
           <input type="color" value={draftColor} aria-label="Ny bordsfärg" onChange={event => setDraftColor(event.target.value)} />
@@ -234,28 +174,6 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
           })}>Ta bort</button>
         </li>)}
       </ul> : null}</details>
-    </fieldset>
-    <fieldset className={styles.group}>
-      <legend>Dealer vid start och tillåtna byten</legend>
-      <label className={styles.check}><input type="checkbox" checked={lane.layers.dealer.enabled} onChange={event => editLane(draft => { draft.layers.dealer.enabled = event.target.checked; })} /> På</label>
-      <label className={styles.field}>Vid start
-        <select value={lane.layers.dealer.default} onChange={event => editLane(draft => { draft.layers.dealer.default = event.target.value; })}>
-          {lane.dealers.map(id => <option key={id} value={id}>{project.dealers.find(dealer => dealer.id === id)?.label ?? id}</option>)}
-        </select>
-      </label>
-      <p className={styles.help}>Tillåtna dealerbyten</p>
-      <div className={styles.checks}>
-        {lane.dealers.map(id => <label className={styles.check} key={id}>
-          <input type="checkbox" checked={lane.layers.dealer.allowed.includes(id)} onChange={event => editLane(draft => {
-            const selected = new Set(draft.layers.dealer.allowed);
-            if (event.target.checked) selected.add(id);
-            else selected.delete(id);
-            draft.layers.dealer.allowed = draft.dealers.filter(dealerId => selected.has(dealerId));
-          })} />
-          {project.dealers.find(dealer => dealer.id === id)?.label ?? id}
-        </label>)}
-      </div>
-    </fieldset>
     <details className={styles.advanced}><summary>Avancerat: automatik och variationer</summary><fieldset className={styles.group}>
       <legend>OpenClaw väljer klipp</legend>
       {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phaseLabels[phase]??phase}
@@ -337,5 +255,5 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
       <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>
       <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
     </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort presentation</button>}</details>
-  </div>;
+  </fieldset>;
 }
