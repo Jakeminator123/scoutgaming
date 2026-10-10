@@ -18,6 +18,53 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+
+test('local server dispatch serves the complete idle browser import graph without broadening web paths', async(t) => {
+  // Exercise the production dispatch condition as well as the module handler:
+  // calling the handler alone missed the dealer-identity alias regression.
+  const serverSource = await readFile(new URL('../web/server.mjs', import.meta.url), 'utf8');
+  const guard = serverSource.match(/^  if \((pathname\.startsWith\('\/api\/presentation\/'\).*?)\) \{\r?$/m)?.[1];
+  assert.ok(guard, 'production presentation dispatch must be identifiable');
+  const dispatches = new Function('pathname', 'return ' + guard);
+  const handler = createPresentationApi({ env:{}, store:{load:async()=>assert.fail('public modules must not load private policy')} });
+  const publicEntry = new Map([
+    ['/local-presentation.mjs', '../web/public/local-presentation.mjs'],
+    ['/dealer-identity.mjs', '../web/public/dealer-identity.mjs'],
+  ]);
+  const server = createServer(async(req,res) => {
+    const pathname = new URL(req.url, 'http://local').pathname;
+    if (dispatches(pathname) && await handler(req,res,pathname,null)) return;
+    if (publicEntry.has(pathname)) {
+      res.writeHead(200, {'Content-Type':'text/javascript'});
+      res.end(await readFile(new URL(publicEntry.get(pathname), import.meta.url))); return;
+    }
+    res.writeHead(404);res.end();
+  });
+  server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(()=>{server.closeAllConnections();server.close();});
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  const pending = ['/local-presentation.mjs'], visited = new Set();
+  while(pending.length) {
+    const path = pending.shift();if(visited.has(path))continue;visited.add(path);
+    const response = await fetch(origin+path);
+    assert.equal(response.status,200,path);
+    const body = await response.text();
+    assert.match(response.headers.get('content-type'),path.endsWith('.json')?/application\/json/:/text\/javascript/,path);
+    if(path.endsWith('.json')){assert.equal(JSON.parse(body).schemaVersion,1);continue;}
+    for(const imported of body.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)) {
+      assert.match(imported[1],/^\.{1,2}\//,'browser imports must stay relative');
+      pending.push(new URL(imported[1],origin+path).pathname);
+    }
+  }
+  for(const path of ['/presentation-runtime/live-idle.mjs','/presentation-runtime/idle-policy.mjs',
+    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
+  for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
+    '/web/public/dealer-identity.mjs.bak']) {
+    assert.equal(dispatches(path),false,path);
+    assert.equal((await fetch(origin+path)).status,404,path);
+  }
+});
+
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 test('native playback context is default off, cookie-owned read-only and refuses substituted policy/owner/round',async()=>{
   const hash=v=>createHash('sha256').update(v).digest('hex'),playerId='isolated-playback-fixture',owner='player-fixture-owner';

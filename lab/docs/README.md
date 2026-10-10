@@ -10,6 +10,8 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
+**Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
+
 **Dealer, presentation och spelrum är olika saker:**
 
 - **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
@@ -22,6 +24,7 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 Tekniskt heter en presentation presentationslane. En spellane är spelmotorns interna väg; du behöver inte skapa den manuellt.
 Börja i **Sammansättning**: välj presentation och öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
 Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
+Innehåll är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
 På Innehåll kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
 Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
@@ -48,6 +51,9 @@ Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
 I **Publicering** väljer du bolag och **Presentation för spelrum**. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk; en allmän Blackjack-länk utan bolag och rum väljer inte partnerns paket.
 **Publicera partnerpaket** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
+**Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
+Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
+
 Bara när ett nytt rum behövs öppnar du **Skapa nytt spelrum** och anger rumsnamn. Rummet och paketet sparas tillsammans; en kompatibel spellane återanvänds eller skapas automatiskt.
 Nivå 2 kräver partnerinloggning och aktivt medlemskap; där kan personalen välja publicerade, kompatibla alternativ som bolaget får ändra. Geometrin följer den publicerade N1-sammansättningen. Ett bolag utan medlemmar får ingen N2-inloggning automatiskt.
 

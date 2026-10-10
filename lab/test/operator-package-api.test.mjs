@@ -287,3 +287,20 @@ test('native SQL failure rolls back publisher and forged or mismatched preparati
   f.pool.failNext('publish-package');await assert.rejects(f.publish(prepared),e=>e.statusCode===503);
   assert.deepEqual(f.pool.snapshot(),before);
 });
+
+
+test('lane operator choices carry each current published assignment and never borrow another company package', async () => {
+  const pool=memoryPool(),{api,lane}=apiFor(pool),store=await createOperatorStore({sql:pool,scope,now:clock});
+  await api.handle(request('operator-create-demo',{}));
+  await store.createOperator({actor:session.user,operatorId:'johns',slug:'johns',name:'Johns'});
+  assert.deepEqual((await lane.listOperators()).map(row=>[row.id,row.publishedPackage]),[['johns',null],['sg-test',null]]);
+  await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'johns',lanes:['johns-johanna'],games:['blackjack'],tables:['room-johns'],branding:{name:'Other private detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'sg-test',expectedRevision:1,lanes:['mobile-phone','evening'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
+  const listed=await lane.listOperators();
+  assert.deepEqual(listed.find(row=>row.id==='sg-test').publishedPackage,{revision:2,lanes:['evening','mobile-phone']});
+  assert.deepEqual(listed.find(row=>row.id==='johns').publishedPackage,{revision:1,lanes:['johns-johanna']});
+  assert.doesNotMatch(JSON.stringify(listed),/room-sg|room-johns|Private|branding|tables|games/);
+  listed.find(row=>row.id==='sg-test').publishedPackage.lanes.length=0;
+  assert.equal((await lane.listOperators()).find(row=>row.id==='sg-test').publishedPackage.lanes.length,2);
+});

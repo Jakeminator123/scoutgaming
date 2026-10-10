@@ -15,7 +15,7 @@ export type PresentationRoomCapability = { schemaVersion: 1; registeredDealerIds
 export interface PresentationRoomPreflight {
   ok: true; operator: PresentationRoomOperator; presentationLaneId: string;
   projectRevision: string; administrationRevision: string; packageRevision: number | null;
-  ready: boolean; reason: null | 'studio_presentation_runtime_update_required' | 'presentation_lane_incompatible';
+  ready: boolean; reason: null | 'studio_presentation_runtime_update_required' | 'presentation_lane_incompatible' | 'presentation_package_conflict' | 'presentation_package_too_large';
   capabilities: PresentationRoomCapability | null;
   rooms: readonly { id: string; name: string; playUrl: string }[];
 }

@@ -173,3 +173,29 @@ test('the lobby text names the last dealer and table colour', () => {
   assert.equal(lobbyChoiceText({ dealer: 'paow' }), 'Dealer Paow');
   assert.equal(lobbyChoiceText({ dealer: 'ghost', tableColor: 'green', background: 'stad' }), '');
 });
+
+test('full-frame dealer scenes never offer independent table or background controls',()=>{
+  const composition={dealer:{enabled:true,compatibility:'full-frame'},table:{allowed:['table-one'],default:'table-one'},
+    assets:[{id:'table-one',label:'Independent table'},{id:'stad',label:'Independent background'}]};
+  const selected=resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition,stored:{tableAsset:'table-one',background:'stad'}});
+  assert.equal(selected.tableValue,null);assert.equal(selected.backgroundValue,null);
+  assert.deepEqual(selected.nextStored,{});
+  const page=dom(),panel=mountPlayerChoices(page,{choices:imageChoices,composition,currentDealer:'astrid',tableValue:selected.tableValue,backgroundValue:selected.backgroundValue});
+  const rows=panel.children.filter(row=>row.className==='choice-row');
+  for(const label of ['Bord','Bakgrund']){
+    const controls=rows.find(row=>row.children[0].textContent===label).children.filter(row=>row.tag==='button');
+    assert.equal(controls.length,1);assert.equal(controls[0].disabled,true);assert.equal(controls[0].textContent,'Ingår i dealerns scen');
+  }
+});
+test('dealer footer labels its real action and returns to the same operator lobby',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const html=await readFile(new URL('../web/public/index.html',import.meta.url),'utf8');
+  assert.match(html,/aria-label="Välj dealer"/);assert.match(html,/>Välj dealer<\/span>/);
+  assert.match(html,/class="casino-return" href="\/play">Till lobbyn/);
+  const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
+  for(const operator of [undefined,'sg-test']){
+    const link={};vm.runInNewContext(code,{entrySelection:{operator},document:{querySelector:()=>link},URLSearchParams});
+    assert.equal(link.href,operator?'/play?operator=sg-test':'/play');
+  }
+});

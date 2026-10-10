@@ -134,3 +134,16 @@ test('layered presentation is accepted only on layer-preview', () => {
   assert.throws(() => gameLaneFromDocument({ gameLane: 'mobile-phone', gameDealer: 'astrid', gamePresentation: 'layered' }));
   assert.throws(() => gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'astrid', gamePresentation: 'layered' }));
 });
+
+test('portrait room adapter follows the selected dealer bank without changing lane or identity',async()=>{
+  const {gamePresentationForDealer}=await import('../web/public/game-lanes.mjs');
+  for(const dealer of ['vera','amira','mei']){
+    assert.equal(gamePresentationForDealer(dealer,'portrait-video'),'original');
+    const lane={schemaVersion:1,id:'room-'+dealer,label:dealer,renderer:'portrait-video',dealer,mediaCollection:dealer+'-presentation'};
+    assert.deepEqual(gameLaneSelection('',lane.id,[lane]),{lane:lane.id,dealer,presentation:'original'});
+  }
+  for(const dealer of ['astrid','johanna'])assert.equal(gamePresentationForDealer(dealer,'portrait-video'),'local');
+  assert.equal(gamePresentationForDealer('astrid','indexed-video'),'original');
+  assert.equal(gamePresentationForDealer('paow','layered'),'layered');
+  assert.throws(()=>gamePresentationForDealer('amira','unknown'));
+});

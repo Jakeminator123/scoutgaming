@@ -213,3 +213,24 @@ test('policy failures still reject so the server answers 503 as before', async (
   assert.throws(() => createGameEntrySelector({ policy: {} }));
   assert.throws(() => createGameEntrySelector({ policy: failing, packages: {} }));
 });
+
+test('published portrait rooms route indexed dealer banks to their working adapter without changing room permissions',async()=>{
+  const {createPortraitRoomEntryFixture}=await import('./fixtures/portrait-room-entry.mjs');
+  for(const dealer of ['amira','vera','mei']) {
+    const f=createPortraitRoomEntryFixture({dealer}),before=structuredClone(f.pack);
+    const result=await f.select(f.query);
+    assert.equal(result.status,200);const selection=result.selection;
+    assert.equal(selection.presentation,'original');assert.equal(selection.dealer,dealer);
+    assert.equal(selection.lane,f.room.gameLaneId);assert.equal(selection.operator,'sg-test');
+    assert.equal(selection.roomId,f.room.id);assert.equal(selection.packageRevision,7);
+    assert.equal(selection.localDealer,undefined);assert.deepEqual(selection.choices.dealers,[dealer]);
+    assert.deepEqual(selection.choices.tableColors,[]);assert.equal(selection.choices.tableDefault,null);
+    assert.equal(selection.composition.dealer.compatibility,'full-frame');
+    assert.deepEqual(selection.choices.background.allowed,[]);assert.equal(selection.choices.background.mode,'baked');
+    const selected=await f.select(f.query+'&dealer=astrid');assert.equal(selected.selection.dealer,dealer,'adapter changes never authorize another dealer');
+    const html=await f.decorate('<html lang="sv"></html>');
+    assert.match(html,/data-game-presentation="original"/);assert.doesNotMatch(html,/data-game-local-dealer=/);
+    assert.match(html,/data-game-operator="sg-test"/);assert.ok(html.includes('data-game-room-id="'+f.room.id+'"'));
+    assert.deepEqual(f.pack,before,'runtime adaptation does not rewrite the frozen package');
+  }
+});

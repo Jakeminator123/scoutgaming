@@ -111,13 +111,16 @@ Nivå 1: Innehåll ↔ Sammansättning → Publicering → bolagspaket (version)
         repliker      bakgrund                        ▼
 Nivå 2:                              Partnerns tillåtna designval
                                                        │
-Nivå 3:                                        Spelklienten
+Nivå 3:                            Rumslobby → dealer och miljö → spel
 
 Presentation → kompatibel spellane → spelrum/bord
 Spelmotor → spelsignal → presentationsregissör → uppspelningsplan
                                                        │
                                               uppspelningskvitto
 ```
+
+Nivå 1 äger dealerklippens sekvenser, grundloopens regler, bord- och bakgrundsbiblioteket samt publicering och bolagstilldelning. Nivå 2 får API-åtkomst, granskning och tillåtna mindre designjusteringar; sekvensredigering ligger kvar på nivå 1.
+Dealerbibliotekets antal är inte antalet spelbara rum. Spelarens bolagslobby visar endast öppna rum i ett publicerat paket och de dealer- och miljöval som fungerar där. Rummet är en spelbar ingång till paketet, inget nytt mediainnehållslager. **Bordets utseende** är scenens bordslager.
 
 Skapa spelrum i Publicering återanvänder eller skapar en kompatibel spellane.
 Manuell administration av spellanes finns kvar under Avancerat.

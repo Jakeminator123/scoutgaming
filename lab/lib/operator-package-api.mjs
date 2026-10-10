@@ -145,9 +145,13 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   return Object.freeze({
     handlers, preparations,
     listOperators: async () => {
-      const listed = await (await store()).listOperators();
-      return listed.filter(operator => operator.status !== 'suspended').map(operator => ({
-        id: operator.id, slug: operator.slug, name: operator.name,
+      const operators = await store(), listed = await operators.listOperators();
+      return Promise.all(listed.filter(operator => operator.status !== 'suspended').map(async operator => {
+        const published = await operators.getCurrentPackage(operator.id);
+        // Server-owned current assignment. The editor must not seed another
+        // company's publish selection or omit lanes serving its live rooms.
+        return { id: operator.id, slug: operator.slug, name: operator.name,
+          publishedPackage: published ? { revision: published.revision, lanes: [...published.lanes] } : null };
       }));
     },
   });

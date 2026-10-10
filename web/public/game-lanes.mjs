@@ -7,6 +7,14 @@ export const GAME_LANES = Object.freeze([
 ]);
 const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'paow', mediaCollection: 'layer-packs-preview' });
 const dealers = BASE_DEALER_IDS;
+const indexedDealers = new Set(['vera', 'amira', 'mei']);
+// These approved dealer banks are indexed frames, not Studio portrait films.
+// A room keeps its identity and permissions while selecting the working adapter.
+export function gamePresentationForDealer(dealerId, renderer) {
+  if (!isDealerId(dealerId) || !['portrait-video', 'indexed-video', 'layered'].includes(renderer)) throw Error('Invalid dealer presentation');
+  if (renderer === 'layered') return 'layered';
+  return renderer === 'portrait-video' && !indexedDealers.has(dealerId) ? 'local' : 'original';
+}
 const layerPreviewDealers = ['paow', 'dragge'];
 export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
 export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
@@ -69,7 +77,7 @@ export function gameLaneSelection(query, activeLane = 'mobile-phone', lanes = GA
     ? params.get('dealer') : null;
   const dealer = lane.renderer === 'indexed-video' && params.getAll('dealer').length === 1 && dealers.includes(params.get('dealer'))
     ? params.get('dealer') : layeredDealer || lane.dealer;
-  const presentation = lane.renderer === 'portrait-video' ? 'local' : lane.renderer === 'layered' ? 'layered' : 'original';
+  const presentation = gamePresentationForDealer(dealer, lane.renderer);
   return { lane: lane.id, dealer, presentation };
 }
 

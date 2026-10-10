@@ -96,9 +96,14 @@ try {
     server.once('error', error => { clearTimeout(timer); reject(error); });
     server.once('exit', code => { clearTimeout(timer); reject(Error(`Server exited ${code}: ${startupError}`)); });
     server.stdout.on('data', chunk => { if (String(chunk).includes('croupier demo on')) { clearTimeout(timer); resolve(); } });
-    server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError):[^\n]*/)?.[0] ?? ''; });
+    server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError)(?: \[[A-Z_]+\])?:[^\n]*/)?.[0] ?? ''; });
   });
 
+  const offlineRooms = await request(game + '/api/operators/sg-test/rooms');
+  assert.equal(offlineRooms.status, 503, 'offline rooms refuse without importing the absent Studio storage runtime');
+  assert.deepEqual(await offlineRooms.json(), {error:'operator_rooms_unavailable'});
+  assert.equal(offlineRooms.headers.get('cache-control'), 'no-store');
+  assert.equal(offlineRooms.headers.has('set-cookie'), false, 'catalog lookup must not create a guest player');
   assert.equal((await request(lab + '/api/auth/lab/check')).status, 401, 'guest preview cannot open Lab');
   assert.equal((await request(game + '/api/auth/lab/start')).status, 403);
   assert.equal((await request(bo + '/api/auth/lab/start')).status, 403);

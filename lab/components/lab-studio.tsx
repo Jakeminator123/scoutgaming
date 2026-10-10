@@ -181,6 +181,9 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
         : <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>}
     >
     <main className={styles.main}>
+      <h2>Dealerbibliotek · {project.dealers.length} dealers</h2>
+      <p>Här redigerar du dealerns grundloop och händelseklipp. Biblioteket visar alla sparade dealers. Spelaren ser bara de dealers som ingår i ett publicerat spelrum.</p>
+      <p>Välj dealer → sätt ihop dealer, bord och bakgrund → publicera till ett bolag → öppna rummets spellobby.</p>
       <DealerRegistration project={project} disabled={!connectedLane||saving||uploading} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
       <DealerRemoval key={dealerId} project={project} dealerId={dealerId} disabled={saving||uploading||conflict||!connectedLane} onEdit={change=>setProject(current=>change(current))} onRemoved={(_id,nextDealerId)=>{selectDealer(nextDealerId);setNotice('Dealern är borttagen från utkastet. Spara för att behålla ändringen.');}}/>
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>

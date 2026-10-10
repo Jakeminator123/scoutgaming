@@ -147,8 +147,13 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
     storeAvailable: false,
   }));
   assert.match(html, /Skapa standardpresentation/);
-  // No saved lanes: the publish list still offers the standard lane, which the API accepts.
-  assert.match(html, /<input type="checkbox" name="lanes" checked="" value="mobile-phone"\/>Mobile Phone Lane · Astrid<\/label>/);
+  // No saved lanes: the standard remains available, but a company must be
+  // explicitly selected before assigning it to a package.
+  const standardChoice = html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
+  assert.ok(standardChoice, 'the publish list still offers the API-supported standard lane');
+  assert.match(standardChoice, /disabled=""/);
+  assert.doesNotMatch(standardChoice, /checked=/);
+  assert.match(html, /<option value="" selected="">Välj bolag<\/option>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.doesNotMatch(html, /Använd samma lane-id/);
   assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);

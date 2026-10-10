@@ -60,6 +60,8 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
+const lobbyReturn = document.querySelector('.casino-return');
+if (lobbyReturn) lobbyReturn.href = entrySelection.operator ? '/play?' + new URLSearchParams({operator:entrySelection.operator}) : '/play';
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name:label,registered:true};
 if (entrySelection.presentation === 'layered') for (const [id, name] of [['paow', 'Paow'], ['dragge', 'Dragge']]) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };

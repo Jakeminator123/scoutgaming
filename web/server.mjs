@@ -112,10 +112,12 @@ if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
 });
 const { handlePlayerSurface } = await import('./player-surface.mjs');
 const { createPublicOperatorDirectory } = await import('./public-operators.mjs');
-const publicOperators = createPublicOperatorDirectory({
-  store: studioPolicyRuntime ? await (await import('./storage/operator-store.mjs')).createOperatorStore({
-    sql: storage.pool, scope: studioPolicyRuntime.scope,
-  }) : null,
+const publicOperatorStore = studioPolicyRuntime ? await (await import('./storage/operator-store.mjs')).createOperatorStore({
+  sql: storage.pool, scope: studioPolicyRuntime.scope,
+}) : null;
+const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore });
+const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).createPublicOperatorRooms({
+  store: publicOperatorStore, policy: studioPolicyRuntime?.policy ?? null,
 });
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
@@ -735,6 +737,7 @@ const server = createServer(async (req, res) => {
   const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
   if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   if (pathname.startsWith('/api/operators/')) {
+    if (await publicOperatorRooms.handle(req, res, pathname)) return;
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
@@ -821,7 +824,7 @@ const server = createServer(async (req, res) => {
     finally{res.removeListener('close',disconnected);}
     return;
   }
-  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json') {
+  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json' || pathname === '/web/public/dealer-identity.mjs') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{

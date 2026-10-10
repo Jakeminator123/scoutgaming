@@ -10,5 +10,5 @@ export default async function Page(props: { searchParams: Promise<Record<string,
   const query = props?.searchParams ? await props.searchParams : {};
   const h = await headers();
   const data=await studioUiInitialData(new Request(`http://${h.get('host') || 'invalid'}/control/preview`, { method: 'GET', headers: h }));
-  return <ControlPreviewPage initialLaneId={firstQueryValue(query.lane)} initialProject={data!.project} initialVideos={data!.videos} initialStatus={data!.status} />;
+  return <ControlPreviewPage initialLaneId={firstQueryValue(query.lane)} initialDealerId={firstQueryValue(query.dealer)} initialProject={data!.project} initialVideos={data!.videos} initialStatus={data!.status} />;
 }

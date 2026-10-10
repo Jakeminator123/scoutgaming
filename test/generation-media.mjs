@@ -6,7 +6,7 @@ import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openGenerationMedia, closeGenerationMedia } from '../web/generation-media.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 
@@ -97,11 +97,16 @@ test('retired generation aliases cannot fall through to static files through Win
     for (const name of ['dealer-identity.mjs', 'game-entry-contract.mjs', 'game-lanes.mjs', 'presentation-composition.mjs', 'composition-settings.mjs']) {
       await copyFile(new URL('public/' + name, source), join(web, 'public', name));
     }
+    // An inactive catalog must import without optional Studio public modules.
+    await import(pathToFileURL(join(web, 'public-operator-rooms.mjs')).href);
     await writeFile(join(web, 'public/bo/generations.json'), JSON.stringify([{ id: known }]));
     await writeFile(join(directory, `${known}.mp4`), 'synthetic known media');
     await writeFile(join(directory, `${unknown}.mp4`), 'synthetic uncatalogued media');
     fixture = await startLocalComparison({ startLab: false, repoRoot: tmp, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1') });
     const get = (path, cookie = '') => fetch(fixture.gameUrl + path, { headers: { Cookie: cookie }, redirect: 'manual' });
+    const unavailableRooms=await get('/api/operators/sg-test/rooms');
+    assert.equal(unavailableRooms.status,503);assert.deepEqual(await unavailableRooms.json(),{error:'operator_rooms_unavailable'});
+    assert.equal(unavailableRooms.headers.get('cache-control'),'no-store');assert.equal(unavailableRooms.headers.has('set-cookie'),false);
     const prefixes = ['/BO/GEN/', '/Bo/gEn/', '/BO%2fGEN%2f', '/BO%5cGEN%5c',
       '/bo./gen./', '/bo%20/gen%20/', '/BO.%20/Gen%20./'];
     for (const prefix of prefixes) {

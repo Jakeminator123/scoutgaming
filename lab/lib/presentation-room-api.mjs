@@ -181,19 +181,22 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const saved = await repository.transaction(() => repository.withTransactionClient(client => snapshot(client, url.searchParams.get('operatorId'), snapshotValue)));
     const id = url.searchParams.get('presentationLaneId');
     sourceProject(saved.project, id);
-    let selected = null, merged = null, packageReady = true, runtime = null;
+    let selected = null, merged = null, packageReason = null, runtime = null;
     try {
       selected = await capture(snapshotValue, id);
       merged = mergePresentation(saved.pack, selected.presentation);
       const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration);
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged });
     } catch (error) {
-      if ([409, 413, 422].includes(error?.statusCode)) packageReady = false; else throw error;
+      if (error?.statusCode === 409) packageReason = 'presentation_package_conflict';
+      else if (error?.statusCode === 413) packageReason = 'presentation_package_too_large';
+      else if (error?.statusCode === 422) packageReason = 'presentation_lane_incompatible';
+      else throw error;
     }
     try { runtime = await capabilities(merged ?? selected?.presentation); }
     catch (error) { if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error; }
     const runtimeReady = runtimeAccepts(runtime, merged ?? selected?.presentation);
-    const reason = !runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : !packageReady ? 'presentation_lane_incompatible' : null;
+    const reason = packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
     return { ok: true, operator: { id: saved.operator.id, slug: saved.operator.slug, name: saved.operator.name }, presentationLaneId: id,
       projectRevision: saved.projectRevision, administrationRevision: saved.administrationRevision, packageRevision: saved.pack?.revision ?? null,
       ready: reason === null, reason, capabilities: runtime,
