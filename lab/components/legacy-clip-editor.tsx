@@ -9,7 +9,7 @@ import { legacyPartInSection, selectedDealerClips, type LegacyWorkspaceSection }
 
 // Controlled draft editor: the parent's usual save/CAS/history owns every edit.
 // Reading the inventory does not replace a draft or write either BO or Studio.
-export function LegacyClipEditor({ project, onChange, dealerId: controlledDealerId, section = 'all', showLegacyReview = true }: { project: StudioProject; onChange: (policy: LegacyClipBinding[]) => void; dealerId?: DealerId; section?: LegacyWorkspaceSection; showLegacyReview?: boolean }) {
+export function LegacyClipEditor({ project, onChange, dealerId: controlledDealerId, section = 'all' }: { project: StudioProject; onChange: (policy: LegacyClipBinding[]) => void; dealerId?: DealerId; section?: LegacyWorkspaceSection }) {
   const [controls, setControls] = useState<LegacyClipControls | null>(null);
   const [localDealerId, setDealer] = useState<DealerId>('vera');
   const dealerId = controlledDealerId ?? localDealerId;
@@ -23,8 +23,6 @@ export function LegacyClipEditor({ project, onChange, dealerId: controlledDealer
   const choose = (part: string, clipId: string) => onChange(upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId, part, clipId }));
   const bindings = project.legacyClipPolicy?.filter(row => row.dealerId === dealerId) ?? [];
   const clips = selectedDealerClips(controls?.clips ?? [], dealerId, section);
-  const legacy = controls?.legacy.filter(row => row.dealerId === dealerId && legacyPartInSection(row.part, section)) ?? [];
-  const route = controls?.routes.find(row => row.dealerId === dealerId);
   const name = (clip: NonNullable<typeof controls>['clips'][number]) => clipLabel({ id: clip.id, label: clip.lineId ? clipSituationLabel('speak.other', clip.lineId) : clip.exactParts[0] ? LEGACY_PART_LABELS[clip.exactParts[0] as keyof typeof LEGACY_PART_LABELS] : clip.id }, project.clipLabels);
   const preview = clips.find(clip => clip.id === previewId && clip.available);
   function bindingField(part: string, showMissing = false) {
@@ -46,16 +44,11 @@ export function LegacyClipEditor({ project, onChange, dealerId: controlledDealer
       {error ? <p role="alert">{error}</p> : !controls ? <p role="status">Läser befintliga medieregister…</p> : <>
         {preview?.previewSrc ? <video key={preview.id} src={preview.previewSrc} controls playsInline preload="metadata" style={{width:'100%',maxHeight:420}} aria-label={`Förhandsvisa ${name(preview)}`}/> : null}
         {section === 'clips' ? <div className="variant-list">{clips.filter(clip => clip.lineId).map(clip => <article key={clip.id}><strong>{name(clip)}</strong>{clip.text ? <p>{clip.text}</p> : null}{clip.previewSrc ? <button type="button" className="text-button" disabled={!clip.available} onClick={() => setPreviewId(clip.id)}>Spela</button> : null}</article>)}</div> : null}
-        {showLegacyReview ? <details><summary>Avancerat · spelvägar och klippkontroll</summary><p><strong>{route?.policy}</strong></p><p>Ordinarie motorkälla: <code>{route?.engineRoute}</code>. {dealerId === 'astrid' ? <>Astrids Studio-val gäller <code>{route?.studioRoute}</code>, med egna exakta replik-/destinationsfamiljer.</> : 'Förinspelat tal följer fortfarande exakt replik och dess granskade audio/video-par.'}</p></details> : null}
         {section === 'deal' || section === 'all' ? <div aria-label="Spelarpositioner och dealer" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,240px),1fr))',gap:16}}>
           {Array.from({length:7},(_,box)=><section key={box} data-position={`box${box}`}><h3>Spelarplats {box+1}</h3>{bindingField(`box${box}`,true)}</section>)}
           <section data-position="dealer"><h3>Dealer</h3>{['dealer-up','dealer-hole'].map(part=> <div key={part}><strong>{clipSituationLabel('deal.dealer',part)}</strong>{bindingField(part,true)}</div>)}</section>
         </div> : null}
         {section === 'deal' ? <details><summary>Avancerat · befintliga utdelningsrörelser</summary>{['deal','dealWatch'].map(part=>bindingField(part))}</details> : section !== 'clips' ? LEGACY_CLIP_PARTS.filter(part => legacyPartInSection(part, section) && !/^box[0-6]$/.test(part) && !['dealer-up','dealer-hole'].includes(part)).map(part=>bindingField(part)) : null}
-        {showLegacyReview ? <details><summary>Äldre BO-val · {legacy.length} · inaktiva i ordinarie spel</summary>
-          {legacy.length ? legacy.map((row, index) => <p key={`${row.part}:${index}`}><strong>{row.part}</strong> → <code>{row.clipId}</code><br />{row.reason}
-            {row.importable ? <button type="button" className="text-button" onClick={() => choose(row.part, row.clipId)}>Importera exakt koppling till utkast</button> : null}</p>) : <p>Inga äldre tilldelningar för denna croupier.</p>}
-        </details> : null}
         <details><summary>Avancerat · klippidentitet och spelväg · {clips.length} filer</summary>
           <div style={{ overflowX: 'auto' }}><table><thead><tr><th>Fil-ID</th><th>Källa / spelväg</th><th>Exakt situation / replik</th><th>Status</th></tr></thead><tbody>{clips.map((clip, index) => <tr key={`${clip.id}:${index}`}><td><code>{clip.id}</code></td><td><code>{clip.source}</code><br /><code>{clip.route}</code></td><td>{clip.lineId ?? (clip.exactParts.join(', ') || 'Endast granskning, ingen säker koppling')}{clip.text ? <p>{clip.text}</p> : null}</td><td>{clip.available ? 'Tillgänglig' : 'Saknas eller spärrad'}<br />{clip.reviewStatus}<br />{clip.previewSrc ? 'Förhandsvisning finns' : 'Ingen separat förhandsvisning'}</td></tr>)}</tbody></table></div>
         </details>

@@ -384,13 +384,13 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off'} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
-  const inventory = await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
+  const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: createSeedProject().idlePolicy, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0;
   const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
@@ -617,4 +617,222 @@ test('a stale committed card does not claim a package change, while an exact pac
   assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/2D-reserv/);assert.doesNotMatch(f.status.textContent,/paketet har ändrats/);
   code='studio_presentation_idle_package_changed';assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/Ladda om spelet/);
   assert.equal(await f.controller.present(source),false);assert.equal(requests,2);
+});
+
+test('frozen event selection uses only the published own-dealer snapshot and committed card, with exact scoped URLs', async () => {
+  const project = addDealer(createSeedProject(), 'johanna', 'Johanna');
+  for (const line of project.lines) for (const variant of line.variants) variant.videoGenerationId = null;
+  const id='00000000-0000-4000-8000-000000000093';
+  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='deal.player.centre').variants[0].videoGenerationId=id;
+  const record={id,dealer:'johanna',fileName:'own-box3.mp4',sha256:'e'.repeat(64),available:true,
+    classification:{dealerId:'johanna',eventId:'deal.player.centre',kind:'action',role:'standard',situation:'box3',playback:'once',label:'Johanna box3',notes:''}};
+  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:9,dealerId:'johanna'};
+  const frozen={project,inventory:{videos:[record],families:[]},projectRevision:'frozen-events',configurationSource:'operator-package-v3'};
+  let reads=0;
+  const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
+    store:{load:async()=>{throw Error('live Studio must not be read');}},registryLoader:async()=>{throw Error('live inventory must not be read');},
+    frozenDealerContext:{resolve:async supplied=>{assert.deepEqual(supplied,context);reads++;return frozen;},
+      publicVideo:(_frozen,mediaId)=>mediaId===id?{id,sha256:record.sha256,fileName:record.fileName,src:'/api/presentation/registered-video/north/room-johanna/9/johanna/'+id}:null}});
+  const response=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'johanna',version:2,mode:'off',
+    event:{...source,card:{r:'K',s:'♦'}},presentationContext:context});
+  assert.equal(response.status,200,JSON.stringify(response.body));
+  assert.deepEqual(response.body.decision.sourceEvent,source);
+  assert.equal(response.body.video.id,id);assert.equal(response.body.standard.id,id);
+  assert.match(response.body.video.src,/registered-video\/north\/room-johanna\/9\/johanna\//);
+  assert.equal(response.body.configurationSource,'operator-package-v3');assert.equal(reads,2);
+  const absent=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'johanna',version:2,mode:'off',
+    event:{type:'speak',line:'goodluck'},presentationContext:context});
+  assert.equal(absent.status,200);assert.equal(absent.body.video,null);assert.equal(absent.body.standard,null);
+  assert.equal(absent.body.decision.media.reason,'frozen_clip_missing');
+});
+
+test('an own dealer with only idle resumes that same film behind a missing card-position animation', async t=>{
+  const ownIdle={id:'own-idle',fileName:'Johanna',sha256:'f'.repeat(64),src:'/frozen-idle'};
+  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,missingPosition:true});
+  f.controller.start();assert.equal(f.jobs.length,1);
+  f.controller.state({action:true});assert.equal(f.jobs[0].options.signal.aborted,true);
+  assert.equal(await f.controller.present(source),false);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,2);assert.equal(f.jobs[1].take.media.src,ownIdle.src);assert.equal(f.jobs[1].options.muted,true);
+  f.jobs[1].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,3,'own idle continues even while the 2D card action is in progress');
+  f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs[2].options.signal.aborted,true);
+  assert.equal(f.jobs[3].take.media.src,ownIdle.src);
+});
+
+test('published own idle policy uses the same automatic scheduler, returns to base and interrupts on a game action', async t => {
+  let now=0;t.mock.method(performance,'now',()=>now);
+  const base='00000000-0000-4000-8000-000000000081', alt='00000000-0000-4000-8000-000000000082', familyId='johanna/idle.ready/ready';
+  const idlePolicy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],
+    variants:[{videoId:alt,durationMs:1000,use:'automatic',automatic:{averageEveryMs:5000,jitterMs:0,cooldownMs:5000,maxPerMinute:12}}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'b':'a').repeat(64),src:'/frozen/'+id}));
+  const customInventory={videos,families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const green={mode:'green-screen',threshold:.23,softness:.15,despill:0},alpha={mode:'alpha'},compositionCalls=[];
+  for(const video of videos)video.classification={compositing:green};videos[0].compositing=alpha;
+  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy,customInventory,
+    composition:{prepareClip:async value=>compositionCalls.push(value),hold(){},renderFrame(){return true;}}});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[0].take.media.src,videos[0].src);
+  f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
+  now=6000;f.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs[1].take.media.src,videos[1].src);
+  f.jobs[1].options.onReceipt({state:'start'});f.jobs[1].options.onReceipt({state:'presented'});
+  f.jobs[1].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs[2].take.media.src,videos[0].src);
+  assert.deepEqual(compositionCalls,[alpha,green,alpha],'raw local metadata and frozen top-level settings share the compositor');
+  f.controller.state({action:true});assert.equal(f.jobs[2].options.signal.aborted,true);
+});
+
+test('own OpenClaw idle advice forwards the exact package context and plays only an offered frozen variant',async t=>{
+  const base='00000000-0000-4000-8000-000000000083',alt='00000000-0000-4000-8000-000000000084',familyId='johanna/idle.ready/ready';
+  const idlePolicy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],
+    variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'d':'c').repeat(64),src:'/frozen/'+id}));
+  const customInventory={videos,families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy,customInventory,defaultMode:'active',
+    entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  const original=globalThis.fetch;let adviceBody;
+  globalThis.fetch=async(url,options)=>url==='/api/presentation/idle-advice'
+    ? (adviceBody=JSON.parse(options.body),Response.json({videoId:alt})):original(url,options);
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
+  await f.controller.observeChat('Hej Johanna');
+  assert.deepEqual(adviceBody.presentationContext,{operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'});
+  f.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs[1].take.media.src,videos[1].src);assert.equal(f.jobs[1].options.muted,true);
+});
+
+test('published own idle policy stops and offers reload after the package changes',async t=>{
+  const id='00000000-0000-4000-8000-000000000093',familyId='johanna/idle.ready/ready';
+  const idlePolicy={schemaVersion:1,familyId,base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
+  const ownIdle={id,dealer:'johanna',familyId,role:'standard',available:true,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id};
+  const customInventory={videos:[ownIdle],families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[id],variantIds:[]}]};
+  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,idlePolicy,customInventory,entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,1);
+  f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
+  f.setConfigStatus(409);f.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(f.jobs.length,1);assert.match(f.status.textContent,/Ladda om spelet/);
+  const before=f.requests.length;f.controller.start();f.controller.state({action:false});
+  assert.equal(await f.controller.present(source),false);await new Promise(resolve=>setImmediate(resolve));assert.equal(f.requests.length,before);
+});
+
+test('own idle advice binds cached decisions and director rereads to each current frozen room',async()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna'),at=new Date().toISOString();
+  const base='00000000-0000-4000-8000-000000000094',alt='00000000-0000-4000-8000-000000000095',familyId='johanna/idle.ready/ready';
+  project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='idle.ready').variants[0].videoGenerationId=base;
+  project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]}}];
+  const idleInventory={videos:[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.webm',sha256:'a'.repeat(64)})),
+    families:[{id:familyId,dealerId:'johanna',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  let calls=0,reads=0,revoked=false;
+  const handler=createPresentationApi({env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
+    store:{load:async()=>{throw Error('live project must not be read');}},registryLoader:async()=>{throw Error('live registry must not be read');},
+    frozenDealerContext:{resolve:async context=>{reads++;if(revoked)throw Object.assign(Error('republished'),{statusCode:409,code:'studio_presentation_idle_package_changed'});
+      return {project:structuredClone(project),context,idleInventory,configurationSource:'operator-package-v3'};}},
+    directorFetchFactory:async context=>{
+      assert.deepEqual(await context.readProject(),context.project);
+      const owned=async (_url,options)=>{calls++;const projected=JSON.parse(options.body);
+        return Response.json({advice:{requestId:projected.input.requestId,catalogRevision:projected.catalog.revision,variantId:null},
+          provider:{status:'responded',contextContractVersion:2,observedChatMessages:projected.input.context.observedChat.messages.length}});};
+      owned.cacheScope='e'.repeat(64);return owned;
+    }});
+  const payload={requestId:'same-frozen-advice',dealerId:'johanna',mode:'active',
+    sourceRef:{kind:'renderer-idle',channel:'same-channel',revision:1,messageId:'same-message',at},
+    observedChat:{source:'native-observation',before:at,messages:[{role:'user',text:'Hello',at}]}};
+  const request=room=>presentationFixtureRequest(handler,'one',{...payload,presentationContext:{operatorSlug:'north',roomId:room,packageRevision:7,dealerId:'johanna'}},'/api/presentation/idle-advice');
+  assert.equal((await request('room-one')).body.provider,'responded');
+  assert.equal((await request('room-two')).body.provider,'responded');assert.equal(calls,2);
+  assert.equal((await request('room-one')).status,200);assert.equal(calls,2);assert.equal(reads,6);
+  revoked=true;assert.equal((await request('room-one')).status,409);assert.equal(calls,2);
+});
+
+test('frozen events use owned Director transport and revalidate the package after selection',async()=>{
+  const project=addDealer(directorProject(),'johanna','Johanna');
+  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+  const owned=async()=>Response.json({});
+  for(const phase of ['valid','revoked-owner','republished']){
+    let valid=true,selected=0,readbacks=0;
+    const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
+      store:{load:async()=>assert.fail('live policy forbidden')},registryLoader:async()=>assert.fail('live media forbidden'),
+      frozenDealerContext:{resolve:async supplied=>{assert.deepEqual(supplied,context);
+        if(!valid)throw Object.assign(Error('package changed'),{statusCode:409,code:'studio_presentation_idle_package_changed'});
+        return {project,inventory:{videos:[],families:[]},context,projectRevision:'frozen',configurationSource:'operator-package-v3'};},publicVideo:()=>null},
+      directorFetchFactory:async args=>{assert.equal(args.playerId,'fixture');assert.equal(args.signal.aborted,false);
+        if(phase==='revoked-owner')throw Object.assign(Error('owner revoked'),{statusCode:401});
+        assert.deepEqual(await args.readProject(),project);readbacks++;return owned;},
+      select:async(body,options)=>{selected++;assert.equal(options.fetchImpl,owned);assert.deepEqual(body.sourceEvent,source);
+        if(phase==='republished')valid=false;
+        return {videoGenerationId:null,decision:{requestId:body.requestId,sourceEvent:body.sourceEvent}};}});
+    const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'johanna',mode:'active',version:2,event:source,presentationContext:context});
+    assert.equal(response.status,phase==='valid'?200:phase==='revoked-owner'?401:409);
+    assert.equal(selected,phase==='revoked-owner'?0:1);assert.equal(readbacks,phase==='revoked-owner'?0:1);
+  }
+});
+
+test('a frozen event rechecks package authority even when its video could be cached',async t=>{
+  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  f.setConfigStatus(409);
+  assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
+  assert.match(f.status.textContent,/Ladda om spelet/);
+});
+
+test('local own-dealer configuration selects its saved idle policy without changing Astrid configuration',async()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna'),id='00000000-0000-4000-8000-000000000096';
+  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
+  const policy={schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
+  project.dealerIdlePolicies=[{dealerId:'johanna',policy}];
+  const inventory={families:[],videos:[{id,dealer:'johanna',available:true,sha256:'c'.repeat(64),fileName:id+'.mp4',
+    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',playback:'once',label:'Grundloop',notes:''}}]};
+  const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
+  async function get(query){
+    const req=Readable.from([]);req.method='GET';req.url='/api/presentation/config'+query;req.headers={};
+    const res={writeHead(status){this.status=status;},end(raw){this.body=JSON.parse(raw);}};
+    await handler(req,res,'/api/presentation/config','fixture');return res;
+  }
+  const own=await get('?dealerId=johanna');assert.equal(own.status,200);assert.deepEqual(own.body.idlePolicy,policy);
+  assert.equal(own.body.idleInventory.families[0].dealerId,'johanna');assert.equal(own.body.idleInventory.videos[0].id,id);
+  assert.deepEqual((await get('')).body.idlePolicy,project.idlePolicy);
+  assert.equal((await get('?dealerId=unknown')).status,400);
+  assert.equal((await get('?dealerId=johanna&dealerId=johanna')).status,400);
+});
+
+test('saved idle rules cross the API with committed event and exact package ownership',async()=>{
+  const project=addDealer(directorProject(),'johanna','Johanna'),base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098';
+  const line=project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready');
+  line.variants[0].videoGenerationId=base;
+  line.variants.push({...structuredClone(line.variants[0]),id:'johanna.idle.ready.rule',videoGenerationId:alt,priority:50,triggerIds:['fixture.box3'],selection:{rules:true,model:false,random:false}});
+  project.triggers.push({id:'fixture.box3',label:'Plats tre',category:'deterministic',path:'event.box',op:'eq',value:3});
+  project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]}}];
+  const inventory={families:[],videos:[base,alt].map((id,i)=>({id,dealer:'johanna',available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',
+    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:i?'alternative':'standard',situation:'',label:'Egen',notes:''}}))};
+  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+  const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
+    frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}});
+  const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'johanna',mode:'rules',version:2,event:source,presentationContext:context});
+  assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.idleRule.videoId,alt);
+  assert.equal(response.body.idleRule.requestId,response.body.decision.requestId);assert.equal(response.body.idleRule.version,2);
+  assert.deepEqual(response.body.idleRule.presentationContext,context);
+  assert.ok(Date.parse(response.body.idleRule.expiresAt)>Date.now());
+});
+
+for(const cancel of [false,true]) test('own idle rule waits for action and base boundary; mode cancelled='+cancel,async t=>{
+    const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='johanna/idle.ready/ready';
+    const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
+    const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
+    const inventory={videos,families:[{id:familyId,dealerId:'johanna',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+    const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
+    const original=globalThis.fetch;
+    globalThis.fetch=async(url,options)=>{
+      const response=await original(url,options);if(url!=='/api/presentation/select')return response;
+      const result=await response.json(),body=JSON.parse(options.body);
+      return Response.json({...result,idleRule:{videoId:alt,requestId:result.decision.requestId,mode:'rules',version:body.version,presentationContext:null,expiresAt:new Date(Date.now()+30000).toISOString()}});
+    };
+    const control=f.elements.find(row=>row.className==='local-presentation-mode');control.value='rules';control.onchange();
+    f.controller.state({action:true});assert.equal(await f.controller.present(source),false);
+    if(cancel){control.value='off';control.onchange();}
+    f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));
+    const current=f.jobs.at(-1);assert.equal(current.take.media.src,videos[0].src);
+    current.options.onReceipt({state:'start'});current.options.onReceipt({state:'presented'});current.resolve();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(f.jobs.at(-1).take.media.src,videos[cancel?0:1].src);
+    f.controller.close();globalThis.fetch=original;
 });

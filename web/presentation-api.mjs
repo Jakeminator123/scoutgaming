@@ -1,11 +1,13 @@
 import { BASE_DEALER_IDS, isDealerId } from './dealer-identity.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
+import { selectRegisteredIdleRule } from '../presentation-runtime/registered-idle-rules.mjs';
+import { registeredIdlePolicy, registeredIdleInventory } from '../presentation-runtime/registered-idle-policy.mjs';
 import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.mjs';
@@ -17,11 +19,18 @@ import { legacyClipControls } from '../lab/lib/legacy-clip-inventory.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `presentation-runtime/${name}.mjs`]));
 publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
+publicModules.set('/web/public/dealer-identity.mjs', 'web/public/dealer-identity.mjs');
 const publicVideo = item => item ? {
   id: item.id, sha256: item.sha256, fileName: item.fileName,
   src: `/api/presentation/videos/${item.id}`,
   ...(item.classification?.compositing ? { compositing: structuredClone(item.classification.compositing) } : {}),
 } : null;
+
+function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
+  const choice = selectRegisteredIdleRule({project,dealerId:body.dealerId,sourceEvent,mode:body.mode},{inventory});
+  return choice && typeof requestId === 'string' ? {...choice,requestId,mode:body.mode,version:body.version,presentationContext:body.presentationContext ?? null,
+    expiresAt:new Date(Date.now()+30000).toISOString()} : null;
+}
 
 const modes = new Set(['off', 'rules', 'random', 'shadow', 'active']);
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
@@ -68,7 +77,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         json(200,await nativeP6PlaybackContext({req,playerId,project,readProject:()=>store.load()}));return true;
       }
       if (!playerId) fail('Sign in required', 401);
-      if (pathname.startsWith('/api/presentation/registered-idle/')) {
+      if (pathname.startsWith('/api/presentation/registered-idle/') || pathname.startsWith('/api/presentation/registered-video/')) {
         if (!frozenDealerContext) fail('Frozen presentation unavailable',503);
         const response = await frozenDealerContext.response(new Request((env.CROUPIER_CLOUD_RUNTIME==='1'&&exactHttpsOrigin(env.PUBLIC_URL)?env.PUBLIC_URL:'http://localhost')+(req.url||pathname), { method: req.method, headers: req.headers }));
         res.writeHead(response.status, Object.fromEntries(response.headers));
@@ -92,14 +101,18 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       }
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
         const query = new URL(req.url||pathname,'http://localhost').searchParams;
-        if (query.size) {
+        const requestedDealer = query.size === 1 && query.getAll('dealerId').length === 1 ? query.get('dealerId') : null;
+        if (query.size && requestedDealer === null) {
           const keys = ['operatorSlug','roomId','packageRevision','dealerId'];
           if (!frozenDealerContext || query.size !== 4 || keys.some(key=>query.getAll(key).length!==1) || !/^[1-9][0-9]{0,15}$/.test(query.get('packageRevision')||'')) fail('Invalid presentation context');
-          json(200, { ...await frozenDealerContext.configuration({operatorSlug:query.get('operatorSlug'),roomId:query.get('roomId'),packageRevision:Number(query.get('packageRevision')),dealerId:query.get('dealerId')}),
-            inventory:{videos:[],families:[]},defaultMode:'off' }); return true;
+          json(200, { inventory:{videos:[],families:[]},defaultMode:'off',
+            ...await frozenDealerContext.configuration({operatorSlug:query.get('operatorSlug'),roomId:query.get('roomId'),packageRevision:Number(query.get('packageRevision')),dealerId:query.get('dealerId')}) }); return true;
         }
         const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
-        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: project.idlePolicy, inventory,
+        if (requestedDealer !== null && (!isDealerId(requestedDealer) || !project.dealers.some(row => row.id === requestedDealer))) fail('Invalid presentation dealer');
+        const ownPolicy = requestedDealer && !BASE_DEALER_IDS.includes(requestedDealer) ? registeredIdlePolicy(project, requestedDealer) : null;
+        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: requestedDealer && !BASE_DEALER_IDS.includes(requestedDealer) ? ownPolicy : project.idlePolicy, inventory,
+          ...(ownPolicy ? {idleInventory:registeredIdleInventory(inventory,{dealerId:requestedDealer,policy:ownPolicy})} : {}),
           dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>!BASE_DEALER_IDS.includes(dealer.id)).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
@@ -112,7 +125,16 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       for await (const chunk of req) { raw += chunk; if (raw.length > 16384) fail('Presentation request too large', 413); }
       const body = JSON.parse(raw);
       if (pathname === '/api/presentation/idle-advice') {
-        const project = await store.load();
+        let frozen = null;
+        if (body.presentationContext !== undefined) {
+          if (!frozenDealerContext || body.presentationContext.dealerId !== body.dealerId) fail('Invalid presentation context');
+          frozen = await frozenDealerContext.resolve(body.presentationContext);
+          if (!frozen.project) { json(200,{videoId:null,provider:'idle_family_unavailable_baseline',projectRevision:frozen.projectRevision}); return true; }
+        }
+        const project = frozen?.project ?? await store.load();
+        const { presentationContext: _context, ...adviceBody } = body;
+        const ownInventory = !frozen && isDealerId(body.dealerId) && !BASE_DEALER_IDS.includes(body.dealerId)
+          ? registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}) : null;
         adviceService ??= createIdleAdviceServer({ settings, registryLoader });
         const advise = await adviceService;
         const controller = new AbortController();
@@ -120,11 +142,13 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         res.once('close', disconnected);
         try {
           const fetchImpl = directorFetchFactory ? await directorFetchFactory({ req, playerId, project,
-            readProject: () => store.load(), signal: controller.signal }) : null;
+            readProject: async () => frozen ? (await frozenDealerContext.resolve(frozen.context)).project : store.load(), signal: controller.signal }) : null;
           if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable', 503);
-          json(200, { ...await advise({ ...body, project }, { signal: controller.signal,
-            ...(fetchImpl ? { fetchImpl, ...(fetchImpl.cacheScope === undefined ? {} : { cacheScope: fetchImpl.cacheScope }) } : {}) }),
-            projectRevision: project.revision, configurationSource });
+          json(200, { ...await advise({ ...adviceBody, project }, { signal: controller.signal,
+            ...(ownInventory ? {videoRegistry:ownInventory} : {}),
+            ...(fetchImpl ? { fetchImpl, ...(fetchImpl.cacheScope === undefined ? {} : { cacheScope: fetchImpl.cacheScope }) } : {}),
+            ...(frozen ? {videoRegistry:frozen.idleInventory, cacheScope:createHash('sha256').update(JSON.stringify([playerId, frozen.context, fetchImpl?.cacheScope ?? null])).digest('hex')} : {}) }),
+            projectRevision: project.revision, configurationSource:frozen?.configurationSource ?? configurationSource });
         }
         finally { res.removeListener('close', disconnected); }
         return true;
@@ -136,6 +160,33 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
         if (['deal','reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
+        if (frozen.project) {
+          const eventId = prepareDecision(buildRuntimeCatalog(frozen.project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
+          const controller = new AbortController();
+          const disconnected = () => { if (!res.writableEnded) controller.abort(); };
+          res.once('close', disconnected);
+          try {
+          const fetchImpl = directorFetchFactory ? await directorFetchFactory({req,playerId,project:frozen.project,
+            readProject:async ()=>(await frozenDealerContext.resolve(body.presentationContext)).project,signal:controller.signal}) : null;
+          if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable',503);
+          const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:body.mode },
+            { settings, videoRegistry:frozen.inventory, ...(fetchImpl ? {fetchImpl} : {}) });
+          const video = frozenDealerContext.publicVideo(frozen, result.videoGenerationId);
+          // The fallback passes the same exact-event selector: never borrow a
+          // different position, sentence or dealer after an alternative fails.
+          const baseline = video && body.mode !== 'off'
+            ? await select({ requestId:result.decision.requestId, project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:'off' },
+              { settings, videoRegistry:frozen.inventory }) : result;
+          const standard = frozenDealerContext.publicVideo(frozen, baseline.videoGenerationId);
+          const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId);
+          await frozenDealerContext.resolve(body.presentationContext);
+          if (controller.signal.aborted) return true;
+          json(200, { ...result, owner:'web', projectRevision:frozen.projectRevision, configurationSource:frozen.configurationSource,
+            video, standard, idleRule, decision: !video && !result.decision.media ? { ...result.decision,
+              media:{familyId:null,reason:'frozen_clip_missing'} } : result.decision });
+          return true;
+          } finally { res.removeListener('close', disconnected); }
+        }
         // Package v2 freezes registered idle only. Other media cannot silently
         // follow an edited Studio registry after publication; native cards stay
         // authoritative and continue in 2D until that media has a frozen format.
@@ -165,7 +216,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
             const video = inventory.videos.find(item => item.id === result.videoGenerationId);
             const family = inventory.families.find(item => item.id === video?.familyId);
             const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
-            return { ...result, video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
+            return { ...result, idleRule:idleRuleFor(body,project,inventory,sourceEvent,result.decision?.requestId), video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
           });
         // A QA transport closes over the actual authenticated HTTP request.
         // It must never be reused through the ordinary presentation cache.

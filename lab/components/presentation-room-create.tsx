@@ -60,9 +60,15 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const canCreate = ready && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
 
-  return <section className={styles.card} aria-label="Skapa spelrum">
-    <h2>Skapa spelrum</h2>
+  const rooms = current && enabled ? state.preflight?.rooms : undefined;
+  return <section className={styles.card} aria-label="Spelrum">
+    <h2>Spelrum</h2>
     {operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
+    <p>Ett spelrum öppnar det publicerade paketet för valt bolag. Återanvänd rummet när du ändrar presentationens lager eller klipp.</p>
+    {rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
+      : rooms && !receipt ? <p>Inget publicerat spelrum för den här presentationen ännu.</p> : null}
+    <details><summary>Skapa nytt spelrum</summary>
+    <p>Skapar ett nytt rum och publicerar vald presentation i bolagets paket.</p>
     <form className={styles.form} onSubmit={submit}>
       <label className={styles.field}>Rumsnamn
         <input type="text" value={current ? state.name : ''} maxLength={100} required
@@ -76,8 +82,9 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
               {busy ? 'Skapar…' : unresolved ? 'Försök igen' : 'Skapa spelrum'}</button>}
       </div>
     </form>
+    </details>
     {current && state.status === 'loading' ? <p role="status">Kontrollerar…</p> : null}
     {message ? <p role={current && ['error', 'conflict', 'uncertain'].includes(state.status) ? 'alert' : 'status'}>{message}</p> : null}
-    {receipt ? <p role="status">{receipt.room.name} är klart.</p> : null}
+    {receipt ? <p role="status">{receipt.room.name} är klart. <a href={receipt.playUrl}>Öppna spelrummet</a></p> : null}
   </section>;
 }

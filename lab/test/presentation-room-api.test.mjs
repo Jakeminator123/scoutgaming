@@ -14,6 +14,7 @@ import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
 
 const scope = { environment: 'room-fixture', workspaceId: 'isolated' };
 const origin = 'https://studio.example.invalid';
+const capability4 = { schemaVersion:4, registeredDealerIds:['nora'], compositing:'per-clip', rooms:'operator-owned-v2', registeredDealerMode:'saved-registry-idle-v1', frozenDealerIdle:'operator-package-v2', frozenDealerEvents:'operator-package-v3' };
 const capability = { schemaVersion: 2, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2' };
 const key = '0aaa0000-1111-4222-8333-444444444444';
 const session = { user: 'room-admin', role: 'admin', scope };
@@ -87,7 +88,7 @@ async function fixture(options = {}) {
   await repository.initializeDocument('project', { value: project, revision: project.revision, actor: session.user });
   await repository.initializeDocument('administration', { value: administration, revision: 'admin-initial', actor: session.user });
   const videoRegistry = { async loadCaptured(snapshot) { assert.equal(pool.active, 0, 'inventory loading outside SQL'); return { videos: snapshot.mediaRows.map(record => ({ id: record.id, dealer: record.classification.dealerId, sha256: record.sha256, bytes: record.size, classification: clone(record.classification), available: true, integrity: 'verified' })) }; }, async verifyCapturedMedia() { assert.equal(pool.active, 0, 'provider HEAD outside SQL'); } };
-  const roomApi = createPresentationRoomApi({ repository, scope, videoRegistry, runtimeCapabilities: async presentation => presentation?.schemaVersion === 2 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability, now: () => 1700000000000, ...options });
+  const roomApi = createPresentationRoomApi({ repository, scope, videoRegistry, runtimeCapabilities: async presentation => presentation?.schemaVersion === 3 ? capability4 : presentation?.schemaVersion === 2 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability, now: () => 1700000000000, ...options });
   const context = body => ({ body, actor: session, scope });
   const prepare = (operatorId = 'north', presentationLaneId = vip.id) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}`) });
   const create = body => roomApi.handlers.get('POST /studio/api/admin/presentation-room')(context(body));
@@ -221,11 +222,11 @@ test('Nora uses an own frozen idle, accepts a different compatible lane ID and e
   await f.repository.saveDocument('project', { value: saved, expectedRevision: project.revision, actor: session.user });
   const admin = await f.repository.readDocument('administration'), serverLane = { schemaVersion: 1, id: 'nearby-nora', label: 'Nora', dealer: 'nora', renderer: 'portrait-video', mediaCollection: 'nora-presentation' };
   await f.repository.saveDocument('administration', { value: { ...admin.value, gameLanes: [{ schemaVersion: 1, id: 'mobile-phone', label: 'Mobile', dealer: 'astrid', renderer: 'portrait-video', mediaCollection: 'astrid-presentation' }, serverLane], gameLane: 'mobile-phone' }, expectedRevision: admin.revision, actor: session.user });
-  const ready = await f.prepare('north', lane.id); assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 3);
+  const ready = await f.prepare('north', lane.id); assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 4);
   const body = { ...(await f.payload()), presentationLaneId: lane.id }, created = await f.create(body);
   assert.equal(created.room.gameLaneId, serverLane.id); assert.equal(created.room.presentationLaneId, lane.id);
   const row = f.pool.snapshot().packages.at(-1), frozen = readPackagePresentation({ lanes: JSON.parse(row.lanes), branding: JSON.parse(row.branding) });
-  assert.equal(frozen.schemaVersion, 2); assert.equal(frozen.registeredDealers[0].idle.id, record.id);
+  assert.equal(frozen.schemaVersion, 3); assert.equal(frozen.registeredDealers[0].idle.id, record.id);
 });
 
 test('frozen assets and existing branding choices survive unrelated draft edits while selected composition is published', async () => {
@@ -320,7 +321,7 @@ async function registeredFixture(options = {}) {
 
 test('Johanna without a technical lane creates one atomically and publishes her exact frozen idle and composition', async () => {
   const f = await registeredFixture(), before = f.pool.snapshot(), ready = await f.prepare('north', f.lane.id);
-  assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 3); assert.deepEqual(f.pool.snapshot(), before);
+  assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 4); assert.deepEqual(f.pool.snapshot(), before);
   const body = await f.registeredPayload(), result = await f.create(body), state = f.pool.snapshot();
   assert.match(result.room.gameLaneId, /^room-lane-[a-f0-9]{24}$/); assert.notEqual(result.room.gameLaneId, f.lane.id);
   const administration = (await f.repository.readDocument('administration')).value, lane = administration.gameLanes.find(row => row.id === result.room.gameLaneId);
@@ -328,7 +329,7 @@ test('Johanna without a technical lane creates one atomically and publishes her 
   assert.equal(administration.gameLane, 'mobile-phone'); assert.equal(administration.gameLanes.length, 2);
   const raw = state.packages.at(-1), pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
   const frozen = readPackagePresentation(pack);
-  assert.equal(frozen.schemaVersion, 2); assert.deepEqual(frozen.registeredDealers, [{ id: 'johanna', label: 'Johanna', idle: f.record }]);
+  assert.equal(frozen.schemaVersion, 3); assert.deepEqual(frozen.registeredDealers, [{ id: 'johanna', label: 'Johanna', idle: f.record }]);
   assert.deepEqual(pack.lanes, [f.lane.id]); assert.deepEqual(frozen.lanes[0].composition, f.lane.composition);
   const saved = { project: (await f.repository.readDocument('project')).value, administration };
   const selector = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => administration },
@@ -430,7 +431,7 @@ test('creating an unrelated original dealer room preserves the previously frozen
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
   await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444', name: 'Original room' }));
   const row = f.pool.snapshot().packages.at(-1), final = readPackagePresentation({ lanes: JSON.parse(row.lanes), branding: JSON.parse(row.branding) });
-  assert.equal(final.schemaVersion, 2); assert.deepEqual(final.registeredDealers, old.registeredDealers);
+  assert.equal(final.schemaVersion, 3); assert.deepEqual(final.registeredDealers, old.registeredDealers);
   assert.deepEqual(final.lanes.find(lane => lane.id === f.lane.id), old.lanes[0]); assert.ok(JSON.parse(row.tables).includes(first.room.id));
 });
 
@@ -491,13 +492,12 @@ test('the native room preparation map keeps provider and capability I/O outside 
   const guarded = wrapNativePresentationRepository(f.repository, { env: { CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid' },
     fetchImpl: async (_url, options) => {
       assert.equal(productActive, false); assert.equal(f.pool.active, 0); capabilityChecks++;
-      assert.equal(options.headers['X-Presentation-Capability-Version'], '3');
-      return Response.json(engineVersion === 3 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability);
+      assert.equal(options.headers['X-Presentation-Capability-Version'], '4');
+      return Response.json(engineVersion === 4 ? capability4 : capability);
     } });
   f.videoRegistry.verifyCapturedMedia = async () => { assert.equal(productActive, false); assert.equal(f.pool.active, 0); headChecks++; };
   const service = createPresentationRoomApi({ repository: guarded, scope, videoRegistry: f.videoRegistry,
-    runtimeCapabilities: presentation => guarded.withMutationContext(async () => ({ ...capability, schemaVersion: 3,
-      registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' }),
+    runtimeCapabilities: presentation => guarded.withMutationContext(async () => capability4,
       [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2 }] } }, { kind: 'presentation-package', value: presentation }]) });
   const api = createStudioAdminApi({ authorize: async () => session, allowedOrigins: [origin], publicHosts: ['studio.example.invalid'],
     handlers: service.handlers, preparations: service.preparations, mutationTransaction: async (work, options) => {
@@ -508,7 +508,7 @@ test('the native room preparation map keeps provider and capability I/O outside 
   const body = await f.registeredPayload(), request = () => new Request(origin + '/studio/api/admin/presentation-room', { method: 'POST',
     headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const initialHeads = headChecks, before = f.pool.snapshot(); assert.equal((await api.handle(request())).status, 503); assert.deepEqual(f.pool.snapshot(), before);
-  engineVersion = 3; const response = await api.handle(request()); assert.equal(response.status, 200);
+  engineVersion = 4; const response = await api.handle(request()); assert.equal(response.status, 200);
   const receipt = await response.json(); assert.equal(receipt.duplicate, false); assert.equal(headChecks, initialHeads + 2);
   const heads = headChecks; assert.equal((await api.handle(request())).status, 200); assert.equal(headChecks, heads, 'replay has no provider HEAD');
   assert.ok(capabilityChecks >= 3);
@@ -518,6 +518,9 @@ test('a frozen default idle removed by another package writer makes replay confl
   const f = await registeredFixture(), body = await f.registeredPayload(); await f.create(body);
   const current = f.pool.snapshot().packages.at(-1), pack = { lanes: JSON.parse(current.lanes), branding: JSON.parse(current.branding) }, frozen = readPackagePresentation(pack);
   frozen.registeredDealers[0].idle = null;
+  const idleLine = frozen.playback.lines.find(line => line.dealerId === 'johanna' && line.eventId === 'idle.ready');
+  idleLine.variants.find(variant => variant.id === idleLine.baselineVariantId).videoGenerationId = null;
+  frozen.playback.media = [];
   await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: 1, lanes: pack.lanes, games: ['blackjack'], tables: JSON.parse(current.tables),
     branding: withPackagePresentation(pack.branding, frozen) });
   const before = f.pool.snapshot(); await assert.rejects(f.create(body), status(409)); assert.deepEqual(f.pool.snapshot(), before);
@@ -529,4 +532,17 @@ test('the catalogue limit blocks an actual missing-lane room without changing ex
   await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: current.revision, value: { ...current.value, gameLane: lanes[0].id, gameLanes: lanes } });
   assert.equal((await f.prepare('north', f.lane.id)).reason, 'presentation_lane_incompatible');
   const before = f.pool.snapshot(); await assert.rejects(f.create(await f.registeredPayload()), status(422)); assert.deepEqual(f.pool.snapshot(), before);
+});
+
+test('room listing exposes only live published rooms of this operator and presentation', async () => {
+  const f=await fixture();
+  assert.deepEqual((await f.prepare()).rooms,[]);
+  const room=await f.create(await f.payload());
+  assert.deepEqual((await f.prepare()).rooms,[{id:room.room.id,name:room.room.name,playUrl:room.playUrl}]);
+  assert.deepEqual((await f.prepare('other')).rooms,[]);
+  assert.deepEqual((await f.prepare('north','mobile-phone')).rooms,[]);
+  const saved=await f.repository.readDocument('administration'), draft=clone(saved.value);
+  draft.rooms.find(item=>item.id===room.room.id).state='preview';
+  await f.repository.saveDocument('administration',{value:draft,expectedRevision:saved.revision,actor:session.user});
+  assert.deepEqual((await f.prepare()).rooms,[]);
 });

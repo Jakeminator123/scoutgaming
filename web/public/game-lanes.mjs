@@ -74,11 +74,11 @@ export function gameLaneSelection(query, activeLane = 'mobile-phone', lanes = GA
 }
 
 // A presentation lane's dealer layer (Studio project) narrows the dealers its
-// server lane can render: portrait lanes render only their own dealer. The
+// server lane can render. Frozen v3 rooms supply their additional authorized dealers. The
 // layer default comes first. null means no overlap; the caller keeps its dealer.
-export function laneDealerSelection(query, lane, dealerLayer) {
+export function laneDealerSelection(query, lane, dealerLayer, { portraitDealerIds = [] } = {}) {
   if (!lane || !['portrait-video', 'indexed-video'].includes(lane.renderer) || !isDealerId(lane.dealer)) throw Error('Invalid lane definition');
-  const renderable = lane.renderer === 'indexed-video' ? dealers : [lane.dealer];
+  const renderable = lane.renderer === 'indexed-video' ? dealers : [lane.dealer, ...portraitDealerIds.filter(isDealerId)];
   const listed = [dealerLayer?.default, ...(Array.isArray(dealerLayer?.allowed) ? dealerLayer.allowed : [])];
   const permitted = [...new Set(listed)].filter(id => renderable.includes(id));
   if (!permitted.length) return null;
@@ -146,7 +146,7 @@ function keptStrings(list, accept, max) {
 
 // Missing project lane → the standard lane. Portrait lanes can only offer the
 // dealer that lane already renders; an indexed lane can offer any of the four.
-export function gameChoicesForLane(projectLanes, laneId, serverLane) {
+export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitDealerIds = [] } = {}) {
   if (laneId === 'layer-preview') {
     return {
       dealers: ['paow', 'dragge'],
@@ -165,7 +165,7 @@ export function gameChoicesForLane(projectLanes, laneId, serverLane) {
   const layers = found?.layers && typeof found.layers === 'object' ? found.layers : STANDARD_PRESENTATION_LAYERS;
   const renderable = !serverLane ? CHOICE_DEALERS
     : serverLane.renderer === 'indexed-video' ? BASE_DEALER_IDS
-    : isDealerId(serverLane.dealer) ? [serverLane.dealer] : [];
+    : isDealerId(serverLane.dealer) ? [serverLane.dealer, ...portraitDealerIds.filter(isDealerId)] : [];
   const dealerLayer = layers.dealer && typeof layers.dealer === 'object' ? layers.dealer : {};
   const dealers = keptStrings([dealerLayer.default, ...(Array.isArray(dealerLayer.allowed) ? dealerLayer.allowed : [])], id => renderable.includes(id), 32);
   const table = layers.table && typeof layers.table === 'object' ? layers.table : {};

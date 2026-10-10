@@ -35,12 +35,20 @@ function preflight(value, context) {
     || value.operator.slug !== context.operator.slug || typeof value.operator.name !== 'string'
     || value.presentationLaneId !== context.presentation.id || !revision(value.projectRevision) || !revision(value.administrationRevision)
     || !(value.packageRevision === null || packageRevision(value.packageRevision)) || typeof value.ready !== 'boolean'
-    || !(value.reason === null || reasons.has(value.reason)) || !Object.hasOwn(value, 'capabilities')) invalid();
+    || !(value.reason === null || reasons.has(value.reason)) || !Object.hasOwn(value, 'capabilities') || !Array.isArray(value.rooms)) invalid();
   const capabilities = capability(value.capabilities);
-  if (value.ready && (value.reason !== null || ![2, 3].includes(capabilities?.schemaVersion))) invalid();
+  if (value.ready && (value.reason !== null || ![2, 3, 4].includes(capabilities?.schemaVersion))) invalid();
+  const seen = new Set();
+  const rooms = value.rooms.map(room => {
+    if (!sameKeys(room, ['id', 'name', 'playUrl']) || !laneId(room.id) || !roomName(room.name) || seen.has(room.id)) invalid();
+    seen.add(room.id);
+    return Object.freeze({ id: room.id, name: room.name,
+      playUrl: presentationRoomPlayUrl(room.playUrl, { operatorSlug: context.operator.slug, roomId: room.id }) });
+  });
+  if (rooms.length && !packageRevision(value.packageRevision)) invalid();
   return Object.freeze({ ok: true, operator: Object.freeze({ id: value.operator.id, slug: value.operator.slug, name: value.operator.name }),
     presentationLaneId: value.presentationLaneId, projectRevision: value.projectRevision, administrationRevision: value.administrationRevision,
-    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, capabilities });
+    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, capabilities, rooms: Object.freeze(rooms) });
 }
 export function presentationRoomPlayUrl(value, { operatorSlug, roomId }) {
   if (typeof value !== 'string' || value.length > 500 || !value.startsWith('/play/blackjack?') || /[#\\\u0000-\u0020\u007f]/u.test(value)) invalid();

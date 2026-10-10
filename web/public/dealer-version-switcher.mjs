@@ -1,13 +1,29 @@
 import { BASE_DEALER_IDS, validatePublicRegisteredDealers } from './dealer-identity.mjs';
+import { gameChoicesFromDocument, isGameLaneId } from './game-lanes.mjs';
 // Separate presentation routes share the same origin, session and game API.
 import {approvedGameQuery} from './game-entry-contract.mjs';
 export const V2_DEALERS = ['astrid', 'amira'];
 export function dealerVersionPath(dealer, version, observerSearch = '') {
-  let registry = []; try { registry = validatePublicRegisteredDealers(JSON.parse(globalThis.document?.documentElement?.dataset.gameRegisteredDealers ?? '[]')); } catch {}
+  const dataset = globalThis.document?.documentElement?.dataset;
+  const registry = validatePublicRegisteredDealers(JSON.parse(dataset?.gameRegisteredDealers ?? '[]'));
   const extra = registry.some(row=>row.id===dealer);
-  const key = BASE_DEALER_IDS.includes(dealer) || extra ? dealer : 'vera';
+  const layered = dataset?.gamePresentation === 'layered' && dataset.gameLane === 'layer-preview' && ['paow', 'dragge'].includes(dealer);
+  if (!BASE_DEALER_IDS.includes(dealer) && !extra && !layered) throw Error('Dealer is not registered');
+  const key = dealer;
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
+  // A room or saved lane owns the adapter and allowed dealer set. Keep that
+  // context when switching; dropping its lane used to reopen default Astrid.
+  if (dataset?.gameChoices !== undefined) {
+    const choices = gameChoicesFromDocument(dataset.gameChoices, { registeredDealerIds: registry.map(row => row.id) });
+    if (!isGameLaneId(dataset.gameLane) || (!choices.dealers.includes(key) && dataset.gameDealer !== key)) throw Error('Dealer is not available in this room');
+    previous.set('dealer', key); previous.set('lane', dataset.gameLane);
+    if (dataset.gameOperator) previous.set('operator', dataset.gameOperator); else previous.delete('operator');
+    if (dataset.gameRoomId) previous.set('table', dataset.gameRoomId); else previous.delete('table');
+    if (dataset.gamePresentation) previous.set('presentation', dataset.gamePresentation);
+    const path = dataset.gamePath === '/blackjack' ? '/blackjack' : '/';
+    return path + '?' + approvedGameQuery(previous, { origin: globalThis.location?.origin, includeLaunch: false });
+  }
   const ownLane=extra ? previous.get('lane') || (globalThis.document?.documentElement?.dataset.gameDealer===key ? globalThis.document.documentElement.dataset.gameLane : null) : null;
   // The clean Blackjack URL carries its saved presentation in the document.
   // An explicit dealer change must not keep a lane override that forces Astrid.
@@ -39,6 +55,7 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
 }
 
 export function installDealerVersionSwitcher({ dealer, version, isBusy }) {
+  if (document.documentElement?.dataset.gameChoices !== undefined) return;
   if(version === 'original' && (new URLSearchParams(location.search).get('presentation') === 'local'
     || new URLSearchParams(location.search).get('lane') === 'mobile-phone'
     || document.documentElement?.dataset.gamePresentation === 'local'))return;

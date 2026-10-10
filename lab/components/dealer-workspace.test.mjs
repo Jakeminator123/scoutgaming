@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -26,6 +26,8 @@ function harness(file, initialStates = [], overrides = {}) {
   const mocks = {
     './activity-log': { ActivityLog: marker('observation') },
     './dealer-registration': {DealerRegistration: empty},
+    './dealer-removal': {DealerRemoval: marker('remove-dealer')},
+    './registered-idle-editor': {RegisteredIdleEditor: marker('own-idle')},
     './idle-policy-editor': { IdlePolicyEditor: marker('idle') },
     './family-video-library': { FamilyVideoLibrary: marker('families') },
     './legacy-clip-editor': { LegacyClipEditor: marker('legacy') },
@@ -116,10 +118,10 @@ test('draft survives dealer chip and category changes', () => {
 });
 
 test('controlled legacy editor lists only selected dealer exact speech and no second dealer selector', () => {
-  const controls = { clips: ['astrid', 'vera'].map(dealerId => ({ id: `${dealerId}:line`, dealerId, kind: 'recorded-speech', exactParts: [], lineId: 'goodluck', text: `${dealerId} exact text`, available: true, source: 'speech-media.json', route: '/', reviewStatus: 'registered' })), legacy: [], routes: [] };
+  const controls = { clips: ['astrid', 'vera'].map(dealerId => ({ id: `${dealerId}:line`, dealerId, kind: 'recorded-speech', exactParts: [], lineId: 'goodluck', text: `${dealerId} exact text`, available: true, source: 'speech-media.json', route: '/', reviewStatus: 'registered' })) };
   const h = harness('./legacy-clip-editor.tsx', [controls, 'astrid', '']);
-  const html = renderToStaticMarkup(h.render({ project: createSeedProject(), dealerId: 'vera', section: 'clips', showLegacyReview: false, onChange() { throw new Error('Unexpected edit'); } }));
-  assert.match(html, /vera exact text/); assert.doesNotMatch(html, /astrid exact text|<select/);
+  const html = renderToStaticMarkup(h.render({ project: createSeedProject(), dealerId: 'vera', section: 'clips', onChange() { throw new Error('Unexpected edit'); } }));
+  assert.match(html, /vera exact text/); assert.doesNotMatch(html, /astrid exact text|<select|Äldre BO-val|Importera exakt koppling|Avancerat · spelvägar och klippkontroll/);
 });
 
 test('another dealer keeps idle tools and the draft without a probe tab', () => {
@@ -198,4 +200,40 @@ test('content links refuse navigation during a save and after a failed CAS reque
   const failedTree=n.h.render(n.p);n.h.flushEffects();
   assert.equal(n.h.values[10],true);assert.deepEqual(n.assigned,[]);
   click(nodes(failedTree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
+});
+
+test('own idle changes update only selected dealer policy and baseline atomically; metadata locks saving and removal',()=>{
+  const p=props();p.initialProject=addDealer(addDealer(p.initialProject,'johanna','Johanna'),'nora','Nora');p.initialDealerId='johanna';
+  const videoId='11111111-1111-4111-8111-111111111111';
+  const policy={schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId,weight:100,durationMs:4321}],variants:[]};
+  const noraPolicy={...policy,familyId:'nora/idle.ready/ready'};
+  p.initialProject.dealerIdlePolicies=[{dealerId:'nora',policy:noraPolicy}];
+  const astridPolicy=structuredClone(p.initialProject.idlePolicy);
+  const h=harness('./lab-studio.tsx');let tree=h.render(p);
+  const own=nodes(tree,row=>row.props?.dealerId==='johanna'&&typeof row.props?.onBusyChange==='function')[0];
+  assert.ok(own);assert.equal(own.props.project,p.initialProject);
+  own.props.onChange(policy);tree=h.render(p);
+  const updated=h.values[0];
+  assert.deepEqual(updated.idlePolicy,astridPolicy);assert.deepEqual(updated.dealerIdlePolicies.find(row=>row.dealerId==='nora').policy,noraPolicy);
+  assert.deepEqual(JSON.parse(JSON.stringify(updated.dealerIdlePolicies.find(row=>row.dealerId==='johanna').policy)),policy);
+  assert.equal(updated.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId,videoId);
+  assert.equal(p.initialProject.dealerIdlePolicies.length,1,'input draft is preserved');
+  own.props.onBusyChange(true);tree=h.render(p);
+  assert.ok(nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar').every(row=>row.props.disabled));
+  assert.equal(nodes(tree,row=>typeof row.props?.onRemoved==='function')[0].props.disabled,true);
+  own.props.onBusyChange(false);tree=h.render(p);
+  assert.equal(nodes(tree,row=>typeof row.props?.onRemoved==='function')[0].props.disabled,false);
+  assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna'&&typeof row.props?.onBusyChange==='function')[0].props.blocked,false,'metadata lock does not block its own editor');
+});
+
+test('draft removal integration updates draft and follows confirmed next dealer selection',()=>{
+  const p=props();p.initialProject=addDealer(p.initialProject,'johanna','Johanna');p.initialDealerId='johanna';
+  const h=harness('./lab-studio.tsx');let tree=h.render(p);
+  const removal=nodes(tree,row=>typeof row.props?.onRemoved==='function')[0];
+  removal.props.onEdit(current=>({...current,dealers:current.dealers.filter(row=>row.id!=='johanna'),lines:current.lines.filter(row=>row.dealerId!=='johanna')}));
+  assert.equal(h.values[3],'johanna','navigation waits for the component-confirmed removal callback');
+  removal.props.onRemoved('johanna','astrid');tree=h.render(p);
+  assert.equal(h.values[3],'astrid');assert.equal(h.values[0].dealers.some(row=>row.id==='johanna'),false);
+  assert.equal(p.initialProject.dealers.some(row=>row.id==='johanna'),true);
+  assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna').length,0);
 });

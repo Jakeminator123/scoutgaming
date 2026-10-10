@@ -197,8 +197,8 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
         editLane(draft => { draft.label = value; }, () => setLabel(value));
       }} />
     </label>
-    <details className={styles.advanced}><summary>Dealers som får ingå i lanen</summary><fieldset className={styles.group}>
-      <legend>Dealers i lanen</legend>
+    <details className={styles.advanced}><summary>Dealers som får ingå i presentationen</summary><fieldset className={styles.group}>
+      <legend>Dealers i presentationen</legend>
       <div className={styles.checks}>
         {project.dealers.map(dealer => <label className={styles.check} key={dealer.id}>
           <input type="checkbox" checked={lane.dealers.includes(dealer.id)} onChange={event => toggleDealer(dealer.id, event.target.checked)} />
@@ -331,7 +331,7 @@ function LaneFields({ project, lane, onEdit, navigationBlocked }: { project: Stu
         </label>)}
       </div>
     </fieldset>
-    <p className={styles.idLine}>Lane-id <strong>{lane.id}</strong></p>
+    <p className={styles.idLine}>Presentationens tekniska ID <strong>{lane.id}</strong></p>
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
       <p>Ta bort presentation {lane.id}?</p>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>

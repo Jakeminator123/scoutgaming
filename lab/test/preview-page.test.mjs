@@ -385,3 +385,24 @@ test('switching layers preserves mounted upload controls and its receipt while t
   await Promise.resolve();assert.equal(harness.saves(),1);
   assert.equal(harness.savedProjects[0].lanes[0].layers.table.default,asset.id);
 });
+
+test('composition makes dealer permission changes explicit and never silently enables the other built-in dealers',()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna'),harness=previewHarness({project,dirty:false});
+  let tree=harness.render();
+  const permission=name=>harness.find(tree,node=>node.type==='input'&&node.props['aria-label']==='Tillåt '+name);
+  assert.equal(permission('Astrid').props.checked,true);assert.equal(permission('Astrid').props.disabled,true);
+  assert.equal(permission('Johanna').props.checked,false);
+  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['astrid']);
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'johanna'}});
+  tree=harness.render();
+  assert.equal(permission('Johanna').props.checked,true);assert.equal(permission('Johanna').props.disabled,true);
+  assert.equal(permission('Astrid').props.checked,true,'previous choice remains visible until explicitly removed');
+  permission('Astrid').props.onChange({target:{checked:false}});tree=harness.render();
+  assert.deepEqual(harness.session.project.lanes[0].dealers,['johanna']);
+  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['johanna']);
+  assert.equal(harness.session.project.lanes[0].layers.dealer.default,'johanna');
+  permission('Johanna').props.onChange({target:{checked:false}});
+  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['johanna']);
+  for(const name of ['Vera','Amira','Mei'])assert.equal(permission(name).props.checked,false);
+  assert.equal(harness.session.dirty,true);
+});

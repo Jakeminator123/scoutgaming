@@ -1,4 +1,5 @@
-import { validateLayerAsset } from '../../web/presentation-layers.mjs';
+import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
 import { isDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
 import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
@@ -295,7 +296,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -310,7 +311,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   }
   if (project.schemaVersion !== 1) error('schemaVersion', 'ska vara 1');
   if (Object.hasOwn(project, 'idlePolicy')) {
-    try { validateIdlePolicy(project.idlePolicy); }
+    try { validateIdlePolicy(project.idlePolicy); if (project.idlePolicy.familyId !== 'astrid/idle.ready/ready') throw Error('idlePolicy tillhör Astrid; använd dealerIdlePolicies för andra dealers.'); }
     catch (cause) { error('idlePolicy', cause instanceof Error ? cause.message : 'ogiltig policy'); }
   }
   id(project.revision, 'revision');
@@ -409,6 +410,10 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     }
   }
   if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
+  if (Object.hasOwn(project, 'dealerIdlePolicies')) {
+    try { validateRegisteredIdlePolicies(project.dealerIdlePolicies,project); }
+    catch (cause) { error('dealerIdlePolicies', cause.message); }
+  }
   if (errors.length) throw new StudioValidationError(errors);
   return project;
 }

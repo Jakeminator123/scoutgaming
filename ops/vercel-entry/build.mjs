@@ -58,6 +58,13 @@ async function writePreview(output) {
     const target = join(fileURLToPath(output), name);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, content);
+    // The shared idle runtime imports the same browser-safe identity module
+    // from its repository path; retain that exact alias in static builds.
+    if (name === 'dealer-identity.mjs') {
+      const alias = join(fileURLToPath(output), 'web/public/dealer-identity.mjs');
+      await mkdir(dirname(alias), { recursive: true });
+      await writeFile(alias, content);
+    }
     if (ext === '.mjs' || ext === '.js') {
       for (const specifier of moduleImports(content)) {
         if (!specifier.startsWith('.')) throw Error(`Oväntad extern modulimport i ${name}: ${specifier}`);

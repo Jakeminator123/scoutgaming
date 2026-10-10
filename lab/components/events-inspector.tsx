@@ -8,7 +8,7 @@ import { studioHref } from './studio-types';
 import type { MediaFamily, VideoInventory } from './studio-types';
 import { clipLabel } from '../lib/clip-label.mjs';
 import { upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
-import { addVariant, allowedPathDescriptors, isAssetCompatible, MAX_ALTERNATIVES, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
+import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, MAX_ALTERNATIVES, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
 import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../lib/studio-model.mjs';
 import type { OriginalMediaEntry } from '../lib/original-media.mjs';
 
@@ -162,7 +162,7 @@ export function EventsInspector({
           <details className="technical-details"><summary>Se källeventets exempel</summary><pre>{JSON.stringify(event.exampleEvent, null, 2)}</pre></details>
         </div>
       </div> : editorTab === 'triggers' ? triggerEditor : <div>
-        {dealerId !== 'astrid' ? <p className="helper">Varianter för {dealerLabel} sparas i projektet men används inte av spelet ännu.</p> : null}
+        {dealerId !== 'astrid' ? <p className="helper">{DEALER_IDS.includes(dealerId) ? `Varianter för ${dealerLabel} sparas i projektet men används inte av spelet ännu.` : `Varianter för ${dealerLabel} sparas i utkastet. Spara och publicera paketet igen för att använda dem i spelet.`}</p> : null}
         <div className="variant-list">
           {line.variants.map((item, index) => {
             const bound = item.videoGenerationId ? videos.videos.find(row => row.id === item.videoGenerationId) : undefined;

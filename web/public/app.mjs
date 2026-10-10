@@ -61,6 +61,7 @@ const DEALERS = {
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name:label,registered:true};
+if (entrySelection.presentation === 'layered') for (const [id, name] of [['paow', 'Paow'], ['dragge', 'Dragge']]) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };
 const layeredPresentationEnabled = entrySelection.presentation === 'layered';
 const localPresentationEnabled = entrySelection.presentation === 'local' || layeredPresentationEnabled;
@@ -2607,9 +2608,9 @@ if (playerChoice && entrySelection.choices) {
 }
 
 // Dealer tables are available in the main controls, without a rehearsal URL.
-// With an operator package the row follows the lane's allowed dealers, like the
-// Ditt bord panel; without ?operator= every dealer is listed as before.
-const allowedDealerKeys = entrySelection.operator && Array.isArray(entrySelection.choices?.dealers)
+// Every server-selected lane narrows the row, with or without an operator.
+// An unavailable dealer must not be advertised and then reopen default Astrid.
+const allowedDealerKeys = Array.isArray(entrySelection.choices?.dealers)
   ? new Set([...entrySelection.choices.dealers, DEALER.key]) : null;
 for (const dealer of Object.values(DEALERS)) {
   if (allowedDealerKeys && !allowedDealerKeys.has(dealer.key)) continue;
@@ -2716,7 +2717,10 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
     <button id="rehearsal-play" disabled>Play line</button><button id="rehearsal-repeat" disabled>Play twice</button>`;
   $('#scene').appendChild(panel);
   const dealerSelect = panel.querySelector('#rehearsal-dealer');
-  for (const d of Object.values(DEALERS)) dealerSelect.add(new Option(d.name, d.key));
+  for (const d of Object.values(DEALERS)) {
+    if (allowedDealerKeys && !allowedDealerKeys.has(d.key)) continue;
+    dealerSelect.add(new Option(d.name, d.key));
+  }
   dealerSelect.value = DEALER.key;
   dealerSelect.onchange = () => { location.href = dealerVersionPath(dealerSelect.value, dealerV2Route ? 'v2' : 'original', location.search); };
   const lineSelect = panel.querySelector('#rehearsal-line');

@@ -289,3 +289,39 @@ test('legacy mutation context cannot introduce generic or frozen-package feature
   }, { kind: 'project', value: project() });
   assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
+
+const cap4 = { schemaVersion: 4, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2',
+  registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' };
+const cap3 = { ...cap4, schemaVersion: 3 }; delete cap3.frozenDealerEvents;
+test('frozen-event schema3 publication negotiates exact v4 before SQL even without a registered dealer', async () => {
+  for(const registeredDealers of [[],[{id:'johanna'}]]) {
+    const descriptor={kind:'presentation-package',value:{schemaVersion:3,registeredDealers}};
+    for(const response of [capability,capabilityV2,cap3,{...cap4,frozenDealerEvents:'latest-draft'}]) {
+      let begun=0;
+      const input=fixture({fetcher:async()=>Response.json(response)});
+      input.repository.transaction=async work=>{begun++;return work(input.repository);};
+      await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
+      assert.equal(begun,0);assert.equal(input.writes.length,0);
+      assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'4');
+    }
+    let begun=0;
+    const input=fixture({fetcher:async()=>Response.json(cap4)});
+    input.repository.transaction=async work=>{begun++;return work(input.repository);};
+    await input.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value:descriptor.value}), {presentationMutation:descriptor});
+    assert.equal(begun,1);assert.equal(input.writes.length,1);assert.equal(input.fetches.length,1);
+  }
+});
+test('v3 readiness cannot authorize schema3 events inside SQL and v4 readiness cannot survive rollback', async () => {
+  const descriptor={kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[]}};
+  let ready=true,begun=0;
+  const input=fixture({fetcher:async(_url,options)=>Response.json(options.headers['X-Presentation-Capability-Version']==='3' ? cap3 : ready ? cap4 : cap3)});
+  input.repository.transaction=async work=>{begun++;return work(input.repository);};
+  await input.wrapped.withMutationContext(async()=>{
+    await assert.rejects(input.wrapped.saveDocument('presentation-package',{value:descriptor.value}),blocked);
+  }, {kind:'presentation-package',value:{schemaVersion:2,registeredDealers:[]}});
+  assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
+  await input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor});
+  assert.equal(begun,1);ready=false;
+  await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
+  assert.equal(begun,1);assert.equal(input.fetches.length,3);
+});

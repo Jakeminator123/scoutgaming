@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {
   applyTableColor, choicesStorageKey, lobbyChoiceText, mountPlayerChoices, parseStoredChoices,
   readChoices, resolvePlayerSelection, writeChoices,
@@ -148,13 +149,22 @@ test('table colour paints the felt mark, wallet and chip row and leaves the film
   assert.equal(nodes['video.local-presentation-film'].style.props.color, undefined);
 });
 
-test('the dealer row follows the lane only when an operator package is active', async () => {
+test('both dealer pickers offer only the active lane dealers even without an operator', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
-  // Same source-level guard style as test/dealer-version-switcher.mjs: the row must gate on
-  // entrySelection.operator AND choices.dealers, keep the current dealer, and skip the rest.
-  assert.match(source, /const allowedDealerKeys = entrySelection\.operator && Array\.isArray\(entrySelection\.choices\?\.dealers\)/);
-  assert.match(source, /new Set\(\[\.\.\.entrySelection\.choices\.dealers, DEALER\.key\]\) : null;/);
-  assert.match(source, /if \(allowedDealerKeys && !allowedDealerKeys\.has\(dealer\.key\)\) continue;/);
+  const row = source.slice(source.indexOf('const allowedDealerKeys ='), source.indexOf('if (!localPresentationEnabled) installDealerVersionSwitcher'));
+  const rehearsal = source.slice(source.indexOf('  for (const d of Object.values(DEALERS))'), source.indexOf('  dealerSelect.value = DEALER.key;'));
+  assert.ok(row && rehearsal);
+  const DEALERS = Object.fromEntries(['vera','astrid','amira','mei'].map(key => [key,{key,name:key,base:key}]));
+  for (const operator of [undefined,'north']) {
+    for (const offered of [['astrid'], ['amira','mei']]) {
+      const actual = [], rehearsed = [];
+      const document = {createElement(){return {dataset:{},setAttribute(){},append(){}};}};
+      vm.runInNewContext(row + rehearsal, {entrySelection:{operator,choices:{dealers:offered}},DEALER:DEALERS[offered[0]],DEALERS,document,
+        $:() => ({appendChild(button){actual.push(button.dataset.dealer);}}),dealerSelect:{add(option){rehearsed.push(option.value);}},
+        Option:class {constructor(name,value){this.value=value;}}});
+      assert.deepEqual(actual, offered); assert.deepEqual(rehearsed, offered);
+    }
+  }
 });
 
 test('the lobby text names the last dealer and table colour', () => {

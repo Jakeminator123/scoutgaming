@@ -153,7 +153,7 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
   assert.doesNotMatch(html, /Använd samma lane-id/);
   assert.equal(html.match(/>Spara presentationer<\/button>/g).length, 1);
   assert.match(html, /Skapa spelrum/);
-  assert.match(html, /<button class="sg-btn sg-btn-secondary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
+  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
 });
 

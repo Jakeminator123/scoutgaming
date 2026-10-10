@@ -11,7 +11,7 @@ test('comparison routes keep original and V2 presentations separate',()=>{
 });
 test('dealers without V2 stay on their original presentation',()=>{
   for(const key of ['vera','mei'])assert.equal(dealerVersionPath(key,'v2'),`/?dealer=${key}`);
-  assert.equal(dealerVersionPath('unknown','v2'),'/?dealer=vera');
+  assert.throws(() => dealerVersionPath('unknown','v2'), /Dealer is not registered/);
 });
 test('version switching keeps only the explicit observation channel, never launch credentials',()=>{
   const search='?launch=private&labObserverOrigin=http%3A%2F%2F127.0.0.1%3A4188&labObserverChannel=channel-1234567890';
@@ -161,7 +161,7 @@ test('any server-registered dealer keeps her own room without introducing an ori
   Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset:{gamePath:'/blackjack',gamePresentation:'local',gameDealer:'johanna',gameLane:'portrait-johanna-123',gameOperator:'north',gameRoomId:'room-johanna',gameRegisteredDealers:JSON.stringify([{id:'johanna',label:'Johanna'}])}}},configurable:true});
   t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
   for(const version of ['original','v2']){const url=new URL(dealerVersionPath('johanna',version,'?rehearsal=1&launch=private'),'https://game.invalid');assert.equal(url.pathname,'/blackjack');assert.deepEqual(Object.fromEntries(url.searchParams),{dealer:'johanna',presentation:'local',operator:'north',table:'room-johanna',rehearsal:'1',lane:'portrait-johanna-123'});}
-  const unregistered=new URL(dealerVersionPath('unknown','original'),'https://game.invalid');assert.equal(unregistered.searchParams.get('dealer'),'vera');
+  assert.throws(() => dealerVersionPath('unknown','original'), /Dealer is not registered/);
 });
 
 test('registered local rehearsal initializes without a nonexistent legacy bank and original dealers keep their own bank',async()=>{
@@ -173,4 +173,35 @@ test('registered local rehearsal initializes without a nonexistent legacy bank a
     });
     assert.equal(fetched.length,registered?0:1);if(registered)assert.deepEqual(Object.keys(bank),[]);else {assert.equal(fetched[0],'dealers/astrid/audio/en/bank.json');assert.equal(bank.goodluck.text,'Recorded Astrid line');}
   }
+});
+
+test('server-selected dealer switches preserve the room and lane, and cannot advertise another identity', t => {
+  const choices = {dealers:['amira','mei'],dealerDefault:'amira',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
+  const dataset = {gamePath:'/blackjack',gameLane:'published-originals',gameDealer:'amira',gamePresentation:'original',gameOperator:'north',gameRoomId:'room-north',gameChoices:JSON.stringify(choices)};
+  const before = Object.getOwnPropertyDescriptor(globalThis,'document');
+  Object.defineProperty(globalThis,'document',{configurable:true,value:{documentElement:{dataset},querySelector(){assert.fail('a published lane must not gain comparison dealers');}}});
+  t.after(() => {if(before)Object.defineProperty(globalThis,'document',before);else delete globalThis.document;});
+  installDealerVersionSwitcher({dealer:'amira',version:'original',isBusy:()=>false});
+  for(const version of ['original','v2']) {
+    const url = new URL(dealerVersionPath('mei',version,'?dealer=amira&lane=mobile-phone&operator=wrong&table=wrong&launch=private&rehearsal=1'),'https://game.invalid');
+    assert.equal(url.pathname,'/blackjack');
+    assert.deepEqual(Object.fromEntries(url.searchParams),{dealer:'mei',presentation:'original',lane:'published-originals',rehearsal:'1',table:'room-north',operator:'north'});
+  }
+  assert.throws(() => dealerVersionPath('astrid','original'), /Dealer is not available in this room/);
+  delete dataset.gameOperator; delete dataset.gameRoomId;
+  const standalone = new URL(dealerVersionPath('mei','original'),'https://game.invalid');
+  assert.equal(standalone.searchParams.get('lane'),'published-originals');
+  assert.equal(standalone.searchParams.get('dealer'),'mei');
+  dataset.gameChoices = '{broken';
+  assert.throws(() => dealerVersionPath('amira','original'), /Invalid game presentation/);
+});
+
+test('the layer-preview dealer change retains its layered adapter without falling back to Vera', t => {
+  const dataset={gamePath:'/blackjack',gameLane:'layer-preview',gameDealer:'paow',gamePresentation:'layered',
+    gameChoices:JSON.stringify({dealers:['paow','dragge'],dealerDefault:'paow',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}})};
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
+  Object.defineProperty(globalThis,'document',{value:{documentElement:{dataset}},configurable:true});
+  t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
+  const url=new URL(dealerVersionPath('dragge','original','?operator=stale&table=stale'),'https://game.invalid');
+  assert.deepEqual(Object.fromEntries(url.searchParams),{dealer:'dragge',presentation:'layered',lane:'layer-preview'});
 });

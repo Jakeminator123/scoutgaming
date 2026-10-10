@@ -14,7 +14,7 @@ const capability = { schemaVersion: 3, registeredDealerIds: ['nora'], compositin
 const id = 'room-00000000-0000-4000-8000-000000000001';
 const keyOne = '00000000-0000-4000-8000-000000000010';
 const prepared = (chosen = context, extra = {}) => ({ ok: true, operator: chosen.operator, presentationLaneId: chosen.presentation.id,
-  projectRevision: chosen.projectRevision, administrationRevision: 'admin-1', packageRevision: null, ready: true, reason: null, capabilities: capability, ...extra });
+  projectRevision: chosen.projectRevision, administrationRevision: 'admin-1', packageRevision: null, ready: true, reason: null, capabilities: capability, rooms: [], ...extra });
 const created = (payload, chosen = context, extra = {}) => ({ ok: true, duplicate: false,
   room: { schemaVersion: 2, id, name: payload.name, operatorId: chosen.operator.id, presentationLaneId: chosen.presentation.id, gameLaneId: 'nora-presentation', state: 'live' },
   administrationRevision: 'admin-2', packageRevision: 1,
@@ -276,4 +276,40 @@ test('refresh after a Render upgrade changes unavailable to ready without replac
 test('an unchanged original-four room can remain ready with the exact legacy v2 capability contract', async () => {
   const h = fixture(); await h.ready(context, { capabilities: { schemaVersion: 2, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2' } });
   assert.equal(h.controller.getSnapshot().status, 'ready'); assert.equal(h.controller.getSnapshot().preflight.capabilities.schemaVersion, 2);
+});
+
+test('existing rooms have validated scoped links and cannot inject another company or duplicate room', async () => {
+  const room={id,name:'Johannas blackjack',playUrl:'/play/blackjack?operator=sg-test&table='+id};
+  const h=fixture();await h.ready(context,{packageRevision:1,rooms:[room]});
+  assert.deepEqual(h.controller.getSnapshot().preflight.rooms,[room]);assert.equal(h.keys,0);
+  const wrong=[
+    {rooms:[{...room,playUrl:'/play/blackjack?operator=foreign&table='+id}],packageRevision:1},
+    {rooms:[{...room,playUrl:'https://foreign.invalid/play'}],packageRevision:1},
+    {rooms:[room,room],packageRevision:1},
+    {rooms:[{...room,name:'\n'}],packageRevision:1},
+    {rooms:[room],packageRevision:null},
+  ];
+  for(const extra of wrong){const broken=fixture();await broken.ready(context,extra);assert.equal(broken.controller.getSnapshot().status,'error');assert.equal(broken.controller.getSnapshot().preflight,null);}
+});
+
+test('room list opens the existing room before creating and hides stale links on company changes', async () => {
+  const h=fixture(),ui=componentHarness(h.controller);
+  ui.render(context);
+  const room={id,name:'Johannas blackjack',playUrl:'/play/blackjack?operator=sg-test&table='+id};
+  h.reply(0,prepared(context,{rooms:[room],packageRevision:1}));await tick();
+  let tree=ui.render(context),html=renderToStaticMarkup(tree);
+  assert.match(html,/<ul aria-label="Befintliga spelrum">/);
+  assert.equal(find(tree,'a').props.href,room.playUrl);
+  assert.match(html,/<details><summary>Skapa nytt spelrum<\/summary>/);
+  assert.equal(h.requests.length,1,'viewing existing rooms performs no create request');
+  const other={...context,operator:{id:'other',slug:'other',name:'Annat bolag'}};
+  tree=ui.render(other);assert.equal(find(tree,'a'),null);
+  h.reply(1,prepared(other));await tick();tree=ui.render(other);
+  assert.equal(find(tree,'a'),null);assert.equal(h.keys,0);ui.unmount();
+});
+
+test('room creation accepts the exact v4 capability for frozen event packages',async()=>{
+  const h=fixture();await h.ready(context,{capabilities:{...capability,schemaVersion:4,frozenDealerEvents:'operator-package-v3'}});
+  assert.equal(h.controller.getSnapshot().status,'ready');
+  assert.equal(h.controller.getSnapshot().preflight.capabilities.schemaVersion,4);
 });

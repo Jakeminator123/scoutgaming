@@ -149,22 +149,19 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
               {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
             </select>
           </label>
-          <label className={styles.field}>Presentation
+          <label className={styles.field}>Presentation för spelrum
             <select value={selectedLane.id} disabled={interactionBusy} onChange={event => setSelectedLaneId(event.target.value)}>
               {rows.map(row => <option key={row.id} value={row.id}>{row.label}{row.unsaved ? ' (osparad)' : ''}</option>)}
             </select>
           </label>
         </div>
       </section>
-      <PresentationRoomCreate operator={listed.find(operator => operator.id === operatorId) ?? null}
-        presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
-        projectSaved={!dirty && !conflict} storeAvailable={storeAvailable} disabled={Boolean(busy) || saving || conflict}
-        onBusyChange={setRoomBusy} onCreated={receipt => setRevision(receipt.packageRevision)} />
-      <details className={styles.card}>
-        <summary>Avancerat: paket och spellanes</summary>
+      <section className={styles.card} aria-label="Partnerpaket">
+        <h2>Publicera partnerpaket</h2>
+        <p>Paketet ger valt bolag tillgång till de markerade presentationerna och deras tillåtna dealers, bord och bakgrunder. Spara ändrade presentationer före publicering.</p>
         <form className={styles.form} onSubmit={event => { void publish(event); }}>
           <fieldset className={styles.choices}>
-            <legend>Presentationer i paketet</legend>
+            <legend>Presentationer i partnerpaketet</legend>
             {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
               <input type="checkbox" name="lanes" value={row.id} checked={chosen.includes(row.id) && !row.unsaved} disabled={row.unsaved || interactionBusy}
                 onChange={event => { setChosen(current => event.target.checked ? [...current, row.id] : current.filter(id => id !== row.id)); }} />
@@ -172,10 +169,18 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
             </label>) : <p>Skapa en presentation i Sammansättning.</p>}
           </fieldset>
           <div className={styles.actions}>
-            <button className="sg-btn sg-btn-secondary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId || conflict}>Publicera paket</button>
-            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
+            <button className="sg-btn sg-btn-primary" type="submit" disabled={writesOff || publishable.length < 1 || !operatorId || conflict}>Publicera paket</button>
           </div>
         </form>
+        <p>För att uppdatera ett befintligt spelrum: behåll rummets presentation markerad och publicera paketet igen. Valen ovan ersätter paketets presentationsurval.</p>
+      </section>
+      <PresentationRoomCreate operator={listed.find(operator => operator.id === operatorId) ?? null}
+        presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
+        projectSaved={!dirty && !conflict} storeAvailable={storeAvailable} disabled={Boolean(busy) || saving || conflict}
+        onBusyChange={setRoomBusy} onCreated={receipt => setRevision(receipt.packageRevision)} />
+      <details className={styles.card}>
+        <summary>Avancerat: bolag och spellanes</summary>
+        <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
         <a className="sg-btn sg-btn-secondary" aria-disabled={dirty || interactionBusy}
           onClick={event => { if (dirty || interactionBusy) event.preventDefault(); }}
           href={labUrl('/control/administration?tab=tables')}>Öppna bord & spelrum</a>

@@ -4,6 +4,8 @@ import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from 
 import { askDirector } from '../../open-claw/lab/src/openclaw.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
+import { registeredIdlePolicy } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { isDealerId } from '../../web/dealer-identity.mjs';
 import { remoteRequest, studioVideoRegistry } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
@@ -27,7 +29,7 @@ const localSettings = () => {
 
 function validateBody(body, now) {
   if (!exact(body, ['requestId', 'project', 'dealerId', 'mode', 'sourceRef', 'observedChat'])
-    || !id(body.requestId) || !['astrid', 'vera', 'amira', 'mei'].includes(body.dealerId)
+    || !id(body.requestId) || !isDealerId(body.dealerId)
     || !['active', 'shadow'].includes(body.mode)) fail('idle_advice_invalid_request');
   const source = body.sourceRef;
   if (!exact(source, ['kind', 'channel', 'revision', 'messageId', 'at']) || source.kind !== 'renderer-idle'
@@ -53,13 +55,14 @@ function validateBody(body, now) {
   // only its bounded, redacted text projection goes to the existing Director.
   let project, input;
   try { project = validateProject(body.project); } catch { fail('idle_advice_invalid_project'); }
+  if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('idle_advice_invalid_request');
   try { input = normalizeInput({ requestId: body.requestId, event: { type: 'idle' }, mode: body.mode, context: { observedChat: chat } }); }
   catch { fail('idle_advice_invalid_observation'); }
   return { body: structuredClone({ ...body, project }), input, expiresAt: at + IDLE_ADVICE_LIMITS.ttlMs };
 }
 
 function idleCatalog(project, dealerId, registry) {
-  const policy = project.idlePolicy;
+  const policy = dealerId === 'astrid' ? project.idlePolicy : registeredIdlePolicy(project, dealerId);
   const family = registry?.families?.find(item => item.id === policy?.familyId && item.dealerId === dealerId
     && item.eventId === 'idle.ready' && item.situation === 'ready' && item.playbackType === 'idle-pool');
   if (!family || !Array.isArray(registry.videos) || !Array.isArray(family.standardIds) || !Array.isArray(family.variantIds)) {
@@ -70,7 +73,7 @@ function idleCatalog(project, dealerId, registry) {
     const video = known.get(videoId);
     return uuid(videoId) && video?.available === true && video.familyId === family.id && video.role === role
       && (role === 'standard' ? family.standardIds : family.variantIds).includes(videoId)
-      && typeof video.fileName === 'string' && /^[^/\\\u0000-\u001f\u007f]{1,116}\.mp4$/i.test(video.fileName) ? video : null;
+      && typeof video.fileName === 'string' && /^[^/\\\u0000-\u001f\u007f]{1,116}\.(?:mp4|webm)$/i.test(video.fileName) ? video : null;
   };
   const primary = member(policy.base[0].videoId, 'standard');
   if (!primary) return { reason: 'idle_primary_unavailable_baseline' };
@@ -81,7 +84,8 @@ function idleCatalog(project, dealerId, registry) {
       // Reuse the deployed catalog's bounded label field. Descriptions remain
       // untrusted candidate data; no Gateway prompt/config restart is needed.
       const description = item.description?.trim();
-      const label = description ? `${video.fileName.slice(0, 117 - description.length)} · ${description}` : video.fileName;
+      const sourceLabel = typeof video.label === 'string' && /^[^\u0000-\u001f\u007f]{1,116}$/.test(video.label) ? video.label : video.fileName;
+      const label = description ? `${sourceLabel.slice(0, 117 - description.length)} · ${description}` : sourceLabel;
       return [{ ...video, adviceLabel: label }];
     });
   if (!videos.length) return { reason: 'only_standard_no_model' };
@@ -129,7 +133,7 @@ const publicProvider = status => typeof status === 'string'
 export function createIdleAdviceServer({ settings, videoRegistry, registryLoader = studioVideoRegistry, fetchImpl = fetch, now = Date.now } = {}) {
   const jobs = new Map();
   let active = 0;
-  return async function advise(body, { signal, fetchImpl: requestFetch = fetchImpl, cacheScope } = {}) {
+  return async function advise(body, { signal, fetchImpl: requestFetch = fetchImpl, cacheScope, videoRegistry: requestRegistry } = {}) {
     if (cacheScope !== undefined && (typeof cacheScope !== 'string' || !/^[a-f0-9]{64}$/.test(cacheScope))) fail('idle_advice_invalid_owner_scope');
     const checked = validateBody(body, now());
     const { body: inputBody, input, expiresAt } = checked;
@@ -155,7 +159,7 @@ export function createIdleAdviceServer({ settings, videoRegistry, registryLoader
     job.promise = Promise.resolve().then(async () => {
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       let selection;
-      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, videoRegistry ?? await registryLoader()); }
+      try { selection = idleCatalog(inputBody.project, inputBody.dealerId, requestRegistry ?? videoRegistry ?? await registryLoader()); }
       catch { return result('idle_catalog_unavailable_baseline'); }
       if (signal?.aborted) return result('idle_advice_cancelled_baseline');
       if (selection.reason) return result(selection.reason);

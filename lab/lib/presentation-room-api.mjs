@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeProject, defaultPresentationLane } from './studio-model.mjs';
 import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
+import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
 import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
 import { gameLaneConfiguration, isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
@@ -89,20 +90,24 @@ function mergePresentation(current, selected) {
   }
   const ids = extraIds(lanes);
   if ([...ids].some(id => !registry.has(id))) fail(409);
-  return validatePresentationPackage({ schemaVersion: 2, ...base, registeredDealers: [...registry.values()].filter(entry => ids.has(entry.id)) });
+  const registeredDealers = [...registry.values()].filter(entry => ids.has(entry.id));
+  let playback;
+  try { playback = mergeFrozenDealerPlayback(old, selected, { registeredDealers, preservedDealerIds:[...preservedIds] }); }
+  catch { fail(409); }
+  return validatePresentationPackage({ schemaVersion: playback ? 3 : 2, ...base, registeredDealers, ...(playback ? {playback} : {}) });
 }
 function assertReplayBinding(saved, room) {
   const frozen = readPackagePresentation(saved.pack), presentation = frozen?.lanes.find(lane => lane.id === room.presentationLaneId);
   const gameLane = gameLaneConfiguration(saved.administration).gameLanes.find(lane => lane.id === room.gameLaneId);
   if (!isPresentationRoomLaneCompatible(gameLane, presentation)) fail(409);
   const dealer = presentation.layers.dealer.default;
-  if (frozen.schemaVersion === 2 && !BASE_DEALER_IDS.includes(dealer)
+  if ([2,3].includes(frozen.schemaVersion) && !BASE_DEALER_IDS.includes(dealer)
     && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed })) fail(409);
   return frozen;
 }
 function runtimeAccepts(capabilities, presentation) {
-  if (!capabilities || ![2, 3].includes(capabilities.schemaVersion)) return false;
-  return presentation?.schemaVersion !== 2 || capabilities.schemaVersion === 3;
+  if (!capabilities || ![2, 3, 4].includes(capabilities.schemaVersion)) return false;
+  return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
   scope = validateStudioScope(scope);
@@ -191,7 +196,10 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const reason = !runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : !packageReady ? 'presentation_lane_incompatible' : null;
     return { ok: true, operator: { id: saved.operator.id, slug: saved.operator.slug, name: saved.operator.name }, presentationLaneId: id,
       projectRevision: saved.projectRevision, administrationRevision: saved.administrationRevision, packageRevision: saved.pack?.revision ?? null,
-      ready: reason === null, reason, capabilities: runtime };
+      ready: reason === null, reason, capabilities: runtime,
+      rooms: saved.administration.rooms.filter(room => room.state === 'live' && room.presentationLaneId === id
+        && resolvePackageRoom({ administration:saved.administration, package:saved.pack, operatorId:saved.operator.id, roomId:room.id }))
+        .map(room => ({ id:room.id, name:room.name, playUrl:`/play/blackjack?operator=${saved.operator.slug}&table=${room.id}` })) };
   });
   handlers.set('POST /studio/api/admin/presentation-room', async context => {
     const body = intent(context.body), roomId = roomIdentity(scope, body); assertScope(context);

@@ -4,7 +4,7 @@ import { createLiveIdleController } from '../../presentation-runtime/live-idle.m
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, muted, composition = null, entry = null }) {
   const ownDealer = !BASE_DEALER_IDS.includes(dealerId);
   const context = ownDealer && entry?.operator ? { operatorSlug: entry.operator, roomId: entry.roomId, packageRevision: entry.packageRevision, dealerId } : null;
-  const configUrl = '/api/presentation/config' + (context ? '?' + new URLSearchParams(Object.entries(context).map(([key,value])=>[key,String(value)])) : '');
+  const configUrl = '/api/presentation/config' + (context ? '?' + new URLSearchParams(Object.entries(context).map(([key,value])=>[key,String(value)])) : ownDealer ? '?dealerId=' + encodeURIComponent(dealerId) : '');
   const packageError = () => Object.assign(new Error('Presentationspaketet har ändrats. Ladda om spelet.'), { code:'studio_presentation_idle_package_changed' });
   const response = await fetch(configUrl, { cache: 'no-store' });
   if (response.status === 409) throw packageError();
@@ -19,7 +19,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       event.to === 'dealer' ? row.eventId === 'deal.dealer' && row.situation === (event.faceDown ? 'dealer-hole' : 'dealer-up') :
       row.eventId.startsWith('deal.player.') && row.situation === `box${event.box}`));
     const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
-    if (video) player.prepareLocalClip?.({ media: { src: `/api/presentation/videos/${video.id}`, sha256: video.sha256 } });
+    if (video) player.prepareLocalClip?.({ media: { src: video.src || `/api/presentation/videos/${video.id}`, sha256: video.sha256 } });
   };
   let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
   const configurationSource = config.configurationSource || 'lab/project.json';
@@ -31,7 +31,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   control.value = mode;
   control.className = 'local-presentation-mode'; host.append(control);
-  const idle = ownDealer ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
+  const hasOwnIdlePolicy = ownDealer && config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
+  const idle = ownDealer && !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { composition?.hold(video); if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
@@ -40,7 +41,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   async function observeChat(text) {
     adviceController?.abort();
-    if (ownDealer || !['active', 'shadow'].includes(mode)) return;
+    if (!idle || !['active', 'shadow'].includes(mode)) return;
     const controller = new AbortController(); adviceController = controller;
     const at = new Date().toISOString(), requestId = crypto.randomUUID(), revision = version();
     const startedMode = mode;
@@ -48,7 +49,13 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const response = await fetch('/api/presentation/idle-advice', { method: 'POST', signal: controller.signal, cache: 'no-store',
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, dealerId, mode,
           sourceRef: { kind: 'renderer-idle', channel, revision, messageId: `native:${channel}:${++chatSequence}`, at },
-          observedChat: { source: 'native-observation', before: at, messages: [{ role: 'user', text: text.slice(0, 600), at }] } }) });
+          observedChat: { source: 'native-observation', before: at, messages: [{ role: 'user', text: text.slice(0, 600), at }] },
+          ...(context ? {presentationContext:context} : {}) }) });
+      if (controller.signal.aborted || closed || mode !== startedMode || version() !== revision) return;
+      if (response.status === 409 && context) {
+        const failure = await response.json().catch(() => null);
+        if (failure?.code === 'studio_presentation_idle_package_changed') { requireReload(packageError()); return; }
+      }
       if (!response.ok) return;
       const result = await response.json();
       if (controller.signal.aborted || closed || mode !== startedMode || version() !== revision) return;
@@ -63,12 +70,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
     try {
-      if (context && kind === 'idle') {
+      if (context) {
         const current = await fetch(configUrl, { signal: own.signal, cache: 'no-store' });
         if (current.status === 409) throw packageError();
-        if (!current.ok) throw new Error('Egen idlefilm är inte längre tillgänglig');
+        if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');
       }
-      if(composition)await composition.prepareClip(video.compositing);
+      if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing);
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       await player.playLocalClip({ media: { src: video.src || `/api/presentation/videos/${video.id}`, sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
@@ -78,16 +85,30 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
-  let idleRun = 0, idleError = null;
+  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null;
+  function retainRule(result, requestVersion) {
+    const rule = result.idleRule;
+    if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
+      || JSON.stringify(rule.presentationContext) !== JSON.stringify(context)) return;
+    const remaining = Math.max(0, Math.min(30000, Date.parse(rule.expiresAt) - Date.now()));
+    if (!Number.isFinite(remaining) || !remaining) return;
+    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:requestVersion};
+  }
+  function offerPendingRule() {
+    if (!pendingRule || action || speech || document.hidden) return;
+    const rule = pendingRule; pendingRule = null;
+    if (mode === 'rules' && rule.version === version() && rule.expiresAt > performance.now())
+      idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:'rules'});
+  }
   function requireReload(error) {
     if (error.code !== 'studio_presentation_idle_package_changed') return false;
-    packageChanged = true; control.disabled = true; status.textContent = error.message + ' ';
+    pendingRule = null; packageChanged = true; ++serial; stop(); idle?.close(); control.disabled = true; status.textContent = error.message + ' ';
     const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Ladda om';
     button.onclick = () => globalThis.location?.reload(); status.append(button);
     return true;
   }
   function resumeOwnIdle() {
-    if (!ownDealer || packageChanged || closed || action || speech || document.hidden || idleRun) return;
+    if (!ownDealer || packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden || idleRun) return;
     const video = config.dealerIdle?.[dealerId];
     if (!video) { status.textContent = 'Ingen egen idlefilm · 2D-reserv'; return; }
     presentationKind = 'idle'; onBusy();
@@ -103,8 +124,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         idleError = `Idle: ${error.message}`; status.textContent = idleError; });
   }
   function resumeIdle() {
-    if (ownDealer) { resumeOwnIdle(); return; }
-    if (dealerId !== 'astrid' || closed || action || speech || document.hidden) return;
+    if (ownDealer && !idle) { resumeOwnIdle(); return; }
+    if (!idle || (!ownDealer && dealerId !== 'astrid') || packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden) return;
     const clip = idle.snapshot().clip;
     if (!clip || clip.playId === idleRun) return;
     presentationKind = 'idle'; onBusy();
@@ -117,10 +138,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
-      .catch(error => { if (epoch !== serial || closed) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; idle.failed(clip.playId); resumeIdle(); });
+      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; idle.failed(clip.playId); resumeIdle(); });
   }
   function state(patch) {
-    if (Object.hasOwn(patch, 'action')) action = patch.action;
+    if (Object.hasOwn(patch, 'action')) { if (patch.action && !action) pendingRule = null; action = patch.action; idleDuringAction = false; }
     if (Object.hasOwn(patch, 'speech')) speech = patch.speech;
     if (Object.hasOwn(patch, 'ready')) ready = patch.ready;
     control.disabled = packageChanged || action || speech;
@@ -128,9 +149,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // may revoke the current card's owner. Apply those flags on action release.
     if (action && ['deal', 'reveal'].includes(presentationKind) && !Object.hasOwn(patch, 'action') && !document.hidden) return;
     if (action || speech || document.hidden) adviceController?.abort();
-    if (document.hidden) { upcoming = []; player.cancelLocalPreparation?.(); }
+    if (document.hidden) { pendingRule = null; upcoming = []; player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
     idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
+    offerPendingRule();
     if (action || speech) onBusy(); else resumeIdle();
   }
   async function present(event, { signal, onPresented, onSelected, onFrame } = {}) {
@@ -160,6 +182,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: result.decision.media.reason, renderer: '2d',
           requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
           projectRevision: result.projectRevision, configurationSource });
+        retainRule(result, requestVersion);
+        if (ownDealer && kind === 'deal' && config.dealerIdle?.[dealerId]) {
+          idleDuringAction = true; idleRun = 0;
+          idle?.updateScene({actionBusy:false});
+          resumeIdle();
+        }
         return false;
       }
       if (!result.video) throw new Error('Exakt film saknas');
@@ -179,7 +207,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
-      return token === serial && requestVersion === version() && !signal?.aborted;
+      const current = token === serial && requestVersion === version() && !signal?.aborted;
+      if (current) retainRule(result, requestVersion);
+      return current;
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       if (requireReload(error)) return false;
@@ -188,10 +218,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }
-  control.onchange = () => { adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
+  control.onchange = () => { pendingRule = null; idle?.clearOffers(); adviceController?.abort(); mode = control.value; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, start: resumeIdle,
     prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
+    close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
 }
