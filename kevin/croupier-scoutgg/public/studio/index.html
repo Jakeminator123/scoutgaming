@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scout Gaming · Blackjack Table Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0a0b0d;--panel:#101113;--panel2:#16171a;--panel3:#1d1e22;--cream:#f2f1ed;--dim:#aaa69e;--mute:#7d7a74;--gold:#dbc18a;--gold2:#c7a66c;--line:#ffffff14;--line2:#ffffff24;--disp:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--cream);font-family:Figtree,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}a:hover{color:#f1deaf;text-decoration:underline}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.screen{display:none;min-height:100%}.screen.on{display:flex}
+.brand{display:flex;align-items:center;gap:9px;font:600 22px var(--disp);letter-spacing:-1px}
+.brand img{width:26px;height:26px}
+.brand b{font-weight:600;color:var(--gold)}
+.kicker{font:600 12px var(--disp);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}.kicker::before{content:'// ';color:var(--mute)}
+.dot{display:inline-flex;align-items:center;gap:7px;font:600 11px var(--disp);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}.dot::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px #dbc18a22;animation:pulse 2s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 7px #dbc18a00}}
+.h-split em{font-style:normal;color:var(--gold)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}.facts div{display:flex;flex-direction:column;gap:6px;padding:14px 14px 0 0}.facts small{font:600 10.5px var(--disp);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}.facts small::before{content:'// '}.facts span{font-size:13px;font-weight:600;line-height:1.35}
+.lic{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute);line-height:1.5}.lic-row{display:flex;flex-wrap:wrap;gap:8px}.lic-row span{padding:4px 8px;border:1px solid var(--line2);border-radius:6px;font:600 10.5px var(--disp);letter-spacing:.08em;color:var(--dim)}
+.nav{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:600;color:var(--dim)}.nav a{color:var(--dim)}.nav a:hover{color:var(--gold);text-decoration:none}.nav .new{margin-left:6px;padding:2px 6px;border-radius:4px;background:var(--gold);color:#201c13;font:700 9.5px var(--disp);letter-spacing:.08em;vertical-align:2px}.nav .cur{color:var(--cream)}
+.cta-link{font-weight:700;font-size:14px;color:var(--gold)}
+.btn-gold{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 28px;border:1px solid #f1deaf;border-radius:30px;background:linear-gradient(160deg,#ead4a7,#c7a86c);color:#201c13;font-weight:800;font-size:15px;letter-spacing:.01em;box-shadow:0 6px 22px #dbc18a26,inset 0 1px 0 #fff7;transition:transform .15s,box-shadow .15s}
+.btn-gold:hover{transform:translateY(-1px);box-shadow:0 10px 28px #dbc18a3d,inset 0 1px 0 #fff7}
+.btn-quiet{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:1px solid var(--line2);border-radius:30px;background:transparent;font-weight:600;font-size:14px;color:var(--cream);transition:border-color .15s,background .15s}
+.btn-quiet:hover{border-color:#dbc18a88;background:#dbc18a0d}
+
+/* LOGIN */
+#login{position:relative;align-items:stretch}
+.login-art{position:relative;flex:1.25;overflow:hidden;min-height:100vh;background:#000}
+.login-art .layer{position:absolute;inset:0;background-size:cover;background-position:50% 8%;transition:opacity 1.6s ease}
+.login-art .shade{position:absolute;inset:0;background:linear-gradient(90deg,#0a0b0d00 40%,#0a0b0d 100%),linear-gradient(0deg,#0a0b0dee 0%,#0a0b0d00 45%)}
+.login-art .cap{position:absolute;left:56px;bottom:52px;display:flex;flex-direction:column;gap:6px}
+.login-art .cap span{font-size:13px;color:var(--dim);letter-spacing:.04em}
+.login-art .cap strong{font:500 20px var(--disp);letter-spacing:-.3px}
+.login-dots{display:flex;gap:6px;margin-top:10px}.login-dots i{width:22px;height:2px;background:#ffffff30;border-radius:2px;transition:background .4s}.login-dots i.on{background:var(--gold)}
+.login-panel{flex:1;max-width:620px;min-width:420px;display:flex;flex-direction:column;justify-content:space-between;padding:48px 72px;background:var(--ink)}
+.login-form{display:flex;flex-direction:column;gap:28px;max-width:400px;width:100%}
+.login-form h1{font:500 52px/1.02 var(--disp);letter-spacing:-2px;margin:0;text-wrap:balance}
+.login-form p.sub{margin:0;color:var(--dim);font-size:17px;line-height:1.5;text-wrap:pretty}
+.fields{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.02em}
+.field input{height:54px;padding:0 18px;border-radius:14px;border:1px solid var(--line2);background:var(--panel);font-size:16px;transition:border-color .15s,background .15s}
+.field input::placeholder{color:#5f5c57}
+.field input:focus{outline:none;border-color:var(--gold);background:#141518}
+.field.err input{border-color:#ef9a84}
+.pw{position:relative}.pw input{width:100%;padding-right:70px}.pw button{position:absolute;right:8px;top:8px;height:38px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--dim);font-size:13px;font-weight:600}.pw button:hover{color:var(--gold)}
+.login-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--dim)}
+.check{display:flex;align-items:center;gap:10px;cursor:pointer}.check input{accent-color:var(--gold);width:16px;height:16px}
+.login-form .btn-gold{width:100%}
+.form-err{min-height:18px;margin:-12px 0 0;font-size:13px;color:#ef9a84}
+.login-foot{display:flex;flex-direction:column;gap:22px}.login-foot .row{display:flex;justify-content:space-between;gap:16px;font-size:13px;color:var(--mute)}
+.login-art .wm{position:absolute;top:44px;left:56px;display:flex;flex-direction:column;gap:14px}.login-art .tag-line{font:500 15px var(--disp);color:var(--cream);text-shadow:0 2px 10px #000}
+
+/* BUILDER */
+#builder{flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;height:72px;padding:0 32px;border-bottom:1px solid var(--line);flex-shrink:0}
+.topbar .crumb{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--dim)}
+.topbar .crumb i{width:1px;height:18px;background:var(--line2)}
+.user{display:flex;align-items:center;gap:14px;font-size:14px;color:var(--dim)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--panel3);border:1px solid var(--line2);font:600 14px var(--disp);color:var(--gold);text-transform:uppercase}
+.user button{border:0;background:none;color:var(--dim);font-size:14px;font-weight:600;padding:8px}.user button:hover{color:var(--gold)}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,560px)}
+.preview-pane{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;background:radial-gradient(ellipse 60% 55% at 50% 45%,#1c1a16 0%,#0a0b0d 70%);min-height:0}
+.preview-note{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mute);letter-spacing:.03em}
+.live{width:7px;height:7px;border-radius:50%;background:#6fcf97;box-shadow:0 0 0 4px #6fcf9722}
+
+/* table stage */
+.stage{position:relative;height:min(calc(100vh - 170px),940px);aspect-ratio:9/16;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 30px 80px #000c,0 0 0 1px #ffffff12;flex-shrink:0}
+.stage>img,.stage>.felt{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.stage .room,.stage .dealer{transition:opacity .45s ease}
+.stage .fading{opacity:0}
+.felt{transition:opacity .4s}
+.felt.c{mix-blend-mode:color}.felt.s{mix-blend-mode:soft-light;opacity:.55}
+.felt.off{opacity:0}
+.ov-top{position:absolute;z-index:3;top:4%;left:6%;right:6%;display:flex;justify-content:space-between;align-items:flex-start;text-shadow:0 2px 8px #000b}
+.ov-top .brand{font-size:clamp(14px,2.2vh,21px)}.ov-top .brand img{width:clamp(16px,2.3vh,24px);height:auto}
+.ov-name{margin:5px 0 8px;font-size:clamp(8px,1vh,10px);letter-spacing:.15em;text-transform:uppercase}
+.ov-name span{color:#d0ccc4}
+.ov-badge{display:inline-block;padding:4px 7px;border:1px solid #dbc18a55;border-radius:4px;font-size:clamp(7px,.95vh,9px);letter-spacing:.13em;color:var(--gold);background:#0a0b0d99;text-transform:uppercase;text-shadow:none}
+.ov-icons{display:flex;gap:8px}.ov-btn{width:clamp(30px,4.4vh,44px);aspect-ratio:1;padding:0;border-radius:50%;display:grid;place-items:center;background:#0a0b0dcc;border:1px solid #ffffff24;color:var(--cream);transition:border-color .15s,color .15s}.ov-btn:hover{border-color:var(--gold);color:var(--gold)}.ov-btn svg{width:55%;height:55%}.ov-btn .off-i,.ov-btn[aria-pressed=false] .on-i{display:none}.ov-btn[aria-pressed=false] .off-i{display:block}.ov-btn[aria-pressed=false]{color:var(--mute)}.ov-exit{display:none}#play .ov-exit{display:grid}
+#play{position:fixed;inset:0;align-items:center;justify-content:center;background:#000;overflow:hidden}.play-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(36px) brightness(.4) saturate(1.1);transform:scale(1.1)}#playHome{position:relative;z-index:1;display:flex}#play .stage{height:calc(100vh - 24px);max-height:none;border-radius:18px;box-shadow:0 40px 120px #000,0 0 0 1px #ffffff14}@media (max-width:860px){#play .stage{height:100vh;width:100vw;aspect-ratio:auto;border-radius:0}}.play-tip{position:absolute;z-index:2;left:24px;bottom:22px;font-size:13px;color:var(--mute)}@media (max-width:1100px){.play-tip{display:none}}
+.ov-bottom{position:absolute;z-index:3;left:6%;right:6%;bottom:4.5%;display:flex;flex-direction:column;gap:clamp(8px,1.4vh,14px);align-items:center}
+.ov-prompt{font-size:clamp(9px,1.35vh,13px);font-weight:600;text-shadow:0 2px 6px #000}
+.chips{display:flex;gap:clamp(5px,1vh,10px);justify-content:center}
+.chip{--c:#1b7866;--s:#0e4138;--r:#eee8da;--t:#fff;width:clamp(26px,4.4vh,44px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;border:clamp(2px,.4vh,4px) dashed var(--r);background:radial-gradient(ellipse 85% 85% at 45% 25%,var(--c),var(--s));box-shadow:0 3px 0 #0009,0 5px 9px #0006,inset 0 0 0 2px #ffffff28;color:var(--t);font-weight:800;font-size:clamp(8px,1.25vh,12px);transition:transform .3s}
+.chip.sel{outline:2px solid var(--gold);outline-offset:2px;transform:translateY(-3px)}
+.ov-wallet{width:100%;display:flex;justify-content:space-between;padding:clamp(7px,1.1vh,11px) clamp(9px,1.4vh,13px);border:1px solid #dbc18a28;border-radius:12px;background:linear-gradient(110deg,#121314ed,#111215cc)}
+.ov-wallet div{display:flex;flex-direction:column;gap:2px}.ov-wallet div:last-child{text-align:right}
+.ov-wallet small{font-size:clamp(6px,.85vh,8px);letter-spacing:.1em;color:#b5aa96;text-transform:uppercase}
+.ov-wallet strong{font:600 clamp(11px,1.6vh,16px) var(--disp);font-variant-numeric:tabular-nums}
+.speaking{position:absolute;z-index:4;top:20%;left:50%;transform:translate(-50%,8px);padding:8px 14px;border-radius:20px;background:#0a0b0dd0;border:1px solid #ffffff1a;font-size:clamp(9px,1.3vh,13px);white-space:nowrap;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
+.speaking.on{opacity:1;transform:translate(-50%,0)}
+
+/* config panel */
+.config{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:1px solid var(--line)}
+.config-head{padding:30px 36px 18px;display:flex;flex-direction:column;gap:10px}
+.config-head h1{margin:0;font:500 34px/1.1 var(--disp);letter-spacing:-1.2px}
+.steps{flex:1;overflow-y:auto;padding:4px 20px 20px;display:flex;flex-direction:column;gap:8px}
+.step{border:1px solid var(--line);border-radius:18px;background:var(--panel2);transition:border-color .2s,background .2s}
+.step.open{border-color:#dbc18a3a;background:#17171a}
+.step-h{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) auto 18px;align-items:center;gap:14px;padding:16px 18px;border:0;background:none;text-align:left}
+.num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2);font:600 13px var(--disp);color:var(--dim);transition:all .2s}
+.step.open .num{border-color:var(--gold);color:var(--gold)}
+.step.done:not(.open) .num{background:#dbc18a1a;border-color:#dbc18a55;color:var(--gold)}
+.step-t{font-weight:700;font-size:16px}
+.step-v{font-size:14px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.step.open .step-v{color:var(--gold)}
+.chev{width:8px;height:8px;border-right:1.5px solid var(--mute);border-bottom:1.5px solid var(--mute);transform:rotate(45deg) translate(-2px,-2px);transition:transform .25s}
+.step.open .chev{transform:rotate(-135deg) translate(-2px,-2px)}
+.step-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease}
+.step.open .step-b{grid-template-rows:1fr}
+.step-b>div{overflow:hidden}
+.step-in{padding:2px 18px 20px 66px;display:flex;flex-direction:column;gap:16px}
+.hint{margin:0;font-size:14px;color:var(--mute);line-height:1.45}
+.opt{position:relative;border:1px solid var(--line2);background:var(--panel3);border-radius:14px;padding:0;text-align:left;transition:border-color .15s,transform .15s,background .15s}
+.opt:hover{border-color:#dbc18a66}
+.opt[aria-checked=true]{border-color:var(--gold);background:#211f1a;box-shadow:0 0 0 1px var(--gold)}
+.opt[aria-checked=true]::after{content:"";position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-7' fill='none' stroke='%23201c13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px no-repeat}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.dealer-opt{overflow:hidden;display:flex;flex-direction:column}
+.dealer-opt img{width:100%;aspect-ratio:4/3.4;object-fit:cover;object-position:50% 18%;display:block}
+.dealer-opt .meta{padding:12px 14px 14px;display:flex;flex-direction:column;gap:3px}
+.dealer-opt strong{font:600 18px var(--disp);letter-spacing:-.3px}
+.dealer-opt span{font-size:13px;color:var(--dim)}
+.room-opt{overflow:hidden}
+.room-opt img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.room-opt span{display:block;padding:10px 12px 12px;font-weight:600;font-size:14px}
+.felts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.felt-opt{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 6px 12px}
+.felt-opt[aria-checked=true]::after{top:6px;right:6px;width:16px;height:16px;background-size:16px}
+.sw{width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff25,inset 0 -8px 14px #0006}
+.felt-opt span{font-size:12px;font-weight:600;text-align:center;line-height:1.2}
+.felt-opt input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.sw.custom{background:conic-gradient(#125c43,#213e70,#70253c,#7a5a2a,#125c43)}
+.langs{display:flex;flex-direction:column;gap:8px}
+.lang-opt{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px}
+.lang-opt[aria-checked=true]::after{display:none}
+.lang-code{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#ffffff0a;border:1px solid var(--line2);font:600 14px var(--disp);color:var(--dim)}
+.lang-opt[aria-checked=true] .lang-code{background:var(--gold);color:#201c13;border-color:var(--gold)}
+.lang-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lang-txt strong{font-weight:700;font-size:15px}
+.lang-txt span{font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play{display:flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 10px;border-radius:20px;border:1px solid var(--line2);background:transparent;font-size:13px;font-weight:600;color:var(--cream)}
+.play:hover{border-color:var(--gold);color:var(--gold)}
+.play i{width:0;height:0;border-left:8px solid currentColor;border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:4px}
+.play.on i{width:9px;height:10px;border:0;border-left:3px solid currentColor;border-right:3px solid currentColor}
+.limits{display:flex;flex-direction:column;gap:10px}
+.limit-opt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 16px;padding:16px 18px}
+.limit-opt[aria-checked=true]::after{display:none}
+.limit-opt .lt{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+.tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:#ffffff10;color:var(--dim)}
+.limit-opt[aria-checked=true] .tag{background:#dbc18a26;color:var(--gold)}
+.limit-opt .range{font:600 22px var(--disp);letter-spacing:-.5px;font-variant-numeric:tabular-nums;grid-row:span 2;text-align:right}
+.limit-opt .ld{font-size:13px;color:var(--dim)}
+.limit-opt .mini{grid-column:1/-1;display:flex;gap:6px;margin-top:6px}
+.limit-opt .mini .chip{width:28px;font-size:8.5px;border-width:2.5px;box-shadow:0 2px 0 #0009}
+.name-field{display:flex;flex-direction:column;gap:8px}
+.name-field label{font-size:13px;font-weight:600;color:var(--dim)}
+.name-field input{height:50px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:var(--panel3);font-size:16px}
+.name-field input:focus{outline:none;border-color:var(--gold)}
+.next{align-self:flex-start;min-height:42px;padding:0 20px;font-size:14px}
+.config-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 36px 22px;border-top:1px solid var(--line);background:var(--panel)}
+.config-foot p{margin:0;font-size:13px;color:var(--mute);line-height:1.4}
+
+/* launching + ready */
+.launch{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#0a0b0dee;backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .35s}
+.launch.on{opacity:1;pointer-events:auto}
+.launch-in{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
+.ring{width:64px;height:64px;border-radius:50%;border:2px solid #ffffff18;border-top-color:var(--gold);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.launch-in strong{font:500 30px/1.1 var(--disp);letter-spacing:-1px}.launch-in .brand{font-size:30px}.launch-in .brand img{width:34px;height:34px}
+.launch-mark{position:relative;width:96px;height:96px;display:grid;place-items:center}.launch-mark img{width:44px;height:44px}.launch-mark .ring{position:absolute;inset:0;width:auto;height:auto}
+.launch-steps{display:flex;flex-direction:column;gap:10px;min-height:80px;text-align:left}.launch-steps span{display:flex;gap:12px;font-size:14px;color:var(--mute);transition:color .3s}.launch-steps span b{font:600 12px var(--disp);letter-spacing:.1em;color:#5f5c57}.launch-steps span.done{color:var(--cream)}.launch-steps span.done b{color:var(--gold)}
+.ov-wm{position:absolute;z-index:3;left:50%;top:47.5%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font:600 clamp(9px,1.25vh,13px) var(--disp);letter-spacing:-.3px;color:#ffffff40;pointer-events:none}.ov-wm img{width:clamp(10px,1.4vh,14px);opacity:.35}.ov-wm b{color:#dbc18a59;font-weight:600}
+.ov-live{display:flex;gap:6px;margin-top:6px}.ov-live .dot{font-size:clamp(6.5px,.9vh,9px);padding:4px 7px;border-radius:4px;background:#0a0b0d99;border:1px solid #dbc18a40;text-shadow:none}.ov-live .dot::before{width:5px;height:5px;box-shadow:none;animation:none}
+.ov-top .ov-badge,.ov-top .ov-live,.ov-top .ov-name,.ov-top .brand{display:none!important}
+.stage .ov-wm{top:63%;transform:translate(-50%,-50%) perspective(400px) rotateX(40deg);font:600 clamp(18px,3.4vh,34px) var(--disp);letter-spacing:-.045em;color:#f2f1ed;opacity:.5;text-shadow:0 1px 0 #0006;white-space:nowrap;pointer-events:none;mix-blend-mode:screen}
+.stage .ov-wm b{color:#d6ff3a;font-weight:600}
+.stage.has-felt-logo .ov-wm{top:55%;font-size:clamp(10px,1.8vh,18px)}
+#ready{flex-direction:column;height:100vh}
+.ready-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:72px;padding:28px 72px;background:radial-gradient(ellipse 50% 60% at 30% 50%,#1c1a16 0%,#0a0b0d 70%)}
+.ready-stage{display:flex;justify-content:flex-end}
+.ready-info{display:flex;flex-direction:column;gap:28px;max-width:520px}
+.ready-info h1{margin:0;font:500 56px/1.02 var(--disp);letter-spacing:-2px;text-wrap:balance}
+.specs{display:grid;grid-template-columns:auto minmax(0,1fr);border-top:1px solid var(--line)}
+.specs dt,.specs dd{margin:0;padding:14px 0;border-bottom:1px solid var(--line);font-size:15px}
+.specs dt{color:var(--mute);padding-right:32px;font:600 12px var(--disp);letter-spacing:.1em;text-transform:uppercase;align-self:center}
+.specs dd{font-weight:600}
+.share{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 18px;border:1px solid var(--line2);border-radius:30px;background:var(--panel)}
+.share code{flex:1;min-width:0;font:500 14px var(--disp);color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.share button{height:40px;padding:0 18px;border:0;border-radius:24px;background:var(--panel3);font-weight:600;font-size:13px}
+.share button:hover{color:var(--gold)}
+.ready-actions{display:flex;flex-wrap:wrap;gap:12px}
+
+@media (max-width:1100px){
+.login-art{flex:1}.login-panel{min-width:380px;padding:40px 44px}
+.work{grid-template-columns:minmax(0,1fr) minmax(400px,480px)}
+.ready-main{gap:40px;padding:28px 40px}}
+.head-sub{margin:0;font-size:15px;color:var(--dim)}
+.num{font-size:12px;letter-spacing:.04em}
+.preview-pane{overflow:hidden}.preview-brand{position:absolute;z-index:1;top:32px;left:36px;display:flex;flex-direction:column;gap:16px}.pb-line{font:500 22px/1.2 var(--disp);letter-spacing:-.6px;color:var(--cream)}
+.preview-wm{position:absolute;right:-90px;bottom:-90px;width:380px;opacity:.05;pointer-events:none}
+.preview-note{font-family:var(--disp);letter-spacing:.08em;text-transform:uppercase;font-size:11.5px;font-weight:600}
+.foot-lic{font:600 10.5px var(--disp);letter-spacing:.1em;text-transform:uppercase;color:#5f5c57}
+.play-back{position:absolute;z-index:2;top:20px;left:24px;background:#0a0b0dcc;backdrop-filter:blur(6px)}
+.kicker,.dot,.facts small,.specs dt,.foot-lic,.preview-note,.launch-steps span b,.lic-row span,.nav .new{font-family:var(--mono)!important;font-weight:500}
+.config-head{padding:34px 36px 26px;gap:14px;border-bottom:1px solid var(--line)}.config-head h1{font-size:44px;line-height:1;letter-spacing:-1.8px}.head-sub{max-width:420px;line-height:1.5;text-wrap:pretty}
+.steps{padding:0 36px 12px;gap:0}
+.step,.step.open{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:26px 0 28px}
+.step:last-child{border-bottom:0}
+.step-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:0;cursor:default}
+.sec-l{font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.step .step-v,.step.open .step-v{font:500 12px var(--mono);letter-spacing:.06em;color:var(--dim);max-width:240px}
+.sec-d{margin:10px 0 0;font-size:14px;line-height:1.5;color:var(--mute);text-wrap:pretty}
+.step-b,.step.open .step-b{display:block}.step-b>div{overflow:visible}
+.step-in{padding:18px 0 0}
+.opt{border-radius:12px}
+.config-foot{padding:18px 36px 22px}
+@media (max-width:860px){.config-head,.steps,.config-foot{padding-left:20px;padding-right:20px}.config-head h1{font-size:36px}}
+.btn-gold{white-space:nowrap;flex-shrink:0}.config-foot p{flex:1;min-width:0}.foot-lic{white-space:nowrap}
+.preview-note{max-width:100%;white-space:nowrap;overflow:hidden}.preview-note #pnSpec{overflow:hidden;text-overflow:ellipsis}
+.preview-wm{right:-140px;bottom:-140px;width:320px}
+@media (max-width:1100px){#pnSpec,.preview-note span:nth-child(2),.preview-wm{display:none}.foot-lic{white-space:normal}}
+.stage>img.felt-logo{position:absolute;z-index:2;inset:auto;left:50%;top:63%;width:36%;height:auto;max-height:9%;object-fit:contain;transform:translate(-50%,-50%) perspective(400px) rotateX(38deg);opacity:.82;filter:drop-shadow(0 1px 0 #0006);pointer-events:none}
+.hdr-logo{display:block;max-width:clamp(70px,13vh,130px);max-height:clamp(22px,4vh,40px);object-fit:contain;object-position:left center;margin-bottom:clamp(6px,1vh,10px);filter:drop-shadow(0 2px 6px #000a)}
+.hdr-logo:not([hidden])+.brand{font-size:clamp(10px,1.4vh,13px);opacity:.85}.hdr-logo:not([hidden])+.brand img{width:clamp(12px,1.5vh,15px)}
+.drop{position:relative;display:block;border:1px dashed #dbc18a55;border-radius:12px;background:var(--panel3);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--gold);background:#211f1a}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px 16px;text-align:center}.drop-empty strong{font-size:15px}.drop-empty>span:last-child{font-size:13px;color:var(--mute)}
+.drop-ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--gold);color:var(--gold);font-size:20px;margin-bottom:4px}
+.drop-full{display:none;align-items:center;gap:14px;padding:12px 14px}
+.drop.has .drop-empty{display:none}.drop.has .drop-full{display:flex}
+.drop-full img{width:84px;height:52px;object-fit:contain;border-radius:8px;background:repeating-conic-gradient(#2a2a2e 0 25%,#222226 0 50%) 0 0/12px 12px;padding:6px}
+.drop-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.drop-meta strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drop-meta span{font-size:12px;color:var(--mute)}
+.drop-x{border:0;background:none;color:var(--dim);font-size:13px;font-weight:600;padding:8px}.drop-x:hover{color:#ef9a84}
+.url-row{display:flex;gap:8px}.url-row input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--panel3);font-size:14px}.url-row input:focus{outline:none;border-color:var(--gold)}.url-row input.bad{border-color:#ef9a84}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.seg-o{min-height:44px;font-size:13px;font-weight:600;text-align:center;padding:0 8px}.seg-o[aria-checked=true]::after{display:none}
+/* Scout Gaming brand: lime + ink, per scoutgaminggroup.com */
+#login,#builder,#ready,.launch{--gold:#d6ff3a;--gold2:#b9dc22;--ink:#0b0c0e;--panel:#0f1012;--panel2:#141517;--panel3:#1a1b1e;--cream:#f2f1ed;--dim:#a9aaa5;--mute:#7c7d78}
+#login .btn-gold,#builder .btn-gold,#ready .btn-gold{background:#d6ff3a;border:0;border-radius:10px;color:#0b0c0e;box-shadow:none;font-weight:700}
+#login .btn-gold:hover,#builder .btn-gold:hover,#ready .btn-gold:hover{background:#e3ff70;box-shadow:0 10px 30px rgba(214,255,58,.18);transform:translateY(-1px)}
+#builder .btn-quiet,#ready .btn-quiet{border-radius:10px}
+#builder .btn-quiet:hover,#ready .btn-quiet:hover{border-color:#d6ff3a88;background:rgba(214,255,58,.05)}
+.brand b{color:#d6ff3a;font-weight:500}
+#builder .stage .brand b,#play .stage .brand b{color:#d6ff3a}
+.topbar{background:#fbfdf0;border-bottom:2px solid #d6ff3a;color:#0b0c0e}
+.topbar .brand{color:#0a0b0d}.topbar .brand b{color:#c4ec1f}
+.topbar .crumb{color:#4a4b47}.topbar .crumb i{background:#0b0c0e22}
+.topbar .crumb>span:last-child{font:500 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#0a0b0d!important}.topbar .brand,.topbar .brand span{font-family:var(--disp)!important;text-transform:lowercase!important;letter-spacing:-.045em!important;font-weight:600!important;color:#0a0b0d}
+.topbar .user{color:#4a4b47}.topbar .user button{color:#0b0c0e}.topbar .user button:hover{color:#6e8a00}
+.topbar .avatar{background:#0b0c0e;color:#d6ff3a;border:0}
+#builder .preview-pane{background:radial-gradient(ellipse 60% 55% at 55% 45%,rgba(214,255,58,.09) 0%,rgba(214,255,58,0) 60%),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/54px 54px,#0b0c0e}
+#ready .ready-main{background:radial-gradient(ellipse 50% 60% at 30% 50%,rgba(214,255,58,.08) 0%,rgba(214,255,58,0) 60%),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/54px 54px,#0b0c0e}
+#builder .preview-wm{display:none}
+.preview-brand .dot{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;padding:8px 14px;border:1px solid rgba(214,255,58,.45);border-radius:30px;color:#d6ff3a;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.preview-brand .dot::before{content:"";width:6px;height:6px;border-radius:50%;background:#d6ff3a;box-shadow:0 0 0 4px rgba(214,255,58,.18)}
+.pb-line{font-size:30px!important;line-height:1.05!important;letter-spacing:-1px!important}
+#builder .config,#builder .config-foot{background:#0b0c0e}
+#builder .opt{background:#141517;border-color:rgba(255,255,255,.08)}
+#builder .opt:hover{border-color:rgba(214,255,58,.45)}
+#builder .opt[aria-checked=true]{background:rgba(214,255,58,.06);border-color:#d6ff3a;box-shadow:0 0 0 1px #d6ff3a}
+#builder .opt[aria-checked=true]::after{background-color:#d6ff3a}
+#builder .lang-opt[aria-checked=true] .lang-code{background:#d6ff3a;border-color:#d6ff3a;color:#0b0c0e}
+#builder .limit-opt[aria-checked=true] .tag{background:rgba(214,255,58,.14);color:#d6ff3a}
+#builder .tag{font-family:var(--mono);font-weight:500;letter-spacing:.14em}
+#builder .drop{border-color:rgba(214,255,58,.4)}#builder .drop:hover,#builder .drop.over{background:rgba(214,255,58,.05)}
+#builder .h-split em,#ready h1 em{font-style:normal;color:#d6ff3a}
+.config-head h1{font-weight:500}
+#login .login-form h1 em{font-style:normal;color:#d6ff3a}
+#login .kicker{display:inline-flex;align-self:flex-start;align-items:center;gap:10px;padding:8px 14px;border:1px solid rgba(214,255,58,.45);border-radius:30px;font-size:11px;letter-spacing:.2em}
+#login .kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:#d6ff3a}
+.field input:focus,.name-field input:focus,.url-row input:focus{border-color:#d6ff3a!important}
+.check input{accent-color:#d6ff3a}
+.login-dots i.on{background:#d6ff3a}
+.ring{border-top-color:#d6ff3a}
+:focus-visible{outline-color:#d6ff3a}
+a{color:#d6ff3a}a:hover{color:#e3ff70}
+.brand{gap:0;font-family:var(--disp);font-weight:600;letter-spacing:-.045em;text-transform:lowercase}.brand b{font-weight:600;color:#d6ff3a}#login,#builder,#ready,.launch{--ink:#0a0b0d;--cream:#f2f1ed}
+.launch-mark{position:relative;display:grid;place-items:center}.launch-mark>*{grid-area:1/1}.lm-slash{font:600 30px var(--disp);color:#d6ff3a}
+@media (max-width:1240px){.preview-brand{display:none}}
+@media (max-width:1240px){.nav a,.cta-link{display:none}}
+@media (max-width:860px){
+.login-art .wm{top:24px;left:24px}.facts{grid-template-columns:minmax(0,1fr)}
+#login{flex-direction:column}.login-art{min-height:42vh;flex:none}.login-art .shade{background:linear-gradient(0deg,#0a0b0d 0%,#0a0b0d00 60%)}.login-art .cap{display:none}
+.login-panel{max-width:none;min-width:0;padding:28px 24px 32px;gap:36px}
+#builder,#ready{height:auto;min-height:100vh}
+.work{grid-template-columns:minmax(0,1fr)}.preview-pane{padding:20px}.stage{height:62vh}
+.config{border-left:0;border-top:1px solid var(--line)}.steps{overflow:visible}
+.config-foot{position:sticky;bottom:0}
+.topbar{padding:0 18px}.topbar .crumb span:last-child,.topbar .crumb i,.user span{display:none}
+.ready-main{grid-template-columns:minmax(0,1fr);padding:24px}.ready-stage{justify-content:center}.ready-info h1{font-size:40px}
+.step-in{padding-left:18px}.felts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0c0e"/><text x="50" y="62" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="30" fill="#f2f1ed">s<tspan fill="#d4f83a">/</tspan>g</text></svg></template>
+<section id="login" class="screen on" data-screen-label="Login">
+<div class="login-art" aria-hidden="true">
+<div class="layer" id="artA" style="background-image:url('assets/login-astrid.png')"></div>
+<div class="layer" id="artB" style="background-image:url('assets/login-dragge.png');opacity:0"></div>
+<div class="shade"></div>
+<div class="wm"><span class="dot">AI live casino · Q4 2026</span><span class="tag-line">Photoreal dealers. Any language. Any hour.</span></div>
+<div class="cap"><span id="capRoom">Golden Salon</span><strong id="capDealer">Astrid · AI dealer</strong><div class="login-dots"><i class="on"></i><i></i></div></div>
+</div>
+<div class="login-panel">
+<div class="brand"><span>scout<b>/</b>gaming</span></div>
+<form class="login-form" id="loginForm" novalidate>
+<div class="kicker">AI live blackjack · Demo</div>
+<h1 class="h-split">One table.<br>Your <em>rules.</em></h1>
+<p class="sub">Sign in to choose a dealer, room, felt, voice and limits, then open the table you designed.</p>
+<div class="fields">
+<div class="field" id="fEmail"><label for="email">Email or username</label><input id="email" type="text" autocomplete="username" placeholder="Your back office login"></div>
+<div class="field" id="fPw"><label for="pw">Password</label><div class="pw"><input id="pw" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" id="pwToggle">Show</button></div></div>
+</div>
+<div class="login-row"><label class="check"><input type="checkbox" checked><span>Keep me signed in</span></label><a href="/bo/login.html">Forgot password?</a></div>
+<p class="form-err" id="formErr" role="alert"></p>
+<button class="btn-gold" type="submit">Sign in to demo →</button>
+</form>
+<div class="login-foot"><div class="facts"><div><small>Dealers</small><span>Generated, live, multilingual</span></div><div><small>RNG</small><span>Certified, separate from render</span></div><div><small>Integration</small><span>One wallet and KYC</span></div></div><div class="lic"><div class="lic-row"><span>MGA B2B/386/2017</span><span>UKGC</span><span>ISO 27001</span><span>eCOGRA</span></div><div class="row"><span>Stockholm · Malta · Lviv</span><a href="https://www.scoutgaminggroup.com/" target="_blank" rel="noopener">scoutgaminggroup.com →</a></div></div></div>
+</div>
+</section>
+
+<section id="builder" class="screen" data-screen-label="Table builder">
+<header class="topbar">
+<div class="crumb"><div class="brand"><span>scout<b>/</b>gaming</span></div><i></i><nav class="nav" aria-label="Scout"><span class="cur">Table Studio</span><a href="https://www.scoutgaminggroup.com/ai-casino" target="_blank" rel="noopener">Live casino<span class="new">NEW</span></a><a href="https://www.scoutgaminggroup.com/fantasy" target="_blank" rel="noopener">Fantasy</a></nav></div>
+<div class="user"><a class="cta-link" href="https://www.scoutgaminggroup.com/#cta" target="_blank" rel="noopener">Book a demo →</a><span id="userEmail">demo@scoutgaming.com</span><div class="avatar" id="avatar">D</div><button type="button" id="signOut">Sign out</button></div>
+</header>
+<div class="work">
+<div class="preview-pane" id="previewHome">
+<div class="stage" id="stage">
+<img class="room" id="roomImg" src="assets/rooms/darkhall-720.png" alt="">
+<img class="dealer" id="dealerImg" src="assets/cut-astrid.png" alt="">
+<canvas class="felt c off" id="feltC" width="720" height="1280"></canvas>
+<canvas class="felt s off" id="feltS" width="720" height="1280"></canvas>
+<div class="ov-top">
+<div><img class="hdr-logo" id="hdrLogo" alt="" hidden><div class="brand"><span>scout<b>/</b>gaming</span></div><div class="ov-name"><span id="ovName">Privé Blackjack</span> · <span id="ovRange">$5 – $2,000</span></div><span class="ov-badge" id="ovBadge">Astrid · AI dealer · EN</span><div class="ov-live"><span class="dot">Live</span></div></div>
+<div class="ov-icons"><button class="ov-btn" id="soundBtn" type="button" aria-label="Turn sound off" aria-pressed="true"><svg class="on-i" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="off-i" viewBox="0 0 24 24"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="ov-btn ov-exit" id="exitBtn" type="button" aria-label="Leave table"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+</div>
+<div class="ov-wm" aria-hidden="true"><span>scout<b>/</b>gaming</span></div>
+<img class="felt-logo" id="feltLogo" alt="" hidden><div class="speaking" id="speaking">Welcome to the table.</div>
+<div class="ov-bottom">
+<div class="ov-prompt">Choose a chip and place your bet</div>
+<div class="chips" id="ovChips"></div>
+<div class="ov-wallet"><div><small>Demo balance</small><strong id="ovBal">$1,000.00</strong></div><div><small>Total bet</small><strong>$0.00</strong></div></div>
+</div>
+</div>
+<div class="preview-brand" aria-hidden="true"><span class="dot">Live preview</span><span class="pb-line">Photoreal dealers.<br>Any language.<br>Any hour.</span></div><div class="preview-note"><span>// Player view</span><span>·</span><span id="pnSpec">Astrid · Dark Hall</span></div>
+</div>
+<aside class="config">
+<div class="config-head"><div class="kicker">Table Studio · AI live casino</div><h1 class="h-split">Build your<br>own <em>table.</em></h1><p class="head-sub">Choose the host, the room, the felt, the language and the limits. The preview updates as you go.</p></div>
+<div class="steps" id="steps">
+
+<section class="step open" data-step="dealer">
+<div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div><p class="sec-d">Photoreal AI host, conversational and reacting to the hand.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="grid2" role="radiogroup" aria-label="Dealer">
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid" aria-checked="true"><img src="assets/astrid.jpg" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · 5 languages</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="dragge" aria-checked="false"><img src="assets/dragge.jpg" alt=""><div class="meta"><strong>Dragge</strong><span>AI dealer · Svenska, English</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="paow" aria-checked="false"><img src="assets/paow.jpg" alt=""><div class="meta"><strong>Paow</strong><span>AI dealer · Svenska, English</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="marten" aria-checked="false"><img src="assets/marten.jpg" alt=""><div class="meta"><strong>Mårten</strong><span>AI dealer · text chat</span></div></button>
+</div>
+</div></div></div>
+</section>
+
+<section class="step" data-step="room">
+<div class="step-h"><span class="sec-l">// 02 · Environment</span><span class="step-v" data-v="room">Dark Hall</span></div><p class="sec-d">The room behind the dealer.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="grid2" role="radiogroup" aria-label="Background">
+<button class="opt room-opt" type="button" role="radio" data-k="room" data-val="darkhall" aria-checked="true"><img src="assets/rooms/astrid-thumb.jpg" alt=""><span>Dark Hall</span></button>
+<button class="opt room-opt" type="button" role="radio" data-k="room" data-val="mahogany" aria-checked="false"><img src="assets/rooms/mahogany-thumb.jpg" alt=""><span>Mahogany Privé</span></button>
+<button class="opt room-opt" type="button" role="radio" data-k="room" data-val="golden" aria-checked="false"><img src="assets/rooms/golden-thumb.jpg" alt=""><span>Golden Salon</span></button>
+<button class="opt room-opt" type="button" role="radio" data-k="room" data-val="azure" aria-checked="false"><img src="assets/rooms/azure-thumb.jpg" alt=""><span>Azure Venue</span></button>
+</div>
+</div></div></div>
+</section>
+
+<section class="step" data-step="felt">
+<div class="step-h"><span class="sec-l">// 03 · Table colour</span><span class="step-v" data-v="felt">Privé</span></div><p class="sec-d">The felt players see under the cards.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="felts" role="radiogroup" aria-label="Table colour">
+<button class="opt felt-opt" type="button" role="radio" data-k="felt" data-val="prive" aria-checked="true"><span class="sw" style="background:#302b2b"></span><span>Privé</span></button>
+<button class="opt felt-opt" type="button" role="radio" data-k="felt" data-val="emerald" aria-checked="false"><span class="sw" style="background:#125c43"></span><span>Emerald Club</span></button>
+<button class="opt felt-opt" type="button" role="radio" data-k="felt" data-val="midnight" aria-checked="false"><span class="sw" style="background:#213e70"></span><span>Midnight</span></button>
+<button class="opt felt-opt" type="button" role="radio" data-k="felt" data-val="burgundy" aria-checked="false"><span class="sw" style="background:#70253c"></span><span>Burgundy</span></button>
+<label class="opt felt-opt" role="radio" data-k="felt" data-val="custom" aria-checked="false"><span class="sw custom" id="customSw"></span><span>Custom</span><input type="color" id="customFelt" value="#7a5a2a" aria-label="Custom felt colour"></label>
+</div>
+</div></div></div>
+</section>
+
+<section class="step" data-step="lang">
+<div class="step-h"><span class="sec-l">// 04 · Language</span><span class="step-v" data-v="lang">English</span></div>
+<div class="step-b"><div><div class="step-in">
+<p class="sec-d">The dealer greets, announces and chats in this language. Player controls stay in English.</p>
+<div class="langs" role="radiogroup" aria-label="Dealer language">
+<div class="opt lang-opt" role="radio" tabindex="0" data-k="lang" data-val="en" aria-checked="true"><span class="lang-code">EN</span><span class="lang-txt"><strong>English</strong><span>“Welcome to the table. Place your bets.”</span></span><button class="play" type="button" data-say="en"><i></i>Hear</button></div>
+<div class="opt lang-opt" role="radio" tabindex="0" data-k="lang" data-val="es" aria-checked="false"><span class="lang-code">ES</span><span class="lang-txt"><strong>Español</strong><span>“Bienvenidos a la mesa. Hagan sus apuestas.”</span></span><button class="play" type="button" data-say="es"><i></i>Hear</button></div>
+<div class="opt lang-opt" role="radio" tabindex="0" data-k="lang" data-val="fr" aria-checked="false"><span class="lang-code">FR</span><span class="lang-txt"><strong>Français</strong><span>“Bienvenue à la table. Faites vos jeux.”</span></span><button class="play" type="button" data-say="fr"><i></i>Hear</button></div>
+<div class="opt lang-opt" role="radio" tabindex="0" data-k="lang" data-val="sv" aria-checked="false"><span class="lang-code">SV</span><span class="lang-txt"><strong>Svenska</strong><span>“Välkommen till bordet. Placera era insatser.”</span></span><button class="play" type="button" data-say="sv"><i></i>Hear</button></div>
+<div class="opt lang-opt" role="radio" tabindex="0" data-k="lang" data-val="zh" aria-checked="false"><span class="lang-code">中</span><span class="lang-txt"><strong>中文</strong><span>“欢迎来到牌桌，请下注。”</span></span><button class="play" type="button" data-say="zh"><i></i>Hear</button></div>
+</div>
+</div></div></div>
+</section>
+
+<section class="step" data-step="limit">
+<div class="step-h"><span class="sec-l">// 05 · Limits</span><span class="step-v" data-v="limit">Privé · $5 – $2,000</span></div><p class="sec-d">Bet range, side bets and demo balance.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="limits" role="radiogroup" aria-label="Table limits">
+<button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="casual" aria-checked="false"><span class="lt">Casual<span class="tag">Low stakes</span></span><span class="range">$1 – $500</span><span class="ld">Side bets up to $50 · Balance $500</span><span class="mini" data-chips="casual"></span></button>
+<button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="prive" aria-checked="true"><span class="lt">Privé<span class="tag">Standard</span></span><span class="range">$5 – $2,000</span><span class="ld">Side bets up to $200 · Balance $1,000</span><span class="mini" data-chips="prive"></span></button>
+<button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="high" aria-checked="false"><span class="lt">High Roller<span class="tag">VIP</span></span><span class="range">$100 – $25,000</span><span class="ld">Side bets up to $1,000 · Balance $50,000</span><span class="mini" data-chips="high"></span></button>
+</div>
+<div class="name-field"><label for="tableName">Table name</label><input id="tableName" type="text" maxlength="28" value="Privé Blackjack"></div>
+</div></div></div>
+</section>
+<section class="step" data-step="brand">
+<div class="step-h"><span class="sec-l">// 06 · Your logo</span><span class="step-v" data-v="brand">No logo</span></div><p class="sec-d">Add the operator's logo to the felt and the table header. PNG or SVG with a transparent background works best.</p>
+<div class="step-b"><div><div class="step-in">
+<label class="drop" id="drop"><input type="file" id="logoFile" accept="image/png,image/svg+xml,image/jpeg,image/webp"><span class="drop-empty"><span class="drop-ico">+</span><strong>Upload logo</strong><span>Drag a file here or click to browse</span></span><span class="drop-full"><img id="logoThumb" alt=""><span class="drop-meta"><strong id="logoName">logo.png</strong><span>Click to replace</span></span><button type="button" class="drop-x" id="logoRemove" aria-label="Remove logo">Remove</button></span></label>
+<div class="url-row"><input id="logoUrl" type="url" placeholder="…or paste a logo URL"><button type="button" class="btn-quiet" id="logoUrlBtn">Add</button></div>
+<div class="seg" role="radiogroup" aria-label="Logo placement"><button type="button" class="opt seg-o" role="radio" data-k="logoPos" data-val="both" aria-checked="true">Felt + header</button><button type="button" class="opt seg-o" role="radio" data-k="logoPos" data-val="felt" aria-checked="false">Felt only</button><button type="button" class="opt seg-o" role="radio" data-k="logoPos" data-val="header" aria-checked="false">Header only</button></div>
+</div></div></div>
+</section>
+
+</div>
+<div class="config-foot"><p>All choices can be changed later.<br><span class="foot-lic">Certified RNG · MGA B2B/386/2017</span></p><button class="btn-gold" type="button" id="createBtn">Create table →</button></div>
+</aside>
+</div>
+</section>
+
+<section id="ready" class="screen" data-screen-label="Table ready">
+<header class="topbar">
+<div class="crumb"><div class="brand"><span>scout<b>/</b>gaming</span></div><i></i><nav class="nav" aria-label="Scout"><span class="cur">Table Studio</span><a href="https://www.scoutgaminggroup.com/ai-casino" target="_blank" rel="noopener">Live casino<span class="new">NEW</span></a><a href="https://www.scoutgaminggroup.com/fantasy" target="_blank" rel="noopener">Fantasy</a></nav></div>
+<div class="user"><a class="cta-link" href="https://www.scoutgaminggroup.com/#cta" target="_blank" rel="noopener">Book a demo →</a><span id="userEmail2">demo@scoutgaming.com</span><div class="avatar" id="avatar2">D</div></div>
+</header>
+<div class="ready-main">
+<div class="ready-stage" id="readyHome"></div>
+<div class="ready-info">
+<span class="dot">Table created · Live</span>
+<h1 id="readyName">Privé Blackjack</h1>
+<dl class="specs">
+<dt>Dealer</dt><dd id="rsDealer">Astrid</dd>
+<dt>Background</dt><dd id="rsRoom">Dark Hall</dd>
+<dt>Table colour</dt><dd id="rsFelt">Privé</dd>
+<dt>Language</dt><dd id="rsLang">English</dd>
+<dt>Limits</dt><dd id="rsLimit">$5 – $2,000</dd>
+<dt>Logo</dt><dd id="rsLogo">None</dd>
+</dl>
+<div class="share"><code id="shareUrl">croupier.scoutgg.dev/t/prive-blackjack</code><button type="button" id="copyBtn">Copy link</button></div>
+<div class="ready-actions"><button class="btn-gold" type="button" id="playBtn">Open table →</button><button class="btn-quiet" type="button" id="editBtn">Edit table</button><button class="btn-quiet" type="button" id="newBtn">New table</button></div>
+</div>
+</div>
+</section>
+
+<section id="play" class="screen" data-screen-label="Play"><div class="play-bg" id="playBg"></div><div id="playHome"></div><button class="btn-quiet play-back" type="button" id="backBuild">← Back to Table Studio</button><div class="play-tip">Esc to leave the table</div></section>
+<div class="launch" id="launch"><div class="launch-in"><div class="launch-mark"><div class="ring"></div><span class="lm-slash">/</span></div><div class="kicker">AI live casino</div><strong>Setting up your table</strong><div class="launch-steps"><span><b>01</b>Seating the dealer</span><span><b>02</b>Dressing the table</span><span><b>03</b>Loading voice clips</span></div></div></div>
+
+<script src="studio.js" defer></script>
+</body>
+</html>
