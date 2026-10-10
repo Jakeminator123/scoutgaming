@@ -177,3 +177,13 @@ test('frozen idle never gets the public capability exception and requires comple
   for(const extra of [{'x-croupier-vercel-secret':undefined},{'x-croupier-public-origin':'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'}])assert.equal(vercelIngressRequest({...request(path,extra),method:'GET'},ingress).accepted,false);
   assert.equal(vercelIngressRequest({...request(path+'/record'),method:'GET'},ingress).accepted,false);
 });
+
+test('frozen event media retains signed transport and never becomes public feature metadata',()=>{
+  const path='/api/presentation/registered-video/north/room-johanna/7/johanna/00000000-0000-4000-8000-000000000083';
+  const direct={url:path,method:'GET',headers:{host:'isolated.onrender.com',cookie:'player_session=fixture',range:'bytes=0-15'}};
+  assert.equal(vercelIngressRequest(direct,ingress).accepted,false);
+  const transported=vercelIngressRequest({...request(path,{range:'bytes=0-15'}),method:'GET'},ingress);
+  assert.equal(transported.accepted,true);assert.equal(transported.headers.range,'bytes=0-15');assert.equal(transported.headers.cookie,'player_session=isolated');
+  for(const extra of [{'x-croupier-vercel-secret':undefined},{'x-croupier-public-origin':'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'}]) assert.equal(vercelIngressRequest({...request(path,extra),method:'GET'},ingress).accepted,false);
+  assert.equal(vercelIngressRequest({...request(path+'/record'),method:'GET'},ingress).accepted,false);
+});

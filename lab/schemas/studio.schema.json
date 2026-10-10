@@ -606,6 +606,17 @@
     "idlePolicy": {
       "$ref": "#/$defs/idlePolicy"
     },
+    "dealerIdlePolicies": {
+      "description": "Explicit own-dealer idle schedules. Runtime checks registration, family ownership and exact media at publication.",
+      "type": "array", "maxItems": 32,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["dealerId", "policy"],
+        "properties": {
+          "dealerId": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", "maxLength": 40 },
+          "policy": { "$ref": "#/$defs/registeredIdlePolicy" }
+        }
+      }
+    },
     "legacyClipPolicy": {
       "description": "Exact Lab-owned bindings for the existing four-dealer engine and explicit staged destinations. Old BO picks are review-only; never copy uncertain destinations or recorded speech.",
       "type": "array", "maxItems": 60,
@@ -1058,6 +1069,16 @@
           "maxItems": 30,
           "items": { "$ref": "#/$defs/idleVariant" }
         }
+      }
+    },
+    "registeredIdlePolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "familyId", "base", "variants"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "familyId": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*/idle[.]ready/ready$", "maxLength": 57 },
+        "base": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "$ref": "#/$defs/idleBase" } },
+        "variants": { "type": "array", "maxItems": 30, "items": { "$ref": "#/$defs/idleVariant" } }
       }
     },
     "idleBase": {

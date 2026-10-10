@@ -6,10 +6,12 @@ import type {StudioMediaRecord} from './managed-media-contract.mjs';
 export interface FrozenRegisteredDealer {id:string; label:string; idle:StudioMediaRecord|null}
 export interface LegacyPresentationPackage {schemaVersion:1; projectRevision:string; lanes:StudioLane[]; assets:LayerAsset[]}
 export interface FrozenPresentationPackage {schemaVersion:2; projectRevision:string; lanes:StudioLane[]; assets:LayerAsset[]; registeredDealers:FrozenRegisteredDealer[]}
-export type PresentationPackage = LegacyPresentationPackage|FrozenPresentationPackage;
+export interface FrozenDealerPlayback {dealerIdlePolicies?:StudioProject['dealerIdlePolicies']; lines:StudioProject['lines']; triggers:StudioProject['triggers']; assets:StudioProject['assets']; media:StudioMediaRecord[]}
+export interface EventPresentationPackage {schemaVersion:3; projectRevision:string; lanes:StudioLane[]; assets:LayerAsset[]; registeredDealers:FrozenRegisteredDealer[]; playback:FrozenDealerPlayback}
+export type PresentationPackage = LegacyPresentationPackage|FrozenPresentationPackage|EventPresentationPackage;
 export function validateFrozenRegisteredDealers(value:unknown, options:{dealerIds:readonly string[]}):FrozenRegisteredDealer[];
 export function layerAssetPath(asset: Partial<LayerAsset>): string;
 export function validateLayerAsset(value: unknown): LayerAsset;
 export function validatePresentationLane(value: unknown, options?:{dealerIds?:readonly string[]}): StudioLane;
 export function validatePresentationPackage(value: unknown): PresentationPackage;
-export function buildPresentationPackage(project: StudioProject, ids: string[], library: LayerAsset[], options?:{registeredDealers?:readonly FrozenRegisteredDealer[]}): PresentationPackage;
+export function buildPresentationPackage(project: StudioProject, ids: string[], library: LayerAsset[], options?:{registeredDealers?:readonly FrozenRegisteredDealer[]; playback?:FrozenDealerPlayback}): PresentationPackage;

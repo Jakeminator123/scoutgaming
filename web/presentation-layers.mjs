@@ -1,15 +1,11 @@
+import {validateFrozenDealerPlayback} from './frozen-dealer-playback.mjs';
 import {validateCompositionSettings} from './public/composition-settings.mjs';
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from './managed-media-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
-export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
-export const LAYER_ASSET_TYPES = Object.freeze({
-  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
-  'video/mp4': 'mp4', 'video/webm': 'webm',
-});
-export const MAX_LAYER_ASSET_BYTES = 128 * 1024 * 1024;
+export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from './layer-asset-contract.mjs';
+import {LAYER_ASSET_ROLES, validateLayerAsset} from './layer-asset-contract.mjs';
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
-const hash = /^[a-f0-9]{64}$/;
 const token = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const dealers = new Set(['astrid', 'vera', 'amira', 'mei', 'nora']);
 const reject = () => { throw Object.assign(new Error('studio_invalid_presentation'), { statusCode: 422 }); };
@@ -42,19 +38,6 @@ function dataArray(value, max) {
   return value;
 }
 const assetId = value => typeof value === 'string' && uuid.test(value);
-export function layerAssetPath(asset) {
-  const extension = Object.hasOwn(LAYER_ASSET_TYPES,asset.contentType)?LAYER_ASSET_TYPES[asset.contentType]:null;
-  if (!LAYER_ASSET_ROLES.includes(asset.role) || !assetId(asset.id) || !hash.test(asset.sha256) || !extension) reject();
-  return `croupier/media/${asset.role === 'background' ? 'backgrounds' : 'tables'}/${asset.id}/${asset.sha256}.${extension}`;
-}
-export function validateLayerAsset(value) {
-  exact(value, ['schemaVersion', 'id', 'role', 'label', 'sha256', 'size', 'contentType', 'pathname', 'width', 'height']);
-  if (value.schemaVersion !== 1 || !Number.isSafeInteger(value.size) || value.size < 16 || value.size > MAX_LAYER_ASSET_BYTES
-    || ![value.width, value.height].every(n => Number.isSafeInteger(n) && n >= 1 && n <= 16384)
-    || value.pathname !== layerAssetPath(value)) reject();
-  text(value.label);
-  return structuredClone(value);
-}
 function layer(value, role, authorisedDealers = dealers) {
   exact(value, ['enabled', 'default', 'allowed'], role === 'background' ? ['mode', 'zones'] : role === 'table' ? ['colors'] : []);
   if (typeof value.enabled !== 'boolean') reject();
@@ -119,9 +102,10 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
   return checked;
 }
 export function validatePresentationPackage(value) {
-  const v2 = value && typeof value === 'object' && Object.getOwnPropertyDescriptor(value, 'schemaVersion')?.value === 2;
-  exact(value, ['schemaVersion', 'projectRevision', 'lanes', 'assets', ...(v2 ? ['registeredDealers'] : [])]);
-  if (![1, 2].includes(value.schemaVersion) || typeof value.projectRevision !== 'string'
+  const version = value && typeof value === 'object' ? Object.getOwnPropertyDescriptor(value, 'schemaVersion')?.value : null;
+  const v2 = [2, 3].includes(version), v3 = version === 3;
+  exact(value, ['schemaVersion', 'projectRevision', 'lanes', 'assets', ...(v2 ? ['registeredDealers'] : []), ...(v3 ? ['playback'] : [])]);
+  if (![1, 2, 3].includes(value.schemaVersion) || typeof value.projectRevision !== 'string'
     || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(value.projectRevision)
     || !Array.isArray(value.lanes) || !value.lanes.length || value.lanes.length > 32
     || !Array.isArray(value.assets) || value.assets.length > 128) reject();
@@ -145,7 +129,8 @@ export function validatePresentationPackage(value) {
   if (assets.some(asset => !used.has(asset.id))) reject();
   const selectedDealers = [...new Set(lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
   if (v2) registry = validateFrozenRegisteredDealers(registry, {dealerIds:selectedDealers});
-  return { schemaVersion:value.schemaVersion, projectRevision:value.projectRevision, lanes, assets, ...(v2 ? {registeredDealers:registry} : {}) };
+  const playback = v3 ? validateFrozenDealerPlayback(value.playback, {registeredDealers:registry, projectRevision:value.projectRevision}) : null;
+  return { schemaVersion:value.schemaVersion, projectRevision:value.projectRevision, lanes, assets, ...(v2 ? {registeredDealers:registry} : {}), ...(v3 ? {playback} : {}) };
 }
 export function buildPresentationPackage(project, selectedLaneIds, library, options = {}) {
   const selected = list(selectedLaneIds, id => typeof id === 'string' && token.test(id));
@@ -153,8 +138,8 @@ export function buildPresentationPackage(project, selectedLaneIds, library, opti
   if (lanes.some(lane => !lane || lane.dealers.some(id=>!project.dealers?.some(dealer=>dealer.id===id)))) reject();
   const used = new Set(lanes.flatMap(lane => LAYER_ASSET_ROLES.flatMap(role => lane.layers[role].allowed)));
   const v2 = Object.hasOwn(options, 'registeredDealers');
-  return validatePresentationPackage({ schemaVersion:v2 ? 2 : 1, projectRevision:project.revision, lanes,
-    assets:library.filter(asset => used.has(asset.id)), ...(v2 ? {registeredDealers:options.registeredDealers} : {}) });
+  return validatePresentationPackage({ schemaVersion:Object.hasOwn(options, 'playback') ? 3 : v2 ? 2 : 1, projectRevision:project.revision, lanes,
+    assets:library.filter(asset => used.has(asset.id)), ...(v2 ? {registeredDealers:options.registeredDealers} : {}), ...(Object.hasOwn(options, 'playback') ? {playback:options.playback} : {}) });
 }
 export function presentationLaneFromPackage(pack, id) {
   const checked = validatePresentationPackage(pack);

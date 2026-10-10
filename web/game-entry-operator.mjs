@@ -36,13 +36,13 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     warned.add(key);
     log(message);
   }
-  function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane, registry = saved.project?.dealers) {
+  function withChoices(selection, saved, gameLanes, presentationLaneId = selection.lane, registry = saved.project?.dealers, portraitDealerIds = []) {
     const serverLane = gameLanes.find(row => row.id === selection.lane);
     const extra = !BASE_DEALER_IDS.includes(selection.dealer) && serverLane?.renderer !== 'layered';
-    if (extra && (!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer)) {
+    if (extra && (!isRegisteredDealer({ dealers: registry }, selection.dealer) || serverLane?.renderer !== 'portrait-video' || serverLane.dealer !== selection.dealer && !portraitDealerIds.includes(selection.dealer))) {
       throw Object.assign(Error('presentation_dealer_unavailable'), { statusCode: 503 });
     }
-    const choices = gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane);
+    const choices = gameChoicesForLane(saved?.project?.lanes, presentationLaneId, serverLane, { portraitDealerIds });
     const allowed = new Set([...choices.dealers, selection.dealer]);
     const registeredDealers = (registry ?? []).filter(row => !BASE_DEALER_IDS.includes(row.id) && allowed.has(row.id)).map(({ id, label }) => ({ id, label }));
     return { ...selection, ...(selection.presentation === 'local' && selection.dealer !== 'astrid' ? { localDealer: selection.dealer } : {}),
@@ -81,7 +81,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (room) params.set('lane', room.gameLaneId);
     let selection = base;
     const frozen = readPackagePresentation(current);
-    if (frozen?.schemaVersion === 2) validateFrozenRegisteredDealers(frozen.registeredDealers, { dealerIds: [...new Set(frozen.lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))] });
+    if ([2,3].includes(frozen?.schemaVersion)) validateFrozenRegisteredDealers(frozen.registeredDealers, { dealerIds: [...new Set(frozen.lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))] });
     if (room) selection = gameLaneSelection(params, gameLane, gameLanes, [room.gameLaneId]);
     else if (packageLaneIds(current.lanes, gameLanes).length) selection = gameLaneSelection(params, gameLane, gameLanes, current.lanes);
     else warnOnce(`lanes:${slug}:${current.revision}`,
@@ -91,8 +91,10 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     const presentationLane = (frozen?.lanes ?? saved.project?.lanes)?.find(row => row?.id === (room?.presentationLaneId ?? selection.lane));
     if(frozen && !presentationLane) throw Object.assign(new Error('presentation_lane_unavailable'),{statusCode:503});
     if (room && !isPresentationRoomLaneCompatible(lane, presentationLane)) throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
+    const portraitDealerIds = room && frozen?.schemaVersion === 3 && lane?.renderer === 'portrait-video'
+      ? [...BASE_DEALER_IDS, ...frozen.registeredDealers.map(row => row.id)] : [];
     if (presentationLane) {
-      const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer);
+      const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer, { portraitDealerIds });
       if (dealer) selection = { ...selection, dealer };
       else if(frozen)throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
@@ -106,7 +108,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     }
     const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding },
       frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane,
-      frozen?.schemaVersion === 2 ? frozen.registeredDealers : saved.project?.dealers);
+      [2,3].includes(frozen?.schemaVersion) ? frozen.registeredDealers : saved.project?.dealers, portraitDealerIds);
     if(frozen) {
       const layers=presentationLane.layers;
       next.composition={schemaVersion:1,

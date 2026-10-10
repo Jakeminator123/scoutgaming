@@ -7,7 +7,7 @@ export interface LiveIdleInventory {
 export interface LiveIdleScene { active: boolean; visible: boolean; actionBusy: boolean; speechReady: boolean; speechPlaying: boolean; identity: string; revision: string }
 export interface LiveIdleClip {
   playId: number; kind: 'base' | 'variant'; videoId: string;
-  reason: 'weighted-base' | 'scheduled' | 'speech-ready' | 'base-resumed' | 'openclaw';
+  reason: 'weighted-base' | 'scheduled' | 'speech-ready' | 'base-resumed' | 'openclaw' | 'rules';
   requestId?: string;
   repeat: boolean; standardBase: boolean;
 }
@@ -16,7 +16,8 @@ export interface LiveIdleController {
   snapshot(): LiveIdleSnapshot;
   updateScene(value: Partial<LiveIdleScene>): LiveIdleSnapshot;
   updatePolicy(policy: IdlePolicy, inventory: LiveIdleInventory): LiveIdleSnapshot;
-  offerVariant(value: { videoId: string; requestId: string; expiresAt: number }): boolean;
+  clearOffers(): LiveIdleSnapshot;
+  offerVariant(value: { videoId: string; requestId: string; expiresAt: number }, options?: { use?: 'openclaw' | 'rules' }): boolean;
   started(playId: number): LiveIdleSnapshot;
   presented(playId: number): LiveIdleSnapshot;
   completed(playId: number): LiveIdleSnapshot;

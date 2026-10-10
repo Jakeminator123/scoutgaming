@@ -3,7 +3,7 @@ import {isPresentationRoom} from '../presentation-room-contract.mjs';
 import {gameLaneConfiguration, laneDealerSelection} from '../public/game-lanes.mjs';
 import {buildPresentationPackage} from '../presentation-layers.mjs';
 import {defaultPresentationLane, normalizeProject} from '../../lab/lib/studio-model.mjs';
-import {captureFrozenRegisteredDealers, assertFrozenMediaPreconditions} from './frozen-dealer-idle.mjs';
+import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions} from './frozen-dealer-idle.mjs';
 import {validateRevision, StudioStorageError} from './studio-contract.mjs';
 
 const fail = () => { throw new StudioStorageError('studio_media_registry_unavailable'); };
@@ -16,13 +16,14 @@ export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory,
   const project = normalizeProject(projectDocument.value);
   const source = project.lanes?.length ? project : {...project, lanes:[defaultPresentationLane()]};
   const captured = captureFrozenRegisteredDealers({project:source, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds});
+  const events = captured.registeredDealers.length ? captureFrozenDealerPlayback({project:source, inventory, mediaRows, registeredDealers:captured.registeredDealers}) : null;
   const presentation = buildPresentationPackage(source, selectedLaneIds, source.layerAssets ?? [],
-    captured.registeredDealers.length ? {registeredDealers:captured.registeredDealers} : {});
+    events ? {registeredDealers:captured.registeredDealers, playback:events.playback} : {});
   const freeze = value => {
     if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
     return value;
   };
-  return freeze({presentation, mediaPreconditions:captured.mediaPreconditions, projectRevision, administrationRevision});
+  return freeze({presentation, mediaPreconditions:events?.mediaPreconditions ?? captured.mediaPreconditions, projectRevision, administrationRevision});
 }
 export function selectedRegisteredIdleDefaults(project, selectedLaneIds) {
   return [...new Set(selectedLaneIds.map(id => project.lanes?.find(lane => lane.id === id)?.layers.dealer.default)

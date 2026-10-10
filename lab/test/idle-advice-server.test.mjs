@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { validateCatalog } from '../../open-claw/lab/src/engine.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
 import { createIdleAdviceServer, idleAdviceResponse, IDLE_ADVICE_LIMITS } from '../lib/idle-advice-server.mjs';
 
 const EPOCH = Date.parse('2026-09-25T12:00:00.000Z');
@@ -444,4 +444,21 @@ test('local route wrapper rejects nonlocal, cross-origin and non-JSON requests b
   const route = await readFile(new URL('../app/api/presentation/idle/route.ts', import.meta.url), 'utf8');
   assert.match(route, /runtime\s*=\s*'nodejs'/);
   assert.match(route, /idleAdviceResponse\(request\)/);
+});
+
+test('registered dealer idle advice uses frozen policy and per-request inventory without loading live media', async()=>{
+  const project=addDealer(createSeedProject(),'johanna','Johanna');
+  const base='00000000-0000-4000-8000-000000000071',alt='00000000-0000-4000-8000-000000000072',familyId='johanna/idle.ready/ready';
+  project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='idle.ready').variants[0].videoGenerationId=base;
+  project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],
+    variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null,description:'Ser glad ut'}]}}];
+  const registry={families:[{id:familyId,dealerId:'johanna',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}],
+    videos:[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,available:true,role:i?'variant':'standard',fileName:id+'.webm',label:i?'Glad':'Grundloop'}))};
+  const f=fixture({registryLoader:async()=>assert.fail('Must not load live media'),answer:input=>({requestId:input.requestId,catalogRevision:input.catalogRevision,variantId:'johanna.idle.ready.file-'+alt})});
+  const result=await f.advise(body({project,dealerId:'johanna'}),{videoRegistry:registry});
+  assert.equal(result.videoId,alt);assert.equal(f.calls.length,1);
+  const serialized=JSON.stringify(f.calls[0].payload);
+  assert.match(serialized,/johanna/);assert.match(serialized,/Ser glad ut/);assert.doesNotMatch(serialized,/astrid.idle.ready.file/);
+  const foreign=body({project,dealerId:'unregistered'});
+  await assert.rejects(f.advise(foreign,{videoRegistry:registry}),/idle_advice_invalid_request/);
 });

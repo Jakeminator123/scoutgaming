@@ -2,6 +2,7 @@
 import { labBasePath, labUrl } from "../lib/lab-url.mjs";
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { IdlePolicyEditor } from './idle-policy-editor';
+import {RegisteredIdleEditor} from './registered-idle-editor';
 import { FamilyVideoLibrary } from './family-video-library';
 import { LegacyClipEditor } from './legacy-clip-editor';
 import { FamilyVideoUpload } from './family-video-upload';
@@ -9,7 +10,7 @@ import { MediaFamilyEditor } from './media-family-editor';
 import { applyClipLabel, clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { upsertMediaVariantPolicy, mediaExampleEvent, mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { situationsForEvent } from '../lib/video-intake.mjs';
-import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
+import { createDefaultIdlePolicy, type IdlePolicy } from '../lib/idle-policy.mjs';
 import {DEALER_IDS, type DealerId, type MediaVariantPolicy, type StudioProject} from '../lib/studio-model.mjs';
 import { DEALER_WORKSPACE_SECTIONS, workspaceLocation, supportsFamilyWorkspace, type DealerWorkspaceSection } from '../lib/dealer-workspace.mjs';
 import { requestJson, studioHref, type VideoInventory } from './studio-types';
@@ -17,6 +18,7 @@ import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './lab-studio.module.css';
 import {ProjectConflict} from './project-conflict';
 import {DealerRegistration} from './dealer-registration';
+import {DealerRemoval} from './dealer-removal';
 
 export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string }) {
   const cloudStudio = labBasePath() === '/studio';
@@ -142,6 +144,15 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       } else draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, familyId, policy);
     });
   }
+  function updateRegisteredIdle(policy: IdlePolicy) {
+    edit(draft => {
+      const line = draft.lines.find(row => row.dealerId === dealerId && row.eventId === 'idle.ready');
+      const baseline = line?.variants.find(row => row.id === line.baselineVariantId);
+      if (!baseline) return;
+      draft.dealerIdlePolicies = [...(draft.dealerIdlePolicies ?? []).filter(row => row.dealerId !== dealerId), {dealerId,policy}];
+      baseline.videoGenerationId = policy.base[0].videoId;
+    });
+  }
   const definition = selection && project.events.find(event => event.id === selection.eventId);
   const event = definition && mediaExampleEvent(definition, selection!.situation);
   const familyWorkspace = supportsFamilyWorkspace(dealerId);
@@ -171,6 +182,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     >
     <main className={styles.main}>
       <DealerRegistration project={project} disabled={!connectedLane||saving||uploading} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
+      <DealerRemoval key={dealerId} project={project} dealerId={dealerId} disabled={saving||uploading||conflict||!connectedLane} onEdit={change=>setProject(current=>change(current))} onRemoved={(_id,nextDealerId)=>{selectDealer(nextDealerId);setNotice('Dealern är borttagen från utkastet. Spara för att behålla ändringen.');}}/>
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
       <nav className="sg-tabs" aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
       <nav className={styles.contentNav} aria-label="Innehållsverktyg">{[['/control/videos', 'Klippbibliotek'], ['/control/events', 'Händelser'], ['/control/probe', 'Tal vid inaktivitet'], ['/control/preview', 'Sammansättning']].map(([path, label]) => {
@@ -184,17 +196,18 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       <div hidden={!familyWorkspace || !uploadOpen || !['idle', 'deal', 'clips'].includes(view)}>
         {familyWorkspace ? <fieldset className={styles.fields} disabled={!connectedLane || saving}><FamilyVideoUpload key={dealerId} dealerId={dealerId} initialFamilyId={media && media.family?.id || videos.families?.find(row => row.dealerId === dealerId && (view === 'idle' ? row.playbackType === 'idle-pool' : view === 'deal' ? /^(deal|reveal)\./.test(row.eventId) : row.eventId.startsWith('speak.')))?.id} project={project} inventory={familyInventory} onBusyChange={setUploading} onUploaded={(next, id) => { setVideos(next); const label = next.videos.find(row => row.id === id)?.classification?.label; if (id && label && label.length <= 80) setProject(current => current.clipLabels?.[id]?.trim() ? current : applyClipLabel(current, id, label)); }} onOpen={open} /></fieldset> : null}
       </div>
-      {view === 'idle' && familyWorkspace ? <section><div className={styles.sectionHeader}><span /><button className="text-button" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? 'Läser…' : 'Uppdatera klipplistan'}</button></div><fieldset disabled={saving || !connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy ?? createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy => edit(draft => { draft.idlePolicy = policy; })} onBusyChange={() => {}} /></fieldset></section> : null}
+      {view === 'idle' && familyWorkspace ? <section><div className={styles.sectionHeader}><span /><button className="text-button" disabled={refreshing} onClick={() => void refresh()}>{refreshing ? 'Läser…' : 'Uppdatera klipplistan'}</button></div><fieldset disabled={saving || !connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy ?? createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy => edit(draft => { draft.idlePolicy = policy; })} onBusyChange={() => {}} onImportBusyChange={setUploading} /></fieldset></section> : null}
       {(view === 'deal' || view === 'clips') && familyWorkspace ? <section>{selection ? <h2>{clipSituationLabel(selection.eventId, selection.situation)}</h2> : null}
         {media && variant ? <><button className="text-button" onClick={() => setSelection(null)}>← Alla klipp</button><fieldset disabled={saving || !connectedLane} className={styles.editor}><div>{video ? <video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="metadata" /> : <p>Ingen tillgänglig film för denna situation.</p>}<p>{video ? clipLabel({ id: video.id, familyId: video.familyId, role: video.role, relativePath: video.relativePath }, project.clipLabels) : ''}</p><details className={styles.help}><summary>Avancerat · klipp och kortdata</summary><p><code>{video && video.fileName} · {video && video.id}</code></p><pre>{JSON.stringify(event, null, 2)}</pre></details></div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={() => void refresh()} refreshing={refreshing} /></fieldset></> : <FamilyVideoLibrary inventory={videos} dealerId={dealerId} familyType={view === 'deal' ? 'deal' : 'speak'} clipLabels={project.clipLabels} onOpen={open} onRefresh={() => void refresh()} refreshing={refreshing} />}
       </section> : null}
-      {!familyWorkspace && !customDealer && ['idle', 'deal', 'clips'].includes(view) ? <fieldset className={styles.fields} disabled={saving || !connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} showLegacyReview={false} onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></fieldset> : null}
+      {!familyWorkspace && !customDealer && ['idle', 'deal', 'clips'].includes(view) ? <fieldset className={styles.fields} disabled={saving || !connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></fieldset> : null}
+      {customDealer && view === 'idle' ? <section><div className={styles.sectionHeader}><span /><button type="button" className="text-button" disabled={refreshing || uploading} onClick={() => void refresh()}>{refreshing ? 'Läser…' : 'Uppdatera klipplistan'}</button></div><RegisteredIdleEditor key={dealerId} project={project} inventory={videos} dealerId={dealerId} blocked={saving || !connectedLane} onChange={updateRegisteredIdle} onBusyChange={setUploading} /></section> : null}
       {customDealer ? <section aria-label={`${dealerLabel} · egna klipp`}><div className={styles.customGrid}>
         {view === 'deal' ? <>{Array.from({length:7},(_,box)=><section key={box} data-position={`box${box}`}><h2>Spelarplats {box+1}</h2>{customEntries.filter(row=>row.situation===`box${box}`).map(row=>customCard(row.event,row.situation,true))}</section>)}
           <section data-position="dealer"><h2>Dealer</h2>{customEntries.filter(row=>['dealer-up','dealer-hole'].includes(row.situation)).map(row=>customCard(row.event,row.situation))}</section></>
           : customEntries.map(row=>customCard(row.event,row.situation))}
       </div></section> : null}
-      {view === 'clips' && familyWorkspace ? <details className={styles.help}><summary>Förinspelade exakta talpar</summary><LegacyClipEditor project={project} dealerId={dealerId} section="clips" showLegacyReview={false} onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></details> : null}
+      {view === 'clips' && familyWorkspace ? <details className={styles.help}><summary>Förinspelade exakta talpar</summary><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></details> : null}
       <details className={styles.help}><summary>Avancerat · uppspelning</summary><a href={contentLink('/control/activity')} onClick={event => void continueTo(event, contentLink('/control/activity'))}>Uppspelning och logg →</a></details>
     </main>
     </PageTemplate>

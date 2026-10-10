@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -90,4 +90,13 @@ test('Grundloop links to content without duplicating the policy editor', () => {
 test('Vera variants are stored but not used by the game yet', () => {
   const html = render({ initialDealerId: 'vera' });
   assert.match(html, /Varianter för Vera sparas i projektet men används inte av spelet ännu\./);
+});
+
+test('own dealer event bindings explain save and republish and expose explicit condition editing',()=>{
+  const draft=addDealer(createSeedProject(),'johanna','Johanna');
+  const html=render({initialProject:draft,initialDealerId:'johanna',initialEventId:'idle.ready'});
+  assert.match(html,/Varianter för Johanna sparas i utkastet/);
+  assert.match(html,/Spara och publicera paketet igen/);
+  assert.doesNotMatch(html,/Varianter för Johanna sparas i projektet men används inte/);
+  assert.match(html,/role="tab"[^>]*>Villkor/);
 });

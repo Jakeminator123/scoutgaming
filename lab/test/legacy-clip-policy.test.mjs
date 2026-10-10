@@ -32,17 +32,16 @@ async function fixture(t) {
   return { repository, dataDirectory, write };
 }
 
-test('old BO choices stay inactive; only exact same-dealer idle choices may be explicitly imported', async t => {
+test('old BO choices stay stored but are not offered by current clip controls', async t => {
   const options = await fixture(t);
+  const before = await readFile(join(options.dataDirectory, 'bo.json'), 'utf8');
   const project = createSeedProject(), controls = await legacyClipControls(project, options);
   assert.equal(controls.runtime.source, 'lab/project.json');
   assert.deepEqual(controls.runtime.dealers.vera.engine, {}, 'BO selection is never a fallback');
-  assert.equal(controls.legacy.find(row => row.dealerId === 'vera').importable, true);
-  assert.equal(controls.legacy.find(row => row.part === 'box4').importable, false, 'direction alone cannot prove box4');
-  assert.equal(controls.legacy.find(row => row.dealerId === 'astrid' && row.part === 'idle').importable, false, 'another dealer cannot supply idle');
-  assert.ok(controls.legacy.every(row => row.active === false));
+  assert.equal(Object.hasOwn(controls, 'legacy'), false);
+  assert.equal(Object.hasOwn(controls, 'routes'), false);
   assert.equal(controls.clips.find(row => row.id === 'direction-with-no-box').exactParts.length, 0);
-  const before = await readFile(join(options.dataDirectory, 'bo.json'), 'utf8');
+  assert.equal(await readFile(join(options.dataDirectory, 'bo.json'), 'utf8'), before);
   project.legacyClipPolicy = upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId: 'vera', part: 'idle', clipId: 'vera:idle-2/idle/idle' });
   const resolved = resolveLegacyClipPolicy(project, controls);
   assert.equal(resolved.dealers.vera.engine.idle, 'idle-2/idle/idle');

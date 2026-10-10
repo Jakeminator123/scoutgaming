@@ -1,3 +1,5 @@
+import { registeredIdlePolicy, registeredIdleInventory } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { frozenPlaybackProject } from '../frozen-dealer-playback.mjs';
 import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.mjs';
 import { createOperatorStore } from './operator-store.mjs';
 import { validateStudioScope, studioStorageFailure } from './studio-contract.mjs';
@@ -9,6 +11,8 @@ import { StudioStorageError } from './studio-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
 
 const prefix = '/api/presentation/registered-idle/';
+const videoPrefix = '/api/presentation/registered-video/';
+const mediaIdPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = (code, statusCode) => { throw new StudioStorageError(code, statusCode); };
 const baseDealers = new Set(BASE_DEALER_IDS);
 const exactContext = value => value && typeof value === 'object' && !Array.isArray(value)
@@ -61,7 +65,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       fail('studio_presentation_idle_room_unavailable', 404);
     }
     const presentation = readPresentation(pack);
-    if (presentation?.schemaVersion !== 2) fail('studio_presentation_idle_package_update_required', 409);
+    if (![2, 3].includes(presentation?.schemaVersion)) fail('studio_presentation_idle_package_update_required', 409);
     if (!Array.isArray(presentation.lanes) || !Array.isArray(presentation.registeredDealers)) fail('studio_presentation_idle_context_unavailable', 503);
     const dealerIds = [...new Set(presentation.lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
     validateFrozenRegisteredDealers(presentation.registeredDealers, { dealerIds });
@@ -73,7 +77,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       || !lane.layers.dealer.allowed.includes(context.dealerId) || !gameLane
       || !isPresentationRoomLaneCompatible(gameLane,lane)
       || gameLane.schemaVersion !== 1 || gameLane.renderer !== 'portrait-video'
-      || gameLane.dealer !== context.dealerId || gameLane.mediaCollection !== `${context.dealerId}-presentation`) {
+      || presentation.schemaVersion === 2 && (gameLane.dealer !== context.dealerId || gameLane.mediaCollection !== `${context.dealerId}-presentation`)) {
       fail('studio_presentation_idle_room_unavailable', 404);
     }
     const entries = presentation.registeredDealers.filter(entry => entry.id === context.dealerId);
@@ -81,30 +85,54 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     const record = resolveFrozenDealerIdle(presentation.registeredDealers, {
       dealerId: context.dealerId, allowedDealerIds: lane.layers.dealer.allowed,
     });
-    return { context, projectRevision: presentation.projectRevision,
+    const project = presentation.schemaVersion === 3 ? frozenPlaybackProject(presentation.playback, {registeredDealers:presentation.registeredDealers, projectRevision:presentation.projectRevision}) : null;
+    const records = presentation.schemaVersion === 3 ? presentation.playback.media.filter(row => row.classification.dealerId === context.dealerId) : record ? [record] : [];
+    const inventoryRecords = presentation.schemaVersion === 3 ? presentation.playback.media : records;
+    const inventory = {families:[], videos:inventoryRecords.map(row => ({id:row.id, dealer:row.classification.dealerId, sha256:row.sha256, bytes:row.size,
+      available:true, integrity:'verified', eventId:row.classification.eventId, playbackType:'once', fileName:row.classification.label, classification:structuredClone(row.classification)}))};
+    const idlePolicy = project ? registeredIdlePolicy(project,context.dealerId) : null;
+    const idleInventory = idlePolicy ? registeredIdleInventory(inventory,{dealerId:context.dealerId,policy:idlePolicy}) : {videos:[],families:[]};
+    for (const video of idleInventory.videos) {
+      const media = records.find(row => row.id === video.id);
+      video.label = video.fileName; video.fileName = video.id + '.' + media.contentType.slice(6);
+    }
+    return { context, projectRevision: presentation.projectRevision, schemaVersion:presentation.schemaVersion, idlePolicy, idleInventory,
+      configurationSource:'operator-package-v' + presentation.schemaVersion, lane:structuredClone(lane), project, inventory, records,
       dealer: { id: context.dealerId, label: entries[0].label }, record };
   }
   async function configuration(input) {
     const resolved = await resolve(input);
-    return { owner: 'web', configurationSource: 'operator-package-v2',
+    return { owner: 'web', configurationSource: resolved.configurationSource,
       projectRevision: resolved.projectRevision, packageRevision: resolved.context.packageRevision,
       operator: resolved.context.operatorSlug, roomId: resolved.context.roomId, dealer: resolved.dealer,
-      dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) } };
+      dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) },
+      ...(resolved.schemaVersion === 3 ? {idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
+        const idle = resolved.idleInventory.videos.find(video => video.id === row.id);
+        return {...publicVideo(resolved,row.id),available:true,...(idle ? {familyId:idle.familyId,role:idle.role,dealer:resolved.dealer.id} : {})};
+      })}} : {}) };
+  }
+  function publicVideo(resolved, mediaId) {
+    const record = resolved.records.find(row => row.id === mediaId && row.classification.dealerId === resolved.context.dealerId);
+    if (!record) return null;
+    if (resolved.schemaVersion === 2) return record.id === resolved.record?.id ? publicIdle(record,resolved.context) : null;
+    return {...publicIdle(record,resolved.context), src:videoPrefix + [resolved.context.operatorSlug,resolved.context.roomId,resolved.context.packageRevision,resolved.context.dealerId,record.id].join('/')};
   }
   async function response(request) {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith(prefix)) return null;
+    const eventMedia = url.pathname.startsWith(videoPrefix);
+    if (!eventMedia && !url.pathname.startsWith(prefix)) return null;
     const json = (status, code) => new Response(request.method === 'HEAD' ? null : JSON.stringify({ error: code }),
       { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' } });
     if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405,
       headers: { Allow: 'GET, HEAD', 'Cache-Control': 'private, no-store' } });
     if (url.search || url.hash) return json(400, 'studio_presentation_idle_context_invalid');
-    const parts = url.pathname.slice(prefix.length).split('/');
-    if (parts.length !== 4 || !/^[1-9][0-9]{0,15}$/.test(parts[2])) return json(400, 'studio_presentation_idle_context_invalid');
+    const parts = url.pathname.slice(eventMedia ? videoPrefix.length : prefix.length).split('/');
+    if (parts.length !== (eventMedia ? 5 : 4) || eventMedia && !mediaIdPattern.test(parts[4]) || !/^[1-9][0-9]{0,15}$/.test(parts[2])) return json(400, 'studio_presentation_idle_context_invalid');
     try {
       const resolved = await resolve({ operatorSlug: parts[0], roomId: parts[1], packageRevision: Number(parts[2]), dealerId: parts[3] });
-      if (!resolved.record) return json(404, 'studio_presentation_idle_media_unavailable');
-      const { pathname, sha256, size, contentType } = resolved.record;
+      const record = eventMedia ? (resolved.schemaVersion === 3 ? resolved.records.find(row => row.id === parts[4]) : null) : resolved.record;
+      if (!record) return json(404, 'studio_presentation_idle_media_unavailable');
+      const { pathname, sha256, size, contentType } = record;
       return await privateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }, request);
     } catch (error) {
       const status = [400, 404, 409].includes(error?.statusCode) ? error.statusCode : 503;
@@ -112,7 +140,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       return json(status, code);
     }
   }
-  return Object.freeze({ resolve, configuration, response });
+  return Object.freeze({ resolve, configuration, publicVideo, response });
 }
 
 // All database authority comes from one uncached repeatable-read snapshot.

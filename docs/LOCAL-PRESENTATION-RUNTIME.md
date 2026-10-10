@@ -331,9 +331,10 @@ Personalens arbetsyta är `/control`. `/partner` är antingen intern fixturförh
 befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
 klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
 BO-tilldelningar är historik och används inte som parallell policykälla.
-Endast en exakt match i dealer, situation/destination och registrerad fil
-kan importeras uttryckligen till Lab-utkastet. Osäkra tal-/stagedkopplingar
-finns kvar för granskning och lånas aldrig till en annan replik/plats.
+Den oanvända BO-importpanelen och dess list-/spelvägsmetadata är borttagna
+från klippkontrollerna. Aktiva val görs direkt bland exakta registrerade
+klipp. Sparade BO-data och granskningsspärrar bevaras; osäkra tal-/stagedkopplingar
+lånas aldrig till en annan replik/plats.
 
 `legacyClipPolicy` styr originalmotorernas befintliga rörelseval och exakt
 verifierade staged-destinationer. Dessa läses vid sidstart; ladda om mellan

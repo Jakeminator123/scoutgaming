@@ -1,3 +1,4 @@
+import './frozen-dealer-events.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
@@ -33,9 +34,9 @@ test('v1 canonical bytes and gzip envelope remain exactly compatible with the pr
   assert.deepEqual(decodePresentationPackage(historicalEnvelope),legacy);
   assert.deepEqual(decodePresentationPackage(envelope),legacy);
 });
-test('v2 idle UUID, shader metadata, own label and immutable bytes survive envelope round-trip and later Studio edits',()=>{
+test('v3 idle UUID, shader metadata, own label and immutable bytes survive envelope round-trip and later Studio edits',()=>{
   const input=fixture(), captured=captureFrozenPresentation(input), lane=input.snapshot.projectDocument.value.lanes[0];
-  assert.equal(captured.presentation.schemaVersion,2);assert.equal(captured.presentation.registeredDealers[0].idle.id,id);
+  assert.equal(captured.presentation.schemaVersion,3);assert.equal(captured.presentation.registeredDealers[0].idle.id,id);
   const pack={lanes:[lane.id],branding:withPackagePresentation({name:'Johns'},captured.presentation)};
   input.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
   input.inventory.videos=[];input.snapshot.mediaRows[0].classification.compositing.threshold=.9;
@@ -43,7 +44,7 @@ test('v2 idle UUID, shader metadata, own label and immutable bytes survive envel
   assert.equal(readPackagePresentation(pack).registeredDealers[0].idle.classification.compositing.threshold,.2);
   assert.equal(Object.isFrozen(captured.presentation.registeredDealers[0].idle.classification.compositing),true);
 });
-test('portable v2 decode requires all and only the selected saved extra registry and refuses descriptor mutations',()=>{
+test('portable v3 decode requires all and only the selected saved extra registry and refuses descriptor mutations',()=>{
   const pack=captureFrozenPresentation(fixture()).presentation;
   for(const mutate of [p=>p.registeredDealers=[],p=>p.registeredDealers.push({...p.registeredDealers[0],id:'another'}),
     p=>p.registeredDealers[0].idle.classification.dealerId='nora',p=>p.lanes[0].layers.dealer.default='nora',
@@ -80,7 +81,7 @@ test('advanced republication must preserve every published room lane/default own
   assert.doesNotThrow(()=>assertPublishedRoomBindings({...input,operatorId:'other',presentation:{lanes:[]}}));
 });
 
-test('portable v2 parser rejects getter-backed authority or decorated arrays without invoking accessors',()=>{
+test('portable v3 parser rejects getter-backed authority or decorated arrays without invoking accessors',()=>{
   const source=captureFrozenPresentation(fixture()).presentation;let called=0;
   for(const mutate of [
     p=>Object.defineProperty(p,'schemaVersion',{enumerable:true,get(){called++;return 2;}}),

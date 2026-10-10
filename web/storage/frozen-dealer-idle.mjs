@@ -1,6 +1,9 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
 import { BASE_DEALER_IDS, MAX_DEALERS, isDealerId } from '../dealer-identity.mjs';
+import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
+import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
 import { ownDealerIdle } from '../../presentation-runtime/registered-idle.mjs';
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
 import {
@@ -110,7 +113,7 @@ export function resolveFrozenDealerIdle(entries, { dealerId, allowedDealerIds } 
 /** Run against rows reread on the bound transaction's SQL client. A changed
  * classification is a conflict even when the uploaded bytes/hash are unchanged. */
 export function assertFrozenMediaPreconditions(preconditions, currentMediaRows) {
-  const expected = cloneStudioJson(array(preconditions)), seen = new Set();
+  const expected = cloneStudioJson(array(preconditions, 5000)), seen = new Set();
   for (const entry of expected) {
     if (!entry || Object.keys(entry).sort().join(',') !== 'id,record,revision' || seen.has(entry.id)) fail();
     validateRevision(entry.revision);
@@ -126,4 +129,42 @@ export function assertFrozenMediaPreconditions(preconditions, currentMediaRows) 
     if (!row || row.revision !== entry.revision || canonicalStudioJson(row.record) !== canonicalStudioJson(entry.record))
       fail('studio_conflict', 409);
   }
+}
+
+/** Capture every explicitly saved own-dealer line from the same project/media snapshot. */
+export function captureFrozenDealerPlayback({ project, inventory, mediaRows, registeredDealers } = {}) {
+  const source = cloneStudioJson(project);
+  const saved = validateDocumentValue('project', source, source?.revision, { allowLegacyRead: true });
+  const ids = registeredDealers.map(row => row.id), rows = rowMap(mediaRows);
+  const lines = cloneStudioJson(saved.lines.filter(line => ids.includes(line.dealerId)));
+  const dealerIdlePolicies = cloneStudioJson((saved.dealerIdlePolicies ?? []).filter(row => ids.includes(row.dealerId)));
+  try { validateRegisteredIdlePolicies(dealerIdlePolicies,{dealers:registeredDealers,lines,requireBaseline:true}); }
+  catch { fail('studio_dealer_idle_policy_mismatch'); }
+  const media = new Map(), preconditions = new Map(), assetIds = new Set(), triggerIds = new Set();
+  function capture(mediaId, dealerId, eventId) {
+    const video = inventory.videos.find(row => row.id === mediaId), captured = rows.get(mediaId);
+    if (!video || !captured || video.available !== true || video.dealer !== dealerId
+      || !videoFitsLine(video, dealerId, eventId) || video.integrity === 'unavailable'
+      || captured.record.sha256 !== video.sha256 || captured.record.size !== video.bytes
+      || canonicalStudioJson(captured.record.classification) !== canonicalStudioJson(video.classification))
+      fail('studio_media_binding_invalid');
+    media.set(captured.record.id, captured.record);
+    preconditions.set(captured.record.id, { id: captured.record.id, revision: captured.revision, record: captured.record });
+  }
+  for (const line of lines) for (const variant of line.variants) {
+    assetIds.add(variant.assetId); for (const id of variant.triggerIds) triggerIds.add(id);
+    const dealer = registeredDealers.find(row => row.id === line.dealerId);
+    if (line.eventId === IDLE_EVENT && variant.id === line.baselineVariantId && dealer.idle === null) {
+      variant.videoGenerationId = null; continue;
+    }
+    if (variant.videoGenerationId !== null) capture(variant.videoGenerationId,line.dealerId,line.eventId);
+  }
+  for (const {dealerId,policy} of dealerIdlePolicies) {
+    if (!registeredDealers.find(row => row.id === dealerId)?.idle) fail('studio_dealer_idle_required');
+    for (const item of [...policy.base,...policy.variants]) capture(item.videoId,dealerId,IDLE_EVENT);
+  }
+  const playback = validateFrozenDealerPlayback({ lines,
+    triggers: saved.triggers.filter(row => triggerIds.has(row.id)), assets: saved.assets.filter(row => assetIds.has(row.id)),
+    media: [...media.values()], ...(dealerIdlePolicies.length ? {dealerIdlePolicies} : {}) }, { registeredDealers, projectRevision: saved.revision });
+  return freeze({ playback, mediaPreconditions: [...preconditions.values()] });
 }

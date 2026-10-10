@@ -120,6 +120,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         <label className="field">Presentation<select value={lane.id} disabled={saving||uploading} onChange={event=>{setLaneId(event.target.value);setClipId('');const url=new URL(window.location.href);url.searchParams.set('lane',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{lanes.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
         <span className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</span>
       </div>
+      <p className={styles.hint}>En presentation samlar dealer, bord och bakgrund samt vilka alternativ partnern får välja. Spara utkastet här och publicera partnerpaketet i nästa steg.</p>
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
           <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
@@ -132,7 +133,17 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           <div className={styles.layerTabs} role="tablist" aria-label="Välj lager">{roles.map(role=><button key={role} ref={element=>{layerTabs.current[role]=element??undefined;}} id={`composition-tab-${role}`} role="tab" aria-selected={activeRole===role} aria-controls={`composition-panel-${role}`} tabIndex={activeRole===role?0:-1} onClick={()=>setActiveRole(role)} onKeyDown={event=>{let index=roles.indexOf(role);if(event.key==='ArrowRight')index=(index+1)%roles.length;else if(event.key==='ArrowLeft')index=(index+roles.length-1)%roles.length;else if(event.key==='Home')index=0;else if(event.key==='End')index=roles.length-1;else return;event.preventDefault();setActiveRole(roles[index]);layerTabs.current[roles[index]]?.focus();}}>{labels[role]}</button>)}</div>
           <section className={styles.layer} id="composition-panel-dealer" role="tabpanel" aria-labelledby="composition-tab-dealer" hidden={activeRole!=='dealer'} tabIndex={0}>
             <label className="field">Dealer<select value={lane.layers.dealer.default} disabled={saving||uploading} onChange={event=>{const next=structuredClone(lane),id=event.target.value;next.layers.dealer.default=id;if(!next.dealers.includes(id))next.dealers.push(id);if(!next.layers.dealer.allowed.includes(id))next.layers.dealer.allowed.push(id);clearRole('dealer');edit(next);setClipId('');}}>{project.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-            <p className={styles.hint}>Startdealer · sparas i presentationen.</p>
+            <p className={styles.hint}>Dealern börjar i grundloop. Publicerade händelseklipp avbryter den när spelet utlöser en händelse; sedan återgår dealern till grundloopen.</p>
+            <fieldset disabled={saving||uploading}><legend>Tillåtna dealers i presentationen</legend>
+              {project.dealers.map(row=><label className="check-field" key={row.id}><input type="checkbox" aria-label={`Tillåt ${row.label}`} checked={lane.layers.dealer.allowed.includes(row.id)} disabled={row.id===lane.layers.dealer.default} onChange={event=>{
+                if(row.id===lane.layers.dealer.default)return;
+                const next=structuredClone(lane);
+                if(event.target.checked){if(!next.dealers.includes(row.id))next.dealers.push(row.id);if(!next.layers.dealer.allowed.includes(row.id))next.layers.dealer.allowed.push(row.id);}
+                else {next.dealers=next.dealers.filter(id=>id!==row.id);next.layers.dealer.allowed=next.layers.dealer.allowed.filter(id=>id!==row.id);}
+                edit(next);
+              }}/>{row.label}{row.id===lane.layers.dealer.default?' · startdealer':''}</label>)}
+              <p className={styles.hint}>Startdealern ingår alltid. Avmarkera äldre dealers som inte ska följa med paketet. Byte av startdealer ändrar inte övriga tillåtna dealers.</p>
+            </fieldset>
             {placementControls('dealer')}
             <label className="field">Förhandsvisa klipp<select value={clip?.id??''} disabled={!clips.length||saving||uploading} onChange={event=>{clearRole('dealer');setClipId(event.target.value);}}>{!clips.length?<option value="">Inga dealerklipp ännu</option>:clips.map(row=><option key={row.id} value={row.id}>{clipName(row)}</option>)}</select></label>
             <p className={styles.hint}>Klippvalet är bara ett prov.</p>

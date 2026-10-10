@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## 10 oktober 2026: egna dealerklipp i partnerpaket och gemensam uppspelning
+
+Övertagandet började från ren main/origin på c8c986c0c67e48c3c501305cc7492fbcd39c24fb. Föregående agent bekräftade sparat, committat och pushat arbete. Den här etappen är kod och isolerad verifiering; Johannas befintliga produktionspaket är inte automatiskt återpublicerat.
+
+**Målbild:** N1 publicerar bolagets tillåtna dealers, bord och bakgrunder. Ett **rum** är bolagets spelbara ingång till en publicerad sammansättning och en teknisk spellane. N2 väljer inom paketet; spelaren öppnar rummets blackjack. Dealerklippet styrs separat, bakgrunden loopar eller är en bild, och bordet är statiskt. Gamla fullbildsklipp blir inte frilagda av lagringen.
+
+- Paket v3 fryser egna dealers explicita händelsekopplingar, klipp, mediahashar, kompositinställningar och valfri egen idlepolicy. Val, standardreserv och medieadresser tillhör samma publicerade dealer/rum/revision. Befintliga v1/v2 läses fortsatt.
+- Publicering kräver runtime capability v4. Frysta eventfiler passerar signerad Verceltransport och ordinarie spelarautentisering. Paketet läses om efter eventurval och före uppspelning även när filen finns i cache; ändrat paket stoppar uppspelning och visar Ladda om.
+- Egen grundloop kan använda samma controller för basklipp, automatik och OpenClaw. Regler kräver explicit sparad idlevariant med eventvillkor på verifierad utdelning/vändning, samt Klippval=Regler. Inga simulerade chattvärden används. Förslag väntar på avslutad action och säker basgräns.
+- **Johannas enda grundloop räcker för första acceptansen**, enligt Jakob. Fler klipp eller ett schema behövs inte. Saknas ett eget kortpositionsklipp fortsätter korten i 2D med samma dealers grundloop; ingen annan dealer lånas.
+- Spelvalen följer faktiskt tillåtna dealers även utan operatorparameter. Versionsväljaren behåller rum/operator/lane. Detta rättar vägen där Amira kunde tappa lane och återgå till standarddealern.
+- Publicera partnerpaket är synligt i Publicering, befintliga rum länkas direkt, och Sammansättning visar tillåtna val per lager. Innehåll har eget grundloopschema och borttagning av oanvänd egen dealer ur utkastet; refererade dealers skyddas. Mediefiler och publicerade paket raderas inte av utkastknappen.
+
+BO-städning: två paneler som alltid var dolda, deras flagga, gamla importlista och oanvänd spelvägsmetadata är borttagna. Aktiv legacyuppspelning, neverAgain-spärrar, sparad BO-data och granskningsvyn med faktiska konsumenter är bevarade.
+
+Verifierat före leverans: Lab-produktionsbygge och TypeScript PASS; nya riktade runtime-, fryst paket-, policy-, behörighets- och UI-tester PASS. Isolerad UI-granskning av Sammansättning/Publicering vid 1440 och 390 px: ingen overflow eller sidfel. Alla fyra originaldealers spelade goodluck två gånger i den faktiska spelaren; Astrid med videoframes, Vera/Amira/Mei med sina frame-engine-sekvenser och avslutade ljud. Amiras granskade bild visar rätt person. Sync --probe matchar alla fyra mediabaslinjer. Detta är inte ny mänsklig läppsynkacceptans.
+
+**Öppet:** ny produktionsacceptans av Johanna/rummet och eventuell återpublicering av v3 kräver ordinarie inloggad åtkomst. CUA-starten är trasig i denna session; exakt Johanna-originaltrio saknas i kontrollerad lokal fixtur. Direkt oinloggad /play/blackjack omdirigerar till spelarlogin. Partnerkontot är fortfarande inte aktiverat; inga konton, e-post, insatser eller produktionsdata ändrades. Långtidsluckan beskriven nedan har inte förklarats eller accepterats. Paketets befintliga storleksgräns gäller även v3.
+
+Policyinventering: idlePolicy (Astrid), dealerIdlePolicies (egna dealers), mediaPolicy (Astrids familjval), legacyClipPolicy (äldre aktiva spelvägar) och probePolicy (genererat tal vid inaktivitet, standard av) har faktiska konsumenter och är inte obsoleta. presentationProfile är fyra visningskategorier, ingen extra policy. Äldre BO clipAssignments används bara som granskningsdata; blanda inte ihop dem med aktiv legacyuppspelning.
+
+Säkerhetsläsning på ingående c8c986c0: GitGuardian 17 observerade/12 öppna, aktiv monitorering, partial location coverage och historisk scan too_large. Inga incidentåtgärder; grön CI får inte beskrivas som rent säkerhetskvitto.
+
 ## 10 oktober 2026: partnerkonto kopplat och tydligt trelagersflöde
 
 Det av Jakob angivna befintliga partnerkontot är nu kopplat till **Johns spelbolag** med den uttryckligen godkända rollen **Partner editor** och aktivt medlemskap. Ordinarie POST /studio/api/admin/operator-membership med användarnamn gav 200/ok; en separat omläsning visar bolagets enda medlem, userId 8, revision 1, partner-editor, active och presentations.configure. Ingen inbjudan eller e-post skickades av denna koppling. Kontot självt har fortfarande active: 0 och behöver aktiveras innan partnerinloggningen och det verkliga sparprovet kan slutföras. Full e-postadress och de sanerade produktionskvittona hålls utanför Git.

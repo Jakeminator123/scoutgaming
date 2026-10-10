@@ -88,6 +88,7 @@ export function backendPlatformPath(value) {
     || /^\/api\/(?:probe|chat\/memory|astrid\/(?:observation|transcription)|generated-speech)(?:\/|$)/.test(path)
     || /^\/api\/presentation\/layers\/[a-z][a-z0-9-]{0,62}\/[a-f0-9-]{36}$/.test(path)
     || /^\/api\/presentation\/registered-idle\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}$/.test(path)
+    || /^\/api\/presentation\/registered-video\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(path)
     || /^\/api\/presentation\/videos\/[a-zA-Z0-9_-]+$/.test(path)
     || /^\/bo\/(?:gen|thumbs|img)\//.test(path)
     || ['/speech-stream', '/lipsync-worker'].includes(path)

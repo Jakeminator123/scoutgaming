@@ -3,6 +3,7 @@ import { validateIdlePolicy } from './idle-policy.mjs';
 const clone = value => structuredClone(value);
 const sceneDefaults = Object.freeze({ active: false, visible: true, actionBusy: false, speechReady: false, speechPlaying: false, identity: 'initial', revision: '0' });
 const blocked = scene => !scene.active || !scene.visible || scene.actionBusy || scene.speechPlaying;
+const contextual = clip => clip?.reason === 'openclaw' || clip?.reason === 'rules';
 function sceneValue(value) {
   if (!value || typeof value !== 'object' || typeof value.identity !== 'string' || !value.identity || value.identity.length > 256
     || typeof value.revision !== 'string' || !value.revision || value.revision.length > 128
@@ -88,7 +89,7 @@ export function createLiveIdleController({ policy, inventory, dealerId = 'astrid
       adviceStarts = adviceStarts.filter(start => at - start < 60000);
       if (!failed.has(candidate.videoId) && at - record.last >= 30000 && record.starts.length < 1 && adviceStarts.length < 1) {
         clip = { playId: ++serial, kind: 'variant', videoId: candidate.videoId, requestId: candidate.requestId,
-          expiresAt: candidate.expiresAt, reason: 'openclaw', repeat: false, standardBase: false, started: false, presented: false };
+          expiresAt: candidate.expiresAt, reason: candidate.use, repeat: false, standardBase: false, started: false, presented: false };
         return;
       }
     }
@@ -111,13 +112,13 @@ export function createLiveIdleController({ policy, inventory, dealerId = 'astrid
   function started(playId) {
     const at = time();
     if (!clip || clip.playId !== playId || clip.started || blocked(scene) || closed) return snapshot();
-    if (clip.reason === 'openclaw' && clip.expiresAt <= at) { clip = null; selectBase('base-resumed'); return snapshot(); }
+    if (contextual(clip) && clip.expiresAt <= at) { clip = null; selectBase('base-resumed'); return snapshot(); }
     clip.started = true;
     if (clip.kind === 'variant') {
       const record = history.get(clip.videoId), item = currentPolicy.variants.find(item => item.videoId === clip.videoId);
       record.starts = record.starts.filter(start => at - start < 60000); record.starts.push(at); record.last = at;
       record.next = item.use === 'automatic' ? nextDue(item, at) : Infinity;
-      if (clip.reason === 'openclaw') { adviceStarts = adviceStarts.filter(start => at - start < 60000); adviceStarts.push(at); }
+      if (contextual(clip)) { adviceStarts = adviceStarts.filter(start => at - start < 60000); adviceStarts.push(at); }
     }
     return snapshot();
   }
@@ -128,7 +129,7 @@ export function createLiveIdleController({ policy, inventory, dealerId = 'astrid
       const at = time(); if (closed) return snapshot();
       const previous = scene, next = sceneValue({ ...scene, ...patch }); scene = next;
       if (Object.keys(sceneDefaults).some(key => previous[key] !== next[key])) offered = null;
-      if (next.revision !== previous.revision && clip?.reason === 'openclaw') clip = null;
+      if (next.revision !== previous.revision && contextual(clip)) clip = null;
       if (next.identity !== previous.identity) {
         history.clear(); failed.clear(); clip = null; adviceStarts = [];
         for (const item of currentPolicy.variants) history.set(item.videoId, { starts: [], last: -Infinity, next: item.use === 'automatic' ? nextDue(item, at) : Infinity });
@@ -144,21 +145,31 @@ export function createLiveIdleController({ policy, inventory, dealerId = 'astrid
       if (configure(nextPolicy, nextInventory, at) && !blocked(scene)) selectBase(scene.speechReady ? 'speech-ready' : 'base-resumed');
       return snapshot();
     },
-    offerVariant(value) {
+    clearOffers() {
+      time(); offered = null;
+      // A mode change invalidates a queued proposal, but never cuts off a clip
+      // already playing. Its completion still returns to the ordinary base.
+      if (contextual(clip) && !clip.started) {
+        clip = null;
+        if (!closed && !blocked(scene)) selectBase(scene.speechReady ? 'speech-ready' : 'base-resumed');
+      }
+      return snapshot();
+    },
+    offerVariant(value, { use = 'openclaw' } = {}) {
       const at = time();
-      if (closed || !value || typeof value !== 'object' || Object.keys(value).length !== 3
+      if (!['openclaw', 'rules'].includes(use) || closed || !value || typeof value !== 'object' || Object.keys(value).length !== 3
         || !['videoId', 'requestId', 'expiresAt'].every(key => Object.hasOwn(value, key))
         || typeof value.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value.requestId)
         || !Number.isFinite(value.expiresAt) || value.expiresAt <= at || value.expiresAt > at + 30000
         || offersSeen.has(value.requestId) || offersSeen.size >= 512) return false;
       offersSeen.add(value.requestId);
-      const item = currentPolicy.variants.find(item => item.videoId === value.videoId && item.use === 'openclaw');
+      const item = currentPolicy.variants.find(item => item.videoId === value.videoId && item.use === use);
       if (blocked(scene) || scene.speechReady || offered || !item || !primary() || failed.has(item.videoId)) return false;
       const record = history.get(item.videoId);
       record.starts = record.starts.filter(start => at - start < 60000);
       adviceStarts = adviceStarts.filter(start => at - start < 60000);
       if (at - record.last < 30000 || record.starts.length >= 1 || adviceStarts.length >= 1) return false;
-      offered = { videoId: value.videoId, requestId: value.requestId, expiresAt: value.expiresAt }; return true;
+      offered = { videoId: value.videoId, requestId: value.requestId, expiresAt: value.expiresAt, use }; return true;
     },
     started,
     presented(playId) {

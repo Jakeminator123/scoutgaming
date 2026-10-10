@@ -136,7 +136,7 @@ export function ControlVideosPage({
         </div>
       )}
       <details><summary>Avancerat · befintliga klippkopplingar</summary><fieldset disabled={saving || !connectedLane}>
-        <LegacyClipEditor project={project} dealerId={dealerId} showLegacyReview={false} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
+        <LegacyClipEditor project={project} dealerId={dealerId} onChange={policy => updateProject(draft => { draft.legacyClipPolicy = policy; })} />
       </fieldset></details>
       {media.managed && named ? (
         <div className={styles.binding}>

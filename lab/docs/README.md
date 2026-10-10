@@ -10,7 +10,16 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 
 Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
 
-**En presentation är en återanvändbar profil** med dealer, bord och bakgrund. Tekniskt heter den presentationslane och skiljer sig från spelets spellane.
+**Dealer, presentation och spelrum är olika saker:**
+
+- **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
+- **Bord**: det visuella bordslagret. Välj en bild för ett statiskt bord.
+- **Bakgrund**: ett separat lager; en bakgrundsfilm loopas.
+- **Presentation**: sparade standardval, tillåtna dealers/bord/bakgrunder och placering per format.
+- **Partnerpaket**: en publicerad version av bolagets tilldelade presentationer och val.
+- **Spelrum**: den spelbara länken som kopplar bolaget till en publicerad presentation.
+
+Tekniskt heter en presentation presentationslane. En spellane är spelmotorns interna väg; du behöver inte skapa den manuellt.
 Börja i **Sammansättning**: välj presentation och öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
 Klippbibliotek, Händelser och Tal vid inaktivitet nås från Innehåll, med vald dealer kvar.
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
@@ -20,9 +29,13 @@ och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett 
 media-ID utan att ta över en annan dealers registrering. Varje film
 har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
+En egen dealer kan tas bort med **Ta bort dealer ur utkastet** när ingen presentation i utkastet använder den. Då tas identiteten, händelsekopplingarna och dess grundloopschema bort ur utkastet. Spara efteråt. Grunddealers skyddas, och filmer samt publicerade paket finns kvar. Om spelet fortfarande hänvisar till dealern kan servern neka sparningen; borttagningen avpublicerar inte ett aktivt spelrum.
 
-I Sammansättning ändrar **Dealer** presentationens startdealer. **Förhandsvisa klipp** byter endast provfilm. **Grundloop och klipp** öppnar Innehåll för det sparade basklippet och andra händelser.
-**Grundloop** är det svenska namnet på `idle`, inte en separat inställning. Basklippet återkommer när dealern väntar; variationer är korta avbrott där stöd finns. En egen dealer publiceras med sitt valda, frysta basklipp. Astrids befintliga avancerade variationer och viktning finns kvar.
+I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i presentationen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
+**Förhandsvisa klipp** byter endast provfilm. **Grundloop och klipp** öppnar Innehåll för det sparade basklippet och andra händelser.
+**Grundloop** är det svenska namnet på `idle`, inte en separat inställning. Utan eget schema loopar dealerns valda basklipp. För en egen dealer öppnar **Anpassa grundloop** samma editor för basklipp och variationer som Astrid använder, med en separat policy för just den dealern.
+Välj **Automatik** för intervall, slumpmarginal, minsta paus och högst antal per minut. **OpenClaw** väljer bland uttryckligt tillåtna variationer med deras beskrivningar när anslutningen och presentationens inställningar tillåter det. **Bara manuellt** startar inga automatiska variationer. För en egen dealers idlevariation kan du välja **Regler**. Under **Händelser → Grundloop** skapar du en variant med samma klipp, tillåter Regler och kopplar ett villkor för själva utdelningen eller vändningen; chattvillkor används inte här. Välj också **Regler** i spelets **Klippval**. Endast matchande sparade villkor kan utlösa variationen, utan separat tidsintervall. Grunddealers använder fortsatt sina befintliga val.
+Klipplängden hämtas från den exakta filmen. Spara inställningarna och publicera partnerpaketet igen; spelet använder samma grundloopsstyrning men blandar aldrig olika dealers scheman eller filmer.
 Utdelning skiljer Spelarplats 1–7 från dealerns öppna och dolda kort.
 En position utan klipp hoppas över i spelet utan ersättningsfilm och stoppar inte
 publicering. Kortet visas fortfarande av spelmotorn. Vänster/mitten/höger är
@@ -33,20 +46,25 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Publicering** väljer du bolag och sparad presentation, anger rumsnamn och väljer
-**Skapa spelrum**. En kompatibel spellane återanvänds eller skapas automatiskt.
-Rummet och paketet sparas tillsammans; **Öppna spelrummet** leder till rätt bolag
-och rum i spelklienten. Paketval och manuell spellaneredigering finns under
-**Avancerat: paket och spellanes**. Nivå 2 kräver partnerinloggning och aktivt medlemskap; där kan personalen välja publicerade, kompatibla alternativ som bolaget får ändra. Geometrin följer den publicerade N1-sammansättningen. Ett bolag utan medlemmar får ingen N2-inloggning automatiskt.
+I **Publicering** väljer du bolag och **Presentation för spelrum**. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk; en allmän Blackjack-länk utan bolag och rum väljer inte partnerns paket.
+**Publicera partnerpaket** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
+Bara när ett nytt rum behövs öppnar du **Skapa nytt spelrum** och anger rumsnamn. Rummet och paketet sparas tillsammans; en kompatibel spellane återanvänds eller skapas automatiskt.
+Nivå 2 kräver partnerinloggning och aktivt medlemskap; där kan personalen välja publicerade, kompatibla alternativ som bolaget får ändra. Geometrin följer den publicerade N1-sammansättningen. Ett bolag utan medlemmar får ingen N2-inloggning automatiskt.
 
 Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.
 Fullbildsklipp behåller sina egna bord och bakgrunder. En egen dealers grundloop
 kräver ett eget sparat basklipp och spelas ljudlöst. Publiceringen fryser exakt
 media-ID, filhash och grönskärmsinställningar. En senare utkaständring ändrar inte
-det publicerade klippet. Händelsefilmer för egna dealers som inte ingår i det frysta
-paketet hoppas över; spelets kort fortsätter visas. Live AI-chatt är fortsatt
-avgränsad till originaldealers. Egen dealer och fryst grundloop kräver motsvarande
-stöd på Render; ett avvisat sparande lämnar utkastet kvar.
+det publicerade klippet. Paketformat v3 fryser även egna dealers uttryckligt sparade
+händelsekopplingar, klippval och media. Filmer som enbart finns i biblioteket följer inte med.
+Dealern börjar i grundloop, spelar ett publicerat klipp vid en matchande spelhändelse
+och återgår sedan till grundloop. Saknad koppling lånar aldrig en annan dealers film;
+spelets kort fortsätter visas. Ett uttryckligen sparat schema för en egen dealer
+fryses också med paketet och styr dess basklipp, automatik och tillåtna OpenClaw-variationer.
+Grundloopen ensam är fortfarande standard när inget schema har sparats.
+Äldre v2-paket behåller enbart den egna dealerns grundloop tills de återpubliceras.
+Live AI-chatt är fortsatt avgränsad till originaldealers. Paket v3 kräver motsvarande
+versionsförhandlade stöd på Render; ett avvisat sparande lämnar utkastet kvar.
 Render måste uppdateras separat om automatisk deploy är avstängd.
 Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet finns kvar.
 
@@ -143,10 +161,9 @@ och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 
 **Publicering:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En lane väljer vilken
-presentation och mediesamling som används. Mobile Phone Lane är enda
-standardvalet; äldre Kevin-länkar väljer inte längre Kevin. I Administration →
-Spel, lanes & bord kan en admin lägga till porträttlanes, välja aktiv lane
-och ta bort lanes. De nya porträttlanerna delar Astrids bank och inställningar.
+presentation och mediesamling som används. Partnerns spelrum väljer sin tilldelade
+presentation via paketet. I Administration → Bord & spelrum finns den tekniska
+hanteringen av spellanes; vanliga Studioflödet kopplar dem automatiskt.
 Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
 Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
@@ -213,7 +230,8 @@ klippet får användas och tryck **Spara inställningar** för att behålla
 urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
 idlepolicy eller originalmotorns klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
-Äldre BO-val är inaktiva och kan bara importeras uttryckligen vid säker match.
+Äldre BO-val är bevarad historik och visas inte som importerbara val i Innehåll.
+Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
 Äldre lokala data i `lab/data` bevaras som
 historik och är inte produktionspolicy.
 Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)

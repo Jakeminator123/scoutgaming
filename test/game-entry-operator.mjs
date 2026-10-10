@@ -1,3 +1,4 @@
+import './v3-room-dealer-choices.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';

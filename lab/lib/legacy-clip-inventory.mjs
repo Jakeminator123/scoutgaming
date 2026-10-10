@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { legacyBindingCandidate, LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
 import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
 import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
@@ -86,19 +86,11 @@ export async function loadLegacyClipInventory({ repository = repositoryRoot, pub
   // A review rejection remains a safety restriction even though BO can no
   // longer select a clip. It must be restored explicitly before a Lab import.
   for (const clip of clips) if (neverAgain?.[clip.id]) { clip.available = false; clip.reviewStatus = 'Never again'; }
-  const legacy = Object.entries(bo.clipAssignments ?? {}).flatMap(([dealerId, parts]) => Object.entries(parts).map(([part, assignment]) => {
-    const binding = { dealerId, part, clipId: assignment?.clip ?? '' };
-    const candidate = legacyBindingCandidate({ clips }, binding);
-    return { ...binding, at: assignment?.at ?? null, active: false, importable: Boolean(candidate),
-      reason: candidate ? 'exakt dealer och situation; kräver explicit import och sparning i Lab' : 'saknar säker exakt motsvarighet; endast äldre granskningsdata' };
-  }));
-  return { source: 'existing-media-registers', clips, legacy, defaults: DEFAULTS, actualPlayback: false,
+  return { source: 'existing-media-registers', clips, defaults: DEFAULTS, actualPlayback: false,
     ...(native ? {reviewSafetyVerified:true} : {}) };
 }
 
 export async function legacyClipControls(project, options) {
   const inventory = await loadLegacyClipInventory(options);
-  return { ...inventory, runtime: resolveLegacyClipPolicy(project, inventory), editor: 'Backoffice/Lab', legacyWrites: false,
-    routes: LEGACY_DEALERS.map(dealerId => ({ dealerId, engineRoute: `/?dealer=${dealerId}`, studioRoute: dealerId === 'astrid' ? '/?dealer=astrid&presentation=local' : null,
-      policy: dealerId === 'astrid' ? 'mediaPolicy/idlePolicy för presentation=local; legacyClipPolicy för originalmotorn' : 'legacyClipPolicy för originalmotorn', reload: 'Ladda om spelfliken mellan händer efter sparning.' })) };
+  return { ...inventory, runtime: resolveLegacyClipPolicy(project, inventory), editor: 'Backoffice/Lab', legacyWrites: false };
 }

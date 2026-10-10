@@ -10,12 +10,14 @@ export interface PresentationRoomContext {
 }
 export type PresentationRoomCapability = { schemaVersion: 1; registeredDealerIds: readonly ['nora']; compositing: 'per-clip' }
   | { schemaVersion: 2; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2' }
-  | { schemaVersion: 3; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2'; registeredDealerMode: 'saved-registry-idle-v1'; frozenDealerIdle: 'operator-package-v2' };
+  | { schemaVersion: 3; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2'; registeredDealerMode: 'saved-registry-idle-v1'; frozenDealerIdle: 'operator-package-v2' }
+  | { schemaVersion: 4; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2'; registeredDealerMode: 'saved-registry-idle-v1'; frozenDealerIdle: 'operator-package-v2'; frozenDealerEvents: 'operator-package-v3' };
 export interface PresentationRoomPreflight {
   ok: true; operator: PresentationRoomOperator; presentationLaneId: string;
   projectRevision: string; administrationRevision: string; packageRevision: number | null;
   ready: boolean; reason: null | 'studio_presentation_runtime_update_required' | 'presentation_lane_incompatible';
   capabilities: PresentationRoomCapability | null;
+  rooms: readonly { id: string; name: string; playUrl: string }[];
 }
 export interface PresentationRoomPayload {
   operatorId: string; presentationLaneId: string; name: string; idempotencyKey: string;

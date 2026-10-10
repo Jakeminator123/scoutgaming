@@ -21,9 +21,10 @@ function documentFeatures(kind, value) {
   const composition = Boolean(kind === 'project' && Array.isArray(value?.lanes)
     && value.lanes.some(lane => object(lane) && Object.hasOwn(lane, 'composition')));
   const rooms = Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.schemaVersion === 2));
-  const frozen = kind === 'presentation-package' && value?.schemaVersion === 2;
+  const frozen = kind === 'presentation-package' && [2, 3].includes(value?.schemaVersion);
+  const frozenEvents = kind === 'presentation-package' && value?.schemaVersion === 3;
   const generic = dealers.some(id => id !== 'nora');
-  return { required: dealers.length > 0 || composition || rooms || frozen, dealers, composition, rooms, generic, frozen };
+  return { required: dealers.length > 0 || composition || rooms || frozen, dealers, composition, rooms, generic, frozen, frozenEvents };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -41,6 +42,7 @@ function mutationFeatures(input) {
     rooms: features.some(value => value.rooms),
     generic: features.some(value => value.generic),
     frozen: features.some(value => value.frozen),
+    frozenEvents: features.some(value => value.frozenEvents),
   };
 }
 function trustedOrigin(env) {
@@ -78,6 +80,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.rooms || active.features.rooms)
       && (!features.generic || active.features.generic)
       && (!features.frozen || active.features.frozen)
+      && (!features.frozenEvents || active.features.frozenEvents)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -91,14 +94,14 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
+      const requiredVersion = features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
-        headers: { Accept: 'application/json', ...(features.generic || features.frozen ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: '3' } : {}) }, signal: AbortSignal.timeout(3000),
+        headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),
       });
       if (response.url && response.url !== endpoint) fail();
-      const v3 = features.generic || features.frozen;
-      const capabilities = await boundedCapabilities(response, v3 ? 3 : undefined);
-      if (!v3 && features.dealers.some(id => !capabilities.registeredDealerIds.includes(id))
+      const capabilities = await boundedCapabilities(response, requiredVersion);
+      if (!requiredVersion && features.dealers.some(id => !capabilities.registeredDealerIds.includes(id))
         || features.rooms && capabilities.rooms !== 'operator-owned-v2') fail();
     } catch {
       try { await response?.body?.cancel(); } catch { /* Keep only the fixed public code. */ }

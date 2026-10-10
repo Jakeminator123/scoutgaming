@@ -1,0 +1,48 @@
+import { BASE_DEALER_IDS, MAX_DEALERS, isDealerId } from '../web/dealer-identity.mjs';
+import { validateIdlePolicy } from './idle-policy.mjs';
+import { videoFitsLine } from '../lab/lib/video-intake.mjs';
+
+const fail = () => { throw Error('Ogiltig sparad dealergrundloop.'); };
+export function registeredIdleFamilyId(dealerId) {
+  if (!isDealerId(dealerId)) fail();
+  return dealerId + '/idle.ready/ready';
+}
+export function createRegisteredIdlePolicy({ dealerId, baselineVideoId, durationMs } = {}) {
+  if (BASE_DEALER_IDS.includes(dealerId)) fail();
+  return validateIdlePolicy({schemaVersion:1,familyId:registeredIdleFamilyId(dealerId),
+    base:[{videoId:baselineVideoId,weight:100,durationMs}],variants:[]});
+}
+export function registeredIdlePolicy(project, dealerId) {
+  if (dealerId === 'astrid') return project?.idlePolicy ?? null;
+  return project?.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy ?? null;
+}
+export function validateRegisteredIdlePolicies(value, { dealers, lines, requireBaseline = false } = {}) {
+  if (!Array.isArray(value) || value.length > MAX_DEALERS) fail();
+  const registered = new Set((dealers ?? []).map(row => row.id)), seen = new Set();
+  for (const row of value) {
+    if (!row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).sort().join(',') !== 'dealerId,policy'
+      || !isDealerId(row.dealerId) || BASE_DEALER_IDS.includes(row.dealerId) || !registered.has(row.dealerId) || seen.has(row.dealerId)) fail();
+    seen.add(row.dealerId);
+    validateIdlePolicy(row.policy);
+    if (row.policy.familyId !== registeredIdleFamilyId(row.dealerId)) fail();
+    const matches = (lines ?? []).filter(line => line.dealerId === row.dealerId && line.eventId === 'idle.ready');
+    const baseline = matches.length === 1 ? matches[0].variants?.find(variant => variant.id === matches[0].baselineVariantId) : null;
+    if (requireBaseline && (!baseline?.videoGenerationId || baseline.triggerIds?.length || row.policy.base[0].videoId !== baseline.videoGenerationId)) fail();
+  }
+  return value;
+}
+/** Adapt exact own idle metadata to the common live-idle/editor family contract.
+ * This inventory is only for idle; keep event selection's inventory unchanged. */
+export function registeredIdleInventory(inventory, { dealerId, policy = null } = {}) {
+  const familyId = registeredIdleFamilyId(dealerId);
+  if (policy && (validateIdlePolicy(policy).familyId !== familyId)) fail();
+  const baseIds = new Set(policy?.base.map(row => row.videoId) ?? []);
+  const videos = (inventory?.videos ?? []).filter(video => video.dealer === dealerId && video.available === true
+    && video.classification?.kind === 'idle' && (video.classification.playback ?? 'once') === 'once'
+    && videoFitsLine(video,dealerId,'idle.ready')).map(video => ({...structuredClone(video),familyId,
+      role:baseIds.has(video.id)?'standard':'variant'}));
+  const available = new Set(videos.map(row => row.id));
+  return {videos,families:[{id:familyId,dealerId,eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',
+    standardIds:(policy?.base ?? []).map(row => row.videoId).filter(id => available.has(id)),
+    variantIds:videos.filter(row => row.role==='variant').map(row => row.id)}]};
+}

@@ -1,6 +1,6 @@
 # Terminologi
 
-Aktiv ordlista, samordnad med lokal Studio-kod 9 oktober 2026. Namnen gäller
+Aktiv ordlista, samordnad med lokal Studio-kod 10 oktober 2026. Namnen gäller
 dokumentation och nya gränssnitt; produktionsstatus finns i
 [handoffen](../../docs/JOHN-HANDOFF.md) och handhavande i [guiden](README.md).
 
@@ -26,16 +26,19 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Presentation event | Presentationshändelse | Instruktion: `idle`, `deal`, `reveal`, `turn`, `settle` eller `speak`. |
 | Admin event | Administrationshändelse | Ändrad roll, konto eller publicerat paket; skiljs från spel- och presentationshändelser. |
 | Presentation director | Presentationsregissör | Ansvar för tillåtet klippurval och uppspelningsplan; ingen ny tjänst. |
-| Presentation lane | Presentation / presentationsprofil | Återanvändbar profil med dealers, klipp, lager och urvalsval. Tekniskt presentationslane; ID ändras inte när visningsnamnet översätts. |
+| Dealer | Dealer | Person med egna klipp: grundloop som vänteläge och händelseklipp som spelas när matchande spelhändelser inträffar. |
+| Table layer | Bordslager | Den visuella bordsytan. En bild ger ett statiskt bord; detta är inte ett spelrum. |
+| Background layer | Bakgrundslager | Separat bakgrund som ligger kvar under dealerbyten och händelseklipp; video loopas. |
+| Presentation lane | Presentation / presentationsprofil | Återanvändbar profil med standardval, tillåtna dealers/bord/bakgrunder, klipp och placering per format. Tekniskt presentationslane; ID ändras inte när visningsnamnet översätts. |
 | Game lane | Spellane | Spelväg med renderer och dealer. Skapa spelrum återanvänder eller skapar kompatibel spellane automatiskt; manuell redigering finns under Avancerat. |
-| Operator package | Operatörspaket / lane-paket | Bolagets publicerade presentationer med dealer, bord och bakgrund, tillåtna operatörsval, spel/bord och revision. |
+| Operator package | Partnerpaket (tekniskt operatörspaket / lane-paket) | Bolagets publicerade presentationer med dealer, bord och bakgrund, tillåtna operatörsval, spel/bord och revision. |
 | Branding | Designprofil / varumärke | Utseende och tillåtna designval. Varumärket är ingen behörighetsgräns. |
 | Layers / mask | Tre lager / mask | Bakgrund, dealer och bord respektive avgränsning av synliga bilddelar. |
 | Full-frame / chroma key | Fullbild / grönskärm | Inbakad bild respektive klipp som kan friläggas med sparade inställningar. |
 | Media asset / registry | Mediafil / mediaregister | Filens bytes respektive ID, metadata och filreferens. |
 | Display name / clipLabels | Visningsnamn | Klippets läsbara namn, skilt från filnamn och ID. |
 | Event clip | Händelseklipp | Klipp för en situation, exempelvis utdelning eller replik. |
-| Idle / base clip / idle variant | Grundloop / basklipp / variation | Grundloop och idle är samma vänteläge. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott. Astrids avancerade policy kan ha flera basklipp; en egen dealer publiceras med ett fryst basklipp. |
+| Idle / base clip / idle variant | Grundloop / basklipp / variation | Grundloop och idle är samma vänteläge. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott. Både Astrid och egna dealers kan ha ett separat sparat schema med flera basklipp och variationer. Utan eget schema används den egna dealerns enda valda grundloop. |
 | Clip set | Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
 | Default / variant | Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
 | Event group / situation | Händelsekategori / situation | Redigeringsgrupp respektive sammanhang: plats, utfall eller exakt replik. |
@@ -56,6 +59,8 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
 | Room / table | Spelrum / spelbord | Bolagsägd spelresurs som kopplar fryst presentation till en verklig spellane. De två lane-ID:na behöver inte vara lika. |
 | Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |
+| Frozen dealer events | Publicerade händelseklipp | Paket v3 fryser egna dealers sparade händelsekopplingar, grundloopschema och exakta filmer. Biblioteksklipp utan koppling eller schemaval ingår inte. V2-paket behöver återpubliceras, och runtime måste stödja v3. |
+| Dealer idle policy | Dealerns grundloopschema | Separat sparade basklipp och variationer med Automatik, OpenClaw eller Bara manuellt. Samma uppspelningsstyrning används för varje dealer. Regelstyrda idlevariationer är ännu inte anslutna. |
 
 Äldre UI-ord Eventgrupp, Linje, Trigger och Policy ska ersättas med
 **Händelsekategori, Klippuppsättning, Villkor och Urvalsregler**.
@@ -161,6 +166,6 @@ table finns kvar. Okänt, inaktivt eller främmande rum ger inte någon reserv-l
 | Område | Gäller nu |
 |---|---|
 | Bild och tal | Granska med `?dealer=<namn>&rehearsal=1`. Ändrad ljud-/videohash upphäver godkännandet. Kvitto, hash och grönt test ersätter inte visuell acceptans. |
-| Egna dealers, exempelvis Nora och Johanna | Eget registrerat basklipp krävs. Publicerat paket fryser grundloopen; ej frysta händelsefilmer hoppas över. Spelrum kopplar rätt spellane automatiskt. Kräver rätt Renderkapacitet. Live AI-chatt återstår. |
+| Egna dealers, exempelvis Nora och Johanna | Eget registrerat basklipp krävs. Paket v3 fryser grundloop, sparat eget schema och sparade händelsekopplingar. Spelrum kopplar rätt spellane automatiskt. Kräver rätt Renderkapacitet och visuell acceptans av faktiskt publicerade filmer. Live AI-chatt återstår. |
 | Tal vid inaktivitet | Textprovet skapar ingen röst eller video; produktionsacceptans återstår. Äldre zondata är separat från Sammansättningens bakgrundsfilmer. |
 | Partnerportal | Bolagsåtkomst och paketens designval finns. Spelare, transaktioner och rapporter från spelmotorn återstår. |
