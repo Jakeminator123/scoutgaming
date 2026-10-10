@@ -6,6 +6,8 @@
 
 Kodversion fd576e32a9503ba6b5638ebf2fed38bc433c80bb är committad med ordinarie fullhook PASS: 2138 tester, 2129 PASS, 9 SKIP, 0 FAIL. Arbetskopian var ren efter commit. Slutligt Lab-bygge efter BO-städningen PASS; CI och hosting verifieras separat efter push.
 
+CI för 29676bedad98192bf4169767f4f8e5a531dbf9aa stoppade på Orphan tests: två testfiler hade körts genom importer men saknades uttryckligen i runnerlistan. Listan rättas och de indirekta importerna tas bort; samma tester körs en gång var. Den fulla Lab-sviten hittade även en gammal v2-förväntan i publiceringstestet; den uppdateras till v3 med kontroll av den frysta klippkopplingen och läggs till i fullhook. Ingen produktkod ändras i rättningen.
+
 **Målbild:** N1 publicerar bolagets tillåtna dealers, bord och bakgrunder. Ett **rum** är bolagets spelbara ingång till en publicerad sammansättning och en teknisk spellane. N2 väljer inom paketet; spelaren öppnar rummets blackjack. Dealerklippet styrs separat, bakgrunden loopar eller är en bild, och bordet är statiskt. Gamla fullbildsklipp blir inte frilagda av lagringen.
 
 - Paket v3 fryser egna dealers explicita händelsekopplingar, klipp, mediahashar, kompositinställningar och valfri egen idlepolicy. Val, standardreserv och medieadresser tillhör samma publicerade dealer/rum/revision. Befintliga v1/v2 läses fortsatt.

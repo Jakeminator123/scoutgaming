@@ -216,7 +216,9 @@ async function nativeFixture({dealer='johanna'}={}){
 }
 test('native package publishing freezes Johanna own UUID and exact metadata with provider work before the bound writer',async()=>{
   const f=await nativeFixture(),prepared=await f.prepare(),offset=f.pool.calls.length;
-  const result=await f.publish(prepared);assert.equal(result.presentation.schemaVersion,2);assert.equal(result.packageRevision,1);assert.equal(f.io(),2);
+  const result=await f.publish(prepared);assert.equal(result.presentation.schemaVersion,3);assert.equal(result.packageRevision,1);assert.equal(f.io(),2);
+  assert.equal(result.presentation.playback.media[0].id,mediaId);
+  assert.equal(result.presentation.playback.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId,mediaId);
   assert.equal(result.presentation.registeredDealers[0].id,'johanna');assert.equal(result.presentation.registeredDealers[0].idle.id,mediaId);
   const writes=f.pool.calls.slice(offset);assert.equal(new Set(writes.map(row=>row.clientId)).size,1);
   assert.deepEqual(writes.find(row=>row.marker==='read-media').values.slice(0,2),[nativeScope.environment,nativeScope.workspaceId]);

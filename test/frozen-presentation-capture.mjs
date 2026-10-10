@@ -1,4 +1,3 @@
-import './frozen-dealer-events.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
