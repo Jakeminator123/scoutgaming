@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Card track review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#eee;font:14px system-ui;display:flex;min-height:100vh;justify-content:center;gap:20px}
+.stage{position:relative;height:100vh;aspect-ratio:9/16;overflow:hidden;background:#000}
+.stage>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center top}
+.stage .v{opacity:0}.game-cards{z-index:2}.dealer-layer{z-index:3;pointer-events:none}#edit{z-index:4}
+.stage.detail>*{transform:translate(calc(50% - var(--cx,50%)),calc(50% - var(--cy,50%))) scale(3);transform-origin:var(--cx,50%) var(--cy,50%)}
+#edit circle{fill:#ff2d55;fill-opacity:.25;stroke:#ff2d55;stroke-width:1;cursor:grab;vector-effect:non-scaling-stroke}#edit polygon{fill:none;stroke:#ff2d55;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
+#edit:not(.on){pointer-events:none}#edit:not(.on) circle{display:none}
+aside{padding:20px 12px;width:260px}label{display:block;margin:10px 0}button,select{padding:9px;margin:4px 0;color:inherit;background:#28332d;border:1px solid #9b895d;border-radius:7px;font:inherit}
+.row{display:flex;gap:6px}.row button{flex:1}input[type=range]{width:100%}output{display:block;margin:12px 0;font-variant-numeric:tabular-nums}
+#fixes{font:12px ui-monospace,monospace;white-space:pre-wrap;color:#c9c3af;max-height:30vh;overflow:auto}
+@media(max-width:650px){body{flex-direction:column;align-items:center;gap:0}.stage{height:70vh}aside{width:100%}}
+</style>
+<section class="stage" id="stage"><img class="still" alt=""><video class="v on" id="film" muted playsinline preload="auto"></video>
+<svg id="gameCards" class="game-cards" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet"></svg>
+<svg id="edit" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet"><polygon id="quad"/><g id="handles"></g></svg></section>
+<aside><h2>Card track review</h2><p>The game's own dealer layer and card renderer on the dealer's take, frame by frame. No round or wallet is touched.</p>
+<label>Take <select id="take"></select></label>
+<label>Frame <input id="scrub" type="range" min="0" max="38" step="1" value="0"></label>
+<div class="row"><button id="prev">◀ Frame</button><button id="next">Frame ▶</button></div>
+<div class="row"><button id="play">Play</button><button id="half">Half speed</button></div>
+<label><input id="detail" type="checkbox" checked> Close-up on the card</label>
+<label><input id="outline" type="checkbox"> Show the track (red)</label>
+<label><input id="editing" type="checkbox"> Drag corners to fix this frame</label>
+<output id="frame">Loading…</output>
+<div class="row"><button id="download">Download fixes</button><button id="reset">Undo frame</button></div>
+<div id="fixes"></div></aside>
+<script type="module" src="./dealer-cards.js"></script></html>
