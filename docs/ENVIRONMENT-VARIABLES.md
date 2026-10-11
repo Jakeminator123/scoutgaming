@@ -82,6 +82,8 @@ kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
 mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
 Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
 
+**Verifiering 11 oktober 2026:** Kopplingarna i huvudkopian och arbetskopian 74b4 pekar nu på team `scoutgaming`, `team_Scxorb9qtZHjNae1YEQnFCaT`, och projekt `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`. Root/Lab har identiska lokala env-filer med 56 namn, med privata backuper av tidigare filer och länkar. Vercel production-pull returnerade 59 namn men bara 29 icke-tomma värden; de andra 30 kan inte användas som bevis på hemlighetsparitet. Tomt molnsvar ersatte inte sju befintliga lokala värden. Andra otillgängliga värden lämnades osatta, och systemnycklar samt oanvända LLM_LOGIN_* togs inte med i de aktiva filerna. De privata snapshotsen för alla tre miljöerna och jämförelsekvittot finns under lab/data/platform-private/cloud-sync-audit; de ska inte läggas i Git. Lokal utveckling fortsätter via den isolerade startaren, vars barn saknar produktions-game-URL och postgresläge. Full produktions-env lokalt och fungerande modell-/medieanrop är inte verifierade. Vercel-pluginens gamla scope ger 403 i scoutgaming; CLI har verifierad åtkomst. Neon-ägaren är nu liveverifierat "Vercel: scoutgaming", `org-green-butterfly-00780270`; organisationen i stycket nedan är den historiska uppgiften före flytten.
+
 Var databaserna bor (bekräftat 8 oktober 2026 via Neon MCP): ett enda Neon-projekt,
 **`croupier-production`** (omdöpt 8 oktober 17:15 från `croupier-astrid-background-zones-db`;
 id `wandering-hill-60561912`, gren `main`, Neon-organisationen "Vercel: jakeminator123's
