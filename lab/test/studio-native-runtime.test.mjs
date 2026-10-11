@@ -54,8 +54,8 @@ test('bundled source paths load all six migrations without asset URLs', async ()
   const expected = await loadStudioMigrations();
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
-  assert.equal(actual.length, 6);
-  assert.equal(actual.at(-1).file, '006-operator-audit.sql');
+  assert.equal(actual.length, 7);
+  assert.equal(actual.at(-1).file, '007-partner-branding-drafts.sql');
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 
