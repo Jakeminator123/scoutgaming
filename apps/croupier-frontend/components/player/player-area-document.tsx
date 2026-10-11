@@ -47,8 +47,9 @@ export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
       {model.surface === 'lobby' ? <section className="mt-9 rounded-2xl border border-white/15 bg-white/5 p-8" aria-labelledby="blackjack-title">
         <p className="text-sm uppercase tracking-widest text-emerald-300">{model.clientLabel}</p>
         <h2 id="blackjack-title" className="mt-4 text-2xl font-semibold">Blackjack</h2>
-        <p className="mt-3 text-slate-300">Välj ett publicerat rum, dealer och miljö. Ett rum är din ingång till spelet; valen kommer från spelbolagets paket.</p>
+        <p className="mt-3 text-slate-300">Välj spelbolag, publicerat rum, dealer och miljö. Valen kommer från bolagets publicerade paket.</p>
         <PlayerLobbyOperator initial={model.operator} playHref={model.primary?.href ?? '/play/blackjack'} playLabel={model.primary?.label ?? 'Spela Blackjack'} directPlay={!model.primary?.href.startsWith('/player-login')} />
+        <p className="mt-7 border-t border-white/15 pt-5 text-sm text-slate-400">Administratör? <a href="/control/preview" className="text-emerald-300 underline">Provspela i Sammansättning</a> med separat testsaldo.</p>
       </section> : <PrimaryAction primary={model.primary} />}
       {model.pills.length ? <p className="mt-6 flex flex-wrap gap-2">{model.pills.map(pill => <span key={pill.label} className="rounded-full border border-white/15 px-3 py-1 text-sm text-slate-300">{pill.label} · {pill.status}</span>)}</p> : null}
     </div>

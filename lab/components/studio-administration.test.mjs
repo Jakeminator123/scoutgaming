@@ -40,7 +40,7 @@ class TestFormData {
 }
 
 function harness() {
-  const hooks = []; let cursor = 0;
+  const hooks = []; let cursor = 0, generatedKeys = 0;
   const listeners = new Map(); const pending = [];
   const fakeReact = {
     ...React,
@@ -70,6 +70,7 @@ function harness() {
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
     module, exports: module.exports, window, DOMException, AbortController, URL,
+    crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
     require: name => name === 'react' ? fakeReact
@@ -81,6 +82,8 @@ function harness() {
   });
   return {
     ...module.exports, listeners, window,
+    get generatedKeys() { return generatedKeys; },
+    renderLane(props) { cursor = 0; return module.exports.TechnicalLaneCreate(props); },
     render(props) { cursor = 0; return module.exports.StudioAdministration(props); },
     effects() { while (pending.length) pending.shift()(); },
     unmount() { for (const hook of hooks) hook?.cleanup?.(); },
@@ -111,7 +114,9 @@ function status(expected) { return error => error?.status === expected; }
 const actor = role => ({ username: 'owner@example.test', role });
 const allActions = contract.STUDIO_ADMIN_ENDPOINTS.map(endpoint => `${endpoint.method} ${endpoint.action}`);
 const available = (method, action) => allActions.includes(`${method} ${action}`);
+const savedDealers = ['vera','astrid','amira','mei','johanna'].map(id => ({ id, label: id[0].toUpperCase() + id.slice(1) }));
 const config = () => ({
+  savedDealers,
   revision: 'studio-v1', tiers: { classic: 'vera', high: 'astrid', vip: 'mei' },
   rooms: [{ id: 'room-one', name: 'Test room', tier: 'classic', state: 'preview' }],
   pitboss: { payout10x: true, streak5: false, randomWalkMin: 45 },
@@ -673,8 +678,9 @@ test('retired tournament, pitboss and empty legacy galleries are absent while so
 
 test('secondary lane and account forms remain functional inside closed disclosures', () => {
   const h = harness();
-  for (const [group, action] of [['tables', 'Lägg till lane med porträttvideo'], ['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
-    const tree = h.StudioAdministrationView(viewProps('admin', group));
+  for (const [group, action] of [['tables', 'Lägg till spelkonfiguration'], ['accounts', 'Skapa spelarkonto'], ['accounts', 'Ändra spelarstatus'], ['partners', 'Skapa partnernyckel']]) {
+    let tree = h.StudioAdministrationView(viewProps('admin', group));
+    if (group === 'tables') tree = h.renderLane(nodes(tree, node => node.type === h.TechnicalLaneCreate)[0].props);
     const disclosure = nodes(tree, node => node.type === 'details' && buttons(node, action).length)[0];
     assert.ok(disclosure, action); assert.notEqual(disclosure.props.open, true);
     assert.ok(nodes(disclosure, node => node.type === 'form' && node.props.method === 'post').length);
@@ -963,4 +969,76 @@ test('password command is single dispatch, never stores the password and does no
   assert.equal(writes,1);assert.equal(Object.hasOwn(body,'password'),false);
   assert.doesNotMatch(renderToStaticMarkup(tree),/fixture-new-password|PRIVATE SERVER TEXT/);
   assert.match(renderToStaticMarkup(tree),/tillfälligt otillgänglig/);h.unmount();
+});
+
+
+const laneCreateProps = overrides => ({ savedDealers, lanes:gameLanes.GAME_LANES, activeDealer:'astrid', revision:'studio-v1', busy:false, command(){ throw Error('unexpected write'); }, ...overrides });
+test('technical lane creation shows saved dealer labels and no free dealer or lane ID in the ordinary form', () => {
+  const h=harness(), tree=h.renderLane(laneCreateProps()), html=renderToStaticMarkup(tree);
+  assert.match(html, /Lägg till teknisk spelkonfiguration/);assert.match(html, /<select name="dealer"/);assert.match(html, /<option value="johanna">Johanna/);
+  assert.match(html, /<option value="astrid" selected="">Astrid/);
+  assert.doesNotMatch(html, /<input[^>]*name="(?:id|dealer|restoreId)"/);
+  assert.match(html, /Återställ ett tidigare tekniskt ID/);assert.equal(h.generatedKeys,0,'rendering must not mint IDs');
+  for (const role of ['reader','operator','staff']) {
+    const view=h.StudioAdministrationView(viewProps(role,'tables'));
+    assert.equal(nodes(view,node=>node.type===h.TechnicalLaneCreate).length,0);
+  }
+});
+
+test('automatic technical ID is generated once, ignores unsolicited restore fields and survives retry until successful reset', () => {
+  const h=harness(), calls=[], props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
+  let tree=h.renderLane(props); const form=new Form({name:'Johannas miljö',dealer:'johanna',restoreId:'unrequested-override'});
+  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  tree=h.renderLane(props);nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  assert.equal(h.generatedKeys,1);assert.equal(calls.length,2);assert.equal(calls[0].body.definition.id,calls[1].body.definition.id);
+  assert.match(calls[0].body.definition.id,/^lane-[a-f0-9-]+$/);assert.notEqual(calls[0].body.definition.id,form.fields.restoreId);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{action:'game-lanes/create',body:{definition:{schemaVersion:1,id:'lane-10000000-0000-4000-8000-000000000001',label:'Johannas miljö',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'},expectedRevision:'studio-v1'}});
+  nodes(tree,node=>node.type==='form')[0].props.onReset();tree=h.renderLane(props);
+  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  assert.equal(h.generatedKeys,2);assert.notEqual(calls[2].body.definition.id,calls[0].body.definition.id);
+});
+
+test('exact prior ID restoration is explicit, validated, scoped to saved dealers and disabled while busy', () => {
+  const h=harness(),calls=[],props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
+  let tree=h.renderLane(props);nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
+  tree=h.renderLane(props);assert.equal(nodes(tree,node=>node.type==='input'&&node.props.name==='restoreId').length,1);
+  for(const fields of [{name:'Repair',dealer:'foreign',restoreId:'old-room-lane'},{name:'Repair',dealer:'amira',restoreId:'mobile-phone'},{name:'Repair',dealer:'amira',restoreId:'../../bad'}]){
+    nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:new Form(fields)});
+  }
+  assert.equal(calls.length,0);assert.equal(h.generatedKeys,0);
+  const form=new Form({name:'Återställd Amira',dealer:'amira',restoreId:'room-lane-9c162457d38b353be86e2731'});
+  nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  assert.equal(calls.length,1);assert.equal(calls[0].body.definition.id,form.fields.restoreId);assert.equal(calls[0].body.definition.mediaCollection,'amira-presentation');
+  tree=h.renderLane({...props,busy:true});nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
+  assert.equal(calls.length,1);
+});
+
+test('unavailable or malformed saved dealer metadata never produces guessed selectable dealers', () => {
+  for(const data of [undefined,null,[],savedDealers.slice(0,3),[...savedDealers,savedDealers[0]],savedDealers.map(row=>({...row,private:'hidden'})),savedDealers.map(row=>({...row,label:'bad\nlabel'}))]){
+    const h=harness(),tree=h.renderLane(laneCreateProps({savedDealers:data}));
+    assert.equal(nodes(tree,node=>node.type==='form').length,0);assert.match(renderToStaticMarkup(tree),/Dealerlistan.*kunde inte läsas/);
+    assert.equal(h.generatedKeys,0);
+  }
+});
+
+test('technical ID generation handles collisions and invalid UUID source without inventing a fallback', () => {
+  const h=harness(),keys=['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002'];
+  assert.equal(h.newTechnicalLaneId([{id:'lane-'+keys[0]}],()=>keys.shift()),'lane-10000000-0000-4000-8000-000000000002');
+  assert.throws(()=>h.newTechnicalLaneId([],()=> 'bad'));
+  assert.throws(()=>h.newTechnicalLaneId([{id:'lane-10000000-0000-4000-8000-000000000001'}],()=> '10000000-0000-4000-8000-000000000001'));
+});
+
+test('successful technical creation resets only its own form after authoritative reload and blocks double writes', async () => {
+  const h=harness();let writes=0;
+  const props={apiBase:'/api/admin',availableActions:allActions,initialGroup:'tables',session:async()=>actor('admin'),fetchImpl:async(url,init)=>{
+    if(init.method==='POST'){writes++;return reply({ok:true});}
+    return reply(config());
+  }};
+  h.render(props);h.effects();await flush();let tree=h.render(props),view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
+  const own=new Form(),other=new Form({state:'pending'});view.props.onDirty(own);view.props.onDirty(other);
+  const body={definition:{...gameLanes.GAME_LANES[0],id:'new-generated-lane'},expectedRevision:'studio-v1'};
+  view.props.command('game-lanes/create',body,own);view.props.command('game-lanes/create',body,own);
+  await flush();tree=h.render(props);
+  assert.equal(writes,1);assert.equal(own.resets,1);assert.equal(other.resets,0);
+  assert.match(renderToStaticMarkup(tree),/Osparade formulärfält/);h.unmount();
 });

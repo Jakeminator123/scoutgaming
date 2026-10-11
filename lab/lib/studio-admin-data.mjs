@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { registeredDealerIds } from '../../web/public/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
@@ -47,7 +48,18 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
       return { ok: true, revision: saved.revision };
     });
   }
-  register('GET', 'config', async () => { const saved = await config(); return { ...saved.value, ...gameLaneConfiguration(saved.value), revision: saved.revision }; });
+  async function readSavedDealers() {
+    try {
+      const saved = await repository.readDocument('project');
+      registeredDealerIds(saved?.value);
+      if (saved.value.dealers.some(dealer => !text(dealer.label, 120) || dealer.label !== dealer.label.trim())) return null;
+      return saved.value.dealers.map(({ id, label }) => ({ id, label }));
+    } catch { return null; }
+  }
+  register('GET', 'config', async () => {
+    const [saved, savedDealers] = await Promise.all([config(), readSavedDealers()]);
+    return { ...saved.value, ...gameLaneConfiguration(saved.value), revision: saved.revision, savedDealers };
+  });
   change('game-lane', ['lane'], (value, body) => {
     const lanes = gameLaneConfiguration(value);
     if (!isGameLane(body.lane, lanes.gameLanes)) fail();

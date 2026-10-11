@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {platformConfiguration,platformBackendHeaders,launchHasPartnerClaim} from './platform-routing.mjs';
+import {platformConfiguration,platformBackendHeaders,launchHasPartnerClaim,blackjackLobbyDestination} from './platform-routing.mjs';
 import {gameEntryEnabled,gameEntryRedirect,approvedGameQuery,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
 import {gameLaneSelection} from '../../../web/public/game-lanes.mjs';
 import {requestedOperator,OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
@@ -63,7 +63,7 @@ export async function platformUiDocument(request, {env = process.env, directory 
   const config = platformConfiguration(env);
   const url = new URL(request.url);
   // The public address changes; the existing session/lane/media contract does not.
-  const path = config?.unifiedUi && url.pathname === '/play/blackjack' ? '/blackjack' : url.pathname;
+  const path = config?.unifiedUi && ['/play/blackjack','/play/blackjack/'].includes(url.pathname) ? '/blackjack' : url.pathname;
   const legacy = legacyStudioLocation(url);
   const headers = {'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer'};
   if (legacy) {
@@ -75,6 +75,8 @@ export async function platformUiDocument(request, {env = process.env, directory 
     : canonical && ['/player-login','/player-login/'].includes(path) ? 'blackjack.html' : DOCUMENTS.get(path);
   if (!config || !file) return new Response(null, {status: 404, headers});
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, {status: 405, headers: {...headers, Allow: 'GET, HEAD'}});
+  const lobby = blackjackLobbyDestination(url,config);
+  if (lobby) return new Response(null,{status:303,headers:{...headers,Location:lobby}});
   const destination = gameEntryRedirect(url,env);
   if (destination) return new Response(null,{status:307,headers:{...headers,Location:destination}});
   let selection;

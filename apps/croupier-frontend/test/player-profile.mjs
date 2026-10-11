@@ -121,7 +121,10 @@ test('legacy stored choices remain readable while the lobby uses verified room a
 test('profile and public operator paths stay on the game backend', () => {
   assert.equal(backendPlatformPath('/api/profile'), true);
   assert.equal(backendPlatformPath('/api/operators/sg-test'), true);
-  assert.equal(backendPlatformPath('/api/operators'), false);
+  assert.equal(backendPlatformPath('/api/operators'), true);
+  for (const path of ['/api/operators/', '/api/operators/private/users', '/api/operators%2f', '/api/operator']) {
+    assert.equal(backendPlatformPath(path), false, path);
+  }
   assert.equal(backendPlatformPath('/api/operators/sg-test/name'), false);
   assert.equal(backendPlatformPath('/api/operators/SG-test'), false);
 });

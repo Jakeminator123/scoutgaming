@@ -3,7 +3,7 @@
 import {useEffect,useState,type MouseEvent} from 'react';
 import {OPERATOR_STORAGE_KEY,clearedOperatorLocation,operatorChoice} from '@/lib/player-operator.mjs';
 import {readChoices} from '@/lib/player-choices.mjs';
-import {loadRoomCatalogue,rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection} from '@/lib/player-lobby.mjs';
+import {loadOperatorCatalogue,loadRoomCatalogue,rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection,type OperatorCatalogueResult} from '@/lib/player-lobby.mjs';
 import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../web/public/operator-rooms-contract.mjs';
 
 type Operator={slug:string;name:string};
@@ -71,12 +71,37 @@ export function PlayerRoomCatalogue({catalog,stored={},directPlay}:{catalog:Publ
   </p>;
 }
 
+type OperatorDirectoryState=OperatorCatalogueResult|{status:'loading'};
+export function PlayerOperatorChooser({state,current,onChoose,onRetry}:{
+  state:OperatorDirectoryState;current:Operator|null;onChoose:(slug:string)=>void;onRetry:()=>void;
+}) {
+  if(state.status==='loading')return <p role="status" className="mt-4 text-slate-300">Hämtar spelbolag…</p>;
+  if(state.status==='unavailable')return <div className="mt-4"><p role="alert" className="text-amber-200">Spelbolagen kan inte hämtas just nu.</p>
+    <button type="button" className="mt-3 rounded-lg border border-white/25 px-4 py-2" onClick={onRetry}>Hämta bolagen igen</button></div>;
+  if(!state.operators.length)return <p role="status" className="mt-4 text-slate-300">Inga spelbolag har öppna spelrum ännu.</p>;
+  return <label className="mt-4 block text-sm text-slate-200">Välj spelbolag
+    <select className={selectClass} value={current?.slug??''} onChange={event=>onChoose(event.target.value)}>
+      <option value="" disabled>Välj ett bolag för att se dess spelrum</option>
+      {current&&!state.operators.some(row=>row.slug===current.slug)?<option value={current.slug}>{current.name}</option>:null}
+      {state.operators.map(row=><option key={row.slug} value={row.slug}>{row.name}</option>)}
+    </select>
+  </label>;
+}
+
 export function PlayerLobbyOperator({initial,directPlay}:{
   initial:Operator|null;playHref:string;playLabel:string;directPlay:boolean;
 }) {
   const [state,setState]=useState<CatalogueState>({status:initial?'loading':'unscoped',slug:initial?.slug??''});
   const [stored,setStored]=useState<Partial<RoomSelection>>({});
   const [retry,setRetry]=useState(0);
+  const [directory,setDirectory]=useState<OperatorDirectoryState>({status:'loading'});
+  useEffect(()=>{
+    const controller=new AbortController();let active=true;
+    setDirectory({status:'loading'});
+    void loadOperatorCatalogue({signal:controller.signal}).then(result=>{if(active)setDirectory(result);});
+    return()=>{active=false;controller.abort();};
+  },[retry]);
+
   useEffect(()=>{
     let savedOperator:string|null=null;
     try{savedOperator=window.localStorage.getItem(OPERATOR_STORAGE_KEY);}catch{}
@@ -92,16 +117,21 @@ export function PlayerLobbyOperator({initial,directPlay}:{
     });
     return()=>{active=false;controller.abort();};
   },[initial?.slug,retry]);
+  function chooseOperator(slug:string){
+    if(directory.status!=='ready'||!directory.operators.some(row=>row.slug===slug))return;
+    window.location.assign('/play?'+new URLSearchParams({operator:slug}).toString());
+  }
   function clearOperator(){
     try{window.localStorage.removeItem(OPERATOR_STORAGE_KEY);}catch{}
     window.location.assign(clearedOperatorLocation(window.location.href));
   }
   const operator=state.status==='ready'?state.catalog.operator:initial?.slug===state.slug?initial:null;
   return <div className="mt-6">
+    <PlayerOperatorChooser state={directory} current={operator} onChoose={chooseOperator} onRetry={()=>setRetry(value=>value+1)} />
     {operator?<p className="text-slate-200" data-operator>Spelar hos: <strong>{operator.name}</strong></p>:null}
-    {state.slug?<button type="button" className="mt-2 text-sm text-slate-400 underline" onClick={clearOperator}>Lämna bolagets lobby</button>:null}
+    {state.slug?<button type="button" className="mt-2 text-sm text-slate-400 underline" onClick={clearOperator}>Visa alla bolag</button>:null}
     {state.status==='loading'?<p role="status" className="mt-6 text-slate-300">Hämtar publicerade spelrum…</p>:null}
-    {state.status==='unscoped'?<p role="status" className="mt-6 rounded-xl border border-white/15 p-5 text-slate-300">Öppna länken till ditt spelbolags lobby för att se dess rum och välja dealer.</p>:null}
+    {state.status==='unscoped'?<p role="status" className="mt-6 rounded-xl border border-white/15 p-5 text-slate-300">Välj spelbolag ovan. Sedan väljer du ett publicerat rum, dealer och miljö.</p>:null}
     {state.status==='not-found'?<p role="status" className="mt-6 text-slate-300">Det här spelbolagets lobby är inte tillgänglig. Kontrollera länken från spelbolaget.</p>:null}
     {state.status==='unavailable'?<div className="mt-6"><p role="alert" className="text-amber-200">Spelrummen kan inte hämtas just nu. Försök igen om en stund.</p><button type="button" className="mt-3 rounded-lg border border-white/25 px-4 py-2" onClick={()=>setRetry(value=>value+1)}>Försök igen</button></div>:null}
     {state.status==='ready'?<PlayerRoomCatalogue catalog={state.catalog} stored={stored} directPlay={directPlay}/>:null}

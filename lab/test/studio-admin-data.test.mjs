@@ -16,7 +16,12 @@ function fixture() {
     return { all: async () => state.rows, get: async () => ({ id: 7, username: 'someone', n: 1 }),
       run: async (...args) => { state.writes.push({ sql, args }); return { changes: 1 }; } };
   }, transaction: work => work() };
-  const repository = { readDocument: async kind => kind === 'project' ? {value:state.project??createSeedProject()} : structuredClone(state.document), async saveDocument(kind, options) {
+  const repository = { readDocument: async kind => {
+    if (kind !== 'project') return structuredClone(state.document);
+    state.projectReads = (state.projectReads ?? 0) + 1;
+    if (state.projectReadError) throw Error('private database details');
+    return state.project === null ? null : {value:state.project??createSeedProject()};
+  }, async saveDocument(kind, options) {
     state.writes.push({ kind, options });
     if (state.document.revision !== options.expectedRevision) throw Object.assign(Error('Conflict'), { statusCode: 409 });
     state.document = { revision: 'studio-new', value: options.value }; return state.document;
@@ -176,5 +181,33 @@ test('removing a game lane referenced by any existing room is rejected before wr
     assert.deepEqual(f.state.document,before);assert.deepEqual(f.state.writes,[]);
     await f.call('POST','game-lanes/remove',{lane:'spare',replacementLane:'mobile-phone',expectedRevision:'studio-original'});
     assert.equal(f.state.document.value.gameLane,'mobile-phone');assert.deepEqual(f.state.document.value.rooms,before.value.rooms);
+  }
+});
+
+
+test('config exposes only validated saved dealer IDs and labels after authorization without writing', async () => {
+  const f=fixture();f.state.project=addDealer(createSeedProject(),'johanna','Johanna');
+  f.state.project.dealers.find(row=>row.id==='johanna').privateNotes='private metadata';
+  const result=await f.call('GET','config');
+  assert.deepEqual(result.savedDealers,f.state.project.dealers.map(({id,label})=>({id,label})));
+  assert.doesNotMatch(JSON.stringify(result.savedDealers),/private metadata|privateNotes|lines|voice/);
+  assert.deepEqual(f.state.writes,[]);
+  const before=f.state.projectReads;
+  await assert.rejects(f.data.handlers.get('GET /studio/api/admin/config')({...f.context(),actor:{user:'player',role:'player'}}),e=>e.statusCode===403);
+  assert.equal(f.state.projectReads,before);
+});
+
+test('missing, unreadable or invalid saved dealer registry is explicit null with no seeded fallback or raw error', async () => {
+  for(const mode of ['missing','unreadable','duplicate','missing-base','label','id']){
+    const f=fixture();f.state.project=createSeedProject();
+    if(mode==='missing')f.state.project=null;
+    if(mode==='unreadable')f.state.projectReadError=true;
+    if(mode==='duplicate')f.state.project.dealers.push({...f.state.project.dealers[0]});
+    if(mode==='missing-base')f.state.project.dealers.pop();
+    if(mode==='label')f.state.project.dealers[0].label='Bad\nlabel';
+    if(mode==='id')f.state.project.dealers[0].id='constructor';
+    const result=await f.call('GET','config');
+    assert.equal(result.savedDealers,null,mode);assert.equal(result.revision,'studio-original');
+    assert.doesNotMatch(JSON.stringify(result),/private database details/);assert.deepEqual(f.state.writes,[]);
   }
 });

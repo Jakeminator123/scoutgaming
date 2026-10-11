@@ -202,3 +202,11 @@ test('Studio preview HTML, commands and media require signed ingress and preserv
   for(const path of [base+'/chat',base+'/deposit',base+'/videos/../private',base+'/layers/'+id+'/more','/studio-preview/'+id+'/extra'])
     assert.equal(vercelIngressRequest(request(path),ingress).accepted,false,path);
 });
+test('published company directory uses the exact existing signed public transport without exposing adjacent APIs',()=>{
+  const accepted=vercelIngressRequest({...request('/api/operators'),method:'GET'},ingress);
+  assert.equal(accepted.accepted,true);assert.equal(accepted.transported,true);
+  assert.equal(vercelIngressRequest({...request('/api/operators'),method:'GET',headers:{host:'isolated.onrender.com'}},ingress).accepted,false);
+  for(const path of ['/api/operators/','/api/operators/private/users','/api/operator','/api/operators%2f']){
+    assert.equal(vercelIngressRequest({...request(path),method:'GET'},ingress).accepted,false,path);
+  }
+});

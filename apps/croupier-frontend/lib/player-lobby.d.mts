@@ -5,3 +5,7 @@ export function loadRoomCatalogue(slug:string,options?:{fetchImpl?:typeof fetch;
 export function roomSelection(room:PublicOperatorRoom,preferred?:Partial<RoomSelection>):RoomSelection|null;
 export function roomLaunch(catalog:PublicOperatorRooms,roomId:string,preferred:RoomSelection,options?:{directPlay?:boolean}):{choices:RoomSelection;href:string}|null;
 export function rememberRoomSelection(storage:Pick<Storage,'getItem'|'setItem'|'removeItem'>,operator:string,selection:RoomSelection):boolean;
+
+export type PublicOperator={slug:string;name:string};
+export type OperatorCatalogueResult={status:'ready';operators:PublicOperator[]}|{status:'unavailable'};
+export function loadOperatorCatalogue(options?:{fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<OperatorCatalogueResult>;

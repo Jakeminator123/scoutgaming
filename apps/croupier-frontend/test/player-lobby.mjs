@@ -6,7 +6,7 @@ import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import {validatePublicOperatorRooms} from '../../../web/public/operator-rooms-contract.mjs';
-import {loadRoomCatalogue,roomSelection,roomLaunch,rememberRoomSelection} from '../lib/player-lobby.mjs';
+import {loadOperatorCatalogue,loadRoomCatalogue,roomSelection,roomLaunch,rememberRoomSelection} from '../lib/player-lobby.mjs';
 
 const table1='11111111-1111-4111-8111-111111111111',table2='22222222-2222-4222-8222-222222222222';
 const background1='33333333-3333-4333-8333-333333333333',background2='44444444-4444-4444-8444-444444444444';
@@ -89,7 +89,7 @@ function load(path){
  vm.runInThisContext('(function(require,module,exports){'+source+'\n})',{filename})(localRequire,module,module.exports);
  return module.exports;
 }
-const {PlayerRoomCatalogue}=load(resolve(root,'components/player/player-lobby-operator.tsx'));
+const {PlayerOperatorChooser,PlayerRoomCatalogue}=load(resolve(root,'components/player/player-lobby-operator.tsx'));
 
 test('actual lobby room cards use registered names and permitted environment options before play',()=>{
  const html=renderToStaticMarkup(React.createElement(PlayerRoomCatalogue,{catalog:fixture(),directPlay:true}));
@@ -128,4 +128,46 @@ test('nullable layer defaults render explicit empty options and never choose the
  const cleared=roomSelection(room,{...explicit,tableAsset:'',background:''});
  assert.deepEqual(cleared,{dealer:'nora'});
  assert.deepEqual(roomLaunch(catalog,room.id,cleared).choices,{dealer:'nora'});
+});
+
+test('operator chooser loads only the minimal published directory and fails closed on private or ambiguous data',async()=>{
+  const operators=[{slug:'johns-spelbolag',name:'Johns spelbolag'},{slug:'sg-test',name:'SG test'}],calls=[];
+  const loaded=await loadOperatorCatalogue({fetchImpl:async(path,options)=>{calls.push({path,options});return Response.json({operators});}});
+  assert.deepEqual(loaded,{status:'ready',operators});
+  assert.equal(calls[0].path,'/api/operators');assert.equal(calls[0].options.cache,'no-store');assert.equal(calls[0].options.redirect,'error');
+  assert.deepEqual(await loadOperatorCatalogue({fetchImpl:async()=>Response.json({operators:[]})}),{status:'ready',operators:[]});
+  for(const payload of [
+    {operators:[{...operators[0],membership:'private'}]}, {operators:[operators[0],operators[0]]},
+    {operators:[{slug:'../control',name:'Forged'}]}, {operators,players:[]}, {operators:null},
+    {operators:new Array(1001).fill(operators[0])},
+  ])assert.deepEqual(await loadOperatorCatalogue({fetchImpl:async()=>Response.json(payload)}),{status:'unavailable'});
+  for(const status of [401,404,503])assert.deepEqual(await loadOperatorCatalogue({fetchImpl:async()=>new Response('private failure',{status})}),{status:'unavailable'});
+  assert.deepEqual(await loadOperatorCatalogue({fetchImpl:async()=>{throw Error('offline');}}),{status:'unavailable'});
+});
+
+test('actual operator chooser distinguishes loading, empty, unavailable and explicit selection without starting a game',()=>{
+  const render=state=>renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:null,onChoose(){},onRetry(){}}));
+  assert.match(render({status:'loading'}),/role="status".*Hämtar spelbolag/);
+  assert.match(render({status:'ready',operators:[]}),/Inga spelbolag har öppna spelrum/);
+  assert.match(render({status:'unavailable'}),/role="alert".*Spelbolagen kan inte hämtas/);
+  assert.match(render({status:'unavailable'}),/>Hämta bolagen igen</);
+  const state={status:'ready',operators:[{slug:'johns-spelbolag',name:'Johns spelbolag'},{slug:'sg-test',name:'SG test'}]};
+  const html=render(state);assert.match(html,/Välj spelbolag/);assert.match(html,/<option value="" disabled="" selected="">/);
+  assert.match(html,/<option value="sg-test">SG test/);assert.doesNotMatch(html,/<a |player_session|bo_jwt/);
+  const scoped=renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:state.operators[1],onChoose(){},onRetry(){}}));
+  assert.match(scoped,/<option value="sg-test" selected="">SG test/);
+  const choices=[];const element=PlayerOperatorChooser({state,current:null,onChoose:slug=>choices.push(slug),onRetry(){}});
+  const select=React.Children.toArray(element.props.children).find(child=>child.type==='select');
+  select.props.onChange({target:{value:'sg-test'}});
+  assert.deepEqual(choices,['sg-test']);
+});
+
+test('lobby includes a separate administrator preview link without changing the published room launch',()=>{
+  const {PlayerAreaDocument}=load(resolve(root,'components/player/player-area-document.tsx'));
+  const model={surface:'lobby',eyebrow:'Spela',title:'Spellobby',intro:'Välj bolag',notice:null,fields:[],pills:[],links:[],
+    sentence:null,primary:{href:'/player-login',label:'Spela Blackjack'},empty:null,historyLines:[],clientLabel:'Spelklient',
+    profileForm:null,profileNote:null,operator:null};
+  const html=renderToStaticMarkup(React.createElement(PlayerAreaDocument,{model}));
+  assert.match(html,/href="\/control\/preview"[^>]*>Provspela i Sammansättning/);
+  assert.match(html,/separat testsaldo/);assert.doesNotMatch(html,/studio-preview\/[a-f0-9]|api\/auth\/bo/);
 });
