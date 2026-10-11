@@ -1,6 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
 ## Börja här: överlämning 11 oktober 2026
+### Johns N2-skiss: konkret integrationsplan, 11 oktober 2026
+
+Befintliga `docs/CLOUD-MIGRATION.md` är uppdaterad med elva öppna delsteg JN2-A–K, vart och ett med frontend, backend, databas, beroenden och verifiering. Ingen ny tracker. Första leveransen är samma adminlogin till riktiga bolag i N2 och Johns visuella grund: Demo North/South försvinner ur normal navigering, riktiga bolag består. Därefter följer beständig audit och utkast/publicering, bolagsavgränsad speldata, drift/RG/rapporter och separat verifierade utökningar. Befintlig Next/Vercel-, Studio-Neon- och Render/spel-Neon-arkitektur återanvänds.
+
+Läsande produktgranskning bekräftade att Johns spelbolag finns i N1 Bolag & team och i `/play`. Intern admin får däremot exempeldata i `/partner/sg-test`: `surface-page.tsx` väljer riktig partnerdata endast med `partner_session`. Detta ska lösas med uttrycklig, färskt auktoriserad adminkontext, inte extra kundlogin eller dubblettbolag. Startsidan använder dessutom CSS-klasser som saknas i den importerade stilmallen. Johns fristående skiss är funktionellt underlag med simulerade data/anrop, inte färdig backend.
+
+Denna leverans ändrar endast tracker och handoff. Kodinventeringens bas är main `9d151fa6`; liveobservationernas exakta deployment-SHA är inte fastställd. Inga produkt-, DB-, roll-, konto-, nyckel-, paket- eller driftändringar utförda i denna uppgift. Separat partnerlogin och skrivning i produktion är inte provade. `git diff --check` passerar; ordinarie dokumentationshook är leveransgrind. Alla implementationspunkter är fortsatt öppna och produktacceptans kräver verkligt flöde samt tenant-/databasprov, inte mockdata.
+
+GitGuardian läst inför leverans på main `a041e48b`: 17 observerade incidenter, 12 öppna och 5 ignored; incidenttäckning complete-for-source, platstäckning partial (sex öppna utan plats), repoövervakning aktiv och historisk scan too_large. Commitkontrollen är queued. Inga incidenter ändrade eller friskförklarade.
+
 ### Egen röst och läppsynk för registrerade dealers, 11 oktober 2026
 
 Gemensam leverans från LOBBYSTRUKTUR och CARTESIA. Dealerregistreringen kan spara en privat v2-talprofil med egen Cartesia-/ElevenLabs-röst, modell och en visuellt vald bildruta ur dealerns egen video. ElevenLabs språk och avsiktliga röstinställningar kan anges utan dolda förval. En ändrad profil, videohash, tidsposition eller röstinställning gör den tidigare bindningen ogiltig. Video med naturlig rörelse är fortsatt förberedelse; den nya strömmande vägen använder en exakt stillbild och påstår inte naturlig andning. Grundloop och talunderlag har skilda uppgifter.
