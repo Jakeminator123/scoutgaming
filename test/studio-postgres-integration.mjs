@@ -23,12 +23,13 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
     assert.equal(initial.toApply.length, 5, 'fixture must start without an existing Studio schema');
+    assert.equal(initial.optionalToApply.length, 1, 'audit migration is optional during compatibility rollout');
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
     assert.equal(applied.toApply.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
-    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 5);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 6);
   });
 
   const scope = { environment: `qa_${suffix()}`, workspaceId: 'integration' };
@@ -196,3 +197,4 @@ test('real isolated PostgreSQL verifies Studio CAS, migrations and speech journa
   const pool = new Pool({ connectionString: config.databaseUrl, connectionTimeoutMillis: 5000, query_timeout: 10000 });
   try { await runStudioPostgresChecks({ pool }); } finally { await pool.end(); }
 });
+

@@ -57,7 +57,7 @@ async function fixture() {
               working.indexes.push({ table_name: table, name: `${table}_pkey`, valid: true, ready: true, definition: `fixture primary key index for ${table}` });
             }
             for (const name of migration.indexes) {
-              const table = name.startsWith('operator_memberships') ? 'operator_memberships'
+              const table = name.startsWith('operator_audit_events') ? 'operator_audit_events' : name.startsWith('operator_memberships') ? 'operator_memberships'
                 : name.startsWith('fullfile_reservations') ? 'fullfile_reservations'
                   : name.startsWith('gpu_reservations') ? 'gpu_reservations' : 'gpu_sessions';
               working.relations.push({ name, kind: 'i', table_name: table, is_constraint: false });
@@ -85,8 +85,8 @@ async function installed() {
 
 test('Studio migration sources are fixed, ordered, bounded and independent of runtime environment', async () => {
   const migrations = await loadStudioMigrations();
-  assert.deepEqual(migrations.map(row => row.version), ['001', '002', '003', '004', '005']);
-  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql', '004-fullfile-reservations.sql', '005-operators.sql']);
+  assert.deepEqual(migrations.map(row => row.version), ['001', '002', '003', '004', '005', '006']);
+  assert.deepEqual(migrations.map(row => row.file), ['001-studio-metadata.sql', '002-generation-journals.sql', '003-operator-speech-qa.sql', '004-fullfile-reservations.sql', '005-operators.sql', '006-operator-audit.sql']);
   assert.ok(migrations.every(row => /^[a-f0-9]{64}$/.test(row.checksum) && Object.isFrozen(row)));
   assert.equal(migrations[0].tables.includes('storage_migrations'), true);
   assert.equal(migrations[1].tables.includes('storage_migrations'), false);
@@ -116,8 +116,8 @@ test('apply needs explicit confirmation and an exactly matching freshly verified
 test('explicit apply records immutable source and structure checksums once; subsequent apply is a no-op', async () => {
   const pool = await fixture(), plan = await planStudioMigrations({ pool });
   const first = await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true });
-  assert.deepEqual(first.appliedNow, ['001', '002', '003', '004', '005']); assert.deepEqual(first.toApply, []);
-  assert.equal(pool.snapshot().ledger.length, 5);
+  assert.deepEqual(first.appliedNow, ['001', '002', '003', '004', '005', '006']); assert.deepEqual(first.toApply, []);
+  assert.equal(pool.snapshot().ledger.length, 6);
   assert.ok(first.applied.every(row => /^[a-f0-9]{64}$/.test(row.checksum) && /^[a-f0-9]{64}$/.test(row.structureChecksum)));
   const before = pool.snapshot(), ddlCalls = pool.calls.filter(row => row.marker.startsWith('ddl-')).length;
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })).appliedNow, []);
@@ -128,13 +128,13 @@ test('004 and 005 upgrade an exact 001/002/003 catalog while preserving all prio
   const pool=await installed();
   pool.change(state=>{
     state.ledger=state.ledger.slice(0,3);
-    const newTables=['fullfile_budget_policies','fullfile_reservations','operators','operator_roles','operator_memberships','operator_packages'];
+    const newTables=['fullfile_budget_policies','fullfile_reservations','operators','operator_roles','operator_memberships','operator_packages','operator_audit_events'];
     state.relations=state.relations.filter(row=>!newTables.includes(row.name)&&!newTables.includes(row.table_name));
     for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!newTables.includes(row.table_name));
   });
   const original=pool.snapshot().ledger;
   assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005']);
-  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004','005']);
+  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004','005','006']);
   assert.deepEqual(pool.snapshot().ledger.slice(0,3),original);
 });
 
@@ -142,13 +142,13 @@ test('005 upgrades an exact 001/002/003/004 catalog while preserving all prior l
   const pool = await installed();
   pool.change(state => {
     state.ledger = state.ledger.slice(0, 4);
-    const newTables = ['operators', 'operator_roles', 'operator_memberships', 'operator_packages'];
+    const newTables = ['operators', 'operator_roles', 'operator_memberships', 'operator_packages','operator_audit_events'];
     state.relations = state.relations.filter(row => !newTables.includes(row.name) && !newTables.includes(row.table_name));
     for (const key of ['columns', 'constraints', 'indexes']) state[key] = state[key].filter(row => !newTables.includes(row.table_name));
   });
   const original = pool.snapshot().ledger;
   assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005']);
-  assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: target, confirm: true })).appliedNow, ['005']);
+  assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: target, confirm: true })).appliedNow, ['005', '006']);
   assert.deepEqual(pool.snapshot().ledger.slice(0, 4), original);
 });
 
@@ -202,8 +202,8 @@ test('COMMIT returning rollback cannot report installed migrations', async () =>
 test('concurrent explicit applies share the short global lock and ledger every version once', async () => {
   const pool = await fixture(), plan = await planStudioMigrations({ pool });
   const results = await Promise.all([1, 2].map(() => applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true })));
-  assert.deepEqual(results.map(row => row.appliedNow.length).sort(), [0, 5]);
-  assert.equal(pool.snapshot().ledger.length, 5); assert.equal(pool.calls.filter(row => row.marker.startsWith('ddl-')).length, 5);
+  assert.deepEqual(results.map(row => row.appliedNow.length).sort(), [0, 6]);
+  assert.equal(pool.snapshot().ledger.length, 6); assert.equal(pool.calls.filter(row => row.marker.startsWith('ddl-')).length, 6);
 });
 
 test('private database diagnostics never leak through planning/apply failures', async () => {
@@ -213,4 +213,40 @@ test('private database diagnostics never leak through planning/apply failures', 
     assert.equal(error.cause, undefined); assert.equal(error.statusCode, 503); return true;
   });
   assert.equal(pool.connects, pool.releases);
+});
+
+test('006 adds only the scoped journal while retaining every preexisting ledger fingerprint', async()=>{
+ const pool=await installed();
+ pool.change(state=>{
+   state.ledger=state.ledger.slice(0,5);
+   state.relations=state.relations.filter(row=>row.name!=='operator_audit_events'&&row.table_name!=='operator_audit_events');
+   for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>row.table_name!=='operator_audit_events');
+ });
+ const original=pool.snapshot().ledger;
+ assert.deepEqual((await planStudioMigrations({pool})).optionalToApply.map(row=>row.version),['006']);
+ assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['006']);
+ assert.deepEqual(pool.snapshot().ledger.slice(0,5),original);
+ pool.change(state=>state.ledger[5].checksum='f'.repeat(64));
+ await assert.rejects(planStudioMigrations({pool}),refusal('studio_migration_checksum_mismatch'));
+});
+
+test('preparation rollout accepts exactly verified005 and006 without hiding required pending or corruption',async()=>{
+ const pool=await installed();
+ assert.equal((await planStudioMigrations({pool})).applied.length,6);
+ pool.change(state=>{
+   state.ledger=state.ledger.slice(0,5);
+   state.relations=state.relations.filter(row=>row.name!=='operator_audit_events'&&row.table_name!=='operator_audit_events');
+   for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>row.table_name!=='operator_audit_events');
+ });
+ const plan=await planStudioMigrations({pool});
+ assert.deepEqual(plan.applied.map(row=>row.version),['001','002','003','004','005']);
+ assert.deepEqual(plan.toApply,[]);assert.deepEqual(plan.pending,[]);
+ assert.deepEqual(plan.optionalToApply.map(row=>row.version),['006']);
+ const current=pool.snapshot();
+ pool.change(state=>state.ledger[4].checksum='e'.repeat(64));
+ await assert.rejects(planStudioMigrations({pool}),refusal('studio_migration_checksum_mismatch'));
+ pool.change(state=>Object.assign(state,current));
+ await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
+ pool.change(state=>state.ledger[5].structure_checksum='d'.repeat(64));
+ await assert.rejects(planStudioMigrations({pool}),refusal('studio_migration_structure_mismatch'));
 });

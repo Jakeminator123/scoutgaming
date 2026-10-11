@@ -2,6 +2,11 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
+### Förberedelse för JN2-C, 12 oktober 2026
+
+Team/behörigheter och beständig operatörsjournal har verifierats isolerat: 11 riktiga PostgreSQL-prov (inklusive konkurrens, separat konto-commit med kompensation och databasomstart) och 18 browserprov på SV/EN i 360/1440 px. Windows native; ingen WSL eller betald generering. Slutimplementationen väntar på en säker trestegsleverans: denna kompatibilitetsversion känner igen endast verifierade migrationskedjor 001–005 eller 001–006 men kräver ännu inte 006; båda produktionsvärdarna ska köra den före additiv migration 006; först därefter levereras journalkonsumenterna. 006 är uttryckligen valfri enbart i denna förberedelseversion, övriga struktur- och checksummegrindar består. Inga produktionsdata eller scheman har ändrats i detta steg. Full acceptans/leverans rapporteras när sista steget verifierats.
+
+
 ### Snabb N2-kontroll och standardtestbudget, 11 oktober 2026
 
 Jakob har satt standardbudgeten till **högst 5 USD totalt per avgränsad testomgång**, över samtliga betalda testtjänster. Följ förbrukningen inom omgången; en större budget kräver nytt mandat. Detta ersätter det tidigare engångsmandatet på 1 USD för nya tester, men nollställer ingen historisk kostnadsjournal och ändrar inte tjänsternas tekniska budgetspärrar.
