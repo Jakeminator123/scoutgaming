@@ -8,7 +8,7 @@ Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutga
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn låter dig välja bland bolag som har spelbara publicerade rum. `?operator=` öppnar bolagets rum direkt. Vercels `/play/blackjack` utan valt spelmål går till lobbyn; enbart `?operator=` går till bolagets lobby. Rummets startlänk begränsar dealer och miljö till paketet. Renders direkta `/blackjack?operator=` behåller sin spelväg. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
-Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login`. Intern personal ser fortfarande den märkta demonförhandsvisningen. Spelare och transaktioner är inte anslutna.
+Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bolag med samma konto som i Kontrollpanelen. Operatörens personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
 
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
@@ -157,14 +157,15 @@ Administration och AI & chatt nås i sidomenyn.
 De gamla interna exempelvyerna för klipp, tal, media och konton leder till
 de riktiga verktygen. Oanslutna exempelvyer visar en förklaring i adminingången,
 inte en andra editor med skenbart fungerande kontroller. Spelbolagets
-arbetsytor nås via **2 · Spelbolag** i sidhuvudet. Demo North och
-Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
-verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
-är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
-medan spelbolagets egen personal bara får tillgång till sin organisation.
+arbetsytor nås via **2 · Spelbolag** i sidhuvudet. Katalogen visar riktiga
+registrerade bolag som kontot har åtkomst till, även om ett bolag ännu saknar
+publicerat paket. Intern admin väljer bolag med samma konto; operatörspersonal
+ser bara sina aktiva medlemskap. Demo North/South ingår inte i normal navigering.
+Katalogen och bolagsvyn har språkval, ljust/mörkt läge samt **Byt konto** och
+**Logga ut**. En misslyckad utloggning visar ett fel och lämnar dig på sidan.
 Välj dealer och kategori i **Dealers & klipp**: **Idle / Grundloop**, **Deal**, **Tal-klipp & ljud**, **Reaktioner** eller **Övriga handlingar**. Välj sedan ett exakt fack. Där finns filerna, uppladdning och länken **Klippval, varianter & villkor**. Listan visar sex filer per sida; kategorierna upprepas inte i en andra inställningsmeny.
 
-Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kliar sig i huvudet. Uppladdade filer behöver väljas och sparas innan de används som varianter. I grundloopseditorn finns användning, vikter, tider och prov; i deal-facken finns exakt destination och variantfrekvens. Sammansättning visar presentationens **Uppspelning · regler, slump och OpenClaw** direkt, medan tekniska lager- och filprov ligger under Avancerat.
+Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kliar sig i huvudet. Uppladdade filer behöver väljas och sparas innan de används som varianter. I grundloopseditorn finns användning, vikter, tider och prov; i deal-facken finns exakt destination och variantfrekvens. Sammansättning hanterar scenens lager och placering. Aktiva klippval och varianter ställs in i Dealers & klipp; tekniska lager- och filprov finns under Avancerat.
 
 **Stäng av** ändrar policyn och behåller filen. **Ta bort** i biblioteket arkiverar oanvända uppladdningar med möjlighet att återställa. Originalspelarens media ändras inte av att navigera mellan dessa vyer.
 
@@ -213,8 +214,10 @@ och saldo flyttas eller återställs inte för provet.
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
 lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
 **Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
-och nivå 3 (`/play`). Utan `partner_session` visas demonstrationer.
-Inloggad operatör ser sitt bolags snapshot och det publicerade lane-paketet.
+och nivå 3 (`/play`) med samma konto. Nivå 2 visar riktiga bolag även för admin,
+utan extra partnerinloggning. En utgången adminsession går till adminlogin och
+återvänder till samma bolagssida. Operatörspersonal loggar in separat och landar
+på sin bolagskatalog. Inloggad operatör ser sitt bolags snapshot och det publicerade lane-paketet.
 Tillåtna branding- och lagerval sparas på paketet. Spelare, transaktioner och
 rapporter från spelmotorn är ännu inte anslutna till partnerportalen (N2.4).
 **Spelare, nivå 3** får använda
