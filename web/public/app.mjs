@@ -1,3 +1,4 @@
+import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
 import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
@@ -2375,14 +2376,14 @@ async function playChatDecision(decision, signal, jobId) {
               nativeObservation.emit('playback', { event: 'speech', source: pending?.probe ? 'probe' : 'generated-lipsync', synthetic: Boolean(pending?.synthetic), ...receipt, requestId: jobId });
             },
           });
-        } else if (DEALER.key === 'astrid') {
-          // Victoria is part of Astrid's identity. Missing generated media must
-          // not silently replace her voice with the browser's default voice.
+        } else if (!['vera', 'amira', 'mei'].includes(DEALER.key)) {
+          // Registered dealers never silently inherit the browser's voice.
+          // A preparation profile is not an exact generated audio/video package.
           const pending = pendingChatReplies.get(jobId);
           if (pending) pending.voiceUnavailable = true;
           chatPlaybackDiagnostic.finish(jobId, 'text-only');
           nativeObservation.emit('playback', { event: 'speech', state: 'fallback',
-            reason: 'astrid-generated-media-unavailable', renderer: 'text-only', source: 'generated-lipsync', requestId: jobId });
+            reason: DEALER.key === 'astrid' ? 'astrid-generated-media-unavailable' : 'dealer-generated-media-unavailable', renderer: 'text-only', source: 'generated-lipsync', requestId: jobId });
         } else await playNeutralTts(decision.exactText, signal);
       }
       finally { speaking = false; }
@@ -2467,7 +2468,9 @@ chatMemory.addEventListener('toggle', async () => {
   if (studioPreview || !chatMemory.open) return;
   try {
     await tableReady;
-    const response = await apiFetch(`/api/chat/memory?dealer=${encodeURIComponent(DEALER.key)}`, { cache: 'no-store' });
+    const context=chatPresentationContext(entrySelection,DEALER.key);
+    const query=new URLSearchParams({dealer:DEALER.key,...(context?{presentationContext:JSON.stringify(context)}:{})});
+    const response = await apiFetch('/api/chat/memory?'+query, { cache: 'no-store' });
     if (!response.ok) throw new Error();
     const profile = await response.json();
     memoryStatus.textContent = `${profile.history.length} sparade inlägg för ${DEALER.name}.`;
@@ -2478,7 +2481,7 @@ memoryForget.onclick = async () => {
   probeClient?.cancel('memory_forgotten');
   memoryForget.disabled = true;
   try {
-    const response = await apiFetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key }) });
+    const response = await apiFetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key, ...(chatPresentationContext(entrySelection,DEALER.key)?{presentationContext:chatPresentationContext(entrySelection,DEALER.key)}:{}) }) });
     if (!response.ok) throw new Error();
     for (const [requestId] of pendingChatReplies) speechPoseGate.cancel(requestId, 'chat-memory-forgotten');
     chatHistory = []; $('#chat-log').replaceChildren();
@@ -2521,6 +2524,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     const r = await apiFetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key, acceptsSpeechStream: true,
+        ...(chatPresentationContext(entrySelection,DEALER.key)?{presentationContext:chatPresentationContext(entrySelection,DEALER.key)}:{}),
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
         ...(images.length ? { observation: { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision, images } } : {}) }),
     });
@@ -2559,7 +2563,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     else {
       chatPlaybackDiagnostic.finish(requestId, decision.kind === 'silence' ? 'silent' : 'unverified');
       setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.'
-        : pendingChatReplies.get(requestId)?.voiceUnavailable ? 'Astrids röstvideo saknas. Svaret visas som text.' : '');
+        : pendingChatReplies.get(requestId)?.voiceUnavailable ? `${DEALER.name}s röstvideo saknas. Svaret visas som text.` : '');
     }
     return true;
   } catch (error) {
@@ -2869,6 +2873,7 @@ const labSpeechBridge = studioPreview?null:createNativeSpeechBridge({ href: loca
     try {
       const response = await apiFetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
         body: JSON.stringify({ requestId, message: text, history: [], dealer: DEALER.key,
+          ...(chatPresentationContext(entrySelection, DEALER.key) ? { presentationContext: chatPresentationContext(entrySelection, DEALER.key) } : {}),
           sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
       });
       if (!response.ok) throw new Error('Linked chat unavailable');

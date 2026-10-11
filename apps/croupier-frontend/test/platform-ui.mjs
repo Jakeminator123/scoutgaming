@@ -450,3 +450,17 @@ test('an operator-only Blackjack bookmark opens that company lobby without consu
     assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/play?operator=sg-test');
   }
 });
+
+test('anonymous room preview proxy has exact descriptor/media paths without a generic operator catch-all',()=>{
+  const base='/api/operators/north/rooms/room-north/preview';
+  assert.equal(backendPlatformPath(base),true);
+  assert.deepEqual(platformRoute(new URL(base+'?dealer=johanna&revision=7',config.publicOrigin),config),
+    {kind:'backend',destination:config.backendOrigin+base+'?dealer=johanna&revision=7'});
+  const transport=platformBackendHeaders(new Headers({range:'bytes=0-15','if-none-match':'"preview-etag"','x-croupier-vercel-secret':'spoof'}),config);
+  assert.equal(transport.get('range'),'bytes=0-15');assert.equal(transport.get('if-none-match'),'"preview-etag"');
+  assert.equal(transport.get('x-croupier-vercel-secret'),config.secret);
+
+  const media=base+'/media/7/johanna/dealer/10000000-0000-4000-8000-000000000001';
+  for(const kind of ['dealer','table','background'])assert.equal(backendPlatformPath(media.replace('/dealer/','/'+kind+'/')),true);
+  for(const path of [base+'/',base+'/draft',base+'/media',media+'/',media+'/private',media.replace('/7/','/0/'),media.replace('/dealer/','/speech/'),media.replace('/north/','/%6eorth/'),media.replace('/room-north/','/../')])assert.equal(backendPlatformPath(path),false,path);
+});

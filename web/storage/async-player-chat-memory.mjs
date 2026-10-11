@@ -1,8 +1,10 @@
+import {isDealerId} from '../public/dealer-identity.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
 const DAY = 86400000;
-const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
+// Callers authorize registered identities against the current published room.
+// Persistence only validates syntax; it does not grant registration or access.
 const HISTORY_STATUS = 'generated-not-playback-confirmed';
 export const PLAYER_CHAT_MEMORY_LIMITS = Object.freeze({
   history: 30, historyChars: 8000, message: 1000, retentionDays: 30,
@@ -45,7 +47,7 @@ export async function createPlayerChatMemory(db, { now = Date.now } = {}) {
   function identity(input) {
     if (!object(input) || typeof input.playerId !== 'string' || !input.playerId.length
       || input.playerId.length > 256 || input.playerId.trim() !== input.playerId
-      || /[\u0000-\u001f\u007f-\u009f]/.test(input.playerId) || !DEALERS.has(input.dealerId)) {
+      || /[\u0000-\u001f\u007f-\u009f]/.test(input.playerId) || !isDealerId(input.dealerId)) {
       reject('player_memory_invalid_identity', 400);
     }
     // Canonical player IDs are already globally separated by server-owned

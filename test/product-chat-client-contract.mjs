@@ -138,3 +138,14 @@ test('Studio preview rejects generated speech before every dealer voice or playe
     }
   }
 });
+
+test('registered dealers without generated media never inherit a browser voice or Astrid video',async()=>{
+  for(const dealerId of ['paow','johanna','new-dealer']){
+    const f=playbackFixture(dealerId);
+    await f.play({kind:'generatedText',exactText:'Hej.'},new AbortController().signal,'reply-1');
+    assert.equal(f.tts.length,0);assert.equal(f.videos.length,0);
+    assert.equal(f.pending.voiceUnavailable,true);
+    assert.equal(f.events.at(-1).reason,'dealer-generated-media-unavailable');
+    assert.equal(f.poses.at(-1).speechOwner,'none');
+  }
+});

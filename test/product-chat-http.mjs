@@ -414,13 +414,34 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     } finally { release.resolve(); beforeRespond = null; await active.catch(() => {}); }
   });
 
+  await t.test('registered dealer HTTP requests cannot forge publication or reach a provider without context',async()=>{
+    const {client,state}=await guest(),count=captured.length;
+    const presentationContext={operatorSlug:'north',roomId:'paow-room',packageRevision:7,dealerId:'paow'};
+    const query=context=>'/api/chat/memory?'+new URLSearchParams({dealer:'paow',presentationContext:JSON.stringify(context)});
+    assert.equal((await client.post('/chat',chat(state,{dealer:'paow'}),400)).error,'invalid_chat_context');
+    assert.equal((await client.get('/api/chat/memory?dealer=paow',400)).error,'invalid_chat_context');
+    assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow'},400)).error,'invalid_chat_context');
+    // Offline has no published Studio authority. Plausible browser fields never
+    // substitute for it, and neither the model nor memory is invoked.
+    assert.equal((await client.post('/chat',chat(state,{dealer:'paow',presentationContext}),503)).error,'chat_dealer_unavailable');
+    assert.equal((await client.get(query(presentationContext),503)).error,'chat_dealer_unavailable');
+    assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow',presentationContext},503)).error,'chat_dealer_unavailable');
+    assert.equal((await client.get(query({...presentationContext,dealerId:'astrid'}),400)).error,'invalid_chat_context');
+    for(const path of ['/api/chat/memory?dealer=astrid&dealer=paow','/api/chat/memory?dealer=paow&presentationContext=%7B',
+      '/api/chat/memory?dealer=paow&presentationContext=null&presentationContext=null']){
+      assert.equal((await client.get(path,400)).error,'invalid_chat_context');
+    }
+    assert.equal(captured.length,count);
+    assert.deepEqual((await client.get('/api/chat/memory?dealer=astrid')).history,[]);
+  });
+
   await t.test('invalid dealers and mutating GETs cannot access or delete existing history', async () => {
     const { client, state } = await guest();
     await client.post('/chat', chat(state));
     const old = await client.get('/api/chat/memory?dealer=astrid');
     const count = captured.length;
-    assert.equal((await client.get('/api/chat/memory?dealer=unknown', 400)).error, 'invalid_chat_dealer');
-    assert.equal((await client.post('/api/chat/memory/forget', { dealer: 'unknown' }, 400)).error, 'invalid_chat_dealer');
+    assert.equal((await client.get('/api/chat/memory?dealer=unknown', 400)).error, 'invalid_chat_context');
+    assert.equal((await client.post('/api/chat/memory/forget', { dealer: 'unknown' }, 400)).error, 'invalid_chat_context');
     assert.equal((await client.get('/api/chat/memory/forget?dealer=astrid', 405)).error, 'method_not_allowed');
     const crossOrigin = await fetch(origin + '/api/chat/memory/forget', { method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.invalid', Cookie: client.cookie() },

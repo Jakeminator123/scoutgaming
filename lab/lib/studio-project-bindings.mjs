@@ -1,3 +1,4 @@
+import { validateDealerSpeechReference } from '../../web/public/dealer-speech-profile.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { validateProject } from './studio-model.mjs';
 import { validateVideoBindings } from '../../presentation-runtime/selection.mjs';
@@ -21,6 +22,10 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
     if (!registry || !Array.isArray(registry.videos) || !Array.isArray(registry.families)) fail('studio_media_registry_unavailable',503);
     const videos = new Map(registry.videos.map(video => [video.id,video]));
     const families = new Map(registry.families.map(family => [family.id,family]));
+    for (const dealer of project.dealers) if (dealer.speechProfile?.reference) {
+      try { validateDealerSpeechReference(dealer.speechProfile,videos.get(dealer.speechProfile.reference.videoId),dealer.id); }
+      catch { fail('studio_speech_reference_invalid'); }
+    }
     if (videos.size !== registry.videos.length || families.size !== registry.families.length) fail('studio_media_registry_unavailable',503);
     try {await validateVideoBindings(project,{registry});}
     catch {fail('studio_media_binding_invalid');}

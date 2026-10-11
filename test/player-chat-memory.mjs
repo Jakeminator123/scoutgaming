@@ -255,7 +255,7 @@ test('invalid input/result, control characters and cross-scope commit fields fai
   const { memory } = fixture(t);
   for (const extras of [
     { playerId: '' }, { playerId: ' raw ' }, { playerId: 'x\u0000y' }, { playerId: 'x'.repeat(257) },
-    { dealerId: 'unknown' }, { dealerId: '__proto__' }, { playerId: 42 },
+    { dealerId: 'constructor' }, { dealerId: '__proto__' }, { playerId: 42 },
   ]) assert.throws(() => memory.begin(request('bad', extras)), code('player_memory_invalid_identity'));
   for (const extras of [
     { requestId: '' }, { requestId: 'https://bad.invalid' }, { requestId: 'x'.repeat(101) },
