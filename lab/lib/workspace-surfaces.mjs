@@ -18,7 +18,7 @@ const legacyControl = Object.freeze({
   ops: Object.freeze({ studioPath: '/studio/openclaw', legacyPath: '/control/openclaw' }),
   lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
 });
-const staffTools = new Set(['clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);
+const staffTools = new Set(['library', 'clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);
 const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 // `login` is the public partner page, not an operator. The App Router page
 // wins by specificity; rejecting the slug here keeps the catch-all from

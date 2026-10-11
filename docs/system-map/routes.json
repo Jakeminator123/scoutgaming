@@ -3854,6 +3854,27 @@
       ]
     },
     {
+      "id": "studio-control-library",
+      "path": "/control/library",
+      "publicPath": "/control/library",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/library/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "studioUiInitialData loads the authorized project and media. Table and background files are managed in the shared library; uploads do not change composition choices or published packages.",
+      "groupId": "studio",
+      "sources": [
+        {
+          "path": "lab/app/control/library/page.tsx"
+        },
+        {
+          "path": "lab/components/control-layer-library-page.tsx"
+        }
+      ]
+    },
+    {
       "id": "studio-control-events",
       "path": "/control/events",
       "publicPath": "/control/events",

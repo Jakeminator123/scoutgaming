@@ -19,3 +19,14 @@
 .customGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; }
 .customGrid article { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); }
 .help pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.dealerHeader { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.eyebrow { color: var(--muted); font-size: 11px; letter-spacing: .1em; margin: 0 0 8px; }
+.dealerHeader h2 { font-size: 28px; }
+.panel, .clipSettings { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 22px; margin: 20px 0; }
+.clipSettings { border-left: 3px solid var(--teal); scroll-margin-top: 120px; }
+.panel h3 { margin-top: 24px; }
+.panel > p { color: var(--muted); line-height: 1.6; }
+.panel .customGrid h3 { margin-top: 0; }
+.panel [class~="field"] { max-width: 640px; }
+@media (max-width: 720px) { .dealerHeader { align-items: flex-start; flex-direction: column; gap: 10px; } .panel, .clipSettings { padding: 16px; } }

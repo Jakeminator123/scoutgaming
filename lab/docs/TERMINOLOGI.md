@@ -1,6 +1,6 @@
 # Terminologi
 
-Aktiv ordlista, samordnad med lokal Studio-kod 11 oktober 2026. Namnen gäller
+Aktiv ordlista, samordnad med lokal Studio-kod 12 oktober 2026. Namnen gäller
 dokumentation och nya gränssnitt; produktionsstatus finns i
 [handoffen](../../docs/JOHN-HANDOFF.md) och handhavande i [guiden](README.md).
 
@@ -142,7 +142,8 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 | Studio / undervy | Adress | Vad sidan innehåller |
 |---|---|---|
-| Dealers & klipp | `/control/clips` | Grundloop, Utdelning och Repliker per dealer. |
+| Dealers & klipp | `/control/clips` | Välj dealer och flik: Grundloop, Klipp, Scen & format, Tal & automatik eller Inställningar. |
+| Bord & bakgrunder | `/control/library?tab=tables` eller `?tab=backgrounds` | Gemensamt filbibliotek med uppladdning, användning och säker borttagning. Ändrar inga scenval vid uppladdning. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
 | Sammansättning | `/control/preview` | Välj, skapa och namnge presentationen. Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, förhandsvisa klipp och spara. |
 | Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. All redigering av sammansättningen finns på Sammansättning; avancerad rumsadministration öppnas kontextuellt. |
@@ -156,8 +157,8 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Drift | Spelmotor & rum, Spelintegritet, Uppspelning, Betalningar & journal. |
 | Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Interna konton & spelare, API & integrationer; Guide & hjälp i sidfoten. |
 
-Studio samlar Dealers & klipp, Talgranskning, Sammansättning och Publicering.
-Talgranskning bedömer exakt inspelat ljud/video; Händelser & villkor och AI-småprat är separata funktioner.
+Studio samlar Dealers & klipp, Bord & bakgrunder, Sammansättning och Publicering.
+Talgranskning finns under vald dealer → Klipp → Tal-klipp & ljud och bedömer endast den dealerns exakta inspelade ljud/video. Händelser & villkor och AI-småprat är separata funktioner.
 Klippbibliotek, Händelser och AI-småprat vid inaktivitet nås som undervyer från Dealers & klipp.
 Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
@@ -170,7 +171,7 @@ En slug ger ingen behörighet. Händelser visar översikt utan `?event=` och
 redigerare med `?event=`. `?variant=` används på Händelser och Klippbibliotek.
 `#idle`, `#deal`, `#clips` väljer Grundloop, Utdelning respektive Repliker. Administrationens sidomenylänkar
 väljer `?tab=tables|operations|finance|accounts|partners`. Flikarna på sidan
-visar bara samma arbetsområde. Talgranskning nås från Studio på den bevarade adressen
+visar bara samma arbetsområde. Talgranskning nås från dealerns tal-klipp på den bevarade adressen
 `/control/administration?tab=media-review`; adressen ger inga extra rättigheter.
 
 Spelrum: `/play/blackjack?operator=<slug>&table=<rum-id>`. Render läser samma

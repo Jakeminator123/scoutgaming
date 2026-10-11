@@ -7,7 +7,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Studio',
     items: Object.freeze([
       Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
-      Object.freeze({ href: '/control/administration?tab=media-review', label: 'Talgranskning' }),
+      Object.freeze({ href: '/control/library', label: 'Bord & bakgrunder' }),
       Object.freeze({ href: '/control/preview', label: 'Sammansättning' }),
       Object.freeze({ href: '/control/lanes', label: 'Publicering' }),
     ]),
@@ -103,6 +103,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   if (mapped.query) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
+  if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
   if (mapped.path === '/control/administration') {
     const tab = params.get('tab');
     // The administration page defaults to operations for an absent or unknown tab.

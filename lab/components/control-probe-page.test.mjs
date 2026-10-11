@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -44,7 +44,7 @@ test('speech review keeps the probe editor, a disabled save button and no old st
   const html = renderToStaticMarkup(React.createElement(ControlProbePage, props));
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<h1>AI-småprat vid inaktivitet<\/h1>/);
-  assert.match(html, /väntetid och AI-modell för Astrid/);
+  assert.match(html, /Talinitiativ för Astrid/);
   assert.match(html, /aria-label="AI-småprat vid inaktivitet för Astrid"/);
   assert.match(html, /<button[^>]*class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Spara projekt<\/button>/);
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|studio-footer|Croupier Lab|sg-pill|Osparade ändringar/);
@@ -62,4 +62,17 @@ test('probe route loads studio data for /control/probe and tolerates a missing s
   assert.match(source, /firstQueryValue\(query\.event\)/);
   assert.match(source, /title: 'AI-småprat vid inaktivitet · Croupier Studio'/);
   assert.match(source, /dynamic = 'force-dynamic'/);
+});
+
+test('unsupported dealers keep their identity and cannot edit or test Astrids probe policy', () => {
+  const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
+  const customProject = addDealer(project, 'paow', 'PAOW');
+  for (const dealerId of ['paow', 'vera', 'amira', 'mei']) {
+    const html = renderToStaticMarkup(React.createElement(ControlProbePage, { ...props, initialProject: customProject, initialDealerId: dealerId }));
+    assert.match(html, /aria-label="Talinitiativ för vald dealer"/);
+    assert.match(html, new RegExp(`dealer=${dealerId}`));
+    assert.match(html, /<button[^>]*disabled[^>]*>Spara projekt<\/button>/);
+    assert.match(html, /ännu bara anslutet för Astrid/);
+    assert.doesNotMatch(html, /aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text<|>Automatiskt · OpenClaw<|<input|<select/);
+  }
 });
