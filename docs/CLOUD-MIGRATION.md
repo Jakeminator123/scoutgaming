@@ -167,7 +167,10 @@ produktionsbygge/TypeScript och byggspårskontroll passerar (fyra workers,
 anpassats till Johns komponenter och passerar 11 tester. Browserprov av de faktiska komponenterna i isolerad UI-fixtur täcker
 360/820/1440 CSS-px, bolagssökning, språk/tema, refresh och sidnavigering utan
 horisontell overflow. Det är inte ett produktionslogin- eller databasprov.
-Ordinarie fullhook är nästa leveransgrind; dess kvitto dokumenteras efter körning.
+Ordinarie fullhook är godkänd för kodcommit `684864b618010caf11d2c7bef719b8fa8faf8e17`:
+2 442 PASS/9 skip/0 fail (55 testgrupper). Ingen hook eller täckning har kopplats bort.
+De tidigare stoppade körningarna räknas separat: äldre previewharness behövde uppdateras
+och lokal Gateway-testdependency `ws` saknades; verifieringen kördes därefter om med låsta beroenden.
 
 **JN2-A/B är fortsatt öppna acceptansgrindar:** efter granskning/deployment krävs
 verklig N1-login → Johns/SG → direktlänk/refresh, begränsad/återkallad identitet,
