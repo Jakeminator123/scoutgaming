@@ -67,6 +67,28 @@ function brandingAttribute(value) {
   if (typeof text !== 'string' || text.length > 8000) throw Error('Invalid game presentation');
   return attributeText(text);
 }
+// The marker is server-owned: a query string cannot turn a public game into
+// an isolated test. The comparison launcher supplies both the guard ports and
+// an exact loopback origin; the regular connected Studio does not.
+function isIsolatedComparison(env, offline) {
+  if (!offline || gameEntryEnabled(env) || typeof env?.CROUPIER_QA_ALLOWED_PORTS !== 'string') return false;
+  const ports = env.CROUPIER_QA_ALLOWED_PORTS.split(',');
+  if (!ports.length || ports.length > 32 || ports.some(port => !/^[1-9][0-9]{0,4}$/.test(port) || Number(port) > 65535)) return false;
+  try {
+    const url = new URL(env.PUBLIC_URL);
+    return ['http:', 'https:'].includes(url.protocol) && ['localhost','127.0.0.1','[::1]'].includes(url.hostname)
+      && env.PUBLIC_URL === url.origin && ports.includes(url.port || (url.protocol === 'https:' ? '443' : '80'));
+  } catch { return false; }
+}
+function decorateIsolatedComparison(html) {
+  const style = '<style id="local-comparison-style">html[data-local-comparison] #hud-top{flex-wrap:wrap;gap:8px}#local-comparison-notice{display:flex;flex:0 0 100%;align-items:center;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;padding:6px 10px;border:1px solid #d4b65a75;border-radius:7px;background:#241e10f2;color:#ffebaa;font:11px/1.35 Arial,sans-serif;pointer-events:none}#local-comparison-notice a{pointer-events:auto;color:#f2f1ed;white-space:nowrap}#local-comparison-notice a:focus-visible{outline:2px solid #d4f83a;outline-offset:3px}@media(max-width:650px){#local-comparison-notice .local-comparison-detail{display:none}}</style>';
+  const notice = '<aside id="local-comparison-notice" aria-label="Isolerad testmiljö"><strong>Isolerad mediarepetition</strong><span class="local-comparison-detail">Testdata · inget publicerat bolagspaket</span><a href="https://www.scoutgaming.tech/play" target="_blank" rel="noopener noreferrer">Publicerad produkt ↗</a></aside>';
+  return html.replace(/<html(?=[\s>])/i, () => '<html data-local-comparison="true"')
+    .replace(/<title>/i, '<title>Isolerad mediarepetition · ')
+    .replace('<a class="casino-return" href="/play">Till lobbyn</a>', '<a class="casino-return" href="https://www.scoutgaming.tech/play" target="_blank" rel="noopener noreferrer">Publicerad lobby ↗</a>')
+    .replace(/<\/head>/i, () => style + '</head>')
+    .replace(/(<header\b[^>]*\bid=["']hud-top["'][^>]*>)/i, match => match + notice);
+}
 export function decorateGameEntryHtml(html,env,selection,{offline = false} = {}) {
   if (!gameEntryEnabled(env) && offline !== true) return html;
   let attributes = gameEntryEnabled(env) ? ' data-game-path="/blackjack"' : '';
@@ -112,5 +134,6 @@ export function decorateGameEntryHtml(html,env,selection,{offline = false} = {})
     }
   }
   // A replacer function: attribute text must never be read as a $-pattern.
-  return html.replace(/<html(?=[\s>])/i,() => '<html'+attributes);
+  const decorated = html.replace(/<html(?=[\s>])/i,() => '<html'+attributes);
+  return isIsolatedComparison(env, offline) ? decorateIsolatedComparison(decorated) : decorated;
 }

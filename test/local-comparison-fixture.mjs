@@ -30,8 +30,16 @@ test('comparison seeds isolated BO/Partner data and leaves only local disposable
   try {
     assert.ok(fixture.gameUrl.startsWith('http://localhost:'));
     assert.ok(fixture.labUrl.startsWith('http://127.0.0.1:'));
-    assert.equal((await fetch(fixture.urls.original)).status, 200);
-    assert.equal((await fetch(fixture.urls.v2)).status, 200);
+    for (const name of ['game','original','v2']) {
+      assert.equal(new URL(fixture.urls[name]).searchParams.get('rehearsal'),'1');
+      const response = await fetch(fixture.urls[name]);
+      assert.equal(response.status,200);
+      const html = await response.text();
+      assert.match(html,/data-local-comparison="true"/);
+      assert.match(html,/Isolerad mediarepetition/);
+      assert.match(html,/class="casino-return" href="https:\/\/www\.scoutgaming\.tech\/play"/);
+      assert.match(html,/https:\/\/www\.scoutgaming\.tech\/play/);
+    }
     const partner = fixture.credentials.partner;
     const ts = String(Math.floor(Date.now() / 1000)), body = '{}', path = '/api/v1/ping';
     const response = await post(path, {}, {

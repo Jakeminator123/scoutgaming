@@ -50,3 +50,22 @@ test('offline decoration opts in to validated dealer metadata without claiming t
   assert.throws(() => decorateGameEntryHtml(html, {}, { ...selection, dealer: '" onclick="bad' }, { offline: true }));
   assert.match(decorateGameEntryHtml(html, env, selection, { offline: true }), /data-game-path="\/blackjack"/);
 });
+
+
+test('isolated comparison documents are visibly labelled only with server-owned loopback isolation', () => {
+  const html = '<html><head><title>Game</title></head><body><header id="hud-top"><div id="game-title">Game</div><button id="sound-btn">Sound</button></header><a class="casino-return" href="/play">Till lobbyn</a></body></html>';
+  const qa = { PUBLIC_URL:'http://localhost:4194', CROUPIER_QA_ALLOWED_PORTS:'4194,4192' };
+  const marked = decorateGameEntryHtml(html, qa, undefined, { offline:true });
+  assert.match(marked, /data-local-comparison="true"/);
+  assert.match(marked, /<title>Isolerad mediarepetition/);
+  assert.match(marked, /<header id="hud-top"><aside id="local-comparison-notice"/);
+  assert.match(marked, /https:\/\/www\.scoutgaming\.tech\/play/);
+  assert.match(marked, /rel="noopener noreferrer"/);
+  assert.match(marked, /class="casino-return" href="https:\/\/www\.scoutgaming\.tech\/play" target="_blank" rel="noopener noreferrer">Publicerad lobby/);
+  assert.doesNotMatch(marked, /href="\/play"/);
+  assert.match(marked, /<button id="sound-btn">Sound<\/button>/);
+  for (const value of [{}, {...qa,PUBLIC_URL:'https://www.scoutgaming.tech'}, {...qa,PUBLIC_URL:'http://localhost:9999'}, {...qa,PUBLIC_URL:'http://localhost:4194/path'}, {...qa,CROUPIER_QA_ALLOWED_PORTS:'4194,0'}, {...qa,...env}]) {
+    assert.doesNotMatch(decorateGameEntryHtml(html,value,undefined,{offline:true}), /local-comparison-notice|data-local-comparison=/);
+  }
+  assert.equal(decorateGameEntryHtml(html,qa),html);
+});
