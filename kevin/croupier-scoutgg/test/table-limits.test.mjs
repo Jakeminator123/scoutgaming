@@ -1,3 +1,4 @@
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -118,7 +119,13 @@ test("a card that ends the run plays Emil's rest take (hand off the shoe on film
   const s=createSharedTable(join(dir,'t.sqlite'),{manifest,now:()=>time,readyFor:()=>({frames,restEnd:['hole','flip'],restStart:['flip']})});
   try{
     const st=()=>s.run('kevin',{session:'v',op:'state'});const send=(op,extra={})=>s.run('kevin',{session:'v',op,version:st().version,requestId:crypto.randomUUID(),...extra});
-    send('join',{name:'Kevin',seats:[3]});send('bet',{seat:3,field:'main',chip:5});send('ready');
+    send('join',{name:'Kevin',seats:[3]});
+    // A fixed shoe so the hand can always take a hit (5+7 against a 6, then a 3): with a random shoe a blackjack or a
+    // dealer blackjack ended the round before any hit, and the test failed about one run in three.
+    {const db=new DatabaseSync(join(dir,'t.sqlite')),row=JSON.parse(db.prepare('SELECT state FROM shared_rooms WHERE id=?').get('v').state);
+     const ranks=['5','6','7','10','3','2','2','2'];row.game.shoe.cards.splice(-ranks.length,ranks.length,...ranks.map((r,i)=>({r,s:['♠','♦','♥','♣'][i%4]})).reverse());
+     db.prepare('UPDATE shared_rooms SET state=? WHERE id=?').run(JSON.stringify(row),'v');db.close();}
+    send('bet',{seat:3,field:'main',chip:5});send('ready');
     let checked=false;const opening=st().plan.steps.filter(x=>x.kind==='deal');
     assert.ok(opening.every(x=>!x.variant.endsWith('v')),'the opening ends on the hole card, no rest take inside it');
     for(let i=0;i<6;i++){
