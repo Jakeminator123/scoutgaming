@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { brandingApiBase } from './partner-appearance-loader.mjs';
+import { PartnerJournal } from './partner-journal-loader.mjs';
 
 const h = React.createElement;
 const ids = value => Array.isArray(value) && value.every(item => typeof item === 'string');
@@ -22,7 +23,7 @@ export function partnerTeamSnapshot(snapshot, team) {
   const operatorId = snapshot.operator.id;
   return {
     ...snapshot,
-    roles: team.roles.map(role => ({ id: role.id, label: role.label, operatorId })),
+    roles: team.roles.map(role => ({ id: role.id, label: role.label, operatorId, permissions: [...(role.permissions || [])], delegable: role.delegable === true })),
     team: team.members.map(member => ({
       id: member.userId,
       operatorId,
@@ -36,8 +37,18 @@ export function partnerTeamSnapshot(snapshot, team) {
   };
 }
 
-export function partnerTeamMessage(action, status, reason) {
-  if (status === 200) return action === 'invite' ? 'Inbjudan är registrerad.' : 'Rollprofilen är sparad.';
+export function partnerTeamMessage(action, status, reason, language = 'sv') {
+  if (language === 'en') {
+    if (status === 200) return ({ invite: 'Invitation registered.', suspend: 'Member suspended.', reactivate: 'Member reactivated.' })[action] || 'Role saved.';
+    if (status === 429) return 'Too many invitations this hour. Try again later.';
+    if (status === 409) return reason === 'member' ? 'This account is already a member.' : reason === 'last-admin' ? 'The operator must retain an active administrator.' : 'Another person changed this membership. The list has been refreshed; try again.';
+    if (status === 401) return 'Your session has expired. Sign in again.';
+    if (status === 403) return 'You do not have permission for this change.';
+    if (status === 404) return 'This member is no longer in the team.';
+    if (status === 422) return action === 'invite' ? 'The invitation details could not be accepted.' : 'This role is unavailable.';
+    return 'The change could not be saved. Try again.';
+  }
+  if (status === 200) return ({ invite: 'Inbjudan är registrerad.', suspend: 'Medlemmen är avstängd.', reactivate: 'Medlemmen är återaktiverad.' })[action] || 'Rollprofilen är sparad.';
   if (status === 429) return 'För många inbjudningar den här timmen. Försök igen om en stund.';
   if (status === 409) {
     if (reason === 'member') return 'Kontot är redan medlem i teamet.';
@@ -71,64 +82,93 @@ export function createPartnerTeamClient({ base, operatorSlug, fetcher = (...args
   });
 }
 
-// runtime.team for TeamView: which roles the viewer may hand out, and the two
-// writes Kevin's view has controls for. Suspension stays in the API and in Kontrollpanelen.
-export function createPartnerTeamAdapter({ team, client, notify, onTeam, guard = { busy: false } }) {
+// Only fresh server-authorized actions are exposed to the membership view.
+export function createPartnerTeamAdapter({ team, client, notify, onTeam, guard = { busy: false }, onBusy = () => {}, language = 'sv' }) {
   const members = new Map(team.members.map(member => [member.userId, member]));
-  const manages = Boolean(team.can?.invite || team.can?.role);
-  async function refresh() {
+  const manages = Boolean(team.can?.invite || team.can?.role || team.can?.suspend);
+  async function refresh(epoch) {
     const fresh = await client.read();
-    if (fresh.team) onTeam(fresh.team);
+    if (guard.epoch === epoch) onTeam(fresh.team || null);
   }
   async function run(action, body) {
-    if (guard.busy) { notify('Vänta, föregående ändring sparas.'); return false; }
-    guard.busy = true;
+    if (guard.busy) { notify(language === 'en' ? 'Please wait for the previous change to finish.' : 'Vänta, föregående ändring sparas.'); return false; }
+    guard.busy = true; onBusy(true);
+    const epoch = guard.epoch = (guard.epoch || 0) + 1;
     try {
       const result = await client.write(body);
-      notify(partnerTeamMessage(action, result.status, result.reason));
+      if (guard.epoch !== epoch) return false;
+      notify(partnerTeamMessage(action, result.status, result.reason, language));
       if (result.status === 200) {
-        if (result.team) onTeam(result.team); else await refresh();
+        if (result.team) onTeam(result.team); else await refresh(epoch);
         return true;
       }
-      if ([403, 404, 409].includes(result.status)) await refresh();
+      if ([401, 403, 404].includes(result.status)) onTeam(null);
+      if ([403, 404, 409].includes(result.status)) await refresh(epoch);
       return false;
-    } finally { guard.busy = false; }
+    } finally { guard.busy = false; onBusy(false); }
   }
   return Object.freeze({
     inviteRoles: Object.freeze([...team.inviteRoles]),
-    note: manages
-      ? 'En ny adress får ett aktiveringsmejl. Ett befintligt partnerkonto kopplas utan mejl. Administratörer och avstängning hanteras av intern personal.'
-      : 'Du kan se teamet. Inbjudan och rollbyte kräver operatörsadministratör.',
+    note: language === 'en'
+      ? (manages ? 'New addresses receive an activation email. Existing partner accounts are linked without email. Only authorized actions are available.' : 'You can view the team. Changes require the relevant administrator permissions.')
+      : (manages ? 'En ny adress får ett aktiveringsmejl. Ett befintligt partnerkonto kopplas utan mejl. Endast tillåtna åtgärder visas.' : 'Du kan se teamet. Ändringar kräver rätt administratörsbehörighet.'),
     assignable: member => members.get(member?.id)?.allowed.role ?? [],
-    invite: (email, roleId) => run('invite', { action: 'invite', email, roleId }),
+    canSuspend: member => members.get(member?.id)?.allowed.suspend === true,
+    canReactivate: member => members.get(member?.id)?.allowed.reactivate === true,
+    status: (member, action) => {
+      const current = members.get(member?.id);
+      if (!current || !['suspend', 'reactivate'].includes(action) || current.allowed[action] !== true) return Promise.resolve(false);
+      return run(action, { action, userId: current.userId, expectedRevision: current.revision });
+    },
+    invite: (email, roleId) => team.can?.invite === true && team.inviteRoles.includes(roleId) ? run('invite', { action: 'invite', email, roleId }) : Promise.resolve(false),
     role: (member, roleId) => {
       const current = members.get(member?.id);
-      if (!current) return Promise.resolve(false);
+      if (!current || !current.allowed.role.includes(roleId)) return Promise.resolve(false);
       return run('role', { action: 'role', userId: current.userId, roleId, expectedRevision: current.revision });
     },
   });
 }
 
-// Shows Kevin's read-only TeamView until the team API answers; any failure keeps it read-only.
-export function PartnerTeamLoader({ snapshot, runtime, surface, toast, base, Team }) {
+// Reauthorize the selected operator before enabling actions; failures clear prior grants.
+export function PartnerTeamLoader({ snapshot, runtime, surface, toast, base, Team, language = 'sv' }) {
   const operatorId = snapshot?.operator?.id;
   const operatorSlug = snapshot?.operator?.slug;
   const [team, setTeam] = React.useState(null);
+  const [state, setState] = React.useState('loading');
+  const [busy, setBusy] = React.useState(false);
+  const [journalVersion, setJournalVersion] = React.useState(0);
+  const alive = React.useRef(true);
+  const readSerial = React.useRef(0);
   const guard = React.useRef({ busy: false });
   const client = React.useMemo(() => createPartnerTeamClient({ base, operatorSlug }), [base, operatorSlug]);
-  const accept = React.useCallback(next => { if (next?.operatorId === operatorId) setTeam(next); }, [operatorId]);
-  React.useEffect(() => {
-    let cancelled = false;
-    void client.read().then(result => { if (!cancelled) accept(result.team); });
-    return () => { cancelled = true; };
+  React.useEffect(() => { alive.current = true; return () => { alive.current = false; readSerial.current += 1; guard.current.epoch = (guard.current.epoch || 0) + 1; }; }, []);
+  const accept = React.useCallback(next => {
+    if (!alive.current) return;
+    readSerial.current += 1;
+    if (next?.operatorId === operatorId) { setTeam(next); setState('ready'); setJournalVersion(value => value + 1); }
+    else { setTeam(null); setState('error'); }
+  }, [operatorId]);
+  const reload = React.useCallback(async () => {
+    const serial = ++readSerial.current;
+    guard.current.epoch = (guard.current.epoch || 0) + 1;
+    setState('loading'); setTeam(null);
+    const result = await client.read();
+    if (alive.current && readSerial.current === serial) accept(result.team);
   }, [client, accept]);
+  React.useEffect(() => { void reload(); }, [reload]);
   const notify = React.useCallback(message => {
-    if (typeof toast === 'function') toast(message); else runtime?.notify?.(message);
+    if (alive.current) { if (typeof toast === 'function') toast(message); else runtime?.notify?.(message); }
   }, [toast, runtime]);
-  const live = React.useMemo(() => team ? createPartnerTeamAdapter({ team, client, notify, onTeam: accept, guard: guard.current }) : null,
-    [team, client, notify, accept]);
-  if (!live) return h(Team, { snapshot, runtime, surface, toast });
-  return h(Team, { snapshot: partnerTeamSnapshot(snapshot, team), runtime: { ...runtime, team: live }, surface, toast });
+  const current = team?.operatorId === operatorId ? team : null;
+  const live = React.useMemo(() => current ? createPartnerTeamAdapter({ team: current, client, notify, onTeam: accept, guard: guard.current,
+    onBusy: value => { if (alive.current) setBusy(value); }, language }) : null, [current, client, notify, accept, language]);
+  const en = language === 'en';
+  return h(React.Fragment, null,
+    state !== 'ready' ? h('div', { className: 'note', role: state === 'error' ? 'alert' : 'status' },
+      state === 'loading' ? (en ? 'Checking team access…' : 'Kontrollerar teamåtkomst…') : (en ? 'Team access could not be verified.' : 'Teamåtkomsten kunde inte verifieras.'),
+      state === 'error' ? h('button', { type: 'button', className: 'btn sm', onClick: () => void reload() }, en ? 'Try again' : 'Försök igen') : null) : null,
+    h(Team, { snapshot: live ? partnerTeamSnapshot(snapshot, current) : snapshot?.preview === true ? snapshot : { ...snapshot, team: [], roles: [] }, runtime: { ...runtime, team: live, teamBusy: busy }, surface, toast, language }),
+    live && current.can?.journal === true ? h(PartnerJournal, { key: operatorId, base, operatorSlug, operatorId, language, version: journalVersion }) : null);
 }
 
 const views = new WeakMap();
@@ -138,6 +178,6 @@ export function partnerTeamView(apiBase, Team) {
   if (!/^(?:\/studio)?\/api\/partner$/.test(base)) return Team;
   let byBase = views.get(Team);
   if (!byBase) views.set(Team, byBase = new Map());
-  if (!byBase.has(base)) byBase.set(base, function PartnerTeamView(props) { return h(PartnerTeamLoader, { ...props, base, Team }); });
+  if (!byBase.has(base)) byBase.set(base, function PartnerTeamView(props) { return h(PartnerTeamLoader, { ...props, key: props.snapshot?.operator?.id, base, Team }); });
   return byBase.get(base);
 }

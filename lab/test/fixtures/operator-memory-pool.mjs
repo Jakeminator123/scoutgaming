@@ -55,7 +55,7 @@ export function usersDb(users) {
 // the Neon pool: query() for reads and connect() for the store's locked writes.
 // BEGIN/ROLLBACK restore a snapshot so a refused guard leaves no partial row.
 export function operatorMemoryPool() {
-  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [] };
+  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [] };
   const trace = [];
   const hooks = new Map();
   let lockTail = Promise.resolve();
@@ -91,6 +91,13 @@ export function operatorMemoryPool() {
     if (tag === 'current-package') {
       return scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1).map(copy);
     }
+    if (tag === 'audit-write') {
+      snapshot();
+      const row={environment_id:environment,workspace_id:workspace,operator_id:values[2],event_id:values[3],actor_id:values[4],access_class:values[5],action:values[6],resource_type:values[7],resource_id:values[8],before_revision:values[9],after_revision:values[10],occurred_at_ms:values[11],request_id:values[12],changes:values[13]};
+      tables.operator_audit_events.push(row); return [copy(row)];
+    }
+    if (tag === 'list-audit') return scoped('operator_audit_events').filter(row=>row.operator_id===values[2] && (values[3]===null || row.occurred_at_ms<values[3] || row.occurred_at_ms===values[3] && row.event_id<values[4]))
+      .sort((a,b)=>b.occurred_at_ms-a.occurred_at_ms || b.event_id.localeCompare(a.event_id)).slice(0,values[5]).map(copy);
     if (tag === 'create-operator') {
       if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
       snapshot();

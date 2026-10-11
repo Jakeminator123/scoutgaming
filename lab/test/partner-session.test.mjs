@@ -469,7 +469,7 @@ async function nativeBrandingFixture() {
   const lane={...defaultPresentationLane(),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
   lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
   const presentation={schemaVersion:2,projectRevision:'frozen-native',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna fryst',idle:null},{id:'nora',label:'Nora fryst',idle:null}]};
-  let state={operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
+  let state={operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
     roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
@@ -484,6 +484,7 @@ async function nativeBrandingFixture() {
     if(tag==='get-role')return result(rows('roles').filter(row=>row.operator_id===values[2]&&row.role_id===values[3]));
     if(tag==='get-membership')return result(rows('memberships').filter(row=>row.operator_id===values[2]&&row.user_id===values[3]));
     if(tag==='current-package')return result(rows('packages').filter(row=>row.operator_id===values[2]).sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
+    if(tag==='audit-write') {source.operatorAudits.push(copy(values));return result([{event_id:values[3]}]);}
     if(tag==='publish-package') {
       const revision=Math.max(0,...rows('packages').filter(row=>row.operator_id===values[2]).map(row=>row.package_revision))+1;
       const row=scoped({operator_id:values[2],package_revision:revision,lanes:values[3],games:values[4],tables:values[5],branding:values[6],published_at_ms:values[7]});

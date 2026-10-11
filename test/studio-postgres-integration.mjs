@@ -22,8 +22,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
 
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
-    assert.equal(initial.toApply.length, 5, 'fixture must start without an existing Studio schema');
-    assert.equal(initial.optionalToApply.length, 1, 'audit migration is optional during compatibility rollout');
+    assert.equal(initial.toApply.length, 6, 'fixture must start without an existing Studio schema');
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
@@ -197,4 +196,3 @@ test('real isolated PostgreSQL verifies Studio CAS, migrations and speech journa
   const pool = new Pool({ connectionString: config.databaseUrl, connectionTimeoutMillis: 5000, query_timeout: 10000 });
   try { await runStudioPostgresChecks({ pool }); } finally { await pool.end(); }
 });
-

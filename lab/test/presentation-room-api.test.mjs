@@ -27,7 +27,7 @@ function idleRecord(dealerId = 'johanna', id = '00000000-0000-4000-8000-00000000
     classification: { dealerId, eventId: 'idle.ready', kind: 'idle', role: 'standard', situation: '', label: 'Grundloop', notes: '', playback: 'once', compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
 }
 function combinedPool() {
-  let state = { documents: new Map(), media: new Map(), history: [], audits: [], packages: [], operators: [
+  let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
   ] }, tail = Promise.resolve(), clientId = 0, tick = 0;
@@ -72,6 +72,7 @@ function combinedPool() {
         working.documents.set(documentKey(values), row); return result([row]);
       }
       if (marker === 'history') { working.history.push(clone(values)); return result(); }
+      if (marker === 'audit-write') { working.operatorAudits.push(clone(values)); return result([{event_id:values[3]}]); }
       if (marker === 'audit') { working.audits.push(clone(values)); return result(); }
       throw Error(`unknown fixture query ${marker}`);
     }, release() { unlock?.(); } };

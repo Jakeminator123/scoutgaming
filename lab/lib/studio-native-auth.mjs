@@ -67,7 +67,7 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
           if (!account?.salt || !/^[a-f0-9]{128}$/i.test(account.hash ?? '')
             || sourceStamp(account) !== claims.source_stamp || account.role !== claims.role
             || currentEpoch(account) !== claims.auth_epoch) denied();
-          return Object.freeze({ user: account.username, role: normalizeStudioRole(claims.role), scope });
+          return Object.freeze({ accountId: String(account.id), user: account.username, role: normalizeStudioRole(claims.role), scope });
         }
         const digest = createHash('sha256').update(bearer).digest('hex');
         const session = await boDb.prepare('SELECT * FROM lab_sessions WHERE token_digest=? AND expires>?').get(digest, now());
@@ -77,7 +77,7 @@ export function createStudioNativeAuth({ boDb, scope, now = Date.now } = {}) {
         const account = matches.length === 1 ? matches[0] : null;
         if (!account || account.role !== session.role || sourceStamp(account) !== session.source_stamp
           || currentEpoch(account) !== session.auth_epoch) denied();
-        return Object.freeze({ user: account.username, role: normalizeStudioRole(account.role), scope });
+        return Object.freeze({ accountId: String(account.id), user: account.username, role: normalizeStudioRole(account.role), scope });
       };
       // The PostgreSQL adapter otherwise starts/commits a transaction for each
       // SELECT. Reuse one connection for this authorization only. Read the signer

@@ -23,6 +23,41 @@ async function port() {
   const server = createServer(); await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
   const value = server.address().port; await new Promise(yes => server.close(yes)); return value;
 }
+// Uses only the caller's already-created loopback fixture cluster. The two
+// databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
+// A stale database fails CREATE DATABASE instead of becoming a test target.
+export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {
+  if (!Number.isInteger(pgPort) || pgPort < 1 || pgPort > 65535 || typeof adminPool?.query !== 'function'
+    || typeof createPool !== 'function' || typeof restartCluster !== 'function' || typeof runChecks !== 'function') {
+    throw new Error('partner_qa_invalid_configuration');
+  }
+  const target = (await adminPool.query("SELECT host(inet_server_addr()) AS address, current_user AS role, current_database() AS database, current_setting('listen_addresses') AS listeners, inet_server_port() AS port")).rows[0];
+  if (!target || target.address !== '127.0.0.1' || target.listeners !== '127.0.0.1'
+    || target.role !== 'studio_qa' || target.database !== 'postgres' || target.port !== pgPort) throw new Error('partner_qa_target_refused');
+  await adminPool.query('CREATE DATABASE n2_qa_operators');
+  await adminPool.query('CREATE DATABASE n2_qa_auth');
+  let operatorPool, authPool;
+  const open = database => createPool({ host: '127.0.0.1', port: pgPort, user: 'studio_qa', database,
+    max: 4, connectionTimeoutMillis: 5000, query_timeout: 15000 });
+  const close = async () => {
+    const current = [operatorPool, authPool].filter(Boolean); operatorPool = null; authPool = null;
+    const results = await Promise.allSettled(current.map(pool => pool.end()));
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+  };
+  const reopen = () => { operatorPool = open('n2_qa_operators'); authPool = open('n2_qa_auth'); return { operatorPool, authPool }; };
+  try {
+    reopen();
+    const result = await runChecks({ operatorPool, authPool, restart: async () => {
+      await close(); await restartCluster(); return reopen();
+    } });
+    if (!Array.isArray(result?.checks) || !result.checks.length || result.checks.some(name => typeof name !== 'string' || !name)) {
+      throw new Error('partner_qa_checks_missing');
+    }
+    return result.checks;
+  } finally { await close(); }
+}
+
 export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = false } = {}) {
   if (process.platform !== 'linux' || process.getuid?.() === 0) throw new Error('isolated_qa_requires_nonroot_linux');
   const root = await mkdtemp(join(tmpdir(), 'croupier-studio-qa-'));
@@ -78,7 +113,8 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       ['product-v1', createHash('sha256').update(sql).digest('hex'), '{}', new Date().toISOString()]);
     await run('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=studio.croupier-qa.invalid',
       '-addext', 'subjectAltName=DNS:studio.croupier-qa.invalid,DNS:render.croupier-qa.invalid', '-keyout', join(root, 'fixture.key'), '-out', join(root, 'fixture.crt')], { env });
-    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql',
+    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
+      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
       'ops/neon-studio/migrations.mjs', 'web/storage/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
       'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
@@ -102,7 +138,10 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     pool = current.pool;
     const { runSpeechLedgerImportSqlChecks } = await import('../test/speech-ledger-import.mjs');
     const imported = await runSpeechLedgerImportSqlChecks({ pool, restart }); pool = imported.pool;
-    const integrationChecks = [...current.checks, ...imported.checks];
+    const { runPartnerTeamPostgresChecks } = await import('../test/partner-team-postgres.mjs');
+    const partnerChecks = await runPartnerDatabaseQa({ adminPool: pool, pgPort, createPool: options => new Pool(options),
+      restartCluster: restart, runChecks: runPartnerTeamPostgresChecks });
+    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();

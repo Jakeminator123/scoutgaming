@@ -76,7 +76,7 @@ test('native login reuses existing identity and signer; resulting cookie validat
   const cookie = login.headers.get('set-cookie');
   assert.match(cookie,/HttpOnly; SameSite=Lax; Max-Age=604800; Secure/);
   const jwt = cookie.split(';')[0];
-  assert.deepEqual(await f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),{user:'Operator',role:'admin',scope});
+  assert.deepEqual(await f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),{accountId:'7',user:'Operator',role:'admin',scope});
   assert.equal(f.state.meta.jwt_secret,'a'.repeat(64)); assert.equal(f.state.users.length,1);
   assert.equal(f.state.users[0].role,'superadmin'); assert.equal(f.counters[0].user,'craig:7');
   f.state.epochs['7']++;

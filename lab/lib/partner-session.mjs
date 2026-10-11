@@ -1,3 +1,4 @@
+import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
 import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
@@ -276,7 +277,20 @@ function takeOperatorSlug(url) {
 function preparePartnerRequest(request, config) {
   if (!config) fail(503);
   const url = new URL(request.url);
-  let operatorSlugValue;
+  let operatorSlugValue, journalCursor = null, journalLimit = 50;
+  if (partnerAction(url.pathname, config) === 'journal') {
+    const limits = url.searchParams.getAll('limit');
+    if (limits.length > 1 || limits.length && !/^(?:[1-9][0-9]?|100)$/.test(limits[0])) fail(400);
+    if (limits.length) { journalLimit = Number(limits[0]); url.searchParams.delete('limit'); }
+    const cursors = url.searchParams.getAll('cursor');
+    if (cursors.length > 1) fail(400);
+    if (cursors.length) {
+      const cursor = cursors[0];
+      if (!/^[a-zA-Z0-9_-]{1,200}$/.test(cursor)) fail(400);
+      try { journalCursor = JSON.parse(Buffer.from(cursor,'base64url').toString('utf8')); } catch { fail(400); }
+      url.searchParams.delete('cursor');
+    }
+  }
   if (request.method === 'GET') {
     if (partnerAction(url.pathname, config) === 'snapshot' && !url.search) {
       if (url.hash) fail(400);
@@ -308,13 +322,13 @@ function preparePartnerRequest(request, config) {
   assertNativeStudioRequest(normalized, config);
   const pathname = new URL(normalized.url).pathname;
   const action = partnerAction(pathname, config);
-  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'set-password'].includes(action)) fail(404);
+  if (!['login', 'logout', 'snapshot', 'branding', 'team', 'journal', 'set-password'].includes(action)) fail(404);
   if (action === 'branding' || action === 'team') {
     if (request.method !== 'GET' && request.method !== 'POST') {
       return { response: new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
   } else {
-    const allowed = action === 'snapshot' ? 'GET' : 'POST';
+    const allowed = action === 'snapshot' || action === 'journal' ? 'GET' : 'POST';
     if (request.method !== allowed) {
       return { response: new Response(null, { status: 405, headers: { Allow: allowed, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } }) };
     }
@@ -324,7 +338,7 @@ function preparePartnerRequest(request, config) {
     if (normalized.headers.get('origin') !== origin || !['same-origin', 'none'].includes(normalized.headers.get('sec-fetch-site') || '')
       || normalized.headers.has('next-action')) fail(403);
   }
-  return { request: normalized, action, operatorSlug: operatorSlugValue };
+  return { request: normalized, action, operatorSlug: operatorSlugValue, journalCursor, journalLimit };
 }
 
 function sameOperatorScope(left, right) {
@@ -457,11 +471,20 @@ async function brandingResponse(prepared, config) {
   if (!Number.isSafeInteger(body.expectedRevision)) fail(400);
   const saved = await api.write({
     operatorId: operator.id,
-    actor: session.user,
+    actor: session.user, audit: operatorAuditContext(session),
     expectedRevision: body.expectedRevision,
     branding: body.branding,
   });
   return json(saved, 200, [], { vary: true });
+}
+async function journalResponse(prepared, config) {
+  const found = await partnerOperatorContext(prepared, config);
+  const decided = await decidedPartnerContext(found);
+  const resource = { scope: decided.scope, operatorId: found.operator.id };
+  if (!allowsWorkspaceResource(decided,'team.read',resource) || !allowsWorkspaceResource(decided,'team.roles.assign',resource)) fail(403);
+  if (typeof found.store.listAuditEvents !== 'function') fail(503);
+  const result = await found.store.listAuditEvents(found.operator.id,{cursor:prepared.journalCursor,limit:prepared.journalLimit});
+  return json({...result,nextCursor:result.nextCursor ? Buffer.from(JSON.stringify(result.nextCursor)).toString('base64url') : null},200,[],{vary:true});
 }
 // Invite links an existing partner account, or creates an invited one (N2.6).
 async function teamResponse(prepared, config) {
@@ -543,6 +566,7 @@ async function setPassword(request, body, config) {
       await config.boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(target.id);
       await config.boDb.prepare('DELETE FROM tokens WHERE username=?').run(tokens[0].username);
       const userId = String(target.id);
+      const audit = operatorAuditContext({accountId:userId,accessClass:'activation'},'membership.activate');
       const actor = text(String(target.username || ''), 128) ? String(target.username) : userId;
       const operators = await store.listOperators();
       if (!Array.isArray(operators)) fail(503);
@@ -552,9 +576,9 @@ async function setPassword(request, body, config) {
         for (const membership of memberships) {
           if (String(membership?.userId) !== userId || membership.status !== 'invited') continue;
           const saved = await store.upsertMembership({
-            actor, operatorId: operator.id, userId, roleId: membership.roleId, status: 'active', expectedRevision: membership.revision,
+            actor, audit, operatorId: operator.id, userId, roleId: membership.roleId, status: 'active', expectedRevision: membership.revision,
           });
-          activated.push({ actor, operatorId: operator.id, userId, roleId: membership.roleId, revision: saved?.revision });
+          activated.push({ actor, audit, operatorId: operator.id, userId, roleId: membership.roleId, revision: saved?.revision });
         }
       }
     });
@@ -562,7 +586,7 @@ async function setPassword(request, body, config) {
     for (const item of activated) {
       try {
         await store.upsertMembership({
-          actor: item.actor, operatorId: item.operatorId, userId: item.userId, roleId: item.roleId,
+          actor: item.actor, audit: {...item.audit,action:'membership.compensate'}, operatorId: item.operatorId, userId: item.userId, roleId: item.roleId,
           status: 'invited', expectedRevision: item.revision,
         });
       } catch { /* Password transaction rolled back; retrying the same link converges. */ }
@@ -598,6 +622,7 @@ export async function handlePartnerAuth(request, injected) {
     }
     if (prepared.action === 'branding') return await brandingResponse(prepared, config);
     if (prepared.action === 'team') return await teamResponse(prepared, config);
+    if (prepared.action === 'journal') return await journalResponse(prepared, config);
     const body = await bodyOf(prepared.request);
     if (prepared.action === 'login') return await login(prepared.request, body, config);
     if (prepared.action === 'set-password') return await setPassword(prepared.request, body, config);

@@ -344,3 +344,14 @@ test('N1 branding reauthorization rejects a revoked session after its operator l
   assert.equal(pack.branding.color, '#112233');
   assert.equal(f.pool.trace.filter(entry => entry.client !== 0).at(-1).step, 'ROLLBACK');
 });
+
+test('internal administrator journal uses the actual admin ID without impersonating the partner',async()=>{
+ const f=await fixture();
+ const response=await handlePartnerAuth(request(f.admin,selected('team'),{body:{action:'suspend',userId:'43',expectedRevision:1}}),f.config);
+ assert.equal(response.status,200);
+ const read=await handlePartnerAuth(request(f.admin,selected('journal')),f.config);assert.equal(read.status,200);
+ const journal=await read.json(),entry=journal.entries.find(row=>row.action==='team.suspend');
+ assert.equal(entry.actor,'7');assert.equal(entry.accessClass,'internal-admin');assert.equal(entry.resourceId,'43');
+ f.users[0].role='reader';
+ assert.equal((await handlePartnerAuth(request(f.admin,selected('journal')),f.config)).status,401);
+});

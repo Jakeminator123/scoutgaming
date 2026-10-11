@@ -1,3 +1,5 @@
+import { operatorAuditContext } from './operator-audit-context.mjs';
+import { randomUUID } from 'node:crypto';
 import { OPERATOR_ADMIN_PERMISSION } from '../../web/partner-access-policy.mjs';
 import {
   allowsWorkspaceInvite as allowsPartnerInvite, allowsWorkspaceInviteRole as allowsPartnerInviteRole,
@@ -66,6 +68,7 @@ export function createPartnerTeamApi({
       operatorId,
       viewer: { userId: decided.account.userId },
       can: {
+        journal: admin,
         invite: inviteRoles.length > 0,
         role: rows.some(row => row.allowed.role.length > 0),
         suspend: rows.some(row => row.allowed.suspend || row.allowed.reactivate),
@@ -111,6 +114,8 @@ export function createPartnerTeamApi({
       if (!writable(decided)) fail(403);
       if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400);
       const { action } = body;
+      const requestId = randomUUID();
+      const audit = operatorAuditContext({ ...decided, user: actor }, `team.${action}`, requestId);
       // The HTTP adapter locks the operator before this callback. Resolve the
       // account/session and exact action grants again on that same SQL source;
       // changing an actor's role cannot race between the guard and the write.
@@ -155,7 +160,7 @@ export function createPartnerTeamApi({
           latest = await fresh();
           if (!allowsPartnerInvite(latest, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
           await save(action, {
-            actor, operatorId, userId: account.userId, roleId: nextRole.id, status: createdNew ? 'invited' : 'active',
+            actor, audit, operatorId, userId: account.userId, roleId: nextRole.id, status: createdNew ? 'invited' : 'active',
           }, source);
         } catch (error) {
           release();
@@ -169,7 +174,7 @@ export function createPartnerTeamApi({
         const currentRole = await roleOf(operatorId, membership.roleId, source);
         const nextRole = await roleOf(operatorId, body.roleId, source);
         if (!allowsPartnerRoleAssignment(await fresh(), { membership, currentRole, nextRole })) fail(403);
-        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: nextRole.id, status: membership.status, expectedRevision }, source);
+        saved = await save(action, { actor, audit, operatorId, userId: membership.userId, roleId: nextRole.id, status: membership.status, expectedRevision }, source);
       } else if (action === 'suspend' || action === 'reactivate') {
         keys(body, ['action', 'userId', 'expectedRevision']);
         const expectedRevision = revisionOf(body.expectedRevision);
@@ -177,11 +182,12 @@ export function createPartnerTeamApi({
         const currentRole = await roleOf(operatorId, membership.roleId, source);
         const nextStatus = action === 'suspend' ? 'suspended' : 'active';
         if (!allowsPartnerSuspension(await fresh(), { membership, currentRole, nextStatus })) fail(403);
-        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: membership.roleId, status: nextStatus, expectedRevision }, source);
+        saved = await save(action, { actor, audit, operatorId, userId: membership.userId, roleId: membership.roleId, status: nextStatus, expectedRevision }, source);
       } else fail(400);
         return { changed: { userId: saved.userId, roleId: saved.roleId, status: saved.status, revision: saved.revision } };
       };
-      // Provider mail and journal are emitted only after the SQL commit succeeds.
+      // Durable audit was inserted by the store inside the SQL transaction.
+      // Mail and the optional diagnostic logger run only after commit.
       const result = typeof withWriteContext === 'function' ? await withWriteContext(locked) : await locked();
       if (result.invited) {
         if (result.invitation) await sendPartnerInvite(delivery, result.invitation);

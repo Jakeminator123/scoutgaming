@@ -15,7 +15,7 @@ function sessionActor(session) {
   if (!session || typeof session.user !== 'string' || !session.user.trim()) throw failure(401);
   const role = normalizeStudioRole(session.role);
   if (!role) throw failure(403);
-  return Object.freeze({ user: session.user, role });
+  return Object.freeze({ user: session.user, role, ...(session.accountId ? { accountId: String(session.accountId) } : {}) });
 }
 function readActorHeaders(actor) {
   if (actor.user.length > 254 || /[\u0000-\u001f\u007f-\u009f]/.test(actor.user)) throw failure(403);
@@ -114,7 +114,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         } } : {}) });
       const refresh = async () => {
         const current = await authorize(request), principal = sessionActor(current), currentScope = validateStudioScope(current.scope);
-        if (principal.user !== actor.user || principal.role !== actor.role
+        if (principal.accountId !== actor.accountId || principal.user !== actor.user || principal.role !== actor.role
           || !studioRoleMeetsMinimum(principal.role, endpoint.minimumRole)
           || currentScope.environment !== scope.environment || currentScope.workspaceId !== scope.workspaceId) throw failure(403);
       };

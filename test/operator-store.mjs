@@ -12,7 +12,7 @@ const refusal = code => error => error instanceof StudioStorageError && error.co
 const clock = () => 1_700_000_000_000;
 
 function memorySql() {
-  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [] };
+  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operator_audit_events: [] };
   const calls = [];
   const clients = [];
   const trace = [];
@@ -75,6 +75,13 @@ function memorySql() {
     if (tag === 'list-memberships' || tag === 'guard-memberships') return scoped('operator_memberships').filter(row => row.operator_id === values[2]).sort((a, b) => a.user_id.localeCompare(b.user_id)).map(copy);
     if (tag === 'current-package') return scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => b.package_revision - a.package_revision).slice(0, 1).map(copy);
     if (tag === 'lock-operator') return scoped('operators').filter(row => row.operator_id === values[2]).map(copy);
+    if (tag === 'audit-write') {
+      snapshot();
+      const row={environment_id:environment,workspace_id:workspace,operator_id:values[2],event_id:values[3],actor_id:values[4],access_class:values[5],action:values[6],resource_type:values[7],resource_id:values[8],before_revision:values[9],after_revision:values[10],occurred_at_ms:values[11],request_id:values[12],changes:values[13]};
+      tables.operator_audit_events.push(row); return [copy(row)];
+    }
+    if (tag === 'list-audit') return scoped('operator_audit_events').filter(row=>row.operator_id===values[2] && (values[3]===null || row.occurred_at_ms<values[3] || row.occurred_at_ms===values[3] && row.event_id<values[4]))
+      .sort((a,b)=>b.occurred_at_ms-a.occurred_at_ms || b.event_id.localeCompare(a.event_id)).slice(0,values[5]).map(copy);
     if (tag === 'create-operator') {
       if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
       snapshot();
@@ -516,10 +523,10 @@ test('a stale admin revision is still a conflict, and writes without a transacti
     operatorId: 'operator-unibet', roleId: 'owner', label: 'Owner', permissions: viewerPermissions, delegable: true, actor,
   }), error => error instanceof StudioStorageError && error.code === 'studio_invalid_configuration' && error.statusCode === 503);
   assert.equal(roleRow(sql, 'owner').permissions, '["team.roles.assign"]');
-  const created = await blocked.upsertMembership({
+  await assert.rejects(blocked.upsertMembership({
     operatorId: 'operator-unibet', userId: 'staff-9', roleId: 'viewer', status: 'active', actor,
-  });
-  assert.equal(created.revision, 1);
+  }), refusal('studio_invalid_configuration'));
+  assert.deepEqual(sql.tables, before);
 });
 
 test('two concurrent admin demotions serialize on the operator lock', async () => {

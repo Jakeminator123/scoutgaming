@@ -151,7 +151,7 @@ describe('partner team API', { concurrency: 1 }, () => {
     const body = await listed.json();
     assert.equal(body.operatorId, 'north');
     assert.deepEqual(body.viewer, { userId: '43' });
-    assert.deepEqual(body.can, { invite: false, role: false, suspend: false });
+    assert.deepEqual(body.can, { journal: false, invite: false, role: false, suspend: false });
     assert.deepEqual(body.inviteRoles, []);
     assert.deepEqual(body.roles.map(role => role.id), ['partner-admin', 'partner-editor', 'partner-viewer']);
     assert.deepEqual(body.members.map(member => [member.userId, member.username, member.roleId, member.status, member.revision]), [
@@ -183,7 +183,7 @@ describe('partner team API', { concurrency: 1 }, () => {
     const { config } = await fixture();
     const cookie = await cookieFor(config, 'north-admin');
     const body = await (await handlePartnerAuth(read(cookie), config)).json();
-    assert.deepEqual(body.can, { invite: true, role: true, suspend: true });
+    assert.deepEqual(body.can, { journal: true, invite: true, role: true, suspend: true });
     assert.deepEqual(body.inviteRoles, ['partner-editor', 'partner-viewer']);
     const allowed = Object.fromEntries(body.members.map(member => [member.userId, member.allowed]));
     assert.deepEqual(allowed, {
@@ -369,4 +369,47 @@ describe('partner team API', { concurrency: 1 }, () => {
     assert.equal(users.some(user => user.email === 'hour-6@partner.invalid'), false);
     assert.equal(pool.tables.operator_memberships.filter(row => row.status === 'invited').length, 5);
   });
+});
+
+test('journal read is fresh, permission-gated and scoped; team change carries authenticated audit identity',async()=>{
+ const f=await fixture(),admin=await cookieFor(f.config,'north-admin'),viewer=await cookieFor(f.config,'north-viewer');
+ const url=origin+'/studio/api/partner/journal?operator=north';
+ assert.equal((await handlePartnerAuth(read(null,url),f.config)).status,401);
+ assert.equal((await handlePartnerAuth(read(viewer,url),f.config)).status,403);
+ const before=f.pool.tables.operator_audit_events.length;
+ const changed=await handlePartnerAuth(write(admin,{action:'suspend',userId:'44',expectedRevision:1}),f.config);
+ assert.equal(changed.status,200);assert.equal(f.pool.tables.operator_audit_events.length,before+1);
+ const response=await handlePartnerAuth(read(admin,url),f.config);assert.equal(response.status,200);
+ assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie');
+ const journal=await response.json(),entry=journal.entries.find(row=>row.action==='team.suspend');
+ assert.equal(entry.actor,'42');assert.equal(entry.accessClass,'partner');assert.equal(entry.resourceId,'44');
+ assert.deepEqual([entry.beforeRevision,entry.afterRevision],[1,2]);
+ assert.doesNotMatch(JSON.stringify(journal),/admin@north|cookie|salt|hash/);
+ assert.equal((await handlePartnerAuth(read(admin,origin+'/studio/api/partner/journal?operator=missing'),f.config)).status,404);
+ memberRow(f.pool,'42').status='suspended';
+ assert.equal((await handlePartnerAuth(read(admin,url),f.config)).status,403);
+});
+test('journal insertion failure returns503 and rolls team membership back with no new event',async()=>{
+ const f=await fixture(),cookie=await cookieFor(f.config,'north-admin'),before=structuredClone(f.pool.tables);
+ f.pool.before('audit-write',()=>{throw Object.assign(Error('fixture audit missing'),{code:'42P01'});});
+ assert.equal((await handlePartnerAuth(write(cookie,{action:'suspend',userId:'44',expectedRevision:1}),f.config)).status,503);
+ assert.deepEqual(f.pool.tables,before);assert.deepEqual(f.logs,[]);
+});
+
+test('journal validates bounded pagination and tenant scope even when a cursor comes from another company',async()=>{
+ const f=await fixture(),cookie=await cookieFor(f.config,'north-admin');
+ const url=origin+'/studio/api/partner/journal?operator=north';
+ for(const suffix of ['&limit=0','&limit=101','&limit=01','&limit=bad','&limit=25&limit=25','&cursor=not-json','&extra=value']){
+  assert.equal((await handlePartnerAuth(read(cookie,url+suffix),f.config)).status,400,suffix);
+ }
+ assert.equal((await handlePartnerAuth(read(cookie,url+'&limit=25'),f.config)).status,200);
+ const first=await (await handlePartnerAuth(read(cookie,url+'&limit=1'),f.config)).json();
+ assert.equal(first.entries.length,1);assert.ok(first.nextCursor);
+ const second=await (await handlePartnerAuth(read(cookie,url+'&limit=1&cursor='+first.nextCursor),f.config)).json();
+ assert.equal(second.entries.length,1);assert.notEqual(second.entries[0].id,first.entries[0].id);
+ await f.store.createOperator({actor:'fixture',operatorId:'other-company',slug:'other-company',name:'Other'});
+ const other=(await f.store.listAuditEvents('other-company')).entries[0];
+ const cursor=Buffer.from(JSON.stringify({atMs:other.atMs,id:other.id})).toString('base64url');
+ const rows=await (await handlePartnerAuth(read(cookie,url+'&cursor='+cursor),f.config)).json();
+ assert.equal(rows.operatorId,'north');assert.ok(rows.entries.every(row=>row.resourceId!=='other-company'));
 });

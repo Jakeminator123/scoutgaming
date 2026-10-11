@@ -1,3 +1,4 @@
+import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
 import { defaultPresentationLane, normalizeProject } from './studio-model.mjs';
 import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
@@ -111,7 +112,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administrationDocument.value, operatorId:prepared.operatorId,
           currentPackage:current, presentation:prepared.presentation});
-        const published = await operators.publishPackage({actor:context.actor.user, operatorId:prepared.operatorId,
+        const published = await operators.publishPackage({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId:prepared.operatorId,
           expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
           games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
           branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation)});
@@ -127,7 +128,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       throw new StudioStorageError('studio_media_registry_unavailable');
     const presentation = buildPresentationPackage(source, lanes, saved.layerAssets ?? []);
     const operators = await store(), current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
-    const published = await operators.publishPackage({actor:context.actor.user, operatorId:context.body.operatorId,
+    const published = await operators.publishPackage({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId:context.body.operatorId,
       expectedRevision:current?.revision ?? null, lanes, games:current?.games?.length ? [...current.games] : ['blackjack'],
       tables:current ? [...current.tables] : [], branding:withPackagePresentation(current?.branding ?? {}, presentation)});
     return result(published, presentation);
@@ -135,7 +136,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   handlers.set('POST /studio/api/admin/operator-create-demo', async context => {
     exactKeys(context.body, []);
     const created = await (await store()).createOperator({
-      actor: context.actor.user,
+      actor: context.actor.user, audit: operatorAuditContext(context.actor),
       operatorId: SG_TEST_OPERATOR.id,
       slug: SG_TEST_OPERATOR.slug,
       name: SG_TEST_OPERATOR.name,

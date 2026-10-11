@@ -19,7 +19,7 @@ const sources = Object.freeze([
   { version: '005', file: '005-operators.sql', optional: true,
     tables: ['operators', 'operator_roles', 'operator_memberships', 'operator_packages'],
     indexes: ['operator_memberships_user_idx'] },
-  { version: '006', file: '006-operator-audit.sql', optional: true,
+  { version: '006', file: '006-operator-audit.sql',
     tables: ['operator_audit_events'], indexes: ['operator_audit_events_time_idx'] },
 ]);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
@@ -166,15 +166,9 @@ async function inspect(client, migrations, objects) {
 }
 
 function result(verifiedTarget, state) {
-  // Preparation release only: no runtime consumer uses 006 yet. It is still
-  // checksum/structure-verified when installed and apply explicitly installs it.
-  // Only this exact reviewed optional migration may wait until after rollout.
-  const optionalToApply = state.toApply.filter(row => row.version === '006' && row.optional === true)
-    .map(({ version, file, checksum }) => ({ version, file, checksum }));
-  const pending = state.toApply.filter(row => !(row.version === '006' && row.optional === true))
-    .map(({ version, file, checksum }) => ({ version, file, checksum }));
+  const pending = state.toApply.map(({ version, file, checksum }) => ({ version, file, checksum }));
   return { target: verifiedTarget, targetFingerprint: hash(canonicalStudioJson(verifiedTarget)), schemaPresent: state.objects.present,
-    applied: state.applied, toApply: pending, pending, optionalToApply };
+    applied: state.applied, toApply: pending, pending };
 }
 
 async function withClient(pool, readOnly, work) {

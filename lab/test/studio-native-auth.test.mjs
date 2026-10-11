@@ -81,7 +81,7 @@ function pooledFixture({ grouped = true, afterRead = () => {}, failQuery = () =>
 test('admin and stored superadmin use live identity with canonical admin privilege and no writes', async () => {
   for (const role of ['admin','superadmin']) {
     const f = fixture(role), session = await f.authorize(f.request());
-    assert.deepEqual(session, { user: 'operator', role:'admin', scope });
+    assert.deepEqual(session, { accountId: '7', user: 'operator', role:'admin', scope });
     assert.ok(Object.isFrozen(session));
     assert.ok(f.state.queries.every(sql => sql.startsWith('SELECT')));
   }
@@ -130,7 +130,7 @@ test('PostgreSQL authorization uses two fresh projections and four query calls i
     const ungrouped = pooledFixture({ grouped: false }), grouped = pooledFixture();
     for (const f of [ungrouped, grouped]) {
       const request = kind === 'lab' ? f.request(`lab_session=${bearer}`) : f.request();
-      assert.deepEqual(await f.authorize(request), { user: 'operator', role: 'admin', scope });
+      assert.deepEqual(await f.authorize(request), { accountId: '7', user: 'operator', role: 'admin', scope });
       assert.equal(f.calls.filter(sql => sql.startsWith('SELECT')).length, 2);
       assert.equal(f.connections.borrowed, f.connections.released);
     }
@@ -218,7 +218,7 @@ test('the real adapter binds login and account ID while projecting no credential
     const f = pooledFixture();
     f.state.user.username = "operator' OR 1=1 --";
     const actor = await f.authorize(kind === 'lab' ? f.request(`lab_session=${bearer}`) : f.request());
-    assert.deepEqual(actor, { user: f.state.user.username, role: 'admin', scope });
+    assert.deepEqual(actor, { accountId: '7', user: f.state.user.username, role: 'admin', scope });
     const projection = f.calls.findIndex(sql => sql.includes('LEFT JOIN croupier_auth.bo_auth_epochs'));
     assert.doesNotMatch(f.calls[projection], /OR 1=1/);
     assert.deepEqual(f.parameters[projection], kind === 'lab' ? ['7'] : [f.state.user.username.toLowerCase(), f.state.user.username.toLowerCase()]);
@@ -232,7 +232,7 @@ test('identity changes are fresh: JWT subject removal is denied and Lab returns 
     assert.equal((await f.authorize(request)).user, 'operator');
     f.state.user.username = 'renamed-operator';
     if (kind === 'jwt') await assert.rejects(f.authorize(request), code('studio_login_required'));
-    else assert.deepEqual(await f.authorize(request), { user: 'renamed-operator', role: 'admin', scope });
+    else assert.deepEqual(await f.authorize(request), { accountId: '7', user: 'renamed-operator', role: 'admin', scope });
     assert.equal(f.connections.borrowed, 2);
     assert.equal(f.connections.released, 2);
   }

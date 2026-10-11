@@ -26,6 +26,7 @@ export function createPartnerBrandingApi(options: {
     getCurrentPackage(operatorId: string): Promise<PartnerPackageRecord | null>;
     publishPackage(input: {
       actor: string;
+      audit?: { actorId: string; accessClass: string; requestId: string; action?: string };
       expectedRevision: number;
       operatorId: string;
       lanes: readonly string[];
@@ -46,6 +47,7 @@ export function createPartnerBrandingApi(options: {
   write(input: {
     operatorId: string;
     actor: string;
+      audit?: { actorId: string; accessClass: string; requestId: string; action?: string };
     expectedRevision: number;
     branding: Record<string, unknown>;
   }): Promise<PartnerBrandingView>;

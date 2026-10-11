@@ -1,3 +1,4 @@
+import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeProject, defaultPresentationLane } from './studio-model.mjs';
@@ -241,7 +242,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live' };
       const administration = validateStudioGameAdministration({ ...plan.administration, rooms: [...saved.administration.rooms, room] });
       const changed = await repository.saveDocument('administration', { value: administration, expectedRevision: body.expectedAdministrationRevision, actor: context.actor.user });
-      const pack = await saved.operators.publishPackage({ actor: context.actor.user, operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
+      const pack = await saved.operators.publishPackage({ actor: context.actor.user, audit: operatorAuditContext(context.actor), operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
         lanes: presentation.lanes.map(lane => lane.id), games: saved.pack?.games?.length ? saved.pack.games : ['blackjack'],
         tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation) });
       return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);

@@ -1,6 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
-## Börja här: överlämning 11 oktober 2026
+## Börja här: överlämning 12 oktober 2026
+
+### JN2-C: team, behörigheter och beständig ändringsjournal
+
+Produktionsförberedelsen verifierades på både Vercel READY och Render LIVE med SHA `d72f392f8c91532c84252c6efdb524f471616c78`, grön GitHub CI samt fungerande N1-session till Johns bolag. Migration006 tillämpades därefter 12 oktober 00:14 svensk tid (11 oktober 22:14 UTC): checksumma `a8775d0329262194340fd6365da4b1d316459d894e6fd3b93106ecde7199b474`, kedja001–006 verifierad, inga väntande migrationer, journalen tom vid installation och noll affärsskrivningar. Slutkoden kräver därefter006; produktionsrevision och slutlig läskontroll redovisas i leveransrapporten.
+
+Slutimplementationen bygger på main, efter förberedelsecommit `d72f392f8c91532c84252c6efdb524f471616c78`. Inga gamla John-/Kevin-brancher eller externa skisser används som runtimekälla. Team visar aktuella medlemmar, faktiska rättigheter och delegerbarhet; inbjudan, rollbyte, avstängning och återaktivering går genom det befintliga scoped API:t med ny behörighetskontroll och revisionsskydd. Självuppgradering, rättigheter utanför aktörens egna, skyddade roller och borttagning av sista aktiva administratören nekas. Försenade eller nekade svar får inte återvisa gammal åtkomst eller gamla teamdata.
+
+Additiv Studio-migration `006-operator-audit.sql` skapar `operator_audit_events`. Operatörs-, roll-, medlemskaps- och paketändringar samt audit sparas i samma transaktion; auditfel avbryter skrivningen. Journalen avgränsas till miljö/workspace/bolag och innehåller verklig aktör, åtkomstklass, åtgärd/resurs, före/efter-revision, tid, request-ID och utvalda säkra ändringsfält. Inga lösenord, token eller e-postadresser loggas. Bevaras tills en uttrycklig retentionpolicy beslutas; ingen app-raderingsväg eller historisk backfill. Team visar journalen för intern admin och partner med både `team.read` och `team.roles.assign`, med 25 poster per sida och SV/EN.
+
+Konto- och operatörsdatabaser förblir separata. Aktiveringsfel efter operatörscommit kompenseras till inbjudet medlemskap, med samma aktör/request-ID i aktiverings- och kompensationsposten; detta är ingen distribuerad transaktion.
+
+Verifiering: 11 riktiga PostgreSQL-prov på Windows med två tomma isolerade databaser, konkurrerande adminändringar, stale CAS, bolagsgränser, återkallade rättigheter, auditfel/rollback, aktivering/inloggning/replay, uppskjutet auth-COMMIT-fel/kompensation/nytt försök och beständighet efter databasomstart. Dessutom 18 browserprov av riktiga Team/Journal-komponenter på SV/EN i 360/1440 px, inklusive tangentbord, bekräftelser, paginering och sena svar efter 403. De 25 fokuserade sluttesterna för UI, journal och QA-koppling passerar. Slutbygge/TypeScript passerar; ordinarie fullhook är leveransgrind. Förberedelseversionen passerade 2 455 tester/9 skip/0 fail. Ny permanent SQL-täckning körs i befintlig CI-runner med separat auth-/operatörsdatabas och riktig omstart; lokal testfil utan fixture är uttryckligen SKIP och räknas inte som SQL-bevis.
+
+Ingen WSL, inga betalda AI-/GPU-testanrop och inga skrivtester mot verkliga användarkonton. Budgettaket är fortsatt 5 USD totalt per avgränsad testomgång. QA-processer och testdatabaser städas av sina fixtures. Isolerade kvitton finns privat i `lab/data/platform-private/n2-pg-qa/evidence.json` och `n2-ui-qa/evidence.json`; leveransloggar ligger i `n2-audit-rollout/`.
+
+Legacygranskningen fann att originalbanken `media/dealers/{astrid,vera,amira,mei}` fortfarande används av runtime, originalmediaserver och publicerade alias (1 616 layoutposter/978 alias). Ingen flyttbar applogik hittades där. Mapparna och aktiva `services/astrid-gpu-worker` bevaras; radering kräver en separat verifierad originalbanks-/runtime-migrering. En enda övergiven publik `lipsync-overrides.json.pre-retime` har flyttats byteidentiskt till Astrids `source/calibration` (SHA256 `28197cb52298d78842d972c1790373e121a43bb59fee727e66998a0379aa5ef1`). Fyra dealerprober och nio medielayouttester PASS. Ingen ny visuell läppsynksacceptans; PAOW-provet hoppas över enligt Jakob.
+
+Kvar: JN2-D–K i befintlig tracker; utkast/publicering, auktoritativ speldata och de beroende drift-/RG-/rapportflödena är egna implementationer. Flera varumärken/marknader per bolag, nya RG-/integrationsskrivrättigheter, lösenordsåterställning och 2FA ingår inte i denna teamleverans. GitGuardian har fortfarande 12 öppna incidenter, partiella platser och ofullständig historisk skanning; grön CI friskförklarar inte dem.
+
 
 ### Förberedelse för JN2-C, 12 oktober 2026
 

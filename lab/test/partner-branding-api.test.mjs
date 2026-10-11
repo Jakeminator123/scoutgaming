@@ -9,7 +9,7 @@ const actor = 'brand-actor';
 const operatorId = 'operator-unibet';
 
 function memoryPool() {
-  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [] };
+  const tables = { operators: [], operator_roles: [], operator_memberships: [], operator_packages: [], operatorAudits: [] };
   const pgError = code => Object.assign(new Error('fixture'), { code });
   const copy = row => structuredClone(row);
   async function dispatch(text, values = []) {
@@ -26,6 +26,7 @@ function memoryPool() {
     if (tag === 'list-memberships' || tag === 'guard-memberships') return { rows: scoped('operator_memberships').filter(row => row.operator_id === values[2]).sort((a, b) => a.user_id.localeCompare(b.user_id)).map(copy) };
     if (tag === 'current-package') return { rows: scoped('operator_packages').filter(row => row.operator_id === values[2]).sort((a, b) => Number(b.package_revision) - Number(a.package_revision)).slice(0, 1).map(copy) };
     if (tag === 'lock-operator') return { rows: scoped('operators').filter(row => row.operator_id === values[2]).map(copy) };
+    if (tag === 'audit-write') { tables.operatorAudits.push(copy(values)); return {rows:[{event_id:values[3]}]}; }
     if (tag === 'create-operator') {
       if (scoped('operators').some(row => row.operator_id === values[2] || row.slug === values[3])) throw pgError('23505');
       const row = { environment_id: environment, workspace_id: workspace, operator_id: values[2], slug: values[3], name: values[4], status: values[5], created_at_ms: values[6] };

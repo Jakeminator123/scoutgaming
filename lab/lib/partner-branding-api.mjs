@@ -129,7 +129,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   return Object.freeze({
     async read({ operatorId }) { return present(await load(operatorId)); },
-    async write({ operatorId, actor, expectedRevision, branding }) {
+    async write({ operatorId, actor, audit, expectedRevision, branding }) {
       if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) fail(400);
       if (!plainObject(branding)) fail(422);
       // Capture the request before any await; a caller cannot change the intent.
@@ -147,7 +147,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         const nextBranding=await prepareBranding(locked,branding,document);
         let published;
         try {
-          published=await context.store.publishPackage({actor,operatorId,expectedRevision:locked.revision,
+          published=await context.store.publishPackage({actor,audit,operatorId,expectedRevision:locked.revision,
             lanes:[...locked.lanes],games:[...locked.games],tables:[...locked.tables],branding:nextBranding});
         } catch(error) { if(Number.isInteger(error?.statusCode)) throw error; fail(503); }
         return present(published,document);
