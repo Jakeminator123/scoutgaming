@@ -104,7 +104,7 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
   nivå 2:s förhandsvisning. `/partner` visar nu en separat ingång med explicit
   demoval; inga exempelbolag presenteras som anslutna kunder. Kundpersonal når
-  bara egna aktiva medlemskap. Adminens val bland riktiga operatörer och paketpublicering är levererade till 11 oktober; verkligt N2-slutprov kvarstår. Operatörslagring, `partner_session`
+  bara egna aktiva medlemskap. Val av riktiga operatörer och paketpublicering är levererade i N1 till 11 oktober, inte i adminens N2-ingång: utan `partner_session` väljer `/partner` fortfarande exempelvyn. Samma admininloggning måste även kunna öppna riktiga bolag i N2; se JN2-A nedan. Operatörslagring, `partner_session`
   och scoped snapshot finns; T2 är påbörjad, inte klar.
 - [ ] **T3. Anslut en operatörsfunktion i taget.** Öppen. Scoped snapshot kan visa sparat paket (presentationer, bord, revision) och medlemskap. Spelare, transaktioner och rapporter är inte anslutna. N1:s bolagsadministration och paketpublicering är levererade; N2:s kompletta liveacceptans och övriga integrationer återstår. Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
@@ -127,6 +127,324 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
 Privata originalanteckningar i `random/` är inte del av produkt eller deployment.
+
+### Johns N2-skiss — implementationsplan, 11 oktober 2026
+
+Denna nedbrytning hör till **T2/T3 i denna tracker**, inte till ett nytt projekt.
+Alla JN2-punkter nedan är öppna implementations- och acceptansgrindar. Planen
+är inte ett påstående att funktionerna är levererade. Befintliga N2.2/N2.4-namn
+behålls; JN2-ID:n avser endast denna skissintegration.
+
+**Underlag och nuläge.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
+pekar på `random/n2-skiss-john/index.html` på John-revision `aaadfb49`.
+Skissen är fristående HTML/JS med exempeldata och simulerade anrop, inte en
+färdig backend. Kodinventeringen nedan utgår från main
+`9d151fa6be364f4af5999c8163a6055dd8fc5fc8`. Webbläsarobservationerna gjordes
+11 oktober på www; deras exakta deployment-SHA är inte fastställd av denna kontroll.
+
+| Del | Finns och ska återanvändas | Lucka som faktiskt återstår |
+| --- | --- | --- |
+| Bolag och åtkomst | Studio `005-operators.sql`: bolag, roller, medlemskap och revisionerade paket; partnerlogin/aktivering; N1 Bolag & team | Adminens N2-ingång väljer fixture utan `partner_session`. Gemensam bolagsingång och separata säkra admin-/partnerkontexter behövs. |
+| N2-gränssnitt | Kevins importerade komponenter; riktiga paket-/teamvyer och appearance-loader | Johns navigation, utseende och arbetsflöden är inte genomgående integrerade. Startsidan refererar CSS-klasser som saknas. |
+| Anpassning/publicering | `partner-branding-api.mjs` validerar tillåtna ändringar, rättigheter och förväntad revision; N1 äger fryst presentation/rum | Dagens sparning publicerar paketrevision. Johns separat sparade utkast, återställning och granskningsflöde saknas som sammanhängande kontrakt. |
+| Speldata | Render/spel-Neon har spelare, transaktioner, partnerrundor och API-nycklar | N2-snapshot markerar players/transactions/reports som ej anslutna. Entydigt bolagsägarskap, läs-API och avstämning krävs före N2.4. |
+| Revision/audit | Pakethistorik och befintlig loggning | `operator-journal.mjs` skriver serverlogg, inte en beständig operatörsjournal som går att läsa och exportera. |
+
+**Varför Johns spelbolag saknas i bilden.** Inloggad intern admin såg på
+`/partner` Demo North, Demo South och SG-test som demonstrationer. På
+`/partner/sg-test` stod uttryckligen intern förhandsvisning/exempeldata.
+Samtidigt visade N1 Bolag & team **Johns spelbolag**, slug
+`johns-spelbolag`, med ett aktivt medlemskap; `/play` visade också bolaget.
+Bolaget saknas alltså inte i den observerade bolagskatalogen. I
+`lab/app/control/surface-page.tsx` används riktig N2-data bara när
+`partnerSessionPresent(request)` är sann; annars väljs `partnerPreviewInitialData`.
+Det är ett åtkomst-/datakälleval, inte något som ska lösas genom att skapa ett
+dubblettbolag eller lägga admin som kundmedlem i varje bolag.
+
+**Arkitektur och avgränsning.** Behåll Next/Route Handlers på Vercel för N2,
+Studio-Neon för operatörer/paket/konfiguration och Render/spel-Neon som auktoritet
+för rundor, kort, regler, saldo och avräkning. Samma konto för intern admin över
+tre nivåer betyder inte samma behörighet för varje N1-användare: read-only och
+andra begränsade roller får inte automatiskt adminrättigheter. Demo North/South
+tas bort ur normal navigering, inte genom att radera verkliga DB-poster eller
+testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt tomläge.
+
+#### Första leveransen: riktig bolagsingång och Johns visuella grund
+
+- [ ] **JN2-A — P0: samma adminlogin, riktiga bolag, inga demokort.**
+  **Frontend:** ersätt normal `/partner`-lista med riktiga bolag som den aktuella
+  identiteten får se; sök/bolagsval och länkar till `/partner/{slug}`. Visa
+  ”Intern admin · Johns spelbolag” respektive partnerns egen identitet. En admin
+  ska gå N1 → N2 → N3 utan separat partnerlogin; partnerpersonal når endast sina
+  aktiva medlemskap. Ta bort Demo North/South och missvisande footertext; SG:s
+  riktiga bolag ska komma från lagret, inte från en namngiven fixture.
+  **Backend:** återanvänd N1:s färska adminauktorisering och operatörslager i
+  `surface-page.tsx`/`partner-data.mjs`. Inför en explicit intern operatörskontext
+  och gemensam snapshotbyggare; behåll partnerpolicyn intakt. Både initial sida,
+  omladdning och varje N2-API måste kontrollera identitet, miljö/workspace, valt
+  operatorId och rättighet på nytt. Adminskrivningar ska gå genom samma
+  resursvalidering/CAS, med verklig admin som aktör; ingen falsk `partner_session`,
+  medlemskap eller generell proxy till oskopade admin-API:er. Bestäm explicit
+  läge när båda sessionerna finns. Utgången/återkallad session ger login/nekande,
+  aldrig automatisk övergång till demo eller högre rättighet.
+  **Databas:** återanvänd operators/roles/memberships/packages från 005; ingen
+  kontomigrering eller bolagsseed behövs för katalogen. Slug är URL, operatorId
+  är ägarskap. Beständig audit för skrivningar färdigställs i JN2-C.
+  **Beroenden:** befintlig N1-auth och 005-lagring; första blockerande steg.
+  **Verifiering:** admin ser Johns och SG:s riktiga bolag och rätt paket vid
+  direktlänk/refresh utan ny login; bolag utan paket är synligt men opublicerat.
+  Partner A får 403/404 för B även vid manipulerad URL/body; read-only kan inte
+  skriva; indragen adminroll/session slår igenom nästa anrop. Anonym användare
+  får ingen privat bolagslista. Inget fixturesvar vid 401/403/503.
+
+- [ ] **JN2-B — Johns visuella språk på befintliga komponenter.**
+  **Frontend:** implementera först skissens sidomeny (A), gemensam PageHeader,
+  grupper Översikt/Spel/Spelare/Finans/Inställningar, tydligt aktivt bolag och
+  konsekventa kort, tabeller, statusmarkeringar, drawers och formulär. Behåll
+  befintliga fungerande loaders/komponenter, byt inte till hela HTML-skissens
+  globala state. Använd dess ljusa neutrala ytor/limeaccent, med mörkt läge och
+  samlade EN/SV-texter. Alternativ toppmeny (B) skjuts upp tills A är godkänd.
+  Åtgärda `/partner` separat: `partner-workspace.tsx` använder `tools`, `tool`,
+  `help`, `notice`, `levels` som saknas i importerad `control-workspace.module.css`.
+  Ge partneringången avsiktlig egen styling eller riktiga gemensamma komponenter
+  utan att återställa N1:s nya CSS. Filter visas bara där datakontraktet stöder dem.
+  **Backend:** återanvänd snapshot/capabilities från A; exponera unavailable,
+  tomt och fel som skilda tillstånd. Inga nya business-API:er för enbart layout.
+  **Databas:** inga nya tabeller för UI-skalet; använd befintlig profil för
+  språkpreferens där den gäller, lagra inte affärsutkast som endast localStorage.
+  **Beroenden:** A:s mode-/bolagskontrakt; kan utformas samtidigt med A.
+  **Verifiering:** jämför startsida, översikt, bord, branding och team med Johns
+  skiss i 360/820/1440 CSS-pixlar, ljust/mörkt, EN/SV. Kontrollera tangentbord,
+  synlig fokus, dialogens fokus/återgång, etiketter, kontrast, tabellscroll och
+  laddning/fel/tomläge. Exempeldata får inte se ut som verkliga pengar eller drift.
+
+#### Säker konfiguration och publicering
+
+- [ ] **JN2-C — rättigheter, beständig audit och bolag/varumärkesgräns.**
+  **Frontend:** koppla Johns teamvy till befintlig invitation/aktivering och
+  team-loader. Visa tillåtna åtgärder och faktiskt aktiva roller, inte bara fem
+  hårdkodade rollnamn. Skilj bolag från varumärke/marknad; första leveransen kan
+  ha ett varumärke per bolag, men ska inte visa påhittade marknader/licenser.
+  **Backend:** mappa skissens Owner/Pit boss/Finance/Branding/Read-only mot
+  `web/partner-access-policy.mjs` och befintliga anpassade roller; dokumentera
+  delegerbara rättigheter. Nya skrivförmågor för RG/integrationer kräver explicit
+  policy, inte återanvändning av `*.read`. Lägg läs-API för journal och skriv
+  audit tillsammans med konfigurationsändringen; fail closed vid saknad journal.
+  **Databas:** additiv Studio-migration för operatörsaudit (scope/operatorId,
+  aktör och accessClass, åtgärd/resurs, gammal/ny revision, tid, requestId;
+  inga hemligheter). Bestäm retention och index för operatör/tid. Vid flerbrands-
+  leverans: scoped brands/markets och kopplingar till rum, valuta och paket;
+  backfyll endast verifierad bolagstillhörighet, bevara befintliga operatorId:n.
+  **Beroenden:** A; audit är en grind för nya verkliga skrivflöden D/F/G/I/J/K.
+  **Verifiering:** isolerad Postgres, samtidiga rollbyten, sista aktiva admin,
+  avstängning och återkallelse; en lyckad ändring ger exakt en beständig auditpost,
+  nekad ändring ändrar inga affärsdata. Ingen läsning/export över scopegräns.
+
+- [ ] **JN2-D — brandutkast, preview, granskat publicera/återställ.**
+  **Frontend:** integrera Johns logga, filt/rail/tryck, bakgrund, chips och
+  knappstilar stegvis med `partner-appearance.tsx`. Visa tydligt utkast kontra
+  publicerad revision, sparstatus, ändringslista, berörda rum och versionshistorik.
+  Lägg brandstandard, separat rumsöverskrivning och ”använd standard igen”. Preview
+  omfattar faktisk tillgänglig speltyp, spelfas och desktop/mobil; N1:s frysta
+  placering/skala är inte redigerbar. Chips/knappar får inte markeras klara innan
+  samma kontrakt renderas i N3 (inklusive kvarvarande L4-arbete).
+  **Backend:** skilj spara-utkast från publicera i befintligt branding-API.
+  Validera serverledes allowlist, färger/kontrast, logoformat/storlek, publicerat
+  Scout-paket, dealer/bakgrundskompatibilitet och förväntad basrevision.
+  Återställ skapar utkast, inte tyst liveändring. 403/409 och ändrat grundpaket
+  behåller användarens utkast men blockerar felaktig publicering. Frysta
+  presentationer/rum och privata mediereferenser förblir N1-ägda.
+  **Databas:** separat scoped utkast med baspaketrevision och egen revision;
+  återanvänd `operator_packages` för publicerad historik, skapa inte ett parallellt
+  N1-paketsystem. Bestäm och validera explicit lagring av tillåtna brand-/rums-
+  overrides. Logo i befintlig behörighetsstyrd medielagring, inte stora data-URL:er
+  i paket eller osanerad SVG/HTML. Publicering och audit atomiskt i Studio;
+  spelmotorns tillämpning kvitteras separat, inte som en distribuerad DB-transaktion.
+  **Beroenden:** A–C, befintligt package-/roomkontrakt och N3-renderer.
+  **Verifiering:** två redigerare → konflikt utan förlorat utkast; ändrade
+  rättigheter/paket efter öppnad dialog → nekande. Reload behåller utkast;
+  publicering syns från nästa runda, pågående runda behåller sin look.
+  Brandbyte påverkar rätt rum, rumsundantag består och reset fungerar.
+  Prova felaktig logo/kontrast samt alla tillgängliga dealers utan att ändra media.
+
+#### Spelmotorkoppling: data före statistik och driftknappar
+
+- [ ] **JN2-E — N2.4: auktoritativt, bolagsavgränsat läskontrakt.**
+  **Frontend:** dashboard/livebord/spelare/transaktioner får samma period-,
+  valuta- och bolagskontext. Visa ”inte anslutet”/”data fördröjd” med asOf;
+  okänd GGR eller beläggning är inte noll. Dölj ej stödda filter och exportknappar.
+  **Backend:** inför autentiserad läsyta på Render med serververifierat operatorId,
+  roomId, tidsintervall, valuta, paginering och mätdefinitioner. N2 använder
+  server-till-server-adapter, inte globalt spelar-admin-API från browsern.
+  Definiera GGR från avräknade insatser minus utbetalningar, separera öppna
+  insatser, annulleringar och valutakonvertering; en spelare kan ha olika
+  operatörsrelationer. Återanvänd befintliga rund-/transaktionskällor.
+  **Databas:** inventera faktisk mål-DB före migration. Granskad bas i
+  `ops/neon-game/product-schema.sql` har `partner_players`/`partner_rounds`
+  med key_id men saknar explicit operatorId-koppling där; globala transactions
+  är player_id-bundna. Inför verifierad API-key → operatorId-bindning samt
+  rums-/rund-/varumärkesscope där nödvändigt, med FK/index och unika eventnycklar.
+  Backfyll endast bevisad historik; okänd legacydata hålls utanför kundrapporter.
+  Härled inte ägarskap från bolagsnamn, key creator eller global player_id.
+  Lagra eventuella läsprojektioner idempotent; kopiera inte en skrivbar plånbok
+  till Studio. Redovisa valutans precision och hantera pengar utan flyttalsdrift.
+  **Beroenden:** A/C och verifierad nyckel-/operatörsmappning; integrationsvyn i
+  J kan komma senare. D och E är separata leveranser, inte beroende av varandra.
+  **Verifiering:** två operatörer med separata och överlappande spelaridentiteter,
+  retry/dubbla events, negativa dagar, öppna/avräknade/annullerade rundor, flera
+  valutor och periodgränser. Avstäm varje summa mot motorns ledger. Testa att
+  nyckelbyte, URL/body/operatorbyte och export inte läcker ett annat bolags data.
+
+- [ ] **JN2-F — livebord, dealer/limitbyte och schemalagda ändringar.**
+  **Frontend:** Johns Floor/List och driftpanel visar faktiska rum, dealer,
+  status, platser och väntande åtgärder. Skilj skickad/accepterad/tillämpad/misslyckad
+  från live. Paus, återuppta och ändrade limits kräver tydlig bekräftelse.
+  **Backend:** återanvänd N1:s atomära presentationsprofil + game lane + room-
+  skapande; N2 begär/utför bara tillåtna paketbundna ändringar. Render validerar
+  dealer, regler, valuta och limits, kvitterar idempotenta kommandon och tillämpar
+  säkra ändringar vid rundgräns. Schemalägg serverledes med uttrycklig tidszon,
+  konfliktregel, avbryt och återauktorisering vid exekvering. Klienttimer räcker inte.
+  **Databas:** beständig kommandologg/outbox/schemaläggning med operator/room,
+  expectedRevision, requestId, önskad tid och engine-ack. Bestäm en enda ägare
+  för exekvering i motorn; ingen dubbel sanning mellan Studio och spel-Neon.
+  **Beroenden:** C/E samt verifierat package-/room- och revisionskontrakt från D.
+  **Verifiering:** pågående runda slutförs före paus; omstart/retry ger inte
+  dubbla ändringar; gammal revision nekas, indraget paket/rättighet stoppar
+  väntande ändring. Prova alla tillgängliga spel; Roulette/Baccarat förblir
+  otillgängliga tills motorn faktiskt stöder dem, oavsett skissens demoväxel.
+
+- [ ] **JN2-G — spelarhistorik och ansvarsfullt spel.**
+  **Frontend:** anslut spelardetalj, transaktioner, noter, flagga/block och limits;
+  visa källa, faktisk effekt och tid. Inför separata rättigheter för varje
+  skrivåtgärd. Självavstängning från operatörsplattformen kan inte hävas i N2.
+  **Backend:** ägarskap genom hela läs-/skrivkedjan; Render kontrollerar striktare
+  limit och spärr vid varje ny insats. Återanvänd `player_admin_events` där dess
+  kontrakt passar och komplettera med operatorscope. Kundvisning väntar på
+  motorns ack; en UI-flagga får inte påstå att spel stoppats.
+  **Databas:** scoped limits med typ/period/valuta/källa/ikraftträdande, noter och
+  audit samt index. Bevara serverägda saldon, historik och kontoidentiteter.
+  **Beroenden:** C/E/F:s säkra kommando-/kvittensprincip.
+  **Verifiering:** gränsöverskridande insats, samtidiga insatser, striktare av två
+  limits, dygn/vecka/månad och tidszon, aktiv runda vid spärr, obehörig upplåsning,
+  PII/CSV/export och tvåbolagsisolering i separat testdatabas; aldrig riktiga
+  kundkonton för test. Dealerförslag får inte kringgå limits eller exkluderingar.
+
+- [ ] **JN2-H — rapporter, statements och senare intäktsdelning.**
+  **Frontend:** börja med sammanfattning/transaktioner/bordsrapport och riktiga
+  CSV/XLSX-exporter; därefter månadens öppna respektive låsta statement.
+  **Backend:** samma beräkningskontrakt som E i UI/export. Kontraktets avgifter,
+  FX-datum, negativ GGR och periodisering ska vara explicit versionsbundna.
+  Skissens 10 procent/avgifter och ”Paid” är exempel, inte produktregler.
+  Intäktsdelningsavtal och månadsutskick är en separat senare delgrind med
+  förhandsgranskning, godkända mottagare, deduplicering och leveransstatus.
+  **Databas:** scoped kontrakt/avgifter, frysta statementunderlag och FX-källor;
+  senare avtal/report-jobs/outbox. Betaldstatus kräver verklig betalningskälla,
+  inte att en månad har passerat. Bevara revisionsspår och undvik dubbelräkning.
+  **Beroenden:** C/E och riktiga brand/market-kopplingar innan sådana brytningar.
+  **Verifiering:** avstäm UI/CSV/statement mot samma ledger för positiv/negativ
+  månad, delmånad, flera valutor och gränsdatum; låst månad ändras inte tyst.
+  Export åtkomstkontrolleras på nytt och skyddas mot formelinjektion.
+
+#### Utökningar från skissen — införs bara med verkligt underlag
+
+- [ ] **JN2-I — dealerkatalog, statistik och spelintegritet.**
+  **Frontend:** katalog och preview visar publicerade/tilldelade dealers, inte
+  Scouts privata mediebibliotek. Statistik och integrity-vy kommer separat när
+  underlaget finns; inga simulerade populäritetstal, chattvärden eller proof-hashar.
+  **Backend:** aggregera vistelsetid/beläggning/retur med definierad population
+  och minsta gruppstorlek; inga privata chattmeddelanden eller obestyrkt kausalitet.
+  Katalogbegäran är inte omedelbar tilldelning. Skor/spins/proof måste komma från
+  motorns faktiska integritetskontrakt; ingen ny egen slump-/kortlogik i N2.
+  **Databas:** scoped aggregat och requeststatus där de saknas; återanvänd
+  befintliga motorkällor för rundor/skor/proof. Avstå från ålders-/VIP-segment
+  utan verifierad datakälla, tillåten behandling och tillräcklig gruppstorlek.
+  **Beroenden:** A/C/D för katalog, E för statistik/integritet, F för tilldelning.
+  **Verifiering:** otilldelade/private assets nekas, små grupper maskeras,
+  filtrering följer bolaget och flaggade/avstängda spelare utesluts från förslag.
+  Prova återspelning/verifiering mot verkligt proof; ändra inte godkända media.
+
+- [ ] **JN2-J — scoped integrationer, återställning av lösenord och 2FA.**
+  **Frontend:** sandbox/production, nycklar, wallet-test, webhookstatus och IP-
+  regler ansluts en funktion i taget. Visa engångshemlighet bara vid tillåten
+  skapning/rotation. Partnerns lösenordsåterställning och riktig 2FA ersätter
+  skissens simulerade sexsifferkontroll/QR; de är egna acceptansgrindar.
+  **Backend:** återanvänd partner-API och `croupier_auth.api_keys` efter E:s
+  operatorbindning; inför separata skrivrättigheter, omauktorisering för känsliga
+  ändringar, revokering/rotation och säkert verkligt anslutningstest. Servervalidera
+  wallet/webhookdestinationer mot SSRF och begränsa tid/storlek/redirects.
+  Produktionsaktivering sker enligt befintlig N1-policy, inte en klientväxel.
+  Auth: tidsbegränsade engångstoken, rate limits, sessionsåterkallelse och riktiga
+  verifierings-/återställningskoder; inga nya parallella kontodatabaser.
+  **Databas:** verifierad nyckelägare och miljö, rotation/revokering, leveranslogg/
+  idempotens samt hashade engångstoken/recoverykoder och skyddad 2FA-hemlighet.
+  Hemligheter får inte ligga i audit, loggar, vanlig snapshot eller export.
+  **Beroenden:** A/C/E:s identitetsbindning; full N2.4 behöver inte vänta på hela J.
+  **Verifiering:** ett bolag kan inte lista/rotera ett annat bolags nyckel,
+  replay/expired token nekas, gammal session återkallas, rotationens överlapp
+  stämmer med kontraktet, felaktig MFA nekas och webhook-retry dubblar inte events.
+
+- [ ] **JN2-K — onboarding och säker brandimport.**
+  **Frontend:** Johns setupsteg återanvänder D:s editor och A/C/J:s riktiga
+  bolag/team/integration. Separera engångssetup från daglig drift. Review visar
+  verkliga blockerare och vad ett go-live-besked innebär; inga lokala checkrutor
+  kan aktivera produktion. PDF-/URL-import införs efter manuell branding.
+  **Backend:** beräkna readiness från sparat paket, rum, rättigheter och verkliga
+  verifieringar. Go-live skapar en spårbar begäran för N1-granskning. Brandimport
+  föreslår ändringar som granskas före applicering; begränsad fil-/URL-läsning,
+  SSRF-skydd och sanitiserad metadata, inga instruktioner från filer får exekveras.
+  **Databas:** scoped setup-/go-live-request med revision/status och audithistorik;
+  återanvänd D:s utkast, inte ett parallellt onboardingpaket. Importstatus endast
+  om faktisk serverimport levereras; skissens simulerade läsning kopieras inte.
+  **Beroenden:** A–D samt relevant F/J-readiness; import är senare förbättring.
+  **Verifiering:** reload/annan enhet fortsätter samma utkast, paket- eller
+  rolländring efter review blockerar, ofullständiga integrationer kan inte bli
+  produktionsklara och upprepad begäran ger inte dubbelt go-live/utskick.
+
+#### Leveransordning och gemensamma slutprov
+
+1. **Första synliga leverans: JN2-A + B.** Admin öppnar Johns och SG:s riktiga
+   bolag utan extra partnerlogin; normal partneringång är välformgiven utan
+   demokort. Befintliga riktiga funktioner består, oanslutna delar märks ärligt.
+2. **Första kompletta konfigurationsflöde: C + D.** Beständig audit, säkra
+   rättigheter och utkast → publicering → nästa N3-runda. Inte beroende av färdig
+   statistik. Enbart snygg preview eller lyckad spara-knapp är inte acceptans.
+3. **Speldataleverans: E → F/G/H.** Gör nyckel-/bolagsmappning och avstämda
+   läsdata först; anslut därefter drift, RG och rapporter i separata verifierbara
+   deländringar. I:s statistik/integritet följer samma datagrind.
+4. **Utökningar: I/J/K.** Katalog kan komma tidigare när paketen stöder det.
+   Flerbrand/marknad, intäktsdelning/utskick, brandimport, 2FA och toppmenyvariant
+   får inte maskera ofärdig kärna och bockas av var för sig.
+
+**Databassäkerhet:** föreslagna tabeller/fält ovan är designarbete, inte godkända
+DDL-körningar. Kontrollera målprojekt/schema och befintlig migrationhistorik
+read-only; prova additiva migrationer både på tom och uppgraderad isolerad DB,
+inklusive FK, unika nycklar, index, race och återställningsplan. Ingen dump av
+verkliga användare, gissad historikmappning eller produktionsbackfill för test.
+Produktionsmigration kräver separat mandat och Studio-readiness ska vara uppfylld
+före beroende kod levereras till main/deployment enligt befintlig migrationsregel.
+
+**Kodverifiering per delsteg:** kontrollera engines/pins och vald Node före körning;
+använd högst fyra testworkers där stödet finns. Utöka befintliga
+`lab/test/workspace-surface-pages.test.mjs`, `partner-preview.test.mjs`,
+`partner-session.test.mjs`, `partner-team-api.test.mjs`,
+`partner-branding-api.test.mjs`, `partner-presentation-flow.test.mjs` samt
+`test/partner-access-policy.mjs` och `test/operator-store.mjs` för respektive
+ändring; kör dem med `node --test --test-concurrency=4 <berörda testfiler>`.
+Följ därefter ordinarie hooks/CI och de runtime-/medieprov som ändringen kräver.
+Tester mot minnesfixtur räcker inte som Postgres- eller tenantacceptans.
+
+**Produktacceptans:** dokumentera exakt SHA/deployment och två isolerade bolag.
+Prova admin → riktig bolagslista → Johns/SG:s paket → N2-ändring → N3 efter
+rundgräns, samt separat partnerlogin → endast egna bolag. Prova 401/403/409/503,
+indragna roller, föråldrad browserflik och bolagsbyte utan kvarhängande data eller
+utkast från föregående bolag. Jämför visuellt med John efter riktig integration,
+inte bara med fixtures. Ingen T2/T3-bock förrän full förväntad effekt verifierats.
+
+**Denna planuppdatering:** kod- och läsande webbläsargranskning; ingen produktkod,
+databas, kundinloggning, roll, nyckel, paketpublicering eller driftinställning
+ändrad. Separat partnerkontos end-to-end-login och N2-skrivning har inte provats
+i produktion. Att adminvägen behöver förbättras är ett bekräftat fynd, inte ett
+krav på att användaren ska logga in en gång till för att planeringen ska gå vidare.
 
 ### Terminologi och navigation — 6 oktober
 
