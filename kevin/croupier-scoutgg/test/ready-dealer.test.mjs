@@ -24,6 +24,9 @@ test('variant URLs, offsets and files exist for every ready dealer', () => {
   assert.equal(dealerClipUrl('/media/deal/pos4.mp4', 'iu').split('?')[0], '/media/dealers/dragge/v2/pos4-iu.mp4');
   assert.equal(variantOffset('iu'), dealer.ready.in / 24);
   assert.equal(variantOffset('u'), 0);
+  // His turn of the hole card is filmed from rest: flip-iu.mp4 is the take itself, so its frames count from 0.
+  assert.equal(variantOffset('iu', 'flip'), 0);
+  assert.equal(variantOffset('iu', '4'), dealer.ready.in / 24);
   assert.equal(dealerClipVariants(dealerClipUrl('/media/deal/hole.mp4')).length, 4);
   for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten]) {
     for (const take of ['pos1', 'pos2', 'pos3', 'pos4', 'pos5', 'pos6', 'pos7', 'posdealer', 'hole', 'flip'])
@@ -59,14 +62,27 @@ test('on his own studio table the server names the variant, so the cards join RE
   assert.equal(variantOffset(readyVariant(plan, b)), 0);
 });
 
-test('Mårten has no voice yet: no recorded lines, only his own rest still as idle, so nothing of another dealer ever plays over his face', () => {
+test('Mårten has no voice yet: no recorded lines, and his idles are his own Kling loops, so nothing of another dealer ever plays over his face', () => {
   const m = DEALERS.marten;
   assert.equal(m.name, 'Mårten');
   assert.equal(m.lines, null);
-  assert.deepEqual(m.idles.map(i => i.url.split('?')[0]), ['/media/dealers/marten/idle-v2/rest.mp4']);
-  assert.ok(existsSync(new URL(`../public${m.idles[0].url.split('?')[0]}`, import.meta.url)));
-  // A lone idle must be allowed to repeat (app.js pickIdle skips the last gesture unless its weight is 10 or more).
+  assert.deepEqual(m.idles.map(i => i.url.split('?')[0]), ['breath', 'glance', 'smile'].map(k => `/media/dealers/marten/idle-v2/${k}.mp4`));
+  for (const idle of m.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)));
+  // The breathing loop can repeat (app.js pickIdle skips the last gesture unless its weight is 10 or more).
   assert.ok(m.idles[0].vikt >= 10);
   assert.ok(existsSync(new URL(`../public${m.keyed.still.split('?')[0]}`, import.meta.url)));
   assert.ok(existsSync(new URL(`../public${m.face.split('?')[0]}`, import.meta.url)));
+});
+
+test('every card he deals or turns follows its planar track from face-up until it rests, then touches down before resting', async () => {
+  const { faceAtTime } = await import('../public/card-face-projection.js');
+  const { DEAL_CONTACT } = await import('../public/card-table-layout.js');
+  assert.ok(dealer.faceTracks.flip, 'his turn of the hole card is tracked too');
+  for (const [k, t] of Object.entries(dealer.faceTracks)) {
+    assert.ok(t.firstFrame < dealer.land[k] && dealer.land[k] < t.firstFrame + t.frames.length, k);
+    assert.equal(faceAtTime(k, t.firstFrame / 24), t.frames[0]);
+    assert.equal(faceAtTime(k, (t.firstFrame - 1) / 24), null);
+    assert.ok(DEAL_CONTACT[k].contactFrame >= t.firstFrame && DEAL_CONTACT[k].contactFrame <= DEAL_CONTACT[k].clearFrame, k);
+    for (const f of t.frames) assert.ok(f.q.length === 4 && f.paper.length === 3);
+  }
 });
