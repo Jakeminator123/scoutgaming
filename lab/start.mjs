@@ -64,8 +64,15 @@ async function buildLab(session) {
   try { session.trackChild(child); } catch (error) { child.kill(); throw error; }
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
-export async function main(args = process.argv.slice(2)) {
-  if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage eller --offline.');
+export const publishedProductUrl = 'https://www.scoutgaming.tech/play';
+export async function main(args = process.argv.slice(2), { open = openBrowser, log = console.log } = {}) {
+  if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline', '--product'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage, --offline eller --product.');
+  if (args.includes('--product')) {
+    if (args.some(arg => !['--product', '--no-open'].includes(arg))) throw new Error('--product kan endast kombineras med --no-open.');
+    log('Publicerad produkt: ' + publishedProductUrl + '\nBolag → spelrum → dealer. Inga lokala servrar eller externa genereringsanrop startas.');
+    if (!args.includes('--no-open')) open(publishedProductUrl);
+    return { mode: 'product', url: publishedProductUrl };
+  }
   if (args.includes('--offline')) {
     if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
     const fixture = await startLocalComparison({ generationDirectory: join(root, 'media/dealers/astrid/runtime/presentation'), streamLane: profile.id,
@@ -73,7 +80,7 @@ export async function main(args = process.argv.slice(2)) {
         await preparePreview();
         if (!args.includes('--skip-build')) await buildLab(session);
       }, prepareStudio: prepareProject });
-    console.log(`Lab: ${fixture.labUrl}\nSpel: ${fixture.gameUrl}/?dealer=astrid&presentation=local\nIsolerat prov med tom testdatabas och externa tjänster avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
+    console.log(`Lokalt Studio: ${fixture.labUrl}\nIsolerad mediarepetition: ${fixture.gameUrl}/?dealer=astrid&presentation=local&rehearsal=1\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
     const stop = async () => { await fixture.stop(); process.exit(0); };
     process.once('SIGINT', stop); process.once('SIGTERM', stop);
     if (!args.includes('--no-open')) openBrowser(fixture.labUrl);
@@ -87,7 +94,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   const running = await fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
   if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
-    console.log(`Backoffice/Lab kör redan: ${url}`);
+    console.log(`Lokalt Studio kör redan: ${url}\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)`);
     if (args.includes('--astrid-camera')) console.log('Kameraflaggan ändras bara vid en ny start. Den körande sessionen ändrades inte.');
     if (args.includes('--cloud-storage')) console.log('Molnlagring väljs bara vid en ny start. Den körande sessionen ändrades inte.');
     return;
@@ -103,7 +110,7 @@ export async function main(args = process.argv.slice(2)) {
       if (!args.includes('--skip-build')) await buildLab(session);
     },
   });
-  console.log(`Backoffice/Lab redo: ${url}\nTryck Anslut för att öppna Astrid och följa samma ström.\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
+  console.log(`Lokalt Studio redo: ${url}\nAnslut öppnar den lokala Astrid-sessionen, inte ett publicerat bolagsrum.\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
   const stop = async () => { await fixture.stop(); process.exit(0); };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);
   if (!args.includes('--no-open')) openBrowser(url);

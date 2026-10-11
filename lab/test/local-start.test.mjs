@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
-import { prepareProject, localDataDir } from '../start.mjs';
+import { prepareProject, localDataDir, main, publishedProductUrl } from '../start.mjs';
 import { childSpecifications, loadPrivateConnection } from '../../open-claw/lab/deploy/local-connection.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
@@ -79,4 +79,21 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   await writeFile(file, 'invalid saved project');
   await assert.rejects(prepareProject(data));
   assert.equal(await readFile(file, 'utf8'), 'invalid saved project');
+});
+
+
+test('public product entry returns before any local connection or provider work', async t => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = () => assert.fail('Product entry must not contact local servers or providers');
+  t.after(() => { globalThis.fetch = previousFetch; });
+  const messages = [], opened = [];
+  assert.deepEqual(await main(['--product','--no-open'], { log: text => messages.push(text), open: url => opened.push(url) }), { mode: 'product', url: publishedProductUrl });
+  assert.deepEqual(opened, []);
+  assert.match(messages[0], /Publicerad produkt: https:\/\/www\.scoutgaming\.tech\/play/);
+  assert.match(messages[0], /Inga lokala servrar/);
+  await main(['--product'], { log: () => {}, open: url => opened.push(url) });
+  assert.deepEqual(opened, [publishedProductUrl]);
+  for (const option of ['--offline','--check','--skip-build','--astrid-camera','--cloud-storage']) {
+    await assert.rejects(main(['--product',option], { log: () => {}, open: () => assert.fail('Invalid combination must not open') }), /kan endast kombineras/);
+  }
 });

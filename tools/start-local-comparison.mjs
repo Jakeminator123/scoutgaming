@@ -144,7 +144,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
   const dataDir = join(runDir, 'game');
   const studioDir = join(runDir, 'studio');
   const gameUrl = `http://localhost:${gamePort}`, labUrl = `http://127.0.0.1:${labPort}`;
-  const urls = Object.freeze({ game: gameUrl, original: `${gameUrl}/?dealer=astrid`, v2: `${gameUrl}/v2/?dealer=astrid`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
+  const urls = Object.freeze({ game: `${gameUrl}/?dealer=astrid&rehearsal=1`, original: `${gameUrl}/?dealer=astrid&rehearsal=1`, v2: `${gameUrl}/v2/?dealer=astrid&rehearsal=1`, backoffice: `${gameUrl}/bo/`, lab: labUrl });
   const password = randomBytes(24).toString('base64url'), username = 'comparison-qa', email = 'comparison@example.invalid';
   const readToken = randomBytes(32).toString('base64url');
   const env = session.environment(isolatedEnv(runDir, [gamePort, labPort]));
@@ -231,7 +231,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const mediaOption = process.argv.indexOf('--media-directory');
     if (mediaOption >= 0 && (!process.argv[mediaOption + 1] || process.argv[mediaOption + 1].startsWith('--'))) throw new Error('--media-directory needs an existing read-only media directory.');
     const fixture = await startLocalComparison({ startLab: !process.argv.includes('--game-only'), generationDirectory: mediaOption >= 0 ? process.argv[mediaOption + 1] : undefined });
-    for (const [name, url] of Object.entries(fixture.urls)) if (name !== 'lab' || fixture.pids.lab) console.log(url);
+    console.log('ISOLERAD MEDIAREPETITION · testdata · inget publicerat bolagspaket.\nPublicerad produkt: https://www.scoutgaming.tech/play');
+    for (const [name, url] of Object.entries(fixture.urls)) if (name !== 'lab' || fixture.pids.lab) console.log(`${name}: ${url}`);
     const shutdown = async () => { await fixture.stop(); process.exit(0); };
     process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
   } catch (error) { console.error(error.message); process.exitCode = 1; }
