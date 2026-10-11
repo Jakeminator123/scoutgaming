@@ -89,7 +89,7 @@ test('blackjack publication is required on the same atomic snapshot, including a
 });
 
 
-test('registered text result uses its published identity and never invokes either speech provider',async()=>{
+test('registered dealer without an enabled stream stays text-only and never uses Astrid fullfile speech',async()=>{
   const f=fixture(),granted=await f.authorize({dealerId:'paow',presentationContext:context});
   const previews=[];
   const result=await completeChatWithSpeech({
@@ -97,7 +97,8 @@ test('registered text result uses its published identity and never invokes eithe
     readOwner:async()=>'session',readStatus:granted.recheck,
     decide:async()=>({kind:'generatedText',exactText:'Hej från PAOW.'}),onDecision:text=>previews.push(text),
     service:{generate:()=>assert.fail('Registered chat must not generate speech')},
-    streamService:{prepare:()=>assert.fail('Registered chat must not prepare speech')},
+    // The server provides a stream only after private profile opt-in.
+    streamService:null,
   });
   assert.deepEqual(result,{kind:'generatedText',exactText:'Hej från PAOW.'});
   assert.deepEqual(previews,['Hej från PAOW.']);assert.equal(f.reads.length,3);

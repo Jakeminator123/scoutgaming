@@ -232,6 +232,16 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
   const config = validateCloudConfig(env);
   const specs = childSpecifications(config, env, { labInternalSecret: LAB_SECRET });
   assert.equal(config.streaming, true);
+  const ownProfiles={...env,CROUPIER_DEALER_SPEECH_PROFILES:'1',CROUPIER_STUDIO_NEON_POLICY:'1',ELEVENLABS_API_KEY:'fixture-own-voice-key'};
+  const ownSpecs=childSpecifications(validateCloudConfig(ownProfiles),ownProfiles,{labInternalSecret:LAB_SECRET});
+  assert.equal(ownSpecs.web.env.CROUPIER_DEALER_SPEECH_PROFILES,'1');
+  assert.equal(ownSpecs.web.env.ELEVENLABS_API_KEY,ownProfiles.ELEVENLABS_API_KEY);
+  assert.equal(ownSpecs.lab.env.ELEVENLABS_API_KEY,undefined);
+  assert.equal(ownSpecs.lab.env.CROUPIER_DEALER_SPEECH_PROFILES,undefined);
+  const off={...env,ELEVENLABS_API_KEY:'must-not-leak',ELEVENLABS_VIDEO_KEY:'different-account',ELEVENLABS_OC_API:'different-purpose'};
+  const offSpecs=childSpecifications(validateCloudConfig(off),off,{labInternalSecret:LAB_SECRET});
+  for(const key of ['ELEVENLABS_API_KEY','ELEVENLABS_VIDEO_KEY','ELEVENLABS_OC_API'])assert.equal(offSpecs.web.env[key],undefined);
+  for(const patch of [{CROUPIER_DEALER_SPEECH_PROFILES:'yes'},{CROUPIER_STUDIO_NEON_POLICY:'0'},{CROUPIER_GENERATED_SPEECH_STREAMING:'0'},{ELEVENLABS_API_KEY:'key\r\ninjection'}])assert.throws(()=>validateCloudConfig({...ownProfiles,...patch}));
   assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '1');
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, env.CROUPIER_SPEECH_STREAM_WORKER_SECRET);
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_TICKET_SECRET, env.CROUPIER_SPEECH_STREAM_TICKET_SECRET);

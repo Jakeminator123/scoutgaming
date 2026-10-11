@@ -14,17 +14,25 @@ const abortable = (pending, signal) => new Promise((resolve, reject) => {
 /** A live preview has text/session provenance, not final audio/video hashes. */
 export async function validateGeneratedSpeechStream(value, { exactText, dealerId, requestId, now = Date.now() } = {}) {
   const keys = ['schemaVersion', 'kind', 'id', 'requestId', 'dealerId', 'exactText', 'textSha256', 'reviewStatus', 'url', 'ticket', 'expiresAt'];
+  if(value?.schemaVersion===2) keys.push('profileRevision','imageSha256','compositing');
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length
     || keys.some(key => !Object.hasOwn(value, key))) throw new Error('invalid_speech_stream_descriptor');
   const speech = { ...value };
-  if (speech.schemaVersion !== 1 || speech.kind !== 'generated-speech-stream' || !/^[a-f0-9]{32}$/.test(speech.id)
+  if (![1,2].includes(speech.schemaVersion) || speech.kind !== 'generated-speech-stream' || !/^[a-f0-9]{32}$/.test(speech.id)
     || typeof speech.requestId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(speech.requestId)
-    || (requestId !== undefined && speech.requestId !== requestId) || speech.dealerId !== 'astrid' || speech.dealerId !== dealerId
+    || (requestId !== undefined && speech.requestId !== requestId) || (speech.schemaVersion===1 ? speech.dealerId !== 'astrid' : !/^[a-z][a-z0-9-]{0,63}$/.test(speech.dealerId) || !/^[a-f0-9]{64}$/.test(speech.profileRevision) || !/^[a-f0-9]{64}$/.test(speech.imageSha256)) || speech.dealerId !== dealerId
     || typeof exactText !== 'string' || !exactText || exactText.length > 500 || exactText !== exactText.trim()
     || /[\u0000-\u001f\u007f-\u009f]/.test(exactText) || speech.exactText !== exactText || !/^[a-f0-9]{64}$/.test(speech.textSha256)
     || speech.reviewStatus !== 'pending' || speech.url !== '/speech-stream' || typeof speech.ticket !== 'string'
     || speech.ticket.length > 4096 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(speech.ticket)
     || !Number.isSafeInteger(speech.expiresAt) || speech.expiresAt <= now || speech.expiresAt > now + 60000) throw new Error('invalid_speech_stream_descriptor');
+  if(speech.schemaVersion===2&&speech.compositing!==null){
+    const c=speech.compositing;
+    if(!c||Object.keys(c).sort().join(',')!=='despill,mode,softness,threshold'||c.mode!=='green-screen'
+      ||!Number.isFinite(c.threshold)||c.threshold<0||c.threshold>1||!Number.isFinite(c.softness)||c.softness<=0||c.softness>1
+      ||!Number.isFinite(c.despill)||c.despill<0||c.despill>1)throw new Error('invalid_speech_stream_compositing');
+    speech.compositing=Object.freeze({...speech.compositing});
+  }
   let claims;
   try { claims = JSON.parse(atob(speech.ticket.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'))); }
   catch { throw new Error('invalid_speech_stream_ticket'); }
@@ -36,31 +44,46 @@ export async function validateGeneratedSpeechStream(value, { exactText, dealerId
 }
 
 async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal,
-  beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver } = {}) {
+  beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame } = {}) {
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(abort, 45000);
-  let player, surface, started = false, completed = false;
+  let player, surface, video, renderHandle, renderKind, started = false, completed = false;
   try {
     const speech = await validateGeneratedSpeechStream(value, { exactText, dealerId, requestId });
     // Admission starts TTS/GPU work. Revalidate the shared queue/pose before
     // opening the socket, then again immediately before its first play().
     await abortable(Promise.resolve().then(beforeStart), controller.signal);
+    if(speech.schemaVersion===2&&prepareRendering)await abortable(Promise.resolve().then(()=>prepareRendering(speech.compositing)),controller.signal);
     if (controller.signal.aborted) throw abortError();
     if (speech.expiresAt <= Date.now()) throw new Error('speech_stream_ticket_expired');
     surface = document.createElement('div'); surface.className = 'generated-speech-surface';
     surface.style.cssText = 'position:absolute;inset:0;z-index:var(--generated-speech-layer,25);background:#101618;overflow:hidden;pointer-events:none;';
     surface.style.visibility = 'hidden';
-    const video = document.createElement('video'); video.muted = false; video.playsInline = true; video.preload = 'auto';
-    video.setAttribute('aria-label', 'Astrid · strömmad läppsynk, labbprov');
+    video = document.createElement('video'); video.muted = false; video.playsInline = true; video.preload = 'auto';
+    video.setAttribute('aria-label', dealerId + ' · strömmad läppsynk, labbprov');
     video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;';
     const label = document.createElement('span'); label.textContent = 'Strömmad läppsynk · labbprov · ej visuellt godkänt';
     label.style.cssText = 'position:absolute;top:var(--generated-speech-label-top,8px);left:8px;padding:5px 8px;background:#101618dd;color:#eee;font:11px sans-serif;';
     surface.append(video, label); mount.append(surface);
+    // Draw each decoded frame with the same compositor as the published idle.
+    // The video remains the single audio clock; no separately timed mouth layer.
+    const draw = () => {
+      if(controller.signal.aborted)return;
+      try{
+        const composed=speech.schemaVersion===2&&renderFrame?renderFrame(video)===true:false;
+        surface.style.background=composed?'transparent':'#101618';video.style.opacity=composed?'0':'1';
+        if(speech.schemaVersion===2&&renderFrame){
+          if(video.requestVideoFrameCallback){renderKind='video';renderHandle=video.requestVideoFrameCallback(draw);}
+          else if(globalThis.requestAnimationFrame){renderKind='animation';renderHandle=requestAnimationFrame(draw);}
+        }
+      }catch(error){player.fail(error);}
+    };
     player = new SpeechStreamPlayer(video, { signal: controller.signal, beforePlay: beforeStart,
       onBinary: streamObserver?.onBinary,
       onFirstFrame: info => { if (!controller.signal.aborted) {
+        draw();if(controller.signal.aborted||player.stopped)return;
         surface.style.visibility = ''; onFirstFrame(); streamObserver?.onFrame?.({ info, video, surface, player });
       } },
       onStart: () => {
@@ -75,6 +98,7 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     completed = true;
   } finally {
     clearTimeout(timer); controller.abort(); signal?.removeEventListener('abort', abort);
+    if(renderHandle!==undefined){if(renderKind==='video')video?.cancelVideoFrameCallback?.(renderHandle);else globalThis.cancelAnimationFrame?.(renderHandle);}
     player?.abort(); surface?.remove();
     onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
       evidence: 'media-lifecycle', started, reviewStatus: 'pending', timings: { ...player?.timings } });
@@ -119,10 +143,10 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
-export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver } = {}) {
+export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame } = {}) {
   if (value?.kind === 'generated-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');
-    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt, streamObserver });
+    return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt, streamObserver, prepareRendering, renderFrame });
   }
   if (!mount || signal?.aborted) throw abortError();
   const controller = new AbortController();

@@ -7,7 +7,7 @@ import { constantEqual } from './auth.mjs';
  * One worker serves one utterance at a time; overload is rejected, never queued.
  */
 export function attachSpeechRelay(server, {
-  workerSecret, allowedOrigins, authenticateClient,
+  workerSecret, allowedOrigins, authenticateClient, authenticateWorker = () => true,
   maxWorkers = 4, maxSessions = 4, maxAudioSeconds = 25,
   maxBufferedBytes = 8 * 1024 * 1024, sessionTimeoutMs = 120000,
   idleTimeoutMs = 15000, cancelTimeoutMs = 5000,
@@ -126,6 +126,7 @@ export function attachSpeechRelay(server, {
       if (path === '/lipsync-worker') {
         const id = req.headers['x-worker-id'];
         if (!constantEqual(req.headers.authorization || '', `Bearer ${workerSecret}`) || typeof id !== 'string' || !/^[\w-]{1,100}$/.test(id)) return reject(socket);
+        if (!await authenticateWorker(req, id) || socket.destroyed) return reject(socket);
         if (workers.has(id) || workers.size >= maxWorkers) return reject(socket, 409);
         workerWss.handleUpgrade(req, socket, head, ws => workerWss.emit('connection', ws, req, id));
       } else if (path === '/speech-stream') {
@@ -134,7 +135,7 @@ export function attachSpeechRelay(server, {
         if (!identity?.userId || !identity?.sessionId) return reject(socket, 401);
         if (socket.destroyed) return;
         if (owners.has(JSON.stringify([identity.userId, identity.sessionId]))) return reject(socket, 409);
-        const w = [...workers.values()].find(v => !v.session && v.ws.readyState === WebSocket.OPEN);
+        const w = [...workers.values()].find(v => (!identity.workerId || v.id === identity.workerId) && !v.session && v.ws.readyState === WebSocket.OPEN);
         if (!w || sessions.size >= maxSessions) return reject(socket, 503);
         wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, req, identity, w));
       } else reject(socket, 404);

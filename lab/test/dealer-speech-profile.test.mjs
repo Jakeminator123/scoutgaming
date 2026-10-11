@@ -74,6 +74,29 @@ test('speech settings shows only own video and requires a decoded reference befo
   preview.props.ref.current={readyState:2,seeking:false,currentTime:.2,duration:3};
   preview.props.onLoadedMetadata();preview.props.onLoadedData();tree=render();button=nodes(tree,node=>node.type==='button')[0];
   assert.equal(button.props.disabled,false);button.props.onClick();
-  assert.deepEqual(edited.dealers.find(row=>row.id==='paow').speechProfile,profile());
+  assert.deepEqual(edited.dealers.find(row=>row.id==='paow').speechProfile,{...profile(),schemaVersion:2});
   assert.equal(edited.dealers.find(row=>row.id==='paow').speechProfile.state,'preparation');
+});
+
+test('enabled request needs voice and a still frame, remains unapproved and stays bound on save',async()=>{
+  const enabled={...profile(),schemaVersion:2,state:'enabled'};
+  assert.deepEqual(normalizeDealerSpeechProfile(enabled),enabled);
+  assert.equal(dealerSpeechPreparation(enabled).active,false);
+  assert.equal(dealerSpeechPreparation(enabled).requested,true);
+  for(const patch of [{schemaVersion:1},{voice:null},{reference:null},{reference:{...reference,kind:'motion-video'}}])assert.throws(()=>normalizeDealerSpeechProfile({...enabled,...patch}));
+  const project=addDealer(createSeedProject(),'paow','PAOW');delete project.idlePolicy;
+  project.dealers.find(row=>row.id==='paow').speechProfile=enabled;
+  assert.equal(validateProject(project),project);
+  const verify=createStudioProjectBindings({videoRegistry:async()=>({videos:[{...video(),dealer:'astrid'}],families:[]})});
+  await assert.rejects(verify(project),error=>error.code==='studio_speech_reference_invalid');
+});
+
+test('v2 preserves explicit ElevenLabs tuning, forbids foreign fields and leaves v1 unchanged',()=>{
+  const p={...profile(),schemaVersion:2,voice:{...voice,modelId:'eleven_v3',language:'sv',settings:{use_speaker_boost:true,similarity_boost:.85,stability:.5}}};
+  const normalized=normalizeDealerSpeechProfile(p);
+  assert.deepEqual(normalized.voice.settings,{stability:.5,similarity_boost:.85,use_speaker_boost:true});
+  assert.deepEqual(Object.keys(normalized.voice.settings),['stability','similarity_boost','use_speaker_boost']);
+  for(const settings of [{},{stability:NaN},{stability:1.01},{style:-1},{use_speaker_boost:'true'},{apiKey:'secret'}])assert.throws(()=>normalizeDealerSpeechProfile({...p,voice:{...p.voice,settings}}));
+  for(const patch of [{schemaVersion:1},{voice:{...p.voice,provider:'cartesia'}},{voice:{...p.voice,language:'sv-SE'}}])assert.throws(()=>normalizeDealerSpeechProfile({...p,...patch}));
+  assert.deepEqual(normalizeDealerSpeechProfile({...profile(),voice:null}).voice,null);
 });

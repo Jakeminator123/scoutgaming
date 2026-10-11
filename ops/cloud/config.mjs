@@ -117,6 +117,11 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   const streaming = env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
   if (env.CROUPIER_GENERATED_SPEECH_STREAMING && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH_STREAMING)) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
   if (streaming && !generatedSpeech) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
+  const dealerSpeechProfiles = env.CROUPIER_DEALER_SPEECH_PROFILES === '1';
+  if (env.CROUPIER_DEALER_SPEECH_PROFILES && !['0','1'].includes(env.CROUPIER_DEALER_SPEECH_PROFILES)
+    || dealerSpeechProfiles && (!streaming || env.CROUPIER_STUDIO_NEON_POLICY !== '1')) fail('CROUPIER_DEALER_SPEECH_PROFILES');
+  const elevenLabsKey = dealerSpeechProfiles ? env.ELEVENLABS_API_KEY || '' : '';
+  if (elevenLabsKey && (elevenLabsKey.length > 2048 || /[\s\u0000-\u001f]/.test(elevenLabsKey))) fail('ELEVENLABS_API_KEY');
   const workerSecret = env.CROUPIER_SPEECH_STREAM_WORKER_SECRET || '';
   const ticketSecret = env.CROUPIER_SPEECH_STREAM_TICKET_SECRET || '';
   const validSecret = value => value.length >= 32 && value.length <= 2048 && !/\s/.test(value);
@@ -226,7 +231,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport, nativeP6QaRouter,
-    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming,
+    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey,
     mediaStorage, mediaBlobIndex, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
@@ -333,6 +338,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         CROUPIER_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_CLOUD_GENERATED_SPEECH: config.generatedSpeech ? '1' : '',
         CROUPIER_GENERATED_SPEECH_STREAMING: config.streaming ? '1' : '',
+        CROUPIER_DEALER_SPEECH_PROFILES: config.dealerSpeechProfiles ? '1' : '',
+        ...(config.dealerSpeechProfiles && config.elevenLabsKey ? {ELEVENLABS_API_KEY:config.elevenLabsKey} : {}),
         ...(config.streamSecrets ? {
           CROUPIER_SPEECH_STREAM_WORKER_SECRET: config.streamSecrets.workerSecret,
           CROUPIER_SPEECH_STREAM_TICKET_SECRET: config.streamSecrets.ticketSecret,

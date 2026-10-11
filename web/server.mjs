@@ -16,6 +16,8 @@ import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
+import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
+import { createDealerSpeechReferenceService } from './dealer-speech-reference.mjs';
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
@@ -86,6 +88,10 @@ const { createStudioMediaRuntime, createStudioPublicMediaAvailability } = neonSt
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage,
   dealerIdle: createRegisteredDealerIdle({ pathFor: publicAssetPath, mediaAvailable: createStudioPublicMediaAvailability({ repositoryRoot: mediaRepository }) }) }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
+  readProject: () => studioPolicyRuntime.policy.projectStore().load(),
+  referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
+}) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
 const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
@@ -1036,7 +1042,7 @@ const server = createServer(async (req, res) => {
         }
         const session = (await playerSession(req));
         const status = (await authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
-        if (dealerId === 'astrid') speechStreamService?.cancelOwner(owner);
+        speechStreamService?.cancelOwner(owner);
         const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
         let observation;
         if (incoming.observation !== undefined) {
@@ -1076,6 +1082,8 @@ const server = createServer(async (req, res) => {
           return (await authoritativeChatStatus(authenticated, (await playerSession(req)), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
         };
         const speechTrace = randomBytes(8).toString('hex');
+        const registeredSpeech = dealerId !== 'astrid' && await dealerSpeechRuntime?.requested(dealerId);
+        if (registeredSpeech && (!speechStreamService || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
             if (speechStreamService && incoming.acceptsSpeechStream === true && Number.isSafeInteger(ms) && ms >= 0) {
@@ -1099,7 +1107,7 @@ const server = createServer(async (req, res) => {
             })) });
           },
           service: dealerId==='astrid'?getGeneratedSpeechService():null,
-          streamService: dealerId==='astrid'&&incoming.acceptsSpeechStream === true ? speechStreamService : null,
+          streamService: (dealerId==='astrid'||registeredSpeech)&&incoming.acceptsSpeechStream === true ? speechStreamService : null,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
@@ -1272,6 +1280,7 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+    dealerRuntime:dealerSpeechRuntime,
     ...(nativeP6QaRouter?.providerFetch ? { fetchImpl:nativeP6QaRouter.providerFetch } : {}),
     ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
 import { createSpeechSessionManager, sessionReserveMicroUsd } from './generated-speech-session.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
+import { acceptsWorkerBinding } from '../services/astrid-gpu-worker/gateway/worker-binding.mjs';
 
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -68,7 +69,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  * browser attachment. Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
-  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch,
+  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
 } = {}) {
@@ -124,6 +125,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const fresh = async record => {
     if (record.controller.signal.aborted || record.input.signal?.aborted || records.get(record.id) !== record) fail('generated_speech_stream_cancelled', 499);
     await record.input.beforeCostly();
+    await record.runtime?.assertFresh();
     if (record.controller.signal.aborted || record.input.signal?.aborted || records.get(record.id) !== record) fail('generated_speech_stream_cancelled', 499);
   };
   relay = attach(server, {
@@ -138,6 +140,12 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       if (record) mark(record, 'server_transport_enqueue_ms', ms);
     },
     onWorkerIdle(workerId) { sessionManager?.activity?.(workerId); },
+    authenticateWorker(req, workerId) {
+      if (configuration.session && typeof sessionManager?.authorizeWorker === 'function') return sessionManager.authorizeWorker(req.headers, workerId);
+      // Existing non-journal/local streaming accepts only the legacy avatar.
+      // Profile-bound workers require the journal manager's exact expectation.
+      return acceptsWorkerBinding(null, req.headers);
+    },
     async authenticateClient(req) {
       const claims = authenticateTicket(req);
       if (!claims) return null;
@@ -146,7 +154,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       try {
         if (await resolveOwner(req, record.input.playerId) !== record.input.owner) return null;
         await fresh(record);
-        return claims;
+        return { ...claims, ...(record.workerId ? {workerId:record.workerId} : {}) };
       } catch { cancel(record); return null; }
     },
     async onSessionReady(identity) {
@@ -180,7 +188,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
           await track((async () => journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() }))());
           await fresh(record);
         }
-        for await (const pcm of source({ text: record.input.text, signal, beforeCostly: async () => {
+        for await (const pcm of (record.runtime?.source ?? source)({ text: record.input.text, signal, beforeCostly: async () => {
           await fresh(record); if (ownership) await ownership.get(); await fresh(record);
         } })) {
           await fresh(record);
@@ -244,7 +252,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     },
     async prepare(input) {
       if (serviceClosing) fail('generated_speech_stream_cancelled', 499);
-      if (!input || !identifier(input.requestId) || input.dealerId !== 'astrid' || typeof input.owner !== 'string' || !input.owner || input.owner.length > 512
+      if (!input || !identifier(input.requestId) || (input.dealerId !== 'astrid' && (!dealerRuntime || !/^[a-z][a-z0-9-]{0,63}$/.test(input.dealerId ?? ''))) || typeof input.owner !== 'string' || !input.owner || input.owner.length > 512
         || typeof input.text !== 'string' || !input.text.trim() || input.text !== input.text.trim() || input.text.length > 500
         || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(input.text) || typeof input.beforeCostly !== 'function') fail('invalid_generated_speech_stream_request', 400);
       if (exclusive && (exclusive.owner !== input.owner || exclusive.releasing)) fail('generated_speech_stream_busy', 429);
@@ -257,23 +265,31 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const current = () => { input.signal?.throwIfAborted(); if (preparations.get(input.owner) !== preparation) fail('generated_speech_stream_cancelled', 499); };
       try {
       current(); await input.beforeCostly(); current();
-      const key = digest(`${digest(input.owner)}\0${input.requestId}`), fingerprint = digest(JSON.stringify([input.text, configuration.voiceId, configuration.modelId]));
+      const runtime = input.dealerId === 'astrid' ? null : await dealerRuntime.prepare(input);
+      current();
+      if (runtime && !sessionManager?.supportsAvatars) fail('generated_speech_profiles_not_configured');
+      const key = digest(`${digest(input.owner)}\0${input.requestId}`), fingerprint = digest(JSON.stringify(runtime
+        ? [input.text,input.dealerId,runtime.profileRevision,runtime.imageSha256] : [input.text, configuration.voiceId, configuration.modelId]));
       // Never silently fall back to a paid full-file job on unavailable capacity.
       if (!sessionManager && !relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       if (records.size >= 32) fail('generated_speech_stream_busy', 429);
       if (owners.has(input.owner)) cancel(owners.get(input.owner));
       preparation.journalClaim = await reserve(input, key, fingerprint);
       current(); await input.beforeCostly(); current();
+      let workerId;
       if (sessionManager) {
-        await sessionManager.ensure({ signal: input.signal, beforeCostly: async () => { current(); await input.beforeCostly(); current(); } });
+        const ready = await sessionManager.ensure({ signal: input.signal, ...(runtime ? {avatar:runtime.avatar} : {}), beforeCostly: async () => { current(); await input.beforeCostly(); await runtime?.assertFresh(); current(); } });
+        workerId = ready?.workerId;
+        if (runtime && (!workerId || ready.binding?.dealerId !== input.dealerId || ready.binding?.profileRevision !== runtime.profileRevision || ready.binding?.imageSha256 !== runtime.imageSha256 || ready.binding?.protocolVersion !== 3)) fail('generated_speech_worker_binding_mismatch');
         current(); await input.beforeCostly(); current();
         if (!relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       }
       const id = randomBytes(16).toString('hex'), controller = new AbortController(), issuedAt = Date.now(), expiresAt = issuedAt + ticketLifetimeMs;
-      const descriptor = { schemaVersion: 1, kind: 'generated-speech-stream', id, requestId: input.requestId, dealerId: 'astrid', exactText: input.text,
+      const descriptor = { schemaVersion: runtime ? 2 : 1, kind: 'generated-speech-stream', id, requestId: input.requestId, dealerId: input.dealerId, exactText: input.text,
         textSha256: digest(input.text), reviewStatus: 'pending', url: '/speech-stream',
-        ticket: issueTicket(ticketSecret, { userId: digest(input.owner), sessionId: id, ttlSeconds: ticketLifetimeMs / 1000 }, issuedAt), expiresAt };
-      const record = { id, descriptor, input, controller, state: 'prepared', journalClaim:preparation.journalClaim };
+        ticket: issueTicket(ticketSecret, { userId: digest(input.owner), sessionId: id, ttlSeconds: ticketLifetimeMs / 1000 }, issuedAt), expiresAt,
+        ...(runtime ? {profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,compositing:runtime.compositing} : {}) };
+      const record = { id, descriptor, input, controller, runtime, workerId, state: 'prepared', journalClaim:preparation.journalClaim };
       records.set(id, record); owners.set(input.owner, record);
       record.externalAbort = () => cancel(record);
       input.signal?.addEventListener('abort', record.externalAbort, { once: true });

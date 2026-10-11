@@ -249,3 +249,21 @@ test('normal chat advertises stream support while native lab bridge keeps finali
   assert.match(normal, /chatPlaybackDiagnostic\.finish\(requestId, 'failed'\)/);
   assert.match(source, /chatPlaybackDiagnostic\.stream\(jobId, receipt\)/);
 });
+
+test('registered stream requires v2 exact profile/image binding and cannot borrow legacy Astrid descriptor',async()=>{
+  const p={...descriptor(),schemaVersion:2,dealerId:'paow',profileRevision:'b'.repeat(64),imageSha256:'c'.repeat(64),compositing:null};
+  const opts=options({dealerId:'paow'});
+  assert.deepEqual(await validateGeneratedSpeechStream(p,opts),p);
+  for(const patch of [{schemaVersion:1},{dealerId:'astrid'},{profileRevision:'legacy'},{imageSha256:null},{reviewStatus:'approved'},{avatarUrl:'https://elsewhere.invalid'},{compositing:{mode:'green-screen',threshold:0,softness:0,despill:0}}])await assert.rejects(validateGeneratedSpeechStream({...p,...patch},opts));
+  await assert.rejects(validateGeneratedSpeechStream({...descriptor(),dealerId:'paow'},opts));
+});
+
+test('registered speech frames use the existing composition and preserve one audible clock',async t=>{
+  const env=browser(t);let draws=0,prepared=false;
+  const p={...descriptor(),schemaVersion:2,dealerId:'paow',profileRevision:'b'.repeat(64),imageSha256:'c'.repeat(64),compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:.5}};
+  const playback=playGeneratedSpeech(p,options({dealerId:'paow',mount:env.mount,prepareRendering:async key=>{assert.deepEqual(key,p.compositing);assert.equal(env.sockets.length,0);prepared=true;},renderFrame:video=>{assert.equal(prepared,true);assert.equal(video,env.media[0]);draws++;return true;}}));
+  await until(()=>env.sockets.length);env.feed();await until(()=>env.media[0].playCalls);
+  env.present();assert.equal(draws,1);assert.equal(env.mount.children[0].style.background,'transparent');assert.equal(env.media[0].style.opacity,'0');assert.equal(env.media[0].muted,false);
+  env.present();assert.equal(draws,2);env.done();await pause(5);env.media[0].ended=true;env.media[0].dispatchEvent(new Event('ended'));await playback;
+  assert.equal(env.frames.size,0);assert.equal(env.mount.children.length,0);
+});

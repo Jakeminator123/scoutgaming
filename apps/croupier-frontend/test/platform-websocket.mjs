@@ -64,6 +64,18 @@ async function connect(url, protocols, options = {}) {
     socket.once('open', () => resolve(socket)); socket.once('error', reject);
   });
 }
+
+test('registered worker binding crosses only the worker route, complete and well formed',()=>{
+  const binding={'x-dealer-id':'paow','x-speech-profile-revision':'a'.repeat(64),'x-speech-image-sha256':'b'.repeat(64),'x-speech-protocol':'3'};
+  const worker=extra=>new Request(configuration.publicOrigin+'/lipsync-worker',{headers:{upgrade:'websocket',authorization:`Bearer ${workerSecret}`,'x-worker-id':'own-worker',...extra}});
+  const result=platformSocketRequest(worker(binding),configuration);
+  for(const [key,value] of Object.entries(binding))assert.equal(result.headers[key],value);
+  for(const key of Object.keys(binding)){
+    const missing={...binding};delete missing[key];assert.equal(platformSocketRequest(worker(missing),configuration).status,403);
+    assert.equal(platformSocketRequest(worker({...binding,[key]:'INVALID!'}),configuration).status,403);
+    assert.equal(platformSocketRequest(request('/speech-stream',binding),configuration).headers[key],undefined);
+  }
+});
 async function rejected(url, protocols, options = {}) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url, protocols, {...options, handshakeTimeout: 3000});

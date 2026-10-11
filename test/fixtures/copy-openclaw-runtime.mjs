@@ -10,6 +10,14 @@ export async function copyOpenClawRuntime(root) {
   for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
     await copyFile(new URL(file, source), join(target, file));
   }
+  // The web server's speech profile adapters are source-only sibling imports.
+  // Keep the disposable layout complete without copying provider config/data.
+  const speechSource = new URL('../../services/astrid-gpu-worker/gateway/', import.meta.url);
+  const speechTarget = join(root, 'services/astrid-gpu-worker/gateway');
+  await mkdir(speechTarget, { recursive: true });
+  for (const file of ['worker-binding.mjs', 'cartesia-source.mjs', 'elevenlabs-source.mjs', 'pcm-source.mjs']) {
+    await copyFile(new URL(file, speechSource), join(speechTarget, file));
+  }
   await mkdir(join(root, 'tools'), {recursive: true});
   await copyFile(new URL('../../tools/media-layout.mjs', import.meta.url), join(root, 'tools/media-layout.mjs'));
   // Media consumers resolve their canonical metadata beneath the disposable

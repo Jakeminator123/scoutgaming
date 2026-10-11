@@ -2343,6 +2343,8 @@ async function playChatDecision(decision, signal, jobId) {
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
             requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart,
+            prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
+            renderFrame: video => layerComposition?.renderFrame(video) ?? false,
             streamObserver: pendingChatReplies.get(jobId)?.nativeP6Observer,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);

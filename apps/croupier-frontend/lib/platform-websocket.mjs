@@ -71,6 +71,13 @@ export function platformSocketRequest(request, configuration) {
     if (!/^Bearer \S{1,2048}$/.test(authorization ?? '') || !/^[\w-]{1,100}$/.test(workerId ?? '') || request.headers.has('sec-websocket-protocol')) return {status: 403};
     if (origin && origin !== configuration.publicOrigin) return {status: 403};
     headers.authorization = authorization; headers['x-worker-id'] = workerId;
+    const bindingFields = ['x-dealer-id','x-speech-profile-revision','x-speech-image-sha256','x-speech-protocol'];
+    if (bindingFields.some(name => request.headers.has(name))) {
+      const [dealer, profile, image, protocol] = bindingFields.map(name => request.headers.get(name));
+      if (!/^[a-z][a-z0-9-]{0,63}$/.test(dealer ?? '') || !/^[a-f0-9]{64}$/.test(profile ?? '')
+        || !/^[a-f0-9]{64}$/.test(image ?? '') || protocol !== '3') return {status:403};
+      for (const name of bindingFields) headers[name] = request.headers.get(name);
+    }
     if (origin) headers.origin = origin;
   }
   return {url: configuration.backendOrigin.replace('https:', 'wss:') + path, headers, protocols,

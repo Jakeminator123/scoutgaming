@@ -12,6 +12,7 @@ import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs'
 import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
 
 const digest = input => createHash('sha256').update(input).digest('hex');
+const dealerAvatar = (dealerId='paow') => {const bytes=Buffer.from('synthetic owned image '+dealerId);return {schemaVersion:1,dealerId,profileRevision:digest(dealerId),imageSha256:digest(bytes),imageBase64:bytes.toString('base64')};};
 const response = value => new Response(JSON.stringify(value), { headers:{ 'content-type':'application/json' } });
 const input = patch => ({ owner:'isolated-runtime-owner', playerId:'isolated-player', requestId:'runtime-request',
   dealerId:'astrid', text:'A precise saved reply.', beforeCostly:async () => {}, ...patch });
@@ -68,6 +69,37 @@ test('Neon opt-in without journal fails before disk, relay or provider; no polic
   assert.equal(relay, 0); assert.equal(f.calls.length, 0); assert.deepEqual(await readdir(f.directory), []);
   await assert.rejects(f.manager().ensure(input()), { code:'generated_speech_budget_policy_missing' });
   assert.equal(f.pool.state.policies.size, 0); assert.equal(f.pool.state.sessions.size, 0); assert.equal(f.starts(), 0);
+});
+
+test('journal pins dealer binding before submit, reuses only matching profile and retires old worker before switching',async t=>{
+  const f=await fixture(t),manager=f.manager(),avatar=dealerAvatar();
+  const first=await manager.ensure(input({avatar}));
+  assert.deepEqual(JSON.parse(f.calls.find(call=>call.url.endsWith('/run')).init.body).input.avatar,avatar);
+  const headers={'x-dealer-id':'paow','x-speech-profile-revision':avatar.profileRevision,'x-speech-image-sha256':avatar.imageSha256,'x-speech-protocol':'3'};
+  assert.equal(manager.authorizeWorker(headers,first.workerId),true);assert.equal(manager.authorizeWorker({},first.workerId),false);
+  assert.equal(manager.authorizeWorker(headers,'untracked'),false);
+  assert.equal((await manager.ensure(input({avatar}))).workerId,first.workerId);assert.equal(f.starts(),1);
+  f.busy(true);await assert.rejects(manager.ensure(input({avatar:dealerAvatar('dragge')})),{code:'generated_speech_stream_busy'});assert.equal(f.starts(),1);
+  f.busy(false);const second=await manager.ensure(input({avatar:dealerAvatar('dragge')}));
+  assert.notEqual(second.workerId,first.workerId);assert.equal(f.starts(),2);
+  assert.equal(manager.authorizeWorker(headers,first.workerId),false);
+  assert.notEqual([...f.pool.state.sessions.values()][0].released_at_ms,null);
+});
+test('simultaneous different dealer cannot join a pending paid session',async t=>{
+  const f=await fixture(t);let release,started;
+  const gate=new Promise(resolve=>{release=resolve;}),submitted=new Promise(resolve=>{started=resolve;});
+  const manager=f.manager({fetchImpl:async(url,init)=>{if(url.endsWith('/run')){started();await gate;}return f.deps.fetchImpl(url,init);}});
+  const first=manager.ensure(input({avatar:dealerAvatar()}));await submitted;
+  await assert.rejects(manager.ensure(input({avatar:dealerAvatar('dragge')})),{code:'generated_speech_stream_busy'});
+  release();const ready=await first;assert.equal(ready.binding.dealerId,'paow');assert.equal(f.starts(),1);
+});
+test('restarted manager drains an unknown previous dealer binding without admitting a replacement on the recovery turn',async t=>{
+  const f=await fixture(t),first=f.manager(),avatar=dealerAvatar();await first.ensure(input({avatar}));
+  f.setTime(f.getTime()+SPEECH_SESSION_POLICY.reservationWindowMs+1);
+  const restarted=f.manager();
+  await assert.rejects(restarted.ensure(input({avatar:dealerAvatar('dragge')})),{code:'generated_speech_recovery_required'});
+  assert.equal(f.starts(),1);assert.notEqual([...f.pool.state.sessions.values()][0].released_at_ms,null);
+  assert.equal(restarted.authorizeWorker({},[...f.pool.state.sessions.values()][0].worker_id),false);
 });
 
 test('actual session caller reserves both UTC days, shares one submit and persists no disk ledger', async t => {

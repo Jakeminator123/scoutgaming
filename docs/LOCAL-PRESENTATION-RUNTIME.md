@@ -1,5 +1,29 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Egen talprofil för registrerade dealers, 11 oktober 2026
+
+Dealerpostens privata speechProfile v2 sparar önskemålet enabled/preparation,
+röstleverantör/voiceId/modelId och egen videoId/SHA-256/offsetMs. ElevenLabs kan
+även ha explicit language och allowlistade settings; båda ingår i profilhashen. V1 preparation
+fortsätter att fungera. Endast video-frame kan väljas för aktivering. Profilen
+följer inte med det publika partnerpaketet; servern läser den aktuella profilen
+och omvaliderar bolagets publicering och sessionens ägare inför talarbetet.
+
+web/dealer-speech-reference.mjs läser exakt egen video ur det privata registret,
+kontrollerar källans bytehash och verkliga längd och extraherar en begränsad
+1080x1920 PNG med FFmpeg. Tillfälliga filer städas. Bildcachen är innehållsbunden
+och ersätter inte nya åtkomstkontroller. Röst- eller referensbyte ger ny
+profileRevision. Frame 0 kan väljas när den granskade posen är lämplig.
+
+Streamdescriptor v2 binder dealerId/profileRevision/imageSha256 och bär enbart
+validerad compositing-metadata från referensvideon. Spelaren återanvänder
+bolagets befintliga lagerkomposition för varje faktisk videobildruta. Samma
+video bär ljudet; ingen separat munanimation eller matchning på ungefärlig
+längd används. Fullbildsklipp behåller inbakad miljö. Sessionens verifierade
+worker-handshake behövs för teknisk beredskap; reviewStatus förblir pending
+fram till separat visuell kontroll. Befintliga Astrid-v1/fullfile-kontrakt
+behålls. Rörlig avatarberedning stöds inte av denna version.
+
 ## Dealerbibliotek och molnkatalog, 11 oktober 2026
 
 /control/clips och /control/videos delar DealerMediaLibrary. Alla registrerade
