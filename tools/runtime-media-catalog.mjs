@@ -7,16 +7,26 @@ import {repositoryRoot as defaultRoot,resolveMediaAbsolutePath} from './media-la
 export function runtimeCatalogPaths(root=defaultRoot) {
   return {manifest:join(root,'media/catalog/presentation.json'),legacy:join(root,'media/catalog/legacy.json')};
 }
-export function createRuntimeMetadataReader(root=defaultRoot) {
+export function createRuntimeMetadataBytesReader(root=defaultRoot) {
   let entries;
   return async file => {
     if (!entries) {
       const document=JSON.parse(readFileSync(runtimeCatalogPaths(root).legacy,'utf8'));
-      if(document.schemaVersion!==1 || !document.entries || Array.isArray(document.entries)) throw Error('Invalid runtime media catalog.');
+      if(document.schemaVersion!==2 || !document.entries || typeof document.entries!=='object' || Array.isArray(document.entries)) throw Error('Invalid runtime media catalog.');
       entries=document.entries;
     }
     const path=relative(root,resolveMediaAbsolutePath(file,{repositoryRoot:root})).split('\\').join('/');
     if(!Object.hasOwn(entries,path)) throw Error('Runtime metadata missing: '+path);
-    return structuredClone(entries[path]);
+    const source=entries[path];
+    if(source===null)return null;
+    if(typeof source!=='string')throw Error('Invalid runtime metadata: '+path);
+    return Buffer.from(source,'utf8');
+  };
+}
+export function createRuntimeMetadataReader(root=defaultRoot) {
+  const readBytes=createRuntimeMetadataBytesReader(root);
+  return async file => {
+    const bytes=await readBytes(file);
+    return bytes===null?null:JSON.parse(bytes.toString('utf8'));
   };
 }

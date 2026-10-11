@@ -30,6 +30,9 @@ för lokala pipelines och kalibrering, men behövs inte i Studios molnartefakt.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
 --check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.
+Katalogens version 2 bevarar originalens exakta JSON-byte, så talgranskningens
+SHA-256- och storlekskontroller gäller även utan lokala dealerfiler. Native
+grundloop, talmetadata och klippinventering läser samtliga katalogen.
 
 Verifiering: riktade API-/UI-/bulk-/ljudtester och audit-dealer-sync --probe
 bevarar regressionen för fyra originaldealers. Inga inspelade byte byttes.

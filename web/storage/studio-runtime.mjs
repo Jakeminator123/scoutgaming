@@ -23,13 +23,13 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
 
 // Exact engine index entry, shared by all dealers. Metadata is bundled source;
 // it is neither a duration heuristic nor an approval of a replacement take.
-export function createRegisteredDealerIdle({ repositoryRoot = process.cwd(), pathFor, mediaAvailable } = {}) {
+export function createRegisteredDealerIdle({ repositoryRoot = process.cwd(), pathFor, mediaAvailable, readMetadata } = {}) {
   return async dealerId => {
     if (!['vera','astrid','amira','mei'].includes(dealerId)) return null;
     const base = dealerId === 'vera' ? 'dealer' : `dealers/${dealerId}`;
     const path = pathFor ? pathFor(base, 'streams/index.json') : resolve(repositoryRoot, 'web/public', base, 'streams/index.json');
     try {
-      const index = JSON.parse(await readFile(path, 'utf8'));
+      const index = readMetadata ? await readMetadata(path) : JSON.parse(await readFile(path, 'utf8'));
       const clip = index?.clips?.['idle-1/idle/idle'];
       const exact = Boolean(clip && typeof clip.file === 'string' && clip.file && !clip.file.includes('..') && !clip.file.includes('\\'));
       return { dealerId, engineKey: 'idle-1/idle/idle', available: exact && (mediaAvailable ? await mediaAvailable(`${base}/streams/${clip.file}`) : true) };

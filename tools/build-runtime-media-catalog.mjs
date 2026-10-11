@@ -11,11 +11,11 @@ export async function buildRuntimeMediaCatalog(root=repositoryRoot,{check=false}
   for(const source of sources){
     const path=resolveMediaAbsolutePath(join(root,'web/public',source),{repositoryRoot:root});
     let value;
-    try {value=JSON.parse(await readFile(path,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;value=null;}
+    try {value=await readFile(path,'utf8');JSON.parse(value);}catch(error){if(error.code!=='ENOENT'||!source.endsWith('/performance/manifest.json'))throw error;value=null;}
     entries[path.slice(root.length+1).split('\\').join('/')]=value;
   }
   const manifest=await readLabVideoManifest(join(presentationBankRoot(root),'lab-video-manifest.json'));
-  const outputs=[[paths.manifest,manifest],[paths.legacy,{schemaVersion:1,entries}]];
+  const outputs=[[paths.manifest,manifest],[paths.legacy,{schemaVersion:2,entries}]];
   for(const [path,value] of outputs){
     const content=JSON.stringify(value,null,2)+'\n';
     if(check){if(await readFile(path,'utf8')!==content)throw Error('Shared media catalog is stale: '+path);}
