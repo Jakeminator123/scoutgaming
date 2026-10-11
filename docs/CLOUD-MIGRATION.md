@@ -7,6 +7,11 @@ Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
+## Aktuellt testmandat och N2-snabbkontroll, 11 oktober 2026
+
+Jakobs standardtestbudget är **högst 5 USD totalt per avgränsad testomgång**. Större budget kräver nytt mandat; historisk kostnad och tekniska budgetspärrar återställs inte. Punkt 1 (ny läppsynksacceptans) hoppas över på Jakobs begäran; han verifierar PAOW i runtime.
+
+86 riktade N2-tester passerade på `2fb18004` med högst fyra workers och syntetiska minnes-/SQLite-fixturer. Begränsade/återkallade roller, bolagsgränser och revisionsskydd ingår. Riktig PostgreSQL-konkurrens och komplett acceptans med separata konto-/operatörsdatabaser är fortfarande **ej verifierade**; JN2-A/B/C stängs inte av detta kvitto. Inga produktionsskrivningar eller betalda provideranrop. Detaljer och testfiler finns i aktuell handoff.
 ## Tre åtkomstnivåer på www.scoutgaming.tech
 
 Apex `scoutgaming.tech` är en 308 till www. Vercelprojektet heter `scoutgaming`.
