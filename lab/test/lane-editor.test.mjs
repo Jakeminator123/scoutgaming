@@ -183,23 +183,13 @@ test('the suggestion keeps human labels and new composition asks only for a name
   assert.match(html, /Skapa spelrum/);
 });
 
-test('the editor retires zones and groups advanced automation while preserving colors and idle settings', () => {
+test('the editor omits inactive phase controls and retains presentation settings', () => {
   const project = createSeedProject();
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {} }));
   assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.match(editorHtml, /Avancerat · sparat styrunderlag/);
-  assert.match(editorHtml, /Ännu inte kopplat till uppspelningen/);
-  assert.match(editorHtml, /nuvarande spelaren läser dem inte som styrning/);
-  assert.match(editorHtml, /Förberedda klippval per fas/);
-  assert.match(editorHtml, /href="[^" ]*control\/clips"/);
-  assert.match(editorHtml, /href="[^" ]*control\/probe"/);
-  assert.match(editorHtml, /href="[^" ]*control\/activity"/);
-  for (const mode of ['off', 'rules', 'random', 'shadow', 'active']) assert.ok(editorHtml.includes('value="' + mode + '"'));
-  assert.doesNotMatch(editorHtml, /<details[^>]*open=/);
+  assert.doesNotMatch(editorHtml, /sparat styrunderlag|Förberedda klippval|Följer OpenClaw|Variationsfrekvens|Variations-id|AI-småprat/);
   assert.match(editorHtml, /type="color"/);
-  assert.match(editorHtml, /Följer OpenClaw/);
-  assert.match(editorHtml, /Variationsfrekvens/);
-  assert.match(editorHtml, /Variations-id, ett per rad/);
+  assert.match(editorHtml, /Bolaget får ändra/);
   assert.doesNotMatch(editorHtml, /sg-btn-primary/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: project,
@@ -317,14 +307,13 @@ test('generated composition IDs normalize names, obey the model limit and retry 
   assert.throws(() => newCompositionId(project, 'Ny scen', () => '../unsafe'), /unikt ID/);
 });
 
-test('moved policy and colour controls edit exact existing fields without changing layer or dealer assignments', () => {
+test('visible colour controls preserve hidden policies and dealer assignments', () => {
   const h = compositionControls(), original = structuredClone(h.project), lane = original.lanes[0];
   let tree = h.settings();
-  const firstMode = h.find(tree, node => node.type === 'select');
-  firstMode.props.onChange({ target: { value: 'shadow' } });
+  assert.equal(h.find(tree, node => node.type === 'select'), null);
   tree = h.settings(); h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
   assert.equal(h.error, '');
-  assert.deepEqual(h.project.lanes[0].openclaw, { ...lane.openclaw, idle: 'shadow' });
+  assert.deepEqual(h.project.lanes[0].openclaw, lane.openclaw);
   assert.deepEqual(h.project.lanes[0].layers.table.colors, [...(lane.layers.table.colors ?? []), '#1b4332']);
   assert.deepEqual(h.project.lanes[0].dealers, lane.dealers);
   assert.deepEqual(h.project.lanes[0].layers.dealer, lane.layers.dealer);
@@ -337,7 +326,19 @@ test('disabled composition controls reject direct callbacks as well as disabling
   let tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.value === before.lanes[0].label).props.onChange({ target: { value: 'Blocked' } });
   h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
-  tree = h.settings(); h.find(tree, node => node.type === 'select').props.onChange({ target: { value: 'shadow' } });
+  tree = h.settings(); h.find(tree, node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({target:{checked:false}});
   h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
   assert.deepEqual(h.project, before);
+});
+
+ test('editing a visible presentation property preserves every hidden playback value', () => {
+  const project=createSeedProject(), lane=project.lanes[0];
+  lane.openclaw={idle:'random',deal:'rules',reveal:'shadow',speak:'active',probe:'off'};
+  lane.probe={mode:'shadow',model:'gateway-default'};
+  lane.idle={frequencyPercent:27,variants:['saved-variation']};
+  const original=structuredClone(project);
+  const changed=structuredClone(lane);changed.layers.table.colors=['#112233'];
+  const next=replaceLane(project,lane.id,changed);
+  for(const key of ['openclaw','probe','idle'])assert.deepEqual(next.lanes[0][key],original.lanes[0][key]);
+  assert.deepEqual(project,original);
 });

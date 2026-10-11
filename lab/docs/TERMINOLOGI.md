@@ -91,7 +91,7 @@ Ett nytt **spelrum** skapas och publicerar sin presentation i ett steg. **Uppdat
 
 **Automatisk** grundloopvariation är en tidsstyrd färdig rörelse, utan AI-anrop. **OpenClaw-reaktion** väljer en tillåten rörelse utifrån observerad chatt (högst 8 meddelanden, totalt 3 200 tecken). **AI-tal** skapar ny text som går vidare till röst och läppsynk; en klippväljare skapar inte tal.
 
-Vanligt klippval får den publika spelhändelsen och tillåtna varianter. Testpanelens extra sammanhang är uttryckliga testvärden. Lane-fälten för OpenClaw, probe och idle bevaras som **sparat styrunderlag**; de styr inte dagens spelare. Aktiva dealerpolicyer och spelflikens läge används. Astrids sparade utdelningsfrekvenser väljer lokalt utan modell.
+Vanligt klippval får den publika spelhändelsen och tillåtna varianter. Testpanelens extra sammanhang är uttryckliga testvärden. Lane-fälten för OpenClaw, probe och idle är dolda och deras tidigare sparade värden bevaras; de styr inte dagens spelare. Aktiva dealerpolicyer och spelflikens läge används. Astrids sparade utdelningsfrekvenser väljer lokalt utan modell.
 
 OpenClaw ändrar inte kort, regler, saldo eller utfall.
 

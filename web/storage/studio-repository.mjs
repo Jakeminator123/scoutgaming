@@ -21,6 +21,8 @@ export function createStudioRepository({ pool, scope } = {}) {
   if (!pool || typeof pool.connect !== 'function') fail('studio_invalid_configuration', 503);
   scope = validateStudioScope(scope);
   const scopeKey = canonicalStudioJson(scope);
+  const lifecycleAuthority = Symbol('dealer-lifecycle');
+  const contains = (value, id) => value === id || value && typeof value === 'object' && Object.values(value).some(item => contains(item,id));
   const parameters = [scope.environment, scope.workspaceId];
   // One scope lock before any row lock: a stable, ordered scope tuple avoids
   // opposite document/media lock order across concurrent editors.
@@ -110,6 +112,17 @@ export function createStudioRepository({ pool, scope } = {}) {
       return { ...record, revision: validateRevision(row.revision), updatedAt: timestamp(row.updated_at) };
     } catch { fail('studio_corrupt_media', 503); }
   };
+  async function lockMediaObject(pathname) {
+    // Scope lock is always first; object lock second; neither path takes another
+    // scope lock. Imports/register/purge share this pathname lock across scopes.
+    await query(`/* studio:media-object-lock */ SELECT pg_advisory_xact_lock(hashtextextended($3::text,0))
+      WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL`, ['croupier:managed-media:' + pathname]);
+  }
+  async function mediaAliases(record) {
+    return (await query(`/* studio:media-aliases */ SELECT environment_id,workspace_id,id,record
+      FROM croupier_studio.media_records WHERE NOT(environment_id=$1 AND workspace_id=$2 AND id=$3::uuid)
+      AND (id=$3::uuid OR record->>'pathname'=$4) LIMIT 2`,[record.id,record.pathname])).rows;
+  }
   async function loadMedia(id) {
     return media((await query(`/* studio:read-media */ SELECT id,revision,record,updated_at FROM croupier_studio.media_records
       WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid`, [id])).rows[0]);
@@ -166,11 +179,21 @@ export function createStudioRepository({ pool, scope } = {}) {
       return operation(() => {
         validateDocumentKind(kind); const revision = newRevision(kind);
         return { expectedRevision: validateRevision(options.expectedRevision), revision,
-          value: validateDocumentValue(kind, options.value, revision), actor: validateActor(options.actor) };
+          value: validateDocumentValue(kind, options.value, revision, {allowLegacyRead:options.lifecycleAuthority === lifecycleAuthority}), actor: validateActor(options.actor) };
       }, async prepared => {
         const previous = await loadDocument(kind);
         if (!previous) fail('studio_document_missing', 404);
         if (previous.revision !== prepared.expectedRevision) fail('studio_conflict');
+        if (kind === 'project') {
+          const lifecycle = options.lifecycleAuthority === lifecycleAuthority;
+          if (!lifecycle && canonicalStudioJson(previous.value.dealerTrash ?? []) !== canonicalStudioJson(prepared.value.dealerTrash ?? [])) fail('studio_dealer_lifecycle_required');
+          const removed = previous.value.dealers.filter(dealer => !prepared.value.dealers.some(next => next.id === dealer.id));
+          const rows = await api.listMedia({limit:5000});
+          if (!lifecycle && removed.some(dealer => rows.some(row => row.classification.dealerId === dealer.id))) fail('studio_dealer_lifecycle_required');
+          const {dealerTrash, ...activeProject} = prepared.value;
+          for (const row of rows) if ((row.deletion || row.classification.archived) && contains(activeProject,row.id)) fail('studio_media_in_use');
+        }
+        if(kind!=='project')for(const row of await api.listMedia({limit:5000}))if(row.deletion&&contains(prepared.value,row.id))fail('studio_media_in_use');
         await query(`/* studio:history */ INSERT INTO croupier_studio.document_history
           (environment_id,workspace_id,kind,revision,value,original_updated_at,replaced_by,actor)
           VALUES ($1,$2,$3,$4,$5::jsonb,$6::timestamptz,$7,$8)`,
@@ -182,6 +205,10 @@ export function createStudioRepository({ pool, scope } = {}) {
         await audit('save_document', kind, prepared.revision, prepared.actor);
         return document(row);
       });
+    },
+    // Server-only lifecycle entry point. HTTP project PUT cannot mint this authority.
+    saveDealerLifecycle(value, {expectedRevision,actor} = {}) {
+      return api.saveDocument('project', {value,expectedRevision,actor,lifecycleAuthority});
     },
     listDocumentHistory(kind, { limit = 100 } = {}) {
       return operation(() => {
@@ -212,7 +239,13 @@ export function createStudioRepository({ pool, scope } = {}) {
     },
     registerMedia(record, { actor } = {}) {
       return operation(() => ({ record: validateStudioMedia(record), actor: validateActor(actor) }), async prepared => {
+        if (prepared.record.deletion) fail('studio_media_deletion_pending');
+        await lockMediaObject(prepared.record.pathname);
+        if (!prepared.record.retainedBank && (await mediaAliases(prepared.record)).length) fail('studio_media_owned_elsewhere');
+        const project = await loadDocument('project');
+        if (project?.value.dealerTrash?.some(entry => entry.dealer.id === prepared.record.classification.dealerId)) fail('studio_dealer_archived');
         const existing = await loadMedia(prepared.record.id);
+        if (existing?.deletion) fail('studio_media_deletion_pending');
         if (existing) {
           const { revision, updatedAt, ...stored } = existing;
           if (canonicalStudioJson(stored) !== canonicalStudioJson(prepared.record)) fail('studio_conflict');
@@ -231,6 +264,7 @@ export function createStudioRepository({ pool, scope } = {}) {
         const previous = await loadMedia(prepared.id);
         if (!previous) fail('studio_media_missing', 404);
         if (previous.retainedBank) fail('studio_retained_media_immutable',410);
+        if (previous.deletion) fail('studio_media_deletion_pending');
         if (previous.revision !== prepared.expectedRevision || previous.sha256 !== sha256) fail('studio_conflict');
         const { revision: oldRevision, updatedAt, ...record } = previous;
         const next = validateStudioMedia({ ...record, classification: metadata }), revision = newRevision('media');
@@ -241,6 +275,60 @@ export function createStudioRepository({ pool, scope } = {}) {
         await audit('classify_media', prepared.id, revision, prepared.actor);
         return media(row);
       });
+    },
+    withMediaObjectLock(id, work) {
+      return operation(() => validateMediaId(id), async checked => {
+        const record = await loadMedia(checked);
+        if (!record) fail('studio_media_missing',404);
+        await lockMediaObject(record.pathname);
+        return work(record);
+      });
+    },
+    mediaRegisteredAt(id) {
+      return operation(()=>validateMediaId(id),async checked=>{
+        const row=(await query(`/* studio:media-registered-at */ SELECT min(at) AS registered_at FROM croupier_studio.audit_events
+          WHERE environment_id=$1 AND workspace_id=$2 AND subject=$3 AND action='register_media'`,[checked])).rows[0];
+        return row?.registered_at?timestamp(row.registered_at):null;
+      },true);
+    },
+    inspectMediaDeletion(record) {
+      return operation(() => validateMediaId(record?.id), async () => {
+        const documents = (await query(`/* studio:media-current-owners */ SELECT environment_id,workspace_id,kind,revision,value
+          FROM croupier_studio.documents WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
+          AND (jsonb_path_exists(value,'$.** ? (@ == $id)',jsonb_build_object('id',$3::text)) OR position($4::text in value::text)>0)
+          LIMIT 101`, [record.id,record.pathname])).rows;
+        const packages = (await query(`/* studio:media-all-packages */ SELECT operator_id,package_revision,lanes,branding
+          FROM croupier_studio.operator_packages WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL LIMIT 1001`)).rows;
+        if(documents.length>100 || packages.length>1000)fail('studio_media_delete_coverage_incomplete',503);
+        return {documents,packages,aliases:await mediaAliases(record)};
+      },true);
+    },
+    setMediaDeletion(id,{expectedRevision,sha256,deletion,actor}={}) {
+      return operation(()=>({id:validateMediaId(id),expectedRevision:validateRevision(expectedRevision),actor:validateActor(actor)}),async checked=>{
+        const previous=await loadMedia(checked.id);
+        if(!previous||previous.revision!==checked.expectedRevision||previous.sha256!==sha256)fail('studio_conflict');
+        if(previous.retainedBank||previous.classification.archived!==true)fail('studio_media_archive_required');
+        await lockMediaObject(previous.pathname);
+        if(previous.deletion?previous.deletion.state!=='pending'||deletion?.state!=='deleted'||previous.deletion.requestedAt!==deletion.requestedAt:deletion?.state!=='pending')fail('studio_media_deletion_pending');
+        const {revision:oldRevision,updatedAt,...record}=previous;
+        const next=validateStudioMedia({...record,deletion}),revision=newRevision('media');
+        const row=(await query(`/* studio:classify-media */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
+          WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,
+          [checked.id,revision,canonicalStudioJson(next),oldRevision])).rows[0];
+        if(!row)fail('studio_conflict');
+        // Existing immutable audit vocabulary; state/revision stay on the durable row.
+        await audit('classify_media',checked.id,revision,checked.actor);
+        return media(row);
+      });
+    },
+    listLifecyclePackages() {
+      return operation(() => null, async () => {
+        const rows = (await query(`/* studio:lifecycle-packages */ SELECT operator_id,package_revision,lanes,branding
+          FROM croupier_studio.operator_packages WHERE environment_id=$1 AND workspace_id=$2
+          ORDER BY operator_id,package_revision LIMIT 1001`)).rows;
+        if (rows.length > 1000) fail('studio_media_delete_coverage_incomplete',503);
+        return rows;
+      }, true);
     },
     findMediaReferences(id) {
       return operation(() => validateMediaId(id), async checked => {

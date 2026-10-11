@@ -1,7 +1,7 @@
 // A generated-text preview is provisional until the final decision arrives.
 // Media and the authoritative result arrive after the ownership/round recheck.
 export const CHAT_STAGES = Object.freeze({
-  text: 'Astrid tänker…', voice: 'Skapar rösten…',
+  text: 'Dealern tänker…', voice: 'Skapar rösten…',
   'video-submit': 'Skickar rösten till läppsynk…',
   'video-queue': 'Väntar på video-GPU…', 'video-render': 'Skapar läppsynk…',
   media: 'Förbereder uppspelning…', ready: 'Svar klart · väntar på ledigt bord',
@@ -52,7 +52,7 @@ export async function readChatResponse(response, onProgress = () => {}, onPrevie
 export function chatFailureMessage(reason = '') {
   if (reason === 'generated_speech_daily_budget_exhausted') return 'Dagens budget för läppsynk är nådd. Nya röstsvar blir tillgängliga nästa dag.';
   if (reason === 'hidden') return 'Uppspelningen avbröts när du bytte flik.';
-  if (reason === 'muted') return 'Slå på ljudet för att höra Astrids svar.';
+  if (reason === 'muted') return 'Slå på ljudet för att höra dealerns svar.';
   if (/stale|^stale:/.test(reason)) return 'Bordet eller profilen ändrades. Skicka frågan igen.';
   if (/busy/.test(reason)) return 'Rösttjänsten är upptagen. Försök igen strax.';
   if (/timeout/.test(reason)) return 'Svaret tog för lång tid. Försök igen.';

@@ -39,12 +39,13 @@ function harness(file, initialStates = [], overrides = {}) {
     ...overrides,
   };
   if (overrides['./studio-types']) mocks['./studio-types'] = { studioHref(path, selection={}) { const query=new URLSearchParams(); for(const [key,value] of Object.entries(selection)) if(value) query.set(({dealerId:'dealer',eventId:'event',variantId:'variant'})[key]??key,value); return query.size?path+'?'+query:path; }, ...overrides['./studio-types'] };
+  const stateNames = [...source.matchAll(/const \[([^,]*),[^\]]*\]\s*=\s*useState/g)].map(match=>match[1].trim());
   const module = { exports: {} };
   vm.runInNewContext(output.code, { module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: runtimeWindow,
     require: name => name === 'react' ? fakeReact : name.endsWith('.module.css') ? { __esModule: true, default: {} } : mocks[name] ?? require(name),
   });
-  return { render(props) { cursor=refCursor=effectCursor=0; return Object.values(module.exports)[0](props); }, values,
+  return { render(props) { cursor=refCursor=effectCursor=0; return Object.values(module.exports)[0](props); }, values, state(name, ...next) { const index=stateNames.indexOf(name); assert.ok(index>=0,name); if(next.length)values[index]=next[0]; return values[index]; },
     flushEffects() { const pending=effects.filter(effect=>effect.changed); for(const effect of pending)effect.cleanup?.(); for(const effect of pending){effect.changed=false;effect.cleanup=effect.run();} },
   };
 }
@@ -177,16 +178,20 @@ test('save and continue waits for the clean render to replace the old beforeunlo
 });
 
 test('pending content navigation is cancelled by newer edits, upload or conflict',async()=>{
-  for(const blocker of ['new-edit','upload','conflict']){
+  for(const blocker of ['new-edit','upload','conflict','dealer-lifecycle','intake']){
     const n=navigationHarness();click(n.links[0]);
     n.finish().resolve({project:{...n.draft,revision:'saved-revision'}});
     await new Promise(resolve=>setImmediate(resolve));
     if(blocker==='new-edit')n.h.values[0]={...n.h.values[0],clipLabels:{'named-clip':'Nyare ändring'}};
-    if(blocker==='upload')n.h.values[13]=true;
-    if(blocker==='conflict')n.h.values[10]=true;
+    if(blocker==='upload')n.h.state('uploading',true);
+    if(blocker==='dealer-lifecycle')n.h.state('dealerBusy',true);
+    if(blocker==='intake')n.h.state('intakePending',true);
+    if(blocker==='conflict')n.h.state('conflict',true);
     n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[],blocker);
-    if(blocker==='upload')n.h.values[13]=false;
-    if(blocker==='conflict')n.h.values[10]=false;
+    if(blocker==='upload')n.h.state('uploading',false);
+    if(blocker==='dealer-lifecycle')n.h.state('dealerBusy',false);
+    if(blocker==='intake')n.h.state('intakePending',false);
+    if(blocker==='conflict')n.h.state('conflict',false);
     n.h.render(n.p);n.h.flushEffects();assert.deepEqual(n.assigned,[],'clearing blocker must not revive an old navigation');
   }
 });
@@ -199,7 +204,7 @@ test('content links refuse navigation during a save and after a failed CAS reque
   n.finish().reject(Object.assign(new Error('revision conflict'),{statusCode:409}));
   await new Promise(resolve=>setImmediate(resolve));
   const failedTree=n.h.render(n.p);n.h.flushEffects();
-  assert.equal(n.h.values[10],true);assert.deepEqual(n.assigned,[]);
+  assert.equal(n.h.state('conflict'),true);assert.deepEqual(n.assigned,[]);
   click(nodes(failedTree,node=>node.type==='a'&&node.props.href?.includes('/control/'))[1]);assert.equal(n.requests.length,1);assert.deepEqual(n.assigned,[]);
 });
 
@@ -221,20 +226,20 @@ test('own idle changes update only selected dealer policy and baseline atomicall
   assert.equal(p.initialProject.dealerIdlePolicies.length,1,'input draft is preserved');
   own.props.onBusyChange(true);tree=h.render(p);
   assert.ok(nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar').every(row=>row.props.disabled));
-  assert.equal(nodes(tree,row=>typeof row.props?.onRemoved==='function')[0].props.disabled,true);
+  assert.equal(nodes(tree,row=>typeof row.props?.onApplied==='function')[0].props.disabled,true);
   own.props.onBusyChange(false);tree=h.render(p);
-  assert.equal(nodes(tree,row=>typeof row.props?.onRemoved==='function')[0].props.disabled,false);
+  assert.equal(nodes(tree,row=>typeof row.props?.onApplied==='function')[0].props.disabled,true,'unsaved edits must still block server lifecycle writes');
   assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna'&&typeof row.props?.onBusyChange==='function')[0].props.blocked,false,'metadata lock does not block its own editor');
 });
 
-test('draft removal integration updates draft and follows confirmed next dealer selection',()=>{
+test('server-confirmed dealer removal applies project, inventory and next selection as a saved revision',()=>{
   const p=props();p.initialProject=addDealer(p.initialProject,'johanna','Johanna');p.initialDealerId='johanna';
   const h=harness('./lab-studio.tsx');let tree=h.render(p);
-  const removal=nodes(tree,row=>typeof row.props?.onRemoved==='function')[0];
-  removal.props.onEdit(current=>({...current,dealers:current.dealers.filter(row=>row.id!=='johanna'),lines:current.lines.filter(row=>row.dealerId!=='johanna')}));
-  assert.equal(h.values[3],'johanna','navigation waits for the component-confirmed removal callback');
-  removal.props.onRemoved('johanna','astrid');tree=h.render(p);
-  assert.equal(h.values[3],'astrid');assert.equal(h.values[0].dealers.some(row=>row.id==='johanna'),false);
+  const removal=nodes(tree,row=>typeof row.props?.onApplied==='function')[0];
+  const next={...p.initialProject,revision:'server-archived',dealers:p.initialProject.dealers.filter(row=>row.id!=='johanna'),lines:p.initialProject.lines.filter(row=>row.dealerId!=='johanna')};
+  const inventory={videos:[]};
+  removal.props.onApplied(next,inventory,'astrid');tree=h.render(p);
+  assert.equal(h.state('dealerId'),'astrid');assert.equal(h.state('project'),next);assert.equal(h.state('saved'),JSON.stringify(next));assert.equal(h.state('videos'),inventory);
   assert.equal(p.initialProject.dealers.some(row=>row.id==='johanna'),true);
   assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna').length,0);
 });
@@ -243,7 +248,7 @@ test('opening an exact slot reveals settings and preserves destination and unsav
   const h=harness('./lab-studio.tsx'),p=props();let tree=h.render(p);
   const draft={...h.values[0],revision:'unsaved'};h.values[0]=draft;
   nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('deal.player','box4');tree=h.render(p);
-  assert.equal(h.values[0],draft);assert.equal(h.values[11].situation,'box4');
+  assert.equal(h.values[0],draft);assert.equal(h.state('selection').situation,'box4');
   const settings=nodes(tree,node=>node.type==='details'&&node.props.onToggle)[0];assert.equal(settings.props.open,true);
   const variants=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('tab=variants'))[0];
   assert.match(variants.props.href,/situation=box4/);

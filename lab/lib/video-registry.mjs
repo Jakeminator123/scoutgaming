@@ -150,6 +150,8 @@ function publicEntry(entry, available, integrity, family) {
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
     bindingScope: 'lab-only', source: entry.retainedBank ? 'emil' : 'upload', classification: entry.classification, addedAt: entry.addedAt,
     ...(entry.retainedBank ? {retainedBank:true} : {}),
+    ...(entry.revision ? {revision:entry.revision} : {}),
+    ...(entry.deletion ? {deletion:entry.deletion,available:false,integrity:'unavailable',previewUrl:null} : {}),
     storage: entry.storage ? 'private-blob' : 'disk',
   };
   if (family) return {
@@ -228,6 +230,7 @@ export async function loadVideoRegistry(options = {}) {
   let uploads = [];
   try { uploads = await (options.readUploads ?? readUploads)(options); }
   catch (error) { if (options.strict) throw error; summary.notes.push('Uppladdningsregistret kunde inte läsas; befintliga filer är bevarade.'); }
+  uploads=uploads.filter(entry=>entry.deletion?.state!=='deleted');
   for (const entry of uploads) {
     await validateRetainedEntry(entry);
     if (entries.has(entry.id)) throw new RegistryError(503, 'Duplicate video identity.');
@@ -274,6 +277,7 @@ export async function loadVideoRegistry(options = {}) {
         if (error.code === 'ENOENT') summary.missing += 1;
       }
     }
+    if(entry.deletion){available=false;integrity='unavailable';}
     const video = publicEntry(entry, available, integrity, familyById.get(entry.familyId));
     if(indexedBank&&!entry.classification)video.storage='private-blob';
     // Only an explicit upload to an exact family joins shared playback. Legacy
@@ -354,6 +358,7 @@ export async function getVideoResponse(id, request, options = {}) {
     catch { snapshotFailed = true; }
     if (!entry) {
       uploaded = (await (options.readUploads ?? readUploads)(options)).find(v => v.id === id);
+      if (uploaded?.deletion) return new Response(null,{status:410,headers:{'Cache-Control':'private, no-store'}});
       if (uploaded) await validateRetainedEntry(uploaded);
       entry = uploaded;
     }

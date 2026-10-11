@@ -1,28 +1,16 @@
 'use client';
-import {labUrl} from '../lib/lab-url.mjs';
 
 import { useRef, useState, type FormEvent } from 'react';
-import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import {
-  LANE_PROBE_MODES,
-  OPENCLAW_MODES,
-  OPENCLAW_PHASES,
   OPERATOR_ADJUSTABLE,
   defaultPresentationLane,
   validateProject,
-  type LaneIdle,
-  type LaneProbe,
-  type LaneProbeMode,
-  type OpenClawMode,
-  type OperatorAdjustable,
   type StudioLane,
   type StudioProject,
 } from '../lib/studio-model.mjs';
 import styles from './lane-editor.module.css';
 
 export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';
-const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'OpenClaw styr'};
-const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'AI-småprat vid inaktivitet'};
 const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
 
 type Edit = (edit: (current: StudioProject) => StudioProject) => void;
@@ -66,17 +54,6 @@ export function replaceLane(project: StudioProject, id: string, lane: StudioLane
   if (index < 0) throw new Error(`lanes: lanen ${id} finns inte`);
   lanes[index] = structuredClone(lane);
   return commitLanes(project, lanes);
-}
-
-function linesOf(value: string) {
-  return value.split('\n').map(item => item.trim()).filter(item => item.length > 0);
-}
-
-function writeIdle(draft: StudioLane, change: (idle: LaneIdle) => void) {
-  const idle: LaneIdle = { ...draft.idle };
-  change(idle);
-  if (idle.frequencyPercent === undefined && idle.variants === undefined) delete draft.idle;
-  else draft.idle = idle;
 }
 
 function layerText(lane: StudioLane) {
@@ -159,15 +136,14 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
 }) {
   const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const [draftColor, setDraftColor] = useState('#1b4332');
-  const [idleVariants, setIdleVariants] = useState((lane.idle?.variants ?? []).join('\n'));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const tableColors = lane.layers.table.colors ?? [];
-  function editLane(change: (draft: StudioLane) => void, accept?: () => void) {
+  function editLane(change: (draft: StudioLane) => void) {
     if (disabled) return;
     const next = structuredClone(lane); change(next);
     try { replaceLane(project, lane.id, next); }
     catch (cause) { onEdit(() => { throw cause; }); return; }
-    accept?.(); onEdit(current => replaceLane(current, lane.id, next));
+    onEdit(current => replaceLane(current, lane.id, next));
   }
   return <fieldset className={styles.editor} disabled={disabled} aria-label="Avancerade sammansättningsinställningar">
       <details className={styles.advanced}><summary>Bordsfärger för bolaget</summary><div className={styles.addColor}>
@@ -189,67 +165,6 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
           })}>Ta bort</button>
         </li>)}
       </ul> : null}</details>
-    <details className={styles.advanced}><summary>Avancerat · sparat styrunderlag</summary><p className={styles.help}><strong>Ännu inte kopplat till uppspelningen.</strong> Dessa fasval, AI-småpratsval och variationsvärden sparas med presentationen, men den nuvarande spelaren läser dem inte som styrning. Befintliga värden bevaras.</p><p className={styles.help}>Aktiva klipp och grundloopvariationer hanteras i <a href={labUrl('/control/clips')}>Dealers & klipp</a>. Genererat småprat styrs i <a href={labUrl('/control/probe')}>AI-småprat vid inaktivitet</a>. Faktiskt klippläge och uppspelning visas i <a href={labUrl('/control/activity')}>Uppspelning</a>.</p><fieldset className={styles.group}>
-      <legend>Förberedda klippval per fas</legend>
-      {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phaseLabels[phase]??phase}
-        <select value={lane.openclaw[phase]} onChange={event => editLane(draft => { draft.openclaw[phase] = event.target.value as OpenClawMode; })}>
-          {[...OPENCLAW_MODES].map(mode => <option key={mode} value={mode}>{modeLabels[mode]??mode}</option>)}
-        </select>
-      </label>)}
-    </fieldset>
-    <fieldset className={styles.group}>
-      <legend>AI-småprat vid inaktivitet</legend>
-      <label className={styles.field}>Läge
-        <select value={lane.probe?.mode ?? ''} onChange={event => {
-          const mode = event.target.value;
-          editLane(draft => {
-            if (!mode) { delete draft.probe; return; }
-            const next: LaneProbe = { mode: mode as LaneProbeMode };
-            if (draft.probe?.model) next.model = draft.probe.model;
-            draft.probe = next;
-          });
-        }}>
-          <option value="">Följer OpenClaw</option>
-          {LANE_PROBE_MODES.map(mode => <option key={mode} value={mode}>{modeLabels[mode]??mode}</option>)}
-        </select>
-      </label>
-      <label className={styles.field}>Modell
-        <select value={lane.probe?.model ?? ''} disabled={!lane.probe} onChange={event => {
-          const model = event.target.value;
-          editLane(draft => {
-            if (!draft.probe) return;
-            if (!model) delete draft.probe.model;
-            else draft.probe.model = model as LaneProbe['model'];
-          });
-        }}>
-          <option value="">Ingen egen modell</option>
-          {PROBE_MODELS.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
-        </select>
-      </label>
-      <p className={styles.help}>Sparat underlag. Använd den aktiva AI-småpratspolicyn för att styra väntetid och generering. <a href={labUrl('/control/probe')}>Öppna inställningar för AI-småprat vid inaktivitet</a></p>
-    </fieldset>
-    <fieldset className={styles.group}>
-      <legend>Grundloopens variationer</legend>
-      <label className={styles.field}>Variationsfrekvens (%)
-        <input type="number" min={0} max={100} step={1} inputMode="numeric" value={lane.idle?.frequencyPercent ?? ''} onChange={event => {
-          const raw = event.target.value;
-          editLane(draft => writeIdle(draft, idle => {
-            if (raw === '') delete idle.frequencyPercent;
-            else idle.frequencyPercent = Number(raw);
-          }));
-        }} />
-      </label>
-      <label className={styles.field}>Variations-id, ett per rad
-        <textarea value={idleVariants} rows={4} onChange={event => {
-          const value = event.target.value;
-          editLane(draft => writeIdle(draft, idle => {
-            const variants = linesOf(value);
-            if (variants.length === 0) delete idle.variants;
-            else idle.variants = variants;
-          }), () => setIdleVariants(value));
-        }} />
-      </label>
-    </fieldset></details>
     <details className={styles.advanced}><summary>Bolagets val och tekniska inställningar</summary><fieldset className={styles.group}>
       <legend>Bolaget får ändra</legend>
       <div className={styles.checks}>

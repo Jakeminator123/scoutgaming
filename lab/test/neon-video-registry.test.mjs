@@ -143,3 +143,30 @@ test('captured inventory rejects foreign scope/registration and unavailable sele
   objects.delete(record.pathname);
   await assert.rejects(registry.verifyCapturedMedia([{record,id:record.id,revision:snapshot.mediaRows[0].revision}]),e=>e.code==='studio_media_storage_unavailable');
 });
+
+test('trash dealer uploads remain readable in live and captured inventory without active registration',async t=>{
+ const {addDealer}=await import('../lib/studio-model.mjs');
+ const {changeDealerLifecycle}=await import('../lib/dealer-lifecycle.mjs');
+ const f=await fixture(t),current=await f.repository.readDocument('project');
+ const project=addDealer(current.value,'paow','PAOW');
+ seedSavedVideoProject(f.pool,scope,project);
+ await f.repository.initializeDocument('administration',{value:{},actor:'Admin'});
+ const {record:original,bytes}=await f.newMedia();
+ const id=randomUUID(),record={...original,id,pathname:mediaBlobPath('dealers/paow/review/uploads',id,original.sha256,'mp4'),classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'PAOW',notes:''}};
+ f.objects.set(record.pathname,bytes);await f.repository.registerMedia(record,{actor:'Admin'});
+ const archived=await changeDealerLifecycle({repository:f.repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',archived:true,expectedRevision:project.revision}});
+ const live=await f.registry.load(),captured=await f.registry.loadCaptured(await f.repository.readPresentationSnapshot());
+ for(const inventory of [live,captured]){const video=inventory.videos.find(row=>row.id===id);assert.equal(video.dealer,'paow');assert.equal(video.classification.archived,true);assert.match(video.revision,/^studio-/);}
+ assert.equal(archived.dealers.some(row=>row.id==='paow'),false);
+ const rows=await f.repository.listMedia();
+ const deletedRepo={...f.repository,listMedia:async()=>rows.map(row=>row.id===id?{...row,deletion:{state:'pending',requestedAt:'2026-10-11T20:00:00.000Z'}}:row)};
+ const pending=createNeonVideoRegistry({repository:deletedRepo,scope,env:f.env,options:f.options});
+ const blocked=(await pending.load()).videos.find(row=>row.id===id);assert.equal(blocked.available,false);assert.equal(blocked.previewUrl,null);
+ assert.equal((await pending.response(id,new Request(`https://studio.example.invalid/studio/api/videos/${id}`))).status,410);
+ const removedRepo={...f.repository,listMedia:async()=>rows.map(row=>row.id===id?{...row,deletion:{state:'deleted',requestedAt:'2026-10-11T20:00:00.000Z',completedAt:'2026-10-11T20:00:01.000Z'}}:row)};
+ const removed=createNeonVideoRegistry({repository:removedRepo,scope,env:f.env,options:f.options});
+ assert.equal((await removed.load()).videos.some(row=>row.id===id),false);
+ const afterDealerDeletion={...removedRepo,readDocument:async kind=>{const doc=await f.repository.readDocument(kind);if(kind==='project')doc.value.dealerTrash=[];return doc;}};
+ assert.equal((await createNeonVideoRegistry({repository:afterDealerDeletion,scope,env:f.env,options:f.options}).load()).videos.some(row=>row.id===id),false);
+ assert.equal((await removed.response(id,new Request(`https://studio.example.invalid/studio/api/videos/${id}`))).status,410);
+});

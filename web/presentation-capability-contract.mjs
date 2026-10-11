@@ -11,22 +11,24 @@ const contracts = Object.freeze({
     registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' }),
   4: Object.freeze({ schemaVersion: 4, ...common, rooms: 'operator-owned-v2',
     registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' }),
+  5: Object.freeze({schemaVersion:5,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1'}),
 });
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3/v4. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3/v4/v5. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
   if (header === '2') return 2;
   if (header === '3') return 3;
   if (header === '4') return 4;
+  if (header === '5') return 5;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

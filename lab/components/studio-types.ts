@@ -6,6 +6,8 @@ export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | '
 export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 
 export interface VideoEntry {
+  revision?: string;
+  deletion?: {state:'pending'|'deleted';requestedAt:string;completedAt?:string};
   classification?: VideoMetadata;
   source?: 'emil' | 'archive' | 'upload';
   familyId?: string;
@@ -158,7 +160,7 @@ export async function requestJson<T>(url: string, init?: RequestInit): Promise<T
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = typeof data.error === 'string' ? data.error : typeof data.message === 'string' ? data.message : 'Begäran misslyckades.';
-    throw Object.assign(new Error(`${detail}${Array.isArray(data.errors) ? ` ${data.errors.join(' ')}` : ''}`),{statusCode:response.status});
+    throw Object.assign(new Error(`${detail}${Array.isArray(data.errors) ? ` ${data.errors.join(' ')}` : ''}`),{statusCode:response.status,...(typeof data.code==='string'?{code:data.code}:{})});
   }
   return data as T;
 }

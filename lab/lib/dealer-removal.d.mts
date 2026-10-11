@@ -5,4 +5,3 @@ export interface DealerRemovalStatus {
   message: string;
 }
 export function dealerRemovalStatus(project: StudioProject, dealerId: string): DealerRemovalStatus;
-export function removeDealerFromDraft(project: StudioProject, dealerId: string): StudioProject;

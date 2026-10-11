@@ -33,6 +33,7 @@ export function createStudioMemoryPool() {
           if (sql.startsWith('BEGIN')) { readOnly = sql.includes('READ ONLY'); working = readOnly ? clone(state) : undefined; return result([], 'BEGIN'); }
           if (sql.startsWith('SET LOCAL')) return result([], 'SET');
           if (sql.includes('pg_advisory_xact_lock')) {
+            if(lockRelease)return result();
             const previous = tail; tail = new Promise(resolve => { lockRelease = resolve; });
             await previous; working = clone(state); return result();
           }
@@ -44,6 +45,11 @@ export function createStudioMemoryPool() {
           }
           if (!working) throw new Error('fixture operation outside transaction');
           switch (marker) {
+            case 'media-registered-at': return result([{registered_at:working.audits.filter(row=>scoped(row,values)&&row.subject===values[2]&&row.action==='register_media').map(row=>row.at).sort()[0]??null}]);
+            case 'media-aliases': return result([...working.media.values()].filter(row=>!(scoped(row,values)&&row.id===values[2])&&(row.id===values[2]||row.record.pathname===values[3])).slice(0,2));
+            case 'media-current-owners': return result([...working.documents.values()].filter(row=>references(row.value,values[2])||JSON.stringify(row.value).includes(values[3])).slice(0,101));
+            case 'media-all-packages': return result(pool.packages??[]);
+            case 'lifecycle-packages': return result(pool.packages ?? []);
             case 'read-document': return result(working.documents.has(key(values)) ? [working.documents.get(key(values))] : []);
             case 'list-documents': return result([...working.documents.values()].filter(row => scoped(row, values)).sort((a, b) => a.kind.localeCompare(b.kind)));
             case 'insert-document': {

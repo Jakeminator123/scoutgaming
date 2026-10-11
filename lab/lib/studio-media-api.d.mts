@@ -7,6 +7,7 @@ export function createStudioMediaApi(options: {
   config: NativeStudioConfiguration; videoRegistry?(): Promise<VideoRegistry>;
   videoResponse?(id: string, request: Request): Promise<Response>;
   uploads?: StudioUploads;
+  mediaDeletion?: {check(body:any):Promise<any>;remove(body:any,context:any):Promise<any>};
   mutationTransaction?<T>(work: () => Promise<T>): Promise<T>;
 }): {handle(request: Request): Promise<Response>};
 export function handleNativeStudioMedia(request: Request): Promise<Response>;

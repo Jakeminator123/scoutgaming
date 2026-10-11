@@ -5,7 +5,7 @@ import { cloneStudioJson, canonicalStudioJson, StudioStorageError, studioStorage
 import { getVideoResponse, loadVideoRegistry } from './video-registry.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
 import { isMediaBlobIndexConfigured } from './media-blob-index.mjs';
-import { savedVideoDealerIds } from './video-dealer-registration.mjs';
+import { savedVideoDealerOwnership } from './video-dealer-registration.mjs';
 import {registeredDealerIds} from '../../web/dealer-identity.mjs';
 
 // The deployed immutable bank is preserved. New review records/classification
@@ -16,7 +16,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     || canonicalStudioJson(validateStudioScope(repository.scope)) !== canonicalStudioJson(scope)) {
     throw new StudioStorageError('studio_invalid_configuration');
   }
-  function uploadsFrom(records, dealerIds) {
+  function uploadsFrom(records, dealerIds, trashIds = new Set()) {
     if (!Array.isArray(records) || records.length > 5000) throw new StudioStorageError('studio_media_registry_unavailable');
     const seen = new Set();
     return records.map(source => {
@@ -26,11 +26,12 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
       const checked = validateStudioMedia(record);
       if (seen.has(checked.id)) throw new StudioStorageError('studio_media_registry_unavailable');
       seen.add(checked.id);
-      if (!dealerIds.has(checked.classification.dealerId)) throw new StudioStorageError('studio_dealer_not_registered', 503);
+      if (checked.deletion?.state!=='deleted' && !dealerIds.has(checked.classification.dealerId) && !(checked.classification.archived && trashIds.has(checked.classification.dealerId))) throw new StudioStorageError('studio_dealer_not_registered', 503);
       const storage = validatePrivateMedia({provider:'vercel-blob', pathname:checked.pathname,
         sha256:checked.sha256, size:checked.size, contentType:checked.contentType});
       return {id:checked.id, sha256:checked.sha256, size:checked.size, extension:MEDIA_FILE_TYPES[checked.contentType],
-        classification:checked.classification, addedAt:updatedAt, storage,
+        classification:checked.classification, addedAt:updatedAt, storage, revision,
+        ...(checked.deletion ? {deletion:checked.deletion} : {}),
         ...(checked.retainedBank ? {retainedBank:checked.retainedBank} : {})};
     });
   }
@@ -40,9 +41,9 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     // Ignore both retired local upload and classification files.
     readUploads: async () => {
       try {
-        const dealerIds = await savedVideoDealerIds(repository);
+        const {active:dealerIds,trash} = await savedVideoDealerOwnership(repository);
         const records = await repository.listMedia({ limit: 5000 });
-        return uploadsFrom(records, dealerIds);
+        return uploadsFrom(records, dealerIds, trash);
       } catch (error) { throw studioStorageFailure(error); }
     },
     readClassifications: async () => [],
@@ -72,7 +73,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
           || snapshot.projectDocument.value?.revision !== validateRevision(snapshot.projectDocument.revision)) {
           throw new StudioStorageError('studio_scope_mismatch', 409);
         }
-        uploads = uploadsFrom(snapshot.mediaRows, registeredDealerIds(snapshot.projectDocument.value));
+        uploads = uploadsFrom(snapshot.mediaRows, registeredDealerIds(snapshot.projectDocument.value), new Set((snapshot.projectDocument.value.dealerTrash ?? []).map(entry => entry.dealer.id)));
         const registry = await loadVideoRegistry({...checkedOptions, readUploads:async () => uploads});
         if (!registry.summary.snapshotReadable || !registry.summary.readable) throw new StudioStorageError('studio_media_registry_unavailable');
         return registry;

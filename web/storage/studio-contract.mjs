@@ -153,7 +153,21 @@ export function validateStudioMedia(record) {
     if (canonicalStudioJson(copy) !== canonicalStudioJson(expected)) throw new StudioStorageError('studio_invalid_retained_media',422);
     return copy;
   }
-  try { return validateManagedStudioMedia(copy); }
+  try {
+    const deletion = copy?.deletion;
+    if (deletion !== undefined) {
+      if (!deletion || Array.isArray(deletion) || !['pending','deleted'].includes(deletion.state)
+        || Object.keys(deletion).sort().join(',') !== (deletion.state === 'deleted' ? 'completedAt,requestedAt,state' : 'requestedAt,state')
+        || copy.classification?.archived !== true) throw Error();
+      for (const key of deletion.state === 'deleted' ? ['requestedAt','completedAt'] : ['requestedAt']) {
+        if (typeof deletion[key] !== 'string' || !Number.isFinite(Date.parse(deletion[key])) || new Date(deletion[key]).toISOString() !== deletion[key]) throw Error();
+      }
+      if (deletion.completedAt && deletion.completedAt < deletion.requestedAt) throw Error();
+      delete copy.deletion;
+    }
+    const checked = validateManagedStudioMedia(copy);
+    return deletion === undefined ? checked : {...checked,deletion};
+  }
   catch { throw new StudioStorageError('studio_invalid_media', 422); }
 }
 

@@ -179,6 +179,20 @@ export async function deletePrivateMedia(record, options = {}) {
   await unlink(path).catch(() => {});
 }
 
+/** Only a durable server-authorized pending tombstone may reach this method.
+ * Metadata is committed BEFORE this provider call; on failure it stays pending. */
+export async function purgeManagedMedia(record, options = {}) {
+  const {validateStudioMedia} = await import('../../web/storage/studio-contract.mjs');
+  const {revision,updatedAt,...value}=record;
+  const checked=validateStudioMedia(value);
+  if(checked.retainedBank || checked.deletion?.state!=='pending')throw Error('studio_media_deletion_pending');
+  const storage=validatePrivateMedia({provider:'vercel-blob',pathname:checked.pathname,sha256:checked.sha256,size:checked.size,contentType:checked.contentType});
+  const token=tokenFor(options),client=await clientFor(options);
+  try{await client.del(storage.pathname,{token,abortSignal:AbortSignal.timeout(15000)});}
+  catch(error){if(typeof client.BlobNotFoundError!=='function'||!(error instanceof client.BlobNotFoundError))throw Object.assign(Error('studio_media_delete_failed'),{code:'studio_media_delete_failed',statusCode:503});}
+  const path=cachePath(storage,options);verifiedFiles.delete(path);await unlink(path).catch(()=>{});
+}
+
 function parseRange(header, size) {
   const match = /^bytes=(\d*)-(\d*)$/.exec(header);
   if (!match || (!match[1] && !match[2])) return null;
