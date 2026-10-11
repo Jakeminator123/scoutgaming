@@ -1,5 +1,41 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Dealerbibliotek och molnkatalog, 11 oktober 2026
+
+/control/clips och /control/videos delar DealerMediaLibrary. Alla registrerade
+dealers får samma kategorier och bulkintag: välj upp till 50 filer, granska och
+mappa varje fil till ett exakt händelse-/situationsfack. Box 1–7 motsvarar
+box0–6. Grundloop, talreplik och dealer-up/dealer-hole förblir skilda fack.
+Registrering i biblioteket sparas direkt; val av aktivt klipp i projektet och
+publicering är separata steg under Spelinställningar och Publicering.
+
+MP4/WebM samt MP3/WAV stöds upp till 128 MB per fil. Ljud måste klassificeras
+med mediaType=audio och exakt talreplik; det kan aldrig kopplas som videoklipp
+eller räknas som godkänd lipsynk. Uppladdning använder privat Blob-grant,
+SHA-256-readback och autentiserad commit. En batch återförsöker inte osäkra
+commits automatiskt och laddar inte om redan sparade rader.
+
+Ta bort flyttar egna uppladdningar till Borttagna med återställbar metadata.
+API:t kontrollerar samma origin, aktuell admin, bytehash och föregående
+klassificering i transaktion. Aktuella dokumentreferenser stoppar borttagning;
+historik och Blob-bytes bevaras. Gemensamma original skrivs inte över eller
+raderas genom biblioteket.
+
+Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
+mediebytes. Native Studio läser gemensam driftmetadata från
+media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
+media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
+en dealer registreras. Originalens media/dealers-mappar är fortsatt underlag
+för lokala pipelines och kalibrering, men behövs inte i Studios molnartefakt.
+tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
+--check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
+Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.
+
+Verifiering: riktade API-/UI-/bulk-/ljudtester och audit-dealer-sync --probe
+bevarar regressionen för fyra originaldealers. Inga inspelade byte byttes.
+Detta innebär inget nytt visuellt lipsynkgodkännande eller prov av automatisk
+talaktivering för PAOW. Ljudet i biblioteket är en källa, ingen ny TTS-profil.
+
 ## Studioflöde, 9 oktober 2026
 
 Sammansättning (/control/preview) är navet. Innehåll (/control/clips) samlar

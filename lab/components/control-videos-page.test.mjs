@@ -54,7 +54,7 @@ test('clip library drops the inner sidebar, roulette and chat shortcuts', () => 
   assert.doesNotMatch(html, /Roulette/);
   assert.match(html, /class="sg-chip" aria-pressed="true"/);
   assert.match(html, /A Astrid/);
-  assert.match(html, /<h1>Klippbibliotek<\/h1>/);
+  assert.match(html, /<h1>Dealerns media<\/h1>/);
   assert.match(html, /\/\/ STUDIO/);
   assert.match(html, /<button[^>]*>Spara projekt<\/button>/);
   assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
@@ -106,7 +106,7 @@ test('clip library shows one display-name override and keeps the single save but
   assert.match(html, new RegExp(clip.id));
   assert.match(html, />Eget namn</);
   assert.match(html, /Visningsnamn/);
-  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal(html.match(/<button[^>]*sg-btn-primary/g)?.length, 1);
   assert.equal(html.match(/>Spara projekt</g)?.length, 1);
   assert.doesNotMatch(html, /clipLabels|sha256/);
 });
@@ -135,7 +135,7 @@ test('an unmanaged clip keeps the override in the library detail without a secon
   assert.match(html, /<h2>Kvällsnamn<\/h2>/);
   assert.match(html, /<strong>Kvällsnamn<\/strong>/);
   assert.match(html, /Originalnamn/);
-  assert.equal(html.match(/sg-btn-primary/g)?.length, 1);
+  assert.equal(html.match(/<button[^>]*sg-btn-primary/g)?.length, 1);
   assert.doesNotMatch(html, /<label[^>]*>\s*Klipp/);
 });
 

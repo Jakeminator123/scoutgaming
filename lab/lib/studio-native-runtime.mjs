@@ -184,7 +184,7 @@ export function nativeStudioErrorResponse(error) {
   const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
   const body = readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
     code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }
-    : { error: status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' };
+    : { error: status === 409 && error?.code === 'studio_media_in_use' ? 'studio_media_in_use' : status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' };
   return Response.json(body,
     { status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 }

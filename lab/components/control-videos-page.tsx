@@ -1,5 +1,6 @@
 'use client';
 
+import { DealerMediaLibrary } from './dealer-media-library';
 import { useState } from 'react';
 import { addVariant, isAssetCompatible, type StudioProject, type StudioVariant } from '../lib/studio-model.mjs';
 import { applyClipLabel, clipLabel } from '../lib/clip-label.mjs';
@@ -41,6 +42,7 @@ export function ControlVideosPage({
   const incompatibleBindings = project.lines.flatMap(item => item.variants.filter(candidate => !isAssetCompatible(project.events.find(entry => entry.id === item.eventId), project.assets.find(asset => asset.id === candidate.assetId))).map(candidate => ({ dealerId: item.dealerId, eventId: item.eventId, variantId: candidate.id })));
   const firstBinding = incompatibleBindings[0];
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
+  const [intakePending, setIntakePending] = useState(false);
   const [namedId, setNamedId] = useState('');
   const dealerClips = videos.videos.filter(video => video.dealer === dealerId || video.familyId?.startsWith(`${dealerId}/`));
   const named = dealerClips.find(video => video.id === namedId) ?? dealerClips[0];
@@ -84,9 +86,9 @@ export function ControlVideosPage({
   return (
     <PageTemplate
       eyebrow="// STUDIO"
-      title="Klippbibliotek"
+      title="Dealerns media"
 
-      primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
+      primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || intakePending} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
       <div className="sg-page-body">
       <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/control/probe','Tal vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
@@ -105,11 +107,13 @@ export function ControlVideosPage({
       ) : null}
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">
         {project.dealers.map(item => (
-          <button type="button" className="sg-chip" aria-pressed={dealerId === item.id} key={item.id} onClick={() => selectDealer(item.id)}>
+          <button type="button" className="sg-chip" disabled={intakePending} aria-pressed={dealerId === item.id} key={item.id} onClick={() => selectDealer(item.id)}>
             {item.label.slice(0, 1)} {item.label}
           </button>
         ))}
       </div>
+      <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onInventory={setVideos} onPendingChange={setIntakePending} disabled={saving || !connectedLane} />
+      <details><summary>Avancerat · spelkopplingar och originalbank</summary>
       {media.managed ? null : (
         <div className={styles.binding}>
           <p className={styles.bindingText}>Koppling för: {dealer.label} · {event.label} · {variant.label}</p>
@@ -173,6 +177,7 @@ export function ControlVideosPage({
             onBind={id => updateVariant({ videoGenerationId: id })}
           />
         )}
+      </details>
       </div>
     </PageTemplate>
   );

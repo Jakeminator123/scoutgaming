@@ -6,7 +6,7 @@ import { resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {
   const video = videos.get(id);
-  if (!video || video.available !== true || video.dealer !== dealerId || !/^[a-f0-9]{64}$/.test(video.sha256)
+  if (!video || (video.classification?.mediaType === 'audio' || video.classification?.archived) || video.available !== true || video.dealer !== dealerId || !/^[a-f0-9]{64}$/.test(video.sha256)
     || !Number.isSafeInteger(video.bytes) || video.bytes < 1 || video.integrity === 'unavailable') fail('studio_media_binding_invalid');
   if (video.familyId && video.eventId !== eventId) fail('studio_media_binding_invalid');
   return video;

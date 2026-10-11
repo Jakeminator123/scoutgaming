@@ -1,3 +1,4 @@
+import { MEDIA_FILE_TYPES } from '../lab/lib/media-file-types.mjs';
 import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../lab/lib/video-intake.mjs';
 
 // The normal managed StudioMediaRecord contract is shared by browser package
@@ -28,9 +29,10 @@ export function validateManagedStudioMedia(record) {
   if (!copy || Array.isArray(copy) || Object.keys(copy).sort().join(',') !== 'classification,contentType,id,pathname,sha256,size'
     || typeof copy.id !== 'string' || !uuid.test(copy.id) || typeof copy.sha256 !== 'string' || !sha.test(copy.sha256)
     || !Number.isSafeInteger(copy.size) || copy.size < 16 || copy.size > MAX_VIDEO_BYTES
-    || !['video/mp4', 'video/webm'].includes(copy.contentType)) fail();
+    || !Object.hasOwn(MEDIA_FILE_TYPES,copy.contentType)) fail();
   try { copy.classification = validateVideoMetadata(copy.classification); } catch { fail(); }
-  const extension = copy.contentType.slice(6);
+  if (copy.contentType.startsWith('audio/') !== (copy.classification.mediaType === 'audio')) fail();
+  const extension = MEDIA_FILE_TYPES[copy.contentType];
   const expected = `croupier/media/dealers/${copy.classification.dealerId}/review/uploads/${copy.id}/${copy.sha256}.${extension}`;
   if (copy.pathname !== expected) fail();
   return copy;

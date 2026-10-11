@@ -1,3 +1,4 @@
+import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { cloneStudioJson, canonicalStudioJson, StudioStorageError, studioStorageFailure, validateStudioScope, validateStudioMedia, validateRevision } from '../../web/storage/studio-contract.mjs';
@@ -28,7 +29,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
       if (!dealerIds.has(checked.classification.dealerId)) throw new StudioStorageError('studio_dealer_not_registered', 503);
       const storage = validatePrivateMedia({provider:'vercel-blob', pathname:checked.pathname,
         sha256:checked.sha256, size:checked.size, contentType:checked.contentType});
-      return {id:checked.id, sha256:checked.sha256, size:checked.size, extension:checked.contentType.slice(6),
+      return {id:checked.id, sha256:checked.sha256, size:checked.size, extension:MEDIA_FILE_TYPES[checked.contentType],
         classification:checked.classification, addedAt:updatedAt, storage,
         ...(checked.retainedBank ? {retainedBank:checked.retainedBank} : {})};
     });

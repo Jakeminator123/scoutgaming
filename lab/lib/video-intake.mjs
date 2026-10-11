@@ -18,6 +18,8 @@ export function situationsForEvent(event) {
 export function validateVideoMetadata(input, { allowLegacySituation = false } = {}) {
   const allowed = Object.keys(schema.properties);
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !allowed.includes(k))) throw new Error('Ogiltiga videofält.');
+  if (input.archived !== undefined && typeof input.archived !== 'boolean') throw new Error('Ogiltig biblioteksstatus.');
+  if (input.mediaType !== undefined && (input.mediaType !== 'audio' || input.kind !== 'speech' || input.familyId)) throw new Error('Ljud behöver ett exakt talfack.');
   const event = seed.events.find(e => e.id === input.eventId);
   if (!isDealerId(input.dealerId) || !event) throw new Error('Välj dealer och event.');
   if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
@@ -53,7 +55,7 @@ export function videoCompositing(video) {
 // Classification is operator supplied. This checks declared compatibility, not visual quality.
 export function videoFitsLine(video, dealerId, eventId) {
   const m = video?.classification;
-  if (!m || m.dealerId !== dealerId || m.eventId !== eventId) return false;
+  if (!m || m.mediaType === 'audio' || m.dealerId !== dealerId || m.eventId !== eventId) return false;
   try { validateVideoMetadata(m); return true; } catch { return false; }
 }
 export function videoFitsEvent(video, event) {

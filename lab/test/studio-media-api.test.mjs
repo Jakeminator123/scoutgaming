@@ -158,3 +158,23 @@ test('Next stripped videos routes pass the logical public request through previe
   assert.equal((await api.handle(new NextRequest(origin+'/api/videos/unknown',{headers}))).status,404);
   assert.equal(prepared,1);assert.equal(previews,1);assert.equal(pool.snapshot().audits.length,1);
 });
+
+test('archive is authenticated, reversible and stale-safe; it keeps the immutable file reference',async()=>{
+  const {api,record,repository}=await fixture();
+  const body={id:record.id,sha256:record.sha256,previous:record.classification,archived:true};
+  assert.equal((await api.handle(request('/studio/api/videos/archive','POST',body,{origin:'https://evil.invalid'}))).status,403);
+  assert.equal((await api.handle(request('/studio/api/videos/archive','POST',body))).status,200);
+  const saved=await repository.getMedia(record.id);assert.equal(saved.classification.archived,true);assert.equal(saved.pathname,record.pathname);
+  assert.equal((await api.handle(request('/studio/api/videos/archive','POST',body))).status,409);
+  assert.equal((await api.handle(request('/studio/api/videos/archive','POST',{...body,previous:saved.classification,archived:false}))).status,200);
+});
+test('archive refuses current references and classification cannot bypass the archive guard',async()=>{
+  const {api,record,repository}=await fixture();
+  const document=await repository.readDocument('project'),value=structuredClone(document.value);
+  const line=value.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready');line.variants[0].videoGenerationId=record.id;
+  await repository.saveDocument('project',{value,expectedRevision:document.revision,actor:'fixture'});
+  const body={id:record.id,sha256:record.sha256,previous:record.classification};
+  const blocked=await api.handle(request('/studio/api/videos/archive','POST',{...body,archived:true}));
+  assert.equal(blocked.status,409);assert.equal((await blocked.json()).error,'studio_media_in_use');
+  assert.equal((await api.handle(request('/studio/api/videos/classify','POST',{...body,metadata:{...record.classification,archived:true}}))).status,400);
+});

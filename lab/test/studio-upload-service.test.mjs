@@ -23,7 +23,7 @@ test('an upload grant cannot register retained bank status even with a valid ser
 
 const scope=Object.freeze({environment:'test',workspaceId:'studio-test'}),key=Buffer.alloc(32,8),origin='https://studio.example.invalid';
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Uploaded clip',notes:''};
-async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fixture')}={}) {
+async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fixture'),contentType='video/mp4',metadata=classification}={}) {
   const cacheDir=await mkdtemp(join(tmpdir(),'croupier-upload-service-'));
   t.after(() => {assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-upload-service-/);return rm(cacheDir,{recursive:true,force:true});});
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope}),objects=new Map(),tokenCalls=[];
@@ -31,13 +31,13 @@ async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fix
   const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-read-write-secret'},options={cacheDir,blobClient:{
     async get(path) {
       const content=objects.get(path);if(!content)return null;
-      return {statusCode:200,stream:new Response(content).body,blob:{pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType:'video/mp4',size:content.length}};
+      return {statusCode:200,stream:new Response(content).body,blob:{pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType,size:content.length}};
     },
   }};
   let at=1000;
   const settings={repository,scope,ticketKey:key,env,options,clientToken:async args => {tokenCalls.push(args);return 'fixture-only-client-capability';},now:() => at};
   const service=createStudioUploadService(settings),sha256=createHash('sha256').update(bytes).digest('hex');
-  const prepare=() => service.prepare({operation:'prepare',sha256,size:bytes.length,contentType:'video/mp4',classification},{actor:'Operator'});
+  const prepare=() => service.prepare({operation:'prepare',sha256,size:bytes.length,contentType,classification:metadata},{actor:'Operator'});
   const context={actor:'Operator',request:new Request(`${origin}/studio/api/videos/upload`,{method:'POST'}),stillAuthorized:async () => true,mutationTransaction:async work => work()};
   return {pool,repository,service,settings,bytes,objects,tokenCalls,prepare,context,setTime:value => {at=value;}};
 }
@@ -110,4 +110,20 @@ test('complete Blob verification stays outside the product lock; revocation at l
   assert.equal(reads,1);assert.equal(writes,1);assert.equal(pool.snapshot().audits.length,1);
   await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},{...context,mutationTransaction:undefined}),error => error.statusCode===503);
   assert.equal(pool.snapshot().audits.length,1);
+});
+
+test('WAV speech is hashed, signed, privately read back and registered with its exact speech slot',async t=>{
+  const metadata={...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',mediaType:'audio'};
+  const {prepare,service,objects,bytes,context,repository,tokenCalls}=await fixture(t,{bytes:Buffer.from('RIFF0000WAVEfmt 000000000000000000'),contentType:'audio/wav',metadata});
+  const grant=await prepare();objects.set(grant.pathname,bytes);
+  assert.ok(grant.pathname.endsWith('.wav'));assert.deepEqual(tokenCalls[0].allowedContentTypes,['audio/wav']);
+  await service.commit({operation:'commit',ticket:grant.ticket},context);
+  assert.equal((await repository.getMedia(grant.id)).classification.situation,'goodluck');
+});
+test('audio MIME cannot disguise video bytes as a speech recording',async t=>{
+  const metadata={...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',mediaType:'audio'};
+  const {prepare,service,objects,bytes,context,pool}=await fixture(t,{contentType:'audio/wav',metadata});
+  const grant=await prepare();objects.set(grant.pathname,bytes);
+  await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},context),error=>error.code==='studio_invalid_media_format');
+  assert.equal(pool.snapshot().media.size,0);
 });

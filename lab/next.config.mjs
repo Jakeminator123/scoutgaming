@@ -26,10 +26,7 @@ export default {
   outputFileTracingIncludes: {
     ...Object.fromEntries(['/control/preview', '/api/layer-assets/**', '/', '/administration', '/control/clips', '/control/administration', '/control/tree', '/control/videos', '/control/openclaw', '/control/activity', '/control/guide', '/control/zones', '/control/events', '/control/lanes', '/control/probe', '/control/operator-chat', '/control/login', '/control/set-password', '/control/[[...path]]', '/partner/[[...path]]', '/partner/login', '/partner/set-password', '/api/partner-preview', '/api/partner/[...action]', '/login', '/set-password', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**', '/api/zones/reference']
       .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql',
-        '../media/layout.json', '../media/blob-index.json', '../media/dealers/*/runtime/**/index.json',
-        '../media/dealers/*/runtime/**/audio/en/bank.json', '../media/dealers/*/runtime/**/performance/manifest.json',
-        '../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', '../media/game/runtime/speech-media.json',
-        '../media/dealers/*/runtime/composited/**/speak.json']])),
+        '../media/layout.json', '../media/blob-index.json', '../media/catalog/*.json']])),
     '/preview/[...path]': ['./preview-build/**/*'],
   },
   experimental: {
