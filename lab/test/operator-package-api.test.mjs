@@ -155,7 +155,7 @@ function nativePool(){
         if(faults.delete(marker))throw Error('private forced fixture failure');
         if(sql.startsWith('BEGIN')){readOnly=sql.includes('READ ONLY');working=clone(state);return result([],'BEGIN');}
         if(sql.startsWith('SET LOCAL'))return result([],'SET');
-        if(sql.includes('pg_advisory_xact_lock')){const previous=tail;tail=new Promise(resolve=>unlock=resolve);await previous;working=clone(state);return result();}
+        if(sql.includes('pg_advisory_xact_lock')){if(unlock)return result();const previous=tail;tail=new Promise(resolve=>unlock=resolve);await previous;working=clone(state);return result();}
         if(sql==='COMMIT'||sql==='ROLLBACK'){if(sql==='COMMIT'&&!readOnly)state=working;working=undefined;unlock?.();unlock=null;return result([],sql);}
         assert.ok(working,'domain reads/writes use a live scoped client');
         const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
@@ -166,6 +166,7 @@ function nativePool(){
           working.packages.push(row);return result([row]);
         }
         if(marker==='read-document')return result(working.documents.has(key(values))?[working.documents.get(key(values))]:[]);
+        if(marker==='media-aliases')return result([...working.media.values()].filter(row=>!(row.environment_id===values[0]&&row.workspace_id===values[1]&&row.id===values[2])&&(row.id===values[2]||row.record.pathname===values[3])).slice(0,2));
         if(marker==='read-media')return result(working.media.has(key(values))?[working.media.get(key(values))]:[]);
         if(marker==='list-media')return result([...working.media.values()].filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]).slice(0,values[2]));
         if(marker==='insert-document'||marker==='save-document'){

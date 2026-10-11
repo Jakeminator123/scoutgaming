@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
-import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot} from '../lib/dealer-media-library.mjs';
+import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot,draftUsesMedia} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
@@ -78,4 +78,14 @@ test('an uploaded standard classification does not claim that the clip is active
   line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=video.id;
   assert.equal(mediaUsage(draft,video,'paow'),'Standard i utkastet');
   assert.equal(mediaUsage(draft,video,'astrid'),'Inte vald i utkastet');
+});
+
+test('AI speech references count as active usage; labels and trash bookkeeping do not',()=>{
+ const draft=structuredClone(project),id='11111111-1111-4111-8111-111111111111';
+ draft.clipLabels={[id]:'Mitt klipp'};
+ draft.dealerTrash=[{dealer:{id:'removed'},activeMediaIds:[id]}];
+ assert.equal(draftUsesMedia(draft,id),false);
+ draft.dealers.find(row=>row.id==='paow').speechProfile={reference:{videoId:id}};
+ assert.equal(draftUsesMedia(draft,id),true);
+ assert.equal(mediaUsage(draft,{id},'paow'),'Referensklipp för AI-tal');
 });

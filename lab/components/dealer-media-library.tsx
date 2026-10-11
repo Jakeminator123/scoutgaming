@@ -10,6 +10,7 @@ import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {uploadNativeVideo} from '../lib/upload-native-video.mjs';
 import {requestJson,studioHref,type VideoEntry,type VideoInventory} from './studio-types';
 import styles from './dealer-media-library.module.css';
+import {mediaRemovalMessage} from './media-removal-feedback';
 
 type IntakeRow={id:string;file:File;label:string;slotId:string;state:'ready'|'saving'|'saved'|'error';message?:string;progress?:number};
 function LocalPreview({file}:{file:File}){
@@ -17,9 +18,10 @@ function LocalPreview({file}:{file:File}){
   useEffect(()=>{const next=URL.createObjectURL(file);setUrl(next);return()=>URL.revokeObjectURL(next);},[file]);
   return mediaContentType(file.name).startsWith('audio/')?<audio src={url} controls preload="metadata"/>:<video src={url} controls playsInline preload="metadata"/>;
 }
-export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPendingChange,onConfigureSlot,onCategoryChange,initialSlotId='',disabled=false}:{project:StudioProject;inventory:VideoInventory;dealerId:string;onInventory:(value:VideoInventory)=>void;onPendingChange:(value:boolean)=>void;onConfigureSlot?:(eventId:string,situation:string)=>void;onCategoryChange?:(category:string)=>void;initialSlotId?:string;disabled?:boolean}){
-  const [category,setCategory]=useState(dealerMediaSlots(project).find(row=>row.id===initialSlotId)?.category??'all'),[archived,setArchived]=useState(false),[queue,setQueue]=useState<IntakeRow[]>([]);
+export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onProjectSaved,onLifecycleChange,onPendingChange,onConfigureSlot,onCategoryChange,initialSlotId='',disabled=false,archivedDealer=false,removalDisabledReason=''}:{project:StudioProject;inventory:VideoInventory;dealerId:string;onInventory:(value:VideoInventory)=>void;onProjectSaved:(value:StudioProject)=>void;onLifecycleChange:(pending:boolean)=>void;onPendingChange:(value:boolean)=>void;onConfigureSlot?:(eventId:string,situation:string)=>void;onCategoryChange?:(category:string)=>void;initialSlotId?:string;disabled?:boolean;archivedDealer?:boolean;removalDisabledReason?:string}){
+  const [category,setCategory]=useState(dealerMediaSlots(project).find(row=>row.id===initialSlotId)?.category??'all'),[archived,setArchived]=useState(archivedDealer),[queue,setQueue]=useState<IntakeRow[]>([]);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[removing,setRemoving]=useState<VideoEntry|null>(null);
+  const [purging,setPurging]=useState<VideoEntry|null>(null),[deleteCheck,setDeleteCheck]=useState<{allowed:boolean;reason?:string;retryAfterMs?:number}|null>(null);
   const [slotId,setSlotId]=useState(initialSlotId),[page,setPage]=useState(1);
   const [legacy,setLegacy]=useState<LegacyClipControls|null>(null),[legacyError,setLegacyError]=useState('');
   useEffect(()=>{if(!['astrid','vera','amira','mei'].includes(dealerId))return;let mounted=true;requestJson<LegacyClipControls>('/api/clip-controls').then(value=>{if(mounted)setLegacy(value);}).catch(()=>{if(mounted)setLegacyError('Originalklippen kunde inte kontrolleras. Ladda om sidan för att försöka igen.');});return()=>{mounted=false;};},[dealerId]);
@@ -68,17 +70,34 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPen
     finally{busyRef.current=false;setBusy(false);controller.current=null;}
   }
   async function archive(video:VideoEntry,value:boolean){
-    if(busyRef.current||disabled||!video.classification)return;
+    if(busyRef.current||disabled||removalDisabledReason||archivedDealer||!video.classification||video.deletion)return;
     busyRef.current=true;setBusy(true);setError('');
     try{
       const next=await requestJson<VideoInventory>('/api/videos/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification,archived:value})});
-      onInventory(next);setRemoving(null);setNotice(value?'Filen är borttagen från biblioteket. Du kan återställa den under Borttagna.':'Filen är återställd i sitt fack.');
+      onInventory(next);setRemoving(null);setNotice(value?'Filen ligger i papperskorgen och kan återställas.':'Filen är återställd i sitt fack.');
     }catch(cause){const message=cause instanceof Error?cause.message:'';setError(message.includes('studio_media_in_use')?'Filen används av sparade inställningar. Koppla loss den och spara projektet först.':message||'Filen kunde inte ändras.');}
     finally{busyRef.current=false;setBusy(false);}
   }
+  async function checkDeletion(video:VideoEntry){
+    if(busyRef.current||disabled||removalDisabledReason||!video.revision)return;
+    setPurging(video);setRemoving(null);setDeleteCheck(null);setError('');
+    busyRef.current=true;setBusy(true);
+    try{setDeleteCheck(await requestJson<{allowed:boolean;reason?:string;retryAfterMs?:number}>('/api/videos/delete-check',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,expectedRevision:video.revision})}));}
+    catch(cause){setDeleteCheck({allowed:false,reason:cause instanceof Error?cause.message:undefined});}
+    finally{busyRef.current=false;setBusy(false);}
+  }
+  async function deletePermanently(video:VideoEntry){
+    if(busyRef.current||disabled||removalDisabledReason||!video.revision||!deleteCheck?.allowed||purging?.id!==video.id)return;
+    busyRef.current=true;setBusy(true);onLifecycleChange(true);setError('');
+    try{
+      const next=await requestJson<{project:StudioProject;inventory:VideoInventory}>('/api/videos/delete',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,expectedRevision:video.revision})});
+      onInventory(next.inventory);onProjectSaved(next.project);setPurging(null);setDeleteCheck(null);setNotice('Filen har raderats permanent från lagringen.');
+    }catch(cause){setError(mediaRemovalMessage(cause));setDeleteCheck(null);try{const [saved,inventory]=await Promise.all([requestJson<{project:StudioProject}>('/api/project'),requestJson<VideoInventory>('/api/videos')]);onProjectSaved(saved.project);onInventory(inventory);}catch{/* Keep the original failure visible. */}}
+    finally{busyRef.current=false;setBusy(false);onLifecycleChange(false);}
+  }
   return <section className={styles.library} aria-label="Dealerns mediebibliotek">
-    <div className={styles.heading}><div><h2>Media för {project.dealers.find(row=>row.id===dealerId)?.label}</h2><p>Välj kategori, lägg in filer och välj ett fack för varje klipp.</p></div><button className="sg-btn sg-btn-secondary" disabled={busy} onClick={()=>{setArchived(value=>!value);setRemoving(null);setPage(1);}}>{archived?'Till biblioteket':'Borttagna'}</button></div>
-    <div className={styles.categories} role="group" aria-label="Mediekategori">{DEALER_MEDIA_CATEGORIES.map(item=><button key={item.id} aria-pressed={category===item.id} onClick={()=>chooseCategory(item.id)}>{item.label}{missing.some(row=>row.slot.category===item.id)?<small className={styles[missing.some(row=>row.slot.category===item.id&&row.level==='required')?'required':'recommended']}>{item.id==='idle'?'Krävs':'Rekommenderas'}</small>:null}<span>{dealerLibraryVideos(project,inventory,dealerId,item.id,archived).length}</span></button>)}</div>
+    <div className={styles.heading}><div><h2>Media för {project.dealers.find(row=>row.id===dealerId)?.label??project.dealerTrash?.find(row=>row.dealer.id===dealerId)?.dealer.label}</h2><p>{archived?'Återställ filer eller granska dem inför permanent radering.':'Välj kategori, lägg in filer och välj ett fack för varje klipp.'}</p></div><button className="sg-btn sg-btn-secondary" disabled={busy||archivedDealer} onClick={()=>{setArchived(value=>!value);setRemoving(null);setPurging(null);setPage(1);}}>{archived?archivedDealer?'Dealerns papperskorg':'Till biblioteket':'Papperskorg'}</button></div>
+    <div className={styles.categories} role="group" aria-label="Mediekategori">{DEALER_MEDIA_CATEGORIES.map(item=><button key={item.id} aria-pressed={category===item.id} onClick={()=>chooseCategory(item.id)}>{item.label}{!archived&&missing.some(row=>row.slot.category===item.id)?<small className={styles[missing.some(row=>row.slot.category===item.id&&row.level==='required')?'required':'recommended']}>{item.id==='idle'?'Krävs':'Rekommenderas'}</small>:null}<span>{dealerLibraryVideos(project,inventory,dealerId,item.id,archived).length}</span></button>)}</div>
     {!archived?<>
       <div className={styles.legend}><span className={styles.required}>Krävs: en vald grundloop</span><span className={styles.recommended}>Rekommenderas: klipp för varje deal-fack</span><span>Övriga fack är valfria. Status visar filer och val, inte ett godkänt uppspelningstest.</span></div>
       {legacyError?<p role="status">{legacyError}</p>:null}
@@ -102,20 +121,32 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPen
         <button aria-label={'Ta bort '+row.file.name+' ur listan'} disabled={busy} onClick={()=>setQueue(rows=>rows.filter(item=>item.id!==row.id))}>Ta bort</button>
       </article>)}<button className="sg-btn sg-btn-primary" disabled={busy||disabled||!queue.some(row=>row.state==='ready')||queue.some(row=>row.state==='ready'&&(!row.slotId||!row.label.trim()))} onClick={()=>void upload()}>{busy?'Sparar…':'Ladda upp och spara facken'}</button>
     </section>:null}</>:null}
-    <div className={styles.heading}><h3>{archived?'Borttagna filer':'Filer i kategorin'} · {displayed.length}</h3><button disabled={busy} onClick={()=>void requestJson<VideoInventory>('/api/videos').then(onInventory).catch(cause=>setError(cause.message))}>Uppdatera</button></div>
+    <div className={styles.heading}><h3>{archived?'Papperskorg':'Filer i kategorin'} · {displayed.length}</h3><button disabled={busy} onClick={()=>void requestJson<VideoInventory>('/api/videos').then(onInventory).catch(cause=>setError(cause.message))}>Uppdatera</button></div>
+    {archived&&removalDisabledReason?<p role="status">{removalDisabledReason}</p>:null}
+    {archivedDealer?<p>Återställ dealern ovan för att återställa dess klipp tillsammans.</p>:null}
     {displayed.length?<div className={styles.grid}>{paged.items.map(video=>{
       const metadata=video.classification,eventId=metadata?.eventId??video.eventId??video.suggestedEventId,situation=metadata?.situation??video.situation;
       const slot=allSlots.find(row=>row.eventId===eventId&&(row.situation===(situation??'')||row.eventId==='idle.ready'));
       const used=draftUsesMedia(project,video.id),editable=video.source==='upload'&&Boolean(metadata);
       return <article className={styles.card} key={video.id}>
-        {metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<video src={video.previewUrl} controls playsInline preload="none"/>}
+        {video.deletion?<div className={styles.empty}>Radering påbörjad · filen kan inte återställas</div>:metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<video src={video.previewUrl} controls playsInline preload="none"/>}
         <h4>{clipLabel({id:video.id,label:video.label,familyId:video.familyId,role:video.role},project.clipLabels)}</h4><p>{slot?.label??'Ej kategoriserad'} · {metadata?.mediaType==='audio'?'Ljud':'Video'}</p>
         <small>{mediaUsage(project,video,dealerId)}{!video.available?' · Otillgänglig':''}</small>
         <div className={styles.actions}>{!archived&&slot?settings(slot):null}
-          {editable?<button disabled={busy||disabled||(!archived&&used)} title={used?'Koppla loss filen och spara projektet först.':undefined} onClick={()=>archived?void archive(video,false):setRemoving(video)}>{archived?'Återställ':'Ta bort'}</button>:<small>Gemensamt original</small>}</div>
-        {removing?.id===video.id?<div className={styles.confirm}><p>Ta bort från biblioteket? Filen behålls för historik och kan återställas.</p><button disabled={busy} onClick={()=>void archive(video,true)}>Ta bort från biblioteket</button><button disabled={busy} onClick={()=>setRemoving(null)}>Avbryt</button></div>:null}
+          {editable?<>
+            {!archivedDealer&&!video.deletion?<button disabled={busy||disabled||Boolean(removalDisabledReason)||(!archived&&used)} title={removalDisabledReason||(used?'Koppla loss filen och spara projektet först.':undefined)} onClick={()=>archived?void archive(video,false):setRemoving(video)}>{archived?'Återställ':'Flytta till papperskorgen'}</button>:null}
+            {archived?<button className={styles.deleteButton} disabled={busy||disabled||Boolean(removalDisabledReason)||!video.revision} onClick={()=>void checkDeletion(video)}>{video.deletion?'Slutför radering':'Radera permanent…'}</button>:null}
+          </>:<small>Skyddat original</small>}</div>
+        {removing?.id===video.id?<div className={styles.confirm}><p>Flytta klippet till papperskorgen? Filen behålls och kan återställas.</p><button disabled={busy||disabled||Boolean(removalDisabledReason)} onClick={()=>void archive(video,true)}>Flytta till papperskorgen</button><button disabled={busy} onClick={()=>setRemoving(null)}>Avbryt</button></div>:null}
+        {purging?.id===video.id?<div className={styles.confirm} role="group" aria-label="Permanent radering">
+          <strong>Radera filen permanent?</strong>
+          <p>Detta tar bort filen från lagringen och kan inte ångras.</p>
+          {!deleteCheck?<p role="status">{busy?'Kontrollerar beroenden…':'Kontrollen behöver göras om. Välj Radera permanent igen.'}</p>:!deleteCheck.allowed?<p role="status">{mediaRemovalMessage(deleteCheck.reason)}{deleteCheck.retryAfterMs?` Försök igen om cirka ${Math.max(1,Math.ceil(deleteCheck.retryAfterMs/60000))} minuter.`:''}</p>:<p>Kontrollen tillåter radering. Beroenden kontrolleras igen när du bekräftar.</p>}
+          <button className={styles.deleteButton} disabled={busy||disabled||Boolean(removalDisabledReason)||!deleteCheck?.allowed} onClick={()=>void deletePermanently(video)}>Radera permanent</button>
+          <button disabled={busy} onClick={()=>{setPurging(null);setDeleteCheck(null);}}>Avbryt</button>
+        </div>:null}
       </article>;
-    })}</div>:<div className={styles.empty}>{archived?'Inga borttagna filer i kategorin.':'Inga filer här ännu. Lägg in filer ovan för den här dealern.'}</div>}
+    })}</div>:<div className={styles.empty}>{archived?'Papperskorgen är tom i den här kategorin.':'Inga filer här ännu. Lägg in filer ovan för den här dealern.'}</div>}
     {paged.total>0?<nav className={styles.pagination} aria-label="Sidor med klipp"><button type="button" disabled={paged.page<=1} onClick={()=>setPage(paged.page-1)}>← Föregående</button><span role="status">Sida {paged.page} av {paged.pages} · {paged.total} filer · 6 per sida</span><button type="button" disabled={paged.page>=paged.pages} onClick={()=>setPage(paged.page+1)}>Nästa →</button></nav>:null}
   </section>;
 }

@@ -3,10 +3,11 @@ import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRunti
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
+import {checkPermanentMediaDeletion} from './studio-media-deletion.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'} });
-export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mutationTransaction, baseOverride} = {}) {
+export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mediaDeletion, mutationTransaction, baseOverride} = {}) {
   if (typeof authorize !== 'function' || !config || !['/api/admin','/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
   const scope = validateStudioScope(config.scope), prefix = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
   if (baseOverride !== undefined && baseOverride !== `${prefix}/layer-assets`) fail('studio_invalid_configuration');
@@ -51,6 +52,16 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         }
         fail('studio_invalid_request',400);
       }
+      if (baseOverride === undefined && [`${base}/delete-check`,`${base}/delete`].includes(path) && request.method === 'POST') {
+        if (request.headers.get('origin') !== new URL(request.url).origin || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
+        const body=await readStudioDocumentJson(request);await refresh();
+        if(path===`${base}/delete-check`)return json(mediaDeletion?await mediaDeletion.check(body):await checkPermanentMediaDeletion(repository,body));
+        if(!mediaDeletion)fail('studio_media_delete_coverage_incomplete',503);
+        await mediaDeletion.remove(body,{stillAuthorized:async()=>{await refresh();return actor;}});
+        const saved=await repository.readDocument('project');
+        if(!saved)fail('studio_document_missing');
+        return json({project:saved.value,inventory:await videoRegistry()});
+      }
       if (baseOverride === undefined && path === `${base}/archive` && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin
           || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
@@ -63,6 +74,8 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
           await repository.transaction(async()=>{
             const current=await repository.getMedia(body.id);
             if(!current||current.retainedBank)fail('studio_retained_media_immutable',409);
+            if(current.deletion)fail('studio_media_deletion_pending',409);
+            if(!body.archived)await requireSavedVideoDealer(repository,current.classification.dealerId);
             if(current.sha256!==body.sha256||canonicalStudioJson(body.previous)!==canonicalStudioJson(current.classification))fail('studio_conflict',409);
             const usage=await repository.findMediaReferences(body.id);
             if(body.archived&&usage.references.some(row=>!row.historical))fail('studio_media_in_use',409);

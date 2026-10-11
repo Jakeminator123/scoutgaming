@@ -1,0 +1,4 @@
+import type {StudioProject} from './studio-model.mjs';
+export function lifecycleProject(project:StudioProject,input:{dealerId:string;archived:boolean;records:any[];now?:string}):StudioProject;
+export function assertLifecyclePackages(rows:any[],input:{dealerId?:string;mediaIds?:string[]}):void;
+export function changeDealerLifecycle(input:any):Promise<StudioProject>;

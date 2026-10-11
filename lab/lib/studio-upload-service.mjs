@@ -84,6 +84,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
         await requireSavedVideoDealer(repository,record.classification.dealerId);
         const existing = await repository.getMedia(record.id);
         if (existing) {
+          if(existing.deletion)fail('studio_media_deletion_pending',409);
           if (['sha256','size','contentType','pathname'].some(field => existing[field] !== record[field])) fail('studio_conflict',409);
           return {id:record.id,duplicate:true};
         }

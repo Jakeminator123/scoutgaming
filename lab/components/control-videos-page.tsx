@@ -1,7 +1,7 @@
 'use client';
 
 import { DealerMediaLibrary } from './dealer-media-library';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { addVariant, isAssetCompatible, type StudioProject, type StudioVariant } from '../lib/studio-model.mjs';
 import { applyClipLabel, clipLabel } from '../lib/clip-label.mjs';
 import { OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
@@ -43,6 +43,8 @@ export function ControlVideosPage({
   const firstBinding = incompatibleBindings[0];
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
   const [intakePending, setIntakePending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  useEffect(()=>{if(!deleting)return;const guard=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);},[deleting]);
   const [namedId, setNamedId] = useState('');
   const dealerClips = videos.videos.filter(video => video.dealer === dealerId || video.familyId?.startsWith(`${dealerId}/`));
   const named = dealerClips.find(video => video.id === namedId) ?? dealerClips[0];
@@ -90,7 +92,7 @@ export function ControlVideosPage({
 
       primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || intakePending} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
-      <div className="sg-page-body">
+      <div className="sg-page-body"><fieldset style={{border:0,padding:0,margin:0,minWidth:0}} disabled={deleting} onClickCapture={event=>{if(deleting){event.preventDefault();event.stopPropagation();}}}>
       <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/control/probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
       <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
@@ -112,7 +114,7 @@ export function ControlVideosPage({
           </button>
         ))}
       </div>
-      <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onInventory={setVideos} onPendingChange={setIntakePending} initialSlotId={initialEventId?initialEventId+'/'+(initialSituation??''):''} disabled={saving || !connectedLane} />
+      <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onProjectSaved={next=>{setSavedJson(JSON.stringify(next));setProject(next);}} onLifecycleChange={setDeleting} onInventory={setVideos} onPendingChange={setIntakePending} removalDisabledReason={dirty?'Spara dina ändringar innan du ändrar papperskorgen.':''} initialSlotId={initialEventId?initialEventId+'/'+(initialSituation??''):''} disabled={saving || !connectedLane} />
       <details><summary>Avancerat · spelkopplingar och originalbank</summary>
       {media.managed ? null : (
         <div className={styles.binding}>
@@ -178,7 +180,7 @@ export function ControlVideosPage({
           />
         )}
       </details>
-      </div>
+      </fieldset></div>
     </PageTemplate>
   );
 }

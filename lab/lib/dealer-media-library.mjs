@@ -21,7 +21,7 @@ export function dealerLibraryVideos(project,inventory,dealerId,category='all',ar
   return inventory.videos.filter(video=>(video.dealer??video.classification?.dealerId??video.familyId?.split('/')[0])===dealerId&&Boolean(video.classification?.archived)===archived
     &&(category==='all'||eventMediaCategory(project.events.find(event=>event.id===(video.classification?.eventId??video.eventId??video.suggestedEventId))??{id:'',sourceType:''})===category));
 }
-export function draftUsesMedia(project,id){return JSON.stringify(project).includes(JSON.stringify(id));}
+export function draftUsesMedia(project,id){const {clipLabels,dealerTrash,...active}=project;return JSON.stringify(active).includes(JSON.stringify(id));}
 
 // A destination is exact. A neighbouring box, sound file or archived upload
 // cannot satisfy the video requirement, even when its duration happens to fit.
@@ -31,6 +31,8 @@ export function mediaMatchesSlot(video,slot){
     && (slot.eventId==='idle.ready'||(metadata?.situation??video.situation??'')===slot.situation);
 }
 export function mediaUsage(project,video,dealerId){
+  if(project.dealers.find(row=>row.id===dealerId)?.speechProfile?.reference?.videoId===video.id)return 'Referensklipp för AI-tal';
+  if(project.dealerTrash?.some(row=>row.dealer.id===dealerId))return 'Tillhör dealer i papperskorgen';
   const idle=dealerId==='astrid'?project.idlePolicy:project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
   if(idle?.base?.some(row=>row.videoId===video.id))return 'Grundloop';
   if(idle?.variants?.some(row=>row.videoId===video.id))return 'Variation';

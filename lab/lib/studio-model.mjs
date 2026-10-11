@@ -261,7 +261,7 @@ export function createSeedProject() {
 // fallbacks are shared; another dealer's recorded film or speech never is.
 export function addDealer(project, dealerId, dealerLabel) {
   validateProject(project);
-  if (!isDealerId(dealerId) || project.dealers.some(row => row.id === dealerId)) throw new StudioValidationError(['dealers: ogiltigt eller upptaget dealer-id']);
+  if (!isDealerId(dealerId) || (project.dealers.some(row => row.id === dealerId) || project.dealerTrash?.some(row => row.dealer.id === dealerId))) throw new StudioValidationError(['dealers: ogiltigt eller upptaget dealer-id']);
   const next = clone(project);
   next.dealers.push({id: dealerId, label: dealerLabel});
   for (const event of next.events) {
@@ -297,7 +297,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets', 'dealerTrash'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -418,6 +418,39 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   if (Object.hasOwn(project, 'dealerIdlePolicies')) {
     try { validateRegisteredIdlePolicies(project.dealerIdlePolicies,project); }
     catch (cause) { error('dealerIdlePolicies', cause.message); }
+  }
+  if (Object.hasOwn(project, 'dealerTrash')) {
+    const trash = project.dealerTrash, seen = new Set(dealerIds);
+    if (array(trash, 'dealerTrash', 0, MAX_DEALERS - DEALER_IDS.length)) {
+      if (dealerIds.size + trash.length > MAX_DEALERS) error('dealerTrash', 'för många registrerade och arkiverade dealers');
+      for (const [i, entry] of trash.entries()) {
+        const at = `dealerTrash[${i}]`;
+        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt'], at, ['deletion'])) continue;
+        if(entry.deletion!==undefined){
+          const deletion=entry.deletion;
+          if(!keys(deletion,['state','requestedAt','mediaIds'],at+'.deletion') || deletion.state!=='pending'
+            || typeof deletion.requestedAt!=='string' || !Number.isFinite(Date.parse(deletion.requestedAt)) || new Date(deletion.requestedAt).toISOString()!==deletion.requestedAt
+            || !Array.isArray(deletion.mediaIds) || deletion.mediaIds.length>5000 || new Set(deletion.mediaIds).size!==deletion.mediaIds.length
+            || deletion.mediaIds.some(id=>typeof id!=='string'||!(/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/).test(id)))error(at,'ogiltig pågående dealerradering');
+        }
+        const dealerId = entry.dealer?.id;
+        if (entry.schemaVersion !== 1 || !isDealerId(dealerId) || DEALER_IDS.includes(dealerId) || seen.has(dealerId)) error(at, 'ogiltig eller upptagen arkiverad dealer');
+        seen.add(dealerId);
+        if (entry.dealer?.speechProfile?.state === 'enabled') error(at, 'stäng av genererat tal innan arkivering');
+        if (typeof entry.archivedAt !== 'string' || !Number.isFinite(Date.parse(entry.archivedAt)) || new Date(entry.archivedAt).toISOString() !== entry.archivedAt) error(at, 'ogiltig arkiveringstid');
+        if (!Array.isArray(entry.activeMediaIds) || entry.activeMediaIds.length > 5000 || new Set(entry.activeMediaIds).size !== entry.activeMediaIds.length
+          || entry.activeMediaIds.some(value => typeof value !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value))) error(at, 'ogiltig lista med arkiverade klipp');
+        // Validate the saved snapshot against the same semantics as an active dealer.
+        // Shared triggers/assets cannot disappear while an archived snapshot needs them.
+        try {
+          if (!Array.isArray(entry.lines) || entry.lines.some(line => line.dealerId !== dealerId)) throw Error();
+          const restored = {...project, dealers:[...project.dealers,entry.dealer], lines:[...project.lines,...entry.lines]};
+          delete restored.dealerTrash;
+          if (entry.idlePolicy !== null) restored.dealerIdlePolicies = [...(project.dealerIdlePolicies ?? []),{dealerId,policy:entry.idlePolicy}];
+          validateProject(restored, {allowIncompatibleAnimations});
+        } catch { error(at, 'ogiltigt dealersnapshot eller saknade gemensamma inställningar'); }
+      }
+    }
   }
   if (errors.length) throw new StudioValidationError(errors);
   return project;

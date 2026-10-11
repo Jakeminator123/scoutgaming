@@ -14,6 +14,8 @@ export function readMediaBlobIndex({env=process.env,indexPath=env.CROUPIER_MEDIA
   if(data.schemaVersion!==1||data.namespace!=='croupier/media'||data.verification!=='readback-sha256'||!Array.isArray(data.files)||data.files.length>20000)throw new Error('Invalid media Blob index.');
   const index=new Map();for(const row of data.files){
     if(typeof row.logicalPath!=='string'||row.logicalPath.includes('\\')||row.logicalPath.split('/').some(part=>!part||part==='.'||part==='..')||index.has(row.logicalPath)||!['source','public','private'].includes(row.access))throw new Error('Invalid media Blob entry.');
+    // Managed uploads are owned solely by the Neon registry, never a deployed bank index.
+    if(/^croupier\/media\/dealers\/[^/]+\/review\/uploads\//.test(row.storage?.pathname??''))throw new Error('Managed upload cannot be an immutable bank asset.');
     validatePrivateMedia(row.storage);if(row.sha256!==row.storage.sha256||row.size!==row.storage.size)throw new Error('Media Blob integrity mismatch.');index.set(row.logicalPath,row);
   }
   cached.set(file,{key,index});return index;

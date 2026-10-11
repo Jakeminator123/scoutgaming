@@ -4075,7 +4075,10 @@
       "id": "studio-preview-files",
       "path": "/preview/:path+",
       "publicPath": "/studio/preview/:path+",
-      "methods": ["GET", "HEAD"],
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/preview/[...path]/route.ts",
@@ -4093,7 +4096,10 @@
       "id": "game-layer-packs",
       "path": "/layer-packs/:path+",
       "publicPath": "/layer-packs/:path+",
-      "methods": ["GET", "HEAD"],
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
       "kind": "api",
       "app": "game",
       "handlerFile": "web/layer-packs.mjs",
@@ -4236,6 +4242,156 @@
       "sources": [
         {
           "path": "apps/croupier-frontend/app/play/historik/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-dealers-archive",
+      "path": "/api/dealers/archive",
+      "publicPath": "/studio/api/dealers/archive",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/dealers/archive/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Same-origin reversible custom dealer archive/restore with project revision CAS. Snapshots own selections, idle policy and active uploads atomically. Published/admin/lane dependencies and enabled speech profiles block archive; pending purge blocks restore. Original dealers remain protected. Native runtime only; unsupported/offline backends fail closed.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/dealers/archive/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-dealer-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-media-deletion.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-dealers-delete-check",
+      "path": "/api/dealers/delete-check",
+      "publicPath": "/studio/api/dealers/delete-check",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/dealers/delete-check/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Read-only dependency and upload-grant expiry preflight for a trashed dealer and all owned files; requires current project revision and runtime v5/trash-v1. Native runtime only; unsupported/offline backends fail closed.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/dealers/delete-check/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-dealer-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-media-deletion.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-dealers-delete",
+      "path": "/api/dealers/delete",
+      "publicPath": "/studio/api/dealers/delete",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/dealers/delete/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Same-origin permanent purge of a trashed custom dealer and owned uploads. Requires project CAS, expired upload grants, all-scope current-document/package/alias checks and immutable-bank exclusion. Durable batch tombstones under scope/object locks precede provider I/O outside SQL; retry resumes pending work and keeps deleted media IDs blocked. Native runtime only; unsupported/offline backends fail closed.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/dealers/delete/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-dealer-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-media-deletion.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-videos-delete-check",
+      "path": "/api/videos/delete-check",
+      "publicPath": "/studio/api/videos/delete-check",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/videos/delete-check/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Read-only preflight for permanent deletion of one archived managed upload; checks exact hash, project revision, all current references/packages/aliases, immutable bank and upload-grant expiry. Native runtime only; unsupported/offline backends fail closed.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/videos/delete-check/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-media-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-media-deletion.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-videos-delete",
+      "path": "/api/videos/delete",
+      "publicPath": "/studio/api/videos/delete",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/videos/delete/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Same-origin permanent deletion of one archived managed upload. Exact hash and project CAS plus all-scope reference/alias and grant-expiry checks; durable tombstone before Blob I/O outside SQL. Retry is idempotent; original-bank bytes remain protected. Native runtime only; unsupported/offline backends fail closed.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/videos/delete/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-media-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-media-deletion.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
         }
       ]
     }
