@@ -113,7 +113,8 @@ export function mergeFrozenDealerPlayback(previous, selected, { registeredDealer
   for (const dealer of registeredDealers) {
     const oldDealer = previous.registeredDealers?.find(row => row.id === dealer.id), newDealer = selected.registeredDealers?.find(row => row.id === dealer.id);
     const old = oldDealer ? scopedPlayback(previous, oldDealer) : null, next = newDealer ? scopedPlayback(selected, newDealer) : null;
-    if (old && next && preservedDealerIds.includes(dealer.id) && canonical(old) !== canonical(next)) fail();
+    if (old && next && preservedDealerIds.includes(dealer.id) && canonical(old) !== canonical(next))
+      throw Object.assign(new Error('studio_shared_dealer_playback_conflict'), { code: 'studio_shared_dealer_playback_conflict', statusCode: 422 });
     const chosen = next ?? old; if (!chosen) fail();
     output.lines.push(...chosen.lines);
     if (chosen.dealerIdlePolicies.length) (output.dealerIdlePolicies ??= []).push(...chosen.dealerIdlePolicies);

@@ -12,10 +12,13 @@ export type PresentationRoomCapability = { schemaVersion: 1; registeredDealerIds
   | { schemaVersion: 2; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2' }
   | { schemaVersion: 3; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2'; registeredDealerMode: 'saved-registry-idle-v1'; frozenDealerIdle: 'operator-package-v2' }
   | { schemaVersion: 4; registeredDealerIds: readonly ['nora']; compositing: 'per-clip'; rooms: 'operator-owned-v2'; registeredDealerMode: 'saved-registry-idle-v1'; frozenDealerIdle: 'operator-package-v2'; frozenDealerEvents: 'operator-package-v3' };
+export type PresentationRoomConflictCode = 'presentation_shared_dealer_conflict' | 'presentation_shared_layer_conflict'
+  | 'presentation_room_binding_conflict' | 'presentation_game_lane_conflict' | 'presentation_legacy_package_conflict';
 export interface PresentationRoomPreflight {
   ok: true; operator: PresentationRoomOperator; presentationLaneId: string;
   projectRevision: string; administrationRevision: string; packageRevision: number | null;
   ready: boolean; reason: null | 'studio_presentation_runtime_update_required' | 'presentation_lane_incompatible' | 'presentation_package_conflict' | 'presentation_package_too_large';
+  conflictCode?: PresentationRoomConflictCode | null;
   capabilities: PresentationRoomCapability | null;
   rooms: readonly { id: string; name: string; playUrl: string }[];
 }

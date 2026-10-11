@@ -1,7 +1,7 @@
 'use client';
 import {labUrl} from '../lib/lab-url.mjs';
 
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import {
   LANE_PROBE_MODES,
@@ -40,6 +40,18 @@ export function addLane(project: StudioProject, id: string, label: string) {
   return commitLanes(project, [...(project.lanes ?? []), lane]);
 }
 
+export function newCompositionId(project: StudioProject, label: string, newKey: () => string = () => crypto.randomUUID()) {
+  const normalized = label.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const stem = (/^[a-z]/.test(normalized) ? normalized : 'scen-' + normalized).slice(0, 26).replace(/-+$/g, '') || 'scen';
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const key = newKey();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(key)) break;
+    const id = stem + '-' + key;
+    if (!project.lanes?.some(lane => lane.id === id)) return id;
+  }
+  throw new Error('Ett unikt ID kunde inte skapas. Försök igen.');
+}
+
 export function addDefaultLane(project: StudioProject) {
   return commitLanes(project, [...(project.lanes ?? []), defaultPresentationLane()]);
 }
@@ -74,7 +86,6 @@ function layerText(lane: StudioLane) {
 
 function LaneSummary({ lane }: { lane: StudioLane }) {
   const items: [string, string][] = [
-    ['Id', lane.id],
     ['Namn', lane.label],
     ['Dealers', lane.dealers.join(', ')],
     ['Lager', layerText(lane)],
@@ -86,10 +97,6 @@ function LaneSummary({ lane }: { lane: StudioLane }) {
       <dd>{value}</dd>
     </div>)}
   </dl>;
-}
-
-function IdHelp({ id }: { id: string }) {
-  return <p id={id} className={styles.help}>{LANE_ID_HELP}</p>;
 }
 
 function applyWhenValid(project: StudioProject, onEdit: Edit, change: (current: StudioProject) => StudioProject, after: () => void) {
@@ -105,14 +112,23 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
   const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
   const lanes = project.lanes ?? [];
   const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
-  const [draftId, setDraftId] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
+  const creating = useRef(false);
   function addNew(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (disabled) return;
-    const id = draftId.trim(), label = draftLabel.trim();
-    applyWhenValid(project, onEdit, current => addLane(current, id, label), () => {
-      setDraftId(''); setDraftLabel(''); onSelect(id);
-    });
+    event.preventDefault();
+    const label = draftLabel.trim();
+    if (disabled || creating.current || !label) return;
+    creating.current = true;
+    try {
+      // Generate once outside the React updater so replays keep the same identity.
+      const id = newCompositionId(project, label);
+      addLane(project, id, label);
+      onEdit(current => addLane(current, id, label));
+      setDraftLabel(''); onSelect(id);
+    } catch (cause) {
+      creating.current = false;
+      onEdit(() => { throw cause; });
+    }
   }
   function rename(value: string) {
     if (!selected || disabled) return;
@@ -131,10 +147,9 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
     </section>
     <details className={styles.card}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
       <h2 id="new-lane-title">Skapa sammansättning</h2><div className={styles.create}>
-        <label className={styles.field}>Namn på ny sammansättning<input value={draftLabel} required maxLength={80} onChange={event => setDraftLabel(event.target.value)} /></label>
-        <label className={styles.field}>Tekniskt ID<input value={draftId} required aria-describedby="new-lane-id-help" autoComplete="off" spellCheck={false} onChange={event => setDraftId(event.target.value)} /></label>
-        <button type="submit" className="sg-btn sg-btn-secondary">Skapa sammansättning</button>
-      </div><IdHelp id="new-lane-id-help" />
+        <label className={styles.field}>Namn på ny sammansättning<input value={draftLabel} required maxLength={80} onChange={event => { creating.current = false; setDraftLabel(event.target.value); }} /></label>
+        <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim()}>Skapa sammansättning</button>
+      </div><p className={styles.help}>Ett tekniskt ID skapas automatiskt och behålls när namnet ändras.</p>
     </form></details>
   </fieldset>;
 }

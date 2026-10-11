@@ -12,7 +12,7 @@
       "view": "videos",
       "href": "/control/preview",
       "title": "2. Sätt ihop presentationen",
-      "body": "Välj, skapa och namnge en sammansättning. Välj dealer, bord och bakgrund, Mobil eller Desktop och Storlek och placering för varje lager. Dealerfliken länkar till dealerns klippredigering; bord och bakgrunder laddas upp vid respektive lager. Uppspelningspolicyer och bolagets tillåtna justeringar finns under Avancerat. Förhandsvisa klipp är ett provval. Fullbildsklipp har inbakat bord och bakgrund; ett frilagt klipp behövs för separata lager. Spara innan publicering."
+      "body": "Välj eller skapa en sammansättning med ett namn; tekniskt ID skapas automatiskt. Välj dealer, bord och bakgrund, Mobil eller Desktop och Storlek och placering för varje lager. Dealerfliken länkar till dealerns klippredigering; bord och bakgrunder laddas upp vid respektive lager. Uppspelningspolicyer och bolagets tillåtna justeringar finns under Avancerat. Förhandsvisa klipp är ett provval. Fullbildsklipp har inbakat bord och bakgrund; ett frilagt klipp behövs för separata lager. Spara och välj Provspela för att öppna blackjack i samma flik. Provet använder sparade biblioteksval i en tidsbegränsad adminsession, utan bolagspublicering eller riktiga spelarkonton. Startdealern behöver en grundloop; andra ofullständiga dealers visas med orsak. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda. Till Sammansättning tar dig tillbaka."
     },
     {
       "view": "tree",
@@ -62,7 +62,7 @@
     },
     {
       "name": "Sammansättning · /control/preview",
-      "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. Uppspelningspolicyer och bolagets justeringsrättigheter ligger under Avancerat. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack."
+      "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. Uppspelningspolicyer och bolagets justeringsrättigheter ligger under Avancerat. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack. Provspela startar uttryckligen ett isolerat blackjackprov efter sparning; alla sparade dealers och lager kan granskas före bolagstilldelning. Startdealern behöver en grundloop och andra ofullständiga dealers kan inte väljas."
     },
     {
       "name": "Publicering · /control/lanes",

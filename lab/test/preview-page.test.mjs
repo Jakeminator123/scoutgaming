@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {createSeedProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 
 const require = createRequire(import.meta.url);
@@ -20,7 +21,7 @@ function loadTs(fileUrl,overrides={}) {
   const module = { exports: {} };
   const localRequire = createRequire(fileUrl);
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams, Request, Headers,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, Request, Headers, AbortController, Error,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
       if(Object.hasOwn(overrides,name))return overrides[name];
@@ -136,7 +137,7 @@ test('unsaved composition invokes guarded save before the next-step navigation',
   let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(saves,1);
 });
 
-function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]}}={}) {
+function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]},previewClient=createStudioPreview}={}) {
   const project=initialProject??createSeedProject(),state=[],refs=[],effects=[],savedProjects=[];let stateIndex=0,refIndex=0,saves=0;
   const session={project,projectRef:{current:project},videos:inventory,setVideos:value=>{session.videos=value;},savedJson:JSON.stringify(project),dirty,saving:false,conflict,
     save:async()=>{saves++;savedProjects.push(structuredClone(session.projectRef.current));if(saveResult)session.dirty=false;return saveResult;},
@@ -149,6 +150,7 @@ function previewHarness({dirty=true,conflict=false,saveResult=true,project:initi
   const model=require('../lib/studio-model.mjs');
   const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url),{
     react:hooks,'./studio-session':{useStudioSession:()=>session},
+    '../lib/studio-preview-client.mjs':{createStudioPreview:previewClient},
     '../lib/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
   });
   function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'}});}
@@ -434,4 +436,121 @@ test('a library dealer outside the selected presentation has an explicit inclusi
   assert.match(html,/Dealern ingår inte i den här presentationen ännu/);
   assert.match(html,/Använd Johanna som startdealer/);
   assert.equal(JSON.stringify(project),before);
+});
+
+const previewId='11111111-2222-4333-8444-555555555555';
+const previewRequest={presentationLaneId:'mobile-phone',expectedProjectRevision:'revision-1'};
+const previewReceipt=()=>({sessionId:previewId,presentationLaneId:'mobile-phone',projectRevision:'revision-1',expiresAt:new Date(Date.now()+60000).toISOString(),entryUrl:'/studio-preview/'+previewId});
+const previewResponse=(body=previewReceipt(),status=201,contentType='application/json')=>new Response(typeof body==='string'?body:JSON.stringify(body),{status,headers:{'content-type':contentType}});
+
+test('explicit Studio preview uses the root API and exact saved revision with safe same-origin JSON transport',async()=>{
+  let call;
+  const receipt=previewReceipt();
+  const result=await createStudioPreview(previewRequest,{fetchImpl:async(...args)=>{call=args;return previewResponse(receipt);}});
+  assert.deepEqual(result,receipt);
+  assert.equal(call[0],'/api/studio-preview');
+  assert.equal(call[1].method,'POST');assert.equal(call[1].credentials,'same-origin');
+  assert.equal(call[1].redirect,'error');assert.equal(call[1].cache,'no-store');
+  assert.deepEqual(JSON.parse(call[1].body),previewRequest);
+  assert.equal(call[1].headers.Accept,'application/json');
+});
+
+test('preview rejects foreign, forged, expired, mismatched and non-JSON receipts',async()=>{
+  const receipt=previewReceipt();
+  for(const mutation of [
+    {entryUrl:'https://www.scoutgaming.tech'+receipt.entryUrl},
+    {entryUrl:'//evil.test/studio-preview/'+previewId},
+    {entryUrl:receipt.entryUrl+'?next=https://evil.test'}, {entryUrl:receipt.entryUrl+'#x'},
+    {entryUrl:'/studio-preview/%2e%2e/control'}, {entryUrl:'/play/blackjack'},
+    {sessionId:previewId.toUpperCase().replace('111','ABC')}, {projectRevision:'other'}, {presentationLaneId:'other'},
+    {expiresAt:new Date(0).toISOString()}, {expiresAt:{toString:null}}, {extra:'ignored'},
+  ]) await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>previewResponse({...receipt,...mutation})}),/ogiltigt svar/);
+  for(const response of [previewResponse('<html>login</html>',200,'text/html'),previewResponse('{',201),previewResponse([],201),previewResponse(receipt,200),previewResponse('x'.repeat(16385),201)]){
+    await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>response}),/ogiltigt svar|kunde inte startas/);
+  }
+});
+
+test('preview maps known failures without exposing server text and never retries automatically',async()=>{
+  for(const [status,code,phrase] of [
+    [422,'studio_preview_idle_required','grundloop för startdealern'],
+    [409,'studio_preview_revision_conflict','Projektet har ändrats'],
+    [429,'studio_preview_limit','För många provspelningar'],
+    [401,'studio_login_required','Logga in'],
+    [403,'studio_preview_forbidden','saknar behörighet'],
+    [503,'studio_preview_media_unavailable','medier kunde inte läsas'],
+  ]) {
+    let calls=0;
+    await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>{calls++;return previewResponse({error:code,detail:'DO NOT DISPLAY'},status);}}),new RegExp(phrase));
+    assert.equal(calls,1);
+  }
+  for(const error of ['unknown server detail',{toString:null}])await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>previewResponse({error},503)}),/kunde inte startas/);
+  await assert.rejects(createStudioPreview(previewRequest,{fetchImpl:async()=>{throw Error('DO NOT DISPLAY');}}),/Kontrollera anslutningen/);
+  let calls=0;
+  await assert.rejects(createStudioPreview({...previewRequest,expectedProjectRevision:''},{fetchImpl:async()=>{calls++;}}),/Spara sammansättningen/);
+  assert.equal(calls,0);
+});
+
+const previewButton=(h,tree)=>h.find(tree,node=>node.type==='button'&&node.props['aria-describedby']==='studio-preview-help');
+test('preview waits for its receipt, locks repeated clicks and mutations, then navigates in the same tab',async()=>{
+  let resolve,calls=0,request,signal;
+  const h=previewHarness({dirty:false,previewClient:(value,options)=>{calls++;request=value;signal=options.signal;return new Promise(done=>resolve=done);}});
+  const navigations=[];globalThis.window={location:{assign:href=>navigations.push(href)}};
+  try{
+    const original=structuredClone(h.session.project),tree=h.render(),button=previewButton(h,tree);
+    assert.equal(button.props.disabled,false);
+    button.props.onClick();button.props.onClick();
+    assert.equal(calls,1);assert.equal(signal.aborted,false);assert.deepEqual(navigations,[]);
+    assert.deepEqual(structuredClone(request),{presentationLaneId:original.lanes[0].id,expectedProjectRevision:original.revision});
+    h.find(tree,node=>node.type?.name==='CompositionMetadata').props.onEdit(current=>({...current,revision:'changed'}));
+    h.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/lanes?')).props.onClick({preventDefault(){}});
+    assert.deepEqual(h.session.project,original);assert.equal(h.saves(),0);
+    assert.equal(previewButton(h,h.render()).props.disabled,true);
+    resolve(previewReceipt());await new Promise(setImmediate);
+    assert.deepEqual(navigations,['/studio-preview/'+previewId]);
+  }finally{delete globalThis.window;}
+});
+
+test('unsaved, absent, uploading, conflicting, temporary or saving compositions never start preview',async()=>{
+  for(const condition of ['dirty','absent','upload','conflict','temporary','saving','same-tick-edit']){
+    let calls=0;const project=createSeedProject();if(condition==='absent')project.lanes=[];
+    const h=previewHarness({project,dirty:condition==='dirty',conflict:condition==='conflict',previewClient:async()=>{calls++;return previewReceipt();}});
+    if(condition==='saving')h.session.saving=true;
+    let tree=h.render();
+    if(condition==='upload')h.find(tree,node=>node.type?.name==='LayerLibrary').props.onBusyChange(true);
+    if(condition==='same-tick-edit')h.find(tree,node=>node.type?.name==='CompositionMetadata').props.onEdit(current=>({...current,revision:'changed'}));
+    if(condition==='temporary'){
+      h.find(tree,node=>node.type==='input'&&node.props.type==='file').props.onChange({target:{files:[new Blob(['fixture'],{type:'video/mp4'})]}});
+      tree=h.render();
+    }
+    previewButton(h,tree).props.onClick();await new Promise(setImmediate);
+    assert.equal(calls,0,condition);assert.equal(h.saves(),0,condition);
+    h.effects[0]()();
+  }
+});
+
+test('late preview responses cannot leave a changed context or an unmounted composer',async()=>{
+  for(const change of ['project','unmount']){
+    let resolve,signal;const navigations=[];
+    const h=previewHarness({dirty:false,previewClient:(_request,options)=>{signal=options.signal;return new Promise(done=>resolve=done);}});
+    globalThis.window={location:{assign:href=>navigations.push(href)}};
+    try {
+      previewButton(h,h.render()).props.onClick();
+      if(change==='unmount')h.effects[3]()();
+      else {h.session.project={...h.session.project,revision:'remote'};h.session.projectRef.current=h.session.project;h.render();}
+      resolve(previewReceipt());await new Promise(setImmediate);
+      assert.deepEqual(navigations,[]);
+      assert.equal(signal.aborted,change==='unmount');
+      if(change==='project')assert.match(h.find(h.render(),node=>node.props?.role==='alert').props.children,/har ändrats/);
+    }finally{delete globalThis.window;}
+  }
+});
+
+test('preview errors stay in the composer and an explicit new click can retry',async()=>{
+  let calls=0;
+  const h=previewHarness({dirty:false,previewClient:async()=>{calls++;throw Error('Välj en grundloop för startdealern före provspelning.');}});
+  previewButton(h,h.render()).props.onClick();await new Promise(setImmediate);
+  const tree=h.render();
+  assert.match(h.find(tree,node=>node.props?.role==='alert').props.children,/grundloop för startdealern/);
+  assert.equal(previewButton(h,tree).props.disabled,false);assert.equal(h.saves(),0);
+  previewButton(h,tree).props.onClick();await new Promise(setImmediate);assert.equal(calls,2);
 });

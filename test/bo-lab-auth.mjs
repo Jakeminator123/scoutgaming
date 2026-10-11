@@ -99,6 +99,11 @@ try {
     server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError)(?: \[[A-Z_]+\])?:[^\n]*/)?.[0] ?? ''; });
   });
 
+  const offlinePreview = await request(game + '/api/studio-preview');
+  assert.equal(offlinePreview.status, 503, 'offline preview refuses before loading Studio or creating a player');
+  assert.deepEqual(await offlinePreview.json(), {error:'studio_preview_unavailable'});
+  assert.equal(offlinePreview.headers.get('cache-control'), 'private, no-store');
+  assert.equal(offlinePreview.headers.has('set-cookie'), false);
   const offlineRooms = await request(game + '/api/operators/sg-test/rooms');
   assert.equal(offlineRooms.status, 503, 'offline rooms refuse without importing the absent Studio storage runtime');
   assert.deepEqual(await offlineRooms.json(), {error:'operator_rooms_unavailable'});

@@ -182,7 +182,7 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
           </label>
         </div>
       </section>
-      <section className={styles.card} aria-label="Partnerpaket">
+      <section id="operator-package-selection" tabIndex={-1} className={styles.card} aria-label="Partnerpaket">
         <h2>Publicera partnerpaket</h2>
         {selectedOperator ? <p>Urval för {selectedOperator.name}. Kryssrutorna utgår från bolagets publicerade paket. Att välja presentation för ett spelrum ändrar inte paketurvalet.</p> : <p>Välj vilket bolag som ska få paketet.</p>}
         {selectedOperator && !chosen.includes(selectedLane.id) ? <p>{selectedLane.label} är inte markerad i paketurvalet nedan. Markera den om du vill lägga till den vid publicering, eller skapa ett rum för presentationen längre ned.</p> : null}

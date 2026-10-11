@@ -75,6 +75,12 @@ const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/sel
 const LAB_API = /^\/studio\/api\/(?:project|videos|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|original-media|generated-speech)(?:\/|$)/;
 const PUBLIC_MEDIA = /^\/(?:assets|dealer|dealers\/(?:astrid|vera|amira|mei)|sfx|kevin-cards|review|media\/(?:dealers\/(?:astrid|vera|amira|mei)|game|site)\/runtime)(?:\/|$)/;
 
+// Preview documents and commands share the signed transport. The backend still
+// requires the current Studio administrator and the session owner on every call.
+const PREVIEW_UUID = '[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}';
+const STUDIO_PREVIEW = new RegExp('^(?:/studio-preview/' + PREVIEW_UUID
+  + '|/api/studio-preview(?:/' + PREVIEW_UUID
+  + '(?:/(?:player|table|session|presentation/(?:config|legacy-config|select|idle-advice)|(?:videos|layers)/' + PREVIEW_UUID + '))?)?)$');
 // The routing boundary deliberately has no general /api or /bo catch-all.
 // Every group retains the backend's own session, role and request validation.
 export function backendPlatformPath(value) {
@@ -82,6 +88,7 @@ export function backendPlatformPath(value) {
   if (!path) return false;
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path)
     || path === '/api/studio-game/command'
+    || STUDIO_PREVIEW.test(path)
     || BACKOFFICE.has(path)
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)
     || /^\/api\/operators\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/rooms)?$/.test(path)

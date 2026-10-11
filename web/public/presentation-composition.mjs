@@ -11,7 +11,8 @@ export function validateComposition(value) {
     if(Object.keys(asset).sort().join(',')!=='contentType,id,label,role,src' || !idPattern.test(asset.id)||ids.has(asset.id)
       || !['background','table'].includes(asset.role)||typeof asset.label!=='string'||asset.label.length>80
       || !['image/png','image/jpeg','image/webp','video/mp4','video/webm'].includes(asset.contentType)
-      || !new RegExp(`^/api/presentation/layers/[a-z][a-z0-9-]{0,62}/${asset.id}$`).test(asset.src))fail();
+      || !(new RegExp(`^/api/presentation/layers/[a-z][a-z0-9-]{0,62}/${asset.id}$`).test(asset.src)
+        || new RegExp(`^/api/studio-preview/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}/layers/${asset.id}$`).test(asset.src)))fail();
     ids.add(asset.id);
   }
   for(const role of ['background','table']) {

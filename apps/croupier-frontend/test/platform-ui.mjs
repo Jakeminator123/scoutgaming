@@ -391,3 +391,17 @@ test('published room catalogue uses an exact operator route through existing bac
   assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
   for(const bad of [path+'/',path+'/private','/api/operators/sg-test/packages','/api/operators/sg-test/draft','/api/operators/%73g-test/rooms','/api/operators/sg-test/../rooms','/api/operators//rooms'])assert.equal(backendPlatformPath(bad),false,bad);
 });
+
+test('Studio preview transports only explicit session paths without acquiring ordinary player context', () => {
+  const id='10000000-0000-4000-8000-000000000001', base='/api/studio-preview/'+id;
+  const paths=['/api/studio-preview','/studio-preview/'+id,base,...['player','table','session','presentation/config',
+    'presentation/legacy-config','presentation/select','presentation/idle-advice','videos/'+id,'layers/'+id].map(tail=>base+'/'+tail)];
+  for(const path of paths) {
+    assert.equal(backendPlatformPath(path),true,path);
+    assert.deepEqual(platformRoute(new URL(path+'?dealer=amira',config.publicOrigin),config),
+      {kind:'backend',destination:config.backendOrigin+path+'?dealer=amira'});
+  }
+  for(const path of ['/studio-preview','/studio-preview/not-a-session',base+'/chat',base+'/deposit',base+'/currency',base+'/auth/logout',
+    base+'/../table',base+'/videos/private/file',base+'/layers/'+id+'/extra',base+'/',base+'/presentation/select/extra',
+    '/api/studio-preview//'+id,base.replace('/api/','/api/%73')]) assert.equal(backendPlatformPath(path),false,path);
+});

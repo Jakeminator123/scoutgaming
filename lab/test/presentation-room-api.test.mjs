@@ -103,7 +103,7 @@ const status = expected => error => error.statusCode === expected;
 
 test('preparation is read-only and returns actual nullable package revision plus verified runtime contract', async () => {
   const f = await fixture(), before = f.pool.snapshot(); const ready = await f.prepare();
-  assert.equal(ready.ready, true); assert.equal(ready.packageRevision, null); assert.equal(ready.projectRevision, f.project.revision);
+  assert.equal(ready.ready, true); assert.equal(ready.conflictCode, null); assert.equal(ready.packageRevision, null); assert.equal(ready.projectRevision, f.project.revision);
   assert.equal(ready.administrationRevision, 'admin-initial'); assert.deepEqual(ready.capabilities, capability); assert.deepEqual(f.pool.snapshot(), before);
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Brand' }, buildPresentationPackage(f.project, ['mobile-phone'], [])) });
   assert.equal((await f.prepare()).packageRevision, 1);
@@ -274,6 +274,7 @@ test('replacing the selected definition cannot break an existing room bound to a
   changed.lanes[1].dealers = ['vera']; changed.lanes[1].layers.dealer = { enabled: true, default: 'vera', allowed: ['vera'] };
   await f.repository.saveDocument('project', { value: changed, expectedRevision: project.revision, actor: session.user });
   const ready = await f.prepare();assert.equal(ready.reason, 'presentation_package_conflict');assert.equal(ready.ready,false);
+  assert.equal(ready.conflictCode, 'presentation_room_binding_conflict');
   assert.deepEqual(ready.rooms,[{id:created.room.id,name:created.room.name,playUrl:created.playUrl}],
     'a blocked new publication must still list the valid current published room');
   const body = await f.payload({ idempotencyKey: '0ddd0000-1111-4222-8333-444444444444', name: 'Changed dealer' }), before = f.pool.snapshot();
@@ -421,6 +422,7 @@ test('an ambiguous compatible catalogue creates one deterministic lane, a later 
   changed.gameLanes.find(row => row.id === first.room.gameLaneId).mediaCollection = 'vera-presentation';
   await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: saved.revision, value: changed });
   const ready = await f.prepare(); assert.equal(ready.reason, 'presentation_package_conflict');
+  assert.equal(ready.conflictCode, 'presentation_game_lane_conflict');
   const body = await f.payload({ idempotencyKey: '0ccc0000-1111-4222-8333-444444444444', name: 'Collision' }), before = f.pool.snapshot();
   await assert.rejects(f.create(body), status(409)); assert.deepEqual(f.pool.snapshot(), before);
 });
@@ -445,6 +447,7 @@ test('a selected generic idle cannot silently replace the idle of another frozen
   const line = next.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = changed.id;
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: saved.revision, value: next });
   const ready = await f.prepare('north', second.id); assert.equal(ready.ready, false); assert.equal(ready.reason, 'presentation_package_conflict');
+  assert.equal(ready.conflictCode, 'presentation_shared_dealer_conflict');
   const project = await f.repository.readDocument('project'), admin = await f.repository.readDocument('administration'), before = f.pool.snapshot();
   await assert.rejects(f.create({ operatorId: 'north', presentationLaneId: second.id, name: 'No implicit idle replacement', idempotencyKey: '0bbb0000-1111-4222-8333-444444444444',
     expectedProjectRevision: project.revision, expectedAdministrationRevision: admin.revision, expectedPackageRevision: 1 }), status(409));
@@ -483,6 +486,7 @@ test('adding Johanna cannot silently migrate an unrelated legacy Nora presentati
   const legacy = buildPresentationPackage(project, [nora.id], []);
   await f.publish({ actor: session.user, operatorId: 'north', lanes: [nora.id], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Legacy Nora' }, legacy) });
   const ready = await f.prepare('north', f.lane.id); assert.equal(ready.reason, 'presentation_package_conflict');
+  assert.equal(ready.conflictCode, 'presentation_legacy_package_conflict');
   const projectDocument = await f.repository.readDocument('project'), admin = await f.repository.readDocument('administration'), before = f.pool.snapshot();
   await assert.rejects(f.create({ operatorId: 'north', presentationLaneId: f.lane.id, name: 'No automatic migration', idempotencyKey: key,
     expectedProjectRevision: projectDocument.revision, expectedAdministrationRevision: admin.revision, expectedPackageRevision: 1 }), status(409));
@@ -572,4 +576,48 @@ test('a saved Amira-Johanna-Astrid presentation can add a room while preserving 
   const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'amira');
   assert.deepEqual(entry.selection.choices.dealers,['amira','johanna','astrid']);
   assert.equal((await select(new URL(first.playUrl,origin).search)).selection.dealer,'johanna');
+});
+
+
+test('shared frozen event changes return a safe dealer conflict on either presentation and preserve published rooms', async () => {
+  const f = await registeredFixture(), first = await f.create(await f.registeredPayload());
+  const saved = await f.repository.readDocument('project'), second = clone(f.lane); second.id = 'second-johanna';
+  saved.value.lanes.push(second);
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  await f.create(await f.registeredPayload({ presentationLaneId: second.id, idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  const edited = await f.repository.readDocument('project');
+  edited.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated saved event';
+  await f.repository.saveDocument('project', { value: edited.value, expectedRevision: edited.revision, actor: session.user });
+  const before = f.pool.snapshot();
+  for (const id of [f.lane.id, second.id]) {
+    const ready = await f.prepare('north', id);
+    assert.equal(ready.ready, false); assert.equal(ready.conflictCode, 'presentation_shared_dealer_conflict');
+    assert.equal(ready.rooms.length, 1);
+    assert.doesNotMatch(JSON.stringify(ready), /Updated saved event|studio_shared_dealer_playback_conflict|pathname|sha256/);
+  }
+  assert.deepEqual(f.pool.snapshot(), before);
+  assert.equal((await f.prepare('north', f.lane.id)).rooms[0].id, first.room.id);
+});
+
+test('changed frozen layer metadata has its own diagnostic without exposing the asset', async () => {
+  const f = await fixture(), saved = await f.repository.readDocument('project');
+  const asset = { schemaVersion: 1, id: '00000000-0000-4000-8000-000000000001', role: 'background', label: 'Published layer', sha256: 'a'.repeat(64), size: 128, contentType: 'image/png', width: 720, height: 1280 };
+  asset.pathname = layerAssetPath(asset); saved.value.layerAssets = [asset];
+  saved.value.lanes[1].layers.background = { enabled: true, mode: 'image', allowed: [asset.id], default: asset.id };
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  await f.create(await f.payload());
+  const changed = await f.repository.readDocument('project'); changed.value.layerAssets[0].label = 'Changed private metadata';
+  await f.repository.saveDocument('project', { value: changed.value, expectedRevision: changed.revision, actor: session.user });
+  const before = f.pool.snapshot(), ready = await f.prepare();
+  assert.equal(ready.conflictCode, 'presentation_shared_layer_conflict'); assert.equal(ready.ready, false);
+  assert.doesNotMatch(JSON.stringify(ready), /Changed private metadata|pathname|sha256/);
+  assert.deepEqual(f.pool.snapshot(), before);
+});
+
+test('unknown internal conflicts remain generic and never reflect raw errors or arbitrary codes', async () => {
+  const f = await registeredFixture();
+  f.videoRegistry.verifyCapturedMedia = async () => { throw Object.assign(Error('private diagnostic'), { statusCode: 409, code: 'private-code' }); };
+  const before = f.pool.snapshot(), ready = await f.prepare('north', f.lane.id);
+  assert.equal(ready.reason, 'presentation_package_conflict'); assert.equal(ready.conflictCode, null);
+  assert.doesNotMatch(JSON.stringify(ready), /private diagnostic|private-code/); assert.deepEqual(f.pool.snapshot(), before);
 });

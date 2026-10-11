@@ -681,10 +681,35 @@ const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
   authorize: createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
   publicOrigin:process.env.CROUPIER_PUBLIC_ORIGIN,labOrigin:process.env.LAB_PUBLIC_URL,
 }) : null;
+const studioPreview = studioPolicyRuntime ? await (async () => {
+  const { createStudioPreview } = await import('./studio-preview.mjs');
+  const { getPrivateMedia } = await import('../lab/lib/cloud-media-store.mjs');
+  const { getVideoResponse } = await import('../lab/lib/video-registry.mjs');
+  const { legacyClipControls } = await import('../lab/lib/legacy-clip-inventory.mjs');
+  return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
+    scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
+    registryLoader:studioMediaRuntime.videoRegistryCaptured,
+    legacyControlsCaptured:(snapshot,project)=>legacyClipControls(project,{repository:mediaRepository,
+      administration:snapshot.administrationDocument.value,mediaAvailable:createStudioPublicMediaAvailability({repositoryRoot:mediaRepository})}),
+    privateMedia:(record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository}),
+    bankVideoResponse:(id,request)=>getVideoResponse(id,request,{repositoryRoot:mediaRepository,readUploads:async()=>[],readClassifications:async()=>[]}),
+    readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
+  });
+})() : null;
 const server = createServer(async (req, res) => {
   try {
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
+  if (pathname==='/api/studio-preview'||pathname.startsWith('/api/studio-preview/')||pathname.startsWith('/studio-preview/')) {
+    if(!studioPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"studio_preview_unavailable"}');return;}
+    const request=new Request((process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin)+req.url,{method:req.method,headers:req.headers,
+      ...(!['GET','HEAD'].includes(req.method)?{body:Readable.toWeb(req),duplex:'half'}:{})});
+    const response=await studioPreview.handle(request);
+    if(!response){res.writeHead(404,{'Cache-Control':'private, no-store'});res.end();return;}
+    res.writeHead(response.status,Object.fromEntries(response.headers));
+    if(response.body&&req.method!=='HEAD')Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);else res.end();
+    return;
+  }
   const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method,headers:req.headers??{}}));
   if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
   const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
@@ -1218,6 +1243,7 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   });
 }
 installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
+  studioPreview?.close();
   // Persist cancellation/terminal receipts while the journal connection is open.
   const probeCancellations = [];
   for (const [key, controller] of activePlayerChats) {

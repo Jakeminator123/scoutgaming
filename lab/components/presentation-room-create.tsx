@@ -62,6 +62,11 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
   const needsComposition = current && ['presentation_lane_incompatible', 'presentation_package_too_large'].includes(state.preflight?.reason ?? '');
   const reloadHref = labUrl('/control/lanes?' + new URLSearchParams({ operator: operator?.id ?? '', lane: presentation?.id ?? '' }));
   const compositionHref = labUrl('/control/preview?' + new URLSearchParams({ lane: presentation?.id ?? '' }));
+  const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
+  const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
+    ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }
+    : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
+      ? { href: labUrl('/control/administration?tab=tables'), label: 'Kontrollera Bord & spelrum' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = ready && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
@@ -82,7 +87,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
           disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => controller.setName(event.target.value)} autoComplete="off" />
       </label>
       <div className={styles.actions}>
-        {staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}
+        {recovery ? null : staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}
           onClick={event => { if (!enabled) event.preventDefault(); }}>Läs in aktuella uppgifter</a>
           : needsComposition ? <a className="sg-btn sg-btn-primary" href={compositionHref} aria-disabled={!enabled}
             onClick={event => { if (!enabled) event.preventDefault(); }}>Kontrollera sammansättningen</a>
@@ -96,6 +101,8 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     </details>
     {current && state.status === 'loading' ? <p role="status">Kontrollerar…</p> : null}
     {message ? <p role={current && ['error', 'conflict', 'uncertain'].includes(state.status) ? 'alert' : 'status'}>{message}</p> : null}
+    {recovery ? <p><a className="sg-btn sg-btn-primary" href={recovery.href} aria-disabled={!enabled}
+      onClick={event => { if (!enabled) event.preventDefault(); }}>{recovery.label}</a></p> : null}
     {receipt ? <p role="status">{receipt.room.name} är klart. <a href={receipt.playUrl}>Öppna spelrummet</a></p> : null}
   </section>;
 }

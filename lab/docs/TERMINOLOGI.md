@@ -54,8 +54,9 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | dealer-up / dealer-hole | Dealerns öppna / dolda kort | Skilda kortdestinationer; ett generellt utdelningsklipp ersätter inte dessa. |
 | reveal | Visa dealerns dolda kort | Eget moment efter utdelningen. |
 | handIndex / card | Hand / kortnummer | Exakta värden följer spelhändelsen; ändras inte vid namnbyte. |
+| Studio preview | Provspela | Uttryckligt startat blackjackprov från en sparad sammansättning. Tidsbegränsad adminsession med sparade biblioteksval; publicerar inget bolagspaket och använder inga riktiga spelarkonton. |
 | Preview clip | Förhandsvisa klipp | Lokalt provval; publicerar eller binder inget runtimeklipp. |
-| Composition | Sammansättning | Nivå 1:s gemensamma redigering av dealer, bord, bakgrund samt storlek och placering per format. Geometrin fryses vid publicering; nivå 2 väljer tillåtna, kompatibla alternativ. |
+| Composition | Sammansättning | Nivå 1:s gemensamma redigering av dealer, bord, bakgrund samt storlek och placering per format. Namnet väljs av användaren; ett stabilt tekniskt ID skapas automatiskt. Geometrin fryses vid publicering; nivå 2 väljer tillåtna, kompatibla alternativ. |
 | Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
 | Room / table | Spelrum / spelbord | Bolagsägd spelresurs som kopplar fryst presentation till en verklig spellane. De två lane-ID:na behöver inte vara lika. |
 | Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |

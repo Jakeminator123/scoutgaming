@@ -78,7 +78,7 @@ test('changing the table tier carries shared presentation and the requested tabl
   const setTable=appSource.match(/function setTable\(id\) \{[\s\S]*?\n\}/)?.[0];
   assert.ok(setTable);
   const location={search:'?dealer=astrid&presentation=local&rehearsal=1&launch=private'};
-  vm.runInNewContext(`${setTable}; setTable('other-tier');`,{location,URLSearchParams,dealerVersionPath,TABLES:[{id:'other-tier',dealer:'amira'}],table:{id:'current'},round:null,busy:false,DEALER:{key:'astrid'}});
+  vm.runInNewContext(`${setTable}; setTable('other-tier');`,{studioPreview:null,location,URLSearchParams,dealerVersionPath,TABLES:[{id:'other-tier',dealer:'amira'}],table:{id:'current'},round:null,busy:false,DEALER:{key:'astrid'}});
   assert.deepEqual([...new URLSearchParams(location.search)],[['dealer','amira'],['presentation','local'],['rehearsal','1'],['table','other-tier']]);
 });
 

@@ -19,6 +19,8 @@ import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-rea
 const operatorIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const keyPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const fail = (status = 422, code = 'studio_presentation_room_rejected') => { throw new StudioStorageError(code, status); };
+const conflictCodes = new Map(['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict',
+  'presentation_room_binding_conflict', 'presentation_game_lane_conflict', 'presentation_legacy_package_conflict'].map(code => ['studio_' + code, code]));
 export const PRESENTATION_ROOM_MUTATION = Object.freeze({ kind: 'administration', value: Object.freeze({
   rooms: Object.freeze([Object.freeze({ schemaVersion: 2 })]),
 }) });
@@ -54,7 +56,7 @@ function lanePlan(presentation, administration) {
     renderer: 'portrait-video', dealer, mediaCollection: `${dealer}-presentation` };
   const existing = config.gameLanes.find(row => row.id === lane.id);
   if (existing) {
-    if (canonicalStudioJson({ ...existing, label: lane.label }) !== canonicalStudioJson(lane)) fail(409);
+    if (canonicalStudioJson({ ...existing, label: lane.label }) !== canonicalStudioJson(lane)) fail(409, 'studio_presentation_game_lane_conflict');
     return { lane: existing, administration };
   }
   if (config.gameLanes.length >= 32) fail();
@@ -68,13 +70,13 @@ function extraIds(lanes) {
 // dealer idle records cannot acquire unpublished edits as a side effect.
 function mergePresentation(current, selected) {
   const old = current ? readPackagePresentation(current) : null;
-  if (current && !old) fail(409);
+  if (current && !old) fail(409, 'studio_presentation_legacy_package_conflict');
   if (!old) return selected;
   const id = selected.lanes[0].id;
   const lanes = old.lanes.some(lane => lane.id === id) ? old.lanes.map(lane => lane.id === id ? selected.lanes[0] : lane) : [...old.lanes, selected.lanes[0]];
   const assets = new Map(old.assets.map(asset => [asset.id, asset]));
   for (const asset of selected.assets) {
-    if (assets.has(asset.id) && canonicalStudioJson(assets.get(asset.id)) !== canonicalStudioJson(asset)) fail(409);
+    if (assets.has(asset.id) && canonicalStudioJson(assets.get(asset.id)) !== canonicalStudioJson(asset)) fail(409, 'studio_presentation_shared_layer_conflict');
     assets.set(asset.id, asset);
   }
   const used = new Set(lanes.flatMap(lane => ['background', 'table'].flatMap(role => lane.layers[role].allowed)));
@@ -82,18 +84,18 @@ function mergePresentation(current, selected) {
   if (old.schemaVersion === 1 && selected.schemaVersion === 1) return validatePresentationPackage({ schemaVersion: 1, ...base });
   const registry = new Map((old.registeredDealers ?? []).map(entry => [entry.id, entry]));
   const preservedIds = extraIds(old.lanes.filter(lane => lane.id !== id));
-  if (old.schemaVersion === 1 && preservedIds.size) fail(409);
+  if (old.schemaVersion === 1 && preservedIds.size) fail(409, 'studio_presentation_legacy_package_conflict');
   for (const entry of selected.registeredDealers ?? []) {
     if (preservedIds.has(entry.id) && registry.has(entry.id)
-      && canonicalStudioJson(registry.get(entry.id)) !== canonicalStudioJson(entry)) fail(409);
+      && canonicalStudioJson(registry.get(entry.id)) !== canonicalStudioJson(entry)) fail(409, 'studio_presentation_shared_dealer_conflict');
     registry.set(entry.id, entry);
   }
   const ids = extraIds(lanes);
-  if ([...ids].some(id => !registry.has(id))) fail(409);
+  if ([...ids].some(id => !registry.has(id))) fail(409, 'studio_presentation_legacy_package_conflict');
   const registeredDealers = [...registry.values()].filter(entry => ids.has(entry.id));
   let playback;
   try { playback = mergeFrozenDealerPlayback(old, selected, { registeredDealers, preservedDealerIds:[...preservedIds] }); }
-  catch { fail(409); }
+  catch (error) { fail(409, error?.code === 'studio_shared_dealer_playback_conflict' ? 'studio_presentation_shared_dealer_conflict' : 'studio_presentation_room_rejected'); }
   return validatePresentationPackage({ schemaVersion: playback ? 3 : 2, ...base, registeredDealers, ...(playback ? {playback} : {}) });
 }
 function assertReplayBinding(saved, room) {
@@ -181,14 +183,19 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const saved = await repository.transaction(() => repository.withTransactionClient(client => snapshot(client, url.searchParams.get('operatorId'), snapshotValue)));
     const id = url.searchParams.get('presentationLaneId');
     sourceProject(saved.project, id);
-    let selected = null, merged = null, packageReason = null, runtime = null;
+    let selected = null, merged = null, packageReason = null, conflictCode = null, runtime = null;
     try {
       selected = await capture(snapshotValue, id);
       merged = mergePresentation(saved.pack, selected.presentation);
       const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration);
-      assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged });
+      try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
+      catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
     } catch (error) {
-      if (error?.statusCode === 409) packageReason = 'presentation_package_conflict';
+      if (error?.statusCode === 409) {
+        packageReason = 'presentation_package_conflict';
+        // Expose fixed diagnostic categories only, never raw errors or snapshot data.
+        if (conflictCodes.has(error.code)) conflictCode = conflictCodes.get(error.code);
+      }
       else if (error?.statusCode === 413) packageReason = 'presentation_package_too_large';
       else if (error?.statusCode === 422) packageReason = 'presentation_lane_incompatible';
       else throw error;
@@ -199,7 +206,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const reason = packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
     return { ok: true, operator: { id: saved.operator.id, slug: saved.operator.slug, name: saved.operator.name }, presentationLaneId: id,
       projectRevision: saved.projectRevision, administrationRevision: saved.administrationRevision, packageRevision: saved.pack?.revision ?? null,
-      ready: reason === null, reason, capabilities: runtime,
+      ready: reason === null, reason, conflictCode, capabilities: runtime,
       rooms: saved.administration.rooms.filter(room => room.state === 'live' && room.presentationLaneId === id
         && resolvePackageRoom({ administration:saved.administration, package:saved.pack, operatorId:saved.operator.id, roomId:room.id }))
         .map(room => ({ id:room.id, name:room.name, playUrl:`/play/blackjack?operator=${saved.operator.slug}&table=${room.id}` })) };
