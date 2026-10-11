@@ -2,6 +2,7 @@
 
 import { Suspense, createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutLevel, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 import { isPartnerSurfacePath, resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
@@ -18,7 +19,10 @@ type ScoutGroup = { id: string; label: string; items: readonly ScoutLink[] };
 function ItemLink({ item, active, routeKey }: { item: ScoutLink; active: boolean; routeKey: string }) {
   const currentPath = routeKey.split('?')[0].replace(/^\/studio(?=\/)/, '');
   if (active && currentPath === item.href.split('?')[0]) return <span className={styles.itemActive} aria-current="page">{item.label}</span>;
-  return <a className={active ? styles.itemActive : styles.item} href={labUrl(item.href)} aria-current={active ? 'page' : undefined}>{item.label}</a>;
+  const params = new URLSearchParams(routeKey.split('?')[1] ?? '');
+  const href = item.href.startsWith('/control/') && !item.href.includes('?tab=companies')
+    ? studioNavigationHref(item.href, {dealerId:params.get('dealer') ?? undefined, laneId:params.get('lane') ?? undefined}) : labUrl(item.href);
+  return <a className={active ? styles.itemActive : styles.item} href={href} aria-current={active ? 'page' : undefined}>{item.label}</a>;
 }
 
 function NavigationGroup({ group, active, routeKey }: { group: ScoutGroup; active: ScoutLink | null; routeKey: string }) {

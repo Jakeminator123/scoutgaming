@@ -2,6 +2,16 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Studio: dealerhierarki och gemensamt lagerbibliotek
+
+12 oktober: dealerflikar Grundloop, Klipp, Scen & format, Tal & automatik och Inställningar samt gemensamma brödsmulor ersätter den splittrade navigeringen. Fackets inställningar visas direkt. Händelsevyn väljer exakta fack utan det äldre pilträdet. Talgranskning följer vald dealer och behåller exakta medieidentiteter/revisioner. Andra dealers får inte Astrids Probe eller kvarhängande chatsvar. Borttagning av sammansättning är synlig, med befintlig bekräftelse och oförändrade publicerade paket.
+
+Bord & bakgrunder har en egen sida på /control/library med två flikar, uppladdning, förhandsvisning, användning och borttagning/ångra. Uppladdning ändrar inga scenval; revisionskonflikter behåller utkast och samtidig fjärranvändning av en borttagen fil blockerar rebase. Dealerflikbyten bevarar utkast, röstformulär och uppladdningskö. Ej applicerade röstfält skyddas vid dealerbyte, historik och sidbyte; Ångra ändringar i talformuläret återställer formuläret. Referensknappen väljer första bildrutan i det verifierade grundklippet men kräver befintlig bildgranskning innan sparande.
+
+Verifiering: 64 dealerarbetsyteprov, 80 kontext-/event-/Probe-/talgranskningsprov, 19 biblioteksprov och 24 globala navigationsprov passerar; gemensam TypeScript och Next-produktionsbygge passerar. Nya regressioner ingår i ordinarie fullhook som leveransgrind. Lokal webbläsarkontroll använder isolerade testdata och avstängda externa tjänster, inklusive 390 px mobilvy utan horisontellt överflöde. Offline-adapterns befintliga /api/clip-controls-fel begränsar originalbanksprovet; uppladdning till molnbiblioteket och produktionsuppspelning verifieras inte i denna offline-session. Ingen DB-migration eller ändring av media, spelmotor eller publicerade paket.
+
+Kvar från önskad målbild: Probe är fortfarande Astrid-specifik. Geometri är sammansättningsägd, inte en ärvd dealerstandard; mobil/helskärm har separata formatinställningar. Automatisk referens vid uppladdning, fristående referensbild, dealerövergripande geometriskt arv och generell proaktiv AI-talpolicy kräver separat kompatibel runtime-/datamodellsutveckling och verklig uppspelningsacceptans. Ingen ny läppsynksacceptans görs av dessa UI-tester.
+
 ### JN2-C: team, behörigheter och beständig ändringsjournal
 
 Produktionsförberedelsen verifierades på både Vercel READY och Render LIVE med SHA `d72f392f8c91532c84252c6efdb524f471616c78`, grön GitHub CI samt fungerande N1-session till Johns bolag. Migration006 tillämpades därefter 12 oktober 00:14 svensk tid (11 oktober 22:14 UTC): checksumma `a8775d0329262194340fd6365da4b1d316459d894e6fd3b93106ecde7199b474`, kedja001–006 verifierad, inga väntande migrationer, journalen tom vid installation och noll affärsskrivningar. Slutkoden kräver därefter006; produktionsrevision och slutlig läskontroll redovisas i leveransrapporten.

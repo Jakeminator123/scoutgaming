@@ -179,11 +179,12 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
         </label>)}
       </div>
     </fieldset>
-    <p className={styles.idLine}>Presentationens tekniska ID <strong>{lane.id}</strong></p>
+    <p className={styles.idLine}>Presentationens tekniska ID <strong>{lane.id}</strong></p></details>
+    <section className={styles.card} aria-label="Hantera sammansättning"><h3>Hantera sammansättning</h3><p>Ta bort {lane.label} ur projektet. Dealerklipp, bord och bakgrunder behålls. Publicerade paket ändras separat i Publicering.</p>
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
-      <p>Ta bort presentation {lane.id}?</p>
-      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort presentation</button>
+      <p>Ta bort sammansättningen {lane.label}?</p>
+      <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort sammansättning</button>
       <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
-    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort presentation</button>}</details>
+    </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort sammansättning</button>}</section>
   </fieldset>;
 }

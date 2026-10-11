@@ -233,7 +233,7 @@ export function EventsPreview({
         />
         <div ref={speechHost} className={socialStyles.speechHost} />
       </div> : null}
-      <div ref={socialChat} className={socialStyles.chatAnchor}>
+      {dealerId === 'astrid' && <div ref={socialChat} className={socialStyles.chatAnchor}>
         <SocialChatPanel
           compact
           speechHost={speechHost}
@@ -248,9 +248,9 @@ export function EventsPreview({
           onReaction={social.onReaction}
           onGoToIdle={social.onGoToIdle}
         />
-      </div>
+      </div>}
       <div className={socialStyles.sceneReply} aria-live="polite" aria-atomic="true">
-        {socialReply ? <>
+        {dealerId === 'astrid' && socialReply ? <>
           <div>
             <span className="eyebrow">ASTRID · SOCIALT LABBSVAR</span>
             <p>{socialReply}</p>

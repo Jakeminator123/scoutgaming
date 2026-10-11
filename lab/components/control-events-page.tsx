@@ -10,6 +10,8 @@ import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible } from '../lib/studio-model.mjs';
 import type { DealerId, StudioAsset, StudioProject } from '../lib/studio-model.mjs';
 import { videoFitsLine, situationsForEvent } from '../lib/video-intake.mjs';
+import { StudioNavigation } from './studio-navigation';
+import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { EventsCatalog } from './events-catalog';
 import { EventsInspector, eventsEditorTab, type EventsEditorTab } from './events-inspector';
 import { describeSocialActivity, EventsIdleNotice, EventsPreview, readableLogReason } from './events-preview';
@@ -17,7 +19,7 @@ import { PageTemplate } from './page-template.mjs';
 import { ProjectConflict } from './project-conflict';
 import type { SocialActivity, SocialDraftCache } from './social-chat-panel';
 import type { PlaybackReceipt } from './stage';
-import { StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
+import { StudioMessages, useStudioSession } from './studio-session';
 import { neutralContext } from './test-context';
 import { previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext, type VideoInventory } from './studio-types';
 
@@ -259,13 +261,14 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
   return <PageTemplate
     eyebrow="// STUDIO"
     title="Klippval & villkor"
-    intro={<><a href={overviewHref}>Alla spelhändelser</a><span> · </span><StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} /></>}
+    intro={`Klipp, varianter och villkor för ${dealer.label}.`}
     primary={<>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={exportProject}>Exportera projekt</button>
       <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>
     </>}
   >
     <div className="sg-page-body">
+    <StudioNavigation dealerId={dealerId} dealerLabel={dealer.label} active={event.id === 'idle.ready' ? 'idle' : 'clips'} eventId={event.id} variantId={variant.id} situation={exampleSituation || undefined} crumbs={[{label: exampleSituation ? clipSituationLabel(event.id, exampleSituation) : event.label}, {label: editorTab === 'triggers' ? 'Villkor' : editorTab === 'variants' ? 'Varianter' : 'Klipp'}]} />
     <a className="skip-link" href="#workspace">Hoppa till arbetsytan</a>
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
@@ -278,7 +281,7 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
       <a className="text-button" href={videoHref}>Granska i Videobanken →</a>
     </div> : null}
     <div className="workspace view-lab" id="workspace">
-      <EventsCatalog project={project} videos={videos} dealerId={dealerId} eventId={event.id} familyId={media.family?.id} managed={managed} filter={filter} onFilter={setFilter} onSelectDealer={selectDealer} onSelectEvent={openEvent} />
+      <EventsCatalog project={project} videos={videos} dealerId={dealerId} eventId={event.id} situation={exampleSituation || undefined} familyId={media.family?.id} managed={managed} filter={filter} onFilter={setFilter} onSelectDealer={selectDealer} onSelectEvent={openEvent} />
       {isIdleEditor ? <EventsIdleNotice refreshing={refreshingVideos} onRefresh={() => void refreshVideos()} /> : null}
       <div className="editor-layout">
         <EventsPreview

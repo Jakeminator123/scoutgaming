@@ -94,7 +94,7 @@ function loadComponent(file, overrides = {}, browser) {
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const localRequire = createRequire(url), module = { exports: {} };
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams, window: browser,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, URL, URLSearchParams, window: browser,
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };

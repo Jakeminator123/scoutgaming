@@ -15,6 +15,14 @@ import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
+const navigationSource = readFileSync(new URL('./studio-navigation.tsx', import.meta.url), 'utf8');
+const navigationModule = { exports: {} };
+vm.runInNewContext(transformSync(navigationSource, {
+  filename: 'studio-navigation.tsx',
+  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
+  module: { type: 'commonjs' },
+}).code, { module: navigationModule, exports: navigationModule.exports,
+  require: name => name.endsWith('.module.css') ? { __esModule: true, default: {} } : require(name) });
 const source = readFileSync(new URL('./studio-administration.tsx', import.meta.url), 'utf8');
 const compiled = transformSync(source, {
   filename: 'studio-administration.tsx',
@@ -73,7 +81,7 @@ function harness() {
     crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
-    require: name => name === 'react' ? fakeReact
+    require: name => name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -1037,4 +1045,50 @@ test('successful technical creation resets only its own form after authoritative
   await flush();tree=h.render(props);
   assert.equal(writes,1);assert.equal(own.resets,1);assert.equal(other.resets,0);
   assert.match(renderToStaticMarkup(tree),/Osparade formulärfält/);h.unmount();
+});
+
+test('selected dealer speech review renders and submits only that dealers exact media pair', () => {
+  const h = harness(), data = resources(), calls = [];
+  data.voicelines.payload.dealers.push({ dealer: 'paow', name: 'PAOW', lines: [
+    { key: 'paow.greeting', text: 'PAOW greeting only', review: null, reviewable: true, identity: 'paow-exact-pair-v2', preview: '/dealer/preview/paow.mp4' },
+  ] });
+  const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId: 'paow', resources: data, command: (action, body) => calls.push({ action, body }) });
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /PAOW greeting only/);
+  assert.doesNotMatch(html, /Astrid|Lycka till|exact-pair-fixture|goodluck/);
+  const forms = nodes(tree, node => node.type === 'form');
+  assert.equal(forms.length, 1);
+  forms[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ action: 'voiceline-review', body: {
+    dealer: 'paow', line: 'paow.greeting', verdict: 'approved', expectedIdentity: 'paow-exact-pair-v2', expectedRevision: 'studio-v1',
+  } }]);
+});
+
+test('a dealer without registered speech never falls back to another dealers review actions', () => {
+  const h = harness();
+  for (const dealerId of ['paow', 'missing-dealer']) {
+    const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId });
+    const html = renderToStaticMarkup(tree);
+    assert.match(html, /Inga registrerade talpar finns för vald dealer/);
+    assert.doesNotMatch(html, /Astrid|Lycka till|<video|<audio|<form|Spara manuell granskning/);
+  }
+});
+
+test('changed media review remains invalidated and unavailable media cannot be approved', () => {
+  const h = harness(), data = resources();
+  const line = data.voicelines.payload.dealers[0].lines[0];
+  line.reviewState = 'unbound-or-changed-media'; line.review = null; line.reviewable = false; line.identity = null;
+  const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), dealerId: 'astrid', resources: data }));
+  assert.match(html, /Tidigare bedömning gäller inte för nuvarande mediepar/);
+  assert.match(html, /ej granskad/);
+  assert.doesNotMatch(html, /<form|Spara manuell granskning|>Godkänd</);
+});
+
+test('speech review navigation starts with the route-selected dealer', () => {
+  const h = harness();
+  const html = renderToStaticMarkup(h.render({ initialGroup: 'media-review', initialDealerId: 'paow', availableActions: allActions, session: async () => actor('admin') }));
+  assert.match(html, /Studio för paow/);
+  assert.match(html, /dealer=paow/);
+  assert.doesNotMatch(html, /dealer=astrid/);
+  h.unmount();
 });

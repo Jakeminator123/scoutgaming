@@ -6,6 +6,7 @@ import {clipLabel} from '../lib/clip-label.mjs';
 import {defaultPresentationLane,validateProject,type StudioProject,type StudioLane} from '../lib/studio-model.mjs';
 import {registerCompositionLayer} from '../lib/studio-composition.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {StudioNavigation} from './studio-navigation';
 import {PageTemplate} from './page-template.mjs';
 import {useStudioSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
@@ -46,6 +47,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const lanes=project.lanes?.length?project.lanes:[defaultPresentationLane()];
   const lane=lanes.find(row=>row.id===laneId)??lanes[0];
   const contentDealer=project.dealers.find(row=>row.id===initialDealerId);
+  const navigationDealer=contentDealer??project.dealers.find(row=>row.id===lane.layers.dealer.default);
   const clips=videos.videos.filter(video=>video.available&&(video.dealer===lane.layers.dealer.default||video.classification?.dealerId===lane.layers.dealer.default));
   const idleFamily=videos.families?.find(row=>row.dealerId===lane.layers.dealer.default&&row.playbackType==='idle-pool');
   const idleIds=idleFamily&&project.idlePolicy?.familyId===idleFamily.id?project.idlePolicy.base.map(row=>row.videoId):idleFamily?.standardIds??[];
@@ -155,6 +157,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   return <PageTemplate eyebrow="// STUDIO" title="Sammansättning"
     primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict} href={publicationHref} onClick={event=>{event.preventDefault();void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
     <div className="sg-page-body">
+      <StudioNavigation dealerId={navigationDealer?.id??lane.layers.dealer.default} dealerLabel={navigationDealer?.label} active="scene" laneId={lane.id} crumbs={[{label:lane.label}]} onNavigate={(event,href)=>{event.preventDefault();void continueTo(href);}} />
       {previewError?<p role="alert">{previewError}</p>:null}
       {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}

@@ -20,7 +20,7 @@ const { transformSync } = require('next/dist/build/swc');
 test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
   assert.deepEqual(groups.map(group => group.label), ['Studio', 'Drift', 'AI & chatt', 'Administration']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/clips', 'Dealers & klipp'], ['/control/administration?tab=media-review', 'Talgranskning'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/library', 'Bord & bakgrunder'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
     [['/control/administration?tab=tables', 'Spelmotor & rum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
     [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Interna konton & spelare'], ['/control/administration?tab=partners', 'API & integrationer']],
@@ -63,7 +63,7 @@ test('active item resolves public and native paths with content aliases and the 
       ['/control/administration', 'Spelintegritet'], ['/control/zones', 'Sammansättning'],
       ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Dealers & klipp'],
       ['/control/administration?tab=not-a-group', 'Spelintegritet'],
-      ['/control/administration?tab=media-review', 'Talgranskning'],
+      ['/control/administration?tab=media-review', 'Dealers & klipp'],
     ]) {
       assert.equal(scoutNavigationItem(path, base)?.label, label, path);
       assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
@@ -82,7 +82,7 @@ function loadNavigation(pathname, search = '', hooks = React) {
   const output = transformSync(readFileSync(url, 'utf8'), { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const localRequire = createRequire(url), module = { exports: {} };
   vm.runInNewContext(`${output.code}\nmodule.exports.NavigationGroup = NavigationGroup; module.exports.MobileNavigation = MobileNavigation; module.exports.ItemLink = ItemLink;`, {
-    module, exports: module.exports, structuredClone,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams,
     require: name => {
       if (name === 'react') return hooks;
       if (name === 'next/navigation') return { usePathname: () => pathname, useSearchParams: () => new URLSearchParams(search) };
@@ -257,7 +257,7 @@ test('current document does not reload a draft and contextual tools still link b
   }
   const contextual = ItemLink({ item: content, active: true, routeKey: '/control/events?dealer=astrid' });
   assert.equal(contextual.type, 'a');
-  assert.equal(contextual.props.href, labUrl('/control/clips'));
+  assert.equal(contextual.props.href, labUrl('/control/clips?dealer=astrid'));
   assert.equal(contextual.props.onClick, undefined);
 });
 

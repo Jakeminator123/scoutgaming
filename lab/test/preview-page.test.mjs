@@ -554,3 +554,20 @@ test('preview errors stay in the composer and an explicit new click can retry',a
   assert.equal(previewButton(h,tree).props.disabled,false);assert.equal(h.saves(),0);
   previewButton(h,tree).props.onClick();await new Promise(setImmediate);assert.equal(calls,2);
 });
+
+test('scene navigation preserves an explicitly requested dealer even when the selected scene uses a different dealer',()=>{
+  const project=createSeedProject();project.lanes=[project.lanes[0]];
+  project.lanes[0].layers.dealer.default='astrid';project.lanes[0].layers.dealer.allowed=['astrid'];
+  const before=structuredClone(project);
+  const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
+  const render=initialDealerId=>renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId}));
+  const html=render('vera');
+  assert.match(html,/Du valde Vera i dealerbiblioteket/);assert.match(html,/Använd Vera som startdealer/);
+  const nav=html.match(/<nav aria-label="Studio för Vera"[^>]*>([\s\S]*?)<\/nav>/)?.[1];assert.ok(nav);
+  const links=[...nav.matchAll(/href="([^"]+)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
+  assert.equal(links.length,5);
+  for(const link of links){assert.equal(link.searchParams.get('dealer'),'vera');assert.equal(link.searchParams.get('lane'),project.lanes[0].id);}
+  assert.deepEqual(project,before);
+  assert.match(render(undefined),/aria-label="Studio för Astrid"/);
+  assert.match(render('unknown-dealer'),/aria-label="Studio för Astrid"/);
+});

@@ -22,5 +22,5 @@ export default async function Page(props: { searchParams?: Promise<Record<string
   }
   const query = props?.searchParams ? await props.searchParams : {};
   const tab = Array.isArray(query.tab) ? query.tab[0] : query.tab;
-  return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} initialGroup={tab} />;
+  return <NativeAdministration apiBase={native.config.apiBase} gameOrigin={native.config.allowedOrigins[0]} availableActions={native.api.availableActions(session)} initialGroup={tab} initialDealerId={Array.isArray(query.dealer) ? query.dealer[0] : query.dealer} />;
 }

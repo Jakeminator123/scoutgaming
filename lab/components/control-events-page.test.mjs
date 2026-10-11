@@ -47,7 +47,9 @@ test('events page drops the inner menu, game switch and chat shortcuts', () => {
   const html = render();
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar|Roulette/);
   assert.match(html, /<h1>Klippval &amp; villkor<\/h1>/);
-  assert.match(html, /href="\/control\/events\?dealer=astrid">Alla spelhändelser/);
+  assert.match(html, /aria-label="Brödsmulor i Studio"/);
+  assert.match(html, /aria-label="Studio för Astrid"/);
+  assert.match(html, /href="\/control\/clips\?view=clips&amp;dealer=astrid&amp;event=speak\.goodluck&amp;variant=astrid\.speak\.goodluck\.standard"/);
   assert.match(html, /aria-label="Välj dealer"/);
   assert.match(html, /class="sg-chip"/);
   assert.match(html, /aria-label="Sök event"/);
@@ -99,4 +101,22 @@ test('own dealer event bindings explain save and republish and expose explicit c
   assert.match(html,/Spara och publicera paketet igen/);
   assert.doesNotMatch(html,/Varianter för Johanna sparas i projektet men används inte/);
   assert.match(html,/role="tab"[^>]*>Villkor/);
+});
+
+test('clip slot menu keeps the exact seat or dealer card when selecting an action', () => {
+  const { EventsCatalog } = loadTs(new URL('./events-catalog.tsx', import.meta.url));
+  const calls = [];
+  const tree = EventsCatalog({ project, videos: { videos: [] }, dealerId: 'astrid', eventId: 'deal.player.right', situation: 'box6', managed: false, filter: '', onFilter() {}, onSelectDealer() {}, onSelectEvent: (...args) => calls.push(args) });
+  const flatten = node => Array.isArray(node) ? node.flatMap(flatten) : !node || typeof node !== 'object' ? [] : [node, ...flatten(node.props?.children)];
+  const select = flatten(tree).find(node => node.type === 'select' && node.props['aria-label'] === 'Välj klippfack');
+  assert.ok(select);
+  assert.equal(select.props.value, 'deal.player.right|box6');
+  const options = flatten(select).filter(node => node.type === 'option');
+  assert.equal(options.find(node => node.props.value === 'deal.player.right|box6')?.props.children, 'Spelarplats 7');
+  assert.equal(options.find(node => node.props.value === 'deal.dealer|dealer-hole')?.props.children, 'Dealer · dolt kort');
+  for (const value of ['deal.player.right|box6', 'deal.dealer|dealer-hole', 'reveal.dealer|dealer-hole']) select.props.onChange({ target: { value } });
+  assert.deepEqual(calls, [['deal.player.right', 'box6'], ['deal.dealer', 'dealer-hole'], ['reveal.dealer', 'dealer-hole']]);
+  const html = renderToStaticMarkup(tree);
+  assert.doesNotMatch(html, /event-tree|role="tree"|Eventträd/);
+  assert.match(html, /Ett klippfack per situation/);
 });
