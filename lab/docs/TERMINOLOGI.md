@@ -1,6 +1,6 @@
 # Terminologi
 
-Aktiv ordlista, samordnad med lokal Studio-kod 10 oktober 2026. Namnen gäller
+Aktiv ordlista, samordnad med lokal Studio-kod 11 oktober 2026. Namnen gäller
 dokumentation och nya gränssnitt; produktionsstatus finns i
 [handoffen](../../docs/JOHN-HANDOFF.md) och handhavande i [guiden](README.md).
 
@@ -15,6 +15,12 @@ dokumentation och nya gränssnitt; produktionsstatus finns i
 
 Servern kontrollerar identitet, rättighet, medlemskap och resursägarskap.
 Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt basePath.
+
+## Bolagets administrationsflöde
+
+**Bolag & team** samlar bolagsval, medlemmar och deras roller. **Spelrum & publicering** är samma bolags spelutbud. Det valda bolaget följer länken mellan vyerna. **Interna konton & spelare** är separat från bolagets medlemskap, och **API & integrationer** hanterar tekniska nycklar.
+
+Ett nytt **spelrum** skapas och publicerar sin presentation i ett steg. **Uppdatera publicerade presentationer** används för bolagets befintliga utbud. **Bord** i Sammansättning betyder bildlagret, medan **Spelmotor & rum** innehåller tekniska driftinställningar. Dessa är inte ytterligare acceptanssteg för att skapa ett vanligt spelrum.
 
 ## Begrepp
 

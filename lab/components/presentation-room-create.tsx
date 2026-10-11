@@ -73,14 +73,14 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
 
   const rooms = current && enabled ? state.preflight?.rooms : undefined;
   return <section className={styles.card} aria-label="Spelrum">
-    <h2>Spelrum</h2>
+    <div className={styles.heading}><div><span className={styles.eyebrow}>SPELARENS INGÅNG</span><h2>Spelrum</h2></div>{rooms ? <span className={styles.count}>{rooms.length} befintliga rum</span> : null}</div>
     {operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
-    <p>Ett spelrum är spelarens ingång till bolagets publicerade paket. Bord är bildlagret i scenen. Återanvänd rummet när du ändrar presentationens lager eller klipp.</p>
+    <p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>
     {operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
       : rooms && !receipt ? <p>Inget publicerat spelrum för den här presentationen ännu.</p> : null}
-    <details><summary>Skapa nytt spelrum</summary>
-    <p>Skapar ett nytt rum och publicerar vald presentation i bolagets paket.</p>
+    <details className={styles.create} open={rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
+    <p>Ange ett namn. Presentationen publiceras och kopplas till rummet i samma steg.</p>
     <form className={styles.form} onSubmit={submit}>
       <label className={styles.field}>Rumsnamn
         <input type="text" value={current ? state.name : ''} maxLength={100} required

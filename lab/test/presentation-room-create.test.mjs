@@ -302,7 +302,7 @@ test('room list opens the existing room before creating and hides stale links on
   assert.equal(find(tree,'a').props.href,'/play?operator=sg-test');
   assert.ok(html.includes(room.playUrl.replaceAll('&','&amp;')));
   assert.match(html,/Öppna bolagets spellobby/);
-  assert.match(html,/<details><summary>Skapa nytt spelrum<\/summary>/);
+  assert.match(html,/<details[^>]*><summary>Skapa nytt spelrum<\/summary>/);
   assert.equal(h.requests.length,1,'viewing existing rooms performs no create request');
   const other={...context,operator:{id:'other',slug:'other',name:'Annat bolag'}};
   tree=ui.render(other);assert.equal(find(tree,'a'),null);

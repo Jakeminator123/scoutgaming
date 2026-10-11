@@ -182,7 +182,7 @@ test('native group headers use seven fresh admin GETs and no sessions while lega
     const h = harness(), f = nativeReadFixture(), props = { ...f.props, readIdentity };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
     f.state.reads = 0; f.state.sessions = 0;
-    for (const menu of ['Spel, lanes & bord', 'Konton', 'Partnernycklar', 'Talgranskning']) {
+    for (const menu of ['Spelmotor & rum', 'Interna konton & spelare', 'API & integrationer', 'Talgranskning']) {
       buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
       const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
       assert.ok(view && Object.values(view.props.resources).every(resource => resource.payload), menu);
@@ -434,9 +434,9 @@ test('menu changes fetch only displayed resources and keep a live identity check
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   for (const [group, menu, reads] of [
     ['operations', 'Drift & spelintegritet', ['overview', 'shoes']],
-    ['tables', 'Spel, lanes & bord', ['config']],
-    ['accounts', 'Konton', ['players', 'users']],
-    ['partners', 'Partnernycklar', ['apikeys', 'emails']],
+    ['tables', 'Spelmotor & rum', ['config']],
+    ['accounts', 'Interna konton & spelare', ['players', 'users']],
+    ['partners', 'API & integrationer', ['apikeys', 'emails']],
     ['finance', 'Betalningar & journal', ['transactions']],
     ['media-review', 'Talgranskning', ['config', 'voicelines']],
   ]) {
@@ -538,7 +538,7 @@ test('one-time credential display clears on explicit reload/group change and nev
   const props = {apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
     init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree,'Partnernycklar')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree,'API & integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   let native = nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
   native.props.command('apikeys/create',{name:'Example'}); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
@@ -548,7 +548,7 @@ test('one-time credential display clears on explicit reload/group change and nev
   assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret));
   nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('apikeys/create',{name:'Example'}); await flush(); tree=h.render(props);
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
-  buttons(tree,'Konton')[0].props.onClick(); tree=h.render(props);
+  buttons(tree,'Interna konton & spelare')[0].props.onClick(); tree=h.render(props);
   assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret)); h.unmount();
 });
 
@@ -758,12 +758,12 @@ test('unmount aborts read transaction before fetch; no background mutation or la
 test('draft guard survives reload/conflict, protects native unload and cancelled local group change', async () => {
   const h = harness(); const props = { apiBase: '/api/admin', availableActions: allActions, session: async () => actor('superadmin'), fetchImpl: async (url, init) => init.method === 'POST' ? reply({ error: 'conflict' }, 409) : reply(url.endsWith('/config') ? config() : resources().overview.payload) };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const nativeView = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const firstForm = new Form({ state: 'live' }); nativeView().props.onDirty(firstForm);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   h.window.confirm = () => false;
-  buttons(tree, 'Konton')[0].props.onClick(); tree = h.render(props);
+  buttons(tree, 'Interna konton & spelare')[0].props.onClick(); tree = h.render(props);
   assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.group, 'tables');
   nativeView().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, firstForm); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /Uppgifterna har ändrats|Osparade formulärfält/); assert.equal(firstForm.resets, 0);
@@ -785,12 +785,12 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
       response.json = () => { bodies++; return json(); }; entry.resolve(response);
     };
     h.render(props); h.effects(); await flush(); let tree = h.render(props); holding = true;
-    buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     assert.equal(pending.length, 1); assert.equal(tree.props['aria-busy'], true);
-    assert.equal(buttons(tree, 'Konton')[0].props.disabled, false);
-    buttons(tree, 'Konton')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
+    assert.equal(buttons(tree, 'Interna konton & spelare')[0].props.disabled, false);
+    buttons(tree, 'Interna konton & spelare')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
     h.render(props); h.effects(); await flush(); tree = h.render(props); assert.equal(pending.length, 3);
-    buttons(tree, 'Partnernycklar')[0].props.onClick();
+    buttons(tree, 'API & integrationer')[0].props.onClick();
     assert.ok(pending.slice(1).every(entry => entry.signal.aborted));
     // Resolve stale reads in the click-to-effect window. These fetches ignore
     // cancellation and include both successful data and an authorization error.
@@ -817,18 +817,18 @@ test('cancelled group change during a GET preserves its read, draft, unload guar
       return nativeReply(resources()[url.split('/').at(-1)].payload);
     } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ state: 'live' });
   const oldKey = view().key; view().props.onDirty(draft); tree = h.render(props); holding = true;
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  h.window.confirm = () => false; buttons(tree, 'Konton')[0].props.onClick(); tree = h.render(props);
+  h.window.confirm = () => false; buttons(tree, 'Interna konton & spelare')[0].props.onClick(); tree = h.render(props);
   assert.equal(signal.aborted, false); assert.equal(view().props.group, 'tables'); assert.equal(view().key, oldKey);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   holding = false; waiting.resolve(nativeReply({ ...config(), revision: 'studio-v2' })); await flush(); tree = h.render(props);
   assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
   view().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v2' }, draft); await flush(); tree = h.render(props);
   assert.equal(writes[0].expectedRevision, 'studio-v1'); assert.equal(draft.resets, 0);
-  h.window.confirm = () => true; buttons(tree, 'Konton')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  h.window.confirm = () => true; buttons(tree, 'Interna konton & spelare')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   assert.equal(view().props.group, 'accounts'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
   prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, false); h.unmount();
 });
@@ -845,17 +845,17 @@ test('POST and its reload block navigation and double writes; one-time results r
         const waiting = deferred(); pending.push({ action, ...waiting }); return waiting.promise;
       } };
     h.render(props); h.effects(); await flush(); let tree = h.render(props);
-    buttons(tree, 'Partnernycklar')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+    buttons(tree, 'API & integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
     view().props.command('apikeys/create', { name: 'Fixture partner' });
     const duplicate = { name: 'Duplicate', password: 'discarded-fixture-password' }; view().props.command('apikeys/create', duplicate);
     await flush(); tree = h.render(props); assert.equal(writes, 1); assert.equal(Object.hasOwn(duplicate, 'password'), false);
-    assert.equal(buttons(tree, 'Konton')[0].props.disabled, true); buttons(tree, 'Konton')[0].props.onClick();
+    assert.equal(buttons(tree, 'Interna konton & spelare')[0].props.disabled, true); buttons(tree, 'Interna konton & spelare')[0].props.onClick();
     tree = h.render(props); assert.equal(view().props.group, 'partners');
     let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
     posting.resolve(reply({ ok: true, key: { id: 'partner-one', key, secret } })); await flush(); tree = h.render(props);
-    assert.equal(pending.length, 2); assert.equal(tree.props['aria-busy'], true); assert.equal(buttons(tree, 'Konton')[0].props.disabled, true);
-    buttons(tree, 'Konton')[0].props.onClick(); tree = h.render(props); assert.equal(view().props.group, 'partners');
+    assert.equal(pending.length, 2); assert.equal(tree.props['aria-busy'], true); assert.equal(buttons(tree, 'Interna konton & spelare')[0].props.disabled, true);
+    buttons(tree, 'Interna konton & spelare')[0].props.onClick(); tree = h.render(props); assert.equal(view().props.group, 'partners');
     for (const [index, entry] of pending.entries()) {
       const username = mode === 'same' || mode === 'mismatched' && index === 0 ? actor('admin').username : 'other@example.test';
       const response = nativeReply(resources()[entry.action].payload, 200, { username, role: 'admin' }), json = response.json.bind(response);
@@ -866,7 +866,7 @@ test('POST and its reload block navigation and double writes; one-time results r
     if (mode === 'same') { assert.match(html, new RegExp(secret)); assert.equal(bodies, 2); }
     else assert.doesNotMatch(html, new RegExp(secret));
     if (mode === 'mismatched') { assert.equal(bodies, 0); assert.doesNotMatch(html, /Backoffice-grupper/); }
-    else { assert.equal(buttons(tree, 'Konton')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
+    else { assert.equal(buttons(tree, 'Interna konton & spelare')[0].props.disabled, false); assert.equal(view().props.actor.username, mode === 'same' ? actor('admin').username : 'other@example.test'); }
     h.unmount();
   }
 });
@@ -878,7 +878,7 @@ test('saving one form preserves other drafts; double command cannot send two wri
     return reply(url.endsWith('/config') ? config() : url.endsWith('/players') ? resources().players.payload : url.endsWith('/users') ? resources().users.payload : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Konton')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Interna konton & spelare')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const saved = new Form({ username: 'test-one' }), other = new Form({ reason: 'Unsaved draft' });
   native.props.onDirty(saved); native.props.onDirty(other);
@@ -897,7 +897,7 @@ test('reload cannot silently rebase an edited config form; only confirmed discar
     return reply(url.endsWith('/config') ? { ...config(), revision } : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0];
   const draft = new Form({ state: 'live' }); native().props.onDirty(draft); tree = h.render(props);
   const oldKey = native().key;
@@ -919,7 +919,7 @@ test('acknowledged write plus unavailable reload is not advertised as fully refr
     return reply(url.endsWith('/config') ? config() : resources().overview.payload);
   } };
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
-  buttons(tree, 'Spel, lanes & bord')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
   const native = nodes(tree, node => node.type === h.StudioAdministrationView)[0]; const form = new Form({ state: 'live' });
   native.props.onDirty(form); native.props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, form);
   await flush(); tree = h.render(props); const html = renderToStaticMarkup(tree);
@@ -960,7 +960,7 @@ test('password command is single dispatch, never stores the password and does no
     const key=url.slice(url.lastIndexOf('/')+1);return reply(resources()[key]?.payload||resources().overview.payload);
   }};
   h.render(props);h.effects();await flush();let tree=h.render(props);
-  buttons(tree,'Konton')[0].props.onClick();h.render(props);h.effects();await flush();tree=h.render(props);
+  buttons(tree,'Interna konton & spelare')[0].props.onClick();h.render(props);h.effects();await flush();tree=h.render(props);
   const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0],body={playerId:'player-active',password:'fixture-new-password',reason:'Operator reset'};
   view.props.command('players/password',body,new Form({}));view.props.command('players/password',{...body},new Form({}));
   await flush();assert.equal(writes,1);assert.equal(submitted.password,'fixture-new-password');

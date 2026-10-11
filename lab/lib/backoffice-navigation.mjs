@@ -16,9 +16,9 @@ export const BACKOFFICE_SECTIONS = Object.freeze([
 // compatibility contracts until its independent migration is complete.
 export const BACKOFFICE_GROUPS = Object.freeze([
   { id: 'operations', label: 'Drift & spelintegritet', sections: ['ops', 'shoes'] },
-  { id: 'tables', label: 'Spel, lanes & bord', sections: ['lanes', 'rooms', 'dealers'] },
-  { id: 'accounts', label: 'Konton', sections: ['players', 'users'] },
-  { id: 'partners', label: 'Partnernycklar', sections: ['apikeys', 'emails'] },
+  { id: 'tables', label: 'Spelmotor & rum', sections: ['lanes', 'rooms', 'dealers'] },
+  { id: 'accounts', label: 'Interna konton & spelare', sections: ['players', 'users'] },
+  { id: 'partners', label: 'API & integrationer', sections: ['apikeys', 'emails'] },
   { id: 'finance', label: 'Betalningar & journal', sections: ['pay'] },
   { id: 'media-review', label: 'Talgranskning', sections: ['voice'] },
 ].map(group => Object.freeze({ ...group, sections: Object.freeze(group.sections) })));

@@ -13,15 +13,16 @@ import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-function loadTs(fileUrl) {
+function loadTs(fileUrl, overrides = {}) {
   const source = readFileSync(fileUrl, 'utf8');
   const output = transformSync(source, { filename: fileURLToPath(fileUrl), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
   const localRequire = createRequire(fileUrl);
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, fetch: overrides.fetch ?? globalThis.fetch,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -29,7 +30,7 @@ function loadTs(fileUrl) {
           const path = fileURLToPath(candidate);
           if (!existsSync(path)) continue;
           if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) return localRequire(path);
-          return loadTs(pathToFileURL(path));
+          return loadTs(pathToFileURL(path), overrides);
         }
       }
       return localRequire(name);
@@ -68,29 +69,26 @@ function page(extra) {
 }
 const buttons = html => [...html.matchAll(/<button class="([^"]+)"[^>]*>([^<]+)<\/button>/g)].map(match => [match[2], match[1]]);
 
-test('the Bolag card lists companies, members and roles with secondary buttons only', () => {
-  const html = page({ directory });
-  assert.equal((html.match(/sg-btn-primary/g)?.length ?? 0), 0);
-  assert.match(html, /<h2 id="operator-directory">Bolag<\/h2>/);
-  assert.match(html, /E-post/);
-  assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
-  assert.match(html, /Skapa saknade standardroller/);
-  for (const label of ['Nordic Bet', 'nordic-bet', 'north-admin', 'konto 43', 'revision 2', 'revision 5', 'aktiv', 'avstängd', 'Amber House', 'Inga medlemmar ännu.']) {
-    assert.match(html, new RegExp(label), label);
-  }
-  assert.match(html, /Standardroller saknas: partner-editor, partner-viewer\./);
-  const shown = buttons(html).filter(([label]) => ['Skapa bolag', 'Lägg till medlem', 'Spara roll', 'Stäng av', 'Återaktivera', 'Skapa saknade standardroller'].includes(label));
-  assert.deepEqual(shown.map(([label]) => label), ['Skapa bolag', 'Spara roll', 'Stäng av', 'Spara roll', 'Återaktivera', 'Lägg till medlem', 'Skapa saknade standardroller', 'Lägg till medlem']);
-  for (const [label, className] of shown) assert.match(className, /^sg-btn sg-btn-(secondary|ghost)$/, label);
-  // The first member of an empty company defaults to the administrator role.
-  assert.match(html, /aria-label="Lägg till medlem i Amber House"[\s\S]*?<option value="partner-admin" selected="">/);
-  assert.match(html, /aria-label="Lägg till medlem i Nordic Bet"[\s\S]*?<option value="partner-viewer" selected="">/);
-  assert.equal(html.includes('@'), false);
+test('companies show a searchable overview and only the selected company membership editor', () => {
+  const overview = page({ directory });
+  assert.match(overview, /type="search"/);
+  assert.match(overview, /Nordic Bet/); assert.match(overview, /Amber House/);
+  assert.doesNotMatch(overview, /north-admin|Roll för/);
+  const selected = renderToStaticMarkup(React.createElement(ControlOperatorDirectory, { directory, selectedOperatorId: 'nordic-bet' }));
+  for (const value of ['north-admin', 'konto 43', 'aktiv', 'avstängd', 'E-post eller användarnamn', 'Administratör', 'Redaktör', 'Läsare']) assert.ok(selected.includes(value), value);
+  assert.doesNotMatch(selected, /revision 2|revision 5|team.roles.assign/);
+  assert.match(selected, /operator=nordic-bet/);
+  assert.match(selected, /partner-viewer" selected=""/);
+  assert.doesNotMatch(selected, /Spara roll/);
+  const empty = renderToStaticMarkup(React.createElement(ControlOperatorDirectory, { directory, selectedOperatorId: 'amber-house' }));
+  assert.match(empty, /Teamet är tomt/);
+  assert.match(empty, /partner-admin" selected=""/);
+  assert.match(empty, /Skapa saknade standardroller/);
 });
 
 test('without a store the card says so, and without the prop the page renders as before', () => {
   const offline = page({ directory: null, storeAvailable: false });
-  assert.match(offline, /Bolag, roller och medlemskap kräver en skrivbar Neon-pool/);
+  assert.match(offline, /Bolag och team kunde inte hämtas/);
   assert.equal(offline.includes('Skapa bolag'), false);
   assert.equal((offline.match(/sg-btn-primary/g)?.length ?? 0), 0);
   assert.equal(page({}).includes('operator-directory'), false);
@@ -113,4 +111,51 @@ test('failures name the cause the admin API status allows, without guessing betw
   const pageSource = readFileSync(new URL('../app/control/lanes/page.tsx', import.meta.url), 'utf8');
   assert.match(pageSource, /directory=\{directory\}/);
   assert.match(pageSource, /listOperatorDirectory/);
+});
+
+test('human input suggests an editable address and selects exactly one membership identity', () => {
+  const { suggestOperatorSlug, operatorMemberInput } = loadTs(new URL('../components/control-operator-directory.tsx', import.meta.url));
+  assert.equal(suggestOperatorSlug('  Åland & Öresund Casino  '), 'aland-oresund-casino');
+  assert.ok(suggestOperatorSlug('a'.repeat(100)).length <= 63);
+  const plain = value => JSON.parse(JSON.stringify(value));
+  assert.deepEqual(plain(operatorMemberInput(' person@example.test ')), { email: 'person@example.test', status: 'invited' });
+  assert.deepEqual(plain(operatorMemberInput(' north-admin ')), { username: 'north-admin', status: 'active' });
+});
+
+function directoryHarness() {
+  const slots = [], requests = []; let cursor = 0;
+  const fakeReact = { ...React,
+    useState(initial) { const i=cursor++; if (!(i in slots)) slots[i]=typeof initial==='function'?initial():initial; return [slots[i], value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}]; },
+    useRef(value) { return slots[cursor++] ??= {current:value}; },
+  };
+  const { ControlOperatorDirectory: View }=loadTs(new URL('../components/control-operator-directory.tsx',import.meta.url),{
+    react:fakeReact, fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve})),
+  });
+  const render=()=>{cursor=0;return View({directory});};
+  function all(node,predicate) { if(!node||typeof node!=='object') return [];return [...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))]; }
+  const nodes=predicate=>all(render(),predicate);
+  return { requests, render, nodes, html:()=>renderToStaticMarkup(render()),
+    select:name=>nodes(node=>node.type==='button' && node.props.className==='company').find(node=>renderToStaticMarkup(node).includes(name)).props.onClick(),
+    input:()=>nodes(node=>node.type==='input'&&node.props.placeholder==='namn@bolag.se')[0],
+    submit:()=>nodes(node=>node.type==='form'&&node.props['aria-label']?.startsWith('Lägg till medlem'))[0].props.onSubmit({preventDefault(){}}),
+    async reply(index,payload,status=200){requests[index].resolve(Response.json(payload,{status}));await new Promise(resolve=>setImmediate(resolve));},
+  };
+}
+test('company drafts stay separate, writes lock immediately and failed invitations keep the input', async()=>{
+  const h=directoryHarness();h.select('Nordic Bet');h.input().props.onChange({target:{value:'person@example.test'}});
+  h.select('Amber House');assert.equal(h.input().props.value,'');h.select('Nordic Bet');assert.equal(h.input().props.value,'person@example.test');
+  h.submit();h.submit();h.select('Amber House');assert.equal(h.requests.length,1);assert.equal(h.input().props.value,'person@example.test');
+  assert.deepEqual(JSON.parse(h.requests[0].options.body),{operatorId:'nordic-bet',email:'person@example.test',status:'invited',roleId:'partner-viewer'});
+  assert.equal(h.requests[0].options.credentials,'same-origin');
+  await h.reply(0,{},409);assert.equal(h.input().props.value,'person@example.test');assert.match(h.html(),/sista administratören/);
+  h.input().props.onChange({target:{value:' north-existing '}});h.submit();
+  assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'nordic-bet',username:'north-existing',status:'active',roleId:'partner-viewer'});
+  await h.reply(1,{operator:directory.operators[0]});assert.equal(h.input().props.value,'');
+});
+test('role updates retain the server membership revision and are never applied optimistically', async()=>{
+  const h=directoryHarness();h.select('Nordic Bet');
+  h.nodes(node=>node.type==='select'&&node.props['aria-label']==='Roll för north-admin')[0].props.onChange({target:{value:'partner-editor'}});
+  h.nodes(node=>node.type==='button'&&node.props.children==='Spara roll')[0].props.onClick();
+  assert.deepEqual(JSON.parse(h.requests[0].options.body),{operatorId:'nordic-bet',userId:'42',roleId:'partner-editor',status:'active',expectedRevision:2});
+  await h.reply(0,{},409);assert.match(h.html(),/Spara roll/);assert.match(h.html(),/sista administratören/);
 });
