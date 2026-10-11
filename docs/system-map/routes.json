@@ -2814,6 +2814,33 @@
       ]
     },
     {
+      "id": "studio-api-videos-archive",
+      "path": "/api/videos/archive",
+      "publicPath": "/studio/api/videos/archive",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/videos/archive/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Authenticated same-origin reversible archive/restore. Exact hash and prior classification CAS; current document references block archive. Blob bytes and historical references are preserved. Offline returns 501.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/videos/archive/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-media-api.mjs"
+        },
+        {
+          "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
       "id": "studio-api-videos-rescan",
       "path": "/api/videos/rescan",
       "publicPath": "/studio/api/videos/rescan",

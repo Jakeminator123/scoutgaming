@@ -1,3 +1,4 @@
+import { MEDIA_FILE_TYPES, mediaHeaderMatches } from './media-file-types.mjs';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -48,11 +49,12 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
     async prepare(body,{actor} = {}) {
       configured(); actor = validateActor(actor);
       if (!exact(body,['operation','sha256','size','contentType','classification']) || body.operation !== 'prepare') fail('studio_invalid_request',400);
-      if (!['video/mp4','video/webm'].includes(body.contentType) || !Number.isSafeInteger(body.size)
+      if (!Object.hasOwn(MEDIA_FILE_TYPES,body.contentType) || !Number.isSafeInteger(body.size)
         || body.size < 16 || body.size > MAX_VIDEO_BYTES || !/^[a-f0-9]{64}$/.test(body.sha256)) fail('studio_invalid_media',422);
       const id = randomUUID();
       const record = validateStudioMedia({id,sha256:body.sha256,size:body.size,contentType:body.contentType,
-        classification:body.classification,pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,body.contentType.slice(6))});
+        classification:body.classification,pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,MEDIA_FILE_TYPES[body.contentType])});
+      if (record.classification.archived) fail('studio_invalid_media',422);
       await requireSavedVideoDealer(repository,record.classification.dealerId);
       const expiresAt = now()+TTL;
       // Exact immutable path, bounded MIME/bytes/time, no overwrite. This short
@@ -75,8 +77,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       const response = await privateMedia(storage,new Request(request.url,{headers:{Range:'bytes=0-31'}}),mediaOptions);
       if (!response.ok) {await response.body?.cancel();fail('studio_upload_bytes_unavailable',503);}
       const header = Buffer.from(await response.arrayBuffer());
-      const validHeader = record.contentType === 'video/mp4' ? header.length >= 16 && header.toString('ascii',4,8) === 'ftyp'
-        : header.length >= 16 && header.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3]));
+      const validHeader = mediaHeaderMatches(record.contentType,header);
       if (!validHeader) fail('studio_invalid_media_format',415);
       return mutationTransaction(async () => {
         if (typeof stillAuthorized !== 'function' || await stillAuthorized() !== true) fail('studio_request_rejected',403);

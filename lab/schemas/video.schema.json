@@ -123,6 +123,14 @@
           }
         }
       ]
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "mediaType": {
+      "enum": [
+        "audio"
+      ]
     }
   },
   "allOf": [

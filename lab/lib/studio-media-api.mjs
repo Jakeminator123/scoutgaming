@@ -51,6 +51,26 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         }
         fail('studio_invalid_request',400);
       }
+      if (baseOverride === undefined && path === `${base}/archive` && request.method === 'POST') {
+        if (request.headers.get('origin') !== new URL(request.url).origin
+          || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
+        const body=await readStudioDocumentJson(request);
+        if(Object.keys(body).sort().join(',')!=='archived,id,previous,sha256'||typeof body.archived!=='boolean')fail('studio_invalid_request',400);
+        validateMediaId(body.id);
+        if(typeof mutationTransaction!=='function'||typeof repository?.findMediaReferences!=='function')fail('studio_mutation_transaction_required');
+        await mutationTransaction(async()=>{
+          await refresh();
+          await repository.transaction(async()=>{
+            const current=await repository.getMedia(body.id);
+            if(!current||current.retainedBank)fail('studio_retained_media_immutable',409);
+            if(current.sha256!==body.sha256||canonicalStudioJson(body.previous)!==canonicalStudioJson(current.classification))fail('studio_conflict',409);
+            const usage=await repository.findMediaReferences(body.id);
+            if(body.archived&&usage.references.some(row=>!row.historical))fail('studio_media_in_use',409);
+            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:{...current.classification,archived:body.archived},actor});
+          });
+        });
+        return json(await videoRegistry());
+      }
       if (baseOverride === undefined && path === `${base}/classify` && request.method === 'POST') {
         if (request.headers.get('origin') !== new URL(request.url).origin
           || !['same-origin','none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected',403);
@@ -68,6 +88,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
             // uploads are classified with prior metadata + exact bytes + row CAS.
             if (!current || current.sha256 !== body.sha256 || current.classification.familyId
               || canonicalStudioJson(body.previous) !== canonicalStudioJson(current.classification)) fail('studio_conflict',409);
+            if (Boolean(body.metadata?.archived) !== Boolean(current.classification.archived)) fail('studio_invalid_request',400);
             await requireSavedVideoDealer(repository,body.metadata?.dealerId);
             await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.metadata,actor});
           }, {presentationMutation:{metadata:body.metadata}});

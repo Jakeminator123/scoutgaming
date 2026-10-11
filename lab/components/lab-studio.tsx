@@ -18,6 +18,7 @@ import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './lab-studio.module.css';
 import {ProjectConflict} from './project-conflict';
 import {DealerRegistration} from './dealer-registration';
+import {DealerMediaLibrary} from './dealer-media-library';
 import {DealerRemoval} from './dealer-removal';
 
 export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string }) {
@@ -36,6 +37,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const [selection, setSelection] = useState<{ eventId: string; situation: string } | null>(initialEventId && initialProject.events.some(row => row.id === initialEventId) ? { eventId: initialEventId, situation: initialSituation ?? '' } : null);
   const [variantId, setVariantId] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [intakePending,setIntakePending] = useState(false);
   const projectRef = useRef(project); projectRef.current = project;
   const savingRef = useRef(false);
   const continueLock = useRef(false);
@@ -176,22 +178,23 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     <PageTemplate
       eyebrow="// STUDIO"
       title="Dealers & klipp"
-      primary={uploadAvailable
-        ? <button type="button" className="sg-btn sg-btn-primary" disabled={uploading} onClick={() => setUploadOpen(current => !current)} aria-expanded={uploadOpen}>Ladda upp klipp</button>
-        : <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>}
+      primary={<button type="button" className="sg-btn sg-btn-primary" onClick={()=>document.getElementById('dealer-media')?.scrollIntoView({behavior:'smooth'})}>Lägg in media</button>}
     >
     <main className={styles.main}>
       <h2>Dealerbibliotek · {project.dealers.length} dealers</h2>
-      <p>Här redigerar du dealerns grundloop och händelseklipp. Biblioteket visar alla sparade dealers. Spelaren ser bara de dealers som ingår i ett publicerat spelrum.</p>
-      <p>Välj dealer → sätt ihop dealer, bord och bakgrund → publicera till ett bolag → öppna rummets spellobby.</p>
-      <DealerRegistration project={project} disabled={!connectedLane||saving||uploading} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
-      <DealerRemoval key={dealerId} project={project} dealerId={dealerId} disabled={saving||uploading||conflict||!connectedLane} onEdit={change=>setProject(current=>change(current))} onRemoved={(_id,nextDealerId)=>{selectDealer(nextDealerId);setNotice('Dealern är borttagen från utkastet. Spara för att behålla ändringen.');}}/>
-      <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
+      <p>Välj en dealer och lägg in media i rätt kategori. Du kan ladda upp flera filer samtidigt och välja exakt fack för varje fil.</p>
+      <p>1. Lägg in och mappa media → 2. Välj och provspela klipp under Spelinställningar → 3. Sammansätt och publicera.</p>
+      <DealerRegistration project={project} disabled={!connectedLane||saving||uploading||intakePending} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
+      <DealerRemoval key={dealerId} project={project} dealerId={dealerId} disabled={saving||uploading||conflict||intakePending||!connectedLane} onEdit={change=>setProject(current=>change(current))} onRemoved={(_id,nextDealerId)=>{selectDealer(nextDealerId);setNotice('Dealern är borttagen från utkastet. Spara för att behålla ändringen.');}}/>
+      <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" disabled={intakePending||uploading} aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
+      <div className={styles.save}>{saveButton}</div>
+      <div id="dealer-media"><DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onInventory={setVideos} onPendingChange={setIntakePending} disabled={saving || !connectedLane} /></div>
+      <details open={Boolean(initialEventId)}><summary>Spelinställningar · grundloop, klippval och villkor</summary>
       <nav className="sg-tabs" aria-label="Dealerns klippkategorier">{sections.map(({ id, label }) => <button type="button" aria-pressed={view === id} key={id} onClick={() => selectView(id)}>{label}</button>)}</nav>
-      <nav className={styles.contentNav} aria-label="Innehållsverktyg">{[['/control/videos', 'Klippbibliotek'], ['/control/events', 'Händelser'], ['/control/probe', 'Tal vid inaktivitet'], ['/control/preview', 'Sammansättning']].map(([path, label]) => {
+      <nav className={styles.contentNav} aria-label="Innehållsverktyg">{[['/control/events', 'Händelser'], ['/control/probe', 'Tal vid inaktivitet'], ['/control/preview', 'Sammansättning']].map(([path, label]) => {
         const href = contentLink(path); return <a key={path} href={href} onClick={event => void continueTo(event, href)}>{label} →</a>;
       })}</nav>
-      {uploadAvailable ? <div className={styles.save}>{saveButton}</div> : null}
+
       {!connectedLane ? <p role="alert" className="feedback error">{cloudStudio ? 'Studions gemensamma spelanslutning är inte konfigurerad. Inställningarna är skrivskyddade tills anslutningen har återställts.' : 'Starta lokalt med node lab/start.mjs för gemensam lagring och spelanslutning. En agent använder node lab/start.mjs --no-open. Det kostnadsfria provet körs med node lab/start.mjs --offline --no-open.'}</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
@@ -212,6 +215,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       </div></section> : null}
       {view === 'clips' && familyWorkspace ? <details className={styles.help}><summary>Förinspelade exakta talpar</summary><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy => edit(draft => { draft.legacyClipPolicy = policy; })} /></details> : null}
       <details className={styles.help}><summary>Avancerat · uppspelning</summary><a href={contentLink('/control/activity')} onClick={event => void continueTo(event, contentLink('/control/activity'))}>Uppspelning och logg →</a></details>
+      </details>
     </main>
     </PageTemplate>
   </div>;

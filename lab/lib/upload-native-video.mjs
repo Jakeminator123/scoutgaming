@@ -1,3 +1,4 @@
+import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
 import { labUrl } from './lab-url.mjs';
 import { MAX_VIDEO_BYTES } from './video-intake.mjs';
 
@@ -7,7 +8,7 @@ export async function uploadNativeVideo(file,classification,contentType,{fetchIm
   putImpl=async (...args) => (await import('@vercel/blob/client')).put(...args), cryptoImpl=globalThis.crypto,signal,onUploadProgress,
 } = {}) {
   signal?.throwIfAborted();
-  if (!(file instanceof Blob) || file.size < 16 || file.size > MAX_VIDEO_BYTES || !['video/mp4','video/webm'].includes(contentType)) throw new Error('Välj en MP4- eller WebM-video upp till 128 MB.');
+  if (!(file instanceof Blob) || file.size < 16 || file.size > MAX_VIDEO_BYTES || !Object.hasOwn(MEDIA_FILE_TYPES,contentType)) throw new Error('Välj MP4, WebM, MP3 eller WAV upp till 128 MB.');
   const hash = new Uint8Array(await cryptoImpl.subtle.digest('SHA-256',await file.arrayBuffer()));
   signal?.throwIfAborted();
   const sha256 = [...hash].map(byte => byte.toString(16).padStart(2,'0')).join('');
@@ -20,7 +21,7 @@ export async function uploadNativeVideo(file,classification,contentType,{fetchIm
   }
   const grant = await post({operation:'prepare',sha256,size:file.size,contentType,classification});
   if (typeof grant.id !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(grant.id)
-    || grant.pathname !== `croupier/media/dealers/${classification.dealerId}/review/uploads/${grant.id}/${sha256}.${contentType.slice(6)}`
+    || grant.pathname !== `croupier/media/dealers/${classification.dealerId}/review/uploads/${grant.id}/${sha256}.${MEDIA_FILE_TYPES[contentType]}`
     || typeof grant.clientToken !== 'string' || !grant.clientToken || typeof grant.ticket !== 'string' || !grant.ticket) throw new Error('Uppladdningens behörighet kunde inte verifieras.');
   signal?.throwIfAborted();
   const stored = await putImpl(grant.pathname,file,{access:'private',token:grant.clientToken,contentType,multipart:file.size > 5*1024*1024,abortSignal:signal,onUploadProgress});

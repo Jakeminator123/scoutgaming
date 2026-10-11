@@ -11,7 +11,7 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 // otherwise interprets the directory as an asset dependency to resolve.
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASES = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
-const readJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 const DEFAULTS = { idle: 'idle-1/idle/idle', headTilt: 'idle-1/idle/idle-breathe-head-tilt', deal: 'idle-1/actions/action-deal', dealWatch: 'idle-1/actions/action-deal-watch', think: 'idle-1/actions/action-think', gest: 'idle-1/actions/gesticulate1' };
 const safeFile = (root, relative) => {
   if (typeof relative !== 'string' || relative.includes('\\') || relative.startsWith('/') || relative.split('/').some(part => part === '..')) return false;
@@ -31,7 +31,8 @@ function stagedParts(take) {
   return []; // An action direction alone never proves an exact destination.
 }
 
-export async function loadLegacyClipInventory({ repository = repositoryRoot, publicRoot = join(repository, 'web/public'), dataDirectory = process.env.CROUPIER_DATA_DIR || join(repository, 'web/data'), administration, mediaAvailable } = {}) {
+export async function loadLegacyClipInventory({ repository = repositoryRoot, publicRoot = join(repository, 'web/public'), dataDirectory = process.env.CROUPIER_DATA_DIR || join(repository, 'web/data'), administration, mediaAvailable, readMetadata = readLocalJson } = {}) {
+  const readJson = readMetadata;
   const clips = [];
   const native = typeof mediaAvailable === 'function';
   const available = file => native ? mediaAvailable(file) : safeFile(publicRoot,file);

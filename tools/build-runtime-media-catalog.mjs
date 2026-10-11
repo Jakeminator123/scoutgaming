@@ -1,0 +1,26 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {repositoryRoot,resolveMediaAbsolutePath,presentationBankRoot} from './media-layout.mjs';
+import {runtimeCatalogPaths} from './runtime-media-catalog.mjs';
+import {readLabVideoManifest} from '../lab/lib/lab-video-manifest.mjs';
+
+export async function buildRuntimeMediaCatalog(root=repositoryRoot,{check=false}={}) {
+  const paths=runtimeCatalogPaths(root),entries={};
+  const sources=['speech-media.json',...['dealer','dealers/astrid','dealers/amira','dealers/mei'].flatMap(base=>['streams/index.json','audio/en/bank.json','performance/manifest.json'].map(path=>base+'/'+path)),...['astrid','amira'].map(id=>'review/'+id+'-green-speak/speak.json')];
+  for(const source of sources){
+    const path=resolveMediaAbsolutePath(join(root,'web/public',source),{repositoryRoot:root});
+    let value;
+    try {value=JSON.parse(await readFile(path,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;value=null;}
+    entries[path.slice(root.length+1).split('\\').join('/')]=value;
+  }
+  const manifest=await readLabVideoManifest(join(presentationBankRoot(root),'lab-video-manifest.json'));
+  const outputs=[[paths.manifest,manifest],[paths.legacy,{schemaVersion:1,entries}]];
+  for(const [path,value] of outputs){
+    const content=JSON.stringify(value,null,2)+'\n';
+    if(check){if(await readFile(path,'utf8')!==content)throw Error('Shared media catalog is stale: '+path);}
+    else {await mkdir(join(root,'media/catalog'),{recursive:true});await writeFile(path,content);}
+  }
+  return {files:outputs.length,metadataSources:sources.length};
+}
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) console.log(JSON.stringify(await buildRuntimeMediaCatalog(repositoryRoot,{check:process.argv.includes('--check')})));

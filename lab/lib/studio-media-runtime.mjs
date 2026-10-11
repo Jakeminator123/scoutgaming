@@ -1,3 +1,4 @@
+import { runtimeCatalogPaths, createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
 import { createNeonVideoRegistry } from './neon-video-registry.mjs';
 import { createStudioProjectBindings } from './studio-project-bindings.mjs';
 import { legacyClipControls } from './legacy-clip-inventory.mjs';
@@ -24,10 +25,10 @@ export function createStudioPublicMediaAvailability({ env = process.env, reposit
 }
 
 export function createStudioMediaRuntime({ repository, scope, env = process.env, repositoryRoot } = {}) {
-  const videos = createNeonVideoRegistry({ repository, scope, env, options: { repositoryRoot } });
+  const videos = createNeonVideoRegistry({ repository, scope, env, options: { repositoryRoot, snapshotPath: runtimeCatalogPaths(repositoryRoot).manifest } });
   const mediaAvailable = createStudioPublicMediaAvailability({ env, repositoryRoot });
   const controls = async project => {
-    const result = await legacyClipControls(project, { repository: repositoryRoot, mediaAvailable,
+    const result = await legacyClipControls(project, { repository: repositoryRoot, mediaAvailable, readMetadata: createRuntimeMetadataReader(repositoryRoot),
       administration: async () => {
         const saved = await repository.readDocument('administration');
         if (!saved) throw new StudioStorageError('studio_document_missing');
