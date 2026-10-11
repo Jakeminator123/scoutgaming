@@ -148,7 +148,7 @@
     },
     {
       "id": "probe",
-      "label": "Tal vid inaktivitet",
+      "label": "AI-småprat vid inaktivitet",
       "definition": "Astrids frivilliga talinitiativ vid inaktivitet. Av, Textprov eller Automatiskt. Samma policy i labbet; spelmotorns event-ID:n är oförändrade."
     },
     {

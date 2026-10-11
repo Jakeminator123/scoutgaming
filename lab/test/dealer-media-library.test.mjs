@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
-import {dealerMediaSlots,mediaClassification,dealerLibraryVideos} from '../lib/dealer-media-library.mjs';
+import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
@@ -40,4 +40,42 @@ test('a ten-file batch preserves successes, skips saved rows and never automatic
   const calls=[],states=new Map();
   const saved=await uploadMediaBatch(items,{upload:async file=>{calls.push(file);if(file===4)throw Error('Lost commit response');},onChange:(id,patch)=>states.set(id,{...states.get(id),...patch})});
   assert.equal(saved,8);assert.deepEqual(calls,[1,2,3,4,5,6,7,8,9]);assert.equal(states.get('4').state,'error');assert.equal(states.get('9').state,'saved');
+});
+
+test('required idle is red until an available exact dealer video is selected, with legacy uncertainty explicit',()=>{
+  const draft=structuredClone(project),slot=dealerMediaSlots(draft,'idle')[0];
+  const video={id:'own-idle',dealer:'paow',available:true,eventId:slot.eventId,situation:''};
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'paow',slot).level,'required');
+  assert.match(dealerSlotStatus(draft,{videos:[video]},'paow',slot).label,/välj grundloop/);
+  const line=draft.lines.find(row=>row.dealerId==='paow'&&row.eventId===slot.eventId);
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=video.id;
+  assert.equal(dealerSlotStatus(draft,{videos:[video]},'paow',slot).level,'ready');
+  for(const patch of [{available:false},{dealer:'astrid'},{classification:{archived:true}},{classification:{mediaType:'audio'}}])assert.equal(dealerSlotStatus(draft,{videos:[{...video,...patch}]},'paow',slot).level,'required');
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot).level,'unknown');
+  const legacy={defaults:{idle:'idle/default'},clips:[{id:'vera-idle',engineKey:'idle/default',dealerId:'vera',available:true,exactParts:['idle']}]};
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot,legacy).level,'ready');
+  draft.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'missing'}];
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot,legacy).level,'required');
+});
+test('recommendations distinguish every exact box and never count archived, unavailable or audio files',()=>{
+  const slots=dealerMediaSlots(project,'deal'),slot=slots.find(row=>row.situation==='box3');
+  const video={id:'deal',dealer:'paow',available:true,eventId:slot.eventId,situation:'box3'};
+  assert.equal(dealerSlotStatus(project,{videos:[video]},'paow',slot).level,'ready');
+  for(const patch of [{situation:'box2'},{available:false},{classification:{archived:true}},{classification:{mediaType:'audio'}}])assert.equal(dealerSlotStatus(project,{videos:[{...video,...patch}]},'paow',slot).level,'recommended');
+  assert.equal(mediaMatchesSlot(video,slots.find(row=>row.situation==='box4')),false);
+});
+test('pagination clamps after removal and never displays more than six videos',()=>{
+  const clips=Array.from({length:13},(_,id)=>({id}));
+  assert.deepEqual(mediaPage(clips,2).items.map(row=>row.id),[6,7,8,9,10,11]);
+  assert.deepEqual(mediaPage(clips,3).items.map(row=>row.id),[12]);
+  assert.equal(mediaPage(clips.slice(0,6),3).page,1);
+  assert.deepEqual(mediaPage([],9),{items:[],page:1,pages:1,total:0});
+});
+test('an uploaded standard classification does not claim that the clip is active',()=>{
+  const video={id:'new-upload',classification:{role:'standard'}};
+  assert.equal(mediaUsage(project,video,'paow'),'Inte vald i utkastet');
+  const draft=structuredClone(project),line=draft.lines.find(row=>row.dealerId==='paow');
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=video.id;
+  assert.equal(mediaUsage(draft,video,'paow'),'Standard i utkastet');
+  assert.equal(mediaUsage(draft,video,'astrid'),'Inte vald i utkastet');
 });

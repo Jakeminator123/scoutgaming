@@ -187,7 +187,7 @@ test('the editor retires zones and groups advanced automation while preserving c
   const project = createSeedProject();
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {} }));
   assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.match(editorHtml, /Avancerat: automatik och variationer/);
+  assert.match(editorHtml, /Uppspelning · regler, slump och OpenClaw/);
   assert.match(editorHtml, /type="color"/);
   assert.match(editorHtml, /Följer OpenClaw/);
   assert.match(editorHtml, /Variationsfrekvens/);

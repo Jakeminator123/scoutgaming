@@ -54,7 +54,7 @@ Ett nytt **spelrum** skapas och publicerar sin presentation i ett steg. **Uppdat
 | Playback receipt | Uppspelningskvitto | Spelarens rapport om urval, start, bild, slut eller avbrott. Urval är inte uppspelning. |
 | Rehearsal | Repetition | Visuell granskning i riktiga spelklienten med två uppspelningar i följd. |
 | 2D fallback | 2D-reserv | Bord och kort visas utan dealervideo när media eller lagerpaket saknas. |
-| Probe | Tal vid inaktivitet | Astrids talinitiativ när spelaren är inaktiv och bordet är lugnt. Teknisk benämning: Probe. |
+| Probe | AI-småprat vid inaktivitet | Astrids talinitiativ när spelaren är inaktiv och bordet är lugnt. Teknisk benämning: Probe. |
 | box0–box6 | Spelarplats 1–7 | Separata kortdestinationer i modellen; visningen räknar från 1. Tom position hoppas över utan reservfilm. |
 | deal.player.left / centre / right | Utdelningsgrupp vänster / mitten / höger | Tekniska eventgrupper för platser 1–2, 3–5 respektive 6–7; exakt box avgör destination. Inte grundloopar. |
 | dealer-up / dealer-hole | Dealerns öppna / dolda kort | Skilda kortdestinationer; ett generellt utdelningsklipp ersätter inte dessa. |
@@ -143,7 +143,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Sammansättning | `/control/preview` | Välj, skapa och namnge presentationen. Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, förhandsvisa klipp och spara. |
 | Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. All redigering av sammansättningen finns på Sammansättning; avancerad rumsadministration öppnas kontextuellt. |
 | Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
-| Tal vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
+| AI-småprat vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
 
 | Övrig meny | Innehåll |
 |---|---|
@@ -153,7 +153,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Konton & roller, Partners; Guide & hjälp i sidfoten. |
 
 Studio har tre huvudval: Dealers & klipp, Sammansättning och Publicering.
-Klippbibliotek, Händelser och Tal vid inaktivitet nås som undervyer från Dealers & klipp.
+Klippbibliotek, Händelser och AI-småprat vid inaktivitet nås som undervyer från Dealers & klipp.
 Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
 aktiv menypunkt. Avancerade inställningar ligger under utfällbara fördjupningar.
@@ -177,5 +177,5 @@ table finns kvar. Okänt, inaktivt eller främmande rum ger inte någon reserv-l
 |---|---|
 | Bild och tal | Granska med `?dealer=<namn>&rehearsal=1`. Ändrad ljud-/videohash upphäver godkännandet. Kvitto, hash och grönt test ersätter inte visuell acceptans. |
 | Egna dealers, exempelvis Nora och Johanna | Eget registrerat basklipp krävs. Paket v3 fryser grundloop, sparat eget schema och sparade händelsekopplingar. Spelrum kopplar rätt spellane automatiskt. Kräver rätt Renderkapacitet och visuell acceptans av faktiskt publicerade filmer. Live AI-chatt återstår. |
-| Tal vid inaktivitet | Textprovet skapar ingen röst eller video; produktionsacceptans återstår. Äldre zondata är separat från Sammansättningens bakgrundsfilmer. |
+| AI-småprat vid inaktivitet | Textprovet skapar ingen röst eller video; produktionsacceptans återstår. Äldre zondata är separat från Sammansättningens bakgrundsfilmer. |
 | Partnerportal | Bolagsåtkomst och paketens designval finns. Spelare, transaktioner och rapporter från spelmotorn återstår. |

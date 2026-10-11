@@ -21,8 +21,8 @@ import {
 import styles from './lane-editor.module.css';
 
 export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';
-const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'Automatiskt'};
-const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'Tal vid inaktivitet'};
+const modeLabels:Record<string,string>={off:'Av',rules:'Regler',random:'Slump',shadow:'Förslag utan att styra',active:'OpenClaw styr'};
+const phaseLabels:Record<string,string>={idle:'Grundloop',deal:'Kortgivning',reveal:'Visa kort',speak:'Repliker',probe:'AI-småprat vid inaktivitet'};
 const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
 
 type Edit = (edit: (current: StudioProject) => StudioProject) => void;
@@ -189,7 +189,7 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
           })}>Ta bort</button>
         </li>)}
       </ul> : null}</details>
-    <details className={styles.advanced}><summary>Avancerat: automatik och variationer</summary><fieldset className={styles.group}>
+    <details className={styles.advanced}><summary>Uppspelning · regler, slump och OpenClaw</summary><fieldset className={styles.group}>
       <legend>OpenClaw väljer klipp</legend>
       {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phaseLabels[phase]??phase}
         <select value={lane.openclaw[phase]} onChange={event => editLane(draft => { draft.openclaw[phase] = event.target.value as OpenClawMode; })}>
@@ -198,7 +198,7 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
       </label>)}
     </fieldset>
     <fieldset className={styles.group}>
-      <legend>Tal vid inaktivitet</legend>
+      <legend>AI-småprat vid inaktivitet</legend>
       <label className={styles.field}>Läge
         <select value={lane.probe?.mode ?? ''} onChange={event => {
           const mode = event.target.value;
@@ -226,7 +226,7 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
           {PROBE_MODELS.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
         </select>
       </label>
-      <p className={styles.help}>Välj när OpenClaw får föreslå eller styra tal vid inaktivitet. <a href={labUrl('/control/probe')}>Öppna inställningar för tal vid inaktivitet</a></p>
+      <p className={styles.help}>Välj när OpenClaw får föreslå eller styra AI-småprat vid inaktivitet. <a href={labUrl('/control/probe')}>Öppna inställningar för AI-småprat vid inaktivitet</a></p>
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Grundloopens variationer</legend>

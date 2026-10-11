@@ -10,6 +10,7 @@ import {PageTemplate} from './page-template.mjs';
 import {useStudioSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
+import {LayerAssetManager} from './layer-asset-manager';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
@@ -145,6 +146,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <fieldset disabled={previewBusy||saving}><LayerAssetSelect role={role} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
       {fullFrame?<p className={styles.hint}>Inbakat i dealerklippet · välj ett frilagt klipp för att placera {labels[role].toLowerCase()}.</p>:placementControls(role)}
       <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
+      <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
   }
   const publicationHref=labUrl(`/control/lanes?lane=${encodeURIComponent(lane.id)}`);
@@ -201,8 +203,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           {(['table','background'] as const).map(layerPanel)}
         </section>
       </div>
-      <details className={styles.advanced}><summary>Avancerat</summary><div>
-        {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={previewBusy||saving||uploading||conflict}/>:null}
+      {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={previewBusy||saving||uploading||conflict}/>:null}
+      <details className={styles.advanced}><summary>Avancerat · lager och filprov</summary><div>
         <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbildsklippet behåller sin bild.</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>

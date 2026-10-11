@@ -7,3 +7,9 @@ export function dealerMediaSlots(project:StudioProject,category?:string):DealerM
 export function mediaClassification(project:StudioProject,input:{dealerId:string;slotId:string;label:string;contentType:string}):VideoMetadata;
 export function dealerLibraryVideos(project:StudioProject,inventory:VideoInventory,dealerId:string,category?:string,archived?:boolean):VideoEntry[];
 export function draftUsesMedia(project:StudioProject,id:string):boolean;
+
+import type {LegacyClipInventory} from './legacy-clip-inventory.mjs';
+export function mediaMatchesSlot(video:VideoEntry,slot:DealerMediaSlot):boolean;
+export function mediaUsage(project:StudioProject,video:VideoEntry,dealerId:string):string;
+export function dealerSlotStatus(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:DealerMediaSlot,legacy?:LegacyClipInventory|null):{level:'ready'|'unknown'|'required'|'recommended'|'optional';label:string;count:number};
+export function mediaPage<T>(items:T[],requested?:number,size?:number):{items:T[];page:number;pages:number;total:number};

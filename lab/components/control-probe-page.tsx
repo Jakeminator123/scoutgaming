@@ -19,8 +19,8 @@ export function ControlProbePage({ initialProject, initialVideos, initialStatus,
   const { project, updateProject, recordActivity, dirty, saving, save, error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson, setProject } = session;
   return <PageTemplate
     eyebrow="// STUDIO"
-    title="Tal vid inaktivitet"
-    intro="Låt dealern ta initiativ när spelaren väntar. Här ställer du in väntetid och AI-modell; stödet gäller Astrid."
+    title="AI-småprat vid inaktivitet"
+    intro="AI formulerar nya repliker när bordet är lugnt. Här ställer du in väntetid och AI-modell för Astrid. Inspelade tal-klipp hanteras i dealerbiblioteket."
     primary={<button className="sg-btn sg-btn-primary" type="button" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
   >
     <div className="sg-page-body">

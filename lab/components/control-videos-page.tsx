@@ -91,7 +91,7 @@ export function ControlVideosPage({
       primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving || intakePending} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>}
     >
       <div className="sg-page-body">
-      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/control/probe','Tal vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
+      <nav className="sg-chip-row" aria-label="Innehållsverktyg">{[['/control/clips','Innehåll'],['/control/events','Händelser'],['/control/probe','AI-småprat vid inaktivitet']].map(([path,label])=><a key={path} className="text-button" href={studioHref(path,{dealerId,eventId:event.id,situation:initialEventId === event.id ? initialSituation : undefined})}>{label} →</a>)}</nav>
       <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       {incompatibleBindings.length ? (
@@ -112,7 +112,7 @@ export function ControlVideosPage({
           </button>
         ))}
       </div>
-      <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onInventory={setVideos} onPendingChange={setIntakePending} disabled={saving || !connectedLane} />
+      <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onInventory={setVideos} onPendingChange={setIntakePending} initialSlotId={initialEventId?initialEventId+'/'+(initialSituation??''):''} disabled={saving || !connectedLane} />
       <details><summary>Avancerat · spelkopplingar och originalbank</summary>
       {media.managed ? null : (
         <div className={styles.binding}>
