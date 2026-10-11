@@ -39,7 +39,7 @@ Komplettering verifierad: 29 ytrouter-/navigationstester och 29 fokuserade sessi
 
 `docs/CLOUD-MIGRATION.md` är uppdaterad i samma tracker. JN2-A/B lämnas öppna tills verklig N1 → Johns/SG, direktlänk/refresh, återkallade/begränsade roller samt tenant-/databasprov är godkända efter granskning/deployment. Inga produktions-DB-, migrations-, media-, provider- eller env-skrivningar och ingen merge/deployment har utförts.
 
-Tidigare GitGuardian-läsning på remote main `52bcab1f`: 17 observerade incidenter, 12 öppna/5 ignored; incidenttäckning complete-for-source, platstäckning partial (sex öppna utan plats), repoövervakning aktiv och historisk scan too_large. Ny statusläsning inför kompletteringen kunde inte nå den skyddade GitGuardian-anslutningen: aktuell incident-/plats-/övervakningstäckning är därför ofullständig, inte grön. GitHub-fallback på samma main visar tre gröna Actions-checks men GitGuardian-suiten queued. Inga incidenter ändrade eller säkerhetsläget friskförklarat.
+GitGuardian-läsning före slutlig push på remote main `52bcab1f`: 17 observerade incidenter, 12 öppna/5 ignored; incidenttäckning complete-for-source, platstäckning partial (sex öppna utan plats), repoövervakning aktiv och historisk scan too_large. Ett tidigare tillfälligt anslutningsfel är därmed ersatt av färskt läskvitto. Commitkontrollen är fortfarande queued; gröna Actions eller PR-checks är inte bevis på ett incidentfritt repo. Inga incidenter ändrade eller säkerhetsläget friskförklarat. Dokumentkvitto `72ba457a` passerade ordinarie dokumenthook: 25 PASS/0 skip/0 fail.
 
 ### Johns N2-skiss: konkret integrationsplan, 11 oktober 2026
 
