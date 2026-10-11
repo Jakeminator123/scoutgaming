@@ -3,7 +3,7 @@ import {isPresentationRoom} from '../presentation-room-contract.mjs';
 import {gameLaneConfiguration, laneDealerSelection} from '../public/game-lanes.mjs';
 import {buildPresentationPackage} from '../presentation-layers.mjs';
 import {defaultPresentationLane, normalizeProject} from '../../lab/lib/studio-model.mjs';
-import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions} from './frozen-dealer-idle.mjs';
+import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';
 import {validateRevision, StudioStorageError} from './studio-contract.mjs';
 
 const fail = () => { throw new StudioStorageError('studio_media_registry_unavailable'); };
@@ -40,9 +40,22 @@ export async function assertCapturedPresentationMedia(repository, mediaPrecondit
   assertFrozenMediaPreconditions(mediaPreconditions, rows);
 }
 
-export function isPresentationRoomLaneCompatible(gameLane, presentationLane) {
+export function isPresentationRoomLaneCompatible(gameLane, presentationLane, frozenPresentation = null) {
   if (!gameLane || !presentationLane || !['portrait-video', 'indexed-video'].includes(gameLane.renderer)) return false;
   const dealer = presentationLane.layers.dealer.default;
+  // The caller supplies the already validated frozen package, never the mutable
+  // Studio registry. v3 portrait rooms select their adapter per allowed dealer.
+  if (frozenPresentation?.schemaVersion === 3 && gameLane.renderer === 'portrait-video') {
+    if (gameLane.mediaCollection !== `${gameLane.dealer}-presentation`) return false;
+    const frozenLane = frozenPresentation.lanes.find(lane => lane.id === presentationLane.id);
+    if (frozenLane?.layers.dealer.default !== dealer || !frozenLane.layers.dealer.allowed.includes(dealer)) return false;
+    try {
+      if (!BASE_DEALER_IDS.includes(dealer) && !resolveFrozenDealerIdle(frozenPresentation.registeredDealers,
+        { dealerId: dealer, allowedDealerIds: frozenLane.layers.dealer.allowed })) return false;
+      const portraitDealerIds = [...BASE_DEALER_IDS, ...frozenPresentation.registeredDealers.map(row => row.id)];
+      return laneDealerSelection('', gameLane, frozenLane.layers.dealer, { portraitDealerIds }) === dealer;
+    } catch { return false; }
+  }
   if (!BASE_DEALER_IDS.includes(dealer)) return gameLane.renderer === 'portrait-video' && gameLane.dealer === dealer
     && gameLane.mediaCollection === `${dealer}-presentation`;
   try { return laneDealerSelection('', gameLane, presentationLane.layers.dealer) === dealer; } catch { return false; }
@@ -53,6 +66,6 @@ export function assertPublishedRoomBindings({administration, operatorId, current
     if (!isPresentationRoom(room) || room.operatorId !== operatorId || !currentPackage?.tables?.includes(room.id)) continue;
     const lane = presentation.lanes.find(row => row.id === room.presentationLaneId);
     const gameLane = gameLanes.find(row => row.id === room.gameLaneId);
-    if (!isPresentationRoomLaneCompatible(gameLane, lane)) throw new StudioStorageError('studio_conflict', 409);
+    if (!isPresentationRoomLaneCompatible(gameLane, lane, presentation)) throw new StudioStorageError('studio_conflict', 409);
   }
 }

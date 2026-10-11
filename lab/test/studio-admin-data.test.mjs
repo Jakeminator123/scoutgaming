@@ -165,3 +165,16 @@ test('Nora catalogue registration requires her saved dealer identity and staff r
  await assert.rejects(f.data.handlers.get('POST /studio/api/admin/game-lanes/create')({...f.context(body),actor:{user:'viewer',role:'reader'}}),e=>e.statusCode===403);
  await f.call('POST','game-lanes/create',body);assert.equal(f.state.document.value.gameLanes.at(-1).dealer,'nora');
 });
+
+
+test('removing a game lane referenced by any existing room is rejected before writes regardless of room state or operator', async () => {
+  for(const state of ['live','preview','pending']){
+    const f=fixture(),room={schemaVersion:2,id:'room-existing',name:'Existing',operatorId:'another-operator',presentationLaneId:'published-presentation',gameLaneId:'mobile-phone',state};
+    f.state.document.value.gameLanes=[...GAME_LANES,{...GAME_LANES[0],id:'spare'}];f.state.document.value.gameLane='spare';
+    f.state.document.value.rooms.push(room);const before=structuredClone(f.state.document);
+    await assert.rejects(f.call('POST','game-lanes/remove',{lane:'mobile-phone',replacementLane:'spare',expectedRevision:'studio-original'}),error=>error.statusCode===409);
+    assert.deepEqual(f.state.document,before);assert.deepEqual(f.state.writes,[]);
+    await f.call('POST','game-lanes/remove',{lane:'spare',replacementLane:'mobile-phone',expectedRevision:'studio-original'});
+    assert.equal(f.state.document.value.gameLane,'mobile-phone');assert.deepEqual(f.state.document.value.rooms,before.value.rooms);
+  }
+});

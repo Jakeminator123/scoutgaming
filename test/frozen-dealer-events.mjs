@@ -224,3 +224,18 @@ test('own idle policy never inherits Astrid, foreign media, missing durations or
   const normal=structuredClone(frozen);normal.playback.dealerIdlePolicies[0].policy.variants.push({videoId:uuid(200),durationMs:1000,use:'openclaw',automatic:null});
   assert.throws(()=>validatePresentationPackage(normal));
 });
+
+
+test('v3 frozen own idle and event media follow an allowed Johanna default on the original Amira room binding', async () => {
+  const f=serviceFor(captureFrozenPresentation(fixture()).presentation);
+  f.saved.administration.gameLanes[0].dealer='amira';f.saved.administration.gameLanes[0].mediaCollection='amira-presentation';
+  const before=structuredClone(f.saved), frozen=await f.service.resolve(context);
+  assert.equal(frozen.record.id,uuid(1));
+  const result=await selectPresentation({project:frozen.project,dealerId:'johanna',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'off'},{videoRegistry:frozen.inventory});
+  assert.equal(result.videoGenerationId,uuid(2));
+  const own=f.service.publicVideo(frozen,result.videoGenerationId);
+  assert.equal((await f.service.response(new Request('https://game.invalid'+own.src))).status,200);
+  assert.deepEqual(f.saved,before);
+  f.saved.package.frozen={...f.saved.package.frozen,schemaVersion:2};delete f.saved.package.frozen.playback;
+  await assert.rejects(f.service.resolve(context),error=>error.statusCode===404);
+});

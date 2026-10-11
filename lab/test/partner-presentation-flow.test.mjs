@@ -159,3 +159,14 @@ test('legacy full-frame dealers suppress stored and company layer overrides with
     assert.deepEqual(f.pack(),before,'adapter selection must not rewrite or widen the package');
   }
 });
+
+
+test('N2 frozen room choices remain available after a v3 default changes across portrait dealer identities', async () => {
+  const f=fixture({layered:true}), game=f.administration.gameLanes.find(row=>row.id==='portrait-johanna');
+  game.dealer='amira';game.mediaCollection='amira-presentation';
+  const before=f.pack(), choices=partnerPresentationDealerChoices({administration:f.administration,package:before,presentation:f.presentation,operatorId:'north'});
+  assert.deepEqual(choices[f.lanes[0].id],['johanna','nora','vera']);
+  const {selection}=await f.select('operator=north&table=room-first');
+  assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,'room-first');assert.equal(selection.lane,game.id);
+  assert.deepEqual(f.pack(),before);
+});

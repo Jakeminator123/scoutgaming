@@ -332,3 +332,32 @@ test('publishing the whole existing selection refreezes one shared dealer snapsh
   assert.deepEqual(await f.repository.readDocument('administration'), beforeAdmin);
   assert.equal((await f.direct.getCurrentPackage('north')).branding.name, 'Johns');
 });
+
+
+test('v3 republication changes the allowed default from Amira to Johanna without replacing its room or adapter', async () => {
+  const f=await nativeFixture(), saved=await f.repository.readDocument('project');
+  saved.value.lanes[0].dealers=['amira','johanna'];saved.value.lanes[0].layers.dealer={enabled:true,default:'amira',allowed:['amira','johanna']};
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+  const admin=await f.repository.readDocument('administration');
+  admin.value.gameLanes[0].dealer='amira';admin.value.gameLanes[0].mediaCollection='amira-presentation';
+  const room={schemaVersion:2,id:'room-existing-amira',name:'Existing Amira',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
+  admin.value.rooms=[room];
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  const first=await f.publish();
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'North'},first.presentation)});
+  const changed=await f.repository.readDocument('project');changed.value.lanes[0].layers.dealer.default='johanna';
+  await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
+  const beforeAdmin=await f.repository.readDocument('administration'), result=await f.publish();
+  assert.equal(result.packageRevision,3);assert.deepEqual(result.tables,[room.id]);assert.deepEqual(await f.repository.readDocument('administration'),beforeAdmin);
+  const {createGameEntrySelector}=await import('../../web/game-entry-operator.mjs');
+  const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:(await f.repository.readDocument('project')).value,administration:beforeAdmin.value})},
+    packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:await f.direct.getCurrentPackage('north')})}});
+  const entry=await select('?operator=north&table='+room.id);
+  assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'johanna');assert.equal(entry.selection.presentation,'local');
+  assert.equal(entry.selection.roomId,room.id);assert.equal(entry.selection.lane,room.gameLaneId);
+  const amira=await select('?operator=north&table='+room.id+'&dealer=amira');
+  assert.equal(amira.selection.dealer,'amira');assert.equal(amira.selection.presentation,'original');
+  const denied=await select('?operator=north&table='+room.id+'&dealer=vera');
+  assert.equal(denied.selection.dealer,'johanna');assert.deepEqual(denied.selection.choices.dealers,['johanna','amira']);
+  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers[0].idle.id,mediaId);
+});

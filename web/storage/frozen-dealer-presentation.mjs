@@ -75,7 +75,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     const gameLane = gameLanes.length === 1 ? gameLanes[0] : null;
     if (!lane || !pack.lanes.includes(lane.id) || !Array.isArray(lane.layers?.dealer?.allowed)
       || !lane.layers.dealer.allowed.includes(context.dealerId) || !gameLane
-      || !isPresentationRoomLaneCompatible(gameLane,lane)
+      || !isPresentationRoomLaneCompatible(gameLane,lane,presentation)
       || gameLane.schemaVersion !== 1 || gameLane.renderer !== 'portrait-video'
       || presentation.schemaVersion === 2 && (gameLane.dealer !== context.dealerId || gameLane.mediaCollection !== `${context.dealerId}-presentation`)) {
       fail('studio_presentation_idle_room_unavailable', 404);

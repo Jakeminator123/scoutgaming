@@ -68,6 +68,9 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
   change('game-lanes/remove', ['lane', 'replacementLane'], (value, body) => {
     const lanes = gameLaneConfiguration(value);
     if (!isGameLane(body.lane, lanes.gameLanes)) fail(404);
+    // Room bindings outlive active/default choices and operator publication.
+    // Preserve every referenced lane, including preview and pending rooms.
+    if ((value.rooms ?? []).some(room => room.gameLaneId === body.lane)) fail(409);
     const remaining = lanes.gameLanes.filter(lane => lane.id !== body.lane);
     const active = lanes.gameLane === body.lane ? body.replacementLane : lanes.gameLane;
     if (remaining.length ? !isGameLane(active, remaining) : active !== null) fail(409);
