@@ -258,8 +258,8 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
 
   return <PageTemplate
     eyebrow="// STUDIO"
-    title="Händelser"
-    intro={<><a href={overviewHref}>Tillbaka till översikten</a><span> · </span><StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} /></>}
+    title="Klippval & villkor"
+    intro={<><a href={overviewHref}>Alla spelhändelser</a><span> · </span><StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} /></>}
     primary={<>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={exportProject}>Exportera projekt</button>
       <button type="button" className="sg-btn sg-btn-primary" disabled={!dirty || saving} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara projekt'}</button>

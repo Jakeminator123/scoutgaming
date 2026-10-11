@@ -47,7 +47,7 @@ Ett nytt **spelrum** skapas och publicerar sin presentation i ett steg. **Uppdat
 | Idle / base clip / idle variant | Grundloop / basklipp / variation | Grundloop och idle är samma vänteläge. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott. Både Astrid och egna dealers kan ha ett separat sparat schema med flera basklipp och variationer. Utan eget schema används den egna dealerns enda valda grundloop. |
 | Clip set | Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
 | Default / variant | Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
-| Event group / situation | Händelsekategori / situation | Redigeringsgrupp respektive sammanhang: plats, utfall eller exakt replik. |
+| Event group / situation | Händelsekategori / situation | Äldre samlingsgrupp respektive exakt plats, utfall eller replik. ”Deal vänster” omfattar flera platser; valt klippfack behåller den exakta situationen. |
 | Trigger / policy | Villkor / urvalsregler | Krav för att få väljas respektive hur valet görs bland tillåtna alternativ. |
 | Speech line ID / speech set | Replik-ID / replikset | Exakt tal-ID respektive text, ljud, video, bildindex, kalibrering och godkännandenotering. |
 | Playback plan | Uppspelningsplan | Klipp, lager, ordning och synkpunkter för spelklienten. |
@@ -88,6 +88,10 @@ Ett nytt **spelrum** skapas och publicerar sin presentation i ett steg. **Uppdat
 | Slump | Slumpaktiverade kandidater. |
 | OpenClaw | Validerat AI-råd; godkänt reservval vid saknat, sent eller ogiltigt råd. |
 | Skuggläge | Standard spelas, AI-rådet registreras. |
+
+**Automatisk** grundloopvariation är en tidsstyrd färdig rörelse, utan AI-anrop. **OpenClaw-reaktion** väljer en tillåten rörelse utifrån observerad chatt (högst 8 meddelanden, totalt 3 200 tecken). **AI-tal** skapar ny text som går vidare till röst och läppsynk; en klippväljare skapar inte tal.
+
+Vanligt klippval får den publika spelhändelsen och tillåtna varianter. Testpanelens extra sammanhang är uttryckliga testvärden. Lane-fälten för OpenClaw, probe och idle bevaras som **sparat styrunderlag**; de styr inte dagens spelare. Aktiva dealerpolicyer och spelflikens läge används. Astrids sparade utdelningsfrekvenser väljer lokalt utan modell.
 
 OpenClaw ändrar inte kort, regler, saldo eller utfall.
 
@@ -142,7 +146,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
 | Sammansättning | `/control/preview` | Välj, skapa och namnge presentationen. Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, förhandsvisa klipp och spara. |
 | Publicering | `/control/lanes` | Välj bolag och presentation, skapa spelrum och publicera paket. All redigering av sammansättningen finns på Sammansättning; avancerad rumsadministration öppnas kontextuellt. |
-| Händelser | `/control/events` | Händelsekategorier, klippuppsättningar, villkor och urval. |
+| Spelhändelser & villkor | `/control/events` | Exakta klippfack och urval. Äldre händelsegrupper/testanimationer finns kvar under Avancerat. |
 | AI-småprat vid inaktivitet | `/control/probe` | Automatik för Astrids inaktivitetstal och textprov. |
 
 | Övrig meny | Innehåll |

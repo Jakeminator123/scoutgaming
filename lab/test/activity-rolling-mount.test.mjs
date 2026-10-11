@@ -79,8 +79,8 @@ test('Uppspelning is the log, with one lime and the old actions still in the mar
     assert.match(html, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   const status = html.indexOf('Aktiv anslutning');
-  const chain = html.indexOf('Kedja:');
-  const speech = html.indexOf('Tal:');
+  const chain = html.indexOf('Inspelade klipp:');
+  const speech = html.indexOf('AI-tal:');
   const connect = html.indexOf('Anslut &amp; följ');
   const log = html.indexOf('>Logg <');
   const diagnostics = html.indexOf('<summary>Diagnostik</summary>');

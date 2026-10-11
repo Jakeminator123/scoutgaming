@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
 import { modeLabels, modeExplanations } from './gateway-panel';
 import { TestContextPanel } from './test-context';
+import { ClipSelectionHelp } from './playback-guidance';
 import type { DirectorMode, SimulationResult, TestContext } from './studio-types';
 import styles from './event-test-panel.module.css';
 
@@ -29,16 +29,6 @@ const providerDescriptions: Record<string, string> = {
   openclaw_unreachable: 'OpenClaw kunde inte nås · säker standard',
 };
 
-const poseStages = [
-  ['chat received', 'Chat mottagen'],
-  ['response ready', 'Svar klart'],
-  ['held for pose', 'Hålls utanför talkön'],
-  ['action completed', 'Handling avslutad'],
-  ['standard idle presented', 'Standard-idle faktiskt presenterad'],
-  ['chat displayed', 'Assistentrad visas'],
-  ['speech started', 'Tal startar'],
-  ['speech completed', 'Tal avslutat'],
-] as const;
 
 
 interface Props {
@@ -55,12 +45,6 @@ interface Props {
 
 export function EventTestPanel({ open, onOpen, mode, onMode, configured, context, onContext, dealer, eventLabel, sourceType, result, previewKind, originalLabel, manifestOwned = false, dealClips = false, dealFrequency = false, busy, blocked = false, onRun }: Props) {
   const usesModel = !dealFrequency && (mode === 'active' || mode === 'shadow');
-  const [poseStep, setPoseStep] = useState(-1);
-  useEffect(() => {
-    if (poseStep < 0 || poseStep >= poseStages.length - 1) return;
-    const timer = window.setTimeout(() => setPoseStep(step => step + 1), 420);
-    return () => window.clearTimeout(timer);
-  }, [poseStep]);
   return <details className={styles.panel} open={open} onToggle={e => onOpen(e.currentTarget.open)}>
     <summary><span className={styles.summaryText}><strong>Testa event</strong><small>Simulera ett klippval för {dealer}. Ingen spelhandling skickas.</small></span><span className={styles.badge}>{dealFrequency && !['off', 'shadow'].includes(mode) ? 'Valda frekvenser' : modeLabels[mode]}</span></summary>
     <div className={styles.body}>
@@ -74,12 +58,7 @@ export function EventTestPanel({ open, onOpen, mode, onMode, configured, context
       <div className={styles.run}><p>{usesModel ? 'Testa event kan göra ett modellanrop. Spelresultatet ändras inte.' : 'Lokalt test. Inget modellanrop och inget ändrat spelresultat.'}</p><button type="button" className="primary-button" disabled={busy || blocked} onClick={onRun}>{blocked ? 'Socialt svar pågår' : busy ? 'Testar…' : 'Testa event'}</button></div>
       {result ? <section className={styles.result} aria-label="Resultat från eventtest" role="status"><span>VALD VARIANT</span><h3>{result.variant?.label ?? 'Beslut klart'}</h3><p>{result.provider === 'local_deal_frequency' && mode === 'shadow' ? 'Frekvensvalet loggas. Skuggprovet spelar standardklippet.' : reasonDescriptions[result.decision?.reason ?? ''] ?? 'Se beslutsspåret för exakt orsak.'}</p><small>{manifestOwned ? result.videoGenerationId ? 'Kopplad video · saknas filen visas ett fel' : 'Ingen video vald' : result.videoGenerationId ? 'Kopplad video · 2D-reserv om filen inte kan spelas' : originalLabel ? `Originalförval · ${originalLabel}` : '2D-reserv · ingen video vald'} · {providerDescriptions[result.provider ?? ''] ?? 'Se tekniskt beslutsspår'}</small></section> : <p className={styles.note}>{previewKind === 'selected' ? 'Du förhandsvisar en vald variant. Det är inget godkänt regelbeslut. Kör Testa event för att prova urvalet.' : previewKind === 'social' ? 'Scenen visar ett chattsvar, inte ett eventtest. Kör Testa event för att prova variantvalet.' : 'Inget test kört för dessa inställningar. Spela vald variant är en separat förhandsvisning utan regelval.'}</p>}
       {result ? <details className={styles.technical}><summary>Tekniskt beslutsspår</summary><p className={styles.note}>Källtyp: {sourceType}. Tillåtna varianter i svaret: {result.eligible?.length ?? '–'}.</p><pre>{JSON.stringify(result, null, 2)}</pre></details> : null}
-      {!dealClips ? <details className={styles.advanced}><summary>Visa principen: tal först i startposition</summary><section className={styles.poseSimulation} aria-label="Simulera chattens startpositionsgrind">
-        <div><strong>Pedagogisk demo, inte ett livetest</strong><p>Illustrerar avsedd ordning: svar väntar tills standard-idlen visas. Timern nedan läser inga spel- eller uppspelningskvitton.</p></div>
-        <button type="button" className="text-button" onClick={() => setPoseStep(0)} disabled={poseStep >= 0 && poseStep < poseStages.length - 1}>Visa exempelförlopp</button>
-        <ol>{poseStages.map(([id, label], index) => <li key={id} data-stage={id} className={index < poseStep ? styles.completedStage : index === poseStep ? styles.activeStage : ''}><code>{id}</code><span>{label}</span></li>)}</ol>
-        {poseStep >= 0 ? <small role="status">{poseStep === poseStages.length - 1 ? 'Exemplet är klart. Verklig uppspelning verifieras i Händelselogg, inte av denna demo.' : `Exempelsteg ${poseStep + 1} av ${poseStages.length}`}</small> : null}
-      </section></details> : null}
+      {!dealFrequency ? <ClipSelectionHelp /> : null}
     </div>
   </details>;
 }

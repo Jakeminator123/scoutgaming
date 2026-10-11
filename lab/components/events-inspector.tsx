@@ -22,8 +22,8 @@ export function eventsEditorTab(value?: string): EventsEditorTab {
 function InspectorFooter({ dirty }: { dirty: boolean }) {
   return <div className="inspector-footer">
     <i className={dirty ? 'unsaved-dot' : 'saved-dot'} />
-    {dirty ? 'Utkast · spara när du är nöjd' : 'Projekt sparat lokalt'}
-    <span>JSON, inte dold konfiguration.</span>
+    {dirty ? 'Utkast · spara när du är nöjd' : 'Projekt sparat'}
+    <span>Publicering till bolag görs separat.</span>
   </div>;
 }
 

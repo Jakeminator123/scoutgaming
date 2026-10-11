@@ -189,8 +189,8 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
           })}>Ta bort</button>
         </li>)}
       </ul> : null}</details>
-    <details className={styles.advanced}><summary>Uppspelning · regler, slump och OpenClaw</summary><fieldset className={styles.group}>
-      <legend>OpenClaw väljer klipp</legend>
+    <details className={styles.advanced}><summary>Avancerat · sparat styrunderlag</summary><p className={styles.help}><strong>Ännu inte kopplat till uppspelningen.</strong> Dessa fasval, AI-småpratsval och variationsvärden sparas med presentationen, men den nuvarande spelaren läser dem inte som styrning. Befintliga värden bevaras.</p><p className={styles.help}>Aktiva klipp och grundloopvariationer hanteras i <a href={labUrl('/control/clips')}>Dealers & klipp</a>. Genererat småprat styrs i <a href={labUrl('/control/probe')}>AI-småprat vid inaktivitet</a>. Faktiskt klippläge och uppspelning visas i <a href={labUrl('/control/activity')}>Uppspelning</a>.</p><fieldset className={styles.group}>
+      <legend>Förberedda klippval per fas</legend>
       {OPENCLAW_PHASES.map(phase => <label className={styles.field} key={phase}>{phaseLabels[phase]??phase}
         <select value={lane.openclaw[phase]} onChange={event => editLane(draft => { draft.openclaw[phase] = event.target.value as OpenClawMode; })}>
           {[...OPENCLAW_MODES].map(mode => <option key={mode} value={mode}>{modeLabels[mode]??mode}</option>)}
@@ -226,7 +226,7 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
           {PROBE_MODELS.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
         </select>
       </label>
-      <p className={styles.help}>Välj när OpenClaw får föreslå eller styra AI-småprat vid inaktivitet. <a href={labUrl('/control/probe')}>Öppna inställningar för AI-småprat vid inaktivitet</a></p>
+      <p className={styles.help}>Sparat underlag. Använd den aktiva AI-småpratspolicyn för att styra väntetid och generering. <a href={labUrl('/control/probe')}>Öppna inställningar för AI-småprat vid inaktivitet</a></p>
     </fieldset>
     <fieldset className={styles.group}>
       <legend>Grundloopens variationer</legend>

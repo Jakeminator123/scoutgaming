@@ -3,6 +3,7 @@
 import { saveObservedStep } from '../lib/observed-step-store.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { ActivityLog } from './activity-log';
+import { PlaybackGuidance } from './playback-guidance';
 import { PageTemplate } from './page-template.mjs';
 import { StudioBindingNotices, StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
 import { studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
@@ -21,6 +22,7 @@ export function ControlActivityPage({ initialProject, initialVideos, initialStat
     <div className="sg-page-body">
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     <StudioBindingNotices project={project} videos={videos} dealerId={dealerId} eventId={event.id} />
+    <PlaybackGuidance dealerId={dealerId} observation />
     <ActivityLog
       full
       rolling

@@ -187,7 +187,15 @@ test('the editor retires zones and groups advanced automation while preserving c
   const project = createSeedProject();
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionSettings, { project, lane: project.lanes[0], onEdit() {} }));
   assert.doesNotMatch(editorHtml, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
-  assert.match(editorHtml, /Uppspelning · regler, slump och OpenClaw/);
+  assert.match(editorHtml, /Avancerat · sparat styrunderlag/);
+  assert.match(editorHtml, /Ännu inte kopplat till uppspelningen/);
+  assert.match(editorHtml, /nuvarande spelaren läser dem inte som styrning/);
+  assert.match(editorHtml, /Förberedda klippval per fas/);
+  assert.match(editorHtml, /href="[^" ]*control\/clips"/);
+  assert.match(editorHtml, /href="[^" ]*control\/probe"/);
+  assert.match(editorHtml, /href="[^" ]*control\/activity"/);
+  for (const mode of ['off', 'rules', 'random', 'shadow', 'active']) assert.ok(editorHtml.includes('value="' + mode + '"'));
+  assert.doesNotMatch(editorHtml, /<details[^>]*open=/);
   assert.match(editorHtml, /type="color"/);
   assert.match(editorHtml, /Följer OpenClaw/);
   assert.match(editorHtml, /Variationsfrekvens/);
