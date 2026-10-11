@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEAL_CONTACT, DEAL_FPS, SLIDE_SECONDS, cardPose, feltMatrix, splitHandAnchor } from '../public/card-table-layout.js';
-import { firstFaceTime, faceAtTime, triangleMatrices } from '../public/card-face-projection.js';
+import { firstFaceTime, faceAtTime, faceTriangles, GRID, triangleMatrices } from '../public/card-face-projection.js';
 import { CARD_FACE_TRACKS } from '../public/card-face-tracks.js';
 
 const anchor = { cx: 540, cy: 1115 };
@@ -109,17 +109,26 @@ test('every source starts face artwork at its first white frame, before hand-cle
   }
 });
 
-test('both projected triangles hit all four measured corners, sharing the diagonal',()=>{
-  const w=63,h=85;
+test('the corner-pin mesh hits all four measured corners and its triangles meet without seams',()=>{
+  const w=63,h=85,local=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]];
+  const at=(m,[x,y])=>[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];
   for(const track of Object.values(CARD_FACE_TRACKS))for(const f of track.frames){
-    const matrices=triangleMatrices(f.q,w,h);
-    const local=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]];
-    for(const [i,indices] of [[0,[0,1,2]],[1,[0,2,3]]])for(const j of indices){
-      const [a,b,c,d,e,g]=matrices[i],[x,y]=local[j];
-      assert.ok(Math.abs(a*x+c*y+e-f.q[j][0])<1e-6);
-      assert.ok(Math.abs(b*x+d*y+g-f.q[j][1])<1e-6);
-    }
+    const matrices=triangleMatrices(f.q,w,h),triangles=faceTriangles(w,h),seen=new Map();
+    assert.equal(matrices.length,2*GRID*GRID);
+    triangles.forEach((t,i)=>t.forEach(p=>{
+      const q=at(matrices[i],p),key=p.join(),j=local.findIndex(c=>c.join()===key);
+      if(j>=0)assert.ok(Math.hypot(q[0]-f.q[j][0],q[1]-f.q[j][1])<1e-6);
+      if(seen.has(key))assert.ok(Math.hypot(q[0]-seen.get(key)[0],q[1]-seen.get(key)[1])<1e-6);else seen.set(key,q);
+    }));
   }
+});
+
+test('a card held in perspective is pinned by its homography, not bent along one diagonal',()=>{
+  const w=78,h=106,q=[[-30,-40],[30,-40],[45,55],[-45,55]];   // a trapezoid: the top edge is further away
+  const m=triangleMatrices(q,w,h),mid=faceTriangles(w,h).findIndex(t=>t[0][0]<0&&t[2][0]>0&&t[0][1]<0&&t[2][1]>0);
+  // The card's centre (0,0 local) lies where the quad's diagonals cross, (0,-2); two affine triangles put it at (7.5,7.5).
+  assert.ok(Math.hypot(m[mid][4],m[mid][5]+2)<1.5,`centre at ${m[mid][4]},${m[mid][5]}`);
+  assert.ok(Math.hypot(m[mid][4]-7.5,m[mid][5]-7.5)>8);
 });
 
 // In these measured frames the hand occludes the corner, but the card's top
@@ -132,4 +141,48 @@ test('dealer thumb occlusion does not become a jumping card corner',()=>{
   for(let i=1;i<frames.length;i++)for(let corner=0;corner<4;corner++){
     assert.ok(Math.hypot(...[0,1].map(d=>frames[i].q[corner][d]-frames[i-1].q[corner][d]))<3);
   }
+});
+
+// Keyed ready dealers (John 11 Oct: "the cards move without the hand moving them"): fixed places, nothing shifts.
+test('ready dealers: a card that is down never moves; the incoming one leans from her fingers into its place as it travels', () => {
+  for (const seat of ['4', 'dealer']) for (let count = 2; count <= 6; count++) {
+    const rest = Array.from({ length: count }, (_, index) => cardPose({ index, count, anchor, seat, fixed: true }));
+    for (let step = 0; step <= 20; step++) {
+      const lean = step / 20;
+      for (let index = 0; index < count - 1; index++) if (!(seat === 'dealer' && index === 0 && count === 2))   // Emil #7: her upcard makes room for the hole card (tested below)
+        assert.deepEqual(cardPose({ index, count, anchor, seat, fixed: true, incomingIndex: count - 1, lean }), rest[index]);
+    }
+    const incoming = lean => cardPose({ index: count - 1, count, anchor, seat, fixed: true, incomingIndex: count - 1, lean });
+    assert.deepEqual(incoming(0), { x: anchor.cx, y: anchor.cy });   // on its filmed track while she picks it up
+    assert.deepEqual(incoming(1), rest[count - 1]);
+  }
+});
+
+test('ready dealers: her hole card keeps the filmed spot; her up card and extra cards spread sideways', () => {
+  const a = { cx: 540, cy: 895 };
+  assert.deepEqual(cardPose({ index: 1, count: 2, anchor: a, seat: 'dealer', fixed: true }), { x: 540, y: 895 });
+  const xs = Array.from({ length: 5 }, (_, index) => cardPose({ index, count: 5, anchor: a, seat: 'dealer', fixed: true }).x);
+  assert.ok(xs[0] < 540 && xs.slice(1).every((x, i, all) => i === 0 || x > all[i - 1]));
+});
+
+test('ready dealers: three-card hands keep the first index readable and stay clear of the next seat', () => {
+  const seats = [110, 253, 396, 540, 684, 827, 970];
+  for (const cx of seats) {
+    const cards = Array.from({ length: 3 }, (_, index) => cardPose({ index, count: 3, anchor: { cx, cy: 1115 }, fixed: true }));
+    assert.ok(cards[1].x - cards[0].x >= 24);                     // the first card's corner index shows
+    assert.ok(Math.max(...cards.map(c => c.x)) + 39 < cx + 143 - 39); // the neighbour's first card starts beyond it
+    assert.ok(Math.max(...cards.map(c => c.x)) + 39 <= 1080);
+  }
+});
+
+test("Emil #7: her upcard stays on its filmed spot until the hole card slides in, then moves aside with it", () => {
+  const a = { cx: 540, cy: 895 }, up = (count, incomingIndex, lean) => cardPose({ index: 0, count, anchor: a, seat: 'dealer', fixed: true, incomingIndex, lean });
+  const slot = cardPose({ index: 0, count: 2, anchor: a, seat: 'dealer', fixed: true });
+  assert.deepEqual(up(1, 0, 1), { x: 540, y: 895 });                  // alone: where the film laid it, even after it rests
+  assert.deepEqual(up(1, -1, 1), { x: 540, y: 895 });
+  assert.deepEqual(up(2, 1, 0), { x: 540, y: 895 });                  // the hole card has not moved yet
+  const half = up(2, 1, .5); assert.ok(half.x < 540 && half.x > slot.x); // moving aside with the hole card
+  assert.deepEqual(up(2, 1, 1), slot);                                 // in its slot when the hole card rests
+  assert.deepEqual(up(3, 2, 0), slot);                                 // and stays there for every later card
+  assert.ok(slot.x < 540);
 });

@@ -19,9 +19,18 @@ const EMIL_CONTACT = Object.freeze({
   hole: frames(28, 45),
   flip: frames(31, 33),
 });
-// The alternative dealer's card touches down two frames before it rests.
+// The alternative dealer's card touches down where its track first comes within 6 px of where it rests (it may still
+// creep a few px after that); without a track, two frames before it rests.
+const centre = q => [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4];
+function touchFrame(seat, land) {
+  const track = dealer.faceTracks?.[seat];
+  if (!track) return Math.max(0, land - 2);
+  const [x, y] = centre(track.frames.at(-1).q);
+  const i = track.frames.findIndex(f => { const [a, b] = centre(f.q); return Math.hypot(a - x, b - y) < 6; });
+  return Math.min(land, track.firstFrame + Math.max(0, i));
+}
 export const DEAL_CONTACT = isAlternative
-  ? Object.freeze(Object.fromEntries(Object.entries(dealer.land).map(([k, f]) => [k, frames(Math.max(0, f - 2), f)])))
+  ? Object.freeze(Object.fromEntries(Object.entries(dealer.land).map(([k, f]) => [k, frames(touchFrame(k, f), f)])))
   : EMIL_CONTACT;
 
 // The manifest dimensions are ALREADY projected pixels measured in the video.
@@ -41,7 +50,19 @@ export function fanOffset(index, count) {
     y: -older * Math.min(26, 110 / steps) };
 }
 
+// Keyed ready dealers (John 11 Oct: "cards move without the hand moving them"): a card never moves once it is down.
+// Every card has its own place in the hand from the start; the incoming one leaves her fingers on its filmed track and
+// leans into its place as it travels (trackLean), so it lands there and nothing beside it shifts. Player hands climb
+// right and toward her (the first card's index stays readable); her own cards spread sideways from the hole card,
+// which keeps the filmed spot exactly (her fingers slide it there and turn it on film).
+export const FIXED_LAYOUT = isAlternative && !!dealer.ready;
+const PLAYER_STEP_X = [28, 24, 18, 14, 10, 8], PLAYER_STEP_Y = -14, DEALER_STEP_X = [40, 30, 24, 18, 14, 10];
+const steps = (list, n) => { let x = 0; for (let k = 0; k < n; k++) x += list[Math.min(k, list.length - 1)]; return x; };
+export const playerSlot = index => ({ x: steps(PLAYER_STEP_X, index), y: PLAYER_STEP_Y * index });
+export const dealerSlot = index => ({ x: index === 0 ? -DEALER_STEP_X[0] : steps(DEALER_STEP_X, index - 1), y: 0 });
+
 export function dealerFanOffset(index, count) {
+  if (FIXED_LAYOUT) return dealerSlot(index);
   const older = count - 1 - index;
   if (count === 2) return { x: -older * 66, y: 0 };
   const steps = Math.max(1, count - 1);
@@ -64,7 +85,34 @@ function splitFanOffset(index, count, splitCount) {
 
 // Reserve the landing position as the new card makes contact. The old nodes
 // move once; revealing the new card does not restart or double their movement.
-export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat }) {
+// How far the incoming card has travelled along its filmed track, 0 at its first face frame and 1 at rest. Its lean into
+// its own place follows this, not the clock (Kevin 11 Oct: "then it goes up"): when her card stands still, so does the face.
+const travel = new Map();
+export function trackLean(track, time) {
+  const t = dealer.faceTracks?.[track];
+  if (!t) return 1;
+  if (!travel.has(track)) {
+    let s = 0; const sums = [0];
+    for (let i = 1; i < t.frames.length; i++) {
+      const a = t.frames[i - 1].q, b = t.frames[i].q;
+      const d = Math.hypot((b[0][0] + b[2][0] - a[0][0] - a[2][0]) / 2, (b[0][1] + b[2][1] - a[0][1] - a[2][1]) / 2);
+      sums.push(s += Math.max(0, d - .8));   // the track's sub-pixel jitter on a card at rest is no travel
+    }
+    travel.set(track, sums);
+  }
+  const sums = travel.get(track), i = Math.floor(time * DEAL_FPS + 1e-5) - t.firstFrame, total = sums.at(-1);
+  return i < 0 ? 0 : total < 1 ? 1 : sums[Math.min(i, sums.length - 1)] / total;
+}
+
+export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat, lean = 1, fixed = FIXED_LAYOUT }) {
+  if (fixed && splitCount === 1) {
+    const slot = seat === 'dealer' ? dealerSlot(index) : playerSlot(index);
+    let w = index !== incomingIndex ? 1 : Math.max(0, Math.min(1, lean));   // the incoming card leans in as it travels
+    // Emil 11 Oct (#7): her upcard stays where the film laid it until her face-down card slides in, then makes room in
+    // the same movement: it moves aside as far as the hole card has travelled, and is in its slot when that one rests.
+    if (seat === 'dealer' && index === 0) w = count < 2 ? 0 : incomingIndex === 1 ? Math.max(0, Math.min(1, lean)) : 1;
+    return { x: anchor.cx + slot.x * w, y: anchor.cy + slot.y * w };
+  }
   const offset = (i,n) => seat === 'dealer' ? dealerFanOffset(i,n)
     : splitCount > 1 ? splitFanOffset(i,n,splitCount) : fanOffset(i,n,width);
   const to = offset(index, count);
