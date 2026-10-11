@@ -10,6 +10,7 @@ import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
+import { internalSessionPresent } from '@/lib/partner-session.mjs';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '@/lib/workspace-surfaces.mjs';
 
@@ -75,7 +76,10 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
       data = await partnerWorkspaceInitialData(request, route.operatorSlug ? { operatorSlug: route.operatorSlug } : {});
     } catch (error) {
       const status = statusOf(error);
-      if (status === 401) redirect(partnerLoginAbsoluteUrl(h));
+      // Match the backend's fail-closed N1 priority, including stale N1 cookies.
+      // A partner login cannot repair an expired administrator credential.
+      if (status === 401) redirect(internalSessionPresent(request)
+        ? nextStudioLoginRedirect(route.publicPath) : partnerLoginAbsoluteUrl(h));
       if (status === 404) notFound();
       throw error;
     }
@@ -101,7 +105,7 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
     return <ControlWorkspace user={user} initialView={route.view} {...(studio ? { studio } : {})} {...companies} />;
   }
   if (route.operatorSlug === null) {
-    return <PartnerWorkspace user={user}
+    return <PartnerWorkspace user={user} apiBase={data.apiBase}
       accessClass={data.session.accessClass === 'internal-admin' ? 'internal-admin' : 'partner'}
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }

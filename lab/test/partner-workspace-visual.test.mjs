@@ -11,6 +11,12 @@ const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const sourceUrl = new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url);
 const source = readFileSync(sourceUrl, 'utf8');
+const actionsUrl = new URL('../components/partner-session-actions.tsx', import.meta.url);
+const actionsCode = transformSync(readFileSync(actionsUrl, 'utf8'), { filename: 'partner-session-actions.tsx',
+  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
+const actionsModule = { exports: {} }, actionsRequire = createRequire(actionsUrl);
+vm.runInNewContext(actionsCode, { module: actionsModule, exports: actionsModule.exports,
+  require: name => name.endsWith('.css') ? {} : actionsRequire(name) });
 
 function components({ language = 'sv', theme = 'light' } = {}) {
   const compiled = transformSync(source, { filename: 'kevin-backoffice.jsx',
@@ -20,6 +26,7 @@ function components({ language = 'sv', theme = 'light' } = {}) {
   vm.runInNewContext(compiled.code, { module, exports: module.exports, structuredClone, URL, URLSearchParams,
     require: name => {
       if (name.endsWith('.css')) return {};
+      if (name === '../partner-session-actions') return actionsModule.exports;
       if (name === './assets.mjs') return { assetUrl: path => path };
       if (name === './original-views.jsx') return { createOriginalViews: () => ({ Mark: () => null,
         views: { ops: () => React.createElement('div', null, 'Fixture operations') } }) };
@@ -87,11 +94,13 @@ test('empty unpublished operators do not imply a live package or assigned tables
 
 test('real administrator shell exposes same-account links, theme, language and grouped navigation', () => {
   const { KevinBackoffice } = components({ language: 'en', theme: 'dark' });
-  const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/workspace' }));
+  const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
   assert.match(html, /data-preview="operator" data-theme="dark" lang="en"/);
   assert.match(html, /href="\/control"/);
   assert.match(html, /href="\/play"/);
   assert.match(html, /Internal administrator/);
+  assert.match(html, /Switch account/);
+  assert.match(html, /Log out/);
   assert.match(html, /<h1[^>]*>Overview<\/h1>/);
   assert.equal((html.match(/<details/g) || []).length, 5);
   assert.match(html, /<summary[^>]*>Finance<\/summary>/);
@@ -103,9 +112,11 @@ test('member shell keeps internal links out and unsupported real pages never sho
   const { KevinBackoffice } = components();
   for (const initialView of ['players', 'tx', 'reports', 'api', 'roulette']) {
     const snapshot = realSnapshot({ accessClass: 'partner', viewer: { user: 'john', accessClass: 'partner' } });
-    const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: snapshot, user: 'john', apiBase: '/api/partner/workspace', initialView }));
+    const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: snapshot, user: 'john', apiBase: '/api/partner/snapshot', initialView }));
     assert.match(html, /Inte anslutet/);
     assert.match(html, /Operatörspersonal/);
+    assert.match(html, /Byt konto/);
+    assert.match(html, /Logga ut/);
     assert.doesNotMatch(html, /href="\/(?:control|play)"|Fixture operations|Intern förhandsvisning|Planerat/);
   }
 });
@@ -117,7 +128,7 @@ test('the existing fixture shell keeps its original group and heading structure'
   assert.match(html, /data-preview="fixture"/);
   assert.match(html, /<h2 class="kevin-shell-heading">Livebord<\/h2>/);
   assert.match(html, /Fixture operations/);
-  assert.doesNotMatch(html, /<details|data-theme=|kevin-page-header/);
+  assert.doesNotMatch(html, /<details|data-theme=|kevin-page-header|Byt konto|Logga ut|Switch account|Log out/);
 });
 
 function contrast(front, back) {

@@ -1,6 +1,6 @@
 # Partnerportal component
 
-Internal fixture preview and real operator data are two snapshots of this same component. Without `partner_session`, an internal admin on `/partner` and `/partner/{operatorSlug}` gets the fixture (`preview: true`, `mode: 'fixture'`) from `/studio/api/partner-preview`. `/partner/login` issues `partner_session`; those same `/partner` routes then serve that operator's data (`preview: false`, `mode: 'live'`). No session on `/partner` redirects to `/partner/login`. `/control` does not render this component. Players, transactions, reports, onboarding and package publishing stay disconnected.
+Real operator data and an explicitly enabled diagnostic fixture are separate snapshots of this component. `/partner` lists registered, accessible operators. Internal administrators reach those real operators with the same N1 login (`accessClass: 'internal-admin'`); members sign in through `/partner/login` and receive only their active memberships (`accessClass: 'partner'`). Normal partner routes never substitute fixtures. `/control` does not render this component. Players, transactions and reports remain disconnected from the game engine.
 
 `kevin-backoffice.jsx` exports `KevinBackoffice({ surface, initialSnapshot,
 apiBase, user, initialView })`. The same component serves two snapshot modes:
@@ -9,22 +9,36 @@ apiBase, user, initialView })`. The same component serves two snapshot modes:
   demonstration. The banner stays **Intern förhandsvisning**, and the demo
   picker can switch the two example operators.
 - **Real operator data** (`preview: false`): compact header with the operator
-  name, the text pill **Operatör**, and the current operatörspaket revision
-  when the snapshot includes one. No demo picker. An operator switcher is
-  shown only when `operators` has more than one membership.
+  name and current package revision, John's grouped navigation, light/dark
+  theme and Swedish/English preferences. No demo picker. An operator switcher
+  is shown only when the authorized `operators` list contains several entries.
+  Both the real directory and operator header expose **Byt konto / Logga ut**
+  (or **Switch account / Log out**) on desktop and mobile. The diagnostic
+  fixture never exposes these real-session actions.
+
+Session actions use `createStudioLoginClient` and the server's snapshot API base.
+Members end only their partner session. Internal administrators first clear any
+secondary partner session, then end the N1 session; only that secondary endpoint's
+existing 401/expired-cookie response counts as already absent. Any other failed or
+malformed response stops navigation and shows a localized retry message. After
+confirmed logout, the user reaches the appropriate login page. Account switching
+keeps only an allowlisted canonical partner return path, never an external URL.
 
 `players`, `transactions` and `reports` stay empty while `notConnected: true`.
-Those views then show one short sentence and one button, either to the matching
-nivå 1 tool or to Integrationer. Public `/control` renders the real internal
+Those views show an honest disconnected notice without fictional metrics or
+working-action promises. Public `/control` renders the real internal
 tool entrance, not this component. Old internal tool URLs lead to the existing
 Studio editors.
 
-## Still disconnected
+## Remaining disconnected verticals and diagnostic-only actions
 
-Player accounts, transactions, reports, real operator onboarding, invitations,
-API-key creation, report scheduling, PDF/XLSX export, player blocking, live
-publication and real table activation. Fixture CSV stays labelled example data.
-Design drafts exist only in the mounted instance.
+Player accounts, transactions, reports, API-key creation, report scheduling,
+PDF/XLSX export, player blocking and real table activation remain disconnected.
+Operator registration belongs to the existing internal company administration.
+Real operator membership invitations/role changes and lane branding
+save/publication use their existing scoped clients, subject to server permissions.
+The diagnostic fixture does not perform those live mutations. Fixture CSV stays
+labelled example data, and its design drafts exist only in the mounted instance.
 
 The source design is pinned to GitLab commit
 `7dee0901c75b7470c16a178079d5a5ebe4f11b9f`. The alias ImpactPL is still not
@@ -58,19 +72,21 @@ not the original global role editor.
   snapshot must be `fixture` and `internal`, owned by the selected operator,
   and bound to the authenticated viewer. A `preview: false` snapshot is
   operator data already supplied to the page (`mode: 'live'`,
-  `accessClass: 'partner'` and `notConnected: true` are accepted). This
+  `accessClass: 'partner'` or `'internal-admin'` and `notConnected: true` are accepted). This
   component does not refetch that snapshot from the fixture API. API failures,
   actor changes and failed authorization clear the visible fixture snapshot.
 - Changing operators aborts prior reads, clears the old view, validates the
   returned context, discards old drafts and updates the URL. Re-focus checks
   authorization without replacing local drafts; an actor mismatch closes them.
-- Design drafts exist only in the current mounted preview instance. No local
-  storage or server save. Applying a design updates only this preview. A
-  before-unload guard and a context-switch confirmation protect unsaved drafts.
+- Imported design drafts exist only in the current mounted instance. No local
+  storage or server save; applying that design updates only its preview. This is
+  separate from the connected lane branding editor's server-backed save/publication.
+  A before-unload guard and a context-switch confirmation protect unsaved drafts.
 - Image/logo palette tools operate locally on bounded PNG/JPG/WebP images.
-  PDF import, live publication, API key creation, invitations, report scheduling,
-  PDF/XLSX export, player blocking and real table activation are disconnected.
-  CSV exports are explicitly labelled fixture data.
+  PDF import, API key creation, report scheduling, PDF/XLSX export, player blocking
+  and real table activation are disconnected. Fixture invitations/publication do
+  not make live writes; connected operator team and lane branding actions keep
+  their server authorization. CSV exports are explicitly labelled fixture data.
 - Test a table uses the original SVG/ThFrame presentation states. It does not
   import the old simulator, wallet or dealer-video player. Static amounts and
   cards are visible design examples; production game authority remains unchanged.
@@ -102,10 +118,13 @@ draft isolation and reject old backend mutations. CSS fencing and UTC versus
 Stockholm initial markup are also checked. The coordinating task runs the
 application build and browser interaction verification.
 
-Resource ownership for each vertical, durable design storage, publication,
-account operations, media mapping and reports remain explicit integration
-work. Operator membership for the scoped snapshot is already enforced with
-`partner_session`. Medlemskap renders from `views/team.jsx`. The other imported
+Resource ownership for the remaining verticals, durable storage/publication of
+imported design drafts, player-account operations, media mapping and reports remain
+explicit integration work. Existing scoped membership and lane branding flows
+are connected, not evidence that those other verticals are complete.
+Operator membership for the scoped snapshot is enforced for partner sessions;
+internal-admin snapshots use the bounded N1 authorization bridge. Medlemskap
+renders from `views/team.jsx`. The other imported
 views stay in the factory so their cross-view helpers remain intact; split a
 view out only when its data is connected and the replacement is tested.
 

@@ -4,6 +4,8 @@ const COPY = Object.freeze({
   sv: {
     portal: 'Partnerportal', level: 'Nivå 2 · Spelbolag', partners: 'Partners', company: 'Spelbolag',
     admin: 'Intern administratör', member: 'Operatörspersonal', signedIn: 'Inloggad som',
+    switchAccount: 'Byt konto', logOut: 'Logga ut', loggingOut: 'Loggar ut…',
+    logoutError: 'Utloggningen kunde inte bekräftas. Du är kvar på sidan. Försök igen.',
     directoryIntroAdmin: 'Öppna ett riktigt spelbolag med samma administratörskonto. Åtkomsten kontrolleras för varje bolag.',
     directoryIntroMember: 'Här finns de spelbolag ditt konto har åtkomst till.',
     open: 'Öppna arbetsyta', directory: 'Alla partners', noPartners: 'Inga tillgängliga spelbolag',
@@ -30,6 +32,8 @@ const COPY = Object.freeze({
   en: {
     portal: 'Partner portal', level: 'Level 2 · Operators', partners: 'Partners', company: 'Operator',
     admin: 'Internal administrator', member: 'Operator staff', signedIn: 'Signed in as',
+    switchAccount: 'Switch account', logOut: 'Log out', loggingOut: 'Signing out…',
+    logoutError: 'Sign-out could not be confirmed. You are still on this page. Please try again.',
     directoryIntroAdmin: 'Open a real operator with the same administrator account. Access is checked separately for each operator.',
     directoryIntroMember: 'These are the operators your account can access.',
     open: 'Open workspace', directory: 'All partners', noPartners: 'No operators available',

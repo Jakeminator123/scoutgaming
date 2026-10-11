@@ -44,7 +44,7 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/preview`, `/control/probe`. `/control/tree` och `/control/operator-chat` omdirigerar. |
-| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). PR #12 implementerar riktiga partners även med samma N1-adminlogin; produktionsacceptans återstår. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
 | 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar publicerade bolag och deras verkliga rum. Allmän `/play/blackjack` går till lobbyn; enbart operator går till bolagets lobby. Explicit rumslänk begränsar dealer och miljö till paketet. Renders direkta spelväg behålls. Historiksidan anropar `POST /api/history`. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
@@ -102,9 +102,11 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   rena policytester är inte acceptans för riktiga konton.
   Förtydligande 6 oktober: intern adminpersonal ska ha åtkomst till alla tre
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
-  nivå 2:s förhandsvisning. `/partner` visar nu en separat ingång med explicit
-  demoval; inga exempelbolag presenteras som anslutna kunder. Kundpersonal når
-  bara egna aktiva medlemskap. Val av riktiga operatörer och paketpublicering är levererade i N1 till 11 oktober, inte i adminens N2-ingång: utan `partner_session` väljer `/partner` fortfarande exempelvyn. Samma admininloggning måste även kunna öppna riktiga bolag i N2; se JN2-A nedan. Operatörslagring, `partner_session`
+  nivå 2:s förhandsvisning. Före PR #12 valde `/partner` exempelvyn utan
+  `partner_session`. PR #12 ersätter normal demoväg med lagrade bolag, även
+  för färskt auktoriserad N1-admin med samma login; JN2-A nedan kräver fortfarande
+  produktionsacceptans. Kundpersonal når bara egna aktiva medlemskap. Val av
+  riktiga operatörer och paketpublicering är redan levererade i N1. Operatörslagring, `partner_session`
   och scoped snapshot finns; T2 är påbörjad, inte klar.
 - [ ] **T3. Anslut en operatörsfunktion i taget.** Öppen. Scoped snapshot kan visa sparat paket (presentationer, bord, revision) och medlemskap. Spelare, transaktioner och rapporter är inte anslutna. N1:s bolagsadministration och paketpublicering är levererade; N2:s kompletta liveacceptans och övriga integrationer återstår. Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
@@ -172,6 +174,23 @@ Ordinarie fullhook är godkänd för kodcommit `684864b618010caf11d2c7bef719b8fa
 De tidigare stoppade körningarna räknas separat: äldre previewharness behövde uppdateras
 och lokal Gateway-testdependency `ws` saknades; verifieringen kördes därefter om med låsta beroenden.
 
+**Granskningskomplettering i [PR #12](https://github.com/Jakeminator123/scoutgaming/pull/12):**
+Byt konto/Logga ut är tillbaka i riktig katalog och bolagsvy, SV/EN och mobil,
+via befintliga API:er och serverns uttryckliga åtkomstklass. Admin avslutar
+sekundär partnersession och N1; partner endast partnersessionen. Misslyckat
+anrop stoppar navigation och kan provas igen. Ogiltig/utgången N1-cookie
+går till N1-login med säker exakt partner-undersida som returnTo. Partnerlogin
+behåller sin befintliga `/partner`-landning; exakt undersideretur är endast
+verifierad för N1. Föråldrade fixturepåståenden i README och inventeringen är
+rensade eller historiskt märkta. Sessionssviten ingår i befintlig fullhook.
+
+Kompletteringens 29 ytrouter-/navigationstester och 29 fokuserade sessions-/
+visuella-/previewtester PASS, noll skip. TypeScript och Lab-produktionsbygge
+inklusive 82 byggspår PASS. Isolerade browserprov av faktiska komponenter
+bekräftar kontobyte, utloggning, anropsordning och serverfel utan navigation,
+SV/EN, ljust/mörkt och 360/1440 CSS-px. Detta är inte produktionslogin eller
+databasacceptans. Ny fullhookreceipt tillkommer efter kodcommit.
+
 **JN2-A/B är fortsatt öppna acceptansgrindar:** efter granskning/deployment krävs
 verklig N1-login → Johns/SG → direktlänk/refresh, begränsad/återkallad identitet,
 tenantisolerad skrivning och riktiga Postgres-konkurrensprov. JN2-B:s övriga
@@ -181,7 +200,7 @@ migration, provider/env eller deployment har ändrats av kodleveransen.
 **Underlag och nuläge.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
 pekar på `random/n2-skiss-john/index.html` på John-revision `aaadfb49`.
 Skissen är fristående HTML/JS med exempeldata och simulerade anrop, inte en
-färdig backend. Kodinventeringen nedan utgår från main
+färdig backend. Den historiska kodinventeringen före PR #12 nedan utgår från main
 `9d151fa6be364f4af5999c8163a6055dd8fc5fc8`. Webbläsarobservationerna gjordes
 11 oktober på www; deras exakta deployment-SHA är inte fastställd av denna kontroll.
 
