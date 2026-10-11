@@ -133,7 +133,10 @@ flagga-av-kompatibilitet. Gemensamt Neon-läge använder dess serverägda
 policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
-webb och Studio som Services. `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
+webb, Studio och taltransport som Services. Talservicen i
+`apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
+`apps/croupier-frontend/lib/platform-configuration.mjs`; inga nya nycklar behövs.
+`CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
 Render-origin måste fortfarande vara separat och ingressnyckeln stannar på

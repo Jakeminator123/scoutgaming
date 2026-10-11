@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import {experimental_upgradeWebSocket, waitUntil} from '@vercel/functions';
-import {platformConfiguration, canonicalPlatformPath} from './platform-routing.mjs';
+import {platformConfiguration, canonicalPlatformPath} from './platform-configuration.mjs';
 
 const CLIENT_PATH = '/speech-stream', WORKER_PATH = '/lipsync-worker';
 const MAX_BUFFERED = 8 * 1024 * 1024;
