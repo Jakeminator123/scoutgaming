@@ -41,7 +41,7 @@
     "Anslutningens serveradress avgör om originalet är lokalt eller externt. tools/start-local-comparison.mjs startar ett isolerat lokalt spel och stänger av externa modellanslutningar. Att OpenClaw-koden finns betyder inte att en körande gateway är ansluten.",
     "Uppspelningens logg håller högst 150 poster i sessionStorage. Den följer med vid sidbyte och töms när fliken stängs. Observationsprotokollet håller högst 300 meddelanden/4 MiB och stannar vid gränsen. Native är den ordinarie kvittokällan och Partner-SSE separat diagnostik. Exportera före omladdning; Ny observation börjar med kommande data utan att spela om gammal kö.",
     "Astrids aktuella standardfilmer är 1080×1920 (9:16). Varianterna för plats 1 och 2 samt idle_smile och idle_yawn är också 1080×1920. Web visar hela filmen utan beskärning, även på dator. Korten är serverstyrda 2D-överlägg; materialet har ännu ingen kalibrerad kontakt med handen. Saknat exakt Astrid-klipp visas som fel i provet på Händelser. Produktens ?rehearsal=1 är den befintliga QA-panelen i den riktiga spelaren, inte en flik på Händelser.",
-    "Tal vid inaktivitet: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
+    "AI-småprat vid inaktivitet: normalt 90 sekunders inaktivitet, minst 5 minuters paus, 3 per timme och 30 procent per tillfälle. Ett obesvarat initiativ tills spelaren åter blir aktiv. Belagda fakta lever högst 30 dagar; samma anekdot spärras 7 dagar. Glöm stoppar även väntande arbete. Senaste avslutade rundans netto skickas separat till vanlig chatt; totalresultat är inte resultatet för förra rundan."
   ],
   "surfaces": [
     {
@@ -81,7 +81,7 @@
       "purpose": "Menyraden Agentmodeller. Operatörschatt är /control/openclaw?tab=chat, och /control/operator-chat leder dit. Sparning av modellval går genom behörighetskontrollen till OpenClaw på Render. Gatewayens separata dashboard finns kvar för avancerad konfiguration."
     },
     {
-      "name": "Tal vid inaktivitet · /control/probe",
+      "name": "AI-småprat vid inaktivitet · /control/probe",
       "purpose": "Under Studio: Astrids automatiska initiativ med väntetid och AI-modell. Textprov och diagnostik är utfällbara. Textprov skapar ingen röst eller video. Talgranskning i Administration är ett separat verktyg."
     }
   ],

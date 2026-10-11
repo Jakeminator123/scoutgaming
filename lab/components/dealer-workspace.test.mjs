@@ -78,19 +78,20 @@ test('cloud idle refresh reads the shared registry even when imported media has 
   assert.equal(h.values[0],p.initialProject,'loading clips preserves the project draft');
 });
 
-test('focused workspace uses dealer chips, three categories and links instead of a hidden dealer list', () => {
+test('focused workspace has one media category entry and separate clip settings and AI speech', () => {
   const h = harness('./lab-studio.tsx'); const tree = h.render(props());
   const html = renderToStaticMarkup(tree);
   assert.equal(nodes(tree, node => node.type === 'select' && node.props['aria-label'] === 'Dealer').length, 0);
   const chips = nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip');
   assert.equal(chips.length, 4);
   assert.equal(chips.filter(node => node.props['aria-pressed'] === true).length, 1);
-  const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
+  assert.equal(nodes(tree, node => node.props?.onConfigureSlot).length,1);
+  assert.equal(nodes(tree, node => node.type === 'nav' && node.props['aria-label']==='Dealerns klippkategorier').length,0);
+  assert.match(html,/Standard och varianter/);
   assert.match(html, /href="\/control\/preview\?dealer=astrid"/);
   assert.match(html, /Sammansättning →/);
   assert.match(html, /href="\/control\/probe\?dealer=astrid"/);
-  assert.match(html, /Tal vid inaktivitet →/);
+  assert.match(html, /AI-småprat vid inaktivitet →/);
   assert.match(html, /href="\/control\/activity\?dealer=astrid"/);
   assert.match(html, /Uppspelning och logg →/);
   assert.doesNotMatch(html, /href="[^"]*openclaw|Spel &amp; uppspelning|Sparat i Lab|aria-label="Dealer"|Granska i spel|sg-pill|Förhandsvisa bakgrundszoner/);
@@ -103,8 +104,8 @@ test('draft survives dealer chip and category changes', () => {
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
   pressDealer(tree, 'Vera');
   tree = h.render(p);
-  const categories = nodes(tree, node => node.type === 'nav')[0];
-  nodes(categories, node => node.type === 'button')[1].props.onClick(); tree = h.render(p);
+  const library=nodes(tree,node=>node.props?.onCategoryChange)[0];
+  library.props.onCategoryChange('deal'); tree=h.render(p);
   assert.equal(h.values[0], draft);
   assert.equal(h.values[4], 'deal');
   const legacy = nodes(tree, node => node.props?.section === 'deal')[0];
@@ -131,10 +132,9 @@ test('another dealer keeps idle tools and the draft without a probe tab', () => 
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
   pressDealer(tree, 'Vera');
   tree = h.render(p);
-  const nav = nodes(tree, node => node.type === 'nav')[0];
-  assert.deepEqual(nodes(nav, node => node.type === 'button').map(node => node.props.children), ['Grundloop', 'Utdelning', 'Repliker']);
-  assert.equal(nodes(nav, node => node.type === 'button' && node.props.children === 'Probe').length, 0);
-  assert.equal(nodes(nav, node => node.props['aria-pressed'] === true)[0].props.children, 'Grundloop');
+  const library=nodes(tree,node=>node.props?.onConfigureSlot)[0];
+  assert.equal(library.props.dealerId,'vera');
+  assert.equal(nodes(tree,node=>node.type==='button'&&node.props.children==='Probe').length,0);
   assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
   assert.match(renderToStaticMarkup(tree), /href="\/control\/probe\?dealer=vera"/);
@@ -237,4 +237,17 @@ test('draft removal integration updates draft and follows confirmed next dealer 
   assert.equal(h.values[3],'astrid');assert.equal(h.values[0].dealers.some(row=>row.id==='johanna'),false);
   assert.equal(p.initialProject.dealers.some(row=>row.id==='johanna'),true);
   assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna').length,0);
+});
+
+test('opening an exact slot reveals settings and preserves destination and unsaved draft',()=>{
+  const h=harness('./lab-studio.tsx'),p=props();let tree=h.render(p);
+  const draft={...h.values[0],revision:'unsaved'};h.values[0]=draft;
+  nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('deal.player','box4');tree=h.render(p);
+  assert.equal(h.values[0],draft);assert.equal(h.values[11].situation,'box4');
+  const settings=nodes(tree,node=>node.type==='details'&&node.props.onToggle)[0];assert.equal(settings.props.open,true);
+  const variants=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('tab=variants'))[0];
+  assert.match(variants.props.href,/situation=box4/);
+  nodes(tree,node=>node.props?.onCategoryChange)[0].props.onCategoryChange('speech');tree=h.render(p);
+  assert.equal(nodes(tree,node=>node.type==='details'&&node.props.onToggle)[0].props.open,false);
+  assert.equal(h.values[0],draft);
 });

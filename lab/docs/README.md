@@ -20,6 +20,12 @@ Publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
 /play: välj bolag → rum → dealer/miljö → spela
 ```
 
+I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte är vald. **Gult** visar rekommenderade deal-fack som saknar exakt video. Övriga fack är valfria. Välj kategori och sedan ett fack: listan visar sex klipp per sida. Flera filer i samma fack är möjliga varianter; **Klippval, varianter & villkor** öppnar inställningarna. Uppladdning aktiverar inte en variant automatiskt. Status är inventering och projektval, inte bevis på godkänd uppspelning.
+
+**När spelas klippen?** Grundloopen går mellan spelhändelser; deal och inspelade repliker följer händelser från spelet. Sammansättning → **Uppspelning · regler, slump och OpenClaw** styr presentationens val per fas. AI-småprat vid inaktivitet skapar nya repliker och har för närvarande stöd för Astrid; det är separat från Tal-klipp & ljud.
+
+Under **Hantera dealers** kan egna dealers läggas till och tas bort ur utkastet. Under Bord/Bakgrund i Sammansättning finns uppladdning och **Hantera bord/bakgrunder**. Oanvända lagerfiler kan tas bort ur projektbiblioteket och ångras medan sidan är öppen. Sparade paket och Blob-filer raderas inte. Koppla först loss filen från standardval och tillåtna alternativ i alla presentationer som anges. Spara projektet efter ändringen.
+
 En enda egen grundloop räcker för att testa flödet. Händelseklipp kan läggas till senare; avsaknad av sådana klipp ersätter inte dealern med någon annan.
 
 **Dealer, presentation och spelrum är olika saker:**
@@ -33,9 +39,9 @@ En enda egen grundloop räcker för att testa flödet. Händelseklipp kan lägga
 
 Tekniskt heter en presentation presentationslane. En spellane är spelmotorns interna väg; du behöver inte skapa den manuellt. Även Administrationens **Lägg till teknisk spelkonfiguration** skapar ID automatiskt och låter dig välja dealer ur en lista. Exakta gamla ID:n används bara vid uttrycklig återställning under Avancerat.
 Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelseklipp. Öppna sedan **Sammansättning**, där du väljer, skapar och namnger presentationen. Öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
-Klippbibliotek, Händelser och Tal vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
+Klippbibliotek, Händelser och AI-småprat vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
 Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
-Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Under Avancerat i Sammansättning finns bevarade uppspelningspolicyer, bordsfärger och vilka mindre ändringar bolaget får göra. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
+Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Under Uppspelning i Sammansättning finns bevarade uppspelningspolicyer, bordsfärger och vilka mindre ändringar bolaget får göra. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
 **Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Fullbildsklipp behåller sin inbakade miljö. **Till Sammansättning** återgår till presentationen som startade provet.
 
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
@@ -165,7 +171,7 @@ Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
 de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
-exakt tal. **Tal vid inaktivitet** ligger under Studio. Det separata textprovet
+exakt tal. **AI-småprat vid inaktivitet** ligger under Studio. Det separata textprovet
 skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
 
@@ -269,7 +275,7 @@ tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslu
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till Tal vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till AI-småprat vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).

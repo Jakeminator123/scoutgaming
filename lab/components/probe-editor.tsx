@@ -27,14 +27,14 @@ export function ProbeEditor({policy,onChange,onActivity}:{policy:ProbePolicy;onC
     try{
       const response=await requestJson<Result>('/api/probe',{method:'POST',body:JSON.stringify({caseId,policy,forgotten})});
       setResult(response);
-      onActivity?.({source:'config',stage:'decision',status:'completed',title:'Tal vid inaktivitet · textprov',owner:'Astrids talroll',
+      onActivity?.({source:'config',stage:'decision',status:'completed',title:'AI-småprat vid inaktivitet · textprov',owner:'Astrids talroll',
         reason:PROBE_REASONS[response.reason]??response.reason,data:{caseId,model:policy.model,choice:response.choice,metrics:response.metrics}});
     }catch(cause){setError(cause instanceof Error?cause.message:'Provet misslyckades.');}
     finally{setBusy(false);}
   }
-  return <section className={styles.panel} aria-label="Tal vid inaktivitet för Astrid">
+  return <section className={styles.panel} aria-label="AI-småprat vid inaktivitet för Astrid">
     <div><span className="eyebrow">ASTRID · EGNA TALINITIATIV</span><h2>Astrids talinitiativ</h2><p>En kort personlig replik när spelaren är inaktiv och bordet är lugnt. Astrid kan också välja att vara tyst.</p></div>
-    <div className={styles.modes} role="group" aria-label="Läge för tal vid inaktivitet">{([['off','Av'],['text','Textprov'],['automatic','Automatiskt · OpenClaw']] as const).map(([mode,label])=><button type="button" key={mode} aria-pressed={policy.mode===mode} onClick={()=>edit({mode})}>{label}</button>)}</div>
+    <div className={styles.modes} role="group" aria-label="Läge för AI-småprat vid inaktivitet">{([['off','Av'],['text','Textprov'],['automatic','Automatiskt · OpenClaw']] as const).map(([mode,label])=><button type="button" key={mode} aria-pressed={policy.mode===mode} onClick={()=>edit({mode})}>{label}</button>)}</div>
     <div className={styles.grid}>
       <label className="field">Inaktivitet före ett initiativ (sekunder)<input type="number" min={1} max={3600} value={policy.inactivityMs/1000} onChange={e=>edit({inactivityMs:Number(e.target.value)*1000})}/></label>
       <label className="field">Minsta paus mellan initiativ (sekunder)<input type="number" min={1} max={86400} value={policy.cooldownMs/1000} onChange={e=>edit({cooldownMs:Number(e.target.value)*1000})}/></label>
