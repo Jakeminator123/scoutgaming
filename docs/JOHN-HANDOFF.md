@@ -1,4 +1,16 @@
 # Aktuell handoff — Scoutgaming
+## 11 oktober 2026: bolagsportal och automatiska tekniska ID:n
+
+Den befintliga /play-lobbyn har nu ett bolagsval med endast aktiva bolag som har spelbara, publicerade rum. Vercels /play/blackjack utan ett uttryckligt spelmål leder till denna portal; enbart operator leder till bolagets lobby. Rumslänkar, rehearsal och signerade spelstarter behåller sina befintliga vägar. Flödet är bolag → rum och tillåtna dealer-/miljöval → blackjack. Katalogen är endast läsande, visar bara slug och namn och använder samma rumsläsare som spelstarten. Tom lista och driftfel visas separat med möjlighet att försöka igen.
+
+Administrationens tekniska spelkonfiguration kräver nu namn och ett dealerval ur det sparade registret. ID skapas automatiskt och behålls vid ett misslyckat sparförsök. Exakt gammalt ID kan anges enbart efter uttryckligt val under Avancerat för återställning. Normal publicering och skapande av spelrum fortsätter att återanvända eller skapa spelkonfiguration automatiskt. Den gemensamma spelarinloggningen stöder redan administratörens uppgifter; en befintlig admincookie ersätter inte en spelarsession. Provspela från Sammansättning använder fortsatt separat testsaldo.
+
+Verifierat före slutcommit: frontend- och Lab-produktionsbyggen PASS, riktade portal-/katalog-/admin-/authtester och TypeScript PASS. Verklig byggd frontend i isolerad browser vid 1440 och 390 px klarar bolagsval, tillbaka till alla bolag, rum/dealerval/startlänk samt tom-, fel- och försöka-igen-vyer utan sidfel eller overflow. Kontotjänsten saknas avsiktligt i denna lokala fixtur; den är inte produktionsacceptans av inloggning. Alla fyra originaldealers klarar åter två faktiska goodluck-uppspelningar. En extra lokal Studio-bildkontroll blandade produktions-basePath och offline-root och räknas därför inte som godkänd Studio-acceptans; liveformuläret kontrolleras efter driftsättning. Exakt-SHA CI och hosting redovisas efter push.
+
+Föregående leverans 19190616354a4eb8a26a670b9452c2a3b3ff7008 är committad och pushad. Normal fullhook: 2263 tester, 2254 PASS, 9 SKIP, 0 FAIL. GitHub CI 38136442361 SUCCESS. Vercel dpl_999KF9Hxv1q6cfMgvnftd1wVdPqN READY/PROMOTED med www/apex; Render /__cloud/version bekräftar exakt samma SHA. Säkerhetsläsningen visar 17 observerade incidenter, 12 öppna, 5 ignorerade; aktiv monitorering, partiella platsuppgifter och historisk scan too_large. Inga incidenter ändrades.
+
+Kvarvarande produktbegränsning: egen oanvänd dealer kan tas ur utkastet, och bord/bakgrund kan tas ur tillåtna val. Permanent mediefilsradering samt borttagning/avstängning av bolag saknas fortfarande i UI/API. Extern .codex/config.toml och okänd tom selection[key] ingår inte i leveransen.
+
 ## 11 oktober 2026: isolerat provspel före publicering
 
 N1-flödet är Dealers & klipp → Sammansättning → Provspela → Publicering till bolag → Spelrum i bolagets lobby. En dealer äger sina klipp och händelser; bord är en statisk bild; bakgrund är bild eller egen videoloop. Ett spelrum är den spelbara ingången, inte ett ytterligare lager eller en dealer.

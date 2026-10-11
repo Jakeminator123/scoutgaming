@@ -244,13 +244,13 @@ test('unknown operator slug is the company 404 from the engine, not the open cat
     assert.equal(init.headers.get('cookie'),'fixture-session=existing');
     assert.equal(init.headers.get('x-croupier-vercel-secret'),env.CROUPIER_VERCEL_INGRESS_SECRET);
     if(String(url).endsWith('/api/auth/session'))return Response.json({authenticated:true});
-    assert.match(String(url),/\/blackjack\?operator=nobody$/);
+    assert.match(String(url),/\/blackjack\?table=room-unknown&operator=nobody$/);
     assert.equal(init.redirect,'manual');
     if(init.method==='HEAD')return new Response(null,{status:404,headers:{'content-type':'text/html; charset=utf-8'}});
     return new Response(enginePage,{status:404,headers:{'content-type':'text/html; charset=utf-8'}});
   };
   const options={env:unified,directory,fetchImpl};
-  const request=method=>new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=nobody',{method,headers:{cookie:'fixture-session=existing'}});
+  const request=method=>new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=nobody&table=room-unknown',{method,headers:{cookie:'fixture-session=existing'}});
   const response=await platformUiDocument(request('GET'),options);
   assert.equal(response.status,404);assert.equal(await response.text(),enginePage);
   const head=await platformUiDocument(request('HEAD'),options);

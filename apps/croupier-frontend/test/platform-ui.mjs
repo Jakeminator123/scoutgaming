@@ -121,7 +121,7 @@ test('unified player addresses preserve approved selectors and the existing sign
     {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&lane=mobile-phone'});
   assert.deepEqual(platformRoute(new URL('/play/blackjack?launch=fixture.claim.signature&table=room-1',unified.publicOrigin),unified),
     {kind:'backend',destination:unified.backendOrigin+'/blackjack?launch=fixture.claim.signature&table=room-1'});
-  assert.equal(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified).kind,'frontend');
+  assert.deepEqual(platformRoute(new URL('/play/blackjack',unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play'});
   assert.equal(platformRoute(new URL('/play/%62lackjack',unified.publicOrigin),unified).kind,'reject');
   assert.deepEqual(platformRoute(new URL('/blackjack?operator=sg-test&dealer=astrid&returnTo=https://evil.invalid',unified.publicOrigin),unified),
     {kind:'redirect',destination:unified.publicOrigin+'/play/blackjack?dealer=astrid&operator=sg-test'});
@@ -178,12 +178,12 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   };
   const request=path=>new Request(unified.publicOrigin+path,{headers:{cookie:'game_session=fixture'}});
   const options={env:unifiedEnv,directory,fetchImpl};
-  const played=await platformUiDocument(request(operatorPlayPath('sg-test')),options);
+  const played=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
   assert.equal(played.status,200);assert.match(await played.text(),/data-game-operator="sg-test"/);
-  assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?operator=sg-test']);
+  assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session',unified.backendOrigin+'/blackjack?table=room-1&operator=sg-test']);
   calls.length=0;authenticated=false;
-  const login=await platformUiDocument(request(operatorPlayPath('sg-test')),options);
-  assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?operator=sg-test');
+  const login=await platformUiDocument(request(operatorPlayPath('sg-test')+'&table=room-1'),options);
+  assert.equal(login.status,303);assert.equal(login.headers.get('location'),'/player-login?table=room-1&operator=sg-test');
   assert.deepEqual(calls,[unified.backendOrigin+'/api/auth/session']);
   calls.length=0;authenticated=true;
   const plain=await platformUiDocument(request('/play/blackjack?dealer=astrid'),options);
@@ -404,4 +404,49 @@ test('Studio preview transports only explicit session paths without acquiring or
   for(const path of ['/studio-preview','/studio-preview/not-a-session',base+'/chat',base+'/deposit',base+'/currency',base+'/auth/logout',
     base+'/../table',base+'/videos/private/file',base+'/layers/'+id+'/extra',base+'/',base+'/presentation/select/extra',
     '/api/studio-preview//'+id,base.replace('/api/','/api/%73')]) assert.equal(backendPlatformPath(path),false,path);
+});
+test('bare public Blackjack enters the existing lobby without reading a player session or saved global lane',async()=>{
+  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unified=platformConfiguration(unifiedEnv);
+  for(const path of ['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/','/play/blackjack?utm_source=bookmark&returnTo=https://evil.invalid']){
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play'});
+    for(const method of ['GET','HEAD']){
+      const response=await platformUiDocument(new Request(unified.publicOrigin+path,{method}),{
+        env:unifiedEnv,fetchImpl:()=>assert.fail('bare entry must not read player auth, account or global policy'),
+      });
+      assert.equal(response.status,303,path);assert.equal(response.headers.get('location'),'/play');
+      assert.equal(await response.text(),'');
+    }
+  }
+  for(const query of ['table=room-one&operator=sg-test','dealer=amira','lane=mobile-phone',
+    'presentation=local','rehearsal=1','performance=staged','motion=smooth60','launch=fixture.claim.signature',
+    'launch=invalid','operator=sg-test&operator=north','labObserverChannel=invalid']){
+    const route=platformRoute(new URL('/play/blackjack?'+query,unified.publicOrigin),unified);
+    assert.notEqual(route.destination,unified.publicOrigin+'/play',query);
+  }
+  assert.equal(backendPlatformPath('/api/operators'),true);
+  for(const path of ['/api/operators/','/api/operators/private/users','/api/operators%2f','/api/operator'])assert.equal(backendPlatformPath(path),false,path);
+});
+
+test('published room login retains operator, room and dealer while the administrator portal keeps its own session',async()=>{
+  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const calls=[];
+  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=amira'),{
+    env:unifiedEnv,fetchImpl:async(url)=>{calls.push(url);return Response.json({authenticated:false});},
+  });
+  assert.equal(response.status,303);
+  const location=new URL(response.headers.get('location'),env.CROUPIER_PUBLIC_ORIGIN);
+  assert.equal(location.pathname,'/player-login');assert.equal(location.searchParams.get('operator'),'sg-test');
+  assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'amira');
+  assert.deepEqual(calls,[env.CROUPIER_BACKEND_ORIGIN+'/api/auth/session']);
+});
+
+test('an operator-only Blackjack bookmark opens that company lobby without consuming player authentication',async()=>{
+  const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
+  const unified=platformConfiguration(unifiedEnv);
+  for(const path of ['/play/blackjack?operator=sg-test','/blackjack?operator=sg-test&utm_source=partner']){
+    assert.deepEqual(platformRoute(new URL(path,unified.publicOrigin),unified),{kind:'redirect',destination:unified.publicOrigin+'/play?operator=sg-test'});
+    const response=await platformUiDocument(new Request(unified.publicOrigin+path),{env:unifiedEnv,fetchImpl:()=>assert.fail('company lobby entry must not create a game session')});
+    assert.equal(response.status,303);assert.equal(response.headers.get('location'),'/play?operator=sg-test');
+  }
 });

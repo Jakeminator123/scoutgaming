@@ -1,3 +1,4 @@
+import {operatorPublicView} from './player-operator.mjs';
 import {validatePublicOperatorRooms} from '../../../web/public/operator-rooms-contract.mjs';
 import {readChoices,writeChoices} from '../../../web/public/player-choices.mjs';
 import {isOperatorSlug} from '../../../web/public/game-lanes.mjs';
@@ -44,4 +45,25 @@ export function rememberRoomSelection(storage,operator,selection) {
   writeChoices(storage,operator,selection);
   const stored=readChoices(storage,operator);
   return ['tableAsset','background'].every(key=>!selection[key]||stored[key]===selection[key]);
+}
+
+export async function loadOperatorCatalogue({fetchImpl=fetch,signal}={}) {
+  try {
+    const response=await fetchImpl('/api/operators',{
+      headers:{accept:'application/json'},cache:'no-store',redirect:'error',signal,
+    });
+    if(!response.ok)return {status:'unavailable'};
+    const text=await response.text();
+    if(text.length>256000)return {status:'unavailable'};
+    const data=JSON.parse(text);
+    if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).join(',')!=='operators'
+      ||!Array.isArray(data.operators)||data.operators.length>1000)return {status:'unavailable'};
+    const operators=[],seen=new Set();
+    for(const row of data.operators){
+      const operator=operatorPublicView(row,row?.slug);
+      if(!operator||seen.has(operator.slug))return {status:'unavailable'};
+      seen.add(operator.slug);operators.push(operator);
+    }
+    return {status:'ready',operators};
+  } catch {return {status:'unavailable'};}
 }

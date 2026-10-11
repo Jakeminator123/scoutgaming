@@ -87,6 +87,7 @@ export function backendPlatformPath(value) {
   const path = canonicalPlatformPath(value);
   if (!path) return false;
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path)
+    || path === '/api/operators'
     || path === '/api/studio-game/command'
     || STUDIO_PREVIEW.test(path)
     || BACKOFFICE.has(path)
@@ -103,6 +104,19 @@ export function backendPlatformPath(value) {
     || ['/scene.jpg', '/dealer-fallback.png', '/speech-media.json'].includes(path);
 }
 
+// A bare public Blackjack address is a lobby entry, not a global dealer choice.
+// Explicit selectors (even malformed ones) keep their existing validation/auth path.
+export function blackjackLobbyDestination(url, config) {
+  if (!config?.unifiedUi || !config.canonicalGame
+    || !['/play/blackjack','/play/blackjack/','/blackjack','/blackjack/'].includes(url.pathname)) return null;
+  const context = ['table','dealer','lane','presentation','launch','rehearsal',
+    'performance','motion','labObserverOrigin','labObserverChannel'];
+  if (context.some(key => url.searchParams.has(key))) return null;
+  const operator = requestedOperator(url.searchParams);
+  if (operator === null) return null; // Preserve the existing invalid/duplicate selector handling.
+  return typeof operator === 'string' ? '/play?'+new URLSearchParams({operator}).toString() : '/play';
+}
+
 export function platformRoute(url, config) {
   // Next encodes the literal catch-all folder in these two generated chunks.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.
@@ -114,6 +128,8 @@ export function platformRoute(url, config) {
   if(config.unifiedUi && ['/administration','/administration/'].includes(path)){
     return {kind:'redirect',destination:`${config.publicOrigin}/control/administration${url.search}`};
   }
+  const lobby = blackjackLobbyDestination(url, config);
+  if (lobby) return {kind:'redirect',destination:config.publicOrigin+lobby};
   if(config.unifiedUi && config.canonicalGame){
     const previous=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:'1'});
     if(previous||['/blackjack','/blackjack/','/play/blackjack/'].includes(path)){

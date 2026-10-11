@@ -1,4 +1,4 @@
-// Public name for an active operator. No package, membership or branding.
+// Public operator labels. The lobby list includes only currently playable rooms.
 import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS, isOperatorSlug } from './demo-operators.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)$/;
@@ -11,8 +11,8 @@ function record(operator) {
   return {slug: operator.slug, name: operator.name};
 }
 
-export function createPublicOperatorDirectory({store = null, now = Date.now, ttlMs = OPERATOR_PUBLIC_CACHE_MS} = {}) {
-  if (typeof now !== 'function' || !Number.isFinite(ttlMs) || ttlMs < 0) throw new TypeError('Invalid operator directory');
+export function createPublicOperatorDirectory({store = null, readRooms = null, now = Date.now, ttlMs = OPERATOR_PUBLIC_CACHE_MS} = {}) {
+  if (typeof now !== 'function' || !Number.isFinite(ttlMs) || ttlMs < 0 || readRooms !== null && typeof readRooms !== 'function') throw new TypeError('Invalid operator directory');
   const cache = new Map();
   const fixtures = new Map(PARTNER_PREVIEW_OPERATORS.map(item => [item.slug, {slug: item.slug, name: item.name, status: 'active'}]));
   async function load(slug) {
@@ -30,7 +30,40 @@ export function createPublicOperatorDirectory({store = null, now = Date.now, ttl
     else cache.delete(slug);
     return value;
   }
+  async function list() {
+    // Unlike the legacy single-name lookup, this is never a cached/demo list.
+    if (typeof store?.listOperators !== 'function' || !readRooms) throw Error('Operator list unavailable');
+    const rows = await store.listOperators();
+    if (!Array.isArray(rows) || rows.length > 1000 || Object.keys(rows).length !== rows.length) throw Error('Invalid operator list');
+    const { validatePublicOperatorRooms } = await import('./public/operator-rooms-contract.mjs');
+    const operators = [], seen = new Set();
+    for (const row of rows) {
+      const value = record(row);
+      if (!value || !value.name.trim()) continue;
+      if (seen.has(value.slug)) throw Error('Duplicate operator');
+      seen.add(value.slug);
+      const rooms = await readRooms(value.slug);
+      if (rooms === null) continue; // Operator was removed/suspended after listing.
+      const current = validatePublicOperatorRooms(rooms, {operatorSlug: value.slug});
+      if (current.rooms.length) operators.push({slug: current.operator.slug, name: current.operator.name});
+    }
+    const result = {operators};
+    if (Buffer.byteLength(JSON.stringify(result), 'utf8') > 256 * 1024) throw Error('Operator list too large');
+    return result;
+  }
+  async function handleList(req, res, pathname) {
+    const send = (status, value, extra = {}) => {
+      res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra});
+      res.end(req.method === 'HEAD' ? undefined : JSON.stringify(value));
+    };
+    if (!['GET', 'HEAD'].includes(req.method)) { send(405, {error: 'method_not_allowed'}, {Allow: 'GET, HEAD'}); return true; }
+    if (new URL(req.url ?? pathname, 'http://local').search) { send(400, {error: 'invalid_query'}); return true; }
+    try { send(200, await list()); }
+    catch { send(503, {error: 'operator_directory_unavailable'}); }
+    return true;
+  }
   async function handle(req, res, pathname) {
+    if (pathname === '/api/operators') return handleList(req, res, pathname);
     const match = PATH.exec(pathname);
     if (!match) return false;
     const headers = {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60'};
@@ -57,5 +90,5 @@ export function createPublicOperatorDirectory({store = null, now = Date.now, ttl
     }
     return true;
   }
-  return {read, handle};
+  return {read, list, handle};
 }

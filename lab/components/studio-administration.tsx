@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import { GAME_LANES } from '../../web/public/game-lanes.mjs';
+import { GAME_LANES, isGameLaneId } from '../../web/public/game-lanes.mjs';
+import { registeredDealerIds } from '../../web/public/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './studio-administration.module.css';
@@ -267,6 +268,66 @@ function ResourceNotice({ resource, onReload, reloadLabel }: { resource?: Resour
 }
 function EmptyRows({ count }: { count: number }) { return count ? null : <p>Servern returnerade inga poster.</p>; }
 
+type SavedDealer = { id: string; label: string };
+export function savedDealerOptions(value: unknown): SavedDealer[] | null {
+  try {
+    registeredDealerIds({ dealers: value });
+    if (!Array.isArray(value) || value.some(row => !object(row) || Object.keys(row).sort().join(',') !== 'id,label'
+      || typeof row.label !== 'string' || !row.label.trim() || row.label !== row.label.trim()
+      || row.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(row.label))) return null;
+    return value.map(row => ({ id: row.id, label: row.label }));
+  } catch { return null; }
+}
+export function newTechnicalLaneId(lanes: JsonObject[], newKey: () => string = () => crypto.randomUUID()) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const key = newKey();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(key)) break;
+    const id = 'lane-' + key;
+    if (isGameLaneId(id) && !lanes.some(lane => lane.id === id)) return id;
+  }
+  throw new Error('Ett unikt tekniskt ID kunde inte skapas. Försök igen.');
+}
+export function TechnicalLaneCreate({ savedDealers, lanes, activeDealer, revision, busy, command }: {
+  savedDealers: unknown; lanes: JsonObject[]; activeDealer: unknown; revision: unknown; busy: boolean; command: Command;
+}) {
+  const automaticId = useRef<string | null>(null);
+  const [restore, setRestore] = useState(false), [error, setError] = useState('');
+  const dealers = savedDealerOptions(savedDealers);
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !dealers || !validRevision(revision)) return;
+    const form = event.currentTarget, dealer = value(form, 'dealer'), name = value(form, 'name');
+    if (!dealers.some(row => row.id === dealer)) { setError('Välj en dealer från det sparade biblioteket.'); return; }
+    if (!name || name.length > 80 || /[\u0000-\u001f\u007f-\u009f<>]/u.test(name)) { setError('Ange ett namn med högst 80 tecken.'); return; }
+    try {
+      const id = restore ? value(form, 'restoreId') : (automaticId.current ??= newTechnicalLaneId(lanes));
+      if (!isGameLaneId(id) || lanes.some(lane => lane.id === id)) {
+        setError('Det tekniska ID:t är ogiltigt eller finns redan. Läs om befintliga spelkonfigurationer.'); return;
+      }
+      setError('');
+      command('game-lanes/create', { definition: { ...GAME_LANES[0], id, label: name, dealer, mediaCollection: dealer + '-presentation' }, expectedRevision: revision }, form);
+    } catch { setError('Ett unikt tekniskt ID kunde inte skapas. Försök igen.'); }
+  }
+  return <details className={styles.disclosure}><summary>Lägg till teknisk spelkonfiguration</summary>
+    <p className={styles.notice}>För vanliga spelrum använder du Publicering → Skapa spelrum. Här hanteras den tekniska spelkonfigurationen.</p>
+    {!dealers ? <p role="status">Dealerlistan från den sparade studion kunde inte läsas. Läs om serverdata innan du skapar en spelkonfiguration.</p>
+      : <form method="post" className={styles.form} onSubmit={submit} onReset={() => { automaticId.current = null; setRestore(false); setError(''); }}>
+        <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
+        <label>Dealer<select name="dealer" required disabled={busy} defaultValue={dealers.some(row => row.id === activeDealer) ? String(activeDealer) : dealers[0].id}>
+          {dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}
+        </select></label>
+        <details className={styles.disclosure}><summary>Avancerat: tekniskt ID och återställning</summary>
+          <p>Tekniskt ID skapas automatiskt och behålls vid återförsök. {automaticId.current ? <code>{automaticId.current}</code> : null}</p>
+          <label><input type="checkbox" checked={restore} disabled={busy} onChange={event => { if (!busy) { setRestore(event.target.checked); setError(''); } }} />Återställ ett tidigare tekniskt ID</label>
+          {restore ? <label>Tidigare tekniskt ID<input name="restoreId" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} disabled={busy} /></label> : null}
+          {restore ? <p>Använd bara ett känt ID för en saknad spelkonfiguration. Välj samma dealer som den tidigare definitionen.</p> : null}
+        </details>
+        <button disabled={busy}>Lägg till spelkonfiguration</button>
+        {error ? <p role="alert">{error}</p> : null}
+      </form>}
+  </details>;
+}
+
 /** Pure presentation export also allows isolated render/role tests without a live server. */
 export function StudioAdministrationView({ actor, group, resources, busy, available, command, onDirty, onReload }: AdministrationViewProps) {
   const selected = BACKOFFICE_GROUPS.find(item => item.id === group);
@@ -349,13 +410,8 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
             <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
             <button disabled={busy}>Spara aktiv lane</button>
           </form>}
-          {mayWrite('game-lanes/create', true) && <details className={styles.disclosure}><summary>Lägg till lane</summary><p className={styles.notice}>Välj en dealer som är sparad under Innehåll. Publicering → Skapa spelrum återanvänder eller skapar en kompatibel spellane automatiskt.</p><form method="post" className={styles.form} onSubmit={submit('game-lanes/create', form => ({ definition: {
-            ...GAME_LANES[0], id: value(form, 'id'), label: value(form, 'name'), dealer: value(form, 'dealer') || 'astrid', mediaCollection: `${value(form, 'dealer') || 'astrid'}-presentation`,
-          } }), true)}>
-            <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
-            <label>Lane-ID<input name="id" required pattern="[a-z][a-z0-9-]{0,63}" maxLength={64} placeholder="min-lane" disabled={busy} /></label>
-            <label>Dealer-id<input name="dealer" defaultValue="astrid" required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" disabled={busy}/></label><button disabled={busy}>Lägg till lane med porträttvideo</button>
-          </form></details>}
+          {mayWrite('game-lanes/create', true) && <TechnicalLaneCreate savedDealers={config.savedDealers} lanes={lanes}
+            activeDealer={lanes.find(lane => lane.id === activeLane)?.dealer} revision={revision} busy={busy} command={command} />}
           {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera befintliga lanes · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas sista lanen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
             lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,
           }), true)}>
@@ -614,7 +670,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
         return;
       }
       if (form) {
-        if (['players/create', 'players/password', 'users/invite', 'tournament', 'apikeys/create'].includes(action)) form.reset();
+        if (['players/create', 'players/password', 'users/invite', 'tournament', 'apikeys/create', 'game-lanes/create'].includes(action)) form.reset();
         draftForms.current.delete(form);
       }
       changed.current = draftForms.current.size > 0; setDirty(changed.current);

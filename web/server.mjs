@@ -115,10 +115,10 @@ const { createPublicOperatorDirectory } = await import('./public-operators.mjs')
 const publicOperatorStore = studioPolicyRuntime ? await (await import('./storage/operator-store.mjs')).createOperatorStore({
   sql: storage.pool, scope: studioPolicyRuntime.scope,
 }) : null;
-const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore });
 const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).createPublicOperatorRooms({
   store: publicOperatorStore, policy: studioPolicyRuntime?.policy ?? null,
 });
+const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
@@ -761,7 +761,7 @@ const server = createServer(async (req, res) => {
   const backoffice=pathname==='/bo'||pathname.startsWith('/bo/')||pathname.startsWith('/api/bo/');
   const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
   if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
-  if (pathname.startsWith('/api/operators/')) {
+  if (pathname === '/api/operators' || pathname.startsWith('/api/operators/')) {
     if (await publicOperatorRooms.handle(req, res, pathname)) return;
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
