@@ -189,7 +189,9 @@ visuella-/previewtester PASS, noll skip. TypeScript och Lab-produktionsbygge
 inklusive 82 byggspår PASS. Isolerade browserprov av faktiska komponenter
 bekräftar kontobyte, utloggning, anropsordning och serverfel utan navigation,
 SV/EN, ljust/mörkt och 360/1440 CSS-px. Detta är inte produktionslogin eller
-databasacceptans. Ny fullhookreceipt tillkommer efter kodcommit.
+databasacceptans. Ordinarie fullhook på kompletteringens kodcommit
+`00511089a922c3df1f7cde81d19701a1094ef194`: 2 453 PASS/9 skip/0 fail
+(55 testgrupper), inklusive sessionssviten. Ingen hook eller täckning bortkopplad.
 
 **JN2-A/B är fortsatt öppna acceptansgrindar:** efter granskning/deployment krävs
 verklig N1-login → Johns/SG → direktlänk/refresh, begränsad/återkallad identitet,
