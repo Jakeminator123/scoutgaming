@@ -150,23 +150,11 @@ Demo South är exempel, inte anslutna kunder. Framtida kundval ska hämtas från
 verifierade, aktiva kundanslutningar; en API-nyckel eller ett inskrivet namn
 är inte tillräckligt. Intern admin ska kunna välja mellan anslutna spelbolag,
 medan spelbolagets egen personal bara får tillgång till sin organisation.
-Välj dealer på Dealers & klipp och arbeta i **Grundloop**, **Utdelning** eller
-**Repliker**. Grundloop upprepar idle-klipp: basklippet visar vila/andning,
-variationerna kan till exempel visa att dealern kliar sig i huvudet.
-Vikter, urvalsregler, tester och diagnostik öppnas vid behov under Avancerat.
-Uppladdning hör till
-klipparbetet, inte till ett parallellt mediebibliotek. Granska i spel och
-tekniska detaljer är sekundära verktyg; avancerade regler och diagnostik
-ligger under Avancerat i respektive vy.
+Välj dealer och kategori i **Dealers & klipp**: **Idle / Grundloop**, **Deal**, **Tal-klipp & ljud**, **Reaktioner** eller **Övriga handlingar**. Välj sedan ett exakt fack. Där finns filerna, uppladdning och länken **Klippval, varianter & villkor**. Listan visar sex filer per sida; kategorierna upprepas inte i en andra inställningsmeny.
 
-Klippöversikten visar kompakta situationskort med **Spela standard** och
-**Inställningar**. Sök efter namn, replik eller plats; öppna **Filer** för
-enskilda filmer och mappinformation. Grundloop visar en rad per variation med
-användningen bredvid filnamnet. Öppna raden för beskrivning och tider;
-fördelning, enminutsprov och hjälp ligger i egna utfällbara avsnitt.
-Kategorierna och Administration delar samma lugna färger och knappar.
-Detta ändrar inte originalspelarens Mobile Phone Lane eller klippvalen.
-**Stäng av** betyder att ändra policyn; råfilen finns kvar.
+Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kliar sig i huvudet. Uppladdade filer behöver väljas och sparas innan de används som varianter. I grundloopseditorn finns användning, vikter, tider och prov; i deal-facken finns exakt destination och variantfrekvens. Sammansättning visar presentationens **Uppspelning · regler, slump och OpenClaw** direkt, medan tekniska lager- och filprov ligger under Avancerat.
+
+**Stäng av** ändrar policyn och behåller filen. **Ta bort** i biblioteket arkiverar oanvända uppladdningar med möjlighet att återställa. Originalspelarens media ändras inte av att navigera mellan dessa vyer.
 
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
 och Mei visar sina egna exakta medieregister och originalspelarens klippval;
