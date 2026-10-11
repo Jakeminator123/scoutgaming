@@ -26,6 +26,26 @@ async function port() {
 // Uses only the caller's already-created loopback fixture cluster. The two
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
+export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+      'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs',
+      'lab/lib/partner-branding-api.mjs', 'lab/lib/partner-presentation-choices.mjs', 'lab/lib/partner-package-view.mjs',
+      'web/storage/partner-branding.mjs', 'web/game-entry-operator.mjs', 'web/operator-appearance-api.mjs',
+      'web/public/operator-appearance-boundary.mjs', 'web/storage/frozen-dealer-presentation.mjs', 'web/public/player-choices.mjs',
+      'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
+      'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'web/public/composition-settings.mjs',
+      'web/presentation-layers.mjs', 'lab/lib/studio-model.mjs',
+      'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
+      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
+      'ops/neon-studio/migrations.mjs', 'web/storage/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
+      'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
+      'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
+      'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
+      'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
+      'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
+      'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'web/public/speech-lines.mjs',
+      'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
+      'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
+
 export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {
   if (!Number.isInteger(pgPort) || pgPort < 1 || pgPort > 65535 || typeof adminPool?.query !== 'function'
     || typeof createPool !== 'function' || typeof restartCluster !== 'function' || typeof runChecks !== 'function') {
@@ -113,18 +133,8 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       ['product-v1', createHash('sha256').update(sql).digest('hex'), '{}', new Date().toISOString()]);
     await run('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=studio.croupier-qa.invalid',
       '-addext', 'subjectAltName=DNS:studio.croupier-qa.invalid,DNS:render.croupier-qa.invalid', '-keyout', join(root, 'fixture.key'), '-out', join(root, 'fixture.crt')], { env });
-    const testedSources = ['ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
-      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
-      'ops/neon-studio/migrations.mjs', 'web/storage/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
-      'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
-      'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
-      'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
-      'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
-      'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
-      'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'web/public/speech-lines.mjs',
-      'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
-      'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs'];
-    const sourceHashes = async () => Object.fromEntries(await Promise.all(testedSources.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
+
+    const sourceHashes = async () => Object.fromEntries(await Promise.all(STUDIO_ISOLATED_QA_SOURCES.map(async file => [file, createHash('sha256').update(await readFile(join(repository, file))).digest('hex')])));
     const before = await sourceHashes();
     // The acceptance count is TAP metadata; Node's default reporter varies
     // across versions and execution contexts. Require the parsed format.
@@ -139,8 +149,13 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const { runSpeechLedgerImportSqlChecks } = await import('../test/speech-ledger-import.mjs');
     const imported = await runSpeechLedgerImportSqlChecks({ pool, restart }); pool = imported.pool;
     const { runPartnerTeamPostgresChecks } = await import('../test/partner-team-postgres.mjs');
+    const { runPartnerBrandingPostgresChecks } = await import('../test/partner-branding-postgres.mjs');
     const partnerChecks = await runPartnerDatabaseQa({ adminPool: pool, pgPort, createPool: options => new Pool(options),
-      restartCluster: restart, runChecks: runPartnerTeamPostgresChecks });
+      restartCluster: restart, runChecks: async configuration => {
+        const team = await runPartnerTeamPostgresChecks(configuration);
+        const branding = await runPartnerBrandingPostgresChecks({ ...configuration, operatorPool: team.operatorPool, authPool: team.authPool });
+        return { ...branding, checks: [...team.checks, ...branding.checks] };
+      } });
     const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));

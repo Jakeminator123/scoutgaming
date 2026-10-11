@@ -344,6 +344,12 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   Brandbyte påverkar rätt rum, rumsundantag består och reset fungerar.
   Prova felaktig logo/kontrast samt alla tillgängliga dealers utan att ändra media.
 
+  **Genomfört i utkaststeget, 12 oktober 2026:** Separata beständiga utkast med bas- och utkastrevision, granskning med ändringslista och berörda rum, uttrycklig publicering och återställning till ett nytt utkast. Brandstandard och rumsundantag använder samma publicerade paket; återgång till standard är en granskad ändring. Paket, publiceringsmarkör och beständig journal skrivs atomiskt. UI behåller egna ändringar vid 403/409, gammalt grundpaket eller försenat svar efter bolagsbyte. Förhandsvisningen använder det publicerade paketets tillåtna lager och gemensam kompositor i desktop/mobil. Publicerad revision kontrolleras före nästa runda; insatsval bevaras vid nödvändig omladdning.
+
+  **Verifieringsgräns:** 27 isolerade native Windows/PostgreSQL-kontroller och 24 browserkontroller PASS, inklusive konkurrens, återkallade roller, rollback, omstart, SV/EN och 360/1440 px. Browserfixturen använder syntetiska bilder med verklig kompositor; verkliga dealerfilmer och samtliga spelfaser är inte accepterade av detta prov. Inkoppling och produktionskvitto redovisas i aktuell handoff. Testkostnad 0 USD inom taket 5 USD; ingen WSL.
+
+  **Breda JN2-D lämnas öppet:** logotyper, chips och knappstilar saknar ett gemensamt kontrakt genom N2 och N3. Full förhandsvisning av spelhändelser och dealerfilm kräver separat implementation/uppspelningsacceptans. Dessa reglage utlovas inte av den levererade utkastfunktionen.
+
 #### Spelmotorkoppling: data före statistik och driftknappar
 
 - [ ] **JN2-E — N2.4: auktoritativt, bolagsavgränsat läskontrakt.**

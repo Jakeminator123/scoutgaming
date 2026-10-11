@@ -1,3 +1,9 @@
+import { createHash } from 'node:crypto';
+import { canonicalStudioJson, cloneStudioJson } from '../../web/storage/studio-contract.mjs';
+import { listPackageRooms } from '../../web/presentation-room-contract.mjs';
+import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
+import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
+import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../web/storage/partner-branding.mjs';
 import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { defaultPresentationLane } from './studio-model.mjs';
@@ -127,7 +133,151 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     } else if (Object.hasOwn(branding,'lane')) fail(422);
     return nextBranding;
   }
+
+  function requireDraftStore(source) {
+    if(!['getBrandingDraft','saveBrandingDraft','publishBrandingDraft','getPackage','listPackages'].every(key=>typeof source?.[key]==='function'))fail(503);
+  }
+  function roomList(pack,document) {
+    const presentation=readPackagePresentation(pack);
+    if(!presentation)return [];
+    const {gameLanes}=gameLaneConfiguration(document.value);
+    return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
+      && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation));
+  }
+  function cleanDraft(draft) {
+    return !draft||draft.action==='draft.publish'?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
+      branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
+  }
+  async function state(operatorId,source=store,document=null) {
+    requireDraftStore(source);
+    const pack=await load(operatorId,source),draft=await source.getBrandingDraft(operatorId);
+    document??=await administrationSnapshot();
+    const history=await source.listPackages(operatorId,{limit:20});
+    return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:cleanDraft(draft),
+      draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
+      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
+      rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId}))};
+  }
+  function assertEditable(branding) {
+    if(!plainObject(branding)||Object.keys(branding).some(key=>!PARTNER_BRANDING_FIELDS.includes(key)&&key!=='roomOverrides'))fail(422);
+    for(const key of PARTNER_BRANDING_FIELDS)if(Object.hasOwn(branding,key)&&(typeof branding[key]!=='string'||branding[key].length>100))fail(422);
+    if(Object.hasOwn(branding,'roomOverrides')){
+      if(!plainObject(branding.roomOverrides)||Object.keys(branding.roomOverrides).length>32)fail(422);
+      for(const [id,value]of Object.entries(branding.roomOverrides)){
+        if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!plainObject(value)||Object.keys(value).some(key=>!PARTNER_ROOM_BRANDING_FIELDS.includes(key)))fail(422);
+        for(const item of Object.values(value))if(typeof item!=='string'||item.length>100)fail(422);
+      }
+    }
+  }
+  async function validateDraft(pack,branding,document) {
+    assertEditable(branding);
+    const presentation=readPackagePresentation(pack);
+    if(!presentation)fail(409); // A published Scout presentation is the authority for every editable choice.
+    const rooms=roomList(pack,document),base=publicEditableBranding(pack.branding);
+    const laneId=branding.lane??presentation.lanes[0].id;
+    const lane=presentation.lanes.find(row=>row.id===laneId);
+    if(!lane)fail(422);
+    const defaults={...branding};delete defaults.roomOverrides;
+    function checkedValues(value,baseline,selectedLane,allowedDealers) {
+      const rights=new Set(effectivePartnerAdjustments(selectedLane));
+      for(const key of PARTNER_ROOM_BRANDING_FIELDS){
+        const changed=canonicalStudioJson(value[key]??null)!==canonicalStudioJson(baseline[key]??null);
+        const token=key==='color'?'table.color':key;
+        if(changed&&!rights.has(token))fail(422);
+        if(!Object.hasOwn(value,key))continue;
+        if(key==='color'){
+          if(!/^#[a-f0-9]{6}$/.test(value.color)||selectedLane.layers.table.colors?.length&&!selectedLane.layers.table.colors.includes(value.color))fail(422);
+        }else if(!selectedLane.layers[key].allowed.includes(value[key]))fail(422);
+        if(key==='dealer'&&!allowedDealers.includes(value[key]))fail(409);
+      }
+    }
+    checkedValues(defaults,resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},null,laneId),lane,choices(pack,presentation,document)[laneId]);
+    for(const id of Object.keys(branding.roomOverrides??{}))if(!rooms.some(room=>room.id===id))fail(422);
+    for(const room of rooms){
+      const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
+      // Explicit overrides change future inheritance even when today's rendered value is equal.
+      const explicitBefore=base.roomOverrides?.[room.id]??{},explicitAfter=branding.roomOverrides?.[room.id]??{};
+      const roomRights=new Set(effectivePartnerAdjustments(selectedLane));
+      for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(explicitBefore[key]??null)!==canonicalStudioJson(explicitAfter[key]??null)
+        &&!roomRights.has(key==='color'?'table.color':key))fail(422);
+      const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);
+      const baseline=resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},room.id,room.presentationLaneId);
+      const roomDealers=choices({...pack,tables:[room.id]},presentation,document)[selectedLane.id];
+      checkedValues(value,baseline,selectedLane,roomDealers);
+    }
+    // Keep all N1-owned metadata exactly, replacing only the public editable surface.
+    const next=structuredClone(pack.branding);
+    for(const key of [...PARTNER_BRANDING_FIELDS,'roomOverrides'])delete next[key];
+    // Save, review and publish must all fit the same final package, including N1-owned metadata.
+    try { return cloneStudioJson({...next,...structuredClone(branding)}, {maxBytes:8000,maxNodes:200,maxDepth:6}); }
+    catch(error) { if(error instanceof StudioStorageError && error.statusCode===422)fail(413); throw error; }
+  }
+  function changesFor(pack,draft,document) {
+    const presentation=readPackagePresentation(pack),fallback=presentation?.lanes[0]?.id;
+    const before=publicEditableBranding(pack.branding),after=publicEditableBranding(draft.branding),changes=[];
+    for(const key of PARTNER_BRANDING_FIELDS)if(canonicalStudioJson(before[key]??null)!==canonicalStudioJson(after[key]??null))
+      changes.push({roomId:null,key,before:before[key]??null,after:after[key]??null});
+    const affectedRooms=[];
+    for(const room of roomList(pack,document)){
+      const previous=resolveRoomBranding({...before,lane:before.lane??fallback},room.id,room.presentationLaneId);
+      const next=resolveRoomBranding({...after,lane:after.lane??fallback},room.id,room.presentationLaneId);
+      let changed=false;
+      for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(previous[key]??null)!==canonicalStudioJson(next[key]??null)){
+        changed=true;changes.push({roomId:room.id,key,before:previous[key]??null,after:next[key]??null});
+      }
+      for(const key of PARTNER_ROOM_BRANDING_FIELDS){
+        const explicitBefore=before.roomOverrides?.[room.id]?.[key]??null,explicitAfter=after.roomOverrides?.[room.id]?.[key]??null;
+        if(canonicalStudioJson(explicitBefore)!==canonicalStudioJson(explicitAfter)){
+          changed=true;
+          if(canonicalStudioJson(previous[key]??null)===canonicalStudioJson(next[key]??null))
+            changes.push({roomId:room.id,key:'roomOverrides.'+key,before:explicitBefore,after:explicitAfter});
+        }
+      }
+      if(changed)affectedRooms.push(room.id);
+    }
+    return {changes,affectedRooms};
+  }
+  function reviewOf(pack,draft,document) {
+    return {reviewToken:createHash('sha256').update(canonicalStudioJson({scope:store.scope??null,operatorId:pack.operatorId,
+      packageRevision:pack.revision,draftRevision:draft.revision,branding:draft.branding,administrationRevision:document.revision})).digest('hex'),
+      draftRevision:draft.revision,packageRevision:pack.revision,branding:publicEditableBranding(draft.branding),...changesFor(pack,draft,document)};
+  }
+  async function command(input) {
+    requireDraftStore(store);
+    if(!['save-draft','review','publish','restore'].includes(input.action)
+      ||!Number.isSafeInteger(input.expectedDraftRevision)||input.expectedDraftRevision<0
+      ||!Number.isSafeInteger(input.expectedPackageRevision)||input.expectedPackageRevision<1)fail(400);
+    input=structuredClone(input);
+    if(typeof withWriteContext!=='function')fail(503);
+    return withWriteContext(async context=>{
+      if(await context.reauthorize()!==true)fail(403);
+      requireDraftStore(context.store);
+      const pack=await load(input.operatorId,context.store),draft=await context.store.getBrandingDraft(input.operatorId);
+      if(pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
+      const document=await administrationSnapshot(context.readAdministration);
+      if(input.action==='save-draft'||input.action==='restore'){
+        let branding=input.branding;
+        if(input.action==='restore'){
+          if(!Number.isSafeInteger(input.sourcePackageRevision)||input.sourcePackageRevision<1)fail(400);
+          const previous=await context.store.getPackage(input.operatorId,input.sourcePackageRevision);
+          if(!previous||previous.operatorId!==input.operatorId)fail(404);
+          branding=publicEditableBranding(previous.branding);
+        }
+        await validateDraft(pack,branding,document);
+        await context.store.saveBrandingDraft({...input,branding});
+      }else{
+        if(!draft||draft.action==='draft.publish'||draft.basePackageRevision!==pack.revision)fail(409);
+        const branding=await validateDraft(pack,draft.branding,document),review=reviewOf(pack,draft,document);
+        if(input.action==='review')return review;
+        if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
+        await context.store.publishBrandingDraft({...input,branding});
+      }
+      return state(input.operatorId,context.store,document);
+    });
+  }
   return Object.freeze({
+    readState:({operatorId})=>state(operatorId),
+    command,
     async read({ operatorId }) { return present(await load(operatorId)); },
     async write({ operatorId, actor, audit, expectedRevision, branding }) {
       if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) fail(400);

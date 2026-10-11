@@ -1,0 +1,64 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+import vm from 'node:vm';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {previewMediaPath} from '../../web/public/operator-preview-contract.mjs';
+import {defaultPresentationLane} from '../lib/studio-model.mjs';
+const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
+const fileUrl=new URL('../components/partner-appearance-preview.tsx',import.meta.url),localRequire=createRequire(fileUrl);
+const compiled=transformSync(readFileSync(fileUrl,'utf8'),{filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+const table1='00000000-0000-4000-8000-000000000001',table2='00000000-0000-4000-8000-000000000002',bg='00000000-0000-4000-8000-000000000003',dealer='00000000-0000-4000-8000-000000000004';
+function props(){const lane={...defaultPresentationLane(),composition:defaultCompositionSettings()};lane.layers.table={enabled:true,default:table1,allowed:[table1,table2]};lane.layers.background={enabled:true,mode:'image',default:bg,allowed:[bg]};lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};return {server:{operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:[],rooms:[{id:'north-main',label:'Main',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],presentation:{schemaVersion:2,projectRevision:'r1',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna',idle:null}]}},branding:{table:table2},scope:'north-main',operatorSlug:'north',onStale:()=>{}};}
+function descriptor(roomId='north-main') {const context={operatorSlug:'north',roomId,packageRevision:7,dealerId:'johanna'};return {schemaVersion:1,operatorSlug:'north',roomId,packageRevision:7,dealer:{id:'johanna',label:'Johanna'},independentLayers:true,settings:defaultCompositionSettings(),media:{dealer:{src:previewMediaPath(context,'dealer',dealer),contentType:'video/mp4'},tables:[table1,table2].map(id=>({id,label:id===table1?'Default table':'Chosen table',src:previewMediaPath(context,'table',id),contentType:'image/png'})),backgrounds:[{id:bg,label:'Backdrop',src:previewMediaPath(context,'background',bg),contentType:'image/png'}]}};}
+function walk(tree,predicate){if(!tree||typeof tree!=='object')return [];return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(row=>walk(row,predicate))];}
+function harness(fetcher){const slots=[],effects=[];let cursor=0;const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},useEffect:(callback,deps)=>{const index=cursor++,previous=slots[index];if(!previous||deps.some((v,i)=>v!==previous.deps[i])){previous?.cleanup?.();slots[index]={deps};effects.push(()=>{slots[index].cleanup=callback();});}}};
+ const output={exports:{}};const CompositionPreview=()=>null;
+ vm.runInNewContext(compiled.code,{module:output,exports:output.exports,AbortController,fetch:fetcher,require:name=>name==='react'?hooks:name==='./composition-preview'?{CompositionPreview}:name.endsWith('.css')?{__esModule:true,default:{}}:localRequire(name)},{filename:fileURLToPath(fileUrl)});
+ return {render:p=>{cursor=0;return output.exports.PartnerAppearancePreview(p);},flush:async()=>{while(effects.length)effects.shift()();await new Promise(resolve=>setImmediate(resolve));},compositions:tree=>walk(tree,node=>node.type===CompositionPreview)};
+}
+const open=tree=>walk(tree,node=>node.props?.['data-action']==='open-preview')[0];
+const response=(value,status=200)=>({ok:status===200,status,json:async()=>value});
+test('preview requests only the scoped frozen descriptor on demand and renders exact chosen layers in both layouts',async()=>{
+ const calls=[],p=props(),h=harness(async(url,request)=>{calls.push({url,request});return response(descriptor());});
+ h.render(p);await h.flush();assert.equal(calls.length,0);
+ open(h.render(p)).props.onClick();h.render(p);await h.flush();let tree=h.render(p),composition=h.compositions(tree)[0];
+ assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=johanna&revision=7');assert.equal(calls[0].request.cache,'no-store');
+ assert.equal(composition.props.table.label,'Chosen table');assert.equal(composition.props.table.url,descriptor().media.tables[1].src);assert.equal(composition.props.layout,'desktop');
+ walk(tree,node=>node.type==='button'&&node.props.children==='Mobil')[0].props.onClick();tree=h.render(p);assert.equal(h.compositions(tree)[0].props.layout,'mobile');assert.equal(calls.length,1);
+});
+test('stale and foreign-context descriptors invalidate parent review and never render their media',async()=>{
+ for(const [data,status]of [[{},409],[{...descriptor(),operatorSlug:'foreign'},200]]){let stale=0;const p={...props(),onStale:()=>stale++},h=harness(async()=>response(data,status));open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.equal(stale,1);assert.equal(h.compositions(h.render(p)).length,0);assert.equal(walk(h.render(p),node=>node.props?.role==='alert').length,1);}
+});
+test('late responses from previous room never display in the next room',async()=>{
+ const pending=[],p=props(),h=harness(()=>new Promise(resolve=>pending.push(resolve)));
+ open(h.render(p)).props.onClick();h.render(p);await h.flush();const next={...p,scope:'north-vip'};h.render(next);await h.flush();
+ pending[0](response(descriptor()));await h.flush();assert.equal(h.compositions(h.render(next)).length,0);
+ pending[1](response(descriptor('north-vip')));await h.flush();assert.match(h.compositions(h.render(next))[0].props.dealer.url,/north-vip/);
+});
+test('base dealer without frozen idle is disclosed and never replaced by another dealer clip',async()=>{
+ const p=props(),data=descriptor();data.media.dealer=null;const h=harness(async()=>response(data));open(h.render(p)).props.onClick();h.render(p);await h.flush();
+ const tree=h.render(p),html=renderToStaticMarkup(tree);assert.match(html,/saknar tillgänglig fryst grundloop/);assert.equal(h.compositions(tree)[0].props.dealer,null);
+});
+test('English preview explains incomplete layers and permits retry after a temporary failure',async()=>{
+ let count=0;const p={...props(),language:'en'},h=harness(async()=>response(count++?descriptor():{},count===1?503:200));
+ open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.match(renderToStaticMarkup(h.render(p)),/Your draft is preserved/);
+ open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.equal(h.compositions(h.render(p))[0].props.language,'en');
+});
+
+test('shared composition controls keep Swedish default and translate English without alternate media sources',()=>{
+ const url=new URL('../components/composition-preview.tsx',import.meta.url),source=transformSync(readFileSync(url,'utf8'),{filename:fileURLToPath(url),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}),output={exports:{}};
+ vm.runInNewContext(source.code,{module:output,exports:output.exports,require:createRequire(url)},{filename:fileURLToPath(url)});
+ const common={dealer:null,table:null,background:null,settings:defaultCompositionSettings(),layout:'mobile',show:{dealer:false,table:false,background:false}};
+ const sv=renderToStaticMarkup(React.createElement(output.exports.CompositionPreview,common)),en=renderToStaticMarkup(React.createElement(output.exports.CompositionPreview,{...common,language:'en'}));
+ assert.match(sv,/Spela två gånger/);assert.match(en,/Play twice/);assert.match(en,/Choose a clip or layer/);assert.match(en,/Mobile 9:16/);assert.doesNotMatch(en,/Spela|Avancerat/);
+});
+
+test('unset room dealer follows the first playable frozen choice if the presentation default cannot render there',async()=>{
+ const calls=[],p=props();p.server.presentation.lanes[0].layers.dealer.default='astrid';p.server.roomDealerChoices={'north-main':['johanna']};
+ const h=harness(async url=>{calls.push(url);return response(descriptor());});open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.match(calls[0],/dealer=johanna&revision=7$/);assert.equal(h.compositions(h.render(p))[0].props.dealer.label,'Johanna');
+});

@@ -176,7 +176,7 @@ function PreviewView({original,runtime,view,copy,language,notify,apiBase,onAppea
   const [tables,setTables]=React.useState(runtime.data.tables),[attention,setAttention]=React.useState([]);
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false&&['theme','design','background','dealers','test'].includes(view))return <>
     <PartnerPackageView snapshot={runtime.snapshot} view={view}/>
-    {view!=='test'&&<PartnerAppearanceLoader apiBase={apiBase} operatorSlug={runtime.snapshot.operator.slug} section={view} onSaved={onAppearanceSaved}/>}
+    {view!=='test'&&<PartnerAppearanceLoader apiBase={apiBase} operatorId={runtime.snapshot.operator.id} operatorSlug={runtime.snapshot.operator.slug} section={view} language={language} onSaved={onAppearanceSaved}/>}
   </>;
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false&&['ops','bj'].includes(view))return <PartnerLiveOverview snapshot={runtime.snapshot} copy={copy} tablesOnly={view==='bj'}/>;
   if(DISCONNECTED[view]&&sectionNotConnected(runtime.snapshot,dataSection(view)))return <DisconnectedSection snapshot={runtime.snapshot} view={view} copy={copy}/>;

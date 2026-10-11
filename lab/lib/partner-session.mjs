@@ -464,18 +464,19 @@ async function brandingResponse(prepared, config) {
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
   const canConfigure = allowsWorkspaceResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
-  if (prepared.request.method === 'GET') return json({ ...await api.read({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
+  if (prepared.request.method === 'GET') return json({ ...await api.readState({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
   if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);
-  keys(body, ['expectedRevision', 'branding']);
-  if (!Number.isSafeInteger(body.expectedRevision)) fail(400);
-  const saved = await api.write({
-    operatorId: operator.id,
-    actor: session.user, audit: operatorAuditContext(session),
-    expectedRevision: body.expectedRevision,
-    branding: body.branding,
-  });
-  return json(saved, 200, [], { vary: true });
+  const actionFields={
+    'save-draft':['action','expectedDraftRevision','expectedPackageRevision','branding'],
+    review:['action','expectedDraftRevision','expectedPackageRevision'],
+    publish:['action','expectedDraftRevision','expectedPackageRevision','reviewToken'],
+    restore:['action','expectedDraftRevision','expectedPackageRevision','sourcePackageRevision'],
+  };
+  if(!Object.hasOwn(actionFields,body.action))fail(400);
+  keys(body,actionFields[body.action]);
+  const saved=await api.command({...body,operatorId:operator.id,actor:session.user,audit:operatorAuditContext(session)});
+  return json({...saved,canConfigure:true},200,[],{vary:true});
 }
 async function journalResponse(prepared, config) {
   const found = await partnerOperatorContext(prepared, config);

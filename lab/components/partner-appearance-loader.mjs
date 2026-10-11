@@ -7,48 +7,52 @@ export function brandingApiBase(apiBase) {
   return typeof apiBase === 'string' ? apiBase.replace(/\/snapshot$/, '') : '';
 }
 
-// Plain .mjs with createElement so Kevin's portal test can require it from Node.
-// The panel itself (tsx) is loaded only in the browser, after the first read.
-export function PartnerAppearanceLoader({ apiBase, operatorSlug, section = 'all', onSaved }) {
+export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, section = 'all', onSaved, language = 'sv' }) {
   const [state, setState] = React.useState({ status: 'loading' });
   const base = brandingApiBase(apiBase);
+  const identity = `${base}:${operatorId || ''}:${operatorSlug}`;
+  const en = language === 'en';
+  const activeIdentity = React.useRef(identity);
+  activeIdentity.current = identity;
   React.useEffect(() => {
-    let cancelled = false;
+    let cancelled = false; activeIdentity.current = identity;
+    const abort = new AbortController();
+    setState({ status: 'loading', identity });
     (async () => {
       try {
+        if (!/^(?:\/studio)?\/api\/partner$/.test(base)) { setState({ status: 'hidden', identity }); return; }
         const [response, panel] = await Promise.all([
           fetch(`${base}/branding?operator=${encodeURIComponent(operatorSlug)}`, {
-            credentials: 'same-origin', headers: { accept: 'application/json' },
+            credentials: 'same-origin', cache: 'no-store', signal: abort.signal, headers: { accept: 'application/json' },
           }),
           import('./partner-appearance'),
         ]);
         if (cancelled) return;
-        if (response.status === 404) { setState({ status: 'none' }); return; }
-        if (!response.ok) { setState({ status: 'hidden' }); return; }
+        if (response.status === 404) { setState({ status: 'none', identity }); return; }
+        if (!response.ok) { setState({ status: 'hidden', identity }); return; }
         const payload = await response.json().catch(() => null);
         if (cancelled) return;
-        if (typeof payload?.packageRevision !== 'number' || !Array.isArray(payload.adjustable) || !Array.isArray(payload.lanes)) {
-          setState({ status: 'hidden' }); return;
+        if (!Number.isSafeInteger(payload?.packageRevision) || payload.packageRevision < 1 || !Array.isArray(payload.adjustable) || !Array.isArray(payload.lanes)
+          || typeof payload.operatorId !== 'string' || operatorId && payload.operatorId !== operatorId) {
+          setState({ status: 'hidden', identity }); return;
         }
-        if (!payload.presentation) { setState({ status: 'legacy' }); return; }
-        setState({ status: 'ready', initial: payload, Panel: panel.PartnerAppearance });
+        if (!payload.presentation) { setState({ status: 'legacy', identity }); return; }
+        setState({ status: 'ready', identity, initial: payload, Panel: panel.PartnerAppearance });
       } catch {
-        if (!cancelled) setState({ status: 'hidden' });
+        if (!cancelled) setState({ status: 'hidden', identity });
       }
     })();
-    return () => { cancelled = true; };
-  }, [base, operatorSlug]);
-  if (state.status === 'hidden') return React.createElement('p', { role: 'alert', className: 'kevin-appearance-state' }, 'Paketets inställningar kunde inte hämtas. Ladda om eller kontrollera din åtkomst.');
-  if (state.status === 'legacy') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, 'Inställningarna öppnas när intern personal har publicerat paketet med tre lager.');
-  if (state.status === 'loading') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, 'Hämtar utseende…');
-  if (state.status === 'none') {
-    return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' },
-      'Inget operatörspaket är publicerat än. Intern personal publicerar under Publicering.');
-  }
-  return React.createElement('section', { className: 'kevin-appearance', 'aria-label': 'Utseende inom lanen' },
-    React.createElement('h3', null, 'Utseende inom lanen'),
-    React.createElement(state.Panel, { initial: state.initial, apiBase: base, operatorSlug, section, onSaved:saved=>{
-      setState(current=>current.status==='ready'&&current.initial.operatorId===saved.operatorId?{...current,initial:saved}:current);
+    return () => { cancelled = true; if (activeIdentity.current === identity) activeIdentity.current = null; abort.abort(); };
+  }, [base, operatorId, operatorSlug, identity]);
+  const current = state.identity === identity ? state : { status: 'loading' };
+  if (current.status === 'hidden') return React.createElement('p', { role: 'alert', className: 'kevin-appearance-state' }, en ? 'Package settings could not be loaded. Reload or check your access.' : 'Paketets inställningar kunde inte hämtas. Ladda om eller kontrollera din åtkomst.');
+  if (current.status === 'legacy') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, en ? 'Internal staff must first publish a package with separate layers.' : 'Inställningarna öppnas när intern personal har publicerat paketet med tre lager.');
+  if (current.status === 'loading') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, en ? 'Loading appearance…' : 'Hämtar utseende…');
+  if (current.status === 'none') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, en ? 'No operator package is published yet. Internal staff publish it from Publishing.' : 'Inget operatörspaket är publicerat än. Intern personal publicerar under Publicering.');
+  return React.createElement('section', { className: 'kevin-appearance', 'aria-label': en ? 'Appearance and publishing' : 'Utseende och publicering' },
+    React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, section, language, onSaved: saved => {
+      if (activeIdentity.current !== identity || saved.operatorId !== current.initial.operatorId) return;
+      setState(previous => previous.status === 'ready' && previous.identity === identity && previous.initial.operatorId === saved.operatorId ? { ...previous, initial: saved } : previous);
       onSaved?.(saved);
     } }));
 }

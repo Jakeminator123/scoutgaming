@@ -4,6 +4,7 @@ import { createFrozenDealerContextReader, createFrozenDealerPresentationContext 
 
 import { createPresentationApi } from '../web/presentation-api.mjs';
 import { Writable } from 'node:stream';
+import {canonicalStudioJson} from '../web/storage/studio-contract.mjs';
 import { operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
 
 const id = '00000000-0000-4000-8000-000000000001', sha256 = 'a'.repeat(64);
@@ -183,10 +184,12 @@ test('published Johanna skips nonfrozen speech/deal despite newly edited live me
   f.saved.package.revision=8;const stale=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'johanna',mode:'off',version:2,event:api.source,presentationContext:input}});assert.equal(stale.status,409);assert.equal(JSON.parse(stale.body).code,'studio_presentation_idle_package_changed');assert.equal(api.liveReads,0);
 });
 
-function readerFixture({badAdmin=false,commitRollback=false}={}){
+function readerFixture({badAdmin=false,commitRollback=false,withHistory=false,changedFrozen=false}={}){
   const scope={environment:'test',workspaceId:'croupier'},f=fixture(),trace=[];
   const admin={...f.saved.administration,gameLane:'portrait-johanna',tiers:{classic:'vera',high:'astrid',vip:'amira'},pitboss:{payout10x:true,streak5:true,randomWalkMin:45},tournaments:[]};
   const live={operator:operatorRow(scope,'north-id','north'),package:packageRow(scope,'north-id',7,['vip-presentation']),admin};
+  if(withHistory)live.package.branding=canonicalStudioJson({_scoutPresentation:{sha256:'same',data:'frozen'},color:'#445566'});
+  const previous=withHistory?{...clone(live.package),package_revision:6,branding:canonicalStudioJson({_scoutPresentation:{sha256:changedFrozen?'other':'same',data:'frozen'},color:'#112233'})}:null;
   let active=false,snapshot=null,releases=0;
   const pool={async connect(){return {async query(text,values){trace.push({text,values});
     if(text.startsWith('BEGIN')){assert.equal(active,false);active=true;snapshot=clone(live);return {rows:[],command:'BEGIN'};}
@@ -195,6 +198,7 @@ function readerFixture({badAdmin=false,commitRollback=false}={}){
     assert.equal(active,true);assert.deepEqual(values.slice(0,2),['test','croupier']);
     if(text.includes('operator-by-slug')){live.package.package_revision=8;live.admin.rooms[0].state='preview';return {rows:[snapshot.operator]};}
     if(text.includes('current-package'))return {rows:[snapshot.package]};
+    if(text.includes('package-by-revision')){assert.deepEqual(values,['test','croupier','north-id',6]);return {rows:previous?[previous]:[]};}
     if(text.includes('frozen-dealer:administration'))return {rows:[{value:badAdmin?{rooms:[]}:snapshot.admin}]};throw Error('Unexpected SQL');
   },release(){releases++;}};}};
   return {scope,pool,trace,live,get active(){return active;},get releases(){return releases;}};
@@ -216,4 +220,29 @@ test('administrative portrait drift cannot serve an allowed neighbour instead of
   const f=fixture();f.presentation.lanes[0].dealers.push('nora');f.presentation.lanes[0].layers.dealer.allowed.push('nora');f.presentation.lanes[0].layers.dealer.default='nora';
   f.presentation.registeredDealers.push({id:'nora',label:'Nora',idle:null});
   await assert.rejects(f.service.configuration(input),status(404));assert.equal((await f.service.response(new Request(mediaUrl(input)))).status,404);assert.equal(f.served.length,0);
+});
+
+
+test('branding history preserves a round only while exact frozen media and current ownership remain published',async()=>{
+  const {sameFrozenPackage}=await import('../web/storage/frozen-dealer-presentation.mjs');
+  const previous={operatorId:'north',revision:7,lanes:['lane'],games:['blackjack'],tables:['room'],branding:{color:'#112233',_scoutPresentation:{sha256:'same',data:'immutable'}}};
+  const current={...structuredClone(previous),revision:8,branding:{color:'#445566',_scoutPresentation:{sha256:'same',data:'immutable'}}};
+  assert.equal(sameFrozenPackage(current,previous),true);
+  for(const patch of [{operatorId:'south'},{revision:7},{branding:{color:'#ffffff'}},{branding:{_scoutPresentation:{sha256:'other',data:'new'}}},{tables:[]},{lanes:['other']},{games:[]}])assert.equal(sameFrozenPackage({...current,...patch},previous),false);
+  assert.equal(sameFrozenPackage(current,null),false);
+  assert.equal(sameFrozenPackage(previous,current),false);
+});
+
+
+test('SQL reader pins same-presentation branding history inside its fresh scope snapshot',async()=>{
+  const f=readerFixture({withHistory:true}),reader=createFrozenDealerContextReader(f),saved=await reader('north',6);
+  assert.equal(saved.package.revision,6);assert.equal(saved.package.branding.color,'#112233');
+  assert.equal(saved.administration.rooms[0].state,'live');assert.equal(f.active,false);assert.equal(f.releases,1);
+  assert.ok(f.trace.some(row=>row.text.includes('package-by-revision')));
+});
+test('SQL reader never substitutes old N1 presentation or unavailable revision',async()=>{
+  for(const options of [{withHistory:true,changedFrozen:true},{withHistory:false}]){
+    const f=readerFixture(options),reader=createFrozenDealerContextReader(f),saved=await reader('north',6);
+    assert.equal(saved.package.revision,7);assert.equal(f.active,false);assert.equal(f.releases,1);
+  }
 });

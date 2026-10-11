@@ -96,7 +96,7 @@ test('Studio migration sources are fixed, ordered, bounded and independent of ru
 test('plan is strictly read-only and does not bootstrap absent schema/ledger', async () => {
   const pool = await fixture(), before = pool.snapshot(), plan = await planStudioMigrations({ pool });
   assert.deepEqual(plan.target, target); assert.equal(plan.schemaPresent, false); assert.equal(plan.applied.length, 0);
-  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006']); assert.deepEqual(plan.pending, plan.toApply);
+  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007']); assert.deepEqual(plan.pending, plan.toApply);
   assert.deepEqual(pool.snapshot(), before);
   assert.equal(pool.calls[0].sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   assert.equal(pool.calls.some(row => row.marker === 'lock' || row.marker.startsWith('ddl-') || row.marker === 'record'), false);
@@ -133,7 +133,7 @@ test('004 and 005 upgrade an exact 001/002/003 catalog while preserving all prio
     for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!newTables.includes(row.table_name));
   });
   const original=pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006']);
+  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006','007']);
   assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004','005','006','007']);
   assert.deepEqual(pool.snapshot().ledger.slice(0,3),original);
 });
@@ -147,7 +147,7 @@ test('005 upgrades an exact 001/002/003/004 catalog while preserving all prior l
     for (const key of ['columns', 'constraints', 'indexes']) state[key] = state[key].filter(row => !newTables.includes(row.table_name));
   });
   const original = pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006']);
+  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006', '007']);
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: target, confirm: true })).appliedNow, ['005', '006', '007']);
   assert.deepEqual(pool.snapshot().ledger.slice(0, 4), original);
 });
@@ -223,7 +223,7 @@ test('006 adds only the scoped journal while retaining every preexisting ledger 
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!['operator_audit_events','operator_branding_drafts'].includes(row.table_name));
  });
  const original=pool.snapshot().ledger;
- assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006']);
+ assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006','007']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['006','007']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,5),original);
  pool.change(state=>state.ledger[5].checksum='f'.repeat(64));
@@ -238,8 +238,8 @@ test('007 adds draft revisions without changing existing ledger fingerprints and
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>row.table_name!=='operator_branding_drafts');
  });
  const original=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
- assert.deepEqual(plan.toApply.map(row=>row.version),[]);
- assert.deepEqual(plan.pending.map(row=>row.version),[]);
+ assert.deepEqual(plan.toApply.map(row=>row.version),['007']);
+ assert.deepEqual(plan.pending.map(row=>row.version),['007']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['007']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,6),original);
  assert.deepEqual((await planStudioMigrations({pool})).pending,[]);

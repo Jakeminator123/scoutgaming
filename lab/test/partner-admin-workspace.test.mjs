@@ -7,6 +7,9 @@ import { createOperatorJournal } from '../lib/operator-journal.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { defaultPresentationLane } from '../lib/studio-model.mjs';
+import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://public.example.invalid';
@@ -287,62 +290,58 @@ test('N1 invitation delivery and journal happen only after membership commit', a
   assert.equal(JSON.parse(f.logs.at(-1)[1]).actor, 'jakob');
 });
 
-test('N1 branding uses its real actor and preserves the scoped package with revision guards', async () => {
-  const f = await fixture();
-  f.config.readProject = async () => ({ project: { lanes: [{ id: 'john-lane', operatorAdjustable: ['table.color'] }] } });
-  await f.store.publishPackage({ actor: 'fixture', operatorId: john.id, lanes: ['john-lane'],
-    games: ['blackjack'], tables: ['john-room'], branding: { color: '#112233' } });
-  const initial = await handlePartnerAuth(request(f.admin, selected('branding')), f.config);
-  assert.equal(initial.status, 200);
-  assert.equal((await initial.json()).packageRevision, 1);
-  f.pool.trace.length = 0;
-  const write = await handlePartnerAuth(request(f.admin, selected('branding'), { body: {
-    expectedRevision: 1, branding: { color: '#445566' },
-  } }), f.config);
-  assert.equal(write.status, 200);
-  assert.equal((await write.json()).packageRevision, 2);
-  const steps = f.pool.trace.filter(entry => entry.client !== 0).map(entry => entry.step);
-  assert.ok(steps.indexOf('scope-lock') < steps.indexOf('lock-operator'));
-  assert.ok(steps.indexOf('lock-operator') < steps.indexOf('publish-package'));
-  assert.equal(steps.at(-1), 'COMMIT');
-  assert.equal((await handlePartnerAuth(request(f.admin, selected('branding'), { body: {
-    expectedRevision: 1, branding: { color: '#778899' },
-  } }), f.config)).status, 409);
-  assert.equal((await handlePartnerAuth(request(f.admin, selected('branding'), { body: {
-    expectedRevision: 2, branding: { dealer: 'not-in-package' },
-  } }), f.config)).status, 422);
-  const actors = [];
-  f.config.store = { ...f.store, async publishPackage(input) {
-    actors.push(input.actor);
-    return f.store.publishPackage(input);
-  } };
-  assert.equal((await handlePartnerAuth(request(f.admin, selected('branding'), { body: {
-    expectedRevision: 2, branding: { color: '#778899' },
-  } }), f.config)).status, 200);
-  assert.deepEqual(actors, ['jakob']);
-  const pack = await f.store.getCurrentPackage(john.id);
-  assert.equal(pack.revision, 3);
-  assert.deepEqual(pack.lanes, ['john-lane']);
-  assert.deepEqual(pack.games, ['blackjack']);
-  assert.deepEqual(pack.tables, ['john-room']);
-  assert.equal(await f.store.getCurrentPackage(other.id), null);
-  assert.equal(f.pool.tables.operator_memberships.some(member => member.user_id === '7'), false);
+async function seedBranding(f) {
+  const lane={...defaultPresentationLane(),id:'john-lane',composition:defaultCompositionSettings(),operatorAdjustable:['table.color']};
+  lane.layers.table={...lane.layers.table,enabled:true,colors:['#112233','#445566','#778899']};
+  const presentation={schemaVersion:1,projectRevision:'john-branding',lanes:[lane],assets:[]};
+  f.config.readProject=async()=>assert.fail('frozen package must not use the live project');
+  f.config.readAdministration=async()=>({rooms:[{schemaVersion:2,id:'john-room',name:'John',operatorId:john.id,presentationLaneId:lane.id,gameLaneId:'indexed',state:'live'}],
+    gameLane:'indexed',gameLanes:[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'}]});
+  await f.store.publishPackage({actor:'fixture',operatorId:john.id,lanes:[lane.id],games:['blackjack'],tables:['john-room'],
+    branding:withPackagePresentation({lane:lane.id,color:'#112233'},presentation)});
+  return body=>handlePartnerAuth(request(f.admin,selected('branding'),{body}),f.config);
+}
+test('N1 draft review publish uses its real actor and preserves scoped package revision guards', async () => {
+  const f=await fixture(),command=await seedBranding(f);
+  const initial=await handlePartnerAuth(request(f.admin,selected('branding')),f.config);
+  assert.equal(initial.status,200);assert.equal((await initial.json()).packageRevision,1);
+  f.pool.trace.length=0;
+  const save=await command({action:'save-draft',expectedPackageRevision:1,expectedDraftRevision:0,branding:{lane:'john-lane',color:'#445566'}});
+  assert.equal(save.status,200);const saved=await save.json();
+  assert.equal(saved.packageRevision,1);assert.equal(saved.draft.revision,1);
+  assert.equal(f.pool.trace.some(row=>row.step==='publish-package'),false,'saving never changes live package');
+  const review=await command({action:'review',expectedPackageRevision:1,expectedDraftRevision:1});assert.equal(review.status,200);
+  const token=(await review.json()).reviewToken;
+  const published=await command({action:'publish',expectedPackageRevision:1,expectedDraftRevision:1,reviewToken:token});
+  assert.equal(published.status,200);assert.equal((await published.json()).packageRevision,2);
+  const write=f.pool.trace.find(row=>row.step==='publish-package'),steps=f.pool.trace.filter(row=>row.client===write.client).map(row=>row.step);
+  assert.ok(steps.indexOf('scope-lock')<steps.indexOf('lock-operator'));
+  assert.ok(steps.indexOf('lock-operator')<steps.indexOf('publish-package'));assert.equal(steps.at(-1),'COMMIT');
+  assert.equal((await command({action:'save-draft',expectedPackageRevision:1,expectedDraftRevision:0,branding:{color:'#778899'}})).status,409);
+  assert.equal((await command({action:'save-draft',expectedPackageRevision:2,expectedDraftRevision:2,branding:{dealer:'not-in-package'}})).status,422);
+  const actors=[];
+  f.config.store={...f.store,async publishBrandingDraft(input){actors.push(input.actor);return f.store.publishBrandingDraft(input);}};
+  assert.equal((await command({action:'save-draft',expectedPackageRevision:2,expectedDraftRevision:2,branding:{lane:'john-lane',color:'#778899'}})).status,200);
+  const nextReview=await command({action:'review',expectedPackageRevision:2,expectedDraftRevision:3});assert.equal(nextReview.status,200);
+  assert.equal((await command({action:'publish',expectedPackageRevision:2,expectedDraftRevision:3,reviewToken:(await nextReview.json()).reviewToken})).status,200);
+  assert.deepEqual(actors,['jakob']);
+  const pack=await f.store.getCurrentPackage(john.id);
+  assert.equal(pack.revision,3);assert.deepEqual(pack.lanes,['john-lane']);assert.deepEqual(pack.games,['blackjack']);assert.deepEqual(pack.tables,['john-room']);
+  assert.equal(await f.store.getCurrentPackage(other.id),null);assert.equal(f.pool.tables.operator_memberships.some(row=>row.user_id==='7'),false);
+  const journal=await f.store.listAuditEvents(john.id);
+  for(const action of ['draft.save','draft.publish','package.publish']){
+    const latest=journal.entries.find(row=>row.action===action&&row.actor==='7');
+    assert.equal(latest?.accessClass,'internal-admin',action+' must retain actual N1 identity');
+  }
 });
-
-test('N1 branding reauthorization rejects a revoked session after its operator lock', async () => {
-  const f = await fixture();
-  f.config.readProject = async () => ({ project: { lanes: [{ id: 'john-lane', operatorAdjustable: ['table.color'] }] } });
-  await f.store.publishPackage({ actor: 'fixture', operatorId: john.id, lanes: ['john-lane'],
-    games: ['blackjack'], tables: ['john-room'], branding: { color: '#112233' } });
-  f.pool.before('lock-operator', () => { f.users[0].epoch += 1; });
-  const response = await handlePartnerAuth(request(f.admin, selected('branding'), { body: {
-    expectedRevision: 1, branding: { color: '#445566' },
-  } }), f.config);
-  assert.equal(response.status, 401);
-  const pack = await f.store.getCurrentPackage(john.id);
-  assert.equal(pack.revision, 1);
-  assert.equal(pack.branding.color, '#112233');
-  assert.equal(f.pool.trace.filter(entry => entry.client !== 0).at(-1).step, 'ROLLBACK');
+test('N1 draft reauthorization rejects a revoked session after its operator lock',async()=>{
+  const f=await fixture(),command=await seedBranding(f);
+  f.pool.before('lock-operator',()=>{f.users[0].epoch+=1;});
+  const response=await command({action:'save-draft',expectedPackageRevision:1,expectedDraftRevision:0,branding:{lane:'john-lane',color:'#445566'}});
+  assert.equal(response.status,401);
+  const pack=await f.store.getCurrentPackage(john.id);assert.equal(pack.revision,1);assert.equal(pack.branding.color,'#112233');
+  assert.equal(await f.store.getBrandingDraft(john.id),null);
+  assert.equal(f.pool.trace.filter(row=>row.client!==0).at(-1).step,'ROLLBACK');
 });
 
 test('internal administrator journal uses the actual admin ID without impersonating the partner',async()=>{

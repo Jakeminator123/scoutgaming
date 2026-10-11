@@ -8,15 +8,15 @@
     "providerConfigurationRead": false,
     "envFilesRead": false,
     "testsRun": false,
-    "statement": "Samtliga tabellkolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är lästa i sju SQL-källor. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
+    "statement": "Kolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är källinventerade i åtta listade SQL-källor. Migration 006 återstår att tabellinventera. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
   },
   "summary": {
     "schemaCount": 4,
-    "tableCount": 53,
+    "tableCount": 54,
     "tableCountBySchema": {
       "croupier_game": 25,
       "croupier_auth": 7,
-      "croupier_studio": 19,
+      "croupier_studio": 20,
       "croupier_zones": 2
     }
   },
@@ -42,7 +42,7 @@
       ],
       "startupContract": [
         "product-v1-källchecksum måste matcha game-ledgern.",
-        "Studio 001–005 måste vara verifierat installerade utan pending versioner.",
+        "Studio 001–007 måste vara verifierat installerade utan pending versioner för utkastflödets runtime.",
         "Saknad sparad policy/schema ger fel; ingen flagga migrerar, seedar eller aktiverar diskfallback."
       ],
       "sources": [
@@ -152,7 +152,7 @@
     {
       "name": "croupier_studio",
       "databaseId": "game-auth-studio-neon",
-      "tableCount": 19,
+      "tableCount": 20,
       "purpose": "Gemensam sparad presentationspolicy, historik/audit, mediaidentiteter och beständiga tal/GPU/QA-journaler, plus operatör, medlemskap, rollprofil och paket.",
       "scope": "Serverägd environment; workspace för dokument/media/operatörs-QA; owner_hash/request/session för journaler; workspace även för operatörstenant.",
       "writer": "Native Studio för dokument/media; Render journaladaptrar för tal/GPU/QA.",
@@ -161,7 +161,9 @@
         "002",
         "003",
         "004",
-        "005"
+        "005",
+        "006",
+        "007"
       ],
       "installation": "Explicit immutable runner; kontrollerar käll- och strukturchecksum. Migrationer seedar inte policy eller kostnadsrätt.",
       "documentKinds": [
@@ -194,6 +196,10 @@
         {
           "path": "web/postgres-operator-speech-qa.mjs",
           "line": 29
+        },
+        {
+          "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+          "line": 4
         }
       ]
     },
@@ -5745,6 +5751,312 @@
       ]
     },
     {
+      "schema": "croupier_studio",
+      "name": "operator_branding_drafts",
+      "purpose": "Sparade utkastrevisioner, återställning och publiceringsmarkörer med beständig actor- och ändringsjournal.",
+      "owner": "Native Studio tenantlager",
+      "scope": "Serverägd environment, workspace och operator_id. Utkastens löpnummer fortsätter efter publicering; inga appstyrda uppdateringar eller raderingar.",
+      "sources": [
+        {
+          "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+          "line": 4
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 5
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "draft_revision",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "base_package_revision",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "branding",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 10
+            }
+          ]
+        },
+        {
+          "name": "source_package_revision",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 11
+            }
+          ]
+        },
+        {
+          "name": "published_package_revision",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "action",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "event_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "actor_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "access_class",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "occurred_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "changes",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 19
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id",
+          "draft_revision"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+            "line": 22
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operators",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 24
+            },
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id",
+            "base_package_revision"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_packages",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id",
+              "package_revision"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 26
+            },
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id",
+            "source_package_revision"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_packages",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id",
+              "package_revision"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 28
+            },
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id",
+            "published_package_revision"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operator_packages",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id",
+              "package_revision"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 30
+            },
+            {
+              "path": "ops/neon-studio/007-partner-branding-drafts.sql",
+              "line": 31
+            }
+          ]
+        }
+      ]
+    },
+    {
       "schema": "croupier_zones",
       "name": "clips",
       "purpose": "Uppladdade zonklipps exakta mått och privata mediareferens",
@@ -6147,6 +6459,16 @@
       ],
       "coverage": "Direktalias med bibehållen logisk identitet, hash, storlek, URL och åtkomst; en fysisk fil och Blobnyckel för identiska bytes; referensskydd före radering.",
       "liveOptIn": false
+    },
+    {
+      "id": "partner-branding-drafts",
+      "files": [
+        "lab/test/partner-branding-drafts.test.mjs",
+        "test/partner-branding-postgres.mjs",
+        "test/studio-isolated-partner-qa.mjs"
+      ],
+      "coverage": "Utkast-CAS, aktuell behörighet, scope, atomisk paket-/journalpublicering, återställning till utkast samt beständiga revisioner efter riktig SQL-omstart. Filinventering innebär inte att SQL-acceptansen har körts.",
+      "liveOptIn": "test/partner-branding-postgres.mjs skippar utan CROUPIER_PARTNER_BRANDING_POSTGRES_QA_CONFIG. tools/studio-isolated-qa.mjs anropar samma SQL-kontroller med isolerade databaser och riktig omstart."
     }
   ],
   "caveats": [
@@ -6161,23 +6483,23 @@
     "Befintliga testfiler är inventerade, inte körda som del av denna kataloguppgift."
   ],
   "sqlContractCatalog": {
-    "complete": true,
-    "scope": "Samtliga 53 CREATE TABLE-kontrakt i de sju befintliga SQL-källorna; inga live-schema/grants/rader avlästa.",
-    "sourceCount": 7,
-    "tableCount": 53,
-    "columnCount": 330,
-    "primaryKeyCount": 53,
-    "foreignKeyCount": 26,
+    "complete": false,
+    "scope": "54 CREATE TABLE-kontrakt i de åtta uttryckligen listade SQL-källorna. Migration 006 återstår att tabellinventera; inga live-schema/grants/rader avlästa.",
+    "sourceCount": 8,
+    "tableCount": 54,
+    "columnCount": 345,
+    "primaryKeyCount": 54,
+    "foreignKeyCount": 30,
     "columnCountBySchema": {
       "croupier_game": 143,
       "croupier_auth": 41,
-      "croupier_studio": 137,
+      "croupier_studio": 152,
       "croupier_zones": 9
     },
     "nullableCountBySchema": {
       "croupier_game": 22,
       "croupier_auth": 15,
-      "croupier_studio": 10,
+      "croupier_studio": 12,
       "croupier_zones": 0
     },
     "dataTypes": [
@@ -6220,6 +6542,10 @@
       },
       {
         "path": "lab/lib/zone-cloud-schema.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/007-partner-branding-drafts.sql",
         "line": 1
       }
     ]

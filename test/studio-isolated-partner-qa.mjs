@@ -60,3 +60,19 @@ test('failure while opening the second pool releases the first pool', async () =
   }, restartCluster() {}, runChecks() {} }), /auth pool unavailable/);
   assert.equal(f.pools.length, 1); assert.equal(f.pools[0].ended, true);
 });
+
+test('isolated SQL evidence binds the actual draft suite imports and immutable migration', async () => {
+  const { STUDIO_ISOLATED_QA_SOURCES } = await import('../tools/studio-isolated-qa.mjs');
+  const { readFile } = await import('node:fs/promises');
+  const { fileURLToPath } = await import('node:url');
+  const { relative } = await import('node:path');
+  const root = new URL('../', import.meta.url), suite = new URL('./partner-branding-postgres.mjs', import.meta.url);
+  const source = await readFile(suite, 'utf8');
+  const required = ['ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs',
+    'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs'];
+  for (const [,path] of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+    if (path.startsWith('.')) required.push(relative(fileURLToPath(root),fileURLToPath(new URL(path,suite))).replaceAll('\\','/'));
+  }
+  assert.equal(new Set(STUDIO_ISOLATED_QA_SOURCES).size,STUDIO_ISOLATED_QA_SOURCES.length,'each source has one receipt hash');
+  for (const path of required) assert.ok(STUDIO_ISOLATED_QA_SOURCES.includes(path),`SQL evidence must hash ${path}`);
+});

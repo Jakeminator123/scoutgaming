@@ -8,6 +8,7 @@
 // A missing/unwritable journal rejects the mutation; server logging is not durability.
 // Branding is package data. It is not a permission boundary.
 import { createHash, randomUUID } from 'node:crypto';
+import { publicEditableBranding } from './partner-branding.mjs';
 import { isAdministratorRole } from '../account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
 import {
@@ -398,14 +399,21 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     if (cursor !== null && (!plain(cursor) || !Number.isSafeInteger(cursor.atMs) || cursor.atMs < 0 || !uuidPattern.test(cursor.id))) fail('studio_invalid_data', 400);
     const rows = await query(`/* operator-store:list-audit */
       SELECT environment_id,workspace_id,operator_id,event_id,actor_id,access_class,action,resource_type,resource_id,before_revision,after_revision,occurred_at_ms,request_id,changes
-      FROM croupier_studio.operator_audit_events
+      FROM (
+        SELECT environment_id,workspace_id,operator_id,event_id,actor_id,access_class,action,resource_type,resource_id,before_revision,after_revision,occurred_at_ms,request_id,changes
+        FROM croupier_studio.operator_audit_events WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+        UNION ALL
+        SELECT environment_id,workspace_id,operator_id,event_id,actor_id,access_class,action,'draft' AS resource_type,operator_id AS resource_id,
+          NULLIF(draft_revision-1,0) AS before_revision,draft_revision AS after_revision,occurred_at_ms,request_id,changes
+        FROM croupier_studio.operator_branding_drafts WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+      ) journal
       WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
         AND ($4::bigint IS NULL OR (occurred_at_ms,event_id) < ($4::bigint,$5::text))
       ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $6`, [operatorId,cursor?.atMs ?? null,cursor?.id ?? null,limit+1]);
     const entries = rows.slice(0,limit).map(row => {
       if (row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId || row.operator_id !== operatorId
         || !uuidPattern.test(row.event_id) || !uuidPattern.test(row.request_id) || !auditClasses.has(row.access_class)
-        || !auditActions.has(row.action)) fail('studio_corrupt_operator');
+        || !auditActions.has(row.action) && !['draft.save','draft.restore','draft.publish'].includes(row.action)) fail('studio_corrupt_operator');
       return {id:row.event_id,atMs:integer(row.occurred_at_ms,0,'studio_corrupt_operator',503),actor:idText(row.actor_id,'studio_corrupt_operator',503),
         accessClass:row.access_class,action:row.action,resourceType:row.resource_type,resourceId:idText(row.resource_id,'studio_corrupt_operator',503),
         beforeRevision:row.before_revision === null ? null : integer(row.before_revision,1,'studio_corrupt_operator',503),
@@ -515,8 +523,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       return saved;
     });
   }
-  async function publishPackage(input = {}) {
-    return withOperatorLock(async txQuery => {
+  async function publishWithin(txQuery,input) {
       // Validation is part of the transaction callback, so a caught local error
       // poisons a shared repository mutation just like an SQL/CAS failure.
       actorOf(input);
@@ -548,10 +555,97 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const saved=packageRow(row);
       await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables}});
       return saved;
+  }
+  async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
+
+  const packageColumns='environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms';
+  const draftColumns='environment_id,workspace_id,operator_id,draft_revision,base_package_revision,branding,source_package_revision,published_package_revision,action,occurred_at_ms';
+  async function getPackage(operatorId, revision) {
+    const rows=await query(`/* operator-store:package-by-revision */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND package_revision=$4`,
+      [idText(operatorId),integer(revision,1,'studio_invalid_data',400)]);
+    if(rows.length>1)fail('studio_corrupt_operator');
+    return rows[0]?packageRow(rows[0]):null;
+  }
+  async function listPackages(operatorId,{limit=20,beforeRevision=null}={}) {
+    if(!Number.isSafeInteger(limit)||limit<1||limit>50)fail('studio_invalid_data',400);
+    if(beforeRevision!==null)integer(beforeRevision,1,'studio_invalid_data',400);
+    return (await query(`/* operator-store:list-packages */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND ($4::bigint IS NULL OR package_revision<$4)
+      ORDER BY package_revision DESC LIMIT $5`,[idText(operatorId),beforeRevision,limit])).map(packageRow);
+  }
+  function draftRow(row) {
+    if(!row||row.environment_id!==scope.environment||row.workspace_id!==scope.workspaceId)fail('studio_corrupt_operator');
+    if(!['draft.save','draft.restore','draft.publish'].includes(row.action))fail('studio_corrupt_operator');
+    return {operatorId:idText(row.operator_id,'studio_corrupt_operator',503),
+      revision:integer(row.draft_revision,1,'studio_corrupt_operator',503),
+      basePackageRevision:integer(row.base_package_revision,1,'studio_corrupt_operator',503),
+      branding:storedJson(row.branding,canonicalBranding),action:row.action,
+      sourcePackageRevision:row.source_package_revision===null?null:integer(row.source_package_revision,1,'studio_corrupt_operator',503),
+      publishedPackageRevision:row.published_package_revision===null?null:integer(row.published_package_revision,1,'studio_corrupt_operator',503),
+      updatedAt:integer(row.occurred_at_ms,0,'studio_corrupt_operator',503)};
+  }
+  async function latestDraft(run,operatorId) {
+    const rows=await run(`/* operator-store:current-branding-draft */ SELECT ${draftColumns}
+      FROM croupier_studio.operator_branding_drafts WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+      ORDER BY draft_revision DESC LIMIT 1`,[idText(operatorId)]);
+    if(rows.length>1)fail('studio_corrupt_operator');
+    return rows[0]?draftRow(rows[0]):null;
+  }
+  async function getBrandingDraft(operatorId) { return latestDraft(query,operatorId); }
+  async function draftWrite(txQuery,input,{before,branding,publishedPackageRevision=null}) {
+    const operatorId=idText(ownValue(input,'operatorId')),actor=actorOf(input);
+    const context=optionalOwn(input,'audit')??{actorId:'actor-'+createHash('sha256').update(actor).digest('hex'),accessClass:'system',requestId:randomUUID()};
+    const actorId=idText(ownValue(context,'actorId')),accessClass=ownValue(context,'accessClass'),requestId=ownValue(context,'requestId');
+    if(!['partner','internal-admin','system'].includes(accessClass)||!uuidPattern.test(requestId))fail('studio_invalid_data',422);
+    const base=integer(ownValue(input,'expectedPackageRevision'),1,'studio_invalid_data',422);
+    const source=publishedPackageRevision===null?(optionalOwn(input,'sourcePackageRevision')??null):null;
+    if(source!==null)integer(source,1,'studio_invalid_data',422);
+    const revision=(before?.revision??0)+1,action=publishedPackageRevision?'draft.publish':source?'draft.restore':'draft.save';
+    let changes=canonicalStudioJson({before:before?{basePackageRevision:before.basePackageRevision,branding:publicEditableBranding(before.branding)}:null,
+      after:{basePackageRevision:base,branding:publicEditableBranding(branding),sourcePackageRevision:source,publishedPackageRevision}});
+    if(changes.length>10000){
+      // Full snapshots remain in immutable draft revisions. Bound the journal without losing their identity.
+      const brandingSha256=value=>createHash('sha256').update(canonicalStudioJson(publicEditableBranding(value))).digest('hex');
+      changes=canonicalStudioJson({before:before?{draftRevision:before.revision,basePackageRevision:before.basePackageRevision,
+        sourcePackageRevision:before.sourcePackageRevision,publishedPackageRevision:before.publishedPackageRevision,brandingSha256:brandingSha256(before.branding)}:null,
+        after:{draftRevision:revision,basePackageRevision:base,sourcePackageRevision:source,publishedPackageRevision,brandingSha256:brandingSha256(branding)}});
+    }
+    if(changes.length>10000)fail('studio_invalid_data',422);
+    const row=(await txQuery(`/* operator-store:write-branding-draft */ INSERT INTO croupier_studio.operator_branding_drafts
+      (environment_id,workspace_id,operator_id,draft_revision,base_package_revision,branding,source_package_revision,published_package_revision,action,event_id,actor_id,access_class,occurred_at_ms,request_id,changes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING ${draftColumns}`,
+      [operatorId,revision,base,canonicalBranding(branding),source,publishedPackageRevision,action,randomUUID(),actorId,accessClass,clock(),requestId,changes]))[0];
+    if(!row)fail('studio_storage_unavailable');
+    const saved=draftRow(row);
+    if(saved.revision!==revision)fail('studio_corrupt_operator');
+    return saved;
+  }
+  async function changeBrandingDraft(input,publish) {
+    return withOperatorLock(async txQuery=>{
+      const operatorId=idText(ownValue(input,'operatorId'));
+      const expected=integer(ownValue(input,'expectedDraftRevision'),0,'studio_invalid_data',422);
+      const expectedPackage=integer(ownValue(input,'expectedPackageRevision'),1,'studio_invalid_data',422);
+      if(!await lockOperator(txQuery,operatorId))fail('studio_operator_not_found',404);
+      const rows=await txQuery(`/* operator-store:current-package */ SELECT ${packageColumns} FROM croupier_studio.operator_packages
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 ORDER BY package_revision DESC LIMIT 1`,[operatorId]);
+      const pack=rows[0]?packageRow(rows[0]):null;
+      const before=await latestDraft(txQuery,operatorId);
+      if(pack?.revision!==expectedPackage||(before?.revision??0)!==expected)fail('studio_conflict',409);
+      if(publish&&(!before||before.action==='draft.publish'||before.basePackageRevision!==expectedPackage))fail('studio_conflict',409);
+      const branding=storedJson(canonicalBranding(ownValue(input,'branding')),canonicalBranding);
+      if(!publish)return draftWrite(txQuery,input,{before,branding});
+      // One connection and transaction: any failure in either audit rolls back publication too.
+      const saved=await publishWithin(txQuery,{...input,expectedRevision:expectedPackage,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding});
+      const draft=await draftWrite(txQuery,input,{before,branding:before.branding,publishedPackageRevision:saved.revision});
+      return {package:saved,draft};
     });
   }
+  async function saveBrandingDraft(input={}) { return changeBrandingDraft(input,false); }
+  async function publishBrandingDraft(input={}) { return changeBrandingDraft(input,true); }
+
   return Object.freeze({
     scope, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, resolvePartnerContext, createOperator, upsertRole, upsertMembership, publishPackage,
+    getCurrentPackage, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, upsertRole, upsertMembership, publishPackage,
   });
 }

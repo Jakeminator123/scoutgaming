@@ -21,7 +21,7 @@ const sources = Object.freeze([
     indexes: ['operator_memberships_user_idx'] },
   { version: '006', file: '006-operator-audit.sql',
     tables: ['operator_audit_events'], indexes: ['operator_audit_events_time_idx'] },
-  { version: '007', file: '007-partner-branding-drafts.sql', deploymentOptional: true,
+  { version: '007', file: '007-partner-branding-drafts.sql',
     tables: ['operator_branding_drafts'], indexes: ['operator_branding_drafts_time_idx'] },
 ]);
 const migrationLock = Object.freeze([1129467987, 1398035778]);
@@ -168,7 +168,7 @@ async function inspect(client, migrations, objects) {
 }
 
 function result(verifiedTarget, state) {
-  const pending = state.toApply.filter(row => !row.deploymentOptional).map(({ version, file, checksum }) => ({ version, file, checksum }));
+  const pending = state.toApply.map(({ version, file, checksum }) => ({ version, file, checksum }));
   return { target: verifiedTarget, targetFingerprint: hash(canonicalStudioJson(verifiedTarget)), schemaPresent: state.objects.present,
     applied: state.applied, toApply: pending, pending };
 }

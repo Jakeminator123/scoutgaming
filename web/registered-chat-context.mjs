@@ -49,8 +49,8 @@ export function createPublishedChatResolver({readCurrentContext,readPresentation
   return async input=>{
     service??=import('./storage/frozen-dealer-presentation.mjs').then(({createFrozenDealerPresentationContext})=>
       createFrozenDealerPresentationContext({
-        readCurrentContext:async slug=>{
-          const saved=await readCurrentContext(slug);
+        readCurrentContext:async (slug,revision)=>{
+          const saved=await readCurrentContext(slug,revision);
           if(saved?.operator&&saved.package&&(!Array.isArray(saved.package.games)||!saved.package.games.includes('blackjack')))
             fail('chat_dealer_unavailable',404);
           return saved;
