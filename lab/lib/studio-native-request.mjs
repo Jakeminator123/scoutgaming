@@ -1,4 +1,5 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
+import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 
@@ -11,7 +12,7 @@ export function normalizeNativeStudioRequest(request, config) {
   const url = new URL(request.url), [publicOrigin, labOrigin] = config.allowedOrigins;
   if (config.allowedOrigins.length !== 2 || !config.allowedOrigins.includes(url.origin)
     || !config.publicHosts.includes(url.host) || url.username || url.password
-    || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) || url.hash) reject();
+    || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) || url.hash) reject();
   const publicHost = new URL(publicOrigin).host;
   const forwarded = request.headers.get('x-forwarded-host');
   const host = request.headers.get('host');
@@ -35,7 +36,7 @@ export function normalizeNativeStudioRequest(request, config) {
   // header. Only exact native endpoint namespaces are repaired; other routes keep
   // their path and remain subject to their own exact routing checks.
   if (config.apiBase === '/studio/api/admin' && config.authBase === '/studio/api/auth'
-    && (/^\/api\/(?:admin|auth|videos|dealers|layer-assets)(?:\/|$)/.test(url.pathname)
+    && (/^\/api\/(?:admin|auth|videos|dealers|layer-assets|replies)(?:\/|$)/.test(url.pathname)
       || /^\/api\/(?:project|social|clip-controls)$/.test(url.pathname))) {
     url.pathname = '/studio' + url.pathname;
   }

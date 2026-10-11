@@ -5,12 +5,21 @@ export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'clips', label: 'Klipp', href: '/control/clips?view=clips' },
   { id: 'scene', label: 'Scen & format', href: '/control/preview' },
   { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
+  { id: 'replies', label: 'Svarsbibliotek', href: '/control/replies' },
   { id: 'settings', label: 'Inställningar', href: '/control/clips?view=settings' },
 ].map(tab => Object.freeze(tab)));
 
 const CONTEXT_PARAMETERS = Object.freeze({
   dealerId: 'dealer', eventId: 'event', variantId: 'variant', situation: 'situation', laneId: 'lane',
 });
+
+// Read only the shared Studio context; page-specific filters and credentials
+// never become navigation context.
+export function studioNavigationContextFromQuery(query) {
+  return Object.fromEntries(Object.entries(CONTEXT_PARAMETERS)
+    .map(([key, parameter]) => [key, query.get(parameter)])
+    .filter(([, value]) => typeof value === 'string' && value));
+}
 
 // Preserve the selected clip across Studio pages, without copying unrelated
 // document parameters (for example an editor's tab or an authentication token).
