@@ -1,4 +1,8 @@
-const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid.png',mask:'assets/felt-mask-astrid.png'},dragge:{name:'Dragge',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge.png'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-dragge.png'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-dragge.png'}};
+// The keyed dealers' rooms carry Emil's shoe like the game's rooms-v2 (Emil 11 Oct: the shoe was wrong for all dealers);
+// their felt masks leave that shoe and the dealer himself out (croupier-dealer-dragge/studio_rooms_v2.py). Astrid too (Emil: her old
+// room had the shoe over "PAYS 3 TO 2" and her cut-out kept a patch of her own shoe): cut-astrid-v3 drops that patch,
+// felt-mask-astrid-v2 = the keyed dealers' v2 table minus her cut-out.
+const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragge',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-marten-v2.png',room:'-v2'}};
 const ROOMS={darkhall:'Dark Hall',mahogany:'Mahogany Privé',golden:'Golden Salon',azure:'Azure Venue'};
 const FELTS={prive:{name:'Privé',c:null},emerald:{name:'Emerald Club',c:'#125c43'},midnight:{name:'Midnight',c:'#213e70'},burgundy:{name:'Burgundy',c:'#70253c'},custom:{name:'Custom',c:null}};
 const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'}};
@@ -19,8 +23,11 @@ const draw=img=>{['#feltC','#feltS'].forEach(s=>{const x=$(s).getContext('2d');x
 if(maskCache[src]?.complete)draw(maskCache[src]);else{const i=maskCache[src]=new Image();i.onload=()=>draw(i);i.src=src}}
 function feltColor(){return st.felt==='custom'?st.custom:FELTS[st.felt].c}
 function render(){
+// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: English as text until he has a voice).
+const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
+$$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
 const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
-swapImg($('#roomImg'),'assets/rooms/'+st.room+'-720.png');swapImg($('#dealerImg'),d.cut);
+swapImg($('#roomImg'),'assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png');swapImg($('#dealerImg'),d.cut);
 paintFelt(d.mask,fc);
 $('#customSw').style.background=st.felt==='custom'?st.custom:'';
 $('#ovName').textContent=st.name||'Blackjack';$('#ovRange').textContent=L.range;$('#ovBal').textContent=L.bal;
@@ -40,7 +47,7 @@ $('#shareUrl').textContent=st.slug?location.host+'/t/'+st.slug:location.host+'/t
 const em=st.email||'demo@scoutgaming.com';$('#userEmail').textContent=$('#userEmail2').textContent=em;$('#avatar').textContent=$('#avatar2').textContent=em[0];
 save()}
 function go(screen){st.screen=screen;$$('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
-const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
+const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
 // The languages each dealer has recorded. Any other language plays the English greeting, as the table does.
 // Mårten has no voice yet: his greeting is shown as text only.
 const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],marten:[]};
@@ -49,9 +56,32 @@ function greetingClip(dealer,lang){lang=voiceLang(dealer,lang);
 if(dealer==='astrid')return lang==='en'?'/media/repliker/greeting_1.mp4':`/media/repliker-${lang}/greeting_1_${lang}.mp4`;
 return `/media/dealers/${dealer}/repliker/${lang}/greeting_1.mp4`}
 let voice;
+// Emil 11 Oct: "Hear" lets the dealer say the greeting on film, lip-synced, in the preview (not only its sound). Green-screen
+// dealers are keyed like the game (dealer-layer.js); Astrid's lines are shot in her own room, so her cut-out masks them.
+const talk=(()=>{const cv=$('#talk'),gl=cv.getContext('webgl',{premultipliedAlpha:true,alpha:true});if(!gl)return null;
+const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);return o},pr=gl.createProgram();
+gl.attachShader(pr,sh(gl.VERTEX_SHADER,'attribute vec2 p;varying vec2 uv;void main(){uv=vec2((p.x+1.)*.5,(1.-p.y)*.5);gl_Position=vec4(p,0.,1.);}'));
+gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,`precision mediump float;varying vec2 uv;uniform sampler2D v,m;uniform float keyed;
+void main(){vec3 c=texture2D(v,uv).rgb;float a;if(keyed>.5){float g=c.g-max(c.r,c.b);a=clamp((1.-smoothstep(.015,.24,g)-.04)/.92,0.,1.);c.g=min(c.g,max(c.r,c.b)+.02);}
+else a=texture2D(m,uv).a;gl_FragColor=vec4(c*a,a);}`));
+gl.linkProgram(pr);gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const at=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(at);gl.vertexAttribPointer(at,2,gl.FLOAT,false,0,0);
+const tex=u=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+u);gl.bindTexture(gl.TEXTURE_2D,t);for(const[k,x]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,x);return t};
+const tv=tex(0),tm=tex(1);gl.uniform1i(gl.getUniformLocation(pr,'v'),0);gl.uniform1i(gl.getUniformLocation(pr,'m'),1);const uk=gl.getUniformLocation(pr,'keyed');
+const vid=document.createElement('video');vid.playsInline=true;vid.preload='auto';let busy=false;
+function frame(){if(!busy)return;gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tv);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid);
+gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);cv.classList.add('on');$('#dealerImg').classList.add('fading');vid.requestVideoFrameCallback?vid.requestVideoFrameCallback(frame):requestAnimationFrame(frame)}
+function stop(){busy=false;vid.pause();cv.classList.remove('on');$('#dealerImg').classList.remove('fading')}
+// Plays the dealer's own clip, keyed or masked by his still; resolves false if it cannot play (no clip, no sound allowed).
+function play(src,keyed,maskSrc,onEnd){stop();busy=true;gl.uniform1f(uk,keyed?1:0);
+if(!keyed){const im=new Image();im.onload=()=>{gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tm);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im)};im.src=maskSrc}
+vid.src=src;vid.onended=()=>{stop();onEnd()};vid.onerror=()=>{stop();onEnd(false)};
+return vid.play().then(()=>{frame();return true},()=>{stop();return false})}
+return{play,stop}})();
 function speak(line,tts,force,done){if(voiceLang(st.dealer,st.lang)!==st.lang)line=LANGS.en.line;const sp=$('#speaking');sp.textContent='“'+line+'”';sp.classList.add('on');clearTimeout(sayT);const end=()=>{sp.classList.remove('on');done&&done()};
-const clip=greetingClip(st.dealer,st.lang);voice?.pause();
+const clip=greetingClip(st.dealer,st.lang);voice?.pause();talk?.stop();
 if(!VOICES[st.dealer]?.length){sayT=setTimeout(end,4200);return}
+if((force||st.sound)&&clip&&talk){talk.play(clip,st.dealer!=='astrid',DEALERS[st.dealer].cut,()=>setTimeout(end,300)).then(ok=>{if(!ok){voice=new Audio(clip);voice.onended=()=>setTimeout(end,300);voice.play().catch(()=>{})}});sayT=setTimeout(()=>{talk.stop();end()},12000);return}
 if((force||st.sound)&&clip){voice=new Audio(clip);voice.onended=()=>setTimeout(end,300);voice.play().catch(()=>{});sayT=setTimeout(end,8000);return}
 if((force||st.sound)&&'speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(line);u.lang=tts;u.rate=.95;u.onend=()=>setTimeout(end,400);speechSynthesis.speak(u)}sayT=setTimeout(end,4200)}
 function syncSound(){const b=$('#soundBtn');b.setAttribute('aria-pressed',String(st.sound));b.setAttribute('aria-label',st.sound?'Turn sound off':'Turn sound on')}
@@ -90,7 +120,7 @@ $('#tableName').addEventListener('input',e=>{st.name=e.target.value;render()});
 $$('.play').forEach(b=>b.onclick=()=>{const l=LANGS[b.dataset.say];st.lang=b.dataset.say;render();
 $$('.play').forEach(p=>p.classList.remove('on'));b.classList.add('on');
 speak(l.line,l.tts,true,()=>b.classList.remove('on'))});
-$('#soundBtn').onclick=()=>{st.sound=!st.sound;if(!st.sound){voice?.pause();if('speechSynthesis' in window)speechSynthesis.cancel()}syncSound();save()};
+$('#soundBtn').onclick=()=>{st.sound=!st.sound;if(!st.sound){voice?.pause();talk?.stop();if('speechSynthesis' in window)speechSynthesis.cancel()}syncSound();save()};
 $('#playBtn').onclick=()=>{if(st.slug)location.href='/t/'+st.slug};
 const leave=()=>{if('speechSynthesis' in window)speechSynthesis.cancel();go('ready')};
 $('#exitBtn').onclick=leave;$('#backBuild').onclick=()=>{if('speechSynthesis' in window)speechSynthesis.cancel();go('builder')};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&st.screen==='play')leave()});
