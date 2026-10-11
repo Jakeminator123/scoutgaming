@@ -1,3 +1,5 @@
+import { REST_TAKES } from './dealers.js';
+
 // Keyed dealer layer for a green-screen dealer: drawn ABOVE the game cards, so
 // his hands and arms always lie over every card. The room is the still below the
 // cards; this canvas shows only him, keyed live from whichever clip is on screen
@@ -174,14 +176,18 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       lastStamp = stamp;
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
       // Which take and frame is on screen decides whether his landed card is keyed out.
-      const m = v ? /\/([a-z0-9]+)(?:-([iu]+))?\.mp4/.exec(v.dataset.source || v.currentSrc || '') : null;   // playback is a blob URL; the preloader keeps the real one
-      const take = m?.[1], lead = m?.[2]?.includes('i') ? inFrames : 0;   // a ready dealer's -i variant starts with his in-transition
-      const track = take === 'posdealer' ? 'dealer' : take?.replace('pos', '');
-      const at = track && cardAt(track);
+      // -v / -iv: the take that ends at rest (a hit, the dealer drawing more): its own track ('4v', 'dealerv') and
+      // landing, at the same seat. These were missed before, so his white prop covered the hit card's face (Kevin, 10 Oct).
+      const m = v ? /\/([a-z0-9]+)(?:-([iuv]+))?\.mp4/.exec(v.dataset.source || v.currentSrc || '') : null;   // playback is a blob URL; the preloader keeps the real one
+      const take = m?.[1], seat = take === 'posdealer' ? 'dealer' : take?.replace('pos', ''), track = seat && (m?.[2]?.includes('v') ? `${seat}v` : seat);
+      const lead = m?.[2]?.includes('i') && !REST_TAKES.includes(track) ? inFrames : 0;   // a ready dealer's -i variant starts with his in-transition (not a take from rest)
+      const at = seat && cardAt(seat);
       const frame = v ? Math.floor(v.currentTime * 24 + 1e-5) - lead : 0;
       const on = at && frame >= (land[track] ?? Infinity);
-      // Before it rests, follow his card frame by frame (the same track the game projects on).
-      const face = at && !on ? faceAt?.(track, v.currentTime - lead / 24) : null;
+      // Follow his card frame by frame (the same track the game projects on), and once it rests keep cutting it out on its
+      // resting outline: the game's card may lie a step beside it (its own place in the hand), so his prop's grey edge
+      // and shadow must go too, not only its white (Kevin 11 Oct: "the second card was transparent for a second").
+      const face = at ? faceAt?.(track, v.currentTime - lead / 24) : null;
       (face?.q ?? [[0, 0], [0, 0], [0, 0], [0, 0]]).forEach(([x, y], i) => gl.uniform2f(uQuad[i], (at?.[0] ?? 0) + x, (at?.[1] ?? 0) + y));
       gl.uniform1f(uQuadOn, face ? 1 : 0);
       gl.uniform4f(uCard, at?.[0] ?? 0, at?.[1] ?? 0, keyHalf[0], keyHalf[1]);   // half-size of his resting prop, plus a margin

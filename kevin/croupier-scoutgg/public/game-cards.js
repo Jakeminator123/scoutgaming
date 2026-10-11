@@ -1,8 +1,8 @@
 import {suitColor} from './game-presentation.js';
 import { svgNode } from './table-boxes.js';
 import { total, totalLabel } from './game-events.js';
-import { faceAtTime, flipFace, triangleMatrices } from './card-face-projection.js';
-import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } from './card-table-layout.js';
+import { faceAtTime, faceTriangles, firstFaceTime, flipFace, triangleMatrices } from './card-face-projection.js';
+import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor, trackLean } from './card-table-layout.js';
 import { dealerHandClip } from './dealer-hand-occlusion.js';
 import { dealer as chosenDealer } from './dealers.js';
 
@@ -15,11 +15,9 @@ export function createGameCards(svg, manifest) {
   const faceClip = svgNode('clipPath', {id: `${prefix}-face`, clipPathUnits:'userSpaceOnUse'});
   faceClip.append(svgNode('rect', {x:-width/2+1,y:-height/2+1,width:width-2,height:height-2,rx:3}));
   defs.append(faceClip);
-  // Local triangle clips are shared; per-card visible-paper clips exclude fingers.
-  for (const [i, points] of [
-    [[-width/2,-height/2],[width/2,-height/2],[width/2,height/2]],
-    [[-width/2,-height/2],[width/2,height/2],[-width/2,height/2]],
-  ].entries()) {
+  // Local triangle clips (the corner-pin mesh) are shared; per-card visible-paper clips exclude fingers.
+  const triangles = faceTriangles(width, height);
+  for (const [i, points] of triangles.entries()) {
     const clip = svgNode('clipPath', {id: `${prefix}-triangle-${i}`, clipPathUnits:'userSpaceOnUse'});
     clip.append(svgNode('polygon', {points: points.map(p=>p.join(',')).join(' ')})); defs.append(clip);
   }
@@ -67,7 +65,7 @@ export function createGameCards(svg, manifest) {
       hand.cards.forEach((card, index) => {
         const pose = cardPose({ index, count, anchor, width,
           incomingIndex: deal ? (incoming < 0 ? count - 1 : incoming) : -1,
-          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat });
+          time: deal?.time, contact: deal?.contact, lean: deal ? trackLean(deal.track, deal.time) : 1, splitCount: hand.splitCount, seat: hand.seat });
         const entry = nodes.get(card.shoeDraw);
         const layoutKey = `${anchor.cx}:${anchor.cy}:${hand.splitCount}`;
         if (entry.pose && entry.layoutKey !== layoutKey) {
@@ -82,15 +80,20 @@ export function createGameCards(svg, manifest) {
         // The prop is stationary once the fingers release it. Stop thresholding
         // its paper then: the dealer clip's neutral final frame has a broken
         // white mask, which otherwise punches flashing holes in the black back.
-        // Emil turns the hole card on film, so the game hides its own meanwhile; a ready dealer has no filmed flip.
-        const turning = !chosenDealer.ready && pending?.track === 'flip' && pending.draw === card.shoeDraw && entry.signature === 'hidden';
+        // Emil turns the hole card on film (every dealer's flip is filmed now), so the game hides its own meanwhile.
+        const turning = pending?.track === 'flip' && pending.draw === card.shoeDraw && entry.signature === 'hidden';
         // #9: once face-up on film, the face takes the filmed card's tracked shape as it settles (filmed flips only)
         const flipping = !chosenDealer.ready && pending?.track === 'flip' && pending.draw === card.shoeDraw && !turning
           ? flipFace(pending.time ?? 0, width, height) : null;
+        // A ready dealer's turned card is corner-pinned on its filmed track until it rests, like a dealt one.
+        // The table may show the card a frame before the video presents its first face-up frame (wall clock vs
+        // video): it is pinned to that first pose then, never drawn at rest beside his hand.
+        const turned = chosenDealer.ready && pending?.track === 'flip' && pending.draw === card.shoeDraw && !turning && pending.time + 1e-6 < pending.clear
+          ? faceAtTime('flip', Math.max(pending.time, firstFaceTime('flip'))) : null;
         const tracked = deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear
-          ? faceAtTime(deal.track, deal.time) : flipping;
+          ? faceAtTime(deal.track, Math.max(deal.time, firstFaceTime(deal.track))) : flipping ?? turned;
         const px = pose.x, py = pose.y;
-        const motionKey=`${turning}:${px.toFixed(3)}:${py.toFixed(3)}:${flipping ? 'flip' + flipping.frame : tracked ? Math.floor(deal.time*24+1e-5) : 'rest'}:${entry.signature}`;
+        const motionKey=`${turning}:${px.toFixed(3)}:${py.toFixed(3)}:${flipping ? 'flip' + flipping.frame : tracked ? Math.floor(pending.time*24+1e-5) : 'rest'}:${entry.signature}`;
         if(entry.motionKey===motionKey)return;
         entry.motionKey=motionKey;
         entry.group.setAttribute('display', turning ? 'none' : 'inline');
@@ -98,6 +101,15 @@ export function createGameCards(svg, manifest) {
         entry.face.setAttribute('visibility', tracked ? 'hidden' : 'visible');
         entry.projected.setAttribute('visibility', tracked ? 'visible' : 'hidden');
         entry.group.style.filter = tracked ? 'none' : '';
+        // The mesh's artwork copies exist only while the card is pinned to the film (one card at a time).
+        if (!tracked && entry.pieces) { entry.ink.replaceChildren(); entry.pieces = null; }
+        if (tracked && !entry.pieces) {
+          entry.pieces = triangles.map((_, i)=>{
+            const piece=svgNode('g'), local=svgNode('g',{'clip-path':`url(#${prefix}-triangle-${i})`});
+            local.append(face(card,true));piece.append(local);return piece;
+          });
+          entry.ink.replaceChildren(...entry.pieces);
+        }
         if (tracked) {
           // Source video lies below ALL game cards. Opaque visible paper must
           // cover older card ink, while its contour leaves the filmed fingers intact.
@@ -134,11 +146,7 @@ export function createGameCards(svg, manifest) {
         }
         if (entry.signature !== signature) {
           entry.face = face(card); entry.signature = signature;
-          entry.pieces = [0,1].map(i=>{
-            const piece=svgNode('g'), local=svgNode('g',{'clip-path':`url(#${prefix}-triangle-${i})`});
-            local.append(face(card,true));piece.append(local);return piece;
-          });
-          entry.ink.replaceChildren(...entry.pieces);
+          entry.pieces = null; entry.ink.replaceChildren(); entry.motionKey = null;
           entry.group.replaceChildren(entry.face,entry.projected);
           entry.group.setAttribute('data-card', signature);
         }
