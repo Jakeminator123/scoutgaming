@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { studioNavigationHref, studioNavigationTabs, studioNavigationCrumbs } from '../lib/studio-navigation.mjs';
+import { studioNavigationHref, studioNavigationTabs, studioNavigationCrumbs, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 const selection = { dealerId: 'paow', eventId: 'speak.goodluck', variantId: 'paow.goodluck.alt-2', situation: 'goodluck', laneId: 'studio/main' };
 const query = href => new URL(href, 'https://scoutgaming.test').searchParams;
@@ -38,7 +38,7 @@ function anchors(node) {
 
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
-  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Scen & format', 'Tal & automatik', 'Inställningar']);
+  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Scen & format', 'Tal & automatik', 'Svarsbibliotek', 'Inställningar']);
   for (const tab of tabs) {
     const params = query(tab.href);
     assert.equal(params.get('dealer'), selection.dealerId);
@@ -46,7 +46,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
     assert.equal(params.get('variant'), selection.variantId);
     assert.equal(params.get('situation'), selection.situation);
     assert.equal(params.get('lane'), selection.laneId);
-    assert.equal(params.get('view'), tab.id === 'scene' ? null : tab.id);
+    assert.equal(params.get('view'), ['scene','replies'].includes(tab.id) ? null : tab.id);
   }
   assert.equal(new URL(tabs.find(tab => tab.id === 'scene').href, 'https://test.invalid').pathname, '/control/preview');
 });
@@ -126,4 +126,9 @@ test('dealer tabs are absent until a dealer is selected', () => {
   const html = renderToStaticMarkup(React.createElement(StudioNavigation, { active: 'clips' }));
   assert.match(html, /Brödsmulor i Studio/);
   assert.doesNotMatch(html, /Studio för|class="tabs"/);
+});
+
+
+test('query context reader includes only Studio selection keys and omits empty values',()=>{
+  const query=new URLSearchParams({dealer:'paow',event:'speak.goodluck',variant:'paow.goodluck.alt-2',situation:'goodluck',lane:'studio/main',category:'player-kind',token:'private',tab:'triggers',cursor:'opaque'});assert.deepEqual(studioNavigationContextFromQuery(query),selection);assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams('dealer=&event=&token=x')),{});
 });

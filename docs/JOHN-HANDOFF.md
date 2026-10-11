@@ -2,6 +2,20 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Studio: privat Svarsbibliotek per dealer
+
+12 oktober: Svarsbibliotek är en egen dealerflik på /control/replies?dealer=<id>. Den visar sparade genererade svar med exakt text, språk, tid, profilrevision samt privat ljud och video. Tio gemensamma kategorier kan filtreras och ändras. Biblioteket genererar, återanvänder, godkänner eller publicerar inga svar. Talgranskning av inspelade klipp finns fortsatt under vald dealer → Klipp → Tal-klipp & ljud.
+
+N1-API:t kräver aktuell intern adminbehörighet och låter aldrig klienten välja miljö/workspace. Privat Blob-metadata och media binds till miljö, workspace och dealer; inga oskopade fallback eller offentliga lagringsreferenser lämnas ut. Kategoriändringar använder revisionskontroll och atomisk ETag-precondition med ny behörighetskontroll före skrivning. Range/HEAD går genom samma privata mediegräns. Förlorat skrivsvar stäms av genom läsning, utan blind omskrivning.
+
+Ett synligt Byt basklipp inkluderar även egna idle-klipp som redan används som variation. Bytet ersätter bara primärklippets video och längd, behåller samtliga basvikter och andra variationer, och lämnar gamla uppladdningen och AI-talreferensen kvar. Det är ett utkast tills inställningarna sparas och paketet publiceras. 19 riktade tester verifierar även dubbelklick, ändrad media, avbruten läsning och sena svar.
+
+Utkast och konflikter skyddas vid sid-, dealer- och filterbyte. Sena svar får inte återvisa en tidigare dealer. Returlänkar bevarar scen, händelse, variant och situation; dealerbyte rensar den gamla dealerns klippkontext. Rader med osparade val hålls synliga även om en samtidig kategoriändring annars skulle filtrera bort dem.
+
+Verifiering: 142 samlade kontext-/dealer-/scen-/event-/Probe-/admin-/biblioteksprov, 15 API-/queryprov och fem privata lagringsprov passerar, liksom 20 befintliga request-/mediaprov, TypeScript och Next-produktionsbygge. Nya tester registreras i ordinarie fullhook; inga tester kring spelkort, plånbok eller taluppspelning tas bort. Produktionsläsningens utfall redovisas i leveransmeddelandet.
+
+Avgränsning: denna leverans innehåller bibliotek och lagringsmodul. Automatisk infångning från avslutade genererade svar levereras separat i röstuppgiften när Blob och Studio-scope finns konfigurerade. Inga tidigare artefakter importeras; ingen verklig läppsynksacceptans eller produktionsskrivning av kategori/media görs av dessa tester.
+
 ### Förberedelse för sparade utkast och publicering, 12 oktober 2026
 
 Kompatibilitetsversionen känner igen endast verifierade Studio-kedjor001–006 eller001–007.007 är tillfälligt valfri i migrationsplanen; installerad007 kontrolleras fortfarande strikt mot SQL-checksumma och schema. Den additiva tabellen operator_branding_drafts sparar separata utkastrevisioner och deras beständiga ändringshistorik. Inga utkastkonsumenter levereras i denna förberedelse. Båda produktionsvärdarna måste köra kompatibilitetsversionen före schema007; först därefter levereras spara/granska/publicera/återställ. Inga produktionsdata ändras av denna kodcommit. Hela breda JN2-D, inklusive ännu ej anslutna logotyper/chips/knappar, är inte färdigmarkerad. Testtak5USD; inga betalda AI/GPU-anrop eller WSL.

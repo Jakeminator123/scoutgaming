@@ -35,6 +35,13 @@ function weightedBase(base: IdlePolicy['base'], primaryId: string, primaryWeight
   })];
 }
 
+function replacementVideo(inventory: VideoInventory, policy: IdlePolicy, videoId: string) {
+  const family = inventory.families?.find(row => row.id === policy.familyId);
+  const video = inventory.videos.find(row => row.id === videoId);
+  return video?.available && video.familyId === policy.familyId && family?.variantIds.includes(videoId)
+    && !policy.base.some(row => row.videoId === videoId) ? video : undefined;
+}
+
 function usageDescription(item: IdleVariantPolicy) {
   if (item.use !== 'automatic' || !item.automatic) return useLabels[item.use];
   return `Automatisk · cirka var ${seconds(item.automatic.averageEveryMs)}:e sekund`;
@@ -60,7 +67,8 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     const ids = role === 'standard' ? family?.standardIds ?? policy.base.map(item => item.videoId) : family?.variantIds ?? policy.variants.map(item => item.videoId);
     const ordinal = Math.max(1, ids.indexOf(videoId) + 1);
     const defaultName = name === 'Variation' ? `Variation ${ordinal}` : name;
-    return { text: clipLabels?.[videoId]?.trim() ? name : defaultName, title: `${file} · ${videoId}` };
+    const uploadName = editableBase ? video?.label?.trim() || video?.classification?.label?.trim() || file : '';
+    return { text: clipLabels?.[videoId]?.trim() ? name : uploadName || defaultName, title: `${file} · ${videoId}` };
   };
   const estimate = useMemo(() => idleShareEstimate(policy), [policy]);
   const [seed, setSeed] = useState(25);
@@ -75,6 +83,8 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const [filter, setFilter] = useState('');
   const [importing,setImporting] = useState(false);
   const [baseId,setBaseId] = useState(''),[baseWeight,setBaseWeight] = useState('');
+  const [replacementId,setReplacementId] = useState(''),[replacementError,setReplacementError] = useState(''),[replacing,setReplacing] = useState(false);
+  const replacementContext=useRef({inventory,blocked,editableBase});replacementContext.current={inventory,blocked,editableBase};
   const importOperation=useRef<AbortController|null>(null);
   const latestPolicy=useRef(policy);latestPolicy.current=policy;
   const busyCallback=useRef(onBusyChange);busyCallback.current=onBusyChange;
@@ -85,6 +95,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const unconfigured = family?.variantIds.filter(id => !policy.variants.some(item => item.videoId === id)) ?? [];
   const plan = useMemo(() => createIdlePreviewPlan(policy, { seed, durationMs: 60000 }), [policy, seed]);
   const primary = policy.base[0];
+  const replacementChoices = editableBase ? inventory.videos.filter(video => replacementVideo(inventory,policy,video.id)) : [];
   const primaryActualShare = primary ? estimate.shares[primary.videoId] ?? 0 : 0;
   const visibleVariants = policy.variants.filter(item => `${shown(item.videoId).text} ${shown(item.videoId).title} ${useLabels[item.use]} ${item.description ?? ''}`.toLocaleLowerCase('sv').includes(filter.trim().toLocaleLowerCase('sv')));
 
@@ -169,6 +180,32 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
     finally { if(importOperation.current===controller){importOperation.current=null;setImporting(false);importBusyCallback.current(false);} }
   }
 
+  async function replacePrimary(videoId: string) {
+    const video=replacementVideo(inventory,policy,videoId);
+    if(blocked||!editableBase||importOperation.current||!video)return;
+    setReplacementError('');stop('Inställningen ändrades');
+    const controller=new AbortController();importOperation.current=controller;
+    setImporting(true);setReplacing(true);importBusyCallback.current(true);
+    try {
+      const durationMs=await readIdleVideoDuration(video.previewUrl,{signal:controller.signal});
+      if(controller.signal.aborted||latestPolicy.current!==policy)return;
+      const latest=replacementContext.current;
+      if(latest.blocked||!latest.editableBase)return;
+      const current=replacementVideo(latest.inventory,policy,videoId);
+      if(!current||current.sha256!==video.sha256||current.previewUrl!==video.previewUrl){setReplacementError('Klippet har ändrats eller är inte längre tillgängligt. Välj klipp igen.');return;}
+      if(!Number.isInteger(durationMs)||durationMs<200||durationMs>60000)throw Error('Klippet måste vara mellan 0,2 och 60 sekunder.');
+      // A replacement inherits only the primary slot's weight. Other base and
+      // variation entries retain their exact settings; uploaded media is untouched.
+      onChange({...policy,base:policy.base.map((row,index)=>index===0?{...row,videoId,durationMs}:row),
+        variants:policy.variants.filter(row=>row.videoId!==videoId)});
+      setReplacementId('');setPreviewId(videoId);
+    } catch(error) {
+      if(!controller.signal.aborted&&latestPolicy.current===policy)setReplacementError(error instanceof Error?error.message:'Videons längd kunde inte läsas. Försök igen.');
+    } finally {
+      if(importOperation.current===controller){importOperation.current=null;setImporting(false);setReplacing(false);importBusyCallback.current(false);}
+    }
+  }
+
   const events = plan.flatMap((segment, index) => segment.kind === 'variant' ? [
     { at: segment.startMs, label: 'scheduled', videoId: segment.videoId },
     { at: segment.startMs, label: 'started', videoId: segment.videoId },
@@ -181,6 +218,15 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
       <h3>Basklipp</h3>
       {!family ? <p className={styles.warning}>Klippen för grundloopen kunde inte hittas.</p> : null}
       <div className={styles.baseChoice}><label className="field">Basklipp<select value={primary.videoId} onChange={event => setPrimary(event.target.value)}>{policy.base.map(item => <option key={item.videoId} value={item.videoId} title={shown(item.videoId).title}>{shown(item.videoId).text}</option>)}</select></label><button type="button" className="text-button" onClick={() => play(primary.videoId)} disabled={blocked || !byId.get(primary.videoId)?.available}>Spela basklipp</button></div>
+      {editableBase?<div role="group" aria-label="Byt basklipp">
+        <div className={styles.baseChoice}><label className="field">Byt basklipp<select aria-label="Välj nytt basklipp" value={replacementId} disabled={!replacementChoices.length} onChange={event=>{setReplacementId(event.target.value);setReplacementError('');}}>
+          <option value="">{replacementChoices.length?'Välj uppladdat grundloopsklipp':'Inga andra tillgängliga grundloopsklipp'}</option>
+          {replacementChoices.map(video=><option key={video.id} value={video.id} title={shown(video.id).title}>{shown(video.id).text}{policy.variants.some(row=>row.videoId===video.id)?' · används som variation':''}</option>)}
+        </select></label><button type="button" className="text-button" disabled={blocked||importing||!replacementChoices.some(row=>row.id===replacementId)} onClick={()=>void replacePrimary(replacementId)}>{replacing?'Läser klipplängd…':'Använd som basklipp'}</button></div>
+        <p className={styles.useHelp}>Ersätter det valda basklippet och behåller övriga basklipp och deras andelar. Det tidigare klippet finns kvar i biblioteket. Spara inställningarna efter bytet.</p>
+        {!replacementChoices.length?<p className={styles.useHelp}>Lägg in en egen video i facket Grundloop för att välja ett nytt basklipp.</p>:null}
+        {replacementError?<p className={styles.warning} role="alert">{replacementError}</p>:null}
+      </div>:null}
       <details className={styles.help}><summary>Avancerat · basklipp och fördelning</summary>
         {policy.base.length > 1 ? <><p>Alla basklipp ingår i grundloopen och väljs enligt sina vikter.</p><label className={styles.range}>Valt basklipps andel <strong>{primary.weight} %</strong><input type="range" min={1} max={100-policy.base.length+1} value={primary.weight} onChange={event => setPrimaryWeight(Number(event.target.value))} /></label></> : null}
         <div className={styles.share}><strong>Andel i det automatiska schemat: {percent(primaryActualShare)}</strong><span>Automatiska variationer tar cirka {percent(estimate.automaticShare)} av tiden. OpenClaw-reaktioner, tal och spelhandlingar ingår inte i uppskattningen.</span></div>

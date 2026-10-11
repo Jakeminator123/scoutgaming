@@ -142,7 +142,8 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 | Studio / undervy | Adress | Vad sidan innehåller |
 |---|---|---|
-| Dealers & klipp | `/control/clips` | Välj dealer och flik: Grundloop, Klipp, Scen & format, Tal & automatik eller Inställningar. |
+| Dealers & klipp | `/control/clips` | Välj dealer och flik: Grundloop, Klipp, Scen & format, Tal & automatik, Svarsbibliotek eller Inställningar. |
+| Svarsbibliotek | `/control/replies?dealer=<id>` | Privata genererade svar för vald dealer: exakt text, ljud, video och kategorier. Ingen generering, återanvändning eller publicering från denna vy. |
 | Bord & bakgrunder | `/control/library?tab=tables` eller `?tab=backgrounds` | Gemensamt filbibliotek med uppladdning, användning och säker borttagning. Ändrar inga scenval vid uppladdning. |
 | Klippbibliotek | `/control/videos` | Mediafiler, registrering, metadata och händelsekoppling. |
 | Sammansättning | `/control/preview` | Välj, skapa och namnge presentationen. Välj Dealer, Bord och Bakgrund; ändra Storlek och placering per format, förhandsvisa klipp och spara. |

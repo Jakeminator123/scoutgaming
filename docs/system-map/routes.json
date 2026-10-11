@@ -4415,6 +4415,55 @@
           "path": "web/storage/studio-repository.mjs"
         }
       ]
+    },
+    {
+      "id": "studio-control-replies",
+      "path": "/control/replies",
+      "publicPath": "/control/replies",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/replies/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "studioUiInitialData authorizes the dealer workspace. The private generated reply library lists exact text/audio/video and permits category edits only; no generation, reuse or publication.",
+      "groupId": "studio",
+      "sources": [
+        {
+          "path": "lab/app/control/replies/page.tsx"
+        },
+        {
+          "path": "lab/components/control-replies-page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-replies",
+      "path": "/api/replies/:path*",
+      "publicPath": "/studio/api/replies/:path*",
+      "methods": [
+        "GET",
+        "HEAD",
+        "PATCH"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/replies/[[...path]]/route.ts",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Fresh internal N1 admin or superadmin session.",
+      "boundary": "Strict native Studio request and dealer query validation; server-bound environment/workspace scope. Private media proxy and category-only updates with revision CAS and fresh authorization. No public Blob references.",
+      "groupId": "studio",
+      "sources": [
+        {
+          "path": "lab/app/api/replies/[[...path]]/route.ts"
+        },
+        {
+          "path": "lab/lib/studio-replies-api.mjs"
+        },
+        {
+          "path": "lab/lib/studio-native-request.mjs"
+        }
+      ]
     }
   ],
   "retiredLanes": [

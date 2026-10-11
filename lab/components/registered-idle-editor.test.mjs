@@ -34,13 +34,13 @@ function harness(file,read){
     flush(){const pending=effects.filter(row=>row.changed);for(const row of pending)row.cleanup?.();for(const row of pending){row.changed=false;row.cleanup=row.run();}},
     unmount(){for(const row of effects)row.cleanup?.();}};
 }
-function fixture(){
-  const project=addDealer(createSeedProject(),'johanna','Johanna');
-  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[0];
-  const inventory={videos:ids.map((id,index)=>({id,dealer:'johanna',available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',previewUrl:'/own/'+id+'.mp4',
-    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:index?'alternative':'standard',playback:'once',situation:'',label:'Idle',notes:''}}))};
+function fixture(dealerId='johanna'){
+  const project=addDealer(createSeedProject(),dealerId,dealerId==='paow'?'PAOW':'Johanna');
+  project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[0];
+  const inventory={videos:ids.map((id,index)=>({id,dealer:dealerId,available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',previewUrl:'/own/'+id+'.mp4',
+    classification:{dealerId,eventId:'idle.ready',kind:'idle',role:index?'alternative':'standard',playback:'once',situation:'',label:'Idle',notes:''}}))};
   const changes=[],busy=[];
-  return {project,inventory,dealerId:'johanna',blocked:false,onChange:policy=>changes.push(policy),onBusyChange:value=>busy.push(value),changes,busy};
+  return {project,inventory,dealerId,blocked:false,onChange:policy=>changes.push(policy),onBusyChange:value=>busy.push(value),changes,busy};
 }
 
 test('own idle starts unconfigured and uses probed baseline only after explicit action',async()=>{
@@ -145,4 +145,73 @@ test('rules can be selected only for an own dealer and require explicit event bi
   selector=nodes(tree,row=>row.type==='select'&&row.props.value==='rules')[0];
   assert.equal(nodes(selector,row=>row.type==='option'&&row.props.value==='rules')[0].props.disabled,true);
   assert.match(text(tree),/Regler är inte anslutna här/);
+});
+
+
+function replacementFixture(){
+  const p=fixture('paow'),extra=['44444444-4444-4444-8444-444444444444','55555555-5555-4555-8555-555555555555','66666666-6666-4666-8666-666666666666'];
+  p.inventory.videos[0].label='dealer_mobile';p.inventory.videos[0].fileName='dealer_mobile.mp4';p.inventory.videos[1].label='dealer_desktop';p.inventory.videos[1].fileName='dealer_desktop.mp4';
+  p.inventory.videos.push(...extra.map(id=>({...clone(p.inventory.videos[0]),id,label:'Extra '+id[0],fileName:id+'.mp4',previewUrl:'/own/'+id+'.mp4'})));
+  const policy={schemaVersion:1,familyId:'paow/idle.ready/ready',base:[ids[0],...extra].map((videoId,index)=>({videoId,weight:[41,29,19,11][index],durationMs:[1100,2200,3300,4400][index]})),variants:[{videoId:ids[1],durationMs:5555,use:'automatic',automatic:{averageEveryMs:25000,jitterMs:3000,cooldownMs:12000,maxPerMinute:2},description:'Desktop idle'},{videoId:ids[2],durationMs:6666,use:'rules',automatic:null,description:'Behåll villkoret'}]};
+  p.project.dealerIdlePolicies=[{dealerId:p.dealerId,policy}];
+  p.project.dealers.find(row=>row.id===p.dealerId).speechProfile={reference:{videoId:ids[0],frameTimeMs:0}};
+  const changes=[],busy=[];
+  return {p,policy,changes,busy,props:{policy,inventory:registered.registeredIdleInventory(p.inventory,{dealerId:p.dealerId,policy}),blocked:false,editableBase:true,onChange:value=>changes.push(value),onBusyChange(){},onImportBusyChange:value=>busy.push(value)}};
+}
+function replacementSelect(tree){const select=nodes(tree,row=>row.type==='select'&&row.props['aria-label']==='Välj nytt basklipp')[0];assert.ok(select,'visible replacement selector');return select;}
+function chooseReplacement(h,props,id=ids[1]){let tree=h.render(props);h.flush();replacementSelect(tree).props.onChange({target:{value:id}});tree=h.render(props);h.flush();return tree;}
+
+test('PAOW can visibly promote its desktop variation to the primary without changing other base weights or settings',async()=>{
+  const f=replacementFixture(),before=clone(f.p),probe=deferred(),requests=[],h=harness('./idle-policy-editor.tsx',(url,options)=>{requests.push({url,...options});return probe.promise;});
+  let tree=chooseReplacement(h,f.props);const group=nodes(tree,row=>row.props?.['aria-label']==='Byt basklipp')[0];assert.ok(group);assert.equal(nodes(tree,row=>row.type==='details'&&nodes(row,child=>child===group).length).length,0,'replacement is outside disclosures');
+  assert.match(text(replacementSelect(tree)),/dealer_desktop · används som variation/);const current=nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0];assert.match(text(current),/dealer_mobile/);
+  const replace=button(tree,'Använd som basklipp');assert.equal(replace.props.disabled,false);replace.props.onClick();replace.props.onClick();tree=h.render(f.props);h.flush();assert.equal(requests.length,1);assert.equal(f.changes.length,0);assert.equal(button(tree,'Läser klipplängd…').props.disabled,true);
+  probe.resolve(7890);await tick();assert.equal(f.changes.length,1);const next=f.changes[0];idlePolicy.validateIdlePolicy(next);
+  assert.deepEqual(clone(next.base),[{videoId:ids[1],weight:41,durationMs:7890},...f.policy.base.slice(1)]);assert.deepEqual(clone(next.variants),[f.policy.variants[1]]);assert.equal(next.variants[0],f.policy.variants[1]);for(let i=1;i<4;i++)assert.equal(next.base[i],f.policy.base[i]);
+  assert.equal(requests[0].url,f.p.inventory.videos[1].previewUrl);assert.deepEqual(f.busy,[true,false]);assert.deepEqual(clone(f.p),before,'old upload, project and AI reference remain unchanged until the parent saves the policy');assert.equal(next.base.length,4);
+});
+
+test('replacement also accepts an unused uploaded idle clip and keeps a sole primary at 100 percent',async()=>{
+  const p=fixture('paow'),policy=registered.createRegisteredIdlePolicy({dealerId:p.dealerId,baselineVideoId:ids[0],durationMs:1000}),changes=[];
+  const props={policy,inventory:registered.registeredIdleInventory(p.inventory,{dealerId:p.dealerId,policy}),blocked:false,editableBase:true,onChange:value=>changes.push(value),onBusyChange(){}};
+  const h=harness('./idle-policy-editor.tsx',async()=>2345),tree=chooseReplacement(h,props);button(tree,'Använd som basklipp').props.onClick();await tick();assert.deepEqual(clone(changes[0].base),[{videoId:ids[1],weight:100,durationMs:2345}]);assert.deepEqual(clone(changes[0].variants),[]);assert.equal(p.inventory.videos.length,3);
+});
+
+test('replacement never commits after unmount, a block, newer policy, dealer change or changed media',async()=>{
+  for(const scenario of ['unmount','blocked','blocked-before-effect','policy','dealer','unavailable','hash','url','not-editable']){
+    const f=replacementFixture(),probe=deferred();let signal;const h=harness('./idle-policy-editor.tsx',(_url,options)=>{signal=options.signal;return probe.promise;});let props=f.props,tree=chooseReplacement(h,props);button(tree,'Använd som basklipp').props.onClick();
+    if(scenario==='unmount')h.unmount();else{
+      if(scenario.startsWith('blocked'))props={...props,blocked:true};
+      if(scenario==='policy')props={...props,policy:{...f.policy}};
+      if(scenario==='dealer')props={...props,policy:{...f.policy,familyId:'johanna/idle.ready/ready'}};
+      if(scenario==='not-editable')props={...props,editableBase:false};
+      if(['unavailable','hash','url'].includes(scenario)){const inventory=clone(props.inventory),video=inventory.videos.find(row=>row.id===ids[1]);if(scenario==='unavailable')video.available=false;if(scenario==='hash')video.sha256='b'.repeat(64);if(scenario==='url')video.previewUrl='/replacement.mp4';props={...props,inventory};}
+      tree=h.render(props);if(scenario!=='blocked-before-effect')h.flush();
+    }
+    probe.resolve(3456);await tick();assert.equal(f.changes.length,0,scenario);assert.equal(f.busy.at(-1),false,scenario);if(['unmount','blocked'].includes(scenario))assert.equal(signal.aborted,true,scenario);
+    if(['unavailable','hash','url'].includes(scenario)){tree=h.render(props);const group=nodes(tree,row=>row.props?.['aria-label']==='Byt basklipp')[0];assert.match(text(group),/Klippet har ändrats eller är inte längre tillgängligt/);}
+  }
+});
+
+test('failed or invalid duration leaves the original primary and variation intact with an error beside replacement',async()=>{
+  for(const duration of ['failed',199,60001,NaN]){
+    const f=replacementFixture(),before=clone(f.policy),h=harness('./idle-policy-editor.tsx',async()=>{if(duration==='failed')throw Error('metadata unavailable');return duration;});let tree=chooseReplacement(h,f.props);button(tree,'Använd som basklipp').props.onClick();await tick();tree=h.render(f.props);
+    assert.equal(f.changes.length,0,String(duration));assert.deepEqual(f.policy,before);const group=nodes(tree,row=>row.props?.['aria-label']==='Byt basklipp')[0];assert.equal(nodes(group,row=>row.props?.role==='alert').length,1);assert.equal(button(tree,'Använd som basklipp').props.disabled,false);assert.deepEqual(f.busy,[true,false]);
+  }
+});
+
+test('replacement excludes existing base, missing, foreign-family and unavailable clips and respects an initial block',()=>{
+  for(const scenario of ['existing','missing','foreign','unavailable','blocked']){
+    const f=replacementFixture();let props=f.props,id=ids[1],calls=0;
+    if(scenario==='existing')id=ids[0];if(scenario==='missing')id='77777777-7777-4777-8777-777777777777';
+    if(scenario==='foreign')props.inventory.videos.find(row=>row.id===ids[1]).familyId='johanna/idle.ready/ready';
+    if(scenario==='unavailable')props.inventory.videos.find(row=>row.id===ids[1]).available=false;if(scenario==='blocked')props={...props,blocked:true};
+    const h=harness('./idle-policy-editor.tsx',()=>{calls++;return Promise.resolve(1000);}),tree=chooseReplacement(h,props,id);button(tree,'Använd som basklipp').props.onClick();assert.equal(calls,0,scenario);assert.equal(f.changes.length,0,scenario);assert.equal(button(tree,'Använd som basklipp').props.disabled,true,scenario);
+  }
+});
+
+test('own upload labels and filename fallback are visible while the original bank keeps established names',()=>{
+  const f=replacementFixture(),h=harness('./idle-policy-editor.tsx',()=>{throw Error('no read');});let tree=h.render(f.props);h.flush();assert.match(text(replacementSelect(tree)),/dealer_desktop/);assert.match(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/dealer_mobile/);
+  const inventory=clone(f.props.inventory),candidate=inventory.videos.find(row=>row.id===ids[1]);delete candidate.label;delete candidate.classification.label;tree=h.render({...f.props,inventory});h.flush();assert.match(text(replacementSelect(tree)),/dealer_desktop/);
+  tree=h.render({...f.props,editableBase:false});h.flush();assert.equal(nodes(tree,row=>row.props?.['aria-label']==='Byt basklipp').length,0);assert.match(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/Lugn blick/);assert.doesNotMatch(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/dealer_mobile/);
 });

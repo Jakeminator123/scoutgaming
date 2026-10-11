@@ -129,7 +129,7 @@ export function platformRoute(url, config) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
-    || /^\/studio\/api\/(?:videos|dealers|clip-controls|layer-assets)(?:\/|$)/.test(path))) {
+    || /^\/studio\/api\/(?:videos|dealers|clip-controls|layer-assets|replies)(?:\/|$)/.test(path))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
   }
   if (backendPlatformPath(path)) return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };

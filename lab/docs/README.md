@@ -13,13 +13,17 @@ Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bola
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
 ```text
-Dealers & klipp: välj dealer → Grundloop / Klipp / Scen & format / Tal & automatik / Inställningar
+Dealers & klipp: välj dealer → Grundloop / Klipp / Scen & format / Tal & automatik / Svarsbibliotek / Inställningar
 Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
 Publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
 /play: välj bolag → rum → dealer/miljö → spela
 ```
+
+**Byt basklipp** är synligt för egna dealers under Grundloop. Även ett uppladdat idle-klipp som används som variation kan väljas. Det ersätter det valda basklippet och behåller övriga basklipp, deras andelar och andra variationer. Den tidigare videon finns kvar bland uppladdade klipp. AI-talets referensbild ändras separat under Tal & automatik. Spara inställningar och publicera paketet igen för att använda bytet i spelet.
+
+**Svarsbibliotek** under vald dealer visar sparade AI-svar med exakt text, ljud och video. Filtrera på kategori, lyssna eller förhandsvisa och spara en eller flera kategorier. Materialet är privat. Om någon ändrar samma svar samtidigt behålls dina val tills du har läst den senaste versionen. Biblioteket startar ingen generering eller återanvändning och publicerar inga klipp. Talgranskning av inspelade klipp nås från Klipp → Tal-klipp & ljud för vald dealer.
 
 I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte är vald. **Gult** visar rekommenderade deal-fack som saknar exakt video. Övriga fack är valfria. Välj kategori och sedan ett fack: listan visar sex klipp per sida. Flera filer i samma fack är möjliga varianter; **Klippval, varianter och villkor** visas direkt ovanför uppladdning och klipplista. **Standard och varianter** respektive **Användning och villkor** öppnar fackets detaljvy. Brödsmulor och dealerflikar behåller dealer, variant och exakt situation. Lokala flikbyten behåller pågående utkast och uppladdningar. Ej applicerade talfält behålls också; använd dem i utkastet eller välj Ångra ändringar i talformuläret innan du byter dealer eller sida. Uppladdning aktiverar inte en variant automatiskt. Status är inventering och projektval, inte bevis på godkänd uppspelning.
 
