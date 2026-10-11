@@ -25,7 +25,7 @@ export function EventsCatalog({ project, videos, dealerId, eventId, familyId, ma
     </div>
     <label className="search-field">
       <span aria-hidden="true">⌕</span>
-      <input type="search" placeholder="Hitta ett event…" aria-label="Sök event" value={filter} onChange={event => onFilter(event.target.value)} />
+      <input type="search" placeholder="Hitta fack eller händelse…" aria-label="Sök event" value={filter} onChange={event => onFilter(event.target.value)} />
     </label>
     {managed ? <FamilyNavigation inventory={videos} project={project} dealerId={dealerId} selectedFamilyId={familyId} eventId={eventId} filter={filter} onOpen={(id, situation) => onSelectEvent(id, situation)} /> : <div className="event-tree">
       <div className="tree-title"><span>EVENTTRÄD</span><span>{project.events.length}</span></div>
@@ -44,9 +44,9 @@ export function EventsCatalog({ project, videos, dealerId, eventId, familyId, ma
       {!visibleEvents.length ? <p className="helper">Inga event matchar sökningen.</p> : null}
     </div>}
     <p className="helper">
-      <strong>{managed ? 'En mapp per situation.' : '4 presentationssätt · 16 grupper.'}</strong>
+      <strong>{managed ? 'En mapp per situation.' : 'Äldre grupper för test och variantval.'}</strong>
       {' '}
-      <span>{managed ? 'Kortdata finns kvar i eventet. Mapparna väljer rörelsen.' : 'Grupperat efter utdata. Källans 6 typer finns kvar.'}</span>
+      <span>{managed ? 'Kortdata finns kvar i eventet. Mapparna väljer rörelsen.' : 'Vänster, mitten och höger är samlingsgrupper. Exakt plats eller replik väljs i arbetsytan.'}</span>
     </p>
   </section>;
 }

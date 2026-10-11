@@ -2,6 +2,18 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
+### Uppspelning och Spelhändelser & villkor, 11 oktober 2026
+
+Samordnat med CARTESIA och LOBBYSTRUKTUR. Spelhändelserna behålls som spelmotorns kontrakt: dealer + händelse + exakt situation väljer ett inspelat klippfack. Äldre riktningar som Deal vänster är samlingsgrupper, inte en andra uppspelningsmotor. Familjeöversiktens länkar tappade tidigare situationen; nu följer exakt box/replik med och ett regressionstest täcker alla Astrids familjelänkar. Äldre händelseträd och testanimationer ligger kvar under stängd Avancerat. Eventtestets timerstyrda taldemo är borttagen; riktiga testanrop, tillåtna lägen och beslutsspår finns kvar.
+
+Sidorna skiljer nu inspelade klipp från AI-tal. Automatiska grundloopvariationer är tidsstyrda utan modell. Vanligt OpenClaw-klippval får publik spelhändelse och tillåtna varianter; eventtestets extra sammanhang är simulerat. Den separata chattreaktionen får observerad chatt (högst 8 meddelanden/3 200 tecken). Ny text/röst/läppsynk är ett annat förlopp. Uppspelning visar separata kvittokedjor och talförlopp; urval innebär inte visad bild eller godkänd läppsynk.
+
+Runtimegranskningen visade att lane.openclaw/probe/idle sparas men inte läses som styrning av nuvarande spelare. Sammansättning märker därför fälten **Avancerat · sparat styrunderlag / Ännu inte kopplat till uppspelningen** och länkar till aktiva dealerpolicyer och småprat. Värden, validering, sparning, publicering, serverägda spelregler och media lämnas oförändrade. Guide, ordlista och guide.json beskriver samma ansvar.
+
+Verifierat före commit: 16 riktade tester, hela Lab-sviten 1 321 PASS/2 skip/0 fail, TypeScript och produktionsbygge med fyra workers inklusive byggspårskontroll. Ordinarie fullhook körs vid commit. Inga DB-, provider-, env- eller medieskrivningar; ingen ny tal- eller läppsynkacceptans påstås. GitGuardian läst på remote a3099298: 17 incidenter/12 öppna, partiell platstäckning (flera API429), aktiv repoövervakning, historisk skanning too_large och väntande commitkontroll.
+
+LOBBYSTRUKTUR har dessutom lämnat slutkvitto för a3099298: CI38164798637 SUCCESS alla tre jobb, Vercel dpl_AJ2UhSnphqTzXwwSrAeU77xwWtsn READY/www och Render dep-db5tiiqvcj2c73f1kj4g LIVE med exakt SHA från /__cloud/version. Senare PAOW-talaktivering samordnas separat mellan de andra agenterna.
+
 ### Lokal repetition och publicerad produkt, 11 oktober 2026
 
 Den localhost-vy med original/V2-dealerväljare som Jakob såg kom från vår isolerade mediarepetition på port 4194. Den använder tillfällig SQLite/testdata utan publicerat bolagspaket. Normal `lab/start.mjs` startar lokalt Studio och spelmotor, inte Next-frontenden för `/play`. Det var därför inte en jämförbar vy av det publicerade bolagets Vercelflöde.

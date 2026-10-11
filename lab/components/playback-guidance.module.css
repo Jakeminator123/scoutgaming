@@ -1,0 +1,18 @@
+.guide { border:1px solid var(--sg-border); border-radius:14px; background:var(--sg-surface); padding:24px; margin-bottom:24px; color:var(--sg-text); }
+.heading { display:flex; justify-content:space-between; align-items:start; gap:24px; margin-bottom:20px; }
+.heading h2 { font-size:22px; letter-spacing:-.4px; margin:7px 0 0; }
+.heading>p { max-width:400px; margin:0; font-size:13px; color:var(--sg-muted); }
+.eyebrow,.tag { font:500 10px/1.5 var(--sg-font-mono),monospace; letter-spacing:.1em; color:var(--sg-accent-text); margin:0; }
+.cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.cards article { border:1px solid var(--sg-border); border-radius:10px; padding:20px; min-width:0; }
+.cards h3 { font-size:16px; margin:8px 0; }
+.cards p,.note { color:var(--sg-muted); font-size:12px; line-height:1.6; }
+.cards p { margin:0 0 16px; }.cards a { color:var(--sg-accent-text); font-size:12px; }
+.flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:0; margin:22px 0 0; list-style:none; }
+.flow li { border-top:2px solid var(--sg-border); padding-top:12px; font-size:12px; }.flow span { display:block; color:var(--sg-muted); margin-top:5px; }
+.note { margin:16px 0 0; }.help { border:1px solid var(--sg-border); border-radius:10px; padding:16px 20px; margin:18px 0; }.help summary { cursor:pointer; font-size:13px; font-weight:600; }
+.definitions { margin:18px 0 0; }.definitions>div { display:grid; grid-template-columns:200px 1fr; gap:20px; padding:14px 0; border-top:1px solid var(--sg-border); font-size:12px; line-height:1.6; }.definitions dt { font-weight:600; }.definitions dd { margin:0; color:var(--sg-muted); }
+.legacy { margin-top:24px; border-top:1px solid var(--sg-border); padding-top:20px; }.legacy>summary { cursor:pointer; font-size:13px; font-weight:600; }.legacy>p { color:var(--sg-muted); font-size:12px; max-width:800px; }
+.dealerBar { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+@media(max-width:900px){.heading{display:block}.heading>p{margin-top:12px;max-width:none}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.guide{padding:18px}.cards,.definitions>div{grid-template-columns:1fr}.definitions>div{gap:5px}.flow{grid-template-columns:1fr 1fr}.heading h2{font-size:20px}}

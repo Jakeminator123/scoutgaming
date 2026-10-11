@@ -57,12 +57,12 @@
       "purpose": "Nivå 3: spellobby på /play, egen profil på /play/profil (namn och språk; saldo är serverägt), egen historik på /play/historik och Blackjack på /play/blackjack. Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= och Vercels /play/blackjack?operator= begränsar lane och dealer till paketet."
     },
     {
-      "name": "Händelser · /control/events",
-      "purpose": "Utan ?event= visas översikten: dealer, händelser per kategori och klippantal. Med ?event= spelas vald standard eller mappvariant, ställs urvalspolicy in och eventdata provas. Tidigare adress /control/tree omdirigerar hit och behåller frågesträngen. Flikarna i adressen är event, triggers och variants. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19)."
+      "name": "Spelhändelser & villkor · /control/events",
+      "purpose": "Spelmotorns händelse och vald dealer ger ett exakt klippfack: plats, utfall eller replik-ID. Översikten utan ?event= behåller situationen i länkarna. Med ?event= öppnas Klippval & villkor för standard, regler, slump och OpenClaw. Äldre samlingsgrupper som Deal vänster och testanimationer finns kvar under stängd Avancerat. Eventtestets chattsignal, språk och spelarhistorik är simulerade värden. Vanligt klippval får den publika spelhändelsen och tillåtna varianter; felaktigt AI-råd ger standard. Skuggläge loggar men spelar standard. Astrids utdelningsfrekvenser väljer lokalt utan modell. Äldre varianter för Vera, Amira och Mei används inte av spelet ännu (L19). /control/tree omdirigerar hit och behåller frågesträngen."
     },
     {
       "name": "Sammansättning · /control/preview",
-      "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. Uppspelningspolicyer och bolagets justeringsrättigheter ligger under Avancerat. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack. Provspela startar uttryckligen ett isolerat blackjackprov efter sparning; alla sparade dealers och lager kan granskas före bolagstilldelning. Startdealern behöver en grundloop och andra ofullständiga dealers kan inte väljas."
+      "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. Avancerat märker lane-fälten för fasval, probe och idle som sparat styrunderlag: dagens spelare läser dem inte som aktiv styrning. Aktiva klipp och grundloopscheman finns i Dealers & klipp; AI-småprat har egen sida. Bolagets justeringsrättigheter har egna inställningar. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack. Provspela startar uttryckligen ett isolerat blackjackprov efter sparning; alla sparade dealers och lager kan granskas före bolagstilldelning. Startdealern behöver en grundloop och andra ofullständiga dealers kan inte väljas."
     },
     {
       "name": "Publicering · /control/lanes",
@@ -74,7 +74,7 @@
     },
     {
       "name": "Uppspelning · /control/activity",
-      "purpose": "Sidan är loggen plus Anslut. Status, kedja och tal är en rad var. Anslut & följ öppnar spelet. Bilddelning, Partner-SSE, källöversikt, videokarta, observationsfiler, JSON-export och Testa Astrids grundfilmer ligger i stängd Diagnostik. Loggen håller högst 150 poster i sessionStorage. Observationsprotokollet sparar de senaste 300 posterna. Live-observationen fortsätter löpande. Partner-SSE är separat diagnostik, inte uppspelningskvitton. $logTruncation markerar kortad visning. Ett valt klipp är inte godkänd läppsynk."
+      "purpose": "Sidan följer vad som faktiskt hände: inspelade klipp och AI-tal visas som separata spår. Urval, start, visad bild och avslut behöver egna kvitton. Den ändrar inga urvalsregler. Status, klippkedja och AI-tal är en rad var. Anslut & följ öppnar spelet. Bilddelning, Partner-SSE, källöversikt, videokarta, observationsfiler, JSON-export och Testa Astrids grundfilmer ligger i stängd Diagnostik. Loggen håller högst 150 poster i sessionStorage. Observationsprotokollet sparar de senaste 300 posterna. Live-observationen fortsätter löpande. Partner-SSE är separat diagnostik, inte uppspelningskvitton. $logTruncation markerar kortad visning. Ett valt klipp är inte godkänd läppsynk."
     },
     {
       "name": "Agentmodeller · /control/openclaw",

@@ -84,7 +84,9 @@ test('event test has one mode selector, explicit run action and result only afte
   assert.equal((html.match(/<option /g) ?? []).length, 5);
   assert.match(html, /Vem väljer klippet\?/);
   assert.match(html, /<details><summary>Vad betyder lägena\?/);
-  assert.match(html, /<details><summary>Visa principen: tal först i startposition/);
+  assert.match(html, /Automatik, regler och OpenClaw/);
+  assert.match(html, /Dessa testvärden hämtas inte från spelaren/);
+  assert.doesNotMatch(html, /Visa exempelförlopp|Visa principen: tal först i startposition/);
   assert.doesNotMatch(html, /Återgå till OpenClaw/);
   assert.match(html, /Inget test kört/);
   assert.doesNotMatch(html, /VALD VARIANT|Tekniskt beslutsspår/);

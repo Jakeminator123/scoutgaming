@@ -74,7 +74,7 @@ test('tree, guide and activity pages drop the inner studio chrome and link the s
     assert.match(html, /\/\/ STUDIO/, file);
   }
   const tree = renderPage('control-tree-page.tsx');
-  assert.match(tree, /<h1>Händelser<\/h1>/);
+  assert.match(tree, /<h1>Spelhändelser &amp; villkor<\/h1>/);
   assert.doesNotMatch(tree, /Roulette/);
   const guide = renderPage('control-guide-page.tsx');
   assert.match(guide, /<h1>Guide &amp; hjälp<\/h1>/);
@@ -89,6 +89,10 @@ test('managed tree folders are real event links and dealer changes replace the q
   const html = renderToStaticMarkup(React.createElement(ControlTreePage, { ...props, initialVideos: inventory, initialDealerId: 'nope', initialEventId: 'missing' }));
   assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=/);
   assert.match(html, /deal\/deal_pos3|repliker\/goodluck/);
+  for (const family of manifest.families.filter(item => item.dealerId === 'astrid')) {
+    const target = '/control/events?' + new URLSearchParams({dealer:'astrid',event:family.eventId,situation:family.situation});
+    assert.ok(html.includes(target.replaceAll('&','&amp;')), 'exact family situation must survive: '+family.id);
+  }
   const paths = [];
   const previous = globalThis.window;
   globalThis.window = { location: { pathname: '/control/tree', search: '' }, history: { replaceState: (_state, _title, path) => paths.push(path) }, addEventListener() {}, removeEventListener() {} };
@@ -110,4 +114,18 @@ test('managed tree folders are real event links and dealer changes replace the q
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
+});
+
+test('recorded media guidance keeps old groups optional and distinguishes models from timed variation', () => {
+  const html = renderPage('control-tree-page.tsx');
+  assert.match(html, /<details[^>]*><summary>Avancerat · äldre händelsegrupper/);
+  assert.doesNotMatch(html, /<details[^>]*open[^>]*><summary>Avancerat · äldre/);
+  assert.match(html, /Automatisk grundloopvariation/);
+  assert.match(html, /högst 8, totalt 3 200 tecken/);
+  assert.match(html, /Dessa testvärden hämtas inte från spelaren/);
+  assert.match(html, /<a href="\/control\/clips\?dealer=astrid">/);
+  const activity = renderPage('control-activity-page.tsx');
+  assert.match(activity, /Klippval och genererat tal har olika spår/);
+  assert.match(activity, /AI-tal: inget förlopp observerat/);
+  assert.match(activity, /Inspelade klipp: inga uppspelningskvitton ännu/);
 });

@@ -4,7 +4,7 @@ import { firstQueryValue } from '@/components/studio-types';
 import { loadControlStudio } from '../../control-studio-data';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Händelser · Croupier Studio' };
+export const metadata = { title: 'Spelhändelser & villkor · Scoutgaming' };
 
 export default async function Page(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await (props?.searchParams ?? Promise.resolve({}));

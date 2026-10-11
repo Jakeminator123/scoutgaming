@@ -46,8 +46,8 @@ const render = props => renderToStaticMarkup(React.createElement(ControlEventsPa
 test('events page drops the inner menu, game switch and chat shortcuts', () => {
   const html = render();
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar|Roulette/);
-  assert.match(html, /<h1>Händelser<\/h1>/);
-  assert.match(html, /href="\/control\/events\?dealer=astrid">Tillbaka till översikten/);
+  assert.match(html, /<h1>Klippval &amp; villkor<\/h1>/);
+  assert.match(html, /href="\/control\/events\?dealer=astrid">Alla spelhändelser/);
   assert.match(html, /aria-label="Välj dealer"/);
   assert.match(html, /class="sg-chip"/);
   assert.match(html, /aria-label="Sök event"/);

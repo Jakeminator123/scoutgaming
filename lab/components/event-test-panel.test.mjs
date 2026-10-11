@@ -14,6 +14,7 @@ const compiled = require('next/dist/build/swc').transformSync(source, {
 const module = { exports: {} };
 vm.runInNewContext(compiled.code, { module, exports: module.exports, require: name => {
   if (name.endsWith('.css')) return {};
+  if (name === './playback-guidance') return { ClipSelectionHelp: () => React.createElement('aside', null, 'Clip selection inputs') };
   if (name === './gateway-panel') return { modeLabels: {}, modeExplanations: {} };
   if (name === './test-context') return { TestContextPanel: () => React.createElement('span', null, 'legacy language and social context') };
   return require(name);
@@ -23,32 +24,12 @@ const render = props => renderToStaticMarkup(React.createElement(module.exports.
   dealer: 'Astrid', eventLabel: 'Utdelning', sourceType: 'deal', result: null, previewKind: null, busy: false, onRun() {}, ...props,
 }));
 
-test('Eventstudion exposes the complete held-for-pose chat simulation in order', () => {
-  const stages = [
-    'chat received',
-    'response ready',
-    'held for pose',
-    'action completed',
-    'standard idle presented',
-    'chat displayed',
-    'speech started',
-    'speech completed',
-  ];
-  let previous = -1;
-  for (const stage of stages) {
-    const index = source.indexOf(`['${stage}'`);
-    assert.ok(index > previous, `${stage} should be present after the preceding stage`);
-    previous = index;
-  }
-  assert.match(source, /Pedagogisk demo, inte ett livetest/);
-  assert.match(source, /Timern nedan läser inga spel- eller uppspelningskvitton/);
-  assert.match(source, /Verklig uppspelning verifieras i Händelselogg/);
-});
-
-test('the real test action precedes the optional educational pose demo', () => {
-  assert.ok(source.indexOf('onClick={onRun}') < source.indexOf('Visa principen: tal först i startposition'));
-  assert.match(source, /<details className=\{styles\.advanced\}><summary>Visa principen/);
-  assert.doesNotMatch(source, /Sekvens klar\. Ingen assistenttext eller media släpptes/);
+test('recorded clip tests retain their real action and remove the timer-only generated-speech demo', () => {
+  const html = render({});
+  assert.match(html, /Testa event/);
+  assert.match(html, /Clip selection inputs/);
+  assert.doesNotMatch(source, /poseStages|poseStep|setTimeout|Visa exempelförlopp/);
+  assert.match(source, /onClick=\{onRun\}/);
 });
 
 test('mode help and test context are separate disclosures with no hidden mode selector', () => {
