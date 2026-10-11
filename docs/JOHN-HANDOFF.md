@@ -6,6 +6,20 @@
 
 Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.
 
+### Molnkopplingar och lokal env kontrollerade 11 oktober 2026
+
+Granskad GitHub main: `ecb68570c616b8bd6f84b408dac7266111ebf2af`, repo-ID `1380630440`. Huvudkopian och arbetskopian 74b4 var rena på samma SHA. Vercel `scoutgaming/scoutgaming` (`team_Scxorb9qtZHjNae1YEQnFCaT`, `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`) hade production READY/PROMOTED på samma SHA, deployment `dpl_AiCNk5a12gvnRwNdeiSoWvqPPZ1H`. Render croupier-v2 hade live `dep-db5o4hrrjlhs73auukj0`; /__cloud/version bekräftade samma SHA. www, /play, /partner/login och /api/operators/sg-test svarade 200; apex gav 308 till www.
+
+Vercel-CLI har verifierad åtkomst till nya teamet. Vercel-pluginen är fortfarande begränsad till personliga teamet och ger 403 för scoutgaming; dess anslutning behöver återauktoriseras av Jakob. GitHub-connectorn har läs-/push-/adminbehörighet till rätt repo; befintlig användar-CLI och Git/SSH fungerar utanför Windows-sandboxens credentialbegränsning. Render-connectorn når Jakob's workspace och samtliga fyra Croupier-tjänster. QA och Director ligger avsiktligt kvar på ee060804; Gateway på 15bd1541, med Auto-Deploy OFF. Deras identiska repo/branch är inte bevis på samma driftsversion som produktionen.
+
+Neon croupier-production, `wandering-hill-60561912`, ägs nu verifierat av Vercel: scoutgaming (`org-green-butterfly-00780270`), region aws-eu-central-1. Main `br-flat-fog-b161a6r8` och produktionscompute är aktiva; croupier_game, neondb och befintliga separata QA-/restore-databaser består. Ingen schema-/data-/rolländring gjordes.
+
+Production, Preview och Development env hämtades till privata, ignorerade snapshots. Production gav 59 namn, varav 29 värden var icke-tomma och 30 kom tillbaka tomma. Detta intygar inte full hemlighetsparitet. Sammanslagningen bevarar sju tidigare lokala värden när molnsvaret är tomt och lämnar andra otillgängliga värden osatta. Root .env.local och lab/.env.local innehåller nu samma 56 namn i huvudkopian och 74b4. Opt-in-filer för tal och molnlagring bevarades; gamla lokala filer och frontendens gamla Vercel-länk säkerhetskopierades privat före uppdateringen. Root-, Lab- och frontendlänkar pekar nu på scoutgaming i nya teamet. Systemnycklar och oanvända LLM_LOGIN_* kopierades inte till de aktiva filerna.
+
+Huvudkopians `node lab/start.mjs --check --cloud-storage --astrid-camera` passerade; Director health och autentiserat API svarade 200. Barnprocesskonfigurationerna använder isolerat lokalt spel och saknar produktions-game-URL/postgresläge; servrar startades inte. Modellanrop, providerautentisering och visuell mediaacceptans är inte provade av --check. 74b4 saknar installerade Lab-beroenden och är därför inte startverifierad; kör lokal produktutveckling från huvudkopian. Privata env-/backupkvitton finns i lab/data/platform-private/cloud-sync-audit i respektive kopia.
+
+Aktuell GitGuardian-läsning: 17 observerade incidenter, 12 öppna, 5 ignorerade, 0 lösta; platstäckning partiell, 6 öppna utan plats. Repoövervakning aktiv, historisk scan too_large, commit-suiten queued. Inga incidenter eller åtkomsträttigheter ändrades.
+
 ### Målbild och ansvar som Jakob har fastställt
 
 - **N1 /control:** vi äger dealers, deras klipp och händelse-/grundloopsregler, bord, bakgrunder, sammansättningar och bolagens tilldelade paket.
