@@ -23,6 +23,20 @@ Implementation a041e48b har fullhook 2380 PASS/9 skip, CI38168414253 SUCCESS och
 
 GitGuardian på remote f8e5bdfd: 17 observerade incidenter, 12 öppna, partiell platstäckning, aktiv övervakning och historisk too_large. Inga incidenter ändrades.
 
+### Johns N2: första kodleverans på egen granskningsbranch, 11 oktober 2026
+
+`codex/john-n2-admin-partners` utgår från `f8e5bdfd` och är synkad med main `52bcab1f`, enligt Jakobs uttryckliga branch-/PR-mandat. Intern admin använder samma färskt kontrollerade N1-login till den riktiga partnerkatalogen och bolagsvyn. Johns spelbolag och SG:s bolag läses från befintligt operatörslager, även utan publicerat paket. Inga konton, extra medlemskap eller partnercookies skapas. Demo North/South och normal fixture-fallback är borttagna; N1-skyddad diagnostikförhandsvisning är avsiktligt kvar.
+
+N1- och partnerkontext är separata; N1 har företräde om båda cookies finns, och ogiltig/återkallad N1-kontext faller inte tillbaka till kundcookie. Partnerns medlemskapsgräns består. Teamläsning kräver `team.read`; teamändringar kontrollerar exakt rättighet igen under operatörslås. Utseendeskrivning behåller resursvalidering/CAS och verklig adminaktör. Beständig audit samt konkurrensacceptans mot riktiga, separata konto-/operatörslager återstår.
+
+Johns visuella grund finns nu i befintliga React-komponenter: sidomeny A, PageHeader, neutrala ljusa ytor/lime, mörkt läge, EN/SV, bolagsval och mobil sidväljare. Partneringångens saknade N1-stylingberoende är ersatt med egen CSS. Paket/bord kommer från snapshot; speldata märks ej ansluten och får inga exempelbelopp. Övriga affärsflöden/toppmeny B är senare leveranser i samma tracker.
+
+Verifierat före PR: backend/åtkomst 44 PASS, navigation/visuell regression 22 PASS, ytrouter 13 PASS och uppdaterad previewtestharness 11 PASS. Slutligt Lab-produktionsbygge/TypeScript med fyra workers samt 82 byggspår passerar efter main-synk `52bcab1f`. Faktiska UI-komponenter har browserprovats med syntetisk fixtur vid 360/820/1440 CSS-px, inklusive sök, språk/tema, refresh och navigation utan horisontell overflow. Detta bevisar inte verkligt produktionslogin eller DB-konkurrens. Ordinarie fullhook körs inför commit och får separat kvitto nedan.
+
+`docs/CLOUD-MIGRATION.md` är uppdaterad i samma tracker. JN2-A/B lämnas öppna tills verklig N1 → Johns/SG, direktlänk/refresh, återkallade/begränsade roller samt tenant-/databasprov är godkända efter granskning/deployment. Inga produktions-DB-, migrations-, media-, provider- eller env-skrivningar och ingen merge/deployment har utförts.
+
+GitGuardian läst på remote main `52bcab1f`: 17 observerade incidenter, 12 öppna/5 ignored; incidenttäckning complete-for-source, platstäckning partial (sex öppna utan plats), repoövervakning aktiv, historisk scan too_large och commitkontroll queued. Inga incidenter ändrade eller säkerhetsläget friskförklarat.
+
 ### Johns N2-skiss: konkret integrationsplan, 11 oktober 2026
 
 Befintliga `docs/CLOUD-MIGRATION.md` är uppdaterad med elva öppna delsteg JN2-A–K, vart och ett med frontend, backend, databas, beroenden och verifiering. Ingen ny tracker. Första leveransen är samma adminlogin till riktiga bolag i N2 och Johns visuella grund: Demo North/South försvinner ur normal navigering, riktiga bolag består. Därefter följer beständig audit och utkast/publicering, bolagsavgränsad speldata, drift/RG/rapporter och separat verifierade utökningar. Befintlig Next/Vercel-, Studio-Neon- och Render/spel-Neon-arkitektur återanvänds.

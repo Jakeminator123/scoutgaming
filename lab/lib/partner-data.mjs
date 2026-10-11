@@ -1,7 +1,8 @@
-import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
+import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
 import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
-import { authorizePartner, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
+import { authorizePartnerWorkspace, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
 import { readPackagePresentation, publicPackageBranding } from '../../web/storage/presentation-package.mjs';
 import { partnerPackageProfiles } from './partner-package-view.mjs';
 import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
@@ -110,8 +111,15 @@ async function memberOperators(store, session) {
   const operators = [];
   for (const raw of listed) {
     const operator = canonicalOperator(raw);
-    if (!operator || operator.status === 'suspended') continue;
+    if (!operator || operator.status !== 'active') continue;
     if (operator.scope && !sameScope(operator.scope, session.scope)) continue;
+    if (session.accessClass === 'internal-admin') {
+      const context = internalPartnerContext(session, operator);
+      if (allowsWorkspaceResource(context, 'overview.read', { scope: session.scope, operatorId: operator.id })) {
+        operators.push({ id: operator.id, slug: operator.slug, name: operator.name });
+      }
+      continue;
+    }
     const membership = await membershipFor(store, operator.id, session.accountId);
     if (!membership || membership.status !== 'active') continue;
     if (membership.userId && String(membership.userId) !== session.accountId) continue;
@@ -125,8 +133,8 @@ function snapshotBase(session, now) {
     schemaVersion: 1,
     preview: false,
     mode: 'live',
-    accessClass: 'partner',
-    viewer: { user: session.user, accessClass: 'partner' },
+    accessClass: session.accessClass,
+    viewer: { user: session.user, accessClass: session.accessClass },
     generatedAt: new Date(now).toISOString(),
     integration: { status: 'not-connected' },
     notConnected: true,
@@ -139,35 +147,44 @@ function snapshotBase(session, now) {
 
 export async function partnerWorkspaceData(request, { operatorSlug, store, config } = {}) {
   const resolved = config ?? await partnerAuthConfig();
-  const session = await authorizePartner(request, resolved);
+  const session = await authorizePartnerWorkspace(request, resolved);
   const operators = store ?? await openOperatorStore(resolved);
   const now = typeof resolved.now === 'function' ? resolved.now() : Date.now();
   const visible = await memberOperators(operators, session);
   if (!operatorSlug) {
-    if (!visible.length) fail(403);
-    return { ...snapshotBase(session, now), operators: visible, presentations: [], tables: [], team: [] };
+    if (!visible.length && session.accessClass !== 'internal-admin') fail(403);
+    return { ...snapshotBase(session, now), operators: visible, permissions: [], presentations: [], tables: [], team: [] };
   }
-  if (typeof operators.getOperatorBySlug !== 'function' || typeof operators.resolvePartnerContext !== 'function'
-    || typeof operators.getCurrentPackage !== 'function') fail(503);
+  if (typeof operators.getOperatorBySlug !== 'function' || typeof operators.getCurrentPackage !== 'function') fail(503);
   const operator = canonicalOperator(await operators.getOperatorBySlug(operatorSlug));
   if (!operator || operator.slug !== operatorSlug) fail(404);
   if (operator.scope && !sameScope(operator.scope, session.scope)) fail(403);
   if (operator.status && operator.status !== 'active') fail(403);
-  const context = await operators.resolvePartnerContext({
-    account: { userId: session.accountId, role: 'partner', status: 'active' },
-    operatorSlug,
-  });
-  if (!context || context.internalPreview === true) fail(403);
-  if (context.operator?.id !== operator.id || (context.operator?.slug && context.operator.slug !== operator.slug)) fail(403);
-  if (context.account?.userId !== session.accountId || context.account?.role !== 'partner') fail(403);
-  if (context.membership?.status !== 'active' || context.operator?.status !== 'active' || context.account?.status !== 'active') fail(403);
+  let context, membership;
+  if (session.accessClass === 'internal-admin') context = internalPartnerContext(session, operator);
+  else {
+    if (typeof operators.resolvePartnerContext !== 'function') fail(503);
+    context = await operators.resolvePartnerContext({
+      account: { userId: session.accountId, role: 'partner', status: 'active' },
+      operatorSlug,
+    });
+    if (!context || context.internalPreview === true) fail(403);
+    if (context.operator?.id !== operator.id || (context.operator?.slug && context.operator.slug !== operator.slug)) fail(403);
+    if (context.account?.userId !== session.accountId || context.account?.role !== 'partner') fail(403);
+    if (context.membership?.status !== 'active' || context.operator?.status !== 'active' || context.account?.status !== 'active') fail(403);
+    membership = await membershipFor(operators, operator.id, session.accountId);
+    if (!membership || membership.status !== 'active' || (membership.userId && String(membership.userId) !== session.accountId)) fail(403);
+    // The role is loaded independently of any cached context, so removing a role
+    // or one of its permissions takes effect on the next snapshot.
+    context = { ...context, membership, role: typeof operators.getRole === 'function'
+      ? await operators.getRole(operator.id, membership.roleId) : context.role };
+  }
   const resource = { scope: context.scope, operatorId: context.operator.id };
-  if (!allowsPartnerResource(context, 'overview.read', resource)) fail(403);
-  const membership = await membershipFor(operators, operator.id, session.accountId);
-  if (!membership || membership.status !== 'active' || (membership.userId && String(membership.userId) !== session.accountId)) fail(403);
-  const team = typeof operators.listMemberships === 'function'
+  if (!allowsWorkspaceResource(context, 'overview.read', resource)) fail(403);
+  const permissions = PARTNER_PERMISSIONS.filter(permission => allowsWorkspaceResource(context, permission, resource));
+  const team = !allowsWorkspaceResource(context, 'team.read', resource) ? [] : typeof operators.listMemberships === 'function'
     ? await teamFromStore(operators, operator.id, session)
-    : [teamRow(membership, await roleFor(operators, operator.id, context), session, operator.id)];
+    : membership ? [teamRow(membership, await roleFor(operators, operator.id, context), session, operator.id)] : [];
   const pack = await operators.getCurrentPackage(operator.id);
   if (pack?.operatorId && pack.operatorId !== operator.id) fail(403);
   const presentation = readPackagePresentation(pack);
@@ -190,6 +207,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     ...snapshotBase(session, now),
     ...(revision ? { packageRevision: revision } : {}),
     operator: current,
+    permissions,
     operators: choices.map(item => ({ id: item.id, slug: item.slug, name: item.name })),
     presentations,
     ...(presentation ? { presentation, branding, roomBindings: 'operator-owned-v2' } : {}),
@@ -209,6 +227,6 @@ export async function partnerWorkspaceInitialData(request, { operatorSlug, store
   return {
     snapshot,
     apiBase: `${partnerApiBase(resolved)}/snapshot`,
-    session: { user: snapshot.viewer.user, role: 'partner', accessClass: 'partner' },
+    session: { user: snapshot.viewer.user, role: snapshot.accessClass === 'internal-admin' ? 'admin' : 'partner', accessClass: snapshot.accessClass },
   };
 }

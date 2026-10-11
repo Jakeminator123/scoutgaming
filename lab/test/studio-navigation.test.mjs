@@ -8,7 +8,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
-import { normalizeView } from '../components/kevin-bo/navigation.mjs';
 
 // Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
 const OLD_HEADER_DESTINATIONS = Object.freeze([
@@ -149,28 +148,31 @@ test('partner documents never render internal workspace links under public or na
   }
 });
 
-test('level-two entrance separates demonstrations and preserves only valid old hash destinations', () => {
-  const demonstrations = [{ slug: 'demo-north', name: 'Demo North' }, { slug: 'demo-south', name: 'Demo South' }];
-  for (const [hash, destination] of [['', null], ['#theme', '/partner/demo-north/presentation'],
-    ['#tables', '/partner/demo-north/tables'], ['#voice', null], ['#https://outside.invalid', null]]) {
-    const effects = [], paths = [], listeners = new Map();
-    const browser = { location: { hash, replace: path => paths.push(path) },
-      addEventListener: (name, callback) => listeners.set(name, callback),
-      removeEventListener: (name, callback) => { if (listeners.get(name) === callback) listeners.delete(name); } };
-    const { PartnerWorkspace } = loadComponent('partner-workspace.tsx', {
-      react: { ...React, useEffect: effect => effects.push(effect) }, './kevin-bo/navigation.mjs': { normalizeView },
-    }, browser);
-    const tree = PartnerWorkspace({ user: 'fixture-admin', demonstrations }), links = [];
-    visit(tree, node => { if (node.type === 'a') links.push(node.props.href); });
-    assert.deepEqual(links, ['/partner/login', '/partner/demo-north', '/partner/demo-south', '/control', '/play', labUrl('/guide')]);
-    const html = renderToStaticMarkup(tree);
-    assert.match(html, /Partnerportal/);
-    assert.match(html, /De är inte anslutna kunder/);
-    assert.match(html, /nivå 1, 2 och 3 med samma konto/);
-    assert.doesNotMatch(html, /Svenska Spel|<select|<form/);
-    const cleanup = effects[0]();
-    assert.deepEqual(paths, destination ? [destination] : []);
-    cleanup(); assert.equal(listeners.size, 0);
+test('level-two entrance lists real supplied partners and preserves the administrator login', () => {
+  const { PartnerWorkspace } = loadComponent('partner-workspace.tsx');
+  const operators = [{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }, { slug: 'sg-test', name: 'SG test game provider' }];
+  const html = renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'jakob', operators, accessClass: 'internal-admin' }));
+  const links = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map(match => match[1]);
+  assert.deepEqual(links, ['/partner', '/partner', '/control', '/play', '/partner/johnsspelbolag', '/partner/sg-test']);
+  assert.match(html, /Johnsspelbolag/);
+  assert.match(html, /Intern administratör/);
+  assert.match(html, /samma administratörskonto/);
+  assert.match(html, /data-theme="light" lang="sv"/);
+  assert.doesNotMatch(html, /Demo North|Demo South|demo-north|demo-south|partner\/login|Kundinloggning.*återstår/);
+  const source = readFileSync(new URL('../components/partner-workspace.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /normalizeView|location\.hash|location\.replace|demonstrations/);
+});
+
+test('level-two member entrance is scoped and empty access never selects a fixture', () => {
+  const { PartnerWorkspace } = loadComponent('partner-workspace.tsx');
+  const render = operators => renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'john', operators, accessClass: 'partner' }));
+  const member = render([{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }]);
+  assert.match(member, /href="\/partner\/johnsspelbolag"/);
+  assert.doesNotMatch(member, /href="\/(?:control|play)"|sg-test|Demo North|Demo South|Intern administratör/);
+  for (const operators of [[], [{ slug: 'login', name: 'Invalid destination' }], [{ slug: '../sg-test', name: 'Invalid destination' }]]) {
+    const empty = render(operators);
+    assert.match(empty, /Inga tillgängliga spelbolag/);
+    assert.doesNotMatch(empty, /href="\/partner\/[^\"]+"|Invalid destination/);
   }
 });
 

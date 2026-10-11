@@ -277,7 +277,7 @@ describe('partner team API', { concurrency: 1 }, () => {
     ]);
   });
 
-  test('the store keeps the last operator administrator even when the actor lost the role concurrently', async () => {
+  test('a concurrently suspended actor is rejected after the operator lock; the store still protects the last administrator', async () => {
     const { config, pool, store, logs } = await fixture({ memberships: [] });
     // Only a custom, delegable administrator role can reach the guard through this path.
     await store.upsertRole({ actor: 'fixture', operatorId: 'north', roleId: 'co-admin', label: 'Co-admin', permissions: [...PARTNER_PERMISSIONS], delegable: true });
@@ -291,14 +291,20 @@ describe('partner team API', { concurrency: 1 }, () => {
     });
     pool.trace.length = 0;
     const refused = await handlePartnerAuth(write(cookie, { action: 'suspend', userId: '46', expectedRevision: 1 }), config);
-    assert.equal(refused.status, 409);
-    assert.deepEqual(await refused.json(), { error: 'Conflict', reason: 'last-admin' });
-    assert.deepEqual(pool.trace.filter(entry => entry.client !== 0).map(entry => entry.step),
-      ['BEGIN', 'lock-operator', 'guard-memberships', 'guard-roles', 'ROLLBACK']);
+    assert.equal(refused.status, 403);
+    assert.deepEqual(await refused.json(), { error: 'Access denied' });
+    const steps = pool.trace.filter(entry => entry.client !== 0).map(entry => entry.step);
+    assert.ok(steps.indexOf('scope-lock') < steps.indexOf('lock-operator'));
+    assert.ok(steps.indexOf('lock-operator') < steps.indexOf('get-membership'));
+    assert.equal(steps.includes('cas-membership'), false);
+    assert.equal(steps.at(-1), 'ROLLBACK');
     assert.equal(memberRow(pool, '46').status, 'active');
     assert.deepEqual(logs, []);
     // The suspended actor's next request no longer gets past the membership check.
     assert.equal((await handlePartnerAuth(read(cookie), config)).status, 403);
+    await assert.rejects(() => store.upsertMembership({ actor: 'fixture', operatorId: 'north', userId: '46',
+      roleId: 'co-admin', status: 'suspended', expectedRevision: 1 }), error => error.code === 'studio_last_operator_admin');
+    assert.equal(memberRow(pool, '46').status, 'active');
   });
 
   test('a new address is invited with one mail; an existing address is linked with the same response and no mail', async () => {

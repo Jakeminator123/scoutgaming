@@ -7,7 +7,6 @@ import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
-import { partnerSessionPresent } from '../lib/partner-session.mjs';
 
 const require = createRequire(import.meta.url);
 const redirects = require('next/dist/client/components/redirect.js');
@@ -26,9 +25,7 @@ function load(file, overrides) {
   return module.exports;
 }
 
-function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = async () => {
-  throw Object.assign(new Error('partner session should not authorize this request'), { statusCode: 500 });
-}, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
+function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = initialData, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
   function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
@@ -43,7 +40,6 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
-    '@/lib/partner-session.mjs': { partnerSessionPresent },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
@@ -131,21 +127,21 @@ test('permission, configuration and unexpected failures propagate without an una
   }
 });
 
-test('authorized SSR passes only the selected snapshot, view, operator and native API to the client', async () => {
-  const requests = [], snapshot = { preview: true, operator: { id: 'operator-demo-south', slug: 'demo-south' } };
+test('authorized SSR passes only the selected live snapshot, view, operator and native API to the client', async () => {
+  const requests = [], snapshot = { preview: false, operator: { id: 'john-id', slug: 'johns-spelbolag' } };
   const loaded = pages(async (request, options) => {
     requests.push({ request, options });
-    return { snapshot, apiBase: '/studio/api/partner-preview', session: { user: 'fixture-admin', role: 'admin', privateTestField: 'never-pass' } };
+    return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'fixture-admin', role: 'admin', accessClass: 'internal-admin', privateTestField: 'never-pass' } };
   });
-  for (const [surface, path, view, uiSurface] of [['partner', ['demo-south', 'presentation'], 'theme', 'partner'],
-    ['partner', ['demo-south', 'tables'], 'bj', 'partner'], ['partner', ['demo-south', 'integration'], 'api', 'partner']]) {
+  for (const [surface, path, view, uiSurface] of [['partner', ['johns-spelbolag', 'presentation'], 'theme', 'partner'],
+    ['partner', ['johns-spelbolag', 'tables'], 'bj', 'partner'], ['partner', ['johns-spelbolag', 'integration'], 'api', 'partner']]) {
     const element = await renderPage(loaded[surface], path);
     assert.equal(element.type, loaded.KevinBackoffice);
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
-    assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner-preview');
+    assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
     assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
-    assert.equal(requests.at(-1).options.operatorSlug, surface === 'partner' ? 'demo-south' : undefined);
+    assert.equal(requests.at(-1).options.operatorSlug, 'johns-spelbolag');
   }
 });
 
@@ -166,21 +162,43 @@ test('control shows the overview and disconnected preview addresses are not foun
   }
 });
 
-test('level-two entrance authorizes and exposes only explicit demo choices, never customer records or an automatic operator', async () => {
+test('level-two entrance exposes the real directory without private records or automatic operator selection', async () => {
   let reads = 0;
   const loaded = pages(async () => {
     reads++;
-    return { session: { user: 'fixture-admin', privateSession: 'never-pass' }, snapshot: {
-      operators: [{ slug: 'demo-north', name: 'Demo North', privateField: 'never-pass' }, { slug: 'demo-south', name: 'Demo South' }],
+    return { session: { user: 'fixture-admin', accessClass: 'internal-admin', privateSession: 'never-pass' }, snapshot: {
+      preview: false, operators: [{ slug: 'johns-spelbolag', name: 'Johns spelbolag', privateField: 'never-pass' }, { slug: 'sg-test', name: 'SG test game provider' }],
       players: [{ privatePlayer: true }], team: [{ privateTeam: true }],
     } };
   });
   const element = await renderPage(loaded.partner);
   assert.equal(reads, 1);
   assert.equal(element.type, loaded.PartnerWorkspace);
-  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', demonstrations: [
-    { slug: 'demo-north', name: 'Demo North' }, { slug: 'demo-south', name: 'Demo South' },
+  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', accessClass: 'internal-admin', operators: [
+    { slug: 'johns-spelbolag', name: 'Johns spelbolag' }, { slug: 'sg-test', name: 'SG test game provider' },
   ] });
+});
+
+test('an admin cookie alone loads real partners and never invokes the fixture adapter, including failures', async () => {
+  const adminHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_jwt=isolated-admin' });
+  let liveReads = 0;
+  const snapshot = { preview: false, operators: [{ slug: 'johns-spelbolag', name: 'Johns spelbolag' }], operator: { slug: 'johns-spelbolag' } };
+  const fixture = () => assert.fail('N2 cannot downgrade an admin request to demo data');
+  const loaded = pages(fixture, adminHeaders, async request => {
+    liveReads++;
+    assert.equal(request.headers.get('cookie'), 'bo_jwt=isolated-admin');
+    return { snapshot, apiBase: '/studio/api/partner/snapshot', session: { user: 'fixture-admin', accessClass: 'internal-admin' } };
+  });
+  assert.equal((await renderPage(loaded.partner)).props.accessClass, 'internal-admin');
+  assert.equal((await renderPage(loaded.partner, ['johns-spelbolag'])).props.initialSnapshot, snapshot);
+  assert.equal(liveReads, 2);
+  for (const statusCode of [401, 403, 404, 503]) {
+    const failure = Object.assign(new Error('live partner unavailable'), { statusCode });
+    const failed = pages(fixture, adminHeaders, async () => { throw failure; });
+    await assert.rejects(renderPage(failed.partner), error => statusCode === 401
+      ? redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/partner/login'
+      : statusCode === 404 ? error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404' : error === failure);
+  }
 });
 
 test('neither workspace renders a missing identity even if the adapter returns a session shell', async () => {
@@ -239,8 +257,8 @@ test('a partner cookie never authorizes control and a partner session skips the 
   assert.equal(partners, 1);
   const entrance = await renderPage(loaded.partner);
   assert.equal(entrance.type, loaded.PartnerWorkspace);
-  assert.equal(entrance.props.preview, false);
-  assert.deepEqual(JSON.parse(JSON.stringify(entrance.props.demonstrations)), [{ slug: 'demo-north', name: 'Demo North' }]);
+  assert.equal(entrance.props.accessClass, 'partner');
+  assert.deepEqual(JSON.parse(JSON.stringify(entrance.props.operators)), [{ slug: 'demo-north', name: 'Demo North' }]);
 });
 
 test('legacy control entrances redirect once to canonical public control tools', async () => {

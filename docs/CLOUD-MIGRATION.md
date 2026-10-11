@@ -132,8 +132,48 @@ Privata originalanteckningar i `random/` är inte del av produkt eller deploymen
 
 Denna nedbrytning hör till **T2/T3 i denna tracker**, inte till ett nytt projekt.
 Alla JN2-punkter nedan är öppna implementations- och acceptansgrindar. Planen
-är inte ett påstående att funktionerna är levererade. Befintliga N2.2/N2.4-namn
+är inte ett påstående att hela funktionerna är produktionsgodkända. Befintliga N2.2/N2.4-namn
 behålls; JN2-ID:n avser endast denna skissintegration.
+
+**Första kodleveransen, 11 oktober 2026 — JN2-A/B för granskning.** Implementerad
+på `codex/john-n2-admin-partners`, ursprunglig bas `f8e5bdfd`, synkad med main
+`52bcab1f`, på Jakobs uttryckliga begäran om egen branch och PR. Normal `/partner` och `/partner/{slug}` använder
+nu det riktiga operatörslagret även för intern admin med samma N1-session. Johns
+spelbolag och SG:s bolag kommer från lagret; inget nytt bolag, medlemskap eller
+partnercookie skapas. Utan publicerat paket är bolaget fortfarande synligt.
+Demo North/South och fallback till exempeldata är borttagna från produktvägen;
+den separata N1-skyddade diagnostikförhandsvisningen och dess testfixturer består.
+
+N1-admin och partner är två explicita åtkomstklasser. Färsk adminauktorisering,
+workspace/miljö, operatör och rättigheter kontrolleras; när båda sessionerna
+finns har N1-kontexten företräde och en ogiltig N1-session får inte falla tillbaka
+till partnercookie. Partnerpersonal är fortsatt begränsad till sina medlemskap.
+Teamdata kräver `team.read`; varje teamändring återkontrollerar exakt rättighet
+under operatörslås. Utseendeskrivning behåller resursvalidering, revisionskontroll
+och verklig adminaktör. Konto- och operatörslager är separata: detta är inte en
+distribuerad transaktion. Beständig audit återstår i JN2-C.
+
+Johns visuella grund är integrerad i befintliga React-komponenter: sidomeny A,
+PageHeader, neutrala ljusa ytor/lime, mörkt läge, EN/SV, bolagsval och mobil
+sidväljare. Partneringången har egen avsiktlig CSS i stället för saknade N1-klasser.
+Riktiga paket-/bordstal visas; ej ansluten speldata visar tydliga tomlägen, inte
+låtsas-GGR. Äldre demoingång och felaktigt delat stylingberoende har städats bort
+utan DB-/medieradering eller ändring av N1:s gränssnitt.
+
+**Verifiering före PR:** 44 isolerade backend-/åtkomsttester, 22 navigation-/
+visuella regressionstester och 13 ytroutetester passerar. Slutligt Lab-
+produktionsbygge/TypeScript och byggspårskontroll passerar (fyra workers,
+82 spår, omkört efter main-synk `52bcab1f`). Befintlig previewtestharness har
+anpassats till Johns komponenter och passerar 11 tester. Browserprov av de faktiska komponenterna i isolerad UI-fixtur täcker
+360/820/1440 CSS-px, bolagssökning, språk/tema, refresh och sidnavigering utan
+horisontell overflow. Det är inte ett produktionslogin- eller databasprov.
+Ordinarie fullhook är nästa leveransgrind; dess kvitto dokumenteras efter körning.
+
+**JN2-A/B är fortsatt öppna acceptansgrindar:** efter granskning/deployment krävs
+verklig N1-login → Johns/SG → direktlänk/refresh, begränsad/återkallad identitet,
+tenantisolerad skrivning och riktiga Postgres-konkurrensprov. JN2-B:s övriga
+affärsformulär och toppmeny B ingår inte i detta grundskal. Ingen produktions-DB,
+migration, provider/env eller deployment har ändrats av kodleveransen.
 
 **Underlag och nuläge.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
 pekar på `random/n2-skiss-john/index.html` på John-revision `aaadfb49`.
