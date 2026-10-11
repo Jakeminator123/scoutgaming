@@ -1,4 +1,4 @@
-import {PlayerLobbyOperator} from './player-lobby-operator';
+import {PlayerLobbyDocument} from './player-lobby-document';
 import {PlayerProfileForm} from './player-profile-form';
 
 type PlayerField = {label: string, value: string};
@@ -30,8 +30,9 @@ function PrimaryAction({primary}: {primary: PlayerAreaModel['primary']}) {
 }
 
 export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
+  if(model.surface==='lobby')return <PlayerLobbyDocument model={model}/>;
   return <main className="min-h-screen bg-[#0b151b] px-6 py-14 text-white">
-    <div className={model.surface==='lobby'?'mx-auto max-w-5xl':'mx-auto max-w-3xl'}>
+    <div className="mx-auto max-w-3xl">
       <a href="/" className="text-sm text-slate-300">← Scoutgaming</a>
       <p className="mt-12 text-sm uppercase tracking-widest text-emerald-300">{model.eyebrow}</p>
       <h1 className="mt-3 text-4xl font-semibold">{model.title}</h1>
@@ -44,13 +45,7 @@ export function PlayerAreaDocument({model}: {model: PlayerAreaModel}) {
       {model.empty ? <p role="status" className="mt-6 text-slate-300">{model.empty}</p> : null}
       {model.historyLines.length ? <ul className="mt-6 space-y-2 text-slate-200">{model.historyLines.map(line => <li key={line}>{line}</li>)}</ul> : null}
       {model.links.length ? <nav className="mt-6 flex flex-wrap gap-4" aria-label="Spelarkonto">{model.links.map(link => <a key={link.href} href={link.href} className="text-emerald-300 underline decoration-emerald-300/70 underline-offset-4">{link.label}</a>)}</nav> : null}
-      {model.surface === 'lobby' ? <section className="mt-9 rounded-2xl border border-white/15 bg-white/5 p-8" aria-labelledby="blackjack-title">
-        <p className="text-sm uppercase tracking-widest text-emerald-300">{model.clientLabel}</p>
-        <h2 id="blackjack-title" className="mt-4 text-2xl font-semibold">Blackjack</h2>
-        <p className="mt-3 text-slate-300">Välj spelbolag, publicerat rum, dealer och miljö. Valen kommer från bolagets publicerade paket.</p>
-        <PlayerLobbyOperator initial={model.operator} playHref={model.primary?.href ?? '/play/blackjack'} playLabel={model.primary?.label ?? 'Spela Blackjack'} directPlay={!model.primary?.href.startsWith('/player-login')} />
-        <p className="mt-7 border-t border-white/15 pt-5 text-sm text-slate-400">Administratör? <a href="/control/preview" className="text-emerald-300 underline">Provspela i Sammansättning</a> med separat testsaldo.</p>
-      </section> : <PrimaryAction primary={model.primary} />}
+      <PrimaryAction primary={model.primary} />
       {model.pills.length ? <p className="mt-6 flex flex-wrap gap-2">{model.pills.map(pill => <span key={pill.label} className="rounded-full border border-white/15 px-3 py-1 text-sm text-slate-300">{pill.label} · {pill.status}</span>)}</p> : null}
     </div>
   </main>;

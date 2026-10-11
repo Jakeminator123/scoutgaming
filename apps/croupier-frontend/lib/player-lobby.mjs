@@ -67,3 +67,9 @@ export async function loadOperatorCatalogue({fetchImpl=fetch,signal}={}) {
     return {status:'ready',operators};
   } catch {return {status:'unavailable'};}
 }
+
+// Legacy demo links land in the same lobby; forward only one valid operator.
+export function demoLobbyPath(params={}) {
+  return typeof params.operator==='string'&&isOperatorSlug(params.operator)
+    ? '/play?'+new URLSearchParams({operator:params.operator}).toString() : '/play';
+}

@@ -21,15 +21,15 @@ export default function Home() {
                 {"// Blackjackpilot · Scout Gaming Group"}
               </p>
               <h1 className="mb-6 text-[clamp(2.25rem,9vw,3rem)] leading-[1.02] font-semibold tracking-tight text-off md:text-6xl lg:text-7xl">
-                Möt Astrid.
+                Välj ditt bord.
                 <br />
                 <span className="text-lime">Live blackjack</span>
                 <br />
                 i vår pilot.
               </h1>
               <p className="mb-10 max-w-xl text-base leading-relaxed text-off/75 md:text-lg">
-                Möt Astrid vid ett blackjackbord där spelservern sköter kort, sko, saldo och utbetalningar.
-                Den här piloten använder demokrediter och öppnar den riktiga spelklienten.
+                Välj spelbolag, hitta ett blackjackrum och möt din dealer.
+                Bolaget bestämmer vilka dealers, bord och bakgrunder du kan välja. Du spelar med demokrediter.
               </p>
 
               <div className="mb-12 flex flex-wrap gap-4">
@@ -38,8 +38,8 @@ export default function Home() {
                   size="lg"
                   className="rounded-full bg-lime px-8 text-sm font-semibold tracking-wide text-ink uppercase transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime),0_0_40px_var(--scout-lime2)]"
                 >
-                  <Link href="/demo">
-                    Öppna blackjack <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  <Link href="/play">
+                    Välj bolag <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button

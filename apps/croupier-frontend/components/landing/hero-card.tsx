@@ -262,8 +262,8 @@ export function HeroCard() {
           style={jolt !== null ? joltStyle(jolt) : undefined}
         >
           <Link
-            href={fantasy ? "https://scoutgaminggroup.com/" : "/demo"}
-            aria-label={fantasy ? "Besök Scout Gaming Group" : "Öppna blackjackpiloten med Astrid"}
+            href={fantasy ? "https://scoutgaminggroup.com/" : "/play"}
+            aria-label={fantasy ? "Besök Scout Gaming Group" : "Välj bolag, spelrum och dealer"}
             className="block [transform-style:preserve-3d]"
           >
             <div
