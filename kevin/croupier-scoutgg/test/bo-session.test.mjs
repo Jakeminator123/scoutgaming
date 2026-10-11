@@ -26,6 +26,13 @@ test('Table Studio signs in only with a back office account', async () => {
   assert.deepEqual(ok.who, { user: 'kevin', role: 'superadmin' });
 });
 
+test('the sign-in name ignores case and surrounding spaces, the password does not (Emil 11 Oct)', async () => {
+  const bo = createBoSession({ fetcher: fakeBo });
+  assert.equal((await bo.login({ user: '  Kevin ', pass: 'right-pass' }, '1.2.3.4')).status, 200);
+  assert.equal((await bo.login({ user: 'KEVIN', pass: 'right-pass' }, '1.2.3.4')).status, 200);
+  assert.equal((await bo.login({ user: 'kevin', pass: 'Right-pass' }, '1.2.3.4')).status, 401);
+});
+
 test('a request is signed in only with a BO session that has a role', async () => {
   const bo = createBoSession({ fetcher: fakeBo });
   assert.equal(await bo.user({}), null);

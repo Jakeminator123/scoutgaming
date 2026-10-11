@@ -24,7 +24,9 @@ export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.
     const r = await fetcher(new URL('/api/bo/login', origin), {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000),
       headers: { 'content-type': 'application/json', 'x-forwarded-for': address },
-      body: JSON.stringify({ user: String(name ?? '').slice(0, 200), pass: String(pass ?? '').slice(0, 200) }),
+      // Emil 11 Oct: 'Emil@…' failed where 'emil@…' worked, the BO matches user and e-mail case-sensitively and every
+      // stored account is lower case, so the name goes over trimmed and in lower case. The password is untouched.
+      body: JSON.stringify({ user: String(name ?? '').trim().toLowerCase().slice(0, 200), pass: String(pass ?? '').slice(0, 200) }),
     });
     const cookie = r.headers.get('set-cookie');
     const jwt = cookie && /(?:^|;\s*)bo_jwt=([A-Za-z0-9._-]+)/.exec(cookie)?.[1];
