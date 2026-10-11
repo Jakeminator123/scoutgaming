@@ -2,6 +2,17 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
+### Snabb N2-kontroll och standardtestbudget, 11 oktober 2026
+
+Jakob har satt standardbudgeten till **högst 5 USD totalt per avgränsad testomgång**, över samtliga betalda testtjänster. Följ förbrukningen inom omgången; en större budget kräver nytt mandat. Detta ersätter det tidigare engångsmandatet på 1 USD för nya tester, men nollställer ingen historisk kostnadsjournal och ändrar inte tjänsternas tekniska budgetspärrar.
+
+Jakob uppger att PAOW fungerar i runtime och har uttryckligen valt att hoppa över handoffens punkt 1. Ingen ny tal-/GPU-körning eller visuell läppsynksattestering utfördes i detta pass.
+
+På ren main `2fb18004b9dc2656ea30227d87ec81750faf6eb0` passerade 86 riktade tester med `node --test --test-concurrency=4 --test-reporter=dot`: `test/partner-access-policy.mjs`, `test/operator-store.mjs`, `test/studio-partner-epoch.mjs` samt Labs `partner-admin-workspace`, `partner-team-api`, `partner-branding-api`, `partner-session` och `partner-set-password`. De täcker begränsade/återkallade roller och sessioner, bolagsavgränsning, nekade skrivningar, revisionskonflikter och skydd för sista administratören med syntetiska konton och minnes-/SQLite-fixturer. Detta är inte acceptans av samtidighet mot riktig PostgreSQL eller hela browserflödet med separata konto-/operatörsdatabaser; dessa punkter förblir öppna. WSL inventerades endast; ingen PostgreSQL installerades eller startades. Inga produktionsdata ändrades och inga betalda provideranrop gjordes.
+
+Remote main och godkänd GitHub CI bekräftades på samma SHA; Vercels senaste produktionsdeployment `dpl_H5z8WtQjR3yB9UFmi2Y4sDsJoYpc` var READY på denna revision. Render har inte återverifierats i detta pass. GitGuardian hade fortsatt 12 öppna incidenter (17 totalt), partiella platsuppgifter och ofullständig historisk skanning; ingen incident ändrades.
+
+Nästa byggsteg i befintlig tracker: JN2-C (team/rättigheter och beständig ändringsjournal), JN2-D (sparade brandutkast, granskad publicering/återställning) och JN2-E (bolagsavgränsad speldata). Därefter F–H: verklig bordsdrift, spelarhistorik/ansvarsfullt spel och avstämda rapporter/exporter. I–K är senare flöden för dealerkatalog/statistik, integrationer/kontosäkerhet och onboarding. JN2-A/B:s återstående acceptanskrav står kvar.
 ### Samlad granskning och städning, 11 oktober 2026
 
 Denna mainleverans sammanför LANDES/BOLAGs och LOBBYSTRUKTURs tidigare godkända arbete på `52bcab1f` med granskad [PR #12](https://github.com/Jakeminator123/scoutgaming/pull/12), fryst på `c125deb9a022ab72839c8bf89e1463e8567512e5`. Granskningen krävde tydligt kontobyte/utloggning och rätt återinloggning för en utgången N1-session; båda är rättade. Ordinarie fullhook: 2 453 PASS/9 skip/0 fail; bygge, TypeScript och PR-kontroller passerar. Bolagsavgränsad skrivning, återkallade/begränsade roller, riktig Postgres-konkurrens och formell visuell läppsynksacceptans är fortfarande separata öppna acceptanskrav.
