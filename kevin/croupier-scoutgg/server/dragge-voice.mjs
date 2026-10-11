@@ -12,15 +12,18 @@ import { normalizePcm16 } from './loudness.mjs';
 // dragan-v2-lipsync: avatar dragan_vila2x (H3's KLARA plate of 2026-10-07); the old dragge-spel-lipsync
 // (9hyt6a6e17223s, v1 green start image) stays for rollback. Paow: instant clone from 7 s of her podcast
 // (videoplayback.mp4 7:31-7:38), avatar paow_vila2x on paow-v2-lipsync.
-// settings: ElevenLabs voice_settings. Dragge keeps the calm read; Paow's clone (7 s of podcast) came out flat at
-// the same settings (Kevin, 9 Oct: "more energy"), so she gets a looser, more expressive and slightly quicker read.
+// reads: ElevenLabs model + voice_settings per language. Dragge keeps his calm read. Paow's whole demeanor shifted
+// (Kevin, 10 Oct: robotic, odd pauses): the reads Kevin picked by ear, Swedish on eleven_v3, English a looser v2 read;
+// her recorded lines were re-voiced the same way (paow-voice/revoice.py).
 const DEALER_VOICES = {
   dragge: { voice: '7f95xPL4S3ySZ4OS1pw8', endpoint: process.env.DRAGGE_LIPSYNC_ENDPOINT ?? 'fxwf3rgwme748i',
-    settings: { stability: 0.5, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } },
+    reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true } } } },
   paow: { voice: 'WZVEBKUreb9jAKojf0QF', endpoint: process.env.PAOW_LIPSYNC_ENDPOINT ?? '7tcfouz8jib4wb',
-    settings: { stability: 0.3, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true, speed: 1.08 } },
+    reads: { sv: { model: 'eleven_v3', settings: { stability: 0.5, similarity_boost: 0.85, use_speaker_boost: true } },
+      any: { model: 'eleven_multilingual_v2', settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true } } } },
 };
-export const voiceSettings = dealer => DEALER_VOICES[dealer].settings;
+export const voiceRead = (dealer, language) => DEALER_VOICES[dealer].reads[language] ?? DEALER_VOICES[dealer].reads.any;
+export const voiceSettings = (dealer, language) => voiceRead(dealer, language).settings;
 export const hasVoice = dealer => Object.hasOwn(DEALER_VOICES, dealer);
 const RATE = 24000;
 
@@ -36,7 +39,20 @@ const XI = () => secret('ELEVENLABS_VIDEO_KEY', [path.join(home, '.config/croupi
 // Local QA sets RUNPOD_API_KEY=local-qa-disabled for Astrid's pipeline; Dragge's voice reads the real key file then.
 const RP = () => secret('DRAGGE_RUNPOD_API_KEY', []) || secret('RUNPOD_API_KEY', [path.join(home, '.config/croupier/runpod.env')]);
 
-export const draggeVoiceReady = () => Boolean(XI() && RP());
+// Emil's dedicated pod (server/pod-lipsync.mjs): server.mjs hands over the pool for the dealers in LIPSYNC_POD_DEALERS;
+// those dealers are lip-synced by their own engine on the pod (avatar below) instead of their RunPod endpoint.
+const POD_AVATARS = { dragge: 'dragan_vila2x', paow: 'paow_vila2x' };
+const pod = { pool: null, dealers: new Set(), queue: {} };
+export function useLipsyncPod(pool, dealers = []) { pod.pool = pool; pod.dealers = new Set(dealers.filter(d => Object.hasOwn(POD_AVATARS, d))); }
+const onPod = dealer => Boolean(pod.pool && pod.dealers.has(dealer));
+// The pod engine takes one utterance at a time per dealer; a second reply waits its turn instead of failing.
+function podLipsync(dealer, pcm) {
+  const run = (pod.queue[dealer] ?? Promise.resolve()).catch(() => {}).then(() => pod.pool.for(POD_AVATARS[dealer]).lipsync(pcm, RATE));
+  pod.queue[dealer] = run;
+  return run;
+}
+
+export const draggeVoiceReady = (dealer) => Boolean(XI() && (onPod(dealer) || RP()));
 
 function wav(pcm) {
   const h = Buffer.alloc(44);
@@ -64,7 +80,7 @@ async function lipsync(input, fetchImpl = fetch, dealer = 'dragge') {
 // Dragge viewer arrives takes that hit before anyone asks him anything (at most every 4 minutes).
 const warmedAt = {};
 export function draggeWarm(dealer = 'dragge') {
-  if (!hasVoice(dealer) || !draggeVoiceReady() || Date.now() - (warmedAt[dealer] ?? 0) < 240000) return;
+  if (!hasVoice(dealer) || onPod(dealer) || !draggeVoiceReady(dealer) || Date.now() - (warmedAt[dealer] ?? 0) < 240000) return;
   warmedAt[dealer] = Date.now();
   const pcm = Buffer.alloc(RATE * 2 * 0.8); for (let i = 0; i < pcm.length; i += 2) pcm.writeInt16LE(Math.round((Math.random() - .5) * 40), i);
   lipsync({ op: 'lipsync', wav_b64: wav(pcm).toString('base64'), crf: 13, preset: 'ultrafast' }, fetch, dealer).catch(() => { warmedAt[dealer] = 0; });
@@ -72,17 +88,24 @@ export function draggeWarm(dealer = 'dragge') {
 
 /** mp4 url in answersDir with Dragge saying `text`, or throws. */
 export async function draggeSay(text, language, answersDir, { fetchImpl = fetch, dealer = 'dragge' } = {}) {
-  const VOICE = DEALER_VOICES[dealer].voice;
+  const VOICE = DEALER_VOICES[dealer].voice, read = voiceRead(dealer, language);
   const tts = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_${RATE}`, {
     method: 'POST', headers: { 'xi-api-key': XI(), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', language_code: ['sv', 'en'].includes(language) ? language : 'en',
-      voice_settings: voiceSettings(dealer) }),
+    body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en'].includes(language) ? language : 'en' }),
+      voice_settings: read.settings }),
   });
   if (!tts.ok) throw new Error(`voice ${tts.status}`);
   // Emil's lip-sync recipe (LAPPSYNK-DRAGAN-PAOW.md): the dry voice at -16 LUFS with one fixed gain, encoded at crf 13.
   // crf 13 costs nothing on the worker's NVENC; ultrafast keeps a worker without NVENC at ~4 s instead of ~7.5 s.
   const { pcm } = normalizePcm16(Buffer.from(await tts.arrayBuffer()), RATE);
   const t0 = Date.now();
+  if (onPod(dealer)) {
+    const { mp4, meta } = await podLipsync(dealer, pcm);
+    await mkdir(answersDir, { recursive: true });
+    const name = `${randomUUID()}.mp4`;
+    await writeFile(path.join(answersDir, name), mp4);
+    return { url: `/answers/${name}`, frames: meta.frames, ms: Date.now() - t0 };
+  }
   let job = await lipsync({ op: 'lipsync', wav_b64: wav(pcm).toString('base64'), crf: 13, preset: 'ultrafast' }, fetchImpl, dealer);
   if (job.output?.error) throw new Error(job.output.error);
   await mkdir(answersDir, { recursive: true });

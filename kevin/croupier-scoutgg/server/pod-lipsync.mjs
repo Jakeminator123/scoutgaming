@@ -1,10 +1,10 @@
-// Läppsynk mot en DEDIKERAD RunPod-pod (mässan) i stället för RunPod Serverless.
+// Läppsynk mot en DEDIKERAD RunPod-pod (persistent_orange_toucan) i stället för RunPod Serverless.
 //
-// Samma gränssnitt som ServerlessLipsync (server/serverless.mjs), så server.mjs byter med en rad:
-//   const lip = process.env.LIPSYNC_POD_TOKEN ? new PodLipsync({...}) : new ServerlessLipsync({...});
+// PodLipsyncPool (längst ner) är det spelet använder: en pod, en motor per dealer, pool.for("<avatar>") ger dealerns
+// läppsynk med samma gränssnitt som ServerlessLipsync (server/serverless.mjs). PodLipsync är en enskild dealers anslutning.
 //
-// Hur det fungerar: poddens startskript (pod-massan/pod/) kopplar själv upp sig mot
-//   wss://<spelets publika adress>/lipsync-worker?token=<LIPSYNC_POD_TOKEN>
+// Hur det fungerar: poddens startskript (pod-lipsync/pod/starta.sh) startar en uppringare per avatar som själv kopplar upp sig mot
+//   wss://<spelets publika adress>/lipsync-worker?token=<LIPSYNC_POD_TOKEN>&avatar=<avatar>
 // och håller anslutningen öppen dygnet runt — samma protokoll som serverless-arbetarens session
 // (pong med kodare, start/binär PCM/end → done + binär mp4). Bryts den ringer podden upp igen inom
 // några sekunder. Spelet beställer aldrig något hos RunPod och släcker aldrig GPU:n: podden är
@@ -147,4 +147,61 @@ export class PodLipsync {
     try { this.session?.close(); } catch {}
     this.session = null;
   }
+}
+
+/**
+ * En pod, flera dealers: podden kör en motor per avatar (astrid_spel2x, dragan_vila2x, paow_vila2x …) och varje motor
+ * ringer upp /lipsync-worker?token=…&avatar=<id>. Poolen tar emot alla på samma väg och ger varje dealer ett eget
+ * PodLipsync-objekt — samma gränssnitt som ServerlessLipsync, så spelet byter
+ *   new ServerlessLipsync({ endpointId: <dealerns endpoint>, … })   →   pool.for("<dealerns avatar>")
+ * Varje dealer har sin egen motor: Astrid och Paow kan läppsynkas samtidigt, ett yttrande i taget per dealer.
+ */
+export class PodLipsyncPool {
+  /**
+   * @param {object} o
+   * @param {string} o.token        delad hemlighet, samma som podden har (LIPSYNC_POD_TOKEN)
+   * @param {string} [o.name]       för loggen, t.ex. poddens namn
+   * @param {string} [o.fallback]   avatar för en uppringning utan &avatar= (äldre poddskript), standard astrid_spel2x
+   * @param {(s: string) => void} [o.log]
+   * @param {(text: string) => void} [o.onStatus]
+   */
+  constructor({ token, name = "dedikerad pod", fallback = "astrid_spel2x", log = console.log, onStatus = () => {} }) {
+    if (!token || token.length < 16) throw new Error("PodLipsyncPool: LIPSYNC_POD_TOKEN saknas eller är för kort (minst 16 tecken)");
+    Object.assign(this, { token, name, fallback, log, onStatus });
+    this.endpointId = `pod (${name})`;
+    this.dealers = new Map();
+  }
+
+  /** Dealerns läppsynk. Skapas direkt även om podden inte ringt upp än: svaret väntar då upp till waitMs. */
+  for(avatar) {
+    if (!/^[a-z0-9_]{1,64}$/.test(avatar ?? "")) throw new Error(`PodLipsyncPool: ogiltigt avatar-id ${avatar}`);
+    let d = this.dealers.get(avatar);
+    if (!d) {
+      d = new PodLipsync({ token: this.token, name: `${this.name}/${avatar}`, onStatus: this.onStatus,
+                           log: (s) => this.log(s.replace(/^läppsynk:/, `läppsynk [${avatar}]:`)) });
+      this.dealers.set(avatar, d);
+    }
+    return d;
+  }
+
+  /** server.mjs: samma rad som i dag — workers.handleUpgrade(…, (ws) => pool.adoptWorker(ws, url)). */
+  adoptWorker(ws, url) {
+    if (url.searchParams.get("token") !== this.token) { ws.close(4403, "fel token"); this.log("läppsynk: uppringning med fel token avvisad"); return; }
+    const avatar = url.searchParams.get("avatar") || this.fallback;
+    if (!/^[a-z0-9_]{1,64}$/.test(avatar)) { ws.close(4400, "ogiltig avatar"); return; }
+    this.for(avatar).adoptWorker(ws, url);
+  }
+
+  /** Bekvämlighet: pool.lipsync(pcm, rate, avatar) = pool.for(avatar).lipsync(pcm, rate). */
+  lipsync(pcm, rate, avatar = this.fallback) { return this.for(avatar).lipsync(pcm, rate); }
+
+  sessionUrlFn = () => "pod";
+  get sessionReady() { return [...this.dealers.values()].some((d) => d.sessionReady); }
+  get status() {
+    const up = [...this.dealers].filter(([, d]) => d.sessionReady).map(([a, d]) => `${a} ${d.info.encoder ?? ""}`.trim());
+    return up.length ? `pod uppkopplad: ${up.join(", ")}` : "väntar på att podden ringer upp";
+  }
+  notifyActivity() {}
+  notifyPlayers() {}
+  close() { for (const d of this.dealers.values()) d.close(); }
 }

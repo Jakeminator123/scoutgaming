@@ -24,7 +24,7 @@ import {speechBank} from '../public/dealer-language.js';
 import { factId, tableFact, roundResult } from './table-facts.mjs';
 import { dealerTalk } from './dealer-chat.mjs';
 import { createDealerMemory } from './dealer-memory.mjs';
-import { draggeSay, draggeVoiceReady, draggeWarm, hasVoice } from './dragge-voice.mjs';
+import { draggeSay, draggeVoiceReady, draggeWarm, hasVoice, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
@@ -37,7 +37,7 @@ import { classifyManifest, mediaInventory } from './media-registry.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
-const { PodLipsync } = await import("./pod-lipsync.mjs");
+const { PodLipsyncPool } = await import("./pod-lipsync.mjs");
 const { Gemini } = await import("./llm.mjs");
 const { CartesiaTTS, FREJA } = await import("./cartesia.mjs");
 const { Astrid } = await import("./astrid.mjs");
@@ -72,12 +72,16 @@ const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGu
 const dealerGameTools=createDealerGameTools(shared);
 const table = createTableService(tableDb, {shared});
 const tableTick = setInterval(()=>shared.tick(),250);
-const lip = process.env.LIPSYNC_POD_TOKEN ? new PodLipsync({
+// Emil's dedicated pod: one engine per dealer, each dials /lipsync-worker?avatar=<id>. Astrid always uses it when the
+// token is set; Dragge and Paow only when listed in LIPSYNC_POD_DEALERS (e.g. "dragge,paow"), else their RunPod endpoints.
+const pod = process.env.LIPSYNC_POD_TOKEN ? new PodLipsyncPool({
   token: process.env.LIPSYNC_POD_TOKEN,
   name: process.env.LIPSYNC_POD_NAME ?? "mässpodden",
   log: (s) => console.log(s),
   onStatus: (text) => broadcast({ t: "status", text },null),
-}) : new ServerlessLipsync({
+}) : null;
+if (pod) useLipsyncPod(pod, (process.env.LIPSYNC_POD_DEALERS ?? "").split(",").map(s => s.trim()).filter(Boolean));
+const lip = pod ? pod.for(process.env.LIPSYNC_POD_AVATAR ?? "astrid_spel2x") : new ServerlessLipsync({
   endpointId: need("RUNPOD_ENDPOINT_ID"),
   apiKey: need("RUNPOD_API_KEY"),
   sessionUrl: sessionUrlFrom(path.join(ROOT, "public-url.txt")),
@@ -163,7 +167,7 @@ async function talkReply(ws, text, dealer) {
   remember({ who: "astrid", text: reply },ws.session);
   const out=m=>fid?send(ws,m):broadcast(m,ws.session);
   // His lip-synced voice when it is ready in time; a cold GPU never keeps the player waiting for the words.
-  const clip=hasVoice(dealer)&&draggeVoiceReady()&&(fid||talk)?draggeSay(reply,language,ANSWERS,{dealer}).catch(()=>null):null;   // Dragge and Paow speak; Astrid keeps her pipeline
+  const clip=hasVoice(dealer)&&draggeVoiceReady(dealer)&&(fid||talk)?draggeSay(reply,language,ANSWERS,{dealer}).catch(()=>null):null;   // Dragge and Paow speak; Astrid keeps her pipeline
   const voiced=clip?await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]):null;
   out({t:'answer',id,to:ws.name,text:reply,dealer,...(voiced?{url:voiced.url}:{})});
   send(ws,{t:'thinking',on:false,queued:0});
@@ -184,7 +188,7 @@ async function roundResultReply(ws, roundId, dealer) {
   const alt = ['dragge', 'paow', 'marten'].includes(dealer) ? dealer : null;
   let voiced = null;
   if (localQA) voiced = null;
-  else if (alt) voiced = hasVoice(alt) && draggeVoiceReady() ? await Promise.race([draggeSay(text, language, ANSWERS, { dealer: alt }).catch(() => null), new Promise(r => setTimeout(() => r(null), VOICE_WAIT_MS))]) : null;
+  else if (alt) voiced = hasVoice(alt) && draggeVoiceReady(alt) ? await Promise.race([draggeSay(text, language, ANSWERS, { dealer: alt }).catch(() => null), new Promise(r => setTimeout(() => r(null), VOICE_WAIT_MS))]) : null;
   else voiced = await astrid.enqueue({ kind: 'game-fact', lang: language, gameFact: tableFactForVoice(text, language) }).catch(() => null);
   send(ws, { t: 'answer', id, to: ws.name, text, ...(alt ? { dealer: alt } : {}), ...(voiced?.url ? { url: voiced.url, ...(voiced.dur ? { dur: voiced.dur } : {}) } : {}) });
 }
@@ -430,7 +434,7 @@ const room = new WebSocketServer({ noServer: true, maxPayload:4096 });
 const workers = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, socket, head) => {
   const url = new URL(req.url, "http://x");
-  if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => lip.adoptWorker(ws, url));
+  if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => (pod ?? lip).adoptWorker(ws, url));
   else {
     try { if(!sameOrigin(req)){socket.destroy();return;} }
     catch {socket.destroy();return;}
@@ -481,7 +485,7 @@ room.on("connection", (ws) => {
   ws.on("error", gone);
 });
 
-for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { clearInterval(tableTick); lip.close(); tts.close(); table.close(); shared.close(); safetyAudit.close(); process.exit(0); });
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { clearInterval(tableTick); (pod ?? lip).close(); tts.close(); table.close(); shared.close(); safetyAudit.close(); process.exit(0); });
 
 http.listen(PORT, process.env.BIND_HOST ?? "0.0.0.0", () => {
   console.log(`Astrid demo 2.0 på http://127.0.0.1:${PORT}`);
