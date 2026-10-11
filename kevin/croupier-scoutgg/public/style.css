@@ -204,7 +204,9 @@ button:disabled { cursor: default; opacity: .42; }
 /* side panel closed: the table and dealer picker only (tester feedback) */
 .app.panel-closed .side { display: none; }
 .app.panel-closed { grid-template-columns: 184px auto; }
-.panel-hide { font-size: 18px; line-height: 1; padding: 4px 10px; }
+.panel-hide { white-space: nowrap; }
+/* phone, chat open: the head row scrolls sideways; Close chat stays pinned at its right edge instead of off screen */
+@media (max-width: 820px) { .side.chat-open .side-head .panel-hide { position: sticky; right: 0; z-index: 1; background: var(--sp-ink, #0b0c0e); box-shadow: -12px 0 10px var(--sp-ink, #0b0c0e), 16px 0 0 4px var(--sp-ink, #0b0c0e); } }   /* right: covers the row's 12px end padding, where the scrolled buttons showed through */
 .panel-show { position: fixed; top: 14px; right: 14px; z-index: 20; padding: 9px 14px; border-radius: 20px; border: 1px solid #ffffff2e; background: #0e1415e6; color: #f2f1ed; font: 600 13px Figtree, Arial, sans-serif; cursor: pointer; }
 @media (max-width: 820px) { .app.panel-closed { grid-template-columns: none; } .panel-show { top: 64px; right: 10px; padding: 7px 12px; } }
 
