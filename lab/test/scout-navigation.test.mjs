@@ -23,7 +23,7 @@ test('four work groups expose the consolidated tools and keep overview and help 
     [['/control/clips', 'Dealers & klipp'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
     [['/control/administration?tab=tables', 'Bord & spelrum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
-    [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Konton & roller'], ['/control/administration?tab=partners', 'Partners']],
+    [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Interna konton & spelare'], ['/control/administration?tab=partners', 'API & integrationer']],
   ]);
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
     ['/control', 'Översikt'], ['/control/guide', 'Guide & hjälp'],
@@ -136,8 +136,8 @@ test('query-specific links win without losing the chat alias or selecting public
     ['/control/administration?tab=tables', 'Bord & spelrum'],
     ['/control/administration?tab=operations', 'Spelintegritet'],
     ['/control/administration?tab=finance', 'Betalningar & journal'],
-    ['/control/administration?tab=accounts', 'Konton & roller'],
-    ['/control/administration?tab=partners', 'Partners'],
+    ['/control/administration?tab=accounts', 'Interna konton & spelare'],
+    ['/control/administration?tab=partners', 'API & integrationer'],
   ];
   for (const base of ['', '/studio']) for (const [path, label] of cases) {
     assert.equal(scoutNavigationItem(path, base)?.label, label, path);

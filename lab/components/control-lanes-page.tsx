@@ -81,6 +81,11 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   function chooseOperator(id: string) {
     if (writeLock.current || interactionBusy) return;
     setOperatorId(id);
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      const params = new URLSearchParams(window.location.search);
+      if (id) params.set('operator', id); else params.delete('operator');
+      window.history.replaceState(null, '', window.location.pathname + '?' + params);
+    }
     updatePackage(id, current => ({ ...current, message: '', error: '' }));
   }
   const [busy, setBusy] = useState<'publish' | 'create' | ''>('');
@@ -94,6 +99,8 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const draftBlocksReload = dirty || interactionBusy;
   const setMessage = (value: string) => updatePackage(operatorId, current => ({ ...current, message: value }));
   const setPublishError = (value: string) => updatePackage(operatorId, current => ({ ...current, error: value }));
+  const companyHref = labUrl('/control/lanes?' + new URLSearchParams({ tab: 'companies', operator: operatorId, lane: selectedLane.id }));
+  const publishingHref = labUrl('/control/lanes?' + new URLSearchParams({ operator: operatorId, lane: selectedLane.id }));
   const shownError = [publishError, error].filter(Boolean).join(' ');
 
   async function post(action: string, body: Record<string, unknown>) {
@@ -155,15 +162,20 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   }
 
   return <PageTemplate
-    eyebrow="// STUDIO"
+    eyebrow={companiesOnly ? '// ADMINISTRATION' : '// STUDIO'}
     title={companiesOnly ? 'Bolag & team' : 'Publicering'}
+    intro={companiesOnly ? 'Människorna bakom bolaget. Samla medlemskap och rätt åtkomst på ett ställe.' : 'Från sparad presentation till spelbart rum. Välj bolag och fortsätt där arbetet står.'}
   >
     <div className={`sg-page-body ${styles.page}`}>
+      <nav className={styles.workspaceNav} aria-label="Bolagets administration">
+        <a href={publishingHref} aria-current={!companiesOnly ? 'page' : undefined} aria-disabled={draftBlocksReload} onClick={event => { if (draftBlocksReload) event.preventDefault(); }}>Spelrum & publicering</a>
+        <a href={companyHref} aria-current={companiesOnly ? 'page' : undefined} aria-disabled={draftBlocksReload} onClick={event => { if (draftBlocksReload) event.preventDefault(); }}>Team & behörigheter</a>
+        {selectedOperator ? <span>{selectedOperator.name}</span> : null}
+      </nav>
       {!storeAvailable ? <p role="status">{OFFLINE}</p> : null}
       {shownError ? <p role="alert">{shownError}</p> : null}
       {message ? <p role="status">{message}</p> : null}
       {notice ? <p role="status">{notice}</p> : null}
-      {revision !== null ? <p>Senast publicerade version: {revision}</p> : null}
       {conflict ? <ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote, merged) => { setSavedJson(JSON.stringify(remote)); setProject(merged); setConflict(false); setError(''); setNotice('Utkastet är sammanslaget. Granska dina val och spara.'); }} /> : null}
       {!companiesOnly ? <>
       <div className={styles.actions}><a className="sg-btn sg-btn-secondary" aria-disabled={dirty || interactionBusy} onClick={event => { if (dirty || interactionBusy) event.preventDefault(); }} href={compositionHref}>Till sammansättning</a></div>
@@ -175,21 +187,28 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
               {listed.map(operator => <option key={operator.id} value={operator.id}>{operator.name}</option>)}
             </select>
           </label>
-          <label className={styles.field}>Presentation för spelrum
+          <label className={styles.field}>Presentation
             <select value={selectedLane.id} disabled={interactionBusy} onChange={event => setSelectedLaneId(event.target.value)}>
               {rows.map(row => <option key={row.id} value={row.id}>{row.label}{row.unsaved ? ' (osparad)' : ''}</option>)}
             </select>
           </label>
         </div>
+        <div className={styles.contextLine}><p>{selectedOperator ? <><strong>{selectedOperator.name}</strong> · {revision !== null ? 'Senast publicerade version: ' + revision : 'Inget publicerat paket ännu'}</> : 'Välj bolaget som ska få tillgång till presentationen.'}</p><a href={companyHref} aria-disabled={draftBlocksReload} onClick={event => { if (draftBlocksReload) event.preventDefault(); }}>{listed.length ? 'Hantera bolag & team →' : 'Skapa första bolaget →'}</a></div>
       </section>
-      <section id="operator-package-selection" tabIndex={-1} className={styles.card} aria-label="Partnerpaket">
-        <h2>Publicera partnerpaket</h2>
-        {selectedOperator ? <p>Urval för {selectedOperator.name}. Kryssrutorna utgår från bolagets publicerade paket. Att välja presentation för ett spelrum ändrar inte paketurvalet.</p> : <p>Välj vilket bolag som ska få paketet.</p>}
-        {selectedOperator && !chosen.includes(selectedLane.id) ? <p>{selectedLane.label} är inte markerad i paketurvalet nedan. Markera den om du vill lägga till den vid publicering, eller skapa ett rum för presentationen längre ned.</p> : null}
+      <PresentationRoomCreate operator={selectedOperator ?? null}
+        presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
+        projectSaved={!dirty && !conflict} storeAvailable={storeAvailable} disabled={Boolean(busy) || saving || conflict}
+        onBusyChange={setRoomBusy} onCreated={receipt => updatePackage(receipt.room.operatorId, current => ({ ...current, revision: receipt.packageRevision, needsRefresh: true, message: '', error: '' }))} />
+      <section className={styles.card} aria-label="Partnerpaket">
+        <div className={styles.cardHeading}><div><span className={styles.eyebrow}>BEFINTLIGT SPELUTBUD</span><h2>Uppdatera publicerade presentationer</h2></div>{revision !== null ? <span className={styles.version}>Version {revision}</span> : null}</div>
+        <p>Har du ändrat en presentation? Publicera den här för att uppdatera bolagets befintliga spelrum. Ett nytt rum publicerar sin presentation automatiskt.</p>
+        <details className={styles.packageDetails} open={needsRefresh || Boolean(publishError) || undefined}><summary>Välj presentationer och publicera <span>{chosen.length} valda</span></summary>
+        {selectedOperator ? <p>Urval för {selectedOperator.name}. Markerade presentationer ersätter bolagets nuvarande paketurval.</p> : <p>Välj vilket bolag som ska få paketet.</p>}
+        {selectedOperator && !chosen.includes(selectedLane.id) ? <p>{selectedLane.label} är inte markerad i paketurvalet nedan. Markera den för att lägga till den i paketet, eller skapa ett rum ovan.</p> : null}
         {selectedOperator && needsRefresh ? <p role="status">Läs in bolagets aktuella paket före nästa publicering. {dirty ? 'Spara utkastet först.' : null} <a href={reloadHref} aria-disabled={draftBlocksReload} onClick={event => { if (draftBlocksReload) event.preventDefault(); }}>Läs in publicerat paket</a></p> : null}
         {chosen.length > 0 && !publishSelectionReady ? <p role="status">Alla markerade presentationer måste finnas och vara sparade före publicering.</p> : null}
-        <p>Paketet ger valt bolag tillgång till de markerade presentationerna och deras tillåtna dealers, bord och bakgrunder. Spara ändrade presentationer före publicering.</p>
-        <form className={styles.form} onSubmit={event => { void publish(event); }}>
+        <p>Tillåtna dealers, bord och bakgrunder följer med varje presentation. Spara ändringar i Sammansättning först.</p>
+        <form id="operator-package-selection" tabIndex={-1} className={styles.form} onSubmit={event => { void publish(event); }}>
           <fieldset className={styles.choices}>
             <legend>Presentationer i partnerpaketet</legend>
             {rows.length ? rows.map(row => <label className={styles.choice} key={row.id}>
@@ -207,23 +226,21 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
             <button className="sg-btn sg-btn-primary" type="submit" disabled={writesOff || !publishSelectionReady || needsRefresh || !operatorId || conflict}>Publicera paket</button>
           </div>
         </form>
-        <p>För att uppdatera ett befintligt spelrum: behåll rummets presentation markerad och publicera paketet igen. Valen ovan ersätter paketets presentationsurval.</p>
+        <p>Behåll presentationer som används av befintliga rum. Servern kontrollerar att rummen fortsätter fungera.</p>
+        </details>
       </section>
-      <PresentationRoomCreate operator={selectedOperator ?? null}
-        presentation={{id:selectedLane.id,label:selectedLane.label}} projectRevision={project.revision}
-        projectSaved={!dirty && !conflict} storeAvailable={storeAvailable} disabled={Boolean(busy) || saving || conflict}
-        onBusyChange={setRoomBusy} onCreated={receipt => updatePackage(receipt.room.operatorId, current => ({ ...current, revision: receipt.packageRevision, needsRefresh: true, message: '', error: '' }))} />
+
       <details className={styles.card}>
-        <summary>Avancerat: bolag och spelrum</summary>
+        <summary>Avancerat: testbolag och spelmotor</summary>
         <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff} onClick={() => { void createDemo(); }}>Skapa SG test game provider</button>
         <a className="sg-btn sg-btn-secondary" aria-disabled={dirty || interactionBusy}
           onClick={event => { if (dirty || interactionBusy) event.preventDefault(); }}
-          href={labUrl('/control/administration?tab=tables')}>Öppna bord & spelrum</a>
+          href={labUrl('/control/administration?tab=tables')}>Öppna spelmotorns inställningar</a>
       </details>
       <p>Dealer, bord, bakgrund och uppspelningsinställningar redigeras i <a href={compositionHref} aria-disabled={dirty||interactionBusy} onClick={event=>{if(dirty||interactionBusy)event.preventDefault();}}>vald sammansättning</a>.</p>
       </> : null}
-      {companiesOnly && directory !== undefined ? <ControlOperatorDirectory directory={directory}
-        onCreated={operator => setListed(current => current.some(item => item.id === operator.id) ? current : [...current, operator])} /> : null}
+      {companiesOnly && directory !== undefined ? <ControlOperatorDirectory directory={directory} selectedOperatorId={operatorId} onSelect={chooseOperator}
+        onCreated={operator => { setListed(current => current.some(item => item.id === operator.id) ? current : [...current, { ...operator, publishedPackage: null }]); setOperatorId(operator.id); setPackages(current => ({ ...current, [operator.id]: packageEditor({ ...operator, publishedPackage: null }) })); }} /> : null}
     </div>
   </PageTemplate>;
 }

@@ -16,7 +16,7 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 Dealers & klipp: dealerfilmer och grundloop
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
-Publicering: välj bolag och paket → återanvänd/skapa spelrum
+Publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
 /play: välj bolag → rum → dealer/miljö → spela
 ```
 
@@ -64,12 +64,14 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Publicering** väljer du bolag och **Presentation för spelrum**. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
-**Publicera partnerpaket** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
+I **Publicering** väljer du bolag och **Presentation**. Flikarna **Spelrum & publicering** och **Team & behörigheter** behåller valt bolag. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
+**Uppdatera publicerade presentationer** → **Välj presentationer och publicera** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
 **Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. **Visa alla bolag** återgår till bolagsvalet. Administratörens inloggningsuppgifter fungerar även i den gemensamma spelarinloggningen, som skapar en separat spelarsession. För ett isolerat test med testsaldo används **Provspela** i Sammansättning. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
 Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
 
-Bara när ett nytt rum behövs öppnar du **Skapa nytt spelrum** och anger rumsnamn. Rummet och paketet sparas tillsammans; en kompatibel spellane återanvänds eller skapas automatiskt.
+Bara när ett nytt rum behövs öppnar du **Skapa nytt spelrum** och anger rumsnamn. Formuläret öppnas automatiskt när vald presentation saknar rum. Rummet och paketet sparas tillsammans; någon separat publicering i förväg behövs inte. En kompatibel spellane återanvänds eller skapas automatiskt. För befintliga rum publicerar du uppdateringarna utan att skapa dubblettrum.
+**Bolag & team:** sök och välj bolag i listan. Skapa bolag föreslår ett adressnamn från bolagsnamnet; det kan justeras innan du sparar. Ett gemensamt fält tar antingen ny e-post eller ett befintligt partnerkontos användarnamn. Rollernas faktiska behörigheter kan läsas under **Vad får rollerna göra?**. Byte av bolag håller formulärutkasten åtskilda. Ändrad roll sparas uttryckligen, och skyddet för sista administratören ligger kvar på servern. **Interna konton & spelare** gäller andra kontotyper; **API & integrationer** gäller tekniska partnernycklar.
+
 Nivå 2 kräver partnerinloggning och aktivt medlemskap; där kan personalen välja publicerade, kompatibla alternativ som bolaget får ändra. Geometrin följer den publicerade N1-sammansättningen. Ett bolag utan medlemmar får ingen N2-inloggning automatiskt.
 
 Spelaren nycklar endast ett valt klipp som uttryckligen är märkt Greenscreen.

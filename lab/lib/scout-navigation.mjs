@@ -34,8 +34,8 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Administration',
     items: Object.freeze([
       Object.freeze({ href: '/control/lanes?tab=companies#operator-directory', label: 'Bolag & team' }),
-      Object.freeze({ href: '/control/administration?tab=accounts', label: 'Konton & roller' }),
-      Object.freeze({ href: '/control/administration?tab=partners', label: 'Partners' }),
+      Object.freeze({ href: '/control/administration?tab=accounts', label: 'Interna konton & spelare' }),
+      Object.freeze({ href: '/control/administration?tab=partners', label: 'API & integrationer' }),
     ]),
   }),
 ]);

@@ -2,15 +2,25 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
-**Status:** Studio-/dealer-/paket-/rumsflödet i denna etapp är levererat. Senaste produktkod är `c48c6754baeda6f3346cca7d0aa149b69b1e5c27`, pushad till GitHub main och verifierad live på både Vercel och Render. Den här dokumentationsuppdateringen tillför inga produktändringar. Jakob vill avsluta arbetet och låta nästa agent ställa eventuella överlämningsfrågor, inte starta fler funktionsbyggen automatiskt.
+**Status:** Jakob har därefter beställt förenklad bolagsadministration och ett gemensamt dealerbibliotek. Arbetet har samordnats mellan administrationschatten, dealerchatten och lobbychatten. Lobbygranskningen var skrivskyddad. Den tidigare leveransen c48c6754 är fortsatt baslinje; nedanstående tillägg beskriver den nya leveransen.
 
 Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.
+
+### Administration och dealerbibliotek, 11 oktober 2026
+
+Bolagsadministrationen utgår från ett valt bolag. Spelrum & publicering och Team & behörigheter behåller bolaget i länkarna. Bolagslistan är sökbar; endast valt bolags medlemsformulär visas. Adressnamn föreslås från bolagsnamnet, och inbjudan/befintligt konto använder ett gemensamt inmatningsfält. Svenska rollnamn och verkliga behörigheter visas utan interna revisionsnummer. Spara roll visas när en roll ändrats. Interna konton & spelare och API & integrationer är tydligt separata.
+
+Spelrum visas före paketurvalet. Nytt rum publicerar vald presentation i samma serveråtgärd; befintliga rum uppdateras via Uppdatera publicerade presentationer. Tekniska driftverktyg ligger kvar under Avancerat. Ingen ändring i API-behörigheter, CAS/revisionsskydd, transaktioner, idempotens, publiceringsvalidering eller spärren mot att ta bort sista bolagsadministratören.
+
+Verifierat: 110 riktade tester, TypeScript, gemensamt Next-produktionsbygge med fyra workers och kontroll av 77 byggspår. Verklig lokal routing behåller bolaget och ger inga konsolfel. Layout med fiktiv SSR-data granskad i mörkt/ljust tema och vid 390 CSS-pixlar. Det isolerade serverparet använder tom testdatabas och avstängda externa tjänster; bolagsteamets layoutprov är inte ett kvitto på produktionsinbjudningar. Ingen riktig inbjudan, kontoändring eller paketpublicering utfördes.
+
+Dealerchatten levererar separat det gemensamma biblioteket för registrerade dealers, kategorier och upp till 50 filer per intag. Blandade MP4/WebM och MP3/WAV granskas och mappas individuellt; ljud kräver exakt talreplik och ersätter inte lipsynkad talvideo. Återställbar borttagning skyddar sparade användningar. Nya dealer-/klippmetadata ägs av Neon och bytes av privat Blob; gemensam runtime-metadata finns i media/catalog. Befintliga inspelade bytes är oförändrade. Se teknisk detalj och kvarstående mediaacceptans i LOCAL-PRESENTATION-RUNTIME.md.
 
 ### Molnkopplingar och lokal env kontrollerade 11 oktober 2026
 
 Granskad GitHub main: `ecb68570c616b8bd6f84b408dac7266111ebf2af`, repo-ID `1380630440`. Huvudkopian och arbetskopian 74b4 var rena på samma SHA. Vercel `scoutgaming/scoutgaming` (`team_Scxorb9qtZHjNae1YEQnFCaT`, `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`) hade production READY/PROMOTED på samma SHA, deployment `dpl_AiCNk5a12gvnRwNdeiSoWvqPPZ1H`. Render croupier-v2 hade live `dep-db5o4hrrjlhs73auukj0`; /__cloud/version bekräftade samma SHA. www, /play, /partner/login och /api/operators/sg-test svarade 200; apex gav 308 till www.
 
-Vercel-CLI har verifierad åtkomst till nya teamet. Vercel-pluginen är fortfarande begränsad till personliga teamet och ger 403 för scoutgaming; dess anslutning behöver återauktoriseras av Jakob. GitHub-connectorn har läs-/push-/adminbehörighet till rätt repo; befintlig användar-CLI och Git/SSH fungerar utanför Windows-sandboxens credentialbegränsning. Render-connectorn når Jakob's workspace och samtliga fyra Croupier-tjänster. QA och Director ligger avsiktligt kvar på ee060804; Gateway på 15bd1541, med Auto-Deploy OFF. Deras identiska repo/branch är inte bevis på samma driftsversion som produktionen.
+Vercel-CLI har verifierad åtkomst till nya teamet. Vercel-pluginen återauktoriserades senare samma dag med Jakobs godkännande. list_teams och get_project bekräftade åtkomst till scoutgaming i nya teamet; 403-felet är löst. Inga Cursor-inställningar behövde ändras. GitHub-connectorn har läs-/push-/adminbehörighet till rätt repo; befintlig användar-CLI och Git/SSH fungerar utanför Windows-sandboxens credentialbegränsning. Render-connectorn når Jakob's workspace och samtliga fyra Croupier-tjänster. QA och Director ligger avsiktligt kvar på ee060804; Gateway på 15bd1541, med Auto-Deploy OFF. Deras identiska repo/branch är inte bevis på samma driftsversion som produktionen.
 
 Neon croupier-production, `wandering-hill-60561912`, ägs nu verifierat av Vercel: scoutgaming (`org-green-butterfly-00780270`), region aws-eu-central-1. Main `br-flat-fog-b161a6r8` och produktionscompute är aktiva; croupier_game, neondb och befintliga separata QA-/restore-databaser består. Ingen schema-/data-/rolländring gjordes.
 
@@ -36,9 +46,9 @@ Sammansättning: bord + bakgrund + placering + tillåtna alternativ
                          ↓
                     Spara → Provspela
                          ↓
-Publicering: bolag + presentationer → publicera paket
-                         ↓
-                Återanvänd/skapa spelrum
+Publicering: välj bolag → öppna befintligt rum
+                         eller
+             skapa rum + publicera i samma steg
                          ↓
 /play: välj bolag → rum → dealer/miljö → blackjack
 ```

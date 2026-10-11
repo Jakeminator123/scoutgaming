@@ -6,6 +6,7 @@ import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { GAME_LANES, isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { registeredDealerIds } from '../../web/public/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
+import { labUrl } from '../lib/lab-url.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './studio-administration.module.css';
 
@@ -690,14 +691,17 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     }
   }
 
-  const pageTitle = group === 'accounts' ? 'Konton & roller' : (BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration');
+  const pageTitle = group === 'accounts' ? 'Interna konton & spelare' : (BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration');
   useEffect(() => {
     publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
     return () => publishShellStatus(null);
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow="// DRIFT" title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
-    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-primary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
+    <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
+    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum skapas i <a href={labUrl('/control/lanes')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
+    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>. Här hanterar du interna konton och spelare.</p>}
+    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">

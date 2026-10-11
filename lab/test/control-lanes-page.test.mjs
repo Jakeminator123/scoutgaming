@@ -58,7 +58,7 @@ test('Lanes renders the title and disables write buttons when no store is connec
     storeAvailable: false,
   }));
   assert.match(html, /<h1>Publicering<\/h1>/);
-  assert.match(html, /<section id="operator-package-selection" tabindex="-1"[^>]*aria-label="Partnerpaket"/);
+  assert.match(html, /<form id="operator-package-selection" tabindex="-1"/);
   assert.match(html, /SG test game provider/);
   assert.match(html, /mobile-phone/);
   assert.match(html, /Demo North/);
@@ -67,7 +67,7 @@ test('Lanes renders the title and disables write buttons when no store is connec
   const laneChoice=html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
   assert.ok(laneChoice);
   assert.match(laneChoice,/disabled/,'pick an explicit company before editing its package selection');
-  assert.match(html, /<summary>Avancerat: bolag och spelrum<\/summary>/);
+  assert.match(html, /<summary>Avancerat: testbolag och spelmotor<\/summary>/);
   assert.doesNotMatch(html, /\(osparad\)/);
   assert.match(componentSource, /\(osparad\)/);
   assert.doesNotMatch(componentSource, /window\.confirm/);
