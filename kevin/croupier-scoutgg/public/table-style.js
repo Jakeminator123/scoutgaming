@@ -7,7 +7,7 @@ const dialog=document.createElement('dialog');dialog.className='table-style-dial
 dialog.innerHTML='<header><div><small>ASTRID · YOUR TABLE</small><h2 id="table-style-title">Table & felt</h2></div><button type="button" class="style-close" aria-label="Close">×</button></header><div class="table-shape-options" role="group" aria-label="Table shape"><button type="button" data-shape="original">Original</button><button type="button" data-shape="rounded">Rounded</button><button type="button" data-shape="extended">Extended · no edges</button></div><div class="table-style-options"></div><label class="custom-felt">Custom felt<input type="color" aria-label="Custom felt" value="#125c43"></label><p class="style-status" role="status"></p><p class="style-note">Same game and hand. These appearance choices affect your screen only.</p>';
 document.body.append(dialog);
 const canvas=document.createElement('canvas');canvas.className='table-style-layer';canvas.setAttribute('aria-hidden','true');stage.insertBefore(canvas,document.querySelector('#tableBoxes'));
-const gl=canvas.getContext('webgl',{alpha:true,antialias:false,depth:false,premultipliedAlpha:false,powerPreference:'low-power'});
+const gl=canvas.getContext('webgl',{alpha:true,antialias:false,depth:false,premultipliedAlpha:true,powerPreference:'low-power'});
 // A Table Studio table (?table=<slug>) starts on the operator's felt; a player's own pick there is kept per table.
 const tableSlug=/^[a-z0-9_-]{1,40}$/.test(new URLSearchParams(location.search).get('table')??'')?new URLSearchParams(location.search).get('table'):null;
 const STORE=tableSlug?'astrid-table-style:'+tableSlug:'astrid-table-style';
@@ -17,14 +17,25 @@ try{if(!gl)throw Error('WebGL unavailable');program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=vec2((p.x+1.)*.5,(1.-p.y)*.5);gl_Position=vec4(p,0.,1.);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
  varying vec2 uv;uniform sampler2D source;uniform sampler2D roundedPlate;uniform float rounded;uniform float extended;uniform float coloured;uniform float still;uniform vec3 tint;
+ // The Table Studio's felt (studio/index.html: a 'color' blend of the colour, then 'soft-light' at .55): the felt keeps its
+ // own light, grain and shade and takes only the colour's hue. Emil 11 Oct: custom colours looked right in the builder but
+ // not in the game, which painted a flat and much lighter tint. A shade keyed as felt stays a shade of the new colour.
+ float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
+ vec3 setLum(vec3 c,float l){c+=l-lum(c);float L=lum(c),n=min(c.r,min(c.g,c.b)),x=max(c.r,max(c.g,c.b));
+  if(n<0.)c=L+(c-L)*L/max(L-n,.0001);if(x>1.)c=L+(c-L)*(1.-L)/max(x-L,.0001);return c;}
+ vec3 softLight(vec3 b,vec3 s){vec3 d=mix(sqrt(max(b,0.)),((16.*b-12.)*b+4.)*b,step(b,vec3(.25)));   // ClipColor leaves ~-1e-4 in a zeroed channel: sqrt of it is NaN, and mix() keeps a NaN
+  return mix(b+(2.*s-1.)*(d-b),b-(1.-2.*s)*b*(1.-b),step(s,vec3(.5)));}
+ vec3 studio(float l){vec3 c=setLum(tint,l);return mix(c,softLight(c,tint),.55);}
  void main(){vec4 c=texture2D(source,uv);float y=uv.y*1920.;float x=uv.x*1080.;
  // Follow the inner rail. Nothing above the table is recoloured.
  float edge=1694.-mix(420.,250.,rounded)*pow(abs((x-540.)/540.),2.25);
  float mask=smoothstep(733.,744.,y)*(1.-smoothstep(edge-7.,edge,y));
- // Select the dark, warm felt; reject skin, white cards, acrylic and black clothing.
+ // Select the dark, warm felt; reject skin, white cards, acrylic and black clothing. The felt is ~.17 bright, a hand's
+ // shade on it goes down to ~.06 and Astrid's black sleeve stays under .05: the shade is felt too (Emil 11 Oct: round her
+ // hands it stayed black, blotchy edges that changed every frame).
  float hi=max(c.r,max(c.g,c.b));float lo=min(c.r,min(c.g,c.b));
  float sat=hi-lo;float warm=c.r-c.g;
- float key=smoothstep(.095,.14,hi)*(1.-smoothstep(.25,.34,hi));
+ float key=smoothstep(.055,.10,hi)*(1.-smoothstep(.25,.34,hi));
  key*=1.-smoothstep(.042,.09,sat);key*=smoothstep(-.008,.012,warm);
  float a=mask*key;
  // A keyed dealer's own plate draws the shoe above this room still (Emil's composite does the same), so here the
@@ -40,8 +51,10 @@ try{if(!gl)throw Error('WebGL unavailable');program=gl.createProgram();
  // The shoe's own cards (white) and red line stay from the still; only its grey acrylic and dark rim go.
  float keep=max(smoothstep(.30,.46,hi),smoothstep(.16,.26,sat));
  a=max(a,mask*shoe*(1.-keep));
- float fhi=mix(hi,mix(.12,hi,near),shoe*(1.-keep));
- vec3 shaded=tint*(.54+fhi*2.3);
+ float fl=mix(lum(c.rgb),mix(.11,lum(c.rgb),near),shoe*(1.-keep));
+ vec3 shaded=studio(fl);
+ // The canvas is premultiplied, and a clear pixel carries no colour: with the felt's colour left in clear pixels (and
+ // premultipliedAlpha false) Emil's browser added it over the whole room (11 Oct: "the background is coloured too, all blue").
  if(rounded>.5){
    // Extended mode samples only the clean centre felt of the same plate.
    // Its rail stays outside the frame without zooming the dealer or game UI.
@@ -51,28 +64,12 @@ try{if(!gl)throw Error('WebGL unavailable');program=gl.createProgram();
    float plateHi=max(plate.r,max(plate.g,plate.b));
    float plateKey=smoothstep(.08,.13,plateHi)*(1.-smoothstep(.30,.40,plateHi));
    plateKey*=1.-smoothstep(.07,.14,plateHi-min(plate.r,min(plate.g,plate.b)));
-   plate=mix(plate,tint*(.54+plateHi*2.3),mask*plateKey*coloured);
+   plate=mix(plate,studio(lum(plate)),mask*plateKey*coloured);
    // Keep original filmed foreground above the rail: hands, sleeves, shoe and lettering.
    float foreground=(1.-key)*(1.-smoothstep(.60,.66,uv.y));
    float cover=smoothstep(.379,.395,uv.y)*(1.-foreground);
-   gl_FragColor=vec4(plate,cover);
- }else{
-   // A light felt: the printed lettering would stay the film's cream, and its half-keyed edges turned into dark,
-   // broken outlines. Reprint it in dark ink, blending felt -> ink by brightness so the edges stay smooth.
-   // Filmed white cards (near 1.0) and skin (saturated) are left alone; dark felts keep the filmed lettering.
-   float light=step(.5,dot(tint,vec3(.2126,.7152,.0722)));
-   float ink=light*mask*(1.-shoe)*smoothstep(.24,.48,hi)*(1.-smoothstep(.10,.22,sat))*(1.-smoothstep(.9,.97,hi));
-   // The table's own lettering (same place on every plate and on Astrid's film: x 150-930, y 843-1000) is too soft to
-   // reprint cleanly at this size: there the film's cream is wiped to plain felt and index.html draws it as vector
-   // text (#feltPrint). Anything else cream on a light felt keeps the dark reprint.
-   // Inside it every felt or cream pixel is covered (skin, cards and dark sleeves stay), with the felt's own grain
-   // but its brightness capped, so the soft letter edges leave no outline under the vector text.
-   float print=light*mask*step(150.,x)*step(x,930.)*step(843.,y)*step(y,1000.);
-   float wipe=print*smoothstep(.06,.095,hi)*(1.-smoothstep(.10,.22,sat))*(1.-smoothstep(.9,.97,hi));
-   float w=clamp(max(a+ink*(1.-print),wipe),0.,1.);
-   vec3 felt=tint*(.54+min(hi,.19)*2.3);
-   gl_FragColor=vec4(print>.5?felt:mix(shaded,tint*.28,ink/max(a+ink,.0001)),w*coloured);
- }
+   gl_FragColor=vec4(plate*cover,cover);
+ }else gl_FragColor=vec4(shaded*a*coloured,a*coloured);
  }`));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Shader link failed');
  gl.useProgram(program);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);const p=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
  texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -94,7 +91,11 @@ function stop(){if(frameVideo){frameVideo.cancelVideoFrameCallback(frame);frameV
 function paint(){
  if((!selected.color&&selected.shape==='original')||document.hidden||failed)return;
  // A keyed dealer's clips are green screen; his table is the room still behind him.
- const video=dealer.keyed?null:stage.querySelector('video.v.on');const source=video&&video.readyState>=2?video:stage.querySelector('.still');
+ const video=dealer.keyed?null:stage.querySelector('video.v.on');
+ // A clip that starts mid-way is seeking for a moment: keep the frame painted last ('seeked' paints it again). Painting
+ // the still then laid her resting hands' felt over the moving clip, a flicker (Emil 11 Oct).
+ if(video&&video.readyState<2)return;
+ const source=video??stage.querySelector('.still');
  const time=source instanceof HTMLVideoElement?source.currentTime:0;
  gl.useProgram(program);gl.uniform1f(gl.getUniformLocation(program,'still'),source instanceof HTMLVideoElement?0:1);
  if(source!==lastSource||time!==lastTime){
@@ -112,8 +113,7 @@ function apply(preset,color,save=true){
  if(gl){gl.useProgram(program);gl.uniform1f(gl.getUniformLocation(program,'rounded'),selected.shape!=='original'?1:0);gl.uniform1f(gl.getUniformLocation(program,'extended'),selected.shape==='extended'?1:0);gl.uniform1f(gl.getUniformLocation(program,'coloured'),color?1:0);}
  dialog.querySelectorAll('[data-shape]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shape===selected.shape)));
  stage.dataset.tableShape=selected.shape;stage.dataset.tableStyle=preset;
- // Printed brand ink (felt-logo.js): dark on a light felt, cream otherwise.
- {const rgb=color?color.match(/[0-9a-f]{2}/gi).map(v=>parseInt(v,16)/255):null;stage.dataset.feltTone=rgb&&(.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2])>.5?'light':'dark';}document.documentElement.style.setProperty('--gold',TABLE_STYLES[preset].accent);
+ document.documentElement.style.setProperty('--gold',TABLE_STYLES[preset].accent);
  dialog.querySelectorAll('[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.style===preset&&color===TABLE_STYLES[preset].color)));
  if(color){const rgb=color.match(/[0-9a-f]{2}/gi).map(v=>parseInt(v,16)/255);gl.useProgram(program);gl.uniform3fv(gl.getUniformLocation(program,'tint'),rgb);dialog.querySelector('input').value=color;lastSource=null;paint();}
  if(selected.shape!=='original'&&!color){lastSource=null;paint();}
@@ -137,7 +137,8 @@ new ResizeObserver(()=>{resize();stop();paint();}).observe(stage);resize();
 const videoChanges=new MutationObserver(()=>{stop();lastSource=null;paint();});
 for(const video of stage.querySelectorAll('video.v'))videoChanges.observe(video,{attributes:true,attributeFilter:['class']});
 for(const video of stage.querySelectorAll('video.v'))for(const event of ['playing','seeked','loadeddata'])video.addEventListener(event,()=>{stop();lastSource=null;paint();});
-stage.querySelector('.still').addEventListener('load',()=>{stop();paint();});
+// a still that loads after the first upload (an empty image) is uploaded again: a keyed dealer has no other source
+stage.querySelector('.still').addEventListener('load',()=>{stop();lastSource=null;paint();});
 document.addEventListener('visibilitychange',()=>{stop();if(!document.hidden){lastSource=null;paint();}});
 let stored;try{stored=JSON.parse(localStorage.getItem(STORE));}catch{}
 if(!stored&&tableSlug){try{const r=await fetch('/api/studio/table?slug='+encodeURIComponent(tableSlug));if(r.ok){const t=await r.json();

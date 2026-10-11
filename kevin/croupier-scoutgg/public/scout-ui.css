@@ -23,17 +23,9 @@ button:disabled { opacity:.36; }
 .felt-brand { position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:.8; }
 .felt-brand[hidden] { display:none; }
 /* The felt's printed brand slot (felt-logo.js): Scout wordmark by default, the operator's logo when set, both in one
-   ink so they read as printed on the felt. Ink is cream on a dark felt and near-black on a light one. */
+   ink so they read as printed on the felt. The felt keeps its own dark shade in every colour (table-style.js), so the ink is cream. */
 .felt-brand { opacity:.5; --felt-ink:#efe3c2; }
-.stage[data-felt-tone=light] .felt-brand { --felt-ink:#14161a; opacity:.55; }
 .felt-brand .felt-ink { flood-color:var(--felt-ink); }
-/* On a light felt (original shape) the filmed lettering is wiped by table-style.js and printed here as vector text in
-   the felt's ink, at the plate's own positions and widths. Dark felts keep the filmed lettering. */
-.felt-print { position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; display:none; }
-.stage[data-felt-tone=light][data-table-shape=original] .felt-print { display:block; }
-.felt-print text { fill:#14161a; fill-opacity:.82; text-anchor:middle; font-family:'EB Garamond',Garamond,serif; font-variant-numeric:oldstyle-nums; }
-.felt-print-big { font-size:33px; font-weight:600; } .felt-print-mid { font-size:22px; font-weight:600; } .felt-print-small { font-size:17px; font-weight:500; }
-.felt-print-arc { fill:none; stroke:#14161a; stroke-opacity:.6; stroke-width:2; }
 .felt-brand .felt-wordmark { fill:var(--felt-ink); font:600 64px 'Space Grotesk',Figtree,sans-serif; letter-spacing:-.045em; }
 .felt-brand [hidden] { display:none; }
 /* A dark operator logo turns light in the header, against its dark scrim. */
@@ -288,10 +280,6 @@ body:has(.studio-back) .studio { padding-top:64px; }
   .audio-settings .settings-popover { position: fixed; top: 12px; right: 12px; width: 396px; box-sizing: border-box; padding: 22px 20px 20px; max-height: calc(100dvh - 24px); z-index: 30; }
 }
 
-.confirm-move { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:50; width:min(320px,86vw); padding:18px; border:1px solid #dbc18a66; border-radius:14px; background:#111315f8; box-shadow:0 20px 60px #000c; text-align:center; }
-.confirm-move p { margin:0 0 14px; font-size:15px; }
-.confirm-move div { display:flex; gap:10px; justify-content:center; }
-.confirm-move button { min-width:96px; }
 
 /* The header sits straight on the room plate. On a light room (Azure) the wordmark, table line and "AI dealer"
    disappeared: a soft dark scrim behind the header and a text shadow keep them readable on every plate. */

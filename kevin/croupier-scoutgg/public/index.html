@@ -7,7 +7,7 @@
 <title>Astrid | Live Blackjack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=EB+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/scout-ui.css">
 <link rel="stylesheet" href="/table-style.css">
@@ -24,7 +24,6 @@
     <img class="still" src="/media/startbild.png" alt="Astrid at the blackjack table">
     <video class="v" id="va" playsinline webkit-playsinline preload="auto" muted></video>
     <video class="v" id="vb" playsinline webkit-playsinline preload="auto" muted></video>
-    <svg id="feltPrint" class="felt-print" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-hidden="true"><text x="540" y="871" textLength="649" lengthAdjust="spacingAndGlyphs" class="felt-print-big">BLACKJACK PAYS 3 TO 2</text><text x="540" y="901" textLength="353" lengthAdjust="spacingAndGlyphs" class="felt-print-small">Dealer stands on all 17s</text><text x="540" y="940" textLength="535" lengthAdjust="spacingAndGlyphs" class="felt-print-mid">INSURANCE PAYS 2 TO 1</text><path d="M170 960 Q540 1014 910 960" class="felt-print-arc"/></svg>
     <svg id="feltBrand" class="felt-brand" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-hidden="true" hidden><defs><filter id="feltInk" color-interpolation-filters="sRGB"><feFlood class="felt-ink"/><feComposite in2="SourceAlpha" operator="in"/></filter></defs><g transform="matrix(1 0 0 .8 0 206.4)"><image id="feltLogo" x="360" y="994" width="360" height="76" preserveAspectRatio="xMidYMid meet" filter="url(#feltInk)" hidden/><text id="feltWordmark" class="felt-wordmark" x="540" y="1048" text-anchor="middle">scout/gaming</text></g></svg>
     <svg id="tableBoxes" class="table-boxes" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" role="group" aria-label="Betting boxes"></svg>
     <svg id="gameCards" class="game-cards" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-label="Cards on the table"></svg>
@@ -92,7 +91,7 @@
     <div class="log" id="log"></div>
 
     <form class="compose" id="form" autocomplete="off">
-      <input id="who" readonly placeholder="Name" maxlength="18" aria-label="Your name">
+      <input id="who" placeholder="Nickname" maxlength="18" enterkeyhint="done" title="Change your nickname" aria-label="Your nickname. Type a new one and press Enter">
       <input id="input" placeholder="Say something to Astrid..." maxlength="280" aria-label="Message">
       <button id="send" type="submit">Send</button>
     </form>

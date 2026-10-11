@@ -330,3 +330,20 @@ test('a seated player opens a free box by betting on it, like putting chips in a
  assert.throws(()=>t.send('guest','bet',{seat:1,field:'main',chip:5}),/your boxes|Join/,'someone not seated cannot open a box this way');
  }finally{t.close();}
 });
+
+test('a seated player renames by joining with the boxes they hold: bets, balance, a live hand and a pending box change stay (Emil #9)',()=>{
+ const t=setup();try{
+ t.send('kevin','join',{name:'Kevin',seats:[3,4]});t.send('john','join',{name:'John',seats:[6]});
+ t.send('kevin','bet',{seat:3,field:'main',chip:5});
+ let v=t.send('kevin','join',{name:'Kev',seats:[3,4]});
+ assert.equal(v.me.name,'Kev');assert.deepEqual(v.me.seats,[3,4]);assert.equal(v.bets[3].main,5);assert.equal(v.me.balance,1000);
+ assert.deepEqual(t.state('john').players.map(p=>p.name).sort(),['John','Kev']);
+ assert.throws(()=>t.send('kevin','join',{name:'john',seats:[3,4]}),/already/);
+ assert.throws(()=>t.send('kevin','join',{name:'<b>',seats:[3,4]}),/name/);
+ t.send('john','leave');t.send('kevin','ready');assert.equal(t.state().phase,'round');
+ v=t.send('kevin','join',{name:'Kev',seats:[4,5]});assert.deepEqual(v.me.boxesAfterRound,[4,5]);
+ const hands=JSON.stringify(v.round.hands);
+ v=t.send('kevin','join',{name:'Kevin',seats:v.me.boxesAfterRound});
+ assert.equal(v.me.name,'Kevin');assert.deepEqual(v.me.boxesAfterRound,[4,5],'a pending box change survives a rename');assert.equal(JSON.stringify(v.round.hands),hands);assert.equal(v.me.balance,995);
+ }finally{t.close();}
+});
