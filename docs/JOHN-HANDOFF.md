@@ -1,6 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
 ## Börja här: överlämning 11 oktober 2026
+
+### PAOW: originalnyckel och miljösynk, 11 oktober 2026
+
+Nycklarna från rotens felplacerade `.env` är avstämda mot `.env.local` och användande tjänster; detaljer utan värden finns i ENVIRONMENT-VARIABLES. PAOW och Dragge svarar 200 med sina originalröster. Canonical ElevenLabs-nyckel är sparad och återläst på Render; inga alternativa röster, GitHub-secrets eller TTS-nycklar på GPU/Vercel. Vercels OpenClaw/Resend är synkade som Sensitive och övriga värden oförändrade. Lokala Cartesia-kopior följer fungerande Render-konto. De privata env-filerna är fortsatt Git-ignorerade.
+
+Implementation a041e48b har fullhook 2380 PASS/9 skip, CI38168414253 SUCCESS och Vercel dpl_8ywaD3iPNSJ9iU5z18q32GVCuqC8 READY. Workerbygge38168475522 SUCCESS; privat GHCR-tagg sha-a041e48b9085a3cc4e324fa960551dde2822229b, publicerad digest sha256:292ecb89721b0ddbc26e197807b378ca98a6a4ea8e68bbc63c35d86211c4383d. Imagen är byggd med verkligt FFmpeg-kanalprov men är ännu inte utprovad på PAOW/GPU. Profilflagga OFF, PAOWs sparade talprofil/visuella acceptans återstår. Befintlig RunPod API-nyckel når jobbtjänsten men REST control-plane /v1/endpoints svarade401; ingen endpoint eller behörighet har ändrats.
+
+GitGuardian på remote f8e5bdfd: 17 observerade incidenter, 12 öppna, partiell platstäckning, aktiv övervakning och historisk too_large. Inga incidenter ändrades.
+
 ### Johns N2-skiss: konkret integrationsplan, 11 oktober 2026
 
 Befintliga `docs/CLOUD-MIGRATION.md` är uppdaterad med elva öppna delsteg JN2-A–K, vart och ett med frontend, backend, databas, beroenden och verifiering. Ingen ny tracker. Första leveransen är samma adminlogin till riktiga bolag i N2 och Johns visuella grund: Demo North/South försvinner ur normal navigering, riktiga bolag består. Därefter följer beständig audit och utkast/publicering, bolagsavgränsad speldata, drift/RG/rapporter och separat verifierade utökningar. Befintlig Next/Vercel-, Studio-Neon- och Render/spel-Neon-arkitektur återanvänds.
