@@ -4,11 +4,10 @@
 // the username and not a digest of the username: usernames can change, the
 // numeric identity does not. The text must match the partner-policy id pattern
 // so it can be compared with account.userId.
-// audit_events.action is closed to document and media actions
-// (ops/neon-studio/001-studio-metadata.sql). Operator writes do not fit that
-// CHECK, so this store does not insert audit rows and does not invent a
-// parallel ledger. Writes still require a validated actor for the caller.
+// Every configuration write and its operator_audit_events row commit together.
+// A missing/unwritable journal rejects the mutation; server logging is not durability.
 // Branding is package data. It is not a permission boundary.
+import { createHash, randomUUID } from 'node:crypto';
 import { isAdministratorRole } from '../account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
 import {
@@ -21,6 +20,9 @@ const tokenPattern = /^[a-z][a-z0-9-]{0,63}$/;
 const reservedTokens = new Set(['original', 'constructor', 'prototype']);
 const operatorStatuses = new Set(['active', 'suspended']);
 const membershipStatuses = new Set(['active', 'suspended', 'invited']);
+const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const auditClasses = new Set(['internal-admin', 'partner', 'activation', 'system']);
+const auditActions = new Set(['operator.create', 'role.save', 'membership.create', 'membership.update', 'team.invite', 'team.role', 'team.suspend', 'team.reactivate', 'membership.activate', 'membership.compensate', 'package.publish']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
 
 function plain(value) {
@@ -371,20 +373,67 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     const after = countActiveAdmins(afterMemberships, afterRoles);
     if (before >= 1 && after === 0) fail('studio_last_operator_admin', 409);
   }
+  async function auditWrite(txQuery, input, { operatorId, action, resourceType, resourceId, beforeRevision = null, afterRevision = null, before = null, after = null }) {
+    const actor = actorOf(input);
+    const supplied = optionalOwn(input, 'audit');
+    const context = supplied === undefined ? {
+      actorId: 'actor-' + createHash('sha256').update(actor).digest('hex'), accessClass: 'system', requestId: randomUUID(),
+    } : supplied;
+    const actorId = idText(ownValue(context, 'actorId'));
+    const accessClass = ownValue(context, 'accessClass'), requestId = ownValue(context, 'requestId');
+    if (!auditClasses.has(accessClass) || typeof requestId !== 'string' || !uuidPattern.test(requestId)) fail('studio_invalid_data', 422);
+    const requestedAction = optionalOwn(context, 'action') ?? action;
+    if (!auditActions.has(requestedAction)) fail('studio_invalid_data', 422);
+    const id = randomUUID();
+    const rows = await txQuery(`/* operator-store:audit-write */
+      INSERT INTO croupier_studio.operator_audit_events
+        (environment_id, workspace_id, operator_id,event_id,actor_id,access_class,action,resource_type,resource_id,before_revision,after_revision,occurred_at_ms,request_id,changes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING event_id`,
+      [operatorId,id,actorId,accessClass,requestedAction,resourceType,resourceId,beforeRevision,afterRevision,clock(),requestId,canonicalStudioJson({before,after})]);
+    if (rows.length !== 1 || rows[0].event_id !== id) fail('studio_storage_unavailable');
+  }
+  async function listAuditEvents(operatorId, { limit = 50, cursor = null } = {}) {
+    operatorId = idText(operatorId);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('studio_invalid_data', 400);
+    if (cursor !== null && (!plain(cursor) || !Number.isSafeInteger(cursor.atMs) || cursor.atMs < 0 || !uuidPattern.test(cursor.id))) fail('studio_invalid_data', 400);
+    const rows = await query(`/* operator-store:list-audit */
+      SELECT environment_id,workspace_id,operator_id,event_id,actor_id,access_class,action,resource_type,resource_id,before_revision,after_revision,occurred_at_ms,request_id,changes
+      FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
+        AND ($4::bigint IS NULL OR (occurred_at_ms,event_id) < ($4::bigint,$5::text))
+      ORDER BY occurred_at_ms DESC,event_id DESC LIMIT $6`, [operatorId,cursor?.atMs ?? null,cursor?.id ?? null,limit+1]);
+    const entries = rows.slice(0,limit).map(row => {
+      if (row.environment_id !== scope.environment || row.workspace_id !== scope.workspaceId || row.operator_id !== operatorId
+        || !uuidPattern.test(row.event_id) || !uuidPattern.test(row.request_id) || !auditClasses.has(row.access_class)
+        || !auditActions.has(row.action)) fail('studio_corrupt_operator');
+      return {id:row.event_id,atMs:integer(row.occurred_at_ms,0,'studio_corrupt_operator',503),actor:idText(row.actor_id,'studio_corrupt_operator',503),
+        accessClass:row.access_class,action:row.action,resourceType:row.resource_type,resourceId:idText(row.resource_id,'studio_corrupt_operator',503),
+        beforeRevision:row.before_revision === null ? null : integer(row.before_revision,1,'studio_corrupt_operator',503),
+        afterRevision:row.after_revision === null ? null : integer(row.after_revision,1,'studio_corrupt_operator',503),
+        requestId:row.request_id,changes:storedJson(row.changes,canonicalStudioJson)};
+    });
+    const last=entries.at(-1);
+    return {operatorId,entries,nextCursor:rows.length > limit && last ? {atMs:last.atMs,id:last.id} : null};
+  }
+  const membershipAudit = row => row ? {roleId:row.role_id,status:row.status} : null;
+  const roleAudit = row => row ? {permissions:storedJson(row.permissions,canonicalPermissions),delegable:row.delegable} : null;
   async function createOperator(input = {}) {
     actorOf(input);
     const operatorId = idText(ownValue(input, 'operatorId'));
     const slug = slugText(ownValue(input, 'slug'));
     const name = labelText(ownValue(input, 'name'), 120);
     const status = statusText(optionalOwn(input, 'status') ?? 'active', operatorStatuses, 'studio_invalid_data', 422);
-    const row = (await query(`/* operator-store:create-operator */
+    return withOperatorLock(async txQuery => {
+    const row = (await txQuery(`/* operator-store:create-operator */
       INSERT INTO croupier_studio.operators
         (environment_id, workspace_id, operator_id, slug, name, status, created_at_ms)
       VALUES ($1,$2,$3,$4,$5,$6,$7)
       RETURNING environment_id, workspace_id, operator_id, slug, name, status, created_at_ms`,
     [operatorId, slug, name, status, clock()]))[0];
     if (!row) fail('studio_storage_unavailable');
+    await auditWrite(txQuery,input,{operatorId,action:'operator.create',resourceType:'operator',resourceId:operatorId,after:{status}});
     return operator(row);
+    });
   }
   async function upsertRole(input = {}) {
     actorOf(input);
@@ -413,6 +462,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
         RETURNING environment_id, workspace_id, operator_id, role_id, label, permissions, delegable`,
       [operatorId, roleId, label, permissions, delegable]))[0];
       if (!row) fail('studio_storage_unavailable');
+      await auditWrite(txQuery,input,{operatorId,action:'role.save',resourceType:'role',resourceId:roleId,before:roleAudit(existing),after:roleAudit(row)});
       return role(row);
     });
   }
@@ -424,7 +474,9 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     const status = statusText(ownValue(input, 'status'), membershipStatuses, 'studio_invalid_data', 422);
     const expected = optionalOwn(input, 'expectedRevision');
     if (expected === undefined) {
-      const row = (await query(`/* operator-store:create-membership */
+      return withOperatorLock(async txQuery => {
+      if (!await lockOperator(txQuery,operatorId)) fail('studio_operator_not_found',404);
+      const row = (await txQuery(`/* operator-store:create-membership */
         INSERT INTO croupier_studio.operator_memberships
           (environment_id, workspace_id, operator_id, user_id, role_id, status, revision, created_at_ms)
         VALUES ($1,$2,$3,$4,$5,$6,1,$7)
@@ -433,7 +485,9 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       if (!row) fail('studio_storage_unavailable');
       const saved = membership(row);
       if (saved.revision !== 1) fail('studio_corrupt_operator');
+      await auditWrite(txQuery,input,{operatorId,action:'membership.create',resourceType:'membership',resourceId:userId,afterRevision:1,after:membershipAudit(row)});
       return saved;
+      });
     }
     const revision = integer(expected, 1, 'studio_invalid_data', 422);
     return withOperatorLock(async txQuery => {
@@ -457,6 +511,7 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       if (!row) fail('studio_conflict', 409);
       const saved = membership(row);
       if (saved.revision !== revision + 1) fail('studio_corrupt_operator');
+      await auditWrite(txQuery,input,{operatorId,action:'membership.update',resourceType:'membership',resourceId:userId,beforeRevision:revision,afterRevision:saved.revision,before:membershipAudit(current),after:membershipAudit(row)});
       return saved;
     });
   }
@@ -490,11 +545,13 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       RETURNING environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms`,
     [operatorId, lanes, games, tables, branding, clock()]))[0];
     if (!row) fail('studio_storage_unavailable');
-      return packageRow(row);
+      const saved=packageRow(row);
+      await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables}});
+      return saved;
     });
   }
   return Object.freeze({
-    scope, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
+    scope, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
     getCurrentPackage, resolvePartnerContext, createOperator, upsertRole, upsertMembership, publishPackage,
   });
 }

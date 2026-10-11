@@ -1,11 +1,17 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-Statusförtydligad 11 oktober 2026. Detta är den enda migrationschecklistan. Daterade kvitton nedan avser respektive leverans; aktuell Studio-/paket-/portalöverlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md). T2–T4 är fortfarande öppna där full acceptans saknas, även om flera delsteg nu är levererade.
+Statusförtydligad 12 oktober 2026. Detta är den enda migrationschecklistan. Daterade kvitton nedan avser respektive leverans; aktuell Studio-/paket-/portalöverlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md). T2–T4 är fortfarande öppna där full acceptans saknas, även om flera delsteg nu är levererade.
 Äldre checkpoints och avslutade delstegs detaljer finns i
 [fryst historik på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md).
 Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
+
+## JN2-C: slutimplementation och acceptans, 12 oktober 2026
+
+Team använder nu verkliga roller/rättigheter, skyddad avstängning/återaktivering och revisionskontroll. Beständig operatörsjournal ingår i samma SQL-transaktion som varje lyckad konfigurationsändring; nekade ändringar eller auditfel ger ingen affärsskrivning. Läsning är bolagsavgränsad, paginerad och åtkomstkontrollerad. Ingen historisk backfill eller app-radering; retention tills separat beslut.
+
+11 isolerade PostgreSQL-prov (två databaser och verklig omstart) samt 18 browserprov PASS; återkallade roller, bolagsgränser, samtidighet och auth-COMMIT-kompensation är verifierade. Tidigare kvittos begränsning till minnes-/SQLite-fixturer är därmed ersatt för dessa teamflöden. QA är inlagd i befintlig CI-runner. Windows native; inga betalda provideranrop, budgettak 5 USD kvarstår. Produktionsleveransen går via kompatibilitetscommit `d72f392f`, därefter additiv migration006 och först därefter slutkod. Båda förberedelsevärdarna samt grön CI verifierades före migration006; Neon har nu verifierad kedja001–006 och tom journal vid installation, utan affärsskrivningar. Se aktuell handoff för full bevisgräns och legacygranskning. JN2-A/B:s övriga visuella/produktövergripande acceptans och D–K är fortsatt öppna.
 
 ## Aktuellt testmandat och N2-snabbkontroll, 11 oktober 2026
 
@@ -138,7 +144,7 @@ Privata originalanteckningar i `random/` är inte del av produkt eller deploymen
 ### Johns N2-skiss — implementationsplan, 11 oktober 2026
 
 Denna nedbrytning hör till **T2/T3 i denna tracker**, inte till ett nytt projekt.
-Alla JN2-punkter nedan är öppna implementations- och acceptansgrindar. Planen
+JN2-punkterna nedan visar respektive implementations- och acceptansgrind. Planen
 är inte ett påstående att hela funktionerna är produktionsgodkända. Befintliga N2.2/N2.4-namn
 behålls; JN2-ID:n avser endast denna skissintegration.
 
@@ -289,7 +295,7 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
 
 #### Säker konfiguration och publicering
 
-- [ ] **JN2-C — rättigheter, beständig audit och bolag/varumärkesgräns.**
+- [x] **JN2-C — rättigheter, beständig audit och bolagsgräns (första leveransen).**
   **Frontend:** koppla Johns teamvy till befintlig invitation/aktivering och
   team-loader. Visa tillåtna åtgärder och faktiskt aktiva roller, inte bara fem
   hårdkodade rollnamn. Skilj bolag från varumärke/marknad; första leveransen kan
@@ -308,6 +314,8 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   **Verifiering:** isolerad Postgres, samtidiga rollbyten, sista aktiva admin,
   avstängning och återkallelse; en lyckad ändring ger exakt en beständig auditpost,
   nekad ändring ändrar inga affärsdata. Ingen läsning/export över scopegräns.
+
+  **Levererat i teamsteget:** riktiga tillåtna åtgärder, rollrättigheter och delegerbarhet; atomisk beständig journal med scope/aktör/revision/request-ID; två databasers aktiveringskompensation och isolerad Postgres/browseracceptans. Johns rollnamn mappas mot befintliga förmågor: Owner behöver administratörsrätten `team.roles.assign` och uttryckliga övriga teamgrants; Pit boss använder `tables.read/configure`; Finance använder `reports.read`; Branding använder `presentations.read/configure`; Read-only får bara relevanta läsrättigheter. Befintliga anpassade roller återanvänds. N2 får bara delegera markerade roller vars samtliga rättigheter ryms i aktörens egna. Nya RG-/integrationsskrivrättigheter får inte härledas från läsrättigheter. Första leveransen har bolagets befintliga brand; flerbrands-/marknadsmodell kräver separat implementation och lämnas öppen. Ingen journalexport utlovas.
 
 - [ ] **JN2-D — brandutkast, preview, granskat publicera/återställ.**
   **Frontend:** integrera Johns logga, filt/rail/tryck, bakgrund, chips och

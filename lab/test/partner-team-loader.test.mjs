@@ -152,7 +152,7 @@ test('a live administrator gets Kevin\'s invite and role controls, limited to wh
   assert.match(html, /Medlemskap i North/);
   assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
   assert.match(html, /avstängd/);
-  assert.equal(html.includes('Inbjudan och rollbyte ansluts i nästa steg'), false);
+  assert.equal(html.includes('Åtgärderna är låsta tills teamåtkomsten har verifierats.'), false);
   assert.equal(html.includes('@'), false);
 });
 
@@ -165,7 +165,7 @@ test('a live member without team.roles.assign sees the team with every control d
   const selects = [...html.matchAll(/<select\b[^>]*>/g)].map(match => match[0]);
   assert.equal(selects.length, 4);
   for (const item of selects) assert.match(item, /disabled/);
-  assert.match(html, /Du kan se teamet\. Inbjudan och rollbyte kräver operatörsadministratör\./);
+  assert.match(html, /Du kan se teamet\. Ändringar kräver rätt administratörsbehörighet\./);
 });
 
 test('the portal binds one stable team view per API base and renders Kevin\'s read-only view until the API answers', async () => {
@@ -178,8 +178,47 @@ test('the portal binds one stable team view per API base and renders Kevin\'s re
   const loading = renderToStaticMarkup(React.createElement(PartnerTeamLoader, {
     snapshot, runtime: { surface: 'partner' }, surface: 'partner', toast() {}, base: '/api/partner', Team: TeamView,
   }));
-  assert.match(loading, /Inbjudan och rollbyte ansluts i nästa steg/);
+  assert.match(loading, /Åtgärderna är låsta tills teamåtkomsten har verifierats./);
   assert.match(tag(loading, 'team-invite-submit'), /disabled/);
   const portal = await readFile(new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url), 'utf8');
   assert.match(portal, /teamView:snapshot\.preview===false&&surface==='partner'\?partnerTeamView\(apiBase,TeamView\):TeamView/);
+});
+
+
+test('team snapshot preserves real permission grants and delegation policy', () => {
+  const mapped = partnerTeamSnapshot(snapshot, team());
+  assert.deepEqual(mapped.roles[0].permissions, ['team.roles.assign']);
+  assert.equal(mapped.roles[0].delegable, false);
+  assert.equal(mapped.roles[1].delegable, true);
+});
+
+test('suspension and reactivation use current member revision and unavailable actions do not send', async () => {
+  const writes = [], busy = [];
+  const live = createPartnerTeamAdapter({ team: team(), client: { write: async body => { writes.push(body); return { status: 200, team: team() }; } },
+    notify() {}, onTeam() {}, onBusy: value => busy.push(value) });
+  assert.equal(await live.status({ id: '42' }, 'suspend'), false);
+  assert.equal(await live.status({ id: '43' }, 'reactivate'), false);
+  assert.equal(await live.status({ id: '43' }, 'suspend'), true);
+  assert.equal(await live.status({ id: '44' }, 'reactivate'), true);
+  assert.deepEqual(writes, [{ action: 'suspend', userId: '43', expectedRevision: 1 }, { action: 'reactivate', userId: '44', expectedRevision: 3 }]);
+  assert.deepEqual(busy, [true, false, true, false]);
+});
+
+test('revocation and a failed refresh clear stale team grants', async () => {
+  const accepted = [];
+  const live = createPartnerTeamAdapter({ team: team(), client: { write: async () => ({ status: 403 }), read: async () => ({ status: 503, team: null }) },
+    notify() {}, onTeam: next => accepted.push(next) });
+  assert.equal(await live.role({ id: '43' }, 'partner-editor'), false);
+  assert.deepEqual(accepted, [null, null]);
+});
+
+test('live status controls follow server grants, support English and lock during a pending write', () => {
+  const live = createPartnerTeamAdapter({ team: team(), client: {}, notify() {}, onTeam() {}, language: 'en' });
+  const props = { snapshot: partnerTeamSnapshot(snapshot, team()), runtime: { team: live, teamBusy: true }, language: 'en' };
+  const html = renderToStaticMarkup(React.createElement(TeamView, props));
+  assert.match(html, /Suspend north-viewer/);
+  assert.match(html, /Reactivate 44/);
+  assert.doesNotMatch(html, /Suspend north-admin/);
+  assert.match(html, /Memberships in North/);
+  for (const button of html.matchAll(/<button[^>]+aria-label="(?:Suspend|Reactivate)[^>]+>/g)) assert.match(button[0], /disabled/);
 });

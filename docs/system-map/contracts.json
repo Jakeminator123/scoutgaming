@@ -113,7 +113,23 @@
         "web/storage/studio-game-policy.mjs",
         "web/storage/studio-repository.mjs",
         "web/storage/studio-runtime.mjs",
-        "web/studio-game-commands.mjs"
+        "web/studio-game-commands.mjs",
+        "ops/neon-studio/005-operators.sql",
+        "ops/neon-studio/006-operator-audit.sql",
+        "test/partner-team-postgres.mjs",
+        "test/studio-isolated-partner-qa.mjs",
+        "web/storage/operator-store.mjs",
+        "web/partner-access-policy.mjs",
+        "lab/lib/partner-session.mjs",
+        "lab/lib/partner-team-api.mjs",
+        "lab/lib/partner-workspace-access.mjs",
+        "lab/lib/operator-audit-context.mjs",
+        "lab/lib/operator-admin-api.mjs",
+        "lab/lib/operator-accounts.mjs",
+        "lab/lib/operator-journal.mjs",
+        "lab/lib/studio-native-runtime.mjs",
+        "lab/lib/studio-native-request.mjs",
+        "lab/lib/studio-native-mail.mjs"
       ],
       "tests": [
         "tools/studio-isolated-qa.mjs"
@@ -155,7 +171,7 @@
         "test/studio-cutover-integration.mjs": "sha256:d7cd1c17531bb4bab96cb143a96fb85e67c2faffe2375a8c1fab00b1b7eaf698",
         "test/studio-postgres-integration.mjs": "sha256:320d3c62e450fc79f93102373a3c374ad5f6b428ff9ef4d474236c7ab67de1da",
         "test/studio-retained-bank.mjs": "sha256:64fe8d87858eee3afb1effbfa2dcac1d7cce85e0c86388d555f63eec2445626f",
-        "tools/studio-isolated-qa.mjs": "sha256:0059deb3846e876ccae2c70ca5027476052cc84e8896ef9f79aeefd944f51ad7",
+        "tools/studio-isolated-qa.mjs": "sha256:0826493ab2d3386dca44ca7e15040740edd5071f68f057fa8b0efb7b56e76ec6",
         "web/account-credentials.mjs": "sha256:90791fa0bbc5c340a75f7349bdfdd5a3f2c5aef6149eec5cf53496d13892e4df",
         "web/account-role.mjs": "sha256:aa0fcf1da61c3ac53fe312f9d3083cc3586edd7f7c74732a84ab5ea1bd77f36f",
         "web/email-templates.mjs": "sha256:0a676759c1510b1d505aa7984e9fc400928a84899a3a3b742d25e1eebc5c85fc",
@@ -181,7 +197,23 @@
         "web/storage/studio-game-policy.mjs": "sha256:fb13fcd2e8f76c4a6d80a3f44ee106bec5c1e44d8197d38ed9dc86a485617106",
         "web/storage/studio-repository.mjs": "sha256:f5030cc2ddce94e334f49420622b4deb14492eafecec4fb7d1025956df9f12a4",
         "web/storage/studio-runtime.mjs": "sha256:6903d6e5cfd4883470d3564451ceeb88daf27ca75a05436ee70131334617dbe1",
-        "web/studio-game-commands.mjs": "sha256:d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f"
+        "web/studio-game-commands.mjs": "sha256:d982e709bbfa780d7e2168124d2254a8979b8b748b98642a6ec5efdd6415386f",
+        "ops/neon-studio/005-operators.sql": "sha256:ed31705d07d9bd5700a60789efa5989a8ba3c0e95125887477ce67e5999fa4ef",
+        "ops/neon-studio/006-operator-audit.sql": "sha256:a8775d0329262194340fd6365da4b1d316459d894e6fd3b93106ecde7199b474",
+        "test/partner-team-postgres.mjs": "sha256:ff3e512e2d00e505f6e14c0a87e1192945b4128bc622c4ec7cea466b195fabfa",
+        "test/studio-isolated-partner-qa.mjs": "sha256:9ed337803c6764daf7b105cc6c356c9f2050da44c945bea0b82a0145d8fa5b17",
+        "web/storage/operator-store.mjs": "sha256:67089567a7a8c499a09da23827e18424e80373998d1cdd3353c25c1173ab7b83",
+        "web/partner-access-policy.mjs": "sha256:6a1994c7a170f97cd5ff8fa9c5dcc833fcbdf3387e16f999ee8b13d8d656d667",
+        "lab/lib/partner-session.mjs": "sha256:26644955b646f2c2f3d9ba08c0278d69838dc2129abd45968572afa8072c4a08",
+        "lab/lib/partner-team-api.mjs": "sha256:b3ec89a945e2cd145ce8aaf203f27c129fcdf96fcd9efe789917603d9800908e",
+        "lab/lib/partner-workspace-access.mjs": "sha256:2542196a5fd8a520d467131cd311453493b6592a9735ecb2ca90c7e0e8ddc338",
+        "lab/lib/operator-audit-context.mjs": "sha256:4dd2e29362efcae6d739f5e2b0436a5c8a9eebb3a640ffe523a357dc164bbe68",
+        "lab/lib/operator-admin-api.mjs": "sha256:384fc9b86be1c516daeba2a8689226b6822e5512fbb9c62218f7ea50caccd87e",
+        "lab/lib/operator-accounts.mjs": "sha256:419adf5aaf36f193b1598129cf27b1db06405a3ba9c8348c8d55c58a5cc5df55",
+        "lab/lib/operator-journal.mjs": "sha256:6b94bbb1cd9e1762c0126595368b96d0454f92b04d98ab99d24d36a9d9851d9f",
+        "lab/lib/studio-native-runtime.mjs": "sha256:95863ec19d41d1e0edb79955f3de4531f427f4327343e26d2ce292b69c7d3c09",
+        "lab/lib/studio-native-request.mjs": "sha256:7304dc5cc50bd67df892e363b09213c2a68ac0aa9d0b1dd6b61458c89efae34e",
+        "lab/lib/studio-native-mail.mjs": "sha256:019738fdc3b2c40cbfc8114d4f6489ae3409c53507f7267f913749872e3e7eda"
       }
     },
     {
@@ -265,7 +297,16 @@
         "lab/lib/studio-native-runtime.mjs",
         "lab/lib/studio-native-runtime.d.mts",
         "lab/lib/studio-native-auth.mjs",
-        "lab/lib/studio-native-request.mjs"
+        "lab/lib/studio-native-request.mjs",
+        "lab/components/kevin-bo/views/team.jsx",
+        "lab/components/kevin-bo/kevin-backoffice.jsx",
+        "lab/components/partner-team-loader.mjs",
+        "lab/components/partner-journal-loader.mjs",
+        "lab/components/partner-appearance-loader.mjs",
+        "lab/lib/partner-preview-fixtures.mjs",
+        "lab/lib/partner-preview-policy.mjs",
+        "lab/package.json",
+        "lab/package-lock.json"
       ],
       "tests": [
         "test/system-map.mjs",
@@ -278,7 +319,10 @@
         "lab/test/studio-admin-api.test.mjs",
         "lab/test/studio-native-runtime.test.mjs",
         "lab/test/studio-native-auth.test.mjs",
-        "lab/test/studio-native-request.test.mjs"
+        "lab/test/studio-native-request.test.mjs",
+        "lab/test/partner-team.test.mjs",
+        "lab/test/partner-team-loader.test.mjs",
+        "lab/test/partner-journal-loader.test.mjs"
       ],
       "testType": "existing-file-tests",
       "checks": [
@@ -387,7 +431,19 @@
         "lab/test/studio-native-request.test.mjs": "sha256:abd1c9feec74a3d3a12ee5aa0d675aae2b79d89c6153c775043606beafc45424",
         "lab/test/studio-native-runtime.test.mjs": "sha256:280d2b153e46152334a0b81cfd922ad9dcf66951f654358d0888b1dc2a508613",
         "lab/test/studio-navigation.test.mjs": "sha256:de7e073bd2287738f36b1515b1a49b94a8c6e6b158c9baf2826e06b110ebfddc",
-        "test/system-map.mjs": "sha256:d974d7725cfd8f9c44ef47bfff30f3cc3cda8590533faafb3334e7f5248cfb5e"
+        "test/system-map.mjs": "sha256:d974d7725cfd8f9c44ef47bfff30f3cc3cda8590533faafb3334e7f5248cfb5e",
+        "lab/components/kevin-bo/views/team.jsx": "sha256:83737329060af6fc962d8487de762773982da0c8557a832e698a911a3e1c8bd2",
+        "lab/components/kevin-bo/kevin-backoffice.jsx": "sha256:e98df744da8560e7a66508796aec1d1dd4a10f6665b468bd573b8ce4f77845ac",
+        "lab/components/partner-team-loader.mjs": "sha256:89bba4cd691a3532c662b6b92d4204b0c490711c6441ce82fea59d95d07661cc",
+        "lab/components/partner-journal-loader.mjs": "sha256:11cdedaba45fb09850df98e31a830bcf86c85a9beb91278f59c29bcf79251684",
+        "lab/components/partner-appearance-loader.mjs": "sha256:b581a2280aa1d73e94044d9b39952b7157ae2e864f6897f675b8c4762f525a6a",
+        "lab/lib/partner-preview-fixtures.mjs": "sha256:8fe1d989c2a77b7e59f6a96879b3159a88b41a4ea7bdc44b283155db78eb4556",
+        "lab/lib/partner-preview-policy.mjs": "sha256:164f74b3bb66634f3fc70899732316003220028c4202f1aceecf7cea402df981",
+        "lab/package.json": "sha256:6d30b2fa4d504ad71e5b83726c937807fd7f59138c94c790530e3d868bc66409",
+        "lab/package-lock.json": "sha256:4c6956f21e19d4d6a033706679f087c928b53e5808098d1567da2de8c04ccadf",
+        "lab/test/partner-team.test.mjs": "sha256:200f8b9138f064ad07fc01ede25abe3cca21d4c699ea830d90877f4bb94146bf",
+        "lab/test/partner-team-loader.test.mjs": "sha256:a43f8cbb335cd27042a4c7ee00b42956a1652357fa43374b852c4acbc228fc62",
+        "lab/test/partner-journal-loader.test.mjs": "sha256:6e985b2cc44cc167b08a49d9941d2f9d00a11d85aaa078d8c28921b861906e6b"
       }
     },
     {
@@ -741,11 +797,20 @@
         }
       ],
       "sources": [
-        "ops/neon-studio/migrations.mjs"
+        "ops/neon-studio/migrations.mjs",
+        "web/storage/operator-store.mjs",
+        "web/storage/studio-contract.mjs",
+        "web/partner-access-policy.mjs",
+        "web/account-role.mjs",
+        "lab/lib/operator-audit-context.mjs",
+        "lab/test/fixtures/operator-memory-pool.mjs",
+        "tools/studio-isolated-qa.mjs"
       ],
       "tests": [
         "test/studio-migrations.mjs",
-        "test/postgres-speech-journal.mjs"
+        "test/postgres-speech-journal.mjs",
+        "lab/test/operator-audit.test.mjs",
+        "test/studio-isolated-partner-qa.mjs"
       ],
       "testType": "existing-file-tests",
       "checks": [
@@ -764,7 +829,16 @@
         "ops/neon-studio/005-operators.sql": "sha256:ed31705d07d9bd5700a60789efa5989a8ba3c0e95125887477ce67e5999fa4ef",
         "ops/neon-studio/migrations.mjs": "sha256:12ad0fea9d47552ba5d648e016601ad6e8f3742fd660aeb868b2d8dbffdce590",
         "test/postgres-speech-journal.mjs": "sha256:17a77d81e3694d0614f9aed37765c766c23a8c682a2cbb55afdbe70444a48aec",
-        "test/studio-migrations.mjs": "sha256:da5b3894f91b2fba7579bffc1283ebfe6f966a76273c1a8dae163fdd35d3267b"
+        "test/studio-migrations.mjs": "sha256:da5b3894f91b2fba7579bffc1283ebfe6f966a76273c1a8dae163fdd35d3267b",
+        "web/storage/operator-store.mjs": "sha256:67089567a7a8c499a09da23827e18424e80373998d1cdd3353c25c1173ab7b83",
+        "web/storage/studio-contract.mjs": "sha256:15a41afafcf4fdc96f0a652ce0d8b1b08a50a909e1e3adbaaab043f0500182d7",
+        "web/partner-access-policy.mjs": "sha256:6a1994c7a170f97cd5ff8fa9c5dcc833fcbdf3387e16f999ee8b13d8d656d667",
+        "web/account-role.mjs": "sha256:aa0fcf1da61c3ac53fe312f9d3083cc3586edd7f7c74732a84ab5ea1bd77f36f",
+        "lab/lib/operator-audit-context.mjs": "sha256:4dd2e29362efcae6d739f5e2b0436a5c8a9eebb3a640ffe523a357dc164bbe68",
+        "lab/test/fixtures/operator-memory-pool.mjs": "sha256:6418a091298ce8ed5d33b89f2b09c8f15178a62196b80207c1482f150a215487",
+        "tools/studio-isolated-qa.mjs": "sha256:0826493ab2d3386dca44ca7e15040740edd5071f68f057fa8b0efb7b56e76ec6",
+        "lab/test/operator-audit.test.mjs": "sha256:14346764e201b355f476b82a22bf9940a36065a3ad4d16a3eb58b7e4d1343d6a",
+        "test/studio-isolated-partner-qa.mjs": "sha256:9ed337803c6764daf7b105cc6c356c9f2050da44c945bea0b82a0145d8fa5b17"
       }
     },
     {

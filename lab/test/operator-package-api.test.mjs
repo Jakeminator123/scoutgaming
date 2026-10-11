@@ -143,7 +143,7 @@ const mediaId='10000000-0000-4000-8000-000000000001',mediaHash='a'.repeat(64);
 // SQL facade fixture only: exercises the actual repository/publisher transaction
 // and rollback paths. Real PostgreSQL isolation remains a separate integration.
 function nativePool(){
-  let state={documents:new Map(),media:new Map(),packages:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
+  let state={documents:new Map(),media:new Map(),packages:[],operatorAudits:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
   const calls=[],faults=new Set(),clone=v=>structuredClone(v),key=values=>JSON.stringify(values.slice(0,3));
   const result=(rows=[],command='SELECT')=>({rows:clone(rows),command});
   const pool={calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
@@ -179,6 +179,7 @@ function nativePool(){
           const row={environment_id:values[0],workspace_id:values[1],id:values[2],revision:values[3],record:JSON.parse(values[4]),updated_at:'2026-10-09T12:00:00Z'};
           working.media.set(key(values),row);return result([row]);
         }
+      if (marker === 'audit-write') { working.operatorAudits.push(clone(values)); return result([{event_id:values[3]}]); }
         if(marker==='audit'){working.audits.push(clone(values));return result();}
         if(marker==='history'){working.history.push(clone(values));return result();}
         throw Error('unexpected fixture marker '+marker);

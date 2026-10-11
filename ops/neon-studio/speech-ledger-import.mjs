@@ -210,7 +210,7 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
   const importChecksum = hash(canonicalStudioJson({sourceId:source.sourceId,sourceChecksum:source.checksum,scope:rows.scope,costRows:wanted,retainedOperatorQa:rows.retainedOperatorQa}));
   const eventId = identityUuid(canonicalStudioJson({sourceId:source.sourceId,scope:rows.scope}));
   const plan = await schemaCheck({pool});
-  if (!plan.schemaPresent || plan.toApply.length || !['001,002,003,004,005','001,002,003,004,005,006'].includes(plan.applied.map(row=>row.version).join(','))
+  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',') !== '001,002,003,004,005,006'
     || plan.applied.some(row=>!sha.test(row.checksum) || !sha.test(row.structureChecksum)) || !same(plan.target,target)) fail('studio_speech_import_schema_unverified',409);
   let client, began = false;
   const query = async (tag,sql,values=[]) => client.query(`/* speech-import:${tag} */ ${sql}`,values);

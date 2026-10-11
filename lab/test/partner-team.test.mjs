@@ -68,7 +68,7 @@ test('fixture membership list shows Swedish labels, both roles and only this ope
   assert.equal(html.includes('South Only Member'), false);
   assert.equal(html.includes('south@demo-south.invalid'), false);
   assert.equal(html.includes('avstängd'), false);
-  assert.equal(html.includes('Inbjudan och rollbyte ansluts i nästa steg'), false);
+  assert.equal(html.includes('Åtgärderna är låsta tills teamåtkomsten har verifierats.'), false);
   assert.equal(tag(html, 'team-invite-email').includes('disabled'), false);
   assert.equal(tag(html, 'team-invite-role').includes('disabled'), false);
   assert.equal(tag(html, 'team-invite-submit').includes('disabled'), false);
@@ -88,7 +88,7 @@ test('the demo-north fixture still lists its own members and fixture status', ()
   assert.match(html, /admin@demo-north\.invalid/);
   assert.match(html, /editor@demo-north\.invalid/);
   assert.match(html, /Fixture · demo/);
-  assert.match(html, /Search name or email/);
+  assert.match(html, /Sök medlemmar/);
   assert.equal(html.includes('South Only Member'), false);
   assert.equal(html.includes('aktiv'), false);
 });
@@ -113,7 +113,7 @@ test('real membership is read-only and does not pretend an invite was sent', () 
   };
   const { html, calls } = render(snapshot);
   assert.match(html, /Medlemskap i Nordic Bet/);
-  assert.match(html, /Inbjudan och rollbyte ansluts i nästa steg/);
+  assert.match(html, /Åtgärderna är låsta tills teamåtkomsten har verifierats./);
   assert.match(html, /user-22/);
   assert.match(html, /Revision 4/);
   assert.match(html, /aktiv/);

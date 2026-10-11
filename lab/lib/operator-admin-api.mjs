@@ -1,3 +1,4 @@
+import { operatorAuditContext } from './operator-audit-context.mjs';
 import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../web/partner-access-policy.mjs';
 import {
   consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
@@ -107,7 +108,7 @@ export function createOperatorAdminApi({
     const name = operatorName(context.body.name);
     const actor = context.actor.user;
     const operators = await store();
-    const created = await operators.createOperator({ actor, operatorId: slug, slug, name });
+    const created = await operators.createOperator({ actor, audit: operatorAuditContext(context.actor), operatorId: slug, slug, name });
     journal.record({ actor, action: 'operator-create', operatorId: created.id, target: { slug: created.slug } });
     // The operator row has committed. A role that fails here is reported, and
     // operator-role can add it later; the operator is not rolled back.
@@ -115,7 +116,7 @@ export function createOperatorAdminApi({
     for (const role of STANDARD_OPERATOR_ROLES) {
       try {
         await operators.upsertRole({
-          actor, operatorId: created.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable,
+          actor, audit: operatorAuditContext(context.actor), operatorId: created.id, roleId: role.id, label: role.label, permissions: [...role.permissions], delegable: role.delegable,
         });
         journal.record({ actor, action: 'operator-role', operatorId: created.id, target: { roleId: role.id, permissions: [...role.permissions] } });
       } catch {
@@ -140,7 +141,7 @@ export function createOperatorAdminApi({
     const operator = await existingOperator(operators, context.body.operatorId);
     const existing = await operators.getRole(operator.id, standard.id);
     const saved = await operators.upsertRole({
-      actor, operatorId: operator.id, roleId: standard.id,
+      actor, audit: operatorAuditContext(context.actor), operatorId: operator.id, roleId: standard.id,
       label: existing?.label ?? standard.label, permissions, delegable: existing?.delegable ?? standard.delegable,
     });
     journal.record({ actor, action: 'operator-role', operatorId: operator.id, target: { roleId: saved.id, permissions: [...saved.permissions] } });
@@ -178,7 +179,7 @@ export function createOperatorAdminApi({
         if (!account || account.role !== 'partner') fail(422);
       }
       saved = await operators.upsertMembership({
-        actor, operatorId: operator.id, userId: account.userId, roleId: role.id, status: createdNew ? 'invited' : 'active',
+        actor, audit: operatorAuditContext(context.actor), operatorId: operator.id, userId: account.userId, roleId: role.id, status: createdNew ? 'invited' : 'active',
       });
     } catch (error) {
       release();
@@ -208,7 +209,7 @@ export function createOperatorAdminApi({
     const lookup = accounts();
     const account = Object.hasOwn(body, 'userId') ? await lookup.byId(body.userId) : await lookup.byUsername(body.username);
     if (!account || account.role !== 'partner') fail(422);
-    const input = { actor, operatorId: operator.id, userId: account.userId, roleId: role.id, status: body.status };
+    const input = { actor, audit: operatorAuditContext(context.actor), operatorId: operator.id, userId: account.userId, roleId: role.id, status: body.status };
     // Without expectedRevision the store only inserts (an existing member is 409).
     // With it the store locks the operator, refuses to remove the last
     // administrator and compares the revision before it writes.

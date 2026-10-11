@@ -138,7 +138,7 @@ function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}
         {surface==='internal'&&target&&<div className="kevin-internal-link"><span>Detta arbetsverktyg hör till intern personal.</span><a href={labUrl(target[0])}>{target[1]} →</a></div>}
         {surface==='partner'&&!real&&['theme','design','background','bj','dealers','test'].includes(view)&&<section className="kevin-lane-status" aria-label="Presentationslane och spelkoppling"><div><strong>Visad presentationslane: {snapshot.presentations.map(profile=>profile.name).join(', ')||'Ingen tilldelad presentationslane'} <span>· exempel</span></strong><p>Ingen publicerad presentationslane är ansluten till denna förhandsvisning. Marker, kort, bord och bakgrund kan provas lokalt men skickas inte till spelet.</p></div><span className="kevin-connection-label">Spelkoppling saknas</span><p>Operatören väljer bland tilldelade, godkända presentationslanes. Klipp, masker, urvalsregler och publicering hanteras i Kontrollpanelen.</p></section>}
         {page&&(real?<header className="kevin-page-header"><p className="kevin-eyebrow">{snapshot.operator.name}</p><h1 className="kevin-shell-heading">{page.label}</h1>{['ops','bj'].includes(view)&&<p className="kevin-page-intro">{view==='ops'?copy.overviewIntro:copy.tablesIntro}</p>}</header>:!disconnected&&<h2 className="kevin-shell-heading">{page.label}</h2>)}
-        <ViewBoundary key={`${view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView original={original} runtime={runtime} view={view} copy={copy} notify={notify} apiBase={apiBase} onAppearanceSaved={saved=>setSnapshot(current=>{
+        <ViewBoundary key={`${view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView original={original} runtime={runtime} view={view} copy={copy} language={language} notify={notify} apiBase={apiBase} onAppearanceSaved={saved=>setSnapshot(current=>{
           if(current?.preview!==false||current.operator.id!==saved.operatorId||!saved.presentation)return current;
           const previous=Number(current.packageRevision??current.operator.packageRevision);
           if(Number.isSafeInteger(previous)&&saved.packageRevision<=previous)return current;
@@ -172,7 +172,7 @@ function DisconnectedSection({snapshot,view,copy}) {
   return <div className="page-b kevin-disconnected"><section className="panel"><div className="empty"><h2>{title}</h2><p>{body}</p><a className="btn primary" href={destination}>{action}</a></div></section></div>;
 }
 
-function PreviewView({original,runtime,view,copy,notify,apiBase,onAppearanceSaved}) {
+function PreviewView({original,runtime,view,copy,language,notify,apiBase,onAppearanceSaved}) {
   const [tables,setTables]=React.useState(runtime.data.tables),[attention,setAttention]=React.useState([]);
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false&&['theme','design','background','dealers','test'].includes(view))return <>
     <PartnerPackageView snapshot={runtime.snapshot} view={view}/>
@@ -182,7 +182,7 @@ function PreviewView({original,runtime,view,copy,notify,apiBase,onAppearanceSave
   if(DISCONNECTED[view]&&sectionNotConnected(runtime.snapshot,dataSection(view)))return <DisconnectedSection snapshot={runtime.snapshot} view={view} copy={copy}/>;
   if(view==='team'&&typeof runtime.teamView==='function'){
     const Team=runtime.teamView;
-    return <Team snapshot={runtime.snapshot} runtime={runtime} surface={runtime.surface} toast={notify}/>;
+    return <Team snapshot={runtime.snapshot} runtime={runtime} surface={runtime.surface} toast={notify} language={language}/>;
   }
   // Unimplemented real views never fall through to Kevin's fixture runtime.
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false)return <DisconnectedSection snapshot={runtime.snapshot} view={view} copy={copy}/>;
