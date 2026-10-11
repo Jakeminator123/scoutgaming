@@ -10,6 +10,7 @@ import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
 import { createRegisteredDealerIdle } from '../../web/storage/studio-runtime.mjs';
 import { resolveMediaPath } from '../../tools/media-layout.mjs';
+import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
 import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
 import { createStudioAdminReadouts } from './studio-admin-readouts.mjs';
 import { createRegisteredVoiceLines } from './studio-voice-lines.mjs';
@@ -105,7 +106,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       return repository.withMutationContext(() => store.boDb.transaction(work), descriptors);
     };
     const repositoryRoot = resolve(schemaRoot(), '..');
-    const dealerIdle = createRegisteredDealerIdle({ repositoryRoot, mediaAvailable: createStudioPublicMediaAvailability({ env, repositoryRoot }),
+    const dealerIdle = createRegisteredDealerIdle({ repositoryRoot, readMetadata: createRuntimeMetadataReader(repositoryRoot), mediaAvailable: createStudioPublicMediaAvailability({ env, repositoryRoot }),
       pathFor: (base, file) => resolveMediaPath(`web/public/${base}/${file}`, { repositoryRoot }) });
     const gamePolicy = policyFactory({ repository, scope: config.scope, dealerIdle });
     await gamePolicy.readSaved();

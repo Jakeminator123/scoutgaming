@@ -5,7 +5,10 @@ import {join,resolve,dirname} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {buildRuntimeMediaCatalog} from '../tools/build-runtime-media-catalog.mjs';
-import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
+import {createStudioMediaRuntime,createStudioPublicMediaAvailability} from '../lab/lib/studio-media-runtime.mjs';
+import {createRuntimeMetadataReader} from '../tools/runtime-media-catalog.mjs';
+import {createRegisteredDealerIdle} from '../web/storage/studio-runtime.mjs';
+import {createRegisteredVoiceLines} from '../lab/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createSeedProject,addDealer} from '../lab/lib/studio-model.mjs';
@@ -23,7 +26,14 @@ test('PAOW and all original inventories load with no dealer directory present',a
   await repository.initializeDocument('administration',{value:{rooms:[],legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{}}},revision:'catalog-admin',actor:'fixture'});
   const id='11111111-1111-4111-8111-111111111111',sha256='b'.repeat(64);
   await repository.registerMedia({id,sha256,size:32,contentType:'video/mp4',pathname:'croupier/media/dealers/paow/review/uploads/'+id+'/'+sha256+'.mp4',classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'PAOW idle',notes:''}},{actor:'fixture'});
-  const media=createStudioMediaRuntime({repository,scope,repositoryRoot:root,env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture',CROUPIER_MEDIA_BLOB_INDEX:join(root,'media/blob-index.json')}});
+  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture',CROUPIER_MEDIA_BLOB_INDEX:join(root,'media/blob-index.json')};
+  const media=createStudioMediaRuntime({repository,scope,repositoryRoot:root,env});
+  const idle=createRegisteredDealerIdle({repositoryRoot:root,readMetadata:createRuntimeMetadataReader(root),mediaAvailable:createStudioPublicMediaAvailability({env,repositoryRoot:root})});
+  for(const dealer of ['astrid','vera','amira','mei'])assert.deepEqual(await idle(dealer),{dealerId:dealer,engineKey:'idle-1/idle/idle',available:true});
+  assert.equal(await idle('paow'),null); // A new dealer must supply its own idle.
+  const voices=await createRegisteredVoiceLines({env,repositoryRoot:root})();
+  assert.deepEqual(voices.dealers.map(row=>row.dealer),['vera','astrid','amira','mei']);
+  for(const dealer of voices.dealers)assert.ok(dealer.lines.length>0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
   const legacy=await media.legacyControls(project);for(const dealer of ['astrid','vera','amira','mei'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
   assert.equal(legacy.clips.some(row=>row.dealerId==='paow'),false);

@@ -8,6 +8,9 @@ export function privateBuildSource(path) {
     || /(?:^|\/)(?:lab\/data|web\/data|open-claw\/lab\/(?:data|runtime)|agent-talk|random|\.croupier-inbox|\.codex|\.git)(?:\/|$)/.test(normalized)
     || /\.(?:db|sqlite|sqlite3)(?:-(?:wal|shm|journal))?$/.test(normalized);
 }
+export function dealerAuthoringBuildSource(path) {
+  return /(?:^|\/)media\/dealers(?:\/|$)/.test(path.replaceAll('\\','/'));
+}
 export async function checkBuildTraces({directory=resolve(process.cwd(),process.env.CROUPIER_LAB_DIST_DIR||'.next'),sanitize=false}={}) {
   const root=resolve(directory), actual=await realpath(root), info=await lstat(root);
   if ((process.platform==='win32'?actual.toLowerCase()!==root.toLowerCase():actual!==root) || !info.isDirectory() || info.isSymbolicLink()) throw Error('unsafe_build_trace_directory');
@@ -24,10 +27,10 @@ export async function checkBuildTraces({directory=resolve(process.cwd(),process.
       if(row.isDirectory()) await visit(file);
       else if(row.isFile()&&row.name.endsWith('.nft.json')) {
         const data=JSON.parse(await readFile(file,'utf8'));if(data.version!==1||!Array.isArray(data.files)||data.files.some(x=>typeof x!=='string')) throw Error('invalid_build_trace');
-        const safe=data.files.filter(path=>!privateBuildSource(resolve(dirname(file),path)));
+        const safe=data.files.filter(path=>{const source=resolve(dirname(file),path);return !privateBuildSource(source)&&!dealerAuthoringBuildSource(source);});
         checked++;removed+=data.files.length-safe.length;
         if(safe.length!==data.files.length) {
-          if(!sanitize) throw Error('private_state_in_build_trace');
+          if(!sanitize) throw Error(data.files.some(path=>privateBuildSource(resolve(dirname(file),path)))?'private_state_in_build_trace':'dealer_authoring_media_in_build_trace');
           await writeFile(file,JSON.stringify({...data,files:safe}));
         }
       }

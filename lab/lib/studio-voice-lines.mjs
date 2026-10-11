@@ -1,4 +1,4 @@
-import { readFile, lstat, realpath } from 'node:fs/promises';
+import { createRuntimeMetadataBytesReader } from '../../tools/runtime-media-catalog.mjs';
 import { createHash } from 'node:crypto';
 import { repositoryRoot as defaultRoot, resolvePublicMedia } from '../../tools/media-layout.mjs';
 import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
@@ -30,12 +30,12 @@ export function voiceReviewMatches(record, identity) {
 // media bytes or BO disk config. Presence/hash proves identity, not visual sync.
 export function createRegisteredVoiceLines({ env = process.env, repositoryRoot = defaultRoot } = {}) {
   const options = { repositoryRoot, env: Object.freeze({ ...env }) };
+  const readMetadataBytes = createRuntimeMetadataBytesReader(repositoryRoot);
   async function registeredJson(url) {
     const row = resolvePublicMedia(url, options);
     if (!row || row.size < 2 || row.size > 4 * 1024 * 1024) fail();
-    const [info, actual, bytes] = await Promise.all([lstat(row.file), realpath(row.file), readFile(row.file)]);
-    const samePath = process.platform === 'win32' ? actual.toLowerCase() === row.file.toLowerCase() : actual === row.file;
-    if (!info.isFile() || info.isSymbolicLink() || !samePath || bytes.length !== row.size || sha(bytes) !== row.sha256) fail();
+    const bytes = await readMetadataBytes(row.file);
+    if (!bytes || bytes.length !== row.size || sha(bytes) !== row.sha256) fail();
     return JSON.parse(bytes.toString('utf8'));
   }
   function media(url, contentType) {
