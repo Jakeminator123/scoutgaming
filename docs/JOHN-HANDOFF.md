@@ -6,6 +6,16 @@
 
 Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.
 
+### Översikt och arbetsområden, 11 oktober 2026
+
+Översikt får valt bolag, nästa relevanta steg och dealer → sammansättning → publicering → spelrum. Publiceringsstatus använder den befintliga publika rumslistans strikta bolags-/URL-kontrakt; Studio visar bara sparade namn och ID:n. Vid fel, laddning eller ändrad paketversion visas ingen bekräftad rumsstatus. Bolagsbyte tömmer föregående data och avbrutna/sena svar kan inte återställa den. Inga nya API:er eller skrivåtgärder införs.
+
+Talgranskning ligger visuellt under Studio med bevarad adress och identitetsbunden manuell bedömning. Administrationsflikar delas per Studio, Drift och Administration. Äldre classic/high/vip-standarder förklaras separat från bolagsägda rum. Aktiva event-/2D-klippskopplingar behålls; läppsynksacceptans, CAS, behörigheter, osparat-skydd och spelregler ändras inte.
+
+Verifiering inför leverans: 97 riktade tester och fyra fullständiga berörda hookgrupper (344 tester) gröna; TypeScript, gemensamt Lab-produktionsbygge med fyra workers och 77 byggspår godkända. Även isolerat offlinebygge är grönt, men den inloggade /control-sidan kräver native Studio-konfiguration och kunde inte visuellt granskas i offline-gästprovet. Fullhook och visuell produktionskontroll genomförs vid leverans. Inga riktiga bolag, behörigheter, publiceringspaket eller mediafiler ändras av verifieringen.
+
+Dealeragentens separata leverans är verifierad på main `72003249` (kod `af7f790a`): fullhook 2293 godkända, 9 överhoppade, 0 fel; GitHub CI `38157984326` grön och Vercel `dpl_8DWH3CziP8X662eTZ5Puf2efAaB2` READY på www. PAOW:s nio klipp, sidindelning, facklänkar, Veras klippkontroller och Sammansättningens uppspelningspanel kontrollerade live. Detta kvitto gäller inte lobbyagentens separata chattbackend som levereras efteråt.
+
 ### Administration och dealerbibliotek, 11 oktober 2026
 
 Bolagsadministrationen utgår från ett valt bolag. Spelrum & publicering och Team & behörigheter behåller bolaget i länkarna. Bolagslistan är sökbar; endast valt bolags medlemsformulär visas. Adressnamn föreslås från bolagsnamnet, och inbjudan/befintligt konto använder ett gemensamt inmatningsfält. Svenska rollnamn och verkliga behörigheter visas utan interna revisionsnummer. Spara roll visas när en roll ändrats. Interna konton & spelare och API & integrationer är tydligt separata.

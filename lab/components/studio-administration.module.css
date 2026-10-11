@@ -8,6 +8,11 @@
 .header p, .section p { margin: 6px 0; }
 .header p { color: var(--muted); font-size: 12px; }
 .headerActions { grid-column: 2; grid-row: 1; align-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.areaLabel { align-self:center; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-right:12px; }
+.contextLinks { padding:16px 20px; border:1px solid var(--line); border-radius:10px; background:var(--panel); font-size:13px; }
+.contextLinks p { margin:0 0 12px; color:var(--muted); }
+.contextLinks nav { display:flex; gap:20px; flex-wrap:wrap; }
+.contextLinks a { color:var(--teal); }
 .groups { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
 .administration button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); padding: 8px 12px; cursor: pointer; font: inherit; }
 .groups button { border-color: transparent; background: transparent; color: var(--muted); font-size: 13px; }

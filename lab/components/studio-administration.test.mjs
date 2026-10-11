@@ -177,24 +177,21 @@ function nativeReadFixture() {
   return { state, props };
 }
 
-test('native group headers use seven fresh admin GETs and no sessions while legacy keeps eighteen GETs', async () => {
-  for (const [readIdentity, expectedSessionCount] of [['session-preflight', 11], ['response-headers-v1', 0]]) {
-    const h = harness(), f = nativeReadFixture(), props = { ...f.props, readIdentity };
-    h.render(props); h.effects(); await flush(); let tree = h.render(props);
-    f.state.reads = 0; f.state.sessions = 0;
-    for (const menu of ['Spelmotor & rum', 'Interna konton & spelare', 'API & integrationer', 'Talgranskning']) {
-      buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
-      const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
-      assert.ok(view && Object.values(view.props.resources).every(resource => resource.payload), menu);
-      assert.equal(view.props.actor.role, 'admin');
+test('each work area retains native identity headers and only shows its own tabs', async () => {
+  for (const readIdentity of ['session-preflight','response-headers-v1']) {
+    for (const group of navigation.BACKOFFICE_GROUPS) {
+      const h=harness(), f=nativeReadFixture(), props={...f.props,readIdentity,initialGroup:group.id};
+      h.render(props);h.effects();await flush();const tree=h.render(props);
+      const view=nodes(tree,node=>node.type===h.StudioAdministrationView)[0];
+      assert.ok(view&&Object.values(view.props.resources).every(resource=>resource.payload),group.id);
+      assert.equal(view.props.actor.role,'admin');
+      assert.equal(f.state.sessions,readIdentity==='response-headers-v1'?0:f.state.reads+1);
+      for(const other of navigation.BACKOFFICE_GROUPS) assert.equal(buttons(tree,other.label).length,other.area===group.area?1:0,group.id+': '+other.id);
+      h.unmount();
     }
-    assert.equal(f.state.reads, 7);
-    assert.equal(f.state.sessions, expectedSessionCount);
-    assert.equal(f.state.reads + f.state.sessions, readIdentity === 'response-headers-v1' ? 7 : 18);
-    h.unmount();
   }
-  const nativeSource = readFileSync(new URL('./native-administration.tsx', import.meta.url), 'utf8');
-  assert.match(nativeSource, /<StudioAdministration\b[^>]*readIdentity="response-headers-v1"/);
+  const nativeSource=readFileSync(new URL('./native-administration.tsx',import.meta.url),'utf8');
+  assert.match(nativeSource,/<StudioAdministration\b[^>]*readIdentity="response-headers-v1"/);
 });
 
 test('response identity is checked before body hydration; missing/malformed/different actors fail closed without session fallback', async () => {
@@ -423,7 +420,7 @@ test('same-origin transport validates exact API base, method/action and explicit
 });
 
 test('menu changes fetch only displayed resources and keep a live identity check for every read', async () => {
-  const h = harness(); const requests = []; let identities = 0;
+  let h; const requests = []; let identities = 0;
   const data = resources();
   const props = { apiBase: '/studio/api/admin', availableActions: allActions,
     session: async () => { ++identities; return actor('admin'); },
@@ -431,7 +428,6 @@ test('menu changes fetch only displayed resources and keep a live identity check
       requests.push({ url, method: init.method });
       return reply(data[url.slice('/studio/api/admin/'.length)]?.payload);
     } };
-  h.render(props); h.effects(); await flush(); let tree = h.render(props);
   for (const [group, menu, reads] of [
     ['operations', 'Drift & spelintegritet', ['overview', 'shoes']],
     ['tables', 'Spelmotor & rum', ['config']],
@@ -440,16 +436,16 @@ test('menu changes fetch only displayed resources and keep a live identity check
     ['finance', 'Betalningar & journal', ['transactions']],
     ['media-review', 'Talgranskning', ['config', 'voicelines']],
   ]) {
-    if (group !== 'operations') {
-      requests.length = 0; identities = 0;
-      buttons(tree, menu)[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
-    }
+    h=harness(); requests.length=0; identities=0;
+    const scoped={...props,initialGroup:group};
+    h.render(scoped);h.effects();await flush();const tree=h.render(scoped);
     assert.deepEqual(requests, reads.map(action => ({ url: `/studio/api/admin/${action}`, method: 'GET' })), group);
     assert.equal(identities, reads.length + 1, group);
     const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
     assert.equal(view.props.group, group);
     assert.deepEqual(Object.keys(view.props.resources), reads, group);
     assert.ok(reads.every(action => view.props.resources[action].payload), group);
+    h.unmount();
   }
   h.unmount();
 });
@@ -535,7 +531,7 @@ test('partner forms retain explicit role/scopes/wallet boundaries and send only 
 
 test('one-time credential display clears on explicit reload/group change and never enters account metadata', async () => {
   const h = harness(), secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
-  const props = {apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
+  const props = {initialGroup:'accounts',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('superadmin'),fetchImpl:async(url,init)=>
     init.method==='POST' ? reply({ok:true,key:{id:'partner-one',key,secret}}) : reply(url.endsWith('/config') ? config() : url.endsWith('/apikeys') ? resources().apikeys.payload : resources().overview.payload)};
   h.render(props); h.effects(); await flush(); let tree = h.render(props);
   buttons(tree,'API & integrationer')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
@@ -763,7 +759,7 @@ test('draft guard survives reload/conflict, protects native unload and cancelled
   const firstForm = new Form({ state: 'live' }); nativeView().props.onDirty(firstForm);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   h.window.confirm = () => false;
-  buttons(tree, 'Interna konton & spelare')[0].props.onClick(); tree = h.render(props);
+  buttons(tree, 'Drift & spelintegritet')[0].props.onClick(); tree = h.render(props);
   assert.equal(nodes(tree, node => node.type === h.StudioAdministrationView)[0].props.group, 'tables');
   nativeView().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v1' }, firstForm); await flush(); tree = h.render(props);
   assert.match(renderToStaticMarkup(tree), /Uppgifterna har ändrats|Osparade formulärfält/); assert.equal(firstForm.resets, 0);
@@ -787,10 +783,10 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
     h.render(props); h.effects(); await flush(); let tree = h.render(props); holding = true;
     buttons(tree, 'Spelmotor & rum')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
     assert.equal(pending.length, 1); assert.equal(tree.props['aria-busy'], true);
-    assert.equal(buttons(tree, 'Interna konton & spelare')[0].props.disabled, false);
-    buttons(tree, 'Interna konton & spelare')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
+    assert.equal(buttons(tree, 'Drift & spelintegritet')[0].props.disabled, false);
+    buttons(tree, 'Drift & spelintegritet')[0].props.onClick(); assert.equal(pending[0].signal.aborted, true, 'abort happens at accepted navigation, before effects');
     h.render(props); h.effects(); await flush(); tree = h.render(props); assert.equal(pending.length, 3);
-    buttons(tree, 'API & integrationer')[0].props.onClick();
+    buttons(tree, 'Betalningar & journal')[0].props.onClick();
     assert.ok(pending.slice(1).every(entry => entry.signal.aborted));
     // Resolve stale reads in the click-to-effect window. These fetches ignore
     // cancellation and include both successful data and an authorization error.
@@ -798,13 +794,13 @@ test('two quick group changes invalidate abort-ignoring late reads before effect
     tree = h.render(props);
     assert.equal(tree.props['aria-busy'], true, 'stale finally cannot finish the new group');
     const view = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
-    assert.equal(view.props.group, 'partners'); assert.equal(Object.keys(view.props.resources).length, 0);
+    assert.equal(view.props.group, 'finance'); assert.equal(Object.keys(view.props.resources).length, 0);
     assert.equal(nodes(tree, node => node.props?.role === 'alert').length, 0); assert.equal(bodies, 0);
-    h.effects(); await flush(); assert.equal(pending.length, 5);
-    release(pending[3]); release(pending[4]); await flush(); tree = h.render(props);
-    assert.equal(tree.props['aria-busy'], false); assert.equal(bodies, 2);
+    h.effects(); await flush(); assert.equal(pending.length, 4);
+    release(pending[3]); await flush(); tree = h.render(props);
+    assert.equal(tree.props['aria-busy'], false); assert.equal(bodies, 1);
     const current = nodes(tree, node => node.type === h.StudioAdministrationView)[0];
-    assert.equal(current.props.group, 'partners'); assert.ok(current.props.resources.apikeys.payload); h.unmount();
+    assert.equal(current.props.group, 'finance'); assert.ok(current.props.resources.transactions.payload); h.unmount();
   }
 });
 
@@ -821,15 +817,15 @@ test('cancelled group change during a GET preserves its read, draft, unload guar
   const view = () => nodes(tree, node => node.type === h.StudioAdministrationView)[0], draft = new Form({ state: 'live' });
   const oldKey = view().key; view().props.onDirty(draft); tree = h.render(props); holding = true;
   buttons(tree, 'Ladda om från servern')[0].props.onClick(); await flush(); tree = h.render(props);
-  h.window.confirm = () => false; buttons(tree, 'Interna konton & spelare')[0].props.onClick(); tree = h.render(props);
+  h.window.confirm = () => false; buttons(tree, 'Drift & spelintegritet')[0].props.onClick(); tree = h.render(props);
   assert.equal(signal.aborted, false); assert.equal(view().props.group, 'tables'); assert.equal(view().key, oldKey);
   let prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, true);
   holding = false; waiting.resolve(nativeReply({ ...config(), revision: 'studio-v2' })); await flush(); tree = h.render(props);
   assert.equal(view().key, oldKey); assert.equal(draft.resets, 0); assert.match(renderToStaticMarkup(tree), /Osparade formulärfält/);
   view().props.command('room', { id: 'room-one', state: 'live', expectedRevision: 'studio-v2' }, draft); await flush(); tree = h.render(props);
   assert.equal(writes[0].expectedRevision, 'studio-v1'); assert.equal(draft.resets, 0);
-  h.window.confirm = () => true; buttons(tree, 'Interna konton & spelare')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
-  assert.equal(view().props.group, 'accounts'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
+  h.window.confirm = () => true; buttons(tree, 'Drift & spelintegritet')[0].props.onClick(); h.render(props); h.effects(); await flush(); tree = h.render(props);
+  assert.equal(view().props.group, 'operations'); assert.doesNotMatch(renderToStaticMarkup(tree), /Osparade formulärfält/);
   prevented = false; h.listeners.get('beforeunload')({ preventDefault() { prevented = true; }, returnValue: undefined }); assert.equal(prevented, false); h.unmount();
 });
 
@@ -837,7 +833,7 @@ test('POST and its reload block navigation and double writes; one-time results r
   for (const mode of ['same', 'different', 'mismatched']) {
     const h = harness(), posting = deferred(), pending = []; let written = false, writes = 0, sessions = 0, bodies = 0;
     const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
-    const props = { apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
+    const props = { initialGroup:'accounts', apiBase: '/studio/api/admin', readIdentity: 'response-headers-v1', availableActions: allActions,
       session: async () => { sessions++; return actor('admin'); }, fetchImpl: async (url, init) => {
         if (init.method === 'POST') { written = true; writes++; return posting.promise; }
         const action = url.split('/').at(-1);
@@ -873,7 +869,7 @@ test('POST and its reload block navigation and double writes; one-time results r
 
 test('saving one form preserves other drafts; double command cannot send two writes and passwords are cleared', async () => {
   const h = harness(); let writes = 0; let submitted;
-  const props = { apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
+  const props = { initialGroup:'accounts', apiBase: '/api/admin', availableActions: allActions, session: async () => actor('admin'), fetchImpl: async (url, init) => {
     if (init.method === 'POST') { ++writes; submitted = JSON.parse(init.body); return reply({ ok: true }); }
     return reply(url.endsWith('/config') ? config() : url.endsWith('/players') ? resources().players.payload : url.endsWith('/users') ? resources().users.payload : resources().overview.payload);
   } };
@@ -955,7 +951,7 @@ test('Backoffice password form confirms twice, clears both fields and excludes c
 test('password command is single dispatch, never stores the password and does not retry an uncertain failure', async () => {
   const h=harness();let writes=0,release,submitted;
   const waiting=new Promise(resolve=>{release=resolve;});
-  const props={apiBase:'/studio/api/admin',availableActions:allActions,session:async()=>actor('admin'),fetchImpl:async(url,init)=>{
+  const props={initialGroup:'accounts',apiBase:'/studio/api/admin',availableActions:allActions,session:async()=>actor('admin'),fetchImpl:async(url,init)=>{
     if(init.method==='POST'){++writes;submitted=JSON.parse(init.body);await waiting;return reply({error:'PRIVATE SERVER TEXT'},503);}
     const key=url.slice(url.lastIndexOf('/')+1);return reply(resources()[key]?.payload||resources().overview.payload);
   }};

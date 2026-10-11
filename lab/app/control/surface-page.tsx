@@ -3,6 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
+import { controlStudioSummary } from '../../lib/control-overview.mjs';
+import { defaultPresentationLane } from '../../lib/studio-model.mjs';
 import { controlToolPath } from '@/lib/control-workspace.mjs';
 import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-native-runtime.mjs';
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
@@ -24,7 +26,16 @@ function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null 
   return `${proto}://${safeHost}/partner/login`;
 }
 
-type ListedOperator = { id: string; slug: string; name: string };
+type ListedOperator = { id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null };
+
+async function controlSavedStudio() {
+  if (!nativeStudioAdminEnabled()) return null;
+  try {
+    const native = await studioNativeRuntime();
+    const { project } = await native.gamePolicy.readSaved();
+    return controlStudioSummary({ ...project, lanes: project.lanes?.length ? project.lanes : [defaultPresentationLane()] });
+  } catch { return null; }
+}
 
 // Demonstrations are explicit. A failed live read must never look like connected companies.
 async function controlOperators(fallback: ListedOperator[]) {
@@ -37,7 +48,7 @@ async function controlOperators(fallback: ListedOperator[]) {
     const operators: ListedOperator[] = [];
     for (const operator of listed) {
       if (!operator || typeof operator.id !== 'string' || typeof operator.slug !== 'string' || typeof operator.name !== 'string') throw new Error('operator_list_unavailable');
-      operators.push({ id: operator.id, slug: operator.slug, name: operator.name });
+      operators.push({ id: operator.id, slug: operator.slug, name: operator.name, ...(operator.publishedPackage === undefined ? {} : { publishedPackage: operator.publishedPackage }) });
     }
     return { operators, operatorStatus: 'live' as const };
   } catch {
@@ -87,8 +98,8 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
     // A missing fixture list is empty; live errors receive their own visible state.
     const fallback = (Array.isArray(data.snapshot.operators) ? data.snapshot.operators : [])
       .map(({ id, slug, name }: ListedOperator) => ({ id, slug, name }));
-    const companies = await controlOperators(fallback);
-    return <ControlWorkspace user={user} initialView={route.view} {...companies} />;
+    const [companies, studio] = await Promise.all([controlOperators(fallback), controlSavedStudio()]);
+    return <ControlWorkspace user={user} initialView={route.view} {...(studio ? { studio } : {})} {...companies} />;
   }
   if (route.operatorSlug === null) {
     return <PartnerWorkspace user={user}

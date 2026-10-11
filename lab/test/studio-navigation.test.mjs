@@ -204,13 +204,13 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const effects = [], paths = [], browser = { location: { hash: '#clips', replace: path => paths.push(path) },
     history: { replaceState: () => assert.fail('a real tool needs native navigation') },
     addEventListener: () => {}, removeEventListener: () => {} };
-  const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect) };
+  const hooks = { ...React, useState: initial => [initial, () => {}], useEffect: effect => effects.push(effect), useRef: current => ({ current }), useSyncExternalStore: (_subscribe, _get, getServerSnapshot) => getServerSnapshot() };
   const { ControlWorkspace } = loadComponent('control-workspace.tsx', { react: hooks }, browser);
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
   assert.match(html, /Sammansättning/);
-  assert.match(html, /Dealers &amp; klipp/);
+  assert.match(html, /Dealer &amp; klipp/);
   assert.match(html, /Publicering/);
-  assert.match(html, /Nivå 2 · Spelbolag/);
+  assert.match(html, /Bolagets arbetsyta/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();
   assert.deepEqual(paths, [labUrl('/control/clips#deal')]);
