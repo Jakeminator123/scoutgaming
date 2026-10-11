@@ -404,7 +404,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
       </>}
       {section === 'lanes' && <>
         {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('game-lane')}
-        <p className={styles.notice}>Välj presentation för nya Blackjack-spel. Pågående spel behåller sin lane.</p>
+        <p className={styles.notice}>Gemensamma grundinställningar för nya Blackjack-spel. Bolagets presentation och spelrum hanteras i Publicering. Pågående spel behåller sin konfiguration.</p>
         {config && <>
           <p>Aktiv lane: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
           {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" className={styles.inlineForm} onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
@@ -434,6 +434,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         </div>)}</>}
       </>}
       {section === 'dealers' && <>
+        <p className={styles.notice}>Standardval för den äldre indelningen classic, high och vip. Dealers i bolagens publicerade spelrum styrs av respektive presentation.</p>
         {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('tier')}
         {config && Object.entries(object(config.tiers) ?? {}).filter(([tier]) => ['classic', 'high', 'vip'].includes(tier)).map(([tier, dealer]) => <div className={styles.row} key={tier}>
           <div><strong>{tier}</strong><p>Dealer: {label(dealer)}</p></div>
@@ -691,14 +692,17 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     }
   }
 
+  const area = BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
+  const areaGroups = BACKOFFICE_GROUPS.filter(item => item.area === area);
   const pageTitle = group === 'accounts' ? 'Interna konton & spelare' : (BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration');
   useEffect(() => {
     publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
     return () => publishShellStatus(null);
   }, [dirty]);
   return <div className={styles.administration} aria-busy={busy}>
-    <PageTemplate eyebrow="// DRIFT" title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
+    <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
+    {group === 'media-review' && <div className={styles.contextLinks}><p>Granska inspelat tal mot exakt ljud och video. AI-småprat och spelhändelser har egna arbetsytor.</p><nav aria-label="Studioverktyg"><a href={labUrl('/control/clips')}>Dealers & klipp</a><a href={labUrl('/control/events')}>Spelhändelser & villkor</a><a href={labUrl('/control/probe')}>AI-småprat vid inaktivitet</a></nav></div>}
     {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum skapas i <a href={labUrl('/control/lanes')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>.</p>}
@@ -713,7 +717,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
       <button type="button" onClick={() => setOneTime(null)}>Dölj engångsresultat</button>
     </section>}
     {dirty && <div><p role="status">Osparade formulärfält. Omladdning behåller fälten och deras ursprungliga revision; den skriver inte över nyare serverändringar.</p><button type="button" disabled={busy} onClick={discardDrafts}>Kasta formulärutkast och läs om</button></div>}
-    {actor && <><nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper">{BACKOFFICE_GROUPS.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
+    {actor && <><nav className={`${styles.groups} sg-tabs`} aria-label="Backoffice-grupper"><span className={styles.areaLabel}>{area}</span>{areaGroups.map(item => <button type="button" key={item.id} aria-pressed={group === item.id} disabled={writing.current} onClick={() => changeGroup(item.id)}>{item.label}</button>)}</nav>
       <StudioAdministrationView key={`${group}-${editorEpoch}`} actor={actor} group={group} resources={resources} busy={busy} available={client.available} command={(action, body, form) => { void command(action, body, form); }} onReload={() => { void load(group); }} onDirty={form => { if (!draftForms.current.has(form)) draftForms.current.set(form, validRevision(resources.config?.payload?.revision) ? resources.config!.payload!.revision as string : undefined); changed.current = true; setDirty(true); }} />
     </>}
   </div>;

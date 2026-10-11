@@ -96,7 +96,7 @@ OpenClaw ändrar inte kort, regler, saldo eller utfall.
 | Term | Betydelse / plats |
 |---|---|
 | Operatör / bolag | Spelbolaget som tar emot tilldelade lane-paket från nivå 1; organisation med stabilt ID och läsbar slug. Administration → Bolag & team. |
-| Bord / spelrum | Bolagsägd spelresurs. Skapas från Publicering tillsammans med paketet. Drift → Bord & spelrum visar den tekniska administrationen. |
+| Bord / spelrum | Bolagsägd spelresurs. Skapas från Publicering tillsammans med paketet. Drift → Spelmotor & rum visar den tekniska administrationen. |
 | Medlemskap / rollprofil | Personens bolagskoppling och namngivna rättigheter. Administration → Bolag & team. |
 | Inbjudan / aktiveringslänk | Ny partner aktiveras via `/partner/set-password`; befintlig partner kopplas direkt. |
 | Partnersession | Inloggning på `/partner/login`; öppnar inte Kontrollrum. |
@@ -147,12 +147,13 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 | Övrig meny | Innehåll |
 |---|---|
-| Översikt | `/control`: snabbval och bolagsarbetsytor. |
+| Översikt | `/control`: dealer → sammansättning → publicering → spelrum, valt bolags publicering och nästa steg. |
 | AI & chatt | Agentmodeller; Operatörschatt är intern OpenClaw-chatt på `?tab=chat`. |
-| Drift | Bord & spelrum, Spelintegritet, Uppspelning, Betalningar & journal. |
-| Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Konton & roller, Partners; Guide & hjälp i sidfoten. |
+| Drift | Spelmotor & rum, Spelintegritet, Uppspelning, Betalningar & journal. |
+| Administration / hjälp | Bolag & team (`/control/lanes?tab=companies`), Interna konton & spelare, API & integrationer; Guide & hjälp i sidfoten. |
 
-Studio har tre huvudval: Dealers & klipp, Sammansättning och Publicering.
+Studio samlar Dealers & klipp, Talgranskning, Sammansättning och Publicering.
+Talgranskning bedömer exakt inspelat ljud/video; Händelser & villkor och AI-småprat är separata funktioner.
 Klippbibliotek, Händelser och AI-småprat vid inaktivitet nås som undervyer från Dealers & klipp.
 Sammansättning ersätter namnet Förhandsvisning;
 `/control/zones` och `/control/backgrounds` leder dit. Bakgrundszoner är ingen
@@ -164,8 +165,9 @@ aktiv menypunkt. Avancerade inställningar ligger under utfällbara fördjupning
 En slug ger ingen behörighet. Händelser visar översikt utan `?event=` och
 redigerare med `?event=`. `?variant=` används på Händelser och Klippbibliotek.
 `#idle`, `#deal`, `#clips` väljer Grundloop, Utdelning respektive Repliker. Administrationens sidomenylänkar
-väljer `?tab=tables|operations|finance|accounts`; inne på sidan finns även
-Partnernycklar och Talgranskning.
+väljer `?tab=tables|operations|finance|accounts|partners`. Flikarna på sidan
+visar bara samma arbetsområde. Talgranskning nås från Studio på den bevarade adressen
+`/control/administration?tab=media-review`; adressen ger inga extra rättigheter.
 
 Spelrum: `/play/blackjack?operator=<slug>&table=<rum-id>`. Render läser samma
 bolagspaket på `/blackjack?operator=<slug>&table=<rum-id>`. Äldre ingång utan

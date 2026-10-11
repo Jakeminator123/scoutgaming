@@ -43,84 +43,38 @@ function render(props) {
   return renderToStaticMarkup(React.createElement(ControlWorkspace, props));
 }
 
-test('overview lists fixture operators alphabetically and makes Dealers and clips primary with three Studio destinations', () => {
-  const operators = [...PARTNER_PREVIEW_OPERATORS].reverse().map(item => ({
-    id: item.id, slug: item.slug, name: item.name, privateField: 'never-pass',
-  }));
-  const html = render({ user: 'fixture-admin', operators, operatorStatus: 'demo' });
-  assert.match(html, /SG test game provider/);
-  assert.match(html, /href="\/partner\/sg-test"/);
-  assert.equal((html.match(/sg-btn-primary/g) ?? []).length, 1);
-  assert.match(html, /<a class="sg-btn sg-btn-secondary" href="\/partner\/demo-north">Öppna arbetsyta →<\/a>/);
-  assert.match(html, /<option value="demo-north" selected="">Demo North<\/option>/);
-  assert.doesNotMatch(html, /never-pass|\/studio\/partner/);
-  const list = html.slice(html.indexOf('operatorList'));
-  const order = ['Demo North', 'Demo South', 'SG test game provider'];
-  let cursor = -1;
-  for (const name of order) {
-    const at = list.indexOf(name);
-    assert.ok(at > cursor, name);
-    cursor = at;
-  }
-  assert.match(html, /<a class="sg-btn sg-btn-primary" href="\/control\/clips">/);
-  assert.match(html, /Dealers &amp; klipp/);
-  assert.match(html, /Publicering/);
-  assert.doesNotMatch(html, /Konfigurera spelets bord|N2\.4/);
-  assert.match(html, /href="\/control\/lanes"/);
-  assert.match(html, /Nivå 2 · Spelbolag/);
-  assert.match(html, /href="\/partner\/demo-north">Öppna spelbolagens arbetsytor →/);
-  assert.match(html, /Nivå 3 · Spelare/);
-  assert.match(html, /href="\/play">Öppna spelarytan →/);
-  assert.equal((html.match(/class="quickItem"/g) ?? []).length, 3);
+test('overview distinguishes shared preparation from company publication and explicit demonstration data', () => {
+  const operators = [...PARTNER_PREVIEW_OPERATORS].reverse().map(item => ({ id:item.id, slug:item.slug, name:item.name, privateField:'never-pass' }));
+  const html = render({ user:'fixture-admin', operators, operatorStatus:'demo' });
+  assert.match(html,/Demonstrationsbolag/); assert.match(html,/Utforska arbetsflödet/);
+  assert.doesNotMatch(html,/never-pass|Hämtad från spellobbyn|href="\/play\?operator=/);
+  for (const title of ['Dealer &amp; klipp','Sammansättning','Publicering','Spelrum']) assert.match(html,new RegExp('<h3>'+title+'</h3>'));
+  assert.ok(html.indexOf('Demo North')<html.indexOf('Demo South'));
+  assert.match(html,/Partnerinloggning och aktivt medlemskap krävs/);
+  assert.match(html,/href="\/control\/administration\?tab=media-review"/);
 });
-
-test('overview without operators shows an empty company list and keeps the level links', () => {
-  const html = render({ user: 'fixture-admin', operatorStatus: 'live' });
-  assert.match(html, /Anslutna bolag/);
-  assert.match(html, /Inga bolag ännu\./);
-  assert.doesNotMatch(html, /<select|Öppna arbetsyta/);
-  assert.match(html, /href="\/partner">Öppna spelbolagens arbetsytor →/);
-  assert.match(html, /href="\/play">Öppna spelarytan →/);
-  assert.equal((html.match(/sg-btn-primary/g) ?? []).length, 1);
+test('an unavailable list is not presented as empty or as a demonstration', () => {
+  const html=render({user:'admin',operatorStatus:'unavailable',operators:[{id:'secret',slug:'secret',name:'Private company'}]});
+  assert.match(html,/Bolagslistan kunde inte hämtas/); assert.doesNotMatch(html,/Private company|Inga bolag ännu|Anslutna bolag · 0|<select/);
+  const empty=render({user:'admin',operatorStatus:'live',operators:[]});
+  assert.match(empty,/Börja med ett bolag/);assert.match(empty,/Skapa bolag/);assert.doesNotMatch(empty,/kunde inte hämtas/);
 });
-
-
-test('live, empty, unavailable and demonstration company states are visibly distinct', () => {
-  const operators = [{ id: 'real', slug: 'real', name: 'Real Company' }];
-  const live = render({ user: 'internal-admin', operators, operatorStatus: 'live' });
-  assert.match(live, /Anslutna bolag/);
-  assert.match(live, /href="\/play\?operator=real"/);
-  assert.match(live, /förhandsvisning.*partnerinloggning och aktivt medlemskap/);
-  assert.match(live, /href="\/partner\/login"/);
-  const demo = render({ user: 'internal-admin', operators, operatorStatus: 'demo' });
-  assert.match(demo, /Demonstrationsbolag/);
-  assert.doesNotMatch(demo, /Anslutna bolag|\/play\?operator=/);
-  const failure = render({ user: 'internal-admin', operators, operatorStatus: 'unavailable' });
-  assert.match(failure, /Bolagslistan kunde inte hämtas/);
-  assert.doesNotMatch(failure, /Real Company|Inga bolag ännu|<select/);
-  const empty = render({ user: 'internal-admin', operators: [], operatorStatus: 'live' });
-  assert.match(empty, /Inga bolag ännu/);
-  assert.doesNotMatch(empty, /kunde inte hämtas|Demonstration/);
-});
-
-test('changing the selected live company updates both level links without carrying demos into player context', () => {
-  let selected, setSelected;
-  const hooks = { ...React, useEffect() {}, useState: initial => {
-    selected ??= initial;
-    setSelected = value => { selected = value; };
-    return [selected, setSelected];
-  } };
-  const { ControlWorkspace: InteractiveWorkspace } = loadTs(new URL('../components/control-workspace.tsx', import.meta.url), { react: hooks });
-  const props = { user: 'internal-admin', operatorStatus: 'live', operators: [{ id: 'north', slug: 'north', name: 'North' }, { id: 'south', slug: 'south', name: 'South' }] };
-  const first = InteractiveWorkspace(props);
-  let select;
-  const visit = node => { if (!node || typeof node !== 'object') return; if (Array.isArray(node)) return node.forEach(visit); if (node.type === 'select') select = node; visit(node.props?.children); };
-  visit(first);
-  select.props.onChange({ target: { value: 'south' } });
-  const html = renderToStaticMarkup(InteractiveWorkspace(props));
-  assert.match(html, /href="\/play\?operator=south"/);
-  assert.match(html, /href="\/partner\/south">Öppna spelbolagens arbetsytor/);
-  assert.doesNotMatch(html, /\/play\?operator=north/);
+test('company links use the internal id for publication, the slug for players, and hide stale room data immediately', () => {
+  let selected=null;
+  const oldData={key:'north-slug',status:'ready',data:{packageRevision:3,rooms:[{id:'room-north',name:'North room',presentation:{id:'standard',label:'Standard'},dealers:[],playUrl:'/play/blackjack?operator=north-slug&table=room-north'}]}};
+  const hooks={...React,useEffect(){},useState:initial=>[selected??initial,value=>{selected=value;}],useRef:()=>({current:null}),useSyncExternalStore:()=>oldData};
+  const {ControlWorkspace:Interactive}=loadTs(new URL('../components/control-workspace.tsx',import.meta.url),{react:hooks});
+  const props={user:'admin',operatorStatus:'live',operators:[{id:'north-id',slug:'north-slug',name:'North'},{id:'south-id',slug:'south-slug',name:'South'}]};
+  let select; const visit=node=>{if(!node||typeof node!=='object')return;if(Array.isArray(node))return node.forEach(visit);if(node.type==='select')select=node;visit(node.props?.children);};
+  visit(Interactive(props));
+  let replaced; globalThis.window={location:{search:'?other=keep',pathname:'/control',hash:''},history:{replaceState(_s,_t,url){replaced=url;}}};
+  try {select.props.onChange({target:{value:'south-id'}});}finally{delete globalThis.window;}
+  const html=renderToStaticMarkup(Interactive(props));
+  assert.match(replaced,/operator=south-id/);assert.match(replaced,/other=keep/);
+  assert.match(html,/href="\/control\/lanes\?operator=south-id"/);
+  assert.match(html,/href="\/partner\/south-slug"/);
+  assert.doesNotMatch(html,/North room|room-north|Hämtad från spellobbyn/);
+  assert.match(html,/Hämtar bolagets publicering/);
 });
 
 test('built-in guide describes published company design and the current room publication workflow', () => {

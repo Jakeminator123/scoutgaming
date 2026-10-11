@@ -7,6 +7,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
     label: 'Studio',
     items: Object.freeze([
       Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
+      Object.freeze({ href: '/control/administration?tab=media-review', label: 'Talgranskning' }),
       Object.freeze({ href: '/control/preview', label: 'Sammansättning' }),
       Object.freeze({ href: '/control/lanes', label: 'Publicering' }),
     ]),
@@ -15,7 +16,7 @@ export const SCOUT_NAVIGATION = Object.freeze([
     id: 'operations',
     label: 'Drift',
     items: Object.freeze([
-      Object.freeze({ href: '/control/administration?tab=tables', label: 'Bord & spelrum' }),
+      Object.freeze({ href: '/control/administration?tab=tables', label: 'Spelmotor & rum' }),
       Object.freeze({ href: '/control/activity', label: 'Uppspelning' }),
       Object.freeze({ href: '/control/administration?tab=operations', label: 'Spelintegritet' }),
       Object.freeze({ href: '/control/administration?tab=finance', label: 'Betalningar & journal' }),
@@ -104,9 +105,8 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   }
   if (mapped.path === '/control/administration') {
     const tab = params.get('tab');
-    if (tab === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
     // The administration page defaults to operations for an absent or unknown tab.
-    if (!['tables', 'operations', 'finance', 'accounts', 'partners'].includes(tab)) params.set('tab', 'operations');
+    if (!['tables', 'operations', 'finance', 'accounts', 'partners', 'media-review'].includes(tab)) params.set('tab', 'operations');
   }
   const matches = items.filter(item => {
     const parts = hrefParts(item.href);

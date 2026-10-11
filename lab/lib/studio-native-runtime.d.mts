@@ -19,7 +19,7 @@ export interface NativeStudioRuntime {
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
   layerUploads?: NativeStudioRuntime['uploads'];
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
-  listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string }>>;
+  listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null }>>;
   listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;
 }
 export interface OperatorDirectoryRole { id: string; label: string; permissions: string[]; delegable: boolean }

@@ -4,7 +4,7 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Dealers & klipp**, **Sammansättning** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Dealers & klipp**, **Talgranskning**, **Sammansättning** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn låter dig välja bland bolag som har spelbara publicerade rum. `?operator=` öppnar bolagets rum direkt. Vercels `/play/blackjack` utan valt spelmål går till lobbyn; enbart `?operator=` går till bolagets lobby. Rummets startlänk begränsar dealer och miljö till paketet. Renders direkta `/blackjack?operator=` behåller sin spelväg. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
@@ -307,6 +307,14 @@ Driftens aktiverade funktioner och återstående liveprov följs i
 [molnstatusen](../../docs/CLOUD-MIGRATION.md).
 För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
 stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
+
+## Översikt och rätt arbetsyta
+
+**Översikt** på /control visar arbetsgången **dealer → sammansättning → publicering → spelrum**. Välj ett bolag för nästa steg, öppna rum, valbara dealers och paketversion. Bolagets status kommer från samma publicerade rumslista som spellobbyn; sparade Studioändringar räknas separat och är inte automatiskt publicerade. Ett anslutningsfel visas som okänd status, aldrig som noll spelrum. **Uppdatera status** hämtar en ny bild. Bolagsvalet följer länkarna till publicering och team.
+
+**Studio** innehåller även Talgranskning: manuell bedömning av ett exakt ljud- och videopar. Ändrade filer ogiltigförklarar den tidigare bedömningen. **Spelhändelser & villkor** styr när inspelade klipp används; **AI-småprat vid inaktivitet** är ett separat flöde. Händelsekopplingar och äldre 2D-klipp är fortfarande aktiva i uppspelning/validering och har inte tagits bort.
+
+**Drift** samlar spelmotor, kortlek/spelintegritet, uppspelning och betalningsjournal. **Administration** samlar bolag/team, interna konton/spelare och API/integrationer. Flikarna inne på respektive sida visar bara det aktuella arbetsområdet. Standarddealer för classic/high/vip hör till den äldre bordsindelningen; bolagens publicerade spelrum styrs av sina presentationer.
 
 ## Grundloop och händelseklipp
 

@@ -20,8 +20,8 @@ const { transformSync } = require('next/dist/build/swc');
 test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
   assert.deepEqual(groups.map(group => group.label), ['Studio', 'Drift', 'AI & chatt', 'Administration']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/clips', 'Dealers & klipp'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
-    [['/control/administration?tab=tables', 'Bord & spelrum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/administration?tab=media-review', 'Talgranskning'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
+    [['/control/administration?tab=tables', 'Spelmotor & rum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
     [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Interna konton & spelare'], ['/control/administration?tab=partners', 'API & integrationer']],
   ]);
@@ -63,7 +63,7 @@ test('active item resolves public and native paths with content aliases and the 
       ['/control/administration', 'Spelintegritet'], ['/control/zones', 'Sammansättning'],
       ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Dealers & klipp'],
       ['/control/administration?tab=not-a-group', 'Spelintegritet'],
-      ['/control/administration?tab=media-review', 'Dealers & klipp'],
+      ['/control/administration?tab=media-review', 'Talgranskning'],
     ]) {
       assert.equal(scoutNavigationItem(path, base)?.label, label, path);
       assert.equal(scoutNavigationItem(`${base}${path}`, base)?.label, label, `${base}${path}`);
@@ -133,7 +133,7 @@ test('query-specific links win without losing the chat alias or selecting public
     ['/control/operator-chat', 'Operatörschatt'], ['/control/lanes?lane=t10', 'Publicering'],
     ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
     ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
-    ['/control/administration?tab=tables', 'Bord & spelrum'],
+    ['/control/administration?tab=tables', 'Spelmotor & rum'],
     ['/control/administration?tab=operations', 'Spelintegritet'],
     ['/control/administration?tab=finance', 'Betalningar & journal'],
     ['/control/administration?tab=accounts', 'Interna konton & spelare'],
@@ -149,7 +149,7 @@ test('reload on a deep route expands only its work group and marks exactly one s
   for (const [pathname, search, groupId, label] of [
     ['/control/preview', 'lane=t10', 'studio', 'Sammansättning'],
     ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Dealers &amp; klipp'],
-    ['/control/administration', 'tab=tables', 'operations', 'Bord &amp; spelrum'],
+    ['/control/administration', 'tab=tables', 'operations', 'Spelmotor &amp; rum'],
     ['/control/openclaw', 'tab=chat&dealer=astrid', 'ai', 'Operatörschatt'],
     ['/control/lanes', 'tab=companies&lane=t10', 'administration', 'Bolag &amp; team'],
   ]) {
