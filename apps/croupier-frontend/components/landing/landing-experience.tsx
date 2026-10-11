@@ -74,7 +74,7 @@ export function LandingLogo() {
 export function LandingHero() {
   const effects = useContext(DesktopContext)
   return effects ? <effects.HeroCard /> : (
-    <Link href="/demo" aria-label="Öppna blackjackpiloten med Astrid"
+    <Link href="/play" aria-label="Välj bolag, spelrum och dealer"
       className="relative block w-full max-w-sm overflow-hidden rounded-2xl border border-off/20 bg-ink">
       {/* A still image needs neither an autoplay decoder nor a 3D compositing layer. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,8 +82,8 @@ export function LandingHero() {
         alt="Astrid vid blackjackbordet" className="aspect-[2/3] w-full object-cover" />
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink to-transparent px-6 pt-16 pb-6">
         <p className="font-mono text-xs tracking-widest text-lime uppercase">Blackjackpilot</p>
-        <p className="mt-2 text-3xl font-semibold text-off">Astrid</p>
-        <span className="mt-4 inline-flex min-h-11 items-center rounded-full bg-lime px-5 text-sm font-semibold text-ink">Öppna bordet →</span>
+        <p className="mt-2 text-3xl font-semibold text-off">Hitta ditt bord</p>
+        <span className="mt-4 inline-flex min-h-11 items-center rounded-full bg-lime px-5 text-sm font-semibold text-ink">Välj bolag →</span>
       </div>
     </Link>
   )

@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { gameUrl } from "@/lib/game-url"
 
 export function SiteHeader() {
   return (
@@ -11,7 +10,7 @@ export function SiteHeader() {
             scout<span className="text-lime">/</span>gaming
           </span>
           <span className="hidden font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase sm:inline">
-            {"// Astrid · Blackjack"}
+            {"// Blackjack · Spellobby"}
           </span>
         </Link>
         <nav aria-label="Huvudmeny" className="flex items-center gap-8">
@@ -24,7 +23,7 @@ export function SiteHeader() {
             <li><Link href="/about" className="transition-colors hover:text-foreground">Om oss</Link></li>
           </ul>
           <Button asChild size="sm" className="min-h-11 bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
-            <a href={gameUrl()}>Öppna bordet</a>
+            <Link href="/play">Välj bolag</Link>
           </Button>
         </nav>
       </div>

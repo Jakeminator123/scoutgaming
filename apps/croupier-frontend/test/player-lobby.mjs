@@ -6,7 +6,7 @@ import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import {validatePublicOperatorRooms} from '../../../web/public/operator-rooms-contract.mjs';
-import {loadOperatorCatalogue,loadRoomCatalogue,roomSelection,roomLaunch,rememberRoomSelection} from '../lib/player-lobby.mjs';
+import {loadOperatorCatalogue,loadRoomCatalogue,roomSelection,roomLaunch,rememberRoomSelection,demoLobbyPath} from '../lib/player-lobby.mjs';
 
 const table1='11111111-1111-4111-8111-111111111111',table2='22222222-2222-4222-8222-222222222222';
 const background1='33333333-3333-4333-8333-333333333333',background2='44444444-4444-4444-8444-444444444444';
@@ -145,21 +145,39 @@ test('operator chooser loads only the minimal published directory and fails clos
   assert.deepEqual(await loadOperatorCatalogue({fetchImpl:async()=>{throw Error('offline');}}),{status:'unavailable'});
 });
 
-test('actual operator chooser distinguishes loading, empty, unavailable and explicit selection without starting a game',()=>{
+test('company cards distinguish loading, empty and unavailable states and require explicit selection',()=>{
   const render=state=>renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:null,onChoose(){},onRetry(){}}));
   assert.match(render({status:'loading'}),/role="status".*Hämtar spelbolag/);
   assert.match(render({status:'ready',operators:[]}),/Inga spelbolag har öppna spelrum/);
   assert.match(render({status:'unavailable'}),/role="alert".*Spelbolagen kan inte hämtas/);
   assert.match(render({status:'unavailable'}),/>Hämta bolagen igen</);
   const state={status:'ready',operators:[{slug:'johns-spelbolag',name:'Johns spelbolag'},{slug:'sg-test',name:'SG test'}]};
-  const html=render(state);assert.match(html,/Välj spelbolag/);assert.match(html,/<option value="" disabled="" selected="">/);
-  assert.match(html,/<option value="sg-test">SG test/);assert.doesNotMatch(html,/<a |player_session|bo_jwt/);
-  const scoped=renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:state.operators[1],onChoose(){},onRetry(){}}));
-  assert.match(scoped,/<option value="sg-test" selected="">SG test/);
-  const choices=[];const element=PlayerOperatorChooser({state,current:null,onChoose:slug=>choices.push(slug),onRetry(){}});
-  const select=React.Children.toArray(element.props.children).find(child=>child.type==='select');
-  select.props.onChange({target:{value:'sg-test'}});
-  assert.deepEqual(choices,['sg-test']);
+  const html=render(state);assert.match(html,/Välj spelbolag/);assert.match(html,/Utforska spelrummen/);
+  assert.match(html,/SG test/);assert.doesNotMatch(html,/<a |player_session|bo_jwt|play\/blackjack/);
+  const choices=[],element=PlayerOperatorChooser({state,current:null,onChoose:slug=>choices.push(slug),onRetry(){}});
+  function walk(node){return React.isValidElement(node)?[node,...React.Children.toArray(node.props.children).flatMap(walk)]:[];}
+  const buttons=walk(element).filter(child=>child.type==='button');
+  buttons[1].props.onClick();assert.deepEqual(choices,['sg-test']);
+  const filtered=renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:null,filter:'Johns',onChoose(){},onRetry(){}}));
+  assert.match(filtered,/Johns spelbolag/);assert.doesNotMatch(filtered,/SG test/);
+  const missing=renderToStaticMarkup(React.createElement(PlayerOperatorChooser,{state,current:null,filter:'missing',onChoose(){},onRetry(){}}));
+  assert.match(missing,/Inget spelbolag matchar/);
+});
+
+test('demo links preserve only one valid operator and never select an arbitrary game or launch',()=>{
+  assert.equal(demoLobbyPath(),'/play');
+  assert.equal(demoLobbyPath({operator:'sg-test',dealer:'paow',launch:'untrusted',returnTo:'https://evil.invalid'}),'/play?operator=sg-test');
+  for(const operator of [['sg-test','other'],'bad/company','https://evil.invalid','',undefined])
+    assert.equal(demoLobbyPath({operator}),'/play');
+});
+
+test('room chooser renders all published rooms but configures only the selected room',()=>{
+ const catalog=fixture(),second=structuredClone(catalog.rooms[0]);second.id='room-two';second.name='Andra rummet';
+ second.playUrl='/play/blackjack?operator=johns-spelbolag&table=room-two';catalog.rooms.push(second);
+ const html=renderToStaticMarkup(React.createElement(PlayerRoomCatalogue,{catalog,directPlay:true}));
+ assert.match(html,/Andra rummet/);assert.match(html,/aria-pressed="true"/);
+ assert.equal((html.match(/<article/g)||[]).length,1);
+ assert.match(html,/table=room-johanna/);assert.doesNotMatch(html,/table=room-two/);
 });
 
 test('lobby includes a separate administrator preview link without changing the published room launch',()=>{
@@ -170,4 +188,11 @@ test('lobby includes a separate administrator preview link without changing the 
   const html=renderToStaticMarkup(React.createElement(PlayerAreaDocument,{model}));
   assert.match(html,/href="\/control\/preview"[^>]*>Provspela i Sammansättning/);
   assert.match(html,/separat testsaldo/);assert.doesNotMatch(html,/studio-preview\/[a-f0-9]|api\/auth\/bo/);
+});
+
+test('demo route actually redirects to the shared lobby and retains operator context',async()=>{
+ const {default:DemoPage}=load(resolve(root,'app/demo/page.tsx'));
+ for(const [query,path] of [[{},'/play'],[{operator:'sg-test'},'/play?operator=sg-test'],[{operator:['sg-test','other']},'/play']]){
+  await assert.rejects(()=>DemoPage({searchParams:Promise.resolve(query)}),error=>error.digest==='NEXT_REDIRECT;replace;'+path+';307;');
+ }
 });

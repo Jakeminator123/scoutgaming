@@ -2,7 +2,7 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
-**Status:** Jakob har därefter beställt förenklad bolagsadministration och ett gemensamt dealerbibliotek. Arbetet har samordnats mellan administrationschatten, dealerchatten och lobbychatten. Lobbygranskningen var skrivskyddad. Den tidigare leveransen c48c6754 är fortsatt baslinje; nedanstående tillägg beskriver den nya leveransen.
+**Status:** Jakob har därefter beställt förenklad bolagsadministration och ett gemensamt dealerbibliotek. Arbetet har samordnats mellan administrationschatten, dealerchatten och lobbychatten. Den ursprungliga lobbygranskningen var skrivskyddad; Jakob har därefter beställt en separat förbättring av den publika lobbyn. Den tidigare leveransen c48c6754 är fortsatt baslinje; nedanstående tillägg beskriver den nya leveransen.
 
 Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.
 
@@ -15,6 +15,12 @@ Spelrum visas före paketurvalet. Nytt rum publicerar vald presentation i samma 
 Verifierat: 110 riktade tester, TypeScript, gemensamt Next-produktionsbygge med fyra workers och kontroll av 77 byggspår. Verklig lokal routing behåller bolaget och ger inga konsolfel. Layout med fiktiv SSR-data granskad i mörkt/ljust tema och vid 390 CSS-pixlar. Det isolerade serverparet använder tom testdatabas och avstängda externa tjänster; bolagsteamets layoutprov är inte ett kvitto på produktionsinbjudningar. Ingen riktig inbjudan, kontoändring eller paketpublicering utfördes.
 
 Dealerchatten levererar separat det gemensamma biblioteket för registrerade dealers, kategorier och upp till 50 filer per intag. Blandade MP4/WebM och MP3/WAV granskas och mappas individuellt; ljud kräver exakt talreplik och ersätter inte lipsynkad talvideo. Återställbar borttagning skyddar sparade användningar. Nya dealer-/klippmetadata ägs av Neon och bytes av privat Blob; gemensam runtime-metadata finns i media/catalog. Befintliga inspelade bytes är oförändrade. Se teknisk detalj och kvarstående mediaacceptans i LOCAL-PRESENTATION-RUNTIME.md.
+
+### Publik bolagslobby, 11 oktober 2026
+
+Startsidan och dess statiska/animerade spelkort leder nu till /play med Välj bolag. /demo omdirigerar till samma lobby och bevarar endast en giltig operator-parameter. Den generella ingången visar alltid bolagsval; lokalt sparat bolag hoppar inte över steget. Därefter väljs publicerat rum, tilldelad dealer och tillåtna miljöval. Layouten är inspirerad av Kevins Table Studio, men ingen Kevin-inloggning, bordslagring, API, spelmotor, talvideo eller konfiguration har importerats. Befintliga publika katalog- och spelstartskontrakt består. Illustration och valsammanfattning påstår inte att vara en exakt medieförhandsvisning; privata medieadresser exponeras inte.
+
+Verifierat före commit: 84 frontendtester, explicit TypeScript-kontroll och Next-produktionsbygge. En kortlivad frontend-fixture använde endast fiktiva GET-svar och ingen DB/spelmotor: /demo behöll operator, bolags-/rums-/dealerbyte och pilknappar fungerade, fullframe dolde miljöval, /play visade bolagsval trots sparat bolag, 390 CSS-pixlar hade ingen horisontell overflow och konsolen var felfri. Fixtureprocesserna är stoppade. audit-dealer-sync --probe passerade baslinjen för alla fyra befintliga dealeruppsättningar; detta är inte ny mänsklig läppsynksacceptans. Arbetet är samordnat med LANDES/BOLAG och CARTESIA och omfattar bara publika frontendfiler samt denna handoff. Inga produktionsbolag, rum, konton, paket eller mediabytes ändras av lobbyarbetet.
 
 ### Molnkopplingar och lokal env kontrollerade 11 oktober 2026
 

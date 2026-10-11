@@ -9,3 +9,5 @@ export function rememberRoomSelection(storage:Pick<Storage,'getItem'|'setItem'|'
 export type PublicOperator={slug:string;name:string};
 export type OperatorCatalogueResult={status:'ready';operators:PublicOperator[]}|{status:'unavailable'};
 export function loadOperatorCatalogue(options?:{fetchImpl?:typeof fetch;signal?:AbortSignal}):Promise<OperatorCatalogueResult>;
+
+export function demoLobbyPath(params?:Record<string,string|string[]|undefined>):string;
