@@ -93,3 +93,23 @@ test('portable v3 parser rejects getter-backed authority or decorated arrays wit
   }
   assert.equal(called,0);
 });
+
+
+test('v3 binding admits a frozen Johanna default on an existing Amira portrait lane but keeps legacy and missing-lane guards', () => {
+  const presentation = captureFrozenPresentation(fixture()).presentation;
+  const room = { schemaVersion:2, id:'room-existing', name:'Existing', operatorId:'north', presentationLaneId:presentation.lanes[0].id, gameLaneId:'old-amira', state:'live' };
+  const game = {schemaVersion:1,id:room.gameLaneId,label:'Amira',renderer:'portrait-video',dealer:'amira',mediaCollection:'amira-presentation'};
+  const input = { administration:{gameLane:game.id,gameLanes:[game],rooms:[room]}, operatorId:'north', currentPackage:{tables:[room.id]}, presentation };
+  assert.doesNotThrow(() => assertPublishedRoomBindings(input));
+  for (const change of [
+    value => { value.administration.gameLanes=[]; value.administration.gameLane=null; },
+    value => { value.administration.gameLanes[0]={...game,renderer:'indexed-video',mediaCollection:'legacy-dealers'}; },
+    value => { value.presentation.schemaVersion=2; delete value.presentation.playback; },
+    value => { value.presentation.lanes[0].layers.dealer.default='unknown'; },
+    value => { value.presentation.registeredDealers[0].idle=null; },
+  ]) {
+    const invalid=structuredClone(input);change(invalid);
+    assert.throws(() => assertPublishedRoomBindings(invalid), error => error.statusCode===409);
+  }
+  assert.equal(input.administration.rooms[0].gameLaneId, 'old-amira');
+});

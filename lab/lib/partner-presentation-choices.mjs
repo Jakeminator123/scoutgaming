@@ -12,7 +12,7 @@ export function partnerPresentationDealerChoices({administration,package:pack,pr
   return Object.fromEntries(presentation.lanes.map(presentationLane=>{
     const lanes=rooms.filter(room=>room.state==='live'&&room.presentationLaneId===presentationLane.id)
       .map(room=>gameLanes.find(lane=>lane.id===room.gameLaneId))
-      .filter(lane=>isPresentationRoomLaneCompatible(lane,presentationLane));
+      .filter(lane=>isPresentationRoomLaneCompatible(lane,presentationLane,presentation));
     const choices=lanes.map(lane=>gameChoicesForLane(presentation.lanes,presentationLane.id,lane,{portraitDealerIds}).dealers);
     return [presentationLane.id,choices.length?presentationLane.layers.dealer.allowed.filter(id=>choices.every(list=>list.includes(id))):[]];
   }));

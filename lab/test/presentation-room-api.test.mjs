@@ -621,3 +621,16 @@ test('unknown internal conflicts remain generic and never reflect raw errors or 
   assert.equal(ready.reason, 'presentation_package_conflict'); assert.equal(ready.conflictCode, null);
   assert.doesNotMatch(JSON.stringify(ready), /private diagnostic|private-code/); assert.deepEqual(f.pool.snapshot(), before);
 });
+
+
+test('room preflight accepts a saved v3 allowed default change on the existing Amira room without writes', async () => {
+  const f=await registeredFixture(), saved=await f.repository.readDocument('project'), lane=saved.value.lanes.find(row=>row.id===f.lane.id);
+  lane.dealers=['amira','johanna'];lane.layers.dealer={enabled:true,default:'amira',allowed:['amira','johanna']};
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
+  const created=await f.create(await f.registeredPayload()), changed=await f.repository.readDocument('project');
+  changed.value.lanes.find(row=>row.id===f.lane.id).layers.dealer.default='johanna';
+  await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:session.user});
+  const before=f.pool.snapshot(), ready=await f.prepare('north',f.lane.id);
+  assert.equal(ready.ready,true);assert.equal(ready.conflictCode,null);assert.equal(ready.rooms[0].id,created.room.id);
+  assert.deepEqual(f.pool.snapshot(),before);
+});

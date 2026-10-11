@@ -177,7 +177,7 @@ test('unreadable or inconsistent published runtime fails closed without returnin
     const f=fixture();let api=f.api;
     if(mode==='digest')f.state.pack.branding._scoutPresentation={...f.state.pack.branding._scoutPresentation,sha256:'b'.repeat(64)};
     if(mode==='owner')f.state.pack.operatorId='someone-else';
-    if(mode==='renderer'){f.state.administration.gameLanes[0].dealer='nora';f.state.administration.gameLanes[0].mediaCollection='nora-presentation';}
+    if(mode==='renderer'){Object.assign(f.state.administration.gameLanes[0],{renderer:'indexed-video',dealer:'amira',mediaCollection:'legacy-dealers'});}
     if(mode==='duplicate-room')f.state.administration.rooms.push({...f.room});
     if(mode==='no-policy')api=createPublicOperatorRooms();
     const res=await request(api);assert.equal(res.status,503,mode);assert.deepEqual(JSON.parse(res.body),{error:'operator_rooms_unavailable'});
@@ -213,4 +213,13 @@ test('portable public decoder rejects wrong origin/context, extra/private fields
   let getterCalled=false;const accessor=structuredClone(original);
   Object.defineProperty(accessor.operator,'name',{enumerable:true,get(){getterCalled=true;return 'secret';}});
   assert.throws(()=>validatePublicOperatorRooms(accessor));assert.equal(getterCalled,false);
+});
+
+test('v3 catalogue retains the same room and grants when its frozen default differs from its portrait anchor',async()=>{
+  const f=fixture(),before=structuredClone(f.state.pack);
+  Object.assign(f.state.administration.gameLanes[0],{dealer:'amira',mediaCollection:'amira-presentation'});
+  const value=await f.api.read('north');assert.equal(value.rooms.length,1);
+  assert.equal(value.rooms[0].id,f.room.id);assert.equal(value.rooms[0].dealerDefault,'nora','existing company choice keeps precedence');
+  assert.deepEqual(value.rooms[0].dealers.map(row=>row.id),['johanna','nora','amira','astrid']);
+  assert.deepEqual(f.state.pack,before);
 });

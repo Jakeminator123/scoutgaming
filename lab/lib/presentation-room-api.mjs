@@ -101,7 +101,7 @@ function mergePresentation(current, selected) {
 function assertReplayBinding(saved, room) {
   const frozen = readPackagePresentation(saved.pack), presentation = frozen?.lanes.find(lane => lane.id === room.presentationLaneId);
   const gameLane = gameLaneConfiguration(saved.administration).gameLanes.find(lane => lane.id === room.gameLaneId);
-  if (!isPresentationRoomLaneCompatible(gameLane, presentation)) fail(409);
+  if (!isPresentationRoomLaneCompatible(gameLane, presentation, frozen)) fail(409);
   const dealer = presentation.layers.dealer.default;
   if ([2,3].includes(frozen.schemaVersion) && !BASE_DEALER_IDS.includes(dealer)
     && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed })) fail(409);
