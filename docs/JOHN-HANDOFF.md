@@ -1,4 +1,166 @@
 # Aktuell handoff — Scoutgaming
+
+## Börja här: överlämning 11 oktober 2026
+
+**Status:** Studio-/dealer-/paket-/rumsflödet i denna etapp är levererat. Senaste produktkod är `c48c6754baeda6f3346cca7d0aa149b69b1e5c27`, pushad till GitHub main och verifierad live på både Vercel och Render. Den här dokumentationsuppdateringen tillför inga produktändringar. Jakob vill avsluta arbetet och låta nästa agent ställa eventuella överlämningsfrågor, inte starta fler funktionsbyggen automatiskt.
+
+Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.
+
+### Målbild och ansvar som Jakob har fastställt
+
+- **N1 /control:** vi äger dealers, deras klipp och händelse-/grundloopsregler, bord, bakgrunder, sammansättningar och bolagens tilldelade paket.
+- **N2 /partner:** bolagets personal granskar sitt paket och ändrar endast uttryckligen tillåtna mindre val. API och partnerbehörighet ska följa samma bolagsgräns. N2 äger inte dealerns sekvenslogik.
+- **N3 /play:** välj bolag, publicerat spelrum och tillåtna dealer-/miljöval, öppna blackjack.
+- **Tre lager:** dealer reagerar på spelhändelser med sin egen klipplogik; bordet är en statisk bild; bakgrunden är en bild eller en egen loopande film. Fullbildsfilmer behåller den miljö som redan finns i filmen. Separata lager kräver frilagd/greenscreen dealerfilm.
+- **Johannas enda grundloop räcker för första funktionstestet.** Skapa inte 20–40 testklipp. Fler inspelningar, långtidstest och visuell läppsynkacceptans är separata uppgifter.
+- Förenkling är styrande: återanvänd befintliga sidor, spelmotor och publicering. Tekniska ID:n ska normalt vara automatiska; namn och sparade val ska väljas i UI.
+
+```text
+Dealers & klipp: dealer + grundloop + valfria händelseklipp
+                         +
+Sammansättning: bord + bakgrund + placering + tillåtna alternativ
+                         ↓
+                    Spara → Provspela
+                         ↓
+Publicering: bolag + presentationer → publicera paket
+                         ↓
+                Återanvänd/skapa spelrum
+                         ↓
+/play: välj bolag → rum → dealer/miljö → blackjack
+```
+
+**Dealer** är identiteten med egna filmer. **Sammansättning/presentation** är scenens standardval, tillåtna alternativ och geometri. **Partnerpaket** är en fryst publicerad version av bolagets tilldelning. **Spelrum** är den spelbara ingången. **Spellane** är en intern spelkonfiguration, inte en extra dealer eller ett fjärde videolager. Dealerbibliotekets fem dealers betyder inte fem publicerade rum.
+
+### Vad vi har genomfört
+
+| Område | Slutligt resultat |
+| --- | --- |
+| Studioflöde | Dealers & klipp → Sammansättning → Publicering. Sammansättning är enda presentationseditorn. Vald dealer/presentation följer länkarna. Namnbyte behåller identiteten. Bord/bakgrund laddas upp i respektive lagerpanel. |
+| Egna dealerhändelser | Paket v3 fryser egna dealers explicit sparade händelsekopplingar, klipp, mediahashar, greenscreeninställningar och valfria idlepolicy. Paket v1/v2 läses fortsatt; äldre egna v2-dealers behöver återpublicering för händelseklippen. En film enbart i biblioteket följer inte med utan koppling. |
+| Gemensam uppspelning | Dealer börjar i grundloop och återgår dit efter eget händelseklipp. Saknat positionsklipp stoppar inte kortspelet och lånar aldrig en annan dealers film. Regler/Automatik/OpenClaw använder tillåtna sparade kopplingar; runtime kräver capability v4 för v3-paket. |
+| Rätt dealer | Amira/Vera/Mei använder rätt originalmotor; Astrid och egna dealers använder lokal spelare. Val behåller bolag, rum, lane och revision. Tom Amira-scen och återfall till standarddealer rättades. |
+| Rum och publicering | Bolagets riktiga publicerade rum visas i lobbyn. Publicering återanvänder rum; nytt rum skapas bara uttryckligen. Fem validerade konfliktkoder gör publicerings-/rumsfel begripliga. Delat paket kan uppdateras med gemensamt snapshot utan att rum/tables/branding tappas. |
+| V3 och befintliga rum | Samma kontroll av frysta tillåtna dealers används i publicering, spelstart, media, N2, lobby och replay. Ett befintligt Amira-rum kan därför starta tillåten Johanna. Saknad lane/ogiltig idle/otillåten dealer nekas fortsatt. Rumsrefererad spelkonfiguration kan inte raderas. |
+| Provspela | Adminbunden 20-minuterssession från sparad sammansättning; ordinarie blackjackmotor, separat minnesdatabas och 10 000 EUR testsaldo. Inga ordinarie saldon, bolagspaket eller rum ändras. Inspelade klipp, Standard/Regler/Slump fungerar; externa OpenClaw-/chatt-/kamera-/genererat-tal-anrop är avstängda endast i detta isolerade läge. Till Sammansättning stänger sessionen. |
+| Bolagsportal | /play samt allmän /play/blackjack leder till befintlig lobby. Enbart operator leder till bolagets lobby. Explicit rum/dealer/lane/launch/rehearsal behåller sin spelväg. /api/operators visar endast namn/slug för aktiva bolag med spelbara publicerade rum; läsfel ger 503, inte demo-/reservlista. |
+| Automatiska ID:n | Ny sammansättning behöver namn. Administrationens tekniska spelkonfiguration behöver namn + sparad dealerlista, med giltig aktiv dealer förvald. UUID behålls vid återförsök. Ett gammalt exakt ID kan anges endast efter uttryckligt återställningsval under Avancerat. |
+| Konton | Befintlig gemensam inloggning stöder adminuppgifter för en separat spelarsession; en admincookie ensam är ingen spelarsession. Provspela använder separat testsaldo. Angivet partnerkonto fick Partner editor och aktivt medlemskap i Johns spelbolag; inget nytt mejl skickades. Själva kontots aktivering och verkligt N2-sparprov är inte slutverifierade. |
+| BO-städning | Två alltid dolda paneler, deras flagga, gammal importlista och oanvänd spelvägsmetadata togs bort. Aktiv legacyuppspelning, neverAgain-spärrar, sparad BO-data och använd granskningsvy behölls. Ytterligare gammal kod får inte tas bort enbart på grund av namnet BO. |
+| Policyinventering | idlePolicy, dealerIdlePolicies, mediaPolicy, legacyClipPolicy och probePolicy har faktiska konsumenter. presentationProfile är visningskategorier. Äldre clipAssignments är granskningsdata. Dessa är inte generellt obsoleta. |
+
+### Faktisk produktionsåterställning och aktuella ingångar
+
+Testrummet pekade på en saknad definition: `room-lane-9c162457d38b353be86e2731`, deterministiskt från mobile-phone + amira. Endast den definitionen återställdes via befintlig N1 game-lanes/create: portrait-video, amira, amira-presentation, Testrummet · Amira. CAS-svar 200; då oförändrad aktiv lane, identisk rumslista och SG-test-paket revision 7. Vi skapade inte nya rum eller återpublicerade paket vid reparationen. Revision 7 är ett kvitto från reparationsögonblicket, inte ett antagande om framtida ändringar från Jakob.
+
+| Ingång | Syfte |
+| --- | --- |
+| https://www.scoutgaming.tech/control/clips | Dealerbibliotek, grundloop och händelseklipp |
+| https://www.scoutgaming.tech/control/preview?lane=johns-johanna | Befintlig Johannasammansättning och Provspela |
+| https://www.scoutgaming.tech/control/lanes | Publicera bolagets paket och hantera spelrum |
+| https://www.scoutgaming.tech/play | Allmänt bolagsval |
+| https://www.scoutgaming.tech/play?operator=sg-test | SG test game provider: Testrummet och ny-jhanna vid senaste prov |
+| https://www.scoutgaming.tech/play?operator=johns-spelbolag | Johns spelbolags publicerade rum |
+
+Verifierade rum: SG-tests Testrummet `room-e46c60e2-8857-7b37-9363-5a37cff9e49a`, SG-tests ny-jhanna `room-07b92acb-42d4-1941-3777-5e37b39951e9`, Johns Johannas blackjack `room-06f0722d-74bf-49ca-8546-f6328ac69909`. Johns lobby visade även test-john-rum och Johannas blackjack 2 i senaste läsningen; de skapades inte i vårt slutprov. Läs aktuell publicerad katalog före ändringar och anta inte att antalet rum är konstant.
+
+### Leveranskvitton och verifiering
+
+| Version | Vad den levererar | Kvitto |
+| --- | --- | --- |
+| 06a732c3 → 8dd4a6ab | Rätt dealer/lobby och samlad Studio-editor; korrigerade lagerfixturer | 8dd4a6ab CI 38062846515 SUCCESS, Vercel och Render verifierade då |
+| 2cc59e3481c3fb491284661a9f1a059f0f572c87 | Isolerat Provspela och rumsdiagnos | Fullhook 2256/2247 PASS/9 SKIP/0 FAIL; CI 38134822394 SUCCESS; båda hostingytor verifierade då |
+| 19190616354a4eb8a26a670b9452c2a3b3ff7008 | Frysta dealerval i befintliga rum, skydd mot borttagning av rumsrefererad lane | Fullhook 2263/2254 PASS/9 SKIP/0 FAIL; CI 38136442361 SUCCESS; båda hostingytor verifierade då |
+| c48c6754baeda6f3346cca7d0aa149b69b1e5c27 | Bolagsportal och automatiska tekniska ID:n | Fullhook 2282/2273 PASS/9 SKIP/0 FAIL; CI 38137920176 SUCCESS; senaste produktkod |
+
+För c48c6754: GitHub-wrappern bekräftade identisk fjärr-SHA. Vercel `dpl_A2gs4PAM7WiYvDJFPhXvGLMu79bT`, projekt `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`, production READY/PROMOTED. Separata inspect-kontroller bekräftade www och apex på samma deployment. Render `https://croupier-v2.onrender.com/__cloud/version` gav HTTP 200, provider render och exakt samma SHA. Render aktiverades genom Auto-Deploy; ingen extra manuell deploy gjordes i slutleveransen.
+
+- Frontend- och Lab-produktionsbyggen, TypeScript, riktade API-/auth-/portal-/publiceringstester och oberoende läsgranskning passerade.
+- Isolerad byggd lobby vid 1440/390 px: bolagsval, tillbaka till alla bolag, rum/dealer/startlänk, tom-/fel-/försöka-igen-vyer utan sidfel eller overflow. Lokal kontotjänst saknas avsiktligt i fixturen; det är inte ett felbevis från produktion.
+- Alla fyra originaldealers klarade två goodluck-uppspelningar i verklig spelklient. audit-dealer-sync --probe matchade befintliga mediabaslinjer. Inga mediabytes/kalibreringar ändrades; ingen ny mänsklig läppsynkacceptans påstås.
+- Provspela verifierades live med Johanna, statiskt bord, loopande bakgrund, bakgrundsbyte och återgång; separat 10 000 EUR testsaldo. Sessionen avslutades.
+- c48c6754 live: /play/blackjack → /play, Johns och SG test visas i bolagslistan, katalog-/rumsanrop HTTP 200. Visa alla bolag och val av Johns fungerar. Inga browserfel.
+- Johns befintliga rum öppnades från lobbyn med vald Johanna. Skärmbild visar dealer + svart/guld-bord + casinobakgrund. Bakgrundsvideo och dealerfilm readyState 4 och spelar. Saldo 860 USD, insats 0, inga insatser eller saldoändringar utfördes.
+- N1-formen verifierades live med namn, fem sparade dealers, giltig Johanna förvald och automatisk-ID-text. Återställning ligger under Avancerat och kräver opt-in. Ingen produktionskonfiguration skapades i det formulärprovet.
+- Ett extra lokalt Studio-skärmbildsprov blandade /studio-produktionsbygge med offline-root och räknas inte som godkänt; det efterföljande riktiga liveformulärprovet ovan passerade.
+
+### Kvar, avgränsningar och lämplig nästa uppgift
+
+1. **N2:s fullständiga livekedja:** kontrollera aktuellt konto-/medlemskapsläge, låt användaren hantera eventuell aktivering och verifiera tillåtna val → spara → omladdning → rätt rum. Partner editor-medlemskapet var aktivt vid kopplingen; kontots då inaktiva flagga får inte antas vara oförändrad. N2:s spelare, transaktioner, rapporter, full auditjournal/chips och lösenordsåterställning är inte färdig produktomfattning.
+2. **Radering:** egen oanvänd dealer kan tas ur utkastet; grunddealers/refererade dealers skyddas. Filmer och publicerade paket behålls. Bord/bakgrund kan avmarkeras. Permanent mediefilsradering och borttagning/avstängning av bolag saknas i UI/API; medlemskapets Stäng av är inte bolagsavstängning. Detta behöver uttrycklig egen implementation, inte en rensning av produktionsdata.
+3. **Mediaacceptans:** Johannas idle bevisar flödet. Full klippuppsättning, visuellt godkännande per replik, längre drift och tidigare rapporterad lucka mellan idlecykler är inte slutaccepterade. Orsaken till den äldre femsekundersluckan är inte bevisad. Preload-/överlappsplanen i historiken är inte implementerad och ska inte tas som felorsaksbevis.
+4. **Säkerhet:** senaste läsning på c48c6754 visar 17 observerade incidenter, 12 öppna, 5 ignorerade, 0 lösta; 6 öppna utan platsuppgift. Incidentlistan är läst, platstäckning partiell, monitorering aktiv och historisk scan too_large. Grön CI betyder inte rent GitGuardian-kvitto. Inga incidenter ändrades av oss.
+5. **Ingen ny funktion startas som del av avslutningen.** Besvara först nästa agents konkreta överlämningsfrågor. Jakob har inte bett om automatisk bevakning, nya sessioner, konton, testklipp eller fler spelrum.
+
+### Filkarta för nästa agent
+
+| Del | Börja i |
+| --- | --- |
+| Användarflöde och begrepp | lab/docs/README.md, lab/docs/TERMINOLOGI.md |
+| Runtime- och miljöregler | docs/LOCAL-PRESENTATION-RUNTIME.md, docs/ENVIRONMENT-RESTORATION.md |
+| Frysta paket och egna klipp | web/storage/presentation-package.mjs, web/storage/frozen-presentation-capture.mjs, web/storage/frozen-dealer-presentation.mjs, web/frozen-dealer-playback.mjs |
+| Lager och dealeridentitet | web/public/local-presentation.mjs, web/public/dealer-identity.mjs, web/dealer-identity.mjs |
+| Provspela | web/studio-preview.mjs, web/public/studio-preview-client.mjs, lab/lib/studio-preview-client.mjs, test/studio-preview.mjs, test/studio-preview-client.mjs |
+| Rum, v3-kompatibilitet och N2 | web/presentation-room-contract.mjs, web/public-operator-rooms.mjs, web/partner-presentation.mjs, lab/lib/presentation-room-api.mjs, lab/lib/partner-presentation-choices.mjs |
+| Bolagsportal | web/public-operators.mjs, web/server.mjs, apps/croupier-frontend/components/player/player-lobby-operator.tsx, apps/croupier-frontend/lib/player-lobby.mjs, lib/platform-routing.mjs och lib/server-ui.mjs i samma frontend |
+| Automatiska spelkonfigurations-ID:n | lab/components/studio-administration.tsx, lab/lib/studio-admin-data.mjs, web/storage/studio-game-policy.mjs |
+| Leverans och samordning | AGENTS.md, agent-talk/README.md, tools/push-github-work.mjs, tools/security-status.mjs, tools/precommit-checks.mjs |
+
+### Lokal städning, bevarande och överlämningssätt
+
+- Arbeta i befintlig checkout `C:\Users\jakob\dev\projects\scoutgame`, endast main, GitHub `Jakeminator123/scoutgaming`. Inga nya worktrees/branches, reset, force-push eller stashes. Leverera via `node tools/push-github-work.mjs`.
+- Vid denna dokumentsammanställning fanns bara två orelaterade lokala filer utanför leveransen: ändrad `.codex/config.toml` och okänd tom `selection[key]`. Lämna dem orörda tills ägare/syfte är klarlagt. Miljöfiler, råmedia, kalibreringar, privata dokument och browserutkast ska bevaras.
+- Våra tre tidigare agent-talk-claims är frigivna. Dokumentationsclaimen frigörs efter sin commit/push. Ingen bakgrundsagent, automatisk bevakning eller ny lokal server startas för avslutningen.
+- Lokala QA-servrar avslutades vid produktleveransen; kontrollera aktuell sessionsägare före eventuell ny start. Endast en serverkombination får köras. `node lab/start.mjs --no-open` är rätt ingång; blanda inte offline-root och ett tidigare /studio-bygge med --skip-build.
+- Ignorerade provskript/skärmbilder finns i `lab/data/qa-lobby-20261010/`. TEMP-loggar heter scout-final-portal-commit.log, -push.log, -ci.log, -audit.log, -browser.log, -rehearsal.log, -build.log, scout-final-admin-build.log och -security-delivered.json. De är lokala bevis, inte portabla garantier; lägg inte råloggar, tokens eller samtalsexporter i Git.
+- Webbläsartillstånd kan ändras av Jakob. Senast lämnades en bolagsportal redo med tomt bolagsval; användarens separata Johanna-spel och tidigare osparade Studio-utkast rördes inte. Läs färskt tillstånd, återanvänd passande flik och undvik omladdning av utkast/pågående spel.
+- Dokumentationsstädning: denna aktuella sammanställning har lagts först, hela tidigare handofftexten är bevarad som tydligt märkt historik, och användarguiden har fått ett kort flöde samt explicita raderingsgränser. Ordlistans och guidens äldre påståenden om att Regler saknas har avgränsats till grunddealerns äldre editor; migrationstrackern skiljer nu levererad N1-onboarding/publicering/bolagsportal från kvarvarande N2-acceptans. Inga T2–T4-rutor har bockats av utan full acceptans. Fortsätt uppdatera befintliga filer; skapa inte ytterligare tracker eller Markdownrapport under docs.
+- Nästa agent bör först läsa denna sammanställning, AGENTS.md och relevanta guideavsnitt, därefter status, claims och exakt Git-version. Fråga den här chatten om kvarstående oklarheter innan historiska planer återstartas. Vi går därefter mot avslut utan att utöka omfånget.
+
+## Funktionella regler som aldrig får komprimeras bort
+
+Render äger kort/shoe/slump/wallet/rundor/resultat, sessionägarskap och cancellation.
+Studio/Vercel sparar revisionsstyrd Neonpolicy, inte osparade utkast eller saldo.
+En kandidat vid credentialresolver; collision/pending/fel lösenord ger generiskt
+avslag utan fallback/klientroll. Admin får spel+Studio; superadmin är alias,
+reader/staff är game-only. Playerlogin rensar gamla BO/Labcookies.
+BO-audience/live roll/fingerprint/epoch och Origin/Host/JSON/CAS/audit består.
+CRAIG-reset och native playerpasswordbyte behåller rätt identitet/saldo/historik;
+Rendercancel kvitteras före OK. Självrollbyte/radering och sista-admin-race skyddas.
+Engångstokens förbrukas atomiskt; hemliga partnerresultat är tillfälliga, inte listmetadata.
+
+Alla fyra dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
+kalibrering/acceptans; ändrad audio-/videohash ogiltigförklarar visuell approval.
+Ingen approximate-duration-match, gammal talvideo till ny text eller munoverlay.
+Audit `pipeline/audit-dealer-sync.mjs --probe`, obligatoriska regressioner och
+två rehearsalplays per dealer krävs för media/spelarändring, inte bara hashar.
+Gamla BO-videopreviews är tysta historikklipp, inte lipsyncmaterial.
+Observation följer faktisk spelflik utan andra playback; valt/laddat ≠ spelat.
+Originalpolicy `legacyClipPolicy` och Astrid `mediaPolicy/idlePolicy` består;
+gammal BO-tilldelning är read-only410 och import kräver explicit exakt match.
+Privata chattar, secrets och signerade medielänkar hör inte hemma i publika logs/takes.
+Neon/Blob-fel stänger med fel, aldrig diskfallback/fröprojekt/nollbudget.
+Aktiva tools/test/fixtures/pipeline/web/media/kalibreringar/OpenClaw-state består.
+Svarskatalog/automatiska spelararkiv är inte infört; kostnadsjournaler gallras inte.
+
+GPU-shutdownrättningen börjar cleanup före gatewayväntan och signalerar båda barnen.
+15 s naturligt provideravslut +15 s cancel +30 s journalmarginal, sedan högst 5 s HTTP
+och 10 s lagring; barnets tvångsgräns 80 s/Render 90 s. Timeout lämnar återhämtningsbar
+journal/reservation och felstatus, inte för tidigt släppt shared lease.
+Isolerad Linuxkedja 4/4 och close 38/38 PASS, inklusive lease 0 före båda flushar/1 efter.
+Zonbilden är registrerad privat PNG 1080×1920/1 628 428 byte,
+SHA `eda87f9e877b00dbd2f02479db44ae5f41e2f182563825304906880ceee0088a`;
+fel molnkälla ger 503 utan lokal fallback. Export 290×104 var pixelidentisk med befintlig zon.
+OpenClawproxy tillåter endast avsedd toppnavigation till exakt /openclaw[/];
+API/fetch/iframe/mutation/WS/Origin/Host/auth/pairing behåller separata kontroller.
+Dessa prov ändrade ingen zonrevision, pairing, speldata eller betaldispatch.
+
+## Historiska kvitton och felsökningsanteckningar
+
+<details>
+<summary>Daterad historik — inte aktuell arbetslista</summary>
+
+Följande text är bevarad för spårbarhet. Aktuellt läge, kvarvarande arbete och nästa steg står i sammanställningen ovan. Tidigare versionsspecifika begränsningar och planer ska inte startas om utan ny bedömning.
+
 ## 11 oktober 2026: bolagsportal och automatiska tekniska ID:n
 
 Den befintliga /play-lobbyn har nu ett bolagsval med endast aktiva bolag som har spelbara, publicerade rum. Vercels /play/blackjack utan ett uttryckligt spelmål leder till denna portal; enbart operator leder till bolagets lobby. Rumslänkar, rehearsal och signerade spelstarter behåller sina befintliga vägar. Flödet är bolag → rum och tillåtna dealer-/miljöval → blackjack. Katalogen är endast läsande, visar bara slug och namn och använder samma rumsläsare som spelstarten. Tom lista och driftfel visas separat med möjlighet att försöka igen.
@@ -1491,44 +1653,6 @@ Full P6 omfattar också text/bild/STT, fullfil/stream, SQL/HTTPS/restart, auth/r
 och verklig invitation/reset där de återstår. `fullP6Passed` får inte sättas true tidigt.
 
 
-## Funktionella regler som aldrig får komprimeras bort
-
-Render äger kort/shoe/slump/wallet/rundor/resultat, sessionägarskap och cancellation.
-Studio/Vercel sparar revisionsstyrd Neonpolicy, inte osparade utkast eller saldo.
-En kandidat vid credentialresolver; collision/pending/fel lösenord ger generiskt
-avslag utan fallback/klientroll. Admin får spel+Studio; superadmin är alias,
-reader/staff är game-only. Playerlogin rensar gamla BO/Labcookies.
-BO-audience/live roll/fingerprint/epoch och Origin/Host/JSON/CAS/audit består.
-CRAIG-reset och native playerpasswordbyte behåller rätt identitet/saldo/historik;
-Rendercancel kvitteras före OK. Självrollbyte/radering och sista-admin-race skyddas.
-Engångstokens förbrukas atomiskt; hemliga partnerresultat är tillfälliga, inte listmetadata.
-
-Alla fyra dealers delar spelaren. Tal är exakt text/audio/video/frame-index/
-kalibrering/acceptans; ändrad audio-/videohash ogiltigförklarar visuell approval.
-Ingen approximate-duration-match, gammal talvideo till ny text eller munoverlay.
-Audit `pipeline/audit-dealer-sync.mjs --probe`, obligatoriska regressioner och
-två rehearsalplays per dealer krävs för media/spelarändring, inte bara hashar.
-Gamla BO-videopreviews är tysta historikklipp, inte lipsyncmaterial.
-Observation följer faktisk spelflik utan andra playback; valt/laddat ≠ spelat.
-Originalpolicy `legacyClipPolicy` och Astrid `mediaPolicy/idlePolicy` består;
-gammal BO-tilldelning är read-only410 och import kräver explicit exakt match.
-Privata chattar, secrets och signerade medielänkar hör inte hemma i publika logs/takes.
-Neon/Blob-fel stänger med fel, aldrig diskfallback/fröprojekt/nollbudget.
-Aktiva tools/test/fixtures/pipeline/web/media/kalibreringar/OpenClaw-state består.
-Svarskatalog/automatiska spelararkiv är inte infört; kostnadsjournaler gallras inte.
-
-GPU-shutdownrättningen börjar cleanup före gatewayväntan och signalerar båda barnen.
-15 s naturligt provideravslut +15 s cancel +30 s journalmarginal, sedan högst 5 s HTTP
-och 10 s lagring; barnets tvångsgräns 80 s/Render 90 s. Timeout lämnar återhämtningsbar
-journal/reservation och felstatus, inte för tidigt släppt shared lease.
-Isolerad Linuxkedja 4/4 och close 38/38 PASS, inklusive lease 0 före båda flushar/1 efter.
-Zonbilden är registrerad privat PNG 1080×1920/1 628 428 byte,
-SHA `eda87f9e877b00dbd2f02479db44ae5f41e2f182563825304906880ceee0088a`;
-fel molnkälla ger 503 utan lokal fallback. Export 290×104 var pixelidentisk med befintlig zon.
-OpenClawproxy tillåter endast avsedd toppnavigation till exakt /openclaw[/];
-API/fetch/iframe/mutation/WS/Origin/Host/auth/pairing behåller separata kontroller.
-Dessa prov ändrade ingen zonrevision, pairing, speldata eller betaldispatch.
-
 ## Historik (daterade lägesbilder)
 
 Flyttade meningar som motsade nuläget 7 oktober 2026. De är inte raderade.
@@ -1576,3 +1700,5 @@ T2–T4 kvarstår för verkligt kundregister, kundpersonal, medlemskap, lane-pub
 Ersatt 7 oktober av en snävare mening i Övertagande: adminens val bland riktiga operatörer är kvar; operatörens inloggning står i Partnerportal.
 
 Kundval är ännu inte aktiverat.
+
+</details>

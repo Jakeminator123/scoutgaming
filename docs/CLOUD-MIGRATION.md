@@ -1,6 +1,6 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-Uppdaterad 7 oktober 2026. Detta är den enda migrationschecklistan.
+Statusförtydligad 11 oktober 2026. Detta är den enda migrationschecklistan. Daterade kvitton nedan avser respektive leverans; aktuell Studio-/paket-/portalöverlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md). T2–T4 är fortfarande öppna där full acceptans saknas, även om flera delsteg nu är levererade.
 Äldre checkpoints och avslutade delstegs detaljer finns i
 [fryst historik på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md).
 Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
@@ -22,7 +22,7 @@ rotens `vercel.json` samlar webb (`apps/croupier-frontend`) och labb (`lab`,
 basePath `/studio`) i ett bygge/projekt utan att slå ihop deras Next-versioner.
 Aktiverad `CROUPIER_VERCEL_UNIFIED_UI` flyttar den befintliga exakta ingressgränsen
 till labb-servicen när Services skickar dit dokument/API direkt. Render behåller spel/live.
-T2 är påbörjad, inte klar: levererat är 005-lagring, `partner_session` och scoped snapshot; kvar är onboarding-UI, åtkomstjournal för operatörsskrivningar, spelare/transaktioner/rapporter och paketpublicering. T3 och T4 är öppna.
+T2 är påbörjad, inte klar. Levererat till 11 oktober: 005-lagring, partner_session, scoped snapshot, N1:s Bolag & team samt publicerade paket/spelrum. Kvar är komplett mottagaraktivering/N2-sparprov, åtkomstjournal för operatörsskrivningar och spelare/transaktioner/rapporter. T3 och T4 behåller sina öppna acceptanspunkter; paketpublicering och bolagslobby är inte längre saknade funktioner.
 Tio riktade routingtester och Lab-typkontroll/produktionsbygge är lokalt gröna.
 Repo och aktivt Vercelprojekt heter nu `scoutgaming`. Repo-ID `1380630440` och
 tidigare Studio-ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD` är bevarade, inklusive
@@ -44,8 +44,8 @@ Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar
 | Nivå | Yta | Behörighet i målbilden |
 | --- | --- | --- |
 | 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/preview`, `/control/probe`. `/control/tree` och `/control/operator-chat` omdirigerar. |
-| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
-| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet. Historiksidan anropar `POST /api/history`. T4 är öppen. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin ser fixturförhandsvisning; operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
+| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar publicerade bolag och deras verkliga rum. Allmän `/play/blackjack` går till lobbyn; enbart operator går till bolagets lobby. Explicit rumslänk begränsar dealer och miljö till paketet. Renders direkta spelväg behålls. Historiksidan anropar `POST /api/history`. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -68,7 +68,7 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Studio-byggen passerar. Publicerad kod `5524b968` är provad med befintlig intern
   adminsession: båda ytorna, menybyten, operatörsbyte och direktlänkar fungerar.
   Oinloggade besök går till login; API ger 401. Riktig kundinloggning ligger i T2.
-- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad, inte klar. Levererat: migration `005-operators.sql`, `partner_session` och scoped snapshot. Kvar: operatörs-onboarding-UI, åtkomstjournal för operatörsskrivningar, spelardata, transaktioner, rapporter och paketpublicering. Behåll
+- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad, inte klar. Levererat: migration `005-operators.sql`, `partner_session`, scoped snapshot, N1:s Bolag & team och paketpublicering med verkliga spelrum. Kvar: slutverifierad mottagaraktivering/N2-sparning, åtkomstjournal för operatörsskrivningar, spelardata, transaktioner och rapporter. Behåll
   dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
   separat partner-session med färsk identitets-, roll-, auth-epoch- och
   medlemskapskontroll. Inga automatiska reader/staff-uppgraderingar. Nivå 1
@@ -104,10 +104,9 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
   nivå 2:s förhandsvisning. `/partner` visar nu en separat ingång med explicit
   demoval; inga exempelbolag presenteras som anslutna kunder. Kundpersonal når
-  bara egna aktiva medlemskap. Adminens val bland riktiga operatörer
-  (onboarding-UI) och paketpublicering är kvar. Operatörslagring, `partner_session`
+  bara egna aktiva medlemskap. Adminens val bland riktiga operatörer och paketpublicering är levererade till 11 oktober; verkligt N2-slutprov kvarstår. Operatörslagring, `partner_session`
   och scoped snapshot finns; T2 är påbörjad, inte klar.
-- [ ] **T3. Anslut en operatörsfunktion i taget.** Öppen. Scoped snapshot kan visa sparat paket (presentationer, bord, revision) och medlemskap. Spelare, transaktioner och rapporter är inte anslutna. Publicering, onboarding och integrationer saknas. Koppla revisionerade
+- [ ] **T3. Anslut en operatörsfunktion i taget.** Öppen. Scoped snapshot kan visa sparat paket (presentationer, bord, revision) och medlemskap. Spelare, transaktioner och rapporter är inte anslutna. N1:s bolagsadministration och paketpublicering är levererade; N2:s kompletta liveacceptans och övriga integrationer återstår. Koppla revisionerade
   presentationer och egna bord, sedan rapporter, team och integrationer. Varje
   funktion behöver organisationens ägarskap genom UI, API, lagring och export.
   Render behåller kort, regler, plånbok och avräkning. Importera inte Kevins
@@ -123,7 +122,7 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   sparad lane och signerad launch. Äldre speladresser leder vidare i det
   gemensamma molnprojektet. Lobbyn kan visa Spelar hos från `?operator=`.
   Profilens namn och språk kan redigeras när `006-player-profile.sql` körts mot spel-Neon.
-  Vercels `/play/blackjack` begränsar inte lane eller dealer. T4 förblir öppen.
+  Delsteg 11 oktober: Vercels spelstart begränsar dealer/miljö till bolagets publicerade paket och verkliga rum. Den allmänna ingången leder till bolagsportalen. Liveprov av bolagsval → rum → Johanna med tre lager passerade på c48c6754; giltiga signerade starter behåller sin separata validering. T4 förblir öppen för återstående full acceptans, inte för ett saknat bolagsval.
 
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
@@ -586,7 +585,7 @@ Ingen generell medieradering eller ny mänsklig synkapproval följer av dedup.
 
 | Tjänst | ID / disk | Ansvar |
 | --- | --- | --- |
-| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. `autoDeployTrigger: off`: en `web/`-ändring kräver manuell deploy i Render-konsolen. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. `/api/profile` och `/api/operators/<slug>` svarar live. `ops/neon-game/006-player-profile.sql` kördes 8 oktober 16:48 mot databasen `croupier_game` i Neon-projektet `croupier-production` (hette `croupier-astrid-background-zones-db` till 17:15 samma dag); kolumnerna verifierade, 4 spelare oförändrade. |
+| croupier-v2 | srv-datg3j6gekts73amgli0; gamla 5 GB-disk borta | Diskfri Neon/Blob, backup kvar. Historiskt var `autoDeployTrigger: off`. Den 11 oktober nådde c48c6754 Render genom Auto-Deploy och exakt SHA verifierades via /__cloud/version; kontrollera aktuell deploystatus före en eventuell manuell åtgärd. 8 oktober 2026 kl. 12:45 återstartade Jakob manuellt; den deployen innehåller L8/N3. `/api/profile` och `/api/operators/<slug>` svarar live. `ops/neon-game/006-player-profile.sql` kördes 8 oktober 16:48 mot databasen `croupier_game` i Neon-projektet `croupier-production` (hette `croupier-astrid-background-zones-db` till 17:15 samma dag); kolumnerna verifierade, 4 spelare oförändrade. |
 | croupier-vercel-preview-qa | srv-datj7l893c1s73ar3u50; /var/data, 1 GB | Separat QA/SDK/data/journal/cache |
 | croupier-lab-director | /data/catalog, 1 GB | Katalog/historik/CompanionDB |
 | croupier-lab-openclaw | /data/openclaw, 1 GB | Konfiguration/agentfiler/sessioner/sökDB |
