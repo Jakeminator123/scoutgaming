@@ -75,6 +75,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .stage{position:relative;height:min(calc(100vh - 170px),940px);aspect-ratio:9/16;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 30px 80px #000c,0 0 0 1px #ffffff12;flex-shrink:0}
 .stage>img,.stage>.felt{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .stage .room,.stage .dealer{transition:opacity .45s ease}
+.stage>.talk{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}.stage>.talk.on{opacity:1}
 .stage .fading{opacity:0}
 .felt{transition:opacity .4s}
 .felt.c{mix-blend-mode:color}.felt.s{mix-blend-mode:soft-light;opacity:.55}
@@ -142,6 +143,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sw.custom{background:conic-gradient(#125c43,#213e70,#70253c,#7a5a2a,#125c43)}
 .langs{display:flex;flex-direction:column;gap:8px}
 .lang-opt{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px}
+.lang-opt[hidden]{display:none}  /* Emil 11 Oct: a language the dealer has not recorded is hidden; display:grid above overrode [hidden] */
 .lang-opt[aria-checked=true]::after{display:none}
 .lang-code{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#ffffff0a;border:1px solid var(--line2);font:600 14px var(--disp);color:var(--dim)}
 .lang-opt[aria-checked=true] .lang-code{background:var(--gold);color:#201c13;border-color:var(--gold)}
@@ -339,7 +341,8 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <div class="preview-pane" id="previewHome">
 <div class="stage" id="stage">
 <img class="room" id="roomImg" src="assets/rooms/darkhall-720.png" alt="">
-<img class="dealer" id="dealerImg" src="assets/cut-astrid.png" alt="">
+<img class="dealer" id="dealerImg" src="assets/cut-astrid-v2.png" alt="">
+<canvas class="talk" id="talk" width="720" height="1280" aria-hidden="true"></canvas>
 <canvas class="felt c off" id="feltC" width="720" height="1280"></canvas>
 <canvas class="felt s off" id="feltS" width="720" height="1280"></canvas>
 <div class="ov-top">
@@ -364,7 +367,7 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div><p class="sec-d">Photoreal AI host, conversational and reacting to the hand.</p>
 <div class="step-b"><div><div class="step-in">
 <div class="grid2" role="radiogroup" aria-label="Dealer">
-<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid" aria-checked="true"><img src="assets/astrid.jpg" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · 5 languages</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid" aria-checked="true"><img src="assets/astrid.jpg" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · 4 languages</span></div></button>
 <button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="dragge" aria-checked="false"><img src="assets/dragge.jpg" alt=""><div class="meta"><strong>Dragge</strong><span>AI dealer · Svenska, English</span></div></button>
 <button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="paow" aria-checked="false"><img src="assets/paow.jpg" alt=""><div class="meta"><strong>Paow</strong><span>AI dealer · Svenska, English</span></div></button>
 <button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="marten" aria-checked="false"><img src="assets/marten.jpg" alt=""><div class="meta"><strong>Mårten</strong><span>AI dealer · text chat</span></div></button>
