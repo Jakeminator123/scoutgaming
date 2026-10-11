@@ -46,3 +46,7 @@ body{font-family:var(--design-font)}
 /* John, 9 Oct: the deal button says just Deal and is bigger, at every width. */
 .game-dock #dealNow,.game-dock #dealNow:is(*){font-size:16px;font-weight:700;min-height:52px;min-width:132px;justify-content:center;letter-spacing:.02em}
 @container(max-width:390px){.game-dock #dealNow{font-size:15px;min-height:50px;min-width:112px}}
+/* John 11 Oct: the insurance box (two buttons) in Scout's colours, not the old gold Privé panel. */
+.game-dock .insurance-panel{background:color-mix(in srgb,var(--design-surface) 92%,transparent);border:1px solid #f2f1ed24;box-shadow:none;color:var(--design-text)}.game-dock .insurance-panel p span,.game-dock .insurance-panel small{color:#f2f1edb3}.game-dock .insurance-panel button[data-insurance=yes]{background:var(--design-primary);border-color:var(--design-primary);color:var(--design-on-primary)}
+/* The seat box (two buttons, "Take your place") in Scout's colours too: no gold Privé buttons on the Scout table. */
+.gate-card{border-color:#f2f1ed24}.gate .entry-actions button:not(.ghost){background:var(--design-primary);color:var(--design-on-primary)}.gate .entry-actions button:not(.ghost):disabled{opacity:.5}.gate .entry-actions .ghost{color:var(--design-text);border-color:#f2f1ed33}#playerName{border-color:#f2f1ed33}
