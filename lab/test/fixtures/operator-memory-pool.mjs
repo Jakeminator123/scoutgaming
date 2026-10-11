@@ -152,6 +152,10 @@ export function operatorMemoryPool() {
         return { rows: [], command: 'BEGIN' };
       }
       if (command.startsWith('SET LOCAL')) return { rows: [], command: 'SET' };
+      if (command === 'SELECT pg_advisory_xact_lock($1::integer, $2::integer)') {
+        trace.push({ client: client.id, step: 'scope-lock' });
+        return { rows: [] };
+      }
       if (command === 'COMMIT' || command === 'ROLLBACK') {
         if (command === 'ROLLBACK' && client.snapshot) restore(client.snapshot);
         client.snapshot = null;
@@ -160,7 +164,8 @@ export function operatorMemoryPool() {
         trace.push({ client: client.id, step: command });
         return { rows: [], command };
       }
-      if (/\/\* operator-store:lock-operator \*\//.test(text)) {
+      // PostgreSQL permits reacquiring a row lock already held by this transaction.
+      if (/\/\* operator-store:lock-operator \*\//.test(text) && !client.unlock) {
         const previous = lockTail;
         let release;
         lockTail = new Promise(resolve => { release = resolve; });

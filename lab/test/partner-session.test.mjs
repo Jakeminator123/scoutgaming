@@ -235,7 +235,8 @@ test('a north membership cannot read demo-south, and a suspended membership is d
   assert.deepEqual(body.transactions, []);
   assert.deepEqual(body.reports, []);
   assert.equal(JSON.stringify(body).includes('demo-south'), false);
-  for (const key of ['tables', 'team', 'presentations']) {
+  assert.deepEqual(body.team, []); // This role has overview.read, but not team.read.
+  for (const key of ['tables', 'presentations']) {
     assert.ok(body[key].length > 0, key);
     for (const item of body[key]) assert.equal(item.operatorId, northId, key);
   }

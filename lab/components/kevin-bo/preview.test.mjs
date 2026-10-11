@@ -97,7 +97,7 @@ const portalCode = babel.transformSync(portalSource, { babelrc:false, configFile
 const portalModule = { exports:{} };
 const portalRequire = createRequire(new URL('./kevin-backoffice.jsx', import.meta.url));
 new Function('require','module','exports', portalCode)(name => {
-  if (name === './original.css' || name === './preview.css') return {};
+  if (name === './original.css' || name === './preview.css' || name === './john-foundation.css') return {};
   if (name === './assets.mjs') return { assetUrl: () => undefined };
   if (name === './original-views.jsx') return { createOriginalViews };
   return (name.startsWith('.') ? portalRequire : require)(name);
@@ -136,7 +136,7 @@ test('partner menu uses Swedish sections and keeps internal ids off the partner 
   assert.doesNotMatch(owned, /Backoffice|BO event|\bTrigger\b|\bPolicy\b|\bLinje\b/);
 });
 
-test('fixture preview keeps the internal banner and a real operator snapshot uses the compact header', () => {
+test('fixture preview keeps its internal banner while real operators use Johns honest partner shell', () => {
   const fixtureHtml = renderPortal({ initialSnapshot:fixture });
   assert.match(fixtureHtml, /Intern förhandsvisning/);
   assert.match(fixtureHtml, /Exempeloperatör/);
@@ -144,22 +144,30 @@ test('fixture preview keeps the internal banner and a real operator snapshot use
   assert.equal(fixtureHtml.includes('data-preview="fixture"'), true);
   const single = renderPortal({ initialSnapshot:realSnapshot(), initialView:'players' });
   assert.match(single, /Nordic Bet/);
-  assert.match(single, /kevin-status-pill">Operatör</);
-  assert.match(single, /Operatörspaket rev-7/);
+  assert.match(single, /class="kevin-operator-header"/);
+  assert.match(single, /href="\/partner">Alla partners</);
+  assert.match(single, /Paketversion rev-7/);
+  assert.match(single, /<h1 class="kevin-shell-heading">Spelare</);
+  assert.match(single, /data-theme="light" lang="sv"/);
+  assert.match(single, /Operatörspersonal/);
   assert.doesNotMatch(single, /Intern förhandsvisning|Exempeloperatör|id="kevin-operator"|Ingen serverdata har lästs|No players match/);
-  assert.match(single, /Spelarkonton för den här operatören är inte anslutna/);
-  assert.match(single, /href="\/control\/administration"/);
-  assert.equal((single.match(/btn primary/g) ?? []).length, 1);
+  assert.match(single, /kevin-status-pill">Inte anslutet</);
+  assert.match(single, /Spelkoppling återstår/);
+  assert.match(single, /Spelare, transaktioner och ekonomiska rapporter är ännu inte anslutna/);
+  assert.match(single, /Inga exempelvärden visas/);
+  assert.doesNotMatch(single, /href="\/control(?:\/|")|Öppna integrationer|Visa nivå 1/);
+  assert.equal((single.match(/btn primary/g) ?? []).length, 0);
   assert.equal(single.includes('data-preview="operator"'), true);
   const several = renderPortal({ initialSnapshot:realSnapshot([{ id:'op-2', name:'Amber House', slug:'amber-house' }]) });
   assert.match(several, /id="kevin-operator"/);
   assert.match(several, /Amber House/);
   assert.doesNotMatch(several, /Exempeloperatör|Intern förhandsvisning/);
   const reports = renderPortal({ initialSnapshot:realSnapshot(), initialView:'reports' });
-  assert.match(reports, /Rapporter för den här operatören är inte anslutna/);
-  assert.match(reports, /href="\/partner\/nordic-bet\/integration"/);
-  assert.match(reports, /Öppna integrationer/);
-  assert.doesNotMatch(reports, /Ingen serverdata har lästs/);
+  assert.match(reports, /<h1 class="kevin-shell-heading">Rapporter</);
+  assert.match(reports, /Spelkoppling återstår/);
+  assert.match(reports, /Spelare, transaktioner och ekonomiska rapporter är ännu inte anslutna/);
+  const unavailablePanel = reports.slice(reports.indexOf('<div class="page-b kevin-disconnected"'));
+  assert.doesNotMatch(unavailablePanel, /href=|Öppna integrationer|Ingen serverdata har lästs/);
   assert.equal(sectionNotConnected(fixture, 'players'), false);
   assert.equal(sectionNotConnected(realSnapshot(), 'transactions'), true);
   assert.equal(operatorPackageRevision(realSnapshot()), 'rev-7');
@@ -182,12 +190,17 @@ test('real partner presentation destinations use assigned packages instead of lo
 
 
 import {defaultPresentationLane} from '../../lib/studio-model.mjs';
+const partnerCopyCode=babel.transformSync(await readFile(new URL('./partner-copy.mjs',import.meta.url),'utf8'),{babelrc:false,configFile:false,plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')]}).code;
 test('verified own-operator saved receipt updates the real package view without replacing team, rooms or fixture design state',()=>{
   const output={exports:{}},slots=[];let cursor=0;
   const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},
     useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},useMemo:work=>work(),useCallback:work=>work,useEffect:()=>{}};
+  // All imported hooks share this harness's slots, including presentation preferences.
+  const preferences={exports:{}};
+  new Function('require','module','exports',partnerCopyCode)(name=>name==='react'?hooks:require(name),preferences,preferences.exports);
   new Function('require','module','exports',portalCode)(name=>{
     if(name==='react')return hooks;
+    if(name==='./partner-copy.mjs')return preferences.exports;
     if(name.endsWith('.css'))return {};
     if(name==='./assets.mjs')return {assetUrl:()=>undefined};
     if(name==='./original-views.jsx')return {createOriginalViews};

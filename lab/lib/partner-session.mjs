@@ -1,6 +1,6 @@
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
-import { allowsPartnerResource } from '../../web/partner-access-policy.mjs';
+import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
 import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
@@ -8,6 +8,8 @@ import { createStudioRepository } from '../../web/storage/studio-repository.mjs'
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
+import { createStudioNativeAuth } from './studio-native-auth.mjs';
+import { normalizeStudioRole } from './studio-access-policy.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
@@ -173,6 +175,35 @@ export async function authorizePartner(request, config) {
   }
 }
 
+export function internalSessionPresent(request) {
+  return (request?.headers?.get('cookie') || '').split(';')
+    .some(part => /^(?:bo_jwt|lab_session)=/.test(part.trim()));
+}
+
+// A present N1 cookie must validate as a fresh N1 administrator even when a
+// valid partner_session is also present. Stale admin credentials never fall
+// back silently to another identity. No partner token or membership is minted.
+export async function authorizePartnerWorkspace(request, config) {
+  if (!internalSessionPresent(request)) {
+    return { ...await authorizePartner(request, config), accessClass: 'partner' };
+  }
+  const authorize = createStudioNativeAuth({ boDb: config?.boDb, scope: config?.scope, now: config?.now });
+  const read = async () => {
+    const session = await authorize(request);
+    const accounts = await config.boDb.prepare(accountProjection + 'LOWER(u.username)=?')
+      .all(session.user.toLowerCase());
+    if (accounts.length !== 1 || normalizeStudioRole(accounts[0].role) !== 'admin') fail(401);
+    return Object.freeze({ ...session, accountId: String(accounts[0].id), accessClass: 'internal-admin' });
+  };
+  try {
+    return await (typeof config.boDb.transaction === 'function'
+      ? config.boDb.transaction(read, { serialize: false }) : read());
+  } catch (error) {
+    if (messages.has(error?.statusCode)) throw error;
+    fail(503);
+  }
+}
+
 async function login(request, body, config) {
   keys(body, ['user', 'pass']);
   if (!text(body.user, 254) || !body.user.trim() || !text(body.pass, 256)) fail(400);
@@ -247,7 +278,9 @@ function preparePartnerRequest(request, config) {
   const url = new URL(request.url);
   let operatorSlugValue;
   if (request.method === 'GET') {
-    operatorSlugValue = takeOperatorSlug(url);
+    if (partnerAction(url.pathname, config) === 'snapshot' && !url.search) {
+      if (url.hash) fail(400);
+    } else operatorSlugValue = takeOperatorSlug(url);
   } else if (request.method === 'POST' && ['branding', 'team'].includes(partnerAction(url.pathname, config))) {
     if (url.hash) fail(400);
     operatorSlugValue = takeOperatorSlug(url);
@@ -323,13 +356,19 @@ async function openBrandingStore(config) {
 }
 // Session, operator and the caller's active membership, read fresh for this request.
 async function partnerOperatorContext(prepared, config) {
-  const session = await authorizePartner(prepared.request, config);
+  const session = await authorizePartnerWorkspace(prepared.request, config);
   const store = await openBrandingStore(config);
-  if (typeof store.getOperatorBySlug !== 'function' || typeof store.resolvePartnerContext !== 'function' || typeof store.getMembership !== 'function') fail(503);
+  if (typeof store.getOperatorBySlug !== 'function') fail(503);
   const operator = await store.getOperatorBySlug(prepared.operatorSlug);
   if (!operator || operator.slug !== prepared.operatorSlug) fail(404);
   if (operator.scope && !sameOperatorScope(operator.scope, session.scope)) fail(403);
   if (operator.status && operator.status !== 'active') fail(403);
+  if (session.accessClass === 'internal-admin') {
+    const context = internalPartnerContext(session, operator);
+    if (!allowsWorkspaceResource(context, 'overview.read', { scope: session.scope, operatorId: operator.id })) fail(403);
+    return { session, store, operator, context, membership: null };
+  }
+  if (typeof store.resolvePartnerContext !== 'function' || typeof store.getMembership !== 'function') fail(503);
   const context = await store.resolvePartnerContext({
     account: { userId: session.accountId, role: 'partner', status: 'active' },
     operatorSlug: prepared.operatorSlug,
@@ -343,6 +382,7 @@ async function partnerOperatorContext(prepared, config) {
   return { session, store, operator, context, membership };
 }
 async function decidedPartnerContext({ session, store, operator, context, membership }) {
+  if (session.accessClass === 'internal-admin') return context;
   if (typeof store.getRole !== 'function') fail(503);
   const role = await store.getRole(operator.id, membership.roleId);
   const scope = context.scope ?? session.scope;
@@ -361,7 +401,7 @@ async function decidedPartnerContext({ session, store, operator, context, member
       permissions: role.permissions,
       operatorId: role.operatorId ?? operator.id,
       scope: role.scope ?? scope,
-    } : context.role,
+    } : null,
   };
 }
 async function brandingResponse(prepared, config) {
@@ -382,8 +422,9 @@ async function brandingResponse(prepared, config) {
     const current=await partnerOperatorContext(prepared,{...config,store:source});
     const decided=await decidedPartnerContext(current);
     if(current.operator.id!==operator.id||current.session.accountId!==session.accountId
+      ||current.session.accessClass!==session.accessClass
       ||!sameOperatorScope(decided.scope,session.scope))fail(403);
-    return allowsPartnerResource(decided,'presentations.configure',{scope:session.scope,operatorId:operator.id});
+    return allowsWorkspaceResource(decided,'presentations.configure',{scope:session.scope,operatorId:operator.id});
   };
   const withWriteContext=async work=>{
     if(config.store)return work({store,readAdministration,reauthorize:()=>reauthorize(store)});
@@ -408,7 +449,7 @@ async function brandingResponse(prepared, config) {
     readProject:typeof config.readProject==='function'?config.readProject:defaultReadProject});
   const decided = await decidedPartnerContext(found);
   const { scope } = decided;
-  const canConfigure = allowsPartnerResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
+  const canConfigure = allowsWorkspaceResource(decided, 'presentations.configure', { scope, operatorId: operator.id });
   if (prepared.request.method === 'GET') return json({ ...await api.read({ operatorId: operator.id }), canConfigure }, 200, [], { vary: true });
   if (!canConfigure) fail(403);
   const body = await bodyOf(prepared.request);
@@ -428,9 +469,40 @@ async function teamResponse(prepared, config) {
   const { session, store } = found;
   if (!['listRoles', 'listMemberships', 'upsertMembership'].every(name => typeof store[name] === 'function')) fail(503);
   const decided = await decidedPartnerContext(found);
+  const reauthorize = async source => {
+    const current = await partnerOperatorContext(prepared, { ...config, store: source });
+    const latest = await decidedPartnerContext(current);
+    if (current.operator.id !== found.operator.id || current.session.accountId !== session.accountId
+      || current.session.accessClass !== session.accessClass || !sameOperatorScope(latest.scope, session.scope)) fail(403);
+    return latest;
+  };
+  const withWriteContext = async work => {
+    if (config.store) return work({ store, reauthorize: () => reauthorize(store) });
+    const repository = createStudioRepository({ pool: config.pool, scope: config.scope });
+    return repository.transaction(() => repository.withTransactionClient(async client => {
+      try {
+        // Match all other Studio writers: scope lock, then operator row lock.
+        const locked = await client.query(
+          '/* operator-store:lock-operator */ SELECT operator_id FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 FOR UPDATE',
+          [config.scope.environment, config.scope.workspaceId, found.operator.id]);
+        if (!locked.rows.length) fail(404);
+        const source = await createOperatorStore({ sql: client, scope: config.scope, now: config.now,
+          transaction: callback => repository.withTransactionClient(callback) });
+        return await work({ store: source, reauthorize: () => reauthorize(source) });
+      } catch (error) {
+        if (Number.isInteger(error?.statusCode)) {
+          const rejected = new StudioStorageError('partner_request_rejected', error.statusCode);
+          if (error.statusCode === 409 && PARTNER_TEAM_CONFLICTS.includes(error.reason)) rejected.reason = error.reason;
+          throw rejected;
+        }
+        throw error;
+      }
+    }));
+  };
   const api = createPartnerTeamApi({
     store, boDb: config.boDb, gameDb: config.gameDb, journal: config.journal,
     mail: config.mail, now: config.now, publicOrigin: config.publicOrigin ?? config.allowedOrigins?.[0],
+    reauthorize: () => reauthorize(store), withWriteContext,
   });
   if (prepared.request.method === 'GET') return json(await api.read(decided), 200, [], { vary: true });
   if (!api.writable(decided)) fail(403);

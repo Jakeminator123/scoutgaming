@@ -1,7 +1,9 @@
+import { OPERATOR_ADMIN_PERMISSION } from '../../web/partner-access-policy.mjs';
 import {
-  OPERATOR_ADMIN_PERMISSION, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerResource,
-  allowsPartnerRoleAssignment, allowsPartnerSuspension,
-} from '../../web/partner-access-policy.mjs';
+  allowsWorkspaceInvite as allowsPartnerInvite, allowsWorkspaceInviteRole as allowsPartnerInviteRole,
+  allowsWorkspaceResource as allowsPartnerResource, allowsWorkspaceRoleAssignment as allowsPartnerRoleAssignment,
+  allowsWorkspaceSuspension as allowsPartnerSuspension,
+} from './partner-workspace-access.mjs';
 import {
   consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
   partnerMailbox, playerOwnsEmail, sendPartnerInvite, visibleOperatorUsername,
@@ -26,6 +28,7 @@ function revisionOf(value) {
 // session check. The store re-checks the last administrator under its lock.
 export function createPartnerTeamApi({
   store, boDb, gameDb, journal = createOperatorJournal(), mail, now = () => Date.now(), publicOrigin,
+  reauthorize, withWriteContext,
 } = {}) {
   const accounts = () => createOperatorAccounts(boDb);
   const clock = typeof now === 'function' ? now : () => Date.now();
@@ -72,20 +75,20 @@ export function createPartnerTeamApi({
       members: rows,
     };
   }
-  async function roleOf(operatorId, roleId) {
+  async function roleOf(operatorId, roleId, source = store) {
     if (typeof roleId !== 'string') fail(422);
-    const found = await store.getRole(operatorId, roleId);
+    const found = await source.getRole(operatorId, roleId);
     if (!found) fail(422);
     return found;
   }
-  async function memberOf(operatorId, userId) {
+  async function memberOf(operatorId, userId, source = store) {
     if (typeof userId !== 'string') fail(400);
-    const found = await store.getMembership(operatorId, userId);
+    const found = await source.getMembership(operatorId, userId);
     if (!found) fail(404);
     return found;
   }
-  async function save(action, input) {
-    try { return await store.upsertMembership(input); }
+  async function save(action, input, source) {
+    try { return await source.upsertMembership(input); }
     catch (error) {
       if (error?.code === 'studio_last_operator_admin') fail(409, 'last-admin');
       if (error?.statusCode === 409) fail(409, action === 'invite' ? 'member' : 'revision');
@@ -108,18 +111,31 @@ export function createPartnerTeamApi({
       if (!writable(decided)) fail(403);
       if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400);
       const { action } = body;
-      let saved;
+      // The HTTP adapter locks the operator before this callback. Resolve the
+      // account/session and exact action grants again on that same SQL source;
+      // changing an actor's role cannot race between the guard and the write.
+      const locked = async ({ store: source = store, reauthorize: authorize = reauthorize } = {}) => {
+        const fresh = async () => {
+          const latest = typeof authorize === 'function' ? await authorize() : decided;
+          if (!latest || !writable(latest)) fail(403);
+          return latest;
+        };
+        await fresh();
+        let saved;
       if (action === 'invite') {
         keys(body, ['action', 'email', 'roleId']);
-        const nextRole = await roleOf(operatorId, body.roleId);
-        if (!allowsPartnerInviteRole(decided, nextRole)) fail(403);
+        const nextRole = await roleOf(operatorId, body.roleId, source);
+        let latest = await fresh();
+        if (!allowsPartnerInviteRole(latest, nextRole)) fail(403);
         const email = partnerMailbox(body.email);
         if (!email) fail(422);
         let account = await accounts().byEmail(email);
         if (account && account.role !== 'partner') fail(422);
-        if (account && !allowsPartnerInvite(decided, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
+        if (account && !allowsPartnerInvite(latest, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
         if (!account && await playerOwnsEmail(gameDb, email)) fail(422);
-        const operator = typeof store.getOperatorById === 'function' ? await store.getOperatorById(operatorId) : null;
+        const operator = typeof source.getOperatorById === 'function' ? await source.getOperatorById(operatorId) : null;
+        latest = await fresh();
+        if (!allowsPartnerInviteRole(latest, nextRole)) fail(403);
         const release = consumePartnerInvite(actor, clock());
         let invitation = null;
         let createdNew = false;
@@ -134,36 +150,45 @@ export function createPartnerTeamApi({
               });
             } else account = await accounts().byEmail(email);
             if (!account || account.role !== 'partner') fail(422);
-            if (!allowsPartnerInvite(decided, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
+            if (!allowsPartnerInvite(latest, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
           }
+          latest = await fresh();
+          if (!allowsPartnerInvite(latest, { account: { userId: account.userId, role: account.role }, nextRole })) fail(403);
           await save(action, {
             actor, operatorId, userId: account.userId, roleId: nextRole.id, status: createdNew ? 'invited' : 'active',
-          });
+          }, source);
         } catch (error) {
           release();
           throw error;
         }
-        if (invitation) await sendPartnerInvite(delivery, invitation);
-        journal.record({ actor, action: 'team.invite', operatorId, target: { email: maskOperatorEmail(email) } });
-        return { invited: true };
+        return { invitation, email, invited: true };
       } else if (action === 'role') {
         keys(body, ['action', 'userId', 'roleId', 'expectedRevision']);
         const expectedRevision = revisionOf(body.expectedRevision);
-        const membership = await memberOf(operatorId, body.userId);
-        const currentRole = await roleOf(operatorId, membership.roleId);
-        const nextRole = await roleOf(operatorId, body.roleId);
-        if (!allowsPartnerRoleAssignment(decided, { membership, currentRole, nextRole })) fail(403);
-        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: nextRole.id, status: membership.status, expectedRevision });
+        const membership = await memberOf(operatorId, body.userId, source);
+        const currentRole = await roleOf(operatorId, membership.roleId, source);
+        const nextRole = await roleOf(operatorId, body.roleId, source);
+        if (!allowsPartnerRoleAssignment(await fresh(), { membership, currentRole, nextRole })) fail(403);
+        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: nextRole.id, status: membership.status, expectedRevision }, source);
       } else if (action === 'suspend' || action === 'reactivate') {
         keys(body, ['action', 'userId', 'expectedRevision']);
         const expectedRevision = revisionOf(body.expectedRevision);
-        const membership = await memberOf(operatorId, body.userId);
-        const currentRole = await roleOf(operatorId, membership.roleId);
+        const membership = await memberOf(operatorId, body.userId, source);
+        const currentRole = await roleOf(operatorId, membership.roleId, source);
         const nextStatus = action === 'suspend' ? 'suspended' : 'active';
-        if (!allowsPartnerSuspension(decided, { membership, currentRole, nextStatus })) fail(403);
-        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: membership.roleId, status: nextStatus, expectedRevision });
+        if (!allowsPartnerSuspension(await fresh(), { membership, currentRole, nextStatus })) fail(403);
+        saved = await save(action, { actor, operatorId, userId: membership.userId, roleId: membership.roleId, status: nextStatus, expectedRevision }, source);
       } else fail(400);
-      const changed = { userId: saved.userId, roleId: saved.roleId, status: saved.status, revision: saved.revision };
+        return { changed: { userId: saved.userId, roleId: saved.roleId, status: saved.status, revision: saved.revision } };
+      };
+      // Provider mail and journal are emitted only after the SQL commit succeeds.
+      const result = typeof withWriteContext === 'function' ? await withWriteContext(locked) : await locked();
+      if (result.invited) {
+        if (result.invitation) await sendPartnerInvite(delivery, result.invitation);
+        journal.record({ actor, action: 'team.invite', operatorId, target: { email: maskOperatorEmail(result.email) } });
+        return { invited: true };
+      }
+      const { changed } = result;
       journal.record({ actor, action: `team.${action}`, operatorId, target: changed });
       return { ...(await listing(decided)), changed };
     },
