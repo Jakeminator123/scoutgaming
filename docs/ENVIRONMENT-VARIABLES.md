@@ -312,6 +312,36 @@ Lab läser bara `CROUPIER_ZONES_DATABASE_URL` för zoner. Generella DATABASE_URL
 POSTGRES_URL är inte reserv för detta. Vercel-konfiguration kopieras inte
 automatiskt till Render. Produkt-, Lab- och Gateway-token har olika roller.
 
+### Synkade privata nycklar, 11 oktober 2026
+
+Rotens ignorerade `.env.local` innehåller aktuella lokala värden. Befintliga
+selektiva läsare använder även `.env` och `lab/.env.local`; deras överlappande
+nycklar hålls därför lika, utan att ladda alla hemligheter i varje process.
+Detta är en verifierad engångssynk, ingen automatisk molnsynk vid filändring.
+
+- ElevenLabs har ett runtime-namn: `ELEVENLABS_API_KEY`. Den angivna
+  dubbla prefixeringen rättades med det separat verifierade kontovärdet.
+  PAOWs och Dragges exakta originalröst-ID svarade 200 vid läsande kontroll.
+  `ELEVENLABS_OC_API` och `ELEVENLABS_VIDEO_KEY` är borttagna ur de tre
+  lokala env-filerna; Lab har ingen ElevenLabs-nyckel. Ingen leverantörsnyckel
+  återkallades och ingen alternativ röst valdes.
+- Render `croupier-v2` har den verifierade `ELEVENLABS_API_KEY`. Läsning
+  efter skrivning bekräftade värdet och att andra Render-värden var orörda.
+  Lokal Cartesia synkades till den fungerande Render-nyckeln; båda tidigare
+  värdena nådde Victoria, men molnets fungerande konto ersattes inte.
+- Vercel `scoutgaming` Production fick `OPENCLAWAPI_KEY` och
+  `RESEND_API_KEY` från rotens `.env.local`, båda som Sensitive.
+  OpenClaws verkliga adminläsning svarade 200 och Resend matchade redan före
+  skrivningen. Övriga Vercel-variabler förblev oförändrade, inklusive
+  integrationsstyrda Neon/Blob-värden och separata Preview-inställningar.
+- Vercels gamla Cartesia/RunPod/OpenAI/Gemini/Director-fält är avsiktligt
+  tomma. De fylls inte från lokala filer. ElevenLabs behövs inte på Vercel,
+  i GPU-workern eller som GitHub-secret: Render genererar ljud och skickar
+  ljudet vidare till workern.
+
+Synk av nycklar bevisar inte TTS eller läppsynk. Dealerprofilflaggan förblir
+av tills den nya GPU-imagen och hela PAOW-förloppet accepterats.
+
 ### Talnycklar och sparade modeller
 
 Nya dealerprofiler kräver `CROUPIER_DEALER_SPEECH_PROFILES=1` på Render
