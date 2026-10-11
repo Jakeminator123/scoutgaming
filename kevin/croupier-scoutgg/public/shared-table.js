@@ -2,7 +2,6 @@ import {presentationState,themeChips,chipLabel} from './game-presentation.js';
 import { boxResults,createWinTracker,currentReceipt,mainResults,mainWin,showWinToast,visibleSideResults } from './win-feedback.js';
 import { createGameCards } from './game-cards.js';
 import { cardsIn,total } from './game-events.js';
-import { askConfirm,dismissConfirm,hardTotal,needsConfirm } from './confirm-action.js';
 import { remarkForAction,createWinStreak,tableTalkFor } from './dealer-remarks.js';
 import { firstFaceTime } from './card-face-projection.js';
 import { DEAL_CONTACT } from './card-table-layout.js';
@@ -173,10 +172,10 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     let revealed=Boolean((plan&&now<plan.endAt?plan.before:round)?.dealer.length>1);
     if((plan&&now<plan.endAt?plan.before:round)?.holeDraw)visible.add((plan&&now<plan.endAt?plan.before:round).holeDraw);
     if(plan)for(const s of plan.steps){
-      if(s.kind==='reveal'&&now>=s.startAt){const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s));if(!s.clip||elapsed>=firstFaceTime(s.track??'flip'))revealed=true;}
+      if(s.kind==='reveal'&&now>=s.startAt){const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s),s.track);if(!s.clip||elapsed>=firstFaceTime(s.track??'flip'))revealed=true;}
       if(s.kind==='deal') {
         // Not adopted yet (a plan that arrived late): count from the deal take too, past a ready dealer's in-transition.
-        const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s));
+        const elapsed=currentDeal?.shoeDraw===s.shoeDraw&&currentDeal?.kind===s.kind?sourceFrame:(now-s.startAt)/1000-variantOffset(readyVariant(plan,s),s.track);
         if(elapsed>=firstFaceTime(s.track??s.seat))visible.add(s.shoeDraw);
       }
     }
@@ -200,7 +199,10 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     const betting=entered&&state.phase==='bets'&&!paused;
     const language=$('#dealerLanguage');
     language.value=state.language??'en';
-    for(const option of language.options)option.disabled=!(state.availableLanguages??['en']).includes(option.value);
+    // Emil 11 Oct: only the languages this dealer speaks are offered: his recorded lines (Dragge, Paow), Astrid's
+    // recorded languages (no Swedish), English only for a dealer without a voice yet (Mårten).
+    const spoken=dealer.lines===undefined?(state.availableLanguages??['en']).filter(l=>l!=='sv'):dealer.lines??['en'];
+    for(const option of language.options){const ok=(state.availableLanguages??['en']).includes(option.value)&&spoken.includes(option.value);option.disabled=!ok;option.hidden=!ok;}
     language.disabled=!entered||sending||preparing||paused||state.phase!=='bets'||state.bets.some(b=>Object.values(b).some(v=>v>0));
     $('#dealerLanguageHint').textContent=!entered?`Join the table to choose ${dealer.name}’s language.`:state.phase!=='bets'||state.deadline?'Available before placing bets in the next round.':'Shared by everyone at this table. Choose before placing bets.';
     const choosing=!$('#gate').classList.contains('off')&&entryStep===1;
@@ -219,7 +221,6 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     $('#gameStatus').textContent=(me?.boxesAfterRound&&state.phase!=='bets'&&!notice)?`Your new boxes (${me.boxesAfterRound.map(boxLabel).sort((a,b)=>a-b).join(', ')}) apply from the next round`:(broke&&!paused&&!notice)?`Out of chips. Tap + ${whole(state.limits?.refill??1000)} demo to keep playing.`:(paused?`Demo break until ${new Date(state.pausedUntil).toLocaleString()}. Existing hands can stand or time out.`:mediaNotice||notice)||(me?.leaving?'Finishing your hand automatically, then freeing your seats':b?`${dealer.name} is dealing`:state.phase==='settled'?'Round complete':state.phase==='bets'?ready?'Ready. Waiting for the table':'Choose a chip and place your bets':round?.phase==='insurance'?state.insuranceDue?'Would you like insurance?':'Waiting for insurance decisions':turn?`Your turn · box ${boxLabel(round.hands[round.active].box)} · ${total(round.hands[round.active].cards)}`:`${playerName(ownerOfHand())} is playing`);
     $('#betControls').hidden=!betting;$('#betActions').hidden=!betting;
     $('#actionControls').hidden=!turn||b||!entered;
-    if(!turn||b)dismissConfirm();
     for(const btn of document.querySelectorAll('[data-action]'))btn.disabled=sending||b||(paused&&btn.dataset.action!=='stand')||!turn||!round.legalActions.includes(btn.dataset.action)||(['double','split'].includes(btn.dataset.action)&&round.hands[round.active].stake>me.balance);
     $('#insuranceControls').hidden=!state.insuranceDue||b||!entered||Boolean(me?.leaving);
     const cost=round?.hands.filter(h=>own().includes(h.box)).reduce((n,h)=>n+h.stake/2,0)??0;
@@ -276,7 +277,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
       stepKey=key;if(currentDeal){cards.endDeal();currentDeal=null;renderKey='';}
       if(step) {
         // A ready dealer's run variant may start with his in-transition: card timing counts from the deal take itself.
-        const variant=readyVariant(plan,step),lead=variantOffset(variant);
+        const variant=readyVariant(plan,step),lead=variantOffset(variant,step.track);
         currentDeal=step.kind==='deal'||(step.kind==='reveal'&&step.clip)?step:null;sourceFrame=Math.max(0,(now-step.startAt)/1000)-lead;let landed=false;
         
         // fit: a ready dealer's take is shorter than the slot (timed on Astrid's): the player stretches it to the slot.
@@ -309,13 +310,18 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   $('#entryBack').addEventListener('click',()=>{entryStep=1;render();});
   $('#changeName').addEventListener('click',()=>{entryStep=2;$('#playerName').value=savedNick();render();ensureMedia();$('#playerName').focus();});
   $('#changeSeats').addEventListener('click',()=>{entryStep=1;selected=new Set(own());$('#playerName').value=state.me?.name??'';$('#gate').classList.remove('off');render();});
-  $('#copyTableLink').addEventListener('click',async()=>{try{const url=new URL(location.href);url.searchParams.set('session',tableSession);await navigator.clipboard.writeText(url.href);notice='Table link copied. Invite a friend.';}catch{notice=`Share this table link: ${location.href}`;}render();});
+  // Emil (10): "Invite a friend" did nothing a seated player could see: its feedback went to the join gate, which is
+  // hidden at the table. The button now shares (phone share sheet) or copies, and says so on itself.
+  $('#copyTableLink').addEventListener('click',async()=>{const btn=$('#copyTableLink'),label=btn.dataset.label??=btn.textContent;
+    const url=new URL(location.href);url.searchParams.set('session',tableSession);const link=url.href;
+    const say=(text,ms=2200)=>{btn.textContent=text;clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.textContent=label;},ms);};
+    try{if(navigator.share&&matchMedia('(pointer:coarse)').matches){await navigator.share({title:document.title,text:'Join my blackjack table',url:link});say('Shared ✓');return;}}catch(e){if(e?.name==='AbortError')return;}
+    try{await navigator.clipboard.writeText(link);say('Link copied ✓');}
+    catch{try{const ta=Object.assign(document.createElement('textarea'),{value:link});ta.style.cssText='position:fixed;opacity:0';document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();say(ok?'Link copied ✓':'Copy failed');if(!ok)window.prompt?.('Table link',link);}catch{say('Copy failed');}}});
   // One listener for the rack, so a rebuilt rack (other table limits) keeps working.
   document.querySelector('.chip-picker').addEventListener('click',e=>{const btn=e.target.closest('[data-chip]');if(!btn)return;chip=Number(btn.dataset.chip);chipPicked=true;unlock();audio?.play('click');for(const other of document.querySelectorAll('.chip-picker [data-chip]'))other.setAttribute('aria-pressed',String(other===btn));});
   for(const [id,op] of [['dealNow','ready'],['clearBets','clear'],['undoBet','undo'],['doubleBets','doubleBets'],['repeatBet','repeat'],['allSeats','allSeats'],['nextRound','next'],['refillDemo','refill']])$('#'+id).addEventListener('click',async()=>{unlock();if(await request(op,{chip})){audio?.play('chip');if(op==='refill'){notice=`Added ${whole(state?.limits?.refill??1000)} in demo funds`;render();}}});
-  for(const btn of document.querySelectorAll('[data-action]'))btn.addEventListener('click',async()=>{unlock();const r=state?.round,hand=r?.hands?.[r.active],asked=`${state?.roundId}:${r?.active}:${hand?.cards.length}`;if(needsConfirm(btn.dataset.action,hand?.cards)){if(!await askConfirm(`${btn.dataset.action==='hit'?'Hit':'Double'} on ${hardTotal(hand.cards)}? Are you sure?`))return;
-    // a Yes counts only for the hand it was asked about: the timer may have moved the turn on meanwhile
-    if(`${state?.roundId}:${state?.round?.active}:${state?.round?.hands?.[state.round.active]?.cards.length}`!==asked)return;}request('act',{action:btn.dataset.action}).then(ok=>{if(ok)remark(remarkForAction(btn.dataset.action,hand?.cards));});});
+  for(const btn of document.querySelectorAll('[data-action]'))btn.addEventListener('click',()=>{unlock();const r=state?.round,hand=r?.hands?.[r.active];request('act',{action:btn.dataset.action}).then(ok=>{if(ok)remark(remarkForAction(btn.dataset.action,hand?.cards));});});
   for(const btn of document.querySelectorAll('[data-insurance]'))btn.addEventListener('click',()=>{unlock();request('insurance',{take:btn.dataset.insurance==='yes'});});
   $('#leaveTable').addEventListener('click',()=>request('leave'));
   $('#pauseDemo').addEventListener('click',async()=>{if(confirm('Start a 24-hour demo break on this browser profile? New bets and refills will be blocked on every table. This break cannot be cancelled. Existing hands can stand or time out.'))await request('pause');});
@@ -330,5 +336,17 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
       selected.has(seat)?selected.delete(seat):selected.add(seat);render();return;
     }
     unlock();void ensureMedia();if(await request('bet',{seat,field,chip}))audio?.play('chip');
-  },sourceStarted:id=>cards.sourceStarted(id),get busy(){return busy()||sending;},get playing(){return state?.phase==='round';},get preview(){return false;}};
+  },
+  // Emil 11 Oct (#9): the chat's name box renames you. Seated, it is the gate's own join with the boxes you hold
+  // (boxesAfterRound first, so a box change waiting for the round end survives), under the server's name rules.
+  // Not seated yet, it becomes the nickname Play uses.
+  rename:async name=>{
+    if(!state?.me?.seats.length){try{localStorage.setItem(NICK,name);}catch{}render();return name;}
+    if(!await request('join',{name,seats:state.me.boxesAfterRound??state.me.seats}))return null;
+    try{localStorage.setItem(NICK,state.me.name);}catch{}
+    return state.me.name;
+  },sourceStarted:id=>cards.sourceStarted(id),get busy(){return busy()||sending;},get playing(){return state?.phase==='round';},
+    // How long the table surely leaves the screen alone (ms): none while a plan runs or a round is on (anyone may act),
+    // the betting countdown while it runs, otherwise open-ended. A chat answer starts only if it ends within this.
+    get quietMs(){if(busy()||sending||state?.phase==='round')return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
 }
