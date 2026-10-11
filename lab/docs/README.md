@@ -12,6 +12,16 @@ Partnerportalen är nivå 2. Operatörens personal loggar in på `/partner/login
 
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
+```text
+Dealers & klipp: dealerfilmer och grundloop
+Sammansättning: bord, bakgrund, placering och tillåtna val
+              → Spara → Provspela
+Publicering: välj bolag och paket → återanvänd/skapa spelrum
+/play: välj bolag → rum → dealer/miljö → spela
+```
+
+En enda egen grundloop räcker för att testa flödet. Händelseklipp kan läggas till senare; avsaknad av sådana klipp ersätter inte dealern med någon annan.
+
 **Dealer, presentation och spelrum är olika saker:**
 
 - **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
@@ -36,6 +46,8 @@ media-ID utan att ta över en annan dealers registrering. Varje film
 har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 En egen dealer kan tas bort med **Ta bort dealer ur utkastet** när ingen presentation i utkastet använder den. Då tas identiteten, händelsekopplingarna och dess grundloopschema bort ur utkastet. Spara efteråt. Grunddealers skyddas, och filmer samt publicerade paket finns kvar. Om spelet fortfarande hänvisar till dealern kan servern neka sparningen; borttagningen avpublicerar inte ett aktivt spelrum.
+
+**Vad kan tas bort?** En oanvänd egen dealer kan tas ur utkastet enligt regeln ovan. Bord och bakgrunder kan tas ur presentationens tillåtna val; publicera om paketet när bolagets utbud ska ändras. Detta är inte permanent radering av mediefiler. Permanent filradering samt borttagning eller avstängning av själva bolaget saknas ännu i gränssnitt/API. Stäng av för en medlem stänger endast medlemskapet.
 
 I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i presentationen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
 **Förhandsvisa klipp** byter endast provfilm. **Dealerklipp, grundloop och händelser** öppnar Dealers & klipp för det sparade basklippet och andra händelser.
@@ -386,8 +398,7 @@ och OpenClaw behöver inte startas om när beskrivningar eller val ändras.
 
 Grundvikt är alltså inte faktisk tidsandel. Automatisk idlevariant följer
 intervall, jitter, cooldown och maxfrekvens. OpenClaw-valbar variant kräver en
-färsk chattmöjlighet; manuell variant schemaläggs inte. Regelstyrd idle har
-ännu ingen ansluten trigger och kan inte nyväljas i editorn.
+färsk chattmöjlighet; manuell variant schemaläggs inte. I grunddealerns äldre idleeditor är Regler inte anslutna och kan inte nyväljas. Egna dealers stöder regelstyrda variationer med sparade villkor för utdelning/vändning och Klippval=Regler, enligt flödet ovan.
 Det deterministiska enminutsprovet spelar exakta registrerade klipp och loggar
 start/slut/återgång. En uttryckligen öppnad separat Lab-preview använder en
 idle-controller med samma sparade policy: verkligt `ended` väljer nästa klipp,

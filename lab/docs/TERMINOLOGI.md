@@ -61,7 +61,7 @@ Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt bas
 | Room / table | Spelrum / spelbord | Bolagsägd spelresurs som kopplar fryst presentation till en verklig spellane. De två lane-ID:na behöver inte vara lika. |
 | Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |
 | Frozen dealer events | Publicerade händelseklipp | Paket v3 fryser egna dealers sparade händelsekopplingar, grundloopschema och exakta filmer. Biblioteksklipp utan koppling eller schemaval ingår inte. V2-paket behöver återpubliceras, och runtime måste stödja v3. |
-| Dealer idle policy | Dealerns grundloopschema | Separat sparade basklipp och variationer med Automatik, OpenClaw eller Bara manuellt. Samma uppspelningsstyrning används för varje dealer. Regelstyrda idlevariationer är ännu inte anslutna. |
+| Dealer idle policy | Dealerns grundloopschema | Separat sparade basklipp och variationer med Automatik, OpenClaw eller Bara manuellt. Samma uppspelningsstyrning används för varje dealer. Egna dealers stöder även Regler med explicit sparat villkor för utdelning/vändning och Klippval=Regler. Grunddealerns äldre idleeditor har inte den regelkopplingen. |
 
 Äldre UI-ord Eventgrupp, Linje, Trigger och Policy ska ersättas med
 **Händelsekategori, Klippuppsättning, Villkor och Urvalsregler**.
