@@ -1,6 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
+    "speech": {
+      "root": "apps/croupier-speech",
+      "framework": "node",
+      "entrypoint": "server.mjs",
+      "installCommand": "npx --yes pnpm@10.33.2 --dir ../croupier-frontend install --frozen-lockfile --ignore-scripts",
+      "buildCommand": "npm run build",
+      "functions": { "server.mjs": { "maxDuration": 600 } }
+    },
     "web": {
       "root": "apps/croupier-frontend",
       "framework": "nextjs",
@@ -31,6 +39,8 @@
     }
   },
   "rewrites": [
+    { "source": "/speech-stream", "destination": { "service": "speech" } },
+    { "source": "/lipsync-worker", "destination": { "service": "speech" } },
     { "source": "/studio/:path*", "destination": { "service": "studio" } },
     { "source": "/control/:path*", "destination": { "service": "studio" } },
     { "source": "/partner/:path*", "destination": { "service": "studio" } },

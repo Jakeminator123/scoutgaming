@@ -2,6 +2,14 @@
 
 ## Börja här: överlämning 11 oktober 2026
 
+### Astrids taltransport: 404-rättning, 11 oktober 2026
+
+Produktionens `/lipsync-worker` och `/speech-stream` svarade med Nexts HTML-404 även vid WebSocket-handshake. Astrid kunde skapa ny svarstext men stannade i `video-queue` med `generated_speech_session_worker_failed`; RunPod laddade modellen men rapporterade `session failed`. Render väntar på GPU-sessionen före Cartesia, vilket även förklarar det uteblivna ljudet. Produktionsnycklarnas närvaro, aktiveringsflaggor och Astrid-endpoint verifierades på spelmotorn `croupier-v2`; inga lokala env-filer eller hemligheter kopierades till drift.
+
+De två exakta publika socketvägarna får nu en explicit Node-service `speech` i samma Vercel-projekt. Den återanvänder befintlig native-bridge, Render-auth, engångsbiljetter, worker-bearer och tids-/kögränser. Enbart serverexporter under Next-appens vanliga `api/` gav inga publicerade Next-rutter. Servicebygget använder frontendens låsta beroenden; nycklar och spel-/providerägarskap stannar på befintliga tjänster. Övriga URL:er får inte åtkomst genom talservicen.
+
+Före leverans: 35 riktade transport-/routingtester PASS, inklusive riktiga relay-bytes genom den nya servicen och nekad främmande ägare/token/återspelning. Faktisk `@vercel/node`-paketering inkluderar entrypoint, dispatcher, befintlig bridge och ws (84 filer); källorna oförändrade av provet. Fullhook och produktionsprov redovisas efter leverans. Detta stycke är ännu inget kvitto på hörbart produktionsljud eller visuell läppsynk.
+
 **Status:** Jakob har därefter beställt förenklad bolagsadministration och ett gemensamt dealerbibliotek. Arbetet har samordnats mellan administrationschatten, dealerchatten och lobbychatten. Den ursprungliga lobbygranskningen var skrivskyddad; Jakob har därefter beställt en separat förbättring av den publika lobbyn. Den tidigare leveransen c48c6754 är fortsatt baslinje; nedanstående tillägg beskriver den nya leveransen.
 
 Detta avsnitt är aktuell sammanställning. Daterade anteckningar längre ned är historiska kvitton och felsökningsspår. Deras ord som "återstår", "inte levererat" och "aktuellt" gäller den angivna tidpunkten. Historiska påståenden om saknat Provspela, trasig webview, tom Amira-scen och väntande c48c6754-deploy är ersatta av verifieringen här. Olösta frågor nedan är däremot fortfarande öppna.

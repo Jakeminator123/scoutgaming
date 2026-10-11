@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
-import {mkdtemp, copyFile, symlink, unlink, rm, realpath} from 'node:fs/promises';
+import {mkdtemp, copyFile, symlink, unlink, rm, realpath, readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -11,6 +11,7 @@ import {createPlatformNativeWebSocketServer} from '../lib/platform-native-websoc
 import {platformConfiguration} from '../lib/platform-routing.mjs';
 import {issueTicket, ticketAuthenticator} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
+import {createSpeechIngress} from '../../croupier-speech/service.mjs';
 
 const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab.example.test',
@@ -30,6 +31,45 @@ async function rejected(url, protocols = [], headers = {}) {
     socket.once('unexpected-response', (_request, response) => {response.resume(); resolve(response.statusCode); socket.terminate();});
   });
 }
+
+test('Services routes both public sockets to the native Node entrypoint before the Next catch-all', async () => {
+  const deployment = JSON.parse(await readFile(new URL('../../../vercel.json', import.meta.url), 'utf8'));
+  const speech = deployment.services.speech;
+  assert.equal(speech.framework, 'node');
+  assert.equal(speech.root, 'apps/croupier-speech');
+  assert.equal(speech.entrypoint, 'server.mjs');
+  assert.equal(speech.functions['server.mjs'].maxDuration, 600);
+  for (const path of ['/speech-stream', '/lipsync-worker']) {
+    const rule = deployment.rewrites.find(value => value.source === path || value.source === '/(.*)');
+    assert.deepEqual(rule, {source: path, destination: {service: 'speech'}});
+  }
+  assert.deepEqual(deployment.rewrites.filter(value => value.destination.service === 'speech').map(value => value.source),
+    ['/speech-stream', '/lipsync-worker']);
+  const entrypoint = await readFile(new URL('../../croupier-speech/server.mjs', import.meta.url), 'utf8');
+  assert.match(entrypoint, /createSpeechIngress\(\)/);
+  assert.match(entrypoint, /server\.listen\(/);
+});
+
+test('speech service exposes only exact public paths and preserves admission before contacting Render', async () => {
+  let backendCalls = 0;
+  class ForbiddenBackend {constructor() {backendCalls++; throw Error('Unexpected backend call');}}
+  const server = createSpeechIngress({env, WebSocketImpl: ForbiddenBackend});
+  try {
+    const base = await listen(server);
+    for (const path of ['/speech-stream', '/lipsync-worker']) {
+      const response = await fetch(base.replace('ws:', 'http:') + path);
+      assert.equal(response.status, 426);
+      assert.equal(response.headers.get('cache-control'), 'private, no-store');
+      assert.equal(await rejected(base + path), 403);
+    }
+    for (const path of ['/api/platform-speech-stream', '/api/platform-lipsync-worker', '/other',
+      '/speech-stream?ticket=secret', '/lipsync-worker/', '/%73peech-stream']) {
+      assert.equal(await rejected(base + path), 404, path);
+      assert.equal((await fetch(base.replace('ws:', 'http:') + path)).status, 404, path);
+    }
+    assert.equal(backendCalls, 0);
+  } finally {await closeServer(server);}
+});
 
 test('native API exports do not listen during imports and flag-off stays closed', async () => {
   const client = (await import('../api/platform-speech-stream.mjs')).default;
@@ -92,7 +132,7 @@ test('native handlers carry actual relay media both ways with current owner, ing
   const temporaryRoot = await realpath(tmpdir());
   const directory = await mkdtemp(join(temporaryRoot, 'croupier-native-relay-'));
   const backend = createServer();
-  let linked = false, relay, clientServer, workerServer, worker, client, currentOwnerActive = true;
+  let linked = false, relay, clientServer, workerServer, speechServer, worker, client, currentOwnerActive = true;
   const authenticate = ticketAuthenticator(ticketSecret), backendRequests = [], workerReceived = [];
   try {
     // Keep the product relay's bytes unchanged, including its real auth module.
@@ -121,10 +161,12 @@ test('native handlers carry actual relay media both ways with current owner, ing
     }
     clientServer = createPlatformNativeWebSocketServer('/speech-stream', {env, WebSocketImpl: ActualBackend, bridgeOptions: {closeTimeoutMs: 30}});
     workerServer = createPlatformNativeWebSocketServer('/lipsync-worker', {env, WebSocketImpl: ActualBackend, bridgeOptions: {closeTimeoutMs: 30}});
-    const clientBase = await listen(clientServer), workerBase = await listen(workerServer);
+    speechServer = createSpeechIngress({env, WebSocketImpl: ActualBackend, bridgeOptions: {closeTimeoutMs: 30}});
+    const clientBase = await listen(clientServer), workerBase = await listen(workerServer), speechBase = await listen(speechServer);
     // Invalid worker credentials are rejected by the actual Render relay before101.
     assert.equal(await rejected(workerBase + '/lipsync-worker', [], {...workerHeaders, authorization: 'Bearer invalid'}), 403);
-    worker = new WebSocket(workerBase + '/api/platform-lipsync-worker', [], {headers: workerHeaders});
+    assert.equal(await rejected(speechBase + '/lipsync-worker', [], {...workerHeaders, authorization: 'Bearer invalid'}), 403);
+    worker = new WebSocket(speechBase + '/lipsync-worker', [], {headers: workerHeaders});
     await once(worker, 'open');
     worker.on('message', (data, binary) => {
       if (binary) {workerReceived.push(Buffer.from(data)); worker.send(Buffer.from('exact-native-fixture-media')); return;}
@@ -132,14 +174,14 @@ test('native handlers carry actual relay media both ways with current owner, ing
       if (message.t === 'start') worker.send(JSON.stringify({t: 'stream', id: message.id, mime: 'video/mp4'}));
       if (message.t === 'end') worker.send(JSON.stringify({t: 'done', id: message.id}));
     });
-    for (const path of ['/speech-stream', '/api/platform-speech-stream']) {
+    for (const [base, path] of [[clientBase, '/speech-stream'], [clientBase, '/api/platform-speech-stream'], [speechBase, '/speech-stream']]) {
       const protocols = ['astrid-v2', `ticket.${ticket()}`];
-      assert.equal(await rejected(clientBase + path, protocols, {...ownerHeaders, cookie: 'player_session=foreign'}), 401);
+      assert.equal(await rejected(base + path, protocols, {...ownerHeaders, cookie: 'player_session=foreign'}), 401);
       currentOwnerActive = false;
-      assert.equal(await rejected(clientBase + path, protocols, ownerHeaders), 401);
+      assert.equal(await rejected(base + path, protocols, ownerHeaders), 401);
       currentOwnerActive = true;
       const messages = [], binaryFrames = [];
-      client = new WebSocket(clientBase + path, protocols, {headers: {...ownerHeaders, 'x-croupier-vercel-secret': 'spoofed'}});
+      client = new WebSocket(base + path, protocols, {headers: {...ownerHeaders, 'x-croupier-vercel-secret': 'spoofed'}});
       const closed = new Promise((resolve, reject) => {
         client.on('error', reject);
         client.on('message', (data, binary) => {
@@ -153,9 +195,9 @@ test('native handlers carry actual relay media both ways with current owner, ing
       assert.equal(client.protocol, 'astrid-v2');
       assert.deepEqual(messages, ['ready', 'stream', 'done']);
       assert.deepEqual(binaryFrames, [Buffer.from('exact-native-fixture-media')]);
-      assert.equal(await rejected(clientBase + path, protocols, ownerHeaders), 401);
+      assert.equal(await rejected(base + path, protocols, ownerHeaders), 401);
     }
-    assert.deepEqual(workerReceived, ['start', Buffer.from('pcm!'), 'end', 'start', Buffer.from('pcm!'), 'end']);
+    assert.deepEqual(workerReceived, Array.from({length: 3}, () => ['start', Buffer.from('pcm!'), 'end']).flat());
     assert.ok(backendRequests.length >= 8);
     assert.ok(backendRequests.every(value => value.headers['x-croupier-vercel-secret'] === configuration.secret));
     assert.ok(backendRequests.every(value => ['/speech-stream', '/lipsync-worker'].includes(value.path)));
@@ -163,7 +205,7 @@ test('native handlers carry actual relay media both ways with current owner, ing
     worker.close(1000); await once(worker, 'close');
   } finally {
     client?.terminate(); worker?.terminate(); relay?.close();
-    await Promise.all([closeServer(backend), ...(clientServer ? [closeServer(clientServer)] : []), ...(workerServer ? [closeServer(workerServer)] : [])]);
+    await Promise.all([closeServer(backend), ...(clientServer ? [closeServer(clientServer)] : []), ...(workerServer ? [closeServer(workerServer)] : []), ...(speechServer ? [closeServer(speechServer)] : [])]);
     if (dirname(directory) !== temporaryRoot || !basename(directory).startsWith('croupier-native-relay-')) throw Error('Unexpected fixture cleanup path');
     if (linked) await unlink(join(directory, 'node_modules'));
     await rm(directory, {recursive: true, force: true});
