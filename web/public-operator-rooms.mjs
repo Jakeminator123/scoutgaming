@@ -4,7 +4,7 @@ import { clipCompositing } from './public/presentation-composition.mjs';
 const PATH = /^\/api\/operators\/([^/]+)\/rooms$/;
 const BASE_LABELS = Object.freeze({ astrid: 'Astrid', vera: 'Vera', amira: 'Amira', mei: 'Mei' });
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
-function supportsIndependentLayers(selection, frozen, dealerId) {
+export function supportsIndependentLayers(selection, frozen, dealerId) {
   if (selection.presentation === 'original' || selection.composition?.dealer.compatibility !== 'per-clip') return false;
   const dealer = frozen.registeredDealers?.find(item => item.id === dealerId);
   if (!dealer) return true; // Preserve the existing built-in local presentation.

@@ -4,6 +4,8 @@ import {useEffect,useState,type MouseEvent} from 'react';
 import {OPERATOR_STORAGE_KEY,operatorChoice} from '@/lib/player-operator.mjs';
 import {readChoices} from '@/lib/player-choices.mjs';
 import {loadOperatorCatalogue,loadRoomCatalogue,rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection,type OperatorCatalogueResult} from '@/lib/player-lobby.mjs';
+import {dealerPortrait,loadRoomPreview,type RoomPreviewResult} from '@/lib/player-room-preview.mjs';
+import {PlayerRoomPreview,PreviewImage,EnvironmentChoices} from './player-room-preview';
 import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../web/public/operator-rooms-contract.mjs';
 
 type Operator={slug:string;name:string};
@@ -12,80 +14,51 @@ const selectClass='mt-2 block min-h-12 w-full rounded-xl border border-white/20 
 const focusClass='focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d4f83a]';
 const initials=(name:string)=>Array.from(name.trim()).slice(0,2).join('').toLocaleUpperCase('sv');
 
-// Visual hierarchy inspired by Kevin's Table Studio (233c65a4): a scene beside
-// ordered choices. Data, permissions and launch remain the existing main flow.
+// Image-led studio layout; choices and launch always come from the published room.
 export function PlayerRoomCard({catalog,room,stored,directPlay}:{catalog:PublicOperatorRooms;room:PublicOperatorRoom;stored:Partial<RoomSelection>;directPlay:boolean}) {
   const [selected,setSelected]=useState(()=>roomSelection(room,stored));
   const [error,setError]=useState('');
+  const [previews,setPreviews]=useState<Record<string,RoomPreviewResult>>({});
+  useEffect(()=>{
+    const controller=new AbortController();let active=true;const pending=[...room.dealers];
+    // Four bounded readers. Cards never discover dealers outside this room.
+    async function worker(){while(active&&pending.length){const row=pending.shift()!;const result=await loadRoomPreview(catalog,room,row.id,{signal:controller.signal});if(active)setPreviews(current=>({...current,[row.id]:result}));}}
+    void Promise.all(Array.from({length:Math.min(4,pending.length)},worker));
+    return()=>{active=false;controller.abort();};
+  },[catalog,room]);
   if(!selected)return null;
   const dealer=room.dealers.find(row=>row.id===selected.dealer)!;
   const launch=roomLaunch(catalog,room.id,selected,{directPlay});
   if(!launch)return null;
   function choose(patch:Partial<RoomSelection>){setSelected(current=>roomSelection(room,{...current,...patch}));setError('');}
   function remember(event:MouseEvent<HTMLAnchorElement>) {
-    try {
-      if(rememberRoomSelection(window.localStorage,catalog.operator.slug,launch!.choices))return;
-    } catch {if(!launch!.choices.tableAsset&&!launch!.choices.background)return;}
+    try {if(rememberRoomSelection(window.localStorage,catalog.operator.slug,launch!.choices))return;}
+    catch {if(!launch!.choices.tableAsset&&!launch!.choices.background)return;}
     event.preventDefault();setError('Dina miljöval kunde inte sparas. Tillåt lokal lagring i webbläsaren och försök igen.');
   }
-  const table=dealer.table.allowed.find(row=>row.id===selected.tableAsset);
-  const background=dealer.background.allowed.find(row=>row.id===selected.background);
-  return <article className="mt-6 grid overflow-hidden rounded-3xl border border-white/10 bg-[#111516] lg:grid-cols-[0.85fr_1.15fr]" aria-labelledby={room.id+'-title'}>
-    <div className="relative flex min-w-0 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#1c3931] via-[#132724] to-[#0b1615] p-6 sm:p-9">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#d4f83a]">Blackjack · {catalog.operator.name}</p>
-        <h3 id={room.id+'-title'} className="mt-4 break-words text-3xl font-medium tracking-tight text-[#f2f1ed]">{room.name}</h3>
-        <p className="mt-2 text-sm text-white/55">{room.presentation.label}</p>
-      </div>
-      <div aria-hidden="true" className="relative my-10 hidden h-40 items-center justify-center sm:flex sm:h-48">
-        <div className="absolute h-40 w-64 rounded-[50%] border border-[#d4f83a]/15 sm:h-48 sm:w-80" />
-        <div className="-mr-4 flex h-32 w-24 -rotate-12 flex-col justify-between rounded-xl bg-[#e9e8de] p-3 text-3xl text-[#18231f] shadow-xl"><span>A</span><span className="self-end">♠</span></div>
-        <div className="mt-5 flex h-32 w-24 rotate-12 flex-col justify-between rounded-xl border border-white/20 bg-[#24483c] p-3 text-3xl text-[#d4f83a] shadow-xl"><span>K</span><span className="self-end">♣</span></div>
-      </div>
-      <div className="relative border-t border-white/15 pt-5" aria-live="polite" aria-atomic="true">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Dina val</p>
-        <p className="mt-2 text-2xl text-[#f2f1ed]">{dealer.label}</p>
-        <p className="mt-2 text-sm leading-relaxed text-white/65">{[table?.label,background?.label].filter(Boolean).join(' · ')||'Dealerns befintliga miljö'}</p>
-        <p className="mt-4 text-xs text-white/40">Bordets slutliga utseende visas när spelet öppnas.</p>
-      </div>
-    </div>
-    <div className="min-w-0 p-6 sm:p-9">
-      <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#d4f83a]">03 / Gör bordet till ditt</p>
-      <fieldset className="mt-6">
-        <legend className="text-lg font-medium text-[#f2f1ed]">Välj dealer</legend>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Dealer">
-          {room.dealers.map(row=><label key={row.id}
-            className={'flex min-h-20 min-w-0 cursor-pointer items-center gap-3 rounded-xl border p-4 text-left transition-colors focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-[#d4f83a] '+(row.id===selected.dealer?' border-[#d4f83a] bg-[#d4f83a]/8':' border-white/10 bg-white/[0.025] hover:border-white/35')}>
-            <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-[#d4f83a]">{initials(row.label)}</span>
-            <span className="min-w-0 flex-1 break-words text-sm font-medium text-[#f2f1ed]">{row.label}</span>
-            <input type="radio" name={room.id+"-dealer"} value={row.id} checked={row.id===selected.dealer} onChange={()=>choose({dealer:row.id})} className="h-4 w-4 shrink-0 accent-[#d4f83a]" />
-          </label>)}
+  const current=previews[dealer.id];const preview=current?.status==='ready'?current.preview:null;
+  return <article className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)] xl:gap-10" aria-labelledby={room.id+'-title'}>
+    <PlayerRoomPreview key={dealer.id} result={current} dealerId={dealer.id} dealerLabel={dealer.label} roomName={room.name} operatorName={catalog.operator.name} tableAsset={selected.tableAsset} background={selected.background}/>
+    <div className="min-w-0 rounded-3xl border border-white/10 bg-[#111516] p-5 sm:p-7">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#d4f83a]">03 / Gör bordet till ditt</p>
+      <h3 id={room.id+'-title'} className="mt-3 text-2xl font-medium tracking-tight">{room.name}</h3>
+      <p className="mt-2 text-sm text-white/45">{room.presentation.label}</p>
+      <fieldset className="mt-7"><legend className="text-base font-medium">Välj dealer</legend>
+        <div className="mt-3 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Dealer">
+          {room.dealers.map(row=>{const data=previews[row.id];return <label key={row.id} className={'group relative min-w-0 cursor-pointer overflow-hidden rounded-xl border transition-colors focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-[#d4f83a] '+(row.id===selected.dealer?'border-[#d4f83a] bg-[#d4f83a]/5':'border-white/10 bg-white/[.025] hover:border-white/35')}>
+            <PreviewImage key={data?.status==='ready'?data.preview.media.dealer?.src??row.id:row.id} portrait={dealerPortrait(row.id)} media={data?.status==='ready'?data.preview.media.dealer:null} label={row.label} className="aspect-[4/3] w-full object-cover object-top transition-transform duration-300 motion-safe:group-hover:scale-[1.025]"/>
+            <span className="flex min-h-16 items-center justify-between gap-2 p-3"><span className="min-w-0"><span className="block break-words text-sm font-medium">{row.label}</span><span className="mt-1 block text-[10px] text-white/45">{row.independentLayers?'Valbar bordsmiljö':'Egen bordsmiljö'}</span></span><input type="radio" name={room.id+'-dealer'} value={row.id} checked={row.id===selected.dealer} onChange={()=>choose({dealer:row.id})} className="h-4 w-4 shrink-0 accent-[#d4f83a]"/></span>
+          </label>})}
         </div>
       </fieldset>
-      <fieldset className="mt-7 space-y-4">
-        <legend className="mb-3 text-lg font-medium text-[#f2f1ed]">Din miljö</legend>
-        {!dealer.independentLayers?<p className="rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-relaxed text-white/60">Bord och bakgrund ingår i {dealer.label}s dealerfilm.</p>:<>
-          {dealer.table.enabled&&dealer.table.allowed.length>0?<label className="block text-sm text-white/65">Bordets utseende
-            <select className={selectClass} value={selected.tableAsset??''} onChange={event=>choose({tableAsset:event.target.value})}>
-              {dealer.table.default===null?<option value="">Inget bord</option>:null}
-              {dealer.table.allowed.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
-            </select>
-          </label>:null}
-          {dealer.background.enabled&&dealer.background.allowed.length>0?<label className="block text-sm text-white/65">Bakgrund
-            <select className={selectClass} value={selected.background??''} onChange={event=>choose({background:event.target.value})}>
-              {dealer.background.default===null?<option value="">Ingen bakgrund</option>:null}
-              {dealer.background.allowed.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}
-            </select>
-            <span className="mt-2 block text-xs text-white/40">{dealer.background.mode==='video'?'Bakgrunden loopas under spelet.':'Bakgrundsbild under spelet.'}</span>
-          </label>:null}
-          {!dealer.table.allowed.length&&!dealer.background.allowed.length?<p className="text-sm text-white/60">Bolagets valda miljö används i det här rummet.</p>:null}
-        </>}
-      </fieldset>
+      {!dealer.independentLayers?<p className="mt-7 rounded-xl border border-white/10 p-4 text-sm leading-relaxed text-white/55">Bord och bakgrund ingår i {dealer.label}s dealerfilm.</p>:<>
+       {dealer.background.enabled&&dealer.background.allowed.length>0?<EnvironmentChoices legend="Bakgrund" name={room.id+'-background'} items={dealer.background.allowed} media={preview?.media.backgrounds} selected={selected.background} allowEmpty={dealer.background.default===null} onChange={id=>choose({background:id})}/>:null}
+       {dealer.table.enabled&&dealer.table.allowed.length>0?<EnvironmentChoices legend="Bordets utseende" name={room.id+'-table'} items={dealer.table.allowed} media={preview?.media.tables} selected={selected.tableAsset} allowEmpty={dealer.table.default===null} onChange={id=>choose({tableAsset:id})}/>:null}
+       {!dealer.table.allowed.length&&!dealer.background.allowed.length?<p className="mt-7 text-sm text-white/55">Bolagets valda miljö används i det här rummet.</p>:null}
+      </>}
       <div className="mt-8 border-t border-white/10 pt-6">
         {error?<p role="alert" className="mb-3 text-sm text-amber-200">{error}</p>:null}
-        <a href={launch.href} onClick={remember} onAuxClick={remember} className={'flex min-h-14 items-center justify-between gap-4 rounded-xl bg-[#d4f83a] px-5 py-4 text-base font-semibold text-[#14180a] transition-colors hover:bg-[#e0ff66] '+focusClass}>
-          <span>{directPlay?'Spela med ':'Logga in och spela med '}{dealer.label}</span><span aria-hidden="true">↗</span>
-        </a>
+        <a href={launch.href} onClick={remember} onAuxClick={remember} className={'flex min-h-14 items-center justify-between gap-4 rounded-xl bg-[#d4f83a] px-5 py-4 text-base font-semibold text-[#14180a] transition-colors hover:bg-[#e0ff66] '+focusClass}><span>{directPlay?'Spela med ':'Logga in och spela med '}{dealer.label}</span><span aria-hidden="true">↗</span></a>
         <p className="mt-3 text-xs leading-relaxed text-white/40">Dina val följer med när bordet öppnas. Demo utan riktiga pengar.</p>
       </div>
     </div>

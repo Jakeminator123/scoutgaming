@@ -18,6 +18,7 @@ import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from './public/chat-response.mjs';
+import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
@@ -104,6 +105,13 @@ const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/publ
   packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
   privateMedia:(await import('../lab/lib/cloud-media-store.mjs')).getPrivateMedia,
 }) : null;
+
+const authorizeChatDealer = createRegisteredChatContext({
+  resolvePublishedContext:studioPolicyRuntime ? createPublishedChatResolver({
+    readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+    readPresentation:(await import('./storage/presentation-package.mjs')).readPackagePresentation,
+  }) : null,
+});
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
   pool: storage.pool, environmentId: studioPolicyRuntime.scope.environment }) : null;
 if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
@@ -119,6 +127,14 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
   store: publicOperatorStore, policy: studioPolicyRuntime?.policy ?? null,
 });
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
+const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
+  readCurrentContext: (await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+  privateMedia: (record,request)=>(import('../lab/lib/cloud-media-store.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+    trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
+      new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
+      ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
+}) : null;
+
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
@@ -500,6 +516,8 @@ function chatSpeechPolicy(dealerId) {
   if (process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' && dealerId === 'astrid') {
     return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
   }
+  // Registered dealers never borrow another dealer's recorded speech bank.
+  if(!Object.hasOwn(CHAT_DEALERS,dealerId))return {recordedLines:[],generatedText:true,silence:true,mediaFamilies:[]};
   let bank = {};
   try { bank = JSON.parse(readSync(publicAssetPath(CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
   catch { /* Generated text or silence remains available. */ }
@@ -593,7 +611,7 @@ const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const lissabonProfiles = postgres ? { enabled: false, session: () => null, handle: () => false } : createLissabonProfiles({ db, createPlayer: apiPlayer,
   enabled: !playerAccounts && guestPreview && process.env.HOST === '127.0.0.1' && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane'
     && process.env.CROUPIER_LISSABON_PROFILES === '1' && process.env.NODE_ENV !== 'production',
-  onSwitch: async playerId => { speechStreamService?.cancelPlayer(playerId); (await probeRuntime.cancel({playerId,dealerId:'astrid'})); for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('demo_profile_changed'); },
+  onSwitch: async playerId => { speechStreamService?.cancelPlayer(playerId); (await probeRuntime.cancel({playerId,dealerId:'astrid'})); cancelPlayerChats(activePlayerChats,playerId,'demo_profile_changed'); },
 });
 const playerSession = async req => lissabonProfiles.session(req) ?? (await auth.session(req));
 if (!postgres) db.exec('CREATE TABLE IF NOT EXISTS preview_sessions (digest TEXT PRIMARY KEY, player_id TEXT NOT NULL, expires INTEGER NOT NULL)');
@@ -642,7 +660,7 @@ const playerPasswordCommand=playerAdministration ? (await import('./storage/play
   administration:playerAdministration,
   cancelRuntime:async playerId=>{
     await speechStreamService?.cancelPlayer(playerId);
-    for(const dealerId of Object.keys(CHAT_DEALERS))activePlayerChats.get(JSON.stringify([playerId,dealerId]))?.abort('player_password_changed');
+    cancelPlayerChats(activePlayerChats,playerId,'player_password_changed');
     await probeRuntime.cancel({playerId,dealerId:'astrid'},'player_password_changed');
   },
 }) : null;
@@ -656,7 +674,7 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
       const changed = await playerAdministration.setStatus({ ...body, actor: actor.user });
       if (changed.changed || changed.status !== 'active') {
         speechStreamService?.cancelPlayer(changed.id);
-        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([changed.id, dealerId]))?.abort('player_account_changed');
+        cancelPlayerChats(activePlayerChats,changed.id,'player_account_changed');
         await probeRuntime.cancel({ playerId: changed.id, dealerId: 'astrid' }, 'player_account_changed');
       }
       return { ok: true, ...changed };
@@ -670,7 +688,7 @@ const studioGameCommand = studioPolicyRuntime ? createStudioGameCommandApi({
       await db.prepare('DELETE FROM player_sessions WHERE source_stamp=? OR source_stamp LIKE ?').run(prefix,`${prefix}:%`);
       for (const { player_id: playerId } of sessions) {
         speechStreamService?.cancelPlayer(playerId);
-        for (const dealerId of Object.keys(CHAT_DEALERS)) activePlayerChats.get(JSON.stringify([playerId, dealerId]))?.abort('partner_key_changed');
+        cancelPlayerChats(activePlayerChats,playerId,'partner_key_changed');
         await probeRuntime.cancel({ playerId, dealerId: 'astrid' }, 'partner_key_changed');
       }
     }
@@ -745,7 +763,7 @@ const server = createServer(async (req, res) => {
   try {
     const loggingOut=pathname==='/api/auth/logout'?(await auth.session(req)):null;
     if(await auth.handle(req,res)){
-      if(loggingOut && res.statusCode===200){speechStreamService?.cancelPlayer(loggingOut.playerId);(await probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout'));}
+      if(loggingOut && res.statusCode===200){cancelPlayerChats(activePlayerChats,loggingOut.playerId,'player_logged_out');speechStreamService?.cancelPlayer(loggingOut.playerId);(await probeRuntime.cancel({playerId:loggingOut.playerId,dealerId:'astrid'},'logout'));}
       return;
     }
   } catch { if(!res.headersSent){res.writeHead(400);res.end('Invalid request');}return; }
@@ -762,6 +780,12 @@ const server = createServer(async (req, res) => {
   const nativePlaybackContext=pathname==='/api/presentation/native-p6-playback-context';
   if(nativePlaybackContext&&!nativeP6QaRouter){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   if (pathname === '/api/operators' || pathname.startsWith('/api/operators/')) {
+    if (pathname.includes('/preview')) {
+      if(!publicOperatorPreview){res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end('{"error":"operator_preview_unavailable"}');return;}
+      const preview=await publicOperatorPreview.handle(new Request(gameOrigin+req.url,{method:req.method,headers:req.headers}));
+      if(preview){res.writeHead(preview.status,Object.fromEntries(preview.headers));if(!preview.body){res.end();return;}
+        const stream=Readable.fromWeb(preview.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
+    }
     if (await publicOperatorRooms.handle(req, res, pathname)) return;
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
@@ -881,8 +905,7 @@ const server = createServer(async (req, res) => {
     const handle = async incoming => {
       try {
         (await chatSessionOwner(req, authenticated));
-        const dealerId = incoming.dealer;
-        if (!Object.hasOwn(CHAT_DEALERS, dealerId)) throw Object.assign(new Error('invalid_chat_dealer'), { statusCode: 400 });
+        const {dealerId}=await authorizeChatDealer({dealerId:incoming?.dealer,presentationContext:incoming?.presentationContext});
         const scope = { playerId: authenticated, dealerId };
         if (pathname.endsWith('/forget')) {
           const key = JSON.stringify([authenticated, dealerId]);
@@ -893,7 +916,14 @@ const server = createServer(async (req, res) => {
         } else respond(200, (await playerChatMemory.profile(scope)));
       } catch (error) { respond(error.statusCode || 400, { error: error.code || error.message }); }
     };
-    if (pathname === '/api/chat/memory' && req.method === 'GET') (await handle({ dealer: new URL(req.url, 'http://local').searchParams.get('dealer') }));
+    if (pathname === '/api/chat/memory' && req.method === 'GET') {
+      try {
+        const query=new URL(req.url,'http://local').searchParams,raw=query.get('presentationContext');
+        if(query.getAll('dealer').length!==1||query.getAll('presentationContext').length>1
+          ||raw!==null&&raw.length>1024)throw Error('invalid');
+        await handle({dealer:query.get('dealer'),...(raw!==null?{presentationContext:JSON.parse(raw)}:{})});
+      } catch {respond(400,{error:'invalid_chat_context'});}
+    }
     else if (pathname.endsWith('/forget') && req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; if (body.length > 2000) req.destroy(); });
@@ -998,13 +1028,14 @@ const server = createServer(async (req, res) => {
       let memoryTurn, memoryKey, expectedMemoryRevision;
       try {
         const incoming = JSON.parse(body || '{}');
-        const dealerId = Object.hasOwn(CHAT_DEALERS, incoming.dealer) ? incoming.dealer : null;
+        const owner = await chatSessionOwner(req, authenticated);
+        const chatAuthorization=await authorizeChatDealer({dealerId:incoming?.dealer,presentationContext:incoming?.presentationContext});
+        const dealerId=chatAuthorization.dealerId;
         if (!dealerId || !CHAT_REVISION.test(incoming.sessionRevision) || !CHAT_REVISION.test(incoming.roundRevision)) {
           res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{"error":"invalid_chat_context"}'); return;
         }
         const session = (await playerSession(req));
         const status = (await authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
-        const owner = (await chatSessionOwner(req, authenticated));
         if (dealerId === 'astrid') speechStreamService?.cancelOwner(owner);
         const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
         let observation;
@@ -1033,6 +1064,7 @@ const server = createServer(async (req, res) => {
         const request = { requestId: incoming.requestId, message: incoming.message, history: memoryTurn.history,
           ...(observation ? { observation } : {}) };
         const readStatus = async () => {
+          await chatAuthorization.recheck();
           if (conversation) {
             const currentPolicy = (await probeRuntime.config()).policy;
             if (['memoryEnabled','memoryDays','maxFacts'].some(key => currentPolicy[key] !== probeConfig.policy[key])) {
@@ -1059,21 +1091,25 @@ const server = createServer(async (req, res) => {
           signal: controller.signal,
           decide: async (value, state) => {
             const model = probeConfig?.policy.model ?? 'gateway-default';
-            const ownedFetch = nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
+            const ownedFetch = chatAuthorization.registered ? null : nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
               playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
               readStatus, signal: controller.signal, model, streamRequested: incoming.acceptsSpeechStream === true });
             return openClawChat(value, state, { model, fetchImpl: ownedFetch ?? ((url, options = {}) => fetch(url, {
               ...options, signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
             })) });
           },
-          service: getGeneratedSpeechService(),
-          streamService: incoming.acceptsSpeechStream === true ? speechStreamService : null,
+          service: dealerId==='astrid'?getGeneratedSpeechService():null,
+          streamService: dealerId==='astrid'&&incoming.acceptsSpeechStream === true ? speechStreamService : null,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
         const memoryReceipt = (await memoryTurn.commit({ kind: decision.kind, exactText: decision.exactText }));
         // This reply's own commit is expected; a later forget/turn remains stale.
         expectedMemoryRevision = memoryReceipt.revision;
+        // The memory commit awaits storage: recheck publication and session before returning it.
+        await readStatus();
+        if(await chatSessionOwner(req,authenticated)!==owner)throw Object.assign(Error('stale_chat_session'),{statusCode:401});
+        if(controller.signal.aborted)throw Object.assign(Error('chat_cancelled'),{statusCode:409});
         if(dealerId==='astrid')void probeRuntime.rememberMessage(scope,incoming.requestId,incoming.message).catch(()=>{});
         if (stream) { frame({ type: 'result', decision }); res.end(); return; }
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });

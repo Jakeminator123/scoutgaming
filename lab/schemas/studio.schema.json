@@ -1137,7 +1137,8 @@
           "minLength": 1,
           "maxLength": 120,
           "pattern": "\\S"
-        }
+        },
+        "speechProfile": { "$ref": "#/$defs/dealerSpeechProfile" }
       }
     },
     "event": {
@@ -2961,6 +2962,99 @@
           "type": "integer",
           "minimum": 200,
           "maximum": 10000
+        }
+      }
+    },
+    "dealerSpeechProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Draft preparation only; never activates speech providers or enters published player packages.",
+      "required": [
+        "schemaVersion",
+        "state",
+        "voice",
+        "reference"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "state": {
+          "const": "preparation"
+        },
+        "voice": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "voiceId",
+                "modelId"
+              ],
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "cartesia",
+                    "elevenlabs"
+                  ]
+                },
+                "voiceId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                },
+                "modelId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          ]
+        },
+        "reference": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "videoId",
+                "sha256",
+                "offsetMs"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "video-frame",
+                    "motion-video"
+                  ]
+                },
+                "videoId": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+                  "not": {
+                    "pattern": "\\.\\.|://"
+                  }
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "offsetMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3600000
+                }
+              }
+            }
+          ]
         }
       }
     }

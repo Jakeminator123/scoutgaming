@@ -110,7 +110,7 @@ test('draft survives dealer chip and category changes', () => {
   assert.equal(h.values[4], 'deal');
   const legacy = nodes(tree, node => node.props?.section === 'deal')[0];
   assert.equal(legacy.props.dealerId, 'vera');
-  assert.equal(nodes(tree, node => node.props?.inventory && !node.props?.section && !node.props?.onPendingChange).length, 0, 'Astrid family tools not rendered for Vera');
+  assert.equal(nodes(tree, node => node.props?.inventory && (node.props?.family || node.props?.policy)).length, 0, 'Astrid family tools not rendered for Vera');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
   assert.match(html, /href="\/control\/preview\?dealer=vera"/);

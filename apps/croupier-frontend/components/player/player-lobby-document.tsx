@@ -3,7 +3,7 @@ import type {PlayerAreaModel} from './player-area-document';
 
 export function PlayerLobbyDocument({model}:{model:PlayerAreaModel}) {
   return <main className="min-h-screen bg-[#0b0e0f] text-[#f2f1ed]">
-    <div className="mx-auto max-w-7xl px-5 pb-12 sm:px-8 lg:px-12">
+    <div className="mx-auto max-w-[1480px] px-5 pb-12 sm:px-8 lg:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 py-6">
         <a href="/" aria-label="Scoutgaming, startsida" className="text-xl font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-[#d4f83a]">scout<span className="text-[#d4f83a]">/</span>gaming</a>
         <nav aria-label="Spelarkonto" className="flex flex-wrap items-center gap-5 text-xs text-white/65">
@@ -11,11 +11,11 @@ export function PlayerLobbyDocument({model}:{model:PlayerAreaModel}) {
           <a href="/" className="inline-flex min-h-11 items-center hover:text-[#d4f83a]">Till startsidan ↗</a>
         </nav>
       </header>
-      <div className="relative flex flex-wrap items-end justify-between gap-8 py-10 sm:py-14">
+      <div className="relative flex flex-wrap items-end justify-between gap-6 py-7 sm:py-9">
         <div className="max-w-2xl">
           <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#d4f83a]">Scoutgaming / Spellobby</p>
-          <h1 className="mt-5 text-4xl font-medium leading-[1.08] tracking-tight sm:text-6xl">Ditt bolag.<br/><span className="text-[#d4f83a]">Ditt bord.</span></h1>
-          <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">Välj spelbolag och hitta ditt spelrum. Där väljer du dealer och de miljöer som bolaget erbjuder.</p>
+          <h1 className="mt-4 text-3xl font-medium leading-[1.08] tracking-tight sm:text-5xl">Ditt bolag.<br/><span className="text-[#d4f83a]">Ditt bord.</span></h1>
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/55 sm:text-base">Välj spelbolag och hitta ditt spelrum. Där väljer du dealer och de miljöer som bolaget erbjuder.</p>
         </div>
         <div className="max-w-sm text-xs text-white/55">
           <p className="rounded-full border border-white/15 px-4 py-2">18+ · Demo utan riktiga pengar</p>

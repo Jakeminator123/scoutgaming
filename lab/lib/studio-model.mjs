@@ -1,3 +1,4 @@
+import { normalizeDealerSpeechProfile } from '../../web/public/dealer-speech-profile.mjs';
 import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
 import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
 import { isDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
@@ -319,7 +320,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', DEALER_IDS.length, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at)) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile'])) return;
+    if (Object.hasOwn(dealer, 'speechProfile')) {
+      try { normalizeDealerSpeechProfile(dealer.speechProfile); }
+      catch (cause) { error(at + '.speechProfile', cause.message); }
+    }
     if (!isDealerId(dealer.id)) error(`${at}.id`, 'ogiltigt croupier-id');
     duplicate(dealerIds, dealer.id, `${at}.id`); label(dealer.label, `${at}.label`);
   });

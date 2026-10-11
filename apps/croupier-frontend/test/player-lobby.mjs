@@ -119,8 +119,8 @@ test('nullable layer defaults render explicit empty options and never choose the
  assert.deepEqual(roomSelection(room),{dealer:'nora'});
  assert.deepEqual(roomLaunch(catalog,room.id,{dealer:'nora'}).choices,{dealer:'nora'});
  const html=renderToStaticMarkup(React.createElement(PlayerRoomCatalogue,{catalog,directPlay:true}));
- assert.match(html,/<option value="" selected="">Inget bord<\/option>/);
- assert.match(html,/<option value="" selected="">Ingen bakgrund<\/option>/);
+ assert.match(html,/Inget bord/);assert.match(html,/<input[^>]*name="room-johanna-table"[^>]*checked=""[^>]*value=""/);
+ assert.match(html,/Ingen bakgrund/);assert.match(html,/<input[^>]*name="room-johanna-background"[^>]*checked=""[^>]*value=""/);
  assert.doesNotMatch(html,new RegExp('<option value="'+table1+'" selected'));
  assert.doesNotMatch(html,new RegExp('<option value="'+background1+'" selected'));
  const explicit=roomSelection(room,{dealer:'nora',tableAsset:table1,background:background1});

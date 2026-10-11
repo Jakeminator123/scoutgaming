@@ -177,7 +177,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       <p>Välj en dealer och lägg in media i rätt kategori. Du kan ladda upp flera filer samtidigt och välja exakt fack för varje fil.</p>
       <p>1. Lägg in media → 2. Öppna facket för klippval, varianter och villkor → 3. Sammansätt och publicera.</p>
       <details><summary>Hantera dealers · lägg till eller ta bort</summary>
-      <DealerRegistration project={project} disabled={!connectedLane||saving||uploading||intakePending} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
+      <DealerRegistration project={project} dealerId={dealerId} inventory={videos} disabled={!connectedLane||saving||uploading||intakePending} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
       <DealerRemoval key={dealerId} project={project} dealerId={dealerId} disabled={saving||uploading||conflict||intakePending||!connectedLane} onEdit={change=>setProject(current=>change(current))} onRemoved={(_id,nextDealerId)=>{selectDealer(nextDealerId);setNotice('Dealern är borttagen från utkastet. Spara för att behålla ändringen.');}}/>
       </details>
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" disabled={intakePending||uploading} aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
