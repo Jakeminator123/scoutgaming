@@ -11,6 +11,7 @@ import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mj
 import { gamePresentationForDealer, gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
 import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
 import { resolvePackageRoom } from './presentation-room-contract.mjs';
+import {resolveRoomBranding} from './storage/partner-branding.mjs';
 
 export const OPERATOR_NOT_FOUND_HTML = '<!doctype html><html lang="sv"><head><meta charset="utf-8">'
   + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bolaget finns inte</title></head>'
@@ -105,11 +106,15 @@ export function createGameEntrySelector({ policy, packages = null, log = console
       else warnOnce(`dealer:${saved.projectRevision}:${selection.lane}`,
         `[operator-package] lane ${selection.lane}: presentation lane and server lane share no dealer; using ${selection.dealer}`);
     }
-    const branding=publicPackageBranding(current.branding);
-    // Company branding is shared; layer choices belong to one frozen presentation.
-    // Without an explicit lane, the existing first-presentation default applies.
-    if(frozen&&(branding.lane??frozen.lanes[0].id)!==presentationLane.id) {
-      for(const key of ['dealer','table','background','color','tableColor'])delete branding[key];
+    const storedBranding=publicPackageBranding(current.branding);
+    // N1 owns the lane for a room. Defaults apply only to their presentation;
+    // the matching room override then wins, without leaking another room's data.
+    const branding={...storedBranding};
+    if(frozen) {
+      const resolved=resolveRoomBranding({lane:frozen.lanes[0].id,...storedBranding},room?.id,presentationLane.id);
+      for(const key of ['lane','dealer','table','background','color','roomOverrides'])delete branding[key];
+      if((storedBranding.lane??frozen.lanes[0].id)!==presentationLane.id)delete branding.tableColor;
+      Object.assign(branding,resolved);
     }
     const next=withChoices({ ...selection, operator: slug, packageRevision: current.revision, branding },
       frozen?{project:{...saved.project,lanes:frozen.lanes}}:saved,gameLanes,room?.presentationLaneId ?? selection.lane,

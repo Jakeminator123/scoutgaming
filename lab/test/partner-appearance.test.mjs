@@ -1,179 +1,175 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
-
-const require = createRequire(import.meta.url);
-const { transformSync } = require('next/dist/build/swc');
-const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
-const compiled = transformSync(readFileSync(fileUrl, 'utf8'), {
-  filename: fileURLToPath(fileUrl),
-  jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
-  module: { type: 'commonjs' },
-});
-const module = { exports: {} };
-const localRequire = createRequire(fileUrl);
-vm.runInNewContext(compiled.code, {
-  module,
-  exports: module.exports,
-  require: name => name.endsWith('.module.css') || name.endsWith('.css')
-    ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) }
-    : localRequire(name),
-}, { filename: fileURLToPath(fileUrl) });
-
-test('appearance renders a disabled lane field and exactly one lime save button', () => {
-  const html = renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance, {
-    apiBase: '/studio/api/partner',
-    operatorSlug: 'demo-north',
-    initial: {
-      operatorId: 'operator-demo-north',
-      packageRevision: 4,
-      lanes: ['mobile-phone'],
-      branding: { [TABLE_COLOR_BRANDING_KEY]: '#112233', name: 'North' },
-      adjustable: ['table.color'],
-    },
-  }));
-  assert.match(html, /Tillåts inte av lanen/);
-  assert.equal((html.match(/sg-btn-primary/g) || []).length, 1);
-  assert.match(html, /class="sg-btn sg-btn-primary"/);
-  assert.match(html, /Spara utseende/);
-  assert.equal((html.match(/<button\b/g) || []).length, 1);
-  assert.match(html, /type="color"/);
-  assert.match(html, /#112233/);
-  assert.match(html, /Revision 4/);
-  assert.match(html, /mobile-phone/);
-  assert.match(html, /disabled=""/);
-});
-
+import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultPresentationLane} from '../lib/studio-model.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
-const canonicalInitial=(layered=true)=>({
-  operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:['background','table.color','branding'],canConfigure:true,dealerChoices:{'mobile-phone':['astrid']},
-  presentation:{schemaVersion:1,projectRevision:'r1',assets:[],lanes:[{...defaultPresentationLane(),operatorAdjustable:['background','table.color','branding'],...(layered?{composition:defaultCompositionSettings()}: {})}]}
-});
-test('read-only roles see the assigned choices with saving and editing disabled',()=>{
-  const html=renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance,{apiBase:'/api/partner',operatorSlug:'north',initial:{...canonicalInitial(),canConfigure:false}}));
-  assert.match(html,/Din roll kan läsa paketet/);
-  assert.match(html,/<fieldset disabled=""/);
-  assert.match(html,/<button[^>]*disabled=""/);
-});
-test('full-frame package cannot offer an ineffective table colour control',()=>{
-  const html=renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance,{apiBase:'/api/partner',operatorSlug:'north',initial:canonicalInitial(false),section:'design'}));
-  assert.match(html,/Fullbildsklipp/);
-  assert.doesNotMatch(html,/type="color"/);
-  assert.match(html,/<button[^>]*disabled=""/);
-});
-test('a connected background destination exposes only the background adjustment',()=>{
-  const initial=canonicalInitial();
-  initial.presentation.lanes[0].layers.background.mode='image';
-  const html=renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance,{apiBase:'/api/partner',operatorSlug:'north',initial,section:'background'}));
-  assert.match(html,/aria-label="Bakgrund"/);
-  assert.doesNotMatch(html,/type="color"|Ordmarke|Primärfärg|aria-label="Bord"|aria-label="Dealer"/);
-});
-
-function actionPanel(initial,section,fetcher) {
+const require = createRequire(import.meta.url);
+const {transformSync} = require('next/dist/build/swc');
+const fileUrl = new URL('../components/partner-appearance.tsx', import.meta.url);
+const localRequire = createRequire(fileUrl);
+const compiled = transformSync(readFileSync(fileUrl,'utf8'), {filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+const css = {__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})};
+function load(hooks=React, fetcher) {
   const output={exports:{}};
-  vm.runInNewContext(compiled.code,{
-    module:output,exports:output.exports,fetch:fetcher,
-    require:name=>name==='react'?{...React,useState:initial=>[typeof initial==='function'?initial():initial,()=>{}],useRef:initial=>({current:initial})}
-      :name.endsWith('.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}:localRequire(name)
-  },{filename:fileURLToPath(fileUrl)});
-  return output.exports.PartnerAppearance({initial,section,apiBase:'/studio/api/partner',operatorSlug:'north'});
+  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,require:name=>name==='react'?hooks:name==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:name.endsWith('.css')?css:localRequire(name)},{filename:fileURLToPath(fileUrl)});
+  return output.exports.PartnerAppearance;
 }
-function saveButton(tree) {
-  if(!tree||typeof tree!=='object')return null;
-  if(tree.type==='button')return tree;
-  for(const child of [tree.props?.children].flat(Infinity)){const found=saveButton(child);if(found)return found;}
-  return null;
-}
-test('background save submits only its lane choice and revision, preserving other package settings',async()=>{
-  const requests=[],initial=canonicalInitial();
-  const id='22222222-2222-4222-8222-222222222222';
-  initial.presentation.lanes[0].layers.background={enabled:true,mode:'video',default:id,allowed:[id]};
-  initial.branding={lane:'mobile-phone',background:id,name:'North',dealer:'astrid',color:'#112233'};
-  const panel=actionPanel(initial,'background',async(url,request)=>{
-    requests.push({url,request});
-    return {ok:true,status:200,json:async()=>({...initial,packageRevision:8})};
-  });
-  await saveButton(panel).props.onClick();
-  assert.equal(requests.length,1);
-  assert.equal(requests[0].url,'/studio/api/partner/branding?operator=north');
-  assert.deepEqual(JSON.parse(requests[0].request.body),{expectedRevision:7,branding:{lane:'mobile-phone',background:id}});
-  assert.equal(requests[0].request.credentials,'same-origin');
-});
-test('read-only save handler performs no network mutation even when invoked directly',async()=>{
-  const panel=actionPanel({...canonicalInitial(),canConfigure:false},'theme',()=>assert.fail('read-only mutation'));
-  const button=saveButton(panel);
-  assert.equal(button.props.disabled,true);
-  await button.props.onClick();
-});
-
-
+const Panel=load();
+const initialState = (extra={}) => {
+  const lane={...defaultPresentationLane(),composition:defaultCompositionSettings(),operatorAdjustable:['background','table','table.color','dealer','branding']};
+  lane.layers.background={enabled:true,mode:'image',default:'bg-one',allowed:['bg-one','bg-two']};
+  lane.layers.table={enabled:true,default:'table-one',allowed:['table-one','table-two'],colors:['#112233','#445566']};
+  lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
+  return {operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{color:'#112233'},adjustable:lane.operatorAdjustable,canConfigure:true,dealerChoices:{'mobile-phone':['astrid','vera']},roomDealerChoices:{'north-main':['astrid','vera'],'north-vip':['astrid']},
+    presentation:{schemaVersion:1,projectRevision:'r1',assets:[],lanes:[lane]},draft:null,draftRevision:0,history:[{revision:7,publishedAt:1000,branding:{color:'#112233'}},{revision:5,publishedAt:900,branding:{color:'#445566'}}],
+    rooms:[{id:'north-main',label:'Huvudrum',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],...extra};
+};
+const withDraft=(extra={})=>initialState({draftRevision:2,draft:{revision:2,basePackageRevision:7,branding:{color:'#445566'},updatedAt:1000},...extra});
 function walk(tree,predicate) {
   if(!tree||typeof tree!=='object')return [];
   return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
 }
-function statefulPanel(initial,section,fetcher,onSaved) {
-  const output={exports:{}},slots=[];let cursor=0;
-  const hooks={...React,useState:value=>{
-    const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;
-    return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];
-  },useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];}};
-  vm.runInNewContext(compiled.code,{module:output,exports:output.exports,fetch:fetcher,
-    require:name=>name==='react'?hooks:name.endsWith('.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}:localRequire(name)
-  },{filename:fileURLToPath(fileUrl)});
-  return ()=>{cursor=0;return output.exports.PartnerAppearance({initial,section,apiBase:'/studio/api/partner',operatorSlug:'north',onSaved});};
+const byAction=(tree,name)=>walk(tree,node=>node.props?.['data-action']===name)[0];
+const select=(tree,label)=>walk(tree,node=>node.type==='select'&&node.props?.['aria-label']===label)[0];
+const response=(data,status=200)=>({ok:status>=200&&status<300,status,json:async()=>data});
+const reviewed=(initial,extra={})=>({reviewToken:'a-valid-review-token',draftRevision:initial.draftRevision,packageRevision:initial.packageRevision,branding:initial.draft.branding,changes:[{roomId:null,key:'color',before:'#112233',after:'#445566'}],affectedRooms:['north-main'],...extra});
+function stateful(initial,fetcher,options={}) {
+  const slots=[],cleanups=[];let cursor=0;
+  const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},
+    useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},
+    useEffect:callback=>{const index=cursor++;if(!(index in slots)){slots[index]=true;cleanups.push(callback());}}};
+  const Component=load(hooks,fetcher);
+  const render=()=>{cursor=0;return Component({initial,apiBase:'/studio/api/partner',operatorSlug:'north',...options});};
+  return {render,unmount:()=>cleanups.forEach(fn=>fn?.())};
 }
-function twoLanes() {
-  const initial=canonicalInitial(),first=initial.presentation.lanes[0],second=structuredClone(first);
-  first.operatorAdjustable=['table','table.color','background','dealer','branding'];first.dealers=['astrid','vera'];
-  first.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
-  first.layers.table.colors=['#112233','#445566'];
-  second.id='vip';second.label='VIP';second.operatorAdjustable=first.operatorAdjustable;second.layers.table.colors=['#112233','#445566'];
-  initial.presentation.lanes.push(second);initial.lanes.push('vip');initial.dealerChoices={'mobile-phone':['astrid','vera'],vip:['astrid']};
-  initial.branding={dealer:'vera',color:'#445566',name:'North'};
-  return initial;
-}
+function html(initial,options={}) {return renderToStaticMarkup(React.createElement(Panel,{initial,apiBase:'/api/partner',operatorSlug:'north',...options}));}
 
-test('first presentation defaults restore saved dealer and colour after browsing another lane without explicit branding.lane',async()=>{
-  for(const section of ['dealers','design']){
-    const initial=twoLanes(),requests=[];
-    const render=statefulPanel(initial,section,async(_url,request)=>{const body=JSON.parse(request.body);requests.push(body);return {ok:true,status:200,json:async()=>({...initial,packageRevision:8,branding:body.branding})};});
-    const presentation=tree=>walk(tree,node=>node.type==='select')[0];
-    presentation(render()).props.onChange({target:{value:'vip'}});
-    presentation(render()).props.onChange({target:{value:'mobile-phone'}});
-    await saveButton(render()).props.onClick();
-    assert.equal(requests[0].expectedRevision,7);assert.equal(requests[0].branding.lane,'mobile-phone');
-    assert.equal(section==='dealers'?requests[0].branding.dealer:requests[0].branding.color,section==='dealers'?'vera':'#445566');
+test('saved draft is loaded separately from the live version with SV and EN workflow labels',()=>{
+  const sv=html(withDraft()),en=html(withDraft(),{language:'en'});
+  assert.match(sv,/Publicerad version.*7/);assert.match(sv,/Sparat utkast 2/);assert.match(sv,/#445566/);
+  assert.match(en,/Save draft/);assert.match(en,/Review publication/);assert.match(en,/Restore to draft/);
+  assert.doesNotMatch(sv,/<input[^>]+(?:name|logo|primary)|type="range"|Placering|Ordmarke/);
+});
+test('read-only and pre-draft backends fail closed but can inspect room scope',async()=>{
+  for(const initial of [initialState({canConfigure:false}),initialState({draftRevision:undefined})]){
+    const {render}=stateful(initial,()=>assert.fail('unauthorized write'));
+    assert.equal(byAction(render(),'save-draft').props.disabled,true);
+    await byAction(render(),'save-draft').props.onClick();
+    assert.equal(select(render(),'Gäller för').props.disabled,false);
   }
+  assert.match(html(initialState({canConfigure:false})),/<fieldset[^>]*disabled=""/);
 });
-test('dealer options use frozen display labels and exactly the server room intersection',()=>{
-  const initial=canonicalInitial(),lane=initial.presentation.lanes[0];
-  initial.presentation={...initial.presentation,schemaVersion:2,registeredDealers:[{id:'johanna',label:'Johanna fryst',idle:null},{id:'nora',label:'Nora fryst',idle:null}]};
-  lane.operatorAdjustable=['dealer'];lane.dealers=['johanna','nora'];lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
-  initial.dealerChoices={'mobile-phone':['johanna']};
-  const html=renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance,{initial,apiBase:'/api/partner',operatorSlug:'north',section:'dealers'}));
-  assert.match(html,/Johanna fryst/);assert.doesNotMatch(html,/value="nora"|Nora fryst/);
-  assert.doesNotMatch(html,/type="range"|Storlek|Placering/,'N1 owns geometry');
-  const readonly=renderToStaticMarkup(React.createElement(module.exports.PartnerAppearance,{initial:{...initial,canConfigure:false},apiBase:'/api/partner',operatorSlug:'north'}));
-  assert.match(readonly,/<select disabled=""/);
+test('full-frame and section views only expose effective supported adjustments',()=>{
+  const initial=initialState();delete initial.presentation.lanes[0].composition;
+  assert.match(html(initial,{section:'design'}),/Fullbildsklipp/);assert.doesNotMatch(html(initial,{section:'design'}),/aria-label="Bordsfärg"/);
+  const background=html(initialState(),{section:'background'});
+  assert.match(background,/aria-label="Bakgrund"/);assert.doesNotMatch(background,/aria-label="Bord"|aria-label="Dealer"|aria-label="Bordsfärg"/);
 });
-test('save locks synchronously, freezes presentation selection and accepts only the own operator receipt',async()=>{
-  const initial=twoLanes(),requests=[],receipts=[];let finish;
-  const render=statefulPanel(initial,'dealers',(_url,request)=>{requests.push(JSON.parse(request.body));return new Promise(resolve=>{finish=resolve;});},receipt=>receipts.push(receipt));
-  const first=saveButton(render()).props.onClick();
-  await saveButton(render()).props.onClick();assert.equal(requests.length,1);
-  const selector=walk(render(),node=>node.type==='select')[0];assert.equal(selector.props.disabled,true);
-  selector.props.onChange({target:{value:'vip'}});assert.equal(walk(render(),node=>node.type==='select')[0].props.value,'mobile-phone');
-  finish({ok:true,status:200,json:async()=>({...initial,operatorId:'another-company',packageRevision:8})});await first;
-  assert.equal(receipts.length,0);assert.equal(walk(render(),node=>node.props?.role==='alert').length,1);
-  const retry=saveButton(render()).props.onClick();assert.equal(requests.length,2);assert.equal(requests[1].expectedRevision,7);
-  finish({ok:true,status:200,json:async()=>({...initial,packageRevision:8,branding:requests[1].branding})});await retry;
-  assert.equal(receipts.length,1);assert.equal(receipts[0].operatorId,initial.operatorId);
-  assert.equal(receipts[0].branding.dealer,'vera');assert.equal(walk(render(),node=>node.props?.role==='status')[0].props.children[1],'8');
+test('save creates a draft with full supported state, preserves hidden choices and never reports a live publication',async()=>{
+  const initial=initialState({branding:{color:'#112233',dealer:'vera',roomOverrides:{'north-vip':{table:'table-two'}},name:'unused'}}),calls=[],published=[];
+  const {render}=stateful(initial,async(url,request)=>{const body=JSON.parse(request.body);calls.push({url,body,request});return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});},{section:'background',onSaved:receipt=>published.push(receipt)});
+  select(render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
+  await byAction(render(),'save-draft').props.onClick();
+  assert.deepEqual(calls[0].body,{action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:7,branding:{background:'bg-two',dealer:'vera',color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}}});
+  assert.equal(calls[0].request.credentials,'same-origin');assert.equal(calls[0].url,'/studio/api/partner/branding?operator=north');
+  assert.equal(published.length,0);assert.equal(byAction(render(),'save-draft').props.disabled,true);assert.equal(byAction(render(),'review').props.disabled,false);
+});
+test('publish requires successful exact review and invalidates it immediately after editing',async()=>{
+  const initial=withDraft(),calls=[];
+  const {render}=stateful(initial,async(_url,request)=>{calls.push(JSON.parse(request.body));return response(reviewed(initial));});
+  await byAction(render(),'publish').props.onClick();assert.equal(calls.length,0);
+  await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,false);
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});
+  assert.equal(byAction(render(),'publish').props.disabled,true);await byAction(render(),'publish').props.onClick();assert.equal(calls.length,1);
+});
+test('published receipt advances live only once and keeps tombstone revision for the next draft',async()=>{
+  const initial=withDraft(),calls=[],published=[];
+  const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);
+    if(body.action==='review')return response(reviewed(initial));
+    if(body.action==='publish')return response({...initial,packageRevision:8,branding:initial.draft.branding,draft:null,draftRevision:3});
+    return response({...initial,packageRevision:8,branding:initial.draft.branding,draftRevision:4,draft:{revision:4,basePackageRevision:8,branding:body.branding}});
+  },{onSaved:value=>published.push(value)});
+  await byAction(render(),'review').props.onClick();await byAction(render(),'publish').props.onClick();
+  assert.deepEqual(calls[1],{action:'publish',expectedDraftRevision:2,expectedPackageRevision:7,reviewToken:'a-valid-review-token'});assert.equal(published.length,1);
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});await byAction(render(),'save-draft').props.onClick();
+  assert.equal(calls[2].expectedDraftRevision,3);assert.equal(calls[2].expectedPackageRevision,8);assert.equal(published.length,1);
+});
+for(const status of [403,409]) test(`${status} retains local edits and blocks publication until explicit fresh reconciliation`,async()=>{
+  const initial=initialState(),calls=[],latest=withDraft({draftRevision:5,draft:{revision:5,basePackageRevision:7,branding:{color:'#112233',background:'bg-one'}}});
+  const {render}=stateful(initial,async(_url,request)=>{calls.push(request);return request.method==='POST'?response({},status):response(latest);});
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();
+  assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,true);
+  await byAction(render(),'refresh').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'publish').props.disabled,true);
+  byAction(render(),'keep-local').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,false);
+  await byAction(render(),'save-draft').props.onClick();assert.equal(JSON.parse(calls.at(-1).body).expectedDraftRevision,5);
+});
+test('fresh revocation never re-enables saving and explicit loading can discard local input',async()=>{
+  const latest=initialState({canConfigure:false}),{render}=stateful(initialState(),async()=>response(latest));
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'refresh').props.onClick();
+  assert.equal(byAction(render(),'keep-local').props.disabled,true);
+  byAction(render(),'load-latest').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#112233');assert.equal(byAction(render(),'save-draft').props.disabled,true);
+});
+test('restore creates a draft only, protects unsaved input and requires a new review',async()=>{
+  const initial=initialState(),published=[],calls=[];
+  const {render}=stateful(initial,async(_url,request)=>{calls.push(JSON.parse(request.body));return response(withDraft());},{onSaved:value=>published.push(value)});
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'restore-5').props.onClick();assert.equal(calls.length,0);
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});await byAction(render(),'restore-5').props.onClick();
+  assert.deepEqual(calls[0],{action:'restore',sourcePackageRevision:5,expectedDraftRevision:0,expectedPackageRevision:7});assert.equal(published.length,0);
+  assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+});
+test('room reset removes only that override and room presentation remains server-owned',async()=>{
+  const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-main':{color:'#445566'},'north-vip':{table:'table-two'}}}}),calls=[];
+  const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});});
+  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Presentation').props.disabled,true);
+  byAction(render(),'reset-room').props.onClick();await byAction(render(),'save-draft').props.onClick();
+  assert.deepEqual(calls[0].branding,{color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}});
+});
+test('synchronous lock ignores double clicks, freezes input and suppresses completion after unmount',async()=>{
+  let finish;const initial=withDraft(),calls=[],published=[];
+  const {render,unmount}=stateful(initial,(_url,request)=>{calls.push(JSON.parse(request.body));return new Promise(resolve=>{finish=resolve;});},{onSaved:value=>published.push(value)});
+  const first=byAction(render(),'review').props.onClick();await byAction(render(),'review').props.onClick();assert.equal(calls.length,1);
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#112233'}});assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+  finish(response(reviewed(initial)));await first;
+  const publish=byAction(render(),'publish').props.onClick();unmount();finish(response({...initial,packageRevision:8,draft:null,draftRevision:3}));await publish;assert.equal(published.length,0);
+});
+test('foreign receipt and mismatched review fail closed without replacing input or publishing',async()=>{
+  for(const invalid of [reviewed(withDraft(),{draftRevision:10}),reviewed(withDraft(),{branding:{color:'#112233'}})]){
+    const {render}=stateful(withDraft(),async()=>response(invalid));await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,true);assert.equal(select(render(),'Bordsfärg').props.value,'#445566');
+  }
+  const {render}=stateful(initialState(),async()=>response(withDraft({operatorId:'op-foreign'})));
+  select(render(),'Bordsfärg').props.onChange({target:{value:'#445566'}});await byAction(render(),'save-draft').props.onClick();assert.equal(select(render(),'Bordsfärg').props.value,'#445566');assert.equal(byAction(render(),'review').props.disabled,true);
+});
+test('stale base requires saving again before review and history is not silently published',async()=>{
+  const initial=withDraft({packageRevision:9}),requests=[];
+  const {render}=stateful(initial,async(_url,request)=>{requests.push(JSON.parse(request.body));return response({...initial,draftRevision:3,draft:{...initial.draft,revision:3,basePackageRevision:9}});});
+  assert.equal(byAction(render(),'review').props.disabled,true);assert.equal(byAction(render(),'save-draft').props.disabled,false);
+  await byAction(render(),'save-draft').props.onClick();assert.equal(requests[0].expectedPackageRevision,9);assert.equal(byAction(render(),'review').props.disabled,false);
+});
+
+test('inherited room override changes appear in review even without an immediate visual change',async()=>{
+  const initial=withDraft(),{render}=stateful(initial,async()=>response(reviewed(initial,{changes:[{roomId:'north-main',key:'roomOverrides.color',before:'#112233',after:null}],affectedRooms:[]})));
+  await byAction(render(),'review').props.onClick();assert.equal(byAction(render(),'publish').props.disabled,false);
+  assert.match(renderToStaticMarkup(render()),/Bordsfärg \(rumsval\)/);assert.doesNotMatch(renderToStaticMarkup(render()),/roomOverrides.color/);
+});
+test('room dealers use room-specific choices and frozen schema3 labels',()=>{
+  const initial=initialState();initial.presentation={...initial.presentation,schemaVersion:3,registeredDealers:[{id:'astrid',label:'Frozen Astrid',idle:null},{id:'vera',label:'Frozen Vera',idle:null}],playback:{}};
+  const {render}=stateful(initial,()=>assert.fail('no request'));select(render(),'Gäller för').props.onChange({target:{value:'north-vip'}});
+  const options=select(render(),'Dealer').props.children.flat(Infinity).filter(Boolean);
+  assert.equal(options.some(row=>row.props?.value==='vera'),false);assert.equal(options.find(row=>row.props?.value==='astrid').props.children,'Frozen Astrid');
+});
+
+test('oversized packages explain how to reduce scope and preserve the draft for another save',async()=>{
+  for(const language of ['sv','en']){
+    const {render}=stateful(initialState(),async()=>response({},413),{language});
+    const label=language==='en'?'Table colour':'Bordsfärg';
+    select(render(),label).props.onChange({target:{value:'#445566'}});
+    await byAction(render(),'save-draft').props.onClick();
+    assert.equal(select(render(),label).props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,false);assert.equal(byAction(render(),'publish').props.disabled,true);
+    const markup=renderToStaticMarkup(render());assert.match(markup,language==='en'?/Reduce the number of room overrides/:/Minska antalet rumsundantag/);assert.match(markup,language==='en'?/20 latest published/:/20 senaste publicerade/);
+  }
 });

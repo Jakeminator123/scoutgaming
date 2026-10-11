@@ -22,7 +22,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
 
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
-    assert.equal(initial.toApply.length, 6, 'fixture must start without an existing Studio schema');
+    assert.equal(initial.toApply.length, 7, 'fixture must start without an existing Studio schema');
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });

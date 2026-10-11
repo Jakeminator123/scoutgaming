@@ -32,7 +32,7 @@ const AUTH = new Set([
   '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/player/login', '/api/auth/player/register',
   '/api/auth/bo/start', '/api/auth/bo/callback', '/api/auth/lab/start', '/api/auth/lab/callback',
 ]);
-const PLAYER = new Set(['/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
+const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile', '/api/table', '/api/deposit', '/api/balance', '/api/currency', '/api/history', '/chat']);
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);

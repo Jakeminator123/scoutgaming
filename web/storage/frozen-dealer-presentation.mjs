@@ -2,7 +2,8 @@ import { registeredIdlePolicy, registeredIdleInventory } from '../../presentatio
 import { frozenPlaybackProject } from '../frozen-dealer-playback.mjs';
 import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.mjs';
 import { createOperatorStore } from './operator-store.mjs';
-import { validateStudioScope, studioStorageFailure } from './studio-contract.mjs';
+import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from './studio-contract.mjs';
+import {PRESENTATION_PACKAGE_KEY} from './presentation-package.mjs';
 import { validateStudioGameAdministration } from './studio-game-policy.mjs';
 import { BASE_DEALER_IDS, isDealerId } from '../dealer-identity.mjs';
 import { isGameLaneId, isOperatorSlug } from '../public/game-lanes.mjs';
@@ -46,7 +47,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
   }
   async function resolve(input) {
     const context = validateContext(input);
-    const saved = await readCurrentContext(context.operatorSlug);
+    const saved = await readCurrentContext(context.operatorSlug, context.packageRevision);
     if (!saved) fail('studio_presentation_idle_context_unavailable', 503);
     const { operator, package: pack, administration } = saved;
     if (!operator || operator.slug !== context.operatorSlug || operator.status !== 'active') {
@@ -143,12 +144,24 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
   return Object.freeze({ resolve, configuration, publicVideo, response });
 }
 
+// Historical branding remains readable only while the exact N1 presentation and
+// ownership lists are still published. This preserves an ongoing round through
+// N2 appearance publication without resurrecting old or revoked N1 media.
+export function sameFrozenPackage(current, previous) {
+  if (!current || !previous || current.operatorId !== previous.operatorId
+    || !Number.isSafeInteger(previous.revision) || previous.revision < 1 || previous.revision >= current.revision
+    || !current.branding?.[PRESENTATION_PACKAGE_KEY] || !previous.branding?.[PRESENTATION_PACKAGE_KEY]) return false;
+  return ['lanes','games','tables'].every(key => Array.isArray(current[key]) && Array.isArray(previous[key])
+    && canonicalStudioJson(current[key]) === canonicalStudioJson(previous[key]))
+    && canonicalStudioJson(current.branding[PRESENTATION_PACKAGE_KEY]) === canonicalStudioJson(previous.branding[PRESENTATION_PACKAGE_KEY]);
+}
+
 // All database authority comes from one uncached repeatable-read snapshot.
 // No provider/media operation runs while this reader owns its SQL client.
 export function createFrozenDealerContextReader({ pool, scope } = {}) {
   scope = validateStudioScope(scope);
   if (typeof pool?.connect !== 'function') throw new TypeError('Scoped SQL pool required');
-  return async slug => {
+  return async (slug, packageRevision = null) => {
     if (!isOperatorSlug(slug)) return { operator: null, package: null };
     let client, active = false;
     try {
@@ -163,7 +176,11 @@ export function createFrozenDealerContextReader({ pool, scope } = {}) {
       const operator = await store.getOperatorBySlug(slug);
       let result = { operator: null, package: null };
       if (operator?.status === 'active') {
-        const pack = await store.getCurrentPackage(operator.id);
+        let pack = await store.getCurrentPackage(operator.id);
+        if (Number.isSafeInteger(packageRevision) && packageRevision > 0 && pack && packageRevision < pack.revision) {
+          const previous = await store.getPackage(operator.id, packageRevision);
+          if (sameFrozenPackage(pack, previous)) pack = previous;
+        }
         const saved = await sql.query(`/* frozen-dealer:administration */ SELECT value FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3`, [scope.environment, scope.workspaceId, 'administration']);
         if (saved.rows.length !== 1) throw new StudioStorageError('studio_document_missing', 503);
         result = { operator, package: pack, administration: validateStudioGameAdministration(saved.rows[0].value) };

@@ -95,7 +95,8 @@ const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
 const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
-  packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope }) }) : null;
+  packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
+const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
 const frozenDealerContext = studioPolicyRuntime ? await (async () => {
   const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('./storage/frozen-dealer-presentation.mjs');
   return createFrozenDealerPresentationContext({
@@ -820,6 +821,10 @@ const server = createServer(async (req, res) => {
     res.writeHead(403);res.end('Invalid origin');return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
+  if (pathname === '/api/operator/appearance') {
+    const result = operatorAppearanceApi ? await operatorAppearanceApi(new Request(new URL(req.url,gameOrigin),{method:req.method})) : new Response(JSON.stringify({error:'operator_appearance_unavailable'}),{status:503,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
+    res.writeHead(result.status,Object.fromEntries(result.headers));res.end(await result.text());return;
+  }
   if (pathname === '/api/astrid/observation' && req.method === 'GET') {
     try {
       const config = await probeRuntime.config();

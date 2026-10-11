@@ -1,3 +1,4 @@
+import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
@@ -1043,9 +1044,20 @@ async function veraEvent() { if (!AUTO_COMMENTARY) return; }
 const ledger = (why, delta) => console.info('[ledger]', why, delta, '->', balance);
 let selected = 5;
 let bets = Array.from({ length: SEATS }, () => ({ main: 0, pp: 0, tp: 0 }));
+if (!studioPreview) { try { bets = consumeAppearanceBets(sessionStorage, entrySelection, SEATS) ?? bets; } catch { /* Browser storage can be unavailable; normal startup remains available. */ } }
 let undoStack = []; // [{box, field, value}]
 let round = null;
 let busy = true; // opens after the server table has loaded
+const operatorAppearanceBoundary = createOperatorAppearanceBoundary({
+  entry:studioPreview ? null : entrySelection,
+  request:apiFetch,
+  isIdle:()=>!round,
+  refresh:revision=>{
+    if (!preserveAppearanceBets(sessionStorage,entrySelection,revision,bets)) throw Error('Dina insatsval kunde inte sparas inför omladdning. Inga insatser har skickats.');
+    hint('UTSEENDE','Utseendet har uppdaterats. Spelet laddas om före nästa runda.');
+    location.reload();
+  },
+});
 
 const betTotal = () => bets.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
 const mains = () => bets.map(b => b.main);
@@ -1849,6 +1861,12 @@ async function dealSequence() {
   let out;
   try {
     await tableReady;
+    try {
+      if (!await operatorAppearanceBoundary.beforeRound()) { busy=false; document.body.classList.remove('in-round'); renderBets(); return; }
+    } catch (error) {
+      busy=false; document.body.classList.remove('in-round'); renderBets();
+      hint('UTSEENDE',error.message); return;
+    }
     out = await tableCommand('start', {bets:bets.map(b=>({...b}))});
   } catch (e) { document.body.classList.remove('in-round'); tableError(e); return; }
   balance=out.balance; ledger('deal',-betTotal());

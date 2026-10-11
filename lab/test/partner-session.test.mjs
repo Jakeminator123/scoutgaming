@@ -326,7 +326,7 @@ test('branding requires partner_session, rejects a query-only pool, and keeps th
   assert.equal(queries, 0);
 });
 
-test('branding read follows the lane and writing requires presentations.configure', async () => {
+test('branding read follows the lane, requires configure, and refuses deprecated implicit publication', async () => {
   const loggedIn = await handlePartnerAuth(loginRequest('north-partner', secret), config);
   const cookie = `partner_session=${tokenOf(loggedIn)}`;
   const readProject = async () => ({ lanes: [{ id: 'mobile-phone', operatorAdjustable: ['table.color'] }] });
@@ -340,6 +340,11 @@ test('branding read follows the lane and writing requires presentations.configur
     };
     return {
       published,
+      async getBrandingDraft(){return null;},
+      async saveBrandingDraft(){throw Error('not used');},
+      async publishBrandingDraft(){throw Error('not used');},
+      async getPackage(){return pack;},
+      async listPackages(){return [pack];},
       async getOperatorBySlug(slug) { return slug === 'demo-north' ? north : null; },
       async getMembership() { return { ...membership }; },
       async getRole() { return { ...role, permissions: [...permissions] }; },
@@ -360,7 +365,7 @@ test('branding read follows the lane and writing requires presentations.configur
     };
   }
   const reader = storeFor(['overview.read']);
-  const authed = { ...config, store: reader, readProject };
+  const authed = { ...config, store: reader, readProject,readAdministration:async()=>({rooms:[]}) };
   const read = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     headers: { host: 'public.example.invalid', cookie },
   }), authed);
@@ -389,13 +394,8 @@ test('branding read follows the lane and writing requires presentations.configur
     },
     body: JSON.stringify({ expectedRevision: 4, branding: { color: '#00ff00' } }),
   }), { ...config, store: writer, readProject });
-  assert.equal(saved.status, 200);
-  assert.equal((await saved.json()).packageRevision, 5);
-  assert.equal(writer.published[0].actor, 'north-partner');
-  assert.deepEqual(writer.published[0].lanes, ['mobile-phone']);
-  assert.deepEqual(writer.published[0].games, ['blackjack']);
-  assert.deepEqual(writer.published[0].tables, ['table-a']);
-  assert.equal(writer.published.length, 1);
+  assert.equal(saved.status, 400);
+  assert.equal(writer.published.length, 0);
 });
 });
 
@@ -469,7 +469,7 @@ async function nativeBrandingFixture() {
   const lane={...defaultPresentationLane(),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
   lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
   const presentation={schemaVersion:2,projectRevision:'frozen-native',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna fryst',idle:null},{id:'nora',label:'Nora fryst',idle:null}]};
-  let state={operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
+  let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
     roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
@@ -484,6 +484,15 @@ async function nativeBrandingFixture() {
     if(tag==='get-role')return result(rows('roles').filter(row=>row.operator_id===values[2]&&row.role_id===values[3]));
     if(tag==='get-membership')return result(rows('memberships').filter(row=>row.operator_id===values[2]&&row.user_id===values[3]));
     if(tag==='current-package')return result(rows('packages').filter(row=>row.operator_id===values[2]).sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
+
+    if(tag==='current-branding-draft')return result(rows('drafts').filter(row=>row.operator_id===values[2]).sort((a,b)=>b.draft_revision-a.draft_revision).slice(0,1));
+    if(tag==='list-packages')return result(rows('packages').filter(row=>row.operator_id===values[2]&&(values[3]===null||row.package_revision<values[3])).sort((a,b)=>b.package_revision-a.package_revision).slice(0,values[4]));
+    if(tag==='package-by-revision')return result(rows('packages').filter(row=>row.operator_id===values[2]&&row.package_revision===values[3]));
+    if(tag==='write-branding-draft'){
+      const row=scoped({operator_id:values[2],draft_revision:values[3],base_package_revision:values[4],branding:values[5],source_package_revision:values[6],
+        published_package_revision:values[7],action:values[8],event_id:values[9],actor_id:values[10],access_class:values[11],occurred_at_ms:values[12],request_id:values[13],changes:values[14]});
+      source.drafts.push(row);return result([row],'INSERT');
+    }
     if(tag==='audit-write') {source.operatorAudits.push(copy(values));return result([{event_id:values[3]}]);}
     if(tag==='publish-package') {
       const revision=Math.max(0,...rows('packages').filter(row=>row.operator_id===values[2]).map(row=>row.package_revision))+1;
@@ -516,11 +525,19 @@ async function nativeBrandingFixture() {
   const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project')};
   const login=await handlePartnerAuth(loginRequest('north-partner',secret),nativeConfig),cookie='partner_session='+tokenOf(login);
   const get=()=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
-  const post=(dealer='johanna',expectedRevision=1)=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
+  const command=body=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
     method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
-    body:JSON.stringify({expectedRevision,branding:{lane:lane.id,dealer}})}),nativeConfig);
+    body:JSON.stringify(body)}),nativeConfig);
+  const save=(dealer='johanna')=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,branding:{lane:lane.id,dealer}});
+  const review=()=>command({action:'review',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1});
+  const publish=reviewToken=>command({action:'publish',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,reviewToken});
+  const post=async(dealer='johanna')=>{
+    const saved=await save(dealer);if(saved.status!==200)return saved;
+    const reviewed=await review();if(reviewed.status!==200)return reviewed;
+    return publish((await reviewed.json()).reviewToken);
+  };
   trace.length=0;
-  return {pool,repository,presentation,administration,get,post,changeBeforeWrite:change=>{beforeWrite=change;},
+  return {pool,repository,presentation,administration,get,post,save,review,publish,changeBeforeWrite:change=>{beforeWrite=change;},
     revoke:()=>{state.memberships[0].status='suspended';},
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
@@ -548,9 +565,10 @@ test('native N2 never saves Nora while the published portrait room renders Johan
   assert.equal((await f.post('nora')).status,409);assert.deepEqual(f.pool.snapshot(),before);
   assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
 });
-test('native stale administration during save returns 409 and rolls back on the real repository',async()=>{
-  const f=await nativeBrandingFixture();f.changeBeforeWrite(f.changeAdmin);
-  assert.equal((await f.post()).status,409);assert.equal(f.pool.snapshot().packages.length,1);
+test('native administration changed after review refuses publication and preserves the draft',async()=>{
+  const f=await nativeBrandingFixture();assert.equal((await f.save()).status,200);
+  const reviewed=await f.review(),token=(await reviewed.json()).reviewToken;f.changeBeforeWrite(f.changeAdmin);
+  assert.equal((await f.publish(token)).status,409);assert.equal(f.pool.snapshot().drafts.length,1);assert.equal(f.pool.snapshot().packages.length,1);
   assert.ok(f.pool.trace.some(row=>row.tag==='ROLLBACK'));assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
 });
 test('native membership revoked after preflight returns 403 and rolls back before publish',async()=>{
@@ -559,8 +577,9 @@ test('native membership revoked after preflight returns 403 and rolls back befor
   assert.ok(f.pool.trace.some(row=>row.tag==='ROLLBACK'));assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);
 });
 test('native package publish failure rolls back and retry preserves the original frozen envelope',async()=>{
-  const f=await nativeBrandingFixture(),before=f.pool.snapshot();f.changeBeforeWrite(()=>{f.pool.base.commitRollback=true;});
-  const failed=await f.post();assert.equal(failed.status,503);assert.deepEqual(f.pool.snapshot(),before);assert.ok(f.pool.trace.some(row=>row.tag==='publish-package'),'failure follows actual publish, before commit');
-  assert.equal((await f.post()).status,200);assert.equal(f.pool.snapshot().packages.length,2);
+  const f=await nativeBrandingFixture();assert.equal((await f.save()).status,200);const token=(await(await f.review()).json()).reviewToken;
+  const before=f.pool.snapshot();f.changeBeforeWrite(()=>{f.pool.base.commitRollback=true;});
+  const failed=await f.publish(token);assert.equal(failed.status,503);assert.deepEqual(f.pool.snapshot(),before);assert.ok(f.pool.trace.some(row=>row.tag==='publish-package'),'failure follows actual publish, before commit');
+  assert.equal((await f.publish(token)).status,200);assert.equal(f.pool.snapshot().packages.length,2);
   assert.deepEqual(JSON.parse(f.pool.snapshot().packages[1].branding)._scoutPresentation,JSON.parse(before.packages[0].branding)._scoutPresentation);
 });
