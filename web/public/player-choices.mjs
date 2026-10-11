@@ -8,7 +8,11 @@ import { isOperatorSlug } from './game-lanes.mjs';
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge', nora: 'Nora' });
 
-export function choicesStorageKey(operator) {
+export function choicesStorageKey(operator, previewSessionId = null) {
+  if(previewSessionId!==null){
+    if(!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(previewSessionId))throw Error('Invalid preview storage');
+    return 'croupier.studio-preview.'+previewSessionId+'.choices';
+  }
   return `croupier.choices.${isOperatorSlug(operator) ? operator : 'default'}`;
 }
 
@@ -25,13 +29,13 @@ export function parseStoredChoices(raw) {
   return stored;
 }
 
-export function readChoices(storage, operator) {
-  try { return parseStoredChoices(storage.getItem(choicesStorageKey(operator))); }
+export function readChoices(storage, operator, previewSessionId = null) {
+  try { return parseStoredChoices(storage.getItem(choicesStorageKey(operator,previewSessionId))); }
   catch { return {}; }
 }
 
-export function writeChoices(storage, operator, nextStored) {
-  const key = choicesStorageKey(operator);
+export function writeChoices(storage, operator, nextStored, previewSessionId = null) {
+  const key = choicesStorageKey(operator,previewSessionId);
   try {
     if (!nextStored || !Object.keys(nextStored).length) storage.removeItem(key);
     else storage.setItem(key, JSON.stringify(nextStored));
@@ -125,14 +129,14 @@ function choiceButton(document, label, pressed) {
 
 export function mountPlayerChoices(document, {
   choices, names = DEALER_NAMES, currentDealer, tableColor, backgroundValue,
-  isBusy = () => false, onDealer, onTableColor, onBackground, onTable, tableValue, composition,
+  isBusy = () => false, onDealer, onTableColor, onBackground, onTable, tableValue, composition, dealerAvailability = null, summaryLabel = 'Ditt bord',
 } = {}) {
   const anchor = document.querySelector?.('#table-pick');
   if (!choices || !anchor) return null;
   const panel = document.createElement('details');
   panel.id = 'player-choices';
   const summary = document.createElement('summary');
-  summary.textContent = 'Ditt bord';
+  summary.textContent = summaryLabel;
   panel.append(summary);
   const status = document.createElement('p');
   status.id = 'player-choices-status';
@@ -146,8 +150,11 @@ export function mountPlayerChoices(document, {
   for (const id of choices.dealers) {
     const button = choiceButton(document, names[id] || id, id === currentDealer);
     button.dataset.dealer = id;
+    if(dealerAvailability&&!dealerAvailability.some(row=>row.id===id&&row.playable)){
+      button.disabled=true;button.title='Saknar spelbart grundklipp. Lägg till det under Dealers & klipp.';button.textContent+=' · grundklipp saknas';
+    }
     button.onclick = () => {
-      if (id === currentDealer) return;
+      if (button.disabled || id === currentDealer) return;
       if (isBusy()) { status.textContent = 'Avsluta rundan innan du byter dealer.'; return; }
       onDealer?.(id);
     };

@@ -18,7 +18,7 @@ function loadTs(fileUrl, overrides = {}) {
   const module = { exports: {} };
   const localRequire = createRequire(fileUrl);
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, crypto: globalThis.crypto,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
@@ -40,7 +40,7 @@ function loadTs(fileUrl, overrides = {}) {
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
 const page = loadTs(new URL('../components/control-lanes-page.tsx', import.meta.url));
-const { addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, CompositionSettings, LANE_ID_HELP } = editor;
+const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, CompositionSettings, LANE_ID_HELP } = editor;
 const { publishLaneRows } = page;
 
 function modelEdit(project, edit) {
@@ -138,8 +138,8 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
   assert.match(editorHtml, /Skapa standardsammansättning/);
-  assert.match(editorHtml, /mobile-phone/);
-  assert.match(editorHtml, /Unikt id: små bokstäver, siffror och bindestreck/);
+  assert.match(editorHtml, /Mobile Phone Lane/);
+  assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
@@ -164,17 +164,14 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
   assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
 });
 
-test('the suggestion row separates values and only the editable ID has format help', () => {
+test('the suggestion keeps human labels and new composition asks only for a name', () => {
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
-  assert.match(editorHtml, /<dt>Id<\/dt><dd>mobile-phone<\/dd>/);
-  assert.match(editorHtml, /<dd>mobile-phone<\/dd>[\s\S]*·[\s\S]*<dd>Mobile Phone Lane<\/dd>/);
-  const splitAt = editorHtml.indexOf('Skapa sammansättning</h2>');
-  assert.ok(splitAt > 0);
-  const help = LANE_ID_HELP;
-  assert.equal(editorHtml.slice(0, splitAt).split(help).length - 1, 0);
-  assert.equal(editorHtml.slice(splitAt).split(help).length - 1, 1);
+  assert.match(editorHtml, /<dt>Namn<\/dt><dd>Mobile Phone Lane<\/dd>/);
+  assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
+  assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
+  assert.match(editorHtml, /Namn på ny sammansättning/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
     initialVideos: { videos: [] },
@@ -243,7 +240,7 @@ test('composition metadata and policies are disabled during writes without expos
 function compositionControls(initialProject = createSeedProject(), disabled = false) {
   let project = structuredClone(initialProject), selectedId = project.lanes?.[0]?.id ?? '', error = '';
   const slots = []; let cursor = 0;
-  const hooks = { ...React, useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial;
+  const hooks = { ...React, useRef(initial) { const i=cursor++; return slots[i]??=({current:initial}); }, useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial;
     return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; } };
   const controls = loadTs(new URL('../components/lane-editor.tsx', import.meta.url), { react: hooks });
   const onEdit = change => { const result = modelEdit(project, change); project = result.project; error = result.error; };
@@ -272,21 +269,44 @@ test('composition metadata creates and selects explicitly while renaming preserv
   assert.deepEqual(h.project, { ...before, lanes: [{ ...before.lanes[0], label: 'Ny scen' }] });
   tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.required && node.props.maxLength === 80).props.onChange({ target: { value: 'Kvällsscenen' } });
-  h.find(tree, node => node.type === 'input' && node.props['aria-describedby'] === 'new-lane-id-help').props.onChange({ target: { value: 'evening' } });
   tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
-  assert.equal(h.error, ''); assert.equal(h.selectedId, 'evening');
+  assert.equal(h.error, ''); assert.match(h.selectedId, /^kvallsscenen-[0-9a-f-]{36}$/);
   assert.equal(h.project.lanes.length, 2); assert.equal(h.project.lanes[1].label, 'Kvällsscenen');
   assert.deepEqual(h.project.lanes[0], { ...before.lanes[0], label: 'Ny scen' });
   assert.deepEqual(project, before, 'the original saved snapshot stays unchanged');
 });
 
-test('duplicate composition IDs fail without changing the existing scene or selection', () => {
-  const h = compositionControls(), before = structuredClone(h.project), originalId = h.selectedId;
+test('creation generates only one identity for double submit and renaming preserves that identity', () => {
+  const h = compositionControls(), original = structuredClone(h.project);
   let tree = h.metadata();
-  h.find(tree, node => node.type === 'input' && node.props.required && node.props.maxLength === 80).props.onChange({ target: { value: 'Duplicate' } });
-  h.find(tree, node => node.type === 'input' && node.props['aria-describedby'] === 'new-lane-id-help').props.onChange({ target: { value: originalId } });
+  h.find(tree, node => node.type === 'input' && node.props.required).props.onChange({ target: { value: 'Ny scen' } });
+  tree = h.metadata(); const submit = h.find(tree, node => node.type === 'form').props.onSubmit;
+  submit({ preventDefault() {} }); submit({ preventDefault() {} });
+  const id = h.selectedId;
+  assert.equal(h.project.lanes.length, 2); assert.equal(h.error, '');
+  tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.value === 'Ny scen' && !node.props.required).props.onChange({ target: { value: 'Annat namn' } });
+  assert.equal(h.selectedId, id); assert.equal(h.project.lanes[1].id, id);
+  assert.deepEqual(h.project.lanes[0], original.lanes[0]);
+  tree = h.metadata();
+  h.find(tree, node => node.type === 'input' && node.props.required).props.onChange({ target: { value: 'Ny scen' } });
   tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
-  assert.ok(h.error); assert.deepEqual(h.project, before); assert.equal(h.selectedId, originalId);
+  assert.equal(h.project.lanes.length, 3); assert.notEqual(h.selectedId, id);
+});
+
+test('generated composition IDs normalize names, obey the model limit and retry collisions', () => {
+  const project = createSeedProject(), key = '11111111-2222-4333-8444-555555555555', other = '11111111-2222-4333-8444-666666666666';
+  for (const label of ['ÅÄÖ fin scen', '123 kväll', '🔥', 'original', 'a'.repeat(80)]) {
+    const id = newCompositionId(project, label, () => key);
+    assert.ok(LANE_ID.test(id)); assert.ok(id.length <= 63);
+    assert.equal(addLane(project,id,label).lanes.at(-1).id,id);
+  }
+  const id = newCompositionId(project, 'Ny scen', () => key);
+  const occupied = addLane(project, id, 'Ny scen'); let calls = 0;
+  assert.equal(newCompositionId(occupied, 'Ny scen', () => ++calls === 1 ? key : other), 'ny-scen-' + other);
+  assert.equal(calls, 2);
+  assert.throws(() => newCompositionId(occupied, 'Ny scen', () => key), /unikt ID/);
+  assert.throws(() => newCompositionId(project, 'Ny scen', () => '../unsafe'), /unikt ID/);
 });
 
 test('moved policy and colour controls edit exact existing fields without changing layer or dealer assignments', () => {

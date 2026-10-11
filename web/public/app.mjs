@@ -1,3 +1,4 @@
+import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
 import { installDealerVersionSwitcher, dealerVersionPath, V2_DEALERS } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
@@ -12,7 +13,6 @@ import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { createNativeSpeechBridge } from './lab-speech-bridge.mjs';
 import { installNativeP6GamePlayback, createNativeP6GameQueueDelivery, nativeP6GameAvailability, NATIVE_P6_GAME_ORIGIN } from './native-p6-game-playback.mjs';
 import { createTableAudio } from './table-audio.mjs';
-import { requestLogin } from './auth-modal.mjs';
 import { gameLaneFromDocument } from './game-lanes.mjs';
 import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from './player-choices.mjs';
 import { DealerEngine } from './dealer-engine.mjs';
@@ -60,8 +60,41 @@ const DEALERS = {
             table: 'dealers/mei/table.png' },
 };
 const entrySelection = gameLaneFromDocument(document.documentElement.dataset);
+const studioPreview = studioPreviewFromDocument(document.documentElement.dataset, location.pathname);
+const requestLogin=studioPreview?async()=>{throw Error('Starta provspel från Sammansättning.');}:(await import('./auth-modal.mjs')).requestLogin;
+const gameApi = createStudioPreviewClient({context:studioPreview});
+const apiFetch = gameApi.request;
+let previewSession = null;
+if (studioPreview) {
+  const notice=document.createElement('details');notice.id='studio-preview-status';
+  const summary=document.createElement('summary');summary.textContent='Provspel · separat testsaldo';summary.title=STUDIO_PREVIEW_NOTICE;
+  const explanation=document.createElement('p');explanation.textContent=STUDIO_PREVIEW_NOTICE;
+  notice.append(summary,explanation);$('#top-right').append(notice);
+  $('#chat').hidden=true;$('#chat').inert=true;
+  $('#chat-input').disabled=true;$('#chat-send').disabled=true;
+  try { previewSession=await gameApi.session(); }
+  catch(error){notice.open=true;explanation.textContent=error.message;explanation.setAttribute('role','alert');throw error;}
+  const label=document.querySelector('#wallet label');if(label)label.textContent='TESTSALDO';
+  $('#add-funds').hidden=true;$('#sign-out').hidden=true;
+}
+const choiceStorage=studioPreview?sessionStorage:localStorage;
+const previewSessionId=studioPreview?.sessionId??null;
+const soundStorageKey=studioPreview?'croupier.studio-preview.'+studioPreview.sessionId+'.muted':'croupier-muted';
+const playableChoices=previewSession&&entrySelection.choices?{...entrySelection.choices,dealers:entrySelection.choices.dealers.filter(id=>previewSession.dealerAvailability.some(row=>row.id===id&&row.playable))}:entrySelection.choices;
 const lobbyReturn = document.querySelector('.casino-return');
-if (lobbyReturn) lobbyReturn.href = entrySelection.operator ? '/play?' + new URLSearchParams({operator:entrySelection.operator}) : '/play';
+if(lobbyReturn){
+  lobbyReturn.href=studioPreview?'/control/preview?'+new URLSearchParams({lane:studioPreview.presentationLaneId}):entrySelection.operator?'/play?'+new URLSearchParams({operator:entrySelection.operator}):'/play';
+  if(studioPreview){
+    lobbyReturn.textContent='Till Sammansättning';
+    lobbyReturn.onclick=async event=>{
+      if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+      try{await gameApi.close();}catch{ /* The expired session also permits returning to Studio. */ }
+      try{writeChoices(choiceStorage,entrySelection.operator,{},previewSessionId);choiceStorage.removeItem(soundStorageKey);}catch{}
+      location.assign(lobbyReturn.href);
+    };
+  }
+}
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name:label,registered:true};
 if (entrySelection.presentation === 'layered') for (const [id, name] of [['paow', 'Paow'], ['dragge', 'Dragge']]) DEALERS[id] = {key:id,base:'assets',anchor:0.878,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer] ?? { key: entrySelection.dealer, base: 'assets', anchor: 0.878, name: entrySelection.dealer };
@@ -77,14 +110,14 @@ if (localPresentationEnabled) {
   $('#supervisor')?.removeAttribute('src');
   $('#supervisor')?.load();
 }
-document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
+if(!studioPreview) document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
 let speechPoseGate = null;
 let probeClient = null;
 let idlePresentationSequence = 0;
 const dealerV2Route = location.pathname === '/v2' || location.pathname.startsWith('/v2/');
-const nativeObservation = createNativeObservation({ href: location.href, opener: window.opener });
+const nativeObservation = createNativeObservation(studioPreview?{}:{href:location.href,opener:window.opener});
 let legacyClipConfiguration = null;
 const clipAssignments = {};
 nativeObservation.emit('status', { state: 'attached', dealer: DEALER.key, route: dealerV2Route ? 'v2' : 'original', presentationOwner: localPresentationEnabled ? 'web-local' : 'legacy' });
@@ -92,15 +125,15 @@ if (!dealerV2Route && DEALER.key === 'amira') DEALER.scene = 'dealers/amira/scen
 if (dealerV2Route && !localPresentationEnabled && !V2_DEALERS.includes(DEALER.key)) location.replace(dealerVersionPath(DEALER.key, 'original', location.search));
 const layerComposition = createLayerComposition(document,entrySelection.composition);
 const playerChoice = entrySelection.choices ? resolvePlayerSelection({
-  choices: entrySelection.choices,
+  choices: playableChoices,
   search: location.search,
-  stored: readChoices(localStorage, entrySelection.operator),
+  stored: readChoices(choiceStorage, entrySelection.operator, previewSessionId),
   branding: entrySelection.branding,
   currentDealer: entrySelection.dealer,
   composition:entrySelection.composition,
 }) : null;
 if (playerChoice) {
-  writeChoices(localStorage, entrySelection.operator, playerChoice.nextStored);
+  writeChoices(choiceStorage, entrySelection.operator, playerChoice.nextStored, previewSessionId);
   if (playerChoice.tableColor) applyTableColor(document, playerChoice.tableColor);
   if(playerChoice.backgroundValue)layerComposition?.setBackground(playerChoice.backgroundValue);
   if(playerChoice.tableValue)layerComposition?.setTable(playerChoice.tableValue);
@@ -149,7 +182,7 @@ const performanceMotion=new URLSearchParams(location.search).get('motion');
 async function loadLabClipConfiguration() {
   if (localPresentationEnabled || greenActor || riggedReview || legacyClipConfiguration) return;
   try {
-    const response = await fetch('/api/presentation/legacy-config', { cache: 'no-store' });
+    const response = await apiFetch('/api/presentation/legacy-config', { cache: 'no-store' });
     if (!response.ok) throw new Error('Lab-klippkonfiguration kunde inte läsas');
     legacyClipConfiguration = await response.json();
     const choices = legacyClipConfiguration.dealers?.[DEALER.key];
@@ -445,7 +478,7 @@ const speechTurn = fn => rawSpeechTurn(async signal => {
 });
 
 const voice = {
-  muted: localStorage.getItem('croupier-muted') === '1',
+  muted: choiceStorage.getItem(soundStorageKey) === '1',
   audio: new Map(),
   playing: false,
   greeted: false,
@@ -542,7 +575,7 @@ if (localPresentationEnabled) {
       ]);
       performancePlayer = new PerformancePlayer({ host: $('#scene') });
       localPresentation = await createLocalPresentation({
-        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection,
+        player: performancePlayer, host: $('#scene'), dealerId: DEALER.key, entry: entrySelection, transport: gameApi,
         version: () => tableVersion, muted: () => voice.muted, composition: layerComposition,
         receipt: entry => nativeObservation.emit('playback', entry),
         onIdle: () => presentStandardIdle('local-primary-frame'),
@@ -633,7 +666,7 @@ const soundBtn = $('#sound-btn');
 const renderSound = () => { soundBtn.classList.toggle('muted', voice.muted); soundBtn.textContent = voice.muted ? '🔇' : '🔊'; soundBtn.setAttribute('aria-label',voice.muted?'Turn sound on':'Mute sound'); };
 function setMuted(muted) {
   if (muted) { speechQueue.cancel(); activeSpeech?.abort(); bankAudio?.pause(); speaking = false; }
-  voice.muted = muted; localStorage.setItem('croupier-muted', muted ? '1' : '0'); renderSound();
+  voice.muted = muted; choiceStorage.setItem(soundStorageKey, muted ? '1' : '0'); renderSound();
   updatePoseState({ muted }, muted ? 'muted' : 'unmuted');
   if (muted) { tableAudio.reset(); sfx.stopAmbience(); }
   else { tableAudio.unlock(); sfx.startAmbience(); }
@@ -883,7 +916,7 @@ const TABLES = [
 ];
 let table = TABLES[0];
 // the backoffice owns tier->dealer assignment; apply it before anyone switches
-fetch('/api/bo/config').then(r => r.ok ? r.json() : null).then(cfg => {
+(!studioPreview?apiFetch('/api/bo/config'):Promise.resolve(null)).then(r => r?.ok ? r.json() : null).then(cfg => {
   if (!cfg) return;
   // BO keeps table administration; active clip bindings are loaded from Lab.
   if (!cfg.tiers) return;
@@ -896,7 +929,7 @@ let balance = 1000;
 // ---------- player account: server-persisted demo money (SQLite) ----------
 let player = null;
 async function api(path, payload) {
-  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if(r.status===401) { player=null; throw new Error('Sign in required'); }
   const out = await r.json().catch(() => ({}));
   if (!r.ok || out.error) throw new Error(out.error ?? `api ${r.status}`);
@@ -960,16 +993,17 @@ async function tableCommand(op, extra = {}) {
 }
 async function ensureLogin(purpose) {
   await tableReady;
-  const session=await fetch('/api/auth/session').then(r=>r.json());
+  const session=await gameApi.session();
   if((session.authenticated || session.guest) && player)return true;
   player=null;
+  if(studioPreview)throw Error('Starta ett nytt provspel från Sammansättning.');
   if(!session.authenticated && !session.guest && !await requestLogin(purpose))return false;
   await prepareTable();return !!player;
 }
 function tableError(e) { busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets(); }
 async function prepareTable() {
-  const session=await fetch('/api/auth/session').then(r=>r.json());
-  $('#sign-out').hidden=!session.authenticated;
+  const session=await gameApi.session();
+  $('#sign-out').hidden=Boolean(studioPreview)||!session.authenticated;
   if(!session.authenticated && !session.guest){player=null;busy=false;renderBets();return null;}
   // A page may show the dealer before login. Retry its private Lab policy once
   // the actual session exists, before preparing that session's first hand.
@@ -1335,7 +1369,7 @@ const setDeposit = amt => {
   depositAmt = amt;
   $('#cashier-pay').textContent = Number.isFinite(amt) && amt >= 1 ? `ADD ${fmt(amt)}` : 'ADD FUNDS';
 };
-$('#add-funds').onclick = async () => { try { if(!await ensureLogin('Sign in to add demo funds.'))return; refreshCashierAmounts(); $('#cashier').hidden = false; } catch(e){hint('SIGN IN',e.message);} };
+$('#add-funds').onclick = async () => { if(studioPreview)return; try { if(!await ensureLogin('Sign in to add demo funds.'))return; refreshCashierAmounts(); $('#cashier').hidden = false; } catch(e){hint('SIGN IN',e.message);} };
 $('#cashier-close').onclick = () => { $('#cashier').hidden = true; };
 $('#cashier').onclick = e => { if (e.target.id === 'cashier') $('#cashier').hidden = true; };
 // deposit presets scale with the table: a VIP box cannot be funded $500 at a time
@@ -1372,7 +1406,7 @@ function renderCurrency() {
 }
 document.querySelectorAll('#cashier .cur').forEach(b => {
   b.onclick = async () => {
-    if (b.dataset.cur === currency || round || busy) return;
+    if (studioPreview || b.dataset.cur === currency || round || busy) return;
     try {
       if (player) {
         const out = await api('/api/currency', { id: player.id, currency: b.dataset.cur });
@@ -1389,6 +1423,7 @@ $('#cc-num').addEventListener('input', e => {
   e.target.value = d.replace(/(.{4})/g, '$1 ').trim();
 });
 $('#cashier-pay').onclick = async () => {
+  if(studioPreview)return;
   try {if(!await ensureLogin('Sign in to add demo funds.'))return;}catch(e){hint('SIGN IN',e.message);return;}
   if ($('#cc-num').value.replace(/\D/g, '').length < 12) { $('#cc-num').classList.add('bad'); return; }
   const depositCap = Math.max(100000, table.max * 100);   // must be able to fund the table you chose
@@ -2083,6 +2118,7 @@ const compactChat = () => localPresentationEnabled && matchMedia('(max-width: 86
 let chatToggle, chatStatus, chatElapsed;
 const chatPlaybackDiagnostic = createChatPlaybackDiagnostic(() => chatStatus);
 function setChatOpen(open) {
+  if(studioPreview)return;
   // Astrid's conversation stays visible independently of the private voice log.
   open = (DEALER.key === 'astrid' && localPresentationEnabled) || open;
   $('#chat-log').classList.toggle('open', open);
@@ -2094,7 +2130,7 @@ function setChatStatus(text) {
   chatElapsed.textContent = '';
   chatStatus.replaceChildren(...(text ? [document.createTextNode(text), chatElapsed] : []));
 }
-if (localPresentationEnabled) {
+if (!studioPreview && localPresentationEnabled) {
   chatToggle = document.createElement('button'); chatToggle.id = 'chat-log-toggle';
   chatToggle.type = 'button'; chatToggle.textContent = 'Chatt';
   chatToggle.setAttribute('aria-label', 'Visa eller dölj chattloggen');
@@ -2281,6 +2317,7 @@ function playNeutralTts(exactText, signal) {
 }
 
 async function playChatDecision(decision, signal, jobId) {
+  if(studioPreview)throw Error('Genererat tal är avstängt i provspel.');
   if (decision.kind === 'silence') return;
   localPresentation?.state({ speech: true, ready: false });
   updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage && !decision.speechStream ? 'standard-idle' : 'speech',
@@ -2397,7 +2434,7 @@ function sayLine(id) {
 
 $('#chat-send').onclick = () => void sendChat();
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
-const astridCamera = DEALER.key === 'astrid' && localPresentationEnabled
+const astridCamera = !studioPreview && DEALER.key === 'astrid' && localPresentationEnabled
   ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
     canStart: () => !chatBusy && !speaking && !busy,
     onActivity: () => probeClient?.activity(),
@@ -2421,25 +2458,27 @@ const memoryStatus = document.createElement('p'); memoryStatus.setAttribute('rol
 const memoryForget = document.createElement('button'); memoryForget.type = 'button'; memoryForget.textContent = 'Radera mitt minne hos denna dealer';
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
+if(studioPreview){chatMemory.hidden=true;memoryForget.disabled=true;}
 if (astridCamera) {
   chatToggle.hidden = true;
   setChatOpen(true);
 }
 chatMemory.addEventListener('toggle', async () => {
-  if (!chatMemory.open) return;
+  if (studioPreview || !chatMemory.open) return;
   try {
     await tableReady;
-    const response = await fetch(`/api/chat/memory?dealer=${encodeURIComponent(DEALER.key)}`, { cache: 'no-store' });
+    const response = await apiFetch(`/api/chat/memory?dealer=${encodeURIComponent(DEALER.key)}`, { cache: 'no-store' });
     if (!response.ok) throw new Error();
     const profile = await response.json();
     memoryStatus.textContent = `${profile.history.length} sparade inlägg för ${DEALER.name}.`;
   } catch { memoryStatus.textContent = 'Minnet kunde inte läsas.'; }
 });
 memoryForget.onclick = async () => {
+  if(studioPreview)return;
   probeClient?.cancel('memory_forgotten');
   memoryForget.disabled = true;
   try {
-    const response = await fetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key }) });
+    const response = await apiFetch('/api/chat/memory/forget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dealer: DEALER.key }) });
     if (!response.ok) throw new Error();
     for (const [requestId] of pendingChatReplies) speechPoseGate.cancel(requestId, 'chat-memory-forgotten');
     chatHistory = []; $('#chat-log').replaceChildren();
@@ -2449,6 +2488,7 @@ memoryForget.onclick = async () => {
 };
 
 async function sendChat({ message: reviewedMessage, images = [], profileRevision = null } = {}) {
+  if(studioPreview){setChatStatus(STUDIO_PREVIEW_NOTICE);return false;}
   const input = $('#chat-input');
   const message = (reviewedMessage ?? input.value).trim();
   if (!message || chatBusy) return false;
@@ -2478,7 +2518,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
   let previewRow = null;
   try {
     if (received.record.status === 'cancelled') throw new Error(received.record.reason);
-    const r = await fetch('/chat', {
+    const r = await apiFetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key, acceptsSpeechStream: true,
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
@@ -2560,7 +2600,7 @@ function setTable(id) {
   const next = TABLES.find(x => x.id === id);
   if (!next || next === table || round || busy) return;
   // a different table can mean a different dealer in a different room
-  if ((next.dealer ?? 'vera') !== DEALER.key) {
+  if (!studioPreview && (next.dealer ?? 'vera') !== DEALER.key) {
     const q = new URLSearchParams(dealerVersionPath(next.dealer ?? 'vera', 'original', location.search).split('?')[1]);
     q.set('table', id);
     location.search = q.toString();
@@ -2579,9 +2619,11 @@ function setTable(id) {
 }
 document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick = () => setTable(b.dataset.id); });
 if (playerChoice && entrySelection.choices) {
-  const remember = patch => writeChoices(localStorage, entrySelection.operator, { ...playerChoice.nextStored, ...patch });
+  const remember = patch => writeChoices(choiceStorage, entrySelection.operator, { ...playerChoice.nextStored, ...patch }, previewSessionId);
   mountPlayerChoices(document, {
     choices: entrySelection.choices,
+    dealerAvailability: previewSession?.dealerAvailability ?? null,
+    summaryLabel:studioPreview?'Bord och bakgrund':undefined,
     names: Object.fromEntries(Object.values(DEALERS).map(dealer => [dealer.key, dealer.name])),
     currentDealer: DEALER.key,
     tableColor: playerChoice.tableColor,
@@ -2618,6 +2660,8 @@ for (const dealer of Object.values(DEALERS)) {
   if (allowedDealerKeys && !allowedDealerKeys.has(dealer.key)) continue;
   const button = document.createElement('button');
   button.type = 'button'; button.dataset.dealer = dealer.key;
+  const available=previewSession?.dealerAvailability.find(row=>row.id===dealer.key);
+  if(previewSession&&available?.playable!==true){button.disabled=true;button.title='Saknar spelbart grundklipp. Lägg till det under Dealers & klipp.';}
   button.setAttribute('aria-label', `${dealer.name}'s table`);
   button.setAttribute('aria-pressed', String(dealer.key === DEALER.key));
   const portrait = document.createElement(dealer.registered ? 'span' : 'img');
@@ -2626,7 +2670,7 @@ for (const dealer of Object.values(DEALERS)) {
   const name = document.createElement('span'); name.textContent = dealer.name;
   button.append(portrait, name);
   button.onclick = () => {
-    if (dealer.key === DEALER.key) return;
+    if (button.disabled || dealer.key === DEALER.key) return;
     if (round || busy) {
       $('#dealer-switch-status').textContent = 'Finish this round to change tables.';
       return;
@@ -2650,7 +2694,7 @@ buildChips();
 }
 $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
 // calibration overlay: applies any saved tweaks, then lies dormant until `C`
-import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
+if(!studioPreview) import('./calibrate.mjs').then(m => { m.applySavedSeats?.(); if (m.applySaved()) layoutSeats(); }).catch(() => {});
 
 // ---------- floor supervisor ----------
 // Kevin walks the pit: he looks in between rounds, never mid-hand, on a loose
@@ -2792,7 +2836,7 @@ if ((!greenActor||astridSpeak)&&new URLSearchParams(location.search).has('rehear
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
 tableReady.then(() => settleRehearsalInitialization?.(false), () => settleRehearsalInitialization?.(true));
-if (localPresentationEnabled) tableReady.then(async () => {
+if (!studioPreview && localPresentationEnabled) tableReady.then(async () => {
   const { installLissabonProfileUi } = await import('./lissabon-profile.mjs');
   await installLissabonProfileUi({ canSwitch: () => !round && !busy && !chatBusy, beforeSwitch: () => astridCamera?.stop('Profilbyte · Av') });
 }).catch(error => console.warn('[Lissabon profile]', error.message));
@@ -2807,12 +2851,12 @@ if(astridSpeak)tableReady.then(()=>{
   });
 }).catch(()=>{});
 
-document.querySelector('#sign-out').onclick=async()=>{astridCamera?.stop('Utloggad · Av');await api('/api/auth/logout',{});location.reload();};
+document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;astridCamera?.stop('Utloggad · Av');await api('/api/auth/logout',{});location.reload();};
 
 // Separate explicit chat capability for the bound local lab. It cannot issue
 // table commands or supply cards/identity. Only this authenticated native server
 // produces the response; the lab owns its own presentation/standard-idle gate.
-const labSpeechBridge = createNativeSpeechBridge({ href: location.href, opener: window.opener,
+const labSpeechBridge = studioPreview?null:createNativeSpeechBridge({ href: location.href, opener: window.opener,
   loadMedia: loadGeneratedSpeech,
   onSubmit: async ({ requestId, text, signal }) => {
     if (chatBusy) throw new Error('A chat request is already active');
@@ -2823,7 +2867,7 @@ const labSpeechBridge = createNativeSpeechBridge({ href: location.href, opener: 
     const identity = poseIdentity();
     nativeObservation.emit('chat', { role: 'user', text, source: 'linked-lab-chat', requestId });
     try {
-      const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+      const response = await apiFetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
         body: JSON.stringify({ requestId, message: text, history: [], dealer: DEALER.key,
           sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
       });
@@ -2835,10 +2879,10 @@ const labSpeechBridge = createNativeSpeechBridge({ href: location.href, opener: 
     } finally { chatBusy = false; }
   },
 });
-window.addEventListener('message', event => labSpeechBridge.accept(event));
-window.addEventListener('pagehide', () => labSpeechBridge.close(), { once: true });
+window.addEventListener('message', event => labSpeechBridge?.accept(event));
+window.addEventListener('pagehide', () => labSpeechBridge?.close(), { once: true });
 
-if (DEALER.key === 'astrid') {
+if (!studioPreview && DEALER.key === 'astrid') {
   await tableReady;
   probeClient = createProbeClient({
     identity: poseIdentity,
@@ -2880,7 +2924,7 @@ if (DEALER.key === 'astrid') {
 
 // Explicit ownQA install. The cookie-owned endpoint must authorize the current
 // user before an API is exposed; ordinary dealer launches perform no QA IO.
-if (location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
+if (!studioPreview && location.origin === NATIVE_P6_GAME_ORIGIN && localPresentationEnabled
   && new URLSearchParams(location.search).get('nativeP6GamePlayback') === '1') {
   const readNativeP6Availability = () => {
     const state = speechPoseGate.state;

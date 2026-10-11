@@ -1115,3 +1115,13 @@ body.cal-on .seat .cards .card:hover { outline: 2px dashed rgba(214,255,58,.9); 
 
 .presentation-composed-film {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2;pointer-events:none;}
 #scene[data-presentation-clip-mode="green-screen"] .local-presentation-still {visibility:hidden;}
+
+/* Preview controls remain in the shared HUD; no fixed banner covers the logo. */
+html[data-studio-preview] #hud-top { gap: 10px; flex-wrap: wrap; }
+html[data-studio-preview] #top-right { margin-left: auto; min-width: 0; }
+html[data-studio-preview] #chat { display: none !important; }
+#studio-preview-status { position: relative; max-width: calc(100vw - 24px); color: #d9e4dc; font: 11px/1.4 Inter, sans-serif; pointer-events: auto; }
+#studio-preview-status summary { cursor: pointer; padding: 7px 10px; border: 1px solid #52605e; border-radius: 8px; background: #101618e6; white-space: nowrap; }
+#studio-preview-status > p { position: absolute; right: 0; top: calc(100% + 6px); width: min(300px, calc(100vw - 24px)); box-sizing: border-box; margin: 0; padding: 12px; background: #101618; border: 1px solid #52605e; border-radius: 8px; }
+html[data-studio-preview] #player-choices { max-width: calc(100vw - 24px); box-sizing: border-box; }
+html[data-studio-preview] body:not(.in-round) #player-choices { pointer-events: auto; }

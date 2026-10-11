@@ -58,6 +58,7 @@ test('Lanes renders the title and disables write buttons when no store is connec
     storeAvailable: false,
   }));
   assert.match(html, /<h1>Publicering<\/h1>/);
+  assert.match(html, /<section id="operator-package-selection" tabindex="-1"[^>]*aria-label="Partnerpaket"/);
   assert.match(html, /SG test game provider/);
   assert.match(html, /mobile-phone/);
   assert.match(html, /Demo North/);

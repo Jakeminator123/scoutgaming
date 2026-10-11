@@ -159,7 +159,7 @@ test('both dealer pickers offer only the active lane dealers even without an ope
     for (const offered of [['astrid'], ['amira','mei']]) {
       const actual = [], rehearsed = [];
       const document = {createElement(){return {dataset:{},setAttribute(){},append(){}};}};
-      vm.runInNewContext(row + rehearsal, {entrySelection:{operator,choices:{dealers:offered}},DEALER:DEALERS[offered[0]],DEALERS,document,
+      vm.runInNewContext(row + rehearsal, {previewSession:null,entrySelection:{operator,choices:{dealers:offered}},DEALER:DEALERS[offered[0]],DEALERS,document,
         $:() => ({appendChild(button){actual.push(button.dataset.dealer);}}),dealerSelect:{add(option){rehearsed.push(option.value);}},
         Option:class {constructor(name,value){this.value=value;}}});
       assert.deepEqual(actual, offered); assert.deepEqual(rehearsed, offered);
@@ -195,7 +195,32 @@ test('dealer footer labels its real action and returns to the same operator lobb
   const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
   const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
   for(const operator of [undefined,'sg-test']){
-    const link={};vm.runInNewContext(code,{entrySelection:{operator},document:{querySelector:()=>link},URLSearchParams});
+    const link={};vm.runInNewContext(code,{studioPreview:null,entrySelection:{operator},document:{querySelector:()=>link},URLSearchParams});
     assert.equal(link.href,operator?'/play?operator=sg-test':'/play');
   }
+});
+
+test('preview keeps an incomplete registered dealer visible and disabled',()=>{
+ const page=dom(),chosen=[];
+ const panel=mountPlayerChoices(page,{choices:{...choices,dealers:['astrid','johanna']},currentDealer:'astrid',
+  dealerAvailability:[{id:'astrid',playable:true},{id:'johanna',playable:false,reason:'studio_preview_idle_required'}],onDealer:id=>chosen.push(id)});
+ const row=panel.children.find(child=>child.className==='choice-row'),buttons=row.children.filter(child=>child.tag==='button');
+ assert.equal(buttons.length,2);assert.equal(buttons[1].dataset.dealer,'johanna');assert.equal(buttons[1].disabled,true);
+ assert.match(buttons[1].textContent,/grundklipp saknas/);buttons[1].onclick();assert.deepEqual(chosen,[]);
+});
+test('preview footer returns to its saved composition without an operator link',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
+ const link={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>link},URLSearchParams});
+ assert.equal(link.href,'/control/preview?lane=evening');assert.equal(link.textContent,'Till Sammansättning');
+});
+
+test('the existing layer panel accepts a clear preview label and keeps the ordinary label',()=>{
+ const ordinary=dom(),preview=dom();
+ const base=mountPlayerChoices(ordinary,{choices,currentDealer:'astrid'});
+ const configured=mountPlayerChoices(preview,{choices,currentDealer:'astrid',summaryLabel:'Bord och bakgrund'});
+ assert.equal(base.children[0].textContent,'Ditt bord');
+ assert.equal(configured.children[0].textContent,'Bord och bakgrund');
+ assert.equal(configured.id,'player-choices');
 });

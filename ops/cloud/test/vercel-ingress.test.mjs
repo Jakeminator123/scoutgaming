@@ -187,3 +187,18 @@ test('frozen event media retains signed transport and never becomes public featu
   for(const extra of [{'x-croupier-vercel-secret':undefined},{'x-croupier-public-origin':'https://foreign.invalid'},{'x-forwarded-host':'foreign.invalid'}]) assert.equal(vercelIngressRequest({...request(path,extra),method:'GET'},ingress).accepted,false);
   assert.equal(vercelIngressRequest({...request(path+'/record'),method:'GET'},ingress).accepted,false);
 });
+
+test('Studio preview HTML, commands and media require signed ingress and preserve only existing session cookies', () => {
+  const id='10000000-0000-4000-8000-000000000001',base='/api/studio-preview/'+id;
+  for(const [path,method] of [['/api/studio-preview','POST'],['/studio-preview/'+id+'?dealer=amira','GET'],
+    [base+'/table','POST'],[base+'/session','GET'],[base+'/videos/'+id,'HEAD'],[base+'/layers/'+id,'GET'],[base,'DELETE']]) {
+    const original={...request(path,{cookie:'lab_session=existing-admin'}),method};
+    const result=vercelIngressRequest(original,ingress);
+    assert.equal(result.transported,true,path);assert.equal(result.headers.cookie,'lab_session=existing-admin');
+    assert.equal(result.headers['x-croupier-vercel-secret'],undefined);
+    for(const fields of [{'x-croupier-vercel-secret':''},{'x-forwarded-host':'foreign.test'},{'x-croupier-public-origin':'https://foreign.test'}])
+      assert.equal(vercelIngressRequest({...original,headers:{...original.headers,...fields}},ingress).accepted,false,path);
+  }
+  for(const path of [base+'/chat',base+'/deposit',base+'/videos/../private',base+'/layers/'+id+'/more','/studio-preview/'+id+'/extra'])
+    assert.equal(vercelIngressRequest(request(path),ingress).accepted,false,path);
+});

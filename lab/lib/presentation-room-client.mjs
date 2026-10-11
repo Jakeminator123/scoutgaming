@@ -11,6 +11,13 @@ const revision = identifier;
 const packageRevision = value => Number.isSafeInteger(value) && value > 0;
 const roomName = value => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 100 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
 const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large']);
+const conflictMessages = Object.freeze({
+  presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
+  presentation_shared_layer_conflict: 'Ett bord eller en bakgrund skiljer sig från paketets frysta definition. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
+  presentation_legacy_package_conflict: 'Paketets äldre format kan inte uppdateras en presentation i taget. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
+  presentation_room_binding_conflict: 'Ett befintligt spelrum är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera sammansättningens startdealer mot rummets inställningar i Administration. Rummets koppling ändras inte av publicering.',
+  presentation_game_lane_conflict: 'Den tekniska spelkonfigurationen krockar med en befintlig definition. Kontrollera Bord & spelrum i Administration. Skapa inte ett extra rum för att kringgå konflikten.',
+});
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
 export class PresentationRoomError extends Error {
@@ -36,6 +43,9 @@ function preflight(value, context) {
     || value.presentationLaneId !== context.presentation.id || !revision(value.projectRevision) || !revision(value.administrationRevision)
     || !(value.packageRevision === null || packageRevision(value.packageRevision)) || typeof value.ready !== 'boolean'
     || !(value.reason === null || reasons.has(value.reason)) || !Object.hasOwn(value, 'capabilities') || !Array.isArray(value.rooms)) invalid();
+  const conflictCode = value.conflictCode ?? null;
+  if (conflictCode !== null && (typeof conflictCode !== 'string' || !Object.hasOwn(conflictMessages, conflictCode)
+    || value.reason !== 'presentation_package_conflict' || value.ready)) invalid();
   const capabilities = capability(value.capabilities);
   if (value.ready && (value.reason !== null || ![2, 3, 4].includes(capabilities?.schemaVersion))) invalid();
   const seen = new Set();
@@ -48,7 +58,7 @@ function preflight(value, context) {
   if (rooms.length && !packageRevision(value.packageRevision)) invalid();
   return Object.freeze({ ok: true, operator: Object.freeze({ id: value.operator.id, slug: value.operator.slug, name: value.operator.name }),
     presentationLaneId: value.presentationLaneId, projectRevision: value.projectRevision, administrationRevision: value.administrationRevision,
-    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, capabilities, rooms: Object.freeze(rooms) });
+    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, conflictCode, capabilities, rooms: Object.freeze(rooms) });
 }
 export function presentationRoomPlayUrl(value, { operatorSlug, roomId }) {
   if (typeof value !== 'string' || value.length > 500 || !value.startsWith('/play/blackjack?') || /[#\\\u0000-\u0020\u007f]/u.test(value)) invalid();
@@ -101,6 +111,7 @@ function readinessMessage(prepared, context) {
   if (prepared.projectRevision !== context.projectRevision) return 'Presentationen har ändrats. Ladda om sidan.';
   if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan rummet kan skapas.';
   if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar sammansättning. Kontrollera vald grundloop, dealer och lager i Sammansättning och spara.';
+  if (prepared.reason === 'presentation_package_conflict' && prepared.conflictCode) return conflictMessages[prepared.conflictCode];
   if (prepared.reason === 'presentation_package_conflict') return 'Paketet kan inte uppdateras eftersom uppgifter har ändrats eller ett befintligt spelrum påverkas. Läs in bolagets aktuella paket och kontrollera presentationerna.';
   if (prepared.reason === 'presentation_package_too_large') return 'Paketet är för stort. Minska presentationens innehåll eller paketets urval och försök igen.';
   return prepared.ready ? null : 'Spelrummet kan inte skapas ännu.';

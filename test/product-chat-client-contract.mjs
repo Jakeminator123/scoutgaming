@@ -35,9 +35,9 @@ test('generated text keeps neutral idle instead of a recorded mouth clip', () =>
   assert.doesNotMatch(source, /function speakFor\(/);
 });
 
-function playbackFixture(dealerId) {
+function playbackFixture(dealerId, studioPreview = null) {
   const events = [], tts = [], videos = [], poses = [], statuses = [], captions = [], pending = {};
-  const context = {
+  const context = { studioPreview,
     DEALER: { key: dealerId, name: dealerId === 'astrid' ? 'Astrid' : dealerId }, pendingChatReplies: new Map([['reply-1', pending]]),
     chatPlaybackDiagnostic: { finish: (requestId, state) => { pending.diagnostic = { requestId, state }; } },
     localPresentation: { state() {} }, updatePoseState: value => poses.push(value), speaking: false,
@@ -120,4 +120,21 @@ test('renderer evidence, not busy or phase, supplies standard-idle proof', () =>
   assert.match(source, /speechPoseGate\.presentStandardIdle\(/);
   const proofFunction = source.slice(source.indexOf('function presentStandardIdle'), source.indexOf('const engine ='));
   assert.doesNotMatch(proofFunction, /\bbusy\b|round\.phase|duration/);
+});
+
+test('Studio preview rejects generated speech before every dealer voice or player side effect', async () => {
+  for (const dealerId of ['astrid', 'vera', 'amira', 'mei']) {
+    for (const media of [
+      {},
+      { visualMode: 'generated-lipsync-preview', speechPackage: { fixture: 'package' } },
+      { visualMode: 'generated-lipsync-stream-preview', speechStream: { fixture: 'stream' } },
+    ]) {
+      const f = playbackFixture(dealerId, { sessionId: 'preview-fixture' });
+      await assert.rejects(f.play({ kind: 'generatedText', exactText: 'Good evening.', ...media },
+        new AbortController().signal, 'reply-1'), /Genererat tal är avstängt i provspel/);
+      for (const effects of [f.tts, f.videos, f.poses, f.statuses, f.captions, f.events]) assert.deepEqual(effects, []);
+      assert.deepEqual(f.pending, {});
+      assert.equal(f.context.speaking, false);
+    }
+  }
 });

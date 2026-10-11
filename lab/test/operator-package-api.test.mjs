@@ -304,3 +304,31 @@ test('lane operator choices carry each current published assignment and never bo
   listed.find(row=>row.id==='sg-test').publishedPackage.lanes.length=0;
   assert.equal((await lane.listOperators()).find(row=>row.id==='sg-test').publishedPackage.lanes.length,2);
 });
+
+
+test('publishing the whole existing selection refreezes one shared dealer snapshot without changing room bindings', async () => {
+  const f = await nativeFixture(), saved = await f.repository.readDocument('project'), second = structuredClone(f.lane);
+  second.id = 'second-johanna'; saved.value.lanes.push(second);
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: 'tester' });
+  f.context.body.lanes = [f.lane.id, second.id];
+  const first = await f.publish();
+  const rooms = [f.lane.id, second.id].map((presentationLaneId, i) => ({ schemaVersion: 2, id: 'room-10000000-0000-4000-8000-00000000000' + (i + 2),
+    name: 'Room ' + i, operatorId: 'north', presentationLaneId, gameLaneId: 'johns-game', state: 'live' }));
+  const admin = await f.repository.readDocument('administration'); admin.value.rooms = rooms;
+  await f.repository.saveDocument('administration', { value: admin.value, expectedRevision: admin.revision, actor: 'tester' });
+  await f.direct.publishPackage({ actor: 'tester', operatorId: 'north', expectedRevision: 1, lanes: f.context.body.lanes, games: ['blackjack'], tables: rooms.map(r => r.id),
+    branding: withPackagePresentation({ name: 'Johns' }, first.presentation) });
+  const changed = await f.repository.readDocument('project');
+  changed.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated shared event';
+  await f.repository.saveDocument('project', { value: changed.value, expectedRevision: changed.revision, actor: 'tester' });
+  const beforeAdmin = await f.repository.readDocument('administration'), offset = f.pool.calls.length, prepared = await f.prepare();
+  assert.equal(f.pool.calls.slice(offset).filter(call => call.marker === 'list-media').length, 1, 'one captured library snapshot for all selections');
+  const result = await f.publish(prepared);
+  assert.equal(result.packageRevision, 3); assert.deepEqual(result.tables, rooms.map(r => r.id));
+  assert.deepEqual(result.presentation.lanes.map(l => l.id), f.context.body.lanes);
+  assert.equal(result.presentation.registeredDealers.length, 1);
+  assert.equal(result.presentation.playback.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
+  assert.notEqual(first.presentation.playback.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
+  assert.deepEqual(await f.repository.readDocument('administration'), beforeAdmin);
+  assert.equal((await f.direct.getCurrentPackage('north')).branding.name, 'Johns');
+});

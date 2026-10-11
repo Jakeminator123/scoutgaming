@@ -3,6 +3,15 @@ import {validateComposition} from './presentation-composition.mjs';
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+export function validateStudioPreview(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).sort().join(',') !== 'expiresAt,presentationLaneId,projectRevision,sessionId'
+    || !uuid.test(value.sessionId) || !isGameLaneId(value.presentationLaneId)
+    || typeof value.projectRevision !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(value.projectRevision)
+    || typeof value.expiresAt !== 'string' || !Number.isFinite(Date.parse(value.expiresAt))
+    || new Date(value.expiresAt).toISOString() !== value.expiresAt) throw Error('Invalid studio preview');
+  return Object.freeze({...value});
+}
 export const gameEntryEnabled = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1';
 export function publicGamePath(env = {}) {
   if (gameEntryEnabled(env)) return '/blackjack';
@@ -62,6 +71,11 @@ export function decorateGameEntryHtml(html,env,selection,{offline = false} = {})
   if (!gameEntryEnabled(env) && offline !== true) return html;
   let attributes = gameEntryEnabled(env) ? ' data-game-path="/blackjack"' : '';
   if (selection) {
+    if (selection.studioPreview !== undefined) {
+      const preview = validateStudioPreview(selection.studioPreview);
+      if (selection.lane !== preview.presentationLaneId || ['operator','roomId','packageRevision','branding'].some(key => selection[key] !== undefined)) throw Error('Invalid game presentation');
+      attributes += ' data-studio-preview="' + attributeText(JSON.stringify(preview)) + '"';
+    }
     if (!isGameLaneId(selection.lane) || !isDealerId(selection.dealer) || !['local','original','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
     const registry = validatePublicRegisteredDealers(selection.registeredDealers ?? []);

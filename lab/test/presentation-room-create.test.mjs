@@ -343,3 +343,35 @@ test('a valid existing room stays visible when changed draft content blocks anot
   assert.doesNotMatch(html, /Inget publicerat spelrum/); assert.equal(h.requests.length, 1);
   ui.unmount();
 });
+
+
+test('typed conflicts offer visible explicit recovery while keeping creation blocked and never publishing', async () => {
+  for (const code of ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict', 'presentation_room_binding_conflict', 'presentation_game_lane_conflict']) {
+    const h = fixture(), ui = componentHarness(h.controller);
+    ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: code })); await tick();
+    const tree = ui.render(context), html = renderToStaticMarkup(tree), together = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(code);
+    assert.equal(h.controller.getSnapshot().status, 'unavailable');
+    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/control/administration?tab=tables');
+    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera Bord &amp; spelrum/);
+    if (together) assert.match(html, /publicera alla dessa presentationer tillsammans först.*Behåll befintliga rum och dealers/);
+    else assert.doesNotMatch(html, /publicera alla dessa presentationer/);
+    const message = h.controller.getSnapshot().message; h.controller.setName('Nytt rum');
+    assert.equal(h.controller.getSnapshot().message, message);
+    find(tree, 'form').props.onSubmit({ preventDefault() {} });
+    assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
+  }
+});
+
+test('conflict code validation rejects unknown, non-string, prototype and inconsistent diagnostics', async () => {
+  for (const extra of [
+    { conflictCode: 'private-code' }, { conflictCode: {} }, { conflictCode: 'constructor' },
+    { conflictCode: 'presentation_shared_dealer_conflict', ready: true, reason: null },
+    { conflictCode: 'presentation_shared_dealer_conflict', reason: 'presentation_lane_incompatible' },
+  ]) {
+    const h = fixture(); await h.ready(context, { ready: false, reason: 'presentation_package_conflict', ...extra });
+    assert.equal(h.controller.getSnapshot().status, 'error');
+    assert.equal(h.controller.getSnapshot().preflight, null);
+    assert.doesNotMatch(h.controller.getSnapshot().message, /private-code|constructor/);
+    assert.equal(await h.controller.create(presentationRoomContextKey(context)), null); assert.equal(h.requests.length, 1);
+  }
+});

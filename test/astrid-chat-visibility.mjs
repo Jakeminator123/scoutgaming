@@ -6,10 +6,10 @@ import vm from 'node:vm';
 const app = readFileSync(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
 const visibility = app.slice(app.indexOf('function setChatOpen(open)'), app.indexOf('\n}', app.indexOf('function setChatOpen(open)')) + 2);
 
-function harness(dealer, localPresentationEnabled = true) {
+function harness(dealer, localPresentationEnabled = true, studioPreview = null) {
   let open = false;
   const chatToggle = { dataset: { unread: '1' }, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; } };
-  const context = vm.createContext({ DEALER: { key: dealer }, localPresentationEnabled, chatToggle,
+  const context = vm.createContext({ studioPreview, DEALER: { key: dealer }, localPresentationEnabled, chatToggle,
     $: () => ({ classList: { toggle: (_name, value) => { open = value; } } }) });
   vm.runInContext(visibility, context);
   return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, chatToggle };
@@ -42,4 +42,16 @@ test('chat controls never move into the hidden private camera panel', () => {
   vm.runInNewContext(init, { astridCamera: {}, chatToggle: h.chatToggle, setChatOpen: value => h.set(value) });
   assert.equal(h.isOpen(), true);
   assert.equal(h.chatToggle.hidden, true);
+});
+
+test('Studio preview cannot expose chat through ordinary open or close controls', () => {
+  for (const dealer of ['astrid', 'vera', 'amira', 'mei']) {
+    const h = harness(dealer, true, { sessionId: 'preview-fixture' });
+    for (const requested of [true, false, true]) {
+      h.set(requested);
+      assert.equal(h.isOpen(), false);
+      assert.deepEqual(h.chatToggle.attributes, {});
+      assert.equal(h.chatToggle.dataset.unread, '1');
+    }
+  }
 });

@@ -1,3 +1,4 @@
+import { studioPreviewFromDocument } from './studio-preview-client.mjs';
 import { BASE_DEALER_IDS, validatePublicRegisteredDealers } from './dealer-identity.mjs';
 import { gameChoicesFromDocument, isGameLaneId } from './game-lanes.mjs';
 // Separate presentation routes share the same origin, session and game API.
@@ -10,6 +11,12 @@ export function dealerVersionPath(dealer, version, observerSearch = '') {
   const layered = dataset?.gamePresentation === 'layered' && dataset.gameLane === 'layer-preview' && ['paow', 'dragge'].includes(dealer);
   if (!BASE_DEALER_IDS.includes(dealer) && !extra && !layered) throw Error('Dealer is not registered');
   const key = dealer;
+  const preview = studioPreviewFromDocument(dataset, globalThis.location?.pathname ?? '/');
+  if (preview) {
+    const choices = gameChoicesFromDocument(dataset.gameChoices, {registeredDealerIds:registry.map(row => row.id)});
+    if (!choices.dealers.includes(key)) throw Error('Dealer is not available in this preview');
+    return '/studio-preview/' + preview.sessionId + '?' + new URLSearchParams({dealer:key});
+  }
   const query=new URLSearchParams({dealer:key});
   const previous=new URLSearchParams(observerSearch);
   // A room or saved lane owns the adapter and allowed dealer set. Keep that
