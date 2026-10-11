@@ -314,6 +314,17 @@ automatiskt till Render. Produkt-, Lab- och Gateway-token har olika roller.
 
 ### Talnycklar och sparade modeller
 
+Nya dealerprofiler kräver `CROUPIER_DEALER_SPEECH_PROFILES=1` på Render
+`croupier-v2`, tillsammans med befintlig streaming och Neon-journal. Flaggan är
+av tills en workerimage som stöder profilbunden avatar och protokoll 3 har verifierats.
+`ELEVENLABS_API_KEY` behövs där för ElevenLabs-profiler; Cartesia-profiler använder
+`CARTESIA_API_KEY`. Molnstartaren vidarebefordrar nyckeln enbart till Web-processen,
+inte Lab, webbläsaren eller GitHub Actions. Lokala `.env.local` och `lab/.env.local`
+förs inte automatiskt över till Render. Inga nya GitHub-secrets krävs för TTS.
+Röst-ID, modell och referens sparas per dealer i Studio; runtime kontrollerar
+röstbehörighet med ett läsande API-anrop innan GPU-jobbet. Saknad röst eller nyckel
+ger fel, aldrig Astrids röst som reserv. Budget och återstartsregler är oförändrade.
+
 På Render `croupier-v2` finns tal-/GPU-konfigurationens `CARTESIA_API_KEY`,
 `RUNPOD_API_KEY` och `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Produktens tre
 aktiveringsflaggor är ON. Aktuell verifiering och kostnadsgränser finns i

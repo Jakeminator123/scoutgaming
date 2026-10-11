@@ -18,6 +18,7 @@ async function fixture(t, options = {}) {
     attachRelay: (_, value) => { relayOptions = value; return relay; },
     pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
     sessionManager: options.sessionManager,
+    dealerRuntime: options.dealerRuntime,
   }).then(value => { services.push(value); return value; });
   service = await construct();
   const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
@@ -41,6 +42,35 @@ test('prepare is unpaid, exact expiry is signed, cookie owner required; ready be
   assert.deepEqual(timings.map(([stage]) => stage), ['tts_first_audio_ms', 'tts_complete_ms',
     'worker_first_media_ms', 'server_transport_enqueue_ms']);
   assert.ok(timings.every(([, ms]) => Number.isSafeInteger(ms) && ms >= 0));
+});
+
+test('registered stream binds own source and exact worker, then invalidates on profile change after preparation',async t=>{
+  let fresh=true, paid=0, avatarSeen;
+  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId:'paow'},
+    assertFresh:async()=>{if(!fresh)throw Error('profile changed');},
+    source:async function*({beforeCostly}){await beforeCostly();paid++;yield new Uint8Array(48);}};
+  const f=await fixture(t,{dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
+    async ensure({avatar,beforeCostly}){await beforeCostly();avatarSeen=avatar;return {ready:true,workerId:'paow-worker',binding:{dealerId:'paow',profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,protocolVersion:3}};},close(){}}});
+  const descriptor=await f.service.prepare({...f.input(),dealerId:'paow'});
+  assert.equal(descriptor.schemaVersion,2);assert.equal(descriptor.dealerId,'paow');assert.equal(descriptor.profileRevision,runtime.profileRevision);
+  assert.equal(descriptor.compositing,null);assert.equal(avatarSeen,runtime.avatar);assert.equal(paid,0);
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));assert.equal(identity.workerId,'paow-worker');
+  await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
+  assert.equal(paid,1);assert.equal(f.sourceCalls,0);assert.equal(f.written,48);
+  fresh=false;await new Promise(resolve=>setTimeout(resolve,40));assert.equal(f.aborted,true);
+});
+test('mismatched worker attestation produces no registered ticket or TTS',async t=>{
+  let paid=0;
+  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId:'paow'},assertFresh:async()=>{},source:async function*(){paid++;yield new Uint8Array(48);}};
+  const f=await fixture(t,{dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
+    ensure:async()=>({ready:true,workerId:'foreign',binding:{dealerId:'astrid'}}),close(){}}});
+  await assert.rejects(f.service.prepare({...f.input(),dealerId:'paow'}),{code:'generated_speech_worker_binding_mismatch'});
+  assert.equal(paid,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
+});
+test('legacy local streaming still admits its worker but cannot accept a profile-bound avatar',async t=>{
+  const f=await fixture(t);
+  assert.equal(f.relayOptions.authenticateWorker({headers:{}},'legacy'),true);
+  assert.equal(f.relayOptions.authenticateWorker({headers:{'x-dealer-id':'paow','x-speech-protocol':'3'}},'foreign'),false);
 });
 
 test('foreign websocket cookie and stale state never enter paid source', async t => {

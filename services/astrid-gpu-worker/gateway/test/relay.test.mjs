@@ -61,6 +61,21 @@ test('forwards first media before input end; server owns ids; releases worker af
   assert.deepEqual(idleWorkers, ['worker-0']);
 });
 
+test('server-chosen exact worker is used even when another idle avatar connected first', {timeout:5000}, async t=>{
+  const authenticate=ticketAuthenticator(ticketSecret);
+  const f=await fixture(t,{authenticateClient:req=>({...authenticate(req),workerId:'worker-1'})});
+  const first=f.worker();await once(first,'open');const second=f.worker(),fromSecond=messages(second);await once(second,'open');
+  let foreignMessages=0;first.on('message',()=>foreignMessages++);
+  const client=f.client(),read=messages(client);await read();client.send(JSON.stringify({t:'start',protocol:2,rate:24000}));
+  assert.equal((await fromSecond()).t,'start');assert.equal(foreignMessages,0);
+  assert.equal(f.relay.workerStatus('worker-0').busy,0);assert.equal(f.relay.workerStatus('worker-1').busy,1);
+});
+test('a valid worker secret cannot bypass profile attestation', {timeout:5000}, async t=>{
+  const f=await fixture(t,{authenticateWorker:()=>false}),worker=f.worker();
+  worker.on('error',()=>{});const [response]=await new Promise(resolve=>worker.once('unexpected-response',(_request,response)=>{response.resume();worker.terminate();resolve([response]);}));
+  assert.equal(response.statusCode,403);assert.equal(f.relay.status().workers,0);
+});
+
 test('lifecycle stop closes only the named idle worker with a graceful bye', { timeout: 5000 }, async t => {
   const f = await fixture(t);
   const w = f.worker(), fromWorker = messages(w); await once(w, 'open');

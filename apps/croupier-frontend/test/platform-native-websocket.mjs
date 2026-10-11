@@ -129,6 +129,7 @@ test('disconnect during authentication cannot produce public101 and cleans up wi
 });
 
 test('native handlers carry actual relay media both ways with current owner, ingress, worker and one-use ticket checks', {timeout: 15000}, async () => {
+  const bindingHeaders={'x-dealer-id':'paow','x-speech-profile-revision':'a'.repeat(64),'x-speech-image-sha256':'b'.repeat(64),'x-speech-protocol':'3'};
   const temporaryRoot = await realpath(tmpdir());
   const directory = await mkdtemp(join(temporaryRoot, 'croupier-native-relay-'));
   const backend = createServer();
@@ -148,6 +149,7 @@ test('native handlers carry actual relay media both ways with current owner, ing
       assert.equal(verdict.headers['x-croupier-vercel-secret'], undefined);
     });
     relay = attachSpeechRelay(backend, {workerSecret, allowedOrigins: [configuration.publicOrigin],
+      authenticateWorker:request=>Object.entries(bindingHeaders).every(([key,value])=>request.headers[key]===value),
       authenticateClient: request => currentOwnerActive && request.headers.cookie === 'player_session=owner' ? authenticate(request) : null,
       allowClientPCM: true});
     const backendBase = await listen(backend);
@@ -166,7 +168,8 @@ test('native handlers carry actual relay media both ways with current owner, ing
     // Invalid worker credentials are rejected by the actual Render relay before101.
     assert.equal(await rejected(workerBase + '/lipsync-worker', [], {...workerHeaders, authorization: 'Bearer invalid'}), 403);
     assert.equal(await rejected(speechBase + '/lipsync-worker', [], {...workerHeaders, authorization: 'Bearer invalid'}), 403);
-    worker = new WebSocket(speechBase + '/lipsync-worker', [], {headers: workerHeaders});
+    assert.equal(await rejected(speechBase + '/lipsync-worker', [], workerHeaders), 403, 'missing binding cannot enter registered worker');
+    worker = new WebSocket(speechBase + '/lipsync-worker', [], {headers: {...workerHeaders,...bindingHeaders}});
     await once(worker, 'open');
     worker.on('message', (data, binary) => {
       if (binary) {workerReceived.push(Buffer.from(data)); worker.send(Buffer.from('exact-native-fixture-media')); return;}

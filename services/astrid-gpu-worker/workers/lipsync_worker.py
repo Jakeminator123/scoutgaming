@@ -25,7 +25,11 @@ from musetalk.utils.audio_processor import AudioProcessor
 
 AVATAR = os.environ.get("AVATAR_ID", "astrid_talk2x")
 # Varje avatar har sin stillbild i assets/<AVATAR_ID>/; demots ursprungliga (astrid_talk2x) ligger direkt i assets/
-_ADIR = f"/workspace/avatar/{AVATAR}" if os.path.isdir(f"/workspace/avatar/{AVATAR}") else "/workspace/avatar"
+_ADIR = os.environ.get("DEALER_AVATAR_DIRECTORY") or (f"/workspace/avatar/{AVATAR}" if os.path.isdir(f"/workspace/avatar/{AVATAR}") else "/workspace/avatar")
+DEALER_BINDING = json.loads(os.environ.get('DEALER_SPEECH_BINDING', 'null'))
+if DEALER_BINDING and (not os.environ.get('DEALER_AVATAR_DIRECTORY') or not os.path.isfile(f'{_ADIR}/binding.json')
+                       or json.load(open(f'{_ADIR}/binding.json')) != DEALER_BINDING):
+    raise RuntimeError('Dealer avatar binding mismatch')
 BASE_PNG = f"{_ADIR}/talk_base.png"
 BASE_YUV = f"{_ADIR}/talk_base.yuv"
 FPS = 24
@@ -49,7 +53,7 @@ base_dir = f"./results/v15/avatars/{AVATAR}"
 if not os.path.exists(os.path.join(base_dir, "latents.pt")):
     say(status=f"bygger avatar {AVATAR}")
     r = subprocess.run([sys.executable, "/workspace/workers/prepare_avatar.py",
-                        "--image", BASE_PNG, "--id", AVATAR, "--scale", "2"], capture_output=True, text=True)
+                        "--image", BASE_PNG, "--id", AVATAR, "--scale", "2"], capture_output=True, text=True, timeout=120)
     if r.returncode != 0:
         say(ok=False, error="prepare_avatar: " + r.stderr[-800:]); sys.exit(1)
 
@@ -369,6 +373,11 @@ def serve_session(url, ttl, token=None, worker_id=None):
             headers['Authorization'] = 'Bearer ' + token
         if worker_id:
             headers['X-Worker-Id'] = worker_id
+        if DEALER_BINDING:
+            headers.update({'X-Dealer-Id': DEALER_BINDING['dealerId'],
+                            'X-Speech-Profile-Revision': DEALER_BINDING['profileRevision'],
+                            'X-Speech-Image-Sha256': DEALER_BINDING['imageSha256'],
+                            'X-Speech-Protocol': '3'})
         header_arg = 'additional_headers' if 'additional_headers' in inspect.signature(websockets.connect).parameters else 'extra_headers'
         async with websockets.connect(url, max_size=1024*1024, max_queue=8,
                                       **{header_arg: headers}) as ws:

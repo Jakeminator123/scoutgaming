@@ -82,3 +82,10 @@ test('without negotiated stream service existing fullfile API is retained', asyn
   const result = await completeChatWithSpeech(f.data);
   assert.ok(result.speechPackage); assert.equal(result.speechStream, undefined); assert.equal(f.jobs, 1);
 });
+test('registered dealer uses negotiated own stream; failure never generates an Astrid package',async()=>{
+  const f=fixture();f.data.status.dealerId='paow';
+  f.data.streamService={prepare:async value=>{assert.equal(value.dealerId,'paow');await value.beforeCostly();return {dealerId:'paow',schemaVersion:2};}};
+  const result=await completeChatWithSpeech(f.data);assert.equal(result.speechStream.dealerId,'paow');assert.equal(f.jobs,0);
+  f.data.streamService.prepare=async()=>{throw Error('own voice unavailable');};
+  await assert.rejects(completeChatWithSpeech(f.data),/own voice unavailable/);assert.equal(f.jobs,0);
+});

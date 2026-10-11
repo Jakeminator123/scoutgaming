@@ -15,7 +15,7 @@ export async function completeChatWithSpeech({ request, status, owner, playerId,
   onTiming('text_wait_ms', Math.round(performance.now() - textStarted));
   await fresh();
   if (decision.kind === 'generatedText') onDecision(decision.exactText);
-  if (streamService && status.dealerId === 'astrid' && decision.kind === 'generatedText') {
+  if (streamService && decision.kind === 'generatedText') {
     onProgress('video-queue');
     const speechStream = await streamService.prepare({ requestId: request.requestId, text: decision.exactText, dealerId: status.dealerId, owner, playerId, signal, beforeCostly: fresh, onTiming });
     try { await fresh(); } catch (error) { streamService.cancelOwner?.(owner); throw error; }

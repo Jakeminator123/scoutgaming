@@ -17,26 +17,59 @@ import base64, ipaddress, json, os, re, subprocess, tempfile, threading, time, u
 from urllib.parse import urlsplit
 
 import runpod
+from workers.dealer_avatar import validate_avatar, prepare_avatar_assets, cleanup_avatar_assets
 
 CMD = ["/workspace/mt-venv/bin/python", "-u", "/workspace/workers/lipsync_worker.py"]
 
 
 class Engine:
-    def __init__(self):
+    def __init__(self, avatar=None):
         started = time.monotonic()
         self.lock = threading.Lock()
+        self.assets = None
+        self.proc = None
+        self.binding = validate_avatar(avatar)[1] if avatar is not None else None
+        env = dict(os.environ)
+        for key in ('DEALER_AVATAR_DIRECTORY', 'DEALER_SPEECH_BINDING'):
+            env.pop(key, None)
+        if avatar is not None:
+            self.assets = prepare_avatar_assets(avatar)
+            env.update(AVATAR_ID=self.assets['id'], DEALER_AVATAR_DIRECTORY=self.assets['directory'],
+                       DEALER_SPEECH_BINDING=json.dumps(self.binding))
         # stderr in i samma rör: kraschar motorn vill vi ha tracebacken i felmeddelandet, inte bara "dog"
-        self.proc = subprocess.Popen(CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT, text=True, bufsize=1)
         self.tail = []
         self.ready = None
-        while True:
-            msg = self._read("motorn dog under start")
-            if msg.get("ready"):
-                self.ready = {**msg, "cold_start_ms": round((time.monotonic() - started) * 1000)}
-                break
-            if msg.get("ok") is False:
-                raise RuntimeError(msg.get("error"))
+        timer = None
+        try:
+            self.proc = subprocess.Popen(CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
+            timer = threading.Timer(180, self.proc.kill)
+            timer.daemon = True
+            timer.start()
+            while True:
+                msg = self._read("motorn dog under start")
+                if msg.get("ready"):
+                    self.ready = {**msg, "cold_start_ms": round((time.monotonic() - started) * 1000)}
+                    break
+                if msg.get("ok") is False:
+                    raise RuntimeError(msg.get("error"))
+        except BaseException:
+            self.close()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
+
+    def close(self):
+        if self.proc:
+            if self.proc.poll() is None:
+                self.proc.kill()
+            self.proc.wait(timeout=10)
+            self.proc.stdin.close()
+            self.proc.stdout.close()
+        if self.assets:
+            cleanup_avatar_assets(self.assets)
+            self.assets = None
 
     def _read(self, died_msg):
         """Nästa JSON-rad från motorn; icke-JSON (t.ex. traceback) loggas och sparas i svansen."""
@@ -82,12 +115,33 @@ def _tmp(suffix):
 
 
 def handler(job):
+    # The subprocess owns one immutable avatar. Hold admission through the
+    # whole session so another job can never replace a speaking dealer.
+    with ENGINE_LOCK:
+        return _handle_locked(job)
+
+
+ENGINE_LOCK = threading.Lock()
+
+
+def _select_engine(avatar=None):
+    global ENGINE, ERROR
+    binding = validate_avatar(avatar)[1] if avatar is not None else None
+    if ENGINE is not None and ENGINE.binding == binding and ENGINE.proc.poll() is None:
+        return ENGINE
+    previous, ENGINE = ENGINE, None
+    if previous is not None:
+        previous.close()
+    ENGINE = Engine(avatar)
+    ERROR = None
+    return ENGINE
+
+
+def _handle_locked(job):
     inp = job.get("input") or {}
     op = inp.get("op", "health")
     if op == "health":
         return {"warm": ENGINE.ready if ENGINE else None, "error": ERROR}
-    if ENGINE is None:
-        return {"error": f"läppsynkmotorn startade inte: {ERROR}"}
     if op == "session":
         try:
             target = urlsplit(inp.get("ws_url", ""))
@@ -112,12 +166,22 @@ def handler(job):
         session["token"] = token
         session["worker_id"] = worker_id
         try:
-            res = ENGINE.run({"session": session})
+            engine = _select_engine(inp.get('avatar'))
+            res = engine.run({"session": session})
         except Exception:
             # Provider and socket exceptions may contain internal addresses.
             # Never return or log their raw text for a credential-bearing job.
             return {"error": "session failed"}
         return {"session": True, "reason": res.get("reason")}
+    # Legacy full-file jobs always use the original avatar, even after a
+    # registered dealer session. New dealers are supported by streaming only.
+    if inp.get('avatar') is not None:
+        return {"error": "dealer avatar requires session"}
+    if op in ('faces', 'lipsync'):
+        try:
+            _select_engine()
+        except Exception:
+            return {"error": "speech engine unavailable"}
     if op == "faces":
         # verktyg: råa MuseTalk-ansikten + avatarens mask/geometri för att prova efterbehandling lokalt
         if "wav_b64" not in inp:

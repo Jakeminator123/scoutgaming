@@ -2968,7 +2968,11 @@
     "dealerSpeechProfile": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Draft preparation only; never activates speech providers or enters published player packages.",
+      "description": "Private speech intent; runtime must verify the exact voice and reference. Never enters public player packages.",
+      "allOf": [
+        {"if":{"properties":{"schemaVersion":{"const":1}}},"then":{"properties":{"state":{"const":"preparation"},"voice":{"not":{"type":"object","anyOf":[{"required":["language"]},{"required":["settings"]}]}}}}},
+        {"if":{"properties":{"state":{"const":"enabled"}}},"then":{"properties":{"voice":{"type":"object"},"reference":{"type":"object","properties":{"kind":{"const":"video-frame"}}}}}}
+      ],
       "required": [
         "schemaVersion",
         "state",
@@ -2977,10 +2981,10 @@
       ],
       "properties": {
         "schemaVersion": {
-          "const": 1
+          "enum": [1, 2]
         },
         "state": {
-          "const": "preparation"
+          "enum": ["preparation", "enabled"]
         },
         "voice": {
           "oneOf": [
@@ -2990,12 +2994,23 @@
             {
               "type": "object",
               "additionalProperties": false,
+              "allOf":[{"if":{"properties":{"provider":{"const":"cartesia"}}},"then":{"not":{"anyOf":[{"required":["language"]},{"required":["settings"]}]}}}],
               "required": [
                 "provider",
                 "voiceId",
                 "modelId"
               ],
               "properties": {
+                "language": {"type":"string","pattern":"^[a-z]{2}$"},
+                "settings": {
+                  "type":"object","additionalProperties":false,"minProperties":1,
+                  "properties": {
+                    "stability":{"type":"number","minimum":0,"maximum":1},
+                    "similarity_boost":{"type":"number","minimum":0,"maximum":1},
+                    "style":{"type":"number","minimum":0,"maximum":1},
+                    "use_speaker_boost":{"type":"boolean"}
+                  }
+                },
                 "provider": {
                   "enum": [
                     "cartesia",

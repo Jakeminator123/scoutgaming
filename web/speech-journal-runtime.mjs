@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
 import { SHUTDOWN_BUDGET } from './graceful-shutdown.mjs';
+import { avatarBinding, sameBinding, acceptsWorkerBinding } from '../services/astrid-gpu-worker/gateway/worker-binding.mjs';
 
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const jobId = /^[A-Za-z0-9_-]{1,128}$/;
@@ -63,6 +64,8 @@ export function createJournalSpeechSessionManager(configuration, {
   let pending = null, active = null, idleTimer = null, closing = false;
   let closePromise;
   const lifecycleTasks = new Map();
+  const bindings = new Map();
+  let pendingBinding;
 
   async function call(route, { signal, body } = {}) {
     const response = await fetchImpl(`${base}/${route}`, { method: body ? 'POST' : 'GET', redirect: 'error',
@@ -200,6 +203,7 @@ export function createJournalSpeechSessionManager(configuration, {
     }, idleTimeoutMs); idleTimer.unref?.();
   }
   async function ensure(input) {
+    const binding = avatarBinding(input.avatar);
     const signal = input.signal ? AbortSignal.any([input.signal, shutdown.signal]) : shutdown.signal;
     const fresh = async () => { signal.throwIfAborted(); await input.beforeCostly(); signal.throwIfAborted(); };
     let job;
@@ -214,7 +218,8 @@ export function createJournalSpeechSessionManager(configuration, {
         job = open[0];
         if (job.endpointId !== endpointId || !jobId.test(job.jobId ?? '')) fail('generated_speech_session_submission_uncertain', 409);
         const status = job.terminalStatus ?? await inspect(job, signal);
-        if (lease.recoveryOnly || terminal.has(status) || job.cancelRequestedAt !== null
+        const unknownBinding = !bindings.has(job.workerId);
+        if (lease.recoveryOnly || !sameBinding(bindings.get(job.workerId), binding) || terminal.has(status) || job.cancelRequestedAt !== null
           || now() + policy.admissionWindowMs >= job.createdAt + policy.seconds * 1000) {
           if (workerState(job.workerId).busy > 0) fail('generated_speech_stream_busy', 429);
           if (!terminal.has(status)) {
@@ -222,6 +227,7 @@ export function createJournalSpeechSessionManager(configuration, {
           } else stopWorker(job.workerId);
           await waitUntilStopped(job, signal, fresh); job = null;
           if (lease.recoveryOnly) { await ownership.release(); fail('generated_speech_recovery_required', 409); }
+          if (unknownBinding && !terminal.has(status)) fail('generated_speech_recovery_required', 409);
         }
       }
       if (!job) {
@@ -233,12 +239,13 @@ export function createJournalSpeechSessionManager(configuration, {
           currentBudgetMicroUsd: dailyBudgetMicroUsd, workerState: state });
         await fresh(); lease = await ownership.get();
         await journal.markSubmissionStarted({ sessionId, lease });
+        bindings.clear(); bindings.set(job.workerId, binding);
         try {
           // There is one paid POST. Lost HTTP or SQL acknowledgement preserves
           // the submitted marker and cannot authorize a replacement attempt.
           const response = await call('run', { signal, body: {
             input: { op:'session', ws_url:`wss://${originUrl.host}/lipsync-worker`, ws_token:workerSecret,
-              worker_id:job.workerId, ttl:policy.seconds },
+              worker_id:job.workerId, ttl:policy.seconds, ...(input.avatar ? {avatar:input.avatar} : {}) },
             policy: { executionTimeout:policy.executionTimeout, ttl:policy.ttl } } });
           if (!jobId.test(response?.id ?? '')) fail('generated_speech_session_submission_uncertain', 409);
           job = await journal.attachJob({ sessionId, lease: await ownership.get(), jobId: response.id });
@@ -255,7 +262,7 @@ export function createJournalSpeechSessionManager(configuration, {
         if (terminal.has(await inspect(job, signal))) fail('generated_speech_session_worker_failed');
         await sleep(pollMs, signal);
       }
-      await fresh(); active = job; touch(); return { ready:true };
+      await fresh(); active = job; touch(); return { ready:true, workerId:job.workerId, binding };
     } catch (error) {
       if (job?.jobId && job.releasedAt === null && !['generated_speech_stream_busy', 'generated_speech_recovery_required'].includes(error.code)) await cancel(job);
       if (signal.aborted) fail('generated_speech_session_cancelled', 499);
@@ -264,10 +271,15 @@ export function createJournalSpeechSessionManager(configuration, {
     }
   }
   return Object.freeze({
+    authorizeWorker(headers, workerId) { return acceptsWorkerBinding(bindings.get(workerId), headers); },
+    supportsAvatars:true,
     activity(workerId) { if (active?.workerId === workerId && !pending && !closing) touch(); },
     ensure(input) {
       if (closing || typeof input?.beforeCostly !== 'function') return Promise.reject(Object.assign(new Error('generated_speech_session_cancelled'), { code:'generated_speech_session_cancelled', statusCode:499 }));
+      let binding; try { binding = avatarBinding(input.avatar); } catch { return Promise.reject(Error('generated_speech_session_avatar_invalid')); }
+      if (pending && !sameBinding(pendingBinding, binding)) return Promise.reject(Object.assign(Error('generated_speech_stream_busy'), {code:'generated_speech_stream_busy',statusCode:429}));
       if (pending) return pending.then(async result => { input.signal?.throwIfAborted(); await input.beforeCostly(); touch(); return result; });
+      pendingBinding = binding;
       pending = ensure(input).finally(() => { pending = null; if (active && !closing) touch(); }); return pending;
     },
     close({ signal = AbortSignal.timeout(SHUTDOWN_BUDGET.runtimeMs) } = {}) {
