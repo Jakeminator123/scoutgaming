@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
+import { internalSessionPresent } from '../lib/partner-session.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
@@ -40,6 +41,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
+    '@/lib/partner-session.mjs': { internalSessionPresent },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
@@ -166,7 +168,7 @@ test('level-two entrance exposes the real directory without private records or a
   let reads = 0;
   const loaded = pages(async () => {
     reads++;
-    return { session: { user: 'fixture-admin', accessClass: 'internal-admin', privateSession: 'never-pass' }, snapshot: {
+    return { apiBase: '/studio/api/partner/snapshot', session: { user: 'fixture-admin', accessClass: 'internal-admin', privateSession: 'never-pass' }, snapshot: {
       preview: false, operators: [{ slug: 'johns-spelbolag', name: 'Johns spelbolag', privateField: 'never-pass' }, { slug: 'sg-test', name: 'SG test game provider' }],
       players: [{ privatePlayer: true }], team: [{ privateTeam: true }],
     } };
@@ -174,7 +176,7 @@ test('level-two entrance exposes the real directory without private records or a
   const element = await renderPage(loaded.partner);
   assert.equal(reads, 1);
   assert.equal(element.type, loaded.PartnerWorkspace);
-  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', accessClass: 'internal-admin', operators: [
+  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', apiBase: '/studio/api/partner/snapshot', accessClass: 'internal-admin', operators: [
     { slug: 'johns-spelbolag', name: 'Johns spelbolag' }, { slug: 'sg-test', name: 'SG test game provider' },
   ] });
 });
@@ -196,7 +198,7 @@ test('an admin cookie alone loads real partners and never invokes the fixture ad
     const failure = Object.assign(new Error('live partner unavailable'), { statusCode });
     const failed = pages(fixture, adminHeaders, async () => { throw failure; });
     await assert.rejects(renderPage(failed.partner), error => statusCode === 401
-      ? redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/partner/login'
+      ? redirects.getURLFromRedirectError(error) === '/login?returnTo=%2Fpartner'
       : statusCode === 404 ? error.digest === 'NEXT_HTTP_ERROR_FALLBACK;404' : error === failure);
   }
 });
@@ -207,6 +209,39 @@ test('neither workspace renders a missing identity even if the adapter returns a
     for (const surface of ['control', 'partner']) {
       await assert.rejects(renderPage(loaded[surface]), /workspace_identity_unavailable/);
     }
+  }
+});
+
+test('expired or invalid N1 credentials recover through N1 login with the exact safe partner return, even with a customer cookie', async () => {
+  for (const cookie of ['bo_jwt=expired', 'lab_session=invalid', 'bo_jwt=', 'bo_jwt=bad; bo_jwt=duplicate',
+    `bo_jwt=expired; partner_session=${'ab'.repeat(32)}`]) {
+    let reads = 0;
+    const loaded = pages(() => assert.fail('no diagnostic downgrade'), new Headers({ host: 'studio.fixture.invalid', cookie }), async () => {
+      reads++;
+      throw Object.assign(new Error('N1 login required'), { statusCode: 401 });
+    });
+    for (const [path, expected] of [[undefined, '/partner'], [['johns-spelbolag'], '/partner/johns-spelbolag'],
+      [['johns-spelbolag', 'team'], '/partner/johns-spelbolag/team']]) {
+      for (const basePath of ['', '/studio']) {
+        await assert.rejects(renderPage(loaded.partner, path), error => {
+          const login = new URL(redirectLocation(error, basePath), 'https://game.fixture.invalid');
+          assert.equal(login.pathname, basePath + '/login');
+          assert.equal(login.searchParams.get('returnTo'), expected);
+          assert.equal(login.searchParams.size, 1);
+          return true;
+        });
+      }
+    }
+    assert.equal(reads, 6);
+  }
+});
+
+test('missing, expired or invalid partner credentials still recover through partner login and never N1 login', async () => {
+  for (const cookie of ['', 'partner_session=expired', 'not_bo_jwt=invalid', 'bo_jwt_extra=invalid']) {
+    const loaded = pages(() => assert.fail('no fixture read'), new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie }),
+      async () => { throw Object.assign(new Error('partner login required'), { statusCode: 401 }); });
+    await assert.rejects(renderPage(loaded.partner, ['johns-spelbolag', 'team']), error =>
+      redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/partner/login');
   }
 });
 

@@ -96,10 +96,17 @@ const portalSource = await readFile(new URL('./kevin-backoffice.jsx', import.met
 const portalCode = babel.transformSync(portalSource, { babelrc:false, configFile:false, presets:[[require('next/dist/compiled/babel/preset-react'),{runtime:'automatic'}]], plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')] }).code;
 const portalModule = { exports:{} };
 const portalRequire = createRequire(new URL('./kevin-backoffice.jsx', import.meta.url));
+const actionsUrl = new URL('../partner-session-actions.tsx', import.meta.url);
+const actionsCode = require('next/dist/build/swc').transformSync(await readFile(actionsUrl, 'utf8'), {
+  filename:'partner-session-actions.tsx', jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'},
+}).code;
+const actionsModule = { exports:{} }, actionsRequire = createRequire(actionsUrl);
+new Function('require','module','exports',actionsCode)(name=>name.endsWith('.css')?{}:actionsRequire(name),actionsModule,actionsModule.exports);
 new Function('require','module','exports', portalCode)(name => {
   if (name === './original.css' || name === './preview.css' || name === './john-foundation.css') return {};
   if (name === './assets.mjs') return { assetUrl: () => undefined };
   if (name === './original-views.jsx') return { createOriginalViews };
+  if (name === '../partner-session-actions') return actionsModule.exports;
   return (name.startsWith('.') ? portalRequire : require)(name);
 }, portalModule, portalModule.exports);
 const { KevinBackoffice } = portalModule.exports;
@@ -199,6 +206,7 @@ test('verified own-operator saved receipt updates the real package view without 
   const preferences={exports:{}};
   new Function('require','module','exports',partnerCopyCode)(name=>name==='react'?hooks:require(name),preferences,preferences.exports);
   new Function('require','module','exports',portalCode)(name=>{
+    if(name==='../partner-session-actions')return actionsModule.exports;
     if(name==='react')return hooks;
     if(name==='./partner-copy.mjs')return preferences.exports;
     if(name.endsWith('.css'))return {};

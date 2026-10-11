@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { workspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { usePartnerPreferences } from './kevin-bo/partner-copy.mjs';
+import { PartnerSessionActions } from './partner-session-actions';
 import styles from './partner-workspace.module.css';
 
 type Partner = { slug: string; name: string };
 
-export function PartnerWorkspace({ user, operators, accessClass }: {
-  user: string; operators: Partner[]; accessClass: 'partner' | 'internal-admin';
+export function PartnerWorkspace({ user, operators, accessClass, apiBase = '/studio/api/partner/snapshot' }: {
+  user: string; operators: Partner[]; accessClass: 'partner' | 'internal-admin'; apiBase?: string;
 }) {
   const { language, theme, copy, setLanguage, setTheme } = usePartnerPreferences();
   const [query, setQuery] = useState('');
@@ -32,8 +33,9 @@ export function PartnerWorkspace({ user, operators, accessClass }: {
     </aside>
     <main className={styles.main}>
       <header className={styles.topbar}><span>{copy.portal} <span aria-hidden="true">/</span> {copy.partners}</span>
-        <div className={styles.preferences}><label>{copy.language}<select value={language} onChange={event => setLanguage(event.target.value)}><option value="sv">Svenska</option><option value="en">English</option></select></label>
+        <div className={styles.headerActions}><div className={styles.preferences}><label>{copy.language}<select value={language} onChange={event => setLanguage(event.target.value)}><option value="sv">Svenska</option><option value="en">English</option></select></label>
           <label>{copy.theme}<select value={theme} onChange={event => setTheme(event.target.value)}><option value="light">{copy.light}</option><option value="dark">{copy.dark}</option></select></label></div>
+          <PartnerSessionActions apiBase={apiBase} accessClass={accessClass} language={language} returnTo="/partner"/></div>
       </header>
       <div className={styles.content}>
         <header className={styles.heading}><p className={styles.eyebrow}>{copy.level}</p><h1>{copy.partners}</h1>
