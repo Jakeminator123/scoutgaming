@@ -2,6 +2,10 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Förberedelse för sparade utkast och publicering, 12 oktober 2026
+
+Kompatibilitetsversionen känner igen endast verifierade Studio-kedjor001–006 eller001–007.007 är tillfälligt valfri i migrationsplanen; installerad007 kontrolleras fortfarande strikt mot SQL-checksumma och schema. Den additiva tabellen operator_branding_drafts sparar separata utkastrevisioner och deras beständiga ändringshistorik. Inga utkastkonsumenter levereras i denna förberedelse. Båda produktionsvärdarna måste köra kompatibilitetsversionen före schema007; först därefter levereras spara/granska/publicera/återställ. Inga produktionsdata ändras av denna kodcommit. Hela breda JN2-D, inklusive ännu ej anslutna logotyper/chips/knappar, är inte färdigmarkerad. Testtak5USD; inga betalda AI/GPU-anrop eller WSL.
+
 ### Studio: dealerhierarki och gemensamt lagerbibliotek
 
 12 oktober: dealerflikar Grundloop, Klipp, Scen & format, Tal & automatik och Inställningar samt gemensamma brödsmulor ersätter den splittrade navigeringen. Fackets inställningar visas direkt. Händelsevyn väljer exakta fack utan det äldre pilträdet. Talgranskning följer vald dealer och behåller exakta medieidentiteter/revisioner. Andra dealers får inte Astrids Probe eller kvarhängande chatsvar. Borttagning av sammansättning är synlig, med befintlig bekräftelse och oförändrade publicerade paket.

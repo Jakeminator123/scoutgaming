@@ -28,7 +28,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     const applied = await planStudioMigrations({ pool });
     assert.equal(applied.toApply.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
-    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 6);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 7);
   });
 
   const scope = { environment: `qa_${suffix()}`, workspaceId: 'integration' };
