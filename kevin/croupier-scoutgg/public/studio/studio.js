@@ -96,8 +96,6 @@ $('#formErr').textContent='Signing in…';
 try{const r=await fetch('/api/studio/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:em,pass:pw})});const me=await r.json();
 if(!r.ok||!me.user){$('#fEmail').classList.add('err');$('#fPw').classList.add('err');$('#formErr').textContent=me.error||'Sign-in failed.';return}
 $('#pw').value='';$('#formErr').textContent='';st.email=me.user;access(me);go('builder')}catch{$('#formErr').textContent='Sign-in is unavailable. Try again shortly.'}};
-let art=0;setInterval(()=>{if(st.screen!=='login')return;art^=1;$('#artA').style.opacity=art?0:1;$('#artB').style.opacity=art?1:0;
-$('#capRoom').textContent=art?'Mahogany Privé':'Golden Salon';$('#capDealer').textContent=(art?'Dragge':'Astrid')+' · AI dealer';$$('.login-dots i').forEach((d,i)=>d.classList.toggle('on',i===art))},6000);
 $('#signOut').onclick=async()=>{await fetch('/api/studio/logout',{method:'POST'}).catch(()=>{});st.email='';go('login')};
 
 // builder
