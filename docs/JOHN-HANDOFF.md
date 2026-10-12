@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Studio låst till Node 24, 12 oktober 2026
+
+lab/package.json och låsfilens rotmetadata anger nu Node 24.x, samma
+huvudversion som Studios GitHub-kontroller. Framtida huvudversioner väljs
+därmed inte automatiskt av Vercel; minor- och säkerhetsuppdateringar tillåts.
+Verifiering: JSON-/låsfilsparitet, diffkontroll och full precommit-regression
+med Node 24.21.0 passerar. Vercels nya buildlogg återstår att verifiera.
+
 ## Publik bolagskatalog: äldre frysta paket, 12 oktober 2026
 
 /play laddade men /api/operators gav 503 efter det valfria skoeventet.
