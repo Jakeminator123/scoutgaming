@@ -47,6 +47,13 @@ test('prepare issues only an immutable private path capability with MIME/byte/ti
   assert.equal(token.addRandomSuffix,false);assert.equal(token.allowOverwrite,false);assert.equal(token.validUntil,grant.expiresAt);
   assert.equal(pool.snapshot().media.size,0);assert.equal(pool.snapshot().audits.length,0);
   assert.ok(!JSON.stringify(grant).includes('fixture-read-write-secret'));
+  const signed=JSON.parse(Buffer.from(grant.ticket.split('.')[0],'base64url').toString('utf8'));
+  assert.equal(signed.record.classification.compositing.mode,'green-screen');
+});
+test('new explicit opaque upload is rejected before granting provider access or writing media',async t=>{
+  const {prepare,tokenCalls,pool}=await fixture(t,{metadata:{...classification,compositing:{mode:'opaque'}}});
+  await assert.rejects(prepare(),error=>error.code==='studio_dealer_background_required'&&error.statusCode===422);
+  assert.equal(tokenCalls.length,0);assert.equal(pool.snapshot().media.size,0);
 });
 test('commit verifies actual Blob hash/header then atomically registers and audits; restart/replay is idempotent',async t => {
   const {prepare,service,settings,objects,bytes,context,pool,repository}=await fixture(t),grant=await prepare();

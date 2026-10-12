@@ -31,6 +31,7 @@ function harness(file, initialStates = [], overrides = {}) {
   const source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const mocks = {
+    './dealer-video-surface': {DealerClipPreview: marker('dealer-preview')},
     './activity-log': { ActivityLog: marker('observation') },
     './dealer-media-library': {DealerMediaLibrary: marker('dealer-media')},
     './dealer-forge-page': {DealerMaterialCreator: marker('dealer-material')},

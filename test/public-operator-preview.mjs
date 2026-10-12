@@ -116,11 +116,31 @@ test('layer withdrawal from selected frozen lane is effective before descriptor 
   const next=await body(f);assert.equal(next.media.tables.length,0);
   assert.equal((await request(f,value.media.tables[0].src)).status,404);assert.equal(f.served.length,0);
 });
-test('opaque registered dealer retains own fullframe idle and cannot access independent layers',async()=>{
-  const f=fixture({compositing:false}),value=await body(f);
-  assert.equal(value.independentLayers,false);assert.equal(value.settings,null);assert.equal(value.media.dealer.compositing,undefined);
-  assert.deepEqual(value.media.tables,[]);assert.deepEqual(value.media.backgrounds,[]);
-  assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,404);
+test('historical missing or opaque keying retains only its expressly allowed independent layers',async()=>{
+  for(const opaque of [false,true]) {
+    const f=fixture({compositing:false});
+    // Historical package decoding remains supported; the new-capture API is
+    // intentionally not used to publish opaque metadata.
+    if(opaque)f.rewrite(pack=>{
+      for(const row of [...pack.registeredDealers.map(dealer=>dealer.idle),...pack.playback.media])row.classification.compositing={mode:'opaque'};
+    });
+    const before=clone(f.saved),value=await body(f);
+    assert.equal(value.independentLayers,true);assert.deepEqual(value.settings,defaultCompositionSettings());
+    assert.equal(value.media.dealer.compositing,undefined,'the preview applies its mandatory legacy keying default');
+    assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+    assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,200);
+    assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[3].id))).status,404);
+    assert.deepEqual(f.saved,before);
+  }
+});
+test('historical full-frame and baked flags preserve layer grants without admitting unpublished media',async()=>{
+  const f=fixture();f.rewrite(pack=>{delete pack.lanes[0].composition;pack.lanes[0].layers.background.mode='baked';});
+  const before=clone(f.saved),value=await body(f);
+  assert.equal(value.independentLayers,true);assert.deepEqual(value.settings,defaultCompositionSettings());
+  assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+  for(const asset of [...value.media.tables,...value.media.backgrounds])assert.equal((await request(f,asset.src)).status,200);
+  assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[3].id))).status,404);
+  assert.deepEqual(f.saved,before);
 });
 test('former dealer names require own published media and retired Amira remains rejected',async()=>{
   const f=fixture(),response=await request(f,descriptor.replace('dealer=johanna','dealer=astrid'));

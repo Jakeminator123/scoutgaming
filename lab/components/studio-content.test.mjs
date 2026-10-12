@@ -143,10 +143,12 @@ test('family upload does not borrow Astrid families for Nora and disables submis
   assert.equal(calls, 0);
 });
 
-test('fullbild and greenscreen share bounded controls and retain the exact event and situation', () => {
+test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {
   const { VideoCompositingFields, VideoMetadataFields } = load('./video-metadata-fields.tsx');
   const values = []; let tree = VideoCompositingFields({ value: { mode: 'opaque' }, onChange: value => values.push(value) });
-  nodes(tree, node => node.type === 'select')[0].props.onChange({ target: { value: 'green-screen' } });
+  assert.equal(nodes(tree,node=>node.type==='select').length,0,'no opaque/background retention option');
+  assert.match(renderToStaticMarkup(tree),/Äldre bakgrundsinställning behöver uppdateras/);
+  nodes(tree, node => node.type === 'input')[0].props.onChange({ target: { valueAsNumber: .23 } });
   assert.equal(validateVideoCompositing(values[0]).mode, 'green-screen');
   tree = VideoCompositingFields({ value: values[0], onChange: value => values.push(value) });
   const inputs = nodes(tree, node => node.type === 'input');

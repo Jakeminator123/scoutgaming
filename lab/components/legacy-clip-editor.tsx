@@ -5,6 +5,7 @@ import type { LegacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 import { LEGACY_CLIP_PARTS, LEGACY_PART_LABELS, upsertLegacyClipBinding } from '../../presentation-runtime/legacy-clip-policy.mjs';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { requestJson } from './studio-types';
+import {DealerClipPreview} from './dealer-video-surface';
 import { legacyPartInSection, selectedDealerClips, type LegacyWorkspaceSection } from '../lib/dealer-workspace.mjs';
 
 // Controlled draft editor: the parent's usual save/CAS/history owns every edit.
@@ -42,7 +43,7 @@ export function LegacyClipEditor({ project, onChange, dealerId: controlledDealer
     <div className="inspector-content">
       {!controlledDealerId ? <label className="field">Croupier<select value={dealerId} onChange={event => setDealer(event.target.value as DealerId)}>{project.dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label> : null}
       {error ? <p role="alert">{error}</p> : !controls ? <p role="status">Läser befintliga medieregister…</p> : <>
-        {preview?.previewSrc ? <video key={preview.id} src={preview.previewSrc} controls playsInline preload="metadata" style={{width:'100%',maxHeight:420}} aria-label={`Förhandsvisa ${name(preview)}`}/> : null}
+        {preview?.previewSrc ? <DealerClipPreview key={preview.id} url={preview.previewSrc} label={`Förhandsvisa ${name(preview)}`}/> : null}
         {section === 'clips' ? <div className="variant-list">{clips.filter(clip => clip.lineId).map(clip => <article key={clip.id}><strong>{name(clip)}</strong>{clip.text ? <p>{clip.text}</p> : null}{clip.previewSrc ? <button type="button" className="text-button" disabled={!clip.available} onClick={() => setPreviewId(clip.id)}>Spela</button> : null}</article>)}</div> : null}
         {section === 'deal' || section === 'all' ? <div aria-label="Spelarpositioner och dealer" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,240px),1fr))',gap:16}}>
           {Array.from({length:7},(_,box)=><section key={box} data-position={`box${box}`}><h3>Spelarplats {box+1}</h3>{bindingField(`box${box}`,true)}</section>)}

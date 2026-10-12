@@ -19,6 +19,21 @@ function fixture(){
   const inventory={videos:[{id,sha256,bytes:4096,dealer:'johanna',available:true,classification,kind:'idle',playback:'once'}],families:[],summary:{readable:true,snapshotReadable:true}};
   return {snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['johanna']};
 }
+test('new publication rejects explicitly opaque dealer sources without changing their saved records',()=>{
+  const input=fixture();input.snapshot.mediaRows[0].classification.compositing={mode:'opaque'};
+  input.inventory.videos[0].classification.compositing={mode:'opaque'};
+  const before=JSON.stringify(input);
+  assert.throws(()=>captureFrozenPresentation(input),error=>error.code==='studio_dealer_background_required'&&error.statusCode===422);
+  assert.equal(JSON.stringify(input),before);
+});
+test('existing frozen v3 opaque metadata remains readable with its exact saved envelope',()=>{
+  const legacy=structuredClone(captureFrozenPresentation(fixture()).presentation);
+  legacy.registeredDealers[0].idle.classification.compositing={mode:'opaque'};
+  for(const record of legacy.playback.media)record.classification.compositing={mode:'opaque'};
+  const envelope=encodePresentationPackage(legacy),before=JSON.stringify(envelope);
+  assert.deepEqual(decodePresentationPackage(envelope),legacy);
+  assert.equal(JSON.stringify(envelope),before);
+});
 test('v1 canonical bytes and gzip envelope remain exactly compatible with the pre-integration fixture',()=>{
   const project=createSeedProject();project.lanes=[defaultPresentationLane('astrid')];project.revision='v1-frozen-fixture';
   const legacy=buildPresentationPackage(project,[project.lanes[0].id],[]);

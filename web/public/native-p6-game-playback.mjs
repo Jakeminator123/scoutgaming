@@ -52,13 +52,19 @@ async function ownedContext(fetchImpl,signal,now){
 }
 function frameVisible(video,surface,mount){
   if(document.hidden||document.visibilityState!=='visible'||!video.isConnected||!surface.isConnected
-    ||!mount.contains(surface)||video.paused||video.muted||video.volume<=0)return false;
-  const r=video.getBoundingClientRect();if(r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;
-  for(let node=video;node;node=node.parentElement){const style=getComputedStyle(node);
+    ||!mount.contains(surface)||!surface.contains(video)||video.paused||video.muted||video.volume<=0)return false;
+  // The player invokes onFrame only after renderFrame succeeds. Its source
+  // video remains the audio clock at opacity zero; presentation is the shared
+  // canvas belonging to this scene, never the raw green source video.
+  const canvas=mount.querySelector('.presentation-composed-film');
+  if(mount.dataset.presentationClipMode!=='green-screen'||canvas?.tagName!=='CANVAS'
+    ||!canvas.isConnected||!mount.contains(canvas))return false;
+  const r=canvas.getBoundingClientRect();if(r.width<=0||r.height<=0||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;
+  for(const presented of [canvas,surface])for(let node=presented;node;node=node.parentElement){const style=getComputedStyle(node);
     if(style.display==='none'||style.visibility!=='visible'||Number(style.opacity)===0)return false;}
   const hit=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),Math.max(0,Math.min(innerHeight-1,r.top+r.height/2)));
   // Product film is pointer-events:none. Its own scene may be the hit target.
-  return hit===mount||hit===video||surface.contains(hit);
+  return hit===mount||hit===canvas||surface.contains(hit);
 }
 
 // This delivery is also used by the real app. It calls the supplied existing

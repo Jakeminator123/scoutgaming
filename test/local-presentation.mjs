@@ -434,6 +434,13 @@ test('interruption cleans the old film and delayed callbacks cannot complete a n
   assert.deepEqual(receipts.map(r => r.state), ['start', 'interrupted']); assert.deepEqual(secondReceipts, []);
   media[1].emit('playing'); media[1].frame(); media[1].ended = true; media[1].emit('ended'); await second;
 });
+test('failed dealer keying never exposes the raw video or publishes a presented receipt',async t=>{
+  const {media,host}=filmFixture(t),receipts=[];
+  const result=playLocalFilm({host,src:'/green-source',renderFrame:()=>false,onReceipt:r=>receipts.push(r.state)});
+  media[0].emit('playing');media[0].frame(0);
+  await assert.rejects(result,/background removal unavailable/);
+  assert.equal(media[0].style.visibility,'hidden');assert.equal(receipts.includes('presented'),false);
+});
 test('an ended event with no presented picture remains a failure', async t => {
   const { media, host } = filmFixture(t);
   const result = playLocalFilm({ host, src: '/broken' }); media[0].emit('playing'); media[0].ended = true; media[0].emit('ended');
@@ -622,6 +629,15 @@ test('Nora repeats only her exact configured silent idle, and stale frames canno
   fixture.jobs[1].options.onReceipt({state:'presented'});assert.equal(fixture.proofs,1);
 });
 
+test('holding a keyed idle never copies raw green pixels into the fallback still canvas',async t=>{
+  let held=0;
+  const composition={prepareClip:async()=>{},renderFrame:()=>true,hold(){held++;}};
+  const f=await controllerFixture(t,{dealerId:'nora',ownIdle:{id:'own',fileName:'own.mp4',sha256:'a'.repeat(64)},composition});
+  const still=f.elements.find(row=>row.className==='local-presentation-film local-presentation-still');
+  still.getContext=()=>({drawImage(){assert.fail('raw source copied behind the compositor');}});
+  f.controller.start();await new Promise(resolve=>setImmediate(resolve));
+  f.jobs[0].options.hold({videoWidth:1080,videoHeight:1920});assert.equal(held,1);
+});
 test('Nora without a saved exact idle never borrows Astrid media',async t=>{
   const missing=await controllerFixture(t,{dealerId:'nora'});missing.controller.start();
   assert.equal(missing.jobs.length,0);assert.match(missing.status.textContent,/saknar en publicerad grundloop/);
