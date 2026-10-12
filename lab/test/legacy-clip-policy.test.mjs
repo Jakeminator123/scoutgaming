@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { loadLegacyClipInventory, legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
+import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
 import { resolveLegacyClipPolicy, upsertLegacyClipBinding } from '../../presentation-runtime/legacy-clip-policy.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { assertLocalRequest } from '../lib/http-guard.mjs';
@@ -68,6 +69,21 @@ test('all four dealers have exact Lab bindings; missing files, different parts a
   assert.throws(() => validateProject({ ...project, legacyClipPolicy: [project.legacyClipPolicy[0], project.legacyClipPolicy[0]] }), /klippkoppling/);
   const speech = inventory.clips.find(row => row.id === 'vera:idle-1/speak/win');
   assert.equal(speech.lineId, 'win'); assert.equal(speech.text, 'Exact vera win'); assert.deepEqual(speech.exactParts, []);
+});
+
+test('native inventory fails on a missing runtime catalog but accepts the retired indexed registers', async t => {
+  const { repository, write } = await fixture(t);
+  const administration = { legacyClipReview: { sourceSha256: 'a'.repeat(64), neverAgain: {} } };
+  const load = () => loadLegacyClipInventory({ repository, administration, mediaAvailable: async () => true, readMetadata: createRuntimeMetadataReader(repository) });
+  await assert.rejects(load(), { code: 'ENOENT' });
+  const speak = { status: 'review', lines: { greeting: { text: 'Exact greeting', media: { src: 'review/astrid-seam-repair/greeting.mp4' }, audio: 'dealers/astrid/audio/en/greeting.mp3' } } };
+  const greenSpeak = { 'web/public/review/astrid-green-speak/speak.json': JSON.stringify(speak), 'web/public/review/amira-green-speak/speak.json': null };
+  await write('media/catalog/legacy.json', { schemaVersion: 2, entries: { 'web/public/speech-media.json': '{}', ...greenSpeak } });
+  const inventory = await load();
+  assert.equal(inventory.reviewSafetyVerified, true);
+  assert.deepEqual(inventory.clips.map(clip => [clip.id, clip.text, clip.available]), [['green:astrid:greeting', 'Exact greeting', true]]);
+  await write('media/catalog/legacy.json', { schemaVersion: 2, entries: greenSpeak });
+  await assert.rejects(load(), /Runtime metadata missing: web\/public\/speech-media\.json/);
 });
 
 test('review rejection blocks explicit Lab import/binding without changing project or recorded media', async t => {

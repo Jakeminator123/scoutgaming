@@ -132,9 +132,6 @@ jobs:
             ${{ runner.temp }}/croupier-system-map.html
             ${{ runner.temp }}/system-map-evidence.json
             ${{ runner.temp }}/system-map-status.json
-      - run: node pipeline/audit-dealer-sync.mjs --probe
-      - run: node pipeline/audit-performance.mjs --probe
-      - run: node pipeline/audit-astrid-actor.mjs --probe
       - run: node test/table-http.mjs
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs test/inbox.mjs

@@ -7,11 +7,11 @@ import {readLabVideoManifest} from '../lab/lib/lab-video-manifest.mjs';
 
 export async function buildRuntimeMediaCatalog(root=repositoryRoot,{check=false}={}) {
   const paths=runtimeCatalogPaths(root),entries={};
-  const sources=['speech-media.json',...['dealer','dealers/astrid','dealers/amira','dealers/mei'].flatMap(base=>['streams/index.json','audio/en/bank.json','performance/manifest.json'].map(path=>base+'/'+path)),...['astrid','amira'].map(id=>'review/'+id+'-green-speak/speak.json')];
+  const sources=['speech-media.json',...['astrid','amira'].map(id=>'review/'+id+'-green-speak/speak.json')];
   for(const source of sources){
     const path=resolveMediaAbsolutePath(join(root,'web/public',source),{repositoryRoot:root});
-    let value;
-    try {value=await readFile(path,'utf8');JSON.parse(value);}catch(error){if(error.code!=='ENOENT'||!source.endsWith('/performance/manifest.json'))throw error;value=null;}
+    const value=await readFile(path,'utf8');
+    JSON.parse(value);
     entries[path.slice(root.length+1).split('\\').join('/')]=value;
   }
   const manifest=await readLabVideoManifest(join(presentationBankRoot(root),'lab-video-manifest.json'));
