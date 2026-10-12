@@ -69,7 +69,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  * browser attachment. Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
-  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime,
+  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
 } = {}) {
@@ -104,9 +104,53 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   const mark = (record, stage, ms) => {
     try { record.input.onTiming?.(stage, ms); } catch { /* Telemetry cannot affect paid work. */ }
   };
-  let relay, sessionManager;
+  let relay, sessionManager, libraryBytesHeld = 0;
+  if (!Number.isSafeInteger(replyCaptureBytes) || replyCaptureBytes < 1 || replyCaptureBytes > 64 * 1024 * 1024) fail('reply_library_invalid_capture_limit');
+  function releaseLibrary(record) {
+    libraryBytesHeld -= record.libraryRetained ?? 0; record.libraryRetained = 0;
+    record.libraryChunks.audio = []; record.libraryChunks.video = [];
+  }
+  const libraryStatus = status => { try { onLibraryStatus(status); } catch {} };
+  function collect(record,kind,bytes) {
+    if (!replyLibrary || !record || record.libraryOverflow) return;
+    const limit = kind === 'audio' ? 24000 * 2 * 25 : 128 * 1024 * 1024;
+    record.libraryBytes[kind] += bytes.byteLength;
+    if (record.libraryBytes[kind] > limit || libraryBytesHeld + bytes.byteLength > replyCaptureBytes) {
+      record.libraryOverflow = true; releaseLibrary(record);
+      libraryStatus({state:'skipped',code:'reply_library_capture_limit'}); return;
+    }
+    record.libraryChunks[kind].push(Buffer.from(bytes));
+    libraryBytesHeld += bytes.byteLength; record.libraryRetained = (record.libraryRetained ?? 0) + bytes.byteLength;
+  }
+  function finishLibrary(record,message) {
+    if (!replyLibrary || !record || record.librarySaving || record.libraryOverflow || !record.ttsComplete
+      || message.aborted || !Number.isInteger(message.frames) || message.frames < 1
+      || record.controller.signal.aborted || record.input.signal?.aborted || !record.libraryBytes.audio || !record.libraryBytes.video) return;
+    record.librarySaving = true;
+    const pcm = Buffer.concat(record.libraryChunks.audio), video = Buffer.concat(record.libraryChunks.video);
+    record.libraryChunks.audio = []; record.libraryChunks.video = [];
+    const wav = Buffer.alloc(44 + pcm.length);
+    wav.write('RIFF'); wav.writeUInt32LE(wav.length-8,4); wav.write('WAVEfmt ',8); wav.writeUInt32LE(16,16);
+    wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22); wav.writeUInt32LE(24000,24); wav.writeUInt32LE(48000,28);
+    wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34); wav.write('data',36); wav.writeUInt32LE(pcm.length,40); pcm.copy(wav,44); pcm.fill(0);
+    const request = {dealerId:record.input.dealerId,exactText:record.input.text,language:'en',
+      profileRevision:record.runtime?.profileRevision ?? digest(JSON.stringify(ASTRID_VOICE_PROFILE)),
+      audio:{bytes:wav,contentType:'audio/wav'},video:{bytes:video,contentType:'video/mp4'}};
+    // Starts after the final media/control frame has been forwarded. Storage
+    // never gates first audio, first video or worker reuse, and gets no user audio.
+    track((async () => {
+      try {
+        await record.input.beforeCostly(); await record.runtime?.assertFresh();
+        if (record.input.signal?.aborted) return;
+        await replyLibrary.save(request); libraryStatus({state:'saved'});
+      } catch { libraryStatus({state:'failed',code:'reply_library_save_failed'}); }
+      finally { wav.fill(0); video.fill(0); releaseLibrary(record); }
+    })());
+  }
   const forget = record => {
     clearTimeout(record.deadline); clearInterval(record.monitor);
+    if (!record.librarySaving) releaseLibrary(record);
+    record.libraryChunks.audio = []; record.libraryChunks.video = [];
     record.input.signal?.removeEventListener('abort', record.externalAbort);
     record.wireSignal?.removeEventListener('abort', record.wireAbort);
     if (records.get(record.id) === record) records.delete(record.id);
@@ -139,6 +183,8 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const record = records.get(identity.sessionId);
       if (record) mark(record, 'server_transport_enqueue_ms', ms);
     },
+    onMedia(identity,bytes) { collect(records.get(identity.sessionId),'video',bytes); },
+    onComplete(identity,message) { finishLibrary(records.get(identity.sessionId),message); },
     onWorkerIdle(workerId) { sessionManager?.activity?.(workerId); },
     authenticateWorker(req, workerId) {
       if (configuration.session && typeof sessionManager?.authorizeWorker === 'function') return sessionManager.authorizeWorker(req.headers, workerId);
@@ -196,11 +242,12 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
             firstAudio = false;
             mark(record, 'tts_first_audio_ms', Math.round(performance.now() - ttsStartedAt));
           }
+          collect(record,'audio',pcm);
           await record.handle.writePCM(pcm);
           unpaidTrace('pcm_written');
         }
         mark(record, 'tts_complete_ms', Math.round(performance.now() - ttsStartedAt));
-        await fresh(record); record.handle.end();
+        await fresh(record); record.ttsComplete = true; record.handle.end();
         if (journal) {
           await track((async () => journal.completeRequest({ key:record.journalClaim.key, lease:await ownership.get() }))());
           record.journalSettled = true;
@@ -243,6 +290,11 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   }
   return {
     status: () => ({ enabled: true, ...relay.status(), pending: records.size + inFlight.size }),
+    prewarm({dealerId,beforeCostly,signal} = {}) {
+      if (!dealerRuntime) return Promise.resolve(false);
+      const work = Promise.resolve().then(() => dealerRuntime.prepare({dealerId,beforeCostly,signal})).then(() => true, () => false);
+      track(work); return work;
+    },
     acquireExclusive(owner) {
       if (typeof owner !== 'string' || !owner || owner.length > 512) fail('invalid_generated_speech_stream_request', 400);
       if (exclusive || records.size || preparations.size || inFlight.size || relay.status().busy > 0) fail('generated_speech_stream_busy', 429);
@@ -289,7 +341,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         textSha256: digest(input.text), reviewStatus: 'pending', url: '/speech-stream',
         ticket: issueTicket(ticketSecret, { userId: digest(input.owner), sessionId: id, ttlSeconds: ticketLifetimeMs / 1000 }, issuedAt), expiresAt,
         ...(runtime ? {profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,compositing:runtime.compositing} : {}) };
-      const record = { id, descriptor, input, controller, runtime, workerId, state: 'prepared', journalClaim:preparation.journalClaim };
+      const record = { id, descriptor, input, controller, runtime, workerId, state: 'prepared', journalClaim:preparation.journalClaim, libraryChunks:{audio:[],video:[]}, libraryBytes:{audio:0,video:0} };
       records.set(id, record); owners.set(input.owner, record);
       record.externalAbort = () => cancel(record);
       input.signal?.addEventListener('abort', record.externalAbort, { once: true });

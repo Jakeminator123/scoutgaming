@@ -10,13 +10,14 @@ function fixture(patch = {}) {
   let current = profile(), references = 0;
   const calls = [], bytes = Buffer.from('isolated reference bytes');
   const probes=[];let voiceResponse=async url=>Response.json({voice_id:url.split('/').at(-1)});
-  const runtime = createDealerSpeechRuntime({
+  let at=0;
+  const runtime = createDealerSpeechRuntime({clock:()=>at,
     readProject:async()=>({dealers:[{id:'paow',speechProfile:current}]}),
     env:{CROUPIER_DEALER_SPEECH_PROFILES:'1',ELEVENLABS_API_KEY:'isolated-key',...patch},
     referenceService:{async prepare(input) {references++;await input.beforeCostlyStep();return {dealerId:input.dealerId,profileRevision:input.profileRevision,image:{sha256:hash(bytes),bytes},compositing:null};}},
     fetchImpl:async(url,options)=>{if(options.method==='GET'){probes.push({url,options});return voiceResponse(url);}calls.push({url,options});return new Response(new Uint8Array(48));},
   });
-  return {runtime,calls,probes,references:()=>references,setVoiceResponse:fn=>{voiceResponse=fn;},setProfile:value=>{current=value;},input:()=>({dealerId:'paow',beforeCostly:async()=>{}})};
+  return {runtime,calls,probes,advance:ms=>{at+=ms;},references:()=>references,setVoiceResponse:fn=>{voiceResponse=fn;},setProfile:value=>{current=value;},input:()=>({dealerId:'paow',beforeCostly:async()=>{}})};
 }
 test('registered voice is immutable per prepared request; provider is invoked only with owned text and fresh profile', async()=>{
   const f=fixture(), result=await f.runtime.prepare(f.input());
@@ -86,4 +87,15 @@ test('normalized clone profile reaches TTS unchanged and a settings edit invalid
   f.setProfile({...profile(),voice:{...voice,settings:{...voice.settings,stability:1}}});
   await assert.rejects(runtime.assertFresh(),{code:'generated_speech_profile_changed'});
   assert.equal(f.calls.length,1);
+});
+
+test('warm voice checks reuse only successful exact provider/key/model verification for at most one minute',async()=>{
+  const f=fixture();await f.runtime.prepare(f.input());await f.runtime.prepare(f.input());assert.equal(f.probes.length,1);
+  f.advance(60000);await f.runtime.prepare(f.input());assert.equal(f.probes.length,2);
+  f.setProfile({...profile(),voice:{...profile().voice,voiceId:'different-voice'}});await f.runtime.prepare(f.input());assert.equal(f.probes.length,3);
+});
+test('failed voice metadata is never cached and cannot start TTS or reference preparation',async()=>{
+  const f=fixture();f.setVoiceResponse(()=>new Response('',{status:403}));
+  await assert.rejects(f.runtime.prepare(f.input()));await assert.rejects(f.runtime.prepare(f.input()));
+  assert.equal(f.probes.length,2);assert.equal(f.references(),0);assert.equal(f.calls.length,0);
 });

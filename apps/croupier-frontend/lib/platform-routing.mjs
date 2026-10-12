@@ -53,6 +53,8 @@ export function backendPlatformPath(value) {
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
+    || path === '/api/dealer/observation'
+    || path === '/api/dealer/transcription'
     || STUDIO_PREVIEW.test(path)
     || BACKOFFICE.has(path)
     || /^\/api\/v1\/(?:events|ping|launch|generations|assets|player|table|deposit|balance|currency|history|lobby|demo-credit)(?:\/|$)/.test(path)

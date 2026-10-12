@@ -464,3 +464,18 @@ test('anonymous room preview proxy has exact descriptor/media paths without a ge
   for(const kind of ['dealer','table','background'])assert.equal(backendPlatformPath(media.replace('/dealer/','/'+kind+'/')),true);
   for(const path of [base+'/',base+'/draft',base+'/media',media+'/',media+'/private',media.replace('/7/','/0/'),media.replace('/dealer/','/speech/'),media.replace('/north/','/%6eorth/'),media.replace('/room-north/','/../')])assert.equal(backendPlatformPath(path),false,path);
 });
+
+test('shared dealer voice has only two exact transport paths and preserves untrusted context for backend validation',()=>{
+  for(const path of ['/api/dealer/observation','/api/dealer/transcription']) {
+    assert.equal(backendPlatformPath(path),true);
+    const route=platformRoute(new URL(config.publicOrigin+path+'?dealer=vera'),config);
+    assert.equal(route.kind,'backend');assert.equal(route.destination,config.backendOrigin+path+'?dealer=vera');
+    for(const suffix of ['/extra','-extra'])assert.equal(backendPlatformPath(path+suffix),false);
+  }
+  assert.equal(backendPlatformPath('/api/dealer/%6fbservation'),false);
+  const context=JSON.stringify({operatorSlug:'north',roomId:'paow-room',packageRevision:7,dealerId:'paow'});
+  const headers=platformBackendHeaders({'x-dealer-presentation-context':context,'x-astrid-dealer':'paow',cookie:'fixture-player-session',origin:config.publicOrigin,'x-croupier-lab-authorized':'spoof'},config);
+  assert.equal(headers.get('x-dealer-presentation-context'),context);assert.equal(headers.get('x-astrid-dealer'),'paow');
+  assert.equal(headers.get('cookie'),'fixture-player-session');assert.equal(headers.get('origin'),config.publicOrigin);
+  assert.equal(headers.get('x-croupier-lab-authorized'),null);assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
+});

@@ -24,7 +24,7 @@ async function fixture(t) {
     async list(o){return{blobs:[...objects].filter(([p])=>p.startsWith(o.prefix)).map(([p,r])=>blob(p,r)),hasMore:false};},
     async del(pathname){objects.delete(pathname);},
   };
-  const options={env,...scope,blobClient,cacheDir};return {objects,options,library:createSpeechReplyLibrary(options)};
+  const options={env,...scope,blobClient,cacheDir};return {objects,options,blobClient,library:createSpeechReplyLibrary(options)};
 }
 test('private completed reply survives reconstruction; manifest never exposes storage pointers',async t=>{
   const f=await fixture(t), request=input('paow'), saved=await f.library.save(request);
@@ -68,4 +68,29 @@ test('corrupt manifest cannot redirect the private media reader',async t=>{
   const f=await fixture(t), saved=await f.library.save(input());
   const [,r]=[...f.objects].find(([p])=>p.endsWith('.json'));const changed=JSON.parse(r.bytes);changed.media.audio.pathname=changed.media.audio.pathname.replace('/astrid/','/paow/');r.bytes=Buffer.from(JSON.stringify(changed));
   await assert.rejects(f.library.media({...saved,kind:'audio',request:new Request('https://studio.test/api/replies/audio')}),{statusCode:409});
+});
+
+test('weak transport ETag uses only the matching authoritative strong version',async t=>{
+  const f=await fixture(t), request=input(), saved=await f.library.save(request);
+  const get=f.blobClient.get;
+  f.blobClient.get=async (...args)=>{const r=await get(...args);if(r)r.blob.etag='W/'+r.blob.etag;return r;};
+  let heads=0;f.blobClient.head=async pathname=>{heads++;const r=f.objects.get(pathname);return {pathname,url:'https://fixture.private.blob.vercel-storage.com/'+pathname,etag:r.etag};};
+  await f.library.get({dealerId:request.dealerId,id:saved.id});await f.library.list({dealerId:request.dealerId});assert.equal(heads,0);
+  const updated=await f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-kind'],expectedRevision:1});
+  assert.equal(updated.revision,2);
+  f.blobClient.head=async pathname=>{const r=f.objects.get(pathname),latest=JSON.parse(r.bytes);latest.revision=3;latest.categories=['player-help'];r.bytes=Buffer.from(JSON.stringify(latest));r.etag='"changed-after-get"';return {pathname,url:'https://fixture.private.blob.vercel-storage.com/'+pathname,etag:r.etag};};
+  await assert.rejects(f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-rude'],expectedRevision:2}),{statusCode:409});
+  const latest=JSON.parse([...f.objects].find(([p])=>p.endsWith('.json'))[1].bytes);assert.equal(latest.revision,3);assert.deepEqual(latest.categories,['player-help']);
+});
+
+test('actual SDK conflict classes map to revision conflicts even with name Error',async t=>{
+  const {speechReplyBlobClient}=await import('../lab/lib/speech-reply-blob-client.mjs');
+  const sdk=await speechReplyBlobClient();
+  for(const name of ['BlobPreconditionFailedError']){
+    const f=await fixture(t), request=input(),saved=await f.library.save(request);
+    f.blobClient[name]=sdk[name];
+    const error=new sdk[name]();assert.equal(error.name,'Error');
+    f.blobClient.put=async()=>{throw error;};
+    await assert.rejects(f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-kind'],expectedRevision:1}),{statusCode:409});
+  }
 });

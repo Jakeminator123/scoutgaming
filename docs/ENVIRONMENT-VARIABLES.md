@@ -339,6 +339,21 @@ Detta är en verifierad engångssynk, ingen automatisk molnsynk vid filändring.
   i GPU-workern eller som GitHub-secret: Render genererar ljud och skickar
   ljudet vidare till workern.
 
+Kontokontroll 12 oktober 2026: nuvarande ElevenLabs-runtime-nyckel i lokal
+Web och Render tillhör Kevin (Pro). Det är fortfarande originalklonernas
+workspace, inte ett verifierat Jakob-konto. Kontot byts först när egen nyckel
+och tillgång till PAOW/Dragge är verifierade; nyckelnamn får inte användas som
+bevis på ägare. Instant-kloner delas inom samma workspace enligt
+[ElevenLabs](https://elevenlabs.io/docs/help-center/product/voices/my-voices/how-do-i-share-a-voice).
+Originalinspelningar behöver bevaras separat; genererade svar ersätter dem inte.
+RunPod-endpointen kontrollerades i Jakobs inloggade konto och runtime-nyckeln
+klarade en obetald health-läsning. Cartesias runtime-värde överensstämmer mellan
+lokal Web och Render, men kontoägaren är inte verifierad. Inga nyckelvärden
+lagras i denna förteckning. Den aktiva ElevenLabs-vägen använder enbart
+`ELEVENLABS_API_KEY` för TTS; historiska video-/OC-namn införs inte som
+automatiska reserver. Ljudleverantörsnycklar stannar på Render Web; Vercel,
+GPU-workern och GitHub behöver inga kopior för svarsbiblioteket.
+
 Synk av nycklar bevisar inte TTS eller läppsynk. Dealerprofilflaggan förblir
 av tills den nya GPU-imagen och hela PAOW-förloppet accepterats.
 

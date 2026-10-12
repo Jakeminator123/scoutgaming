@@ -1,6 +1,7 @@
 import { createAstridCameraSession } from './astrid-camera-session.mjs';
 import { createAstridAudioRecorder } from './astrid-camera-audio.mjs';
 import { createAstridWakeWord } from './astrid-wake-word.mjs';
+import { isDealerId } from './dealer-identity.mjs';
 
 const MAX_IMAGE_BYTES = 64 * 1024;
 const sameIdentity = (a, b) => a?.playerId === b?.playerId && a?.dealerId === b?.dealerId
@@ -24,7 +25,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   RecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition,
   createRecorder = createAstridAudioRecorder, createWakeWord = createAstridWakeWord,
   canStart = () => true, onActivity = () => {}, onPlaybackToggle = () => {}, onPlaybackEnable = () => {}, getPlaybackEnabled = () => false,
-  onLogToggle = () => {} } = {}) {
+  onLogToggle = () => {}, dealerName = 'Astrid', wakeNames = [dealerName], language = 'en-US', presentationContext = () => null } = {}) {
   const element = (tag, text, className) => {
     const node = document.createElement(tag); if (text) node.textContent = text; if (className) node.className = className; return node;
   };
@@ -32,13 +33,15 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   const stylesheet = element('link'); stylesheet.rel = 'stylesheet'; stylesheet.href = '/astrid-voice-control.css';
   const playback = element('button', '▶', 'astrid-voice-button'); playback.type = 'button';
   const record = element('button', '●', 'astrid-voice-button'); record.type = 'button';
+  const camera = element('button', '▣', 'astrid-voice-button'); camera.type = 'button';
+  let cameraOptIn = false;
   const status = element('span', '', 'astrid-voice-error'); status.setAttribute('role', 'status'); status.hidden = true;
   const video = element('video'); video.autoplay = true; video.muted = true; video.playsInline = true; video.hidden = true;
   const consent = element('dialog', '', 'astrid-voice-dialog'); consent.hidden = true; consent.setAttribute('aria-label', 'Enable voice and optional camera');
   const consentHeading = element('h2', 'Enable voice and optional camera?');
-  const consentText = element('p', 'In wake-word mode, this browser listens locally for “Astrid” and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for speech translation into English. The English text is automatically sent to OpenClaw and its model provider after you pause. If image support is enabled, up to two camera snapshots are included. There is no preview or Send step.');
-  const consentPrivacy = element('p', 'Enabling voice also turns on Astrid playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save raw audio. Press Record again to stop. Voice is always off when this page loads.');
-  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to Astrid. Recording then switches off. Press Record again during capture to cancel without sending.');
+  const consentText = element('p', 'In wake-word mode, this browser listens locally for the selected dealer name and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for speech translation into English. The English text is automatically sent to OpenClaw and its model provider after you pause. Camera is off by default. Only when you switch the camera button on, up to two snapshots are included if the model supports images. There is no preview or Send step.');
+  const consentPrivacy = element('p', 'Enabling voice also turns on dealer playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save your raw microphone audio. Generated dealer replies may be stored in the private reply library. Press Record again to stop. Voice is always off when this page loads.');
+  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to the selected dealer. Recording then switches off. Press Record again during capture to cancel without sending.');
   const accept = element('button', 'Enable voice'); accept.type = 'button';
   const manual = element('button', 'Record one message'); manual.type = 'button';
   const decline = element('button', 'Keep off'); decline.type = 'button';
@@ -50,7 +53,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   const log = element('pre', '', 'astrid-voice-events');
   const debugContainer = element('div', '', 'astrid-voice-chat-debug');
   debug.append(logHeading, logNote, closeLog, log, debugContainer);
-  root.append(stylesheet, playback, record, status, video, consent, debug); container.append(root);
+  root.append(stylesheet, playback, record, camera, status, video, consent, debug); container.append(root);
 
   let enabled = false, visionEnabled = false, profileRevision = null, blockedReason = '', visionReason = '';
   let consentGranted = false, recordingMode = 'wake', mode = false, modeStarting = false, modeOwner = null, wake = null;
@@ -68,15 +71,19 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   function render() {
     const playing = getPlaybackEnabled() === true;
     playback.textContent = playing ? '❚❚' : '▶';
-    playback.setAttribute('aria-label', playing ? 'Mute Astrid playback' : 'Enable Astrid playback');
-    playback.setAttribute('aria-pressed', String(playing)); playback.title = `${playing ? 'Mute' : 'Enable'} Astrid playback. Hold 5 seconds for the log.`;
+    playback.setAttribute('aria-label', playing ? 'Mute ' + dealerName + ' playback' : 'Enable ' + dealerName + ' playback');
+    playback.setAttribute('aria-pressed', String(playing)); playback.title = `${playing ? 'Mute' : 'Enable'} ${dealerName} playback. Hold 5 seconds for the log.`;
     record.textContent = mode || modeStarting || busy() ? '■' : '●';
     record.setAttribute('aria-label', mode || modeStarting || busy() ? 'Stop voice listening'
       : recordingMode === 'manual' ? 'Record one message' : 'Enable voice listening');
     record.setAttribute('aria-pressed', String(mode || modeStarting || busy()));
     record.title = `${blockedReason || lastStatus}${visionReason ? ` ${visionReason}` : ''} Hold 5 seconds for the log.`;
     record.setAttribute('data-error', String(Boolean(blockedReason || statusIsError)));
-    status.textContent = blockedReason || lastStatus; status.hidden = !(blockedReason || statusIsError);
+    camera.setAttribute('aria-label', cameraOptIn ? 'Turn camera off' : 'Include optional camera images');
+    camera.setAttribute('aria-pressed', String(cameraOptIn));
+    camera.title = cameraOptIn ? 'Camera images enabled for the next recording' : 'Camera off; click to include images';
+    status.textContent = blockedReason || lastStatus; status.hidden = false;
+    status.setAttribute('data-error', String(Boolean(blockedReason || statusIsError)));
     root.setAttribute('data-panel-open', String(!debug.hidden || !consent.hidden));
   }
   function report(message, error = false) { lastStatus = message; statusIsError = error; appendLog(message); render(); }
@@ -100,7 +107,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   async function readConfig(signal) {
     const fail = text => { throw Object.assign(new Error('configuration_failed'), { configurationReason: text }); };
     let response, config;
-    try { response = await fetchImpl('/api/astrid/observation', { cache: 'no-store', ...(signal ? { signal } : {}) }); }
+    try { response = await fetchImpl('/api/dealer/observation?' + new URLSearchParams({ dealer: identity()?.dealerId ?? '', ...(presentationContext() ? { presentationContext: JSON.stringify(presentationContext()) } : {}) }), { cache: 'no-store', ...(signal ? { signal } : {}) }); }
     catch { fail('Cannot reach the server. Check the connection and try Record again.'); }
     if (response.ok === false) fail(response.status === 401 ? 'Your session has expired. Sign in or select your profile again.'
       : `Cannot read server settings${Number.isInteger(response.status) ? ` (HTTP ${response.status})` : ''}. Try Record again.`);
@@ -165,7 +172,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     const oldWake = wake; wake = null; oldWake?.stop();
     let instance;
     try {
-      instance = createWakeWord({ RecognitionClass, language: 'en-US',
+      instance = createWakeWord({ RecognitionClass, language, wakeNames,
         canWake: () => current(token) && armedReady && !busy() && canStart(),
         onWake: () => {
           if (wake !== instance || !current(token) || !armedReady || busy()) return;
@@ -174,7 +181,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
         onStatus: event => {
           if (wake !== instance || !current(token)) return;
           const messages = { checking: 'Checking local wake-word support.', installing: 'Installing local speech support.',
-            starting: 'Starting local listening.', listening: 'Listening locally for Astrid.', rearming: 'Resuming local listening.' };
+            starting: 'Starting local listening.', listening: `Listening locally for ${dealerName}.`, rearming: 'Resuming local listening.' };
           if (Object.hasOwn(messages, event?.state) && (event.state !== 'listening' || armedReady)) report(messages[event.state]);
         },
         onError: error => { if (wake === instance && current(token)) offerManualRecording(error); },
@@ -216,7 +223,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (!captureCurrent() || wake !== expectedWake) { acquiredRecorder.stop(true); return; }
       recorder = acquiredRecorder; armedReady = true; clearTimeout(captureTimeout); captureTimeout = null;
       if (recordingMode === 'manual') { pending = false; await beginCapture(token); }
-      else report('Listening locally for Astrid.');
+      else report(`Listening locally for ${dealerName}.`);
     } catch (error) { if (current(token)) stop(error?.name === 'NotAllowedError' ? 'Microphone permission was denied. Voice off.' : 'Microphone recording could not start. Voice off.', true); }
   }
   async function enableVoice() {
@@ -237,22 +244,28 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
         }
       }
       if (document.hidden || !sameIdentity(requestedOwner, identity())) { stop('Context changed. Voice off.'); return; }
-      if (requestedOwner?.dealerId !== 'astrid') { stop('Voice is only available for Astrid.', true); return; }
-      if (recordingMode === 'manual' && !canStart()) { stop('Wait until Astrid and the table are ready, then press Record again.'); return; }
+      if (!isDealerId(requestedOwner?.dealerId)) { stop('Select a dealer before recording.', true); return; }
+      if (recordingMode === 'manual' && !canStart()) { stop('Wait until the dealer has finished speaking, then press Record again.'); return; }
       // Only an explicit Record/Enable voice action opts into audible replies.
       // Automatic wake rearming and autosend must never undo a later mute.
       if (!getPlaybackEnabled()) {
         // Keep this synchronous so local wake recognition retains the click's
         // browser gesture; the host sets its mute state synchronously.
         try { onPlaybackEnable(); }
-        catch { if (token === epoch) stop('Astrid playback could not be enabled. Voice off.', true); return; }
+        catch { if (token === epoch) stop('Dealer playback could not be enabled. Voice off.', true); return; }
         if (token !== epoch) return;
         if (document.hidden || !sameIdentity(requestedOwner, identity())) { stop('Context changed. Voice off.'); return; }
-        if (!getPlaybackEnabled()) { stop('Enable Astrid playback before recording. Voice off.', true); return; }
-        report('Astrid playback enabled for voice replies.');
+        if (!getPlaybackEnabled()) { stop('Enable dealer playback before recording. Voice off.', true); return; }
+        report('Dealer playback enabled for voice replies.');
       }
       mode = true; modeStarting = false; modeOwner = requestedOwner;
-      identityTimer = setInterval(() => { if (mode && !current(token)) stop('Context changed. Voice off.'); }, 250);
+      let paused = false;
+      identityTimer = setInterval(() => {
+        if (mode && !current(token)) { stop('Context changed. Voice off.'); return; }
+        if (!mode || busy() || !armedReady) return;
+        const waiting = !canStart();
+        if (waiting !== paused) { paused = waiting; report(waiting ? 'Listening paused while the dealer replies.' : 'Listening locally for ' + dealerName + '.'); }
+      }, 250);
       if (recordingMode === 'manual') await prepareAudio(token);
       else await startWake(token);
     } catch (error) {
@@ -262,10 +275,10 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   async function beginCapture(token) {
     if (!current(token) || busy() || !armedReady || !recorder || !wakeStream) return;
-    if (!canStart()) { stop('Wait until Astrid and the table are ready, then enable Record again.'); return; }
+    if (!canStart()) { stop('Wait until the dealer has finished speaking, then enable Record again.'); return; }
     const turn = captureRevision, captureCurrent = () => current(token) && turn === captureRevision;
     stream = wakeStream; wakeStream = null; armedReady = false;
-    pending = true; heardAudio = false; onActivity(); report(recordingMode === 'manual' ? 'Recording one message.' : 'Astrid heard. Starting the microphone.');
+    pending = true; heardAudio = false; onActivity(); report(recordingMode === 'manual' ? 'Recording one message.' : `${dealerName} heard. Starting the microphone.`);
     session = createAstridCameraSession({ endSilenceMs: 1150, capture: () => cameraStream ? captureJpeg(video) : null,
       onEnd: result => { if (result.reason === 'speech_end') void finishCapture(token); } });
     const configCheck = { controller: new AbortController() };
@@ -284,7 +297,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       applyConfig(checked.config); if (!enabled) { stop(); return; }
       // Use the current saved model, including a Terra/Luna selection made
       // after this tab opened. Consent already covers optional camera images.
-      const withVideo = visionEnabled;
+      const withVideo = visionEnabled && cameraOptIn;
       if (withVideo) {
         try {
           const acquired = await mediaDevices.getUserMedia({ audio: false, video: { width: { ideal: 640 }, height: { ideal: 480 } } });
@@ -332,9 +345,10 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       applyConfig(checked.config);
       if (!enabled) { stop(); return; }
       report('Translating speech into English.');
-      const response = await fetchImpl('/api/astrid/transcription', { method: 'POST', signal: controller.signal,
-        headers: { 'Content-Type': 'audio/wav', 'X-Astrid-Dealer': 'astrid', 'X-Astrid-Language': 'auto',
-          'X-Astrid-Request-Id': crypto.randomUUID(), 'X-Astrid-Profile-Revision': profileRevision,
+      const response = await fetchImpl('/api/dealer/transcription', { method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'audio/wav', 'X-Astrid-Dealer': modeOwner.dealerId, 'X-Astrid-Language': 'auto',
+          'X-Astrid-Request-Id': crypto.randomUUID(),
+          ...(presentationContext() ? { 'X-Dealer-Presentation-Context': JSON.stringify(presentationContext()) } : {}), 'X-Astrid-Profile-Revision': profileRevision,
           'X-Astrid-Session-Revision': modeOwner.sessionRevision, 'X-Astrid-Round-Revision': modeOwner.roundRevision }, body: bytes });
       if (!current(token)) return;
       if (!response.ok) {
@@ -346,7 +360,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (typeof data.text !== 'string' || data.text.length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/.test(data.text)) throw new Error('transcription_failed');
       const message = data.text.trim();
       if (!message) { report('No words recognized. Nothing sent.'); resume = true; return; }
-      appendLog(`You: ${message}`); transcribing = false; sending = true; onActivity(); report('Sending the voice turn to Astrid automatically.');
+      appendLog(`You: ${message}`); transcribing = false; sending = true; onActivity(); report(`Sending the voice turn to ${dealerName} automatically.`);
       if (await send({ message, images: [...images], profileRevision, voice: true }) !== true) throw new Error('voice_send_failed');
       if (!current(token)) return;
       report('Voice turn completed.'); resume = true;
@@ -410,6 +424,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       cancel(); action();
     };
   }
+  camera.onclick = () => { cameraOptIn = !cameraOptIn; if (!cameraOptIn) { for (const track of cameraStream?.getTracks() ?? []) track.stop(); cameraStream = null; video.srcObject = null; } render(); };
   longPress(record, recordClick);
   longPress(playback, () => { Promise.resolve().then(() => onPlaybackToggle()).then(render).catch(() => report('Playback audio could not be changed.', true)); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
@@ -417,7 +432,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !debug.hidden) { event.preventDefault(); showLog(false); } });
   report('Voice off.'); void refreshConfig();
   return { stop, debugContainer, refreshPlayback() {
-    if ((mode || modeStarting || busy()) && !getPlaybackEnabled()) stop('Astrid playback muted. Voice off.');
+    if ((mode || modeStarting || busy()) && !getPlaybackEnabled()) stop('Dealer playback muted. Voice off.');
     else render();
   },
     get active() { return Boolean(mode || modeStarting || busy()); }, get busy() { return busy(); } };

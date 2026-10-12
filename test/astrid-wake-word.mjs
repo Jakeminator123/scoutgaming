@@ -7,7 +7,7 @@ const deferred = () => { let resolve; const promise = new Promise(yes => { resol
 const navigatorRestores = new WeakSet();
 
 function harness(t, { availability = async () => 'available', install = async () => true, local = true,
-  autoStart = true, canWake = () => true, gesture = false, onWake } = {}) {
+  autoStart = true, canWake = () => true, gesture = false, onWake, wakeNames } = {}) {
   if (!navigatorRestores.has(t)) {
     const priorNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
     t.after(() => { if (priorNavigator) Object.defineProperty(globalThis, 'navigator', priorNavigator); else delete globalThis.navigator; });
@@ -25,7 +25,7 @@ function harness(t, { availability = async () => 'available', install = async ()
     end() { this.onend?.(); }
     error(error) { this.onerror?.({ error }); }
   }
-  const control = createAstridWakeWord({ RecognitionClass: Recognition, canWake,
+  const control = createAstridWakeWord({ RecognitionClass: Recognition, canWake, ...(wakeNames ? {wakeNames} : {}),
     onStatus: value => statuses.push(value), onError: value => errors.push(value),
     onWake: () => { assert.equal(control.active, false); assert.ok(instances.at(-1).aborts); wakes.push(true); return onWake?.(); },
   });
@@ -196,4 +196,12 @@ test('stopping a scheduled rearm cancels it and a missing onstart times out once
   t.mock.timers.tick(10000);
   assert.equal(await ready, false); assert.equal(waiting.errors[0].code, 'start-timeout');
   assert.equal(waiting.control.active, false);
+});
+
+test('each selected dealer name wakes only that dealer, with escaped names and complete-word boundaries',async t=>{
+  for(const name of ['Vera','Astrid','Amira','Mei','PAOW','Dragge','Dealer (A)']) {
+    const h=harness(t,{wakeNames:[name]});await h.control.start();
+    h.instances.at(-1).result(['not'+name,name==='Astrid'?'PAOW':'Astrid']);assert.equal(h.wakes.length,0);
+    h.instances.at(-1).result(['Hej '+name+'!']);assert.equal(h.wakes.length,1);
+  }
 });

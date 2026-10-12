@@ -88,6 +88,8 @@ const { createStudioMediaRuntime, createStudioPublicMediaAvailability } = neonSt
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage,
   dealerIdle: createRegisteredDealerIdle({ pathFor: publicAssetPath, mediaAvailable: createStudioPublicMediaAvailability({ repositoryRoot: mediaRepository }) }) }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
+const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
+  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   readProject: () => studioPolicyRuntime.policy.projectStore().load(),
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
@@ -825,8 +827,15 @@ const server = createServer(async (req, res) => {
     const result = operatorAppearanceApi ? await operatorAppearanceApi(new Request(new URL(req.url,gameOrigin),{method:req.method})) : new Response(JSON.stringify({error:'operator_appearance_unavailable'}),{status:503,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
     res.writeHead(result.status,Object.fromEntries(result.headers));res.end(await result.text());return;
   }
-  if (pathname === '/api/astrid/observation' && req.method === 'GET') {
+  if (['/api/astrid/observation','/api/dealer/observation'].includes(pathname) && req.method === 'GET') {
     try {
+      const query = new URL(req.url,'http://local').searchParams;
+      if ([...query.keys()].some(key => !['dealer','presentationContext'].includes(key) || query.getAll(key).length !== 1)) throw Error('invalid_chat_context');
+      const dealerId = pathname === '/api/astrid/observation' ? 'astrid' : query.get('dealer');
+      const rawContext = query.get('presentationContext');
+      if (rawContext && rawContext.length > 512) throw Object.assign(Error('invalid_chat_context'),{statusCode:400});
+      const authorization = await authorizeChatDealer({dealerId,presentationContext:rawContext ? JSON.parse(rawContext) : null});
+      await authorization.recheck();
       const config = await probeRuntime.config();
       const enabled = astridCameraEnabled;
       const profileRevision = enabled ? createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex') : null;
@@ -840,13 +849,20 @@ const server = createServer(async (req, res) => {
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
     return;
   }
-  if (pathname === '/api/astrid/transcription') {
+  if (['/api/astrid/transcription','/api/dealer/transcription'].includes(pathname)) {
     const ownerRevision = async () => createHash('sha256').update((await chatSessionOwner(req, authenticated))).digest('hex');
-    let profileRevision;
-    try { profileRevision = (await ownerRevision()); }
+    let profileRevision, authorization, dealerId;
+    try {
+      dealerId = pathname === '/api/astrid/transcription' ? 'astrid' : req.headers['x-astrid-dealer'];
+      const rawContext = req.headers['x-dealer-presentation-context'];
+      if (rawContext && (typeof rawContext !== 'string' || rawContext.length > 512)) throw Error('invalid_chat_context');
+      authorization = await authorizeChatDealer({dealerId,presentationContext:rawContext ? JSON.parse(rawContext) : null});
+      profileRevision = (await ownerRevision());
+    }
     catch { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"error":"stale_transcription_context"}'); return; }
-    await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision,
+    await astridTranscription.handle(req, res, { enabled: astridCameraEnabled, profileRevision, dealerId,
       checkCurrent: async context => {
+        await authorization.recheck();
         if ((await ownerRevision()) !== profileRevision) {
           throw Object.assign(new Error('stale_transcription_context'), { code: 'stale_transcription_context', statusCode: 409 });
         }
@@ -1048,17 +1064,18 @@ const server = createServer(async (req, res) => {
         const session = (await playerSession(req));
         const status = (await authoritativeChatStatus(authenticated, session, { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
         speechStreamService?.cancelOwner(owner);
-        const probeConfig = dealerId === 'astrid' ? await probeRuntime.config() : null;
+        const voiceConfig = await probeRuntime.config();
+        const probeConfig = dealerId === 'astrid' ? voiceConfig : null;
         let observation;
         if (incoming.observation !== undefined) {
-          if (!astridCameraEnabled || dealerId !== 'astrid') throw Object.assign(new Error('observation_disabled'), { statusCode: 403 });
+          if (!astridCameraEnabled) throw Object.assign(new Error('observation_disabled'), { statusCode: 403 });
           if (!req.headers.origin || !URL.canParse(req.headers.origin)
             || !['http:', 'https:'].includes(new URL(req.headers.origin).protocol)
             || new URL(req.headers.origin).origin !== req.headers.origin
             || new URL(req.headers.origin).host !== req.headers.host || req.headers['sec-fetch-site'] === 'cross-site') {
             throw Object.assign(new Error('observation_same_origin_required'), { statusCode: 403 });
           }
-          if (!astridVisionModels.has(probeConfig.policy.model)) throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
+          if (!astridVisionModels.has(voiceConfig.policy.model)) throw Object.assign(new Error('observation_model_not_verified'), { statusCode: 409 });
           observation = normalizeAstridObservation(incoming.observation, incoming.requestId, dealerId,
             createHash('sha256').update(owner).digest('hex'));
         }
@@ -1103,7 +1120,7 @@ const server = createServer(async (req, res) => {
           readStatus,
           signal: controller.signal,
           decide: async (value, state) => {
-            const model = probeConfig?.policy.model ?? 'gateway-default';
+            const model = probeConfig?.policy.model ?? (observation ? voiceConfig.policy.model : 'gateway-default');
             const ownedFetch = chatAuthorization.registered ? null : nativeP6OwnedSpeechFetch(nativeP6QaRouter, { request: value, status: state,
               playerId: authenticated, owner, readOwner: async () => (await chatSessionOwner(req, authenticated)),
               readStatus, signal: controller.signal, model, streamRequested: incoming.acceptsSpeechStream === true });
@@ -1285,7 +1302,8 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
-    dealerRuntime:dealerSpeechRuntime,
+    dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
+    onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
     ...(nativeP6QaRouter?.providerFetch ? { fetchImpl:nativeP6QaRouter.providerFetch } : {}),
     ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)

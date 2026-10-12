@@ -89,3 +89,19 @@ test('registered dealer uses negotiated own stream; failure never generates an A
   f.data.streamService.prepare=async()=>{throw Error('own voice unavailable');};
   await assert.rejects(completeChatWithSpeech(f.data),/own voice unavailable/);assert.equal(f.jobs,0);
 });
+
+test('unpaid dealer preparation overlaps model work; paid preparation awaits it and fresh ownership',async()=>{
+  const f=fixture();let warmStarted,modelStarted,finishWarm,finishModel,prepared=0;
+  const warming=new Promise(resolve=>finishWarm=resolve),model=new Promise(resolve=>finishModel=resolve);
+  const warmEntered=new Promise(resolve=>warmStarted=resolve),modelEntered=new Promise(resolve=>modelStarted=resolve);
+  f.data.streamService={prewarm:async value=>{await value.beforeCostly();warmStarted();await warming;},prepare:async value=>{await value.beforeCostly();prepared++;return {};}};
+  f.data.decide=async()=>{modelStarted();await model;return {kind:'generatedText',exactText:'Exact reply.'};};
+  const reply=completeChatWithSpeech(f.data);
+  await Promise.all([warmEntered,modelEntered]);assert.equal(prepared,0);
+  finishModel();await new Promise(resolve=>setImmediate(resolve));assert.equal(prepared,0);
+  f.changeOwner();finishWarm();await assert.rejects(reply,/stale_chat_session/);assert.equal(prepared,0);assert.equal(f.jobs,0);
+});
+test('failed unpaid preparation never substitutes a voice or masks a paid preparation error',async()=>{
+  const f=fixture();f.data.streamService={prewarm:async()=>{throw Error('reference pending');},prepare:async()=>{throw Error('own voice unavailable');}};
+  await assert.rejects(completeChatWithSpeech(f.data),/own voice unavailable/);assert.equal(f.jobs,0);
+});

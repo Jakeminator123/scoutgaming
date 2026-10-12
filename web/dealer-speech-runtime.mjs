@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { normalizeDealerSpeechProfile } from './public/dealer-speech-profile.mjs';
 import { dealerSpeechProfileRevision } from './dealer-speech-reference.mjs';
 import { createCartesiaSource } from '../services/astrid-gpu-worker/gateway/cartesia-source.mjs';
@@ -28,10 +29,19 @@ async function verifyVoice(voice, apiKey, fetchImpl, signal) {
 }
 /** Private Studio intent is read afresh; browser fields never choose a voice,
  * provider key or avatar. Publication/session ownership remains the chat guard. */
-export function createDealerSpeechRuntime({readProject, referenceService, env = process.env, fetchImpl = fetch} = {}) {
+export function createDealerSpeechRuntime({readProject, referenceService, env = process.env, fetchImpl = fetch, clock = Date.now, voiceVerificationTtlMs = 60000} = {}) {
   if (typeof readProject !== 'function' || typeof referenceService?.prepare !== 'function') throw Error('Invalid dealer speech runtime');
   const enabled = env.CROUPIER_DEALER_SPEECH_PROFILES === '1';
   const keys = {cartesia:env.CARTESIA_API_KEY,elevenlabs:env.ELEVENLABS_API_KEY};
+  const verifiedVoices = new Map();
+  async function verifyCurrentVoice(voice,apiKey,signal) {
+    signal?.throwIfAborted();
+    const key = createHash('sha256').update(JSON.stringify([voice.provider,voice.voiceId,voice.modelId,apiKey])).digest('hex');
+    const at = clock(), last = verifiedVoices.get(key);
+    if (last !== undefined && at >= last && at-last < Math.min(60000,Math.max(0,voiceVerificationTtlMs))) return;
+    await verifyVoice(voice,apiKey,fetchImpl,signal); signal?.throwIfAborted();
+    verifiedVoices.set(key,clock()); while (verifiedVoices.size > 32) verifiedVoices.delete(verifiedVoices.keys().next().value);
+  }
   async function profileFor(dealerId) {
     if (!/^[a-z][a-z0-9-]{0,63}$/.test(dealerId ?? '')) fail('generated_speech_dealer_invalid');
     const matches = (await readProject())?.dealers?.filter(dealer => dealer.id === dealerId);
@@ -58,7 +68,7 @@ export function createDealerSpeechRuntime({readProject, referenceService, env = 
       if (typeof apiKey !== 'string' || !apiKey.length || /[\s\u0000-\u001f]/.test(apiKey)) fail('generated_speech_voice_not_configured');
       const createSource = profile.voice.provider === 'cartesia' ? createCartesiaSource : createElevenLabsSource;
       const source = createSource({...profile.voice,apiKey},{fetchImpl});
-      await verifyVoice(profile.voice,apiKey,fetchImpl,signal);
+      await verifyCurrentVoice(profile.voice,apiKey,signal);
       await assertFresh();
       const reference = await referenceService.prepare({dealerId,profile,profileRevision:revision,beforeCostlyStep:assertFresh,signal});
       if (reference.dealerId !== dealerId || reference.profileRevision !== revision) fail('generated_speech_reference_mismatch');

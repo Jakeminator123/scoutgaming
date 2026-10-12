@@ -18,7 +18,7 @@ async function fixture(t, options = {}) {
     attachRelay: (_, value) => { relayOptions = value; return relay; },
     pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
     sessionManager: options.sessionManager,
-    dealerRuntime: options.dealerRuntime,
+    dealerRuntime: options.dealerRuntime, replyLibrary:options.replyLibrary, onLibraryStatus:options.onLibraryStatus, replyCaptureBytes:options.replyCaptureBytes,
   }).then(value => { services.push(value); return value; });
   service = await construct();
   const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
@@ -277,4 +277,58 @@ test('QA abort retains exclusion until shared manager cancellation settles; prod
   assert.equal(f.service.status().pending, 0);
   await f.service.prepare({ ...f.input('product'), owner: 'product' });
   assert.equal(starts, 2);
+});
+
+test('only a completed exact audio/video pair enters reply library; save never gates first media',async t=>{
+  const saved=[],statuses=[];let releaseSave;const saving=new Promise(resolve=>releaseSave=resolve);
+  const f=await fixture(t,{replyLibrary:{async save(value){saved.push(value);await saving;}},onLibraryStatus:value=>statuses.push(value)});
+  const descriptor=await f.service.prepare(f.input());assert.equal(saved.length,0);
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
+  f.relayOptions.onMedia(identity,Buffer.from('first MP4 fragment'));f.relayOptions.onComplete(identity,{frames:0,aborted:true});assert.equal(saved.length,0);
+  f.relayOptions.onMedia(identity,Buffer.from('last MP4 fragment'));f.relayOptions.onComplete(identity,{frames:12});
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(saved.length,1);assert.equal(saved[0].exactText,f.input().text);
+  assert.equal(saved[0].audio.bytes.toString('ascii',0,4),'RIFF');assert.equal(saved[0].audio.bytes.length,44+48);
+  assert.equal(saved[0].video.bytes.toString(),'first MP4 fragmentlast MP4 fragment');
+  f.relayOptions.onComplete(identity,{frames:12});assert.equal(saved.length,1);
+  releaseSave();await new Promise(resolve=>setImmediate(resolve));assert.equal(statuses[0].state,'saved');
+});
+test('cancelled or incomplete streams cannot be archived as completed replies',async t=>{
+  const saved=[];const f=await fixture(t,{replyLibrary:{async save(value){saved.push(value);}}});
+  const descriptor=await f.service.prepare(f.input());const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
+  f.relayOptions.onMedia(identity,Buffer.from('partial'));f.relayOptions.onComplete(identity,{frames:12});assert.equal(saved.length,0);
+  f.service.cancelOwner(f.input().owner);f.relayOptions.onComplete(identity,{frames:12});assert.equal(saved.length,0);
+});
+
+test('reply capture memory is bounded without stopping playback and cancellation releases it',async t=>{
+  const saved=[],statuses=[];
+  const f=await fixture(t,{replyCaptureBytes:60,replyLibrary:{async save(value){saved.push(value);}},onLibraryStatus:v=>statuses.push(v)});
+  const start=async id=>{const d=await f.service.prepare(f.input(id));const i=await f.relayOptions.authenticateClient(f.request(d));await f.relayOptions.onSessionReady({...i,id:'wire-'+id,signal:new AbortController().signal});return i;};
+  let identity=await start('oversized');f.relayOptions.onMedia(identity,Buffer.alloc(13));f.relayOptions.onComplete(identity,{frames:12});
+  assert.equal(f.written,48);assert.equal(saved.length,0);assert.equal(statuses[0].state,'skipped');
+  f.service.cancelOwner(f.input().owner);
+  identity=await start('cancelled');f.relayOptions.onMedia(identity,Buffer.alloc(12));f.service.cancelOwner(f.input().owner);
+  identity=await start('completed');f.relayOptions.onMedia(identity,Buffer.alloc(12));f.relayOptions.onComplete(identity,{frames:12});
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(saved.length,1);assert.equal(f.written,144);
+});
+test('pending Blob writes count toward reply capture memory until they settle',async t=>{
+  let release;const pending=new Promise(resolve=>release=resolve),saved=[],statuses=[];
+  const f=await fixture(t,{replyCaptureBytes:60,replyLibrary:{async save(value){saved.push(value);await pending;}},onLibraryStatus:v=>statuses.push(v)});
+  const start=async id=>{const d=await f.service.prepare(f.input(id));const i=await f.relayOptions.authenticateClient(f.request(d));await f.relayOptions.onSessionReady({...i,id:'wire-'+id,signal:new AbortController().signal});return i;};
+  try{
+    let identity=await start('saving');f.relayOptions.onMedia(identity,Buffer.alloc(12));f.relayOptions.onComplete(identity,{frames:12});
+    await new Promise(resolve=>setImmediate(resolve));f.service.cancelOwner(f.input().owner);
+    identity=await start('plays-during-save');f.relayOptions.onMedia(identity,Buffer.alloc(12));f.relayOptions.onComplete(identity,{frames:12});
+    assert.equal(f.written,96);assert.equal(saved.length,1);assert.equal(statuses[0].state,'skipped');
+    release();await new Promise(resolve=>setImmediate(resolve));f.service.cancelOwner(f.input().owner);
+    identity=await start('after-save');f.relayOptions.onMedia(identity,Buffer.alloc(12));f.relayOptions.onComplete(identity,{frames:12});
+    await new Promise(resolve=>setImmediate(resolve));assert.equal(saved.length,2);
+  }finally{release();}
+});
+
+test('prewarm reads only the selected dealer runtime; no GPU session or audio is started',async t=>{
+  let references=0,workers=0;
+  const f=await fixture(t,{dealerRuntime:{async prepare({dealerId,beforeCostly}){await beforeCostly();assert.equal(dealerId,'paow');references++;return {}; }},sessionManager:{async ensure(){workers++;},close(){}}});
+  assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),true);
+  assert.equal(references,1);assert.equal(workers,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
+  f.stale();assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),false);assert.equal(references,1);assert.equal(workers,0);
 });
