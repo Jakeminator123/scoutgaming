@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { fixture, PNG } from '../test/helpers/dealer-forge-fixture.mjs';
+import { fixture, PNG } from '../test/fixtures/dealer-forge-fixture.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

@@ -22,13 +22,15 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
 
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
+    // 008 (Dealer Forge) is deployment-optional: not counted as pending, still applied by an explicit apply.
     assert.equal(initial.toApply.length, 7, 'fixture must start without an existing Studio schema');
+    assert.deepEqual(initial.optionalPending.map(row => row.version), ['008']);
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
-    assert.equal(applied.toApply.length, 0);
+    assert.equal(applied.toApply.length, 0); assert.equal(applied.optionalPending.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
-    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 7);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 8);
   });
 
   const scope = { environment: `qa_${suffix()}`, workspaceId: 'integration' };

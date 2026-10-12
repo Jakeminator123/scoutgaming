@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
 import { forgeSlots, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
 import { ForgeError } from '../lib/dealer-forge-service.mjs';
-import { fixture, sha, scope, PNG, MP4 } from './helpers/dealer-forge-fixture.mjs';
+import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
 import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';
 import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
 
