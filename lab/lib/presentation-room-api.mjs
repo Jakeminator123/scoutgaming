@@ -21,7 +21,8 @@ const operatorIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const keyPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const fail = (status = 422, code = 'studio_presentation_room_rejected') => { throw new StudioStorageError(code, status); };
 const conflictCodes = new Map(['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict',
-  'presentation_room_binding_conflict', 'presentation_game_lane_conflict', 'presentation_legacy_package_conflict'].map(code => ['studio_' + code, code]));
+  'presentation_room_binding_conflict', 'presentation_game_lane_conflict', 'presentation_legacy_package_conflict',
+  'presentation_room_environment_conflict'].map(code => ['studio_' + code, code]));
 export const PRESENTATION_ROOM_MUTATION = Object.freeze({ kind: 'administration', value: Object.freeze({
   rooms: Object.freeze([Object.freeze({ schemaVersion: 2 })]),
 }) });
@@ -47,6 +48,37 @@ function intentHash(value) {
 function sourceProject(project, id) {
   if (!project.lanes?.some(lane => lane.id === id)) fail(404, 'studio_presentation_required');
   return project;
+}
+// A room's identity must not depend on a player's background preference or
+// another dealer's baked scene. This only constrains new room creation.
+function roomEnvironment(project, id) {
+  sourceProject(project, id);
+  const lane = project.lanes.find(row => row.id === id), background = lane.layers.background;
+  const dealers = new Set([...lane.dealers, ...lane.layers.dealer.allowed]);
+  if (background.mode === 'baked' && !background.allowed.length && background.default === null) {
+    return { kind: 'baked', fixed: dealers.size === 1,
+      label: dealers.size === 1 ? 'Miljö i dealerfilmen' : 'Miljön följer vald dealer' };
+  }
+  const asset = project.layerAssets?.find(row => row.id === background.default && row.role === 'background');
+  const fixed = background.enabled && ['image', 'video'].includes(background.mode)
+    && background.allowed.length === 1 && background.allowed[0] === background.default && Boolean(asset)
+    && (lane.backgroundPlayback?.rules ?? []).every(rule => rule.assetId === background.default);
+  return fixed ? { kind: background.mode, fixed: true, label: asset.label }
+    : { kind: 'variable', fixed: false, label: 'Välj en fast bakgrund för rummet' };
+}
+function requireRoomEnvironment(project, id) {
+  if (!roomEnvironment(project, id).fixed) fail(422, 'studio_presentation_room_environment_required');
+}
+function preservePublishedRoomEnvironment(saved, id) {
+  if (!saved.administration.rooms.some(room => isPresentationRoom(room) && room.operatorId === saved.operator.id
+    && room.presentationLaneId === id && saved.pack?.tables.includes(room.id))) return;
+  const previous = readPackagePresentation(saved.pack)?.lanes.find(lane => lane.id === id);
+  const next = saved.project.lanes.find(lane => lane.id === id);
+  const environment = lane => ({ background: lane.layers.background, playback: lane.backgroundPlayback ?? { schemaVersion: 1, rules: [] },
+    ...(lane.layers.background.mode === 'baked' && !lane.layers.background.allowed.length
+      ? { dealers: [...new Set([...lane.dealers, ...lane.layers.dealer.allowed])].sort() } : {}) });
+  if (!previous || canonicalStudioJson(environment(previous)) !== canonicalStudioJson(environment(next)))
+    fail(409, 'studio_presentation_room_environment_conflict');
 }
 function lanePlan(presentation, administration, frozen) {
   const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => lane.dealer === presentation.layers.dealer.default && isPresentationRoomLaneCompatible(lane, presentation, frozen));
@@ -161,6 +193,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         return saved;
       }));
       if ((saved.pack?.revision ?? null) !== body.expectedPackageRevision) fail(409);
+      requireRoomEnvironment(saved.project, body.presentationLaneId);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId);
       captured = await capture(snapshotValue, body.presentationLaneId);
       publicationPresentation = mergePresentation(saved.pack, captured.presentation);
     } else {
@@ -184,6 +218,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     const saved = await repository.transaction(() => repository.withTransactionClient(client => snapshot(client, url.searchParams.get('operatorId'), snapshotValue)));
     const id = url.searchParams.get('presentationLaneId');
     sourceProject(saved.project, id);
+    const environment = roomEnvironment(saved.project, id);
     let selected = null, merged = null, packageReason = null, conflictCode = null, runtime = null;
     try {
       selected = await capture(snapshotValue, id);
@@ -191,6 +226,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged);
       try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
       catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
+      preservePublishedRoomEnvironment(saved, id);
     } catch (error) {
       if (error?.statusCode === 409) {
         packageReason = 'presentation_package_conflict';
@@ -204,10 +240,12 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     try { runtime = await capabilities(merged ?? selected?.presentation); }
     catch (error) { if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error; }
     const runtimeReady = runtimeAccepts(runtime, merged ?? selected?.presentation);
-    const reason = packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
+    const reason = !environment.fixed ? 'presentation_room_environment_required'
+      : packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
     return { ok: true, operator: { id: saved.operator.id, slug: saved.operator.slug, name: saved.operator.name }, presentationLaneId: id,
       projectRevision: saved.projectRevision, administrationRevision: saved.administrationRevision, packageRevision: saved.pack?.revision ?? null,
-      ready: reason === null, reason, conflictCode, capabilities: runtime,
+      ready: reason === null, reason, conflictCode: reason === 'presentation_package_conflict' ? conflictCode : null, capabilities: runtime,
+      environment: conflictCode === 'presentation_shared_layer_conflict' ? null : environment,
       rooms: saved.administration.rooms.filter(room => room.state === 'live' && room.presentationLaneId === id
         && resolvePackageRoom({ administration:saved.administration, package:saved.pack, operatorId:saved.operator.id, roomId:room.id }))
         .map(room => ({ id:room.id, name:room.name, playUrl:roomPlayPath(room,saved.operator.slug) })) };
@@ -235,6 +273,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       if (saved.projectRevision !== body.expectedProjectRevision || saved.administrationRevision !== body.expectedAdministrationRevision
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
+      requireRoomEnvironment(saved.project, body.presentationLaneId);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId);
       await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
       const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation);
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });

@@ -31,10 +31,14 @@ test('registered admin and published lobby share exact identities without privat
   assert.deepEqual(result.lobby.catalogs[0].rooms.map(row => row.id), [f.room.id]);
   assert.deepEqual(result.lobby.catalogs[0].rooms[0].dealers.map(row => row.id), ['johanna']);
   assert.equal(result.administration.rooms.find(row => row.id === 'not-published').playable, false);
+  assert.equal(result.administration.rooms.find(row => row.id === 'not-published').environment, null);
   assert.doesNotMatch(JSON.stringify(result), /private-operator-field|sha256|pathname|croupier\/media|_scoutPresentation|salt|password/);
   assert.deepEqual(f.saved, before);
   const lobby = parseLobbyCatalog(result);
   const choice = lobbySelection(lobby, { operatorId: 'north', roomKey: 'north:' + f.room.id, dealerId: 'johanna' });
+  const adminRoom = result.administration.rooms.find(row => row.id === f.room.id);
+  assert.equal(adminRoom.environment.label, choice.room.environmentLabel);
+  assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
   assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=johanna');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'johanna' }).dealer, null);
 });

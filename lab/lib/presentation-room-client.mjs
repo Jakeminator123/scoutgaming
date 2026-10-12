@@ -10,13 +10,14 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 const revision = identifier;
 const packageRevision = value => Number.isSafeInteger(value) && value > 0;
 const roomName = value => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 100 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
-const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large']);
+const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large', 'presentation_room_environment_required']);
 const conflictMessages = Object.freeze({
   presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
   presentation_shared_layer_conflict: 'Ett bord eller en bakgrund skiljer sig från paketets frysta definition. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
   presentation_legacy_package_conflict: 'Paketets äldre format kan inte uppdateras en presentation i taget. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
   presentation_room_binding_conflict: 'Ett befintligt spelrum är kopplat till en annan startdealer eller spelkonfiguration. Kontrollera sammansättningens startdealer mot rummets inställningar i Administration. Rummets koppling ändras inte av publicering.',
   presentation_game_lane_conflict: 'Den tekniska spelkonfigurationen krockar med en befintlig definition. Kontrollera Bord & spelrum i Administration. Skapa inte ett extra rum för att kringgå konflikten.',
+  presentation_room_environment_conflict: 'Sammansättningen används redan av publicerade rum med en annan miljö. Skapa en separat sammansättning för det nya rummets fasta bakgrund. Befintliga rum och deras publicerade miljöer ändras inte här.',
 });
 const sameKeys = (value, keys) => object(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
@@ -47,6 +48,11 @@ function preflight(value, context) {
   if (conflictCode !== null && (typeof conflictCode !== 'string' || !Object.hasOwn(conflictMessages, conflictCode)
     || value.reason !== 'presentation_package_conflict' || value.ready)) invalid();
   const capabilities = capability(value.capabilities);
+  const environment = value.environment ?? null;
+  if (environment !== null && (!sameKeys(environment, ['kind', 'fixed', 'label'])
+    || !['baked', 'image', 'video', 'variable'].includes(environment.kind) || typeof environment.fixed !== 'boolean'
+    || !roomName(environment.label) || value.ready && !environment.fixed
+    || environment.kind === 'variable' && environment.fixed)) invalid();
   if (value.ready && (value.reason !== null || ![2, 3, 4, 9].includes(capabilities?.schemaVersion))) invalid();
   const seen = new Set();
   const rooms = value.rooms.map(room => {
@@ -58,7 +64,8 @@ function preflight(value, context) {
   if (rooms.length && !packageRevision(value.packageRevision)) invalid();
   return Object.freeze({ ok: true, operator: Object.freeze({ id: value.operator.id, slug: value.operator.slug, name: value.operator.name }),
     presentationLaneId: value.presentationLaneId, projectRevision: value.projectRevision, administrationRevision: value.administrationRevision,
-    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, conflictCode, capabilities, rooms: Object.freeze(rooms) });
+    packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, conflictCode, capabilities,
+    environment: environment && Object.freeze({ ...environment }), rooms: Object.freeze(rooms) });
 }
 export function presentationRoomPlayUrl(value, { operatorSlug, roomId }) {
   if (typeof value !== 'string' || value.length > 500 || !/^\/play\/(blackjack|roulette)\?/.test(value) || /[#\\\u0000-\u0020\u007f]/u.test(value)) invalid();
@@ -111,6 +118,7 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
 }
 function readinessMessage(prepared, context) {
   if (prepared.projectRevision !== context.projectRevision) return 'Presentationen har ändrats. Ladda om sidan.';
+  if (prepared.reason === 'presentation_room_environment_required') return 'Ett nytt spelrum behöver en fast miljö. Välj en enda tillåten bakgrund som standard i Sammansättningar och spara. Använd en separat sammansättning om den nuvarande redan delas av publicerade rum. Inbakade miljöer för flera dealers kan inte räknas som samma rum.';
   if (prepared.reason === 'studio_presentation_runtime_update_required') return 'Spelservern behöver uppdateras innan rummet kan skapas.';
   if (prepared.reason === 'presentation_lane_incompatible') return 'Presentationen saknar en spelbar sammansättning. Kontrollera vald grundloop, dealer och lager i Sammansättning och spara.';
   if (prepared.reason === 'presentation_package_conflict' && prepared.conflictCode) return conflictMessages[prepared.conflictCode];
@@ -142,7 +150,8 @@ export function createPresentationRoomController({ client = createPresentationRo
     try {
       const prepared = await read(token, controller.signal); if (!prepared) return false;
       const message = readinessMessage(prepared, context), attempt = attempts.get(state.key);
-      notify({ preflight: prepared, status: message ? 'unavailable' : attempt ? 'uncertain' : 'ready', message: message ?? (attempt ? 'Svaret är osäkert. Försök igen med samma uppgifter.' : null) });
+      notify({ preflight: prepared, status: attempt ? 'uncertain' : message ? 'unavailable' : 'ready',
+        message: attempt ? 'Svaret är osäkert. Kontrollera det tidigare försöket med samma uppgifter innan du skapar något nytt.' : message });
       return !message;
     } catch (error) {
       if (current(token)) notify({ status: 'error', message: error.message });
@@ -172,7 +181,8 @@ export function createPresentationRoomController({ client = createPresentationRo
     },
     refresh,
     async create(expectedKey) {
-      if (locked || !enabled() || expectedKey !== state.key || !state.preflight?.ready || state.preflight.projectRevision !== context.projectRevision
+      const previous = attempts.get(state.key);
+      if (locked || !enabled() || expectedKey !== state.key || !previous && (!state.preflight?.ready || state.preflight.projectRevision !== context.projectRevision)
         || !['ready', 'uncertain', 'error'].includes(state.status)) return null;
       const key = state.key, chosen = structuredClone(context), name = state.name.trim();
       let attempt = attempts.get(key);

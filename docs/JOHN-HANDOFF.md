@@ -7,6 +7,44 @@ Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
 
 ## 1. Aktuellt läge
 
+**Lobby och fast rumsmiljö, 12 oktober (`codex/lobby-room-flow`).**
+Spelarflödet är bolag → spelrum (speltyp + publicerad miljö) → tillåten dealer.
+Insatsnivå är en separat framtida egenskap, inte ett nytt namn på spel eller rum.
+Lobbyn visar publicerade kort även före val, med lås och gråade dealers som
+inte ingår i valt rum. Minst fyra kortplatser syns; tomma platser märks Ej publicerad.
+Originalets cirkulära reveal från pekaren och tangentbordsfokus finns tillbaka,
+med samma filter för porträttbild och framtida godkänd video. Parallax finns kvar;
+introsekvensen har återspelningsknapp och räknar sju synliga sekunder. Vid högst
+30 procent av parallaxsträckan börjar video och scroll tillsammans; längre ned
+tar introt inte över. Scrollen följer filmens uppspelningstid och avbryts vid
+manuell input. Dold flik pausar film och rörelse.
+Minskad rörelse stänger av sekvensen. Fasta publicerade bildbakgrunder används
+som rumsbilder; övrig konst är märkt illustration, utan påhittade dealerporträtt.
+
+Admin och lobby härleder miljö från samma publika rumskontrakt. Nya rum via
+Sammansättningar kräver en enda bakgrund och samma standard för alla dealers;
+flera inbakade dealermiljöer räknas inte som en fast miljö. Nytt rum får inte
+samtidigt byta miljö i publicerade rum med samma sammansättning. Använd då en
+separat sammansättning. Exakta idempotenta återförsök bevaras. Befintliga rum,
+paket, spelmotor och mediefiler migreras inte av ändringen.
+
+Färsk publik läsning: Nordic Bets blackjack- och rouletterum tillåter båda tre
+videobakgrunder. De markeras därför med flera miljöval. Att dela upp dessa till
+ett rum per miljö och speltyp är kvarvarande publiceringsarbete; ingen global
+unikhetsregel eller automatisk ompublicering införs. Publika `/lobby` och dess
+routing från PR48 (`003a8bce`) ingår i basen; samma komponenter återanvänds.
+
+Verifierat före leverans: 80 riktade room-API/formtester, 15 miljö/katalogtester,
+båda designytornas typkontroll, designbygge och Lab-produktionsbygge. Isolerat UI-prov: intro spelar
+och autoscroll når 1,6 vyhöjder, låsta kort, rätt dealerutbud, rumsbyte rensar
+gammal spellänk, blackjack/roulette får rätt mål och minskad rörelse stoppar
+sekvensen. 29,9 procent tillåter intro, 30,1 procent behåller positionen; vid
+0,4 sekunders video har scrollen redan börjat. Låst dealer kan visa reveal via
+pekare/fokus utan urval. Isolerad selected-video-mount med reduced motion gav
+noll play()-anrop. Inga konsolfel. Media-probe matchar alla fyra befintliga baslinjer;
+inga nya medietagningar eller läppsynksgodkännanden. Full commit-hook körs vid
+leverans. Produktionsacceptans av denna ändring återstår.
+
 Publik sajt: https://www.scoutgaming.tech (apex `scoutgaming.tech` är 308 till www).
 Vercel-projekt `scoutgaming`. Spelmotor och plånbok: Render `croupier-v2`.
 `/studio` är labbets Next-basePath, inte en produkt. Kort, sko, saldo och

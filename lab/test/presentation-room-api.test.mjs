@@ -113,6 +113,96 @@ async function fixture(options = {}) {
   return { pool, repository, project, administration, roomApi, videoRegistry, prepare, create, payload, publish };
 }
 const status = expected => error => error.statusCode === expected;
+function fixedBackground(project, lane, suffix = '1') {
+  const asset = { schemaVersion: 1, id: '00000000-0000-4000-8000-00000000000' + suffix,
+    role: 'background', label: 'Casino ' + suffix, sha256: suffix.repeat(64), size: 128,
+    contentType: 'image/png', width: 720, height: 1280 };
+  asset.pathname = layerAssetPath(asset);
+  project.layerAssets = [...(project.layerAssets ?? []).filter(row => row.id !== asset.id), asset];
+  lane.layers.background = { enabled: true, mode: 'image', allowed: [asset.id], default: asset.id };
+  return asset;
+}
+
+test('new rooms report their fixed environment and reject multiple backgrounds without writes', async () => {
+  const f = await fixture(), saved = await f.repository.readDocument('project');
+  const lane = saved.value.lanes.find(row => row.id === 'vip-presentation');
+  const first = fixedBackground(saved.value, lane), second = fixedBackground(saved.value, lane, '2');
+  lane.layers.background = { enabled: true, mode: 'image', allowed: [first.id], default: first.id };
+  lane.operatorAdjustable.push('background'); // A singleton grant cannot broaden the environment.
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  const ready = await f.prepare();
+  assert.equal(ready.ready, true);
+  assert.deepEqual(ready.environment, { kind: 'image', fixed: true, label: 'Casino 1' });
+  assert.doesNotMatch(JSON.stringify(ready.environment), /pathname|sha256/);
+  const body = await f.payload(), room = await f.create(body);
+  const changed = await f.repository.readDocument('project');
+  const background = changed.value.lanes.find(row => row.id === lane.id).layers.background;
+  background.allowed.push(second.id);
+  await f.repository.saveDocument('project', { value: changed.value, expectedRevision: changed.revision, actor: session.user });
+  const before = f.pool.snapshot(), blocked = await f.prepare();
+  assert.equal(blocked.reason, 'presentation_room_environment_required'); assert.equal(blocked.ready, false);
+  assert.equal(blocked.environment.fixed, false); assert.equal(blocked.rooms[0].id, room.room.id);
+  await assert.rejects(f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' })),
+    error => error.statusCode === 422 && error.code === 'studio_presentation_room_environment_required');
+  assert.deepEqual(f.pool.snapshot(), before);
+  assert.equal((await f.create(body)).duplicate, true);
+  assert.deepEqual(f.pool.snapshot(), before, 'old frozen room retries never apply the new room requirement');
+});
+
+test('a background playback switch and a missing default cannot create a fixed-environment room', async () => {
+  for (const mode of ['missing-default', 'dynamic']) {
+    const f = await fixture(), saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
+    const first = fixedBackground(saved.value, lane), second = fixedBackground(saved.value, lane, '2');
+    lane.layers.background = { enabled: true, mode: 'image', allowed: [first.id], default: mode === 'missing-default' ? null : first.id };
+    if (mode === 'dynamic') {
+      second.contentType = 'video/mp4'; second.pathname = layerAssetPath(second);
+      lane.layers.background.allowed.push(second.id);
+      lane.backgroundPlayback = { schemaVersion: 1, rules: [{ id: 'casino-switch', assetId: second.id,
+        trigger: { everyMs: 10000 }, maxDurationMs: 1000, cooldownMs: 10000, maxPerMinute: 1, maxSecondsPerMinute: 1 }] };
+    }
+    await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+    const before = f.pool.snapshot(), ready = await f.prepare();
+    assert.equal(ready.reason, 'presentation_room_environment_required');
+    await assert.rejects(f.create(await f.payload()), error => error.code === 'studio_presentation_room_environment_required');
+    assert.deepEqual(f.pool.snapshot(), before);
+  }
+});
+
+test('baked environments are explicit and multiple dealers do not prove a shared scene', async () => {
+  const f = await fixture(), ready = await f.prepare();
+  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
+  const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
+  lane.dealers = ['astrid', 'vera']; lane.layers.dealer.allowed = ['astrid', 'vera'];
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  const blocked = await f.prepare(), before = f.pool.snapshot();
+  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
+  assert.equal(blocked.reason, 'presentation_room_environment_required');
+  await assert.rejects(f.create(await f.payload()), error => error.code === 'studio_presentation_room_environment_required');
+  assert.deepEqual(f.pool.snapshot(), before);
+});
+
+test('new rooms reuse an unchanged fixed scene but cannot replace an existing rooms frozen multi-environment', async () => {
+  const f = await fixture(), saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
+  const first = fixedBackground(saved.value, lane), second = fixedBackground(saved.value, lane, '2');
+  lane.layers.background = { enabled: true, mode: 'image', allowed: [first.id], default: first.id };
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  const body = await f.payload(), original = await f.create(body);
+  const same = await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  assert.notEqual(same.room.id, original.room.id);
+  const raw = f.pool.snapshot().packages.at(-1), frozen = readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding) });
+  // Model a valid historical publication made before the singleton requirement.
+  frozen.lanes[0].layers.background.allowed.push(second.id); frozen.assets.push(second);
+  await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: raw.package_revision,
+    lanes: JSON.parse(raw.lanes), games: JSON.parse(raw.games), tables: JSON.parse(raw.tables), branding: withPackagePresentation({}, frozen) });
+  const before = f.pool.snapshot(), ready = await f.prepare();
+  assert.equal(ready.reason, 'presentation_package_conflict');
+  assert.equal(ready.conflictCode, 'presentation_room_environment_conflict'); assert.equal(ready.ready, false);
+  assert.equal(ready.rooms.length, 2);
+  await assert.rejects(f.create(await f.payload({ idempotencyKey: '0ccc0000-1111-4222-8333-444444444444' })),
+    error => error.statusCode === 409 && error.code === 'studio_presentation_room_environment_conflict');
+  assert.equal((await f.create(body)).duplicate, true);
+  assert.deepEqual(f.pool.snapshot(), before, 'new-room validation and replay cannot republish existing rooms');
+});
 
 test('roulette creation publishes its game and room atomically, replays once and preserves blackjack',async()=>{
   const requested=[];
@@ -624,6 +714,7 @@ test('a saved Vera-Johanna-Astrid presentation can add a room while preserving t
   const saved=await f.repository.readDocument('project'), project=clone(saved.value), mobile=project.lanes.find(lane=>lane.id==='mobile-phone');
   mobile.dealers=['vera','johanna','astrid'];mobile.layers.dealer={enabled:true,default:'vera',allowed:[...mobile.dealers]};
   mobile.composition=defaultCompositionSettings();
+  fixedBackground(project, mobile);
   await f.repository.saveDocument('project',{actor:session.user,expectedRevision:saved.revision,value:project});
   const prepared=await f.prepare('north','mobile-phone');assert.equal(prepared.ready,true);assert.equal(prepared.reason,null);
   const created=await f.create({operatorId:'north',presentationLaneId:'mobile-phone',name:'Jackes spelrum',
@@ -692,6 +783,7 @@ test('unknown internal conflicts remain generic and never reflect raw errors or 
 test('room preflight accepts a saved v3 allowed default change on the existing Astrid room without writes', async () => {
   const f=await registeredFixture(), saved=await f.repository.readDocument('project'), lane=saved.value.lanes.find(row=>row.id===f.lane.id);
   lane.dealers=['astrid','johanna'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','johanna']};
+  fixedBackground(saved.value, lane);
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
   const created=await f.create(await f.registeredPayload()), changed=await f.repository.readDocument('project');
   changed.value.lanes.find(row=>row.id===f.lane.id).layers.dealer.default='johanna';

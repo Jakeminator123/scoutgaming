@@ -1,5 +1,6 @@
 import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../web/public-operator-rooms.mjs';
 import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
+import { roomEnvironment } from '../../web/public/room-environment.mjs';
 import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
 import { isPresentationRoom, roomGame, resolvePackageRoom } from '../../web/presentation-room-contract.mjs';
 import { readPackagePresentation } from '../../web/storage/presentation-package.mjs';
@@ -70,6 +71,7 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     return { id: row.id, name: row.name, operatorId: row.operatorId, game: roomGame(row), state: row.state,
       compositionId: row.presentationLaneId, laneId: row.gameLaneId, published, playable: Boolean(playable),
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
+      environment: playable ? roomEnvironment(playable, operator.slug) : null,
       playUrl: playable?.playUrl ?? null };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
