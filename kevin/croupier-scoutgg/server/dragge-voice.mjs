@@ -86,8 +86,8 @@ export function draggeWarm(dealer = 'dragge') {
   lipsync({ op: 'lipsync', wav_b64: wav(pcm).toString('base64'), crf: 13, preset: 'ultrafast' }, fetch, dealer).catch(() => { warmedAt[dealer] = 0; });
 }
 
-/** mp4 url in answersDir with Dragge saying `text`, or throws. */
-export async function draggeSay(text, language, answersDir, { fetchImpl = fetch, dealer = 'dragge' } = {}) {
+/** His voice saying `text`: s16le mono at RATE, at -16 LUFS (Emil's recipe), or throws. */
+export async function draggeVoice(text, language, { fetchImpl = fetch, dealer = 'dragge' } = {}) {
   const VOICE = DEALER_VOICES[dealer].voice, read = voiceRead(dealer, language);
   const tts = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_${RATE}`, {
     method: 'POST', headers: { 'xi-api-key': XI(), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
@@ -95,9 +95,14 @@ export async function draggeSay(text, language, answersDir, { fetchImpl = fetch,
       voice_settings: read.settings }),
   });
   if (!tts.ok) throw new Error(`voice ${tts.status}`);
-  // Emil's lip-sync recipe (LAPPSYNK-DRAGAN-PAOW.md): the dry voice at -16 LUFS with one fixed gain, encoded at crf 13.
+  // Emil's lip-sync recipe (LAPPSYNK-DRAGAN-PAOW.md): the dry voice at -16 LUFS with one fixed gain.
+  return normalizePcm16(Buffer.from(await tts.arrayBuffer()), RATE).pcm;
+}
+
+/** mp4 url in answersDir with Dragge saying `text`, or throws. */
+export async function draggeSay(text, language, answersDir, { fetchImpl = fetch, dealer = 'dragge' } = {}) {
   // crf 13 costs nothing on the worker's NVENC; ultrafast keeps a worker without NVENC at ~4 s instead of ~7.5 s.
-  const { pcm } = normalizePcm16(Buffer.from(await tts.arrayBuffer()), RATE);
+  const pcm = await draggeVoice(text, language, { fetchImpl, dealer });
   const t0 = Date.now();
   if (onPod(dealer)) {
     const { mp4, meta } = await podLipsync(dealer, pcm);

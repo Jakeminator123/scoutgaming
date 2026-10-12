@@ -9,6 +9,7 @@ import { createGameAudit } from './game-audit.mjs';
 import { planDraws, outcomeSpeech, total } from '../public/game-events.js';
 import {dealerLanguage,availableLanguages,speechForEvent} from '../public/dealer-language.js';
 import {DEFAULT_LIMITS} from './studio-tables.mjs';
+import {scheduleTalks,LJUD_FORE} from './rorlig-lipsync.mjs';
 
 const emptyBets = () => Array.from({length:7},()=>({main:0,pp:0,tp:0}));
 const sum = b => b.main+b.pp+b.tp;
@@ -35,7 +36,11 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // limitsFor(room): the betting limits that room plays with (studio-tables.mjs); the default is the demo's original.
 // languageFor(room): the dealer language a new room opens in (a studio table's choice); players can still change it.
 // readyFor(room): a ready dealer's take lengths (meta.json frames) when the room is his studio table, else null.
-export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null}={}) {
+// talk(room): {line(clip, language)} when the room's ready dealer can speak over his moving clips (rorlig-lipsync.mjs), else
+// null; onPlan(room, plan, ready, {nya, omplanera, steg}) then hands the new lines to the lip-sync worker, and the lines still
+// speaking when the new plan's cards come (their frames changed) for a new map; steg = the previous plan's steps + this one's.
+// The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
+export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{}}={}) {
   const db=new DatabaseSync(filename);
   db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS shared_players (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, seen REAL NOT NULL, last_return REAL, PRIMARY KEY(room,token));
@@ -97,10 +102,15 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // halfway. Give that plan time for one more poll; a player's own move keeps the short lead.
     const draws=planDraws(before,r.round,opening);
     const steps=[];let at=now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:700);
-    const addClip=(clip,meta={})=>{if(!clip)return;const duration=Math.max(.1,Number(clip.dur)||3)*1000;steps.push({...meta,kind:meta.kind??'speech',clip:{id:clip.id,event:clip.event,url:clip.url,dur:duration/1000,text:clip.text,sound:!['deal','reveal','hands'].includes(meta.kind)},startAt:at,endAt:at+duration});at+=duration+80;};
+    const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[];
+    const addClip=(clip,meta={})=>{if(!clip)return;
+      // Emil 12 Oct: a ready dealer with a warm lip-sync worker says the line WHILE he deals. It leaves the timeline and is
+      // timed after readyTimeline (scheduleTalks); no line of his own in that language -> it stays a step as before.
+      if(talker&&(meta.kind??'speech')==='speech'){const line=talker.line(clip,dealerLanguage(r.language));if(line){talks.push({after:steps.length,event:clip.event,clip:{id:clip.id,url:clip.url,text:clip.text},line:line.url,lang:line.lang,dur:line.dur});return;}}
+      const duration=Math.max(.1,Number(clip.dur)||3)*1000;steps.push({...meta,kind:meta.kind??'speech',clip:{id:clip.id,event:clip.event,url:clip.url,dur:duration/1000,text:clip.text,sound:!['deal','reveal','hands'].includes(meta.kind)},startAt:at,endAt:at+duration});at+=duration+80;};
     prefix.forEach(e=>addClip(clipByEvent(e,r.language)));
     // Before the first card a ready dealer shows both hands empty (Serhiy): his take goes rest to rest.
-    const ready=readyFor(contexts.get(r).id),hands=ready?.hands;
+    const hands=ready?.hands;
     if(opening&&hands&&ready.dir)addClip({id:'hands',event:'hands',url:`${ready.dir}hands.mp4`,dur:hands/24},{kind:'hands'});
     for(const s of draws) {
       if(s.kind==='deal')addClip(manifest.deal.find(c=>c.id===s.clipId),{kind:'deal',seat:s.seat,track:s.track,shoeDraw:s.shoeDraw});
@@ -113,10 +123,16 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
+    const spoken=talks.length?scheduleTalks(talks,steps,{free:Math.max(r.talkUntil??0,now()+1200),end:at}).map(t=>({id:randomUUID(),kind:'line',...t})):[];
+    if(spoken.length)r.talkUntil=spoken.at(-1).endAt+250;
+    const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
+    const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
+    r.talk=[...live,...spoken];r.prevSteps=r.plan?.steps??[];
     r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at};
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
     r.version++;
+    if(spoken.length||omplanera.length)onPlan(roomId,r.plan,ready,{nya:spoken,omplanera,steg:[...r.prevSteps,...steps]});
   }
   function start(id,r) {
     if(r.phase!=='bets'||!r.bets.some(b=>b.main))throw new Error('Place your bets please');
@@ -195,7 +211,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const all=players(id),me=all.find(p=>p.token===token);
     const roster=all.filter(p=>owned(r,p.id).length).map(p=>({id:p.id,name:p.name,seats:owned(r,p.id),online:now()-p.seen<15000,ready:r.ready.includes(p.id)}));
     const insuranceDue=r.phase==='round'&&r.round?.phase==='insurance'&&me&&r.round.hands.some(h=>r.owners[h.box]===me.id)&&!Object.hasOwn(r.insurance,me.id);
-    return {limits:{name:L.name,tableName:L.tableName??null,min:L.min,max:L.max,sideMax:L.sideMax,chips:L.chips,refill:L.balance},session:id,language:dealerLanguage(r.language),availableLanguages:languages,pausedUntil:pausedUntil(token),roundId:r.roundId??null,actionMs,version:r.version,serverNow:now(),demo:true,phase:r.phase,players:roster,owners:r.owners,bets:r.bets,round:r.round,shoe:gameView(r.game).shoe,plan:r.plan,deadline:r.deadline,actionDeadline:r.actionDeadline,insuranceDue:Boolean(insuranceDue),me:me?{id:me.id,name:me.name,leaving:(r.leaving??[]).includes(me.id),balance:me.balance,seats:owned(r,me.id),boxesAfterRound:r.boxesAfterRound?.[me.id]??null,repeatable:Object.keys(r.lastBets?.[me.id]??{}).some(i=>owned(r,me.id).includes(Number(i))),lastReturn:me.last_return,lastSettlement:JSON.parse(db.prepare('SELECT receipt FROM shared_settlements WHERE room=? AND player_id=? ORDER BY rowid DESC LIMIT 1').get(id,me.id)?.receipt??'null')}:null};
+    return {limits:{name:L.name,tableName:L.tableName??null,min:L.min,max:L.max,sideMax:L.sideMax,chips:L.chips,refill:L.balance},session:id,language:dealerLanguage(r.language),availableLanguages:languages,pausedUntil:pausedUntil(token),roundId:r.roundId??null,actionMs,version:r.version,serverNow:now(),demo:true,phase:r.phase,players:roster,owners:r.owners,bets:r.bets,round:r.round,shoe:gameView(r.game).shoe,plan:r.plan,talk:(r.talk??[]).filter(t=>t.endAt>now()-2000),deadline:r.deadline,actionDeadline:r.actionDeadline,insuranceDue:Boolean(insuranceDue),me:me?{id:me.id,name:me.name,leaving:(r.leaving??[]).includes(me.id),balance:me.balance,seats:owned(r,me.id),boxesAfterRound:r.boxesAfterRound?.[me.id]??null,repeatable:Object.keys(r.lastBets?.[me.id]??{}).some(i=>owned(r,me.id).includes(Number(i))),lastReturn:me.last_return,lastSettlement:JSON.parse(db.prepare('SELECT receipt FROM shared_settlements WHERE room=? AND player_id=? ORDER BY rowid DESC LIMIT 1').get(id,me.id)?.receipt??'null')}:null};
   }
   function readGameState(room='astrid',token=null,displayName=null) {
     const id=sessionName(room),row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);
@@ -343,7 +359,23 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     db.exec('BEGIN IMMEDIATE');try{const r=load(id);advance(id,r);save(id,r);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');}
   }}
   // snapshot: a visitor without a guest cookie (not seated yet) sees the table as a guest.
-  return{run,tick,readGameState,hasRoom:room=>Boolean(db.prepare('SELECT 1 FROM shared_rooms WHERE id=?').get(String(room).toLowerCase())),language:session=>load(sessionName(session)).language,snapshot:(session,token)=>{const id=sessionName(session);return view(id,load(id),token?keyFor(token):null);},presentationContext:(room='astrid')=>{
+  /**
+   * An answer spoken over whatever the dealer shows (rorlig-lipsync.mjs): it joins the room's talk track at the next free
+   * moment. Outside a round it is flexible: each viewer starts it once his dealer is at rest (idles are per viewer).
+   * → {talk, steg (the steps it may run over), ready} for the lip-sync worker.
+   */
+  function addTalk(session,input) {
+    const id=sessionName(session);
+    db.exec('BEGIN IMMEDIATE');
+    try{
+      const r=load(id),start=Math.round(Math.max(now()+1200,r.talkUntil??0)),tid=randomUUID();
+      const talk={id:tid,kind:'answer',...input,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:r.phase!=='round',ljud:`/api/lip/${tid}/ljud`};
+      r.talk=[...(r.talk??[]).filter(t=>t.endAt>now()),talk];r.talkUntil=talk.endAt+250;
+      save(id,r);db.exec('COMMIT');
+      return{talk,steg:[...(r.prevSteps??[]),...(r.plan?.steps??[])],ready:readyFor(id)};
+    }catch(e){db.exec('ROLLBACK');throw e;}
+  }
+  return{run,tick,readGameState,addTalk,hasRoom:room=>Boolean(db.prepare('SELECT 1 FROM shared_rooms WHERE id=?').get(String(room).toLowerCase())),language:session=>load(sessionName(session)).language,snapshot:(session,token)=>{const id=sessionName(session);return view(id,load(id),token?keyFor(token):null);},presentationContext:(room='astrid')=>{
     const row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(sessionName(room));
     const r=row?JSON.parse(row.state):null;
     return {room,language:dealerLanguage(r?.language),roundId:r?.roundId??null,parent:db.prepare('SELECT seq FROM audit_events WHERE room=? ORDER BY seq DESC LIMIT 1').get(room)?.seq??null,sessionRevision:String(r?.version??0),roundRevision:`${r?.roundId??'none'}:${r?.version??0}`,phase:r?.plan&&r.plan.endAt>now()?'dealing':r?.round?.phase??r?.phase??'idle'};

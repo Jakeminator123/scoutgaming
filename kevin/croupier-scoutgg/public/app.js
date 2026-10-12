@@ -14,6 +14,7 @@ import { createTableBoxes } from "./table-boxes.js";
 import { createSharedGameTable,tableSession } from "./shared-table.js";
 import { createVideoBuffer, tableVideoSources } from "./video-buffer.js";
 import { createMediaFetch } from "./media-fetch.js";
+import { createLipTracks } from "./lip-layer.js";
 import { createVideoPreloader, initialVideoOffset } from "./video-preloader.js";
 import { createPlaybackRecovery } from "./playback-recovery.js";
 import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer, PUBLIC_HIDDEN } from "./dealers.js";
@@ -40,6 +41,8 @@ let tableBoxes, gameTable;
 let finishCurrent = null;
 let playing = null;              // the clip play() is on, and whether it has started (chat answers yield to the table)
 const voiceOvers = new Set();    // answers still talking as sound after the table took the screen
+// A ready dealer speaking his lines over his clips (server/rorlig-lipsync.mjs): the mouth patches for the dealer layer.
+const lips = dealer.ready ? createLipTracks() : null;
 
 // ------------------------------------------------------------------ spelaren ---
 const queue = [];           // { url, sound, text, kind }
@@ -224,6 +227,7 @@ async function play(item) {
 // The alternative dealer's own lines (greeting, remarks, banter) in the table's language.
 let greeted = false;
 function remarkNow(id) {
+  if (gameTable?.talking) return;   // he is already speaking over his clips (state.talk): no second voice on top
   const url = id && dealerExtraLineUrl(id, $('#dealerLanguage').value);
   if (url) enqueue({ url, sound: true, kind: 'remark', text: null });
 }
@@ -262,7 +266,9 @@ setInterval(() => {
 document.addEventListener("visibilitychange", () => { if (!document.hidden) recoverPlayback(); });
 
 let captionUntil = 0;   // a text-only line's caption stays this long (dealer without recorded lines)
+let talkCaption = null, talkCaptionUntil = 0;   // a line spoken over the clips keeps its caption while the clips change under it
 function showCaption(text) {
+  if (!text && Date.now() < talkCaptionUntil) text = talkCaption;
   caption.textContent = (text ?? "").replace(/—/g, ", ");
   caption.classList.toggle("on", Boolean(text));
 }
@@ -333,8 +339,12 @@ function connect() {
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + `/?session=${encodeURIComponent(tableSession)}`);
   ws.onopen = () => { tries = 0; const n = store.get("astrid.name"); if (n) ws.send(JSON.stringify({ t: "name", name: n }));
     if (["dragge", "paow"].includes(dealer.id)) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); };   // wakes his lip-sync GPU before the first question
+  ws.binaryType = "arraybuffer";
+  let lipMeta = null;   // a {t:'lip'} piece whose bytes come in the next binary frame
   ws.onmessage = (ev) => {
+    if (ev.data instanceof ArrayBuffer) { if (lipMeta) lips?.push(lipMeta, new Uint8Array(ev.data)); lipMeta = null; return; }
     const j = JSON.parse(ev.data);
+    if (j.t === "lip" && j.bytes) { lipMeta = j; return; }
     switch (j.t) {
       case "hello":
         me = j.name; if (!who.value) who.value = me;
@@ -343,6 +353,7 @@ function connect() {
         setThinking(j.thinking, j.queued);
         break;
       case "notice": sys(j.text); break;
+      case "lip": lips?.push(j); break;
       case "named": me=j.name;who.value=me;break;
       case "said": render(j); break;
       case "reply":   // håll texten tills den färdiga röst/läppsynken kan börja spelas
@@ -352,6 +363,8 @@ function connect() {
         pending.delete(j.id);
         // A dealer's own clip (Dragge) only plays for viewers who chose that dealer; others just read the text.
         if ((j.dealer ?? 'astrid') !== dealer.id) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
+        // Spoken over his clips (state.talk): the words appear when he starts saying them (speak above).
+        if (j.talk) break;
         // No clip (Paow, or his voice was not ready in time): show the words now, never behind a deal.
         if (isAlternative && !j.url) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
         // Its length decides when it may start (chat-priority.js); Astrid's answers carry it, the others' clips are read.
@@ -452,6 +465,27 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
     warmPlan:plan=>{for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
     playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
+    // A line over the clips: its sound plays on top of the deal, no idle starts until it ends. True when this viewer hears
+    // the language the mouth was synced to (else the line plays without the mouth).
+    lips,
+    atRest:()=>!running&&!loading,
+    hold:ms=>{holdUntil=Math.max(holdUntil,Date.now()+ms);},
+    speak:(t,offsetMs,remainMs)=>{
+      const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
+      if(!url)return false;
+      if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them
+      // one voice at a time: a remark of his still waiting or playing gives way to the talk track
+      for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
+      if(currentItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
+      const a=new Audio(url),at=performance.now();a.preload='auto';a.dataset.voiceOver='1';a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
+      a.addEventListener('loadedmetadata',()=>{const o=(offsetMs+performance.now()-at)/1000;if(o>.15)a.currentTime=Math.min(o,a.duration||o);},{once:true});
+      const end=()=>{voiceOvers.delete(a);if(!voiceOvers.size&&!currentItem?.sound)audio.speech(false);};
+      a.onended=a.onerror=end;voiceOvers.add(a);a.play().then(()=>audio.speech(true)).catch(end);
+      holdUntil=Math.max(holdUntil,Date.now()+remainMs+300);
+      const words=t.clip?.text??t.text;
+      if(words){talkCaption=words;talkCaptionUntil=Date.now()+remainMs;showCaption(words);setTimeout(()=>{if(Date.now()>=talkCaptionUntil&&caption.textContent===talkCaption.replace(/—/g,', '))showCaption(null);},remainMs+50);}
+      return t.kind==='answer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
+    },
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
     onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;remarkNow(greetingFor(name));}},
@@ -492,7 +526,7 @@ $("#toggleChat").addEventListener("click", e => {
     const at = Object.fromEntries(m.deal.map(d => [d.id.replace("deal_pos", "").replace("deal_", ""), [d.kort.cx, d.kort.cy]]));
     at.dealer = at.dealer ?? [540, 895]; at.hole = [540, 895];
     createDealerLayer({ stage: document.querySelector("#stage"), still: dealer.keyed.still, land: dealer.land, cardAt: t => at[t], faceAt: faceAtTime, scale: dealer.layerScale ?? .8, inFrames: dealer.ready?.in ?? 0, finished: !!dealer.ready,
-      keyHalf: dealer.ready?.card ? [Math.ceil(dealer.ready.card[0] / 2) + 4, Math.ceil(dealer.ready.card[1] / 2) + 4] : [38, 48] });
+      keyHalf: dealer.ready?.card ? [Math.ceil(dealer.ready.card[0] / 2) + 4, Math.ceil(dealer.ready.card[1] / 2) + 4] : [38, 48], lips });
   }).catch(() => {});
   // A studio table keeps the dealer it was built with (its deals are timed on his takes).
   const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS).filter(d => !PUBLIC_HIDDEN.includes(d.id));   // Mårten only on his own studio tables

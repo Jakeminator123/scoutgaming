@@ -24,7 +24,7 @@ import {speechBank} from '../public/dealer-language.js';
 import { factId, tableFact, roundResult } from './table-facts.mjs';
 import { dealerTalk } from './dealer-chat.mjs';
 import { createDealerMemory } from './dealer-memory.mjs';
-import { draggeSay, draggeVoiceReady, draggeWarm, hasVoice, useLipsyncPod } from './dragge-voice.mjs';
+import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
@@ -36,6 +36,7 @@ import { auditAuthorized } from './audit-access.mjs';
 import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
+import { RorligLipsync, kartaFor } from './rorlig-lipsync.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -72,7 +73,29 @@ const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Pla
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
 const READY_TAKES=Object.fromEntries(['dragge','paow','marten'].map(id=>{try{return [id,{...JSON.parse(readFileSync(path.join(PUBLIC,'media','dealers',id,'v2','meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`}];}catch{return [id,null];}}));
-const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null});
+// Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
+// on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
+let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
+const dealerOf = room => studioTables.get(room)?.dealer ?? room;
+const rorligOn = () => process.env.RORLIG !== "0" && Boolean(process.env.RORLIG_ENDPOINT_ID || process.env.RORLIG === "1" || /(^|\/\/|\.)staging\./.test(publicOrigin));
+const rorlig = process.env.RUNPOD_API_KEY && !localQA ? new RorligLipsync({
+  endpointId: process.env.RORLIG_ENDPOINT_ID ?? "mq7eiwanda72fg",
+  apiKey: process.env.RUNPOD_API_KEY,
+  publicBase: () => publicOrigin,
+  publicDir: PUBLIC,
+  dealers: (process.env.RORLIG_DEALERS ?? "paow").split(",").map(s => s.trim()).filter(Boolean),
+  log: s => console.log(s),
+  // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
+  // round queued behind the clip downloads and came too late for the first frames
+  onPiece: (room, talk, meta, bytes) => { for (const c of clients) if (c.session === room && c.readyState === WebSocket.OPEN) { c.send(JSON.stringify({ t: "lip", talk, ...meta, bytes: true })); c.send(bytes); } },
+}) : null;
+const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
+  talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
+  onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
+    const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
+    for(const t of nya)rorlig.speak(d,room,t,karta(t));
+    // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes
+    for(const t of omplanera)if(rorlig.index(t.id))rorlig.speak(d,room,t,karta(t));}});
 const dealerGameTools=createDealerGameTools(shared);
 const table = createTableService(tableDb, {shared});
 const tableTick = setInterval(()=>shared.tick(),250);
@@ -171,6 +194,20 @@ async function talkReply(ws, text, dealer) {
   }
   remember({ who: "astrid", text: reply },ws.session);
   const out=m=>fid?send(ws,m):broadcast(m,ws.session);
+  // Emil 12 Oct: with a warm lip-sync worker on the moving clips he answers over whatever he shows, also while he deals:
+  // the voice joins the table's talk track and the worker syncs his mouth to those very frames (rorlig-lipsync.mjs).
+  // A fact about the asker's own game stays private (his clip, to him only), so it keeps the old path.
+  if(!fid&&talk&&rorlig&&rorligOn()&&rorlig.ready(dealer)&&hasVoice(dealer)&&draggeVoiceReady(dealer)){
+    try{
+      const pcm=await draggeVoice(reply,language,{dealer});
+      const {talk:spoken,steg,ready}=shared.addTalk(ws.session,{text:reply,lang:language,dur:pcm.length/48000});
+      rorlig.activity(dealer);
+      rorlig.speak(dealer,ws.session,spoken,kartaFor(steg,spoken.kartaStart,Math.ceil((spoken.endAt-spoken.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]}),{pcm});
+      out({t:'answer',id,to:ws.name,text:reply,dealer,talk:spoken.id});
+      send(ws,{t:'thinking',on:false,queued:0});
+      return;
+    }catch(e){console.log(`läppsynk rörlig: svaret tar den vanliga vägen (${e.message})`);}
+  }
   // His lip-synced voice when it is ready in time; a cold GPU never keeps the player waiting for the words.
   const clip=hasVoice(dealer)&&draggeVoiceReady(dealer)&&(fid||talk)?draggeSay(reply,language,ANSWERS,{dealer}).catch(()=>null):null;   // Dragge and Paow speak; Astrid keeps her pipeline
   const voiced=clip?await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]):null;
@@ -337,6 +374,23 @@ async function api(req, res, route) {
   }
   // MEDIA_BASE_URL (e.g. https://media.scoutgg.dev): where the game fetches dealer clips; empty = this host. Unset it to go back.
   if (req.method === "GET" && route === "clips") return json(res, 200, { ...MANIFEST, mediaBase: process.env.MEDIA_BASE_URL ?? "" });
+  // Mouth patches of a line spoken over the moving clips: the index (catch-up for a late viewer) and each 0.5 s piece.
+  if (req.method === "GET" && route.startsWith("lip/") && rorlig) {
+    const [, id, del] = route.split("/");
+    if (!/^[0-9a-f-]{36}$/.test(id ?? "")) return json(res, 404, { error: "okänd replik" });
+    if (del === undefined) { const ix = rorlig.index(id); return ix ? json(res, 200, ix) : json(res, 404, { error: "okänd replik" }); }
+    if (del === "ljud") {
+      const wav = rorlig.wav(id);
+      if (!wav) return json(res, 404, { error: "inget ljud" });
+      res.writeHead(200, { "Content-Type": "audio/wav", "Content-Length": wav.length, "Cache-Control": "private, max-age=600" });
+      return res.end(wav);
+    }
+    const piece = rorlig.piece(id, Number(del), Number(new URL(req.url, "http://x").searchParams.get("v")) || 0);
+    if (!piece) return json(res, 404, { error: "ingen sådan bit" });
+    res.writeHead(200, { "Content-Type": "application/octet-stream", "Cache-Control": "private, max-age=600" });
+    return res.end(piece.bytes);
+  }
+  if (req.method === "GET" && route === "lipsync-status") return json(res, 200, { rorlig: rorlig ? { on: rorligOn(), origin: publicOrigin || null, dealers: rorlig.status() } : null });
   if (req.method === "GET" && route === "health") {
     return json(res, 200, { ok: true, demo: true });
   }
@@ -411,6 +465,8 @@ async function api(req, res, route) {
   try { b = await body(req); } catch (e) { return json(res, 400, { error: e.message }); }
   try {
     if (route === "table") {
+      // a move at a table whose dealer speaks over his clips keeps (or wakes) his lip-sync worker; watching alone does not
+      if (rorlig && b?.op && b.op !== "state" && rorligOn()) { try { rorlig.activity(dealerOf(sessionName(b.session ?? "astrid"))); } catch {} }
       const out = table.handle(req, res, b);
       if ((b?.op === "join" || b?.op === "leave") && sidOf(req.headers)) {
         // A first visit gets its guest cookie in this very response: take it from there, so the rounds can be linked.
@@ -459,6 +515,8 @@ async function handleHttp(req, res) {
   res.setHeader('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:${MEDIA_ORIGIN}; connect-src 'self'${MEDIA_ORIGIN}; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`);
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
+  // the lip-sync worker dials this server back: remember the public https origin visitors reach it on (Caddy in front)
+  if (rorlig && !process.env.RORLIG_PUBLIC_URL && req.headers["x-forwarded-proto"] === "https" && /^[a-z0-9.-]+(:\d+)?$/i.test(req.headers.host ?? "")) publicOrigin = `https://${req.headers.host}`;
   if (p.startsWith("/api/")) { api(req, res, p.slice(5)).catch(() => json(res, 500, { error: "Request could not be completed" })); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.
@@ -520,6 +578,7 @@ const workers = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, socket, head) => {
   let url; try { url = new URL(req.url, "http://x"); } catch { socket.destroy(); return; }
   if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => (pod ?? lip).adoptWorker(ws, url));
+  else if (url.pathname === "/lipsync-rorlig" && rorlig) workers.handleUpgrade(req, socket, head, (ws) => rorlig.adoptWorker(ws, url));
   else {
     try { if(!sameOrigin(req)){socket.destroy();return;} }
     catch {socket.destroy();return;}

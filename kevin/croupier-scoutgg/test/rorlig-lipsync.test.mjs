@@ -1,0 +1,126 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createSharedTable} from '../server/shared-table.mjs';
+import {mp4Duration,dealerLine,takeOf,kartaFor,scheduleTalks,LJUD_FORE} from '../server/rorlig-lipsync.mjs';
+import {splitAccessUnits} from '../public/lip-layer.js';
+
+// Emil 12 Oct: a ready dealer says his lines while he deals; the mouth is a patch per frame, tagged with take and frame.
+
+test('an mp4 tells its length from its movie header', () => {
+  const b=Buffer.alloc(40);b.write('mvhd',4);b[8]=0;b.writeUInt32BE(1000,20);b.writeUInt32BE(3413,24);
+  assert.equal(mp4Duration(b),3.413);
+  const v1=Buffer.alloc(48);v1.write('mvhd',4);v1[8]=1;v1.writeUInt32BE(24000,28);v1.writeBigUInt64BE(81920n,32);
+  assert.equal(mp4Duration(v1),81920/24000);
+  assert.equal(mp4Duration(Buffer.from('no header')),null);
+});
+
+test("a manifest line maps to the dealer's own take in the table language, English when he has none in it", () => {
+  const dir={linesDir:'/media/dealers/paow/repliker/',langs:['sv','en']};
+  assert.deepEqual(dealerLine('/media/repliker/goodluck_2.mp4','sv',dir),{id:'goodluck_2',lang:'sv',url:'/media/dealers/paow/repliker/sv/goodluck_2.mp4'});
+  assert.equal(dealerLine('/media/repliker-es/bust_1_es.mp4','es',dir).url,'/media/dealers/paow/repliker/en/bust_1.mp4');
+  assert.equal(dealerLine('/media/deal/pos4.mp4','sv',dir),null);
+});
+
+test('a step names the take file the dealer plays, variant included', () => {
+  assert.equal(takeOf({clip:{url:'/media/deal/pos4.mp4'},variant:'iv'}),'pos4-iv');
+  assert.equal(takeOf({clip:{url:'/media/deal/hole.mp4'},variant:''}),'hole');
+  assert.equal(takeOf({clip:{url:'/media/repliker/bust_1.mp4'}}),null);
+});
+
+test('the frame map follows the takes, holds the last frame in a gap and rests after a take that ends at rest', () => {
+  const ms=f=>f*1000/24;
+  const steps=[
+    {kind:'deal',clip:{url:'/media/deal/pos6.mp4'},variant:'i',startAt:1000,endAt:1000+ms(60)},
+    {kind:'deal',clip:{url:'/media/deal/pos4.mp4'},variant:'',startAt:1000+ms(60),endAt:1000+ms(99)},
+    {kind:'deal',clip:{url:'/media/deal/pos2.mp4'},variant:'u',startAt:1000+ms(99)+80,endAt:1000+ms(159)+80},
+  ];
+  const k=kartaFor(steps,1000+ms(50),130);
+  assert.deepEqual(k[0],['pos6-i',50,10]);
+  assert.deepEqual(k[1],['pos4',0,39]);
+  // the 80 ms gap: pos4's last frame stays on screen (two frames of 41.7 ms)
+  assert.deepEqual(k.slice(2,4).map(x=>x.join()),['pos4,38,1','pos4,38,1']);
+  assert.equal(k[4][0],'pos2-u');
+  assert.deepEqual(k.at(-1)[0],'vila','after a take that ends at rest he rests');
+  assert.equal(k.reduce((n,x)=>n+x[2],0),130);
+  assert.deepEqual(kartaFor(steps,0,5),[['vila',0,5]],'before the plan he rests');
+});
+
+test('lines are timed over the cards: before the first card while he reaches, after a card once it landed, never overlapping', () => {
+  const steps=[{clip:{},startAt:1000,endAt:3000},{clip:{},startAt:3000,endAt:4000}];
+  const [a,b,c]=scheduleTalks([{after:0,dur:3},{after:1,dur:2},{after:2,dur:1}],steps,{free:0,end:4000});
+  assert.equal(a.startAt,1600);assert.equal(a.endAt,4600);assert.equal(a.kartaStart,1600-LJUD_FORE*1000);
+  assert.equal(b.startAt,4850,'the bust line waits for the line before it');
+  assert.equal(c.startAt,b.endAt+250);
+  assert.equal(scheduleTalks([{after:0,dur:1}],steps,{free:9000})[0].startAt,9000,'a line never starts before the table is free');
+});
+
+const talkManifest={deal:[1,2,3,4,5,6,7,'dealer'].map(i=>({id:`deal_pos${i}`,url:`/media/deal/pos${i}.mp4`,dur:.1})).concat(['hole','flip'].map(i=>({id:`deal_${i}`,url:`/media/deal/${i}.mp4`,dur:.1}))),
+  repliker:['goodluck','bust','win','lose','push','blackjack','dealerblackjack','dealerbust','insurance','sidebet','double'].map(e=>({id:`${e}_1`,event:e,url:`/media/repliker/${e}_1.mp4`,dur:3,text:e})),idle:[]};
+function talkTable(opts={}){
+  const take={'-':39,'-i':60,'-u':60,'-iu':81,'-v':39,'-iv':60},frames=Object.fromEntries(['1','2','3','4','5','6','7','dealer'].map(k=>[k,take]));
+  frames.hole={'-':39,'-i':60,'-u':39,'-iu':60};frames.flip={'-':56,'-i':56,'-u':56,'-iu':56};
+  const ready={frames,restEnd:['hole','flip'],restStart:['flip']};
+  const dir=mkdtempSync(join(tmpdir(),'talk-')),box={warm:true,planned:[],time:100000};
+  const s=createSharedTable(join(dir,'t.sqlite'),{manifest:talkManifest,now:()=>box.time,readyFor:()=>ready,
+    talk:()=>box.warm?{line:clip=>({url:clip.url.replace('/media/repliker/','/media/dealers/paow/repliker/sv/'),lang:'sv',dur:3.2})}:null,
+    onPlan:(room,plan,r,extra)=>box.planned.push({plan,...extra}),...opts});
+  const st=room=>s.run('kevin',{session:room,op:'state'});
+  const send=(room,op,extra={})=>s.run('kevin',{session:room,op,version:st(room).version,requestId:crypto.randomUUID(),...extra});
+  const deal=room=>{send(room,'join',{name:'Kevin',seats:[3]});send(room,'bet',{seat:3,field:'main',chip:5});send(room,'ready');return st(room);};
+  return{s,box,st,send,deal,close(){s.close();rmSync(dir,{recursive:true,force:true});}};
+}
+
+test("a ready dealer who can speak over his clips gets his lines on the talk track, not as steps; without a worker they stay steps", () => {
+  const t=talkTable();
+  try{
+    const view=t.deal('paow'),plan=view.plan;
+    assert.ok(!plan.steps.some(x=>x.kind==='speech'),'no line takes a slot of its own');
+    const luck=view.talk.find(x=>x.event==='goodluck'),first=plan.steps.find(x=>x.kind==='deal');
+    assert.ok(luck,'good luck is on the talk track');
+    assert.equal(luck.startAt,first.startAt+600,'said while he reaches for the shoe');
+    assert.equal(first.variant,'i','the first card follows straight on, no waiting for the line');
+    assert.equal(luck.line,'/media/dealers/paow/repliker/sv/goodluck_1.mp4');
+    assert.equal(t.box.planned.at(-1).plan.id,plan.id,'the plan goes to the lip-sync worker');
+    assert.deepEqual(t.box.planned.at(-1).nya.map(x=>x.id),view.talk.map(x=>x.id));
+    for(let i=1;i<view.talk.length;i++)assert.ok(view.talk[i].startAt>=view.talk[i-1].endAt,'lines never overlap');
+    t.box.warm=false;
+    const classic=t.deal('cold');
+    assert.ok(classic.plan.steps.some(x=>x.kind==='speech'&&x.clip.id==='goodluck_1'),'without a warm worker the line is a step as before');
+    assert.deepEqual(classic.talk,[]);
+  }finally{t.close();}
+});
+
+test('an answer joins the talk track after the line before it; between rounds it is flexible, in a round time-locked', () => {
+  const t=talkTable();
+  try{
+    t.send('paow','join',{name:'Kevin',seats:[3]});
+    const between=t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2});
+    assert.equal(between.talk.flex,true,'between rounds each viewer starts it once his dealer rests');
+    assert.equal(between.talk.startAt,t.box.time+1200);
+    assert.equal(between.talk.ljud,`/api/lip/${between.talk.id}/ljud`);
+    assert.equal(t.st('paow').talk.at(-1).id,between.talk.id,'every viewer sees it on the talk track');
+    t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
+    const view=t.st('paow'),luck=view.talk.find(x=>x.event==='goodluck');
+    assert.ok(luck.startAt>=between.talk.endAt,'the round\'s first line waits for the answer');
+    const rep=t.box.planned.at(-1).omplanera.map(x=>x.id);
+    assert.ok(rep.includes(between.talk.id),'the answer still speaking when the cards come gets a new map');
+    assert.ok(t.box.planned.at(-1).steg.length>=view.plan.steps.length);
+    const inRound=t.s.addTalk('paow',{text:'Lycka till!',lang:'sv',dur:1.5});
+    assert.equal(inRound.talk.flex,false,'in a round it runs on the table clock over the cards');
+    assert.ok(inRound.talk.startAt>=Math.max(...view.talk.map(x=>x.endAt)),'never over another line');
+    assert.ok(inRound.steg.some(x=>x.kind==='deal'),'its map can run over the round\'s takes');
+  }finally{t.close();}
+});
+
+test('a piece splits into one access unit per frame at its delimiters, the first one a key frame', () => {
+  const nal=(type,...rest)=>[0,0,0,1,type,...rest];
+  const buf=Uint8Array.from([...nal(9,0xf0),...nal(7,1,2),...nal(8,3),...nal(5,4,4),...nal(9,0xf0),...nal(1,5),...nal(9,0xf0),0,0,1,1,6]);
+  const units=splitAccessUnits(buf);
+  assert.equal(units.length,3);
+  assert.deepEqual(units.map(u=>u.key),[true,false,false]);
+  assert.equal(units[0].data[4],9);assert.equal(units[0].data.length,6+7+6+7);
+  assert.deepEqual([...units[2].data.slice(-2)],[1,6]);
+});

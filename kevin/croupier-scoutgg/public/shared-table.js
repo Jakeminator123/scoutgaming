@@ -11,7 +11,7 @@ const $=s=>document.querySelector(s);
 const money=n=>`$${Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 export const tableSession=new URLSearchParams(location.search).get('session')||dealerRoom(dealer.id);
 
-export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{}}) {
+export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnter,onBusy,prepareMedia=async()=>{},warmPlan=()=>{},preloadNext=()=>{},remark=()=>{},speak=()=>false,lips=null,atRest=()=>true,hold=()=>{}}) {
   const streak=createWinStreak();let quietTimer=null;
   const cards=createGameCards($('#gameCards'),manifest);
   let state=null,offset=0,sending=false,polling=false,notice='',chip=5,entered=false,entryStep=1,autoEntered=false;
@@ -267,9 +267,37 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     el.setAttribute('aria-label',deciding?'Time remaining to decide':'Time until dealing');
     const key=deadline&&seconds<=5&&seconds>0?`${deadline}:${seconds}`:null;if(key&&key!==lastTick&&entered)audio?.play('timer');lastTick=key;
   }
+  // The table's talk track (state.talk, server/rorlig-lipsync.mjs): lines and answers spoken over the clips. Each starts on
+  // the server clock and its mouth patches come from the lip-sync worker; speak() returns whether this viewer hears the
+  // language the mouth was synced to. A flexible answer (said between rounds) starts here once the dealer rests: his idle
+  // clips are this viewer's own, so it waits for the one playing to end, at most 6 s, and runs shifted by that wait.
+  const spoken=new Map();
+  const talking=()=>{const n=time();return (state?.talk??[]).some(t=>n<t.endAt+(t.flex?6300:300));};
+  function syncTalk(now){
+    for(const t of state?.talk??[]) {
+      // every tick, not once: each clip of the plan clears the idle hold (playNow), and no idle may start under a line
+      const shift=spoken.get(t.id)??0;
+      if(!t.flex&&now<t.endAt)hold(t.endAt-now+300);
+      else if(t.flex&&spoken.has(t.id)&&now-shift<t.endAt)hold(t.endAt-(now-shift)+300);
+      if(spoken.has(t.id))continue;
+      if(t.flex){
+        if(now>=t.endAt+6000)continue;
+        lips?.talk(t,false);
+        if(now>=t.startAt-1500)hold(t.endAt-t.startAt+7000);
+        if(now>=t.startAt&&(atRest()||now>=t.startAt+6000)){const shift=now-t.startAt;spoken.set(t.id,shift);lips?.talk(t,speak(t,0,t.endAt-t.startAt)!==false,shift);}
+        continue;
+      }
+      if(now>=t.endAt)continue;
+      lips?.talk(t,true);
+      if(now>=t.startAt-40){spoken.set(t.id,0);lips?.talk(t,speak(t,Math.max(0,now-t.startAt),t.endAt-now)!==false);}
+    }
+    lips?.prune();
+  }
+  lips?.setClock(()=>time());
   function syncPlayback() {
     if(document.hidden)return;updateClock();if(!state||!entered)return;
     const now=time(),plan=state.plan;
+    syncTalk(now);
     const step=plan?.steps.find(s=>s.clip&&now>=s.startAt&&now<s.endAt);
     const upcoming=plan?.steps.find(s=>s.clip&&s.startAt>now);
     if(upcoming&&upcoming.startAt-now<1200)preloadNext({...upcoming.clip,variant:readyVariant(plan,upcoming)});
@@ -349,5 +377,5 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   },sourceStarted:id=>cards.sourceStarted(id),get busy(){return busy()||sending;},get playing(){return state?.phase==='round';},
     // How long the table surely leaves the screen alone (ms): none while a plan runs or a round is on (anyone may act),
     // the betting countdown while it runs, otherwise open-ended. A chat answer starts only if it ends within this.
-    get quietMs(){if(busy()||sending||state?.phase==='round')return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
+    get talking(){return talking();},get quietMs(){if(busy()||sending||state?.phase==='round'||talking())return 0;return state?.phase==='bets'&&state.deadline?Math.max(0,state.deadline-time()):Infinity;},get preview(){return false;}};
 }

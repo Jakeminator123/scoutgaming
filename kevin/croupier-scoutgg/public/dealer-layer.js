@@ -12,6 +12,7 @@ uniform vec4 card; uniform float cardOn; uniform vec2 qa, qb, qc, qd; uniform fl
 uniform vec2 skin;   // his skin hue and saturation (0..1), picked from his rest image
 uniform vec3 lift, gain;   // the room's grade on him: its black point, and a nudge toward its light
 uniform float finished;   // Emil's KLARA plates: already graded and despilled, so none of the clean-up below runs on them
+uniform sampler2D lipTex; uniform vec4 lipRect; uniform float lipOn;   // his talking mouth (lip-layer.js): colour above, mask below
 // How much of a source pixel is HIM (1) versus green screen (0). A wide band keeps
 // see-through hair strands soft instead of cutting them out.
 float gx(vec2 t){ vec3 k = texture2D(tex, t).rgb; return k.g - max(k.r, k.b); }
@@ -40,6 +41,10 @@ void main(){
   vec2 suv = src / vec2(1080., 1920.);
   if (suv.x < 0. || suv.x > 1. || suv.y < 0. || suv.y > 1.) { gl_FragColor = vec4(0.); return; }
   vec3 c = texture2D(tex, suv).rgb;
+  // Speaking over a clip: the mouth patch for this very frame goes in before anything reads his colours (rorlig-lipsync.mjs).
+  vec2 lu = (src - lipRect.xy) / lipRect.zw;
+  if (lipOn > .5 && lu.x > 0. && lu.x < 1. && lu.y > 0. && lu.y < 1.)
+    c = mix(c, texture2D(lipTex, vec2(lu.x, lu.y * .5)).rgb, clamp(texture2D(lipTex, vec2(lu.x, .5 + lu.y * .5)).r, 0., 1.));
   // Green = green clearly above both red and blue, at any brightness (catches the
   // dark green shading of the table rim too). Skin, white shirt and black suit are not.
   // The matte is softened ~1.5 px (a 5-tap cross) so edges blend instead of stair-stepping.
@@ -127,7 +132,7 @@ function roomGrade(img) {
   return { lift: avg(dark), gain: mean.map(v => 1 + ROOM_GRADE * (v / lum(mean) - 1)) };
 }
 
-export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = .8, inFrames = 0, keyHalf = [38, 48], finished = false }) {
+export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = .8, inFrames = 0, keyHalf = [38, 48], finished = false, lips = null }) {
   const canvas = document.createElement('canvas');
   canvas.className = 'dealer-layer'; canvas.width = 1080; canvas.height = 1920;
   canvas.setAttribute('aria-hidden', 'true');
@@ -154,30 +159,57 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
 
   const uLift = gl.getUniformLocation(prog, 'lift'), uGain = gl.getUniformLocation(prog, 'gain');
   gl.uniform3f(uLift, 0, 0, 0); gl.uniform3f(uGain, 1, 1, 1);
+  // The mouth patch lives on texture unit 1; the clip stays on unit 0.
+  gl.uniform1i(gl.getUniformLocation(prog, 'tex'), 0);
+  gl.uniform1i(gl.getUniformLocation(prog, 'lipTex'), 1);
+  const uLipRect = gl.getUniformLocation(prog, 'lipRect'), uLipOn = gl.getUniformLocation(prog, 'lipOn');
+  gl.uniform1f(uLipOn, 0);
+  const lipTexture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, lipTexture);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  gl.activeTexture(gl.TEXTURE0);
+  let lipKey = '';
   // The room is the still under the cards; it changes when the player picks another room.
   const room = stage.querySelector('.still');
   const regrade = () => {
     if (finished || !room?.complete || !room.naturalWidth) return;   // finished plates are graded already: no lift on their blacks
-    const g = roomGrade(room); gl.uniform3fv(uLift, g.lift); gl.uniform3fv(uGain, g.gain); lastStamp = '';
+    const g = roomGrade(room); gl.uniform3fv(uLift, g.lift); gl.uniform3fv(uGain, g.gain); lastStamp = ''; lastSource = '';
   };
   room?.addEventListener('load', regrade);
   const img = new Image();
   // The stage waits dark (index.html, .pending) until the room and this dealer can both be drawn: then show it, two frames later.
   const reveal = () => { if (room?.complete && room.naturalWidth && img.complete && img.naturalWidth) requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove('pending'))); };
   room?.addEventListener('load', reveal);
-  img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; reveal(); };
+  img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; lastSource = ''; reveal(); };
   img.src = still;
   const videos = [...stage.querySelectorAll('video')];
-  let lastStamp = '';
+  let lastStamp = '', lastSource = '';
+  const lipDebug = /[?&]lipdebug=1/.test(location.search) ? (globalThis.__lip = { frames: 0, hits: 0, misses: [] }) : null;
   function draw() {
     const v = videos.find(x => x.classList.contains('on') && x.readyState >= 2);
     const src = v ?? (img.complete && img.naturalWidth ? img : null);
     // Only redraw when something new is on screen: a new video frame or a switch
     // between clip and still. Uploading 1080x1920 every animation frame is wasteful.
-    const stamp = v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '';
+    // While he speaks over his clips, the patch for this frame is part of what is on screen: a new patch redraws too,
+    // also on a still or a held last frame (the mouth moves while the body waits).
+    const name = v ? /\/([a-z0-9]+(?:-[iuv]+)?)\.mp4/.exec(v.dataset.source || v.currentSrc || '')?.[1] : null;
+    const raw = v ? Math.floor(v.currentTime * 24 + 1e-5) : 0;
+    const atEnd = v && (v.ended || (Number.isFinite(v.duration) && v.currentTime >= v.duration - .05));
+    // He rests on his still, or on the last frame of a clip that ends at rest: every clip but a deal take that ends in REDO.
+    const rest = !v || (atEnd && !/^pos[a-z0-9]+(-i)?$/.test(name ?? ''));
+    const lip = lips?.active() ? lips.at(name, raw, rest) : null;
+    // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
+    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }
+    const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      if (lip && lip.key !== lipKey) {
+        gl.activeTexture(gl.TEXTURE1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, lip.bitmap); gl.activeTexture(gl.TEXTURE0);
+        lipKey = lip.key;
+      }
+      if (lip) gl.uniform4f(uLipRect, ...lip.rect);
+      gl.uniform1f(uLipOn, lip ? 1 : 0);
+      if (stamp.split('|')[0] !== lastSource) { lastSource = stamp.split('|')[0]; gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
       // Which take and frame is on screen decides whether his landed card is keyed out.
       // -v / -iv: the take that ends at rest (a hit, the dealer drawing more): its own track ('4v', 'dealerv') and
       // landing, at the same seat. These were missed before, so his white prop covered the hit card's face (Kevin, 10 Oct).
