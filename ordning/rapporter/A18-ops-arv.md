@@ -1,101 +1,57 @@
 # A18 · Ops-arv: `vercel-entry`, `preview/` och Caddy
 
-Steg 1–2. B15 är öppet, så inget i `ops/vercel-entry/` eller `ops/caddy/` är
-raderat. `build.mjs` är flyttad med `git mv`, inte borttagen som projekt.
+B15 (2026-10-12): ta bort, men beskriv vad det var och behåll det som fortfarande
+används. Vercel-projektet `github-work-vercel-entry` finns inte. `bettalotto.se`
+körs av Caddy på `37.27.199.225`, svarar 301 till `https://croupier.scoutgg.dev/`
+och använder inte filen i repot.
 
-## Steg 0
+Levande bygglogik: `apps/croupier-frontend/tools/player-ui-build.mjs`.
+Landningsmallen följde med till `player-ui-landing.html`.
+`presentation-runtime/` släpps fortfarande igenom på rad 20.
+Provet som skyddar bygget ligger i `apps/croupier-frontend/test/player-ui-build.mjs`.
 
-| Mätning | Värde |
-| --- | --- |
-| Start på `jakob/repo-ordning` | `43bb429cf5dc4d70b7b95fac8c8567e481f9f769` |
-| `origin/main` efter fetch | `919691072212c044ccaf5aeaa8f0b2fbf99b1bf5` (Pin Studio migration 008) |
-| Gemensam bas | `e160af12aea6fa1f99cff8a5e95186890a1d8220` |
-| Main efter den basen | `12a12fd6`, `91969107`. Ingen av dem rör ägda filer |
-| Ägda filer mot `origin/main` | oförändrade före denna aktivitet |
-| Känd rörelse sedan `00ea55c5` | `c0b029f7` (Dealer Forge) ändrar env-dokumenten, inte `vercel-entry`-raden |
-| Systemkarta före start | gul, 0 röda, exit 0 (BASLINJE §7: fortsätt och notera) |
-| Node | 24.21.0 |
+Återställning av en borttagen sökväg: `git checkout 00ea55c5 -- <sökväg>`.
+Det återskapar trädet vid baslinjen, inklusive den gamla `ops/vercel-entry/build.mjs`
+bredvid den nya filen.
 
-## Klassning
+## Borttaget
 
-| Fil | Klass | Konsumenter | Rekommendation |
+| Del | Vad det var | Tillagd | Varför den inte används |
 | --- | --- | --- | --- |
-| `apps/croupier-frontend/tools/player-ui-build.mjs` | levande | `prepare-platform-ui.mjs:4`, `test/blackjack-entry-http.mjs:10`, `test/player-signup.mjs:9`, `ops/vercel-entry/test/build-preview.mjs:7`, `ops/vercel-entry/preview/build.mjs:4`, `ops/vercel-entry/preview/prepare.mjs:4` | ägs av frontenden. Behåll |
-| `ops/vercel-entry/index.html` | levande mall | läses av `player-ui-build.mjs:95` | behåll tills landningssidan har en ny mall |
-| `ops/vercel-entry/.env.example` | levande mall | `docs/environment-variables.json` templates | behåll. Bara nyckelnamnet `CROUPIER_GAME_ORIGIN`, tomt värde |
-| `ops/vercel-entry/vercel.json` | pensionerad projektkonfiguration, testläst | `ops/vercel-entry/test/build-preview.mjs:46`, `preview-routes.mjs:14` | behåll tills B15. `buildCommand` är fortfarande `node build.mjs` och träffar ingen fil |
-| `ops/vercel-entry/README.md` | pensionerad projektext | människor | behåll. Kommandona pekar nu på den nya filen |
-| `ops/vercel-entry/.gitignore` | pensionerat stöd | ignorerar `dist/` och `.vercel/` | behåll tills B15 |
-| `ops/vercel-entry/test/build-preview.mjs` | levande test | `.githooks/pre-commit-full:63` | behåll. Importen uppdaterad |
-| `ops/vercel-entry/test/preview-routes.mjs` | prov-verktyg | `.githooks/pre-commit-full:64` | behåll |
-| `ops/vercel-entry/preview/build.mjs` | prov-verktyg | `preview-routes.mjs:8`. Egen `buildCommand` `node build.mjs` i preview-roten | behåll. Anropar frontendens `build` |
-| `ops/vercel-entry/preview/prepare.mjs` | prov-verktyg | `preview/build.mjs`, `preview-routes.mjs:9` | behåll |
-| `ops/vercel-entry/preview/route-guard.js` | prov-verktyg | kopieras av `preview/build.mjs` | behåll |
-| `ops/vercel-entry/preview/preview-only.css` | prov-verktyg | kopieras av `preview/build.mjs` | behåll |
-| `ops/vercel-entry/preview/vercel.template.json` | prov-verktyg | `prepare.mjs`, `preview-routes.mjs:15` | behåll. Platshållare, ingen riktig backend |
-| `ops/vercel-entry/preview/README.md` | prov-verktyg | människor | behåll |
-| `ops/vercel-entry/preview/.gitignore` | prov-verktyg | ignorerar `dist/`, genererad `vercel.json`, `.vercel/`, `.env.local` | behåll |
-| `ops/caddy/bettalotto-game-auth.Caddyfile` | pensionerad i repot, eventuell extern drift | ingen träff på filnamnet utanför `ordning/` | radera inte förrän T6 |
+| `ops/vercel-entry/README.md`, `vercel.json`, `.env.example`, `.gitignore` | Fristående Vercel-projekt "Enkel Vercel-ingång till Blackjack". `vercel.json` byggde `node build.mjs` till `dist/` | `4dec3e1a` 2026-09-28, Jakob Eberg | Projektet `github-work-vercel-entry` finns inte. Bygget ägs av frontenden |
+| `ops/vercel-entry/index.html` | Landningsmall med `{{BLACKJACK_URL}}` | samma commit | Flyttad, inte slängd: `apps/croupier-frontend/tools/player-ui-landing.html` |
+| `ops/vercel-entry/preview/` | Isolerad, odriftsatt Preview-rot med ogiltig platshållar-proxy, route-guard och CSS som låste Astrid | `2941c577` 2026-09-29, Jakob Eberg. `route-guard.js`: `f31a06de` samma dag | Ingen publik Preview. Skyddade bara den mappen |
+| `ops/vercel-entry/test/preview-routes.mjs` | Prov av preview-routrar och `prepare.mjs` | `2941c577` 2026-09-29, Jakob Eberg | Skyddade bara preview-projektet |
+| `ops/vercel-entry/test/build-preview.mjs` | Prov av `build()` plus det pensionerade `vercel.json` | `5e693abc` 2026-09-29, Jakob Eberg | `build()`-delen flyttad till `apps/croupier-frontend/test/player-ui-build.mjs`. CSP-kontrollerna av `vercel.json` följde inte med |
+| `ops/caddy/bettalotto-game-auth.Caddyfile` | Caddy för `www` → apex, partnerytor, inloggning/backoffice och `forward_auth` mot loopback på `/api/auth/access`. Inga adresser i den här texten | `bdb01f31` 2026-09-20, ImpactPL (Kevin), "Connect backoffice sign-in to original and V2 games" | Den live servern använder inte filen. Kevins aktuella Caddy-filer ligger på `kevin/croupier-scoutgg/drift/` |
 
-`test/vercel-presentation-video-origin.mjs:13` importerar inte bygget. Den
-använder originen `https://github-work-vercel-entry.vercel.app` som opt-in för
-Range/206. Sökvägen är oförändrad.
+## Env och karta
 
-## Caddy, struktur utan värden
+Tjänsten `vercel-entry` är kvar. `CROUPIER_GAME_ORIGIN` läses av
+`player-ui-build.mjs` och finns också som villkor på `render-game`, med en
+annan betydelse (samma publika origin som partnerbasen). Mallen
+`.env.example` är borta. Systemkartans `environment.vercel-entry` pekar på
+spelarbygget.
 
-Två site-block. `www`-värden omdirigerar permanent till apex och behåller `{uri}`.
-Apex har tre handledare: en namngiven match för partnerytor (API v1, docs,
-dealers, dealer, assets) med encode och `reverse_proxy` till loopback; en
-namngiven match för inloggning och backoffice (auth-API, bo-API, bo-sidor) med
-`reverse_proxy` till samma loopback; en default med `forward_auth` mot loopback
-på `/api/auth/access`, därefter encode och `reverse_proxy`. Inga adresser eller
-portar här. Partnerdokumentationen och `BETTALOTTO_PARTNER_*` är en annan sak
-än den här filen.
+## Dokumentändringar som behövs
 
-## Flytt
-
-`git mv` till `apps/croupier-frontend/tools/player-ui-build.mjs` är en egen
-commit. Därefter bara sökvägar som annars pekar fel efter flytten:
-
-- repots rot och `tools/media-layout.mjs` är tre nivåer upp
-- landningsmallen är kvar i `ops/vercel-entry/index.html`
-- CSS är kvar i `web/public/blackjack-entry.css`
-- `outputName` rad 20 släpper fortfarande igenom `presentation-runtime/` och
-  `lab/policies/idle-policy.seed.json` (A21)
-
-Anropare som skickar `output` är oförändrade. CLI utan `output` skriver `dist/`
-bredvid det nya skriptet. Ogiltiga CLI-argument namnger den nya filen. Det är
-den enda texten som inte är en sökväg.
-
-`.githooks/pre-commit-full` är orörd: testerna ligger kvar.
-
-## Frågor bara Vercel eller Jakob kan besvara
-
-1. Finns Vercel-projektet `github-work-vercel-entry` kvar?
-2. Körs `ops/caddy/bettalotto-game-auth.Caddyfile` på en extern server? (T6)
-3. Ska `ops/vercel-entry/preview/` fortsätta som QA-verktyg efter B15?
-
-## Inte gjort (B15)
-
-Steg 3. Ingen radering av projektkonfiguration, `preview/` eller Caddy.
-Env-tjänsten `vercel-entry` finns kvar. Källan är den nya filen. Mallen är
-`.env.example`.
-
-## Dokument som andra äger
-
-- `docs/system-map/index.html` bäddar in katalogen och namnger fortfarande
-  `ops/vercel-entry/build.mjs`. Inte ägd här.
-- `ordning/BASLINJE.md` §3, `ordning/README.md` och
-  `ordning/aktiviteter/A21-presentation-runtime.md` pekar på den gamla sökvägen.
-  A21 ska följa `apps/croupier-frontend/tools/player-ui-build.mjs` rad 20.
+- `docs/CLOUD-MIGRATION.md`: `github-work-vercel-entry` är borta.
+  `ops/vercel-entry/` och `ops/caddy/bettalotto-game-auth.Caddyfile` är
+  borttagna. `bettalotto.se` svarar 301 till `https://croupier.scoutgg.dev/`
+  och använder inte den filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
+- `docs/system-map/index.html` kan fortfarande bädda in den gamla källsökvägen.
+- `ordning/BASLINJE.md`, `ordning/README.md`, `A21-presentation-runtime.md`
+  och `A19-lokal-hygien.md` nämner `ops/vercel-entry`. A21:s prov ska vara
+  `apps/croupier-frontend/test/player-ui-build.mjs`, och genomsläppet är
+  `player-ui-build.mjs` rad 20.
 
 ## Tveksamt
 
-- `ops/vercel-entry/vercel.json` kan inte bygga det pensionerade projektet
-  längre. Ingen shim är tillagd. Säg till om den historiska roten ska kunna
-  byggas tills B15.
-- CLI-standardens `dist/` följer skriptet. Alla anropare i repot skickar
-  `output`. Säg till om standarden ska låsas till `ops/vercel-entry/dist/`.
-- `preview/build.mjs` och `prepare.mjs` läser samma `CROUPIER_GAME_ORIGIN` men
-  står inte som egna `sources`. Det var så före flytten. Nyckeln ligger kvar
-  på tjänsten `vercel-entry`.
+- Tjänsten heter fortfarande `vercel-entry` fast projektet är borta, så att
+  läsaren av nyckeln har en källa. Säg till om posten ska slås ihop med
+  `render-game`.
+- `test/vercel-presentation-video-origin.mjs` använder fortfarande
+  `https://github-work-vercel-entry.vercel.app` som exakt testorigin. Den
+  hämtar inte projektet.
+- `check-orphan-tests.mjs` inventerar inte `apps/**/test`. Kroken kör det
+  flyttade provet, samma mönster som övriga frontendprov.

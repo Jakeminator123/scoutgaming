@@ -61,7 +61,7 @@ run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test
 node test/player-auth.mjs
 node test/table-http.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs
-run_node_tests ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs ops/vercel-entry/test/preview-routes.mjs
+run_node_tests ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
 node pipeline/audit-dealer-sync.mjs

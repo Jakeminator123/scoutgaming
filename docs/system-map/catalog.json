@@ -366,7 +366,7 @@
   {
     "id": "environment.vercel-entry",
     "label": "Miljönyckelnamn: vercel-entry",
-    "where": "Vercel-ingång",
+    "where": "Frontendens spelarbygge",
     "source": "docs/environment-variables.json, tools/check-environment-variables.mjs, apps/croupier-frontend/tools/player-ui-build.mjs",
     "verifiedBy": "test/check-environment-variables.mjs"
   },
