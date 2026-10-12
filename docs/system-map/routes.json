@@ -275,7 +275,7 @@
       "sources": [
         "lab/app/control/preview/page.tsx",
         "lab/components/control-preview-page.tsx",
-        "test-videoeditor/README.md"
+        "packages/presentation/README.md"
       ],
       "limitation": "Shared saved lane editor and private background/table library. Existing full-frame dealer clips remain opaque; separate Paow/Dragge preview stays under /preview. Publication freezes presentation choices; game outcomes and wallets remain server-owned.",
       "tests": [
@@ -4134,7 +4134,7 @@
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/preview/[...path]/route.ts",
-      "serving": "Lab service under basePath /studio. Files from the gitignored lab/preview-build (prepared from test-videoeditor/preview/site), traced into the server bundle.",
+      "serving": "Lab service under basePath /studio. Files from the gitignored lab/preview-build (prepared from packages/presentation/preview/site), traced into the server bundle.",
       "access": "Internal admin. authorizeUiPage; 401 redirects to login.",
       "boundary": "No public copy. Segment allow-list, no traversal; Range and HEAD only after authorization. Cache-Control private, no-store.",
       "groupId": "layer-preview",
@@ -4155,7 +4155,7 @@
       "kind": "api",
       "app": "game",
       "handlerFile": "web/layer-packs.mjs",
-      "serving": "Render game service. Runtime modules come from test-videoeditor/program/web and lane media/manifests from lab/preview-build.",
+      "serving": "Render game service. Runtime modules come from packages/presentation/compositor and lane media/manifests from lab/preview-build.",
       "access": "Player session lane flag. Without cookie croupier_layer_preview=1 the route responds 404.",
       "boundary": "No traversal, reviewed file types only, byte-range support and Cross-Origin-Resource-Policy same-origin.",
       "groupId": "layer-preview",

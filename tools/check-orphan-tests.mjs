@@ -4,16 +4,19 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services)\//;
+const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages)\//;
 
 // Files under a fixtures directory are helpers imported by tests, not test files.
 function isTestFile(rel) {
   const parts = rel.split('/');
   if (parts.includes('fixtures') || parts.includes('__fixtures__')) return false;
-  if (!parts.slice(0, -1).includes('test')) return false;
   const name = parts[parts.length - 1];
   const dot = name.lastIndexOf('.');
-  return dot > 0 && testExtensions.has(name.slice(dot));
+  const extensionOk = dot > 0 && testExtensions.has(name.slice(dot));
+  // packages/**/*.test.* has no test/ directory segment.
+  if (parts[0] === 'packages' && extensionOk && /\.test\.[^.]+$/.test(name)) return true;
+  if (!parts.slice(0, -1).includes('test')) return false;
+  return extensionOk;
 }
 
 function toRel(abs) {
@@ -302,7 +305,7 @@ function loadExceptions() {
 export function auditOrphanTests() {
   const items = loadRunnerPatterns();
   const patterns = compilePatterns(items);
-  const files = [...collectTree('test'), ...collectTree('lab/test')];
+  const files = [...collectTree('test'), ...collectTree('lab/test'), ...collectTree('packages')];
   if (targetsTree(patterns, 'open-claw')) files.push(...collectTree('open-claw'));
   if (targetsTree(patterns, 'ops')) files.push(...collectTree('ops'));
   files.sort();

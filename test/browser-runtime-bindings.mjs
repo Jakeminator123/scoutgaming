@@ -21,7 +21,7 @@ const globals=new Set([...runInNewContext('Object.getOwnPropertyNames(globalThis
   AudioWorkletProcessor registerProcessor sampleRate currentTime createImageBitmap
   arguments`.split(/\s+/)]);
 
-for(const directory of ['web/public/','presentation-runtime/','test-videoeditor/program/web/']){
+for(const directory of ['web/public/','presentation-runtime/','packages/presentation/compositor/']){
   test(`${directory} has no unresolved JavaScript bindings`,async()=>{
     const folder=new URL('../'+directory,import.meta.url);
     const files=(await readdir(folder,{withFileTypes:true}))

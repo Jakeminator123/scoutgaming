@@ -1,13 +1,13 @@
 // Dealer Forge catalog: which slots a dealer bank needs, how each slot is
 // generated from one still image, prompt templates and credit estimates.
 // Geometry is the canonical 1080x1920 / 24 fps portrait master shared with
-// test-videoeditor (Paow catalog) and the layered player; desktop is a crop,
+// packages/presentation (Paow catalog) and the layered player; desktop is a crop,
 // never a new camera. Prompts request geometry; they are not acceptance.
 import { dealerMediaSlots } from './dealer-media-library.mjs';
 
 export const FORGE_CANVAS = Object.freeze({ width: 1080, height: 1920, fps: 24 });
 export const FORGE_CARD = Object.freeze({ width: 79, height: 106 });
-// From test-videoeditor/preview/site/catalog.json (Paow, lanes[0].dealer.metadata.positioner).
+// From packages/presentation/preview/site/catalog.json (Paow, lanes[0].dealer.metadata.positioner).
 export const DEFAULT_POSITIONS = Object.freeze({
   1: Object.freeze({ cx: 110, cy: 1025 }), 2: Object.freeze({ cx: 253, cy: 1075 }), 3: Object.freeze({ cx: 396, cy: 1105 }),
   4: Object.freeze({ cx: 540, cy: 1115 }), 5: Object.freeze({ cx: 684, cy: 1105 }), 6: Object.freeze({ cx: 827, cy: 1075 }),
