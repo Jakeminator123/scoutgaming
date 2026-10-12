@@ -1,7 +1,0 @@
-{
-  "samples": 59,
-  "maxSurfaceDistanceMm": 2.1231065038591623,
-  "meanSurfaceDistanceMm": 0.9240907908198266,
-  "limitMm": 5,
-  "status": "mechanical surface check; rendered seam acceptance remains separate"
-}
