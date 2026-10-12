@@ -1,5 +1,181 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Central Studio: rum, spel och lager, 13 oktober 2026
+
+Detta är målkontraktet för nya `/admin`, enligt Jakobs senaste krav. Det är
+inte ett kvitto på genomförd datamigrering eller godkänd speluppspelning.
+Nuläget nedan lästes i produktion utan skrivningar; kodreferenserna granskades
+på `main` `a5441feb1fd1761ca95d12b4f51beed2f689c57b`. `/control` och dess
+publicerade paket fortsätter fungera medan den nya ytan granskas.
+
+### Begrepp och ägarskap
+
+```mermaid
+flowchart LR
+  Operator[Spelbolag] --> Room[Rum / bakgrundsmiljö]
+  Room --> BJ[Blackjack]
+  Room --> Roulette[Roulette]
+  BJ --> BJDealer[Tillåtna dealeruppsättningar]
+  Roulette --> RDealer[Tillåtna dealeruppsättningar]
+  BJ --> BJTable[Blackjackbord]
+  Roulette --> RTable[Roulettebord]
+  BJDealer --> Clips[Grundloop, händelseklipp och exakt tal]
+  RDealer --> Clips
+```
+
+| Begrepp | Kontrakt för nya ytan |
+| --- | --- |
+| Spelbolag | Äger sina rum, tilldelningar och publiceringar. Ett bolags val ger aldrig åtkomst till ett annat bolags utkast. |
+| Rum / bakgrund | En namngiven miljö med en vald grundbakgrund: bild eller video. Detta är ett och samma val i användarflödet. Rummet får innehålla både Blackjack och Roulette. |
+| Bakgrundsfil | En versionsbunden lagerresurs med eget ID, roll, MIME och hash. Flera filer kan vara varianter inom samma miljö. Ett biblioteksobjekt skapar inte automatiskt ett publicerat rum. Samma fil kan återanvändas i flera bolags rum utan att deras rumsidentiteter slås ihop. |
+| Spel | Ett aktiverat spel i ett visst rum, med egen adapter, bord/geometri och tillåtna dealeruppsättningar. Insatsgränser hör hit; VIP är inte en separat rumstyp eller automatisk etikett. |
+| Dealer | Personens registrerade identitet. Visningsnamnet räcker inte som nyckel. |
+| Dealeruppsättning | En namngiven uppsättning klippreferenser för en dealer och avsett spel. Exempelvis PAOW och PAOW 3 kan vara uppsättningsnamn, men endast om registret faktiskt beskriver dem så. |
+| Bord | Förgrundslagret och spelets placeringsgeometri. Bordet är varken rum, bakgrund eller dealer. Bordsfärg är en uttrycklig tillåten bordsegenskap. |
+| Sammansättning | Den tekniska sammanställningen av miljö, dealer, bord, klipp och placering för mobil/desktop. Befintliga `lane`-ID behålls som kompatibilitet tills en granskad övergång är klar. |
+
+En dealer får bara väljas om den uttryckligen är tillåten och har nödvändigt
+material för spelet. Ett blackjackpaket blir inte ett roulettepaket genom
+namnbyte eller genom att återanvända samma sammansättning. Saknas godkänd
+roulettedealer visas detta som saknat material, aldrig som en färdig reservdealer.
+
+### Meny och översta kontexten
+
+Struktur ligger utanför Studio och visar Scoutgaming → Studio, Drift,
+Ekonomi, AI och Admin samt verkliga relationer och antal. Simulerade data
+och saknade anslutningar ska märkas i själva förhandsvisningen.
+
+Studio har en central klippkarta. Kontexten följer **spelbolag → rum/bakgrund
+→ spel → dealeruppsättning**. Blackjack/Roulette får vara flikar, men visar
+spelvalet inom det valda rummet. Bakgrundens filer/varianter redigeras i
+rummets panel; en andra fristående bakgrundsväljare får inte skapa en
+motsägande rumskoppling. Bord och grundloop är kontextuella val vid kartan.
+Nivå 1/2/3 leder till intern administration, spelbolagsportal och spelarvy
+med befintliga behörighetskontroller. Inga gula omvägar till Control behövs
+för att slutföra Studio-arbetet.
+
+Varje klippkort visar valt händelsefack, variant och befintliga filer samt
+uppladdning/släppyta. Byte av variant får inte skriva över grannfack eller
+gömma en befintlig koppling. **Återställ kortlayout** återställer endast
+placering och zoom; sparade klipp, referenser, röstprofiler och publiceringar
+ska förbli oförändrade. Språkval och exakt taltext är en del av talsetet,
+inte en slumpvis ersättning av en inspelad replik. Röst-ID är inte API-nyckel.
+
+### Lager och automation
+
+Ordningen bakifrån är **bakgrund → frilagd dealer → bord → spelets kort,
+markeringar och gränssnitt**. Samma lagerprincip gäller Blackjack och
+Roulette, med spelens egna geometrier. Grundloopen tillhör dealern;
+bakgrundsvideon är ett separat, ljudlöst lager. Den får inte ersätta,
+blockera eller synka om dealerns tal, kortlogik eller resultat.
+
+Bakgrundsbyte, tidsintervall, slumpvariation och eventuell OpenClaw-styrning
+konfigureras på rummets bakgrundspolicy. De får endast välja tillåtna
+bakgrunds-ID inom miljön, inte byta bolag, rum eller bord. En annan miljö
+är ett uttryckligt rumsval. Om bordsautomation införs måste den vara separat,
+välja enbart tillåtna bords-ID för spelet och bevara spelgeometrin; ett byte
+får inte ske mitt i en pågående giv/omgång. Det är inte en redan verifierad
+funktion. En kontroll på ett bordskort får aldrig styra bakgrundspoolen.
+
+Den befintliga `backgroundPlayback`-policyn ligger i sammansättningen och
+följer det frysta paketet. UI bör redigera den via rummet utan att skapa en
+konkurrerande timer. Dagens runtime stöder validerade händelser/intervall
+och budgetar (se nästa avsnitt); designexemplets Slump/Ordning/OpenClaw är
+inte bevis för att varje sådant läge redan finns i produktionsruntime.
+
+Äldre inbakade bord, miljöer och färger i dealerfilm kan inte göras fristående
+genom en ny etikett eller ett färgfält. `web/public/dealer-compositing.mjs`
+kräver friläggningsbart grönt källmaterial; godtycklig inbakad miljö är inte
+ett giltigt alternativ. Materialets pixlar måste granskas. Äldre fält och
+Kevin-vyer får inte skapa ett andra defaultsystem vid sidan av registrerad
+sammansättning och bolagets uttryckligen tillåtna val. Rensa först efter
+referenskontroll; ändra inte historiska paket eller gemensam spelarlogik.
+
+### Verifierat nuläge: paow3 och biblioteket
+
+Read-only i `/control/rooms?operator=nordic-bet` den 13 oktober: Nordic Bet
+har publicerad version 7, två öppna rum och ett arkiverat rum. **paow3 är
+ett registrerat rum**, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`.
+`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, är
+ett annat rum. Båda refererar sammansättningen **PAOW · Studio**,
+`paow-studio-14b6c188-ef58-4ad9-9028-4f6fb58a6de9`. Dess editor visar
+dealer `paow-v2`, bord **Bord · Svart och guld** och en bakgrund med namnet
+`background-ditt-spelbolag`. Dessa namn bevisar inte en separat PAOW 3-bank
+eller att roulettematerialet är accepterat. Ingen av posterna ändrades.
+
+Biblioteksvyn visar två bordsbilder, båda registrerade som 1440 × 2560:
+**Bord · Svart och guld** (används av tre sammansättningar) och
+**e14100b1-0dad-4700-9d0a-a5bc081cadc4** (används av Mobile Phone Lane).
+Det senare är visningsnamnet, inte här verifierat som filens ID.
+De sju bakgrunderna visas som video, samtliga registrerade som 1920 × 1080:
+
+| Namn | Lager-ID | Användning enligt biblioteket |
+| --- | --- | --- |
+| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | PAOW · Studio, Mobile Phone Lane, Johns sammansättning |
+| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | PAOW · Studio, Mobile Phone Lane |
+| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Mobile Phone Lane |
+| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Mobile Phone Lane |
+| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | PAOW · Studio |
+| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Ingen sammansättning angiven |
+| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Mobile Phone Lane |
+
+De fyra likadana namnen är skilda ID; de får inte slås ihop på namn.
+ID lästes från respektive synligt videoelements källadress. Efter start via
+bibliotekets spelkontroller nådde samtliga sju `readyState=4`, 1920 × 1080,
+10,042 sekunder och `ended=true` utan mediefel. Avkodning och ett genomspel
+i den här webbläsaren är därmed verifierade. Specifik codec, loopskarv och
+scenens visuella formatacceptans är ännu inte granskade.
+Designmallens tre bakgrunder och två exempelbord är inte detta
+register. Nya `/admin` ska läsa `project.layerAssets` med samma ID och
+roller, visa video som video och även visa registrerade men ännu oanvända filer.
+
+### Format: tillåten fil är inte samma sak som godkänd scen
+
+`web/layer-asset-contract.mjs` tillåter PNG, JPEG, WebP, MP4 och WebM för
+lager. Storlek: 16 byte till 128 MiB; registrerad bredd/höjd: heltal 1–16384.
+Det finns inget generellt krav på exakt 1920 × 1080 i detta kontrakt.
+`lab/components/layer-library.tsx` läser dimensioner i webbläsaren innan
+uppladdning. `lab/lib/layer-upload-service.mjs` verifierar lagrade bytes,
+MIME/storlek/hash och filsignatur innan registreringen skrivs med revisionsskydd.
+
+Kontrollen är inte en fullständig serververifiering av codec, bildfrekvens,
+duration, alpha eller visuell kvalitet. MP4 som behållare är tillåten;
+varje verklig MP4 måste fortfarande kunna avkodas och provas i rätt scen.
+Bakgrunder granskas i 16:9 och 9:16 med verklig beskärning, två loopvarv och
+fri yta bakom dealer/bord. Bord behöver korrekt friläggning och geometri;
+JPEG saknar alpha även om filtypen accepteras. Klippen kan registreras utan
+att automatiskt bli godkända/publicerade. Bristande media ska ge en tydlig
+status, aldrig en tyst ersättning med mallens bild eller en annan dealers film.
+
+### Livscykel och övergång från dagens rum
+
+I `web/presentation-room-contract.mjs` är dagens rum en operatörsägd
+spelbar ingång med ett `presentationLaneId`, ett `gameLaneId` och **ett**
+`game` (äldre poster utan fält läses som Blackjack). `gameLaneId` och URL-
+parametern `table` är tekniska spel-/rumsidentiteter, inte bordsbilder.
+Därför kan ett rum med två spel inte införas enbart genom nya rubriker.
+Övergången måste uttryckligen mappa befintliga spelrum till en gemensam
+miljö med separata spelbindningar, bevara gamla rums-ID/länkar och kontrollera
+behörigheter och publiceringsrevisioner. Gruppera aldrig på bara namn eller
+bakgrundsfil: två bolags rum och olika spelinställningar måste hållas isär.
+Detta dokument väljer inte ett nytt lagringsschema och genomför ingen migrering.
+
+Rumsarkivering påverkar den spelbara ingången; den får inte radera dealer,
+sammansättning eller delade filer. Arkivering av en uppsättningskategori
+behåller filerna. Bortkoppling av ett enskilt klipp respektive alla klipp i
+en uppsättning är separata handlingar med förhandsvisad påverkan. Visa
+objekttyp, ID, användningar och berörda publiceringar före bekräftelse.
+Beständig fysisk radering kräver att inga skyddade/delade referenser finns
+och en separat uttrycklig handling. Papperskorg/återställning återställer
+utkast, inte tyst återpublicering eller betald talgenerering. Genererings-
+och lipsynclogiken ska finnas kvar även när en kategori tas bort.
+
+Första UI-preview ska granskas innan ytterligare menyombyggnad. Därefter
+behövs verklig inläsning av ovanstående lager, isolerad verifiering av
+släpp/uppladdning och återläsning, säkra livscykelflöden, migrationsbeslut
+för rum med flera spel och visuell acceptans i respektive spel. Testdata,
+registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
