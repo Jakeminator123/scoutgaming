@@ -189,7 +189,7 @@ html[data-presentation-startup]:not([data-presentation-startup="ready"]) #scene 
 .seat-inner { position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
 html[data-presentation-standard="three-layer"] .seat-inner { transform:scale(var(--game-seat-scale,1)); }
 .bet-target {display:none;}
-@media (max-width:860px) and (orientation:portrait) {
+@media (max-width:860px) {
   html[data-presentation-standard="three-layer"] .bet-target {display:block;position:absolute;top:-22px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;z-index:5;}
   .bet-target-main {left:-22px;width:44px;}
   .bet-target-pp {left:-49px;width:24px;}

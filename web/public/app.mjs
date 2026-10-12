@@ -654,7 +654,7 @@ for (let i = 0; i < SEATS; i++) {
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
 const COMPACT_BOXES = [2, 3, 4];
-const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)');
+const compactQuery = matchMedia('(max-width: 860px)');
 let compactSeats = compactQuery.matches;
 const playedBoxes = () => {
   if(!compactSeats)return seatEls.map((_,i)=>i);
