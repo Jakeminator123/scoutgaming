@@ -4,7 +4,7 @@
 // account; everyone else goes to the password page. Off when DEMO_PASSWORD is unset.
 import { timingSafeEqual } from 'node:crypto';
 
-export function createDemoGate({ password = process.env.DEMO_PASSWORD ?? '', passwordPage = 'https://scoutgaminggroup.com/demo' } = {}) {
+export function createDemoGate({ password = process.env.DEMO_PASSWORD ?? '', passwordPage = process.env.DEMO_PASSWORD_PAGE || 'https://scoutgaminggroup.com/demo' } = {}) {   // staging points at its own /studio/
   const on = !!password;
   const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
   const rightPassword = given => on && same(String(given ?? '').trim(), password);
