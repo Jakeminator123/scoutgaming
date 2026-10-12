@@ -2,6 +2,43 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
+
+12 oktober: PAOW:s sparade basklipp är dealer_desktop, 1920×1080 och 5 sekunder.
+I den inloggade produktionsvyn verifierades byte till det äldre porträttklippet
+och tillbaka som osparat utkast, därefter omladdning till sparat desktopklipp.
+Videon spelade utan mediefel. Den separata AI-talreferensen behölls. Kontrollen
+sparade eller publicerade inget produktionspaket.
+
+Svarsbibliotekets gemensamma privata lagring verifierades hela vägen: ett eget
+syntetiskt Astrid-svar sparades med Render-konfigurationen, lästes och kategoriserades
+i Vercels inloggade UI, och lästes tillbaka från Render-sidan med exakt text,
+kategori och revision 2. Privat ljud och video spelade färdigt utan mediefel.
+Samtliga tre egna testobjekt raderades; inga befintliga objekt berördes.
+PAOW:s bibliotek laddades separat med rätt dealer och tio kategorier.
+
+Dealerhantering verifierades i verkliga LabStudio-komponenten och ordinarie
+API/repository mot en ny isolerad lokal PostgreSQL: skapa, spara, omladdning,
+papperskorg, omladdning, återställ och omladdning. Alla tre skrivningar gav 200.
+SQL-historiken visade 4→5→4→5 dealers; återställda dealers och 80 klipprader var
+exakt identiska med sparningen före arkivering. Egna processer och temporär
+databas stängdes och togs bort. Privat fixture och underlag finns under
+lab/data/platform-private/dealer-crud-qa/ och följer inte med i Git.
+
+Basdealers och dealers som fortfarande används skyddas fortsatt mot radering.
+Permanent borttagning av media kräver Blob-kontroller och minst 15 minuter efter
+arkivering; det steget ingick inte i browserprovet. 74 riktade befintliga prov
+täcker dealerregistrering, livscykel och borttagning.
+
+Scenvalet (lane) följer nu dealerflikar, utgående klipplänkar och webbläsarhistorik.
+33 riktade navigeringsprov passerar. Direktlänkar till kända Control-dokument
+normaliserar webbläsarens navigeringsmetadata före Nexts interna rewrite.
+Undantaget gäller endast GET-dokument utan body eller server action; Origin,
+cookie, N1-behörighet och API-kontroller behålls. 24 request-/navigeringsprov och
+provet mot den verkliga middleware-kedjan passerar. Två oberoende granskningar
+fann ingen säkerhetsregression. Slutbygge, fullhook och exakt live-revision
+redovisas i leveransmeddelandet.
+
 ### Gemensam namnväckning och sparning av genererade dealersvar
 
 CI-komplettering: OpenClaws separata produkttalprov avvisar nu en verkligt
@@ -55,7 +92,7 @@ Utkast och konflikter skyddas vid sid-, dealer- och filterbyte. Sena svar får i
 
 Verifiering: 142 samlade kontext-/dealer-/scen-/event-/Probe-/admin-/biblioteksprov, 15 API-/queryprov och fem privata lagringsprov passerar, liksom 20 befintliga request-/mediaprov, TypeScript och Next-produktionsbygge. Nya tester registreras i ordinarie fullhook; inga tester kring spelkort, plånbok eller taluppspelning tas bort. Produktionsläsningens utfall redovisas i leveransmeddelandet.
 
-Avgränsning: denna leverans innehåller bibliotek och lagringsmodul. Automatisk infångning från avslutade genererade svar levereras separat i röstuppgiften när Blob och Studio-scope finns konfigurerade. Inga tidigare artefakter importeras; ingen verklig läppsynksacceptans eller produktionsskrivning av kategori/media görs av dessa tester.
+Automatisk infångning från avslutade genererade svar ingår nu i röstleveransen ovan. Blob och Studio-scope är konfigurerade och den gemensamma lagringen har verifierats med egna syntetiska testobjekt enligt acceptansnoteringen överst. Tidigare artefakter importeras inte. Detta är ingen ny mänsklig läppsynksacceptans eller verifiering av ett nytt betalt genereringsförlopp.
 
 ### JN2-D: sparade utkast, granskad publicering och återställning, 12 oktober 2026
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server.js';
-import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest } from '../lib/studio-native-request.mjs';
+import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest, studioDocumentNavigationHeaders } from '../lib/studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest } from '../lib/studio-native-runtime.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
@@ -139,4 +139,28 @@ test('only the room preparation GET retains two exact query keys through the pub
     assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + extra, { method, headers: forwarded }), config), error => error.statusCode === 403);
   }
   assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + query, { headers: { ...forwarded, origin: 'https://evil.invalid' } }), config), error => error.statusCode === 403);
+});
+
+test('known staff document navigation remains readable after Next drops mode and destination during rewrite',()=>{
+  const navigation={...forwarded,'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
+  for(const path of ['/control','/control/clips','/control/replies','/studio/control/replies']) {
+    const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
+    assert.equal(headers.get('sec-fetch-site'),null);
+    assert.equal(headers.get('cookie'),forwarded.cookie);
+    assert.equal(headers.get('origin'),publicOrigin);
+    headers.delete('sec-fetch-mode');headers.delete('sec-fetch-dest');
+    assert.doesNotThrow(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+path,{headers}),config));
+  }
+  const foreign=studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{headers:{...navigation,origin:'https://evil.invalid'}}));
+  assert.equal(foreign.get('origin'),'https://evil.invalid');
+  assert.throws(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+'/control/replies',{headers:foreign}),config),error=>error.statusCode===403);
+  for(const path of ['/api/replies','/studio/api/replies','/control/api/replies','/control/replies/extra','/studio/_next/static/test.js','/unknown']) {
+    const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
+    assert.equal(headers.get('sec-fetch-site'),'cross-site',path);
+  }
+  for(const change of [{'sec-fetch-mode':'cors'},{'sec-fetch-dest':'empty'},{'sec-fetch-mode':null},{'sec-fetch-dest':null},{'next-action':'fixture'}]) {
+    const headers=new Headers(navigation);for(const [key,value] of Object.entries(change)){if(value===null)headers.delete(key);else headers.set(key,value);}
+    assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{headers})).get('sec-fetch-site'),'cross-site');
+  }
+  assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{method:'POST',headers:navigation,body:'mutation'})).get('sec-fetch-site'),'cross-site');
 });

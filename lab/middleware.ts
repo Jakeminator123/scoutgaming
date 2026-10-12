@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { platformConfiguration, platformRoute, platformBackendHeaders } from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import { studioDocumentNavigationHeaders } from './lib/studio-native-request.mjs';
 
 // Services route Studio documents directly to this app. Retain the same exact
 // transport boundary that the separate frontend previously enforced.
@@ -12,7 +13,8 @@ export function middleware(request: NextRequest) {
   if (route.kind === 'frontend' || route.kind === 'socket') return new NextResponse(null, { status: 404 });
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);
 
-  const headers = route.kind === 'backend' ? platformBackendHeaders(request.headers, config) : new Headers(request.headers);
+  const headers = route.kind === 'backend' ? platformBackendHeaders(request.headers, config)
+    : route.kind === 'lab' ? studioDocumentNavigationHeaders(request) : new Headers(request.headers);
   if (route.kind === 'lab') {
     for (const name of [...headers.keys()]) if (name.startsWith('x-croupier-') || name === 'forwarded') headers.delete(name);
     headers.set('x-forwarded-host', new URL(config.publicOrigin).host);

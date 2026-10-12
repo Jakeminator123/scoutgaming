@@ -397,3 +397,51 @@ test('exact selected variants remain in outgoing navigation and both editor tab 
   const editors=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/events'));assert.equal(editors.length,2);
   for(const link of editors){const params=new URL(link.props.href,'https://test.invalid').searchParams;assert.equal(params.get('variant'),'astrid.deal.player.centre.alt-2');assert.equal(params.get('situation'),'box4');assert.ok(['variants','triggers'].includes(params.get('tab')));}
 });
+
+test('clips route and actual dealer tabs keep lane through outgoing links, dealer changes and browser history',async()=>{
+  const project=addDealer(createSeedProject(),'paow','PAOW');
+  const pageSource=readFileSync(new URL('../app/control/clips/page.tsx',import.meta.url),'utf8');
+  const pageOutput=transformSync(pageSource,{filename:'page.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+  const routeModule={exports:{}},LabStudioMarker=()=>null;
+  vm.runInNewContext(pageOutput.code,{module:routeModule,exports:routeModule.exports,Request,process:{env:{CROUPIER_STREAM_LANE:'lissabon-stream-lane'}},require:name=>({
+    '@/components/studio-types':realStudioTypes,
+    'next/headers':{headers:async()=>new Headers({host:'local.test'})},
+    '@/components/lab-studio':{LabStudio:LabStudioMarker},
+    '@/lib/ui-server':{studioUiInitialData:async()=>({project,videos:{videos:[]}})},
+  })[name]??require(name)});
+  const page=await routeModule.exports.default({searchParams:Promise.resolve({lane:['mobile-phone','ignored-lane'],dealer:'paow',view:'settings',category:'idle'})});
+  assert.equal(page.type,LabStudioMarker);assert.equal(page.props.initialLaneId,'mobile-phone');
+  const navSource=readFileSync(new URL('./studio-navigation.tsx',import.meta.url),'utf8');
+  const navOutput=transformSync(navSource,{filename:'studio-navigation.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+  const navModule={exports:{}};vm.runInNewContext(navOutput.code,{module:navModule,exports:navModule.exports,require:name=>name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
+  const listeners=new Map(),assigned=[];
+  const location=new URL('https://local.test/control/clips?lane=mobile-phone&dealer=paow&view=settings&category=idle#idle');
+  const runtimeWindow={location:{href:location.href,search:location.search,hash:location.hash,assign:href=>assigned.push(href)},addEventListener:(name,callback)=>listeners.set(name,callback),removeEventListener(){},history:{pushState(_state,_title,url){setLocation(url);},replaceState(_state,_title,url){setLocation(url);}}};
+  function setLocation(value){const next=new URL(value,runtimeWindow.location.href);Object.assign(runtimeWindow.location,{href:next.href,search:next.search,hash:next.hash});}
+  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow,'./studio-navigation':navModule.exports});
+  let tree=h.render(page.props);
+  const tabLinks=()=>{const component=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];return nodes(component.type(component.props),node=>node.type==='a'&&['Grundloop','Klipp','Scen & format','Tal & automatik','Svarsbibliotek','Inställningar'].includes(node.props.children));};
+  function assertTabs(dealer,lane){const links=tabLinks();assert.equal(links.length,6);for(const link of links){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('dealer'),dealer,link.props.children);assert.equal(query.get('lane'),lane,link.props.children);}return links;}
+  assertTabs('paow','mobile-phone'); // Lane must already exist before hydration.
+  h.flushEffects();tree=h.render(page.props);assertTabs('paow','mobile-phone');
+  const clips=tabLinks().find(link=>link.props.children==='Klipp');clips.props.onClick({button:0,preventDefault(){}});tree=h.render(page.props);
+  assert.equal(new URL(runtimeWindow.location.href).searchParams.get('lane'),'mobile-phone');assertTabs('paow','mobile-phone');
+  nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('speak.goodluck','goodluck');tree=h.render(page.props);
+  const outgoing=nodes(tree,node=>node.type==='a'&&/^\/control\/(?:events|administration|preview|activity)/.test(node.props.href??''));
+  assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/events')));assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
+  for(const link of outgoing)assert.equal(new URL(link.props.href,'https://local.test').searchParams.get('lane'),'mobile-phone',link.props.href);
+  pressDealer(tree,'Amira');tree=h.render(page.props);assertTabs('amira','mobile-phone');
+  for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}
+  for(const [url,lane] of [['/control/clips?lane=desktop-wide&dealer=paow&view=settings','desktop-wide'],['/control/clips?dealer=paow&view=settings',null],['/control/clips?lane=mobile-phone&dealer=paow&view=settings','mobile-phone']]){
+    setLocation(url);listeners.get('popstate')({type:'popstate'});tree=h.render(page.props);assertTabs('paow',lane);
+  }
+  const replies=tabLinks().find(link=>link.props.children==='Svarsbibliotek');assert.equal(new URL(replies.props.href,'https://local.test').pathname,'/control/replies');
+  replies.props.onClick({button:0,preventDefault(){}});tree=h.render(page.props);h.flushEffects();assert.equal(assigned.length,1);assert.equal(new URL(assigned[0],'https://local.test').searchParams.get('lane'),'mobile-phone');
+});
+
+test('legacy composition hash redirects retain the selected lane and dealer',()=>{
+  const redirected=[],runtimeWindow={location:{href:'https://local.test/control/clips?dealer=paow&lane=mobile-phone#background',search:'?dealer=paow&lane=mobile-phone',hash:'#background',replace:href=>redirected.push(href)},addEventListener(){},removeEventListener(){}};
+  const p={...props(),initialProject:addDealer(createSeedProject(),'paow','PAOW'),initialDealerId:'paow',initialLaneId:'mobile-phone'};
+  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();assert.equal(redirected.length,1);
+  const url=new URL(redirected[0],'https://local.test');assert.equal(url.pathname,'/control/preview');assert.equal(url.searchParams.get('dealer'),'paow');assert.equal(url.searchParams.get('lane'),'mobile-phone');
+});
