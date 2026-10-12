@@ -420,6 +420,9 @@ Format, koordinater, keystone-/idle-prompter och reserverad blackjackmall:
 blackjack. Rouletteguiden länkar dit. Inga nya parallella dokumentationsmappar.
 
 Verifierat: 27 roulettekontroller och 10 gemensamma scenkontroller passerar.
+Fullständig pre-commit-kontroll passerar på `77f959db` med Node 24.21.0.
+Windows-körningen använder en egen katalog under vanlig LocalAppData/Temp;
+en testrot under `.codex` blockeras av byggspårens avsiktliga privatfilter.
 Browser: 1440/390/320 px, 44 px minsta satshöjd, PNG med bibehållen alpha,
 tangentbordsdialog, spelvarv och tappat svar följt av omladdning/återförsök
 (samma requestId/version/bets, en debitering). Riktig lokal H.264-testfilm
