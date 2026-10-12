@@ -59,7 +59,7 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | (inte nämnt) Render-imagen | `COPY . .` bakar in all `media/**/runtime`. Dealerfiler på disk är inte reservkälla för molnuppspelningen. | A31 |
 | (inte nämnt) Död kod | 87 pipeline-skript saknar konsument. Av 122 klientfiler i `web/public` saknar 27 produktkonsument, bland dem fem spårade granskningssidor. 181 av 296 Markdown-filer är QA-anteckningar i staging. | A10, A14–A17 |
 | (inte nämnt) `ops/vercel-entry`, `ops/caddy` | `ops/vercel-entry` är den gamla fristående Vercel-ingången, men dess `build.mjs` används av frontendbygget och tre tester. `preview/` är ett separat tillfälligt Vercel-projekt med lokal `.vercel` och `dist`. `ops/caddy/bettalotto-game-auth.Caddyfile` (bettalotto.se) har ingen konsument i repot, men kan köras på en extern server. | A18, B15 |
-| (inte nämnt) Cursor-ignorerat | `.cursorignore` är identisk med `.ignore`. Cursor och `rg` ser inte `media/**/source`, `media/**/staging`, `media/layout.json`, `media/blob-index.json`, `vendor/`, binärer, `lab/data/` och `web/data/`. Mätverktygen använder `git ls-files` och påverkas inte. | ORKESTRERING §4 punkt 13 |
+| (inte nämnt) Cursor-ignorerat | Vid `00ea55c5` var `.cursorignore` identisk med `.ignore`. Cursor och `rg` såg inte `media/**/source`, `media/**/staging`, `media/layout.json`, `media/blob-index.json`, `vendor/`, binärer, `lab/data/` och `web/data/`. **Ändrat i A17 (B17):** `.cursorignore` håller bara hemligheter, privata data och genererat. De spårade medietexterna står i `.cursorindexingignore` och kan läsas uttryckligen. `.ignore` döljer dem fortfarande för `rg`. Mätverktygen använder `git ls-files` och påverkas inte. | ORKESTRERING §4 punkt 13 |
 | (inte nämnt) Lokalt utanför Git | `lab/data` är 787 MB, varav `platform-private` 748 MB med QA-evidens och privata nycklar. Därtill en `.venv` på 161 MB i ditt 3lager-material, `.next`-cache på 172 MB, `media/.migration` på 9,5 MB (migreringsjournaler från 2 oktober) och genererade kopior i `apps/croupier-frontend/public`. | A19, B16 (Jakobs egna data) |
 
 ## 3. Principer
@@ -174,9 +174,9 @@ Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) 
 | [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | inmergad (V2-prov) |
 | [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | inmergad (V2-prov) |
 | [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | inmergad (V2-prov) |
-| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | körs |
+| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | inmergad (V2-prov) |
 | [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | inmergad (V2-prov) |
-| [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | väntar (efter V2) |
+| [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | förslag till Jakob |
 | [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar (B12 ja) |
 | [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar (B12 ja) |
 | [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar; bara utredning (B12) |

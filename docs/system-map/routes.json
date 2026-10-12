@@ -1283,7 +1283,7 @@
       "handlerFile": "apps/croupier-frontend/app/game/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 remains a separate prepared entry, and /casino.html is a 308 redirect to /play (frontend-casino-html). This catalog does not infer /blackjack authorization for those legacy paths.",
       "groupId": "aliases",
       "sources": [
         {
@@ -1428,7 +1428,7 @@
       "handlerFile": "apps/croupier-frontend/app/v2/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 remains a separate prepared entry, and /casino.html is a 308 redirect to /play (frontend-casino-html). This catalog does not infer /blackjack authorization for those legacy paths.",
       "groupId": "aliases",
       "sources": [
         {

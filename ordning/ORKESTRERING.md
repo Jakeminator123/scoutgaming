@@ -173,9 +173,12 @@ Avvikelse mot baslinjen (med origin/main-SHA) · Dokumentändringar som behövs 
     `git ls-files <mapp>` att inget spårat finns kvar.
 12. **Ospårat lokalt material** (BASLINJE §9) finns inte i molnet. Skriv aldrig
     att det kan raderas, och skriv inte regler som skulle radera det.
-13. **Ignorerade sökvägar:** `.ignore` (ripgrep) och `.cursorignore` döljer
-    `media/**/source`, `media/**/staging`, `media/layout.json`,
-    `media/blob-index.json`, `vendor/` och binärer. `.cursorignore` begränsar
+13. **Ignorerade sökvägar:** `.ignore` (ripgrep) döljer `media/**/source`,
+    `media/**/staging`, `media/layout.json`, `media/blob-index.json`, `vendor/`
+    och binärer. Sedan B17 (A17) håller `.cursorignore` bara hemligheter,
+    privata data och genererat; de spårade medietexterna ligger i
+    `.cursorindexingignore`, som stoppar indexering men tillåter en uttrycklig
+    läsning. `.cursorignore` begränsar
     också Cursors egna filverktyg (Read/Grep/Glob), medan terminal- och
     MCP-verktyg inte omfattas. Sök därför i **spårade** textfiler med
     `git grep -n <mönster> -- <sökvägar>` (läser bara spårat innehåll och
