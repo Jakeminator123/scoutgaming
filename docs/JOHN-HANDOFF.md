@@ -310,6 +310,13 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
+**Kompositorn ligger i `packages/presentation`, 12 oktober.** Paketet äger
+`compositor/`, `docs/` och `preview/`. Publika adresser
+(`/composition-runtime/*`, `/layer-packs/*`, Studio `/preview/*`) och
+källfilernas hash är oförändrade. Riktade prov gröna i molnet på Node 22.
+Studio-bygge, frontendbygge och hela sviten är orkestratorns, med Node 24.
+Kvar: layer-lanen efter deploy.
+
 **Admininloggning från partnerportalen, 12 oktober (`jakob/partner-admin-login-link`).**
 `/partner/login` tar fortfarande bara emot operatörspersonal. Ett internt
 adminkonto ger samma allmänna fel som ett fel lösenord, och formuläret skapar
@@ -540,8 +547,9 @@ inloggad spelare, gäst och Studio-provspel. Den tidigare teststubben för den
 borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
 skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
 Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
-och kompositorns JavaScript utan runtime-stubbar. Vid A20/A21 måste dess
-kataloger i `test/browser-runtime-bindings.mjs` följa samma atomära flytt.
+och kompositorns JavaScript utan runtime-stubbar. Kompositorns katalog är
+`packages/presentation/compositor/`. A21 flyttar fortfarande `presentation-runtime/`
+i samma lista.
 
 Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
 `f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade

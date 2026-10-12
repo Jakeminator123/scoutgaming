@@ -7,8 +7,8 @@ import {presentationCapabilitiesResponse} from '../web/presentation-capabilities
 import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from '../web/public/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../web/public/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
-import {stageGeometry,tableRect} from '../test-videoeditor/program/web/geometry.js';
-import {Compositor} from '../test-videoeditor/program/web/compositor.js';
+import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
+import {Compositor} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
@@ -74,7 +74,7 @@ test('published Nora uses the frozen named registry and rejects query requests f
 });
 test('runtime serves only the two shared code files and refuses data, queries and writes',async()=>{
   const response=await compositionRuntimeResponse(new Request('https://local/composition-runtime/compositor.js'));
-  assert.equal(response.status,200);assert.equal(await response.text(),await readFile(new URL('../test-videoeditor/program/web/compositor.js',import.meta.url),'utf8'));
+  assert.equal(response.status,200);assert.equal(await response.text(),await readFile(new URL('../packages/presentation/compositor/compositor.js',import.meta.url),'utf8'));
   assert.equal(await compositionRuntimeResponse(new Request('https://local/composition-runtime/catalog.json')),null);
   assert.equal(await compositionRuntimeResponse(new Request('https://local/composition-runtime/../../.env')),null);
   assert.equal((await compositionRuntimeResponse(new Request('https://local/composition-runtime/geometry.js?file=.env'))).status,400);

@@ -1,8 +1,8 @@
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 const sources=new Map([
-  ['/composition-runtime/compositor.js',new URL('../test-videoeditor/program/web/compositor.js',import.meta.url)],
-  ['/composition-runtime/geometry.js',new URL('../test-videoeditor/program/web/geometry.js',import.meta.url)],
+  ['/composition-runtime/compositor.js',new URL('../packages/presentation/compositor/compositor.js',import.meta.url)],
+  ['/composition-runtime/geometry.js',new URL('../packages/presentation/compositor/geometry.js',import.meta.url)],
 ]);
 export async function compositionRuntimeResponse(request) {
   const url=new URL(request.url),source=sources.get(url.pathname);

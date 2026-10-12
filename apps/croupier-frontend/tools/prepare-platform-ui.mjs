@@ -33,7 +33,7 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
   for(const name of ['compositor.js','geometry.js']){
     const target=join(output,'public','composition-runtime',name);
     await mkdir(dirname(target),{recursive:true});
-    await writeFile(target,await readFile(join(repo,'test-videoeditor/program/web',name)));
+    await writeFile(target,await readFile(join(repo,'packages/presentation/compositor',name)));
     files.push('/composition-runtime/'+name);
   }
   // Optional player styles are selected dynamically by the existing player.

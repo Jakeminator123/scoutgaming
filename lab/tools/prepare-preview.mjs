@@ -19,8 +19,8 @@ const scriptRewrites = [
 ];
 
 export async function preparePreview({
-  previewRoot = join(repoRoot, 'test-videoeditor/preview'),
-  webRoot = join(repoRoot, 'test-videoeditor/program/web'),
+  previewRoot = join(repoRoot, 'packages/presentation/preview'),
+  webRoot = join(repoRoot, 'packages/presentation/compositor'),
   output = previewBuildDirectory,
 } = {}) {
   await rm(join(labRoot, 'public', 'preview'), { recursive: true, force: true });
