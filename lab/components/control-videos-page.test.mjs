@@ -20,6 +20,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (name === 'next/navigation') return { usePathname: () => '/control/videos', useSearchParams: () => new URLSearchParams() };
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -37,7 +38,7 @@ function loadTs(fileUrl) {
 }
 
 const { ControlVideosPage } = loadTs(new URL('./control-videos-page.tsx', import.meta.url));
-const base = { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: { configured: false } };
+const base = { initialDealerId: 'astrid', initialEventId: 'speak.goodluck', initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: { configured: false } };
 const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 const astridVideos = {
   families: manifest.families,

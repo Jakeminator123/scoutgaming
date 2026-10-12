@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
@@ -21,7 +22,7 @@ test('Web ownership prevents a second player before attachment and survives obse
   const Partner = () => null, Player = () => null, Capture = () => null;
   const mocks = { react, './partner-reference': { PartnerReference: Partner }, './game-stream': { GameStream: Player }, './reference-capture': { ReferenceCapture: Capture } };
   const module = { exports: {} };
-  vm.runInNewContext(compiled.code, { module, exports: module.exports, TextEncoder, clearTimeout,
+  vm.runInNewContext(compiled.code, { module, exports: module.exports, TextEncoder, clearTimeout, crypto: webcrypto,
     require: name => name.endsWith('.css') ? {} : mocks[name] ?? require(name),
   });
   const props = { entries: [], full: true, onActivity() {}, onClear() {}, onOpen() {}, streamView: { dealerId: 'astrid' } };

@@ -18,6 +18,7 @@ const CONTEXT_PARAMETERS = Object.freeze({
 // Read only the shared Studio context; page-specific filters and credentials
 // never become navigation context.
 export function studioNavigationContextFromQuery(query) {
+  if (query == null) return {};
   return Object.fromEntries(Object.entries(CONTEXT_PARAMETERS)
     .map(([key, parameter]) => [key, query.get(parameter) ?? (key === 'laneId' ? query.get('lane') : null)])
     .filter(([, value]) => typeof value === 'string' && value));

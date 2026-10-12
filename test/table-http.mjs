@@ -84,14 +84,23 @@ try {
   await start();
   let entryHtml;
   for (const path of ['/', '/v2', '/v2/', '/v2/index.html']) {
-    const response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
-    assert.equal(response.status, 200, `local guest entry ${path}`);
+    let response = await fetch(origin + path + '?dealer=astrid', { redirect: 'manual' });
+    if(path!=='/'){
+      assert.equal(response.status,307,`retired entry alias ${path}`);
+      assert.equal(response.headers.get('location'),'/?dealer=astrid','aliases keep the explicit choice but grant no registration');
+      await response.text();
+      response=await fetch(origin+'/?dealer=astrid',{redirect:'manual'});
+    }
+    assert.equal(response.status, 503, `empty installation entry ${path}`);
     const html = await response.text();
+    assert.match(html,/Ingen presentation vald/);
+    assert.doesNotMatch(html,/data-game-dealer=|<video|src="app\.mjs"/,'a dealer query cannot create a playable presentation');
     entryHtml ??= html;
-    assert.equal(html, entryHtml, 'original and V2 use the same entry document; pathname chooses the presentation');
+    assert.equal(html, entryHtml, 'original and V2 share the same unavailable presentation response');
   }
-  checks.push('Original/V2 routes: same shared entry document, local guest access preserved');
+  checks.push('Original/V2 empty entry fails closed; explicit dealer query never creates a presentation');
   player = await post('/api/player', {}); await refresh();
+  checks.push('Isolated guest session still authenticates the authoritative table API');
   db = new DatabaseSync(join(dir,'data/croupier.db'));
   db.exec('PRAGMA busy_timeout=5000'); // Wait for the isolated server's brief SQLite writes.
   assert.equal(state.balance,1000); assert.equal(state.shoe.remaining,415);

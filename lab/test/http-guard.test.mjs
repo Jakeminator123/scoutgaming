@@ -84,10 +84,13 @@ test('ordinary same-origin page and RSC fetches still work without relaxing fore
 test('loadControlStudio delegates to the guarded UI helper; API routes cannot use the navigation exception', async () => {
   const page = await readFile(new URL('../app/control-studio-data.tsx', import.meta.url), 'utf8');
   assert.match(page, /studioUiInitialData/);
-  for (const file of ['events', 'videos', 'activity', 'guide', 'probe', 'openclaw']) {
+  for (const file of ['events', 'videos', 'rehearsal', 'guide', 'probe', 'openclaw']) {
     const source = await readFile(new URL(`../app/control/${file}/page.tsx`, import.meta.url), 'utf8');
     assert.match(source, /loadControlStudio/, file);
   }
+  const activity = await readFile(new URL('../app/control/activity/page.tsx', import.meta.url), 'utf8');
+  assert.match(activity, /redirectToPublicControl\('\/control\/rehearsal'/);
+  assert.doesNotMatch(activity, /loadControlStudio|studioUiInitialData/);
   const tree = await readFile(new URL('../app/control/tree/page.tsx', import.meta.url), 'utf8');
   assert.match(tree, /permanentRedirect/);
   assert.match(tree, /authorizeUiPage/);

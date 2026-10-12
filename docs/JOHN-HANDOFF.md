@@ -31,6 +31,15 @@ Chrome verifierade gamla lane-länkens omdirigering, kontextuell tom provspelnin
 sammansättningarnas tomvy och mobilmenyn vid uppmätta 320–400 CSS-pixlar.
 Inget horisontellt överflöde sågs i dessa vyer. Isolerat serverpar stoppat;
 bolagsdata var avsiktligt otillgänglig i offline-provet.
+Commit 8e8aced levererade grundändringen; hela lokala commitkontrollen passerade
+med 2 827 godkända prov och 11 villkorliga undantag. GitHub kör även hela
+Lab-sviten (1 665 prov) och hittade 11 äldre fixture-/routefel. Följdfixen
+uppdaterar explicit dealerval, tom projektstart, observationens browser-API och
+skyddade canonical-rutter, och hanterar null från Nexts URL-hook. Hela Lab-
+sviten passerar nu (1 664 godkända, två miljövillkorade undantag), liksom
+produktionsbygget med typkontroll. Tom spelstart ger avsiktligt 503 även för
+gamla alias; bord, kort, saldo och omstart fungerar i isolerade prov. Samma
+regressioner ingår nu även i commitkontrollen.
 Verifiering mot verklig publicerad data efter driftsättning återstår; tracker-
 punkter som kräver sådan acceptans lämnas öppna.
 
@@ -73,8 +82,11 @@ ersätter inte full molnrehearsal eller visuell acceptans av publicerade dealers
 
 Leverans samordnas med flow-restructure, inklusive modell-/UI-ändringar och
 dealerarkiv. Exakt fryst ägarlista finns lokalt i lab/data/legacy-delivery-files.json.
-Samlad fullhook, full molnrehearsal och liveleverans återstår vid denna notering.
-GitGuardian på 395d35f3: 12 öppna av 17, partiella platser, historisk skanning
+Samlad fullhook passerade för 8e8aced. Full molnrehearsal återstår; läskontrollen
+av molndata visar att Astrid, Vera och Mei saknar baseline-videoGenerationId på
+idle.ready och därför inte kan friskförklaras spelbara. Följdcommit och
+GitHub-kontroller krävs innan Render levererar den nya runtime-versionen.
+GitGuardian på 8e8aced: 12 öppna av 17, partiella platser, historisk skanning
 too_large och väntande GitHub-suite. Ingen friskförklaring eller incidentåtgärd.
 
 ## Börja här: överlämning 12 oktober 2026
