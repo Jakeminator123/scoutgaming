@@ -1,4 +1,0 @@
-#!/bin/sh
-# Keep this hook LF-only; .gitattributes enforces it on Windows checkouts.
-set -eu
-exec node tools/precommit-checks.mjs "$@"

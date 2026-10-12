@@ -1,9 +1,0 @@
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101b18;color:#f6f1e6}
-*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px}
-main{width:min(100%,430px)}.eyebrow{font-size:.75rem;letter-spacing:.2em;color:#d2bc8d}
-h1{font-size:clamp(2rem,7vw,3.3rem);line-height:1.05;font-weight:500}p{line-height:1.6;color:#c7cec7}
-form{display:grid;gap:12px}form[hidden]{display:none}fieldset{border:1px solid #53645b;border-radius:10px;margin:0 0 12px;padding:14px}
-fieldset label{display:block;margin:8px 0}input:not([type=radio]){width:100%;font:inherit;padding:14px;border:1px solid #53645b;border-radius:10px;background:#172720;color:inherit}
-button,.button{font:inherit;cursor:pointer;padding:15px 20px;border:0;border-radius:10px;background:#e1cda5;color:#14231a;font-weight:650;text-align:center;text-decoration:none;display:block}
-.secondary{background:transparent;color:#e1cda5;border:1px solid #53645b}button:disabled{opacity:.6;cursor:wait}
-:focus-visible{outline:3px solid #fff;outline-offset:4px}#status{min-height:1.6em}input[type=radio]{accent-color:#e1cda5}

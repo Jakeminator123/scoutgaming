@@ -1,8 +1,0 @@
-Lane-kedjan, läge 2026-10-08 18:10 (alla tre tidigare X är kod på main):
-
-[Lane-typ] --> [/control/lanes publicerar] --> [operator_packages] --> [spelmotorn läser]      (L8: Render /blackjack?operator=, L8b: Vercel /play/blackjack?operator= bär slug genom inloggning; ej klickat i prod)
-                                                                   --> [bolagets justering]   (L4/N2.2: bordsfärg + branding inom lanens adjustable; chips kvar)
-                                                                   --> [spelarens val]        (N3.4: dealerraden följer paketet)
-
-Prod-Neon: bolag sg-test, 3 standardroller, 1 medlem (partner-admin, invited 18:06), 1 paket.
-Återstår i kedjan: klick-verifiering i prod efter partnerinloggning; chips; N2.4 (spelare/transaktioner/rapporter).

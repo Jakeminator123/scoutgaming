@@ -1,7 +1,0 @@
-# Remaining source survey — 13 September 2026, 17:54 UTC follow-up
-
-Inspected the preserved motion-transfer source after the portion used by the current 60 fps takes. source-tail.jpg samples approximately seconds 5–10 at one-second intervals, left to right then top to bottom. This is a sparse candidate survey, not per-frame acceptance.
-
-At 5–6 seconds the deliveries still terminate at the short generated card row close to Astrid. At 7–10 seconds she returns to presentation/rest gestures over the same row, with loose generated cards still in the hands and on the table. The samples do not supply four newly calibrated physical reaches to the actual inner seat fans. They must not be installed as seat-specific fixes merely because more footage exists. No new take was installed, no colour grading changed, and no generation job was submitted.
-
-Reviewed existing per-seat receipts/rejection notes before considering new generation: the first seat-2 proof, its video edit, and both endpoint images were already completed and unsuitable. Repeating their numerical/relative text targeting would repeat the same uncontrolled placement method. The current smooth60 build remains the latest playable quality version; missing distinct physical reaches and camera-matched colour acceptance remain open. The next source needs a correctly placed physical motion reference at the game camera, not body warping or a destination relabel.
