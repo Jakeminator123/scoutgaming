@@ -36,7 +36,7 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 ## Starta
 
 Lokalt öppnas Lab på `/`. I molnet är personalytan `/control`; `/studio` är labbets basePath.
-`/lissabon` inne i Lab är en omdirigering till samma startsida.
+`/lissabon` omdirigerar till `/control`. Lab-roten `/` omdirigerar permanent till `/control/clips`.
 Startkod, standardprojekt och lokala profilval finns nu här i Lab.
 
 ```powershell
@@ -85,9 +85,9 @@ En ny hash är inte ett visuellt godkännande.
 
 ## Arbetsytor och gemensam Guide
 
-- **Guide (`/guide`):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
+- **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
-- **Händelser, översikten (`/control/events` utan `?event=`; `/control/tree` omdirigerar dit):** välj dealer och presentationssätt: idle/bakgrund,
+- **Spelhändelser & villkor, översikten (`/control/events` utan `?event=`; `/control/tree` omdirigerar dit):** välj dealer och presentationssätt: idle/bakgrund,
   engångshandling, exakt tal eller tur/resultat. De fyra grupperna är en vy
   över befintliga sex källtyper och 16 eventgrupper. Vald nod visar exempeldata,
   förväntade källfält och saknade uppgifter, separat från testkontext och
@@ -95,7 +95,7 @@ En ny hash är inte ett visuellt godkännande.
   en dealers standard och alternativ. Klicka vidare till editorn utan att
   tappa osparat arbete. Ingen seed eller något tekniskt ID migreras.
 
-- **Händelser (`/control/events`):** välj croupier/event, redigera namn, linje, varianter och
+- **Spelhändelser & villkor (`/control/events`):** välj croupier/event, redigera namn, linje, varianter och
   triggers. **Övrig spelreplik → Tal-klipp att prova** väljer en exakt lokal
   replik för exemplet (14 Astrid-klipp, utöver de tre egna talnoderna).
   Tur/resultat visar speldata; resultattalet har ett separat speak-event.
@@ -115,12 +115,12 @@ En ny hash är inte ett visuellt godkännande.
   högst sex sekunder tal i neutralt idle. Modellens uttrycksförslag loggas
   separat; ingen hand- eller kroppsrörelse läggs ovanpå talet. Riktig läppsynk
   återstår.
-- **Klippbibliotek (`/control/videos`):** lägg in egna MP4/WebM-filer med dealer, event, typ,
+- **Klippbibliotek (`/control/videos`; menyraden är Dealers & klipp på `/control/clips`):** lägg in egna MP4/WebM-filer med dealer, event, typ,
   standard/alternativ och konkret situation. Filtrera banken och kontrollera
   vilka standardlinjer som har video. Inspektera original och bind vald variant till ett exakt
   `videoGenerationId`. Samma koppling kan redigeras direkt i Händelser.
   Detta är en labbkoppling, inte ett runtime-godkännande.
-- **Uppspelning (`/control/activity`):** flikens indata, beslut och uppspelarens
+- **Provspelning & logg (`/control/rehearsal`; `/control/activity` omdirigerar dit):** flikens indata, beslut och uppspelarens
   start/slut/fel med tid, källa, beslutsfattare och orsak. Fäll ut faktisk JSON
   och filtrera stegen. Loggen håller högst 150 poster i `sessionStorage`, följer
   med vid sidbyte och töms när fliken stängs. Den korta loggen på andra sidor är
@@ -141,7 +141,7 @@ En ny hash är inte ett visuellt godkännande.
 
 ## Var finns chatten och vad täcker 2D?
 
-**Spelarchatt med Astrid** sitter i Händelser (`/control/events`), i förhandsvisningen.
+**Spelarchatt med Astrid** sitter i Spelhändelser & villkor (`/control/events`), i förhandsvisningen.
 Chattgenvägarna ovanför de andra sidorna är borta.
 **Fråga OpenClaw om labbet** ligger på fliken Chatt (`/control/openclaw?tab=chat`).
 Ingen fråga skickas av navigationen.
@@ -351,7 +351,7 @@ uttrycklig anslutning; loggen är ingen fullständig spelhistorik. Lokala API:n
    JSON-underlaget visas även för kopiering när webbläsaren inte hämtar filen.
 
 Protokollet håller hela mottagna rundmeddelanden före loggvisningens kortning.
-Gränsen är 300 meddelanden eller 4 MiB, och Uppspelning stannar där.
+Gränsen är 300 meddelanden eller 4 MiB, och Provspelning & logg stannar där.
 Protokollet ligger i sidans minne och försvinner vid sidbyte eller omladdning.
 De högst 150 loggraderna ligger i `sessionStorage` och följer med vid sidbyte
 tills fliken stängs. Töm visningen tömmer loggraderna. Nycklar maskeras och URL-frågesträngar utelämnas.
@@ -404,7 +404,7 @@ npm --prefix lab run build
 node tools/start-local-comparison.mjs
 ```
 
-Öppna `http://127.0.0.1:4192/activity` (Uppspelning) och tryck **Anslut**. Spelet körs på
+Öppna `http://127.0.0.1:4192/activity` (omdirigerar till Provspelning & logg, `/control/rehearsal`) och tryck **Anslut**. Spelet körs på
 `http://localhost:4194` med originalet på `/`. `/v2/` finns kvar. `/bo`, `/bo/` och `/bo/index.html`
 svarar 308 till `/control/administration`. Olika hostnamn håller testets
 spelcookies skilda från labbet. Tillfälliga databaser och en
