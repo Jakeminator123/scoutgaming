@@ -93,25 +93,29 @@ test("a ready dealer who can speak over his clips gets his lines on the talk tra
   }finally{t.close();}
 });
 
-test('an answer joins the talk track after the line before it; between rounds it is flexible, in a round time-locked', () => {
+test('an answer is said at once on the table clock, before recorded lines still to come; a late good luck is dropped', () => {
   const t=talkTable();
   try{
     t.send('paow','join',{name:'Kevin',seats:[3]});
     const between=t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2});
-    assert.equal(between.talk.flex,true,'between rounds each viewer starts it once his dealer rests');
+    assert.equal(between.talk.flex,false,'also between rounds it runs on the table clock');
     assert.equal(between.talk.startAt,t.box.time+1200);
     assert.equal(between.talk.ljud,`/api/lip/${between.talk.id}/ljud`);
     assert.equal(t.st('paow').talk.at(-1).id,between.talk.id,'every viewer sees it on the talk track');
     t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');
-    const view=t.st('paow'),luck=view.talk.find(x=>x.event==='goodluck');
-    assert.ok(luck.startAt>=between.talk.endAt,'the round\'s first line waits for the answer');
-    const rep=t.box.planned.at(-1).omplanera.map(x=>x.id);
-    assert.ok(rep.includes(between.talk.id),'the answer still speaking when the cards come gets a new map');
+    let view=t.st('paow');const luck=view.talk.find(x=>x.event==='goodluck');
+    assert.ok(luck.startAt>=between.talk.endAt,'the round\'s first line waits for the answer already speaking');
+    assert.ok(t.box.planned.at(-1).omplanera.map(x=>x.id).includes(between.talk.id),'the answer still speaking when the cards come gets a new map');
     assert.ok(t.box.planned.at(-1).steg.length>=view.plan.steps.length);
-    const inRound=t.s.addTalk('paow',{text:'Lycka till!',lang:'sv',dur:1.5});
-    assert.equal(inRound.talk.flex,false,'in a round it runs on the table clock over the cards');
-    assert.ok(inRound.talk.startAt>=Math.max(...view.talk.map(x=>x.endAt)),'never over another line');
-    assert.ok(inRound.steg.some(x=>x.kind==='deal'),'its map can run over the round\'s takes');
+    // a second question mid-deal: only the answer already speaking goes first, the good luck still to come is dropped
+    const mid=t.s.addTalk('paow',{text:'Lycka till själv!',lang:'sv',dur:1.5});
+    assert.equal(mid.talk.startAt,between.talk.endAt+250,'right after the answer speaking now, not after every line of the deal');
+    view=t.st('paow');
+    assert.ok(!view.talk.some(x=>x.event==='goodluck'),'a good luck that would come after the answers is dropped');
+    for(const x of mid.moved)assert.ok(x.startAt>=mid.talk.endAt,'a moved line comes after the answer');
+    assert.ok(mid.steg.some(x=>x.kind==='deal'),'its map can run over the round\'s takes');
+    const sorted=[...view.talk].sort((a,b)=>a.startAt-b.startAt);
+    for(let i=1;i<sorted.length;i++)assert.ok(sorted[i].startAt>=sorted[i-1].endAt,'nothing on the talk track overlaps');
   }finally{t.close();}
 });
 

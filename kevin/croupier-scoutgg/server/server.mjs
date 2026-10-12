@@ -101,9 +101,11 @@ const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGu
   talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
   onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
     const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
-    for(const t of nya)rorlig.speak(d,room,t,karta(t));
-    // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes
-    for(const t of omplanera)if(rorlig.index(t.id))rorlig.speak(d,room,t,karta(t));}});
+    // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes,
+    // FIRST (it is on screen now) and only from the frame where the new cards start (the frames before are with the viewers)
+    const first=plan.steps.find(x=>x.clip)?.startAt??Date.now();
+    for(const t of omplanera)if(rorlig.index(t.id))rorlig.speak(d,room,t,karta(t),{fran:Math.max(0,Math.floor((first-t.kartaStart)*24/1000)-6)});
+    for(const t of nya)rorlig.speak(d,room,t,karta(t));}});
 const dealerGameTools=createDealerGameTools(shared);
 const table = createTableService(tableDb, {shared});
 const tableTick = setInterval(()=>shared.tick(),250);
@@ -208,9 +210,11 @@ async function talkReply(ws, text, dealer) {
   if(!fid&&talk&&rorlig&&rorligOn()&&rorlig.ready(dealer)&&hasVoice(dealer)&&draggeVoiceReady(dealer)){
     try{
       const pcm=await draggeVoice(reply,language,{dealer});
-      const {talk:spoken,steg,ready}=shared.addTalk(ws.session,{text:reply,lang:language,dur:pcm.length/48000});
+      const {talk:spoken,moved,steg,ready}=shared.addTalk(ws.session,{text:reply,lang:language,dur:pcm.length/48000});
       rorlig.activity(dealer);
-      rorlig.speak(dealer,ws.session,spoken,kartaFor(steg,spoken.kartaStart,Math.ceil((spoken.endAt-spoken.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]}),{pcm});
+      const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
+      rorlig.speak(dealer,ws.session,spoken,karta(spoken),{pcm});
+      for(const t of moved)rorlig.speak(dealer,ws.session,t,karta(t));   // recorded lines that now come after the answer
       out({t:'answer',id,to:ws.name,text:reply,dealer,talk:spoken.id});
       send(ws,{t:'thinking',on:false,queued:0});
       return;

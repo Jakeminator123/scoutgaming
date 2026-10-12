@@ -363,8 +363,8 @@ function connect() {
         pending.delete(j.id);
         // A dealer's own clip (Dragge) only plays for viewers who chose that dealer; others just read the text.
         if ((j.dealer ?? 'astrid') !== dealer.id) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
-        // Spoken over his clips (state.talk): the words appear when he starts saying them (speak above).
-        if (j.talk) break;
+        // Spoken over his clips (state.talk): the words appear when he starts saying them (speak above); no idle starts first.
+        if (j.talk) { holdUntil = Math.max(holdUntil, Date.now() + 15000); break; }
         // No clip (Paow, or his voice was not ready in time): show the words now, never behind a deal.
         if (isAlternative && !j.url) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
         // Its length decides when it may start (chat-priority.js); Astrid's answers carry it, the others' clips are read.
@@ -474,6 +474,8 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
       if(!url)return false;
       if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them
+      // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now gives way to his still
+      if(currentItem?.kind==='idle'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
       if(currentItem?.kind==='remark'&&finishCurrent)finishCurrent(true);

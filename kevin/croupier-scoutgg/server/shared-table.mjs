@@ -360,19 +360,28 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   }}
   // snapshot: a visitor without a guest cookie (not seated yet) sees the table as a guest.
   /**
-   * An answer spoken over whatever the dealer shows (rorlig-lipsync.mjs): it joins the room's talk track at the next free
-   * moment. Outside a round it is flexible: each viewer starts it once his dealer is at rest (idles are per viewer).
-   * → {talk, steg (the steps it may run over), ready} for the lip-sync worker.
+   * An answer spoken over whatever the dealer shows (rorlig-lipsync.mjs), at once, on the table clock (Emil 12 Oct: she
+   * answers mid-deal, not after the last card). Only a line already speaking goes first; a recorded line still to come
+   * moves after the answer (a late good luck is dropped). → {talk, moved (lines with a new time), steg, ready}.
    */
   function addTalk(session,input) {
     const id=sessionName(session);
     db.exec('BEGIN IMMEDIATE');
     try{
-      const r=load(id),start=Math.round(Math.max(now()+1200,r.talkUntil??0)),tid=randomUUID();
-      const talk={id:tid,kind:'answer',...input,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:r.phase!=='round',ljud:`/api/lip/${tid}/ljud`};
-      r.talk=[...(r.talk??[]).filter(t=>t.endAt>now()),talk];r.talkUntil=talk.endAt+250;
+      const r=load(id),t=now(),live=(r.talk??[]).filter(x=>x.endAt>t),tid=randomUUID();
+      const speaking=live.filter(x=>x.startAt<=t+1200);
+      const start=Math.round(Math.max(t+1200,...speaking.map(x=>x.endAt+250)));
+      const talk={id:tid,kind:'answer',...input,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`};
+      let free=talk.endAt+250;const later=[],moved=[];
+      for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
+        if(x.startAt>=free){later.push(x);continue;}
+        if(x.kind==='line'&&x.event==='goodluck')continue;
+        const d=x.endAt-x.startAt,y={...x,startAt:free,endAt:free+d,kartaStart:free-LJUD_FORE*1000};
+        later.push(y);moved.push(y);free=y.endAt+250;
+      }
+      r.talk=[...speaking,talk,...later];r.talkUntil=Math.max(r.talkUntil??0,...r.talk.map(x=>x.endAt+250));
       save(id,r);db.exec('COMMIT');
-      return{talk,steg:[...(r.prevSteps??[]),...(r.plan?.steps??[])],ready:readyFor(id)};
+      return{talk,moved,steg:[...(r.prevSteps??[]),...(r.plan?.steps??[])],ready:readyFor(id)};
     }catch(e){db.exec('ROLLBACK');throw e;}
   }
   return{run,tick,readGameState,addTalk,hasRoom:room=>Boolean(db.prepare('SELECT 1 FROM shared_rooms WHERE id=?').get(String(room).toLowerCase())),language:session=>load(sessionName(session)).language,snapshot:(session,token)=>{const id=sessionName(session);return view(id,load(id),token?keyFor(token):null);},presentationContext:(room='astrid')=>{

@@ -110,6 +110,7 @@ export function createLipTracks() {
         catchUp(x);
       }
       x.lips = lips; x.shift = shift;
+      Object.assign(x, { startAt: t.startAt, endAt: t.endAt, kartaStart: t.kartaStart });   // a line moved after an answer
     },
     /** The server pushed a piece ({t:'lip', talk, del, fran, till, rutor}) with its bytes. */
     push(m, bytes = null) {

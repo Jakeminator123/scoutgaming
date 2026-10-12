@@ -139,7 +139,7 @@ export class RorligLipsync {
    * pcm: an answer's voice (s16le 24 kHz), kept for a new map; without it the worker fetches the line (talk.line).
    * A new map for the same talk (the plan changed under it) is a new version: its patches replace the old ones.
    */
-  speak(dealer, room, talk, karta, { pcm = null } = {}) {
+  speak(dealer, room, talk, karta, { pcm = null, fran = 0 } = {}) {
     const s = this.s.get(dealer);
     const old = this.talks.get(talk.id);
     const rec = { room, ver: (old?.ver ?? 0) + 1, pieces: [], done: false, error: null, at: Date.now(), pcm: pcm ?? old?.pcm ?? null, talk };
@@ -164,10 +164,11 @@ export class RorligLipsync {
       };
       const timer = setTimeout(() => finish('timeout'), 30_000);
       ws.on('message', onMsg);
+      // fran: the first frame the viewers still need (a new map while it speaks): the worker makes only the rest
       if (rec.pcm) {
-        ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta }));
+        ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, fran_ruta: fran }));
         for (let i = 0; i < rec.pcm.length; i += 32768) ws.send(rec.pcm.subarray(i, i + 32768));
-      } else ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, ljud_url: base + talk.line }));
+      } else ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, ljud_url: base + talk.line, fran_ruta: fran }));
       ws.send(JSON.stringify({ t: 'end', id: talk.id }));
     });
     s.queue = s.queue.then(run, run);   // one line at a time per worker, in plan order
