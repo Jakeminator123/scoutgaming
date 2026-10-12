@@ -28,9 +28,10 @@ test('chat previews model text provisionally and commits it only inside the gate
 });
 
 test('generated text keeps neutral idle instead of a recorded mouth clip', () => {
-  const playback = source.slice(source.indexOf('async function playChatDecision'), source.indexOf('function sayLine'));
+  const playback = source.match(/async function playChatDecision[\s\S]*?\n\}/)[0];
   assert.match(playback, /decision\.kind === 'generatedText'/);
-  assert.match(playback, /playNeutralTts\(decision\.exactText, signal\)/);
+  assert.match(playback, /pending\.voiceUnavailable = true/);
+  assert.doesNotMatch(playback, /playNeutralTts/);
   assert.doesNotMatch(playback, /playRecorded\([^\n]*generatedText/);
   assert.doesNotMatch(source, /function speakFor\(/);
 });
@@ -48,7 +49,7 @@ function playbackFixture(dealerId, studioPreview = null) {
     $: () => ({ classList: { remove() {} } }), greenActor: false,
     engine: { presentedClip: 'other' }, CLIP: { idle: 'idle' },
   };
-  const playback = source.slice(source.indexOf('async function playChatDecision'), source.indexOf('function sayLine'));
+  const playback = source.match(/async function playChatDecision[\s\S]*?\n\}/)[0];
   const play = runInNewContext(`${playback}\nplayChatDecision`, context);
   return { play, events, tts, videos, poses, statuses, captions, pending, context };
 }
@@ -60,7 +61,7 @@ test('Astrid without generated media stays text-only and never calls a substitut
   assert.equal(f.videos.length, 0);
   assert.equal(f.pending.voiceUnavailable, true);
   assert.deepEqual(f.pending.diagnostic, { requestId: 'reply-1', state: 'text-only' });
-  assert.equal(f.events.at(-1).reason, 'astrid-generated-media-unavailable');
+  assert.equal(f.events.at(-1).reason, 'dealer-generated-media-unavailable');
   assert.equal(f.events.at(-1).renderer, 'text-only');
   assert.equal(f.context.speaking, false);
   assert.equal(f.poses.at(-1).speechOwner, 'none');
@@ -106,19 +107,19 @@ test('generated media preparation replaces the table wait status until actual me
   }
 });
 
-test('the other three dealers retain their existing exact-text voice path', async () => {
-  for (const dealerId of ['vera', 'amira', 'mei']) {
+test('every registered dealer requires exact generated media and never borrows a voice', async () => {
+  for (const dealerId of ['vera', 'mei', 'paow']) {
     const f = playbackFixture(dealerId);
     await f.play({ kind: 'generatedText', exactText: 'Good evening.' }, new AbortController().signal, 'reply-1');
-    assert.deepEqual(f.tts, ['Good evening.']);
-    assert.equal(f.pending.voiceUnavailable, undefined);
+    assert.deepEqual(f.tts, []);
+    assert.equal(f.pending.voiceUnavailable, true);
   }
 });
 
 test('renderer evidence, not busy or phase, supplies standard-idle proof', () => {
-  assert.match(source, /if \(clip === CLIP\.idle\) presentStandardIdle/);
+  assert.match(source, /onIdle: \(\) => presentStandardIdle\('local-primary-frame'\)/);
   assert.match(source, /speechPoseGate\.presentStandardIdle\(/);
-  const proofFunction = source.slice(source.indexOf('function presentStandardIdle'), source.indexOf('const engine ='));
+  const proofFunction = source.match(/function presentStandardIdle[\s\S]*?\n\}/)[0];
   assert.doesNotMatch(proofFunction, /\bbusy\b|round\.phase|duration/);
 });
 

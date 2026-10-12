@@ -1,6 +1,7 @@
 'use client';
 
 import type { MouseEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { studioNavigationCrumbs, studioNavigationTabs, type StudioNavigationCrumbOptions, type StudioDealerTab } from '../lib/studio-navigation.mjs';
 import styles from './studio-navigation.module.css';
 
@@ -11,6 +12,13 @@ export type StudioNavigationProps = StudioNavigationCrumbOptions & {
 };
 
 export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNavigationProps) {
+  const query = useSearchParams();
+  context = {
+    ...(query?.get('composition') || query?.get('lane') ? { laneId: query.get('composition') || query.get('lane')! } : {}),
+    ...(query?.get('operator') ? { operatorId: query.get('operator')! } : {}),
+    ...(query?.get('table') ? { tableId: query.get('table')! } : {}),
+    ...Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined)),
+  } as typeof context;
   const crumbs = studioNavigationCrumbs(context);
   const tabs = studioNavigationTabs(context, tabHrefs);
   const navigate = (event: MouseEvent<HTMLAnchorElement>, href: string) => {

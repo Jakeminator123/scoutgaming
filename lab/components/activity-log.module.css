@@ -67,3 +67,8 @@
 .logBlock .filters { margin-top: 10px; }
 @media (max-width: 900px) { .traceStatus { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 500px) { .playbackTrace { padding: 14px; } .traceStatus { grid-template-columns: 1fr; } }
+
+.observationContext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 0 0 12px; }
+.observationContext h2 { margin: 6px 0; font-size: 23px; overflow-wrap: anywhere; }
+.observationContext p { margin: 6px 0; font-size: 13px; line-height: 1.6; }
+.contextKind { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }

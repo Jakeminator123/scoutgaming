@@ -21,6 +21,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (name === 'next/navigation') return { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() };
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {
@@ -39,7 +40,7 @@ function loadTs(fileUrl) {
 }
 
 const project = createSeedProject();
-const base = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false } };
+const base = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'astrid' };
 const { ControlEventsPage } = loadTs(new URL('../components/control-events-page.tsx', import.meta.url));
 const render = props => renderToStaticMarkup(React.createElement(ControlEventsPage, { ...base, ...props }));
 
@@ -119,4 +120,11 @@ test('clip slot menu keeps the exact seat or dealer card when selecting an actio
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /event-tree|role="tree"|Eventträd/);
   assert.match(html, /Ett klippfack per situation/);
+});
+
+test('events page requires an explicit dealer and handles an empty dealer register',()=>{
+  const unselected=render({initialDealerId:undefined});
+  assert.match(unselected,/<h2>Välj dealer<\/h2>/);assert.doesNotMatch(unselected,/aria-label="Sök event"/);
+  const empty=render({initialDealerId:undefined,initialProject:{...project,dealers:[],lines:[]}});
+  assert.match(empty,/Inga dealers har registrerats ännu/);assert.doesNotMatch(empty,/dealer=astrid/);
 });

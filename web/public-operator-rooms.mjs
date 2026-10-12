@@ -2,12 +2,11 @@ import { isOperatorSlug } from './public/game-lanes.mjs';
 import { clipCompositing } from './public/presentation-composition.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)\/rooms$/;
-const BASE_LABELS = Object.freeze({ astrid: 'Astrid', vera: 'Vera', amira: 'Amira', mei: 'Mei' });
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
 export function supportsIndependentLayers(selection, frozen, dealerId) {
   if (selection.presentation === 'original' || selection.composition?.dealer.compatibility !== 'per-clip') return false;
   const dealer = frozen.registeredDealers?.find(item => item.id === dealerId);
-  if (!dealer) return true; // Preserve the existing built-in local presentation.
+  if (!dealer) return false;
   const composited = media => Boolean(clipCompositing(media?.classification.compositing));
   if (!composited(dealer.idle)) return false;
   const policy = frozen.playback?.dealerIdlePolicies?.find(item => item.dealerId === dealerId)?.policy;
@@ -73,7 +72,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
         query.set('dealer', id);
         const entry = await select(query), selection = entry.selection;
         if (entry.status !== 200 || selection?.dealer !== id || selection.roomId !== room.id || selection.packageRevision !== pack.revision) unavailable();
-        const label = BASE_LABELS[id] ?? frozen.registeredDealers?.find(item => item.id === id)?.label;
+        const label = frozen.registeredDealers?.find(item => item.id === id)?.label;
         if (!label) unavailable();
         const independentLayers = supportsIndependentLayers(selection, frozen, id);
         const defaults = resolvePlayerSelection({ choices: selection.choices, currentDealer: id,

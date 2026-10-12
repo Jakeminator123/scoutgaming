@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,addDealer,validateProject,buildRuntimeCatalog,addVariant} from '../lib/studio-model.mjs';
+import {createSeedProject,addDealer,validateProject,buildRuntimeCatalog,addVariant,defaultPresentationLane} from '../lib/studio-model.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 
 test('Nora receives all own event bindings without borrowing recorded films',()=>{
@@ -21,8 +21,8 @@ test('registered dealer references and complete independent baselines are requir
  assert.throws(()=>buildRuntimeCatalog(project,'unregistered'));
 });
 test('composition round trips in saved lanes and refuses unbounded settings',()=>{
- const project=addDealer(createSeedProject(),'nora','Nora');const lane=project.lanes[0];
- lane.dealers.push('nora');lane.layers.dealer.allowed.push('nora');lane.layers.dealer.default='nora';lane.composition=defaultCompositionSettings();
+ const project=addDealer(createSeedProject(),'nora','Nora'),lane=defaultPresentationLane('nora');project.lanes=[lane];
+ lane.composition=defaultCompositionSettings();
  lane.composition.mobile.table.y=0.08;assert.doesNotThrow(()=>validateProject(JSON.parse(JSON.stringify(project))));
  lane.composition.mobile.dealer.x=Infinity;assert.throws(()=>validateProject(project));
 });

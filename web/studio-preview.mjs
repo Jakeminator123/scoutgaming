@@ -4,7 +4,7 @@ import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import {createNativeTableCommand} from './native-table.mjs';
 import {createPresentationApi} from './presentation-api.mjs';
-import {BASE_DEALER_IDS, registeredDealerIds} from './dealer-identity.mjs';
+import {isActiveDealerId, registeredDealerIds} from './dealer-identity.mjs';
 import {gamePresentationForDealer, isGameLaneId, gameChoicesForLane} from './public/game-lanes.mjs';
 import {decorateGameEntryHtml} from './public/game-entry-contract.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
@@ -36,11 +36,11 @@ function fields(body,allowed) {if(Object.keys(body).some(key=>!allowed.includes(
 
 // This is a separate transport and never accepts a product player database,
 // partner publisher, player cookie or live project reader after capture.
-export function createStudioPreview({authorize,scope,repository,registryLoader,legacyControlsCaptured,privateMedia,bankVideoResponse,readHtml,
+export function createStudioPreview({authorize,scope,repository,registryLoader,privateMedia,bankVideoResponse,readHtml,
   origin,now=Date.now,ttlMs=20*60*1000,maxSessions=16,maxSessionsPerAdmin=3,dbFactory=()=>new DatabaseSync(':memory:')}={}) {
   scope=validateStudioScope(scope);
   if(!same(repository?.scope,scope)||typeof repository?.readPresentationSnapshot!=='function'
-    ||[authorize,registryLoader,legacyControlsCaptured,privateMedia,bankVideoResponse,readHtml,now,dbFactory].some(f=>typeof f!=='function')
+    ||[authorize,registryLoader,privateMedia,bankVideoResponse,readHtml,now,dbFactory].some(f=>typeof f!=='function')
     ||!Number.isSafeInteger(ttlMs)||ttlMs<1000||ttlMs>60*60*1000
     ||!Number.isSafeInteger(maxSessions)||maxSessions<1||maxSessions>64
     ||!Number.isSafeInteger(maxSessionsPerAdmin)||maxSessionsPerAdmin<1||maxSessionsPerAdmin>maxSessions)throw Error('Invalid Studio preview configuration');
@@ -58,27 +58,24 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,l
     if([...params.keys()].some(key=>key!=='dealer')||params.getAll('dealer').length>1)fail('studio_preview_invalid_selection');
     const dealer=params.get('dealer')??s.lane.layers.dealer.default;available(s,dealer);
     const presentation=gamePresentationForDealer(dealer,'portrait-video');
-    const lane=structuredClone(s.lane);lane.layers.dealer.allowed=s.project.dealers.map(row=>row.id);
+    const lane=structuredClone(s.lane);lane.layers.dealer.allowed=s.dealerAvailability.filter(row=>row.playable).map(row=>row.id);
     // Preview can try the complete captured library without changing saved lane
     // assignments. Per-clip compositing still decides whether each film reveals it.
-    const independent=presentation!=='original';
     for(const role of ['table','background']){
       const assets=s.assets.filter(row=>row.role===role);
       lane.layers[role].allowed=assets.map(row=>row.id);
-      lane.layers[role].enabled=independent&&assets.length>0;
+      lane.layers[role].enabled=assets.length>0;
       if(role==='background'){
-        if(!independent)lane.layers[role].mode='baked';
-        else if(assets.length&&lane.layers[role].mode==='baked')lane.layers[role].mode=assets.some(row=>row.contentType.startsWith('image/'))?'image':'video';
+        if(assets.length&&lane.layers[role].mode==='baked')lane.layers[role].mode=assets.some(row=>row.contentType.startsWith('image/'))?'image':'video';
       }
     }
     lane.composition??=defaultCompositionSettings();
-    const registry=s.project.dealers.filter(row=>!BASE_DEALER_IDS.includes(row.id)).map(({id,label})=>({id,label}));
+    const registry=s.project.dealers.filter(row=>isActiveDealerId(row.id)).map(({id,label})=>({id,label}));
     const choices=gameChoicesForLane([lane],lane.id,{renderer:'portrait-video',dealer},{portraitDealerIds:lane.layers.dealer.allowed});
-    if(presentation==='original')choices.background={enabled:false,mode:'baked',allowed:[],default:null};
     const composition={schemaVersion:1,
       background:{enabled:lane.layers.background.enabled,mode:lane.layers.background.mode,allowed:lane.layers.background.allowed,default:lane.layers.background.default},
       table:{enabled:lane.layers.table.enabled,allowed:lane.layers.table.allowed,default:lane.layers.table.default},
-      dealer:{enabled:lane.layers.dealer.enabled,compatibility:independent?'per-clip':'full-frame'},
+      dealer:{enabled:lane.layers.dealer.enabled,compatibility:'per-clip'},
       ...(lane.composition?{settings:lane.composition}:{}),
       assets:s.assets.map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/studio-preview/${s.id}/layers/${id}`}))};
     return {lane:lane.id,dealer,presentation,...(presentation==='local'?{localDealer:dealer}:{}),registeredDealers:registry,choices,composition};
@@ -98,8 +95,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,l
       if(snapshot.projectDocument.revision!==body.expectedProjectRevision||snapshot.projectDocument.value?.revision!==body.expectedProjectRevision)fail('studio_preview_revision_conflict',409);
       const project=freeze(normalizeProject(snapshot.projectDocument.value));registeredDealerIds(project);
       const lane=project.lanes.find(row=>row.id===body.presentationLaneId);if(!lane)fail('studio_preview_lane_not_found',404);
-      const [loadedInventory,loadedControls]=await Promise.all([registryLoader(snapshot),legacyControlsCaptured(snapshot,project)]);
-      const controls=freeze(structuredClone(loadedControls));
+      const loadedInventory=await registryLoader(snapshot);
       const inventory=freeze(structuredClone({videos:loadedInventory.videos,families:loadedInventory.families}));
       if(!Array.isArray(inventory.videos)||inventory.videos.length>5000||!Array.isArray(inventory.families))fail('studio_preview_media_unavailable',503);
       const records=new Map();
@@ -113,8 +109,8 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,l
       }
       const assets=freeze((project.layerAssets??[]).map(validateLayerAsset));
       if(['table','background'].some(role=>assets.filter(row=>row.role===role).length>32))fail('studio_preview_layer_limit',422);
-      const dealerAvailability=project.dealers.map(({id,label})=>({id,label,playable:BASE_DEALER_IDS.includes(id)||Boolean(ownDealerIdle(project,inventory,id)),
-        reason:BASE_DEALER_IDS.includes(id)||ownDealerIdle(project,inventory,id)?null:'studio_preview_idle_required'}));
+      const dealerAvailability=project.dealers.filter(row=>isActiveDealerId(row.id)).map(({id,label})=>({id,label,playable:Boolean(ownDealerIdle(project,inventory,id)),
+        reason:ownDealerIdle(project,inventory,id)?null:'studio_preview_idle_required'}));
       if(!dealerAvailability.find(row=>row.id===lane.layers.dealer.default)?.playable)fail('studio_preview_idle_required',422);
       const current=await authorize(request);if(current.role!=='admin'||current.user!==owner||!same(current.scope,scope))fail('studio_preview_forbidden',403);
       if(closed)fail('studio_preview_unavailable',503);
@@ -125,7 +121,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,l
       const getPlayer=()=>sessionDb.prepare('SELECT * FROM players WHERE id=?').get(playerId);
       const command=createNativeTableCommand({db,getPlayer,logTx:(...values)=>sessionDb.prepare('INSERT INTO transactions VALUES (?,?,?,?,?)').run(...values)});
       const s={id,owner,project,lane,inventory,records,assets,dealerAvailability,expires,db,getPlayer,command,active:0,closed:false};
-      s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),legacyControls:async()=>controls});
+      s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s)});
       s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);db=null;
       return json(201,{...metadata(s),entryUrl:`/studio-preview/${id}`});
     }finally{pending.set(owner,pending.get(owner)-1);if(!pending.get(owner))pending.delete(owner);if(db)db.close();}

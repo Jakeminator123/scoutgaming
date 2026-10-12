@@ -1,5 +1,7 @@
+import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 import type { DealerId, StudioAsset, StudioProject, StudioVariant } from '../lib/studio-model.mjs';
 import { labUrl, stripLabBasePath } from "../lib/lab-url.mjs";
+import { canonicalControlHref } from '../lib/control-flow.mjs';
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 
 export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | 'guide' | 'probe';
@@ -104,16 +106,19 @@ export const viewPaths: Record<StudioView, string> = {
 const EDITOR_TABS = new Set(['event', 'triggers', 'variants']);
 
 // Public control URL plus dealer, event, an optional variant and an optional allowlisted tab.
-export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string; situation?: string } = {}) {
+export function studioHref(path: string, selection: { dealerId?: string; eventId?: string; variantId?: string; tab?: string; situation?: string; laneId?: string; operatorId?: string; tableId?: string } = {}) {
   const base = path.split(/[?#]/, 1)[0];
   const params = new URLSearchParams();
   if (selection.dealerId) params.set('dealer', selection.dealerId);
   if (selection.eventId) params.set('event', selection.eventId);
   if (selection.variantId) params.set('variant', selection.variantId);
   if (selection.situation) params.set('situation', selection.situation);
+  if (selection.laneId) params.set('composition', selection.laneId);
+  if (selection.operatorId) params.set('operator', selection.operatorId);
+  if (selection.tableId) params.set('table', selection.tableId);
   if (selection.tab === 'chat' || (selection.tab && EDITOR_TABS.has(selection.tab))) params.set('tab', selection.tab);
   const query = params.toString();
-  return labUrl(query ? `${base}?${query}` : base);
+  return labUrl(canonicalControlHref(query ? `${base}?${query}` : base));
 }
 
 // Current document path with the selection written into dealer and event.
@@ -128,16 +133,21 @@ export function selectionHref(pathname: string, search: string, dealerId: string
   const previous = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
   const situation = previous.get('event') === eventId ? previous.get('situation') ?? undefined : undefined;
   const nextTab = onEvents && EDITOR_TABS.has(tab) ? tab : onOpenClaw && tab === 'chat' ? tab : undefined;
-  return studioHref(path, { dealerId, eventId, variantId: onEvents || onVideos ? variantId : undefined, tab: nextTab, situation });
+  return studioHref(path, { dealerId, eventId, variantId: onEvents || onVideos ? variantId : undefined, tab: nextTab, situation, laneId: previous.get('composition') ?? previous.get('lane') ?? undefined, operatorId: previous.get('operator') ?? undefined, tableId: previous.get('table') ?? undefined });
 }
 
 export function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** Active views never remove historical dealers from the saved project. */
+export function activeStudioDealers<T extends { id: string }>(project: { dealers: readonly T[] }): T[] {
+  return project.dealers.filter(dealer => isActiveDealerId(dealer.id));
+}
+
 export function resolveStudioDealerId(project: StudioProject, initial?: string): DealerId {
-  const match = project.dealers.find(item => item.id === initial);
-  return (match?.id ?? project.dealers[0]?.id ?? 'astrid') as DealerId;
+  const match = activeStudioDealers(project).find(item => item.id === initial);
+  return (match?.id ?? '') as DealerId;
 }
 
 export function resolveStudioEventId(project: StudioProject, initial?: string) {

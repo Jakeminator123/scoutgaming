@@ -1,3 +1,4 @@
+import {isActiveDealerId} from '../dealer-identity.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -185,6 +186,9 @@ export function createStudioRepository({ pool, scope } = {}) {
         if (!previous) fail('studio_document_missing', 404);
         if (previous.revision !== prepared.expectedRevision) fail('studio_conflict');
         if (kind === 'project') {
+          // Retired profiles stay readable, but project PUT cannot register or restore one as new.
+          if (prepared.value.dealers.some(dealer => !isActiveDealerId(dealer.id)
+            && !previous.value.dealers.some(existing => existing.id === dealer.id))) fail('studio_dealer_inactive');
           const lifecycle = options.lifecycleAuthority === lifecycleAuthority;
           if (!lifecycle && canonicalStudioJson(previous.value.dealerTrash ?? []) !== canonicalStudioJson(prepared.value.dealerTrash ?? [])) fail('studio_dealer_lifecycle_required');
           const removed = previous.value.dealers.filter(dealer => !prepared.value.dealers.some(next => next.id === dealer.id));

@@ -27,6 +27,7 @@ import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
+import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -108,11 +109,10 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       return repository.withMutationContext(() => store.boDb.transaction(work), descriptors);
     };
     const repositoryRoot = resolve(schemaRoot(), '..');
-    const dealerIdle = createRegisteredDealerIdle({ repositoryRoot, readMetadata: createRuntimeMetadataReader(repositoryRoot), mediaAvailable: createStudioPublicMediaAvailability({ env, repositoryRoot }),
-      pathFor: (base, file) => resolveMediaPath(`web/public/${base}/${file}`, { repositoryRoot }) });
+    const media = createStudioMediaRuntime({ repository, scope: config.scope, env, repositoryRoot });
+    const dealerIdle = createRegisteredDealerIdle({registryLoader:media.videoRegistry});
     const gamePolicy = policyFactory({ repository, scope: config.scope, dealerIdle });
     await gamePolicy.readSaved();
-    const media = createStudioMediaRuntime({ repository, scope: config.scope, env, repositoryRoot });
     const mediaDeletion=createStudioMediaDeletion({repository,mutationTransaction,env,options:{repositoryRoot}});
     const signer = await store.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
     if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) unavailable();
@@ -157,6 +157,9 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
+    for (const [key, handler] of createResourceLifecycleApi({ repository, scope: config.scope }).handlers) {
+      if (handlers.has(key)) unavailable(); handlers.set(key, handler);
+    }
     const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,

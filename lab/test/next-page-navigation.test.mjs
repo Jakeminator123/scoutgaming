@@ -117,7 +117,8 @@ test('actual native page guard returns every current view after public, standalo
         await assert.rejects(guard.authorizeUiPage(request), error => {
           const login = new URL(locationFromNext(error, basePath), config.allowedOrigins[0]);
           assert.equal(login.pathname, basePath + '/login');
-          assert.equal(login.searchParams.get('returnTo'), returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo);
+          const expectedReturn = returnTo === '/studio/control/lanes?tab=companies' ? '/control/companies' : returnTo === '/studio/control/lanes?lane=evening' ? '/control/rooms?composition=evening' : returnTo.startsWith('/studio/control/') ? returnTo.slice('/studio'.length) : returnTo;
+          assert.equal(login.searchParams.get('returnTo'), expectedReturn);
           assert.equal(login.searchParams.size, 1);
           return true;
         });
@@ -161,7 +162,7 @@ test('editor SSR authorization uses each real route and OpenClaw settings and ch
       assert.equal(editor.props.initialVariantId, 'v2');
       const surfaces = [
         ['../app/control/videos/page.tsx', '@/components/control-videos-page', 'ControlVideosPage', '/control/videos'],
-        ['../app/control/activity/page.tsx', '@/components/control-activity-page', 'ControlActivityPage', '/control/activity'],
+        ['../app/control/rehearsal/page.tsx', '@/components/control-activity-page', 'ControlActivityPage', '/control/rehearsal'],
         ['../app/control/guide/page.tsx', '@/components/control-guide-page', 'ControlGuidePage', '/control/guide'],
       ];
       for (const [file, specifier, exportName, path] of surfaces) {
@@ -296,6 +297,8 @@ test('actual administration page uses Next-local login with the exact public ret
       'next/navigation': navigation,
       'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
       '@/components/native-administration': {},
+      '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
+      '../public-redirect': {redirectToPublicControl:()=>assert.fail('unauthorized page must not redirect to rooms')},
       '@/lib/studio-native-runtime.mjs': nativeOverrides(status),
       '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
       '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
@@ -313,6 +316,8 @@ test('administration without native configuration fails before runtime initializ
     'next/navigation': navigation,
     'next/headers': { headers: async () => new Headers({ host: 'qa.example.invalid' }) },
     '@/components/native-administration': {},
+      '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
+      '../public-redirect': {redirectToPublicControl:()=>assert.fail('unauthorized page must not redirect to rooms')},
     '@/lib/studio-native-runtime.mjs': {
       nativeStudioAdminConfiguration: () => null,
       assertNativeStudioRequest: () => assert.fail('missing configuration cannot authorize'),
@@ -458,4 +463,83 @@ test('retired zone entries redirect to public composition without a doubled base
       return true;
     });
   }
+});
+
+
+test('old activity URLs retain only observation context and canonicalize the composition alias', async () => {
+  const destinations = [];
+  const page = load('../app/control/activity/page.tsx', { '../public-redirect': { redirectToPublicControl: async value => destinations.push(value) } });
+  await page.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'speak.goodluck', operator: 'operator-one', table: 'room-1', lane: 'mobile-phone', token: 'private' }) });
+  assert.equal(destinations[0], '/control/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
+  await page.default({ searchParams: Promise.resolve({ dealer: ['vera', 'mei'], composition: 'chosen', lane: 'stale' }) });
+  assert.equal(destinations[1], '/control/rehearsal?composition=chosen');
+});
+
+
+test('dealer pages retain allowlisted context through an expired session and normalize legacy selections', async () => {
+  for (const basePath of ['', '/studio']) {
+    const config = {allowedOrigins:['https://game.fixture.invalid','https://studio.fixture.invalid'],publicHosts:['game.fixture.invalid','studio.fixture.invalid'],apiBase:basePath+'/api/admin',authBase:basePath+'/api/auth'};
+    const guard = load('../lib/ui-server.ts', {
+      'next/navigation': navigation,
+      './http-guard.mjs': {assertLocalPageRequest:()=>assert.fail('no local fallback')},
+      './studio-server.mjs': {studioInitialData:()=>assert.fail('no legacy fallback')},
+      './remote-ui.mjs': {remoteUiConfiguration:()=>null},
+      './studio-native-runtime.mjs': {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>({authorize:async()=>{throw Object.assign(new Error('fixture authorization'),{statusCode:401});}})},
+      './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
+      './next-page-navigation.mjs': {nextStudioLoginRedirect},
+    });
+    const data = load('../app/control-studio-data.tsx', {
+      'next/headers': {headers:async()=>new Headers({host:'game.fixture.invalid','sec-fetch-mode':'navigate','sec-fetch-dest':'document'})},
+      '@/lib/ui-server':guard,
+    });
+    const studioTypes = load('../components/studio-types.ts', {});
+    for(const [route,component,exportName] of [['clips','@/components/lab-studio','LabStudio'],['rehearsal','@/components/control-activity-page','ControlActivityPage']]) {
+      const page = load('../app/control/'+route+'/page.tsx', {'../../control-studio-data':data,'@/components/studio-types':studioTypes,[component]:{[exportName]:()=>assert.fail('expired session cannot render client work')}});
+      for(const legacy of [false,true]) {
+        const query={dealer:'vera',operator:'operator-42',table:'room-7',[legacy?'lane':'composition']:'desktop-wide',token:'do-not-copy',returnTo:'https://untrusted.invalid'};
+        if(route==='clips')Object.assign(query,{view:'settings',category:'speech',event:'speak.goodluck',situation:'goodluck'});
+        await assert.rejects(page.default({searchParams:Promise.resolve(query)}),error=>{
+          assert.match(error.digest ?? '', /^NEXT_REDIRECT;/, error.message);
+          const login = new URL(locationFromNext(error,basePath),'https://game.fixture.invalid');
+          assert.equal(login.pathname,basePath+'/login');
+          const destination = new URL(login.searchParams.get('returnTo'),'https://game.fixture.invalid');
+          assert.equal(destination.pathname,'/control/'+route);
+          assert.equal(destination.searchParams.get('dealer'),'vera');assert.equal(destination.searchParams.get('operator'),'operator-42');assert.equal(destination.searchParams.get('table'),'room-7');assert.equal(destination.searchParams.get('composition'),'desktop-wide');
+          assert.equal(destination.searchParams.has('lane'),false);assert.equal(destination.searchParams.has('token'),false);assert.equal(destination.searchParams.has('returnTo'),false);
+          if(route==='clips'){assert.equal(destination.searchParams.get('view'),'settings');assert.equal(destination.searchParams.get('category'),'speech');assert.equal(destination.searchParams.get('event'),'speak.goodluck');assert.equal(destination.searchParams.get('situation'),'goodluck');}
+          return true;
+        });
+      }
+    }
+  }
+});
+
+
+test('legacy administration tables await the public room redirect after authorization', async () => {
+  const calls=[];
+  const publicRedirect=load('../app/control/public-redirect.ts', {
+    'next/navigation': navigation,
+    'next/headers': {headers:async()=>{calls.push('public-host');return new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'});}},
+    '@/lib/lab-url.mjs': {publicAbsoluteUrl:require('../lib/lab-url.mjs').publicAbsoluteUrl},
+  });
+  const page=load('../app/control/administration/page.tsx', {
+    'next/navigation': navigation,
+    'next/headers': {headers:async()=>new Headers({host:'game.fixture.invalid'})},
+    '@/components/native-administration': {NativeAdministration:()=>assert.fail('the retired room view must redirect')},
+    '@/components/studio-types': {firstQueryValue:value=>Array.isArray(value)?value[0]:value},
+    '../public-redirect':publicRedirect,
+    '@/lib/studio-native-request.mjs': {normalizeNativeStudioPageRequest:request=>request},
+    '@/lib/next-page-navigation.mjs': {nextStudioLoginRedirect},
+    '@/lib/studio-native-runtime.mjs': {
+      nativeStudioAdminConfiguration:()=>({}),assertNativeStudioRequest:()=>{},
+      studioNativeRuntime:async()=>({authorize:async()=>{calls.push('authorize');return{};},api:{availableActions:()=>assert.fail('must await redirect before preparing page')},config:{allowedOrigins:['https://game.fixture.invalid']}}),
+    },
+  });
+  await assert.rejects(page.default({searchParams:Promise.resolve({tab:'tables',operator:'operator-42',lane:'mobile-phone',dealer:'vera',table:'room-7',token:'do-not-copy'})}),error=>{
+    const url=new URL(locationFromNext(error,''));
+    assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/control/rooms');
+    assert.equal(url.searchParams.get('operator'),'operator-42');assert.equal(url.searchParams.get('composition'),'mobile-phone');assert.equal(url.searchParams.get('dealer'),'vera');assert.equal(url.searchParams.get('table'),'room-7');assert.equal(url.searchParams.has('token'),false);
+    return true;
+  });
+  assert.deepEqual(calls,['authorize','public-host']);
 });

@@ -67,11 +67,14 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
   const { fileURLToPath } = await import('node:url');
   const { relative } = await import('node:path');
   const root = new URL('../', import.meta.url), suite = new URL('./partner-branding-postgres.mjs', import.meta.url);
-  const source = await readFile(suite, 'utf8');
+  const fixture = new URL('../lab/test/fixtures/cloud-presentation.mjs', import.meta.url);
   const required = ['ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs',
-    'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs'];
-  for (const [,path] of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
-    if (path.startsWith('.')) required.push(relative(fileURLToPath(root),fileURLToPath(new URL(path,suite))).replaceAll('\\','/'));
+    'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs', 'lab/test/fixtures/cloud-presentation.mjs'];
+  for (const entry of [suite,fixture]) {
+    const source = await readFile(entry,'utf8');
+    for (const [,path] of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+      if (path.startsWith('.')) required.push(relative(fileURLToPath(root),fileURLToPath(new URL(path,entry))).replaceAll('\\','/'));
+    }
   }
   assert.equal(new Set(STUDIO_ISOLATED_QA_SOURCES).size,STUDIO_ISOLATED_QA_SOURCES.length,'each source has one receipt hash');
   for (const path of required) assert.ok(STUDIO_ISOLATED_QA_SOURCES.includes(path),`SQL evidence must hash ${path}`);

@@ -1,4 +1,5 @@
 'use client';
+import { StudioDealerRequired } from './studio-dealer-required';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { decisionAttribution, eventSummary } from '../lib/activity-log.mjs';
@@ -21,7 +22,7 @@ import type { SocialActivity, SocialDraftCache } from './social-chat-panel';
 import type { PlaybackReceipt } from './stage';
 import { StudioMessages, useStudioSession } from './studio-session';
 import { neutralContext } from './test-context';
-import { previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext, type VideoInventory } from './studio-types';
 
 function readObservedStep(): PresentationStep | null {
   const step = takeObservedStep() as PresentationStep | null;
@@ -37,7 +38,7 @@ function consumeObservedStep() {
   return strictObservedStep;
 }
 
-export function ControlEventsPage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialTab, initialSituation, connectedLane = false }: {
+function SelectedControlEventsPage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialTab, initialSituation, connectedLane = false }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -281,7 +282,7 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
       <a className="text-button" href={videoHref}>Granska i Videobanken →</a>
     </div> : null}
     <div className="workspace view-lab" id="workspace">
-      <EventsCatalog project={project} videos={videos} dealerId={dealerId} eventId={event.id} situation={exampleSituation || undefined} familyId={media.family?.id} managed={managed} filter={filter} onFilter={setFilter} onSelectDealer={selectDealer} onSelectEvent={openEvent} />
+      <EventsCatalog project={{...project,dealers:activeStudioDealers(project)}} videos={videos} dealerId={dealerId} eventId={event.id} situation={exampleSituation || undefined} familyId={media.family?.id} managed={managed} filter={filter} onFilter={setFilter} onSelectDealer={selectDealer} onSelectEvent={openEvent} />
       {isIdleEditor ? <EventsIdleNotice refreshing={refreshingVideos} onRefresh={() => void refreshVideos()} /> : null}
       <div className="editor-layout">
         <EventsPreview
@@ -371,4 +372,9 @@ export function ControlEventsPage({ initialProject, initialVideos, initialStatus
     </div>
     </div>
   </PageTemplate>;
+}
+
+export function ControlEventsPage(props: Parameters<typeof SelectedControlEventsPage>[0]) {
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Händelser" />;
+  return <SelectedControlEventsPage {...props} />;
 }

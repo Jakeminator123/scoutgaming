@@ -1,4 +1,4 @@
-import { BASE_DEALER_IDS, isDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
+import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
 
@@ -27,8 +27,8 @@ export function approvedGameQuery(input,{origin,includeLaunch = true} = {}) {
   const source = input instanceof URLSearchParams ? input : new URLSearchParams(input);
   const result = new URLSearchParams();
   const one = key => source.getAll(key).length === 1 ? source.get(key) : null;
-  const values = {dealer:isDealerId,presentation:value => ['local','original','layered'].includes(value),lane:isGameLaneId,
-    performance:value => value === 'staged',motion:value => value === 'smooth60',rehearsal:value => value === '1',
+  const values = {dealer:isDealerId,presentation:value => ['local','layered'].includes(value),lane:isGameLaneId,
+    rehearsal:value => value === '1',
     table:value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value),operator:isOperatorSlug};
   for (const [key,valid] of Object.entries(values)) {const value = one(key);if (valid(value)) result.set(key,value);}
   const launch = one('launch');
@@ -50,6 +50,10 @@ export function canonicalGameDestination(input,options = {}) {
   return '/blackjack'+(query ? `?${query}` : '');
 }
 export function gameEntryRedirect(url,env) {
+  if (['/v2','/v2/','/v2/index.html'].includes(url.pathname)) {
+    const query = approvedGameQuery(url.searchParams,{origin:url.origin}).toString();
+    return publicGamePath(env) + (query ? '?' + query : '');
+  }
   if (!gameEntryEnabled(env)) return null;
   if (['/game','/game/'].includes(url.pathname)
     || url.pathname === '/' && ['dealer','presentation','lane','performance','motion','rehearsal','table','launch','labObserverOrigin','labObserverChannel'].some(key => url.searchParams.has(key))) return canonicalGameDestination(url);
@@ -98,10 +102,11 @@ export function decorateGameEntryHtml(html,env,selection,{offline = false} = {})
       if (selection.lane !== preview.presentationLaneId || ['operator','roomId','packageRevision','branding'].some(key => selection[key] !== undefined)) throw Error('Invalid game presentation');
       attributes += ' data-studio-preview="' + attributeText(JSON.stringify(preview)) + '"';
     }
-    if (!isGameLaneId(selection.lane) || !isDealerId(selection.dealer) || !['local','original','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
+    if (!isGameLaneId(selection.lane) || !isDealerId(selection.dealer) || !['local','layered'].includes(selection.presentation)) throw Error('Invalid game presentation');
     attributes += ` data-game-lane="${selection.lane}" data-game-dealer="${selection.dealer}" data-game-presentation="${selection.presentation}"`;
+    attributes += ` data-presentation="${selection.presentation}" data-dealer="${selection.dealer}"`;
     const registry = validatePublicRegisteredDealers(selection.registeredDealers ?? []);
-    const extra = !BASE_DEALER_IDS.includes(selection.dealer) && !['paow','dragge'].includes(selection.dealer);
+    const extra = selection.presentation !== 'layered';
     if (extra && (selection.presentation !== 'local' || selection.localDealer !== selection.dealer || !registry.some(row => row.id === selection.dealer))) throw Error('Invalid game presentation');
     if (selection.localDealer !== undefined) {
       if (selection.presentation !== 'local' || selection.localDealer !== selection.dealer) throw Error('Invalid game presentation');

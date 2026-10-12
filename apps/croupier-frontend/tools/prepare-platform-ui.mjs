@@ -21,7 +21,7 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
       if (entry.isDirectory()) { if (entry.name !== 'frontend-preview') await publish(join(directory, entry.name), name + '/'); continue; }
       if (!/\.(?:mjs|js|css|json)$/.test(name)) continue;
       let text = await readFile(join(directory, entry.name), 'utf8');
-      if (name === 'blackjack-entry.mjs') text = text.replace('/frontend-preview/game/?dealer=astrid&presentation=local', '/game/?dealer=astrid&presentation=local');
+      if (name === 'blackjack-entry.mjs') text = await readFile(join(repo, 'web/public/blackjack-entry.mjs'), 'utf8');
       if (name === 'auth-modal.mjs') text = text.replace('/frontend-preview/blackjack/', '/blackjack');
       const target = join(output, 'public', name);
       await mkdir(dirname(target), {recursive: true}); await writeFile(target, text);

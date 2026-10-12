@@ -1,6 +1,8 @@
 .page {
   width: 100%;
-  max-width: none;
+  max-width: 1368px;
+  box-sizing: border-box;
+  padding: 8px 32px 40px;
   min-width: 0;
   display: grid;
   gap: 20px;
@@ -88,3 +90,5 @@
 .eyebrow { display: block; font-size: 10px; letter-spacing: .12em; color: var(--sg-muted); margin-bottom: 7px; }.version { font-size: 11px; padding: 5px 10px; border: 1px solid var(--sg-border); border-radius: 100px; }
 .packageDetails { border-top: 1px solid var(--sg-border); padding-top: 16px; }.packageDetails summary { cursor: pointer; font-size: 13px; font-weight: 600; }.packageDetails summary span { margin-left: 8px; color: var(--sg-muted); font-weight: 400; }.packageDetails[open] summary { margin-bottom: 18px; }.packageDetails > p { margin-bottom: 14px; }.packageDetails > p:last-child { margin: 14px 0 0; }
 .choice { border: 1px solid var(--sg-border); border-radius: 10px; padding: 12px; font-size: 13px; }.choice:has(input:checked) { border-color: var(--sg-mark); background: var(--sg-field); }.packageDetails summary:focus-visible, .workspaceNav a:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
+
+@media (max-width: 680px) { .page { padding: 8px 16px 32px; } }

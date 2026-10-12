@@ -44,6 +44,7 @@ const props = {
   initialVideos: { videos: [] },
   initialStatus: { configured: true, message: 'Konfigurerat' },
   standaloneVoicePreviewAvailable: true,
+  initialDealerId: 'astrid',
 };
 
 test('operator chat tab shows OpenClaw chat without a project save button', () => {
@@ -51,7 +52,7 @@ test('operator chat tab shows OpenClaw chat without a project save button', () =
   const { studioHref } = loadTs(new URL('./studio-types.ts', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlOpenClawChat, props));
   assert.match(html, /\/\/ OPENCLAW/);
-  assert.match(html, /<h1>OpenClaw<\/h1>/);
+  assert.match(html, /<h1>Intern agentchatt<\/h1>/);
   assert.match(html, /class="sg-tabs"/);
   assert.match(html, /aria-current="page"/);
   assert.match(html, /aria-pressed="true"[^>]*>Chatt/);
@@ -92,7 +93,7 @@ test('chat panel receives the studio session props and opens playback with a ful
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/control/activity')]);
+  assert.deepEqual(assigned, [labUrl('/control/rehearsal?dealer=vera')]);
 });
 
 test('model tab keeps its own primary button and the chat link', () => {

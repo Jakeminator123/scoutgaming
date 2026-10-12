@@ -51,3 +51,9 @@
   .preview .hint { font-size:11px; margin-bottom:8px; }
   .toolbar { gap:4px; margin-bottom:12px; }
 }
+
+.empty { display:grid; gap:16px; width:100%; max-width:850px; min-width:0; }
+.empty > p { margin:0; }
+
+.empty { box-sizing: border-box; padding: 8px 32px 40px; }
+@media (max-width: 680px) { .empty { padding: 8px 16px 32px; } }

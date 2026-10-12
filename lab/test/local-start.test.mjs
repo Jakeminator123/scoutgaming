@@ -8,6 +8,9 @@ import { childSpecifications, loadPrivateConnection } from '../../open-claw/lab/
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';
+import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {createRegisteredIdlePolicy} from '../../presentation-runtime/registered-idle-policy.mjs';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { once } from 'node:events';
 
 test('a guard-only legacy directory does not redirect Lab data after restart', async t => {
@@ -31,24 +34,27 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   const data = await prepareProject(join(dir, 'saved'));
   const store = createProjectStore(data);
   const original = await store.load();
-  const edit = structuredClone(original);
-  edit.idlePolicy.variants.find(row => row.use === 'openclaw').use = 'manual';
+  assert.deepEqual(original.dealers,[]);assert.deepEqual(original.lines,[]);assert.deepEqual(original.lanes,[]);assert.equal(original.idlePolicy,undefined);
+  const {project:edit,inventory}=cloudPresentationFixture({project:original,lanes:[defaultPresentationLane('johanna')]});
+  const policy=createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:inventory.videos[0].id,durationMs:1000});
+  policy.variants=[1,2].map(index=>({videoId:'20000000-0000-4000-8000-'+String(index).padStart(12,'0'),durationMs:1000,use:'openclaw',automatic:null}));
+  edit.dealerIdlePolicies=[{dealerId:'johanna',policy}];
+  edit.dealerIdlePolicies[0].policy.variants[0].use='manual';
   const saved = await store.save(edit, original.revision);
   await prepareProject(data);
   assert.deepEqual(await store.load(), saved);
 
   const old = structuredClone(saved);
-  old.idlePolicy.variants = old.idlePolicy.variants.slice(0, 4);
-  old.idlePolicy.variants[0].description = 'Keep my own description.';
+  old.dealerIdlePolicies[0].policy.variants = old.dealerIdlePolicies[0].policy.variants.slice(0, 1);
+  old.dealerIdlePolicies[0].policy.variants[0].description = 'Keep my own description.';
   await store.save(old, saved.revision);
   await prepareProject(data);
-  const upgraded = await store.load();
-  assert.equal(upgraded.idlePolicy.variants.length, 13);
-  assert.deepEqual(upgraded.idlePolicy.variants.slice(0, 4), old.idlePolicy.variants);
-  assert.deepEqual(upgraded.idlePolicy.base, old.idlePolicy.base);
-  assert.deepEqual(upgraded.idlePolicy.variants.slice(4).map(item => item.use), ['openclaw', 'openclaw', ...Array(7).fill('manual')]);
+  const retained = await store.load();
+  assert.equal(retained.dealerIdlePolicies[0].policy.variants.length, 1,'restart must not refill removed variants');
+  assert.deepEqual(retained.dealerIdlePolicies,old.dealerIdlePolicies);
+  assert.deepEqual(retained.dealers,old.dealers);
   // Continue the HTTP assertions with the current stored revision.
-  const restored = await store.save(saved, upgraded.revision);
+  const restored = await store.save(saved, retained.revision);
 
   const { configuration } = loadPrivateConnection({ envFiles: [], env: {} });
   const specs = childSpecifications(configuration, join(dir, 'disposable'), { productPort: 4200, labPort: 4201, studioDataDir: data, streamLane: 'lissabon-stream-lane' });
@@ -65,14 +71,15 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   assert.equal(specs.lab.env.CROUPIER_STREAM_LANE, 'lissabon-stream-lane');
 
   for (const [lane, expected] of [['lissabon-stream-lane', 'active'], ['', 'off']]) {
-    const handler = createPresentationApi({ env: { CROUPIER_STREAM_LANE: lane }, store });
+    const handler = createPresentationApi({ env: { CROUPIER_STREAM_LANE: lane }, store,registryLoader:async()=>inventory });
     const server = createServer((req, res) => handler(req, res, '/api/presentation/config', 'demo'));
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     try {
-      const config = await (await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/config`)).json();
+      const config = await (await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/config?dealerId=johanna`)).json();
       assert.equal(config.defaultMode, expected);
       assert.equal(config.revision, restored.revision);
-      assert.deepEqual(config.idlePolicy, saved.idlePolicy);
+      assert.deepEqual(config.idlePolicy, saved.dealerIdlePolicies[0].policy);
+      assert.deepEqual(Object.keys(config.dealerIdle),['johanna']);
     } finally { server.closeAllConnections(); await new Promise(yes => server.close(yes)); }
   }
   const file = join(data, 'project.json');

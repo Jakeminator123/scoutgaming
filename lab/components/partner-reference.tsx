@@ -13,11 +13,24 @@ interface Configuration { configured: boolean; mappingConfigured: boolean; mappi
 interface Access { verifiedAt: string; playerId: string; scopes: string[] }
 interface Mapping { fetchedAt: string; source: string; actualPlayback: false; mapping: { revision?: string | null; dealers: Record<string, Record<string, unknown>>; backofficePicks?: unknown; notes?: string[] } }
 
-export function PartnerReference({ trace, connected, connection, dealerId = 'astrid', onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false, layout }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode; layout?: (parts: { card: ReactNode; toolbar: ReactNode; diagnostics: ReactNode }) => ReactNode }) {
+export function PartnerReference({ trace, connected, connection, dealerId, operatorSlug, tableId, onObservationStart, onConnect, onDisconnect, onNative, onActivity, onImport, onNewObservation, children, diagnostics, focused = false, layout }: { focused?: boolean; trace: PartnerTrace; connected: boolean; connection: string; dealerId?: string; operatorSlug?: string; tableId?: string; onObservationStart?: () => void; onConnect: () => Promise<void>; onDisconnect: () => void; onNative: (record: Record<string, unknown>) => void; onActivity: (entry: ActivityDraft) => void; onImport?: (records: Record<string, unknown>[]) => void; onNewObservation?: () => void; children?: ReactNode; diagnostics?: ReactNode; layout?: (parts: { card: ReactNode; toolbar: ReactNode; diagnostics: ReactNode }) => ReactNode }) {
   // The cloud build mounts Studio on the game origin. Its ordinary player
   // entry is usable even when the optional Partner observer is unconfigured.
   const cloudStudio = labBasePath() === '/studio';
-  const directGameUrl = focused && cloudStudio ? '/blackjack' : null;
+  const selectedDealer = dealerId ?? '';
+  const hasSelection = Boolean(selectedDealer || tableId);
+  const selection = { dealer: selectedDealer, operator: operatorSlug ?? '', table: tableId ?? '' };
+  const selectionKey = JSON.stringify(selection);
+  function applySelection(url: URL) {
+    for (const [key, value] of Object.entries(selection)) {
+      if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
+    }
+  }
+  function matchesSelection(url: URL) {
+    return Object.entries(selection).every(([key, value]) => url.searchParams.getAll(key).length === (value ? 1 : 0) && (url.searchParams.get(key) ?? '') === value);
+  }
+  const directQuery = new URLSearchParams(Object.entries(selection).filter(([, value]) => value));
+  const directGameUrl = focused && cloudStudio && hasSelection ? '/blackjack?' + directQuery : null;
   const [configuration, setConfiguration] = useState<Configuration | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
@@ -26,10 +39,11 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const [exportText, setExportText] = useState('');
   const [speechBinding, setSpeechBinding] = useState<NativeSpeechBinding | null>(null);
   const gameWindow = useRef<Window | null>(null);
-  const observer = useRef<{ source: Window; origin: string; channel: string; lastSequence: number } | null>(null);
+  const observer = useRef<{ source: Window; origin: string; channel: string; lastSequence: number; selectionKey: string } | null>(null);
   const nativeSessionEpoch = useRef(0);
   const observing = useRef(false);
   const nativeCallback = useRef(onNative); nativeCallback.current = onNative;
+  const disconnectCallback = useRef(onDisconnect); disconnectCallback.current = onDisconnect;
   const importInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const receive = (message: MessageEvent) => {
@@ -48,8 +62,14 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       expected.lastSequence = record.nativeSequence;
       nativeCallback.current(observed);
     };
+    const checkGameWindow = () => {
+      if (observing.current && gameWindow.current?.closed) {
+        observing.current = false; setSpeechBinding(null); disconnectCallback.current();
+      }
+    };
     window.addEventListener('message', receive);
-    return () => { window.removeEventListener('message', receive); observer.current = null; };
+    window.addEventListener('focus', checkGameWindow);
+    return () => { window.removeEventListener('message', receive); window.removeEventListener('focus', checkGameWindow); observer.current = null; };
   }, []);
   useEffect(() => {
     let current = true;
@@ -67,12 +87,15 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   }
   async function connectGame() {
     if (busy) return;
+    if (!hasSelection) { setError('Välj en dealer eller ett spelrum innan du ansluter.'); return; }
     if (gameWindow.current && !gameWindow.current.closed) {
       gameWindow.current.focus();
-      if (!observer.current) {
+      if (!observer.current || observer.current.selectionKey !== selectionKey) {
+        observing.current = false; setSpeechBinding(null); onDisconnect();
         setError('Spelet är öppet utan studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet. Dina sparade klippval gäller även utan observation.');
         return;
       }
+      onObservationStart?.();
       observing.current = true;
       if (!cloudStudio) try { await onConnect(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Strömmen kunde inte anslutas.'); }
       return;
@@ -97,36 +120,39 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
         closeOnError = current.href === 'about:blank';
         if (!closeOnError) {
           const channel = current.searchParams.get('labObserverChannel');
-          if (game.opener !== window || current.origin !== cloudOrigin || !['/game', '/game/', '/v2', '/v2/'].includes(current.pathname)
+          if (game.opener !== window || current.origin !== cloudOrigin || !['/game', '/game/', '/v2', '/v2/', '/blackjack', '/blackjack/', '/play/blackjack', '/play/blackjack/'].includes(current.pathname)
             || current.searchParams.get('labObserverOrigin') !== cloudOrigin || !/^[a-zA-Z0-9_-]{16,128}$/.test(channel?.replaceAll('-', '') ?? '')) {
             throw new Error('Spelet är redan öppet utan denna studiokoppling. Spela klart och stäng spelfliken före Anslut & följ spelet.');
           }
-          if (current.searchParams.getAll('dealer').length !== 1 || current.searchParams.get('dealer') !== dealerId) {
-            throw new Error('Den öppna spelfliken har en annan dealer. Välj samma dealer i Studio innan du ansluter igen. Pågående spel har inte ändrats.');
+          if (!matchesSelection(current)) {
+            throw new Error('Den öppna spelfliken gäller en annan dealer, ett annat spelrum eller spelbolag. Öppna samma provspelning innan du ansluter igen. Pågående spel har inte ändrats.');
           }
-          observer.current = { source: game, origin: cloudOrigin, channel: channel!, lastSequence: 0 };
+          observer.current = { source: game, origin: cloudOrigin, channel: channel!, lastSequence: 0, selectionKey };
+          onObservationStart?.();
           observing.current = true;
           game.focus();
           onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Befintlig spelflik följs igen', owner: 'Spelflikens native-observation', reason: 'Pågående spel bevaras. Studion väntar på kommande native-kvitton.', data: { replay: false } });
           return;
         }
         const url = new URL('/game', cloudOrigin), channel = crypto.randomUUID();
-        url.searchParams.set('dealer', dealerId);
-        if (dealerId === 'astrid') url.searchParams.set('presentation', 'local');
+        applySelection(url);
+        if (selectedDealer === 'astrid') url.searchParams.set('presentation', 'local');
         url.searchParams.set('labObserverOrigin', cloudOrigin);
         url.searchParams.set('labObserverChannel', channel);
-        observer.current = { source: game, origin: cloudOrigin, channel, lastSequence: 0 };
+        observer.current = { source: game, origin: cloudOrigin, channel, lastSequence: 0, selectionKey };
+        onObservationStart?.();
         observing.current = true;
         const start = new URL('/api/auth/bo/start', cloudOrigin);
         start.searchParams.set('next', url.pathname + url.search);
         game.location.replace(start.href);
-        onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Spelflik och studiokoppling öppnas', owner: 'Vanlig spelarinloggning + native-observation', reason: 'Spela i spelfliken. Studion väntar på dess verkliga speldata och uppspelningskvitton.', data: { dealerId, presentationMode: dealerId === 'astrid' ? 'local' : 'legacy' } });
+        onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Spelflik och studiokoppling öppnas', owner: 'Vanlig spelarinloggning + native-observation', reason: 'Spela i spelfliken. Studion väntar på dess verkliga speldata och uppspelningskvitton.', data: { dealerId: selectedDealer, operatorSlug, tableId, presentationMode: 'not-observed' } });
         return;
       }
       const verified = await request('verify'); setAccess(verified);
       if (!verified.scopes.includes('launch')) throw new Error('Partner-nyckeln saknar launch och kan inte öppna referensspelet.');
       // Open the event channel before navigation so the first accepted round is
       // not lost. Native observation remains usable if upstream SSE is absent.
+      onObservationStart?.();
       try { await onConnect(); } catch (cause) {
         onActivity({ source: 'partner', stage: 'connection', status: 'failed', title: 'Partner-strömmen kunde inte startas', owner: 'Läsande anslutning', reason: 'Originalfliken öppnas med native-observation. Kontrollera att speldata börjar komma.', data: { error: cause instanceof Error ? cause.message : 'Anslutningen misslyckades' } });
       }
@@ -134,14 +160,14 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
       const url = new URL(data.url);
       if (!configuration?.origin || url.origin !== configuration.origin) throw new Error('Referensspelet gav en oväntad adress.');
       const channel = crypto.randomUUID();
-      observer.current = { source: game, origin: url.origin, channel, lastSequence: 0 };
+      observer.current = { source: game, origin: url.origin, channel, lastSequence: 0, selectionKey };
       observing.current = true;
       url.searchParams.set('labObserverOrigin', window.location.origin);
       url.searchParams.set('labObserverChannel', channel);
-      url.searchParams.set('dealer', dealerId);
-      if (dealerId === 'astrid') url.searchParams.set('presentation', 'local');
+      applySelection(url);
+      if (selectedDealer === 'astrid') url.searchParams.set('presentation', 'local');
       game.location.replace(url.href);
-      onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId, presentationMode: data.presentationMode } });
+      onActivity({ source: 'config', stage: 'connection', status: 'observed', title: 'Originalspel och labbföljning startade', owner: 'Partner-launch + native-observation', reason: 'Spela i originalfliken. Bilddelningen väljs i webbläsaren; data följs automatiskt.', data: { dealerId: selectedDealer, operatorSlug, tableId, presentationMode: data.presentationMode } });
     } catch (cause) { if (closeOnError) { game.close(); gameWindow.current = null; } observer.current = null; observing.current = false; onDisconnect(); setError(cause instanceof Error ? cause.message : 'Spelet kunde inte anslutas.'); }
     finally { setBusy(''); }
   }
@@ -162,6 +188,8 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   async function run(action: 'verify' | 'launch' | 'launch-staged-base' | 'mapping') {
     if (busy) return;
     const openingGame = action === 'launch' || action === 'launch-staged-base';
+    if (action === 'launch-staged-base' && selectedDealer !== 'astrid') return;
+    if (openingGame && !hasSelection) { setError('Välj en dealer eller ett spelrum innan du ansluter.'); return; }
     // Reuse the current player tab; a second launch must not interrupt a hand.
     if (openingGame && gameWindow.current && !gameWindow.current.closed) { gameWindow.current.focus(); setError('Spelet är redan öppet. Avsluta rundan och stäng spelfliken före byte av videoläge.'); return; }
     // Diagnostic launch without observation. The main Anslut flow binds the
@@ -216,7 +244,8 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
   const connectLabel = busy === 'connect' ? 'Ansluter…' : connected ? 'Koppla från' : focused ? 'Anslut & följ spelet' : 'Anslut';
   const card = <section className={styles.reference} aria-label="Anslut och följ">
     <h3>Anslut & följ</h3>
-    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || (!cloudStudio && !configuration?.configured)} onClick={() => connected ? disconnect() : void connectGame()}>{connectLabel}</button><strong role="status">{connection}</strong></div>
+    {!hasSelection ? <p role="status">Välj en dealer eller ett spelrum innan du ansluter.</p> : null}
+    <div className={styles.tools}>{directGameUrl ? <a className="primary-button" href={directGameUrl} target="_blank" rel="noopener" onClick={event => { event.preventDefault(); openGame(); }}>Öppna spelet ↗</a> : null}<button className={directGameUrl ? 'text-button' : 'primary-button'} disabled={Boolean(busy) || (!connected && !hasSelection) || (!cloudStudio && !configuration?.configured)} onClick={() => connected ? disconnect() : void connectGame()}>{connectLabel}</button><strong role="status">{connection}</strong></div>
     <p>{focused ? 'Anslut & följ spelet öppnar spelet med din spelarinloggning; loggen visar spelflikens verkliga klippval och kvitton.' : 'Anslut öppnar spelet med din spelarinloggning; loggen nedan visar spelflikens verkliga klippval och kvitton.'}</p>
     {cloudStudio ? null : !configuration?.configured ? <p className={styles.note}>{configuration ? 'Partner-konfiguration saknas eller är ogiltig. Se Diagnostik.' : 'Läser anslutningsinställningar…'}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
@@ -231,14 +260,14 @@ export function PartnerReference({ trace, connected, connection, dealerId = 'ast
     {!cloudStudio ? <><p><strong>{focused ? 'Teknisk launch-identitet:' : 'Spelare:'}</strong> {configuration?.playerId ?? 'Läses från serverkonfigurationen'}{access ? <> · Behörigheter: <strong>{access.scopes.join(', ')}</strong></> : null}</p>
     <div className={styles.tools}>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.configured} onClick={() => void run('verify')}>{busy === 'verify' ? 'Verifierar…' : 'Verifiera Partner-åtkomst'}</button>
-      {!focused ? <><button className="text-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
+      {!focused ? <><button className="text-button" disabled={Boolean(busy) || !hasSelection || !canLaunch} onClick={() => void run('launch')}>{busy === 'launch' ? 'Öppnar…' : 'Öppna referensspelet ↗'}</button>
       <button className="text-button" disabled={Boolean(busy) || !configuration?.mappingConfigured} onClick={() => void run('mapping')}>{busy === 'mapping' ? 'Hämtar…' : 'Hämta videokarta'}</button></> : null}
     </div>
     </> : null}
     {diagnostics}
-    {!focused && !cloudStudio ? <details className={styles.mapping}>
+    {!focused && !cloudStudio && !tableId && selectedDealer === 'astrid' ? <details className={styles.mapping}>
       <summary>Testa Astrids grundfilmer</summary>
-      <button className="text-button" disabled={Boolean(busy) || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>
+      <button className="text-button" disabled={Boolean(busy) || !hasSelection || !canLaunch} onClick={() => void run('launch-staged-base')}>{busy === 'launch-staged-base' ? 'Öppnar…' : 'Öppna staged-grundläge ↗'}</button>
     </details> : null}
     {!access ? null : !canLaunch ? <p className={styles.note}>Nyckeln saknar launch. Den kan inte öppna referensspelet.</p> : null}
     {!focused && access && !access.scopes.includes('play') ? <p className={styles.note}>Nyckeln kan öppna spelet men saknar play för en egen klient med Partner-table.</p> : null}

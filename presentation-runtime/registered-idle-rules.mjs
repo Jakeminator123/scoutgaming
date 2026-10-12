@@ -1,4 +1,4 @@
-import { BASE_DEALER_IDS, registeredDealerIds } from '../web/public/dealer-identity.mjs';
+import { isActiveDealerId, registeredDealerIds } from '../web/public/dealer-identity.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { buildRuntimeCatalog } from '../lab/lib/studio-model.mjs';
 import { selectionFor } from '../lab/lib/video-intake.mjs';
@@ -12,7 +12,7 @@ import { registeredIdleInventory, registeredIdlePolicy } from './registered-idle
  */
 export function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {}, { inventory } = {}) {
   if (mode !== 'rules' || !['deal', 'reveal'].includes(sourceEvent?.type)
-    || BASE_DEALER_IDS.includes(dealerId) || !registeredDealerIds(project).has(dealerId)) return null;
+    || !isActiveDealerId(dealerId) || !registeredDealerIds(project).has(dealerId)) return null;
   const policy = registeredIdlePolicy(project, dealerId);
   if (!policy?.variants.some(item => item.use === 'rules')) return null;
   const catalog = buildRuntimeCatalog(project, dealerId);

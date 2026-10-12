@@ -1,5 +1,82 @@
 # Aktuell handoff — Scoutgaming
 
+## Samlat kontroll- och partnerflöde, 12 oktober 2026
+
+N1 har fyra arbetsområden: Studio, Spelbolag, Drift och System. Skapa dealer
+→ bygg sammansättning → publicera till spelbolag → skapa spelrum → öppna
+bolagets portal eller provspel. Sammansättning är dealer/bord/bakgrund;
+spelrum är bolagets spelbara instans av en publicerad sammansättning.
+De gamla interna lane-fälten finns kvar som kompatibilitet och automatisk
+speladapter, men är inte ett separat användarsteg. Gamla länkar omdirigeras
+med bibehållet dealer-, bolags- och rumssammanhang. Provspelning & logg är
+kontextuell, och redovisningen skiljer beslut från faktisk uppspelning.
+
+N2 samlar översikt, spelrum, team och integration. Utseende, förhandsvisning
+och publicering finns i rummets sammanhang. Osparade ändringar skyddas även
+vid kontobyte och utloggning. Tomma vyer hittar inte på bolag eller dealers.
+
+N1 kan arkivera bolag och rum med återställning. Dealerarkivering visar en
+serverberäknad konsekvenslista och stänger AI-tal, arkiverar egna klipp och
+sammansättningar samt tar bort berörda aktiva rum/publiceringar i samma
+transaktion. Samtidiga ändringar kräver en ny konsekvenslista. Återställning
+skapar utkast med tal avstängt; permanent radering är en separat batch med
+befintligt skydd för historiskt publicerad media. Runtime v7 krävs för det
+nya dealerarkivet, även vid permanent radering. Inga produktionsposter eller
+Blob-filer har ändrats under utvecklingen.
+
+Verifierat: 174 riktade UI/session/navigation-prov, 39 dealer-UI/loggprov och
+153 domänprov med rollback, behörighet, samtidighet och historik passerade.
+Grupperna överlappar och ska inte summeras. Produktionsbygget passerade.
+Chrome verifierade gamla lane-länkens omdirigering, kontextuell tom provspelning,
+sammansättningarnas tomvy och mobilmenyn vid uppmätta 320–400 CSS-pixlar.
+Inget horisontellt överflöde sågs i dessa vyer. Isolerat serverpar stoppat;
+bolagsdata var avsiktligt otillgänglig i offline-provet.
+Verifiering mot verklig publicerad data efter driftsättning återstår; tracker-
+punkter som kräver sådan acceptans lämnas öppna.
+
+
+## Avveckling av lokala dealers, 12 oktober 2026
+
+Jakobs beslut: Amira ska inte vara en aktiv dealer. Astrid, Vera och Mei är
+inte inbyggda lokala dealers eller standardval. De kan spelas när de uttryckligen
+registrerats i Studio med egen giltig media och ingår i vald publicering.
+Neon-/Blob-klipp och historiska dokument bevaras som material. Ingen råmedia,
+kalibrering, produktionsdatabas eller Blob har raderats eller skrivits om.
+
+Spelstart använder den gemensamma presentationsspelaren och ger ett tydligt
+fel vid tom/ofullständig konfiguration. Ingen lokal bank eller reservdealer
+startas. Lokala dealer-URL:er ger 410, även kodade/Windows-varianter. Offline
+startar tomt. Gamla klipppolicyer skapar inte längre aktiva bindningar vid
+inläsning och gamla variantnamn upphöjs inte automatiskt till standardklipp.
+Amira får inte nyregistreras eller återinföras via lokal projektsparning;
+befintliga historiska poster kan fortfarande läsas/bevaras. Borttagen aktiv
+spelbana kan lämnas null även när andra banor finns, utan implicit ersättare.
+
+Frysta paket kräver egna mediereferenser för alla dealers, inklusive gamla
+namn. Rumsadaptern måste vara aktiv, tillåten och registrerad i paketet. Ett
+sparat spelarval stoppar föregående sidas initiering innan navigering. Första
+scenen hålls dold bakom laddningsytan tills vald spelare presenterar en bildruta.
+
+Verifierat efter slutändringarna: 18 registrerings-/historik-/sparprov, 59
+uppspelnings-/frysta händelseprov och 33 ban-/entry-/policyprov passerade.
+Övriga riktade media-, kort-, val- och pakettester passerade; grupper överlappar
+och ska inte summeras. Isolerat offline-HTTP-prov gav avsedda 503/410 och
+städade server/tempdata. Synkgranskning --probe PASS, oförändrad mediebaslinje;
+detta är inte ny visuell läppsynkacceptans.
+
+Chrome-provet använde verkliga local-film-player.mjs, presentation-startup.mjs
+och produktens CSS på det gemensamma testserverparet. Scenen var hidden före
+första presenterade bildrutan och visible därefter. Två kompletta uppspelningar,
+två presenterade starter, noll fel, state=ready. Tillfälliga HTML-/MP4-fixturer
+togs bort efter hashkontroll och provfliken stängdes. Detta tekniska startprov
+ersätter inte full molnrehearsal eller visuell acceptans av publicerade dealers.
+
+Leverans samordnas med flow-restructure, inklusive modell-/UI-ändringar och
+dealerarkiv. Exakt fryst ägarlista finns lokalt i lab/data/legacy-delivery-files.json.
+Samlad fullhook, full molnrehearsal och liveleverans återstår vid denna notering.
+GitGuardian på 395d35f3: 12 öppna av 17, partiella platser, historisk skanning
+too_large och väntande GitHub-suite. Ingen friskförklaring eller incidentåtgärd.
+
 ## Börja här: överlämning 12 oktober 2026
 
 ### Samlad snabbgranskning och nästa steg, 12 oktober 2026

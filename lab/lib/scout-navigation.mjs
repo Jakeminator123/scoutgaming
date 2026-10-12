@@ -1,45 +1,28 @@
 import { labBasePath } from './lab-url.mjs';
+import { canonicalControlHref } from './control-flow.mjs';
 
 // Staff shell only. A menu href with a query wins over the same path without one.
 export const SCOUT_NAVIGATION = Object.freeze([
-  Object.freeze({
-    id: 'studio',
-    label: 'Studio',
-    items: Object.freeze([
-      Object.freeze({ href: '/control/clips', label: 'Dealers & klipp' }),
-      Object.freeze({ href: '/control/library', label: 'Bord & bakgrunder' }),
-      Object.freeze({ href: '/control/preview', label: 'Sammansättning' }),
-      Object.freeze({ href: '/control/lanes', label: 'Publicering' }),
-    ]),
-  }),
-  Object.freeze({
-    id: 'operations',
-    label: 'Drift',
-    items: Object.freeze([
-      Object.freeze({ href: '/control/administration?tab=tables', label: 'Spelmotor & rum' }),
-      Object.freeze({ href: '/control/activity', label: 'Uppspelning' }),
-      Object.freeze({ href: '/control/administration?tab=operations', label: 'Spelintegritet' }),
-      Object.freeze({ href: '/control/administration?tab=finance', label: 'Betalningar & journal' }),
-    ]),
-  }),
-  Object.freeze({
-    id: 'ai',
-    label: 'AI & chatt',
-    items: Object.freeze([
-      Object.freeze({ href: '/control/openclaw', label: 'Agentmodeller' }),
-      Object.freeze({ href: '/control/openclaw?tab=chat', label: 'Operatörschatt' }),
-    ]),
-  }),
-  Object.freeze({
-    id: 'administration',
-    label: 'Administration',
-    items: Object.freeze([
-      Object.freeze({ href: '/control/lanes?tab=companies#operator-directory', label: 'Bolag & team' }),
-      Object.freeze({ href: '/control/administration?tab=accounts', label: 'Interna konton & spelare' }),
-      Object.freeze({ href: '/control/administration?tab=partners', label: 'API & integrationer' }),
-    ]),
-  }),
-]);
+  { id: 'studio', label: 'Studio', items: [
+    { href: '/control/clips', label: 'Dealers & klipp' },
+    { href: '/control/library', label: 'Bord & bakgrunder' },
+    { href: '/control/compositions', label: 'Sammansättningar' },
+  ] },
+  { id: 'companies', label: 'Spelbolag', items: [
+    { href: '/control/companies', label: 'Bolag & team' },
+    { href: '/control/rooms', label: 'Spelrum & publicering' },
+  ] },
+  { id: 'operations', label: 'Drift', items: [
+    { href: '/control/administration?tab=operations', label: 'Spelstatus & integritet' },
+    { href: '/control/administration?tab=finance', label: 'Betalningar & journal' },
+  ] },
+  { id: 'system', label: 'System', items: [
+    { href: '/control/administration?tab=accounts', label: 'Konton & åtkomst' },
+    { href: '/control/administration?tab=partners', label: 'API & integrationer' },
+    { href: '/control/openclaw', label: 'Agentmodeller' },
+    { href: '/control/openclaw?tab=chat', label: 'Intern agentchatt' },
+  ] },
+].map(group => Object.freeze({...group, items: Object.freeze(group.items.map(item => Object.freeze(item)))})));
 
 export const SCOUT_FOOTER_NAVIGATION = Object.freeze([
   Object.freeze({ href: '/control', label: 'Översikt' }),
@@ -64,9 +47,9 @@ const legacyPaths = new Map([
   ['/videos', '/control/clips'],
   ['/control/videos', '/control/clips'],
   ['/control/replies', '/control/clips'],
-  ['/zones', '/control/preview'],
-  ['/control/zones', '/control/preview'],
-  ['/control/backgrounds', '/control/preview'],
+  ['/zones', '/control/compositions'],
+  ['/control/zones', '/control/compositions'],
+  ['/control/backgrounds', '/control/compositions'],
   ['/events', '/control/clips'],
   ['/control/events', '/control/clips'],
   ['/probe', '/control/clips'],
@@ -77,7 +60,8 @@ const legacyPaths = new Map([
   ['/control/operator-chat', '/control/openclaw?tab=chat'],
   ['/tree', '/control/clips'],
   ['/control/tree', '/control/clips'],
-  ['/activity', '/control/activity'],
+  ['/activity', '/control/clips'],
+  ['/control/rehearsal', '/control/clips'],
   ['/guide', '/control/guide'],
 ]);
 
@@ -96,6 +80,7 @@ function hrefParts(href) {
 
 export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   if (typeof pathname !== 'string') return null;
+  try { pathname = canonicalControlHref(pathname); } catch { return null; }
   const cut = pathname.indexOf('?');
   const path = shellPath(cut === -1 ? pathname : pathname.slice(0, cut), basePath);
   if (path == null) return null;
@@ -104,6 +89,7 @@ export function scoutNavigationItem(pathname, basePath = labBasePath()) {
   if (mapped.query) {
     for (const [key, value] of new URLSearchParams(mapped.query)) if (!params.has(key)) params.append(key, value);
   }
+  if (mapped.path === '/control/administration' && params.get('tab') === 'tables') return items.find(item => item.href === '/control/rooms') ?? null;
   if (mapped.path === '/control/administration' && params.get('tab') === 'media-review') return items.find(item => item.href === '/control/clips') ?? null;
   if (mapped.path === '/control/administration') {
     const tab = params.get('tab');

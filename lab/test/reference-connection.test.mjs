@@ -9,6 +9,7 @@ import { buildPlaybackTrace } from '../lib/playback-trace.mjs';
 import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { createSeedProject } from '../lib/studio-model.mjs';
+import { canonicalGameDestination } from '../../web/public/game-entry-contract.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -36,7 +37,7 @@ function setup({ origin = 'http://127.0.0.1:4194', connect = async () => {}, lau
     useEffect(fn, deps) { const i = cursor++; if (!hooks[i] || !same(deps, hooks[i].deps)) { const old = hooks[i]; hooks[i] = { deps }; effects.push(() => { old?.cleanup?.(); hooks[i].cleanup = fn(); }); } },
   };
   const module = { exports: {} };
-  vm.runInNewContext(code, { module, exports: module.exports, URL, Promise, Error, crypto: webcrypto,
+  vm.runInNewContext(code, { module, exports: module.exports, URL, URLSearchParams, Promise, Error, crypto: webcrypto,
     window: browserWindow,
     fetch: async (url, options) => {
       fetchCalls.push({ url, method: options?.method ?? 'GET' });
@@ -52,7 +53,7 @@ function setup({ origin = 'http://127.0.0.1:4194', connect = async () => {}, lau
   function nodes(node, found = []) { if (Array.isArray(node)) node.forEach(child => nodes(child, found)); else if (node?.props) { found.push(node); nodes(node.props.children, found); } return found; }
   function button(label) { return nodes(tree).find(node => node.type === 'button' && node.props.children === label)?.props; }
   flush();
-  return { calls, openCalls, fetchCalls, popup, received, activity, flush, button, update(next) { props = { ...props, ...next }; flush(); },
+  return { calls, openCalls, fetchCalls, popup, received, activity, flush, button, link: label => nodes(tree).find(node => node.type === 'a' && node.props.children === label)?.props, focus: () => listeners.get('focus')?.(), update(next) { props = { ...props, ...next }; flush(); },
     speech: () => nodes(tree).find(node => node.type === speechContext.Provider).props.value,
     receive(data, overrides = {}) { listeners.get('message')({ source: popup, origin, data, ...overrides }); },
     message(kind, payload, sequence = 1) {
@@ -216,7 +217,7 @@ test('cloud reconnect preserves its game and native channel without another auth
 
 test('cloud Lab reload rebinds the named same-origin game or V2 popup and leaves ongoing play intact', async () => {
   const origin = 'https://qa.example.test', channel = 'saved-native-channel-0123456789';
-  for (const path of ['/game', '/game/', '/v2', '/v2/']) {
+  for (const path of ['/game', '/game/', '/v2', '/v2/', '/blackjack', '/blackjack/', '/play/blackjack', '/play/blackjack/']) {
     const game = new URL(path, origin);
     game.searchParams.set('dealer', 'astrid');
     game.searchParams.set('labObserverOrigin', origin);
@@ -254,4 +255,88 @@ test('cloud connection refuses non-HTTPS origins and preserves an existing unbou
     ui.receive(ui.message('status', { state: 'attached' }));
     assert.equal(ui.received.length, 0);
   }
+});
+
+
+test('room observation forwards the exact operator/table and leaves dealer selection to the server when absent', async () => {
+  for (const dealerId of ['vera', undefined]) {
+    const ui = setup({ cloud: true, configured: false, origin: 'https://qa.example.test' });
+    ui.update({ dealerId, operatorSlug: 'operator-one', tableId: 'room-1' });
+    await tick(); ui.flush(); ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
+    const start = new URL(ui.popup.url), game = new URL(start.searchParams.get('next'), start.origin);
+    assert.equal(game.searchParams.get('operator'), 'operator-one');
+    assert.equal(game.searchParams.get('table'), 'room-1');
+    assert.equal(game.searchParams.get('dealer'), dealerId ?? null);
+    assert.equal(game.searchParams.has('lane'), false);
+    const canonical = new URL(canonicalGameDestination(game, { includeLaunch: false }), game.origin);
+    for (const key of ['operator', 'table', 'dealer', 'labObserverOrigin', 'labObserverChannel']) assert.equal(canonical.searchParams.get(key), game.searchParams.get(key), key);
+  }
+});
+
+test('canonical room reconnect requires matching operator, table, dealer and unambiguous query values', async () => {
+  const origin = 'https://qa.example.test';
+  const base = new URL('/play/blackjack', origin);
+  for (const [key, value] of Object.entries({ dealer: 'vera', operator: 'operator-one', table: 'room-1', labObserverOrigin: origin, labObserverChannel: 'room-observation-channel-0123456789' })) base.searchParams.set(key, value);
+  for (const change of [null, ['operator', 'other'], ['table', 'other'], ['dealer', 'mei'], ['operator', 'operator-one', true], ['table', 'room-1', true]]) {
+    const target = new URL(base);
+    if (change) target.searchParams[change[2] ? 'append' : 'set'](change[0], change[1]);
+    const ui = setup({ cloud: true, origin, popupHref: target.href });
+    ui.update({ dealerId: 'vera', operatorSlug: 'operator-one', tableId: 'room-1' });
+    await tick(); ui.flush(); ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
+    assert.deepEqual(ui.calls, change ? ['open', 'disconnect'] : ['open']);
+    assert.equal(ui.popup.url, target.href); assert.equal(ui.popup.closed, false);
+    ui.receive(ui.message('status', { state: 'attached', dealer: 'vera' }));
+    assert.equal(ui.received.length, change ? 0 : 1);
+  }
+});
+
+test('changing room context in a mounted observer never silently reuses its earlier binding', async () => {
+  const ui = setup({ cloud: true, origin: 'https://qa.example.test' });
+  ui.update({ operatorSlug: 'operator-one', tableId: 'room-1' });
+  await tick(); ui.flush(); ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
+  ui.update({ tableId: 'room-2' });
+  ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
+  ui.receive(ui.message('status', { state: 'attached' }));
+  assert.equal(ui.received.length, 0);
+  assert.equal(ui.popup.closed, false);
+  assert.equal(ui.calls.at(-1), 'disconnect');
+});
+
+
+test('returning to Studio after closing the game clears its observation binding without polling or reopening it', async () => {
+  const ui = setup({ cloud: true, origin: 'https://qa.example.test' });
+  await tick(); ui.flush(); ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
+  ui.receive(ui.message('status', { state: 'attached' })); ui.flush();
+  assert.ok(ui.speech().binding);
+  const opens = ui.openCalls.length;
+  ui.popup.close(); ui.focus(); ui.flush();
+  assert.equal(ui.speech().binding, null);
+  assert.equal(ui.calls.at(-1), 'disconnect'); assert.equal(ui.openCalls.length, opens);
+  ui.receive(ui.message('playback', { state: 'presented' }, 2));
+  assert.equal(ui.received.length, 1);
+});
+
+
+test('no dealer or room keeps observation and direct game launch unavailable',async()=>{
+ for(const cloud of [false,true]) {
+  const ui=setup({cloud,origin:'https://game.fixture.invalid'});ui.update({dealerId:undefined});await tick();ui.flush();
+  const connect=ui.button(cloud?'Anslut & följ spelet':'Anslut');assert.equal(connect.disabled,true);connect.onClick();await tick();ui.flush();
+  assert.equal(ui.openCalls.length,0);assert.equal(ui.link('Öppna spelet ↗'),undefined);assert.equal(ui.calls.includes('connect'),false);
+ }
+});
+
+test('direct game link carries the explicitly selected dealer and room without a global fallback',async()=>{
+ const ui=setup({cloud:true,origin:'https://game.fixture.invalid'});ui.update({dealerId:'vera',operatorSlug:'operator-42',tableId:'room-7'});await tick();ui.flush();
+ const link=ui.link('Öppna spelet ↗'),url=new URL(link.href,'https://game.fixture.invalid');assert.equal(url.pathname,'/blackjack');
+ assert.equal(url.searchParams.get('dealer'),'vera');assert.equal(url.searchParams.get('operator'),'operator-42');assert.equal(url.searchParams.get('table'),'room-7');
+ ui.update({dealerId:undefined});const room=new URL(ui.link('Öppna spelet ↗').href,'https://game.fixture.invalid');assert.equal(room.searchParams.has('dealer'),false);assert.equal(room.searchParams.get('table'),'room-7');
+});
+
+test('opening an observation never infers its presentation mode from the dealer name',async()=>{
+ for(const dealerId of ['astrid','johanna']){
+  const ui=setup({cloud:true,configured:false,origin:'https://qa.example.test'});ui.update({dealerId});
+  await tick();ui.flush();ui.button('Anslut & följ spelet').onClick();await tick();ui.flush();
+  const entry=ui.activity.find(row=>row.title==='Spelflik och studiokoppling öppnas');
+  assert.equal(entry.data.dealerId,dealerId);assert.equal(entry.data.presentationMode,'not-observed');
+ }
 });

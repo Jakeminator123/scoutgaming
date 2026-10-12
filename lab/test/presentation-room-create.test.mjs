@@ -222,7 +222,7 @@ test('standalone form has one name field and create action, with no extra accept
   const h = fixture(), ui = componentHarness(h.controller);
   const tree = ui.render({ ...context, projectSaved: false });
   const html = renderToStaticMarkup(tree);
-  assert.match(html, /Skapa spelrum/); assert.match(html, /Rumsnamn/); assert.match(html, /Spara presentationen först/);
+  assert.match(html, /Skapa spelrum/); assert.match(html, /Rumsnamn/); assert.match(html, /Spara sammansättningen först/);
   assert.equal((html.match(/<input/g) ?? []).length, 1); assert.equal(html.includes('checkbox'), false);
   assert.equal(find(tree, 'button').props.disabled, true); assert.equal(h.requests.length, 0); ui.unmount();
 });
@@ -318,10 +318,10 @@ test('room creation accepts the exact v4 capability for frozen event packages',a
 
 test('preflight causes provide distinct recovery without silently creating or republishing', async () => {
   for (const [extra, label, href] of [
-    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/control/lanes?operator=sg-test&lane=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/control/lanes?operator=sg-test&lane=portrait-live'],
-    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/control/preview?lane=portrait-live'],
-    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/control/preview?lane=portrait-live'],
+    [{ projectRevision: 'project-new' }, 'Läs in aktuella uppgifter', '/control/rooms?operator=sg-test&composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/control/rooms?operator=sg-test&composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
   ]) {
     const h = fixture(), ui = componentHarness(h.controller);
     ui.render(context); h.reply(0, prepared(context, extra)); await tick();
@@ -351,8 +351,8 @@ test('typed conflicts offer visible explicit recovery while keeping creation blo
     ui.render(context); h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: code })); await tick();
     const tree = ui.render(context), html = renderToStaticMarkup(tree), together = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(code);
     assert.equal(h.controller.getSnapshot().status, 'unavailable');
-    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/control/administration?tab=tables');
-    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera Bord &amp; spelrum/);
+    assert.equal(find(tree, 'a').props.href, together ? '#operator-package-selection' : labBasePath() + '/control/rooms?operator=sg-test');
+    assert.match(html.slice(html.indexOf('</details>')), together ? /Granska hela paketurvalet/ : /Kontrollera spelrummet/);
     if (together) assert.match(html, /publicera alla dessa presentationer tillsammans först.*Behåll befintliga rum och dealers/);
     else assert.doesNotMatch(html, /publicera alla dessa presentationer/);
     const message = h.controller.getSnapshot().message; h.controller.setName('Nytt rum');
@@ -374,4 +374,28 @@ test('conflict code validation rejects unknown, non-string, prototype and incons
     assert.doesNotMatch(h.controller.getSnapshot().message, /private-code|constructor/);
     assert.equal(await h.controller.create(presentationRoomContextKey(context)), null); assert.equal(h.requests.length, 1);
   }
+});
+
+
+test('room name changes notify the parent immediately and busy starts before a parent can switch company',async()=>{
+  const h=fixture(),ui=componentHarness(h.controller),drafts=[],busy=[];
+  const props={...context,onDraftChange:value=>drafts.push(value),onBusyChange:value=>busy.push(value)};
+  ui.render(props);h.reply(0,prepared());await tick();
+  let tree=ui.render(props);find(tree,'input').props.onChange({target:{value:'Mitt rum'}});assert.equal(drafts.at(-1),true);
+  tree=ui.render(props);find(tree,'form').props.onSubmit({preventDefault(){}});assert.equal(busy.at(-1),true);
+  ui.unmount();assert.equal(drafts.at(-1),false);
+});
+
+
+test('temporary sibling locks retain a verified room receipt and never report it as an unsaved name',async()=>{
+  const h=fixture(),ui=componentHarness(h.controller),drafts=[];
+  const props={...context,onDraftChange:value=>drafts.push(value)};
+  ui.render(props);h.reply(0,prepared());await tick();let tree=ui.render(props);
+  find(tree,'input').props.onChange({target:{value:'Mitt rum'}});tree=ui.render(props);
+  find(tree,'form').props.onSubmit({preventDefault(){}});h.reply(1,prepared());await tick();
+  const payload=JSON.parse(h.requests[2].options.body);h.reply(2,created(payload));await tick();ui.render(props);
+  assert.equal(drafts.at(-1),false);const count=h.requests.length;
+  ui.render({...props,interactionDisabled:true});tree=ui.render(props);
+  assert.equal(h.requests.length,count);assert.equal(drafts.at(-1),false);
+  assert.match(renderToStaticMarkup(tree),/Mitt rum är klart/);ui.unmount();
 });

@@ -1,5 +1,6 @@
 import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { stripTypeScriptTypes } from 'node:module';
@@ -404,7 +405,7 @@ import {defaultPresentationLane} from '../lib/studio-model.mjs';
 test('scoped snapshot projects the frozen lane format and never substitutes the live project',async()=>{
   const loggedIn=await handlePartnerAuth(loginRequest('north-partner',secret),config);
   const cookie=`partner_session=${tokenOf(loggedIn)}`;
-  const presentation={schemaVersion:1,projectRevision:'frozen-r1',lanes:[{...defaultPresentationLane(),label:'Publicerad North'}],assets:[]};
+  const presentation={schemaVersion:1,projectRevision:'frozen-r1',lanes:[{...defaultPresentationLane('astrid'),label:'Publicerad North'}],assets:[]};
   const store={...memoryStore(),getCurrentPackage:async()=>({operatorId:northId,revision:7,lanes:['mobile-phone'],tables:['room-1'],branding:withPackagePresentation({name:'North'},presentation)})};
   const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
@@ -421,11 +422,13 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   assert.equal(body.roomBindings,'operator-owned-v2');
 });
 
-for (const schemaVersion of [1,2]) test('partner tables use actual room ownership with presentation v'+schemaVersion,async()=>{
+for (const schemaVersion of [1,2,3]) test('partner tables require cloud registration and actual room ownership with presentation v'+schemaVersion,async()=>{
   const loggedIn=await handlePartnerAuth(loginRequest('north-partner',secret),config);
   const cookie=`partner_session=${tokenOf(loggedIn)}`;
-  const presentation={schemaVersion,projectRevision:'frozen-rooms-r1',...(schemaVersion===2?{registeredDealers:[]}:{}),
-    lanes:[{...defaultPresentationLane(),id:'published-portrait',label:'Publicerad presentation'}],assets:[]};
+  const lane={...defaultPresentationLane('astrid'),id:'published-portrait',label:'Publicerad presentation'};
+  const {playback,...captured}=cloudPresentationFixture({lanes:[lane]}).presentation;
+  const presentation=schemaVersion===1?{schemaVersion:1,projectRevision:'historical',lanes:[lane],assets:[]}
+    :{...captured,schemaVersion,...(schemaVersion===3?{playback}:{})};
   const room=(id,operatorId,state='live')=>({schemaVersion:2,id,name:id==='room-live'?'Johns blackjack':id,
     operatorId,presentationLaneId:'published-portrait',gameLaneId:'actual-portrait',state});
   const administration={gameLane:'actual-portrait',gameLanes:[{schemaVersion:1,id:'actual-portrait',label:'Runtime',
@@ -437,14 +440,19 @@ for (const schemaVersion of [1,2]) test('partner tables use actual room ownershi
   const store={...memoryStore(),getCurrentPackage:async()=>pack};
   const request=new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}});
   const body=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
-  assert.deepEqual(body.tables.map(row=>row.id),['room-live','room-preview']);
-  assert.equal(body.tables[0].name,'Johns blackjack');
-  assert.equal(body.tables[0].operatorId,northId);
-  assert.equal(body.tables[0].presentationId,'published-portrait');
-  assert.equal(body.summary.activeTables,1);
+  if(schemaVersion===1){
+    assert.deepEqual(body.tables,[],'historical names alone do not authorize cloud rooms');
+    assert.equal(body.summary.activeTables,0);
+  }else{
+    assert.deepEqual(body.tables.map(row=>row.id),['room-live','room-preview']);
+    assert.equal(body.tables[0].name,'Johns blackjack');
+    assert.equal(body.tables[0].operatorId,northId);
+    assert.equal(body.tables[0].presentationId,'published-portrait');
+    assert.equal(body.summary.activeTables,1);
+  }
   const incompatible=structuredClone(administration);
-  incompatible.gameLanes[0].dealer='vera';
-  incompatible.gameLanes[0].mediaCollection='vera-presentation';
+  incompatible.gameLanes[0].renderer='indexed-video';
+  incompatible.gameLanes[0].mediaCollection='legacy-dealers';
   const rejected=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
     config:{...config,readAdministration:async()=>incompatible}});
   assert.deepEqual(rejected.tables,[]);
@@ -466,9 +474,11 @@ import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
 async function nativeBrandingFixture() {
   const base=createStudioMemoryPool(),trace=[];
   const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
-  const lane={...defaultPresentationLane(),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
+  const lane={...defaultPresentationLane('johanna'),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
   lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
-  const presentation={schemaVersion:2,projectRevision:'frozen-native',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna fryst',idle:null},{id:'nora',label:'Nora fryst',idle:null}]};
+  // v2 intentionally keeps this room on its one published portrait adapter.
+  const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane]}).presentation;
+  const presentation={...captured,schemaVersion:2};
   let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
     roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],

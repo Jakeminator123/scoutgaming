@@ -6,11 +6,13 @@ import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 const color = index => `#${index.toString(16).padStart(6, '0')}`;
 
 function withLane() {
-  return createSeedProject();
+  const project = createSeedProject();
+  project.lanes = [defaultPresentationLane('astrid')];
+  return project;
 }
 
 test('seed and the default lane stay valid without zones, colors, probe or idle', () => {
-  const lane = defaultPresentationLane();
+  const lane = defaultPresentationLane('astrid');
   assert.equal(Object.hasOwn(lane, 'probe'), false);
   assert.equal(Object.hasOwn(lane, 'idle'), false);
   assert.equal(Object.hasOwn(lane.layers.background, 'zones'), false);

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { createPartnerBrandingApi as createApi, TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
 
@@ -104,11 +105,11 @@ function apiFor(store, lanes) {
   });
 }
 
-test('adjustable is the union of the package lanes, with mobile-phone falling back to the default lane', async () => {
+test('adjustable uses only saved package lanes and does not manufacture a standard lane', async () => {
   const { store } = await seeded(['mobile-phone', 'missing-lane']);
   const fallback = apiFor(store, [{ id: 'vip-table', operatorAdjustable: ['dealer'] }]);
   const fallen = await fallback.read({ operatorId });
-  assert.deepEqual(fallen.adjustable, ['table.color', 'branding']);
+  assert.deepEqual(fallen.adjustable, []);
   assert.equal(fallen.packageRevision, 1);
   const pinned = apiFor(store, [{ id: 'mobile-phone', operatorAdjustable: ['dealer'] }]);
   assert.deepEqual((await pinned.read({ operatorId })).adjustable, ['dealer']);
@@ -172,7 +173,7 @@ test('the wrong revision is 409 and a key outside the lane is 422', async () => 
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import { defaultPresentationLane } from '../lib/studio-model.mjs';
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
-import { layerAssetPath, validatePresentationPackage } from '../../web/presentation-layers.mjs';
+import { layerAssetPath } from '../../web/presentation-layers.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
 function makePresentation(layered=true) {
@@ -180,10 +181,10 @@ function makePresentation(layered=true) {
     const asset={schemaVersion:1,id,role,label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};
     return {...asset,pathname:layerAssetPath(asset)};
   });
-  const lane={...defaultPresentationLane(),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
+  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
     layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','vera']}},
     ...(layered?{composition:defaultCompositionSettings()}: {})};
-  return validatePresentationPackage({schemaVersion:1,projectRevision:'test-r1',lanes:[lane],assets});
+  return cloudPresentationFixture({lanes:[lane],assets}).presentation;
 }
 
 test('canonical package rejects incompatible baked layer choices while retaining approved playback',async()=>{
@@ -229,8 +230,19 @@ test('a package changed after the read is rejected by the atomic publisher',asyn
 function createPartnerBrandingApi(options) {
   const readAdministration=async()=>{
     const pack=await options.store.getCurrentPackage(operatorId);
-    return {revision:'admin-fixture',value:{gameLane:'indexed',gameLanes:[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'}],
-      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId,gameLaneId:'indexed',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
+    return {revision:'admin-fixture',value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+      rooms:pack.tables.map((id,index)=>({schemaVersion:2,id,name:id,operatorId,gameLaneId:'portrait-astrid',presentationLaneId:pack.lanes[index%pack.lanes.length],state:'live'}))}};
   };
   return createApi({...options,readAdministration,withWriteContext:work=>work({store:options.store,readAdministration,reauthorize:async()=>true})});
 }
+
+
+test('empty and unresolved package selections cannot be republished through branding',async()=>{
+ for(const lanes of [[],['mobile-phone']]){
+  let writes=0;const current={operatorId,revision:1,lanes,games:['blackjack'],tables:[],branding:{name:'Company'}};
+  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async()=>{writes++;return current;}},readProject:async()=>({lanes:[]})});
+  assert.deepEqual((await api.read({operatorId})).adjustable,[]);
+  for(const branding of [{},{name:'Changed'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===409);
+  assert.equal(writes,0);assert.equal(current.revision,1);assert.deepEqual(current.branding,{name:'Company'});
+ }
+});

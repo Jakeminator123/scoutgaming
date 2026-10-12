@@ -7,6 +7,12 @@ Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
+## Flödesomstrukturering, 12 oktober 2026
+
+N1 samlas i Studio, Spelbolag, Drift och System. Kanoniska adresser är `/control/compositions`, `/control/companies`, `/control/rooms` och kontextuell `/control/rehearsal`; gamla adresser leder vidare. Sammansättning ersätter presentationslane i användarflödet, medan kompatibla lagrings-ID:n och intern uppspelningskonfiguration behålls. N2 samlar rummets inställningar på `/partner/{slug}/rooms` med bevarade utkast och navigationsskydd.
+
+Bolags- och rumsarkiv bevarar historik och har revisionskontroll. Ingen SQL-migration eller produktionsdatastädning ingår. De nya mutationerna kräver spelmotorns capability v6 `resourceLifecycle: operator-room-archive-v1`; äldre runtime nekar dem före skrivning. Ägarlösa gamla rum och tidigare avstängda bolag utan arkivmarkör får ingen gissad ägare/automatisk återaktivering. Dealerarkivets samlade konsekvensplan och atomiska avpublicering kräver dessutom capability v7 `dealerArchiveCascade: dealer-compositions-rooms-v1`. Historiska paket behålls; återställning ger utkast utan att starta AI-tal eller spelrum. Full leverans-, UI- och runtimeverifiering redovisas i aktuell handoff; denna kodändring stänger inte JN2 eller medieacceptans.
+
 ## JN2-C: slutimplementation och acceptans, 12 oktober 2026
 
 Team använder nu verkliga roller/rättigheter, skyddad avstängning/återaktivering och revisionskontroll. Beständig operatörsjournal ingår i samma SQL-transaktion som varje lyckad konfigurationsändring; nekade ändringar eller auditfel ger ingen affärsskrivning. Läsning är bolagsavgränsad, paginerad och åtkomstkontrollerad. Ingen historisk backfill eller app-radering; retention tills separat beslut.

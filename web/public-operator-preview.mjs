@@ -1,11 +1,10 @@
 import {previewMediaPath,validatePublicOperatorPreview} from './public/operator-preview-contract.mjs';
 import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
-import {isDealerId,BASE_DEALER_IDS} from './public/dealer-identity.mjs';
+import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
 
 const route=/^\/api\/operators\/([^/]+)\/rooms\/([^/]+)\/preview(?:\/media\/([^/]+)\/([^/]+)\/(dealer|table|background)\/([^/]+))?$/;
 const uuid=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
-const labels={astrid:'Astrid',vera:'Vera',amira:'Amira',mei:'Mei'};
 const headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Cross-Origin-Resource-Policy':'same-origin','Referrer-Policy':'no-referrer'};
 const fail=(status=503)=>{throw Object.assign(Error('operator_preview_unavailable'),{statusCode:status});};
 const revision=value=>/^[1-9][0-9]{0,15}$/.test(value??'')&&Number.isSafeInteger(Number(value))?Number(value):null;
@@ -43,9 +42,9 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
       ||selection.packageRevision!==context.packageRevision||!selection.choices.dealers.includes(context.dealerId))fail(404);
     const independentLayers=supportsIndependentLayers(selection,frozen,context.dealerId);
     const registered=frozen.registeredDealers?.find(row=>row.id===context.dealerId);
-    const label=labels[context.dealerId]??registered?.label;
+    const label=registered?.label;
     if(!label)fail();
-    const idle=BASE_DEALER_IDS.includes(context.dealerId)?null:resolveFrozenDealerIdle(frozen.registeredDealers,{
+    const idle=resolveFrozenDealerIdle(frozen.registeredDealers,{
       dealerId:context.dealerId,allowedDealerIds:selection.choices.dealers});
     const assets={table:[],background:[]};
     for(const role of ['table','background']) {

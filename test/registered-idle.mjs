@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, addDealer } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, createEmptyProject, addDealer } from '../lab/lib/studio-model.mjs';
 import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
 
 const VIDEO_ID = '00000000-0000-4000-8000-000000000001';
 const OTHER_ID = '00000000-0000-4000-8000-000000000002';
 function fixture() {
-  const project = addDealer(createSeedProject(), 'nora', 'Nora');
+  const project = addDealer(createEmptyProject(), 'nora', 'Nora');
   const line = project.lines.find(row => row.dealerId === 'nora' && row.eventId === 'idle.ready');
   const baseline = line.variants.find(row => row.id === line.baselineVariantId);
   baseline.videoGenerationId = VIDEO_ID;
@@ -46,10 +46,11 @@ test('ten-second baseline selection ignores timing, priority, family and alterna
 });
 
 test('the saved dealer roster authorizes access and malformed registries fail closed', () => {
+  const explicit=fixture();assert.deepEqual(explicit.project.dealers,[{id:'nora',label:'Nora'}]);assert.deepEqual(resolve(explicit),explicit.video,'other historical dealers are not prerequisites');
   for (const change of [
     input => input.project.dealers = input.project.dealers.filter(row => row.id !== 'nora'),
     input => input.project.dealers.push({ id: 'nora', label: 'Duplicate' }),
-    input => input.project.dealers = input.project.dealers.filter(row => row.id !== 'astrid'),
+    input => input.project.dealers.push({ id: '../other', label: 'Invalid' }),
     input => input.project.dealers = [],
   ]) {
     const input = fixture(); change(input); assert.equal(resolve(input), null);

@@ -1,4 +1,3 @@
-import { BASE_DEALER_IDS } from '../web/dealer-identity.mjs';
 // Shared selection runtime. The caller owns game order and the playback lifecycle.
 import { randomUUID, createHash } from 'node:crypto';
 import { askDirector, boundedJson } from '../open-claw/lab/src/openclaw.mjs';
@@ -8,7 +7,7 @@ import { StudioError } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
 import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
-import { isLegacyClipReference, legacySituationLine, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
+import { isLegacyClipReference, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
 import { mediaSituationForEvent } from './media-family-resolver.mjs';
 
 export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
@@ -71,9 +70,10 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
   const media = mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
   const frequency = dealFrequencyPolicies(savedProject, media.family);
-  const playedLine = media.managed ? media.line : legacySituationLine(media.line, input.event);
-  const project = media.managed || playedLine !== media.line
-    ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? playedLine : line) }
+  // Only explicit current bindings can select a clip. Historical variant names
+  // never promote a clip into the standard line merely because a box matches.
+  const project = media.managed
+    ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? media.line : line) }
     : savedProject;
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
   let prepared = prepareDecision(catalog, input);
@@ -130,7 +130,7 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   if (videoGenerationId) {
     videoRegistry ??= await loadVideoRegistry();
     const video = videoRegistry.videos.find(v => v.id === videoGenerationId);
-    const unavailablePosition = !BASE_DEALER_IDS.includes(body.dealerId) && prepared.event.type === 'deal' && video?.available === false;
+    const unavailablePosition = prepared.event.type === 'deal' && video?.available === false;
     if (unavailablePosition || (media.managed ? !mediaVideoForEvent(videoRegistry, body.dealerId, event.id, prepared.event, videoGenerationId) : !videoFitsEvent(video, prepared.event))) {
       videoGenerationId = null;
       result.trace.push({ stage: 'video', status: 'fallback', detail: 'Videons exakta situation/replik matchar inte exempel-eventet. Visar variantens 2D-reserv.' });
@@ -138,7 +138,7 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   }
   const selectedVideo = videoRegistry.videos.find(video => video.id === videoGenerationId);
   const missingPosition = !videoGenerationId && prepared.event.type === 'deal'
-    && (media.managed || !BASE_DEALER_IDS.includes(body.dealerId)) && mediaSituationForEvent(event.id, prepared.event) !== null;
+    && mediaSituationForEvent(event.id, prepared.event) !== null;
   const mediaReceipt = media.managed || missingPosition ? { familyId: media.family?.id ?? null, situation: media.family?.situation ?? (missingPosition ? mediaSituationForEvent(event.id, prepared.event) : null),
     videoId: videoGenerationId, fileName: selectedVideo?.fileName ?? null, sha256: selectedVideo?.sha256 ?? null,
     standard: variant.id === media.line.baselineVariantId, reason: videoGenerationId ? 'exact_family' : missingPosition ? 'position_clip_missing' : 'no_exact_video_2d' } : null;

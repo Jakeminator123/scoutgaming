@@ -6,7 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {createSeedProject} from '../lib/studio-model.mjs';
+import {createSeedProject as createEmptyProject, defaultPresentationLane} from '../lib/studio-model.mjs';
 import {registerLibraryLayer,validateLibraryDraft} from '../lib/layer-library-draft.mjs';
 import {rebaseProjectDraft} from '../lib/project-rebase.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
@@ -90,7 +90,7 @@ test('library route keeps shared authorization and renders visible usage/removal
   assert.match(html,/id="library-tab-background"[^>]*aria-selected="true"/);
   assert.match(html,/id="library-panel-table"[^>]*hidden=""/);
   assert.match(html,/<h3>Hantera bord · 1 filer<\/h3>/);assert.doesNotMatch(html,/<summary>Hantera/);
-  assert.match(html,new RegExp(`/control/preview\\?lane=${project.lanes[0].id}`));
+  assert.match(html,new RegExp(`/control/compositions\\?composition=${project.lanes[0].id}`));
   assert.match(html,/disabled="">Ta bort ur biblioteket/);assert.match(html,/Spara bibliotek/);
 });
 
@@ -100,7 +100,7 @@ test('upload callback advances CAS baseline while preserving removal drafts and 
   const state={project:draft,projectRef,dirty:true,saving:false,conflict:false,savedJson:JSON.stringify(base),save:async()=>{saves++;},modelEdit:()=>{},
     setProject:value=>{updates.project=value;},setSavedJson:value=>{updates.saved=value;},setConflict:value=>{updates.conflict=value;},setError:()=>{},setNotice:()=>{}};
   const {ControlLayerLibraryPage}=loadTs(new URL('../components/control-layer-library-page.tsx',import.meta.url),{
-    react:{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect:()=>{}},'./studio-session':{useStudioSession:()=>state,StudioMessages:()=>null},
+    react:{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect:()=>{}},'./studio-session':{useStudioProjectSession:()=>state,StudioMessages:()=>null},
   });
   const tree=ControlLayerLibraryPage({initialProject:base,initialVideos:{videos:[]},initialStatus:{provider:'neon'}});
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child,predicate);if(match)return match;}return null;}
@@ -127,7 +127,7 @@ test('keeping local conflict choices cannot drop a layer newly used by a remote 
   const state={project:draft,projectRef,dirty:true,saving:false,conflict:true,savedJson,save:async()=>{},modelEdit:()=>{},
     setProject:value=>{updates.project=value;},setSavedJson:value=>{updates.saved=value;},setConflict:value=>{updates.conflict=value;},setError:value=>{updates.error=value;},setNotice:()=>{}};
   const {ControlLayerLibraryPage}=loadTs(new URL('../components/control-layer-library-page.tsx',import.meta.url),{
-    react:{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect:()=>{}},'./studio-session':{useStudioSession:()=>state,StudioMessages:()=>null},
+    react:{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect:()=>{}},'./studio-session':{useStudioProjectSession:()=>state,StudioMessages:()=>null},
   });
   const tree=ControlLayerLibraryPage({initialProject:base,initialVideos:{videos:[]},initialStatus:{provider:'neon'}});
   function find(node){if(!node||typeof node!=='object')return null;if(typeof node.props?.onResolve==='function')return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
@@ -138,3 +138,6 @@ test('keeping local conflict choices cannot drop a layer newly used by a remote 
   conflict.props.onResolve(remote,remoteChoice);
   assert.equal(projectRef.current,remoteChoice);assert.equal(updates.saved,JSON.stringify(remote));assert.equal(updates.conflict,false);assert.equal(updates.error,'');
 });
+
+// This suite exercises a saved composition, not an automatically populated new project.
+function createSeedProject() { const project = createEmptyProject(); project.lanes = [defaultPresentationLane('astrid')]; return project; }

@@ -291,7 +291,7 @@ test('N1 invitation delivery and journal happen only after membership commit', a
 });
 
 async function seedBranding(f) {
-  const lane={...defaultPresentationLane(),id:'john-lane',composition:defaultCompositionSettings(),operatorAdjustable:['table.color']};
+  const lane={...defaultPresentationLane('astrid'),id:'john-lane',composition:defaultCompositionSettings(),operatorAdjustable:['table.color']};
   lane.layers.table={...lane.layers.table,enabled:true,colors:['#112233','#445566','#778899']};
   const presentation={schemaVersion:1,projectRevision:'john-branding',lanes:[lane],assets:[]};
   f.config.readProject=async()=>assert.fail('frozen package must not use the live project');

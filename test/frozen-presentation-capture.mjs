@@ -1,3 +1,4 @@
+import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
@@ -9,7 +10,7 @@ const scope={environment:'frozen-fixture',workspaceId:'isolated'};
 const id='10000000-0000-4000-8000-000000000001',sha256='a'.repeat(64);
 function fixture(){
   const project=addDealer(createSeedProject(),'johanna','Johanna');
-  const lane=defaultPresentationLane();lane.id='johns-presentation';lane.dealers=['johanna'];lane.layers.dealer.default='johanna';lane.layers.dealer.allowed=['johanna'];project.lanes=[lane];
+  const lane=defaultPresentationLane('johanna');lane.id='johns-presentation';lane.dealers=['johanna'];lane.layers.dealer.default='johanna';lane.layers.dealer.allowed=['johanna'];project.lanes=[lane];
   project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
   const classification={dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen Johanna',notes:'',
     compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}};
@@ -19,7 +20,7 @@ function fixture(){
   return {snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['johanna']};
 }
 test('v1 canonical bytes and gzip envelope remain exactly compatible with the pre-integration fixture',()=>{
-  const project=createSeedProject();project.revision='v1-frozen-fixture';
+  const project=createSeedProject();project.lanes=[defaultPresentationLane('astrid')];project.revision='v1-frozen-fixture';
   const legacy=buildPresentationPackage(project,[project.lanes[0].id],[]);
   const envelope=encodePresentationPackage(legacy);
   const historicalEnvelope={format:'croupier-lanes-v1',encoding:'gzip-base64url',sha256:'cb46fe439c10e9584e978b784812c83043bec71084e88824eb3121318f359784',
@@ -95,10 +96,11 @@ test('portable v3 parser rejects getter-backed authority or decorated arrays wit
 });
 
 
-test('v3 binding admits a frozen Johanna default on an existing Amira portrait lane but keeps legacy and missing-lane guards', () => {
-  const presentation = captureFrozenPresentation(fixture()).presentation;
-  const room = { schemaVersion:2, id:'room-existing', name:'Existing', operatorId:'north', presentationLaneId:presentation.lanes[0].id, gameLaneId:'old-amira', state:'live' };
-  const game = {schemaVersion:1,id:room.gameLaneId,label:'Amira',renderer:'portrait-video',dealer:'amira',mediaCollection:'amira-presentation'};
+test('v3 binding admits only a frozen allowed Astrid adapter for the Johanna default and rejects retired or foreign adapters', () => {
+  const lane = defaultPresentationLane('johanna'); lane.dealers=['johanna','astrid']; lane.layers.dealer.allowed=[...lane.dealers];
+  const presentation = cloudPresentationFixture({lanes:[lane]}).presentation;
+  const room = { schemaVersion:2, id:'room-existing', name:'Existing', operatorId:'north', presentationLaneId:presentation.lanes[0].id, gameLaneId:'old-astrid', state:'live' };
+  const game = {schemaVersion:1,id:room.gameLaneId,label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
   const input = { administration:{gameLane:game.id,gameLanes:[game],rooms:[room]}, operatorId:'north', currentPackage:{tables:[room.id]}, presentation };
   assert.doesNotThrow(() => assertPublishedRoomBindings(input));
   for (const change of [
@@ -106,10 +108,14 @@ test('v3 binding admits a frozen Johanna default on an existing Amira portrait l
     value => { value.administration.gameLanes[0]={...game,renderer:'indexed-video',mediaCollection:'legacy-dealers'}; },
     value => { value.presentation.schemaVersion=2; delete value.presentation.playback; },
     value => { value.presentation.lanes[0].layers.dealer.default='unknown'; },
+    value => { value.administration.gameLanes[0]={...game,dealer:'amira',mediaCollection:'amira-presentation'}; },
+    value => { value.administration.gameLanes[0]={...game,dealer:'nora',mediaCollection:'nora-presentation'}; },
+    value => { value.presentation.lanes[0].layers.dealer.allowed=['johanna']; },
+    value => { value.presentation.registeredDealers=value.presentation.registeredDealers.filter(row=>row.id!=='astrid'); },
     value => { value.presentation.registeredDealers[0].idle=null; },
   ]) {
     const invalid=structuredClone(input);change(invalid);
     assert.throws(() => assertPublishedRoomBindings(invalid), error => error.statusCode===409);
   }
-  assert.equal(input.administration.rooms[0].gameLaneId, 'old-amira');
+  assert.equal(input.administration.rooms[0].gameLaneId, 'old-astrid');
 });

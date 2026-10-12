@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject,validateProject} from '../lib/studio-model.mjs';
-import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages} from '../lib/dealer-lifecycle.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
+import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDealerArchive} from '../lib/dealer-lifecycle.mjs';
+import {combinedPool} from './fixtures/lifecycle-pool.mjs';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
+import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
 import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
 import {checkPermanentMediaDeletion,createStudioMediaDeletion} from '../lib/studio-media-deletion.mjs';
@@ -18,7 +22,10 @@ const id='00000000-0000-4000-8000-000000000001',oldId='00000000-0000-4000-8000-0
 const media=(key=id,archived=false)=>({id:key,sha256:sha,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/paow/review/uploads/${key}/${sha}.mp4`,classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Clip',notes:'',...(archived?{archived:true}:{})}});
 const req=(path,body,headers={})=>new Request(origin+path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',...headers},body:JSON.stringify(body)});
 async function fixture({bind=false}={}){
- const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+ const pool=createStudioMemoryPool();
+ // This isolated fixture has no operators; historical packages stay in the separate purge fixture.
+ const connect=pool.connect.bind(pool);pool.connect=async()=>{const client=await connect(),query=client.query.bind(client);client.query=(sql,values)=>sql.includes('/* operator-store:list-operators */')?Promise.resolve({rows:[]}):query(sql,values);return client;};
+ const repository=createStudioRepository({pool,scope});
  const project=addDealer(createSeedProject(),'paow','PAOW');
  if(bind)project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
  seedSavedVideoProject(pool,scope,project);
@@ -26,8 +33,12 @@ async function fixture({bind=false}={}){
  await repository.registerMedia(media(),{actor:'operator'});await repository.registerMedia(media(oldId,true),{actor:'operator'});
  const context={repository,config,mutationTransaction:async work=>work(),authorize:async()=>({user:'Admin',role:'admin',scope}),videoRegistry:async()=>({videos:await repository.listMedia()})};
  const operation=(archived,expectedRevision=project.revision)=>({dealerId:'paow',archived,expectedRevision});
- const change=async(body=operation(true),extras={})=>changeDealerLifecycle({...context,body,stillAuthorized:async()=> 'Admin',...extras});
- return {pool,repository,project,context,operation,change};
+ const change=async(body=operation(true),extras={})=>{
+  if(body.archived&&body.impactToken===undefined){const {impact}=await checkDealerArchive({repository,body:{dealerId:body.dealerId,expectedRevision:body.expectedRevision}});body={...body,impactToken:impact.token};}
+  return changeDealerLifecycle({...context,body,stillAuthorized:async()=> 'Admin',...extras});
+ };
+ const archiveBody={...operation(true),impactToken:(await checkDealerArchive({repository,body:{dealerId:'paow',expectedRevision:project.revision}})).impact.token};
+ return {pool,repository,project,context,operation,change,archiveBody};
 }
 test('dealer archive and restore preserve own exact lines/settings and only restore previously active uploads',async()=>{
  const f=await fixture({bind:true}),before=structuredClone(f.project);
@@ -49,22 +60,22 @@ test('ordinary PUT cannot forge/change trash or remove a dealer owning clips, ev
  const forged=lifecycleProject(f.project,{dealerId:'paow',archived:true,records:await f.repository.listMedia()});
  await assert.rejects(f.repository.saveDocument('project',{value:forged,expectedRevision:f.project.revision,actor:'Admin'}),{code:'studio_dealer_lifecycle_required'});
 });
-test('base dealers, enabled speech, current presentation and administration references block archive without changes',async()=>{
- for(const mode of ['base','speech','lane','admin']){
-  const f=await fixture();let dealerId='paow';
-  if(mode==='base')dealerId='astrid';
-  if(mode==='speech')f.project.dealers.at(-1).speechProfile={schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'original',modelId:'eleven_v3'},reference:{kind:'video-frame',videoId:id,sha256:sha,offsetMs:0}};
-  if(mode==='lane'){f.project.lanes[0].dealers.push('paow');f.project.lanes[0].layers.dealer.allowed.push('paow');}
-  seedSavedVideoProject(f.pool,scope,f.project);
-  if(mode==='admin'){const doc=await f.repository.readDocument('administration');await f.repository.saveDocument('administration',{value:{genLandings:{dealer:'paow'}},expectedRevision:doc.revision,actor:'Admin'});}
-  const before=f.pool.snapshot();await assert.rejects(f.change({...f.operation(true),dealerId}));assert.deepEqual(f.pool.snapshot(),before);
- }
+test('archive automatically disables speech and moves affected compositions while keeping historical administration',async()=>{
+ const f=await fixture();f.project.dealers.at(-1).speechProfile={schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'original',modelId:'eleven_v3'},reference:{kind:'video-frame',videoId:id,sha256:sha,offsetMs:0}};
+ f.project.lanes=[defaultPresentationLane('paow')];seedSavedVideoProject(f.pool,scope,f.project);
+ const doc=await f.repository.readDocument('administration');await f.repository.saveDocument('administration',{value:{genLandings:{dealer:'paow'}},expectedRevision:doc.revision,actor:'Admin'});
+ const archived=await f.change();assert.deepEqual(archived.lanes,[]);assert.equal(archived.dealerTrash[0].dealer.speechProfile.state,'preparation');assert.equal(archived.dealerTrash[0].compositions.length,1);
+ const restored=await f.change(f.operation(false,archived.revision));assert.equal(restored.dealers.at(-1).speechProfile.state,'preparation');assert.deepEqual(restored.lanes,f.project.lanes);
+ assert.deepEqual((await f.repository.readDocument('administration')).value,{genLandings:{dealer:'paow'}});
 });
-test('published dealer and unreadable package metadata block archive',async()=>{
+
+test('historical packages never block reversible archive but still block permanent removal',async()=>{
  for(const pack of [{lanes:'[]',branding:JSON.stringify({dealer:'paow'})},{lanes:'[]',branding:'invalid'}]){
-  const f=await fixture();f.pool.packages=[pack];const before=f.pool.snapshot();await assert.rejects(f.change());assert.deepEqual(f.pool.snapshot(),before);
+  const f=await fixture();f.pool.packages=[pack];const archived=await f.change();assert.equal(archived.dealerTrash.length,1);
+  assert.throws(()=>assertLifecyclePackages([pack],{dealerId:'paow'}));
  }
 });
+
 test('concurrent archive attempts have one winner and stale restoration has no partial success',async()=>{
  const f=await fixture();const results=await Promise.allSettled([f.change(),f.change()]);assert.equal(results.filter(row=>row.status==='fulfilled').length,1);
  const before=f.pool.snapshot();await assert.rejects(f.change(f.operation(false)),{code:'studio_conflict'});assert.deepEqual(f.pool.snapshot(),before);
@@ -83,10 +94,10 @@ test('missing or changed media makes whole dealer restore conflict',async()=>{
  const before=f.pool.snapshot();await assert.rejects(f.change(f.operation(false,archived.revision)),{code:'studio_dealer_restore_conflict'});assert.deepEqual(f.pool.snapshot(),before);
 });
 test('authenticated lifecycle API returns project and inventory; cross-site, role and auth changes fail closed',async()=>{
- const f=await fixture();const response=await createStudioDealerApi(f.context).handle(req('/api/dealers/archive',f.operation(true)));assert.equal(response.status,200);const body=await response.json();assert.equal(body.project.dealerTrash.length,1);assert.equal(body.inventory.videos.length,2);
+ const f=await fixture();const response=await createStudioDealerApi(f.context).handle(req('/api/dealers/archive',f.archiveBody));assert.equal(response.status,200);const body=await response.json();assert.equal(body.project.dealerTrash.length,1);assert.equal(body.inventory.videos.length,2);
  for(const mode of ['cross-site','reader','changed']){
   const g=await fixture();let calls=0;const context={...g.context,authorize:async()=>({scope,user:mode==='changed'&&calls++?'Other':'Admin',role:mode==='reader'?'reader':'admin'})};const before=g.pool.snapshot();
-  const failed=await createStudioDealerApi(context).handle(req('/api/dealers/archive',g.operation(true),mode==='cross-site'?{origin:'https://evil.invalid'}:{}));assert.equal(failed.status,403);assert.deepEqual(g.pool.snapshot(),before);
+  const failed=await createStudioDealerApi(context).handle(req('/api/dealers/archive',g.archiveBody,mode==='cross-site'?{origin:'https://evil.invalid'}:{}));assert.equal(failed.status,403);assert.deepEqual(g.pool.snapshot(),before);
  }
 });
 test('purge checks explicitly reject referenced history and do not mistake zero scoped matches for full coverage',async()=>{
@@ -104,18 +115,18 @@ test('tombstones validate only archived uploads, block registration and cannot b
 });
 test('trash ids cannot be reused and malformed saved snapshots fail validation',async()=>{
  const f=await fixture(),archived=await f.change();assert.throws(()=>addDealer(archived,'paow','Duplicate'));
- for(const mutate of [entry=>entry.activeMediaIds.push('not-uuid'),entry=>entry.lines.pop(),entry=>entry.dealer.id='astrid',entry=>entry.schemaVersion=2]){const copy=structuredClone(archived);mutate(copy.dealerTrash[0]);assert.throws(()=>validateProject(copy));}
+ for(const mutate of [entry=>entry.activeMediaIds.push('not-uuid'),entry=>entry.lines.pop(),entry=>entry.dealer.id='astrid',entry=>entry.schemaVersion=3]){const copy=structuredClone(archived);mutate(copy.dealerTrash[0]);assert.throws(()=>validateProject(copy));}
 });
-test('runtime capability v5 is required before any trash document SQL mutation',async()=>{
+test('runtime capability v7 is required before cascade trash document SQL mutation',async()=>{
  const f=await fixture(),next=lifecycleProject(f.project,{dealerId:'paow',archived:true,records:await f.repository.listMedia()});
- for(const version of [4,5]){let mutations=0,fetches=0;const repo={saveDocument:async()=>mutations++};const wrapped=wrapNativePresentationRepository(repo,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,options)=>{fetches++;assert.equal(options.headers['X-Presentation-Capability-Version'],'5');return Response.json(presentationCapabilitiesForVersion(version));}});
- if(version===4)await assert.rejects(wrapped.saveDocument('project',{value:next}));else await wrapped.saveDocument('project',{value:next});assert.equal(mutations,version===5?1:0);assert.equal(fetches,1);}
+ for(const version of [6,7]){let mutations=0,fetches=0;const repo={saveDocument:async()=>mutations++};const wrapped=wrapNativePresentationRepository(repo,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,options)=>{fetches++;assert.equal(options.headers['X-Presentation-Capability-Version'],'7');return Response.json(presentationCapabilitiesForVersion(version));}});
+ if(version===6)await assert.rejects(wrapped.saveDocument('project',{value:next}));else await wrapped.saveDocument('project',{value:next});assert.equal(mutations,version===7?1:0);assert.equal(fetches,1);}
 });
 
 test('public rewrite and Next stripped basePath reach the same dealer lifecycle route',async()=>{
  for(const path of ['/api/dealers/archive','/studio/api/dealers/archive']){
   const f=await fixture();const context={...f.context,config:{...config,apiBase:'/studio/api/admin',authBase:'/studio/api/auth'}};
-  const response=await createStudioDealerApi(context).handle(req(path,f.operation(true)));
+  const response=await createStudioDealerApi(context).handle(req(path,f.archiveBody));
   assert.equal(response.status,200);
  }
 });
@@ -195,7 +206,7 @@ test('unknown bank index or an upload pointer inside it cannot authorize deletio
 });
 test('a failed v5 readiness gate or revoked authorization prevents provider calls',async()=>{
  const f=await fixture(),row=await f.repository.getMedia(oldId);let calls=0;
- const service=deletionFixture(f,{del:async()=>calls++,mutationTransaction:async(_work,options)=>{assert.deepEqual(options.presentationMutation,{kind:'project',value:{dealerTrash:[]}});throw Error('readiness');}}),before=f.pool.snapshot();
+ const service=deletionFixture(f,{del:async()=>calls++,mutationTransaction:async(_work,options)=>{assert.equal(options.presentationMutation.kind,'project');assert.deepEqual(options.presentationMutation.value.dealerTrash,[]);throw Error('readiness');}}),before=f.pool.snapshot();
  await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}));assert.equal(calls,0);assert.deepEqual(f.pool.snapshot(),before);
  const revoked=deletionFixture(f,{del:async()=>calls++});await assert.rejects(revoked.remove(deletionInput(row),{stillAuthorized:async()=>{throw Error('revoked');}}));assert.equal(calls,0);assert.deepEqual(f.pool.snapshot(),before);
 });
@@ -274,4 +285,81 @@ test('dealer purge routes return preflight and fenced project/inventory without 
  const f=await fixture({bind:true}),archived=await f.change(),mediaDeletion=deletionFixture(f,{now:()=>afterArchive(archived)}),api=createStudioDealerApi({...f.context,mediaDeletion});
  const check=await api.handle(req('/api/dealers/delete-check',dealerDeleteInput(archived)));assert.equal(check.status,200);assert.equal((await check.json()).allowed,true);
  const result=await api.handle(req('/api/dealers/delete',dealerDeleteInput(archived)));assert.equal(result.status,200);const body=await result.json();assert.deepEqual(body.project.dealerTrash,[]);assert.equal(body.inventory.videos.filter(row=>row.deletion.state==='deleted').length,2);
+});
+
+test('archive plan API is read-only and confirmation requires the same current token',async()=>{
+ const f=await fixture(),api=createStudioDealerApi(f.context),before=f.pool.snapshot();
+ const check=await api.handle(req('/api/dealers/archive-check',{dealerId:'paow',expectedRevision:f.project.revision}));assert.equal(check.status,200);
+ const {impact}=await check.json();assert.equal(impact.token,f.archiveBody.impactToken);assert.deepEqual(f.pool.snapshot(),before);
+ assert.equal((await api.handle(req('/api/dealers/archive',f.operation(true)))).status,400);
+ assert.equal((await api.handle(req('/api/dealers/archive',{...f.archiveBody,impactToken:'0'.repeat(64)}))).status,409);
+ assert.deepEqual(f.pool.snapshot(),before);
+ const admin=await f.repository.readDocument('administration');await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'Other'});
+ const changed=f.pool.snapshot();assert.equal((await api.handle(req('/api/dealers/archive',f.archiveBody))).status,409);assert.deepEqual(f.pool.snapshot(),changed);
+});
+
+test('shared archived compositions validate against history but restore waits for active dealer dependencies',()=>{
+ let project=addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'elin','Elin');
+ const lane=defaultPresentationLane('johanna');lane.dealers.push('elin');lane.layers.dealer.allowed.push('elin');project.lanes=[lane];
+ project=lifecycleProject(project,{dealerId:'johanna',archived:true,records:[]});
+ project=lifecycleProject(project,{dealerId:'elin',archived:true,records:[]});assert.equal(validateProject(project),project);
+ assert.throws(()=>lifecycleProject(project,{dealerId:'johanna',archived:false,records:[]}),{code:'studio_dealer_restore_conflict'});
+ project=lifecycleProject(project,{dealerId:'elin',archived:false,records:[]});project=lifecycleProject(project,{dealerId:'johanna',archived:false,records:[]});assert.deepEqual(project.lanes,[lane]);
+});
+
+test('explicit baseline dealer archive preserves retained clips and inactive legacy dealers cannot reactivate',()=>{
+ const project=createSeedProject(),dealer=project.dealers.find(row=>row.id==='astrid');assert.ok(dealer);
+ const retained={id,classification:{dealerId:'astrid'},retainedBank:{immutable:true}};
+ const archived=lifecycleProject(project,{dealerId:'astrid',archived:true,records:[retained]});assert.deepEqual(archived.dealerTrash[0].activeMediaIds,[]);
+ assert.equal(lifecycleProject(archived,{dealerId:'astrid',archived:false,records:[retained]}).dealers.some(row=>row.id==='astrid'),true);
+ const historical=structuredClone(project);
+ const retired=lifecycleProject(historical,{dealerId:'amira',archived:true,records:[]});assert.throws(()=>lifecycleProject(retired,{dealerId:'amira',archived:false,records:[]}),{code:'studio_dealer_inactive'});
+});
+
+test('composition IDs reused while archived reject restore without partial media changes',async()=>{
+ const f=await fixture();f.project.lanes=[defaultPresentationLane('paow')];seedSavedVideoProject(f.pool,scope,f.project);const archived=await f.change();
+ const other=defaultPresentationLane('astrid');other.id=f.project.lanes[0].id;archived.lanes=[other];seedSavedVideoProject(f.pool,scope,archived);
+ const before=f.pool.snapshot();await assert.rejects(f.change(f.operation(false,archived.revision)),{code:'studio_dealer_restore_conflict'});assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('foreign active dealer clip bindings remain a safe archive blocker',()=>{
+ const project=addDealer(createSeedProject(),'paow','PAOW');project.lines.find(row=>row.dealerId==='astrid').variants[0].videoGenerationId=id;
+ assert.throws(()=>lifecycleProject(project,{dealerId:'paow',archived:true,records:[media()]}),{code:'studio_media_in_use'});
+});
+
+test('dealer, media, room and current publication changes commit together and roll back together',async()=>{
+ for(const failure of [null,'classify-media','save-document']){
+  const pool=combinedPool(scope),repository=createStudioRepository({pool,scope}),lane={...defaultPresentationLane('paow'),id:'paow-scene'};
+  const cloud=cloudPresentationFixture({lanes:[lane]}),project=await repository.initializeDocument('project',{value:cloud.project,actor:'fixture'});
+  await repository.initializeDocument('administration',{value:{rooms:[{schemaVersion:2,id:'paow-room',name:'PAOW room',operatorId:'north',presentationLaneId:'paow-scene',gameLaneId:'paow-adapter',state:'live'}],gameLanes:[{schemaVersion:1,id:'paow-adapter',label:'PAOW',renderer:'portrait-video',dealer:'paow',mediaCollection:'paow-presentation'}],gameLane:'paow-adapter'},actor:'fixture'});
+  for(const {revision,...row} of cloud.mediaRows)pool.setMedia(row,revision);
+  const stored=work=>repository.transaction(()=>repository.withTransactionClient(async client=>work(await createOperatorStore({sql:client,scope,transaction:fn=>repository.withTransactionClient(fn)}))));
+  await stored(store=>store.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:null,lanes:['paow-scene'],games:['blackjack'],tables:['paow-room'],branding:withPackagePresentation({},cloud.presentation)}));
+  const {impact}=await checkDealerArchive({repository,body:{dealerId:'paow',expectedRevision:project.revision}}),before=pool.snapshot();
+  const execute=()=>changeDealerLifecycle({repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',expectedRevision:project.revision,archived:true,impactToken:impact.token}});
+  if(failure){pool.fail(failure);await assert.rejects(execute());assert.deepEqual(pool.snapshot(),before);continue;}
+  const archived=await execute();assert.equal(archived.dealers.length,0);assert.equal(archived.dealerTrash[0].compositions.length,1);
+  assert.equal((await repository.getMedia(cloud.mediaRows[0].id)).classification.archived,true);assert.deepEqual((await repository.readDocument('administration')).value.rooms,[]);
+  const pack=await stored(store=>store.getCurrentPackage('north'));assert.deepEqual(pack.lanes,[]);assert.deepEqual(pool.snapshot().packages[0],before.packages[0]);
+  await changeDealerLifecycle({repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',expectedRevision:archived.revision,archived:false}});
+  assert.deepEqual((await repository.readDocument('administration')).value.rooms,[]);assert.equal((await stored(store=>store.getCurrentPackage('north'))).revision,pack.revision);
+ }
+});
+
+test('permanent deletion of cascade trash needs v7 before tombstones or provider work',async()=>{
+ for(const version of [5,6,7]){
+  const f=await fixture();await f.change();const row=await f.repository.getMedia(id),before=f.pool.snapshot();let calls=0,requested;
+  const wrapped=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async(_url,options)=>{requested=options.headers['X-Presentation-Capability-Version'];return Response.json(presentationCapabilitiesForVersion(version));}});
+  const service=createStudioMediaDeletion({repository:wrapped,mutationTransaction:(work,options)=>wrapped.withMutationContext(work,options.presentationMutation),readIndex:()=>new Map(),env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del:async()=>calls++}}});
+  if(version<7){await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}),{code:'studio_presentation_runtime_update_required'});assert.deepEqual(f.pool.snapshot(),before);assert.equal(calls,0);}
+  else{await service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'});assert.equal((await f.repository.getMedia(id)).deletion.state,'deleted');assert.equal(calls,1);}
+  assert.equal(requested,'7');
+ }
+});
+
+test('a server lifecycle write cannot acquire cascade authority inside an older verified transaction',async()=>{
+ const f=await fixture(),next=lifecycleProject(f.project,{dealerId:'paow',archived:true,records:await f.repository.listMedia()});let calls=0;
+ const wrapped=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},fetchImpl:async()=>{calls++;return Response.json(presentationCapabilitiesForVersion(5));}}),before=f.pool.snapshot();
+ await wrapped.withMutationContext(async()=>{await assert.rejects(wrapped.saveDealerLifecycle(next,{expectedRevision:f.project.revision,actor:'Admin'}),{code:'studio_presentation_runtime_update_required'});},{kind:'project',value:{...f.project,dealerTrash:[]}});
+ assert.deepEqual(f.pool.snapshot(),before);assert.equal(calls,1);
 });

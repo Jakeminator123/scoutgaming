@@ -81,8 +81,10 @@ export function validatePresentationLane(value, {dealerIds = [...dealers]} = {})
 /** All and only extras in the selected frozen lane union have an entry.
  * A descriptor is storage metadata, never authority to register a runtime ID. */
 export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
-  const expected = list(dealerIds, isDealerId, MAX_DEALERS).filter(id => !BASE_DEALER_IDS.includes(id));
+  const selected = list(dealerIds, isDealerId, MAX_DEALERS);
   dataArray(entries, MAX_DEALERS);
+  // Old packages may omit their built-in profiles. New packages capture every selected dealer.
+  const expected = selected.filter(id => !BASE_DEALER_IDS.includes(id) || entries.some(row => row?.id === id));
   const checked = [], seen = new Set();
   for (const entry of entries) {
     exact(entry, ['id', 'label', 'idle']);
@@ -115,7 +117,7 @@ export function validatePresentationPackage(value) {
     dataArray(value.lanes, 32); dataArray(value.assets, 128);
     registry = validateFrozenRegisteredDealers(value.registeredDealers, {dealerIds:value.registeredDealers.map(row => row && typeof row === 'object' ? Object.getOwnPropertyDescriptor(row, 'id')?.value : null)});
   }
-  const authorised = v2 ? [...BASE_DEALER_IDS, ...registry.map(row => row.id)] : [...dealers];
+  const authorised = v2 ? [...new Set([...BASE_DEALER_IDS, ...registry.map(row => row.id)])] : [...dealers];
   const lanes = value.lanes.map(lane => validatePresentationLane(lane, {dealerIds:authorised})), assets = value.assets.map(validateLayerAsset);
   if (new Set(lanes.map(row => row.id)).size !== lanes.length || new Set(assets.map(row => row.id)).size !== assets.length) reject();
   const byId = new Map(assets.map(asset => [asset.id, asset]));

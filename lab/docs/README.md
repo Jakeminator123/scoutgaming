@@ -4,8 +4,8 @@ Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
 Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Studio samlar **Dealers & klipp**, **Bord & bakgrunder**, **Sammansättning** och **Publicering**. Sidomenyn har dessutom Drift, AI & chatt och Administration. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
-- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`.
+- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Menyn består av **Studio**, **Spelbolag**, **Drift** och **System**. Studio bygger innehållet; Spelbolag hanterar bolag, team, rum och publicering. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Spelbolag → Bolag & team på `/control/companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
 - **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn låter dig välja bland bolag som har spelbara publicerade rum. `?operator=` öppnar bolagets rum direkt. Vercels `/play/blackjack` utan valt spelmål går till lobbyn; enbart `?operator=` går till bolagets lobby. Rummets startlänk begränsar dealer och miljö till paketet. Renders direkta `/blackjack?operator=` behåller sin spelväg. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
 
 Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bolag med samma konto som i Kontrollpanelen. Operatörens personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
@@ -13,11 +13,11 @@ Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bola
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
 ```text
-Dealers & klipp: välj dealer → Grundloop / Klipp / Scen & format / Tal & automatik / Svarsbibliotek / Inställningar
+Dealers & klipp: välj dealer → Grundloop / Klipp / Sammansättning / Tal & automatik / Svarsbibliotek / Provspelning & logg / Inställningar
 Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
-Publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
+Spelrum & publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
 /play: välj bolag → rum → dealer/miljö → spela
 ```
 
@@ -31,7 +31,7 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **Automatik eller OpenClaw?** Automatiska grundloopvariationer styrs av tid, slumpmarginal, minsta paus och maxantal utan AI-anrop. OpenClaws klippval får den publika spelhändelsen och de tillåtna varianternas beskrivningar/villkor; ogiltigt råd ger standardklippet. Skuggläge spelar standard och loggar rådet. Eventtestets chattsignal, språk, återkomst, vinster/förluster och framtoning är simulerade testvärden, inte automatiskt hämtade spelaruppgifter. Den separata OpenClaw-reaktionen i grundloopen använder observerad chatt, högst 8 meddelanden och 3 200 tecken. Den skapar ingen ny talreplik. Astrids utdelningsfrekvenser väljer lokalt på sparade procentandelar för exakt plats.
 
-**AI-tal och uppföljning:** AI-småprat vid inaktivitet skapar ny text och har för närvarande stöd för Astrid. Röst och läppsynk är separata steg och kräver aktiverad talintegration. **Uppspelning** visar separata förlopp för inspelade klipp och AI-tal. Ett urvalsbeslut bevisar inte att en bild visats eller att läppsynken är godkänd.
+**AI-tal och uppföljning:** AI-småprat vid inaktivitet skapar ny text och har för närvarande stöd för Astrid. Röst och läppsynk är separata steg och kräver aktiverad talintegration. **Provspelning & logg** visar separata förlopp för inspelade klipp och AI-tal. Ett urvalsbeslut bevisar inte att en bild visats eller att läppsynken är godkänd.
 
 **Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Tal & automatik** och är fortfarande begränsat till Astrid.
 
@@ -47,17 +47,17 @@ Grundloopen spelas mellan repliker. Under tal används en genererad video med sy
 
 En enda egen grundloop räcker för att testa flödet. Händelseklipp kan läggas till senare; avsaknad av sådana klipp ersätter inte dealern med någon annan.
 
-**Dealer, presentation och spelrum är olika saker:**
+**Dealer, sammansättning och spelrum är olika saker:**
 
 - **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
 - **Bord**: det visuella bordslagret. Välj en bild för ett statiskt bord.
 - **Bakgrund**: ett separat lager; en bakgrundsfilm loopas.
-- **Presentation**: sparade standardval, tillåtna dealers/bord/bakgrunder och placering per format.
-- **Partnerpaket**: en publicerad version av bolagets tilldelade presentationer och val.
-- **Spelrum**: den spelbara länken som kopplar bolaget till en publicerad presentation.
+- **Sammansättning**: dealer, bord, bakgrund, tillåtna alternativ och placering per format.
+- **Publicerad version**: bolagets tilldelade sammansättningar och val. Den fryses när du publicerar.
+- **Spelrum**: bolagets spelbara rum med en publicerad sammansättning. Samma rum visas i partnerportalen och för spelaren.
 
-Tekniskt heter en presentation presentationslane. En spellane är spelmotorns interna väg; du behöver inte skapa den manuellt. Även Administrationens **Lägg till teknisk spelkonfiguration** skapar ID automatiskt och låter dig välja dealer ur en lista. Exakta gamla ID:n används bara vid uttrycklig återställning under Avancerat.
-Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelseklipp. Öppna sedan **Sammansättning**, där du väljer, skapar och namnger presentationen. Öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Publicering**.
+I äldre kod betyder `lane` två olika saker: sammansättningen och spelmotorns interna uppspelningskonfiguration. Den senare skapas eller återanvänds automatiskt för spelrummet. Du hanterar därför **Sammansättningar** och **Spelrum** i det vanliga flödet.
+Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelseklipp. Öppna sedan **Sammansättning**, där du väljer, skapar och namnger presentationen. Öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Spelrum & publicering**.
 Klippbibliotek, Spelhändelser & villkor och AI-småprat vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
 Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
 Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Bordsfärger och bolagets tillåtna mindre ändringar har egna inställningar. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
@@ -80,13 +80,13 @@ redan vid första filvalet. Originalfilen behålls. Spara filinställningarna oc
 publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar behåller
 sitt tidigare bildläge.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
-En egen dealer flyttas till **Papperskorg för dealers** under Hantera dealers. Spara utkastet först. Servern flyttar dealer, klippval och uppladdade klipp tillsammans; **Återställ dealer och klipp** återställer samma innehåll. Redan arkiverade enskilda klipp stannar i papperskorgen. **Radera dealer permanent** tar bort hela den arkiverade dealern och dess filer efter en separat kontroll och bekräftelse. Det går tidigast 15 minuter efter arkiveringen, så gamla uppladdningstillåtelser hinner upphöra. Vid ett delvis lagringsfel visas **Slutför radering**; dealern går då inte att återställa och inga redan raderade filer återuppladdas. Presentationer, spelrum, publicerade paket och aktiverat AI-tal kan hindra borttagning. Grunddealerna tillhör den skyddade originalbanken.
+Under **Hantera dealers** väljer du **Arkivera dealer**. Spara pågående utkast först. En samlad bekräftelse visar vilka klipp, sammansättningar, spelrum och bolag som påverkas. Servern stänger av AI-tal, arkiverar dealern med dess klipp och sammansättningar och avpublicerar berörda spelrum i samma åtgärd. Du behöver inte först gå runt mellan flikar och koppla loss innehållet. **Återställ dealer och klipp** återför materialet som utkast med AI-tal avstängt; publicering och öppning av rum görs separat. Tidigare arkiverade enskilda klipp förblir arkiverade. **Radera dealer permanent** kontrollerar och tar bort hela den arkiverade dealern och dess egna filer efter en separat bekräftelse. Tidigare publicerade filer och annat material som fortfarande används skyddas. Permanent radering kan ske tidigast 15 minuter efter arkiveringen, när tidigare uppladdningstillåtelser har löpt ut. Vid avbruten radering visas **Slutför radering**; redan raderade filer återskapas inte.
 
 **Enskilda klipp:** Flytta oanvända uppladdningar till bibliotekets **Papperskorg**, eller återställ dem därifrån. Ett referensklipp för AI-tal måste först bytas eller kopplas loss och projektet sparas. **Radera permanent** är en separat åtgärd med beroendekontroll och egen bekräftelse. Servern skyddar aktuella användningar, publicerade paket, andra arbetsytors filer och originalbanken. Äldre projekthistorik kan finnas kvar, men kan inte återaktivera raderade filer. Nya uppladdningstillåtelser måste löpa ut innan permanent radering; väntetiden visas. Om lagringen inte svarar behålls en raderingsspärr och **Slutför radering** försöker igen.
 
 Bord och bakgrunder kan tas ur presentationens tillåtna val; publicera om paketet när bolagets utbud ändras. Borttagning eller avstängning av själva bolaget saknas fortfarande. Stäng av för en medlem stänger endast medlemskapet.
 
-I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i presentationen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
+I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i sammansättningen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
 **Förhandsvisa klipp** byter endast provfilm. **Dealerklipp, grundloop och händelser** öppnar Dealers & klipp för det sparade basklippet och andra händelser.
 **Grundloop** är det svenska namnet på `idle`, inte en separat inställning. Utan eget schema loopar dealerns valda basklipp. För en egen dealer öppnar **Anpassa grundloop** samma editor för basklipp och variationer som Astrid använder, med en separat policy för just den dealern.
 Välj **Automatik** för intervall, slumpmarginal, minsta paus och högst antal per minut. **OpenClaw** väljer bland uttryckligt tillåtna variationer med deras beskrivningar när anslutningen och presentationens inställningar tillåter det. **Bara manuellt** startar inga automatiska variationer. För en egen dealers idlevariation kan du välja **Regler**. Under **Händelser → Grundloop** skapar du en variant med samma klipp, tillåter Regler och kopplar ett villkor för själva utdelningen eller vändningen; chattvillkor används inte här. Välj också **Regler** i spelets **Klippval**. Endast matchande sparade villkor kan utlösa variationen, utan separat tidsintervall. Grunddealers använder fortsatt sina befintliga val.
@@ -101,8 +101,8 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Publicering** väljer du bolag och **Presentation**. Flikarna **Spelrum & publicering** och **Team & behörigheter** behåller valt bolag. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
-**Uppdatera publicerade presentationer** → **Välj presentationer och publicera** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
+I **Spelrum & publicering** på `/control/rooms` väljer du bolag och **Sammansättning**. **Bolag & team** på `/control/companies` behåller samma bolagsval. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
+**Uppdatera publicerade sammansättningar** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
 **Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. **Visa alla bolag** återgår till bolagsvalet. Administratörens inloggningsuppgifter fungerar även i den gemensamma spelarinloggningen, som skapar en separat spelarsession. För ett isolerat test med testsaldo används **Provspela** i Sammansättning. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
 Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
 
@@ -130,7 +130,7 @@ Grundloopen ensam är fortfarande standard när inget schema har sparats.
 Live AI-chatt är fortsatt avgränsad till originaldealers. Paket v3 kräver motsvarande
 versionsförhandlade stöd på Render; ett avvisat sparande lämnar utkastet kvar.
 Render måste uppdateras separat om automatisk deploy är avstängd.
-Alla dealerpaket behöver godkännas i spelets repetition. Paow/Dragge-provet finns kvar.
+Alla dealerpaket behöver godkännas i spelets provspelning. Frilagda dealers förhandsvisas i den valda sammansättningen.
 
 
 Intern personal producerar klipp, masker och urvalsregler. Partnern ska bara
@@ -138,7 +138,7 @@ välja tilldelat innehåll och tillåtna designval. Inloggad nivå 2 läser det 
 operatörspaketets dealer, bord och bakgrund, inklusive bild- och videoformat.
 Bord, Bakgrund och Presentationslanes visar paketets tillåtna inställningar;
 Färger, marker och kort visar dess branding. Skrivning kräver
-`presentations.configure`, rätt revision och val inom samma tilldelade lane.
+`presentations.configure`, rätt revision och val inom samma tilldelade sammansättning.
 Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
 Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
 Provbord länkar till den riktiga spelklienten med bolag och faktiskt tilldelat,
@@ -324,7 +324,7 @@ kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
-**Uppspelning** på `/control/activity` skiljer källa, eventdata, kontext, beslut och
+**Provspelning & logg** på `/control/rehearsal` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
 originalsession och startar läsande observation.
 Observation startar ingen separat Lab-spelare. Native-kedjan visar mottaget
@@ -345,6 +345,16 @@ Driftens aktiverade funktioner och återstående liveprov följs i
 [molnstatusen](../../docs/CLOUD-MIGRATION.md).
 För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
 stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
+
+## Arkivera, återställa och provspela
+
+På **Bolag & team** kan ett bolag arkiveras efter bekräftelse. Det försvinner från aktiva val och dess åtkomst stoppas; historiken bevaras. **Visa arkiverade bolag** visar återställning. Återställning av ett bolag kan återöppna tidigare öppna rum, vilket anges före bekräftelsen.
+
+På **Spelrum & publicering** kan du pausa/öppna rum samt arkivera dem. Växla till arkivet för återställning; ett återställt rum är väntande tills du öppnar det. Saknade eller ändrade publiceringsberoenden visas före återställning. Åtgärderna läser tillbaka serverns aktuella version och kräver en kompatibel spelmotor.
+
+På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering. Använda eller skyddade dealers visar varför arkivering eller permanent borttagning hindras. Att ta bort en sammansättning ändrar Studio-utkastet; publicerade rum behåller sin frysta version tills de hanteras separat.
+
+**Provspelning & logg** visar vald dealer, bolag och rum. Den aktuella observationen hålls åtskild från tidigare logg och importerade protokoll. Att välja ett klipp är inte bevis för att klippet visats; följ uppspelningskvittot. Namnet **lane** används inte som ett separat produktsteg.
 
 ## Översikt och rätt arbetsyta
 

@@ -1,6 +1,6 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
-import { defaultPresentationLane, normalizeProject } from './studio-model.mjs';
+import { normalizeProject } from './studio-model.mjs';
 import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
 import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
@@ -37,7 +37,7 @@ export function presentationLaneIds(project) {
     throw error;
   }
   const ids = Array.isArray(normalized?.lanes) ? normalized.lanes.map(lane => lane.id).filter(id => typeof id === 'string') : [];
-  return ids.length ? ids : [defaultPresentationLane().id];
+  return ids;
 }
 
 function exactKeys(body, keys) {
@@ -46,7 +46,17 @@ function exactKeys(body, keys) {
   if (present.length !== keys.length || keys.some(key => !Object.hasOwn(body, key))) fail(400);
 }
 
+// Older callers may omit the revision; current editors send the revision they
+// actually displayed so a stale tab cannot replace a newer package selection.
+function requestedPackageRevision(body) {
+  const specified = Object.hasOwn(body ?? {}, 'expectedPackageRevision');
+  exactKeys(body, ['operatorId', 'lanes', ...(specified ? ['expectedPackageRevision'] : [])]);
+  const revision = body.expectedPackageRevision;
+  if (specified && revision !== null && (!Number.isSafeInteger(revision) || revision < 1)) fail(422);
+  return specified ? revision : undefined;
+}
 function selectedLanes(value, allowed) {
+  if (!allowed.length) throw new StudioStorageError('studio_presentation_required', 422);
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype || value.length < 1 || value.length > 32) fail(422);
   if (new Set(value).size !== value.length || value.some(item => typeof item !== 'string' || !allowed.includes(item))) fail(422);
   return value;
@@ -64,7 +74,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   const preparedValues = new WeakSet();
   const preparations = new Map();
   async function prepare(context) {
-    exactKeys(context.body, ['operatorId', 'lanes']);
+    const expectedPackageRevision = requestedPackageRevision(context.body);
     const operatorId = context.body.operatorId;
     if (typeof operatorId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(operatorId)) fail(422);
     // Clone the intent before any asynchronous read/provider verification.
@@ -75,16 +85,17 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const snapshot = await repository.readPresentationSnapshot();
     const saved = normalizeProject(snapshot.projectDocument.value);
     const lanes = selectedLanes(wanted, presentationLaneIds(saved));
-    const source = saved.lanes?.length ? saved : {...saved, lanes:[defaultPresentationLane()]};
-    const hasExtras = source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id)));
-    if (hasExtras && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) {
+    const source = saved;
+    const hasDealers = source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.length || lane.layers.dealer.allowed.length);
+    if (hasDealers && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) {
       throw new StudioStorageError('studio_media_registry_unavailable');
     }
     // This package revision is a server-read CAS precondition, never a guessed
     // null. Reading it before I/O ensures concurrent branding cannot be erased.
     const operators = await store();
     const current = await operators.getCurrentPackage(operatorId);
-    const inventory = hasExtras ? await videoRegistry.loadCaptured(snapshot) : null;
+    if (expectedPackageRevision !== undefined && (current?.revision ?? null) !== expectedPackageRevision) fail(409);
+    const inventory = hasDealers ? await videoRegistry.loadCaptured(snapshot) : null;
     const captured = captureFrozenPresentation({snapshot, selectedLaneIds:lanes, inventory,
       requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, lanes)});
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
@@ -98,11 +109,12 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       lanes:[...published.lanes], games:[...published.games], tables:[...published.tables], presentation};
   }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
-    exactKeys(context.body, ['operatorId', 'lanes']);
+    const expectedPackageRevision = requestedPackageRevision(context.body);
     if (repository) {
       const prepared = context.prepared === undefined ? await prepare(context) : context.prepared;
       if (!preparedValues.has(prepared) || prepared.operatorId !== context.body.operatorId
         || canonicalStudioJson(prepared.lanes) !== canonicalStudioJson(context.body.lanes)) fail(422);
+      if (expectedPackageRevision !== undefined && prepared.expectedPackageRevision !== expectedPackageRevision) fail(409);
       return repository.transaction(() => repository.withTransactionClient(async client => {
         const operators = await createOperatorStore({sql:client, scope, now, transaction:work => repository.withTransactionClient(work)});
         const projectDocument = await repository.readDocument('project'), administrationDocument = await repository.readDocument('administration');
@@ -123,11 +135,14 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     // extra dealer requires the native saved snapshot and immutable media path.
     const saved = normalizeProject(typeof project === 'function' ? await project() : project);
     const lanes = selectedLanes(context.body.lanes, presentationLaneIds(saved));
-    const source = saved.lanes?.length ? saved : {...saved, lanes:[defaultPresentationLane()]};
+    const source = saved;
     if (source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id))))
       throw new StudioStorageError('studio_media_registry_unavailable');
     const presentation = buildPresentationPackage(source, lanes, saved.layerAssets ?? []);
-    const operators = await store(), current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
+    const operators = await store();
+    if (expectedPackageRevision !== undefined && typeof operators.getCurrentPackage !== 'function') fail(503);
+    const current = typeof operators.getCurrentPackage === 'function' ? await operators.getCurrentPackage(context.body.operatorId) : null;
+    if (expectedPackageRevision !== undefined && (current?.revision ?? null) !== expectedPackageRevision) fail(409);
     const published = await operators.publishPackage({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId:context.body.operatorId,
       expectedRevision:current?.revision ?? null, lanes, games:current?.games?.length ? [...current.games] : ['blackjack'],
       tables:current ? [...current.tables] : [], branding:withPackagePresentation(current?.branding ?? {}, presentation)});
@@ -151,7 +166,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const published = await operators.getCurrentPackage(operator.id);
         // Server-owned current assignment. The editor must not seed another
         // company's publish selection or omit lanes serving its live rooms.
-        return { id: operator.id, slug: operator.slug, name: operator.name,
+        return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status,
           publishedPackage: published ? { revision: published.revision, lanes: [...published.lanes] } : null };
       }));
     },

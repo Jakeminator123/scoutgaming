@@ -22,6 +22,7 @@ function loadTs(fileUrl) {
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
+      if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/control/clips'};
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -39,19 +40,19 @@ function loadTs(fileUrl) {
 }
 
 const project = createSeedProject();
-const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false } };
+const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'astrid' };
 
-function renderPage(file) {
+function renderPage(file, override = {}) {
   const page = loadTs(new URL(`../components/${file}`, import.meta.url));
   const name = Object.keys(page).find(key => key.startsWith('Control'));
-  return renderToStaticMarkup(React.createElement(page[name], props));
+  return renderToStaticMarkup(React.createElement(page[name], {...props,...override}));
 }
 
 test('dealer and event query helpers ignore unknown values and keep only allowlisted tabs', () => {
   const { studioHref, resolveStudioDealerId, resolveStudioEventId, selectionHref } = loadTs(new URL('../components/studio-types.ts', import.meta.url));
   assert.equal(resolveStudioDealerId(project, 'vera'), 'vera');
-  assert.equal(resolveStudioDealerId(project, 'nope'), 'astrid');
-  assert.equal(resolveStudioDealerId(project), 'astrid');
+  assert.equal(resolveStudioDealerId(project, 'nope'), '');
+  assert.equal(resolveStudioDealerId(project), '');
   assert.equal(resolveStudioEventId(project, 'idle.ready'), 'idle.ready');
   assert.equal(resolveStudioEventId(project, 'missing'), 'speak.goodluck');
   assert.equal(studioHref('/control/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'triggers' }), '/control/events?dealer=astrid&event=idle.ready&tab=triggers');
@@ -66,11 +67,11 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
 });
 
 test('tree, guide and activity pages drop the inner studio chrome and link the selected event', () => {
-  for (const file of ['control-tree-page.tsx', 'control-guide-page.tsx', 'control-activity-page.tsx']) {
+  for (const file of ['control-tree-page.tsx', 'control-guide-page.tsx']) {
     const html = renderPage(file);
     assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar/, file);
     assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/, file);
-    assert.ok(html.includes('/control/events?dealer=astrid&amp;event=speak.goodluck'), file);
+    if (file === 'control-tree-page.tsx') assert.ok(html.includes('/control/events?dealer=astrid&amp;event=speak.goodluck'), file);
     assert.match(html, /\/\/ STUDIO/, file);
   }
   const tree = renderPage('control-tree-page.tsx');
@@ -79,14 +80,16 @@ test('tree, guide and activity pages drop the inner studio chrome and link the s
   const guide = renderPage('control-guide-page.tsx');
   assert.match(guide, /<h1>Guide &amp; hjälp<\/h1>/);
   const activity = renderPage('control-activity-page.tsx');
-  assert.match(activity, /<h1>Uppspelning<\/h1>/);
+  assert.match(activity, /<h1>Provspelning &amp; logg<\/h1>/);
+  assert.doesNotMatch(activity, /Lycka till|event=speak\.goodluck/);
+  assert.match(activity, /Dealerprov/);
 });
 
 test('managed tree folders are real event links and dealer changes replace the query', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };
   const { ControlTreePage } = loadTs(new URL('../components/control-tree-page.tsx', import.meta.url));
-  const html = renderToStaticMarkup(React.createElement(ControlTreePage, { ...props, initialVideos: inventory, initialDealerId: 'nope', initialEventId: 'missing' }));
+  const html = renderToStaticMarkup(React.createElement(ControlTreePage, { ...props, initialVideos: inventory, initialDealerId: 'astrid', initialEventId: 'missing' }));
   assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=/);
   assert.match(html, /deal\/deal_pos3|repliker\/goodluck/);
   for (const family of manifest.families.filter(item => item.dealerId === 'astrid')) {
@@ -125,7 +128,30 @@ test('recorded media guidance keeps old groups optional and distinguishes models
   assert.match(html, /Dessa testvärden hämtas inte från spelaren/);
   assert.match(html, /<a href="\/control\/clips\?dealer=astrid">/);
   const activity = renderPage('control-activity-page.tsx');
-  assert.match(activity, /Klippval och genererat tal har olika spår/);
+  assert.match(activity, /<summary>Klippförhandsvisning och provspelning<\/summary>/);
   assert.match(activity, /AI-tal: inget förlopp observerat/);
   assert.match(activity, /Inspelade klipp: inga uppspelningskvitton ännu/);
+});
+
+
+test('rehearsal requires an explicit dealer or room and never starts a default observation',()=>{
+ for(const initialDealerId of [undefined,'','unknown','amira']) {
+  const html=renderPage('control-activity-page.tsx',{initialDealerId,initialOperatorSlug:'operator-42',initialLaneId:'mobile-phone'});
+  assert.match(html,/Välj en dealer att provspela/);assert.doesNotMatch(html,/Anslut &amp; följ|Klippförhandsvisning och provspelning|Dealerprov/);
+  for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/control/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
+ }
+ const room=renderPage('control-activity-page.tsx',{initialDealerId:undefined,initialOperatorSlug:'operator-42',initialTableId:'room-7'});
+ assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/room-7/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);
+});
+
+
+test('dealer editor routes gate missing and invalid dealers before mounting their media session',()=>{
+ const previous=globalThis.window;
+ try {
+  for(const [file,path] of [['control-tree-page.tsx','/control/events'],['control-events-page.tsx','/control/events'],['control-videos-page.tsx','/control/videos'],['control-probe-page.tsx','/control/probe'],['control-openclaw-chat.tsx','/control/openclaw']])for(const initialDealerId of [undefined,'unknown','amira']) {
+   globalThis.window={location:{pathname:path,search:'?composition=composition-1&operator=operator-42&table=room-7'}};
+   const html=renderPage(file,{initialDealerId});assert.match(html,/<h2>Välj dealer<\/h2>/,file);assert.doesNotMatch(html,/<video|<audio|Klippförhandsvisning och provspelning/,file);
+   for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes(path+'?dealer='+dealer.id+'&amp;composition=composition-1&amp;operator=operator-42&amp;table=room-7'),file+' keeps context for '+dealer.id);
+  }
+ } finally {if(previous===undefined)delete globalThis.window;else globalThis.window=previous;}
 });

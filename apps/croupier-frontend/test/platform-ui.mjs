@@ -125,7 +125,7 @@ test('new document surfaces rewrite to native Studio without creating customer o
 
 test('old workspace slugs redirect to one canonical document without granting another surface',()=>{
   const native=platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for(const [old,path]of [['/control/voice','/control/speech'],['/control/overview','/control'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/tables']]){
+  for(const [old,path]of [['/control/voice','/control/speech'],['/control/overview','/control'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/rooms']]){
     assert.deepEqual(platformRoute(new URL(old,native.publicOrigin),native),{kind:'redirect',destination:native.publicOrigin+path});
     assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab');
   }
@@ -157,9 +157,9 @@ test('new game document retains live session/policy checks, cookies and fail-clo
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const request=new Request(config.publicOrigin+'/play/blackjack?dealer=astrid',{headers:{cookie:'game_session=fixture'}});
   let calls=[];
-  const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return Response.json(url.endsWith('/api/auth/session')?{authenticated:true}:{gameLane:'mobile-phone'});};
+  const fetchImpl=async(url,init)=>{calls.push(url);assert.equal(init.headers.get('cookie'),'game_session=fixture');assert.equal(init.cache,'no-store');return url.endsWith('/api/auth/session')?Response.json({authenticated:true}):new Response('<html data-game-lane="saved-johanna" data-game-dealer="johanna"></html>');};
   const ok=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl});
-  assert.equal(ok.status,200);assert.match(await ok.text(),/data-game-lane="mobile-phone"/);assert.equal(calls.length,2);
+  assert.equal(ok.status,200);assert.match(await ok.text(),/data-game-lane="saved-johanna"/);assert.equal(calls.length,2);
   const denied=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>Response.json({authenticated:false})});
   assert.equal(denied.status,303);assert.equal(denied.headers.get('location'),'/player-login?dealer=astrid');
   const failed=await platformUiDocument(request,{env:unifiedEnv,directory,fetchImpl:async()=>{throw Error('private upstream detail');}});
@@ -208,11 +208,11 @@ test('lobby operator survives into the engine proxy; an invalid slug matches tod
   const duplicate=await platformUiDocument(request('/play/blackjack?dealer=astrid&operator=sg-test&operator=demo-north'),options);
   const plainText=await plain.text();
   assert.equal(await invalid.text(),plainText);assert.equal(await duplicate.text(),plainText);
-  assert.equal(calls.some(url=>url.includes('/blackjack?')),false);
+  assert.equal(calls.some(url=>url.includes('/blackjack?')),true);assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
   calls.length=0;
   const partnerPage=await platformUiDocument(request(`/play/blackjack?dealer=astrid&operator=sg-test&launch=${partner}`),options);
   assert.equal(await partnerPage.text(),plainText);
-  assert.equal(calls.some(url=>url.includes('/blackjack?')),false);
+  assert.equal(calls.some(url=>url.includes('/blackjack?')),true);assert.ok(calls.every(url=>!url.includes('/api/bo/config')));
 });
 
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
@@ -292,11 +292,12 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     assert.ok(prepared.files.includes('/casino.mjs'));
     assert.ok(prepared.files.includes('/vendor/three/GLTFLoader.js'));
     assert.ok(prepared.files.every(path => !/\.(mp4|webm|png|jpg|wav|mp3)$/.test(path)));
-    assert.match(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'), /\/game\/\?dealer=astrid&presentation=local/);
+    assert.equal(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'),await readFile(new URL('../../../web/public/blackjack-entry.mjs',import.meta.url),'utf8'));
     const game = await platformUiDocument(new Request(config.publicOrigin + '/game'), {env, directory: join(directory, 'runtime-ui')});
     assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
     assert.match(game.headers.get('cache-control'), /no-store/);
-    for (const path of ['/v2', '/casino.html']) assert.equal((await platformUiDocument(new Request(config.publicOrigin + path), {env, directory: join(directory, 'runtime-ui')})).status, 200);
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/casino.html'), {env, directory: join(directory, 'runtime-ui')})).status,200);
+    const retired=await platformUiDocument(new Request(config.publicOrigin+'/v2'),{env,directory:join(directory,'runtime-ui')});assert.equal(retired.status,307);assert.equal(retired.headers.get('location'),'/');
     const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64), token = 'b'.repeat(43);
     for (const [path,location] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
       ['/bo/login.html','/control/login'],[`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`,`/control/login?returnTo=${encodeURIComponent(`/api/bo/game-login?state=${state}`)}`],
@@ -448,13 +449,13 @@ test('bare public Blackjack enters the existing lobby without reading a player s
 test('published room login retains operator, room and dealer while the administrator portal keeps its own session',async()=>{
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const calls=[];
-  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=amira'),{
+  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=johanna'),{
     env:unifiedEnv,fetchImpl:async(url)=>{calls.push(url);return Response.json({authenticated:false});},
   });
   assert.equal(response.status,303);
   const location=new URL(response.headers.get('location'),env.CROUPIER_PUBLIC_ORIGIN);
   assert.equal(location.pathname,'/player-login');assert.equal(location.searchParams.get('operator'),'sg-test');
-  assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'amira');
+  assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'johanna');
   assert.deepEqual(calls,[env.CROUPIER_BACKEND_ORIGIN+'/api/auth/session']);
 });
 

@@ -18,7 +18,7 @@ const legacyControl = Object.freeze({
   ops: Object.freeze({ studioPath: '/studio/openclaw', legacyPath: '/control/openclaw' }),
   lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
 });
-const staffTools = new Set(['library', 'replies', 'clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);
+const staffTools = new Set(['companies', 'rooms', 'compositions', 'rehearsal', 'library', 'replies', 'clips', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);
 const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 // `login` is the public partner page, not an operator. The App Router page
 // wins by specificity; rejecting the slug here keeps the catch-all from
@@ -41,7 +41,7 @@ export function workspaceSurfacePath(surface, view, operator = null) {
   if (!views.includes(view)) return null;
   if (surface === 'partner' && (typeof operator !== 'string' || operator.length > 63 || !operatorSlug.test(operator) || reservedOperators.has(operator))) return null;
   const root = surface === 'partner' ? `/partner/${operator}` : '/control';
-  const slug = surface === 'partner' && view === 'bj' ? 'tables' : WORKSPACE_VIEW_SLUGS[view];
+  const slug = surface === 'partner' && view === 'bj' ? 'rooms' : WORKSPACE_VIEW_SLUGS[view];
   return view === 'ops' ? root : `${root}/${slug}`;
 }
 
@@ -66,7 +66,7 @@ export function resolveWorkspaceSurfacePath(value) {
     if (![2, 3].includes(parts.length) || parts[1].length > 63 || !operatorSlug.test(parts[1]) || reservedOperators.has(parts[1])) return null;
     operator = parts[1]; section = parts[2] ?? section;
   }
-  const view = surface === 'partner' && section === 'tables' ? 'bj'
+  const view = surface === 'partner' && ['rooms', 'tables'].includes(section) ? 'bj'
     : Object.hasOwn(aliases, section) ? aliases[section]
     : Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === section) ?? section;
   const allowed = (surface === 'partner' ? PARTNER_PREVIEW_VIEWS : CONTROL_PREVIEW_VIEWS).includes(view);

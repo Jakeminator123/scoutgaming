@@ -1,6 +1,6 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
-import { BASE_DEALER_IDS, MAX_DEALERS, isDealerId } from '../dealer-identity.mjs';
+import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../dealer-identity.mjs';
 import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
 import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
 import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
@@ -11,7 +11,6 @@ import {
   validateDocumentValue, validateRevision, validateStudioMedia,
 } from './studio-contract.mjs';
 
-const base = new Set(BASE_DEALER_IDS);
 const IDLE_EVENT = 'idle.ready';
 const fail = (code = 'studio_invalid_presentation', status = 422) => { throw new StudioStorageError(code, status); };
 function freeze(value) {
@@ -70,7 +69,8 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
   const lanes = selected.map(id => saved.lanes?.find(lane => lane.id === id));
   if (lanes.some(lane => !lane)) fail();
   const selectedDealers = [...new Set(lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
-  const extras = dealerIds(selectedDealers).filter(id => !base.has(id));
+  const extras = dealerIds(selectedDealers);
+  if (extras.some(id => !isActiveDealerId(id))) fail();
   const required = dealerIds(requiredIdleDealerIds);
   if (required.some(id => !extras.includes(id))) fail();
   if (!extras.length) return freeze({ registeredDealers: [], mediaPreconditions: [] });
@@ -103,7 +103,7 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
  * this operator/room. Neither this list nor entries may come from the browser. */
 export function resolveFrozenDealerIdle(entries, { dealerId, allowedDealerIds } = {}) {
   const allowed = dealerIds(allowedDealerIds);
-  if (!isDealerId(dealerId) || base.has(dealerId) || !allowed.includes(dealerId)) return null;
+  if (!isActiveDealerId(dealerId) || !allowed.includes(dealerId)) return null;
   const copied = cloneStudioJson(array(entries));
   const ids = copied.map(entry => entry?.id);
   const checked = validateFrozenRegisteredDealers(copied, { dealerIds: ids });

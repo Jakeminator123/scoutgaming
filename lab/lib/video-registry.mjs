@@ -1,13 +1,12 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { labUrl } from "./lab-url.mjs";
 import { constants } from 'node:fs';
-import { access, lstat, open, realpath, writeFile, rename, unlink } from 'node:fs/promises';
+import { access, lstat, open, realpath } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
 import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
-import { buildLabVideoManifest, manifestJson } from '../../pipeline/build-lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath } from './cloud-media-store.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
@@ -17,7 +16,6 @@ import { isMediaBlobIndexConfigured, verifiedMediaBlobStorage, getIndexedMediaBl
 // Server-only: the browser receives logical IDs, never archive paths or credentials.
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const DEALERS = new Set(['astrid', 'vera', 'amira', 'mei']);
-const EMIL_SOURCE = ['media', 'dealers', 'astrid', 'runtime', 'presentation'];
 const verified = new Map();
 
 export function exactHttpsOrigin(value) {
@@ -44,26 +42,8 @@ function snapshotPath(options) {
   return join(selection.path, 'lab-video-manifest.json');
 }
 
-let pendingRescan;
-/** Explicit local operator action: hash new files, then publish a complete manifest atomically. */
 export async function rescanVideoRegistry() {
-  if (pendingRescan) return pendingRescan;
-  pendingRescan = (async () => {
-    const selection = selectArchive({});
-    if (selection.source !== 'emil-default') throw new StudioError('Mappimport stöds bara för den lokala Astrid-banken.', 403);
-    let manifest;
-    try { manifest = await buildLabVideoManifest({ root: selection.path }); }
-    catch { throw new StudioError('Videoimporten misslyckades. Kontrollera att nya MP4-filer ligger i en tillåten mapp och är läsbara.', 422); }
-    const target = join(selection.path, 'lab-video-manifest.json');
-    const temporary = join(selection.path, `.lab-video-manifest-${randomUUID()}.tmp`);
-    try {
-      await writeFile(temporary, manifestJson(manifest), { flag: 'wx' });
-      await rename(temporary, target);
-    } finally { await unlink(temporary).catch(() => {}); }
-    return loadVideoRegistry();
-  })();
-  try { return await pendingRescan; }
-  finally { pendingRescan = null; }
+  throw new StudioError('Den lokala dealerbanken är avvecklad. Lägg till klipp i klippbiblioteket.', 410);
 }
 
 function safeRelativeMediaPath(value, extension) {
@@ -82,9 +62,10 @@ async function readEntries(options) {
 
 function selectArchive(options) {
   if (Object.hasOwn(options, 'archiveDir')) return { path: normalizePresentationArchive(options.archiveDir,options.repositoryRoot??repositoryRoot()), source: options.archiveDir ? 'explicit' : 'none' };
-  const env = options.env ?? process.env;
-  if (Object.hasOwn(env, 'LAB_VIDEO_ARCHIVE')) return { path: normalizePresentationArchive(env.LAB_VIDEO_ARCHIVE,options.repositoryRoot??repositoryRoot()), source: 'environment' };
-  return { path: join(options.repositoryRoot ?? repositoryRoot(), ...EMIL_SOURCE), source: 'emil-default' };
+  // Legacy folder variables no longer auto-register local dealer banks.
+  return isMediaBlobIndexConfigured(options)
+    ? { path: presentationBankRoot(options.repositoryRoot ?? repositoryRoot()), source: 'blob-bank' }
+    : { path: null, source: 'none' };
 }
 
 function samePath(a, b) {
@@ -225,7 +206,7 @@ export async function loadVideoRegistry(options = {}) {
     ],
   };
   let entries, families = [];
-  try { ({ entries, families } = await readEntries(options)); summary.snapshotReadable = true; }
+  try { ({ entries, families } = selection.path || options.snapshotPath ? await readEntries(options) : {entries:new Map(),families:[]}); summary.snapshotReadable = true; }
   catch (error) { if (options.strict) throw error; summary.notes.push('Originalregistret kunde inte läsas.'); entries = new Map(); }
   let uploads = [];
   try { uploads = await (options.readUploads ?? readUploads)(options); }
@@ -243,7 +224,7 @@ export async function loadVideoRegistry(options = {}) {
     try { readMediaBlobIndex(options); summary.readable=Boolean(selection.path&&isAbsolute(selection.path)&&samePath(resolve(selection.path),presentationBankRoot(options.repositoryRoot??repositoryRoot()))&&isCloudMediaConfigured(options.env??process.env)); }
     catch { summary.notes.push('Det aktiva Blob-indexet kunde inte verifieras. Lokal disk används inte som reserv.'); }
   }else{
-    try { archive = await archiveLocation(selection); summary.readable = true; }
+    try { if(selection.path) archive = await archiveLocation(selection); summary.readable = Boolean(selection.path) || !options.snapshotPath; }
     catch { summary.notes.push('Emils videomapp är inte tillgänglig. LAB_VIDEO_ARCHIVE måste ange en absolut rot med samma manifeststruktur.'); }
   }
   const videos = [];

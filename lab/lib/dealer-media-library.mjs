@@ -1,6 +1,5 @@
 import {kindForEvent,situationsForEvent,validateVideoMetadata} from './video-intake.mjs';
 import {clipSituationLabel} from './clip-label.mjs';
-import {MEDIA_FAMILY_DEFINITIONS} from '../../presentation-runtime/media-families.mjs';
 export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'idle',label:'Idle / Grundloop'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
 export function eventMediaCategory(event){if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
 export function dealerMediaSlots(project,category='all'){
@@ -14,8 +13,7 @@ export function mediaClassification(project,{dealerId,slotId,label,contentType})
   if(!slot||!project.dealers.some(row=>row.id===dealerId))throw Error('Välj dealer och ett exakt fack.');
   const audio=contentType.startsWith('audio/');
   if(audio&&slot.category!=='speech')throw Error('Välj ett talfack för ljudfilen.');
-  const family=!audio&&MEDIA_FAMILY_DEFINITIONS.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId&&(row.playbackType==='idle-pool'?slot.situation==='':row.situation===slot.situation));
-  return validateVideoMetadata({dealerId,eventId:slot.eventId,situation:slot.situation,label,kind:kindForEvent(project.events.find(row=>row.id===slot.eventId)),role:family?'alternative':'standard',playback:'once',notes:'',...(family?{familyId:family.id}:{}),...(audio?{mediaType:'audio'}:{})});
+  return validateVideoMetadata({dealerId,eventId:slot.eventId,situation:slot.situation,label,kind:kindForEvent(project.events.find(row=>row.id===slot.eventId)),role:'standard',playback:'once',notes:'',...(audio?{mediaType:'audio'}:{})});
 }
 export function dealerLibraryVideos(project,inventory,dealerId,category='all',archived=false){
   return inventory.videos.filter(video=>(video.dealer??video.classification?.dealerId??video.familyId?.split('/')[0])===dealerId&&Boolean(video.classification?.archived)===archived
@@ -33,7 +31,7 @@ export function mediaMatchesSlot(video,slot){
 export function mediaUsage(project,video,dealerId){
   if(project.dealers.find(row=>row.id===dealerId)?.speechProfile?.reference?.videoId===video.id)return 'Referensklipp för AI-tal';
   if(project.dealerTrash?.some(row=>row.dealer.id===dealerId))return 'Tillhör dealer i papperskorgen';
-  const idle=dealerId==='astrid'?project.idlePolicy:project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
+  const idle=project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
   if(idle?.base?.some(row=>row.videoId===video.id))return 'Grundloop';
   if(idle?.variants?.some(row=>row.videoId===video.id))return 'Variation';
   for(const line of project.lines.filter(row=>row.dealerId===dealerId)){
@@ -45,27 +43,20 @@ export function mediaUsage(project,video,dealerId){
   if(video.role==='standard'&&video.familyId)return 'Familjens standard';
   return 'Inte vald i utkastet';
 }
-export function dealerSlotStatus(project,inventory,dealerId,slot,legacy=null){
+export function dealerSlotStatus(project,inventory,dealerId,slot){
   const files=dealerLibraryVideos(project,inventory,dealerId).filter(row=>mediaMatchesSlot(row,slot));
   const usable=files.filter(row=>row.available&&row.classification?.mediaType!=='audio');
-  const original=['astrid','vera','amira','mei'].includes(dealerId);
-  const legacyPart=slot.eventId==='idle.ready'?'idle':slot.category==='deal'?slot.situation:'';
-  const originals=(legacy?.clips??[]).filter(row=>row.dealerId===dealerId&&row.available&&(legacyPart?row.exactParts.includes(legacyPart):slot.category==='speech'&&row.lineId===slot.situation));
-  const count=usable.length+originals.filter(row=>!usable.some(file=>file.id===row.id)).length;
+  const count=usable.length;
   if(slot.eventId==='idle.ready'){
-    const policy=dealerId==='astrid'?project.idlePolicy:project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
+    const policy=project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
     const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     const baseline=line?.variants.find(row=>row.id===line.baselineVariantId)?.videoGenerationId;
     const ids=policy?.base?.length?policy.base.map(row=>row.videoId):baseline?[baseline]:[];
-    const explicit=project.legacyClipPolicy?.find(row=>row.dealerId===dealerId&&row.part==='idle');
-    const chosen=ids.length?ids.every(id=>usable.some(row=>row.id===id))
-      :originals.some(row=>explicit?row.id===explicit.clipId:row.engineKey===legacy?.defaults?.idle);
+    const chosen=ids.length>0&&ids.every(id=>usable.some(row=>row.id===id));
     if(chosen)return {level:'ready',label:'Grundloop vald',count};
-    if(original&&!legacy)return {level:'unknown',label:'Originalklipp behöver kontrolleras',count};
     return {level:'required',label:count?'Krävs · välj grundloop':'Krävs · grundloop saknas',count};
   }
   if(slot.category==='deal'&&!count){
-    if(original&&!legacy)return {level:'unknown',label:'Originalklipp behöver kontrolleras',count};
     return {level:'recommended',label:'Rekommenderas · klipp saknas',count};
   }
   return {level:count?'ready':'optional',label:count?count+' klipp finns':'Valfritt · tomt fack',count};

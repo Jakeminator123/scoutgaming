@@ -1,3 +1,4 @@
+import {publishedChatContext,withPublishedChatContext,withPublishedChatQuery} from './fixtures/published-chat-authority.mjs';
 import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,7 +88,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   const gatewayPort = gateway.address().port;
   const web = fileURLToPath(new URL('../web/', import.meta.url));
-  const server = spawn(process.execPath, [join(web, 'server.mjs')], {
+  const server = spawn(process.execPath, ['--import',new URL('./fixtures/published-chat-authority-register.mjs',import.meta.url).href,join(web, 'server.mjs')], {
     cwd: web,
     env: isolatedTransportEnvironment({ ...process.env,
       OPENCLAW_PRODUCT_SPEECH_URL: poisonOrigin, OPENCLAW_PRODUCT_SPEECH_TOKEN: 'poison-relay-token',
@@ -120,6 +121,8 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   function createClient() {
     let cookie = '';
     async function exchange(path, value, expected = 200, method = 'POST') {
+      if(method==='GET')path=withPublishedChatQuery(path);
+      else if(['/chat','/api/chat/memory/forget'].includes(path))value=withPublishedChatContext(value);
       const response = await fetch(origin + path, { method,
         headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: cookie },
         ...(method === 'GET' ? {} : { body: JSON.stringify(value) }), signal: AbortSignal.timeout(5000) });
@@ -134,7 +137,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   const client = createClient();
   const post = client.post;
   const envelope = (index = captured.length - 1) => suppliedEnvelope(captured[index].body);
-  const chat = (view, extras = {}) => ({ requestId: crypto.randomUUID(), message: 'A fixture question.', history: [],
+  const chat = (view, extras = {}) => withPublishedChatContext({ requestId: crypto.randomUUID(), message: 'A fixture question.', history: [],
     dealer: 'astrid', sessionRevision: crypto.randomUUID(), roundRevision: String(view.version), ...extras });
   async function guest() {
     const client = createClient();
@@ -421,7 +424,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.equal((await client.post('/chat',chat(state,{dealer:'paow'}),400)).error,'invalid_chat_context');
     assert.equal((await client.get('/api/chat/memory?dealer=paow',400)).error,'invalid_chat_context');
     assert.equal((await client.post('/api/chat/memory/forget',{dealer:'paow'},400)).error,'invalid_chat_context');
-    // Offline has no published Studio authority. Plausible browser fields never
+    // This operator/dealer has no published fixture authority. Plausible fields never
     // substitute for it, and neither the model nor memory is invoked.
     assert.equal((await client.post('/chat',chat(state,{dealer:'paow',presentationContext}),503)).error,'chat_dealer_unavailable');
     assert.equal((await client.get(query(presentationContext),503)).error,'chat_dealer_unavailable');
@@ -431,6 +434,9 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
       '/api/chat/memory?dealer=paow&presentationContext=null&presentationContext=null']){
       assert.equal((await client.get(path,400)).error,'invalid_chat_context');
     }
+    const own=publishedChatContext('astrid');
+    assert.equal((await client.post('/chat',chat(state,{dealer:'paow',presentationContext:{...own,dealerId:'paow'}}),403)).error,'chat_dealer_unavailable');
+    assert.equal((await client.post('/chat',chat(state,{presentationContext:{...own,packageRevision:own.packageRevision+1}}),409)).error,'chat_presentation_changed');
     assert.equal(captured.length,count);
     assert.deepEqual((await client.get('/api/chat/memory?dealer=astrid')).history,[]);
   });
@@ -499,13 +505,13 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(envelope().status.playResults.lastRound,last);
     assert.equal(envelope().status.playResults.currentRound.wagered,10);
   });
-  await t.test('shared voice configuration supports every base dealer and rejects forged registered context', async () => {
+  await t.test('shared voice configuration supports explicitly published dealers and rejects retired or forged context', async () => {
     const {client}=await guest(),before=captured.length;
-    for(const dealer of ['astrid','vera','amira','mei']) {
+    for(const dealer of ['astrid','vera','mei']) {
       const value=await client.get('/api/dealer/observation?dealer='+dealer);
       assert.equal(value.enabled,lissabon);assert.equal(value.transcription.enabled,lissabon);
     }
-    for(const query of ['dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
+    for(const query of ['dealer=amira','dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
       const result=await client.get('/api/dealer/observation?'+query,503);
       assert.deepEqual(result,{enabled:false});
     }

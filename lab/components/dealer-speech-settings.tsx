@@ -6,7 +6,6 @@ import type {VideoInventory} from './studio-types';
 
 export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,expanded=false,idleReferenceId,onDraftChange}:{expanded?:boolean;idleReferenceId?:string;onDraftChange?:(dirty:boolean)=>void;dealer:StudioProject['dealers'][number];inventory?:VideoInventory;disabled?:boolean;onEdit:(edit:(current:StudioProject)=>StudioProject)=>void}) {
   const saved=dealer.speechProfile;
-  const existingDealer=['vera','astrid','amira','mei'].includes(dealer.id);
   const [enabled,setEnabled]=useState(saved?.state==='enabled');
   const [provider,setProvider]=useState(saved?.voice?.provider??'');
   const [voiceId,setVoiceId]=useState(saved?.voice?.voiceId??''),[modelId,setModelId]=useState(saved?.voice?.modelId??'');
@@ -64,7 +63,6 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
   const Container=expanded?'section':'details', Heading=expanded?'h3':'summary';
   return <Container><Heading>Röst och läppsynk · {dealer.label}</Heading>
     <p>Grundloopen visar dealern mellan repliker. En referens till talavataren är ett separat underlag som ska passa samma dealer och scen. En lobbybild är inte en talavatar.</p>
-    {existingDealer?<p>Den här standarddealerns befintliga talflöde behålls. Egen talprofil kan förberedas här.</p>:null}
     <p role="status">{dealerSpeechPreparation(saved).message}</p>
     <fieldset disabled={disabled}>
       <label className="field">Röstleverantör<select value={provider} onChange={event=>setProvider(event.target.value as typeof provider)}><option value="">Inte vald</option><option value="cartesia">Cartesia</option><option value="elevenlabs">ElevenLabs</option></select></label>
@@ -96,7 +94,7 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
         <p>{reviewed?'Videopositionen visas.':'Laddar videopositionen…'} Välj en tydlig neutral pose med synligt ansikte. Servern tar fram en stillbild från exakt den sparade videon och positionen när en talsession förbereds.</p>
         <p>{kind==='motion-video'?'Rörligt underlag kan sparas för senare. Den gemensamma talmotorn stöder ännu bara en stillbild, så AI-tal kan inte aktiveras med detta val.':'En stillbild kan användas av en förberedd avatar. Läppsynk mot en stillbild skapar inte naturliga kroppsrörelser.'}</p>
       </div>:null}
-      <label><input type="checkbox" checked={enabled} disabled={existingDealer||kind!=='video-frame'||!selected||!provider||!voiceId.trim()||!modelId.trim()} onChange={event=>setEnabled(event.target.checked)}/> Använd egen röst och läppsynk för chattsvar</label>
+      <label><input type="checkbox" checked={enabled} disabled={kind!=='video-frame'||!selected||!provider||!voiceId.trim()||!modelId.trim()} onChange={event=>setEnabled(event.target.checked)}/> Använd egen röst och läppsynk för chattsvar</label>
       <p>Röst-id måste finnas hos vald leverantör. Servern kontrollerar åtkomst och förbereder just denna dealer. Om det misslyckas spelas ingen annan dealers röst eller avatar.</p>
       {localDirty?<p role="status">Talformuläret har ändringar som inte lagts till i projektutkastet. Använd talunderlaget eller ångra ändringarna innan du byter dealer eller lämnar sidan.</p>:null}
       <button type="button" className="sg-btn sg-btn-secondary" onClick={save} disabled={Boolean(videoId)&&(!selected||!reviewed||!durationMs||offsetMs>=durationMs)}>Använd talunderlag i utkastet</button>

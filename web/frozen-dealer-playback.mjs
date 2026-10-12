@@ -2,7 +2,6 @@ import { validateRegisteredIdlePolicies } from '../presentation-runtime/register
 import seed from '../lab/policies/project.seed.json' with { type: 'json' };
 import { validateProject } from '../lab/lib/studio-model.mjs';
 import { validateManagedStudioMedia } from './managed-media-contract.mjs';
-import { BASE_DEALER_IDS } from './dealer-identity.mjs';
 
 // Portable frozen selection policy. No filesystem, registry or provider reads.
 const fail = () => { throw Object.assign(new Error('studio_invalid_presentation'), { code: 'studio_invalid_presentation', statusCode: 422 }); };
@@ -37,8 +36,8 @@ function emptyLines(dealerId) {
 function projectFrom(playback, { registeredDealers, projectRevision }) {
   const project = structuredClone(seed);
   project.revision = projectRevision;
-  project.dealers = [...project.dealers, ...registeredDealers.map(({ id, label }) => ({ id, label }))];
-  project.lines = [...BASE_DEALER_IDS.flatMap(emptyLines), ...structuredClone(playback.lines)];
+  project.dealers = registeredDealers.map(({ id, label }) => ({ id, label }));
+  project.lines = structuredClone(playback.lines);
   project.triggers = structuredClone(playback.triggers);
   project.assets = [...new Map([...project.assets, ...playback.assets].map(asset => [asset.id, structuredClone(asset)])).values()];
   if (playback.dealerIdlePolicies !== undefined) project.dealerIdlePolicies = structuredClone(playback.dealerIdlePolicies);

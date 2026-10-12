@@ -151,7 +151,7 @@ test('table colour paints the felt mark, wallet and chip row and leaves the film
 
 test('both dealer pickers offer only the active lane dealers even without an operator', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
-  const row = source.slice(source.indexOf('const allowedDealerKeys ='), source.indexOf('if (!localPresentationEnabled) installDealerVersionSwitcher'));
+  const row = source.slice(source.indexOf('const allowedDealerKeys ='), source.indexOf('buildChips();', source.indexOf('const allowedDealerKeys =')));
   const rehearsal = source.slice(source.indexOf('  for (const d of Object.values(DEALERS))'), source.indexOf('  dealerSelect.value = DEALER.key;'));
   assert.ok(row && rehearsal);
   const DEALERS = Object.fromEntries(['vera','astrid','amira','mei'].map(key => [key,{key,name:key,base:key}]));

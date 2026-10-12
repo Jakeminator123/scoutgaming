@@ -1,4 +1,5 @@
 'use client';
+import { StudioDealerRequired } from './studio-dealer-required';
 
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { EventTree } from './event-tree';
@@ -7,9 +8,9 @@ import styles from './playback-guidance.module.css';
 import { FamilyOverview } from './family-video-library';
 import { PageTemplate } from './page-template.mjs';
 import { StudioBindingNotices, StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
-import { studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
 
-export function ControlTreePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
+function SelectedControlTreePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -23,7 +24,7 @@ export function ControlTreePage({ initialProject, initialVideos, initialStatus, 
     <div className="sg-page-body">
     <StudioMessages error={error} notice={notice} setError={setError} setNotice={setNotice} />
     <StudioBindingNotices project={project} videos={videos} dealerId={dealerId} eventId={event.id} />
-    <div className={styles.dealerBar} role="group" aria-label="Välj dealer för spelhändelser">{project.dealers.map(item => <button type="button" className="sg-chip" key={item.id} aria-pressed={dealerId === item.id} onClick={() => selectDealer(item.id)}>{item.label}</button>)}</div>
+    <div className={styles.dealerBar} role="group" aria-label="Välj dealer för spelhändelser">{activeStudioDealers(project).map(item => <button type="button" className="sg-chip" key={item.id} aria-pressed={dealerId === item.id} onClick={() => selectDealer(item.id)}>{item.label}</button>)}</div>
     <PlaybackGuidance dealerId={dealerId} />
     <ClipSelectionHelp />
     {media.managed
@@ -31,4 +32,9 @@ export function ControlTreePage({ initialProject, initialVideos, initialStatus, 
       : <details className={styles.legacy}><summary>Avancerat · äldre händelsegrupper och testanimationer</summary><p>Här finns de sparade grupperna, varianterna och villkoren kvar. Vänster, mitten och höger samlar flera exakta spelplatser. Använd i första hand dealerns klippfack; en labbanimation är ett jämförelseprov och bevisar inte att en inspelad video finns.</p><EventTree project={project} inventory={videos} originals={originals} dealerId={dealerId} event={event} line={line} variant={variant} mode={mode} onSelectDealer={selectDealer} onSelectEvent={selectEvent} onSelectVariant={selectVariant} onEdit={tab => { window.location.assign(studioHref('/control/events', { dealerId, eventId: event.id, tab })); }} onVideos={() => { window.location.assign(studioHref('/control/videos', { dealerId, eventId: event.id })); }} onOpenClaw={() => { window.location.assign(studioHref('/control/openclaw', { dealerId, eventId: event.id, tab: 'chat' })); }} /></details>}
     </div>
   </PageTemplate>;
+}
+
+export function ControlTreePage(props: Parameters<typeof SelectedControlTreePage>[0]) {
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Händelser" />;
+  return <SelectedControlTreePage {...props} />;
 }

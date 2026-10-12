@@ -14,7 +14,7 @@ function makePresentation(layered=true) {
     const asset={schemaVersion:1,id,role,label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};
     return {...asset,pathname:layerAssetPath(asset)};
   });
-  const lane={...defaultPresentationLane(),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
+  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
     layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','vera']}},
     ...(layered?{composition:defaultCompositionSettings()}: {})};
   return validatePresentationPackage({schemaVersion:1,projectRevision:'test-r1',lanes:[lane],assets});
@@ -46,8 +46,7 @@ test('real preview links to the actual scoped player and contains no invented ta
   assert.match(html,/Tre separata lager/);
   assert.match(html,/Bordbild/);
   assert.match(html,/Bakgrundsfilm/);
-  assert.match(html,/image\/png/);
-  assert.match(html,/video\/webm/);
+  assert.doesNotMatch(html,/image\/png|video\/webm/);
   assert.match(html,/\/play\/blackjack\?operator=north&amp;lane=mobile-phone/);
   assert.doesNotMatch(html,/<svg|<iframe|1,000|10 000|localStorage/);
 });
@@ -80,4 +79,15 @@ test('registered dealer label comes from the frozen package while selection keep
   assert.equal(state.dealer,'johanna');assert.equal(state.layers.dealer.label,'Johanna Studio');
   const html=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot:{operator:{id:'north-id',slug:'north'},presentation},view:'design'}));
   assert.match(html,/Johanna Studio/);
+});
+
+test('compact published summary follows the selected owned room and its exact overrides',()=>{
+  const presentation=makePresentation();presentation.lanes.push({...structuredClone(presentation.lanes[0]),id:'second',label:'Second composition'});
+  const snapshot={operator:{id:'north-id',slug:'north'},packageRevision:9,roomBindings:'operator-owned-v2',presentation,
+    branding:{lane:'mobile-phone',dealer:'astrid',roomOverrides:{vip:{dealer:'vera'}}},tables:[{id:'vip',name:'VIP',operatorId:'north-id',status:'active',presentationId:'mobile-phone'}]};
+  const sv=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip'}));
+  assert.match(sv,/VIP/);assert.match(sv,/vera/);assert.match(sv,/table=vip/);assert.match(sv,/Version 9/);
+  assert.doesNotMatch(sv,/Second composition|image\/png|video\/webm|lane=/);
+  const en=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:'vip',language:'en'}));
+  assert.match(en,/Published composition/);assert.match(en,/Three separate layers/);assert.doesNotMatch(en,/<dt>Bakgrund|Provspela|Publicerat/);
 });

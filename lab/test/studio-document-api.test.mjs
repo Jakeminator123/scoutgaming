@@ -200,7 +200,7 @@ test('Native Nora composition saves preflight before outer product SQL; old save
   const old=await api.handle(request(undefined,{method:'PUT',body:{project:oldDraft,expectedRevision:initial.revision}}));
   assert.equal(old.status,200);assert.equal(fetches,0);
   const saved=await raw.readDocument('project'),draft=addDealer(saved.value,'nora','Nora');
-  if(!draft.lanes?.length)draft.lanes=[defaultPresentationLane()];
+  if(!draft.lanes?.length)draft.lanes=[defaultPresentationLane('astrid')];
   draft.lanes[0].composition=defaultCompositionSettings();
   const before=pool.snapshot(),connects=pool.connects;
   const denied=await api.handle(request(undefined,{method:'PUT',body:{project:draft,expectedRevision:saved.revision}}));

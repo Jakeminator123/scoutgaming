@@ -30,3 +30,5 @@
 .panel .customGrid h3 { margin-top: 0; }
 .panel [class~="field"] { max-width: 640px; }
 @media (max-width: 720px) { .dealerHeader { align-items: flex-start; flex-direction: column; gap: 10px; } .panel, .clipSettings { padding: 16px; } }
+
+.archiveCount { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 400; }

@@ -62,7 +62,7 @@ function validateBody(body, now) {
 }
 
 function idleCatalog(project, dealerId, registry) {
-  const policy = dealerId === 'astrid' ? project.idlePolicy : registeredIdlePolicy(project, dealerId);
+  const policy = registeredIdlePolicy(project, dealerId);
   const family = registry?.families?.find(item => item.id === policy?.familyId && item.dealerId === dealerId
     && item.eventId === 'idle.ready' && item.situation === 'ready' && item.playbackType === 'idle-pool');
   if (!family || !Array.isArray(registry.videos) || !Array.isArray(family.standardIds) || !Array.isArray(family.variantIds)) {

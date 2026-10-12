@@ -50,11 +50,15 @@
 }
 html, body { height: 100%; background: #000; overflow: hidden; font-family: "Figtree", "Helvetica Neue", Arial, sans-serif; color: #eee; }
 
+/* The selected adapter releases this boundary only after its first frame. */
+html[data-presentation-startup]:not([data-presentation-startup="ready"]) #scene { visibility: hidden; opacity: 0; pointer-events: none; }
+#presentation-loading { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: #101618; color: #f2f1ed; text-align: center; z-index: 1000; }
+#presentation-loading[hidden], html[data-presentation-startup="ready"] #presentation-loading { display: none; }
 #scene { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 #room { position: absolute; inset: 0; background: #0b0c10; }
 #room2 {
   position: absolute; inset: 0;
-  background: var(--scene-url, url('scene.jpg')) no-repeat;
+  background: var(--scene-url, none) no-repeat;
   background-size: calc(var(--dealer-h) * var(--scene-w-k, 2.63602)) calc(var(--dealer-h) * var(--scene-h-k, 1.47126));
   /* registered to the dealer window: --dealer-x slides the window, so the
      scene has to slide by exactly the same amount or the painted-in dealer

@@ -9,22 +9,25 @@ import styles from './presentation-room-create.module.css';
 import { labUrl } from '../lib/lab-url.mjs';
 
 export type PresentationRoomCreateProps = PresentationRoomContext & {
+  hideExisting?: boolean;
+  interactionDisabled?: boolean;
   onCreated?: (receipt: PresentationRoomReceipt) => void;
   onBusyChange?: (busy: boolean) => void;
+  onDraftChange?: (dirty: boolean) => void;
 };
 
-export function PresentationRoomCreate({ operator, presentation, projectRevision, projectSaved, storeAvailable, disabled = false, onCreated, onBusyChange }: PresentationRoomCreateProps) {
+export function PresentationRoomCreate({ operator, presentation, projectRevision, projectSaved, storeAvailable, disabled = false, interactionDisabled = false, onCreated, onBusyChange, onDraftChange, hideExisting = false }: PresentationRoomCreateProps) {
   const controllerRef = useRef<PresentationRoomController | null>(null);
   if (!controllerRef.current) controllerRef.current = createPresentationRoomController();
   const controller = controllerRef.current;
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const context = { operator, presentation, projectRevision, projectSaved, storeAvailable, disabled };
   const key = presentationRoomContextKey(context);
-  const callbacks = useRef({ onCreated, onBusyChange });
-  callbacks.current = { onCreated, onBusyChange };
+  const callbacks = useRef({ onCreated, onBusyChange, onDraftChange });
+  callbacks.current = { onCreated, onBusyChange, onDraftChange };
   const delivered = useRef<PresentationRoomReceipt | null>(null);
   const current = state.key === key;
-  const enabled = Boolean(operator && presentation && projectSaved && storeAvailable && !disabled);
+  const enabled = Boolean(operator && presentation && projectSaved && storeAvailable && !disabled && !interactionDisabled);
   const busy = current && state.status === 'busy';
   const unresolved = current && state.status === 'uncertain';
   const ready = enabled && current && state.preflight?.ready && state.preflight.projectRevision === projectRevision;
@@ -48,25 +51,31 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     }
   }, [controller, enabled, current, state.receipt]);
 
+  useEffect(()=>{
+    callbacks.current.onDraftChange?.(current && Boolean(state.name.trim()) && !state.receipt);
+    return()=>callbacks.current.onDraftChange?.(false);
+  },[current,state.name,state.receipt]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!ready || busy) return;
-    void controller.create(key);
+    callbacks.current.onBusyChange?.(true);
+    void controller.create(key).finally(()=>callbacks.current.onBusyChange?.(controller.getSnapshot().status==='busy'));
   }
   const message = !storeAvailable ? 'Spelrum kräver en ansluten lagring.'
-    : !projectSaved ? 'Spara presentationen först.'
-      : !operator || !presentation ? 'Välj bolag och presentation.'
+    : !projectSaved ? 'Spara sammansättningen först.'
+      : !operator || !presentation ? 'Välj bolag och sammansättning.'
         : current ? state.message : null;
   const staleProject = current && Boolean(state.preflight && state.preflight.projectRevision !== projectRevision);
   const packageConflict = current && state.preflight?.reason === 'presentation_package_conflict';
   const needsComposition = current && ['presentation_lane_incompatible', 'presentation_package_too_large'].includes(state.preflight?.reason ?? '');
-  const reloadHref = labUrl('/control/lanes?' + new URLSearchParams({ operator: operator?.id ?? '', lane: presentation?.id ?? '' }));
-  const compositionHref = labUrl('/control/preview?' + new URLSearchParams({ lane: presentation?.id ?? '' }));
+  const reloadHref = labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
+  const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
-      ? { href: labUrl('/control/administration?tab=tables'), label: 'Kontrollera Bord & spelrum' } : null;
+      ? { href: labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '' })), label: 'Kontrollera spelrummet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
   const canCreate = ready && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
@@ -76,15 +85,15 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     <div className={styles.heading}><div><span className={styles.eyebrow}>SPELARENS INGÅNG</span><h2>Spelrum</h2></div>{rooms ? <span className={styles.count}>{rooms.length} befintliga rum</span> : null}</div>
     {operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
     <p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>
-    {operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
-    {rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
-      : rooms && !receipt ? <p>Inget publicerat spelrum för den här presentationen ännu.</p> : null}
+    {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
+    {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
+      : !hideExisting && rooms && !receipt ? <p>Inget publicerat spelrum för den här sammansättningen ännu.</p> : null}
     <details className={styles.create} open={rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
-    <p>Ange ett namn. Presentationen publiceras och kopplas till rummet i samma steg.</p>
+    <p>Ange ett namn. Sammansättningen publiceras och kopplas till rummet i samma steg.</p>
     <form className={styles.form} onSubmit={submit}>
       <label className={styles.field}>Rumsnamn
         <input type="text" value={current ? state.name : ''} maxLength={100} required
-          disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => controller.setName(event.target.value)} autoComplete="off" />
+          disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => { controller.setName(event.target.value);callbacks.current.onDraftChange?.(Boolean(controller.getSnapshot().name.trim())); }} autoComplete="off" />
       </label>
       <div className={styles.actions}>
         {recovery ? null : staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}

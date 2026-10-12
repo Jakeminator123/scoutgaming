@@ -48,9 +48,9 @@ test('overview distinguishes shared preparation from company publication and exp
   const html = render({ user:'fixture-admin', operators, operatorStatus:'demo' });
   assert.match(html,/Demonstrationsbolag/); assert.match(html,/Utforska arbetsflödet/);
   assert.doesNotMatch(html,/never-pass|Hämtad från spellobbyn|href="\/play\?operator=/);
-  for (const title of ['Dealer &amp; klipp','Sammansättning','Publicering','Spelrum']) assert.match(html,new RegExp('<h3>'+title+'</h3>'));
+  for (const title of ['Dealer &amp; klipp','Sammansättning','Bolagets publicering','Spelrum']) assert.match(html,new RegExp('<h3>'+title+'</h3>'));
   assert.ok(html.indexOf('Demo North')<html.indexOf('Demo South'));
-  assert.match(html,/Partnerinloggning och aktivt medlemskap krävs/);
+  assert.match(html,/Kräver partnerinloggning eller en aktiv administratörssession/);
   assert.match(html,/href="\/control\/administration\?tab=media-review"/);
 });
 test('an unavailable list is not presented as empty or as a demonstration', () => {
@@ -71,7 +71,7 @@ test('company links use the internal id for publication, the slug for players, a
   try {select.props.onChange({target:{value:'south-id'}});}finally{delete globalThis.window;}
   const html=renderToStaticMarkup(Interactive(props));
   assert.match(replaced,/operator=south-id/);assert.match(replaced,/other=keep/);
-  assert.match(html,/href="\/control\/lanes\?operator=south-id"/);
+  assert.match(html,/href="\/control\/rooms\?operator=south-id"/);
   assert.match(html,/href="\/partner\/south-slug"/);
   assert.doesNotMatch(html,/North room|room-north|Hämtad från spellobbyn/);
   assert.match(html,/Hämtar bolagets publicering/);

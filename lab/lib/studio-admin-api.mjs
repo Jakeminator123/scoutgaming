@@ -4,7 +4,7 @@ import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
 const MAX_BODY = 64 * 1024;
-const administrationMutations = new Set(['voiceline-review','tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','clip-landing','clip-never','gen-landing','gen-verdict']);
+const administrationMutations = new Set(['voiceline-review','tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
@@ -136,7 +136,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       };
       // Render revalidates inside its own product transaction. Local mutations
       // hold that same product lock while validating current identity and writing.
-      const presentationOptions = endpoint.action === 'presentation-room'
+      const presentationOptions = ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
+        ? { presentationDocuments: ['project','administration'], presentationMutation: {kind:'resource-lifecycle',value:{}} }
+        : endpoint.action === 'presentation-room'
         ? { presentationDocuments: ['project', 'administration'], presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2 }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'

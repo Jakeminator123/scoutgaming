@@ -1,3 +1,4 @@
+import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
@@ -24,14 +25,14 @@ const origin = 'https://n2-branding-qa.example.invalid';
 const host = 'n2-branding-qa.example.invalid';
 const scope = { environment: 'isolated-n2-branding-qa', workspaceId: 'draft-acceptance' };
 
-function presentationFixture() {
+export function presentationFixture() {
   const assets = ['table', 'table', 'background', 'background'].map((role, index) => {
     const asset = { schemaVersion: 1, id: '00000000-0000-4000-8000-' + String(index + 1).padStart(12, '0'), role,
       label: role + index, contentType: 'image/png', sha256: 'a'.repeat(64), size: 32, width: 720, height: 1280 };
     return { ...asset, pathname: layerAssetPath(asset) };
   });
   const lanes = ['first-presentation', 'vip-presentation'].map((id, index) => {
-    const lane = { ...defaultPresentationLane(), id, dealers: ['astrid', 'vera'],
+    const lane = { ...defaultPresentationLane('astrid'), id, dealers: ['astrid', 'vera'],
       operatorAdjustable: ['table', 'table.color', 'background', 'dealer'], composition: defaultCompositionSettings() };
     lane.layers.dealer = { enabled: true, default: 'astrid', allowed: ['astrid', 'vera'] };
     lane.layers.table = { enabled: true, default: assets[index].id, allowed: assets.slice(0, 2).map(row => row.id), colors: ['#112233', '#445566'] };
@@ -39,13 +40,13 @@ function presentationFixture() {
     return lane;
   });
   const room = (id, lane, operatorId = 'draft-north', state = 'live') => ({ schemaVersion: 2, id, name: id,
-    presentationLaneId: lane, gameLaneId: 'indexed', operatorId, state });
-  const administration = { gameLane: 'indexed', gameLanes: [{ schemaVersion: 1, id: 'indexed', label: 'Indexed',
-    renderer: 'indexed-video', dealer: 'astrid', mediaCollection: 'legacy-dealers' }], rooms: [
+    presentationLaneId: lane, gameLaneId: 'portrait', operatorId, state });
+  const administration = { gameLane: 'portrait', gameLanes: [{ schemaVersion: 1, id: 'portrait', label: 'Portrait',
+    renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }], rooms: [
       room('draft-room-first', lanes[0].id), room('draft-room-vip', lanes[1].id),
       room('draft-room-foreign', lanes[0].id, 'draft-south'), room('draft-room-hidden', lanes[0].id, 'draft-north', 'preview'),
     ] };
-  return { assets, lanes, administration, presentation: { schemaVersion: 1, projectRevision: 'isolated-frozen-originals', lanes, assets } };
+  return { assets, lanes, administration, presentation: cloudPresentationFixture({lanes,assets}).presentation };
 }
 
 // Called after the empty-database team suite has installed the production schemas.
@@ -311,7 +312,8 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     lane.layers.table.allowed = [fixture.assets[0].id];
     lane.layers.background.allowed = [fixture.assets[2].id];
     const presentation = { ...fixture.presentation, lanes: [lane], assets: [fixture.assets[0], fixture.assets[2]] };
-    const tables = Array.from({ length: 28 }, (_, i) => 'room-' + String(i).padStart(2, '0') + 'x'.repeat(50));
+    // Keep the audit payload above 5 KiB while allowing the explicit frozen idle registry within the 8 KiB package limit.
+    const tables = Array.from({ length: 28 }, (_, i) => 'room-' + String(i).padStart(2, '0') + 'x'.repeat(31));
     const branding = { lane: lane.id, color: '#445566', roomOverrides: Object.fromEntries(tables.map(id => [id,
       { table: fixture.assets[0].id, background: fixture.assets[2].id, dealer: 'astrid', color: '#445566' }])) };
     const initial = withPackagePresentation({ lane: lane.id, color: '#112233' }, presentation);
@@ -326,7 +328,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     await store.publishPackage({ actor: 'fixture', operatorId, lanes: [lane.id], games: ['blackjack'], tables, branding: initial });
     const configuration = () => ({ ...config, readAdministration: async () => ({ revision: 'qa-large-rooms-1', value: {
       ...fixture.administration, rooms: tables.map(id => ({ schemaVersion: 2, id, name: id, operatorId,
-        presentationLaneId: lane.id, gameLaneId: 'indexed', state: 'live' })),
+        presentationLaneId: lane.id, gameLaneId: 'portrait', state: 'live' })),
     } }) });
     const command = async (body, status = 200) => {
       const response = await call(`branding?operator=${operatorId}`, { cookie: admin, ...(body ? { body } : {}) }, configuration());

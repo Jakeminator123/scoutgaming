@@ -2,7 +2,6 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {StudioProject} from '../lib/studio-model.mjs';
 import {DEALER_MEDIA_CATEGORIES,dealerMediaSlots,mediaClassification,dealerLibraryVideos,draftUsesMedia,mediaMatchesSlot,dealerSlotStatus,mediaPage,mediaUsage,type DealerMediaSlot} from '../lib/dealer-media-library.mjs';
-import type {LegacyClipControls} from '../lib/legacy-clip-inventory.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
 import {mediaContentType} from '../lib/media-file-types.mjs';
 import {MAX_VIDEO_BYTES} from '../lib/video-intake.mjs';
@@ -37,8 +36,6 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
   const [localSlotId,setSlotId]=useState(initialSlotId),[page,setPage]=useState(1);
   const category=controlledCategory??localCategory,slotId=controlledSlotId??localSlotId;
   useEffect(()=>{setPage(1);},[category,slotId]);
-  const [legacy,setLegacy]=useState<LegacyClipControls|null>(null),[legacyError,setLegacyError]=useState('');
-  useEffect(()=>{if(!['astrid','vera','amira','mei'].includes(dealerId))return;let mounted=true;requestJson<LegacyClipControls>('/api/clip-controls').then(value=>{if(mounted)setLegacy(value);}).catch(()=>{if(mounted)setLegacyError('Originalklippen kunde inte kontrolleras. Ladda om sidan för att försöka igen.');});return()=>{mounted=false;};},[dealerId]);
   const controller=useRef<AbortController|null>(null),busyRef=useRef(false),input=useRef<HTMLInputElement>(null);
   const pending=queue.some(row=>row.state!=='saved');
   useEffect(()=>{onPendingChange(pending||busy);},[pending,busy,onPendingChange]);
@@ -48,7 +45,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
   const selectedSlot=allSlots.find(row=>row.id===slotId);
   const displayed=dealerLibraryVideos(project,inventory,dealerId,category,archived).filter(row=>!selectedSlot||mediaMatchesSlot(row,selectedSlot));
   const paged=mediaPage(displayed,page);
-  const status=(slot:DealerMediaSlot)=>dealerSlotStatus(project,inventory,dealerId,slot,legacy);
+  const status=(slot:DealerMediaSlot)=>dealerSlotStatus(project,inventory,dealerId,slot);
   function chooseCategory(value:string){setCategory(value);setSlotId('');setPage(1);onCategoryChange?.(value);}
   function chooseSlot(value:string){setSlotId(value);setPage(1);onSlotChange?.(value);}
   function settings(slot:DealerMediaSlot){return onConfigureSlot?<button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onConfigureSlot(slot.eventId,slot.situation)}>Öppna klipp och inställningar</button>:<a href={studioHref('/control/clips',{dealerId,eventId:slot.eventId,situation:slot.situation})}>Öppna klipp och inställningar</a>;}
@@ -114,7 +111,6 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     <div className={styles.categories} role="group" aria-label="Mediekategori">{DEALER_MEDIA_CATEGORIES.filter(item=>!categoryIds||categoryIds.includes(item.id)).map(item=><button key={item.id} aria-pressed={category===item.id} onClick={()=>chooseCategory(item.id)}>{item.id==='idle'?'Grundloop':item.id==='deal'?'Utdelning':item.label}{!archived&&missing.some(row=>row.slot.category===item.id)?<small className={styles[missing.some(row=>row.slot.category===item.id&&row.level==='required')?'required':'recommended']}>{item.id==='idle'?'Krävs':'Rekommenderas'}</small>:null}<span>{dealerLibraryVideos(project,inventory,dealerId,item.id,archived).length}</span></button>)}</div>
     {!archived?<>
       <div className={styles.legend}><span className={styles.required}>Krävs: en vald grundloop</span><span className={styles.recommended}>Rekommenderas: klipp för varje deal-fack</span><span>Övriga fack är valfria. Status visar filer och val, inte ett godkänt uppspelningstest.</span></div>
-      {legacyError?<p role="status">{legacyError}</p>:null}
       <div className={styles.slotBar}><label>Fack<select aria-label="Filtrera på fack" value={slotId} onChange={event=>chooseSlot(event.target.value)}><option value="">Alla fack i kategorin</option>{slots.map(slot=><option key={slot.id} value={slot.id}>{slot.label} · {status(slot).label}</option>)}</select></label>{selectedSlot&&!slotEditor?settings(selectedSlot):null}</div>
       {selectedSlot?<p className={styles[status(selectedSlot).level]} role="status">{status(selectedSlot).label}. Flera klipp i samma fack kan användas som varianter. Välj dem och deras villkor i fackets inställningar.</p>:<div className={styles.slots}>{slots.filter(slot=>category!=='all'||['idle','deal'].includes(slot.category)).map(slot=>{const state=status(slot);return <button type="button" className={styles.slot} key={slot.id} onClick={()=>chooseSlot(slot.id)}><strong>{slot.label}</strong><span className={styles[state.level]}>{state.label}</span><small>Öppna klipp och varianter</small></button>;})}</div>}
     </>:<div className={styles.slotBar}><label>Fack<select aria-label="Filtrera på fack" value={slotId} onChange={event=>chooseSlot(event.target.value)}><option value="">Alla fack i kategorin</option>{slots.map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}</select></label></div>}

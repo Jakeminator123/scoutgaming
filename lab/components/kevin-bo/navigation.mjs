@@ -39,7 +39,7 @@ export function destinationsFor(surface) {
 export function normalizeView(value, surface) {
   const aliases = { overview: 'ops', presentation: 'theme', integration: 'api', transactions: 'tx', operations: 'ops', events: 'tree', users: 'team', apikeys: 'api', voicelines: 'voice', generations: 'gen' };
   const raw = typeof value === 'string' ? value.split('?')[0].replace(/^#/, '') : '';
-  const view = surface === 'partner' && raw === 'tables' ? 'bj' : aliases[raw]
+  const view = surface === 'partner' && ['rooms', 'tables'].includes(raw) ? 'bj' : aliases[raw]
     || Object.keys(WORKSPACE_VIEW_SLUGS).find(id => WORKSPACE_VIEW_SLUGS[id] === raw) || raw;
   return destinationsFor(surface).some(item => item.id === view) ? view : null;
 }

@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { createStudioRepository } from './studio-repository.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from './studio-game-policy.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
@@ -16,23 +14,22 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
     throw Object.assign(new Error('studio_game_schema_unavailable'), { statusCode: 503 });
   }
   const repository = createStudioRepository({ pool: storage.pool, scope: config.scope });
+  if (!dealerIdle) {
+    const {createStudioMediaRuntime} = await import('../../lab/lib/studio-media-runtime.mjs');
+    dealerIdle = createRegisteredDealerIdle({registryLoader:createStudioMediaRuntime({repository,scope:config.scope,env}).videoRegistry});
+  }
   const policy = createStudioGamePolicy({ repository, scope: config.scope, dealerIdle });
   await policy.readSaved(); // Missing import fails before listening; no seed.
   return Object.freeze({ policy, repository, scope: config.scope });
 }
 
-// Exact engine index entry, shared by all dealers. Metadata is bundled source;
-// it is neither a duration heuristic nor an approval of a replacement take.
-export function createRegisteredDealerIdle({ repositoryRoot = process.cwd(), pathFor, mediaAvailable, readMetadata } = {}) {
-  return async dealerId => {
-    if (!['vera','astrid','amira','mei'].includes(dealerId)) return null;
-    const base = dealerId === 'vera' ? 'dealer' : `dealers/${dealerId}`;
-    const path = pathFor ? pathFor(base, 'streams/index.json') : resolve(repositoryRoot, 'web/public', base, 'streams/index.json');
-    try {
-      const index = readMetadata ? await readMetadata(path) : JSON.parse(await readFile(path, 'utf8'));
-      const clip = index?.clips?.['idle-1/idle/idle'];
-      const exact = Boolean(clip && typeof clip.file === 'string' && clip.file && !clip.file.includes('..') && !clip.file.includes('\\'));
-      return { dealerId, engineKey: 'idle-1/idle/idle', available: exact && (mediaAvailable ? await mediaAvailable(`${base}/streams/${clip.file}`) : true) };
-    } catch { return null; }
+import {isActiveDealerId} from '../dealer-identity.mjs';
+import {ownDealerIdle} from '../../presentation-runtime/registered-idle.mjs';
+export function createRegisteredDealerIdle({registryLoader} = {}) {
+  if (typeof registryLoader !== 'function') throw new TypeError('Explicit cloud media registry required');
+  return async (dealerId, project) => {
+    if (!isActiveDealerId(dealerId)) return null;
+    const video = ownDealerIdle(project, await registryLoader(), dealerId);
+    return video ? {dealerId, mediaId:video.id, sha256:video.sha256, available:true} : null;
   };
 }

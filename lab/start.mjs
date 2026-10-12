@@ -6,12 +6,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPrivateConnection, probeConnections, startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
-import { createSeedProject, validateProject } from './lib/studio-model.mjs';
+import { createEmptyProject, validateProject } from './lib/studio-model.mjs';
 import { createProjectStore } from './lib/project-store.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 import { preparePreview } from './tools/prepare-preview.mjs';
-import profile from './policies/local-profile.json' with { type: 'json' };
 
+const profile = Object.freeze({id:'lissabon-stream-lane',productPort:4200,labPort:4201,generatedSpeech:true});
 const directory = dirname(fileURLToPath(import.meta.url));
 const root = resolve(directory, '..');
 export const localDataDir = (repoRoot = root) => {
@@ -22,8 +22,7 @@ export const localDataDir = (repoRoot = root) => {
 };
 export const defaultDataDir = join(root, 'lab/data');
 export function createLocalProject() {
-  const project = createSeedProject();
-  for (const row of project.idlePolicy.variants) if (profile.openClawIdleIds.includes(row.videoId)) { row.use = 'openclaw'; row.automatic = null; }
+  const project = createEmptyProject();
   return project;
 }
 export async function prepareProject(dataDir = defaultDataDir) {
@@ -39,7 +38,7 @@ export async function prepareProject(dataDir = defaultDataDir) {
   // normal revision/history path so upgrading an older lane is reversible.
   const draft = retireDemoExamples(saved);
   if (saved.idlePolicy) {
-    const defaults = JSON.parse(snapshot).idlePolicy.variants;
+    const defaults = JSON.parse(snapshot).idlePolicy?.variants ?? [];
     for (const variant of defaults) {
       const existing = draft.idlePolicy.variants.find(item => item.videoId === variant.videoId);
       if (!existing) draft.idlePolicy.variants.push(variant);
@@ -75,12 +74,12 @@ export async function main(args = process.argv.slice(2), { open = openBrowser, l
   }
   if (args.includes('--offline')) {
     if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
-    const fixture = await startLocalComparison({ generationDirectory: join(root, 'media/dealers/astrid/runtime/presentation'), streamLane: profile.id,
+    const fixture = await startLocalComparison({ streamLane: profile.id,
       prepare: async session => {
         await preparePreview();
         if (!args.includes('--skip-build')) await buildLab(session);
       }, prepareStudio: prepareProject });
-    console.log(`Lokalt Studio: ${fixture.labUrl}\nIsolerad mediarepetition: ${fixture.gameUrl}/?dealer=astrid&presentation=local&rehearsal=1\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
+    console.log(`Lokalt Studio: ${fixture.labUrl}\nProvspel startas från en sparad sammansättning i Studio\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
     const stop = async () => { await fixture.stop(); process.exit(0); };
     process.once('SIGINT', stop); process.once('SIGTERM', stop);
     if (!args.includes('--no-open')) openBrowser(fixture.labUrl);
@@ -110,7 +109,7 @@ export async function main(args = process.argv.slice(2), { open = openBrowser, l
       if (!args.includes('--skip-build')) await buildLab(session);
     },
   });
-  console.log(`Lokalt Studio redo: ${url}\nAnslut öppnar den lokala Astrid-sessionen, inte ett publicerat bolagsrum.\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
+  console.log(`Lokalt Studio redo: ${url}\nVälj en sparad sammansättning i Studio för att starta provspel.\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
   const stop = async () => { await fixture.stop(); process.exit(0); };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);
   if (!args.includes('--no-open')) openBrowser(url);

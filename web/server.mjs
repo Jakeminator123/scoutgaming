@@ -66,27 +66,13 @@ if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = await import('./public/game-entry-contract.mjs');
 const { gameLaneSelection } = await import('./public/game-lanes.mjs');
-// Offline documents still give the player a server-owned, validated adapter.
-// Only the four original asset sets opt into the indexed playback path.
-const offlineOriginalDealers = new Set(['astrid', 'vera', 'amira', 'mei']);
-const offlineOriginalLane = { schemaVersion: 1, id: 'legacy', label: 'Original dealers', renderer: 'indexed-video', dealer: 'vera', mediaCollection: 'legacy-dealers' };
-function offlineGameSelection(query) {
-  const params = new URLSearchParams(query);
-  const dealer = params.getAll('dealer').length === 1 ? params.get('dealer') : null;
-  const lane = params.getAll('lane').length === 1 ? params.get('lane') : null;
-  const local = dealer === 'astrid' && params.getAll('presentation').length === 1 && params.get('presentation') === 'local';
-  if (!offlineOriginalDealers.has(dealer) || ['mobile-phone', 'layer-preview'].includes(lane) || local) return gameLaneSelection(params);
-  params.set('lane', offlineOriginalLane.id);
-  return gameLaneSelection(params, offlineOriginalLane.id, [offlineOriginalLane]);
-}
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
-const { createRenderStudioPolicy, createRegisteredDealerIdle } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
+const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../lab/lib/studio-native-auth.mjs') : {};
 const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
-const { createStudioMediaRuntime, createStudioPublicMediaAvailability } = neonStudioEnabled ? await import('../lab/lib/studio-media-runtime.mjs') : {};
-const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage,
-  dealerIdle: createRegisteredDealerIdle({ pathFor: publicAssetPath, mediaAvailable: createStudioPublicMediaAvailability({ repositoryRoot: mediaRepository }) }) }) : null;
+const { createStudioMediaRuntime } = neonStudioEnabled ? await import('../lab/lib/studio-media-runtime.mjs') : {};
+const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
   ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope}) : null;
@@ -512,32 +498,14 @@ const MIME = {
 // Dealer chat now runs exclusively through the deployed OpenClaw gateway.
 // Product chat has one active decision owner: OpenClaw. It receives only this
 // freshly projected public state and a closed speech/media allowlist.
-const CHAT_DEALERS = Object.freeze({ vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' });
 const CHAT_REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const astridCameraEnabled = process.env.CROUPIER_ASTRID_CAMERA === '1'
   && process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane';
 const astridTranscription = createAstridTranscriptionApi({ apiKey: process.env.CROUPIER_ASTRID_TRANSLATION_KEY });
 const astridVisionModels = new Set(['gpt-6-luna', 'gpt-5.6-terra']);
 
-function chatSpeechPolicy(dealerId) {
-  // The local Astrid renderer cannot verify legacy bank lines against its
-  // replacement films. Direct chat must use exact generated speech there.
-  if (process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' && dealerId === 'astrid') {
-    return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
-  }
-  // Registered dealers never borrow another dealer's recorded speech bank.
-  if(!Object.hasOwn(CHAT_DEALERS,dealerId))return {recordedLines:[],generatedText:true,silence:true,mediaFamilies:[]};
-  let bank = {};
-  try { bank = JSON.parse(readSync(publicAssetPath(CHAT_DEALERS[dealerId], 'audio/en/bank.json'), 'utf8')); }
-  catch { /* Generated text or silence remains available. */ }
-  const recordedLines = Object.entries(bank)
-    .filter(([lineId, line]) => /^[a-z0-9_]{1,64}$/.test(lineId) && typeof line?.text === 'string' && line.text.trim()
-      && !(dealerId === 'vera' && ['rules_decks', 'fair_rng'].includes(lineId)))
-    .map(([lineId, line]) => ({ lineId, exactText: line.text.trim(), familyId: `${dealerId}.speak.${lineId}`, variantIds: [] }));
-  return {
-    recordedLines, generatedText: true, silence: true,
-    mediaFamilies: recordedLines.map(({ familyId, variantIds }) => ({ familyId, variantIds })),
-  };
+function chatSpeechPolicy() {
+  return { recordedLines: [], generatedText: true, silence: true, mediaFamilies: [] };
 }
 
 async function authoritativeChatStatus(playerId, session, request, { allowCurrentRound = false } = {}) {
@@ -712,12 +680,9 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
   const { createStudioPreview } = await import('./studio-preview.mjs');
   const { getPrivateMedia } = await import('../lab/lib/cloud-media-store.mjs');
   const { getVideoResponse } = await import('../lab/lib/video-registry.mjs');
-  const { legacyClipControls } = await import('../lab/lib/legacy-clip-inventory.mjs');
   return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
     scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
     registryLoader:studioMediaRuntime.videoRegistryCaptured,
-    legacyControlsCaptured:(snapshot,project)=>legacyClipControls(project,{repository:mediaRepository,
-      administration:snapshot.administrationDocument.value,mediaAvailable:createStudioPublicMediaAvailability({repositoryRoot:mediaRepository})}),
     privateMedia:(record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository}),
     bankVideoResponse:(id,request)=>getVideoResponse(id,request,{repositoryRoot:mediaRepository,readUploads:async()=>[],readClassifications:async()=>[]}),
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
@@ -923,7 +888,7 @@ const server = createServer(async (req, res) => {
             readStatus: async () => authoritativeChatStatus(playerId, await playerSession(request), revision) });
         } } : {}),
         ...(studioPolicyRuntime ? { store: studioPolicyRuntime.policy.projectStore(), registryLoader: studioMediaRuntime.videoRegistry,
-          videoResponse: studioMediaRuntime.videoResponse, legacyControls: studioMediaRuntime.legacyControls } : {}) });
+          videoResponse: studioMediaRuntime.videoResponse } : {}) });
       if (await presentationApi(req, res, pathname, authenticated)) return;
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Local presentation unavailable' })); return; }
   }
@@ -1104,7 +1069,7 @@ const server = createServer(async (req, res) => {
           return (await authoritativeChatStatus(authenticated, (await playerSession(req)), { dealerId, sessionRevision: incoming.sessionRevision, roundRevision: incoming.roundRevision }));
         };
         const speechTrace = randomBytes(8).toString('hex');
-        const registeredSpeech = dealerId !== 'astrid' && await dealerSpeechRuntime?.requested(dealerId);
+        const registeredSpeech = await dealerSpeechRuntime?.requested(dealerId);
         if (registeredSpeech && (!speechStreamService || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
@@ -1189,7 +1154,7 @@ const server = createServer(async (req, res) => {
     if(response){res.writeHead(response.status,Object.fromEntries(response.headers));if(!response.body){res.end();return;}
       const stream=Readable.fromWeb(response.body);res.once('close',()=>stream.destroy());stream.once('error',()=>res.destroy());stream.pipe(res);return;}
   }
-  const gameRedirect = neonStudioEnabled ? gameEntryRedirect(new URL(req.url,gameOrigin),process.env) : null;
+  const gameRedirect = gameEntryRedirect(new URL(req.url,gameOrigin),process.env);
   if (gameRedirect) {
     if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}); res.end(); return; }
     res.writeHead(307,{Location:gameRedirect,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}); res.end(); return;
@@ -1199,6 +1164,10 @@ const server = createServer(async (req, res) => {
   catch { res.writeHead(400); res.end('bad request'); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (/^\/(?:dealer[ .]*(?:\/|$)|dealers[ .]*\/(?:astrid|vera|amira|mei)[ .]*(?:\/|$))/i.test(generationPath)) {
+    res.writeHead(410, {'Content-Type':'application/json','Cache-Control':'no-store'});
+    res.end(JSON.stringify({error:'local_dealer_retired'})); return;
+  }
   const retiredGenerationPath = /^\/bo[ .]*\/(?:gen[ .]*(?:\/|$)|generations[ .]*\.json[ .]*$)/i.test(generationPath);
   if (retiredGenerationPath) {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
@@ -1234,7 +1203,7 @@ const server = createServer(async (req, res) => {
       serveGenerationMedia(req, res, media, { ETag: etag, 'Cache-Control': 'no-cache' }); return;
     }
   }
-  if (['/v2', '/v2/', '/v2/index.html', '/game', '/game/'].includes(decoded)) path = '/index.html';
+  if (['/game', '/game/'].includes(decoded)) path = '/index.html';
   if (decoded === '/blackjack' || decoded === '/blackjack/') path = neonStudioEnabled ? '/index.html' : '/blackjack-entry.html';
   if (decoded === '/player-login' || decoded === '/player-login/') {
     if (!neonStudioEnabled) { res.writeHead(404); res.end('not found'); return; }
@@ -1265,8 +1234,8 @@ const server = createServer(async (req, res) => {
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
   if (!neonStudioEnabled && path === '/index.html') {
-    const html = decorateGameEntryHtml(readSync(file, 'utf8'), process.env, offlineGameSelection(url.searchParams), { offline: true });
-    res.writeHead(200, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(html), ...noStore(file) });
+    const html = '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Välj en presentation</title><main><h1>Ingen presentation vald</h1><p>Starta ett publicerat bord eller öppna ett provspel från Sammansättning.</p><a href="/control/preview">Öppna Sammansättning</a></main></html>';
+    res.writeHead(503, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(html), ...noStore(file) });
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);

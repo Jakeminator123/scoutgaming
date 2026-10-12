@@ -1,4 +1,5 @@
 import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { canonicalControlHref } from './control-flow.mjs';
 
 // Exact current document routes only; query values are narrowly allowlisted below.
 // Keep login and bearer-entry pages out of this list to avoid auth redirect loops.
@@ -6,18 +7,20 @@ const returns = new Set(['/studio','/studio/administration','/studio/openclaw','
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
 const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
 function publicationReturn(value) {
-  if (typeof value !== 'string' || value.length > 300 || /[#\\\x00-\x20]/.test(value)) return null;
+  if (typeof value !== 'string' || value.length > 900 || /[#\\\x00-\x20]/.test(value)) return null;
   const parts = value.split('?');
-  if (parts.length !== 2 || !['/control/lanes', '/studio/control/lanes'].includes(parts[0])) return null;
+  if (parts.length !== 2 || resolveWorkspaceSurfacePath(parts[0])?.surface !== 'control') return null;
   const query = new URLSearchParams(parts[1]);
-  if (!query.size || query.size > 2) return null;
+  if (!query.size || query.size > 8) return null;
   for (const [key, entry] of query) {
     if (query.getAll(key).length !== 1) return null;
-    if (key === 'tab' && ['publish', 'companies'].includes(entry)) continue;
-    if (key === 'lane' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(entry)) continue;
+    if (key === 'tab' && ['publish','companies','tables','operations','finance','accounts','partners','media-review','chat'].includes(entry)) continue;
+    if (key === 'view' && ['idle','clips','speech','settings'].includes(entry)) continue;
+    if (key === 'category' && ['all','deal','speech','reaction','action','idle'].includes(entry)) continue;
+    if (['lane','composition','operator','dealer','table','event','variant','situation'].includes(key) && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(entry)) continue;
     return null;
   }
-  return '/control/lanes?' + query.toString();
+  return canonicalControlHref(parts[0] + '?' + query);
 }
 export function studioLoginReturnTo(value) {
   if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/studio';

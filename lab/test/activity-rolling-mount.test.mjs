@@ -36,7 +36,7 @@ function loadTs(fileUrl) {
   return module.exports;
 }
 
-test('Uppspelning mounts the rolling observation window and keeps Ny observation', () => {
+test('Provspelning mounts the rolling observation window and keeps Ny observation', () => {
   const pageSource = readFileSync(new URL('../components/control-activity-page.tsx', import.meta.url), 'utf8');
   const logSource = readFileSync(new URL('../components/activity-log.tsx', import.meta.url), 'utf8');
   // Rolling without focused: the page keeps Partner SSE and the reference capture.
@@ -46,15 +46,17 @@ test('Uppspelning mounts the rolling observation window and keeps Ny observation
   const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
     initialProject: createSeedProject(),
+    initialDealerId: 'astrid',
     initialVideos: { videos: [] },
     initialStatus: { configured: false },
   }));
-  assert.match(html, /<h1>Uppspelning<\/h1>/);
+  assert.match(html, /<h1>Provspelning &amp; logg<\/h1>/);
   assert.match(html, /0 senaste poster/);
   assert.match(html, />Ny observation</);
   assert.doesNotMatch(html, /Protokollet finns kvar mellan labbets vyer/);
   assert.doesNotMatch(html, /Live-observationen fortsätter löpande/);
-  assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
+  assert.doesNotMatch(html, /Lycka till|event=speak\.goodluck/);
+  assert.match(html, /Tidigare i fliken/);
   const guide = readFileSync(new URL('../docs/guide.json', import.meta.url), 'utf8');
   assert.match(guide, /300/);
   assert.match(guide, /sessionStorage/);
@@ -63,10 +65,11 @@ test('Uppspelning mounts the rolling observation window and keeps Ny observation
   assert.match(guide, /Live-observationen fortsätter|senaste 300 posterna/);
 });
 
-test('Uppspelning is the log, with one lime and the old actions still in the markup', () => {
+test('Provspelning is the log, with one lime and the old actions still in the markup', () => {
   const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
     initialProject: createSeedProject(),
+    initialDealerId: 'astrid',
     initialVideos: { videos: [] },
     initialStatus: { configured: false },
   }));
@@ -84,8 +87,30 @@ test('Uppspelning is the log, with one lime and the old actions still in the mar
   const connect = html.indexOf('Anslut &amp; följ');
   const log = html.indexOf('>Logg <');
   const diagnostics = html.indexOf('<summary>Diagnostik</summary>');
-  assert.ok(status >= 0 && status < chain && chain < speech && speech < connect && connect < log && log < diagnostics);
+  assert.ok(connect >= 0 && connect < status && status < chain && chain < speech && speech < log && log < diagnostics);
   const chips = html.indexOf('Filtrera detaljlogg');
   const empty = html.indexOf('Inga registrerade händelser i detta urval.');
   assert.ok(chips >= 0 && chips < empty && empty < diagnostics);
+});
+
+
+test('room context names the room and does not silently identify the default dealer as its published dealer', () => {
+  const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
+  const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
+    initialProject: createSeedProject(),
+    initialVideos: { videos: [] }, initialStatus: { configured: false },
+    initialTableId: 'room-1', initialOperatorSlug: 'operator-one', initialLaneId: 'mobile-phone',
+  }));
+  assert.match(html, /Spelrum/); assert.match(html, /room-1/); assert.match(html, /operator-one/);
+  assert.match(html, /Spelrummets publicerade dealer/); assert.doesNotMatch(html, /Dealerprov|Astrid|Lycka till/);
+});
+
+test('the inactive-speech link preserves the selected dealer', () => {
+  const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
+  const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
+    initialProject: createSeedProject(),
+    initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'vera',
+  }));
+  assert.match(html, /href="\/control\/probe\?dealer=vera"/);
+  assert.doesNotMatch(html, /href="\/control\/probe"/);
 });

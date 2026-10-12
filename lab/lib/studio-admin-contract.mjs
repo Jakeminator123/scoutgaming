@@ -24,12 +24,12 @@ function adminEndpoint(method, action) {
 
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
   ...['overview', 'config', 'voicelines', 'clips', 'generations', 'gen-verdicts',
-    'apikeys', 'users', 'players', 'transactions','emails','shoes', 'presentation-room'].map(action => adminEndpoint('GET', action)),
+    'apikeys', 'users', 'players', 'transactions','emails','shoes', 'presentation-room', 'resource-lifecycle'].map(action => adminEndpoint('GET', action)),
   ...['voiceline-review', 'tournament', 'pitboss', 'tier', 'room', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
     'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
-    'operator-package', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership']
+    'operator-package', 'presentation-room', 'operator-create-demo', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state']
     .map(action => adminEndpoint('POST', action)),
   // These methods still require the existing opt-in operator gate, owner/budget
   // checks and paid-work authority. A matching descriptor grants none of them.

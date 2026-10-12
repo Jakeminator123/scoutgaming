@@ -1,149 +1,82 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAME_LANES, gameLaneSelection, gameLaneConfiguration, gameLaneFromDocument, validateGameLanes,
-  isOperatorSlug, laneDealerSelection, packageLaneIds } from '../web/public/game-lanes.mjs';
-import { decorateGameEntryHtml, playerLoginDestination } from '../web/public/game-entry-contract.mjs';
-import { validateDocumentValue } from '../web/storage/studio-contract.mjs';
+import {GAME_LANES,gameLaneSelection,gameLaneConfiguration,gameLaneFromDocument,validateGameLanes,isOperatorSlug,laneDealerSelection,packageLaneIds,gamePresentationForDealer} from '../web/public/game-lanes.mjs';
+import {decorateGameEntryHtml,playerLoginDestination} from '../web/public/game-entry-contract.mjs';
+const portrait={schemaVersion:1,id:'chosen-table',label:'Chosen table',renderer:'portrait-video',dealer:'vera',mediaCollection:'vera-presentation'};
+const registry=[{id:'vera',label:'Vera'},{id:'mei',label:'Mei'}];
+const dataset={gameLane:portrait.id,gameDealer:'vera',gamePresentation:'local',gameLocalDealer:'vera',gameRegisteredDealers:JSON.stringify(registry)};
+const selection={lane:portrait.id,dealer:'vera',presentation:'local',localDealer:'vera',registeredDealers:registry};
+const env={CROUPIER_STUDIO_NEON_POLICY:'1'};
 
-test('mobile is default and layer-preview is opt-in', () => {
-  assert.deepEqual(gameLaneSelection('', 'mobile-phone'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
-  assert.deepEqual(gameLaneSelection('', 'original'), {lane:'mobile-phone',dealer:'astrid',presentation:'local'});
-  assert.deepEqual(gameLaneSelection('?lane=layer-preview', 'mobile-phone'), { lane: 'layer-preview', dealer: 'paow', presentation: 'layered' });
-  assert.deepEqual(gameLaneSelection('?lane=layer-preview&dealer=dragge', 'mobile-phone'), { lane: 'layer-preview', dealer: 'dragge', presentation: 'layered' });
-  for (const dealer of ['vera','astrid','amira','mei']) {
-    assert.equal(gameLaneSelection('?dealer='+dealer, 'mobile-phone').dealer,'astrid');
-    assert.equal(gameLaneSelection('?dealer='+dealer, 'mobile-phone').presentation,'local');
-  }
-  assert.equal(gameLaneSelection('?dealer=astrid&presentation=local','original').lane,'mobile-phone');
-  assert.equal(gameLaneSelection('?lane=mobile-phone','original').dealer,'astrid');
-  assert.throws(() => gameLaneSelection('', 'unknown'));
+test('empty configuration has no local dealer or lane; layer preview is explicit',()=>{
+ assert.deepEqual(GAME_LANES,[]);assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});
+ assert.throws(()=>gameLaneSelection(''),/configured/);assert.throws(()=>gameLaneFromDocument({}));
+ assert.deepEqual(gameLaneSelection('?lane=layer-preview&dealer=dragge'),{lane:'layer-preview',dealer:'dragge',presentation:'layered'});
+});
+test('saved catalogues validate identity, media ownership and explicit active lane',()=>{
+ assert.deepEqual(gameLaneConfiguration({gameLanes:[portrait],gameLane:portrait.id}),{gameLanes:[portrait],gameLane:portrait.id});
+ assert.deepEqual(gameLaneSelection('',portrait.id,[portrait]),{lane:portrait.id,dealer:'vera',presentation:'local'});
+ for(const change of [{id:'original'},{id:'../bad'},{renderer:'remote-script'},{mediaCollection:'astrid-presentation'},{label:'<script>'}])assert.throws(()=>validateGameLanes([{...portrait,...change}]));
+ assert.throws(()=>validateGameLanes([portrait,portrait]));assert.throws(()=>gameLaneConfiguration({gameLanes:[portrait],gameLane:'unknown'}));
+});
+test('former local names need the same explicit registered document as every cloud dealer',()=>{
+ for(const id of ['astrid','vera','mei','paow','nora']){
+  const data={...dataset,gameDealer:id,gameLocalDealer:id,gameRegisteredDealers:JSON.stringify([{id,label:id}])};
+  assert.equal(gameLaneFromDocument(data).dealer,id);
+  assert.throws(()=>gameLaneFromDocument({...data,gameRegisteredDealers:'[]'}));
+  assert.throws(()=>gameLaneFromDocument({...data,gameLocalDealer:undefined}));
+  assert.equal(gamePresentationForDealer(id,'portrait-video'),'local');
+ }
+ assert.throws(()=>gamePresentationForDealer('amira','portrait-video'));
+ assert.throws(()=>gamePresentationForDealer('vera','indexed-video'));
+});
+test('historical indexed catalogues can be read but cannot launch',()=>{
+ const legacy={...portrait,id:'old',renderer:'indexed-video',mediaCollection:'legacy-dealers'};
+ assert.deepEqual(validateGameLanes([legacy]),[legacy]);
+ assert.throws(()=>gameLaneSelection('','old',[legacy]),/cloud/);
+ assert.throws(()=>gameLaneFromDocument({...dataset,gamePresentation:'original'}));
+});
+test('package lane selection intersects the saved catalogue',()=>{
+ const beta={...portrait,id:'beta'},gamma={...portrait,id:'gamma'},catalogue=[portrait,beta,gamma];
+ assert.deepEqual(packageLaneIds(['gamma','unknown','beta','gamma'],catalogue),['gamma','beta']);
+ assert.equal(gameLaneSelection('?lane=gamma',portrait.id,catalogue,['beta','gamma']).lane,'gamma');
+ assert.equal(gameLaneSelection('?lane=chosen-table',portrait.id,catalogue,['beta','gamma']).lane,'beta');
+ assert.throws(()=>packageLaneIds('beta',catalogue));
+});
+test('an explicit unavailable dealer never silently changes identity',()=>{
+ const layer={default:'vera',allowed:['vera','mei','amira']};
+ assert.equal(laneDealerSelection('',portrait,layer),'vera');
+ assert.equal(laneDealerSelection('?dealer=mei',portrait,layer),null);
+ assert.equal(laneDealerSelection('?dealer=mei',portrait,layer,{portraitDealerIds:['mei']}),'mei');
+ for(const query of ['?dealer=amira','?dealer=foreign','?dealer=vera&dealer=mei'])assert.equal(laneDealerSelection(query,portrait,layer,{portraitDealerIds:['mei','amira']}),null);
+});
+test('document attributes escape branding and reject injected identities',()=>{
+ const branding={felt:'#0a5"><script>alert(1)</script>',note:'& <b>'};
+ const html=decorateGameEntryHtml('<html lang="sv">',env,{...selection,operator:'sg-test',packageRevision:3,branding});
+ assert.doesNotMatch(html,/<script/);assert.match(html,/data-game-local-dealer="vera"/);
+ const decode=text=>text.replace(/&(amp|quot|#39|lt|gt);/g,(_,name)=>({amp:'&',quot:'"','#39':"'",lt:'<',gt:'>'})[name]);
+ assert.deepEqual(JSON.parse(decode(/data-game-branding="([^"]*)"/.exec(html)[1])),branding);
+ for(const change of [{dealer:'"><script>'},{dealer:'amira'},{registeredDealers:[]},{localDealer:'mei'},{presentation:'original'}])assert.throws(()=>decorateGameEntryHtml('<html>',env,{...selection,...change}));
+});
+test('operator metadata is bounded and login carries only approved selectors',()=>{
+ for(const slug of ['sg-test','demo-north','a'])assert.equal(isOperatorSlug(slug),true);
+ for(const slug of ['','SG','sg_test','play','api',null])assert.equal(isOperatorSlug(slug),false);
+ assert.equal(playerLoginDestination(new URL('https://game.invalid/blackjack?operator=sg-test&lane=chosen-table&launch=a.b.c&returnTo=https://evil.invalid')),'/player-login?lane=chosen-table&operator=sg-test');
+ const d={...dataset,gameOperator:'sg-test',gamePackageRevision:'3',gameBranding:'{}'};
+ assert.equal(gameLaneFromDocument(d).packageRevision,3);
+ for(const change of [{gameOperator:'Bad'},{gameOperator:undefined},{gamePackageRevision:'0'},{gamePackageRevision:'1e3'},{gameBranding:'[]'},{gameBranding:'null'},{gameBranding:'{'}])assert.throws(()=>gameLaneFromDocument({...d,...change}));
+});
+test('layered presentation is accepted only in its explicit lane',()=>{
+ for(const id of ['paow','dragge'])assert.deepEqual(gameLaneFromDocument({gameLane:'layer-preview',gameDealer:id,gamePresentation:'layered'}),{lane:'layer-preview',dealer:id,presentation:'layered'});
+ assert.throws(()=>gameLaneFromDocument({...dataset,gamePresentation:'layered'}));
+ assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:'astrid',gamePresentation:'layered'}));
 });
 
-test('saved lane definitions are bounded, unique and bind an adapter; empty catalogue closes entry', () => {
-  const another = {...GAME_LANES[0],id:'another',label:'Another lane'};
-  assert.deepEqual(gameLaneSelection('?lane=another','mobile-phone',[...GAME_LANES,another]),{lane:'another',dealer:'astrid',presentation:'local'});
-  assert.deepEqual(gameLaneFromDocument({gameLane:'another',gameDealer:'astrid',gamePresentation:'local'}),{lane:'another',dealer:'astrid',presentation:'local'});
-  for (const change of [{id:'original'},{id:'../bad'},{renderer:'remote-script'},{dealer:'mei'},{mediaCollection:'https://external.invalid'}]) {
-    assert.throws(()=>validateGameLanes([{...another,...change}]));
-  }
-  assert.throws(()=>validateGameLanes([another,another]));
-  assert.deepEqual(gameLaneConfiguration({gameLanes:[],gameLane:null}),{gameLanes:[],gameLane:null});
-  assert.throws(()=>gameLaneSelection('',null,[]));
-  assert.throws(()=>gameLaneConfiguration({gameLanes:[another],gameLane:'mobile-phone'}));
-  assert.equal(gameLaneSelection('?lane=original&dealer=vera','another',[another]).lane,'another');
-});
-
-test('lane metadata and login cannot introduce arbitrary HTML, redirects or privileges', () => {
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1'};
-  assert.match(decorateGameEntryHtml('<html>',env,gameLaneSelection('','mobile-phone')),/data-game-lane="mobile-phone" data-game-dealer="astrid" data-game-presentation="local"/);
-  assert.throws(() => decorateGameEntryHtml('<html>',env,{lane:'mobile-phone',dealer:'"><script>',presentation:'local'}));
-  assert.equal(playerLoginDestination(new URL('https://game.invalid/blackjack?lane=mobile-phone&returnTo=https://evil.invalid&playerId=forged&launch=a.b.c')),'/player-login?lane=mobile-phone');
-  assert.equal(playerLoginDestination(new URL('https://game.invalid/blackjack')),'/player-login');
-  for (const lane of ['evil',null,{},['mobile-phone']]) assert.throws(() => validateDocumentValue('administration',{gameLane:lane},'r1'));
-  assert.equal(validateDocumentValue('administration',{gameLane:'mobile-phone'},'r1').gameLane,'mobile-phone');
-});
-
-const beta = {...GAME_LANES[0],id:'beta',label:'Beta lane'};
-const gamma = {...GAME_LANES[0],id:'gamma',label:'Gamma lane'};
-const legacy = {schemaVersion:1,id:'legacy',label:'Legacy lane',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'};
-const catalogue = [...GAME_LANES,beta,gamma,legacy];
-
-test('allowedLanes narrows the saved catalogue; outside the package falls to its first allowed lane', () => {
-  assert.deepEqual(packageLaneIds(['gamma','unknown','beta','gamma'],catalogue),['gamma','beta']);
-  assert.throws(() => packageLaneIds('beta',catalogue));
-  assert.throws(() => gameLaneSelection('','mobile-phone',catalogue,'beta'));
-  // Intersection: the requested lane is honoured only inside the package.
-  assert.equal(gameLaneSelection('?lane=gamma','mobile-phone',catalogue,['beta','gamma']).lane,'gamma');
-  assert.equal(gameLaneSelection('?lane=mobile-phone','mobile-phone',catalogue,['beta','gamma']).lane,'beta');
-  assert.equal(gameLaneSelection('?lane=nope','mobile-phone',catalogue,['beta','gamma']).lane,'beta');
-  assert.equal(gameLaneSelection('','mobile-phone',catalogue,['beta','gamma']).lane,'beta');
-  assert.equal(gameLaneSelection('?lane=beta&lane=gamma','mobile-phone',catalogue,['gamma','beta']).lane,'gamma');
-  // The saved active lane stays the default when the package includes it.
-  assert.equal(gameLaneSelection('?lane=nope','mobile-phone',catalogue,['beta','mobile-phone']).lane,'mobile-phone');
-  // A package can never add a lane the server does not serve.
-  assert.deepEqual(gameLaneSelection('?lane=delta','mobile-phone',catalogue,['delta']),gameLaneSelection('?lane=delta','mobile-phone',catalogue));
-  // Empty intersection keeps today's selection exactly.
-  for (const query of ['','?lane=beta','?lane=legacy&dealer=mei']) {
-    assert.deepEqual(gameLaneSelection(query,'mobile-phone',catalogue,[]),gameLaneSelection(query,'mobile-phone',catalogue));
-    assert.deepEqual(gameLaneSelection(query,'mobile-phone',catalogue,['delta']),gameLaneSelection(query,'mobile-phone',catalogue));
-  }
-  assert.deepEqual(gameLaneSelection('?lane=legacy&dealer=mei','mobile-phone',catalogue,['legacy']),{lane:'legacy',dealer:'mei',presentation:'original'});
-  assert.throws(() => gameLaneSelection('','unknown',catalogue,['beta']));
-});
-
-test('a presentation lane only narrows the dealers its server lane can render', () => {
-  const portrait = GAME_LANES[0];
-  assert.equal(laneDealerSelection('?dealer=vera',portrait,{default:'astrid',allowed:['astrid']}),'astrid');
-  assert.equal(laneDealerSelection('',portrait,{default:'vera',allowed:['vera','astrid']}),'astrid');
-  assert.equal(laneDealerSelection('',portrait,{default:'vera',allowed:['vera']}),null);
-  assert.equal(laneDealerSelection('?dealer=mei',legacy,{default:'amira',allowed:['mei','vera']}),'mei');
-  assert.equal(laneDealerSelection('?dealer=astrid',legacy,{default:'amira',allowed:['mei','vera']}),'amira');
-  assert.equal(laneDealerSelection('?dealer=mei&dealer=vera',legacy,{default:'amira',allowed:['mei','vera']}),'amira');
-  assert.equal(laneDealerSelection('',legacy,{default:'amira',allowed:[]}),'amira');
-  assert.equal(laneDealerSelection('',legacy,{default:'x',allowed:['x']}),null);
-  assert.equal(laneDealerSelection('',legacy,null),null);
-  assert.throws(() => laneDealerSelection('',{...legacy,renderer:'remote-script'},{default:'vera',allowed:[]}));
-});
-
-test('operator context is read-only client data: validated, escaped and never a selector', () => {
-  const env = {CROUPIER_STUDIO_NEON_POLICY:'1'};
-  for (const slug of ['sg-test','demo-north','a']) assert.equal(isOperatorSlug(slug),true);
-  for (const slug of ['','SG','sg_test','-sg','sg-','sg--test','play','api','a'.repeat(64),null,['sg-test']]) assert.equal(isOperatorSlug(slug),false);
-  assert.equal(playerLoginDestination(new URL('https://game.invalid/blackjack?operator=sg-test&lane=mobile-phone&launch=a.b.c')),'/player-login?lane=mobile-phone&operator=sg-test');
-  for (const query of ['operator=Bad','operator=play','operator=a&operator=b','operator=']) {
-    assert.equal(playerLoginDestination(new URL('https://game.invalid/blackjack?lane=mobile-phone&'+query)),'/player-login?lane=mobile-phone');
-  }
-  const branding = {felt:'#0a5"><script>alert(1)</script>',note:"$& $' $` & <b>"};
-  const html = decorateGameEntryHtml('<html lang="sv">',env,{...gameLaneSelection('','mobile-phone'),operator:'sg-test',packageRevision:3,branding});
-  assert.equal(html.match(/<script/g),null);
-  assert.match(html,/^<html data-game-path="\/blackjack" data-game-lane="mobile-phone" data-game-dealer="astrid" data-game-presentation="local" data-game-operator="sg-test" data-game-package-revision="3" data-game-branding="[^"]*" lang="sv">$/);
-  const encoded = /data-game-branding="([^"]*)"/.exec(html)[1];
-  const decoded = encoded.replace(/&(amp|quot|#39|lt|gt);/g,(_,name) => ({amp:'&',quot:'"','#39':"'",lt:'<',gt:'>'})[name]);
-  assert.deepEqual(JSON.parse(decoded),branding);
-  const dataset = {gameLane:'mobile-phone',gameDealer:'astrid',gamePresentation:'local',gameOperator:'sg-test',gamePackageRevision:'3',gameBranding:decoded};
-  assert.deepEqual(gameLaneFromDocument(dataset),{lane:'mobile-phone',dealer:'astrid',presentation:'local',operator:'sg-test',packageRevision:3,branding});
-  assert.deepEqual(gameLaneFromDocument({...dataset,gamePackageRevision:undefined,gameBranding:undefined}),{lane:'mobile-phone',dealer:'astrid',presentation:'local',operator:'sg-test'});
-  assert.match(decorateGameEntryHtml('<html>',env,{...gameLaneSelection('','mobile-phone'),operator:'sg-test'}),/data-game-operator="sg-test">$/);
-  for (const change of [{gameOperator:'Bad'},{gameOperator:undefined},{gamePackageRevision:'0'},{gamePackageRevision:'1e3'},
-    {gamePackageRevision:'99999999999999999'},{gameBranding:'[]'},{gameBranding:'null'},{gameBranding:'{'},{gameBranding:undefined}]) {
-    assert.throws(() => gameLaneFromDocument({...dataset,...change}));
-  }
-  for (const change of [{operator:'play'},{operator:undefined},{packageRevision:0},{packageRevision:'3'},{branding:[]},{branding:null},
-    {branding:{text:'x'.repeat(8000)}}]) {
-    assert.throws(() => decorateGameEntryHtml('<html>',env,{...gameLaneSelection('','mobile-phone'),operator:'sg-test',packageRevision:3,branding:{},...change}));
-  }
-});
-
-test('local for another dealer is allowed only when that lane is portrait-video for her', () => {
-  const vera = { schemaVersion: 1, id: 'vera-phone', label: 'Vera phone', renderer: 'portrait-video', dealer: 'vera', mediaCollection: 'vera-presentation' };
-  assert.equal(validateGameLanes([vera])[0].mediaCollection, 'vera-presentation');
-  assert.throws(() => gameLaneFromDocument({ gameLane: 'vera-phone', gameDealer: 'vera', gamePresentation: 'local' }));
-  assert.deepEqual(gameLaneFromDocument({ gameLane: 'vera-phone', gameDealer: 'vera', gamePresentation: 'local' }, [vera]), { lane: 'vera-phone', dealer: 'vera', presentation: 'local' });
-  assert.throws(() => gameLaneFromDocument({ gameLane: 'vera-phone', gameDealer: 'mei', gamePresentation: 'local' }, [vera]));
-  assert.throws(() => validateGameLanes([{ ...vera, mediaCollection: 'astrid-presentation' }]));
-  assert.throws(() => validateGameLanes([{ ...vera, mediaCollection: 'legacy-dealers' }]));
-});
-
-test('layered presentation is accepted only on layer-preview', () => {
-  assert.deepEqual(gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'paow', gamePresentation: 'layered' }), {
-    lane: 'layer-preview', dealer: 'paow', presentation: 'layered',
-  });
-  assert.deepEqual(gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'dragge', gamePresentation: 'layered' }), {
-    lane: 'layer-preview', dealer: 'dragge', presentation: 'layered',
-  });
-  assert.throws(() => gameLaneFromDocument({ gameLane: 'mobile-phone', gameDealer: 'astrid', gamePresentation: 'layered' }));
-  assert.throws(() => gameLaneFromDocument({ gameLane: 'layer-preview', gameDealer: 'astrid', gamePresentation: 'layered' }));
-});
-
-test('portrait room adapter follows the selected dealer bank without changing lane or identity',async()=>{
-  const {gamePresentationForDealer}=await import('../web/public/game-lanes.mjs');
-  for(const dealer of ['vera','amira','mei']){
-    assert.equal(gamePresentationForDealer(dealer,'portrait-video'),'original');
-    const lane={schemaVersion:1,id:'room-'+dealer,label:dealer,renderer:'portrait-video',dealer,mediaCollection:dealer+'-presentation'};
-    assert.deepEqual(gameLaneSelection('',lane.id,[lane]),{lane:lane.id,dealer,presentation:'original'});
-  }
-  for(const dealer of ['astrid','johanna'])assert.equal(gamePresentationForDealer(dealer,'portrait-video'),'local');
-  assert.equal(gamePresentationForDealer('astrid','indexed-video'),'original');
-  assert.equal(gamePresentationForDealer('paow','layered'),'layered');
-  assert.throws(()=>gamePresentationForDealer('amira','unknown'));
+test('retiring the active lane leaves an explicit empty choice even when other lanes remain',()=>{
+ const configuration={gameLanes:[portrait],gameLane:null};
+ assert.deepEqual(gameLaneConfiguration(configuration),configuration);
+ assert.throws(()=>gameLaneSelection('',null,[portrait]),/configured/);
+ assert.deepEqual(gameLaneSelection('?lane=chosen-table',null,[portrait]),{lane:portrait.id,dealer:'vera',presentation:'local'});
+ assert.throws(()=>gameLaneConfiguration({gameLanes:[portrait]}),/active lane/);
+ assert.throws(()=>gameLaneConfiguration({gameLanes:[],gameLane:portrait.id}),/active lane/);
 });

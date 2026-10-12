@@ -16,7 +16,8 @@ import { StudioNavigation } from './studio-navigation';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { DealerSpeechSettings } from './dealer-speech-settings';
 import { ownDealerIdle } from '../../presentation-runtime/registered-idle.mjs';
-import { requestJson, studioHref, type VideoInventory } from './studio-types';
+import { activeStudioDealers, requestJson, resolveStudioDealerId, studioHref, type VideoInventory } from './studio-types';
+import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './lab-studio.module.css';
 import {ProjectConflict} from './project-conflict';
@@ -30,7 +31,7 @@ const clipCategories = ['all', 'deal', 'speech', 'reaction', 'action'];
 const validView = (value: string | null | undefined): value is WorkspaceView => workspaceViews.includes(value as WorkspaceView);
 const eventSection = (eventId: string): DealerWorkspaceSection => eventId === 'idle.ready' ? 'idle' : /^(deal|reveal)\./.test(eventId) ? 'deal' : 'clips';
 
-export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation, initialView, initialCategory, initialLaneId }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string; initialView?: string; initialCategory?: string; initialLaneId?: string }) {
+export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation, initialView, initialCategory, initialLaneId, initialOperatorId, initialTableId }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string; initialView?: string; initialCategory?: string; initialLaneId?: string; initialOperatorId?: string; initialTableId?: string }) {
   const cloudStudio = labBasePath() === '/studio';
   const startingView = validView(initialView) ? initialView : initialEventId && initialEventId !== 'idle.ready' ? 'clips' : 'idle';
   const startingEvent = initialProject.events.find(row => row.id === initialEventId && (startingView === 'idle' ? row.id === 'idle.ready' : startingView === 'clips' && row.id !== 'idle.ready'));
@@ -38,7 +39,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const [project, setProject] = useState(initialProject);
   const [saved, setSaved] = useState(JSON.stringify(initialProject));
   const [videos, setVideos] = useState(initialVideos);
-  const [dealerId, setDealerId] = useState<DealerId>(initialProject.dealers.some(row => row.id === initialDealerId) ? initialDealerId! : initialProject.dealers[0]?.id ?? 'astrid');
+  const [dealerId, setDealerId] = useState<DealerId>(resolveStudioDealerId(initialProject, initialDealerId));
   const [requestedView, setView] = useState<DealerWorkspaceSection>(startingEvent ? eventSection(startingEvent.id) : startingCategory === 'idle' ? 'idle' : startingCategory === 'deal' ? 'deal' : 'clips');
 
   const [saving, setSaving] = useState(false);
@@ -59,6 +60,8 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const [category, setCategory] = useState(startingCategory);
   const [speechDraft, setSpeechDraft] = useState(false);
   const [laneId, setLaneId] = useState(initialLaneId ?? '');
+  const [operatorId, setOperatorId] = useState(initialOperatorId ?? '');
+  const [tableId, setTableId] = useState(initialTableId ?? '');
   const navigationRef = useRef({ dealerId, blocked: false, busy: false, speechDraft: false, href: '' });
   navigationRef.current = { ...navigationRef.current, dealerId, blocked: uploading || dealerBusy || intakePending || speechDraft, busy: uploading || dealerBusy, speechDraft };
   const settingsRef=useRef<HTMLElement>(null);
@@ -68,18 +71,21 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       const location = workspaceLocation(window.location.hash);
       const query = new URLSearchParams(window.location.search);
       const requestedDealer = query.get('dealer') ?? query.get('dealerId');
+      const selectedDealer = resolveStudioDealerId(projectRef.current, requestedDealer ?? undefined);
       // Uploads and metadata reads belong to their mounted dealer. History must
       // not silently move a pending operation into another dealer's workspace.
-      if (navigationRef.current.busy || navigationRef.current.blocked && requestedDealer && requestedDealer !== navigationRef.current.dealerId) {
+      if (navigationRef.current.busy || navigationRef.current.blocked && selectedDealer !== navigationRef.current.dealerId) {
         const url = new URL(navigationRef.current.href || window.location.href);
         url.searchParams.set('dealer', navigationRef.current.dealerId);
         window.history.replaceState(null, '', url);
         setNotice(navigationRef.current.speechDraft ? 'Använd talunderlaget i utkastet eller ångra ändringarna under Tal & automatik innan du byter dealer.' : 'Avsluta eller töm pågående uppladdningar innan du byter dealer.');
         return;
       }
-      setLaneId(query.get('lane') ?? '');
-      if (projectRef.current.dealers.some(row => row.id === requestedDealer)) setDealerId(requestedDealer!);
-      if (location.redirect) { window.location.replace(studioNavigationHref(location.redirect, { dealerId: requestedDealer ?? undefined, laneId: query.get('lane') ?? undefined })); return; }
+      setLaneId(query.get('composition') ?? query.get('lane') ?? '');
+      setOperatorId(query.get('operator') ?? '');
+      setTableId(query.get('table') ?? '');
+      setDealerId(selectedDealer);
+      if (location.redirect) { window.location.replace(studioNavigationHref(location.redirect, { dealerId: selectedDealer || undefined, laneId: query.get('composition') ?? query.get('lane') ?? undefined, operatorId: query.get('operator') ?? undefined, tableId: query.get('table') ?? undefined })); return; }
       const requestedEvent = query.get('event');
       const requestedDefinition = projectRef.current.events.find(row => row.id === requestedEvent);
       const requestedSituation = query.get('situation') ?? '';
@@ -147,7 +153,11 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   function writeSelection(id: string, eventId = '', situation = '', section?: DealerWorkspaceSection, nextView: WorkspaceView = workspaceView, nextCategory = category) {
     if (!window.location.href) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('dealer', id); url.searchParams.delete('dealerId');
+    if (id) url.searchParams.set('dealer', id); else url.searchParams.delete('dealer');
+    url.searchParams.delete('dealerId');
+    const composition = url.searchParams.get('composition') ?? url.searchParams.get('lane');
+    if (composition) url.searchParams.set('composition', composition);
+    url.searchParams.delete('lane');
     url.searchParams.set('view', nextView);
     if (nextCategory !== 'all') url.searchParams.set('category', nextCategory); else url.searchParams.delete('category');
     if (eventId) url.searchParams.set('event', eventId); else url.searchParams.delete('event');
@@ -180,7 +190,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     else continueLock.current = false;
   }
   function contentLink(path: string) {
-    return studioNavigationHref(path, { dealerId, eventId: selection?.eventId, variantId: variantId || undefined, situation: selection?.situation, laneId });
+    return studioNavigationHref(path, { dealerId, eventId: selection?.eventId, variantId: variantId || undefined, situation: selection?.situation, laneId, operatorId, tableId });
   }
   function open(eventId: string, situation: string) {
     if (uploading || dealerBusy) return;
@@ -204,6 +214,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     setWorkspaceView('speech');writeSelection(dealerId,'','',undefined,'speech');
   }
   function selectDealer(id: DealerId) {
+    if (id && !isActiveDealerId(id)) return;
     if (speechDraft) { showSpeechDraft(); return; }
     if (intakePending || uploading) return;
     setDealerId(id); setSelection(null); setVariantId(''); writeSelection(id, '', '', requestedView);
@@ -230,7 +241,8 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const familyWorkspace = supportsFamilyWorkspace(dealerId);
   const customDealer = !DEALER_IDS.includes(dealerId);
   const view = requestedView;
-  const dealer = project.dealers.find(row => row.id === dealerId);
+  const dealers = activeStudioDealers(project);
+  const dealer = dealers.find(row => row.id === dealerId);
   const idleReferenceId = customDealer ? ownDealerIdle(project, videos, dealerId)?.id : dealerId === 'astrid' ? project.idlePolicy?.base[0]?.videoId : undefined;
   const currentSlot = selection ? selection.eventId + '/' + selection.situation : workspaceView === 'idle' ? 'idle.ready/' : '';
   const showClips = workspaceView === 'idle' || workspaceView === 'clips';
@@ -239,9 +251,9 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const variant = media && (media.line.variants.find(item => item.id === variantId) ?? media.line.variants[0]);
   const video = definition && event && variant && mediaVideoForEvent(videos, dealerId, definition.id, event, variant.videoGenerationId);
   const saveButton = <button type="button" className="sg-btn sg-btn-secondary" disabled={!dirty || speechDraft || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>;
-  const clipSettings = showEditor ? <section ref={settingsRef} className={styles.clipSettings} aria-label="Klippval, varianter och villkor">
+  const clipSettings = dealer && showEditor ? <section ref={settingsRef} className={styles.clipSettings} aria-label="Klippval, varianter och villkor">
     <div className={styles.sectionHeader}><div><h2>{selection ? clipSituationLabel(selection.eventId,selection.situation) : view === 'idle' ? 'Grundloop och variationer' : 'Klippval för ' + dealer?.label}</h2><p className={styles.intro}>Välj klipp, varianter och hur de används. Spara inställningarna efter ditt val.</p></div></div>
-    {selection || view === 'idle' ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioNavigationHref(studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab}),{laneId});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
+    {selection || view === 'idle' ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioNavigationHref(studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab}),{laneId,operatorId,tableId});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
     {view==='idle'&&familyWorkspace?<section><div className={styles.sectionHeader}><span/><button type="button" className="text-button" disabled={refreshing} onClick={()=>void refresh()}>{refreshing?'Läser…':'Uppdatera klipplistan'}</button></div><fieldset disabled={saving||!connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy??createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy=>edit(draft=>{draft.idlePolicy=policy;})} onBusyChange={()=>{}} onImportBusyChange={setUploading}/></fieldset></section>:null}
     {(view==='deal'||view==='clips')&&familyWorkspace&&media&&variant?<fieldset disabled={saving||!connectedLane} className={styles.editor}><div>{video?<video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="none"/>:<p>Ingen tillgänglig film för detta fack.</p>}</div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={()=>void refresh()} refreshing={refreshing}/></fieldset>:null}
     {!familyWorkspace&&!customDealer?<fieldset className={styles.fields} disabled={saving||!connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></fieldset>:null}
@@ -249,37 +261,38 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     {view==='clips'&&familyWorkspace&&category==='speech'?<section className={styles.help}><h3>Inspelade tal-klipp</h3><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></section>:null}
     {saveButton}
   </section> : null;
-  const reviewHref=studioNavigationHref('/control/administration?tab=media-review',{dealerId,laneId});
+  const reviewHref=studioNavigationHref('/control/administration?tab=media-review',{dealerId,laneId,operatorId,tableId});
   return <div className={styles.shell}>
-    <PageTemplate eyebrow="// STUDIO" title="Dealers" primary={saveButton}>
+    <PageTemplate eyebrow="// STUDIO" title="Dealers & klipp" primary={saveButton}>
     <main className={styles.main}><fieldset className={styles.fields} disabled={dealerBusy} onClickCapture={event=>{if(dealerBusy){event.preventDefault();event.stopPropagation();}}}>
-      <div className={styles.dealerHeader}><div><p className={styles.eyebrow}>DEALERBIBLIOTEK · {project.dealers.length} DEALERS</p><h2>{dealer?.label ?? 'Välj dealer'}</h2><p className={styles.intro}>Grundloop, klipp och talinställningar för vald dealer.</p></div><button type="button" className="sg-btn sg-btn-secondary" disabled={uploading||dealerBusy} onClick={()=>{setWorkspaceView('settings');writeSelection(dealerId,'','',undefined,'settings');}}>Hantera dealers</button></div>
-      <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" disabled={intakePending||uploading} aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
-      <StudioNavigation dealerId={dealerId} laneId={laneId} dealerLabel={dealer?.label} active={workspaceView} eventId={selection?.eventId} variantId={variantId||undefined} situation={selection?.situation} onNavigate={navigateWorkspace} crumbs={selection&&selection.eventId!=='idle.ready'?[{label:clipSituationLabel(selection.eventId,selection.situation)}]:[]} />
+      <div className={styles.dealerHeader}><div><p className={styles.eyebrow}>DEALERBIBLIOTEK · {dealers.length} DEALERS</p><h2>{dealer?.label ?? 'Välj dealer'}</h2><p className={styles.intro}>Grundloop, klipp och talinställningar för vald dealer.</p></div><button type="button" className="sg-btn sg-btn-secondary" disabled={saving||uploading||dealerBusy} aria-controls="dealer-settings" onClick={()=>{if(savingRef.current||saving||uploading||dealerBusy)return;setWorkspaceView('settings');setSelection(null);setVariantId('');writeSelection(dealerId,'','',undefined,'settings');}}>Hantera dealers <span className={styles.archiveCount}>{project.dealerTrash?.length??0} arkiverade</span></button></div>
+      <div className="sg-chip-row" role="group" aria-label="Välj dealer">{dealers.map(dealer => <button type="button" className="sg-chip" disabled={intakePending||uploading} aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
+      {dealer ? <StudioNavigation dealerId={dealerId} laneId={laneId} operatorId={operatorId} tableId={tableId} dealerLabel={dealer?.label} active={workspaceView} eventId={selection?.eventId} variantId={variantId||undefined} situation={selection?.situation} onNavigate={navigateWorkspace} crumbs={selection&&selection.eventId!=='idle.ready'?[{label:clipSituationLabel(selection.eventId,selection.situation)}]:[]} /> : null}
       {!connectedLane ? <p role="alert" className="feedback error">Spelanslutningen är inte tillgänglig. Inställningarna är skrivskyddade tills anslutningen har återställts.</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {speechDraft?<p role="status" className="feedback">Talformuläret har ändringar som inte lagts till i projektutkastet. Flikarna kan bytas. Innan du byter dealer eller lämnar sidan: använd talunderlaget eller ångra ändringarna under Tal &amp; automatik.</p>:null}
       {notice ? <p role="status" className="feedback success">{notice}</p> : null}
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
       {/* Keep the library mounted across tabs: queued uploads belong to this dealer. */}
-      <div id="dealer-media" hidden={!showClips}>
-        {workspaceView==='idle'?<p className={styles.intro}>Grundloopen spelas mellan händelser. Välj basklipp och variationer här; scenens storlek och placering finns under Scen &amp; format.</p>:null}
+      {dealer ? <div id="dealer-media" hidden={!showClips}>
+        {workspaceView==='idle'?<p className={styles.intro}>Grundloopen spelas mellan händelser. Välj basklipp och variationer här; scenens storlek och placering finns under Sammansättning.</p>:null}
         {category==='speech'?<div className={styles.sectionHeader}><p className={styles.intro}>Tal-klipp och ljud för {dealer?.label}. Varje replik har egna filer, varianter och villkor.</p><a className="sg-btn sg-btn-secondary" href={reviewHref} onClick={event=>void continueTo(event,reviewHref)}>Talgranskning för {dealer?.label}</a></div>:null}
         <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onProjectSaved={next=>{setSaved(JSON.stringify(next));setProject(next);}} onLifecycleChange={setDealerBusy} onInventory={setVideos} onPendingChange={setIntakePending} removalDisabledReason={dirty?'Spara dina ändringar innan du ändrar papperskorgen.':''} initialSlotId={initialEventId?initialEventId+'/'+(initialSituation??''):''} category={category} slotId={currentSlot} categoryIds={workspaceView==='idle'?[]:clipCategories} onSlotChange={slotId=>{const slot=dealerMediaSlots(project).find(row=>row.id===slotId);if(slot)open(slot.eventId,slot.situation);else{setSelection(null);writeSelection(dealerId,'','',requestedView);}}} onConfigureSlot={open} onCategoryChange={selectCategory} slotEditor={clipSettings} disabled={saving || !connectedLane} />
-      </div>
-      <section hidden={workspaceView!=='speech'} className={styles.panel} aria-label="Tal och automatik">
+      </div> : null}
+      {dealer ? <section hidden={workspaceView!=='speech'} className={styles.panel} aria-label="Tal och automatik">
         <h2>Tal &amp; automatik · {dealer?.label}</h2><p>Inspelade tal-klipp hör till spelets händelser. AI-tal skapar en ny replik med dealerns röst och talunderlag.</p>
         <div className={styles.customGrid}><article><h3>Inspelade klipp</h3><p>Välj repliker och varianter under Klipp. Grundloopens variationer har egna intervall och val mellan automatik och OpenClaw.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>selectCategory('speech')}>Tal-klipp &amp; ljud</button></article><article><h3>AI-småprat vid inaktivitet</h3><p>{dealerId==='astrid'?'Styr när Astrid får formulera nya repliker vid ett lugnt bord.':'Automatiskt AI-småprat vid inaktivitet stöds för närvarande endast av Astrid. En egen talprofil kan förberedas nedan för chattsvar.'}</p>{dealerId==='astrid'?<a href={contentLink('/control/probe')} onClick={event=>void continueTo(event,contentLink('/control/probe'))}>Inställningar för AI-småprat</a>:null}</article></div>
         {dealer?<DealerSpeechSettings key={dealer.id} dealer={dealer} inventory={videos} idleReferenceId={idleReferenceId} onDraftChange={setSpeechDraft} expanded disabled={!connectedLane||saving||uploading||intakePending} onEdit={change=>setProject(current=>change(current))}/>:null}
         {saveButton}
-      </section>
-      <section hidden={workspaceView!=='settings'} className={styles.panel} aria-label="Dealerinställningar">
-        <h2>Inställningar · {dealer?.label}</h2><p>Lägg till dealers och hantera papperskorgen. Originaldealers och material som används är fortsatt skyddade.</p>
+      </section> : null}
+      {!dealer && workspaceView !== 'settings' ? <section className={styles.panel} aria-label="Välj dealer"><h2>Välj en dealer för att börja</h2><p>Välj en dealer i listan ovan för att redigera grundloop, klipp och tal. Ingen dealer väljs automatiskt.</p><p>Under Hantera dealers kan du lägga till en ny dealer eller återställa en arkiverad.</p></section> : null}
+      <section id="dealer-settings" hidden={workspaceView!=='settings'} className={styles.panel} aria-label="Dealerinställningar">
+        <h2>{dealer ? 'Inställningar · '+dealer.label : 'Hantera dealers'}</h2><p>Arkivera en egen dealer för att ta bort den från den aktiva listan. Klipp och inställningar finns kvar för återställning. Du kan också lägga till en ny dealer här.</p>
+        <DealerRemoval project={project} inventory={videos} dealerId={dealerId} laneId={laneId} operatorId={operatorId} tableId={tableId} onNavigate={navigateWorkspace} disabled={dirty||speechDraft||saving||uploading||conflict||intakePending||!connectedLane} disabledReason={speechDraft?'Använd eller ångra talformulärets ändringar under Tal & automatik först.':dirty?'Spara dina ändringar innan du arkiverar eller återställer en dealer.':''} onPendingChange={setDealerBusy} onInventory={setVideos} onProjectSaved={next=>{setSaved(JSON.stringify(next));setProject(next);}} onApplied={(next,inventory,selectedId)=>{setSaved(JSON.stringify(next));setProject(next);setVideos(inventory);selectDealer(selectedId);setNotice('Dealerlistan och arkivet är uppdaterade. Ändringen är sparad.');}}/>
         <DealerRegistration expanded showSpeechSettings={false} project={project} dealerId={dealerId} inventory={videos} disabled={!connectedLane||saving||uploading||intakePending||speechDraft} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
-        <DealerRemoval project={project} inventory={videos} dealerId={dealerId} disabled={dirty||speechDraft||saving||uploading||conflict||intakePending||!connectedLane} disabledReason={speechDraft?'Använd eller ångra talformulärets ändringar under Tal & automatik först.':dirty?'Spara dina ändringar innan du flyttar eller återställer en dealer.':''} onPendingChange={setDealerBusy} onInventory={setVideos} onProjectSaved={next=>{setSaved(JSON.stringify(next));setProject(next);}} onApplied={(next,inventory,selectedId)=>{setSaved(JSON.stringify(next));setProject(next);setVideos(inventory);selectDealer(selectedId);setNotice('Papperskorgen är uppdaterad. Ändringen är sparad.');}}/>
         {saveButton}
       </section>
-      <nav className={styles.contentNav} aria-label="Fortsätt med dealern">{[['/control/preview','Scen & format'],['/control/activity','Uppspelning och logg']].map(([path,label])=>{const href=contentLink(path);return <a key={path} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav>
+      {dealer ? <nav className={styles.contentNav} aria-label="Fortsätt med dealern">{[['/control/compositions','Sammansättning'],['/control/rehearsal','Provspelning & logg']].map(([path,label])=>{const href=contentLink(path);return <a key={path} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
     </fieldset></main>
     </PageTemplate>
   </div>;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import { GAME_LANES, isGameLaneId } from '../../web/public/game-lanes.mjs';
+import { isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { registeredDealerIds } from '../../web/public/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
@@ -27,7 +27,7 @@ export type StudioAdministrationProps = {
   /** Explicit public game origin from server configuration, never request JSON. */
   gameOrigin?: string;
   sessionAction?: ReactNode;
-  /** Group id from ?tab=. Unknown values open Drift & spelintegritet. */
+  /** Group id from ?tab=. Unknown values open Spelstatus & integritet. */
   initialGroup?: string;
   initialDealerId?: string;
 };
@@ -48,6 +48,13 @@ const CURRENCIES = ['USD', 'EUR', 'SEK'];
 const PLAYER_STATES = ['active', 'blocked', 'closed'];
 const PARTNER_SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
 const EMPTY_ACTIONS: readonly string[] = Object.freeze([]);
+// Keep historical groups in the storage/API contract while the active UI follows
+// the same destinations and names as the shared sidebar.
+const ACTIVE_GROUPS = BACKOFFICE_GROUPS.filter(group => group.id !== 'tables').map(group => ({
+  ...group,
+  label: group.id === 'operations' ? 'Spelstatus & integritet' : group.id === 'accounts' ? 'Konton & åtkomst' : group.label,
+  area: group.area === 'Administration' ? 'System' : group.area,
+}));
 
 function object(value: unknown): JsonObject | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as JsonObject : null;
@@ -299,7 +306,7 @@ export function TechnicalLaneCreate({ savedDealers, lanes, activeDealer, revisio
   const dealers = savedDealerOptions(savedDealers);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !dealers || !validRevision(revision)) return;
+    if (busy || !dealers?.length || !validRevision(revision)) return;
     const form = event.currentTarget, dealer = value(form, 'dealer'), name = value(form, 'name');
     if (!dealers.some(row => row.id === dealer)) { setError('Välj en dealer från det sparade biblioteket.'); return; }
     if (!name || name.length > 80 || /[\u0000-\u001f\u007f-\u009f<>]/u.test(name)) { setError('Ange ett namn med högst 80 tecken.'); return; }
@@ -309,15 +316,17 @@ export function TechnicalLaneCreate({ savedDealers, lanes, activeDealer, revisio
         setError('Det tekniska ID:t är ogiltigt eller finns redan. Läs om befintliga spelkonfigurationer.'); return;
       }
       setError('');
-      command('game-lanes/create', { definition: { ...GAME_LANES[0], id, label: name, dealer, mediaCollection: dealer + '-presentation' }, expectedRevision: revision }, form);
+      command('game-lanes/create', { definition: { schemaVersion: 1, id, label: name, renderer: 'portrait-video', dealer, mediaCollection: dealer + '-presentation' }, expectedRevision: revision }, form);
     } catch { setError('Ett unikt tekniskt ID kunde inte skapas. Försök igen.'); }
   }
   return <details className={styles.disclosure}><summary>Lägg till teknisk spelkonfiguration</summary>
     <p className={styles.notice}>För vanliga spelrum använder du Publicering → Skapa spelrum. Här hanteras den tekniska spelkonfigurationen.</p>
     {!dealers ? <p role="status">Dealerlistan från den sparade studion kunde inte läsas. Läs om serverdata innan du skapar en spelkonfiguration.</p>
+      : !dealers.length ? <p role="status">Inga dealers har registrerats. Lägg till en dealer innan du skapar en spelkonfiguration.</p>
       : <form method="post" className={styles.form} onSubmit={submit} onReset={() => { automaticId.current = null; setRestore(false); setError(''); }}>
         <label>Namn<input name="name" required maxLength={80} disabled={busy} /></label>
-        <label>Dealer<select name="dealer" required disabled={busy} defaultValue={dealers.some(row => row.id === activeDealer) ? String(activeDealer) : dealers[0].id}>
+        <label>Dealer<select name="dealer" required disabled={busy} defaultValue={dealers.some(row => row.id === activeDealer) ? String(activeDealer) : ''}>
+          <option value="" disabled>Välj dealer</option>
           {dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}
         </select></label>
         <details className={styles.disclosure}><summary>Avancerat: tekniskt ID och återställning</summary>
@@ -338,8 +347,8 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
   const voiceDealers = rows(resources.voicelines?.payload?.dealers).filter(row => !dealerId || row.dealer === dealerId);
   const config = resources.config?.payload;
-  const lanes = rows(config?.gameLanes ?? GAME_LANES);
-  const activeLane = config?.gameLane === 'original' || config?.gameLane === undefined ? 'mobile-phone' : config.gameLane;
+  const lanes = rows(config?.gameLanes);
+  const activeLane = typeof config?.gameLane === 'string' && config.gameLane !== 'original' ? config.gameLane : null;
   const revision = config?.revision;
   function mayWrite(action: string, needsRevision = false) {
     const descriptor = studioAdminEndpoint('POST', `/studio/api/admin/${action}`);
@@ -699,9 +708,10 @@ export function StudioAdministration(props: StudioAdministrationProps) {
 
   const reviewDealers = savedDealerOptions(resources.config?.payload?.savedDealers) ?? rows(resources.voicelines?.payload?.dealers).map(row=>({id:label(row.dealer),label:label(row.name,row.dealer as string)}));
   const reviewDealerLabel = reviewDealers.find(row=>row.id===reviewDealerId)?.label ?? reviewDealerId;
-  const area = BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
-  const areaGroups = BACKOFFICE_GROUPS.filter(item => item.area === area);
-  const pageTitle = group === 'accounts' ? 'Interna konton & spelare' : (BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration');
+  const activeGroup = ACTIVE_GROUPS.find(item => item.id === group);
+  const area = activeGroup?.area ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
+  const areaGroups = ACTIVE_GROUPS.filter(item => item.area === area);
+  const pageTitle = activeGroup?.label ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.label ?? 'Administration';
   useEffect(() => {
     publishShellStatus(<span className={dirty ? 'sg-pill sg-pill-ej-sparad' : 'sg-pill sg-pill-sparad'}>{dirty ? 'Ej sparad' : 'Sparad'}</span>);
     return () => publishShellStatus(null);
@@ -710,9 +720,9 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealerId} disabled={busy||dirty} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{!reviewDealers.some(row=>row.id===reviewDealerId)?<option value={reviewDealerId}>{reviewDealerLabel}</option>:null}{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
-    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum skapas i <a href={labUrl('/control/lanes')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
-    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>. Här hanterar du interna konton och spelare.</p>}
-    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/lanes?tab=companies')}>Bolag & team</a>.</p>}
+    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum skapas i <a href={labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
+    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>Bolag & team</a>. Här hanterar du interna konton och spelare.</p>}
+    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/companies')}>Bolag & team</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">

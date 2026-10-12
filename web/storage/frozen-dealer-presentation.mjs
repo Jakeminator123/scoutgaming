@@ -5,7 +5,7 @@ import { createOperatorStore } from './operator-store.mjs';
 import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from './studio-contract.mjs';
 import {PRESENTATION_PACKAGE_KEY} from './presentation-package.mjs';
 import { validateStudioGameAdministration } from './studio-game-policy.mjs';
-import { BASE_DEALER_IDS, isDealerId } from '../dealer-identity.mjs';
+import { isActiveDealerId as isDealerId } from '../dealer-identity.mjs';
 import { isGameLaneId, isOperatorSlug } from '../public/game-lanes.mjs';
 import { isPresentationRoom } from '../presentation-room-contract.mjs';
 import { StudioStorageError } from './studio-contract.mjs';
@@ -15,14 +15,13 @@ const prefix = '/api/presentation/registered-idle/';
 const videoPrefix = '/api/presentation/registered-video/';
 const mediaIdPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = (code, statusCode) => { throw new StudioStorageError(code, statusCode); };
-const baseDealers = new Set(BASE_DEALER_IDS);
 const exactContext = value => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).length === 4 && ['operatorSlug', 'roomId', 'packageRevision', 'dealerId'].every(key => Object.hasOwn(value, key));
 
 function validateContext(value) {
   if (!exactContext(value) || !isOperatorSlug(value.operatorSlug) || !isGameLaneId(value.roomId)
     || !Number.isSafeInteger(value.packageRevision) || value.packageRevision < 1
-    || !isDealerId(value.dealerId) || baseDealers.has(value.dealerId)) fail('studio_presentation_idle_context_invalid', 400);
+    || !isDealerId(value.dealerId)) fail('studio_presentation_idle_context_invalid', 400);
   return Object.freeze({ ...value });
 }
 function idlePath(context) {

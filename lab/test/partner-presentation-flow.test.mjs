@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject,defaultPresentationLane} from '../lib/studio-model.mjs';
-import {captureFrozenPresentation} from '../../web/storage/frozen-presentation-capture.mjs';
+import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
@@ -13,46 +13,26 @@ import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument} from '../../web/public/game-lanes.mjs';
 import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
 
-function fixture({layered=false}={}) {
+function fixture({layered=false,fullFrame=false}={}) {
   const dealerIds=layered?['johanna','nora','vera']:['astrid','vera'];
   const assets=['table','table','background','background'].map((role,index)=>{
     const asset={schemaVersion:1,id:'00000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),role,label:role+' '+index,contentType:'image/png',sha256:'a'.repeat(64),size:32,width:720,height:1280};
     return {...asset,pathname:layerAssetPath(asset)};
   });
   const lanes=['first-presentation','vip-presentation'].map((id,index)=>{
-    const lane={...defaultPresentationLane(),id,dealers:[...dealerIds],operatorAdjustable:['table','table.color','background','dealer','branding'],composition:defaultCompositionSettings()};
+    const lane={...defaultPresentationLane(dealerIds[0]),id,dealers:[...dealerIds],operatorAdjustable:['table','table.color','background','dealer','branding'],...(fullFrame?{}:{composition:defaultCompositionSettings()})};
     lane.layers.dealer={enabled:true,default:dealerIds[0],allowed:[...dealerIds]};
     lane.layers.table={enabled:true,default:assets[index].id,allowed:assets.slice(0,2).map(row=>row.id),colors:['#112233','#445566']};
     lane.layers.background={enabled:true,mode:'image',default:assets[index+2].id,allowed:assets.slice(2).map(row=>row.id)};
     return lane;
   });
-  let presentation={schemaVersion:1,projectRevision:'frozen-originals',lanes,assets};
-  if(layered) {
-    // Independent layers need a real portrait package with frilagda clips.
-    // An indexed-video room intentionally keeps its dealer's complete scene.
-    const project=addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'nora','Nora');
-    project.lanes=lanes;project.layerAssets=assets;
-    const mediaRows=['johanna','nora'].map((dealerId,index)=>{
-      const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
-      project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
-      return {id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
-        classification:{dealerId,eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:dealerId,notes:'',playback:'once',
-          compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}},revision:'media-'+dealerId};
-    });
-    const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
-      available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
-    presentation=captureFrozenPresentation({snapshot:{
-      projectDocument:{kind:'project',revision:project.revision,value:project},
-      administrationDocument:{kind:'administration',revision:'admin-frozen',value:{rooms:[]}},mediaRows},
-      inventory,selectedLaneIds:lanes.map(row=>row.id),requiredIdleDealerIds:['johanna','nora']}).presentation;
-    assert.equal(presentation.schemaVersion,3);
-  }
+  const presentation=structuredClone(cloudPresentationFixture({lanes,assets,compositingByDealer:{vera:{mode:'opaque'}}}).presentation);
   let pack={operatorId:'north',revision:1,lanes:lanes.map(row=>row.id),games:['blackjack'],tables:['room-first','room-vip'],branding:withPackagePresentation({name:'North',primary:'#abcdef'},presentation)};
   const gameLanes=[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'},
     {schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}];
   if(layered)gameLanes.push({schemaVersion:1,id:'portrait-johanna',label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'});
-  const room=(id,presentationLaneId,gameLaneId=layered?'portrait-johanna':'indexed',operatorId='north',state='live')=>({schemaVersion:2,id,name:id,presentationLaneId,gameLaneId,operatorId,state});
-  const administration={gameLane:'indexed',gameLanes,rooms:lanes.map((row,index)=>room(index?'room-vip':'room-first',row.id))};
+  const room=(id,presentationLaneId,gameLaneId=layered?'portrait-johanna':'portrait-astrid',operatorId='north',state='live')=>({schemaVersion:2,id,name:id,presentationLaneId,gameLaneId,operatorId,state});
+  const administration={gameLane:layered?'portrait-johanna':'portrait-astrid',gameLanes,rooms:lanes.map((row,index)=>room(index?'room-vip':'room-first',row.id))};
   const store={getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
     assert.equal(input.expectedRevision,pack.revision);pack={...input,revision:pack.revision+1};return structuredClone(pack);
   }};
@@ -88,12 +68,12 @@ test('N2 frozen allowed choices save once and reach actual HTML/client with N1 g
   assert.equal((await f.api.read({operatorId:'north'})).branding.dealer,'nora');
 });
 
-test('global dealer choices intersect all published compatible live rooms, excluding foreign/unpublished/inactive rooms',async()=>{
+test('dealer choices require published compatible live rooms and exclude foreign, missing and retired adapters',async()=>{
   const f=fixture(),id=f.lanes[0].id;
-  f.administration.rooms.push(f.room('room-portrait',id,'portrait-astrid'));
-  f.addTables(['room-portrait']);
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[id],['astrid']);
-  const before=f.pack();await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:id,dealer:'vera'}}),error=>error.statusCode===409);
+  f.administration.rooms.push(f.room('room-portrait',id,'portrait-astrid'),f.room('room-retired',id,'indexed'));
+  f.addTables(['room-portrait','room-retired']);
+  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[id],['astrid','vera']);
+  const before=f.pack();await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:id,dealer:'foreign'}}),error=>error.statusCode===422);
   assert.deepEqual(f.pack(),before);
   f.administration.rooms.find(row=>row.id==='room-portrait').state='preview';
   f.administration.rooms.push(f.room('room-foreign',id,'portrait-astrid','south'),f.room('room-unpublished',id,'portrait-astrid'));
@@ -141,14 +121,14 @@ test('permissions remain bound to the selected frozen presentation and fresh pac
   assert.equal(f.pack().revision,2);assert.equal(f.pack().branding.table,f.assets[1].id);
 });
 
-test('legacy full-frame dealers suppress stored and company layer overrides without changing frozen room grants',async()=>{
+test('registered full-frame presentations suppress stored and company layer overrides without changing frozen room grants',async()=>{
   for(const layered of [false,true]) {
-    const f=fixture({layered});
+    const f=fixture({layered,fullFrame:true});
     f.setBranding({lane:f.lanes[0].id,dealer:'vera',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'});
     const before=f.pack(),selection=f.document((await f.select('operator=north&table=room-first&dealer=vera')).selection);
     const actual=resolvePlayerSelection({choices:selection.choices,search:'dealer=vera',branding:selection.branding,currentDealer:selection.dealer,
       composition:selection.composition,stored:{dealer:'vera',tableAsset:f.assets[1].id,background:f.assets[3].id}});
-    assert.equal(selection.dealer,'vera');assert.equal(selection.presentation,'original');
+    assert.equal(selection.dealer,'vera');assert.equal(selection.presentation,'local');
     assert.equal(selection.composition.dealer.compatibility,'full-frame');
     assert.equal(actual.dealer,'vera');assert.equal(actual.navigateDealer,null);
     assert.equal(actual.tableValue,null);assert.equal(actual.backgroundValue,null);assert.equal(actual.backgroundDisabled,true);
@@ -163,10 +143,18 @@ test('legacy full-frame dealers suppress stored and company layer overrides with
 
 test('N2 frozen room choices remain available after a v3 default changes across portrait dealer identities', async () => {
   const f=fixture({layered:true}), game=f.administration.gameLanes.find(row=>row.id==='portrait-johanna');
-  game.dealer='amira';game.mediaCollection='amira-presentation';
+  game.dealer='nora';game.mediaCollection='nora-presentation';
   const before=f.pack(), choices=partnerPresentationDealerChoices({administration:f.administration,package:before,presentation:f.presentation,operatorId:'north'});
   assert.deepEqual(choices[f.lanes[0].id],['johanna','nora','vera']);
   const {selection}=await f.select('operator=north&table=room-first');
   assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,'room-first');assert.equal(selection.lane,game.id);
   assert.deepEqual(f.pack(),before);
+});
+
+test('N2 dealer choices never add historical names absent from the frozen registry',()=>{
+  const f=fixture({layered:true}),presentation=structuredClone(f.presentation);
+  presentation.registeredDealers=presentation.registeredDealers.filter(row=>row.id!=='vera');
+  const choices=partnerPresentationDealerChoices({administration:f.administration,package:f.pack(),presentation,operatorId:'north'});
+  assert.deepEqual(choices[f.lanes[0].id],['johanna','nora']);
+  assert.equal(Object.values(choices).some(ids=>ids.includes('vera')),false);
 });

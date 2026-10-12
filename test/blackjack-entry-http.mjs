@@ -50,7 +50,7 @@ test('real entry serves login and preserves account/table identity across a serv
     assert.doesNotMatch(landing,/localhost|127\.0\.0\.1|\{\{BLACKJACK_URL\}\}/);
     await start();
     const entry=await fetch(origin+'/blackjack');assert.equal(entry.status,200);assert.match(await entry.text(),/blackjack-entry.mjs/);
-    const script=await fetch(origin+'/blackjack-entry.mjs');assert.match(await script.text(),/dealer=astrid&presentation=local/);
+    const script=await fetch(origin+'/blackjack-entry.mjs'),loginScript=await script.text();assert.match(loginScript,/const destination = '\/play'/);assert.doesNotMatch(loginScript,/dealer=astrid&presentation=local/);
     const configuration=await(await fetch(origin+'/api/auth/session')).json();assert.equal(configuration.playerAccounts,true);assert.equal(configuration.guest,false);
     assert.equal((await post('/api/player',{})).status,401);
     const registered=await post('/api/auth/player/register',{username:'fixture-player',password:'Synthetic-Player-Test-Password',id:'forged-player'});

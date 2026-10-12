@@ -12,16 +12,18 @@ const contracts = Object.freeze({
   4: Object.freeze({ schemaVersion: 4, ...common, rooms: 'operator-owned-v2',
     registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' }),
   5: Object.freeze({schemaVersion:5,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1'}),
+  6: Object.freeze({schemaVersion:6,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1'}),
+  7: Object.freeze({schemaVersion:7,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1'}),
 });
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3/v4/v5. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3/v4/v5/v6/v7. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -29,6 +31,8 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '3') return 3;
   if (header === '4') return 4;
   if (header === '5') return 5;
+  if (header === '6') return 6;
+  if (header === '7') return 7;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

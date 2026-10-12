@@ -22,7 +22,7 @@ function loadNavigation() {
   const module = { exports: {} };
   vm.runInNewContext(result.code, {
     module, exports: module.exports,
-    require: name => name.endsWith('.module.css')
+    require: name => name === 'next/navigation' ? { useSearchParams: () => new URLSearchParams('') } : name.endsWith('.module.css')
       ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) }
       : require(name),
   });
@@ -38,17 +38,17 @@ function anchors(node) {
 
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
-  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Scen & format', 'Tal & automatik', 'Svarsbibliotek', 'Inställningar']);
+  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Sammansättning', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
   for (const tab of tabs) {
     const params = query(tab.href);
     assert.equal(params.get('dealer'), selection.dealerId);
     assert.equal(params.get('event'), selection.eventId);
     assert.equal(params.get('variant'), selection.variantId);
     assert.equal(params.get('situation'), selection.situation);
-    assert.equal(params.get('lane'), selection.laneId);
-    assert.equal(params.get('view'), ['scene','replies'].includes(tab.id) ? null : tab.id);
+    assert.equal(params.get('composition'), selection.laneId);
+    assert.equal(params.get('view'), ['scene','replies','playback'].includes(tab.id) ? null : tab.id);
   }
-  assert.equal(new URL(tabs.find(tab => tab.id === 'scene').href, 'https://test.invalid').pathname, '/control/preview');
+  assert.equal(new URL(tabs.find(tab => tab.id === 'scene').href, 'https://test.invalid').pathname, '/control/compositions');
 });
 
 test('custom tab destinations keep their own query and hash while encoding selection safely', () => {

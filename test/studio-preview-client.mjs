@@ -9,8 +9,9 @@ import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 const id='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222', asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const context={sessionId:id,presentationLaneId:'evening',projectRevision:'revision:7',expiresAt:'2030-01-01T00:00:00.000Z'};
 const metadata=value=>({authenticated:true,guest:false,preview:true,studioPreview:value,externalServices:{ai:false,speech:false},dealerAvailability:[{id:'astrid',label:'Astrid',playable:true,reason:null},{id:'johanna',label:'Johanna',playable:false,reason:'studio_preview_idle_required'}]});
-const choices={dealers:['astrid','amira'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
-const dataset={gameLane:'evening',gameDealer:'astrid',gamePresentation:'local',gameChoices:JSON.stringify(choices),studioPreview:JSON.stringify(context)};
+const choices={dealers:['astrid','vera'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
+const registry=[{id:'astrid',label:'Astrid'},{id:'vera',label:'Vera'}];
+const dataset={gameLocalDealer:'astrid',gameRegisteredDealers:JSON.stringify(registry),gameLane:'evening',gameDealer:'astrid',gamePresentation:'local',gameChoices:JSON.stringify(choices),studioPreview:JSON.stringify(context)};
 const composition={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},
  table:{enabled:true,default:asset,allowed:[asset]},background:{enabled:true,mode:'image',default:null,allowed:[]},
  assets:[{id:asset,role:'table',label:'Testbord',contentType:'image/png',src:'/api/studio-preview/'+id+'/layers/'+asset}]};
@@ -23,7 +24,7 @@ test('preview metadata binds document, snapshot, exact session path and private 
   [{...d,gameOperator:'example'},'/studio-preview/'+id],[{...d,gameLane:'other'},'/studio-preview/'+id],
   [{...d,gameComposition:JSON.stringify({...composition,assets:[{...composition.assets[0],src:composition.assets[0].src.replace(id,other)}]})},'/studio-preview/'+id]]) assert.throws(()=>studioPreviewFromDocument(data,path));
  for(const bad of [{...context,projectRevision:7},{...context,operator:'example'},{...context,sessionId:'../other'}])assert.throws(()=>validateStudioPreview(bad));
- const html=decorateGameEntryHtml('<html lang="sv">',{CROUPIER_STUDIO_NEON_POLICY:'1'},{lane:'evening',dealer:'astrid',presentation:'local',choices,composition,studioPreview:context});
+ const html=decorateGameEntryHtml('<html lang="sv">',{CROUPIER_STUDIO_NEON_POLICY:'1'},{lane:'evening',dealer:'astrid',presentation:'local',localDealer:'astrid',registeredDealers:registry,choices,composition,studioPreview:context});
  assert.match(html,/data-studio-preview="/);assert.match(html,/revision:7/);
  assert.throws(()=>decorateGameEntryHtml('<html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},{lane:'evening',dealer:'astrid',presentation:'local',studioPreview:context,operator:'example'}));
  assert.deepEqual(validateComposition(composition),composition);
@@ -74,9 +75,9 @@ test('dealer switching retains preview session and rejects foreign context',t=>{
  t.after(()=>{globalThis.document=oldDocument;globalThis.location=oldLocation;});
  globalThis.document={documentElement:{dataset}};
  globalThis.location={pathname:'/studio-preview/'+id,origin:'https://test.example'};
- assert.equal(dealerVersionPath('amira','original','?operator=live&table=foreign&lane=wrong'),'/studio-preview/'+id+'?dealer=amira');
+ assert.equal(dealerVersionPath('vera','original','?operator=live&table=foreign&lane=wrong'),'/studio-preview/'+id+'?dealer=vera');
  assert.throws(()=>dealerVersionPath('mei','original'));
- globalThis.location.pathname='/studio-preview/'+other;assert.throws(()=>dealerVersionPath('amira','original'));
+ globalThis.location.pathname='/studio-preview/'+other;assert.throws(()=>dealerVersionPath('vera','original'));
 });
 test('own dealer starts its exact preview idle and cannot select paid OpenClaw modes',async t=>{
  const oldDocument=globalThis.document;
@@ -113,7 +114,7 @@ test('preview tier presets never navigate out of their selected dealer or sessio
  const preview=vm.createContext({...base,studioPreview:context,dealerVersionPath:()=>assert.fail('preview preset must not navigate')});
  vm.runInContext(code+"\nsetTable('high');",preview);assert.equal(preview.table.id,'high');assert.equal(link.search,'');
  const regular=vm.createContext({...base,studioPreview:null,dealerVersionPath:dealer=>'/blackjack?dealer='+dealer});
- vm.runInContext(code+"\nsetTable('high');",regular);assert.equal(link.search,'dealer=vera&table=high');
+ vm.runInContext(code+"\nsetTable('high');",regular);assert.equal(link.search,'');assert.equal(regular.table.id,'high');
 });
 
 test('closing one preview addresses only its owner-bound session',async()=>{
@@ -130,9 +131,10 @@ test('preview never loads local profile UI or its ordinary session API; normal l
  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
  const at=source.indexOf("await import('./lissabon-profile.mjs')");
  assert.ok(at>0);
- const start=source.lastIndexOf('\nif ',at)+1,end=source.indexOf('// The guest table',at);
+ const start=source.lastIndexOf('\nif ',at)+1,end=source.indexOf("document.querySelector('#sign-out')",at);
  const block=source.slice(start,end).replace("import('./lissabon-profile.mjs')","loadProfile()");
- const run=new Function('studioPreview','localPresentationEnabled','tableReady','loadProfile','round','busy','chatBusy','astridCamera','console',block);
+ const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+ const run=new AsyncFunction('studioPreview','localPresentationEnabled','tableReady','loadProfile','round','busy','chatBusy','astridCamera','console',block);
  const originalFetch=globalThis.fetch,calls=[];
  t.after(()=>{globalThis.fetch=originalFetch;});
  globalThis.fetch=async(url,options)=>{calls.push({url,options});return Response.json({localDemoProfiles:false});};
@@ -140,16 +142,16 @@ test('preview never loads local profile UI or its ordinary session API; normal l
  const loadProfile=async()=>{imports++;return import('../web/public/lissabon-profile.mjs');};
  const quietConsole={warn(...args){assert.fail(args.join(' '));}};
  for(const local of [true,false]){
-  run(context,local,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
+  await run(context,local,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
   await new Promise(resolve=>setImmediate(resolve));
  }
  assert.equal(imports,0);assert.deepEqual(calls,[]);
- run(null,true,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
+ await run(null,true,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
  await new Promise(resolve=>setImmediate(resolve));
  // Loading an uncached ES module may finish after the first event loop turn.
  for(let i=0;i<20&&!calls.length;i++)await new Promise(resolve=>setTimeout(resolve,5));
  assert.equal(imports,1);assert.equal(calls.length,1);assert.equal(calls[0].url,'/api/auth/session');
- run(null,false,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
+ await run(null,false,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
  await new Promise(resolve=>setImmediate(resolve));assert.equal(imports,1);assert.equal(calls.length,1);
 });
 

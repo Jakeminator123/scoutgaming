@@ -1,11 +1,13 @@
 'use client';
+import { StudioDealerRequired } from './studio-dealer-required';
 
+import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
 import { PageTemplate } from './page-template.mjs';
 import { useStudioSession } from './studio-session';
-import { studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
 
 export function OpenClawTabLinks({ active }: { active: 'models' | 'chat' }) {
   const models = active === 'models';
@@ -16,7 +18,7 @@ export function OpenClawTabLinks({ active }: { active: 'models' | 'chat' }) {
   </>;
 }
 
-export function ControlOpenClawChat({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, standaloneVoicePreviewAvailable }: {
+function SelectedControlOpenClawChat({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, standaloneVoicePreviewAvailable }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -27,12 +29,17 @@ export function ControlOpenClawChat({ initialProject, initialVideos, initialStat
   const { status, mode, changeMode, dealerId, dirty } = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
   return <PageTemplate
     eyebrow="// OPENCLAW"
-    title="OpenClaw"
-    intro="Fråga OpenClaw om labbet, eller öppna spelarchatten vid bordet."
+    title="Intern agentchatt"
+    intro="Arbeta med vald dealers agentinställningar och gå vidare till provspelning."
     tabs={<OpenClawTabLinks active="chat" />}
   >
     <div className="sg-page-body">
-      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(labUrl('/control/activity')); }} />
+      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { window.location.assign(studioNavigationHref('/control/rehearsal', { ...studioNavigationContextFromQuery(new URLSearchParams(window.location.search)), dealerId })); }} />
     </div>
   </PageTemplate>;
+}
+
+export function ControlOpenClawChat(props: Parameters<typeof SelectedControlOpenClawChat>[0]) {
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Intern agentchatt" />;
+  return <SelectedControlOpenClawChat {...props} />;
 }

@@ -4,7 +4,7 @@ import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
 import { controlStudioSummary } from '../../lib/control-overview.mjs';
-import { defaultPresentationLane } from '../../lib/studio-model.mjs';
+
 import { controlToolPath } from '@/lib/control-workspace.mjs';
 import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-native-runtime.mjs';
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
@@ -33,7 +33,7 @@ async function controlSavedStudio() {
   try {
     const native = await studioNativeRuntime();
     const { project } = await native.gamePolicy.readSaved();
-    return controlStudioSummary({ ...project, lanes: project.lanes?.length ? project.lanes : [defaultPresentationLane()] });
+    return controlStudioSummary(project);
   } catch { return null; }
 }
 

@@ -1,4 +1,3 @@
-import {BASE_DEALER_IDS} from '../../web/dealer-identity.mjs';
 import {gameLaneConfiguration,gameChoicesForLane} from '../../web/public/game-lanes.mjs';
 import {listPackageRooms} from '../../web/presentation-room-contract.mjs';
 import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
@@ -8,7 +7,7 @@ import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-present
 export function partnerPresentationDealerChoices({administration,package:pack,presentation,operatorId}) {
   const {gameLanes}=gameLaneConfiguration(administration);
   const rooms=listPackageRooms({administration,package:pack,operatorId});
-  const portraitDealerIds=presentation.schemaVersion===3?[...BASE_DEALER_IDS,...presentation.registeredDealers.map(row=>row.id)]:[];
+  const portraitDealerIds=presentation.schemaVersion===3?presentation.registeredDealers.map(row=>row.id):[];
   return Object.fromEntries(presentation.lanes.map(presentationLane=>{
     const lanes=rooms.filter(room=>room.state==='live'&&room.presentationLaneId===presentationLane.id)
       .map(room=>gameLanes.find(lane=>lane.id===room.gameLaneId))

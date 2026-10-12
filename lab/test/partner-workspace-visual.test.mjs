@@ -61,7 +61,7 @@ test('John shell strings are supplied in Swedish and English with a safe fallbac
 
 test('real partner navigation has John groups and no legacy fixture product pages', () => {
   const nav = partnerNavigation('en');
-  assert.deepEqual([...new Set(nav.map(item => item.group))], ['Overview', 'Games', 'Players', 'Finance', 'Settings']);
+  assert.deepEqual([...new Set(nav.map(item => item.group))], ['Operator']);
   for (const id of ['pit', 'roulette', 'baccarat', 'shoes', 'stats', 'voice', 'clips', 'archive']) assert.equal(nav.some(item => item.id === id), false, id);
   assert.equal(nav.some(item => item.id === 'team'), false);
   assert.equal(partnerNavigation('sv', ['team.read']).some(item => item.id === 'team'), true);
@@ -78,7 +78,7 @@ test('real overview uses actual package and configuration data, not fixture game
     assert.match(html, /Johns bord/);
     assert.ok(html.includes(copy.configured));
     assert.ok(html.includes(copy.unavailableBody));
-    assert.match(html, /href="\/partner\/johnsspelbolag\/tables"/);
+    assert.match(html, /href="\/partner\/johnsspelbolag\/rooms"/);
     assert.doesNotMatch(html, /paused|Pausat|GGR|€|EUR|Öppna insatser|Spelare online|Fixture operations/);
   }
 });
@@ -88,7 +88,7 @@ test('empty unpublished operators do not imply a live package or assigned tables
   const snapshot = realSnapshot({ operator: { id: 'john', slug: 'johnsspelbolag', name: 'Johnsspelbolag' }, packageRevision: '', presentations: [], tables: [] });
   const html = renderToStaticMarkup(React.createElement(PartnerLiveOverview, { snapshot, copy: partnerCopy('sv') }));
   assert.match(html, /Inget publicerat paket/);
-  assert.match(html, /Inga tilldelade bord ännu/);
+  assert.match(html, /Inga spelrum ännu/);
   assert.doesNotMatch(html, /Johns bord|Johns lane|Konfigurerat/);
 });
 
@@ -102,8 +102,8 @@ test('real administrator shell exposes same-account links, theme, language and g
   assert.match(html, /Switch account/);
   assert.match(html, /Log out/);
   assert.match(html, /<h1[^>]*>Overview<\/h1>/);
-  assert.equal((html.match(/<details/g) || []).length, 5);
-  assert.match(html, /<summary[^>]*>Finance<\/summary>/);
+  assert.equal((html.match(/<details/g) || []).length, 1);
+  assert.match(html, /<summary[^>]*>Operator<\/summary>/);
   assert.match(html, /aria-current="page"/);
   assert.doesNotMatch(html, /Intern förhandsvisning|Exempeloperatör|Fixture operations|Demo North|Demo South/);
 });

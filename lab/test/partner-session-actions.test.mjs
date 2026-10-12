@@ -170,3 +170,14 @@ test('auth action colors resolve directory and John operator tokens in both them
   assert.match(operator, /--white:#FFF;[^}]*--ink:#0A0B0D;/);
   assert.match(directory, /--surface:#FFF;[^}]*--ink:#0A0B0D;/);
 });
+
+test('declined draft warning prevents session mutation and a failed logout restores navigation protection',async()=>{
+  const slots=[];let cursor=0,allow=false,resets=0;
+  const hooks={...React,useRef:value=>{const index=cursor++;return slots[index]??={current:value};},useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=value;return [slots[index],next=>{slots[index]=next;}];}};
+  const calls=[],destinations=[];
+  const {PartnerSessionActions}=loadComponent('../components/partner-session-actions.tsx',{hooks,dependencies:{'../lib/partner-session-actions.mjs':{endPartnerSession:async()=>{calls.push('logout');throw Error('offline');}}},context:{window:{location:{assign:path=>destinations.push(path)}}}});
+  const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
+  const buttons=()=>{cursor=0;return walk(PartnerSessionActions({...defaults,language:'sv',beforeNavigate:()=>allow,onNavigationCancelled:()=>resets++})).filter(row=>row.type==='button');};
+  buttons()[0].props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,0);assert.deepEqual(destinations,[]);
+  allow=true;buttons()[1].props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,1);assert.equal(resets,1);assert.deepEqual(destinations,[]);
+});
