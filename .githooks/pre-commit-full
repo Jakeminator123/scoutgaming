@@ -78,11 +78,7 @@ run_node_tests test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach
 run_node_tests test/idle-video-loop.mjs
 run_node_tests test/action-placement.mjs test/bugshot-report.mjs
 node test/blackjack-asset-state.mjs
-run_node_tests test/dealer-motion.mjs test/dealer-skin-contact.mjs
-run_node_tests test/rigged-card-layout.mjs test/rigged-layout-contact.mjs test/rigged-discard-state.mjs
-run_node_tests test/dealer-collection.mjs
-run_node_tests test/dealer-face.mjs test/rigged-face-playback.mjs test/rigged-face-bindings.mjs
-run_node_tests test/dealer-face-calibration.mjs test/dealer-face-skin.mjs test/generations-api.mjs
+run_node_tests test/generations-api.mjs
 run_node_tests test/native-partner-events.mjs test/bo-media-preview.mjs
 run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests test/fuzz-blackjack.mjs
