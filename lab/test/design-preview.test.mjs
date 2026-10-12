@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { designPreviewFile, serveDesignPreview } from '../lib/design-preview.mjs';
+import { designPreviewFile, serveDesignPreview, designPreviewAuthRedirect } from '../lib/design-preview.mjs';
 import { studioLoginReturnTo, studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { platformConfiguration, platformRoute } from '../../apps/croupier-frontend/lib/platform-routing.mjs';
 
@@ -34,6 +34,27 @@ test('public admin documents and assets route to Studio without changing control
   for (const path of ['/admin','/admin/lobby','/admin/_assets/admin/app.js']) {
     assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'lab', destination: config.labUiOrigin + '/studio' + path });
   }
+});
+
+test('native document login uses the public mounted path; resources fail without redirects or caching', async () => {
+  for (const basePath of ['', '/studio']) {
+    for (const target of ['/admin', '/admin/lobby', '/studio/admin/rooms']) {
+      const response = designPreviewAuthRedirect(`/login?returnTo=${encodeURIComponent(target)}`, { basePath });
+      const expected = target.replace(/^\/studio/, '');
+      assert.equal(response.status, 307);
+      assert.equal(response.headers.get('location'), `${basePath}/login?returnTo=${encodeURIComponent(expected)}`);
+      assert.equal(response.headers.get('cache-control'), 'private, no-store');
+      assert.equal(response.headers.get('vary'), 'Cookie');
+      assert.equal(await response.text(), '');
+    }
+    const denied = designPreviewAuthRedirect('/login?returnTo=%2Fstudio', { basePath, resource: true });
+    assert.equal(denied.status, 401);
+    assert.equal(denied.headers.get('location'), null);
+    assert.equal(denied.headers.get('cache-control'), 'private, no-store');
+    assert.equal(await denied.text(), '');
+  }
+  assert.equal(designPreviewAuthRedirect('/login?returnTo=https%3A%2F%2Felsewhere.test', { basePath: '/studio' }).headers.get('location'), '/studio/login?returnTo=%2Fadmin');
+  assert.equal(designPreviewAuthRedirect('https://public.example/api/auth/lab/start?next=%2Fstudio%2Fadmin'), null);
 });
 
 test('every asset request reauthorizes, rejects writes, streams ranges and sends isolation headers', async () => {

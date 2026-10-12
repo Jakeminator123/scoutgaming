@@ -154,6 +154,11 @@ auth-/routing-/katalogtest på Node 24.21.0. Full pre-commit-kontroll passerade;
 katalogtesterna ingår nu i den. Alla fyra medieset matchar befintlig baslinje.
 En separat granskning hittade och fick en regression för sammanblandning av sparade
 och publicerade dealers. Mediebaslinje är inte nytt läppsynkgodkännande.
+PR #43 finns på main `438a48a9`; Vercels produktionsbygge är READY. Det anonyma
+liveprovet upptäckte att Route Handler-login tappade `/studio`-prefixet. Admins
+egen redirect adapter återställer nu monterad loginadress och no-store; katalog
+och tillgångar ger 401 i stället för att omdirigeras. Nytt regressionstest täcker
+monterad/friliggande login, tillåtna retursidor och nekade resursanrop.
 Publicerad N1-läsning och hela inloggade flödet är separata acceptanssteg;
 lokal offlinevy eller injicerade testdata bevisar inte dem.
 
