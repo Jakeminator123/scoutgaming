@@ -839,7 +839,7 @@ att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
    Fullfil får Blobpaket; stream får inte tvingas genom Blob/betald fullfilsfallback.
 4. **Spel/AI-gräns:** Vercel gör lätta adminanrop; Render/RunPod äger live spel/
    långvariga jobb. `/speech-stream` och `/lipsync-worker` bevarar auth/workerbiljetter.
-   Molnets Cartesia-anrop får starta medan GPU-sessionen kopplar upp; PCM lämnar
+   Molnets Cartesia-anrop får starta efter accepterat GPU-jobb, medan workern kopplar upp; PCM lämnar
    inte spelprocessen förrän spelarbiljetten är autentiserad. Workern använder
    den publika ingressen. Reconnect återspelar inte gammal kö/startar inte nytt betalt GPU-jobb.
    OpenClaw får tillåten publik kontext/katalogrevision, ingen direkt saldoauktoritet.
