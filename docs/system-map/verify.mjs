@@ -214,7 +214,7 @@ export function captureSystemMapInputs({ reader = createSourceReader() } = {}) {
   const { data, registry, contracts } = loadSystemMap(reader);
   const paths = new Set(['docs/system-map/contracts.json', 'docs/environment-variables.json',
     '.github/workflows/croupier.yml', 'tools/system-map-evidence.mjs', 'docs/system-map/verify.mjs',
-    'docs/system-map/build.mjs', ...PARTS.map(part => 'docs/system-map/' + part + '.json')]);
+    'docs/system-map/build.mjs', 'docs/system-map/planned.json', ...PARTS.map(part => 'docs/system-map/' + part + '.json')]);
   for (const contract of contracts?.contracts || []) selectedInputs(reader, data, registry, contract).forEach(path => paths.add(path));
   const files = {}, commitMatched = {};
   for (const path of [...paths].sort()) { const text = reader.read(path); if (text !== null) { files[path] = hashText(text); commitMatched[path] = reader.commitMatched(path); } }
@@ -316,15 +316,22 @@ export function verifySystemMap({ reader = createSourceReader(), evidence, now =
   for (const layer of data.storage.storageLayers || []) addPlanned(layer, 'layer');
   for (const connection of data.catalog.connections || []) if (Object.hasOwn(connection, 'status')) addPlanned(connection, 'connection');
   if (planned.length) {
-    const checklistPath = 'random/checklista-2026-10-08.md';
-    const checklist = reader.read(checklistPath);
-    const hasId = (text, ref) => text.split(/\r?\n/).some(line => line.startsWith('| ' + ref + ' |'));
-    if (checklist === null) gate('planned.checklist', 'Checklistan för planerade rutor saknas.', checklistPath);
+    const plannedPath = 'docs/system-map/planned.json';
+    const raw = reader.read(plannedPath);
+    let items = null;
+    if (raw !== null) {
+      try {
+        const parsed = parse(raw);
+        if (parsed?.schemaVersion === 1 && Array.isArray(parsed.items)) items = parsed.items;
+      } catch { items = null; }
+    }
+    const hasId = ref => Array.isArray(items) && items.some(item => item && item.id === ref);
+    if (items === null) gate('planned.checklist', 'Planfilen för planerade rutor saknas.', plannedPath);
     else for (const { row, kind } of planned) {
       const ref = row.plannedRef;
       const label = row.id || row.label || row.name || kind;
-      if (typeof ref !== 'string' || !/^[A-Za-z][A-Za-z0-9.]*$/.test(ref) || !hasId(checklist, ref))
-        gate('planned.ref', 'Planerad ruta saknar ett id som finns i checklistan: ' + label + (typeof ref === 'string' ? ' (' + ref + ')' : '') + '.', checklistPath);
+      if (typeof ref !== 'string' || !/^[A-Za-z][A-Za-z0-9.]*$/.test(ref) || !hasId(ref))
+        gate('planned.ref', 'Planerad ruta saknar ett id som finns i planfilen: ' + label + (typeof ref === 'string' ? ' (' + ref + ')' : '') + '.', plannedPath);
     }
   }
   const baselineCommit = typeof contracts.baseline?.observedCommit === 'string' && contracts.baseline.observedCommit.trim()

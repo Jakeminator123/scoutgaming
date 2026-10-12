@@ -357,7 +357,7 @@ test('changed input is a yellow review with the last commit and baseline, not a 
   assert.equal(worktree.message, warning.message);
   assert.equal(moved.errors.length, 0);
 });
-test('a planned page needs a checklist id and does not become route drift', t => {
+test('a planned page needs a planned.json id and does not become route drift', t => {
   const f = fixture(t);
   const routes = f.get('docs/system-map/routes.json');
   routes.pages.push({ id: 'lane-publish', label: 'Publicera', status: 'planned', plannedRef: 'L3', paths: ['/control/lanes'] });
@@ -366,7 +366,7 @@ test('a planned page needs a checklist id and does not become route drift', t =>
   let result = f.check();
   assert.equal(result.status, 'red');
   assert.ok(result.errors.some(row => row.code === 'planned.checklist'));
-  f.put('random/checklista-2026-10-08.md', '| L3 | Exportera |\n');
+  f.put('docs/system-map/planned.json', { schemaVersion: 1, items: [{ id: 'L3', label: 'Exportera', status: 'kvar', tracker: 'docs/CLOUD-MIGRATION.md' }] });
   result = f.check();
   assert.equal(result.errors.some(row => row.code === 'planned.ref' || row.code === 'planned.checklist' || row.code === 'route.removed'), false);
   routes.pages[0].plannedRef = 'SAKNAS';
