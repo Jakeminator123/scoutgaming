@@ -9,7 +9,7 @@ Vercel project name: `scoutgaming`. Game engine: Render service `croupier-v2`.
 - Nivå 2, operator: `/partner`, `/partner/login` and `/partner/{operatorSlug}`. Menu: Översikt, Spelrum (`/partner/{slug}/rooms`), Team & behörigheter, Integration. Operators, roles and memberships are created from Bolag & team on `/control/companies`. Not done: players, transactions and reports (N2.4), chips (L4) and partner password reset.
 - Nivå 3, player: `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` (editable profile: display name and language; lobby shows Spelar hos from `?operator=`; Render `/blackjack?operator=` and Vercel `/play/blackjack?operator=` limit lane and dealer to the package; media acceptance in rehearsal `?dealer=<name>&rehearsal=1`).
 - `/studio` is the lab service basePath, not a fourth product and not the UI name.
-- Long-lived branches: `main` (pull request required), `kevin` (separate app), `john`, and `emil` (contained in `main`). `jakob-export` stays until its purpose is known. Delivery branches match `jakob/*`, `codex/*` and `cursor/*`. `test-video-jakob` was deleted 2026-10-08; its layer preview media live in `test-videoeditor/preview/site`.
+- Long-lived branches: `main` (pull request required), `kevin` (separate app), `john`, and `emil` (contained in `main`). `jakob-export` stays until its purpose is known. Delivery branches match `jakob/*`, `codex/*` and `cursor/*`. `test-video-jakob` was deleted 2026-10-08; its layer preview media live in `packages/presentation/preview/site`.
 - v1 checkpoint: tag `Jakobs-v1`, commit `600093e`.
 - Current guide: `lab/docs/README.md`.
 - Current runtime: `docs/LOCAL-PRESENTATION-RUNTIME.md`.

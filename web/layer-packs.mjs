@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const previewBuildDirectory = resolve(root, 'lab/preview-build');
-const runtimeRoot = resolve(root, 'test-videoeditor/program/web');
+const runtimeRoot = resolve(root, 'packages/presentation/compositor');
 const allowedRuntimeFiles = new Set(['player.js', 'compositor.js', 'bridge.js', 'geometry.js', 'lanes.js']);
 const mime = new Map([
   ['.js', 'text/javascript'],

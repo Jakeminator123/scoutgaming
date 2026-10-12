@@ -14,10 +14,10 @@ och andra brancher får inte rutten. Vercels befintliga preview-skydd gäller.
 
 - `site/`: granskat, versionshanterat preview-material; 720p-kopior av dealerklippen.
 - `prepare.mjs`: verifierar mediehashar och kopierar till frontendens ignorerade `public/test/` vid branchbygget.
-- Spelare, kompositor och koordinatberäkning kopieras från `program/web/` vid bygget.
+- Spelare, kompositor och koordinatberäkning kopieras från `../compositor/` vid bygget.
 - Original, arbetsutkast, sessionsfiler och redigeringsarkiv publiceras inte.
 
-Uppdatera med explicit valda lokala lanes från mappen test-videoeditor:
+Uppdatera med explicit valda lokala lanes från packages/presentation:
 
 ```powershell
 .\program\.venv\Scripts\python.exe tools/build_branch_preview.py lane-16d202061913 lane-aeabf3ab3ef4
