@@ -14,10 +14,11 @@ export async function prepareDesignPreview() {
     await access(resolve(root, 'node_modules/esbuild/lib/main.js'));
   } catch { installed = false; }
   if (!installed) {
+    // Build tools are needed even when Vercel sets NODE_ENV=production.
     // Use the active Node/npm installation. Static arguments; no user input enters the shell.
     const windows = process.platform === 'win32';
     const result = spawnSync(windows ? (process.env.ComSpec || 'cmd.exe') : 'npm',
-      windows ? ['/d', '/s', '/c', 'npm ci --ignore-scripts --no-audit --no-fund'] : ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], {
+      windows ? ['/d', '/s', '/c', 'npm ci --include=dev --ignore-scripts --no-audit --no-fund'] : ['ci', '--include=dev', '--ignore-scripts', '--no-audit', '--no-fund'], {
       cwd: root, stdio: 'inherit', windowsHide: true,
     });
     if (result.error || result.status !== 0) throw new Error('Design preview dependency installation failed.');
