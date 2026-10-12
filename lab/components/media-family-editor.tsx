@@ -15,7 +15,7 @@ export function MediaSituation({ event, observed, onSelect }: { event: StudioEve
   const current = mediaSituationForEvent(event.id, event.exampleEvent) ?? '';
   return <section className={styles.situation} aria-label="Exakt situation">
     <span className="eyebrow">{observed ? 'MOTTAGET NATIVE-EVENT' : 'LOKALT EVENTPROV'}</span>
-    {situations.length > 1 ? <label className="field">{event.sourceType === 'speak' ? 'Exakt replik' : 'Kortets destination'}<select aria-label="Exakt situation" value={current} disabled={observed} onChange={e => onSelect(e.target.value)}>
+    {situations.length > 1 ? <label className="field">{event.sourceType === 'speak' ? 'Exakt replik' : event.sourceType === 'transition' ? 'Övergång' : 'Kortets destination'}<select aria-label="Exakt situation" value={current} disabled={observed} onChange={e => onSelect(e.target.value)}>
       {!situations.includes(current) ? <option value={current}>{current || 'Ingen exakt situation'}</option> : null}
       {situations.map(situation => <option key={situation} value={situation}>{mediaSituationLabel(situation)}</option>)}
     </select></label> : <strong>{current ? mediaSituationLabel(current) : event.label}</strong>}

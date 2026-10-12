@@ -72,7 +72,7 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 
 - The private [GitHub repository](https://github.com/Jakeminator123/scoutgaming)
   is the active source on `main`. Keep it private.
-  Tag `Jakobs-v1` preserves commit `600093e`. See [migration and delivery](docs/CLOUD-MIGRATION.md).
+  Tag `Jakobs-v1` identifies filtered checkpoint `b9355ab`; original media history is preserved in the private recovery backup. See [recovery](docs/ENVIRONMENT-RESTORATION.md).
 - [Cloud and storage map](docs/CLOUD-MIGRATION.md) describes services and delivery.
 - GitLab inbox, wiki, and mirror are paused. New code and documentation are delivered to GitHub only.
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)

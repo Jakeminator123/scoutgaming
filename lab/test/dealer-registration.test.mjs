@@ -6,7 +6,7 @@ import {defaultCompositionSettings} from '../../web/public/composition-settings.
 test('Nora receives all own event bindings without borrowing recorded films',()=>{
  const original=createSeedProject(), before=structuredClone(original), project=addDealer(original,'nora','Nora');
  assert.deepEqual(original,before);assert.equal(project.dealers.length,5);
- const lines=project.lines.filter(line=>line.dealerId==='nora');assert.equal(lines.length,16);
+ const lines=project.lines.filter(line=>line.dealerId==='nora');assert.equal(lines.length,17);
  for(const line of lines){assert.equal(line.variants.length,1);assert.equal(line.variants[0].videoGenerationId,null);assert.equal(line.baselineVariantId,`nora.${line.eventId}.standard`);}
  assert.equal(buildRuntimeCatalog(project,'nora').events.length,16);
  const next=addVariant(project,'nora','idle.ready','Reaktion');next.lines.find(row=>row.dealerId==='nora'&&row.eventId==='idle.ready').variants[1].selection={rules:true,model:true,random:true};

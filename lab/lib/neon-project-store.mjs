@@ -2,6 +2,7 @@ import {
   StudioStorageError, canonicalStudioJson, studioStorageFailure,
   validateActor, validateDocumentValue, validateRevision, validateStudioScope,
 } from '../../web/storage/studio-contract.mjs';
+import { normalizeProject } from './studio-model.mjs';
 
 function documentStore(kind, { repository, scope, actor } = {}) {
   const checkedScope = validateStudioScope(scope);
@@ -22,7 +23,10 @@ function documentStore(kind, { repository, scope, actor } = {}) {
   };
   return Object.freeze({
     async load() {
-      try { return documentValue(await repository.readDocument(kind)); }
+      try {
+        const value = documentValue(await repository.readDocument(kind));
+        return kind === 'project' ? normalizeProject(value, { allowIncompatibleAnimations: true, preserveMissingLanes: true }) : value;
+      }
       catch (error) { throw studioStorageFailure(error); }
     },
     async save(next, expectedRevision) {

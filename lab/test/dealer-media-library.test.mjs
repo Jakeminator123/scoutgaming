@@ -135,3 +135,19 @@ test('library renders registered clips consistently without requesting local cli
     for(const stop of cleanup)if(typeof stop==='function')stop();
   }
 });
+
+test('shoe transitions are exact recommended slots and accept an upload classification',()=>{
+  const slots=dealerMediaSlots(project,'transition');
+  assert.deepEqual(slots.map(slot=>[slot.id,slot.label]),[['transition.shoe/to-shoe','Till skon'],['transition.shoe/from-shoe','Från skon']]);
+  assert.equal(dealerSlotStatus(project,{videos:[]},'paow',slots[0]).level,'recommended');
+  assert.match(dealerSlotStatus(project,{videos:[]},'paow',slots[1]).label,/Rekommenderas · klipp saknas/);
+  const classification=mediaClassification(project,{dealerId:'paow',slotId:'transition.shoe/from-shoe',label:'Från skon',contentType:'video/mp4'});
+  assert.equal(classification.eventId,'transition.shoe');
+  assert.equal(classification.situation,'from-shoe');
+  assert.equal(classification.kind,'action');
+  assert.equal(classification.role,'standard');
+  const video={id:'shoe',available:true,dealer:'paow',classification};
+  assert.equal(dealerSlotStatus(project,{videos:[video]},'paow',slots[1]).level,'ready');
+  assert.equal(dealerSlotStatus(project,{videos:[{...video,available:false}]},'paow',slots[1]).level,'recommended');
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'transition.shoe/from-shoe',label:'Ljud',contentType:'audio/wav'}));
+});

@@ -70,6 +70,32 @@ i samma modul. Återställ endast med stoppade servrar, bevara nuvarande Lab-dat
 separat och kopiera den verifierade backupens `lissabon/data` till en tom
 `lab/data`, utan den gamla `.local-session.sqlite`. Återskapa inte den gamla katalogen.
 
+## Git-historik efter rensningen 12 oktober 2026
+
+Jakob godkände en engångsomskrivning av Git-historiken. Aktuella branchers
+filer bevarades; äldre oanvänd media togs bort även ur historiska taggar.
+Ordinarie leverans sker fortsatt på main med push-github-work.mjs utan force.
+Alla sju befintliga arbetskopior på Jakobs dator fick motsvarande nya HEADs.
+Andra kloner måste utgå från nyklonad historik och återföra eventuella egna
+ändringar som avgränsade patchar. Merga eller pusha inte tillbaka gammal historik.
+
+Privat återställningsmaterial finns utanför Git i
+`C:/Users/jakem/.codex/visualizations/2026/10/12/01a12ebb-0f5c-7e72-b93b-8e3c6f297053/history-cleanup/approved/`:
+`original.bundle` (4 504 287 614 byte, verifierad), `reflog-only.pack` med
+separat checksumma, `original-git-metadata.zip`, `source.json`,
+`local-ref-plan.json` och `filtered.git/filter-repo/commit-map`.
+Bundlens SHA-256 är
+`630fac7c2afe4e2e1ea63146781ecc05eebaa52eb7819b617e85c328344f70dc`.
+Reflog-arkivet behövs bara för lokala tillstånd utanför bundlens refs.
+
+Återställ originalhistorik genom att klona bundlen till en separat tom katalog.
+Kontrollera checksumman först. Vid behov kan reflog-paketet importeras i denna
+separata kopia med Git index-pack; metadataarkivet beskriver gamla lokala refs.
+Skriv inte originalets Git-metadata över en aktiv arbetskopia och publicera
+inte återställd gammal historik. Bundlen innehåller versionshanterade filer;
+lokalt 3lager-material, miljöfiler, Neon-/Blob-data och lokala databaser ingår
+inte i Git-backupen och lämnades orörda vid denna rensning.
+
 ## Beständig molndata
 
 Produktionen använder nu Neon för Studio-policy, metadata och kostnads-/
