@@ -436,7 +436,9 @@ Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 
 **Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
 Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
-historiken har den, till exempel på `faf0e822`. Leveranser: V1 #19 (plan och
+historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
+står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
+`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
 regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
 dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
 `test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
