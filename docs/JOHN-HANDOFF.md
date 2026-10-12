@@ -278,6 +278,16 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
+**Admininloggning från partnerportalen, 12 oktober (`jakob/partner-admin-login-link`).**
+`/partner/login` tar fortfarande bara emot operatörspersonal. Ett internt
+adminkonto ger samma allmänna fel som ett fel lösenord, och formuläret skapar
+ingen session åt det. Ny knapp **Logga in som intern administratör** leder till
+N1-inloggningen (`/studio/login?returnTo=%2Fpartner` i produktion) och tillbaka
+till `/partner` med samma behörighet som i Kontrollpanelen. Felmeddelandet
+hänvisar dit. Prov: `lab/test/partner-login.test.mjs` (länk för båda
+`authBase`, formuläret postar oförändrat, felmeddelandet avslöjar inte någon
+roll) och full commit-hook. Kvar: inget.
+
 **Repo-ordning våg 2, 12 oktober (V2, `jakob/repo-ordning`).** 3D-, rigg-,
 ansikts- och hårspåret, kasinogolvet, Studios originalmediareserv, avslutad
 staging, oanvända pipeline-skript, de fem granskningssidorna och
@@ -329,9 +339,21 @@ Den omfattar full pre-commit, Studio- och frontendbyggena,
 (0) och systemkartan (0 röda). Spärren för raderingar gav 0 kvarvarande
 importer och 0 registerrader för 1151 borttagna filer. Inget Blob-objekt
 raderades. `migrate-media-layout --verify` har samma registerrad för en lokal,
-ospårad Astrid-zonfil som på `33be100b`. Kvar: visuell kontroll av
-partnerportalen i produktion direkt efter merge, med ljust och mörkt tema,
-SV/EN och mobilbredd.
+ospårad Astrid-zonfil som på `33be100b`.
+
+Efter merge (`061294ab`) kontrollerat i produktion:
+- Render `/__cloud/version` och Vercel `www` kör merge-commiten.
+- `/`, `/play` och `/partner/login` svarar 200.
+- `/casino.html` ger 308 till `/play` med query bevarad, och `/v2` ger 307.
+- De borttagna granskningssidorna ger 404.
+- `compositor.js` på `www` är bytelikt repot (sha256 `a668ed93…`).
+- Partnerportalen (Nordic Bet: översikt, spelrum, integration) är korrekt i
+  ljust och mörkt tema, på svenska och engelska och i 390 px bredd.
+- Rummet `paow3` spelar PAOW frilagd över bord och bakgrund, och lagrens
+  loopar startar om.
+
+Kvar: provspelning av händelseklipp och tal för de fyra dealerna, när PAOW och
+de övriga har sina klipp.
 
 **Env-städning och OpenClaw-namnbyte, 12 oktober (`8a8f434e`, `19c44902`, `deea75a5`).** `fe8b6372` passerar samtliga tre GitHub-jobb och är verifierad live på Vercel
 och spelservern; den publika friläggningsmodulen matchar samma commit bytevis.
