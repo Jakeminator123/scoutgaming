@@ -557,6 +557,33 @@ test('the native room preparation map keeps provider and capability I/O outside 
   assert.ok(capabilityChecks >= 3);
 });
 
+test('the full Studio admin route publishes the first roulette room only with capability 9', async () => {
+  const f = await registeredFixture(), versions = []; let engineVersion = 4;
+  const guarded = wrapNativePresentationRepository(f.repository, {env: {CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid'},
+    fetchImpl: async (_url, options) => {
+      assert.equal(f.pool.active, 0);
+      versions.push(Number(options.headers['X-Presentation-Capability-Version']));
+      return Response.json(presentationCapabilitiesForVersion(engineVersion));
+    }});
+  const service = createPresentationRoomApi({repository: guarded, scope, videoRegistry: f.videoRegistry,
+    runtimeCapabilities: (presentation, game) => guarded.withMutationContext(async () => presentationCapabilitiesForVersion(game === 'roulette' ? 9 : 4),
+      [{kind:'administration',value:{rooms:[{schemaVersion:2,game}]}},{kind:'presentation-package',value:presentation}])});
+  const api = createStudioAdminApi({authorize: async () => session, allowedOrigins:[origin], publicHosts:['studio.example.invalid'],
+    handlers:service.handlers, preparations:service.preparations, mutationTransaction: async (work, options) => {
+      const descriptors = [...options.presentationMutation];
+      for (const kind of options.presentationDocuments) descriptors.push({kind,value:(await guarded.readDocument(kind)).value});
+      return guarded.withMutationContext(work,descriptors);
+    }});
+  const body = await f.registeredPayload({game:'roulette'}), before = f.pool.snapshot();
+  const request = () => new Request(origin+'/studio/api/admin/presentation-room',{method:'POST',
+    headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await api.handle(request())).status,503); assert.deepEqual(f.pool.snapshot(),before);
+  assert.deepEqual(versions,[9]); versions.length=0; engineVersion=9;
+  const response=await api.handle(request()); assert.equal(response.status,200);
+  assert.equal((await response.json()).room.game,'roulette'); assert.equal(f.pool.snapshot().packages.length,1);
+  assert.deepEqual(versions,[9,9]);
+});
+
 test('a frozen default idle removed by another package writer makes replay conflict instead of exposing a broken game link', async () => {
   const f = await registeredFixture(), body = await f.registeredPayload(); await f.create(body);
   const current = f.pool.snapshot().packages.at(-1), pack = { lanes: JSON.parse(current.lanes), branding: JSON.parse(current.branding) }, frozen = readPackagePresentation(pack);

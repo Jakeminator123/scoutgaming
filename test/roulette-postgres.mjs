@@ -5,6 +5,54 @@ import {readFile} from 'node:fs/promises';
 import {createPostgresStore} from '../web/storage/postgres-store.mjs';
 import {createPostgresRouletteCommand} from '../web/games/roulette/storage.mjs';
 import {ROOM} from '../web/games/roulette/room.mjs';
+import {createRouletteRoomAccess} from '../web/games/roulette/access.mjs';
+import {createFrozenDealerContextReader} from '../web/storage/frozen-dealer-presentation.mjs';
+import {createOperatorStore} from '../web/storage/operator-store.mjs';
+import {createStudioRepository} from '../web/storage/studio-repository.mjs';
+import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
+import {defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+
+async function publicationPoolChecks(pool) {
+  const scope={environment:'roulette-pool-qa',workspaceId:randomUUID()};
+  const {presentation}=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
+  const room={schemaVersion:2,id:'roulette-one',name:'Pool QA',operatorId:'north',presentationLaneId:'mobile-phone',gameLaneId:'mobile-phone',state:'live',game:'roulette'};
+  const administration={rooms:[room],gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+    tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
+  const repository=createStudioRepository({pool,scope});
+  await repository.initializeDocument('administration',{value:administration,actor:'qa'});
+  const operators=await createOperatorStore({sql:pool,scope});
+  await operators.createOperator({operatorId:'north',slug:'north',name:'North',actor:'qa'});
+  await operators.publishPackage({operatorId:'north',actor:'qa',expectedRevision:null,lanes:['mobile-phone'],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)});
+  const ids=Array.from({length:8},()=>randomUUID());
+  for(const id of ids) await pool.query('INSERT INTO croupier_game.players(id,name,currency,balance,created_at) VALUES($1,$2,$3,$4,$5)',[id,'Pool QA','USD',100,new Date().toISOString()]);
+  let active=0,peak=0,acquired=0,barrier=null,unblock;
+  const limited={query:(...args)=>pool.query(...args),async connect(){
+    assert.ok(active<8,'must not borrow a ninth connection while eight wallet transactions are held');
+    const raw=await pool.connect();active++;peak=Math.max(peak,active);
+    return {async query(sql,values){
+      const result=await raw.query(sql,values);
+      if(barrier&&sql.includes('FOR UPDATE')&&sql.includes('players')){if(++acquired===8)unblock();await barrier;}
+      return result;
+    },release(){active--;raw.release();}};
+  }};
+  const access=createRouletteRoomAccess({readCurrentContext:createFrozenDealerContextReader({pool:limited,scope})});
+  const context=await access({operator:'north',table:room.id});
+  const run=createPostgresRouletteCommand({pool:createPostgresStore({pool:limited}).gamePool});
+  async function together(op){
+    acquired=0;barrier=new Promise(resolve=>{unblock=resolve;});
+    try {return await Promise.all(ids.map(id=>run(op==='state'?{id,op}:{id,op,requestId:randomUUID(),version:0,currency:'USD',bets:[{id:'red',amount:1}]},context)));}
+    finally {barrier=null;}
+  }
+  assert.equal((await together('state')).length,8);assert.equal((await together('spin')).length,8);
+  assert.equal(peak,8);assert.equal(active,0);
+  const before=await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]]);
+  const saved=await repository.readDocument('administration');administration.rooms[0].state='preview';
+  await repository.saveDocument('administration',{value:administration,actor:'qa',expectedRevision:saved.revision});
+  await assert.rejects(run({id:ids[0],op:'spin',requestId:randomUUID(),version:1,currency:'USD',bets:[{id:'red',amount:1}]},context),/roulette_room_not_found/);
+  assert.deepEqual((await pool.query('SELECT balance FROM croupier_game.players WHERE id=$1',[ids[0]])).rows,before.rows);
+  assert.equal(active,0);
+}
 
 export async function runRoulettePostgresChecks({pool,restart}={}) {
   const identity=(await pool.query("SELECT host(inet_server_addr()) AS address,current_user AS role,current_database() AS database,current_setting('listen_addresses') AS listeners")).rows[0];
@@ -50,6 +98,8 @@ export async function runRoulettePostgresChecks({pool,restart}={}) {
   await pool.query("UPDATE croupier_game.players SET status='blocked' WHERE id=$1",[id]);
   await assert.rejects(run(next),/player_unavailable/);
   checks.push('roulette: blocked players cannot read or play a room');
+  await publicationPoolChecks(pool);
+  checks.push('roulette: eight real publication rechecks reuse the held wallet clients; revocation rolls back');
   return {pool,checks};
 }
 

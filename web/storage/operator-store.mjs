@@ -212,6 +212,23 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND slug=$3 LIMIT 2`,
     [slugText(slug)]);
   }
+  // One statement gives a current, internally consistent publication snapshot
+  // even inside a caller's READ COMMITTED wallet transaction.
+  async function getCurrentPresentationContext(slug) {
+    const rows = await query(`/* operator-store:presentation-context */
+      SELECT row_to_json(o) AS operator,
+        (SELECT row_to_json(p) FROM croupier_studio.operator_packages p
+          WHERE p.environment_id=o.environment_id AND p.workspace_id=o.workspace_id AND p.operator_id=o.operator_id
+          ORDER BY p.package_revision DESC LIMIT 1) AS package,
+        (SELECT d.value FROM croupier_studio.documents d
+          WHERE d.environment_id=o.environment_id AND d.workspace_id=o.workspace_id AND d.kind='administration') AS administration
+      FROM croupier_studio.operators o WHERE o.environment_id=$1 AND o.workspace_id=$2 AND o.slug=$3 LIMIT 2`, [slugText(slug)]);
+    if (rows.length > 1) fail('studio_corrupt_operator');
+    if (!rows.length) return { operator: null, package: null };
+    const row = rows[0], owner = operator(row.operator), pack = row.package ? packageRow(row.package) : null;
+    if (pack && pack.operatorId !== owner.id) fail('studio_corrupt_operator');
+    return { operator: owner, package: pack, administration: row.administration };
+  }
   async function getOperatorById(id) {
     return one(`/* operator-store:operator-by-id */
       SELECT environment_id, workspace_id, operator_id, slug, name, status, created_at_ms
@@ -680,6 +697,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
 
   return Object.freeze({
     scope, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage,
+    getCurrentPackage, getCurrentPresentationContext, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage,
   });
 }

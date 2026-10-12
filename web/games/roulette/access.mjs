@@ -13,9 +13,9 @@ export function validateRoomContext(value) {
   return new URLSearchParams(value);
 }
 export function createRouletteRoomAccess({ readCurrentContext }) {
-  async function resolve(value) {
+  async function resolve(value, client) {
     const query = validateRoomContext(value);
-    const saved = await readCurrentContext(value.operator);
+    const saved = client ? await readCurrentContext.inTransaction(client, value.operator) : await readCurrentContext(value.operator);
     if (!saved) fail('roulette_room_unavailable',503);
     const { operator, package:pack, administration } = saved;
     if (!operator || operator.status !== 'active' || operator.slug !== value.operator || !pack) fail('roulette_room_not_found');
@@ -28,8 +28,8 @@ export function createRouletteRoomAccess({ readCurrentContext }) {
     const room = { ...ROOM, id:entry.room.id, operatorId:operator.id, name:entry.room.name,
       operator:operator.slug, operatorName:operator.name, packageRevision:pack.revision,
       dealer:entry.selection.dealer, branding:entry.selection.branding };
-    return { room, recheck:async()=>{
-      const current = await resolve(value);
+    return { room, recheck:async client=>{
+      const current = await resolve(value, client);
       if (JSON.stringify(current.room) !== JSON.stringify(room)) fail('roulette_room_changed',409);
     } };
   }

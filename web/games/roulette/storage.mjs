@@ -57,7 +57,7 @@ export function createPostgresRouletteCommand({ pool, draw }) {
         await client.query(insert,[id,'roulette_bet',-result.round.wagered,player.currency,ledger(result.round),result.round.event.occurredAt]);
         if (result.round.returned) await client.query(insert,[id,'roulette_payout',result.round.returned,player.currency,ledger(result.round),result.round.event.occurredAt]);
       }
-      await recheck();
+      await recheck(client);
       await client.query('COMMIT');
       return response(result,player,balance,request.requestId);
     } catch (error) {

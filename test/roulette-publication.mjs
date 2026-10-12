@@ -8,6 +8,8 @@ import {createRouletteRoomAccess,validateRoomContext} from '../web/games/roulett
 import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
 import {isPresentationRoom,roomPlayPath} from '../web/presentation-room-contract.mjs';
 import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
+import {createFrozenDealerContextReader} from '../web/storage/frozen-dealer-presentation.mjs';
+import {canonicalStudioJson} from '../web/storage/studio-contract.mjs';
 
 function fixture() {
   const {project,presentation}=cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
@@ -50,4 +52,22 @@ test('wrong tenant, unpublished room, suspended operator and revoked game never 
   const f=fixture();await assert.rejects(f.access({operator:'south',table:f.room.id}),error=>error.statusCode===404);
   for(const context of [{},{operator:['north'],table:'roulette-one'},{operator:'north',table:['roulette-one']},{operator:'north',table:'roulette-one',dealer:['astrid']},{operator:'north',table:'roulette-one',number:7}]) assert.throws(()=>validateRoomContext(context));
   const ready=await f.access({operator:'north',table:f.room.id});f.operator.status='suspended';await assert.rejects(ready.recheck());
+});
+
+test('the real publication recheck uses one scoped snapshot on the held transaction client',async()=>{
+  const f=fixture(),scope={environment:'roulette-test',workspaceId:'isolated'};
+  const scopeColumns={environment_id:scope.environment,workspace_id:scope.workspaceId};
+  const row={operator:{...scopeColumns,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1},
+    package:{...scopeColumns,operator_id:'north',package_revision:1,published_at_ms:1,
+      lanes:canonicalStudioJson([...f.pack.lanes].sort()),games:canonicalStudioJson([...f.pack.games].sort()),tables:canonicalStudioJson([...f.pack.tables].sort()),branding:canonicalStudioJson(f.pack.branding)},
+    administration:{...f.administration,tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}}};
+  let queries=0;
+  const reader=createFrozenDealerContextReader({scope,pool:{connect(){assert.fail('must reuse wallet client');}}});
+  const client={async query(sql,values){queries++;assert.match(sql,/operator-store:presentation-context/);
+    assert.deepEqual(values,[scope.environment,scope.workspaceId,'north']);return {rows:[structuredClone(row)]};}};
+  const direct=createRouletteRoomAccess({readCurrentContext:reader});
+  const ready=await direct({operator:'north',table:f.room.id},client);
+  assert.equal(queries,1);await ready.recheck(client);assert.equal(queries,2);
+  row.administration.rooms[0].state='preview';await assert.rejects(ready.recheck(client),/roulette_room_not_found/);
+  row.operator.workspace_id='foreign';await assert.rejects(reader.inTransaction(client,'north'),/studio_corrupt_operator/);
 });
