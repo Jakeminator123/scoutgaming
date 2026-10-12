@@ -240,7 +240,7 @@
         "web/graceful-shutdown.mjs",
         "web/speech-journal-runtime.mjs",
         "web/generated-speech-stream.mjs",
-        "planes/01-slutratningar/PLAN.md"
+        "docs/CLOUD-MIGRATION.md"
       ],
       "tests": [
         "ops/cloud/test/shutdown.test.mjs",
@@ -264,7 +264,7 @@
         "lab/app/api/zones/reference/route.ts",
         "lab/lib/zone-reference.mjs",
         "lab/next.config.mjs",
-        "planes/01-slutratningar/PLAN.md"
+        "docs/CLOUD-MIGRATION.md"
       ],
       "tests": [
         "lab/test/zone-reference.test.mjs"
@@ -295,7 +295,7 @@
       "purpose": "Endast aktiverad top-level GET-navigation till exakt /openclaw eller /openclaw/ tillåts från Studio. Cross-site fetch, iframe, POST, API och WebSocket är fortsatt skyddade. Riktade tester och oberoende granskning passerar; native login/pairing ändras inte. Verklig Studio-navigation och native Agents-vy med befintlig Owner-inloggning verifierade 22:20 UTC på Director 96020c04.",
       "sources": [
         "open-claw/lab/src/dashboard-proxy.mjs",
-        "planes/01-slutratningar/PLAN.md"
+        "docs/CLOUD-MIGRATION.md"
       ],
       "tests": [
         "open-claw/lab/test/dashboard-proxy.test.mjs",
@@ -316,7 +316,7 @@
       "purpose": "Fysisk mikrofon/kamera, P6-medieacceptans, produktionsmail och full GitGuardian-incidentlista är separata öppna kontroller. Prisunderlag är backlog; kostnad okänd. Den redan öppna spelfliken visade vid läsande efterkontroll Idle: Film ended without a presented frame. Detta är en separat P6/medieobservation; autentiserad åtkomst är inget nytt playbackgodkännande.",
       "sources": [
         "docs/JOHN-HANDOFF.md",
-        "planes/07-produktionsacceptans/PLAN.md"
+        "docs/CLOUD-MIGRATION.md"
       ]
     }
   ],
@@ -394,20 +394,20 @@
 ],
   "plans": [
     {
-      "label": "Systemkarta och nästa etapp",
-      "path": "planes/02-systemkarta/PLAN.md"
+      "label": "Systemkarta",
+      "path": "docs/system-map/index.html"
     },
     {
       "label": "Konton och nyckelplacering",
-      "path": "planes/03-konton-och-nycklar/PLAN.md"
+      "path": "docs/ENVIRONMENT-VARIABLES.md"
     },
     {
       "label": "Testkoppling och granskning",
-      "path": "planes/04-tester-och-granskning/PLAN.md"
+      "path": "docs/system-map/contracts.json"
     },
     {
       "label": "Sluträttningar",
-      "path": "planes/01-slutratningar/PLAN.md"
+      "path": "docs/CLOUD-MIGRATION.md"
     }
   ]
 }

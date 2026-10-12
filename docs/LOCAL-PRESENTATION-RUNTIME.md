@@ -378,8 +378,8 @@ inte anslutna. T2 är påbörjad, inte klar.
 Kontrollpanelens länkar till befintliga interna verktyg behåller deras ordinarie
 auktorisering. Det gamla backofficets rolltabell i klienten styr inte åtkomst.
 
-Privata `random/` undantas uttryckligen från byggtraces, liksom lokal QA-data.
-Detta kompletterar mappens lokala Git-ignore och ändrar inga medieregister.
+Privata lokala kopior (env-säkerhetskopior och bildmappar) undantas uttryckligen från byggtraces i `lab/next.config.mjs`, liksom lokal QA-data.
+Git-ignore för de mapparna står kvar. Detta ändrar inga medieregister.
 
 ### Byggutdata
 
