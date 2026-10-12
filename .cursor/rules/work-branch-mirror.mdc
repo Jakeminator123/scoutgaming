@@ -1,19 +1,15 @@
 ---
-description: Deliver Croupier work on main to its private GitHub repository.
+description: Deliver Croupier work through a feature branch and a pull request.
 alwaysApply: true
 ---
 
-# Croupier main delivery
+# Croupier delivery
 
-- Work only on `main` in `Jakeminator123/scoutgaming` (repository ID `1380630440`),
-  as requested by Jakob on 2026-10-02. `github-work` redirects there. Do not create
-  another branch or worktree unless requested.
+Deliver from a feature branch matching `jakob/*`, `codex/*` or `cursor/*` in `Jakeminator123/scoutgaming` (repository ID `1380630440`; `github-work` redirects here) and open a pull request to `main`. `tools/repository-policy.json` lists those patterns. The pre-push hook allows new and fast-forward updates of those branches and of `main`, and rejects deletion, force-push, tags and any other repository. Direct push to `main` remains only as an explicit admin emergency path (`node tools/push-github-work.mjs --admin-main`). Ordinary delivery is `node tools/push-github-work.mjs`: it pushes the current feature branch and prints the `gh pr create` command without creating the pull request. `tools/push-work-mirrors.mjs` is the GitHub-only compatibility entry point. Never force-push. GitHub ruleset 24642403 ("main: pull requests only") requires a pull request into `main`.
+
 - GitLab integration is paused: no inbox fetch/send, wiki publication or mirror
   push. Historical GitLab delivery instructions do not apply.
 - Before a shared push, run `node tools/croupier-chef.mjs status` and follow
   `AGENTS.md` ownership instructions. Commit only task-owned files.
-- Deliver with `node tools/push-github-work.mjs`. It checks the exact GitHub
-  destination, ancestry and the published commit. The compatibility entry point
-  `push-work-mirrors.mjs` also uses GitHub only.
-- Do not force-push, publish other branches or use the retired `gitlab-work` repo.
+- Do not use the retired `gitlab-work` repo.
 - This rule governs agent deliveries; it does not activate a role or background job.

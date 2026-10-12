@@ -13,9 +13,9 @@ Vercel project name is `scoutgaming`. The game engine stays on Render service `c
 
 `/studio` is the Next.js `basePath` of the lab service. It is not a fourth product and not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
 
-## GitHub-only work on main
+## GitHub delivery
 
-Work only on `main` in `Jakeminator123/scoutgaming` (repository ID `1380630440`; `github-work` redirects here). Do not create another branch or worktree unless Jakob explicitly requests it. Deliver with `node tools/push-github-work.mjs`. Never force-push or push another branch. `tools/repository-policy.json` and the pre-push hook enforce this destination. `tools/push-work-mirrors.mjs` is the GitHub-only compatibility entry point.
+Deliver from a feature branch matching `jakob/*`, `codex/*` or `cursor/*` in `Jakeminator123/scoutgaming` (repository ID `1380630440`; `github-work` redirects here) and open a pull request to `main`. `tools/repository-policy.json` lists those patterns. The pre-push hook allows new and fast-forward updates of those branches and of `main`, and rejects deletion, force-push, tags and any other repository. Direct push to `main` remains only as an explicit admin emergency path (`node tools/push-github-work.mjs --admin-main`). Ordinary delivery is `node tools/push-github-work.mjs`: it pushes the current feature branch and prints the `gh pr create` command without creating the pull request. `tools/push-work-mirrors.mjs` is the GitHub-only compatibility entry point. Never force-push. GitHub ruleset 24642403 ("main: pull requests only") requires a pull request into `main`.
 
 GitLab inbox, wiki, and mirror are paused. Jira is not an authorized workflow. The live migration tracker is `docs/CLOUD-MIGRATION.md`. Check an item complete only when its full expected result is verified. Do not create another tracker.
 
