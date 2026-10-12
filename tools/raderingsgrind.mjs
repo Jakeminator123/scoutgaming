@@ -1,4 +1,4 @@
-// Usage (repository root): node ordning/verktyg/raderingsgrind.mjs <base> [--json <file>]
+// Usage (repository root): node tools/raderingsgrind.mjs <base> [--json <file>]
 // Integration gate for deletions (ORKESTRERING §6): every file removed between <base>
 // and HEAD is checked at HEAD for
 //   IMPORT   relative import/require/new URL specifiers in code that resolve to it;
@@ -13,7 +13,7 @@ import { posix } from 'node:path';
 
 const [base, flag, out] = process.argv.slice(2);
 if (!base) {
-  console.error('Usage: node ordning/verktyg/raderingsgrind.mjs <base> [--json <file>]');
+  console.error('Usage: node tools/raderingsgrind.mjs <base> [--json <file>]');
   process.exit(2);
 }
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 });

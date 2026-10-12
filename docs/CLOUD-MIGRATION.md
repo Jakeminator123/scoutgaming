@@ -17,13 +17,29 @@ Spårade arbetsanteckningar och de åtta planfilerna tas bort ur trädet i denna
 
 Övriga öppna rader från checklistan 8 oktober finns redan i denna tracker: spelare, transaktioner och rapporter (N2.4, JN2-E), marker (JN2-D), partnerns lösenordsåterställning (JN2-J), visuell partneracceptans (JN2-B) och samlad P6 med fyra dealers. Operatörsjournalen (N2.5) är levererad i JN2-C och öppnas inte igen. Systemkartans planerade ruta N2.4 pekar på `docs/system-map/planned.json`.
 
-## Repo-ordning våg 2 i trädet, 12 oktober 2026
+## Repo-ordning, slutläge 12 oktober 2026
 
-Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efter våg 2, inte ett nytt produktionskvitto.
+Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efter planen (V1 #19, V2 #23, V3a #34, V4 #40 och avslutet med A21 och A99), inte ett nytt produktionskvitto. Före/efter-tabellen står i handoffen. Planmappen `ordning/` är borttagen; den finns i historiken på `faf0e822`.
 
 - `github-work-vercel-entry` finns inte (A18:s env-granskning). Spelarbygget är `apps/croupier-frontend/tools/player-ui-build.mjs`. `ops/vercel-entry/` är borttagen.
 - `ops/caddy/bettalotto-game-auth.Caddyfile` är borttagen. A18: bettalotto.se svarar 301 till `https://croupier.scoutgg.dev/` och använder inte filen. Aktuell Caddy: `kevin/croupier-scoutgg/drift/`.
 - `/casino.html` är 308 till `/play`. Granskningssidorna är borta. `/v2` är kvar som 307. Originalmedia-API:t i Studio är borta. Registrerad video stannar på den gemensamma scenen.
+- `test-videoeditor/` ligger i `packages/presentation/{compositor,docs,preview}` och `presentation-runtime/` i `packages/presentation/runtime/`. URL:en `/presentation-runtime/*` är oförändrad. Shimmen `presentation-runtime/live-idle.mjs` finns kvar för `web/public/local-presentation.mjs`.
+- Indexerade banken, läppsynkverktygen och bankauditarna är borta ur Git och Render-imagen. 34 MP3 i `runtime/indexed/audio/en` står kvar för de bevarade green-speak-talparen.
+
+Öppet efter planen:
+
+- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers.
+- [ ] B18 permanent radering av klipp (beslutad 12 oktober): raden och sökvägen bort med journal (migration 009). Varje sparad paketrevision, fryst presentation eller öppet rum som refererar klippet spärrar. Bekräftelse kräver inskrivet namn. Egen PR; migrationen körs mot produktions-Neon före koden.
+- [ ] Bankens Blob-objekt saknar indexrad. De rensas först med B18:s journal.
+- [ ] B19 talklipp från vilobilden (beslutad 12 oktober): MuseTalk 1.5 på RunPod med dealerns egen röst, pilot Astrid `goodluck` på svenska och engelska, migration 010 efter B18. Betalda anrop bekräftas med Jakob först. Förtydliga regeln i `AGENTS.md`: förbudet gäller inklistrade munnar i spelaren, inte MuseTalk-genererade. Språkval i spelaren saknas.
+- [ ] A22b och framåt, `packages/platform`: utredningen A22a lämnas som ärende med etiketten `beslut` i inkorgen. Skivorna börjar först efter Jakobs beslut (B12). Proceduren står i `ordning/aktiviteter/A22-platform-karna.md` på `faf0e822`.
+- [ ] `?lane=layer-preview&rehearsal=1` svarar 503 (fanns före planen).
+- [ ] `astrid-select-baseline` faller eftersom `dealer-speech-profile.mjs` saknas i `ARCHIVE_PATHS` (fanns före V4).
+- [ ] `media-layout-verify` har en inaktuell rad för `astrid-zones-manual-snapshot-2026-09-29.json` (fanns sedan V1).
+- [ ] `speech-media.json` pekar på `dealers/astrid/speech/{win,goodluck}.mp4`, som inte finns (fanns före V4).
+- [ ] B9-byggarna (`build-hands.sh`, `build-previews.sh` och kontaktbyggarna) nämner den borttagna banken som källa, och `runtime/hands` saknar audit.
+- [ ] Raderna `act` och `insurance` i `web/public/docs/partner-api.html` är felrenderade (`\|` i kod delar cellen).
 
 ## Flödesomstrukturering, 12 oktober 2026
 

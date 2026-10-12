@@ -399,8 +399,8 @@ Start för nästa agent:
    eventuellt schema- och fältnamn.
 4. Provspela rummen hos sg-test, Johns och Nordic Bet före och efter varje etapp.
 
-Samordning: ordningsplanens strukturvåg (`ordning/`, våg 3) flyttar samma
-centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
+Samordning: plattformsflytten A22 (`packages/platform`, se `docs/CLOUD-MIGRATION.md`)
+flyttar samma centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
 
 ### Övrigt öppet
 
@@ -424,7 +424,7 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
   (`studio_request_rejected`). Manuell länk och omladdning fungerade i det
   provet. Ingen skyddsregel lättades.
 - Objektens existens i Blob och full visuell liveuppspelning är inte
-  verifierade (`ordning/BASLINJE.md` §8).
+  verifierade (`ordning/BASLINJE.md` §8 på `faf0e822`).
 - Upload-anteckningen om `kortflipp_kling_1080p.mp4` står kvar i
   `docs/CLOUD-MIGRATION.md`. Den är inte stängd här.
 - Vercel-byggets nya logg för Node 24-låsningen (`12a12fd6`) är inte verifierad.
@@ -433,6 +433,39 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
+Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
+historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
+står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
+`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
+regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
+dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
+`test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
+(PAOW-grundloopen), V4 #40 (B11: indexerade banken, läppsynkverktygen och
+bankauditarna) och denna leverans (A21: `presentation-runtime/` till
+`packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
+plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
+`web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
+
+| Mått | Före `00ea55c5` | Efter `e602ea91` |
+| --- | --- | --- |
+| Spårade filer | 4 412 · 790,18 MB | 2 868 · 388,44 MB |
+| `media/` | 2 455 · 731,74 MB | 857 · 289,33 MB |
+| `web/public`, källfiler | 122: 95 produkt, 12 bara granskning, 11 bara test, 2 bara pipeline, 2 ingen | 102: 99 produkt, 1 bara test, 2 bara pipeline |
+| Studio utan importör | 4 | 2 (behållna på beslut) |
+| `pipeline/`, skript | 109, varav 87 utan konsument | 21, varav 10 utan konsument |
+| Testfiler | 359 · 0 föräldralösa | 355 · 0 föräldralösa |
+| Importer `lab/lib → web(server)` · `pipeline → web/public` | 125 · 46 | 135 · 18 |
+| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar efter ny baslinje |
+| GitGuardian | 0 öppna · 17 ignorerade | 0 öppna · 17 ignorerade |
+
+Importerna mellan Studio och spelmotorn ökade med ny kod på main under arbetet;
+de är A22:s område. Prov för A21 på V4-huvudet: Studio- och frontendbygget ger
+samma 74 genererade filer byte för byte, full pre-commit, 0 föräldralösa prov,
+0 röda i systemkartan och raderingsspärren 0. Kvar finns som punkter i
+`docs/CLOUD-MIGRATION.md` under "Repo-ordning, slutläge", bland annat B18, B19,
+A22b och acceptansen efter deploy.
 
 **Indexerad dealerbank borttagen, 12 oktober (V4, `jakob/repo-ordning`).**
 `media/dealers/{astrid,amira,vera,mei}/runtime/indexed` är borta ur Git (598 av
@@ -719,8 +752,8 @@ borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
 skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
 Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
 och kompositorns JavaScript utan runtime-stubbar. Kompositorns katalog är
-`packages/presentation/compositor/`. A21 flyttar fortfarande `presentation-runtime/`
-i samma lista.
+`packages/presentation/compositor/`. Urval och idle ligger i
+`packages/presentation/runtime/`. Webbläsarens adress `/presentation-runtime/*` är oförändrad.
 
 Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
 `f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade

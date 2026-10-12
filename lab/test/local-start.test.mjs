@@ -9,7 +9,7 @@ import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';
 import {defaultPresentationLane} from '../lib/studio-model.mjs';
-import {createRegisteredIdlePolicy} from '../../presentation-runtime/registered-idle-policy.mjs';
+import {createRegisteredIdlePolicy} from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { once } from 'node:events';
 

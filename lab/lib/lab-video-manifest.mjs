@@ -10,7 +10,7 @@ const ROOT_KEYS = ['schemaVersion', 'source', 'families', 'items'];
 const FAMILY_KEYS = ['id', 'dealerId', 'eventId', 'situation', 'playbackType', 'standardIds', 'variantIds'];
 const ITEM_KEYS = ['id', 'familyId', 'role', 'relativePath', 'extension', 'size', 'sha256'];
 
-import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
+import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/media-families.mjs';
 export { MEDIA_FAMILY_DEFINITIONS };
 
 const definitionsById = new Map(MEDIA_FAMILY_DEFINITIONS.map(definition => [definition.id, definition]));

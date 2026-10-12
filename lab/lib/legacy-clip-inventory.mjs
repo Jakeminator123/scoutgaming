@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
 import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';

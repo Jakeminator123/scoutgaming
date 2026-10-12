@@ -95,7 +95,7 @@ function refs(value, found = new Set()) {
     Object.values(value).forEach(item => refs(item, found));
   } else if (typeof value === 'string') {
     const path = value.replace(/:\d+$/, '');
-    if (/^(?:apps|web|lab|ops|tools|test|services|open-claw|presentation-runtime|pipeline|docs|planes|\.github|\.githooks)\//.test(path)
+    if (/^(?:apps|web|lab|ops|tools|test|services|open-claw|pipeline|docs|planes|packages|\.github|\.githooks)\//.test(path)
       && safePath(path) && TEXT.test(path)) found.add(path);
   }
   return found;

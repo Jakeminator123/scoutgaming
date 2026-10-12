@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
-const gateUrl = new URL('./raderingsgrind.mjs', import.meta.url).href;
+const gateUrl = new URL('../tools/raderingsgrind.mjs', import.meta.url).href;
 
 function runGate({ readError = null, source = "import './gone.mjs';" } = {}) {
   // Exercise the CLI with synthetic Git/filesystem inputs. No repository,

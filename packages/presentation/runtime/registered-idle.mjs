@@ -1,5 +1,5 @@
-import { registeredDealerIds } from '../web/dealer-identity.mjs';
-import { videoFitsLine } from '../lab/lib/video-intake.mjs';
+import { registeredDealerIds } from '../../../web/dealer-identity.mjs';
+import { videoFitsLine } from '../../../lab/lib/video-intake.mjs';
 
 const IDLE_EVENT = 'idle.ready';
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;

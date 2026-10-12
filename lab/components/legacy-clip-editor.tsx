@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { DealerId, LegacyClipBinding, StudioProject } from '../lib/studio-model.mjs';
 import type { LegacyClipControls } from '../lib/legacy-clip-inventory.mjs';
-import { LEGACY_CLIP_PARTS, LEGACY_PART_LABELS, upsertLegacyClipBinding } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { LEGACY_CLIP_PARTS, LEGACY_PART_LABELS, upsertLegacyClipBinding } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { requestJson } from './studio-types';
 import {DealerClipPreview} from './dealer-video-surface';

@@ -330,7 +330,7 @@ flowchart LR
 
 Diagrammets namn beskriver ansvar. Det inför inga nya tjänster eller påstår
 att ett nytt generellt planformat redan är installerat. I koden ligger mycket
-av urvalet i `presentation-runtime/selection.mjs`, befintliga adaptrar och
+av urvalet i `packages/presentation/runtime/selection.mjs`, befintliga adaptrar och
 Webs spelare. Spelmotorn bestämmer utfallet; presentationen visar det.
 Valfri OpenClaw-rådgivning får bara föreslå redan tillåtna klipp. Rådet måste
 valideras och skuggläge spelar inte förslaget. Studio-assistentens hjälp med
@@ -507,7 +507,7 @@ Ingen kontoflytt, plånboksjustering eller schemaändring ingår.
 ## Ägarskap och ordning
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.
-`presentation-runtime/selection.mjs` väljer exakt familj och tillåten variant
+`packages/presentation/runtime/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Labbets tidigare moduler återexporterar den gemensamma implementationen.
 
@@ -627,6 +627,6 @@ bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
 inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
-`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `presentation-runtime/`.
+`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.

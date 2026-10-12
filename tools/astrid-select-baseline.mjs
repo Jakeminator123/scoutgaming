@@ -25,7 +25,7 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createSeedProject, isDirectorSourceType, OPENCLAW_MODES } from '../lab/lib/studio-model.mjs';
-import { selectPresentation } from '../presentation-runtime/selection.mjs';
+import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -33,7 +33,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FIXTURE_DIR = join(repoRoot, 'test', 'fixtures', 'astrid-select-baseline');
 export const RANDOM_SEED = 20261008;
 const MODE_ORDER = ['off', 'rules', 'random', 'shadow', 'active'];
-const ARCHIVE_PATHS = ['presentation-runtime', 'lab/lib', 'lab/policies', 'lab/schemas', 'open-claw/lab', 'pipeline', 'tools/media-layout.mjs'];
+const ARCHIVE_PATHS = ['packages/presentation/runtime', 'lab/lib', 'lab/policies', 'lab/schemas', 'open-claw/lab', 'pipeline', 'tools/media-layout.mjs'];
 const DROP_KEYS = new Set(['elapsedMs', 'cacheId', 'cacheKey', 'generatedAt', 'timestamp', 'observedAt']);
 
 export const CONTEXTS = Object.freeze([
@@ -284,7 +284,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { executeJobs, loadRegistry } from ${JSON.stringify(toolUrl)};
 const root = process.env.ASTRID_HEAD_ROOT;
-const selection = await import(pathToFileURL(join(root, 'presentation-runtime/selection.mjs')).href);
+const selection = await import(pathToFileURL(join(root, 'packages/presentation/runtime/selection.mjs')).href);
 const model = await import(pathToFileURL(join(root, 'lab/lib/studio-model.mjs')).href);
 const jobs = JSON.parse(await readFile(process.env.ASTRID_JOBS, 'utf8'));
 const outcome = await executeJobs(selection.selectPresentation, model.createSeedProject(), await loadRegistry(), jobs);

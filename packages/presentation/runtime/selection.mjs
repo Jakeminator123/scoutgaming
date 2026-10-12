@@ -1,11 +1,11 @@
 // Shared selection runtime. The caller owns game order and the playback lifecycle.
 import { randomUUID, createHash } from 'node:crypto';
-import { askDirector, boundedJson } from '../open-claw/lab/src/openclaw.mjs';
-import { prepareDecision, finalizeDecision } from '../open-claw/lab/src/engine.mjs';
-import { buildRuntimeCatalog, isDirectorSourceType, validateProject } from '../lab/lib/studio-model.mjs';
-import { StudioError } from '../lab/lib/project-store.mjs';
-import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
-import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
+import { askDirector, boundedJson } from '../../../open-claw/lab/src/openclaw.mjs';
+import { prepareDecision, finalizeDecision } from '../../../open-claw/lab/src/engine.mjs';
+import { buildRuntimeCatalog, isDirectorSourceType, validateProject } from '../../../lab/lib/studio-model.mjs';
+import { StudioError } from '../../../lab/lib/project-store.mjs';
+import { loadVideoRegistry } from '../../../lab/lib/video-registry.mjs';
+import { selectionFor, videoFitsLine, videoFitsEvent } from '../../../lab/lib/video-intake.mjs';
 import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
 import { isLegacyClipReference, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
 import { mediaSituationForEvent } from './media-family-resolver.mjs';
