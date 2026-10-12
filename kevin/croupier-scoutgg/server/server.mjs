@@ -454,15 +454,20 @@ async function handleHttp(req, res) {
     if(from&&!["https://scoutgaminggroup.com","https://www.scoutgaminggroup.com","https://croupier.scoutgg.dev"].includes(from)){res.writeHead(403).end();return;}
     if(!demoLimit(clientAddress(req))){res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=limit","Cache-Control":"no-store"});res.end();return;}
     let raw="";req.on("data",c=>{raw+=c;if(raw.length>2000)req.destroy();});
-    req.on("end",()=>{const pw=new URLSearchParams(raw).get("pw");
-      if(demoGate.rightPassword(pw)){res.writeHead(303,{Location:"/?dealer=astrid&lang=en","Set-Cookie":demoGate.passCookie(true),"Cache-Control":"no-store"});res.end();return;}
-      res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=1","Cache-Control":"no-store"});res.end();});
+    // Kevin 12 Oct: one path, no parallel solution. The right password signs the visitor in as the shared Test Player
+    // back office account (DEMO_BO_USER/DEMO_BO_PASS, an aggregator) and they go through Table Studio like everyone else.
+    req.on("end",async()=>{const pw=new URLSearchParams(raw).get("pw");
+      if(!demoGate.rightPassword(pw)){res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=1","Cache-Control":"no-store"});res.end();return;}
+      let r=null; try{ if(process.env.DEMO_BO_USER&&process.env.DEMO_BO_PASS) r=await bo.login({user:process.env.DEMO_BO_USER,pass:process.env.DEMO_BO_PASS},clientAddress(req)); }catch{}
+      if(r?.status===200&&r.cookie){res.writeHead(303,{Location:"/studio/?resume","Set-Cookie":r.cookie,"Cache-Control":"no-store"});res.end();return;}
+      console.error("demo unlock: Test Player sign-in failed", r?.status??"no account");
+      res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=down","Cache-Control":"no-store"});res.end();});
     return;
   }
   const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
   if (!file) { res.writeHead(404).end(); return; }
   // The gate goes by the file, not the path: /index.html and /%69ndex.html are the game page as well.
-  if(file===path.join(PUBLIC,"index.html")&&demoGate.on&&!demoGate.hasPass(req.headers)){
+  if(file===path.join(PUBLIC,"index.html")&&demoGate.on){   // one path (Kevin 12 Oct): a Table Studio table or a signed-in back office account, nothing else
     const q=new URL(req.url,"http://x").searchParams, studioTable=studioTables.get(q.get("table")??"");
     let who=null; if(!studioTable){try{who=await bo.user(req.headers);}catch{}}
     if(!studioTable&&!who){res.writeHead(302,{Location:demoGate.passwordPage,"Cache-Control":"no-store"});res.end();return;}
