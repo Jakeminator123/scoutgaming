@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAWAPI_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes.",
+  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAW_API_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes. 12 Oct 2026 cleanup: canonical OPENCLAW_API_KEY supported by the private Gateway startup and specified in both Render services and Compose; legacy name is compatibility-only. Local GEMINI_API_KEY, empty RUNPOD_ENDPOINT_ID and platform-owned VERCEL removed after a private backup.",
   "services": {
     "render-game": {
       "sources": [
@@ -243,7 +243,7 @@
       },
       "required": [
         "LAB_API_TOKEN",
-        "OPENCLAWAPI_KEY"
+        "OPENCLAW_API_KEY"
       ],
       "firstBoot": [],
       "conditional": [
@@ -262,7 +262,7 @@
         "OPENCLAW_SPEECH_DEEP_MODEL",
         "OPENCLAW_SPEECH_TIMEOUT_MS",
         "OPENCLAW_STUDIO_ADMIN_DEVICE_KEY",
-        "OPENCLAW_API_KEY"
+        "OPENCLAWAPI_KEY"
       ],
       "managed": [],
       "blocked": []
@@ -278,7 +278,7 @@
         "service": "croupier-lab-openclaw"
       },
       "required": [
-        "OPENCLAWAPI_KEY",
+        "OPENCLAW_API_KEY",
         "OPENCLAW_MODEL_API_KEY"
       ],
       "firstBoot": [],
@@ -291,7 +291,8 @@
         "OPENCLAW_CONFIG_PATH",
         "OPENCLAW_DASHBOARD_ORIGIN",
         "OPENCLAW_DASHBOARD_ALLOW_LOOPBACK",
-        "CROUPIER_SPEECH_VISION"
+        "CROUPIER_SPEECH_VISION",
+        "OPENCLAWAPI_KEY"
       ],
       "managed": [],
       "blocked": []

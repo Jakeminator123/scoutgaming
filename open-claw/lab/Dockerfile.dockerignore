@@ -1,0 +1,12 @@
+# Director only: default-deny repository-root build context. Keep this allowlist
+# aligned with Dockerfile COPY inputs; never send local state, keys or media.
+**
+!open-claw/lab/package.json
+!open-claw/lab/src/*.mjs
+!open-claw/lab/public/index.html
+!open-claw/lab/public/app.mjs
+!open-claw/lab/public/styles.css
+!open-claw/lab/config/catalog.json
+!open-claw/lab/fixtures/scenarios.json
+!open-claw/lab/deploy/start-director.mjs
+!web/public/dealer-identity.mjs

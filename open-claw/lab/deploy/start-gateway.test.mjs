@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { gatewayConfig } from './gateway-config.mjs';
 import { gatewayEnvironment, parseGatewayConfig, prepareGatewayConfig } from './start-gateway.mjs';
 
-const example = { OPENCLAWAPI_KEY: 'test-only-gateway-secret', OPENCLAW_MODEL_API_KEY: 'test-only-provider-secret' };
+const example = { OPENCLAW_API_KEY: 'test-only-gateway-secret', OPENCLAW_MODEL_API_KEY: 'test-only-provider-secret' };
 
 async function fixture(t) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'croupier-gateway-test-'));
@@ -19,7 +19,7 @@ async function validateFixture(configPath, env) {
   const config = JSON.parse(await readFile(configPath, 'utf8'));
   assert.equal(config.gateway.auth.mode, 'password');
   assert.equal(config.gateway.auth.password, '${OPENCLAW_GATEWAY_PASSWORD}');
-  assert.equal(env.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAWAPI_KEY);
+  assert.equal(env.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAW_API_KEY);
   assert.equal(env.OPENCLAW_GATEWAY_TOKEN, undefined);
   assert.equal(env.OPENCLAW_CONFIG_READONLY, undefined);
 }
@@ -27,10 +27,29 @@ async function validateFixture(configPath, env) {
 test('startup maps the one secret to native password auth and removes retired read-only/token defaults', async (t) => {
   const env = await fixture(t);
   const child = gatewayEnvironment({ ...env, OPENCLAW_GATEWAY_TOKEN: 'stale-test-key', OPENCLAW_CONFIG_READONLY: '1' });
-  assert.equal(child.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAWAPI_KEY);
+  assert.equal(child.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAW_API_KEY);
   assert.equal(child.OPENCLAW_GATEWAY_TOKEN, undefined);
   assert.equal(child.OPENCLAW_CONFIG_READONLY, undefined);
   assert.throws(() => gatewayEnvironment({ ...env, OPENCLAW_CONFIG_PATH: path.join(env.OPENCLAW_STATE_DIR, '..', 'outside.json') }), /inside/);
+});
+
+test('startup normalizes either credential name and drops the legacy child credential', async (t) => {
+  const env = await fixture(t);
+  const legacy = { ...env, OPENCLAWAPI_KEY: env.OPENCLAW_API_KEY };
+  delete legacy.OPENCLAW_API_KEY;
+  const child = gatewayEnvironment(legacy);
+  assert.equal(child.OPENCLAW_API_KEY, example.OPENCLAW_API_KEY);
+  assert.equal(child.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAW_API_KEY);
+  assert.equal(child.OPENCLAWAPI_KEY, undefined);
+  const canonical = gatewayEnvironment({ ...env, OPENCLAWAPI_KEY: 'obsolete-test-key' });
+  assert.equal(canonical.OPENCLAW_GATEWAY_PASSWORD, example.OPENCLAW_API_KEY);
+  assert.equal(canonical.OPENCLAWAPI_KEY, undefined);
+  assert.throws(() => gatewayEnvironment({ ...legacy, OPENCLAW_API_KEY: '' }), /OPENCLAW_API_KEY/);
+  const first = await prepareGatewayConfig(legacy, { validateConfig: validateFixture });
+  const bytes = await readFile(first.configPath, 'utf8');
+  const next = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(next.action, 'reuse');
+  assert.equal(await readFile(first.configPath, 'utf8'), bytes);
 });
 
 test('first start seeds once; a native settings edit and its raw formatting survive the next start', async (t) => {

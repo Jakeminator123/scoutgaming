@@ -38,7 +38,7 @@ Repository index (paths are references, not automatic access):
 
 Connection: local studio server → Render Director → private OpenClaw Gateway →
 model provider. Local LAB_REMOTE_URL points to Director; LAB_REMOTE_TOKEN has
-the same value as Director LAB_API_TOKEN. OPENCLAWAPI_KEY is Gateway auth;
+the same value as Director LAB_API_TOKEN. OPENCLAW_API_KEY is Gateway auth;
 OPENCLAW_MODEL_API_KEY is the provider credential, not the Gateway password.
 Use configured credentials unchanged; never print values. This static package
 neither verifies current connectivity nor enables laptop access or player memory.

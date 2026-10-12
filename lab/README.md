@@ -248,13 +248,13 @@ saldo och utbetalningar är aldrig OpenClaws ansvar.
 Vid senare anslutning: sätt `LAB_REMOTE_URL` till Directors HTTPS-adress och
 `LAB_REMOTE_TOKEN` till dess `LAB_API_TOKEN`, i rotens `.env` eller labbets
 `.env.local`. De läses endast på servern. Ingen `NEXT_PUBLIC_*`-nyckel.
-`OPENCLAW_MODEL_API_KEY` stannar på Gatewayen; `OPENCLAWAPI_KEY` är Gatewayens
+`OPENCLAW_MODEL_API_KEY` stannar på Gatewayen; `OPENCLAW_API_KEY` är Gatewayens
 inloggning och är inte samma sak som Directors API-token.
 
 Den här ändringen tillför `/api/studio/advice` och `/api/studio/chat` i
 Director. De behöver driftsättas innan nya studion kan använda Render med
 sin tillfälliga katalog. Anropen sparar **inte** utkastet i Render. Direkt
-lokal Gateway stöds också via `OPENCLAW_BASE_URL` och `OPENCLAWAPI_KEY`.
+lokal Gateway stöds också via `OPENCLAW_BASE_URL` och `OPENCLAW_API_KEY`.
 Konfigurerad betyder inte automatiskt hälsotestad. Den 20 september 2026
 driftsattes Director `7f056f7`: aktivt val, shadow och operatörschatt gav
 riktiga modellsvar via lokal Next-server. Första rådanropet fick timeout;
@@ -292,7 +292,7 @@ labbet. Nyckelparet kan användas av olika klienter inom sin behörighet;
 
 Detta är skilt från våra övriga anslutningar: `LAB_API_TOKEN` skyddar vårt
 Director-API och `LAB_REMOTE_TOKEN` är den lokala kopian för anrop dit.
-`OPENCLAWAPI_KEY` hör till Gatewayen. Ingen av dem ersätter Bettalottos
+`OPENCLAW_API_KEY` hör till Gatewayen. Ingen av dem ersätter Bettalottos
 publika Partner-nyckel och tillhörande signeringshemlighet.
 
 Det historiska namnet `BETTALOTTO_API` avser enligt Kevins åtkomstuppgifter

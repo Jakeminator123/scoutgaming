@@ -1,7 +1,7 @@
 # Aktuell handoff — Scoutgaming
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `c48fc657`.
+`jakob/repo-ordning` och ajour med `origin/main` `deea75a5`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -183,6 +183,56 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Env-städning och OpenClaw-namnbyte, 12 oktober (`8a8f434e`, `19c44902`, `deea75a5`).** `fe8b6372` passerar samtliga tre GitHub-jobb och är verifierad live på Vercel
+och spelservern; den publika friläggningsmodulen matchar samma commit bytevis.
+Gateway driftsattes med samma bevarade konfiguration. Director avslöjade däremot
+ett tidigare paketeringsfel: `astrid-observation.mjs` importerar gemensamma
+`web/public/dealer-identity.mjs`, men Docker-kontexten innehöll bara labbmappen.
+Render återgick till den friska gamla Director-versionen. Båda nyckelnamnen
+behölls. Hälsokontroll och admin visar anslutning samt oförändrade fem roller,
+fyra modeller och konfigurationshash.
+
+Director-paketet bevarar nu repo-sökvägar och kopierar endast sina faktiska
+runtimefiler samt den gemensamma identitetsfilen. En Dockerfile-specifik
+allowlist utesluter övriga filer, hemligheter och media. Render behöver Docker
+context `.` med oförändrad Dockerfile-sökväg och Root Directory; Gateway har
+kvar sin tidigare kontext. Tre isolerade paketprov, full commit-hook och samtliga
+GitHub-jobb passerar för `19c44902`. Faktiskt Director-bygge och start är verifierade.
+Efter borttagningen av gamla env-namnet är båda tjänsterna åter live på samma
+commit och admin/hälsokontroller passerar med oförändrad konfiguration.
+Exakta driftkvitton finns i `ENVIRONMENT-VARIABLES.md`.
+
+Gatewayens startkod stöder nu `OPENCLAW_API_KEY` med prioritet över det
+äldre namnet, uttryckligt tomt värde stänger av fallback, och barnprocessen
+får endast det rättade namnet och OpenClaws interna lösenordsvariabel.
+Blueprint, Compose, aktiva exempel och guider använder samma namn för
+Director och Gateway. Äldre namnet finns kvar endast som kompatibilitet och
+i daterade driftkvitton. 105 riktade Gateway-/konfigurations-/isolationsprov
+passerar med Node 24.21.0; namnbytet bevarar sparad Gateway-konfiguration.
+
+Gemini-nyckeln utan produktkonsument, tomma gamla `RUNPOD_ENDPOINT_ID` och
+plattformsägda `VERCEL` är borttagna från båda aktiva lokala env-filerna med
+privat backup. Render hade 37/53/16/10 env-poster för QA/spel/Director/Gateway;
+samtliga återstående namn har produktkällreferenser. Det rättade Gateway-
+namnet har lagts till i Director och Gateway med samma befintliga credential
+och oförändrade övriga värden. Efter verifierad koddeploy togs endast det gamla
+namnet bort med privat backup och läsback; Director/Gateway har åter 16/10 poster.
+Omstart utan det gamla namnet och ny hälsokontroll passerar. Ingen modell,
+media eller DB ändrades av env-migreringen. PAOWs nya talprofil och visuella
+spelacceptans är fortfarande separata återstående steg; webbläsaren blockerade
+den första provspelningsadressen för Astrid (`ERR_BLOCKED_BY_CLIENT`), så den
+visuella fyrdealerskontrollen återstår. Ingen provinsats gjordes.
+
+**Hemsidans separata byggtest, 12 oktober (`4ea767cf`).** Hemsidans middleware-test laddar nu `next/server` från hemsidans egen
+Next-installation. Relativa Studio-importer använder fortfarande resolvern vid
+`lab/middleware.ts`. Samma verkliga middleware transpileras och alla befintliga
+assertioner för session, transport, alias och avvisade anrop består.
+Det isolerade provet har enbart hemsidans beroenden: före rättningen gav det
+`MODULE_NOT_FOUND`; efter rättningen passerar samma test. Alla 23 prov i filen
+och hela hemsidans testsvit passerar med Node 24.21.0 och fyra workers.
+Inga miljövärden, testgrindar eller produktflöden ändrades. GitHub-CI och ett
+nytt isolerat Vercel-förhandsbygge ska verifieras efter leverans.
 
 **PAOW-omstart och obligatorisk friläggning, 12 oktober (`0c04d1a2`, `c48fc657`).** Jakob bad uttryckligen om återställbar städning och en metodisk ombyggnad efter
 att bord/bakgrund inte gick att lägga bakom PAOW. Via den ordinarie N1-vyn
