@@ -103,10 +103,12 @@ dealer `paow-v2`, bord **Bord · Svart och guld** och en bakgrund med namnet
 `background-ditt-spelbolag`. Dessa namn bevisar inte en separat PAOW 3-bank
 eller att roulettematerialet är accepterat. Ingen av posterna ändrades.
 
-Biblioteksvyn visar två bordsbilder, båda registrerade som 1440 × 2560:
-**Bord · Svart och guld** (används av tre sammansättningar) och
-**e14100b1-0dad-4700-9d0a-a5bc081cadc4** (används av Mobile Phone Lane).
-Det senare är visningsnamnet, inte här verifierat som filens ID.
+Biblioteksvyn visar två bordsbilder. Båda laddades i webbläsaren med faktisk
+storlek 1440 × 2560: **Bord · Svart och guld**, lager-ID
+`4b688411-d186-4229-8f8a-046cd1b0a2c5` (används av tre sammansättningar), och
+**e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
+`b52b9077-de4e-4691-a570-a41a90312f6a` (används av Mobile Phone Lane).
+Det andra bordets UUID-liknande visningsnamn är alltså inte filens ID.
 De sju bakgrunderna visas som video, samtliga registrerade som 1920 × 1080:
 
 | Namn | Lager-ID | Användning enligt biblioteket |

@@ -15,7 +15,7 @@ acceptans dokumenteras i kontraktet. Sju videor avkodades och spelades till
 slut i webbläsaren utan mediefel; codecprofil/loopskarv är inte granskade.
 SIDOR3 äger UI-arbetet; första preview använder isolerat QA-underlag.
 Verifiering för denna dokumentationsleverans: källkontrakt och synligt
-produktregister jämförda; ordinarie dokumentationshook ska passera vid commit.
+produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
 Rumsövergång, riktiga lager i preview och spelacceptans återstår.
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
