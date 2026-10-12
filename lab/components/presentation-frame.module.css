@@ -16,6 +16,13 @@
 .frame[data-presentation-source=dealer] .content :global(.stage-video) { height: var(--dealer-height); width: calc(var(--dealer-height) * 16 / 9); max-width: 100%; aspect-ratio: auto; margin-inline: auto; overflow: hidden; }
 .frame[data-presentation-source=dealer][data-presentation-format=mobile] .content :global(.stage-video) { width: calc(var(--dealer-height) * 9 / 16); }
 .frame[data-presentation-source=dealer] .content :global(.stage-video) video { position: absolute; top: 0; left: 50%; width: auto; height: 100%; max-width: none; max-height: none; transform: translateX(-50%); }
+/* Native controls belong to the visible viewport, not the oversized picture. */
+.frame[data-presentation-source=dealer] .content :global(.stage-video) video[controls] { left: 0; width: 100%; transform: none; object-fit: contain; }
+.frame[data-presentation-source=dealer][data-presentation-format=mobile] .content :global(.stage-video) video[controls] { object-fit: cover; }
+/* The generated speech host is a sibling of the idle/event surface. */
+.frame[data-presentation-source=dealer] .content [data-dealer-speech-host] { inset: 0 auto auto 50%; width: calc(var(--dealer-height) * 16 / 9); height: var(--dealer-height); transform: translateX(-50%); overflow: hidden; }
+.frame[data-presentation-source=dealer][data-presentation-format=mobile] .content [data-dealer-speech-host] { width: calc(var(--dealer-height) * 9 / 16); }
+.frame[data-presentation-source=dealer] .content [data-dealer-speech-host] video { inset: 0 auto auto 50% !important; width: auto !important; height: 100% !important; max-width: none; transform: translateX(-50%); }
 .note { margin: 7px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) { background: repeating-conic-gradient(#333 0% 25%, #555 0% 50%) 0 / 20px 20px; }
 .frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) video { visibility: hidden; }

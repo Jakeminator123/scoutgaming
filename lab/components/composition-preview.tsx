@@ -24,7 +24,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
   const sourceKey=JSON.stringify(sources);
   const frameSettings=useRef(framing);frameSettings.current=framing;
-  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined),...(framing?{dealerAspect:16/9}:{})};},[settings,layout,show,compositing,framing]);
+  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined),dealerAspect:16/9};},[settings,layout,show,compositing,framing]);
 
   useEffect(()=>{
     const stage=canvas.current;if(!stage)return;stage.width=1080;stage.height=1920;
@@ -71,9 +71,9 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
           const video=videos.current.dealer;
           if(video&&context&&video.readyState>=2&&(video.currentTime!==actorTime||lastFraming!==frameSettings.current)){
             actorTime=video.currentTime;lastFraming=frameSettings.current;
-            const width=lastFraming?1920:1080,height=lastFraming?1080:1920;if(actor.width!==width||actor.height!==height){actor.width=width;actor.height=height;}
-            if(lastFraming)drawDealerFrame(context,video,width,height,lastFraming);
-            else{context.clearRect(0,0,1080,1920);const fit=Math.min(1080/video.videoWidth,1920/video.videoHeight),w=video.videoWidth*fit,h=video.videoHeight*fit;context.drawImage(video,(1080-w)/2,(1920-h)/2,w,h);}
+            // Legacy and local files need the same height fit as classified clips.
+            const width=1920,height=1080;if(actor.width!==width||actor.height!==height){actor.width=width;actor.height=height;}
+            drawDealerFrame(context,video,width,height,lastFraming);
             actor.src=`${video.currentSrc}@${actorTime}/${JSON.stringify(lastFraming)}`;
           }
           if(scene.current)renderer.current?.render(scene.current,actor,assets,[],undefined);
@@ -97,9 +97,9 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     catch{channels.forEach(video=>video.pause());if(token!==generation.current)return;setPlaying(false);setError(t('Videorna kunde inte starta. Försök igen.','The videos could not start. Try again.'));}
   }
   function pause(){Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
-  return <div>
+  return <div style={{containerType:'inline-size'}}>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
-      <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',width:'100%',maxWidth:layout==='mobile'?'min(100%, 45vh)':undefined,aspectRatio:layout==='mobile'?'9 / 16':'16 / 9'}}/>
+      <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',height:'min(540px, 60vh, 56.25cqw)',width:layout==='mobile'?'calc(min(540px, 60vh, 56.25cqw) * 9 / 16)':'calc(min(540px, 60vh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}/>
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
       <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>

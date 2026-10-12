@@ -53,7 +53,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
     const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
       {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&current.background.mode!=='baked'),table:Boolean(key.enabled&&current?.table.enabled)},key);
-    if(framing)scene.dealerAspect=16/9;
+    scene.dealerAspect=16/9;
     compositor.render(scene,actorFrame,assets(),[],null);
   }
   function animate() {paintHeld();if(!closed&&key&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);}
@@ -98,12 +98,10 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(closed)return false;
     if(!key||!compositor){host.dataset.presentationClipMode='opaque';if(compositor)compositor.canvas.style.visibility='hidden';return false;}
     if(!video.videoWidth||!video.videoHeight)throw Error('Dealer frame unavailable');
-    const targetWidth=framing?1920:1080,targetHeight=framing?1080:1920;
+    const targetWidth=1920,targetHeight=1080;
     if(actorFrame.width!==targetWidth||actorFrame.height!==targetHeight){actorFrame.width=targetWidth;actorFrame.height=targetHeight;}
     const context=actorFrame.getContext('2d');
-    if(framing)drawDealerFrame(context,video,targetWidth,targetHeight,framing);
-    else{const fit=Math.min(1080/video.videoWidth,1920/video.videoHeight),width=video.videoWidth*fit,height=video.videoHeight*fit;
-      context.clearRect(0,0,1080,1920);context.drawImage(video,(1080-width)/2,(1920-height)/2,width,height);}
+    drawDealerFrame(context,video,targetWidth,targetHeight,framing??undefined);
     actorFrame.src=`presented-frame-${++frameNumber}`;
     paintHeld();compositor.canvas.style.visibility='';host.dataset.presentationClipMode='green-screen';
     if(raf===null&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);
