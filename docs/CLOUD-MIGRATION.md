@@ -29,11 +29,11 @@ Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efte
 
 Öppet efter planen:
 
-- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers.
+- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. Delkontroll 13 oktober: Render och Vercel kör `a5441feb`, sökvägarna svarar som förut och rum paow3 spelar.
 - [ ] B18 permanent radering av klipp (beslutad 12 oktober): raden och sökvägen bort med journal (migration 009). Varje sparad paketrevision, fryst presentation eller öppet rum som refererar klippet spärrar. Bekräftelse kräver inskrivet namn. Egen PR; migrationen körs mot produktions-Neon före koden.
 - [ ] Bankens Blob-objekt saknar indexrad. De rensas först med B18:s journal.
 - [ ] B19 talklipp från vilobilden (beslutad 12 oktober): MuseTalk 1.5 på RunPod med dealerns egen röst, pilot Astrid `goodluck` på svenska och engelska, migration 010 efter B18. Betalda anrop bekräftas med Jakob först. Förtydliga regeln i `AGENTS.md`: förbudet gäller inklistrade munnar i spelaren, inte MuseTalk-genererade. Språkval i spelaren saknas.
-- [ ] A22b och framåt, `packages/platform`: utredningen A22a lämnas som ärende med etiketten `beslut` i inkorgen. Skivorna börjar först efter Jakobs beslut (B12). Proceduren står i `ordning/aktiviteter/A22-platform-karna.md` på `faf0e822`.
+- [ ] A22b och framåt, `packages/platform`: utredningen A22a är ärende #52 (`beslut`). Skivorna börjar först efter Jakobs beslut (B12). Proceduren står i `ordning/aktiviteter/A22-platform-karna.md` på `faf0e822`.
 - [ ] `?lane=layer-preview&rehearsal=1` svarar 503 (fanns före planen).
 - [ ] `astrid-select-baseline` faller eftersom `dealer-speech-profile.mjs` saknas i `ARCHIVE_PATHS` (fanns före V4).
 - [ ] `media-layout-verify` har en inaktuell rad för `astrid-zones-manual-snapshot-2026-09-29.json` (fanns sedan V1).
