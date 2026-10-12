@@ -92,7 +92,7 @@ export function blackjackUrl(value, { local = false } = {}) {
 }
 export async function build({ origin = process.env.CROUPIER_GAME_ORIGIN, local = false, frontendPreview = false, output = new URL('./dist/', import.meta.url) } = {}) {
   const href = blackjackUrl(origin, { local });
-  const source = await readFile(new URL('../../../ops/vercel-entry/index.html', import.meta.url), 'utf8');
+  const source = await readFile(new URL('./player-ui-landing.html', import.meta.url), 'utf8');
   await mkdir(output, { recursive: true });
   await writeFile(new URL('index.html', output), source.replace('{{BLACKJACK_URL}}', href));
   await copyFile(new URL('../../../web/public/blackjack-entry.css', import.meta.url), new URL('style.css', output));
