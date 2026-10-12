@@ -447,10 +447,13 @@ Första trycket på den lilla översikten öppnar vyn utan satsning. Minsta
 nummerträffyta där är 26 px och markerkontrollerna är minst 44 px höga.
 Serverkvitto, låsning, saldo och exakt återförsök är kvar.
 
+Fullständig pre-commit-kontroll passerar på `d66f0184` (Node 24.21.0).
 29 roulettekontroller inklusive bildregistrering passerar. Browserkontroll
 på 1440/390/320 px bekräftar placering, ångra, fokus och frånvaro av sidspill.
 Tappat kvitto + omladdning + återförsök ger samma requestId/version/bets och
-en enda debitering för den rundan. Dealer-audit --probe matchar fyra baseline-
+en enda debitering för den rundan. Lokal H.264-bakgrund fungerar med samma
+canvas genom förstoring/återställning; paus och markerplacering är kontrollerade.
+Dealer-audit --probe matchar fyra baseline-
 set; nya dealerklipp/mediaacceptans och framtida MP4-registrering återstår.
 
 ## 3. Senaste leveranser
