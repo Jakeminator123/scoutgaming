@@ -2,6 +2,7 @@ import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppeara
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
+import {layoutGameOverlay} from './game-overlay-layout.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
@@ -642,18 +643,18 @@ for (let i = 0; i < SEATS; i++) {
     <div class="stake"></div>
     <div class="sideresult"></div>
     <div class="result"></div>
-  </div>`;
+  </div><button class="bet-target bet-target-pp" data-bet="pp" aria-label="Perfect Pairs, plats ${i+1}"></button>
+    <button class="bet-target bet-target-main" data-bet="main" aria-label="Insats, plats ${i+1}"></button>
+    <button class="bet-target bet-target-tp" data-bet="tp" aria-label="21+3, plats ${i+1}"></button>`;
   seatsEl.appendChild(el);
   seatEls.push(el);
 }
-// screen-space seat positions measured from the expected-results screenshot:
-// x fractions of the viewport, y on a shallow arc bowing toward the player
-// Seats live on the TABLE IMAGE, not the viewport: equal angular spacing
-// along an ellipse concentric with the felt's near rail, constant inset.
+// Bets and cards share the compositor's reference plane. Table artwork remains
+// independently replaceable; its transparent border is not a gameplay anchor.
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
 const COMPACT_BOXES = [2, 3, 4];
-const compactQuery = matchMedia('(max-width: 860px) and (orientation: portrait)');
+const compactQuery = matchMedia('(max-width: 860px)');
 let compactSeats = compactQuery.matches;
 const playedBoxes = () => {
   if(!compactSeats)return seatEls.map((_,i)=>i);
@@ -667,6 +668,21 @@ const playedBoxes = () => {
 };
 
 function layoutSeats() {
+    const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
+    if(plane){
+      const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
+      const hud=$('#hud-bottom').getBoundingClientRect();
+      const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
+        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats});
+      seatEls.forEach((el,i)=>el.classList.toggle('seat-off',!boxes.includes(i)));
+      for(const seat of layout.seats){
+        Object.assign(seatEls[seat.box].style,{left:(scene.left+seat.x-table.left)+'px',top:(scene.top+seat.y-table.top)+'px'});
+        seatEls[seat.box].style.setProperty('--game-seat-scale',layout.controlScale);
+      }
+      Object.assign($('#dealer-cards').style,{left:(scene.left+layout.dealer.x-table.left)+'px',top:(scene.top+layout.dealer.y-table.top)+'px'});
+      localCards?.setProjection(layout,scene.width,scene.height);
+      return;
+    }
     const width = Math.min(innerWidth, innerHeight * 9 / 16), height = width * 16 / 9;
     const left = (innerWidth - width) / 2, top = (innerHeight - height) / 2;
     const table = $('#table2d').getBoundingClientRect(), boxes = playedBoxes();
@@ -680,6 +696,7 @@ function layoutSeats() {
 
 }
 layoutSeats();
+layerComposition?.onGeometryChange(layoutSeats);
 compactQuery.addEventListener('change', e => {
   compactSeats = e.matches;
   // boxes that just left the table must not keep money on them
@@ -760,6 +777,7 @@ function placeBet(i, field, targetEl) {
 }
 seatEls.forEach((seat, i) => {
   seat.querySelector('.spot').onclick = e => { console.info('[click-src]', i, 'trusted=', e.isTrusted); placeBet(i, 'main', e.currentTarget); };
+  for(const target of seat.querySelectorAll('.bet-target'))target.onclick=e=>placeBet(i,e.currentTarget.dataset.bet,e.currentTarget);
   seat.querySelector('.side.pp').onclick = e => placeBet(i, 'pp', e.currentTarget);
   seat.querySelector('.side.tp').onclick = e => placeBet(i, 'tp', e.currentTarget);
   seat.querySelector('.clear-box').onclick = () => {

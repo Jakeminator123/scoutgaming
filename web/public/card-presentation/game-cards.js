@@ -8,6 +8,7 @@ import { dealerHandClip } from './dealer-hand-occlusion.js';
 // One stable SVG node per server-issued draw. Motion is driven by source frames.
 export function createGameCards(svg, manifest) {
   const positions = new Map(manifest.deal.map(d => [d.id.replace('deal_pos', ''), d.kort]));
+  const sourcePositions=new Map(positions);
   const { bredd: width, hojd: height } = manifest.kort_storlek;
   const prefix = `${svg.id || 'cards'}-felt`;
   const defs = svgNode('defs');
@@ -147,7 +148,7 @@ export function createGameCards(svg, manifest) {
       const split = hand.splitCount > 1;
       const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 32 : 60);
       const value = total(hand.cards.filter(c => c.r));
-      const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
+      const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
         'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
       badge.append(svgNode('rect', { x: -36, y: split ? -16 : -22, width: 72, height: split ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
         svgNode('text', { y: split ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': split ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
@@ -162,6 +163,9 @@ export function createGameCards(svg, manifest) {
     move();
   }
   return {
+    setSeatOffsets(offsets) {
+      for(const [seat,point]of sourcePositions)positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
+    },
     sourceStarted() { pending = null; move(); },
     beginDeal(seat, draw, track = seat) {
       seat = String(seat);

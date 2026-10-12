@@ -107,6 +107,23 @@ test('two exact dealer plays and legacy metadata always use the shared keyed com
   assert.equal(host.dataset.presentationClipMode,'green-screen');waiting.close();
 });
 
+test('game plane follows scene resize but stays anchored to the base idle during speech crops',async()=>{
+  const {descriptor}=fixture(),host={dataset:{},clientWidth:1920,clientHeight:1080,append(){}};
+  const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:720,naturalHeight:1280,
+    setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
+  class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}render(){}dispose(){}}
+  const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+  let changed=0;c.onGeometryChange(()=>changed++);
+  const source={videoWidth:1080,videoHeight:1920},base={scale:.75,x:.1,y:0};
+  await c.prepareClip(key,base,{kind:'idle'});c.renderFrame(source);const p=c.referencePlane();
+  assert.equal(changed,1);c.renderFrame(source);assert.equal(changed,1);
+  await c.prepareClip(key,{scale:1.5,x:0,y:.1},{kind:'speech'});c.renderFrame(source);
+  assert.deepEqual({...c.referencePlane(),sourceAligned:true},p);assert.equal(c.referencePlane().sourceAligned,false);
+  host.clientWidth=390;host.clientHeight=844;c.hold();assert.notEqual(c.referencePlane().scale,p.scale);
+  await c.prepareClip(key,base,{kind:'idle'});c.renderFrame(source);assert.equal(c.referencePlane().sourceAligned,true);
+  c.close();
+});
+
 test('public capability metadata is exact and cannot read data, select media or authorize writes',async()=>{
   let reads=0;const handler=createPresentationApi({store:{load:async()=>{reads++;throw Error('must not read');}},registryLoader:async()=>{reads++;}});
   for(const [method,query,status]of [['GET','',200],['HEAD','',200],['GET','?registeredDealerIds=astrid',400],['POST','',405]]){

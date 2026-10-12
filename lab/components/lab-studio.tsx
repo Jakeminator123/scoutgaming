@@ -288,7 +288,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
       {conflict?<ProjectConflict base={JSON.parse(saved)} draft={project} onResolve={(remote,merged)=>{setSaved(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Utkastet är sammanslaget. Granska dina val och spara.');}}/>:null}
       {/* Keep the library mounted across tabs: queued uploads belong to this dealer. */}
       {dealer ? <div id="dealer-media" hidden={!showClips}>
-        {workspaceView==='idle'?<p className={styles.intro}>Grundloopen spelas mellan händelser. Välj basklipp och variationer här; scenens storlek och placering finns under Sammansättning.</p>:null}
+        {workspaceView==='idle'?<p className={styles.intro}>Grundloopen spelas mellan händelser. Välj basklipp och variationer här; scenens storlek och placering finns under Sammansättningar i Studio-menyn.</p>:null}
         {category==='speech'?<div className={styles.sectionHeader}><p className={styles.intro}>Tal-klipp och ljud för {dealer?.label}. Varje replik har egna filer, varianter och villkor.</p><a className="sg-btn sg-btn-secondary" href={reviewHref} onClick={event=>void continueTo(event,reviewHref)}>Talgranskning för {dealer?.label}</a></div>:null}
         <DealerMediaLibrary key={dealerId} project={project} inventory={videos} dealerId={dealerId} onProjectSaved={next=>{setSaved(JSON.stringify(next));setProject(next);}} onLifecycleChange={setDealerBusy} onInventory={setVideos} onPendingChange={setIntakePending} removalDisabledReason={dirty?'Spara dina ändringar innan du ändrar papperskorgen.':''} initialSlotId={initialEventId?initialEventId+'/'+(initialSituation??''):''} category={category} slotId={currentSlot} categoryIds={workspaceView==='idle'?[]:clipCategories} onSlotChange={slotId=>{const slot=dealerMediaSlots(project).find(row=>row.id===slotId);if(slot)open(slot.eventId,slot.situation);else{setSelection(null);writeSelection(dealerId,'','',requestedView);}}} onConfigureSlot={open} onCategoryChange={selectCategory} slotEditor={clipSettings} disabled={saving || !connectedLane} />
       </div> : null}
@@ -306,7 +306,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
         <DealerRegistration expanded showSpeechSettings={false} project={project} dealerId={dealerId} inventory={videos} disabled={!connectedLane||saving||uploading||intakePending||speechDraft||generationStatus.dirty||generationStatus.busy} onEdit={change=>setProject(current=>change(current))} onAdded={id=>{selectDealer(id);setNotice('Dealern finns i utkastet. Spara och lägg sedan in egna klipp.');}}/>
         {saveButton}
       </section>
-      {dealer ? <nav className={styles.contentNav} aria-label="Fortsätt med dealern">{[['/control/compositions','Sammansättning'],['/control/rehearsal','Provspelning & logg']].map(([path,label])=>{const href=contentLink(path);return <a key={path} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
+      {dealer ? <nav className={styles.contentNav} aria-label="Fortsätt med dealern"><a href={contentLink('/control/rehearsal')} onClick={event=>void continueTo(event,contentLink('/control/rehearsal'))}>Provspelning &amp; logg</a></nav> : null}
     </fieldset></main>
     </PageTemplate>
   </div>;

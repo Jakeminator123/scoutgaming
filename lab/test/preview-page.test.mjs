@@ -565,15 +565,13 @@ test('scene navigation preserves an explicitly requested dealer even when the se
   const render=initialDealerId=>renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId}));
   const html=render('vera');
   assert.match(html,/Du valde Vera i dealerbiblioteket/);assert.match(html,/Använd Vera som startdealer/);
-  const nav=html.match(/<nav aria-label="Studio för Vera"[^>]*>([\s\S]*?)<\/nav>/)?.[1];assert.ok(nav);
-  const links=[...nav.matchAll(/href="([^"]+)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
-  assert.equal(links.length,8);
-  assert.equal(links.filter(link=>link.searchParams.get('view')==='generate').length,1);
-  assert.equal(links.filter(link=>link.pathname.endsWith('/control/replies')).length,1);
+  assert.doesNotMatch(html,/aria-label="Studio för|class="tabs"/);
+  const links=[...html.matchAll(/href="([^"]*\/control\/clips\?view=idle[^"]*)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
+  assert.equal(links.length,1);
   for(const link of links){assert.equal(link.searchParams.get('dealer'),'vera');assert.equal(link.searchParams.get('composition'),project.lanes[0].id);}
   assert.deepEqual(project,before);
-  assert.match(render(undefined),/aria-label="Studio för Astrid"/);
-  assert.doesNotMatch(render('unknown-dealer'),/aria-label="Studio för Astrid"/);
+  assert.match(render(undefined),/Dealers &amp; klipp · Astrid/);
+  assert.doesNotMatch(render('unknown-dealer'),/Dealers &amp; klipp · Astrid/);
   assert.match(render('unknown-dealer'),/Dealern i länken är inte aktiv/);
 });
 

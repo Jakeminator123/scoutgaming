@@ -5,7 +5,6 @@ export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'idle', label: 'Grundloop', href: '/control/clips?view=idle' },
   { id: 'clips', label: 'Klipp', href: '/control/clips?view=clips' },
   { id: 'generate', label: 'Skapa material', href: '/control/clips?view=generate' },
-  { id: 'scene', label: 'Sammansättning', href: '/control/compositions' },
   { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
   { id: 'replies', label: 'Svarsbibliotek', href: '/control/replies' },
   { id: 'playback', label: 'Provspelning & logg', href: '/control/rehearsal' },
@@ -47,13 +46,15 @@ export function studioNavigationTabs(context = {}, hrefs = {}) {
 
 export function studioNavigationCrumbs({ dealerId, dealerLabel, active, crumbs = [], ...context } = {}) {
   const selection = { ...context, dealerId };
-  const result = [
-    { label: 'Studio', href: studioNavigationHref('/control/clips', context) },
-    { label: 'Dealers', href: studioNavigationHref('/control/clips', context) },
-  ];
-  if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/control/clips?view=idle', selection) });
-  const tab = STUDIO_DEALER_TABS.find(row => row.id === active);
-  if (tab) result.push({ label: tab.label, href: studioNavigationHref(tab.href, selection) });
+  const result = [{ label: 'Studio', href: studioNavigationHref('/control/clips', selection) }];
+  if (active === 'scene') {
+    result.push({ label: 'Sammansättningar', href: studioNavigationHref('/control/compositions', selection) });
+  } else {
+    result.push({ label: 'Dealers', href: studioNavigationHref('/control/clips', selection) });
+    if (dealerId) result.push({ label: dealerLabel || dealerId, href: studioNavigationHref('/control/clips?view=idle', selection) });
+    const tab = STUDIO_DEALER_TABS.find(row => row.id === active);
+    if (tab) result.push({ label: tab.label, href: studioNavigationHref(tab.href, selection) });
+  }
   result.push(...crumbs.map(crumb => ({ label: crumb.label, ...(crumb.href ? { href: labUrl(crumb.href) } : {}) })));
   // The final breadcrumb identifies this page; ancestors remain navigable.
   return result.map((crumb, index) => index === result.length - 1 ? { label: crumb.label } : crumb);

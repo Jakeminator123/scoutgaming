@@ -188,6 +188,15 @@ html[data-presentation-startup]:not([data-presentation-startup="ready"]) #scene 
 #seats { position: absolute; inset: 0; }
 .seat { position: absolute; width: 0; height: 0; }
 .seat-inner { position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; }
+html[data-presentation-standard="three-layer"] .seat-inner { transform:scale(var(--game-seat-scale,1)); }
+.bet-target {display:none;}
+@media (max-width:860px) {
+  html[data-presentation-standard="three-layer"] .bet-target {display:block;position:absolute;top:-22px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;z-index:5;}
+  .bet-target-main {left:-22px;width:44px;}
+  .bet-target-pp {left:-49px;width:24px;}
+  .bet-target-tp {left:25px;width:24px;}
+  .bet-target:focus-visible {outline:2px solid #d6ff3a;border-radius:8px;}
+}
 .spot {
   position: absolute; left: var(--spot-x); top: var(--spot-y); width: var(--spot-w); height: var(--spot-h); border-radius: 50%;
   background: radial-gradient(ellipse, rgba(24,72,50,.30), rgba(20,60,42,.38));

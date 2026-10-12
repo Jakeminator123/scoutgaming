@@ -38,7 +38,7 @@ function anchors(node) {
 
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
-  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Skapa material', 'Sammansättning', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
+  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Skapa material', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
   for (const tab of tabs) {
     const params = query(tab.href);
     assert.equal(params.get('dealer'), selection.dealerId);
@@ -48,7 +48,7 @@ test('switching dealer tabs keeps the selected event, variant, situation and com
     assert.equal(params.get('composition'), selection.laneId);
     assert.equal(params.get('view'), ['scene','replies','playback'].includes(tab.id) ? null : tab.id);
   }
-  assert.equal(new URL(tabs.find(tab => tab.id === 'scene').href, 'https://test.invalid').pathname, '/control/compositions');
+  assert.equal(tabs.some(tab => tab.href.startsWith('/control/compositions')), false);
 });
 
 test('custom tab destinations keep their own query and hash while encoding selection safely', () => {
@@ -126,6 +126,19 @@ test('dealer tabs are absent until a dealer is selected', () => {
   const html = renderToStaticMarkup(React.createElement(StudioNavigation, { active: 'clips' }));
   assert.match(html, /Brödsmulor i Studio/);
   assert.doesNotMatch(html, /Studio för|class="tabs"/);
+  const context = { ...selection, dealerLabel: 'PAOW', operatorId: 'operator-42', tableId: 'room-7', active: 'scene', crumbs: [{label:'Kväll'}] };
+  const scene = StudioNavigation({ ...context, onNavigate: event => event.preventDefault() });
+  const sceneHtml = renderToStaticMarkup(scene);
+  assert.doesNotMatch(sceneHtml, /Studio för|class="tabs"|Skapa material|Tal &amp; automatik/);
+  assert.deepEqual(studioNavigationCrumbs(context).map(crumb => crumb.label), ['Studio','Sammansättningar','Kväll']);
+  const back = anchors(scene).find(link => link.props.href.startsWith('/control/clips?view=idle'));
+  assert.ok(back);
+  assert.equal(query(back.props.href).get('dealer'),'paow');
+  assert.equal(query(back.props.href).get('composition'),selection.laneId);
+  assert.equal(query(back.props.href).get('operator'),'operator-42');
+  assert.equal(query(back.props.href).get('table'),'room-7');
+  const event={button:0,preventDefault(){this.defaultPrevented=true;}};
+  back.props.onClick(event);assert.equal(event.defaultPrevented,true);
 });
 
 

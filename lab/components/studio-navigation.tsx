@@ -2,7 +2,7 @@
 
 import type { MouseEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { studioNavigationCrumbs, studioNavigationTabs, type StudioNavigationCrumbOptions, type StudioDealerTab } from '../lib/studio-navigation.mjs';
+import { studioNavigationCrumbs, studioNavigationTabs, studioNavigationHref, type StudioNavigationCrumbOptions, type StudioDealerTab } from '../lib/studio-navigation.mjs';
 import styles from './studio-navigation.module.css';
 
 export type StudioNavigationProps = StudioNavigationCrumbOptions & {
@@ -21,6 +21,7 @@ export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNav
   } as typeof context;
   const crumbs = studioNavigationCrumbs(context);
   const tabs = studioNavigationTabs(context, tabHrefs);
+  const dealerHref = studioNavigationHref('/control/clips?view=idle', context);
   const navigate = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     // The editor owns its save/conflict guard. Native links preserve beforeunload
     // when no callback is supplied; modified clicks keep normal browser behavior.
@@ -35,7 +36,10 @@ export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNav
           : <span aria-current={index === crumbs.length - 1 ? 'page' : undefined}>{crumb.label}</span>}
       </li>)}</ol>
     </nav>
-    {context.dealerId && <nav aria-label={`Studio för ${context.dealerLabel || context.dealerId}`} className={styles.tabs}>
+    {context.active === 'scene' && context.dealerId ? <div className={styles.breadcrumbs}>
+      <a href={dealerHref} onClick={event => navigate(event, dealerHref)}>← Dealers &amp; klipp · {context.dealerLabel || context.dealerId}</a>
+    </div> : null}
+    {context.dealerId && context.active !== 'scene' && <nav aria-label={`Studio för ${context.dealerLabel || context.dealerId}`} className={styles.tabs}>
       {tabs.map(tab => <a key={tab.id} href={tab.href}
         className={tab.id === context.active ? styles.activeTab : styles.tab}
         aria-current={tab.id === context.active ? 'page' : undefined}
