@@ -1,5 +1,69 @@
 # Aktuell handoff — Scoutgaming
 
+## Rensning av lokala prototyper och cache, 12 oktober 2026
+
+Åtta frikopplade prototypfiler är borttagna: den gamla riggade bordsspelaren,
+grön-waiting-spelaren, packed-speech, performance-authoring samt dealer-studio
+och collection-export-review med respektive HTML. Importsökning, exportnamn
+och en konservativ modulanalys fann inga konsumenter i aktuell kod eller tester.
+Tre genererade Python-bytecodefiler är också borttagna. Gemensam .gitignore
+skyddar nu Next-/Nuxt-cache, .cache/.turbo, testresultat, Python-cache,
+virtuella miljöer, byggmetadata och loggar. node_modules var redan ignorerat.
+
+754 995 884 byte disponibel lab/.next/cache rensades efter tom sessionspost
+och kontroll av Node-processernas script/identitet. Övrig .next-runtime,
+beroenden, sparade data, råmedia och kalibreringar bevarades. Det pågående
+lokala 3lager-materialet med Johanna/Paow är kvar och lades inte till i Git.
+
+Verifiering: 11 ignore-prov, full precommit-regression med 2 874 godkända
+prov/11 villkorliga undantag/0 fel, samt audit-dealer-sync --probe. Alla fyra
+medieset matchar befintlig baseline; detta är inget nytt visuellt
+lipsynkgodkännande. Aktiva spel-/Studio-/partner-moduler har bevarats.
+
+En privat Git-bundle av originalhistoriken är verifierad utanför repot.
+Isolerad historikrensning gav 692 MB för endast main och 1,59 GB för brancher
+plus omskrivna historiska taggar; alla aktiva branchers filträd var identiska
+före/efter. Originaltippen var 77b760529f8be4eebb9c38737d25e111aa05a5ab.
+GitHub-historiken är inte omskriven. Faktisk publicering kräver samordning,
+färsk inventering efter denna commit samt hantering av Jakobs-v1 och gamla
+checkpoint-SHA:n; nuvarande leveransregel förbjuder force-push/andra brancher.
+
+## Offentlig bolagslista och GitGuardian, 12 oktober 2026
+
+Publika /api/operators svarade 503 fast Johns spelbolag och Nordic Bet hade
+läsbara spelrum; SG test game providers rum svarade 503. Listan utesluter nu
+endast ett bolag som den riktiga spelvalideringen uttryckligen avvisar som
+ospelbart, efter verifierat bolagsägarskap och fryst paket. Lagringsfel,
+främmande data och korrupta paket stoppar fortsatt svaret. Inga bolag eller
+rum ändras av katalogläsningen. 62 riktade prov passerade, inklusive
+pensionerad dealer, bolagsordning, HEAD och tenant-/lagringsfel. Kod 5ebe3ff4
+är verifierad live på Vercel dpl_9UmrNSYEKZr2CohshU2AqiQkfTyL och Render
+dep-db66cggu01pc73f9i9jg, med grön GitHub-körning 38204816606. Full lokal
+kontroll: 2 874 godkända, 11 villkorliga undantag, inga fel. Publik GET ger
+Johns spelbolag (tre rum, paket 14) och Nordic Bet (ett rum, paket 1). Webbvyn
+visar båda bolagen, och Nordic Bet leder till nordic rum med korrekt
+operator/table/dealer i speladressen. SG-test svarar fortsatt 503 för egen
+ospelbar publicering men blockerar inte listan. Inget spel startades.
+Den interna sammansättningsetiketten tas bort från spelarkortet: Nordic Bet
+ska inte visas med ett återanvänt konfigurationsnamn som nämner Johns bolag.
+Bolag, rum och vald dealer är kvar. Befintligt lobbyprov skyddar detta;
+19 lobbyprov och frontendens typkontroll passerar.
+
+GitGuardians befintliga skyddade API fungerar med incidents:read och
+sources:read. Samtliga 34 förekomster i de 12 öppna Scoutgaming-fynden
+kontrollerades mot sina exakta Git-versioner: 26 förekomster var filhashar
+under expectedHashes i docs/system-map/contracts.json, samtliga omräknade
+SHA-256 matchade. Åtta förekomster var rena konfigurationsfixturer i
+ops/cloud/test/container-entry.test.mjs utan databasanslutning.
+Åtta hashfynd (37867511, 37867512, 37879729–37879732, 37880359, 37880360)
+klassades som false_positive och fyra fixturefynd (37862641, 37863164–37863166)
+som test_credential i den inloggade GitGuardian-webbvyn. Efterläsning visade
+0 öppna och 17 ignorerade incidenter; de fem tidigare ignorerade ändrades inte.
+Bevakningen är aktiv. Historisk skanning är fortfarande too_large och ger
+inte full historisk täckning; detta kräver separat lösning för leverantörens
+storleksgräns. Inga API-behörigheter, detektorer, exclusions eller hemligheter
+ändrades. Andra repon i samma workspace ingår inte i denna klassning.
+
 ## Samlat kontroll- och partnerflöde, 12 oktober 2026
 
 N1 har fyra arbetsområden: Studio, Spelbolag, Drift och System. Skapa dealer
@@ -40,13 +104,13 @@ sviten passerar nu (1 664 godkända, två miljövillkorade undantag), liksom
 produktionsbygget med typkontroll. Tom spelstart ger avsiktligt 503 även för
 gamla alias; bord, kort, saldo och omstart fungerar i isolerade prov. Samma
 regressioner ingår nu även i commitkontrollen.
-Commit 7eb9f7a verifierades på main, med grön GitHub-körning 38200519251,
-Vercel READY på www.scoutgaming.tech och Render live med samma SHA. Hela
-lokala commitkontrollen passerade med 2 871 godkända prov och 11 villkorliga
+Commit 5df1a454 verifierades på main, med grön GitHub-körning 38202259662,
+Vercel READY på www.scoutgaming.tech. Spelmotorn verifierades live på Render med 7eb9f7a. Hela
+lokala commitkontrollen passerade med 2 872 godkända prov och 11 villkorliga
 undantag. Inloggad Chrome-läsning verifierade fyra verkliga bolag, Johns tre
 spelrum och paketversion 14 i både N1 och N2, samt partnerkatalogens riktiga
 bolag. Interna länkar behöll bolags- och rumskontext. Den gamla etiketten
-Mobile Phone Lane i N2:s paketval normaliseras till Standardsammansättning;
+Mobile Phone Lane normaliseras i N2:s paketval, översikt och rumstabell;
 sparade identifierare och paketdata behålls. Provspelningen visar rums- och
 bolagsnamn; tekniska ID:n styr fortsatt observationens identitet.
 Arkiveringsförhandsvisningen för PAOW hämtade aktuell påverkan på klipp,

@@ -93,7 +93,7 @@ const {PlayerOperatorChooser,PlayerRoomCatalogue}=load(resolve(root,'components/
 
 test('actual lobby room cards use registered names and permitted environment options before play',()=>{
  const html=renderToStaticMarkup(React.createElement(PlayerRoomCatalogue,{catalog:fixture(),directPlay:true}));
- assert.match(html,/Johannas blackjack/);assert.match(html,/Kvällsmiljö/);
+ assert.match(html,/Johannas blackjack/);assert.doesNotMatch(html,/Kvällsmiljö/);
  assert.match(html,/Spela med Johanna/);assert.doesNotMatch(html,/>Nora</);
  assert.match(html,/Grönt bord/);assert.match(html,/Kvällslounge/);
  assert.match(html,/operator=johns-spelbolag&amp;table=room-johanna&amp;dealer=nora/);

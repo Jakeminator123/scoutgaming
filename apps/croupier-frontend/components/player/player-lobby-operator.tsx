@@ -78,7 +78,7 @@ export function PlayerRoomCard({catalog,room,stored,directPlay}:{catalog:PublicO
       <header className="border-b border-white/10 px-5 pb-6 pt-7 sm:px-8 sm:pt-9">
         <p className={kickerClass}><span aria-hidden="true">{'// '}</span>Spelrum · {catalog.operator.name}</p>
         <h3 id={room.id+'-title'} className="mt-3 break-words text-3xl font-medium leading-[1.05] tracking-[-0.03em] sm:text-4xl">{room.name}</h3>
-        <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/55"><span className="rounded-full border border-white/15 px-3 py-1">{room.presentation.label}</span><span>Förhandsvisningen följer dina val.</span></p>
+        <p className="mt-4 text-xs text-white/55">Förhandsvisningen följer dina val.</p>
       </header>
       <div className="flex-1 divide-y divide-white/10 px-5 sm:px-8">
         <fieldset className="py-7"><legend className="float-left w-full"><StepHeading step="01" title="Dealer" value={dealer.label}/></legend>
