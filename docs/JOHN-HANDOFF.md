@@ -1,7 +1,7 @@
 # Aktuell handoff — Scoutgaming
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` (`43bb429c`) och mot `origin/main` `12a12fd6`.
+`jakob/repo-ordning` och ajour med `origin/main` `dda785ec`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -181,6 +181,46 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Blackjackstart och granskning av uppspelningslogik, 12 oktober (`dda785ec`).**
+`prepareTable` anropade `loadLabClipConfiguration` efter att funktionen tagits
+bort i `7f7f6fc0`. ReferenceError låste bordet före serverns `state`, så inga
+marker kunde läggas. Det kvarvarande anropet och dess kommentar är borttagna.
+Den gamla funktionen gjorde redan inget för den gemensamma spelaren.
+
+Regressionen kör verkliga `prepareTable`, `placeBet` och deal-knappens kod för
+inloggad spelare, gäst och Studio-provspel. Den tidigare teststubben för den
+borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
+skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
+Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
+och kompositorns JavaScript utan runtime-stubbar. Vid A20/A21 måste dess
+kataloger i `test/browser-runtime-bindings.mjs` följa samma atomära flytt.
+
+Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
+`f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade
+kodnamn. Gemensam kortgivning, hålkort/vändning, tal, hashverifierad videobuffer
+och förberedelse av nästa klipp finns kvar. Buffring och kortöverlägg har
+redan selektivt anpassats från Kevin; hans separata motor, demoplånbok,
+identitet och mediabank ska inte helmergas för att rätta starten.
+
+Kvar i befintlig omorganisation:
+- `transitionClipsForDealer` har endast en testkonsument. Facken Till skon/
+  Från skon är konfiguration; automatisk uppspelning är ännu inte inkopplad.
+  Detta är ofärdigt arbete, inte belagt borttagen logik.
+- A30/T7: `buildAssetsManifest(web/public, dealer)` gav 0 streams/deals/speech
+  för Astrid, Vera, Amira och Mei. Partnerproducenten läser gamla sökvägar och
+  erbjuder scenadresser som avsiktligt ger 410. Kräver ett uttryckligt
+  partnerkontrakt mot publicerade paket, inte återaktiverad originalspelare.
+- Kevins återhämtning efter browserpaus och filmvarianter för vila/redo är
+  möjliga fortsättningar med egna mediekrav. A20/A21 ska fortsatt vara
+  flyttar utan sådana beteendeändringar.
+
+`audit-dealer-sync --probe` passerade för alla fyra historiska medieset;
+inga media eller godkännanden ändrades. Det är inget nytt visuellt
+lipsynkgodkännande. Amira är avvecklad som aktiv identitet; offline-start får
+inte kringgå kravet på registrerad dealer och publicerat/sparat provpaket.
+Full pre-commit-regression med Node 24.21.0 och högst fyra lokala testworkers
+passerade. Produktionsleveransen är ännu inte verifierad i detta kvitto.
 
 **Merge-samordning och CI-cache, 12 oktober (`45ff5c25`).** Övertagen av
 merge-cd76. Merge gäller bara PR-author `Jakeminator123`, samma repo, mål
