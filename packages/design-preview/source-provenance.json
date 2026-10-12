@@ -1,0 +1,471 @@
+{
+  "purpose": "Original source hashes before preview adaptations. No API routes, credentials or migrations imported.",
+  "sources": [
+    {
+      "archiveSha256": "23a170a20b55ea210a09c5454e15dc8e1ea086ddbd402130d0845c5750d38df3",
+      "files": [
+        {
+          "path": "app/control/(studio)/assets/page.tsx",
+          "sourceSha256": "df5e139bf2309c5b94554efa96f1f247d44e5a29aae9da952df83777dffe18fa"
+        },
+        {
+          "path": "app/control/(studio)/clips/page.tsx",
+          "sourceSha256": "2f538c4432b0c16525e70477dc28df8a0518873280ac43fb0cf21dbd43e9c7a6"
+        },
+        {
+          "path": "app/control/(studio)/structure/page.tsx",
+          "sourceSha256": "45a266c9b4d561454851f3f74f5fd9583b98515b1f62cf9c96a108faf694cec5"
+        },
+        {
+          "path": "app/control/admin/accounts/page.tsx",
+          "sourceSha256": "8b39f2aa46c8db2da9cf33a20a7434a24182af7fa03fe0f8db199d4d5886c9c1"
+        },
+        {
+          "path": "app/control/admin/api/page.tsx",
+          "sourceSha256": "a71db9bf8e7999c04abda850c6ad77eb57fa4c1da826773df615e4e5d35be6e9"
+        },
+        {
+          "path": "app/control/admin/log/page.tsx",
+          "sourceSha256": "0c7de79784e98d77bb4fc80c2aa3bf6e4d05270076ddaef0c5e673793e6827fe"
+        },
+        {
+          "path": "app/control/admin/operators/page.tsx",
+          "sourceSha256": "53e47af7ae7e8ea0213b7c912077369349f2fa1aa8ee539e282291b442af0663"
+        },
+        {
+          "path": "app/control/admin/page.tsx",
+          "sourceSha256": "90897d235cabeac9f38183dcc271ee091e0bbf6952967759ef7b1d2afc8e5a50"
+        },
+        {
+          "path": "app/control/admin/payments/page.tsx",
+          "sourceSha256": "f305b20cd8a81e0d612694c37dcf78a392be1bb341416c3bcdf12d8dde7f4adb"
+        },
+        {
+          "path": "app/control/admin/players/page.tsx",
+          "sourceSha256": "f2cda9e07ca1f7504f66ed853391be1eb21b794a4c4e1f2965b6a6c39253933b"
+        },
+        {
+          "path": "app/control/ai/chat/page.tsx",
+          "sourceSha256": "d45fec52130f892e26134015e5a00748b1a2d2e63e8ba5b8d598fd22e163b431"
+        },
+        {
+          "path": "app/control/ai/models/page.tsx",
+          "sourceSha256": "69bff3f1de04ff9f344132984ea8ff6e4f65fe7859099263f81e11b64c6656f2"
+        },
+        {
+          "path": "app/control/drift/page.tsx",
+          "sourceSha256": "41ba21a8b9dee8b1c0d5de271f95650ad7bedee738c5c0a73ef3f5ce7e9ca35a"
+        },
+        {
+          "path": "app/control/ekonomi/page.tsx",
+          "sourceSha256": "5110587f62841832b9d833e1622aa4e858acf28add58ba7071f95f35bc5a2c8b"
+        },
+        {
+          "path": "app/globals.css",
+          "sourceSha256": "f8e5f2c5dd7a4c2e4ba38d7a476c828155a2810dd4636c9a98a1f4ac5c95cac9"
+        },
+        {
+          "path": "app/studio.css",
+          "sourceSha256": "fd8fec09e15266bc12a9a3b31a84224def270cc611b3172e835eab8e7cc33cb7"
+        },
+        {
+          "path": "components/ops/accounts-admin.tsx",
+          "sourceSha256": "144cf8ae917283e4a4aa248128b1d042d9aa7b81619f5ba778b617a416604934"
+        },
+        {
+          "path": "components/ops/admin-gate.tsx",
+          "sourceSha256": "7eac6d980a5e34f839344a770db8efdbde10b957acc2a51df897934a14187d0c"
+        },
+        {
+          "path": "components/ops/agent-chat.tsx",
+          "sourceSha256": "74293833adf6692bdccffe239bc96f0a402063c1d21d530952251c32e8ff5189"
+        },
+        {
+          "path": "components/ops/agent-models.tsx",
+          "sourceSha256": "e83d3008a3ada1c1044720e35ab855a590bc917136b09e520732a032fbbde840"
+        },
+        {
+          "path": "components/ops/api-admin.tsx",
+          "sourceSha256": "c6ac862b6ebbdfd78d31a2b9dfff2ebaca89932ba7c92749d8555f14d8bb1c01"
+        },
+        {
+          "path": "components/ops/audit-view.tsx",
+          "sourceSha256": "4d60ccb9caa9613e19d5f739fc731f845411ebbf71db1802d9028f87094a0ffd"
+        },
+        {
+          "path": "components/ops/drift-view.tsx",
+          "sourceSha256": "ce9bde97c558f37e873bce7819f3569b7c07e0b0d7bac84b8919db7f1f4a2c34"
+        },
+        {
+          "path": "components/ops/economy-view.tsx",
+          "sourceSha256": "9049b753f724e9a3dbc3c1557207640985635d9c3762d33516fc46223072c514"
+        },
+        {
+          "path": "components/ops/operators-admin.tsx",
+          "sourceSha256": "33301982e9c800ea3e1dfa942a6a5c2f37f10a84deb8792e41e5ed31c87ac69c"
+        },
+        {
+          "path": "components/ops/payments-admin.tsx",
+          "sourceSha256": "a7dc6547862fb61a15a781e8b065b947be240b4587072bb759f03ea2ff4e6610"
+        },
+        {
+          "path": "components/ops/players-admin.tsx",
+          "sourceSha256": "b773e6fcdd1eb8d17181aaec56a2bcdde437a183b8fdbb0d14e15648f7e7cde3"
+        },
+        {
+          "path": "components/ops/ui.tsx",
+          "sourceSha256": "603b6662028d48ab9a308f82d8d11511454ec1c7945b8307e9454f4f5214d230"
+        },
+        {
+          "path": "components/studio/asset-library.tsx",
+          "sourceSha256": "40cffd0a7d1c4b9a086b5a7f5de0fe85e0093c70a1934485f6104a7f9943f1fc"
+        },
+        {
+          "path": "components/studio/background-rotation.tsx",
+          "sourceSha256": "3fb354357de6807b73789f2bb6312e1ee3573855b9c521d2c9d275cf4ad061aa"
+        },
+        {
+          "path": "components/studio/clip-canvas.tsx",
+          "sourceSha256": "55fd9bf88c3198040bae823ec15924769ac4df988059229095224bd5628c9a1f"
+        },
+        {
+          "path": "components/studio/clip-node.tsx",
+          "sourceSha256": "3b6d872a295b507d1507c7222d0253af37728b584e59bcef334e64a726e033cd"
+        },
+        {
+          "path": "components/studio/hierarchy-bar.tsx",
+          "sourceSha256": "b486021de050c6f00d553ad4eaa2d70968c89858290ac553bad2dacf8c58b90c"
+        },
+        {
+          "path": "components/studio/structure-view.tsx",
+          "sourceSha256": "4e5b7a01b9784e6b78f49c2bef8c94448c002207d86a95aff7fab0ff2e2c28d1"
+        },
+        {
+          "path": "components/studio/studio-header.tsx",
+          "sourceSha256": "ef909c31aee665347fd805a6bf818ce3b1e781d506887af7ca999daff4e7aa65"
+        },
+        {
+          "path": "components/studio/studio-provider.tsx",
+          "sourceSha256": "532ecff0dbb9d6c60d511c4d301d82efbf11ccfeccf4297780c220ab5bc33507"
+        },
+        {
+          "path": "components/studio/studio-sidebar.tsx",
+          "sourceSha256": "72db9a440cf22f7baa5eef58b5f7ef60a2e3948444f43aa718696c29fad958db"
+        },
+        {
+          "path": "components/ui/chart.tsx",
+          "sourceSha256": "b2d753024abcdab1e50510b2b739264740cf66e2df5e73de7d8449e3f1a52219"
+        },
+        {
+          "path": "lib/clip-catalog.ts",
+          "sourceSha256": "4676e3709ba5a62957b154af33485667b8821d21fc74588812ebe541a85f7c17"
+        },
+        {
+          "path": "lib/ops.ts",
+          "sourceSha256": "109a805d98a22f77c7b62639d98e7d712655d95657f628e5fd7d8f00c15a6943"
+        },
+        {
+          "path": "lib/studio-assets.ts",
+          "sourceSha256": "44d3a8cecc029d7912a48102b695da3133f47ee1f99147f7a6308a6dcfce7a15"
+        },
+        {
+          "path": "lib/studio-hierarchy.ts",
+          "sourceSha256": "4d17fa2bed32071bf23e2a31e810f312b2e9d9f2c2f58bfa076b903243b0d811"
+        },
+        {
+          "path": "lib/utils.ts",
+          "sourceSha256": "e46429536f43f5910f5b2b0c50bb2769b510a4558bb4b5d20a3b0a9091dbf7c3"
+        },
+        {
+          "path": "public/assets/bg-lounge.png",
+          "sourceSha256": "ffda1accc27968859f033b41b11401f0ecae7b2f840f788f1001e0db958ece46"
+        },
+        {
+          "path": "public/assets/bg-studio-dark.png",
+          "sourceSha256": "d4fbcfe88229091d4422ba17dddce0c742df59a43e736783036564e88f446366"
+        },
+        {
+          "path": "public/assets/bg-teal.png",
+          "sourceSha256": "21cff15ab109f60ff2ecbb6765aeb73d142388aafeea08a2111e15b1a6615bf7"
+        },
+        {
+          "path": "public/assets/table-black.png",
+          "sourceSha256": "d3cd12f5417e304bcc196f9b23487b97a2fa044900674abbad962ba97cccab1e"
+        },
+        {
+          "path": "public/assets/table-green.png",
+          "sourceSha256": "f201500f808cff7c7b957fb4847875e07bafd057d9133ee0f48d2ea81e36aebc"
+        },
+        {
+          "path": "public/clips/deal-player.png",
+          "sourceSha256": "8522ef21d8e25856c50bd65a56a9295177007e81c60f22f124dff076adfb32f0"
+        },
+        {
+          "path": "public/clips/dealer-hole.png",
+          "sourceSha256": "8453f5b3068655102abbf14715df853f7e04d05da579ac2cee2e4ba8fc71e5da"
+        },
+        {
+          "path": "public/clips/dealer-up.png",
+          "sourceSha256": "bf3e21d005cbd6881ad8cf52730765813f02cd4432de7c31f4f5558bbb3c92a3"
+        },
+        {
+          "path": "public/clips/from-shoe.png",
+          "sourceSha256": "2e24e66e3363095e743a06aaff14adec7062ac12be536dd54e6e19d5a5b5071c"
+        },
+        {
+          "path": "public/clips/idle.png",
+          "sourceSha256": "dd8c6c570a505c4ca0b74ec6c850c1b4a1b044fc80b513010ff5aa2e1e196a64"
+        },
+        {
+          "path": "public/clips/reveal.png",
+          "sourceSha256": "f77a1c12f9636d21405a276f4f12d628709a3ad5c8b63e654cd02a08b9be39bd"
+        },
+        {
+          "path": "public/clips/speech.png",
+          "sourceSha256": "35453f76c8a3490e243eadb2bbf84c74e632604f7a9e6d8c1afa058e9365ef97"
+        },
+        {
+          "path": "public/clips/to-shoe.png",
+          "sourceSha256": "ad8195f1092ab8aa12289ef3b70fee590038e73e3d885987be3761675d881f15"
+        },
+        {
+          "path": "public/flowforge-logo.png",
+          "sourceSha256": "709ea498a64272581e17d9e4d3242bfc0f7c804fbc2ef1edc753423a72c98954"
+        },
+        {
+          "path": "public/placeholder-logo.png",
+          "sourceSha256": "d7c39d978af643ba9525de6fb8171e0f834882db4110c82ecad0df3f4f69551a"
+        },
+        {
+          "path": "public/placeholder-logo.svg",
+          "sourceSha256": "19a9e968f4656d52a4c249b4056117ad109370ba9da51cdc630ddded74cec73b"
+        },
+        {
+          "path": "public/placeholder-user.jpg",
+          "sourceSha256": "22be067d748175598a5e00123902f5c8332dd7f101de03dfb92ec08d85bb5e53"
+        },
+        {
+          "path": "public/placeholder.jpg",
+          "sourceSha256": "14be0c7aa11cca1e78f0966176b286a6d36d00ec64be027775dfeb33d8e2dfdf"
+        },
+        {
+          "path": "public/placeholder.svg",
+          "sourceSha256": "64badf7aabda0b9630b87020ffb6095cb858ccbcf66b355c2aa08b1063954d3b"
+        },
+        {
+          "path": "tailwind.config.ts",
+          "sourceSha256": "fce63afb614e57af34ecba3036caaf6358629435763c10f0de096edbfe3b3437"
+        }
+      ],
+      "name": "admin",
+      "archive": "ai-workflow-canvas.zip"
+    },
+    {
+      "archiveSha256": "697cbf83e9605ad441a11f60f85990ce0ef2668837d3ac2ec983cce21e0b15f6",
+      "files": [
+        {
+          "path": "app/globals.css",
+          "sourceSha256": "5cc09f11abd2b87c2793154d13cb1f7e7e52e6278471b03d99cae7322a008d48"
+        },
+        {
+          "path": "app/page.tsx",
+          "sourceSha256": "fc7509dba08485ed971ae395a11bd959a36431077bc49b9c713d43c5dc8fe27b"
+        },
+        {
+          "path": "components/dealer-key-filter.tsx",
+          "sourceSha256": "d8a70e22920d0aed47be660de4128cfe07c88253c6982201058079c4601f1ad4"
+        },
+        {
+          "path": "components/dealer-portrait.tsx",
+          "sourceSha256": "20bb52c5016f606e66b4b57aa82cc0fff16e9623637477d84c2d3500b9bf038e"
+        },
+        {
+          "path": "components/fade-image.tsx",
+          "sourceSha256": "38875a2930fdf90c4564f5da9265d6d060337f7adb8d2125b870c02c53a5a0a1"
+        },
+        {
+          "path": "components/header.tsx",
+          "sourceSha256": "ff9ff81348f4350a35bdc1f1b3ab96df607d6b5feb9c0c49ec377d904c17a6f4"
+        },
+        {
+          "path": "components/hero-keystone.tsx",
+          "sourceSha256": "1b7a1b750ff9eef30fd5a2932386168543f51168b49c01e161e8dae6366830e9"
+        },
+        {
+          "path": "components/lobby-provider.tsx",
+          "sourceSha256": "0339bdcbcec909085ee1c79f8c605de15b33f901e9a69a8c29d96af9d01b803e"
+        },
+        {
+          "path": "components/locked-overlay.tsx",
+          "sourceSha256": "c6a9f6e57db2ca605602a810ab913e4988f3a93111a0d036e0dc1b94daf16112"
+        },
+        {
+          "path": "components/roulette-wheel.tsx",
+          "sourceSha256": "1e7e2cf8fc0d23777773b8765483277e670ff65da5403ea0f664495479a54884"
+        },
+        {
+          "path": "components/scout-logo.tsx",
+          "sourceSha256": "e90f96883ebb677482ddf0459924ac3c586a7d2048f0f7a6d7bac17ffd02316f"
+        },
+        {
+          "path": "components/sections/dealers-section.tsx",
+          "sourceSha256": "4301b0404260d6400d1255a9aaf8e15b87eba2ed5f99e4a58da3d56ae2274105"
+        },
+        {
+          "path": "components/sections/footer-section.tsx",
+          "sourceSha256": "9f4259961e78baedc430baa7a4179a4b58666a9d7868e5c52dc458e4744640f5"
+        },
+        {
+          "path": "components/sections/hero-section.tsx",
+          "sourceSha256": "1b7e6a99baa245b829ca44ac7a7619c6d73f979e68476f820beee6ab3de8af11"
+        },
+        {
+          "path": "components/sections/how-it-works-section.tsx",
+          "sourceSha256": "5e24ae29777faa143e9c80a69e98e5db33e4b6666f7cf73768fa4a764ba7f1af"
+        },
+        {
+          "path": "components/sections/operators-section.tsx",
+          "sourceSha256": "b974a5d458c8ebf9375576742e329ac47ddf222516de457956a238026a053520"
+        },
+        {
+          "path": "components/sections/rooms-section.tsx",
+          "sourceSha256": "a3b5fcaa64a2aea653312ce0d46ab3923e78d81298eb0fa11958dbc853d4573b"
+        },
+        {
+          "path": "components/selection-ticket.tsx",
+          "sourceSha256": "621209ea17d685dea13813f939f8f1d9c45075ac26ba5802c7b5bbc6f235aff3"
+        },
+        {
+          "path": "components/theme-provider.tsx",
+          "sourceSha256": "7c1edcfa7a0614bfc279aeb8ce3e60e0642b1c24a6ff3d4d03d3e256efc95b20"
+        },
+        {
+          "path": "components/ui/dialog.tsx",
+          "sourceSha256": "2341f5d3379758c9659806e518299f9a3dc394128571e379ed83941deae83403"
+        },
+        {
+          "path": "components/ui/dropdown-menu.tsx",
+          "sourceSha256": "3124a8b0edfe90400cf4d14d438dfe6ac3af9ec9a6181feee10f48390aeb1815"
+        },
+        {
+          "path": "hooks/use-hero-sequence.ts",
+          "sourceSha256": "c4fd4508518862af6d58a9e7a43358ab33c0b817f2bcc7646cf0660bad066a6a"
+        },
+        {
+          "path": "hooks/use-mobile.ts",
+          "sourceSha256": "1b43441b273aa21c1e74fefa774d5a7cb50068e5d4c192a8f63b9c95c5580431"
+        },
+        {
+          "path": "hooks/use-toast.ts",
+          "sourceSha256": "3b5f8c9c5257f1cf36a94eeffed2588037e9cc7931d90b752604c2baed30cf81"
+        },
+        {
+          "path": "lib/lobby-data.ts",
+          "sourceSha256": "04ca0341be705966db8f9c2d5af31d891b920f23f00d3cd14cb73b9c1366ce0d"
+        },
+        {
+          "path": "lib/utils.ts",
+          "sourceSha256": "e46429536f43f5910f5b2b0c50bb2769b510a4558bb4b5d20a3b0a9091dbf7c3"
+        },
+        {
+          "path": "public/apple-icon.png",
+          "sourceSha256": "da678942d4656a903f61000551cc51c09464d7a223faaae304e8210e1ca19257"
+        },
+        {
+          "path": "public/icon-dark-32x32.png",
+          "sourceSha256": "8a1570b2955c3748b6844356a7487d88c60f9f1e699e870a3452a3decd1ba03c"
+        },
+        {
+          "path": "public/icon-light-32x32.png",
+          "sourceSha256": "83145e5bb033ace23cd8e7fbb63e7c39733aaf58f8a7280d7800995cced6f7c2"
+        },
+        {
+          "path": "public/icon.svg",
+          "sourceSha256": "263f117c0c69a44d3206a5702105c178ebaa164bca325f3c3973a13bd948f1bf"
+        },
+        {
+          "path": "public/images/dealers/astrid.jpg",
+          "sourceSha256": "98c40754cd3dfdba2765e2d0bc6477f910eae8e44056fbc6e87493a73bc58e2d"
+        },
+        {
+          "path": "public/images/dealers/dragge.jpg",
+          "sourceSha256": "f23e116a3aab8e11d9f82c3e05f2c285769f55cef57acc4c8884d5f129728f4e"
+        },
+        {
+          "path": "public/images/dealers/marten.jpg",
+          "sourceSha256": "e4705a244e427ec26de5d8cbf9c680f3ccb52568b0e309b56c10271b7bc7cb8e"
+        },
+        {
+          "path": "public/images/dealers/paow.jpg",
+          "sourceSha256": "328b2a15e685d413dd385befae9275c69549c4eebb76e126d8e51f550139b068"
+        },
+        {
+          "path": "public/images/lobby/detail-chips.png",
+          "sourceSha256": "59ca96366ae6d176b23a9a66723225ee3e8b74ca00e21a5dd810133ed76595d9"
+        },
+        {
+          "path": "public/images/lobby/hero-end.png",
+          "sourceSha256": "bb80aae1c6c8a4ae3b68b536e37bb1820f7218b95d818fbd7018eb33fb94d245"
+        },
+        {
+          "path": "public/images/lobby/hero-table.png",
+          "sourceSha256": "d3f69ee8cf6a470c71679711c922c55d465cbc2a58669fd8b69c19ff33cc9898"
+        },
+        {
+          "path": "public/images/lobby/room-loungen.png",
+          "sourceSha256": "c29f9938a2d286989b229806eed39c1499f0f6c79fff5fd9f2900b56934a3c7b"
+        },
+        {
+          "path": "public/images/lobby/room-salongen.png",
+          "sourceSha256": "381beee90e0ffe11e918f133661ab2bf1b9afc8082486c6c9f36793d62bcd78e"
+        },
+        {
+          "path": "public/images/lobby/room-studion.png",
+          "sourceSha256": "ee0e69af69cd29c5b9f37dea67dfc680c82776558ca7df045825a93f7e45a260"
+        },
+        {
+          "path": "public/placeholder-logo.png",
+          "sourceSha256": "d7c39d978af643ba9525de6fb8171e0f834882db4110c82ecad0df3f4f69551a"
+        },
+        {
+          "path": "public/placeholder-logo.svg",
+          "sourceSha256": "19a9e968f4656d52a4c249b4056117ad109370ba9da51cdc630ddded74cec73b"
+        },
+        {
+          "path": "public/placeholder-user.jpg",
+          "sourceSha256": "22be067d748175598a5e00123902f5c8332dd7f101de03dfb92ec08d85bb5e53"
+        },
+        {
+          "path": "public/placeholder.jpg",
+          "sourceSha256": "14be0c7aa11cca1e78f0966176b286a6d36d00ec64be027775dfeb33d8e2dfdf"
+        },
+        {
+          "path": "public/placeholder.svg",
+          "sourceSha256": "64badf7aabda0b9630b87020ffb6095cb858ccbcf66b355c2aa08b1063954d3b"
+        },
+        {
+          "path": "public/videos/dealers/astrid-look.mp4",
+          "sourceSha256": "433f66b6a42d15833c0e9c44a49d9093d86f19553c6c5acbe20fe44c8ea23fa7"
+        },
+        {
+          "path": "public/videos/dealers/dragge-shirt.mp4",
+          "sourceSha256": "a9ed0574152c91af4eeac6f62b289f8a4dabe428ba5e9eb2581dd2779b6829ef"
+        },
+        {
+          "path": "public/videos/dealers/marten-look.mp4",
+          "sourceSha256": "d60ea587d855c9d2577ee1bfec17d0139910bb8c501f2cad2b03c7f6a6065cf1"
+        },
+        {
+          "path": "public/videos/dealers/paow-hair.mp4",
+          "sourceSha256": "9f066c7829fb3c19252a5bba3461f7d75705aaf416909adacc0076a4fdb3b1cc"
+        },
+        {
+          "path": "public/videos/hero-end.mp4",
+          "sourceSha256": "bd46a515007e438e4ae5ed28176c2217a9ce902733cd0df44c8bb014fd05b015"
+        }
+      ],
+      "name": "lobby",
+      "archive": "mono-e-commerce-template-3.zip"
+    }
+  ]
+}

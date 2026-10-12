@@ -1,0 +1,364 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Scout Gaming palette — warm near-black, off-white, lime accent */
+:root {
+  --background: oklch(15% 0.008 70);
+  --foreground: oklch(93% 0.02 85);
+  --card: oklch(19% 0.01 70);
+  --card-foreground: oklch(93% 0.02 85);
+  --popover: oklch(19% 0.01 70);
+  --popover-foreground: oklch(93% 0.02 85);
+  --primary: #d6ff3a;
+  --primary-foreground: #0a0b0d;
+  --secondary: oklch(23% 0.012 70);
+  --secondary-foreground: oklch(93% 0.02 85);
+  --muted: oklch(22% 0.01 70);
+  --muted-foreground: oklch(68% 0.025 80);
+  --accent: #d6ff3a;
+  --accent-foreground: #0a0b0d;
+  --destructive: oklch(60% 0.2 25);
+  --destructive-foreground: oklch(98% 0 0);
+  --border: oklch(30% 0.015 75);
+  --input: oklch(30% 0.015 75);
+  --ring: #d6ff3a;
+  --chart-1: #d6ff3a;
+  --chart-2: #b5dc1f;
+  --chart-3: #5a6470;
+  --chart-4: #f2f1ed;
+  --chart-5: #1f252e;
+  --radius: 0.375rem;
+  --sidebar: oklch(19% 0.01 70);
+  --sidebar-foreground: oklch(93% 0.02 85);
+  --sidebar-primary: #d6ff3a;
+  --sidebar-primary-foreground: #0a0b0d;
+  --sidebar-accent: oklch(23% 0.012 70);
+  --sidebar-accent-foreground: oklch(93% 0.02 85);
+  --sidebar-border: oklch(30% 0.015 75);
+  --sidebar-ring: #d6ff3a;
+
+  --scout-ink: #0a0b0d;
+  --scout-off: #f2f1ed;
+  --scout-lime: #d6ff3a;
+  --scout-lime-2: #b5dc1f;
+  --scout-steel: #5a6470;
+  --scout-steel-2: #1f252e;
+  --scout-brass: #8a6a3f;
+}
+
+.dark {
+  --background: oklch(15% 0.008 70);
+  --foreground: oklch(93% 0.02 85);
+  --card: oklch(19% 0.01 70);
+  --card-foreground: oklch(93% 0.02 85);
+  --popover: oklch(19% 0.01 70);
+  --popover-foreground: oklch(93% 0.02 85);
+  --primary: #d6ff3a;
+  --primary-foreground: #0a0b0d;
+  --secondary: oklch(23% 0.012 70);
+  --secondary-foreground: oklch(93% 0.02 85);
+  --muted: oklch(22% 0.01 70);
+  --muted-foreground: oklch(68% 0.025 80);
+  --accent: #d6ff3a;
+  --accent-foreground: #0a0b0d;
+  --destructive: oklch(60% 0.2 25);
+  --destructive-foreground: oklch(98% 0 0);
+  --border: oklch(30% 0.015 75);
+  --input: oklch(30% 0.015 75);
+  --ring: #d6ff3a;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Geist Mono Fallback', ui-monospace, monospace;
+  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-ink: var(--scout-ink);
+  --color-off: var(--scout-off);
+  --color-lime: var(--scout-lime);
+  --color-lime-2: var(--scout-lime-2);
+  --color-steel: var(--scout-steel);
+  --color-steel-2: var(--scout-steel-2);
+  --color-brass: var(--scout-brass);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    background: var(--scout-lime);
+    color: var(--scout-ink);
+  }
+}
+
+@layer utilities {
+  /* Mono eyebrow labels used across the lobby, mirroring scoutgaming.tech */
+  .eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-[0.22em] text-lime;
+  }
+
+  .display {
+    @apply font-sans font-medium tracking-[-0.045em];
+  }
+
+  /* Subtle architectural grid that fades towards the bottom */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, oklch(93% 0.02 85 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(93% 0.02 85 / 0.045) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  20% { transform: translate(-15%, 5%); }
+  30% { transform: translate(7%, -25%); }
+  40% { transform: translate(-5%, 25%); }
+  50% { transform: translate(-15%, 10%); }
+  60% { transform: translate(15%, 0%); }
+  70% { transform: translate(0%, 15%); }
+  80% { transform: translate(3%, 35%); }
+  90% { transform: translate(-10%, 10%); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--scout-lime) 60%, transparent); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-reveal-up {
+  animation: reveal-up 0.8s ease-out forwards;
+}
+
+.animate-reveal-left {
+  animation: reveal-left 0.8s ease-out forwards;
+}
+
+.animate-reveal-right {
+  animation: reveal-right 0.8s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.6s ease-out forwards;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-out infinite;
+}
+
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
+.animation-delay-500 { animation-delay: 500ms; }
+.animation-delay-600 { animation-delay: 600ms; }
+
+.grain-overlay::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  animation: grain 8s steps(10) infinite;
+}
+
+.text-stroke {
+  -webkit-text-stroke: 1px currentColor;
+  -webkit-text-fill-color: transparent;
+}
+
+.clip-diagonal {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+}
+
+.clip-diagonal-reverse {
+  clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Fade in animation for images */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.7s ease-out forwards;
+}
+
+/* A step that just unlocked slides into place */
+@keyframes unlock-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-unlock {
+  animation: unlock-in 0.6s ease-out both;
+}
+
+/* Idle gesture for dealer portraits without a video clip */
+@keyframes dealer-breath {
+  0% { transform: scale(1); filter: brightness(1); }
+  45% { transform: scale(1.035); filter: brightness(1.08); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.animate-dealer-breath {
+  animation: dealer-breath 1.6s ease-in-out both;
+}
+
+@keyframes result-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-result-pop {
+  animation: result-pop 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-in,
+  .animate-reveal-up,
+  .animate-reveal-left,
+  .animate-reveal-right,
+  .animate-scale-in,
+  .animate-float,
+  .animate-pulse-dot,
+  .animate-unlock,
+  .animate-dealer-breath,
+  .animate-result-pop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

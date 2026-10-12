@@ -11,6 +11,7 @@ export interface NativeStudioRuntime {
   config: NativeStudioConfiguration; authorize(request: Request): Promise<NativeStudioSession>;
   api: {handle(request: Request): Promise<Response>; availableActions(session: NativeStudioSession): string[]};
   repository: any; gamePolicy: any;
+  readDesignCatalog(): Promise<unknown>;
   mutationTransaction<T>(work: () => Promise<T>): Promise<T>;
   validateProjectBindings?: (project: any) => Promise<void>;
   videoRegistry?: () => Promise<any>;

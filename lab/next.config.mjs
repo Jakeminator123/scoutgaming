@@ -28,6 +28,7 @@ export default {
       .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql',
         '../media/layout.json', '../media/blob-index.json', '../media/catalog/*.json']])),
     '/preview/[...path]': ['./preview-build/**/*'],
+    '/admin/[[...path]]': ['./design-preview-build/**/*'],
   },
   experimental: {
     externalDir: true,
