@@ -159,8 +159,30 @@ liveprovet upptäckte att Route Handler-login tappade `/studio`-prefixet. Admins
 egen redirect adapter återställer nu monterad loginadress och no-store; katalog
 och tillgångar ger 401 i stället för att omdirigeras. Nytt regressionstest täcker
 monterad/friliggande login, tillåtna retursidor och nekade resursanrop.
-Publicerad N1-läsning och hela inloggade flödet är separata acceptanssteg;
-lokal offlinevy eller injicerade testdata bevisar inte dem.
+Det tidigare adminarbetets inloggade produktionsprov den 12 oktober, efter
+PR #46 (`e3805b87`), visade 4 bolag, 2 rum och 7 aktiva dealers. Nordic Bets
+publicerade blackjack- och rouletterum gav rätt `/play/{game}`-länk med bolag,
+verkligt rum och PAOW; rumsbyte återställde dealervalet. Partnerportalen öppnades
+med samma internadmin och spelarvyn gick att nå. Provet omfattade läsning och
+valflöde, inga insatser eller transaktioner; full spel- och behörighetsacceptans
+återstår. Lokal offlinevy eller injicerade testdata ersätter inte detta liveprov.
+
+**Publik lobbyadress, 12 oktober (`codex/public-lobby-entry`).** Startsidan får
+knappen Lobby till `/lobby`. Den återanvänder lobbyns design i ett separat bygge,
+med befintliga publika läsningar `/api/operators` och `/api/operators/{slug}/rooms`.
+Bara kanoniska publicerade spelbara rum och deras tillåtna dealers blir valbara;
+registerfel ger felstatus, utan exempeldata som reserv. Startsideslänken i den
+publika designen leder hem till `/`. Lobbyfiler och typsnitt har egna begränsade
+`/lobby/_assets/`-rutter. `/admin`, `/admin/lobby` och adminkatalogen fortsätter
+kräva N1, medan nuvarande Control är kvar. Ingen DB-skrivning, publicering,
+speltransaktion eller ändring av roulettebord/animationer ingår. Denna PR är
+en adress- och läsanslutning; fortsatt lobbydesign sker i separat arbete.
+Verifierat med byggda UI-filer och isolerade publika API-fixturer på 1440 och
+390 px: startsidesknapp, båda speltypernas valflöde, återställning efter bolagsbyte,
+felstatus och återförsök. Inga adminanrop eller speltransaktioner utfördes.
+Detta är inte ett nytt produktionsprov av `/lobby`; det görs efter separat
+godkänd merge/deploy. Frontend-/design-/Studio-produktionsbyggen och riktad
+lobbyregression ingår i leveranskontrollen.
 
 ### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 

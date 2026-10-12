@@ -29,6 +29,7 @@ export default {
         '../media/layout.json', '../media/blob-index.json', '../media/catalog/*.json']])),
     '/preview/[...path]': ['./preview-build/**/*'],
     '/admin/[[...path]]': ['./design-preview-build/**/*'],
+    '/lobby/[[...path]]': ['./design-preview-build/public-lobby/**/*', './design-preview-build/fonts/**/*'],
   },
   experimental: {
     externalDir: true,

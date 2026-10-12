@@ -4124,6 +4124,20 @@
       ]
     },
     {
+      "id": "studio-public-lobby",
+      "path": "/lobby/:path*",
+      "publicPath": "/lobby/:path*",
+      "methods": ["GET", "HEAD"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/lobby/[[...path]]/route.ts",
+      "serving": "Public lobby document and dedicated lobby/fonts assets, rewritten to the Studio service. Uses existing public operator and published room APIs.",
+      "access": "Public read-only UI; no N1 session required. Game entry revalidates player access and room publication.",
+      "boundary": "Dedicated public build and public file subdirectories only. No admin assets, catalog, private media or writes. Public room reads use the canonical player validators, fail closed and preserve scoped room/dealer choices.",
+      "groupId": "layer-preview",
+      "sources": [{ "path": "lab/app/lobby/[[...path]]/route.ts" }, { "path": "lab/lib/design-preview.mjs" }, { "path": "packages/design-preview/runtime/public-lobby-catalog.mjs" }]
+    },
+    {
       "id": "studio-design-preview",
       "path": "/admin/:path*",
       "publicPath": "/admin/:path*",
