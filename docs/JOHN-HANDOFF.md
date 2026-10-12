@@ -246,6 +246,8 @@ som plånbokstransaktionen, i en enda SQL-snapshot. Nya regressioner täcker
 hela första-publiceringen mot gammal/ny motor samt åtta samtidiga spelare
 med verklig publiceringskontroll och rollback vid revokering. Produktions-
 byggen och livekontroll följs upp i rättnings-PR; ingen ny DDL behövs.
+Partnerns snapshot behåller också rummets speltyp så provspelningslänken
+öppnar roulette i stället för den tidigare hårdkodade blackjack-adressen.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
