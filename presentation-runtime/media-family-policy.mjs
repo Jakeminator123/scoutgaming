@@ -121,6 +121,8 @@ export function mediaSituationLabel(situation) {
   if (/^box[0-6]$/.test(situation)) return `Plats ${Number(situation.slice(3)) + 1} · ${situation}`;
   if (situation === 'dealer-up') return 'Croupierns öppna kort';
   if (situation === 'dealer-hole') return 'Croupierns dolda kort';
+  if (situation === 'to-shoe') return 'Till skon';
+  if (situation === 'from-shoe') return 'Från skon';
   return situation;
 }
 

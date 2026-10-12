@@ -18,7 +18,7 @@ test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 6
   assert.equal(p.gameId, 'blackjack');
   assert.deepEqual(p.dealers.map(d => d.id), DEALER_IDS);
   assert.equal(p.events.length, 16);
-  assert.deepEqual([...new Set(p.events.map(e => e.sourceType))].sort(), [...SOURCE_TYPES].sort());
+  assert.deepEqual([...new Set(p.events.map(e => e.sourceType))].sort(), [...SOURCE_TYPES].filter(type => type !== 'transition').sort());
   assert.equal(p.lines.length, 64);
   assert.ok(p.lines.every(line => line.variants.length === 4));
   assert.equal(p.assets.length, 64);

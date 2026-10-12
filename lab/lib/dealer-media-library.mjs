@@ -1,7 +1,7 @@
 import {kindForEvent,situationsForEvent,validateVideoMetadata} from './video-intake.mjs';
 import {clipSituationLabel} from './clip-label.mjs';
-export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'idle',label:'Idle / Grundloop'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
-export function eventMediaCategory(event){if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
+export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
+export function eventMediaCategory(event){if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
 export function dealerMediaSlots(project,category='all'){
   return project.events.filter(event=>category==='all'||eventMediaCategory(event)===category).flatMap(event=>{
     const situations=situationsForEvent(event);
@@ -55,6 +55,10 @@ export function dealerSlotStatus(project,inventory,dealerId,slot){
     const chosen=ids.length>0&&ids.every(id=>usable.some(row=>row.id===id));
     if(chosen)return {level:'ready',label:'Grundloop vald',count};
     return {level:'required',label:count?'Krävs · välj grundloop':'Krävs · grundloop saknas',count};
+  }
+  if(slot.category==='transition'){
+    if(!count)return {level:'recommended',label:'Rekommenderas · klipp saknas',count};
+    return {level:'ready',label:count+' klipp finns',count};
   }
   if(slot.category==='deal'&&!count){
     return {level:'recommended',label:'Rekommenderas · klipp saknas',count};

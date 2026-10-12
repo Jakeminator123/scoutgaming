@@ -49,6 +49,8 @@ Studio äger det gemensamma innehållet. En **sammansättning** samlar dealer, b
 | Display name / clipLabels | Visningsnamn | Klippets läsbara namn, skilt från filnamn och ID. |
 | Event clip | Händelseklipp | Klipp för en situation, exempelvis utdelning eller replik. |
 | Idle / base clip / idle variant | Grundloop / basklipp / variation | Grundloop och idle är samma vänteläge. Basklippet är dess återkommande huvudfilm; en variation är ett kort avbrott. Både Astrid och egna dealers kan ha ett separat sparat schema med flera basklipp och variationer. Utan eget schema används den egna dealerns enda valda grundloop. |
+| Till skon | VILA → REDO | Övergång från båda händerna i vila till vänster hand vid kortskon. Fack `transition.shoe` / `to-shoe`. Spelas från idle före första givningen. |
+| Från skon | REDO → VILA | Övergång tillbaka till båda händerna i vila. Fack `transition.shoe` / `from-shoe`. Spelas till idle efter sista givningen. |
 | Clip set | Klippuppsättning | En dealers standardklipp och alternativ för ett presentationsbehov. |
 | Default / variant | Standardvariant / variant | Grundval respektive alternativ i klippuppsättningen. |
 | Event group / situation | Händelsekategori / situation | Äldre samlingsgrupp respektive exakt plats, utfall eller replik. ”Deal vänster” omfattar flera platser; valt klippfack behåller den exakta situationen. |

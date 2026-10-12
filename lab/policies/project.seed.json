@@ -345,6 +345,21 @@
       "exampleEvent": {
         "type": "idle"
       }
+    },
+    {
+      "id": "transition.shoe",
+      "label": "Till och från skon",
+      "description": "Spelas från idle före första givningen respektive tillbaka till idle efter sista. Inte ett spelmotorevent; infogas av presentationsspelaren.",
+      "sourceType": "transition",
+      "sourceRef": "lab/policies/studio-contract.json#transition.shoe",
+      "sourceStatus": "proposed",
+      "match": {
+        "type": "transition"
+      },
+      "exampleEvent": {
+        "type": "transition",
+        "pose": "to-shoe"
+      }
     }
   ],
   "triggers": [],
@@ -606,6 +621,22 @@
       ]
     },
     {
+      "dealerId": "astrid",
+      "eventId": "transition.shoe",
+      "label": "Skövergång",
+      "baselineVariantId": "astrid.transition.shoe.standard",
+      "variants": [
+        {
+          "id": "astrid.transition.shoe.standard",
+          "label": "Skövergång",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "transition.shoe.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
       "dealerId": "vera",
       "eventId": "speak.goodluck",
       "label": "Standardhälsning",
@@ -857,6 +888,22 @@
           "priority": 0,
           "triggerIds": [],
           "assetId": "idle.ready.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
+      "dealerId": "vera",
+      "eventId": "transition.shoe",
+      "label": "Skövergång",
+      "baselineVariantId": "vera.transition.shoe.standard",
+      "variants": [
+        {
+          "id": "vera.transition.shoe.standard",
+          "label": "Skövergång",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "transition.shoe.standard",
           "videoGenerationId": null
         }
       ]
@@ -1118,6 +1165,22 @@
       ]
     },
     {
+      "dealerId": "amira",
+      "eventId": "transition.shoe",
+      "label": "Skövergång",
+      "baselineVariantId": "amira.transition.shoe.standard",
+      "variants": [
+        {
+          "id": "amira.transition.shoe.standard",
+          "label": "Skövergång",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "transition.shoe.standard",
+          "videoGenerationId": null
+        }
+      ]
+    },
+    {
       "dealerId": "mei",
       "eventId": "speak.goodluck",
       "label": "Standardhälsning",
@@ -1372,6 +1435,22 @@
           "videoGenerationId": null
         }
       ]
+    },
+    {
+      "dealerId": "mei",
+      "eventId": "transition.shoe",
+      "label": "Skövergång",
+      "baselineVariantId": "mei.transition.shoe.standard",
+      "variants": [
+        {
+          "id": "mei.transition.shoe.standard",
+          "label": "Skövergång",
+          "priority": 0,
+          "triggerIds": [],
+          "assetId": "transition.shoe.standard",
+          "videoGenerationId": null
+        }
+      ]
     }
   ],
   "assets": [
@@ -1498,6 +1577,14 @@
     {
       "id": "idle.ready.standard",
       "label": "Vänta",
+      "kind": "animation",
+      "animation": "idle",
+      "color": "#83d4a6",
+      "durationMs": 1400
+    },
+    {
+      "id": "transition.shoe.standard",
+      "label": "Skövergång",
       "kind": "animation",
       "animation": "idle",
       "color": "#83d4a6",
