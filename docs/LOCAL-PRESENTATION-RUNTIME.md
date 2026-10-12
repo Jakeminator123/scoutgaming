@@ -1,5 +1,225 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Medieformat för roulette och blackjack
+
+Aktuellt produktionsbeslut 12 oktober 2026: Jakob levererar roulettevideo
+separat. Inga nya kodgenererade hjul-/kulanimationer, parallax eller gester
+byggs. Följande format är produktionsunderlaget; nya dealerklipp är ännu
+inte inspelade eller visuellt accepterade.
+
+### Gemensam bakgrund och lager
+
+Rumsbakgrunden är spelneutral: inga inbakade bord, dealers, satsningar eller
+resultat. Samma registrerade tillgång kan tillåtas i både ett blackjackrum
+och ett rouletterum. Publicering och bolagets tillåtna lager gäller fortsatt;
+roulette väljer bara en publicerad bakgrund, inklusive spelarens redan
+sparade tillåtna val. Ingen valfri URL från query/localStorage får hämtas.
+
+| Material | Leverans | Anmärkning |
+| --- | --- | --- |
+| Bakgrund, master | 3840 × 2160 PNG/WebP, 16:9 | Samma kamera, ljus och perspektiv för båda spelen. |
+| Bakgrund, webbvideo | 1920 × 1080 MP4/H.264, 30 fps CFR, kvadratiska pixlar, SDR Rec.709, utan ljud | Låst kamera, försiktig miljörörelse. Fast utsnitt och stillbildsreserv. |
+| Roulettebord, master | 1920 × 1080 transparent PNG; gärna äkta 4K-original senare | Spelets egen geometri. Ingen extra keystone-förvrängning. |
+| Roulettebord, video | 1920 × 1080 MP4/H.264, 30 fps CFR, utan ljud | Identisk registrering med bordets PNG och mask; ingen svart rektangel får täcka rummet. |
+| Bordsmask | PNG med alfakanal, samma bildyta som bordsvideon | Opakt visar bordet, transparent visar underliggande lager. RGB-färgen ignoreras. En svartvit bild utan alpha fungerar **inte** som denna runtime-mask. |
+| Dealer | Godkänd keystonebild och en enda frilagd idle-master | Samma klipp för mobil och desktop; ingen separat tagning per skärm. |
+
+Vanlig H.264/MP4 behandlas som opak video. En statisk PNG-alfamask stöds
+för ett bord vars ytterkontur är konstant. Rörliga objekt måste hålla sig
+inom masken; en silhuett som ändras kräver en annan, synkroniserad masklösning
+som **inte** ingår här. Ingen grönnyckling av den gröna bordfilten.
+Källa för webbformat: [MDN, video codecs](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs).
+
+Lagerordning: bakgrund → frilagd dealer → spelbord → separata spelkontroller.
+Detta placerar kroppen bakom bordet. Händer ovanpå bordet behöver godkänd
+handmask eller en kontaktpose som inte skyms; ingen sådan ny mask är levererad.
+Befintliga inspelningar med inbakat blackjackbord återanvänds inte som en
+frilagd roulette-dealer. Ingen dealeridentitet hårdkodas eller publiceras om.
+
+### Roulette: bordets koordinater och aktuella referens
+
+Koordinater gäller en logisk 1920 × 1080-scen, origo uppe till vänster.
+Bordets bildyta placeras vid **x=192, y=216, bredd=1536**, med proportionerlig
+höjd. En exakt 16:9-leverans blir 864 px hög. I kompositionsformatet motsvarar
+detta `desktop.table={width:0.8,x:0,y:0.2}`, `tableFront=true`.
+Obs: `x=0` i Studio är centrerad förskjutning, inte bildens vänsterkant.
+
+| Ankare i slutscenen | Produktionsmål, px |
+| --- | --- |
+| Bakgrund | x=0, y=0, bredd=1920, höjd=1080 |
+| Bordets bildyta | x=192, y=216, bredd=1536, höjd≈864 |
+| Bordets främre mittpunkt | x=960, y≈1080 |
+| Dealerns mittlinje, bakom bordet till höger i bild | x≈1410 |
+| Dealerns ögon | x≈1410, y≈150 |
+| Båda händerna, kontaktområde på bakre högra kanten | x=1240–1480, y=405–455 |
+
+Detta är kompositionsmål, inte bevisad kontaktkalibrering för befintliga
+klipp. Dealerplaceringen följer den publicerade kompositionens desktopvärden.
+En ny take kalibreras och granskas mot ankaren före publicering.
+
+Den användarlevererade `roulette-bord.png` ligger oförändrad i
+`web/public/roulette/assets/roulette-bord.png`: 1672 × 941 RGBA,
+SHA-256 `dcf2fe0eb5332bce7d599f3e41bc210b14a3bc9605444acc41634a2c2e28976b`.
+Detta är en designreferens, inte granskad nummergrafik eller resultatvisning.
+Proportionerna är nästan 16:9; aktuell höjd blir cirka 864,46 px. Inför MP4
+passas originalet proportionerligt in på exakt 1920 × 1080 och alpha-masken
+exporteras från samma registrering. Uppskalning skapar inte ny bilddetalj.
+
+Mobilen visar hela samma 16:9-scen ovanför separata, läsbara satsningsknappar.
+Vid 1080 px scenbredd multipliceras alla scenkoordinater med 0,5625;
+vid faktisk CSS-bredd W används W/1920. Ingen beskärning av bordets sidor,
+sträckning eller separat dealerfilm. Bordets tryckta siffror är dekorativa;
+serverns kvitto och de tillgängliga spelkontrollerna är auktoritativa.
+
+### Roulette: croupier som keystonebild och idle-video
+
+1. Skapa först en stillbild i scenens 1920 × 1080-mall med referensbordet
+   som registreringshjälp. Dealern står bakom bordet **till höger för betraktaren**, med
+   överkroppen lätt vänd mot mitten och blicken mot spelaren. Spelaren står också; kameran ser snett ned mot bordet.
+2. Utgångspunkt för scenbygge: bord 240 × 150 cm, höjd 95 cm, hjul cirka
+   80 cm. Kamera cirka 165 cm över golvet och 25° nedåtvinkel. Dessa är
+   föreslagna arbetsmått, inte uppmätta mått ur bilden. Referensens perspektiv
+   och kontaktpunkter styr slutlig kamerakalibrering. Lås kameran därefter.
+3. Leverera både sammansatt kontrollbild och frilagd dealer-PNG. Runtime-
+   materialet kan vara 1080 × 1920, med 2160 × 3840-original om källan medger.
+   Hela huvud, armbågar, händer och kropp en bit under bordskanten ska finnas
+   kvar. Spara beskärningsruta och ankare så den frilagda personen går att
+   placera tillbaka exakt i kontrollbilden. Ingen inbakad roulette-/blackjack-
+   geometri i dealerfilen. Ett grönt original måste registreras och nycklas
+   genom befintligt godkänt compositingflöde.
+4. Idle utgår från den godkända keystonebilden: en 8–10 sekunders master,
+   30 fps CFR, utan ljud/tal. Endast naturlig andning och diskreta blinkningar.
+   Händerna vilar stabilt; inga kort, marker, hjulrörelser eller nya gester.
+   Samma ljus, fokus, skala och kontur i första och sista bilden. En generator
+   garanterar inte sömlöshet; kontrollera och justera skarven vid behov.
+
+**Prompt för keystonebild (engelska):**
+
+> Photorealistic adult casino croupier standing behind the rear-right corner of the supplied roulette table, on the viewer's right. The torso is turned slightly toward the center of the table and the gaze meets the standing player. Use a locked 1920 by 1080 composition: the dealer's eyes are approximately at pixel (1410,150); both hands rest naturally on the rear-right contact area around x=1240–1480, y=405–455. Match the reference perspective, camera and lighting; the wheel and betting field remain unobstructed. Relaxed shoulders, calm attentive expression, realistic anatomy and stable fingers. Soft neutral key light from camera left, warm room lighting. Keep the complete head, elbows, hands and lower torso available. Deliver a composition reference and a separate isolated dealer layer with identical framing; the roulette table is a placement reference only and is not baked into the isolated dealer layer.
+
+**Separat prompt för idle från den godkända bilden:**
+
+> The locked-off camera remains perfectly still. The croupier stays behind the table on the viewer's right and maintains the approved reference pose, with gentle breathing and a subtle natural blink. Lips remain gently closed. Both hands and every finger stay at their original resting contact points. The framing, exposure, focus and lighting remain constant. A calm neutral resting pose at both ends of the clip, suitable for an unobtrusive idle loop.
+
+Acceptans: två följande uppspelningar på mobil och desktop; kontrollera
+skarv, händer, kroppens ocklusion, hudkanter, ljus och frånvaro av inbakat bord.
+Spara källa, filhash, dimensioner, fps, längd, alpha/key-inställningar,
+beskärning, kontaktankare och granskningsnotering. Ändrad mediahash behöver
+ny visuell acceptans. Det här dokumentet godkänner inte någon dealer-take.
+
+### Mottagen videospecifikation och uppmätt leverans
+
+Källfilerna finns lokalt i `C:/Users/jakem/Desktop/videoskapare/roulette/bord/`.
+PNG:n är kopierad byteidentiskt till runtime-sökvägen ovan. MP4-originalet
+ligger kvar i källmappen och är inte uppladdat, registrerat eller publicerat
+av denna ändring. Den sammanförda JSON-filen nedan är metadata, inte en
+beställning att generera fler animationer.
+
+Den bifogade `roulette_specifikation.json` är sammanförd som källunderlag i
+[media-specification.json](../web/games/roulette/media-specification.json).
+Originalets beställningsstatus och önskemål är bevarade under
+`receivedSpecification`; aktuella filfakta finns under `verification` och
+Jakobs nuvarande riktning under `currentDecision`. Dokumentets äldre förslag
+om kodstyrd rotor är inte ett uppdrag: inga egna nya animationer byggs.
+
+`lyxigt_europeiskt_roulettebord.png` och `roulette-bord.png` är byteidentiska.
+Båda är 1672 × 941, 2 229 281 byte och har SHA-256 ovan. Alphakontrollen
+bekräftar 526 913 helt transparenta, 295 helt opaka och 1 046 144 delvis
+transparenta pixlar; vanligaste icke-nollvärdet är 253. Ingen färgprofil är
+inbäddad. sRGB är ett arbetsantagande, inte verifierad källmetadata.
+
+| `roulette-bord-start-stop.mp4` | Uppmätt fil |
+| --- | --- |
+| Dimensioner | 1916 × 1080; inte exakt 1920 × 1080 |
+| Container / codec / pixel-format | MP4 / H.264 / yuv420p |
+| Bildfrekvens | 24 fps, 361 bildrutor; samtliga frame durations 0,041667 s |
+| Längd | 15,041667 s |
+| Storlek | 10 317 238 byte |
+| Ljud / alpha | Ingen ljudström / ingen alfakanal |
+| SHA-256 | `7702cec6f0ec5ec2e1767608781588e8f6b182a0fbc652a952706f8288314195` |
+
+30 fps och 1920 × 1080 ovan är föreslaget gemensamt leveransformat, inte krav
+att interpolera den mottagna filmen. Behåll originalet i 24 fps. Nästa export
+bör ha fast, gemensam bildyta. Ändra inte hastigheten för att få 30 fps.
+
+Bildrutor 0, 180 och 360 har inspekterats: svart bakgrund är inbakad och
+rotorn är olika i början/mitten/slutet. Detta bevisar inte perfekt låst kamera,
+stabila siffror genom hela filmen, pixelidentisk slutruta eller sömlös loop.
+Källspecifikationen markerar dessutom originalets hjulsiffror/nummerföljd som
+ogranskade och delvis felaktiga. Varken PNG eller MP4 är godkänd resultatgrafik.
+
+Denna 1916 × 1080-video och originalets PNG har olika proportioner. Runtime-
+maskens proportionskontroll ska neka en direkt felregistrerad kombination;
+släpp inte igenom den genom att höja toleransen. Förbered en separat mask mot
+**videons verkliga bildruta**, kontrollera bordets kanter vid start/mitt/slut
+mot valda bakgrunder och behåll PNG:n som reserv. Svart får inte nycklas bort
+över hela bilden eftersom bordet också innehåller svarta detaljer.
+
+Filmen är mottagen och analyserad, men inte aktiverad i spelrummet eller
+kopplad till serverutfall. Runtime visar fortfarande den bifogade PNG:n.
+Ny dealer ska produceras bakom bordet **till höger i bild**, enligt ankaren
+och prompterna ovan; detta ersätter tidigare förslag om centrerad dealer.
+
+### Runtime och nästa MP4-leverans
+
+`web/public/roulette/media.mjs` väljer tills vidare enbart den bifogade PNG:n.
+`ROULETTE_TABLE_MASK` är null för denna PNG, som redan har alpha. Vid framtida
+MP4-leverans registreras dess exakta tillgång och en matchande PNG-alpha via
+`mountPublishedScene(...,{table,tableMask,layout:'desktop',settings})`.
+En ny lokal fil behöver även läggas i den explicita HTTP-/proxylistan; ingen
+sökväg eller URL får hämtas direkt från användarinmatning. En administrerbar
+bordsvideo/mask i det frysta publiceringskontraktet är en separat integration;
+ingen ny Studio-maskkontroll eller publicering är gjord i den här ändringen.
+
+Den gemensamma `published-scene.mjs` läser redan bild och MP4/WebM för
+bakgrunder och bord. Roulette använder samma publicerade bakgrunds-ID:n som
+blackjack. Tillagda layout-/maskalternativ är frivilliga; befintliga anrop
+behåller sin mobila standardkomposition. Video pausas i dold flik, utanför
+bild och vid reducerad rörelse, med möjlighet till ett uttryckligt Spela-val.
+Vid mediefel visar rouletten PNG-reserven och spelkontrollerna fungerar.
+
+En framtida film med snurrande roulette kan användas som dekorativ bakgrund.
+Den får inte föreställa den aktuella rundans slututfall om den inte är kopplad
+till samma bekräftade serverresultat. Ingen sådan koppling implementeras här.
+Resultatrutan uppdateras direkt från kvittot. RNG, insats, plånbok och exakt
+återförsök med oförändrat requestId/version/bets ändras inte.
+
+### Blackjack: formatmall att fylla i
+
+Avsiktligt reserverad, ännu inte kalibrerad eller godkänd. Gemensamma
+bakgrunds- och videokrav ovan kan återanvändas. Kopiera inte roulettes
+bordsgeometri eller kontaktankare till blackjack.
+
+| Uppgift | Blackjackvärde |
+| --- | --- |
+| Keystonebild / referensfil | — |
+| Bildformat / originaldimensioner | — |
+| Bordsmått och kamerakalibrering | — |
+| Bordets placering i 1920 × 1080 | — |
+| Dealer, beskärning och handankare | — |
+| Idle-video, codec, fps och längd | — |
+| Bordsvideo och alpha-mask | — |
+| Gemensamma bakgrunds-ID:n | — |
+| Mobil-/desktopacceptans och hash | — |
+
+### Kort överlämningsprompt till N1-/backoffice-agenten
+
+> Fortsätt utveckla Scoutgamings interna kontrollrum på nivå 1. Läs AGENTS.md
+> och behåll den aktuella kanoniska vägen `/control`; inför inte `/admin` som
+> en parallell produkt. Roulette har nu en gemensam 16:9-scen med PNG-bord,
+> spelneutrala publicerade bild-/MP4-bakgrunder och förberedd statisk alfamask
+> för framtida bordsvideo. Läs medieformaten i docs/LOCAL-PRESENTATION-RUNTIME.md
+> och den uppmätta leveransen i web/games/roulette/media-specification.json.
+> Utgå från spelbolag → tillgängligt spel → spelrum → tillåten sammansättning
+> och dealer. Håll spelneutral bakgrund, spelspecifikt bord och frilagd dealer
+> separata. Visa mediaformat, beskärning/ankare, mask, hash och acceptansstatus
+> före förhandsvisning/publicering. Mottagen MP4 är en ogranskad prototyp;
+> bordsvideo/mask återstår att integrera i det frysta publiceringskontraktet.
+> Återanvänd befintliga revisioner, behörigheter och livscykelkontroller och
+> undersök blackjack-legacy innan ändringar. Hårdkoda ingen dealer, ändra inte
+> aktiva publiceringar automatiskt och bygg inga nya hjul-/kulanimationer.
+
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet

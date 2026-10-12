@@ -265,7 +265,7 @@ ES-moduler som levereras från Render via Vercel, inte en Next-sida.
 `web/games/roulette/README.md` beskriver API, filansvar och verifiering.
 Behåll serverns regler/RNG/plånbok, inloggning, bolags- och rumskontext samt
 exakt återförsök av väntande rundor. Utveckla layout, mobil, satsningsflöde,
-återkoppling, tillgänglighet och animationer. `/roulette-test` är en separat
+återkoppling och tillgänglighet. Senare beslut: inga nya animationer; Jakob levererar MP4. `/roulette-test` är en separat
 kontofri generatordemo. Ny UI-kontroll görs med isolerat testsaldo; inga
 produktionsinsatser har lagts för verifieringen här.
 
@@ -386,6 +386,48 @@ material är fortsatt öppna. Ingen isolerad PostgreSQL-körning utfördes i
 denna UI-fixtur. Full regression ingår fortfarande i leveransgrinden.
 Runway-prompter, föreslagna bild-/bordsmått, loopacceptans och kamerans
 tekniska begränsningar finns i `web/games/roulette/README.md`.
+
+### Roulette: PNG-bord och delade medialager, 12 oktober 2026
+
+Jakobs nya riktning ersätter rörelseprototypen ovan. Spelrummet visar nu den
+bifogade transparenta bordsbilden i en gemensam 16:9-scen på mobil/desktop.
+Kodritat hjul, kula, väntan på animation och länken till rörelselabbet är
+borttagna från spelrummet. Resultat och historik visas direkt från kvittot.
+Rörelseexperimentens gamla separata testyta är inte vidareutvecklad.
+
+Bakgrunden väljs endast ur rummets publicerade, tillåtna tillgångar och kan
+vara samma bild/MP4 som blackjack. Frilagd dealer hämtas från publiceringen;
+inbakat äldre bord ersätts inte genom att lägga ny geometri ovanpå. Saknad
+kompatibel dealer/media ger reservbild och status, fortsatt spelbara kontroller.
+Ingen dealeridentitet, publicering, databas eller plånboksregel har ändrats.
+
+Gemensam scenspelare har frivillig desktoplayout och en statisk PNG-alfamask
+för framtida bordsvideo. Masken måste ha samma registrering/proportioner som
+videon. Tidigare anrop behåller sina standarder. Ingen ny animation eller
+framtida resultatvideo är byggd. N1:s publiceringskontrakt/maskeditor återstår
+som separat integration när materialet finns; lokal media-definition är klar.
+
+Mottagen `roulette-bord-start-stop.mp4`: 1916×1080, H.264, 24 fps,
+15,041667 s, utan ljud/alpha. Specifikationens gamla beställningsstatus är
+bevarad som källa men kompletterad med verifierade filfakta i
+`web/games/roulette/media-specification.json`. Båda PNG-namnen är byteidentiska.
+Filmen behöver egen registrerad mask och visuell acceptans; den är inte
+aktiverad som spelresultat. Ny dealer-keystone/idle placeras bakom bordet
+till höger för betraktaren. Ingen ny rörelse har genererats.
+
+Format, koordinater, keystone-/idle-prompter och reserverad blackjackmall:
+`docs/LOCAL-PRESENTATION-RUNTIME.md`, avsnitt Medieformat för roulette och
+blackjack. Rouletteguiden länkar dit. Inga nya parallella dokumentationsmappar.
+
+Verifierat: 27 roulettekontroller och 10 gemensamma scenkontroller passerar.
+Browser: 1440/390/320 px, 44 px minsta satshöjd, PNG med bibehållen alpha,
+tangentbordsdialog, spelvarv och tappat svar följt av omladdning/återförsök
+(samma requestId/version/bets, en debitering). Riktig lokal H.264-testfilm
+avkodad som publicerad bakgrund och maskat bord; paus och reducerad rörelse
+verifierade. Testfilen är enfärgad, privat och ingen ny spelanimation.
+Dealer-audit --probe matchar fyra baseline-set. PostgreSQL var inte startad
+i denna körning; tidigare PG-bevis ersätts inte. Verkliga nya dealerklipp
+saknas; mänsklig media-/läppsynkacceptans är fortsatt öppen.
 
 ## 3. Senaste leveranser
 

@@ -1,35 +1,15 @@
-import { BETS, BET_BY_ID, WHEEL, LIMITS, pocketColor } from '/roulette-rules.mjs';
+import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
 
 const $ = id => document.getElementById(id);
 const context = Object.fromEntries(new URL(location.href).searchParams);
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
-let state, pending, pendingKey, busy = true, chip = 5, rotation = 0;
+let state, pending, pendingKey, busy = true, chip = 5;
 let draft = new Map(), undo = [];
-const motion = matchMedia('(prefers-reduced-motion: reduce)');
-let finishMotion = () => {};
-let restoreSpinFocus = false;
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
 const sum = () => [...draft.values()].reduce((a,b)=>a+b,0);
 const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error',error); };
 const node = (tag, text, className) => { const el = document.createElement(tag); if(text !== undefined) el.textContent=text; if(className) el.className=className; return el; };
-
-function drawWheel() {
-  const ns = 'http://www.w3.org/2000/svg', step = 360/37;
-  const point = (angle,r) => [200+r*Math.sin(angle*Math.PI/180),200-r*Math.cos(angle*Math.PI/180)];
-  WHEEL.forEach((number,index)=>{
-    const start = point(index*step-step/2,196), end = point(index*step+step/2,196);
-    const path = document.createElementNS(ns,'path');
-    path.setAttribute('d',`M200 200 L${start.join(' ')} A196 196 0 0 1 ${end.join(' ')} Z`);
-    path.setAttribute('fill',{green:'#28754b',red:'#87333e',black:'#18221c'}[pocketColor(number)]);
-    path.setAttribute('stroke','#c4b681'); path.setAttribute('stroke-width','.6');
-    const text = document.createElementNS(ns,'text'), p = point(index*step,171);
-    text.setAttribute('x',p[0]); text.setAttribute('y',p[1]); text.setAttribute('fill','#f3f0dd');
-    text.setAttribute('text-anchor','middle'); text.setAttribute('dominant-baseline','middle');
-    text.setAttribute('font-size','13'); text.setAttribute('transform',`rotate(${index*step} ${p.join(' ')})`);
-    text.textContent=number; $('wheel').append(path,text);
-  });
-}
 
 function addBet(id) {
   if (busy || pending || !state) return;
@@ -104,10 +84,7 @@ function renderDraft() {
 function showResult(round) {
   if(!round) return;
   const {number,color}=round.event.outcome;
-  rotation=(360-WHEEL.indexOf(number)*360/37)%360;
-  $('wheel-disk').style.transform=`rotate(${rotation}deg)`;
   $('result-number').textContent=number; $('result-number').className='result-number '+color;
-  $('wheel').setAttribute('aria-label',`Europeiskt roulettehjul. Senaste utfall: ${number}, ${colourNames[color]}.`);
   $('result-color').textContent=colourNames[color]+(number ? number%2===0?' · Jämnt':' · Udda':' · Nolla');
   $('round-return').textContent=round.returned ? 'Tillbaka '+money(round.returned,round.currency)+' · netto '+money(round.net,round.currency) : 'Ingen vinst denna runda';
   for(const [id,button] of betButtons) button.classList.toggle('winner',id===`straight-${number}`);
@@ -142,31 +119,12 @@ async function command(request) {
   return data;
 }
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
-async function animate(number) {
-  const duration=motion.matches||document.hidden?0:3200;
-  const destination=(360-WHEEL.indexOf(number)*360/37)%360;
-  const next=rotation+360*4+(destination-rotation%360+360)%360;
-  const timing={duration,easing:'cubic-bezier(.18,.65,.22,1)',fill:'forwards'};
-  const animations=[
-    $('wheel-disk').animate([{transform:`rotate(${rotation}deg)`},{transform:`rotate(${next}deg)`}],timing),
-    $('ball-orbit').animate([{transform:'rotate(0deg)'},{transform:'rotate(-1800deg)'}],timing),
-    $('ball').animate([{top:'2%'},{top:'2%',offset:.65},{top:'16%'}],{duration,fill:'forwards'}),
-  ];
-  $('ball-orbit').classList.add('visible');$('skip-motion').hidden=!duration;
-  finishMotion=()=>animations.forEach(animation=>animation.finish());
-  try { await Promise.all(animations.map(animation=>animation.finished)); } catch { /* The saved result remains authoritative. */ }
-  rotation=next;$('wheel-disk').style.transform=`rotate(${rotation}deg)`;
-  $('ball').style.top='16%';animations.forEach(animation=>animation.cancel());
-  finishMotion=()=>{};restoreSpinFocus=document.activeElement===$('skip-motion');$('skip-motion').hidden=true;
-}
 async function submit() {
   if(busy||!pending) return;
   busy=true;$('retry').hidden=true;renderDraft();message('Satsningarna är låsta. Rundan avgörs…');
   try {
     const result=await command(pending);
     if(result.player.id!==pending.playerId||result.requestId!==pending.requestId||!result.round) throw Error('invalid_receipt');
-    message('Rundan är bekräftad. Kulan stannar strax…');
-    await animate(result.round.event.outcome.number);
     state=result;clearPending();draft=new Map();undo=[];
     renderState();showResult(result.round);
     message(`${result.replayed?'Den sparade rundan hämtades. ':''}${result.round.event.outcome.number} · ${colourNames[result.round.event.outcome.color]}. ${result.round.returned?'Tillbaka '+money(result.round.returned,result.round.currency)+'.':'Ingen vinst.'} Lägg nya satsningar när du vill.`);
@@ -178,7 +136,7 @@ async function submit() {
     if(error.status===401) $('login').hidden=false;
     message(errorText[error.message] ?? 'Svaret kunde inte bekräftas. Kontrollera samma runda igen innan du spelar vidare.',true);
     $('retry').hidden=!pending;
-  } finally {busy=false;renderDraft();if(restoreSpinFocus){$('rebet').focus();restoreSpinFocus=false;}}
+  } finally {busy=false;renderDraft();}
 }
 async function init() {
   try {
@@ -194,8 +152,7 @@ async function init() {
     if(pending) { $('retry').hidden=false;message('En tidigare runda inväntar bekräftelse. Kontrollera den igen.',true); }
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
     if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{
-      $('dealer-scene').className='published-scene';
-      $('dealer-scene').replaceChildren(node('p','Dealerscenen är inte tillgänglig just nu. Spelet fungerar fortfarande.'));
+      $('scene-status').textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';
     });
   } catch(error) {
     message(errorText[error.message] ?? 'Rummet kunde inte öppnas. Ladda om sidan och försök igen.',true);
@@ -219,8 +176,4 @@ $('spin').addEventListener('click',()=>{
   pending=request;void submit();
 });
 $('retry').addEventListener('click',()=>void submit());
-$('skip-motion').addEventListener('click',()=>finishMotion());
-motion.addEventListener('change',()=>{if(motion.matches)finishMotion();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)finishMotion();});
-document.querySelector('.table-tools').append($('show-rules'));
-drawWheel();buildBoard();renderDraft();void init();
+buildBoard();renderDraft();void init();

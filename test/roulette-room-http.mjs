@@ -18,9 +18,14 @@ test('room document preserves login context and serves only explicit public asse
   const page=await get(path);assert.equal(page.status,200);assert.match(await page.text(),/id="spin"/);
   assert.match(page.headers.get('content-security-policy'),/media-src 'self'/);
   assert.equal(page.headers.get('cache-control'),'private, no-store');
-  for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette-rules.mjs']) {
+  for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
     assert.equal(backendPlatformPath(asset),true);assert.equal((await get(asset)).status,200);
   }
+  const image=await get('/roulette/assets/roulette-bord.png');
+  assert.equal(image.headers.get('content-type'),'image/png');
+  assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,8)],[137,80,78,71,13,10,26,10]);
+  const head=await get('/roulette/assets/roulette-bord.png',{method:'HEAD'});assert.equal((await head.arrayBuffer()).byteLength,0);
+  assert.equal((await get('/roulette/assets/private.png')).status,404);
   assert.equal(backendPlatformPath('/api/roulette/table'),true);assert.equal(backendPlatformPath('/play/roulette'),true);
   assert.equal((await get('/roulette/private.mjs')).status,404);
   assert.equal((await get('/play/roulette?operator=north&table=other')).status,404);

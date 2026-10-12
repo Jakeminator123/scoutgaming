@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 const files = new Map([
   ['/play/roulette','index.html'], ['/roulette-rules.mjs','rules.mjs'], ['/roulette/app.mjs','app.mjs'], ['/roulette/style.css','style.css'], ['/roulette/scene.mjs','scene.mjs'],
+  ['/roulette/media.mjs','media.mjs'], ['/roulette/assets/roulette-bord.png','assets/roulette-bord.png'],
 ]);
 const headers = { 'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff',
   'Referrer-Policy':'no-referrer', 'X-Robots-Tag':'noindex, nofollow',
@@ -29,7 +30,7 @@ export async function rouletteDocument(req,res,{ authenticated, guestPreview, re
   }
   const name = files.get(url.pathname);
   const content = await readFile(new URL(name === 'rules.mjs' ? './rules.mjs' : `../../public/roulette/${name}`,import.meta.url));
-  const type = name.endsWith('.html') ? 'text/html' : name.endsWith('.css') ? 'text/css' : 'text/javascript';
-  res.writeHead(200,{ ...headers,'Content-Type':type+'; charset=utf-8' });
+  const type = name.endsWith('.png') ? 'image/png' : (name.endsWith('.html') ? 'text/html' : name.endsWith('.css') ? 'text/css' : 'text/javascript')+'; charset=utf-8';
+  res.writeHead(200,{ ...headers,'Content-Type':type });
   res.end(req.method === 'HEAD' ? undefined : content); return true;
 }
