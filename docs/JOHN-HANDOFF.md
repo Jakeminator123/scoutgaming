@@ -16,7 +16,12 @@ till Ubuntu när dess sources-fil finns. Studios två byggen behålls för obero
 jobb men återanvänder `.next/cache` enligt Nexts CI-guide. Åttaminutersgränsen,
 alla tester och migrationsgrinden består. Lokal installer-fixture täcker varm,
 kall och ofullständig cache samt saknad ffprobe; full regression körs före push.
-Tidsvinst och en riktig Ubuntu-cacheträff återstår att mäta efter leveransen.
+Första Ubuntu-körningen på 45ff5c25 visade att offlineinstallationen behövde
+peka APT:s arkivcache på samma mapp som download-only; den kopplingen och
+fixturen är rättade. Tidsvinst och en riktig varm cacheträff återstår att mäta.
+d5ed blev senare tom och oregistrerad genom en extern ändring; inget kommando
+från merge-cd76 raderade den. Arkiv/backup för dess privata reproduktioner är
+ännu inte verifierad.
 
 91969107 verifierad: tre gröna GitHub-jobb, Vercel READY i produktion och Render
 live (dep-db6b0649v7es739sh6g0). /api/operators gav 200 för Johns och Nordic Bet.
