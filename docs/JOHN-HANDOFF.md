@@ -40,8 +40,24 @@ sviten passerar nu (1 664 godkända, två miljövillkorade undantag), liksom
 produktionsbygget med typkontroll. Tom spelstart ger avsiktligt 503 även för
 gamla alias; bord, kort, saldo och omstart fungerar i isolerade prov. Samma
 regressioner ingår nu även i commitkontrollen.
-Verifiering mot verklig publicerad data efter driftsättning återstår; tracker-
-punkter som kräver sådan acceptans lämnas öppna.
+Commit 7eb9f7a verifierades på main, med grön GitHub-körning 38200519251,
+Vercel READY på www.scoutgaming.tech och Render live med samma SHA. Hela
+lokala commitkontrollen passerade med 2 871 godkända prov och 11 villkorliga
+undantag. Inloggad Chrome-läsning verifierade fyra verkliga bolag, Johns tre
+spelrum och paketversion 14 i både N1 och N2, samt partnerkatalogens riktiga
+bolag. Interna länkar behöll bolags- och rumskontext. Den gamla etiketten
+Mobile Phone Lane i N2:s paketval normaliseras till Standardsammansättning;
+sparade identifierare och paketdata behålls. Provspelningen visar rums- och
+bolagsnamn; tekniska ID:n styr fortsatt observationens identitet.
+Arkiveringsförhandsvisningen för PAOW hämtade aktuell påverkan på klipp,
+sammansättningar, rum och bolag och avbröts utan arkivering.
+
+Direkt automation gav korsdomänsmarkerad cors-navigering och avvisades av
+anropsskyddet; interna länkar och normal omladdning fungerade. Ingen skyddsregel ändrades.
+Inga bolag, rum, dealers, media eller utkast ändrades under produktionsprovet.
+Fullt molnprovspel och visuell talacceptans återstår, bland annat eftersom
+Astrid/Vera/Mei saknar grundloopens videoGenerationId. Trackerpunkter som
+kräver sådan acceptans lämnas öppna.
 
 
 ## Avveckling av lokala dealers, 12 oktober 2026

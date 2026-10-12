@@ -185,3 +185,43 @@ test('parent receives real dirty state and room switches preserve all unsaved ro
   await byAction(render(),'save-draft').props.onClick();render();assert.equal(changes.at(-1),false);
   unmount();assert.equal(changes.at(-1),false);
 });
+
+
+test('legacy published composition labels are translated in selection and review without changing saved identities',async()=>{
+  for(const language of ['sv','en']){
+    const initial=initialState({branding:{lane:'mobile-phone',color:'#112233'}});
+    const lane=initial.presentation.lanes[0];
+    lane.label='Mobile Phone Lane';
+    initial.presentation.lanes.push({...structuredClone(lane),id:'layer-preview',label:'Layer Preview Lane'},
+      {...structuredClone(lane),id:'company-custom',label:'Bolagets egen sammansättning'});
+    initial.lanes=initial.presentation.lanes.map(row=>row.id);
+    const before=JSON.stringify(initial),calls=[];
+    let saved;
+    const {render}=stateful(initial,async(_url,request)=>{
+      const body=JSON.parse(request.body);calls.push(body);
+      if(body.action==='save-draft'){
+        saved={...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}};
+        return response(saved);
+      }
+      assert.equal(body.action,'review');
+      return response(reviewed(saved,{changes:[{roomId:null,key:'lane',before:'mobile-phone',after:'layer-preview'}]}));
+    },{language});
+    const label=language==='en'?'Composition':'Sammansättning';
+    const standard=language==='en'?'Standard composition':'Standardsammansättning';
+    const layers=language==='en'?'Layer composition':'Lagersammansättning';
+    const options=walk(select(render(),label),node=>node.type==='option');
+    assert.deepEqual(options.map(row=>[row.props.value,row.props.children]),[
+      ['mobile-phone',standard],['layer-preview',layers],['company-custom','Bolagets egen sammansättning'],
+    ]);
+    select(render(),label).props.onChange({target:{value:'layer-preview'}});
+    await byAction(render(),'save-draft').props.onClick();
+    assert.equal(calls[0].branding.lane,'layer-preview');
+    assert.equal(calls[0].expectedPackageRevision,7);
+    await byAction(render(),'review').props.onClick();
+    const markup=renderToStaticMarkup(render());
+    assert.ok(markup.includes(standard+' → '+layers));
+    assert.doesNotMatch(markup,/Mobile Phone Lane|Layer Preview Lane/);
+    assert.equal(select(render(),label).props.value,'layer-preview');
+    assert.equal(JSON.stringify(initial),before);
+  }
+});
