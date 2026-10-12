@@ -92,9 +92,11 @@ Director-paketet bevarar nu repo-sökvägar och kopierar endast sina faktiska
 runtimefiler samt den gemensamma identitetsfilen. En Dockerfile-specifik
 allowlist utesluter övriga filer, hemligheter och media. Render behöver Docker
 context `.` med oförändrad Dockerfile-sökväg och Root Directory; Gateway har
-kvar sin tidigare kontext. Tre isolerade paketprov och Blueprint-valideringen
-passerar. Faktiskt Director-bygge och ny start måste verifieras före borttagning
-av det gamla env-namnet. Slutligt driftkvitto förs i `ENVIRONMENT-VARIABLES.md`.
+kvar sin tidigare kontext. Tre isolerade paketprov, full commit-hook och samtliga
+GitHub-jobb passerar för `19c44902`. Faktiskt Director-bygge och start är verifierade.
+Efter borttagningen av gamla env-namnet är båda tjänsterna åter live på samma
+commit och admin/hälsokontroller passerar med oförändrad konfiguration.
+Exakta driftkvitton finns i `ENVIRONMENT-VARIABLES.md`.
 
 Gatewayens startkod stöder nu `OPENCLAW_API_KEY` med prioritet över det
 äldre namnet, uttryckligt tomt värde stänger av fallback, och barnprocessen
@@ -109,9 +111,13 @@ plattformsägda `VERCEL` är borttagna från båda aktiva lokala env-filerna med
 privat backup. Render hade 37/53/16/10 env-poster för QA/spel/Director/Gateway;
 samtliga återstående namn har produktkällreferenser. Det rättade Gateway-
 namnet har lagts till i Director och Gateway med samma befintliga credential
-och oförändrade övriga värden. Molnbytet slutförs efter koddeploy och läsande
-hälsokontroll; gamla poster behålls tills dess. Ingen modell, media eller DB
-ändras av env-migreringen.
+och oförändrade övriga värden. Efter verifierad koddeploy togs endast det gamla
+namnet bort med privat backup och läsback; Director/Gateway har åter 16/10 poster.
+Omstart utan det gamla namnet och ny hälsokontroll passerar. Ingen modell,
+media eller DB ändrades av env-migreringen. PAOWs nya talprofil och visuella
+spelacceptans är fortfarande separata återstående steg; webbläsaren blockerade
+den första provspelningsadressen för Astrid (`ERR_BLOCKED_BY_CLIENT`), så den
+visuella fyrdealerskontrollen återstår. Ingen provinsats gjordes.
 
 ## Materialskapande i dealerns arbetsyta, 12 oktober 2026
 

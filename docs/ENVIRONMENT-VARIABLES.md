@@ -19,6 +19,26 @@ Vercelprojektet `scoutgaming` bygger `apps/croupier-frontend` och `lab` som
 Services från reporoten. Båda använder samma projektmiljö och `fra1`.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
+Slutkontroll 12 oktober 2026, 13:56 UTC: kod `19c44902` har grön
+[GitHub-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38257724379).
+Director `dep-db6eciqd0e5s73aef4f0` och Gateway `dep-db6eciid0e5s73aef360`
+är live på denna commit efter omstart med enbart `OPENCLAW_API_KEY`.
+Det äldre `OPENCLAWAPI_KEY` saknas på båda; 16 respektive 10 env-poster återstår.
+Credentialvärdet och samtliga andra värden är verifierat oförändrade;
+backup finns privat under `lab/data/platform-private/env-cleanup-20261012/`.
+Director använder nu repo-roten som Docker-kontext med en separat strikt
+filallowlist, samma Dockerfile-sökväg och bevarad disk. Gatewayens byggkontext,
+disk och sparade konfiguration är bevarade. Hälsa för spel, QA, Director och
+Vercel ger 200. Autentiserad admin visar ansluten Gateway, samma konfigurationshash,
+fem roller och fyra modeller. Detta är anslutningskontroll, inte nytt
+godkännande av genererat tal eller läppsynk.
+
+Webb och spelserver verifierades på `4ea767cf`, som innehåller PAOW-/envfixarna;
+den publika `dealer-compositing.mjs` matchar `fe8b6372` bytevis. Dockerfixen
+kräver enbart ny Director-image. GitGuardian läst på `19c44902`: noll öppna,
+17 tidigare ignorerade incidenter och aktiv övervakning. Platstäckningen är
+partiell och historisk skanning är `too_large`; detta är ingen full säkerhetsfriskrivning.
+
 Verifierad produktion 4 oktober: gemensam Neon-policy och native Studio är
 aktiva. Render kör utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
 `CROUPIER_MEDIA_BLOB_INDEX=/app/media/blob-index.json` och disponibel OS-temp
@@ -326,7 +346,7 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 | --- | --- | --- | --- | --- |
 | Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
 | Vercel: spel/Studio-ingång (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
-| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar Dealer Forge-generering på `/control/dealer-forge`; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `lab/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
+| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/control/clips?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `lab/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
 | Vercel: äldre statisk ingång (`ops/vercel-entry`, inte längre publicerad) | `CROUPIER_GAME_ORIGIN` = Render-tjänstens exakta HTTPS-origin utan snedstreck på slutet | – | Historiskt byggkontrakt | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAW_API_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
