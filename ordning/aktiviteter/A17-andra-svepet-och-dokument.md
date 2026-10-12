@@ -31,20 +31,38 @@ Dokumenten beskriver det nya läget i ett samlat pass.
   produktkonsument efter våg 2 och A30 inte behöver dem.
 - Från våg 1–2: täckningsluckorna i `ordning/rapporter/A00-tackning.md`
   (`apps/croupier-frontend/public`, `media/site/*`, `services/astrid-gpu-worker/assets`,
-  `pipeline/data`, `pipeline/irs`). Därtill `pipeline/load-dealer-rig.mjs`, som
-  importerar den borttagna `dealer-rig.mjs` (A10), kommentarer som nämner
-  borttagna skript (`web/public/styles.css`, `pipeline/build-index.mjs`,
-  `pipeline/trim-speak-start.py`), `ops/cloud/CONTAINER-CONTEXT.md` och
-  `.dockerignore`-rader för `assets/astrid-3d` och `assets/blackjack-3d`, samt B17
-  (ignoreringsregler) om Jakob säger ja.
-- Från våg 1–2: täckningsluckorna i `ordning/rapporter/A00-tackning.md`
-  (`apps/croupier-frontend/public`, `media/site/*`, `services/astrid-gpu-worker/assets`,
-  `pipeline/data`, `pipeline/irs`). Därtill `pipeline/load-dealer-rig.mjs`, som
-  importerar den borttagna `dealer-rig.mjs` (A10), kommentarer som nämner
-  borttagna skript (`web/public/styles.css`, `pipeline/build-index.mjs`,
-  `pipeline/trim-speak-start.py`), `ops/cloud/CONTAINER-CONTEXT.md` och
-  `.dockerignore`-rader för `assets/astrid-3d` och `assets/blackjack-3d`, samt B17
-  (ignoreringsregler) om Jakob säger ja.
+  `pipeline/data`, `pipeline/irs`). Kommentarer som nämner borttagna skript
+  (`web/public/styles.css`, `pipeline/build-index.mjs`, `pipeline/trim-speak-start.py`),
+  `ops/cloud/CONTAINER-CONTEXT.md` och `.dockerignore`-rader för `assets/astrid-3d`
+  och `assets/blackjack-3d`. B17 (ignoreringsregler) är **ja** (Jakob 2026-10-12):
+  genomförs här enligt README §4.
+
+## Läget efter provintegrationen (`jakob/ordning-v2-trial`, 2026-10-12)
+
+Orkestratorn har mergat A10, A11, A12, A13, A14, A15, A16 och A18 på V1-headen
+`33be100b`. Hela sviten (`node tools/precommit-checks.mjs --full`), Studio-
+och frontendbyggena, `audit-dealer-sync --probe`, båda mediekatalogkontrollerna,
+`check-orphan-tests` och systemkartan (0 röda) är gröna. Redan gjort, gör inte om:
+
+- `pipeline/load-dealer-rig.mjs` och `web/public/table-scene.mjs` är borttagna.
+  De importerade `dealer-rig.mjs` (A10) och `dealing-card.mjs` (A16) och saknade
+  konsument. `dealer-studio.css` fanns inte kvar.
+- `media/layout.json` har förlorat de 903 rader som pekade på A14:s borttagna
+  staging. `media/blob-index.json` hade inga sådana rader. Inga Blob-objekt rörs.
+- `node ordning/verktyg/raderingsgrind.mjs 33be100b` ger 0 IMPORT och 0 REGISTRY.
+  Kvar som MENTION: `docs/JOHN-HANDOFF.md` (nämner
+  `lab/lib/original-media-server.mjs`), kommentarer i `web/public/styles.css`
+  (`bake-composite.sh`) och `web/partner-presentation.mjs`
+  (`seven-targets/isolated-game-targets.json`), samt historiska Astrid-stagingfiler
+  som A14 behöll avsiktligt. `docs/system-map/index.html` är en genererad
+  ögonblicksbild, senast byggd 8 oktober, och byggs inte om i den här aktiviteten.
+- `node tools/migrate-media-layout.mjs --verify` rapporterar
+  `game/source/pipeline/encoded/background-zones/astrid-zones-manual-snapshot-2026-09-29.json`.
+  Felet är identiskt på `33be100b`: en registerrad för en lokal, ospårad fil.
+  Det är inte våg 2:s fel. Låt raden vara och nämn den i rapporten.
+- Agenternas rapporter finns bara i commitmeddelandena
+  (`git log --no-merges 33be100b..HEAD`) och, för A18, i `ordning/rapporter/A18-ops-arv.md`.
+  Härled dokumentbehovet från diffen `33be100b..HEAD`.
 - Engångsverktyg: `tools/migrate-media-layout.mjs` och
   `tools/deduplicate-media.mjs`, med `test/media-migration.mjs` och
   `test/media-deduplication.mjs` i kroken. De behålls om de används för

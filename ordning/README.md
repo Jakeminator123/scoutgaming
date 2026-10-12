@@ -102,13 +102,13 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | B8 | Staging- och experimentmedia | **Delvis** (Jakob 2026-10-12): ta bort `media/game/staging` och Amiras staging. Astrids staging bara efter klassning per mapp; kalibreringsdata behålls. | A14 |
 | B9 | Pipeline-skript utan konsument | **Provisoriskt ja**, med tillägg (Jakob 2026-10-12, T8): verktyg som är enda byggaren av media som fortfarande används behålls, även utan automatisk anropare (`build-previews.sh`, `encode.sh`, `build-hands.sh`, samt kontaktbyggarna `build-contact-review.mjs` och `prepend-contact-entry.mjs`). Läppsynk- och kalibreringskedjan behålls. | A15 |
 | B10 | `/v2`, composited-media (91 MB) och gamla granskningssidor | **Ja** (Jakob 2026-10-12): ta bort composited-media och de fem granskningssidorna. `/v2` behålls som den 307-omdirigering den redan är. | A16 |
-| B11 | Indexerad bank, originalmotor och partnerprotokoll | Öppet. A30 utreder först. | A30, A31 |
-| B12 | Strukturfasen | Öppet. Rekommendation: ja till A20–A21, A22 efter utvärdering, A23 valfri. | A20–A23 |
+| B11 | Indexerad bank, originalmotor och partnerprotokoll | **Väntar** (Jakob 2026-10-12): inte nu. Först reds partnerkontraktet ut (T7), liksom motsägelsen mellan A30 (börja med `performance`) och A05/T3 (`audit-performance.mjs` skyddar manifestet som partner-API:t läser). | A30 fas 2, A31 |
+| B12 | Strukturfasen | **Delvis ja** (Jakob 2026-10-12): A20 och A21, en i taget med produktionskontroll emellan. A22 bara som utredning. A23 inte nu. | A20–A23 |
 | B13 | Brancher och worktrees | **Ja**, efter A03:s underlag (Jakob 2026-10-12). Lokala `ORCHISTRATOR` är redan raderad; dess commit fanns på `main`. | A03 |
 | B14 | Kevin-integration | Öppet. Rekommendation: selektiv, i en egen plan. | (utanför) |
 | B15 | Ops-arv: gamla `vercel-entry`-projektet, `preview/`, Caddy för bettalotto.se | **Ja** (Jakob 2026-10-12): ta bort, men beskriv vad filerna var. Vercel-projektet `github-work-vercel-entry` finns inte längre (env-granskningen). `ops/caddy/bettalotto-game-auth.Caddyfile` lades till 2026-09-20 av Kevin (ImpactPL) för backoffice-inloggning till original- och V2-spelen. Live-servern för bettalotto.se (Caddy, 37.27.199.225) svarar nu 301 till croupier.scoutgg.dev och använder inte den konfigurationen; Kevins aktuella Caddy-filer ligger på hans branch (`kevin/croupier-scoutgg/drift/`). Filen tas bort ur `main` och finns kvar i Git-historiken. | A18 |
 | B16 | Lokala ignorerade mappar (`lab/data`, `.venv`, byggutdata, `media/.migration`) | Jakobs data. A19 ger förslag; inget raderas utan Jakob. | A19 |
-| B17 | Ignoreringsregler: skilj säkerhet från indexering | Öppet. Rekommendation (andra granskaren): `.cursorignore` behåller hemligheter och privata data (`.env*`, `lab/data/`, `web/data/`, arkivet). Ofarligt, tungt spårat projektmaterial (`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`, `media/**/staging/*.md`) flyttas till `.cursorindexingignore`, som bara stoppar indexering, så att agenter kan läsa det uttryckligen. | A17 |
+| B17 | Ignoreringsregler: skilj säkerhet från indexering | **Ja** (Jakob 2026-10-12), genomförs i A17. Underlag (andra granskaren): `.cursorignore` behåller hemligheter och privata data (`.env*`, `lab/data/`, `web/data/`, arkivet). Ofarligt, tungt spårat projektmaterial (`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`, `media/**/staging/*.md`) flyttas till `.cursorindexingignore`, som bara stoppar indexering, så att agenter kan läsa det uttryckligen. | A17 |
 
 ### Tveksamt
 
@@ -148,13 +148,15 @@ Omgång 5:  A30 fas 2 ─► A31 ─► A99                       ══► PR V
 | PR | Innehåll | Kontroll efter merge |
 | --- | --- | --- |
 | V1 (#19) | Planen, dokument, regler och inventeringar (våg 1) | Röktest; inga runtime-ändringar |
-| V2 | Avveckling av oanvänt (våg 2) | Röktest och rehearsal för fyra dealers |
+| V2 | Avveckling av oanvänt (våg 2). Mergas först efter Jakobs ok (2026-10-12). | Röktest och rehearsal för fyra dealers |
 | V3 | Flyttar till `packages/` (våg 3). Ändrar runtime-sökvägar på Render, som inte kan förhandsvisas från en branch. | Produktionskontroll direkt efter merge |
 | V4 | Bank, media och slutavstämning (våg 4 och A99) | Render-imagen, offline-läget och rehearsal |
 
 ## 6. Register
 
 Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) · `i V1–V4` · `klar` · `struken`.
+`inmergad (V2-prov)` betyder på `jakob/ordning-v2-trial`. Den grenar från V1-headen
+`33be100b` och förs in i `jakob/repo-ordning` när V1 är mergad.
 
 | ID | Aktivitet | Våg | Beroenden | Risk | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -165,22 +167,22 @@ Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) 
 | [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
 | [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
 | [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | inmergad (V1) |
-| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | klar, väntar på V1 |
-| [A11](aktiviteter/A11-kasinogolvet.md) | Kasinogolvet `/casino.html` | 2 | B5, A10 | 25 % | väntar |
-| [A12](aktiviteter/A12-originalmedia-i-studio.md) | Originalmedia som Studio-reserv | 2 | B6, A04, A05 | 35 % | väntar |
-| [A13](aktiviteter/A13-partnerportalens-prototyper.md) | Partnerportalens prototypfabrik | 2 | B7 (prov.) | 40 % | körs |
-| [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | väntar |
-| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | klar, väntar på V1 |
-| [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | väntar |
-| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | väntar |
-| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | klar (flytt), väntar på V1 |
-| [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | väntar |
-| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar |
-| [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar |
-| [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar |
-| [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | väntar |
-| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 inmergad (V1) |
-| [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | väntar |
+| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | inmergad (V2-prov) |
+| [A11](aktiviteter/A11-kasinogolvet.md) | Kasinogolvet `/casino.html` | 2 | B5, A10 | 25 % | inmergad (V2-prov) |
+| [A12](aktiviteter/A12-originalmedia-i-studio.md) | Originalmedia som Studio-reserv | 2 | B6, A04, A05 | 35 % | inmergad (V2-prov) |
+| [A13](aktiviteter/A13-partnerportalens-prototyper.md) | Partnerportalens prototypfabrik | 2 | B7 (prov.) | 40 % | inmergad (V2-prov); visuell kontroll kvar |
+| [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | inmergad (V2-prov) |
+| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | inmergad (V2-prov) |
+| [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | inmergad (V2-prov) |
+| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | körs |
+| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | inmergad (V2-prov) |
+| [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | väntar (efter V2) |
+| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar (B12 ja) |
+| [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar (B12 ja) |
+| [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar; bara utredning (B12) |
+| [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | struken tills vidare (B12) |
+| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 inmergad (V1); fas 2 väntar (B11) |
+| [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | väntar (B11) |
 | [A99](aktiviteter/A99-slutavstamning.md) | Slutavstämning, drift, mappen bort | 4 | allt | 20 % | väntar |
 
 Risk anger sannolikheten att aktiviteten kräver omtag eller ger en regression

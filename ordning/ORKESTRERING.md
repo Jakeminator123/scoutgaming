@@ -65,7 +65,11 @@ npm --prefix "$wt\lab" run build                 # krävs av full pre-commit, se
   De gäller när låsfilernas Git-blobbar är lika (`rev-parse` ovan) och
   huvudcheckouten är installerad från dem. Skiljer de sig: ta bort länken och kör
   `npm --prefix "$wt\lab" ci` (motsvarande för övriga). Exempel: Dealer Forge
-  lade till `sharp` i `lab`.
+  lade till `sharp` i `lab`. Skapa länkarna med versal enhetsbokstav
+  (`C:\Users\…`). Med `c:\Users\…` läser webpack in Next två gånger, och
+  frontendbygget faller på "`<Html>` should not be imported outside of
+  pages/_document" när `/404` förrenderas. Ta bort en länk med `cmd /c rmdir`,
+  som lämnar målet orört.
 - **Bygg Studio före varje full svit.** Provet
   `open-claw/lab/deploy/local-connection.test.mjs` ("launcher starts isolated
   native and the real Next Eventstudio …") kräver ett verifierat
@@ -232,6 +236,18 @@ git -C $wt merge --no-ff "origin/$b" -m "Merge <ID>: <titel>"
    - bara filer märkta `säker` i A05 (eller som orkestratorn bevisat säkra)
      mergas in. Övriga återställs i samma merge
      (`git checkout <bas> -- <fil>` före merge-commiten) eller lyfts till Jakob.
+   - `node ordning/verktyg/raderingsgrind.mjs <bas>` gör hela kontrollen på en
+     gång, för en grupp merger: IMPORT (relativa importer som pekar på en
+     borttagen fil), MENTION (hela sökvägen eller de två sista leden) och
+     REGISTRY (rader i `media/layout.json` och `media/blob-index.json`).
+     IMPORT och REGISTRY ska vara 0. Varje MENTION läses: ett vanligt
+     tvåledsnamn som `streams/index.json` kan vara en levande fil.
+   - **Registerkonflikt** mellan två raderande brancher i `media/layout.json`
+     eller `media/blob-index.json` löses som unionen av båda sidornas
+     borttagningar, i basens ordning, och med räkning: bas − A − B = resultat.
+     Om någon sida har lagt till eller ändrat en post, eller ändrat något utanför
+     `files`, löses konflikten för hand. Rader under `runtime/` avregistreras
+     aldrig i våg 2.
 2. Kontrollera att diffen bara rör ägda filer. Kör riktade prov i `$wt`, samt
    `node docs/system-map/verify.mjs --check` (0 röda) och
    `node tools/check-orphan-tests.mjs`.
