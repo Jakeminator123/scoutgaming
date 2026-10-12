@@ -1,7 +1,7 @@
 // Table Studio signs in with the back office's own accounts (scout-gg/croupier web/server.mjs, on this
 // host). The game server only relays: the sign-in to /api/bo/login, the session check to /api/bo/me.
 // Any BO role may build demo tables; a partner launch token (same signing key, no role) may not.
-const ROLES = ['reader', 'staff', 'admin', 'superadmin'];
+const ROLES = ['aggregator', 'reader', 'staff', 'admin', 'superadmin'];   // aggregator: Table Studio only (BO closes the rest)
 const boCookie = headers => /(?:^|;\s*)bo_jwt=([A-Za-z0-9._-]+)(?:;|$)/.exec(headers.cookie ?? '')?.[1] ?? null;
 
 export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.BO_DESIGN_URL ?? 'http://127.0.0.1:4173', fetcher = fetch } = {}) {
