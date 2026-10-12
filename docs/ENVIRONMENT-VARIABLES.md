@@ -28,11 +28,33 @@ QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
 Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
 
 Studio-flikens modellinställningar använder den inloggade administratörens
-vanliga Studio-session. `OPENCLAWAPI_KEY` finns server-only i Vercel-projektet
-`scoutgaming`, endast production, och måste motsvara Directors befintliga
+vanliga Studio-session. `OPENCLAW_API_KEY` är det rättade namnet för Gateway-
+hemligheten i Vercel-projektet `scoutgaming`, endast production, och måste motsvara Directors befintliga
 Gateway-lösenord. Nyckeln får inte skickas till webbläsaren eller till spelets
 frontend. Det vanliga `LAB_API_TOKEN` ger ingen rätt att administrera Gateway.
 De avvecklade `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` behöver inte återaktiveras.
+
+Studio och den lokala anslutningsstartaren accepterar även `OPENCLAWAPI_KEY`
+för befintliga tjänster. Inom samma env-källa vinner `OPENCLAW_API_KEY`;
+senare filer och processmiljön behåller sin vanliga prioritet. Ett uttryckligen
+tomt rättat värde stänger av anslutningen även när det gamla namnet är satt.
+Båda namnen töms i isolerade barn som inte ska få Gateway-hemligheten.
+Render-Gatewayens befintliga blueprint använder fortfarande det äldre namnet.
+
+Env-granskning 12 oktober: 59 Vercel-poster motsvarar 51 unika namn.
+Alla 18 namn utan referens i produktkällorna hör till de registrerade Neon-/
+Blob-kopplingarna. De handsatta namnen har källreferenser; det bevisar inte att
+varje villkorligt flöde är aktivt. Hemliga molnvärden är maskerade i pluginen
+och har inte likhetsverifierats mot lokala filer. Rootens två OpenClaw-namn
+och labbets äldre namn innehöll lokalt samma värde. Preview saknar avsiktligt
+produktionskonton, native Studio och leverantörsnycklar; dessa ska inte kopieras
+dit som del av namnbytet.
+Rättningen har verifierats med 56 riktade env-/Studio-/isolationsprov. De två
+aktiva lokala `.env.local`-filerna använder nu det rättade namnet och har samma
+Gateway-värde. Namnbytet i Vercel görs först efter levererat kodstöd; värdet
+behålls genom en ändring av nyckelnamnet på den befintliga hemliga posten.
+Rotens lokala `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` saknade PEM-markörer och
+har rättats mot Vercels publika post. Labbets kopia matchade redan den posten.
 
 På `croupier-lab-director` används dessutom
 `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`: en privat Ed25519-nyckel i base64-kodad
