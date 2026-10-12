@@ -252,7 +252,10 @@ function seedEventsMissing(project) {
   if ([...present].some(id => !seed.events.some(event => event.id === id))) return false;
   const ordered = seed.events.map(event => event.id).filter(id => present.has(id));
   if (project.events.map(event => event?.id).join('\0') !== ordered.join('\0')) return false;
-  return seed.events.some(event => !present.has(event.id));
+  const missing = seed.events.filter(event => !present.has(event.id));
+  // Only deployment-optional slots may be appended on read. A document missing a mandatory
+  // event (e.g. a speech line) is corrupt and must fail validation, never be silently repaired.
+  return missing.length > 0 && missing.every(event => OPTIONAL_SEED_EVENT_IDS.has(event.id));
 }
 
 function standardLineFor(dealerId, eventId) {

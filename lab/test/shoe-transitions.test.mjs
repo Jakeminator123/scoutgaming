@@ -30,6 +30,25 @@ test('a saved 16-event project gains the shoe slots without dropping existing li
   assert.deepEqual(again.assets, upgraded.assets);
 });
 
+test('only the optional shoe event is appended on read; a document missing a mandatory event is rejected, never repaired', () => {
+  const legacy = createLegacyProject();
+  const corrupt = structuredClone(legacy);
+  const dropped = corrupt.events.findIndex(event => event.id === 'speak.goodluck');
+  corrupt.events.splice(dropped, 1);
+  corrupt.lines = corrupt.lines.filter(line => line.eventId !== 'speak.goodluck');
+  assert.throws(() => normalizeProject(structuredClone(corrupt)), /events|lines/);
+  assert.throws(() => validateProject(structuredClone(corrupt)), /events|lines/);
+  // Same shape but with the optional slot missing too: still a corrupt document, still refused.
+  assert.equal(corrupt.events.some(event => event.id === 'transition.shoe'), false);
+  assert.throws(() => normalizeProject(structuredClone(corrupt)));
+  // A 17-event project that lost only a mandatory event is refused as well.
+  const upgraded = normalizeProject(structuredClone(legacy));
+  const broken = structuredClone(upgraded);
+  broken.events = broken.events.filter(event => event.id !== 'deal.dealer');
+  broken.lines = broken.lines.filter(line => line.eventId !== 'deal.dealer');
+  assert.throws(() => normalizeProject(broken));
+});
+
 test('the current seed, a new dealer and an archived dealer all receive the shoe line once', () => {
   const seed = createSeedProject();
   assert.equal(seed.events.length, 17);
