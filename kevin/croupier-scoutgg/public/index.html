@@ -22,10 +22,11 @@
   <section class="stage" id="stage" aria-label="Astrid at the table">
     <!-- Stillbilden ligger underst; två videor växlar ovanpå. Alla klipp börjar och slutar i stillbilden,
          så varje byte är osynligt. -->
-    <img class="still" src="/media/startbild.png" alt="Astrid at the blackjack table">
+    <img class="still" alt="">
     <!-- Kevin 12 Oct: a table with another dealer showed Astrid, then an empty table, before its own dealer. For any other
-         dealer the stage stays dark until that dealer's own still is ready (dealer-layer.js clears it, 4 s at most). -->
-    <script>(function(){var d=new URLSearchParams(location.search).get('dealer');if(!d||d==='astrid')return;var st=document.getElementById('stage'),im=st.querySelector('.still');im.removeAttribute('src');st.classList.add('pending');setTimeout(function(){st.classList.remove('pending')},4000)})()</script>
+         dealer the stage stays dark until that dealer's own still is ready (dealer-layer.js clears it, 4 s at most).
+         A file, not inline: the page's CSP only runs scripts from this site. It runs here, before the first paint. -->
+    <script src="/stage-pending.js"></script>
     <video class="v" id="va" playsinline webkit-playsinline preload="auto" muted></video>
     <video class="v" id="vb" playsinline webkit-playsinline preload="auto" muted></video>
     <svg id="feltBrand" class="felt-brand" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMin meet" aria-hidden="true" hidden><defs><filter id="feltInk" color-interpolation-filters="sRGB"><feFlood class="felt-ink"/><feComposite in2="SourceAlpha" operator="in"/></filter></defs><g transform="matrix(1 0 0 .8 0 206.4)"><image id="feltLogo" x="360" y="994" width="360" height="76" preserveAspectRatio="xMidYMid meet" filter="url(#feltInk)" hidden/><text id="feltWordmark" class="felt-wordmark" x="540" y="1048" text-anchor="middle">scout/gaming</text></g></svg>
