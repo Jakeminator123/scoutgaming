@@ -13,6 +13,7 @@ uniform vec2 skin;   // his skin hue and saturation (0..1), picked from his rest
 uniform vec3 lift, gain;   // the room's grade on him: its black point, and a nudge toward its light
 uniform float finished;   // Emil's KLARA plates: already graded and despilled, so none of the clean-up below runs on them
 uniform sampler2D lipTex; uniform vec4 lipRect; uniform float lipOn;   // his talking mouth (lip-layer.js): colour above, mask below
+uniform float fade;   // a cross-fade out of an idle cut short (1 = no fade)
 // How much of a source pixel is HIM (1) versus green screen (0). A wide band keeps
 // see-through hair strands soft instead of cutting them out.
 float gx(vec2 t){ vec3 k = texture2D(tex, t).rgb; return k.g - max(k.r, k.b); }
@@ -97,7 +98,7 @@ void main(){
   float inQuad = step(-3., min(min(edge(px, qa, qb), edge(px, qb, qc)), min(edge(px, qc, qd), edge(px, qd, qa))));
   a *= 1. - quadOn * inQuad * (1. - skin);
   // Last, after the card checks read his real colours: sit him in the room (its blacks, its light).
-  gl_FragColor = vec4((lift + c * (gain - lift)) * a, a);
+  gl_FragColor = vec4((lift + c * (gain - lift)) * a, a) * fade;
 }`;
 
 // Like the eyedropper on normal skin: median hue and saturation of the pixels the shader calls skin
@@ -147,12 +148,17 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  const texture = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    return t; };
+  // the last frame of an idle cut short, faded out under what comes next (Emil 12 Oct: idles play while the players decide)
+  const fadeTexture = texture(), clipTexture = texture();
+  const uFade = gl.getUniformLocation(prog, 'fade');
   const uCard = gl.getUniformLocation(prog, 'card'), uCardOn = gl.getUniformLocation(prog, 'cardOn');
   const uQuad = ['qa', 'qb', 'qc', 'qd'].map(n => gl.getUniformLocation(prog, n)), uQuadOn = gl.getUniformLocation(prog, 'quadOn');
   gl.uniform1f(gl.getUniformLocation(prog, 'S0'), scale);
   gl.uniform1f(gl.getUniformLocation(prog, 'finished'), finished ? 1 : 0);
+  gl.uniform1f(uFade, 1);
   const uSkin = gl.getUniformLocation(prog, 'skin');
   gl.uniform2f(uSkin, .07, .45);
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -184,6 +190,10 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   img.src = still;
   const videos = [...stage.querySelectorAll('video')];
   let lastStamp = '', lastSource = '';
+  // Idles play while the players decide; a hit, his turn or his speech can come in the middle of one. Kevin 11 Oct: a cut
+  // there snapped his face back to rest. Instead the idle's last frame fades out under the next clip over FADE_MS.
+  const FADE_MS = 330, IDLE = /^(breath|glance|smile|still|cheek)/;
+  let shown = null, shownName = null, fadeAt = 0;
   const lipDebug = /[?&]lipdebug=1/.test(location.search) ? (globalThis.__lip = { frames: 0, hits: 0, misses: [] }) : null;
   function draw() {
     const v = videos.find(x => x.classList.contains('on') && x.readyState >= 2);
@@ -200,7 +210,17 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
     const lip = lips?.active() ? lips.at(name, raw, rest) : null;
     // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
     if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }
-    const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
+    if (v !== shown) {
+      const old = shown;
+      if (old && IDLE.test(shownName ?? '') && old.readyState >= 2 && Number.isFinite(old.duration) && old.duration - old.currentTime > .15) {
+        gl.bindTexture(gl.TEXTURE_2D, fadeTexture); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, old); gl.bindTexture(gl.TEXTURE_2D, clipTexture);
+        fadeAt = performance.now();
+      }
+      shown = v; shownName = name;
+    }
+    const fadeW = fadeAt ? Math.min(1, (performance.now() - fadeAt) / FADE_MS) : 1;
+    if (fadeW >= 1) fadeAt = 0;
+    const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '') + (fadeAt ? `|f${Math.round(fadeW * 30)}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
       if (lip && lip.key !== lipKey) {
@@ -209,6 +229,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       }
       if (lip) gl.uniform4f(uLipRect, ...lip.rect);
       gl.uniform1f(uLipOn, lip ? 1 : 0);
+      gl.bindTexture(gl.TEXTURE_2D, clipTexture);
       if (stamp.split('|')[0] !== lastSource) { lastSource = stamp.split('|')[0]; gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); }
       // Which take and frame is on screen decides whether his landed card is keyed out.
       // -v / -iv: the take that ends at rest (a hit, the dealer drawing more): its own track ('4v', 'dealerv') and
@@ -228,6 +249,14 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
       gl.uniform4f(uCard, at?.[0] ?? 0, at?.[1] ?? 0, keyHalf[0], keyHalf[1]);   // half-size of his resting prop, plus a margin
       gl.uniform1f(uCardOn, on ? 1 : 0);
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      if (fadeAt) {   // the idle frame first, fading out, without mouth or card cut-outs; the new clip over it, fading in
+        gl.bindTexture(gl.TEXTURE_2D, fadeTexture);
+        gl.uniform1f(uLipOn, 0); gl.uniform1f(uCardOn, 0); gl.uniform1f(uQuadOn, 0); gl.uniform1f(uFade, 1 - fadeW);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.bindTexture(gl.TEXTURE_2D, clipTexture);
+        gl.uniform1f(uLipOn, lip ? 1 : 0); gl.uniform1f(uCardOn, on ? 1 : 0); gl.uniform1f(uQuadOn, face ? 1 : 0);
+      }
+      gl.uniform1f(uFade, fadeAt ? fadeW : 1);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
     requestAnimationFrame(draw);
