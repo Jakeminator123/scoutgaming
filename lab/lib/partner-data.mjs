@@ -197,7 +197,7 @@ export async function partnerWorkspaceData(request, { operatorSlug, store, confi
     ? listPackageRooms({ administration, package: pack, operatorId: operator.id })
       .filter(room => isPresentationRoomLaneCompatible(gameLanes.find(lane => lane.id === room.gameLaneId),
         presentation.lanes.find(lane => lane.id === room.presentationLaneId), presentation))
-      .map(room => ({ id: room.id, name: room.name, operatorId: room.operatorId, game: 'blackjack',
+      .map(room => ({ id: room.id, name: room.name, operatorId: room.operatorId, game: room.game ?? 'blackjack',
         status: room.state === 'live' ? 'active' : room.state, presentationId: room.presentationLaneId }))
     : parseList(pack?.tables).map(item => owned(item, operator.id, ['name', 'game', 'status', 'playerCount', 'presentationId'])).filter(Boolean);
   const revision = revisionOf(pack);

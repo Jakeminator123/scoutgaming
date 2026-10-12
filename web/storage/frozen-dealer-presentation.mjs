@@ -161,7 +161,7 @@ export function sameFrozenPackage(current, previous) {
 export function createFrozenDealerContextReader({ pool, scope } = {}) {
   scope = validateStudioScope(scope);
   if (typeof pool?.connect !== 'function') throw new TypeError('Scoped SQL pool required');
-  return async (slug, packageRevision = null) => {
+  const readCurrent = async (slug, packageRevision = null) => {
     if (!isOperatorSlug(slug)) return { operator: null, package: null };
     let client, active = false;
     try {
@@ -193,4 +193,18 @@ export function createFrozenDealerContextReader({ pool, scope } = {}) {
       throw studioStorageFailure(error);
     } finally { active = false; try { client?.release(); } catch {} }
   };
+  // The wallet owns this client and its transaction. Do not BEGIN, COMMIT,
+  // release, or borrow another pool connection while it holds the player lock.
+  readCurrent.inTransaction = async (client, slug) => {
+    if (!isOperatorSlug(slug)) return { operator: null, package: null };
+    if (typeof client?.query !== 'function') throw new TypeError('Transaction client required');
+    try {
+      const store = await createOperatorStore({ sql: client, scope });
+      const result = await store.getCurrentPresentationContext(slug);
+      if (result.operator?.status !== 'active') return { operator: null, package: null };
+      if (result.administration == null) throw new StudioStorageError('studio_document_missing', 503);
+      return { ...result, administration: validateStudioGameAdministration(result.administration) };
+    } catch (error) { throw studioStorageFailure(error); }
+  };
+  return Object.freeze(readCurrent);
 }

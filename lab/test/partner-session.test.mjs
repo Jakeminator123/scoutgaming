@@ -449,6 +449,10 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
     assert.equal(body.tables[0].operatorId,northId);
     assert.equal(body.tables[0].presentationId,'published-portrait');
     assert.equal(body.summary.activeTables,1);
+    administration.rooms[0].game='roulette';
+    const roulette=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
+    assert.equal(roulette.tables[0].game,'roulette');
+    assert.equal(roulette.tables[1].game,'blackjack');
   }
   const incompatible=structuredClone(administration);
   incompatible.gameLanes[0].renderer='indexed-video';

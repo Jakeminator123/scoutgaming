@@ -172,7 +172,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     }
     if (!runtimeAccepts(await capabilities(publicationPresentation,roomGame(body)), publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
-    const value = freeze({ body: canonicalStudioJson(body), publicationPresentation, ...captured });
+    const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, ...captured });
     preparedValues.add(value); return value;
   }
   preparations.set('POST /studio/api/admin/presentation-room', prepare);

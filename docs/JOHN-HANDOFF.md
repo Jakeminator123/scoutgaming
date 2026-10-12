@@ -238,8 +238,16 @@ omfattar desktop, mobil, tappat svar/återförsök och omladdat sparat utfall.
 Vercel-preview `dpl_2RWmjsBKynRcnnczoKhReXWEJt7S` är READY för samma kod.
 Dealer-audit --probe matchar alla fyra baseline-set,
 med tidigare saknade tal-takes och mänsklig läppsynkacceptans fortsatt öppna.
-Leverans: PR #35. Produktionsbyggen och livekontroll följs upp där efter merge;
-ovanstående förhandskontroller är inte bevis för produktionspublicering.
+Leverans: PR #35 mergades som `6414dd0e`. Dess main-CI stoppades före Render-
+aktivering efter två sena integrationsfynd. Rättningen på
+`codex/roulette-runtime-fixes` för den validerade speltypen genom Studios
+yttre publiceringstransaktion och läser aktuell publicering på samma klient
+som plånbokstransaktionen, i en enda SQL-snapshot. Nya regressioner täcker
+hela första-publiceringen mot gammal/ny motor samt åtta samtidiga spelare
+med verklig publiceringskontroll och rollback vid revokering. Produktions-
+byggen och livekontroll följs upp i rättnings-PR; ingen ny DDL behövs.
+Partnerns snapshot behåller också rummets speltyp så provspelningslänken
+öppnar roulette i stället för den tidigare hårdkodade blackjack-adressen.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
