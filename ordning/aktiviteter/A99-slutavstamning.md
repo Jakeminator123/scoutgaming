@@ -47,7 +47,7 @@ planmappen är borta.
 6. **Reserv för sen drift:** buffert för det steg 1–4 hittar. Fynd som tar mer än
    cirka en timme blir punkter i CLOUD-MIGRATION i stället för nya aktiviteter.
 7. **Avveckla planen:** `git rm -r ordning` på integrationsbranchen, som sista
-   commit i M3-PR:en. När M3 är mergad: radera kvarvarande molnagentbrancher och
+   commit i PR V4. När V4 är mergad: radera kvarvarande molnagentbrancher och
    `jakob/repo-ordning` med `gh api -X DELETE …/git/refs/heads/<branch>`, och ta
    bort worktreen `repo-ordning` (`git worktree remove`, efter att `git status`
    visat att den är tom). Kör `git worktree prune` och, med Jakobs ok,

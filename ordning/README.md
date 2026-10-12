@@ -8,7 +8,7 @@ Tillfällig arbetsmapp. Skapad 2026-10-12 på branch `jakob/repo-ordning` från
 > (utkast-PR [#19](https://github.com/Jakeminator123/scoutgaming/pull/19)), inte
 > på `main`. Molnagenter (`grok-4.7-xhigh-fast`) arbetar på egna brancher, och
 > orkestratorn mergar in dem här lokalt. `origin/main` mergas in före varje
-> körning. Inget når `main` förrän Jakob godkänt en milstolps-PR (se §5).
+> körning. Inget når `main` förrän Jakob godkänt vågens PR (en PR per våg, §5).
 
 | Fil | Innehåll |
 | --- | --- |
@@ -67,7 +67,7 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 1. **Inget blir sämre.** En nåbar sida, länk eller handling får inte försvinna
    utan beslut. Pensionerade adresser omdirigeras.
 2. **Beslut före radering av användarytor.** B-besluten nedan styr. Provisoriska
-   beslut gäller bara på integrationsbranchen och bekräftas i milstolps-PR:en.
+   beslut gäller bara på integrationsbranchen och bekräftas i vågens PR.
 3. **Funktion först, test sedan.** Tester tas bort tillsammans med funktionen de
    skyddar, aldrig för att de blivit röda. Skydden för kort, sko, saldo,
    behörighet, publicerade paket, medieägarskap och uppspelning behålls.
@@ -88,9 +88,9 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | ID | Fråga | Status | Spärrar |
 | --- | --- | --- | --- |
 | B1 | Leveransmodell | **Beslutat** (orkestratorn på Jakobs uppdrag 2026-10-12): feature-branch + PR. Pre-push tillåter `jakob/*`, `codex/*` och `cursor/*` utan force-push, radering eller taggar. Direkt-push till `main` är bara en uttrycklig admin-nödväg. | A03 |
-| B2 | Hur når arbetet `main`? | **Beslutat** (Jakob 2026-10-12): via integrationsbranchen `jakob/repo-ordning` och en stor PR. Orkestratorn föreslår tre milstolps-PR:er (§5). | alla |
+| B2 | Hur når arbetet `main`? | **Beslutat** (Jakob 2026-10-12): via integrationsbranchen `jakob/repo-ordning`, med **en PR per våg** till `main` (V1–V4, §5). | alla |
 | B3 | `random/` och `planes/` ur Git | **Ja** (Jakob 2026-10-12) | A01 |
-| B4 | Avveckla 3D-, rigg- och ansiktsspåret | **Provisoriskt ja.** Intern kod utan användaryta; bekräftas i M1. | A10 |
+| B4 | Avveckla 3D-, rigg- och ansiktsspåret | **Provisoriskt ja.** Intern kod utan användaryta; bekräftas i PR V2. | A10 |
 | B5 | `/casino.html` (3D-kasinogolv, olänkat) | Öppet. Rekommendation: pensionera med 308 till `/play`. | A11 |
 | B6 | Originalmedia som Studio-reserv | Öppet. Rekommendation: pensionera när A04 visat att registrerad media finns. | A12 |
 | B7 | Partnerportalens 24 diagnostiska vyer | **Provisoriskt:** bryt ut och isolera, ta inte bort något. Borttagning är öppen. | A13 |
@@ -115,36 +115,37 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | T5 | `jakob-export` har 78 egna commits. Den rörs inte förrän Jakob sagt vad den är. |
 | T6 | Körs `ops/caddy/bettalotto-game-auth.Caddyfile` på någon extern server? Svaret avgör B15. |
 
-## 5. Vågor, omgångar och milstolpar
+## 5. Vågor, omgångar och en PR per våg
+
+Jakob beslutade 2026-10-12: **en PR per våg** från `jakob/repo-ordning` till
+`main`. Agentbrancher från en senare våg kan köras tidigt, men mergas in på
+integrationsbranchen först när föregående vågs PR är mergad.
 
 ```text
-Omgång 1 (startad 2026-10-12, molnagenter, parallellt):
-  A01 A02 A03 A04 A05 A06    A10 A13 A15 A18    A30-fas1
+Omgång 1 (startad 2026-10-12 11:53, 11 molnagenter parallellt):
+  våg 1: A01 A02 A03 A04 A05 A06 + rapporten A30 fas 1  ══► PR V1 (#19)
+  våg 2 tidigt: A10 A13 A15 A18  (väntar utanför integrationsbranchen tills V1 är mergad)
                 │
-  merge in, main in, full svit, push ──► CI på PR #19
+Omgång 2 (efter V1 + beslut B5 B6 B8 B10):
+  A11 (efter A10 och A18)  A12  A14  A16  A19 (lokal, orkestratorn)
                 │
-Omgång 2 (efter A04/A05 + beslut B5 B6 B8 B10):
-  A11 (efter A10)  A12  A14  A16  A19 (lokal, orkestratorn)
+Omgång 3:  A17  andra svepet + samlade dokument     ══► PR V2 (våg 2)
                 │
-Omgång 3:  A17  andra svepet + samlade dokument     ══► M1-PR till main (våg 1–2)
+Omgång 4:  A20 ─► A21 ─► A22 ─► (A23 valfri)  en i taget  ══► PR V3
                 │
-Omgång 4:  A20 ─► A21 ─► A22 ─► (A23 valfri)  en i taget  ══► M2-PR
-                │
-Omgång 5:  A30 fas 2 ─► A31 ─► A99                       ══► M3-PR, ordning/ bort
+Omgång 5:  A30 fas 2 ─► A31 ─► A99                       ══► PR V4, ordning/ bort
 ```
 
-| Milstolpe | Innehåll | Varför separat |
+| PR | Innehåll | Kontroll efter merge |
 | --- | --- | --- |
-| M1 | Våg 1–2: dokument, regler, inventeringar, avveckling av oanvänt | Låg risk. Hela sviten och CI bevisar mest. |
-| M2 | Våg 3: flyttar till `packages/` | Ändrar runtime-sökvägar på Render, där branchen inte kan förhandsvisas. Behöver produktionskontroll direkt efter merge. |
-| M3 | Våg 4 och A99: bank, media, slutavstämning | Kräver B11 och kontroll av Render-imagen. |
-
-En enda stor PR går också, men då hamnar alla risker i samma deploy.
-Milstolparna är min rekommendation.
+| V1 (#19) | Planen, dokument, regler och inventeringar (våg 1) | Röktest; inga runtime-ändringar |
+| V2 | Avveckling av oanvänt (våg 2) | Röktest och rehearsal för fyra dealers |
+| V3 | Flyttar till `packages/` (våg 3). Ändrar runtime-sökvägar på Render, som inte kan förhandsvisas från en branch. | Produktionskontroll direkt efter merge |
+| V4 | Bank, media och slutavstämning (våg 4 och A99) | Render-imagen, offline-läget och rehearsal |
 
 ## 6. Register
 
-Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) · `i M1/M2/M3` · `klar` · `struken`.
+Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) · `i V1–V4` · `klar` · `struken`.
 
 | ID | Aktivitet | Våg | Beroenden | Risk | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -165,7 +166,7 @@ Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) 
 | [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | väntar |
 | [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | körs |
 | [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | väntar |
-| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, M1 | 30 % | väntar |
+| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar |
 | [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar |
 | [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar |
 | [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | väntar |
@@ -178,7 +179,7 @@ som CI inte fångar. Den är en bedömning, inte en mätning.
 
 ## 7. Förväntad vinst
 
-| Mått | Före | Efter M1 (uppskattat) | Efter M3 (om B11 = ja) |
+| Mått | Före | Efter V2 (uppskattat) | Efter V4 (om B11 = ja) |
 | --- | --- | --- | --- |
 | Spårade MiB | 790 | ~535 (−3D 148, −composited 91, −staging upp till 15) | ~255 (−indexerad bank 279) |
 | Render-image (media/runtime) | ~690 MB | ~475 MB | ~195 MB, lägre om presentationsmedia flyttas till Blob |
@@ -206,7 +207,7 @@ A99 mäter de faktiska värdena.
 ## 9. Klart när
 
 - [ ] Alla B-beslut är tagna eller uttryckligen strukna. Provisoriska beslut är
-      bekräftade i respektive milstolps-PR.
+      bekräftade i respektive vågs PR.
 - [ ] Varje aktivitet är `klar` eller `struken` med motivering.
 - [ ] Full pre-commit, CI, Studio- och frontendbygge är gröna på slutlig `main`.
 - [ ] Vercel och Render kör slutlig `main`. Röktest av `/`, `/play`, `/control`,

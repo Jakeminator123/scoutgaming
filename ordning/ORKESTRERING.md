@@ -16,7 +16,7 @@ origin/main ──merge──► jakob/repo-ordning (integrationsbranch, utkast-
                             ▼
               orkestratorn: granska → merge --no-ff → prov → push → CI på #19
                             │
-              milstolpe klar ──► PR jakob/repo-ordning → main (Jakobs ok)
+              våg klar ──► PR jakob/repo-ordning → main (en PR per våg, Jakobs ok)
 ```
 
 1. **Före varje omgång:** `git fetch origin --prune`, sedan

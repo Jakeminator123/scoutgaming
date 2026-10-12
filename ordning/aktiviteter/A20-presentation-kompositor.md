@@ -3,7 +3,7 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 3 · först i strukturfasen · ensam, inga parallella kodflyttar |
-| Väntar på | B12 · M1 mergad till `main` och verifierad · inga öppna PR:er som rör konsumenterna nedan |
+| Väntar på | B12 · PR V2 mergad till `main` och verifierad · inga öppna PR:er som rör konsumenterna nedan |
 | Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 30 % · tre byggkedjor och layer-lanens runtime |
