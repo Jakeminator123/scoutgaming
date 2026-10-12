@@ -11,9 +11,11 @@ Det skapar en Git-ignorerad `vercel.json` med exakta rewrites. Den kända
 Production-originen `https://croupier-v2.onrender.com` avvisas uttryckligen.
 Sätt `CROUPIER_GAME_ORIGIN` till exakt testbackend-origin i det tillfälliga
 projektets Preview-miljö; bygget avbryts om värdena skiljer sig. Byggkommandot
-`node build.mjs` här anropar förälderns
-`build({ frontendPreview: true })`, alltså samma opt-in som
-`node ops/vercel-entry/build.mjs --frontend-preview`, men med egen `dist/`.
+`node build.mjs` här anropar
+`build({ frontendPreview: true })` från
+`apps/croupier-frontend/tools/player-ui-build.mjs`, samma opt-in som
+`node apps/croupier-frontend/tools/player-ui-build.mjs --frontend-preview`,
+men med egen `dist/`.
 Ingen Production-konfiguration, Production-länk eller branch byts.
 Den isolerade Web-processen behöver spelarregistrering aktiverad och en
 separat datakatalog; ingen verklig användardatabas får användas. Dess

@@ -54,14 +54,20 @@ Ingen tjänst eller deployment har skapats av dessa filer.
 
 ## Opt-in förhandsbygge: frontend på Vercel
 
-Standardkommandot `node build.mjs` och Vercels `buildCommand` ovan är oförändrade:
-`dist/` innehåller bara landningssidan och dess CSS, och knappen leder fortsatt
-till spelserverns `/blackjack`. Detta är **inte** en produktions-cutover.
+Bygglogiken ligger i `apps/croupier-frontend/tools/player-ui-build.mjs`.
+Vercels historiska `buildCommand` i den här katalogens `vercel.json` är
+fortfarande strängen `node build.mjs` och hittar inte längre en fil här.
+Projektet är inte publicerat.
 
-För ett separat lokalt eller Vercel Preview-bygge kan buildkommandot
-uttryckligen sättas till `node build.mjs --frontend-preview` (med samma
-`CROUPIER_GAME_ORIGIN`); lokalt mot loopback:
-`node build.mjs --local --frontend-preview`. Använd en ren `dist/` före ett
+Standardanropet utan flaggor skriver `dist/` bredvid skriptet: bara
+landningssidan och dess CSS, och knappen leder fortsatt till spelserverns
+`/blackjack`. Detta är **inte** en produktions-cutover.
+
+För ett separat lokalt eller Vercel Preview-bygge kan kommandot uttryckligen
+sättas till `node apps/croupier-frontend/tools/player-ui-build.mjs --frontend-preview`
+(med samma `CROUPIER_GAME_ORIGIN`); lokalt mot loopback:
+`node apps/croupier-frontend/tools/player-ui-build.mjs --local --frontend-preview`.
+Använd en ren `dist/` före ett
 sådant separat bygge, eftersom skriptet inte rensar gamla filer. Kontrollera
 med `node --test test/build-preview.mjs` från denna katalog. Flaggan lägger
 till `/frontend-preview/blackjack/` och `/frontend-preview/game/` i `dist`,

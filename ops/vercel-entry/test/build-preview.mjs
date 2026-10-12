@@ -4,7 +4,7 @@ import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { build } from '../build.mjs';
+import { build } from '../../../apps/croupier-frontend/tools/player-ui-build.mjs';
 import { runInNewContext } from 'node:vm';
 import { canonicalGameDestination } from '../../../web/public/game-entry-contract.mjs';
 

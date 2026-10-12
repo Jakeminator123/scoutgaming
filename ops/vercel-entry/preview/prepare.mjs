@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { blackjackUrl } from '../build.mjs';
+import { blackjackUrl } from '../../../apps/croupier-frontend/tools/player-ui-build.mjs';
 
 const productionOrigin = 'https://croupier-v2.onrender.com';
 const marker = '__ISOLATED_BACKEND_ORIGIN__';

@@ -1,7 +1,7 @@
 import { readFile, writeFile, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build } from '../build.mjs';
+import { build } from '../../../apps/croupier-frontend/tools/player-ui-build.mjs';
 import { checkIsolatedOrigin } from './prepare.mjs';
 
 export async function buildPreview({ origin = process.env.CROUPIER_GAME_ORIGIN,
