@@ -4,18 +4,26 @@
 
 ### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
 
-Fortsatt livekontroll efter 77b3de84: CI är grön, Vercel READY och Render LIVE.
-Intern navigering PAOW → Svarsbibliotek → Grundloop bevarar dealer och scen.
-Direktöppning från webbläsaren ger däremot fortfarande SSR-fel 403/HTTP 500,
-även genom den interna /studio/control-vägen. Vanlig omladdning fungerar.
-Detta är ett öppet acceptansfel; ingen komplett direktlänksacceptans hävdas.
+Slutkontroll 12 oktober: 03edad7d3b53b0ec3306e80d5db2db8c1f459e82 är Vercel
+READY (dpl_7ok2qqXMWEVJu47iHzUjx4GXEAZ6). Alla tre kontroller i CI 38190272297
+är SUCCESS. Render är separat verifierad LIVE på 77b3de84; den senaste ändringen
+gäller bara Studio-diagnostik och feltext. Hela lokala kontrollen gav 2 661 PASS,
+11 SKIP och 0 FAIL; 26 riktade requestprov och TypeScript passerade.
 
-En begränsad transportdiagnos visar nu fasta enum-/booleanflaggor vid middleware
-och avvisad sidnormalisering. Den bevarar samtliga request- och N1-kontroller
-och innehåller inga cookie-, Origin-, URL-, query-, identitets- eller tokenvärden.
-Felvyn använder generell Studio-text även i produktion. Webbläsarens
-navigate/document/cross-site är verifierat; en intern transport som ändrar
-metadata är ännu en hypotes. Nästa steg är att jämföra mottagarflaggorna live.
+Intern navigering PAOW → Svarsbibliotek → Grundloop bevarar dealer och scen.
+Ett riktigt klick från en extern lokal HTML-sida öppnade PAOW:s privata bibliotek
+i Codex-webbläsaren. Serverkvittot på exakt 03edad7d visade navigate/document,
+crossSite=true och ingen Origin eller server action. Jakob bekräftade därefter
+att samma direktlänk öppnas när han själv klistrar in den i en ny Chrome-flik.
+
+Den automatiserade Chrome-vägen gav däremot cors/document redan vid middleware,
+och avvisades som avsett med studio_request_rejected. Detta är en kvarstående
+begränsning i testvägen, inte belägg för att normal användarnavigering misslyckas.
+Exakt komponent som ändrar metadata före middleware är inte identifierad.
+Ingen generell cors-lättnad infördes. Transportdiagnosen innehåller bara fasta
+enum-/booleanflaggor, aldrig cookie-, Origin-, URL-, query-, identitets- eller
+tokenvärden. N1-, Origin- och API-kontroller är bevarade. Den rena länkfixturens
+egna processer stoppades efter proven; inga produktdata skrevs.
 
 12 oktober: PAOW:s sparade basklipp är dealer_desktop, 1920×1080 och 5 sekunder.
 I den inloggade produktionsvyn verifierades byte till det äldre porträttklippet
