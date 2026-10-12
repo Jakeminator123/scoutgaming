@@ -134,6 +134,10 @@ statistik hittas inte på för riktiga bolag/dealers. Redigering sker tills vida
 via kontextbevarande länkar till Control. Nuvarande Control ska inte ersättas
 innan arbetsytorna är accepterade.
 
+Designprincip för fortsatt integration: den nya, rena layouten styr. Återanvänd
+befintliga datakällor och behörigheter; importera inte Controls gamla komponenter
+eller hela menyer. Lägg endast till kontroller som behövs för den aktuella uppgiften.
+
 Källzippar och ursprungliga SHA-256: `packages/design-preview/source-provenance.json`.
 Zipparnas API:er, SQL och miljöinställningar importerades inte. Separata React/CSS-byggen
 bevarar Tailwind 3 respektive 4 och serveras från privata `lab/design-preview-build`.
@@ -146,7 +150,8 @@ Studio-start/-bygge förbereder designerna och deras typkontroll automatiskt.
 Inga nya miljövariabler krävs i den befintliga native-deploymenten.
 
 Verifierat: designbyggen, Studio-produktionsbygge/typkontroll och 32 riktade
-auth-/routing-/katalogtest på Node 24.21.0. Katalogtesterna ingår nu i full hook.
+auth-/routing-/katalogtest på Node 24.21.0. Full pre-commit-kontroll passerade;
+katalogtesterna ingår nu i den. Alla fyra medieset matchar befintlig baslinje.
 En separat granskning hittade och fick en regression för sammanblandning av sparade
 och publicerade dealers. Mediebaslinje är inte nytt läppsynkgodkännande.
 Publicerad N1-läsning och hela inloggade flödet är separata acceptanssteg;
