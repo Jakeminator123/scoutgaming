@@ -413,10 +413,13 @@ Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
 **Indexerad dealerbank borttagen, 12 oktober (V4, `jakob/repo-ordning`).**
-`media/dealers/{astrid,amira,vera,mei}/runtime/indexed` (632 filer, 279,0 MiB)
-är borta ur Git, liksom layoutrader, blob-indexrader och de auditar som bara
+`media/dealers/{astrid,amira,vera,mei}/runtime/indexed` är borta ur Git (598 av
+632 filer, cirka 278,0 MiB), liksom layoutrader, blob-indexrader och de auditar som bara
 läste banken (`audit-dealer-sync`, `audit-performance`, `audit-astrid-actor`)
-och deras baslinje `docs/dealer-sync-baseline.json`. Blob-objekt är inte
+och deras baslinje `docs/dealer-sync-baseline.json`. Kvar under
+`runtime/indexed/audio/en` står 34 MP3 (17 Astrid, 17 Amira, 1,0 MiB) med
+oförändrade layout- och blob-indexrader: de bevarade green-speak-talparen kräver
+exakt det ljudet. Blob-objekt är inte
 raderade. `runtime/presentation` (83 filer) är orörd. Läppsynkverktygen i
 `pipeline/` (`sync-audio-warp.py`, `retime-video-warp.py` m.fl. och
 `lipsync-overrides.json`) är också borta, på Jakobs beslut, eftersom de hörde
@@ -432,9 +435,17 @@ Prov, lokalt med Node 24:
 - `build-runtime-media-catalog --check` och `build-lab-video-manifest --check`
   är gröna. Det finns 0 föräldralösa prov och 0 röda i systemkartan.
 - Raderingsspärren visar 0 kvarvarande importer och 0 registerrader.
+- Efter granskningen av PR #40: inventeringen avbryts igen när runtime-katalogen
+  saknas; bara de tre pensionerade registren får saknas i katalogen. Den riktiga
+  inventeringen ger 34 av 34 green-speak-talpar tillgängliga, lokalt och mot
+  katalogen. Det generiska negativa hand-proxy-provet ligger nu i
+  `test/performance-contact.mjs` med syntetiska data. `partner-api.html` är
+  synkad med Markdown. Mutationsprov: den gamla ENOENT-fångsten och en
+  försvagad proxyregel fäller var sitt nytt prov.
 
 Kvar: handmattorna i `runtime/hands` har ingen audit, och B9-byggarna nämner den
-borttagna banken som tidigare källa.
+borttagna banken som tidigare källa. Raderna `act` och `insurance` i
+`partner-api.html` är felrenderade sedan tidigare (`\|` i kod delar cellen).
 
 **PAOW: grundloopen väljs och kopplas loss uttryckligen, 12 oktober (`jakob/paow-media-controls`).**
 Merge-samordnarens patch, levererad av orkestratorn. Studio väljer och kopplar

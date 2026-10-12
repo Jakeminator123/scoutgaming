@@ -13,10 +13,11 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const BASES = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
 const indexedRegister = /(?:^|[\\/])(?:dealer|dealers[\\/](?:astrid|amira|mei))[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
 const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+// Only the retired indexed registers may be absent from the catalog; a missing
+// catalog or any other unreadable entry still fails the whole inventory.
 const readOptionalJson = async (readMetadata, path) => {
   try { return await readMetadata(path); }
   catch (error) {
-    if (error?.code === 'ENOENT') return null;
     if (indexedRegister.test(String(path)) && String(error?.message || '').startsWith('Runtime metadata missing:')) return null;
     throw error;
   }

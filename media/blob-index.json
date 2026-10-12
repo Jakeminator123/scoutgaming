@@ -1057,6 +1057,295 @@
       }
     },
     {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/blackjack.mp3",
+      "id": "453e418e-2af2-62e1-1f68-5d14c5b6b71d",
+      "sha256": "453e418e2af262e11f685d14c5b6b71d1dc23682cfc055215a8592e9a5f21011",
+      "size": 21123,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/blackjack.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/453e418e-2af2-62e1-1f68-5d14c5b6b71d/453e418e2af262e11f685d14c5b6b71d1dc23682cfc055215a8592e9a5f21011.mp3",
+        "sha256": "453e418e2af262e11f685d14c5b6b71d1dc23682cfc055215a8592e9a5f21011",
+        "size": 21123,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/bust.mp3",
+      "id": "ad6bd1da-0ae6-4960-9e67-f4639dbcbac7",
+      "sha256": "ad6bd1da0ae649609e67f4639dbcbac725cb5195d7913dcb9dbf08f396bdf4b0",
+      "size": 46338,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/bust.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/ad6bd1da-0ae6-4960-9e67-f4639dbcbac7/ad6bd1da0ae649609e67f4639dbcbac725cb5195d7913dcb9dbf08f396bdf4b0.mp3",
+        "sha256": "ad6bd1da0ae649609e67f4639dbcbac725cb5195d7913dcb9dbf08f396bdf4b0",
+        "size": 46338,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/chatter1.mp3",
+      "id": "b76b8ce9-696b-5977-6944-0023bfcc173c",
+      "sha256": "b76b8ce9696b597769440023bfcc173c935fd672c392af2eb48ca8b671e3d377",
+      "size": 29680,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/chatter1.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/b76b8ce9-696b-5977-6944-0023bfcc173c/b76b8ce9696b597769440023bfcc173c935fd672c392af2eb48ca8b671e3d377.mp3",
+        "sha256": "b76b8ce9696b597769440023bfcc173c935fd672c392af2eb48ca8b671e3d377",
+        "size": 29680,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/chatter2.mp3",
+      "id": "593e6acd-44ae-93eb-7fc8-0db7cfb022c7",
+      "sha256": "593e6acd44ae93eb7fc80db7cfb022c7db83ebe46fd1387815525c74a3d085c3",
+      "size": 30123,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/chatter2.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/593e6acd-44ae-93eb-7fc8-0db7cfb022c7/593e6acd44ae93eb7fc80db7cfb022c7db83ebe46fd1387815525c74a3d085c3.mp3",
+        "sha256": "593e6acd44ae93eb7fc80db7cfb022c7db83ebe46fd1387815525c74a3d085c3",
+        "size": 30123,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/dealerblackjack.mp3",
+      "id": "d0c8bcdc-6cf4-4a3f-77e3-de7e2fe6c388",
+      "sha256": "d0c8bcdc6cf44a3f77e3de7e2fe6c388782ac24d9a877d46cb3450d3ea9744e2",
+      "size": 41601,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/dealerblackjack.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/d0c8bcdc-6cf4-4a3f-77e3-de7e2fe6c388/d0c8bcdc6cf44a3f77e3de7e2fe6c388782ac24d9a877d46cb3450d3ea9744e2.mp3",
+        "sha256": "d0c8bcdc6cf44a3f77e3de7e2fe6c388782ac24d9a877d46cb3450d3ea9744e2",
+        "size": 41601,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/dealerbust.mp3",
+      "id": "6117739e-6851-9497-744f-2b9a26aa6f52",
+      "sha256": "6117739e68519497744f2b9a26aa6f52e0b5a30555f80f44dfe4a79a083b89e2",
+      "size": 34447,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/dealerbust.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/6117739e-6851-9497-744f-2b9a26aa6f52/6117739e68519497744f2b9a26aa6f52e0b5a30555f80f44dfe4a79a083b89e2.mp3",
+        "sha256": "6117739e68519497744f2b9a26aa6f52e0b5a30555f80f44dfe4a79a083b89e2",
+        "size": 34447,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/double.mp3",
+      "id": "42f855fb-855c-f489-5250-d9679fd4750d",
+      "sha256": "42f855fb855cf4895250d9679fd4750d4c8c1e1db7f3c33a11bb4bea48c64461",
+      "size": 25790,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/double.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/42f855fb-855c-f489-5250-d9679fd4750d/42f855fb855cf4895250d9679fd4750d4c8c1e1db7f3c33a11bb4bea48c64461.mp3",
+        "sha256": "42f855fb855cf4895250d9679fd4750d4c8c1e1db7f3c33a11bb4bea48c64461",
+        "size": 25790,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/farewell.mp3",
+      "id": "13126490-7359-20d2-6f8b-6c4c181ded2c",
+      "sha256": "13126490735920d26f8b6c4c181ded2c5035384fab6405c47e00e8aed3809720",
+      "size": 24899,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/farewell.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/13126490-7359-20d2-6f8b-6c4c181ded2c/13126490735920d26f8b6c4c181ded2c5035384fab6405c47e00e8aed3809720.mp3",
+        "sha256": "13126490735920d26f8b6c4c181ded2c5035384fab6405c47e00e8aed3809720",
+        "size": 24899,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/goodluck.mp3",
+      "id": "95c44ad6-d7ca-d780-d6ed-88fc8a23fdc6",
+      "sha256": "95c44ad6d7cad780d6ed88fc8a23fdc692ae481f9a17c18d88b765a57ca675cd",
+      "size": 24381,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/goodluck.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/95c44ad6-d7ca-d780-d6ed-88fc8a23fdc6/95c44ad6d7cad780d6ed88fc8a23fdc692ae481f9a17c18d88b765a57ca675cd.mp3",
+        "sha256": "95c44ad6d7cad780d6ed88fc8a23fdc692ae481f9a17c18d88b765a57ca675cd",
+        "size": 24381,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/greeting.mp3",
+      "id": "449f0fe3-5a11-6efc-443d-0d4f02060904",
+      "sha256": "449f0fe35a116efc443d0d4f020609047b1358fcc1e7961f7ac41e1b61e3f79e",
+      "size": 62627,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/greeting.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/449f0fe3-5a11-6efc-443d-0d4f02060904/449f0fe35a116efc443d0d4f020609047b1358fcc1e7961f7ac41e1b61e3f79e.mp3",
+        "sha256": "449f0fe35a116efc443d0d4f020609047b1358fcc1e7961f7ac41e1b61e3f79e",
+        "size": 62627,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/insurance.mp3",
+      "id": "fe0c0652-a974-0160-d25e-ecc1e7d4d0ef",
+      "sha256": "fe0c0652a9740160d25eecc1e7d4d0efb638ea024f80aed063f8c02d24c9e211",
+      "size": 27095,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/insurance.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/fe0c0652-a974-0160-d25e-ecc1e7d4d0ef/fe0c0652a9740160d25eecc1e7d4d0efb638ea024f80aed063f8c02d24c9e211.mp3",
+        "sha256": "fe0c0652a9740160d25eecc1e7d4d0efb638ea024f80aed063f8c02d24c9e211",
+        "size": 27095,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/lose.mp3",
+      "id": "393df642-3186-548f-9530-90c3823519cd",
+      "sha256": "393df6423186548f953090c3823519cd3297a8a5f6add74868ffe7c0e8dfea6c",
+      "size": 20730,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/lose.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/393df642-3186-548f-9530-90c3823519cd/393df6423186548f953090c3823519cd3297a8a5f6add74868ffe7c0e8dfea6c.mp3",
+        "sha256": "393df6423186548f953090c3823519cd3297a8a5f6add74868ffe7c0e8dfea6c",
+        "size": 20730,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/peek.mp3",
+      "id": "db0160b6-e8d8-8cab-050e-6b79edfa3e88",
+      "sha256": "db0160b6e8d88cab050e6b79edfa3e88b579913a484636e6f82bea3f82d1eb6a",
+      "size": 27903,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/peek.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/db0160b6-e8d8-8cab-050e-6b79edfa3e88/db0160b6e8d88cab050e6b79edfa3e88b579913a484636e6f82bea3f82d1eb6a.mp3",
+        "sha256": "db0160b6e8d88cab050e6b79edfa3e88b579913a484636e6f82bea3f82d1eb6a",
+        "size": 27903,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/placebets.mp3",
+      "id": "cb569aaf-18a2-078d-fe40-737eb1f6d5c4",
+      "sha256": "cb569aaf18a2078dfe40737eb1f6d5c484ddca798fec436cc50c47ea8a9af970",
+      "size": 27222,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/placebets.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/cb569aaf-18a2-078d-fe40-737eb1f6d5c4/cb569aaf18a2078dfe40737eb1f6d5c484ddca798fec436cc50c47ea8a9af970.mp3",
+        "sha256": "cb569aaf18a2078dfe40737eb1f6d5c484ddca798fec436cc50c47ea8a9af970",
+        "size": 27222,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/push.mp3",
+      "id": "270006ef-ce38-5eda-ed35-fceaef8e6022",
+      "sha256": "270006efce385edaed35fceaef8e60222f2e21cf47f9f6d21afd19fe41738480",
+      "size": 29880,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/push.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/270006ef-ce38-5eda-ed35-fceaef8e6022/270006efce385edaed35fceaef8e60222f2e21cf47f9f6d21afd19fe41738480.mp3",
+        "sha256": "270006efce385edaed35fceaef8e60222f2e21cf47f9f6d21afd19fe41738480",
+        "size": 29880,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/sidebet.mp3",
+      "id": "720be14a-c23f-c266-ae77-241e04276f62",
+      "sha256": "720be14ac23fc266ae77241e04276f62e90e7671df5c9eaaa844452337c96d2a",
+      "size": 27771,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/sidebet.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/720be14a-c23f-c266-ae77-241e04276f62/720be14ac23fc266ae77241e04276f62e90e7671df5c9eaaa844452337c96d2a.mp3",
+        "sha256": "720be14ac23fc266ae77241e04276f62e90e7671df5c9eaaa844452337c96d2a",
+        "size": 27771,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/amira/runtime/indexed/audio/en/win.mp3",
+      "id": "6af5c2f9-4a42-e1fb-1311-b9ad4f872e52",
+      "sha256": "6af5c2f94a42e1fb1311b9ad4f872e52e353708709d0de1315e473469b9b458c",
+      "size": 23207,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/amira/audio/en/win.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/amira/runtime/indexed/audio/en/6af5c2f9-4a42-e1fb-1311-b9ad4f872e52/6af5c2f94a42e1fb1311b9ad4f872e52e353708709d0de1315e473469b9b458c.mp3",
+        "sha256": "6af5c2f94a42e1fb1311b9ad4f872e52e353708709d0de1315e473469b9b458c",
+        "size": 23207,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
       "logicalPath": "dealers/amira/staging/2026-09-20/amira-composite/all-lines-runtime.json",
       "id": "a5e353ec-e0c8-c80a-79f0-707cafa42f13",
       "sha256": "a5e353ece0c8c80a79f0707cafa42f13af921b295372088d5a23da9fb0d719f9",
@@ -4168,6 +4457,295 @@
         "sha256": "e51b6dac6fc1d0736637e5e2ae87c3faaf19b889449b4d597b82465390b1ba4f",
         "size": 3151,
         "contentType": "application/json"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/blackjack.mp3",
+      "id": "fe1a7682-a7a1-1ed3-f56d-0177cf44899f",
+      "sha256": "fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f",
+      "size": 43285,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/blackjack.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/fe1a7682-a7a1-1ed3-f56d-0177cf44899f/fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f.mp3",
+        "sha256": "fe1a7682a7a11ed3f56d0177cf44899f0e95e27ea8076b5664c288772535f30f",
+        "size": 43285,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/bust.mp3",
+      "id": "4f62c572-de41-8db9-3fcf-c228415f07e0",
+      "sha256": "4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d",
+      "size": 20152,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/bust.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/4f62c572-de41-8db9-3fcf-c228415f07e0/4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d.mp3",
+        "sha256": "4f62c572de418db93fcfc228415f07e05c0efc30638dab8434fb81457ab6488d",
+        "size": 20152,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/chatter1.mp3",
+      "id": "985d8362-07cf-9995-9aae-54236b07b439",
+      "sha256": "985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8",
+      "size": 37471,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/chatter1.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/985d8362-07cf-9995-9aae-54236b07b439/985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8.mp3",
+        "sha256": "985d836207cf99959aae54236b07b439899472ea33486a746fe035e4cfa6e2f8",
+        "size": 37471,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/chatter2.mp3",
+      "id": "bdbc0a77-5627-d758-bd60-e83139e7cb54",
+      "sha256": "bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8",
+      "size": 34178,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/chatter2.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/bdbc0a77-5627-d758-bd60-e83139e7cb54/bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8.mp3",
+        "sha256": "bdbc0a775627d758bd60e83139e7cb54af1b4406386db474bea36644c02139b8",
+        "size": 34178,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/dealerblackjack.mp3",
+      "id": "5830b3bd-57e5-3d85-ae82-c32a0478ec41",
+      "sha256": "5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09",
+      "size": 29104,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/dealerblackjack.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/5830b3bd-57e5-3d85-ae82-c32a0478ec41/5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09.mp3",
+        "sha256": "5830b3bd57e53d85ae82c32a0478ec41adcc8d1e86949960adcbfb799f199f09",
+        "size": 29104,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/dealerbust.mp3",
+      "id": "0cb1a5f1-2e02-69fe-d94c-2985570a3c7a",
+      "sha256": "0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55",
+      "size": 45895,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/dealerbust.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/0cb1a5f1-2e02-69fe-d94c-2985570a3c7a/0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55.mp3",
+        "sha256": "0cb1a5f12e0269fed94c2985570a3c7afe02bb7f02544a1d0019d791a7dbcc55",
+        "size": 45895,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/double.mp3",
+      "id": "c4c30b73-267a-d6af-635a-21449d7942d0",
+      "sha256": "c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc",
+      "size": 25161,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/double.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/c4c30b73-267a-d6af-635a-21449d7942d0/c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc.mp3",
+        "sha256": "c4c30b73267ad6af635a21449d7942d0142da6647ab8e7e8ecca52841b1b56fc",
+        "size": 25161,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/farewell.mp3",
+      "id": "cb22f40e-cbdf-5fba-352d-983522cd50cc",
+      "sha256": "cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a",
+      "size": 24636,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/farewell.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/cb22f40e-cbdf-5fba-352d-983522cd50cc/cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a.mp3",
+        "sha256": "cb22f40ecbdf5fba352d983522cd50ccaa3138b10d63299c1dac3308f785d04a",
+        "size": 24636,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/goodluck.mp3",
+      "id": "4ab37063-8918-3bed-d27f-dcf278e388da",
+      "sha256": "4ab3706389183bedd27fdcf278e388da9fddf4fcf3a950cac371132dd3bc3efd",
+      "size": 26154,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/goodluck.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/4ab37063-8918-3bed-d27f-dcf278e388da/4ab3706389183bedd27fdcf278e388da9fddf4fcf3a950cac371132dd3bc3efd.mp3",
+        "sha256": "4ab3706389183bedd27fdcf278e388da9fddf4fcf3a950cac371132dd3bc3efd",
+        "size": 26154,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/greeting.mp3",
+      "id": "84a5345c-dba7-2e72-2c37-d7abd5baec0e",
+      "sha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
+      "size": 48006,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/greeting.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/84a5345c-dba7-2e72-2c37-d7abd5baec0e/84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e.mp3",
+        "sha256": "84a5345cdba72e722c37d7abd5baec0ee46fbdb9a443414ff6d28044acf6690e",
+        "size": 48006,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/insurance.mp3",
+      "id": "ce5863ac-6478-2ae3-c45e-44ca09e0fc3b",
+      "sha256": "ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86",
+      "size": 26912,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/insurance.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/ce5863ac-6478-2ae3-c45e-44ca09e0fc3b/ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86.mp3",
+        "sha256": "ce5863ac64782ae3c45e44ca09e0fc3b6e1fbd33f7610c3dbbf3a4f76c2f2a86",
+        "size": 26912,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/lose.mp3",
+      "id": "2f2925cb-ee67-be74-51ac-110f6e603003",
+      "sha256": "2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f",
+      "size": 22498,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/lose.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/2f2925cb-ee67-be74-51ac-110f6e603003/2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f.mp3",
+        "sha256": "2f2925cbee67be7451ac110f6e603003ef7b9f05e3b49bef8b44324414ac888f",
+        "size": 22498,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/peek.mp3",
+      "id": "7f86eeb0-7f9d-4fec-5440-35ae845890cc",
+      "sha256": "7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a",
+      "size": 36376,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/peek.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/7f86eeb0-7f9d-4fec-5440-35ae845890cc/7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a.mp3",
+        "sha256": "7f86eeb07f9d4fec544035ae845890cce081dd5096ed55499bf0948138c11e1a",
+        "size": 36376,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/placebets.mp3",
+      "id": "a25740b3-3d92-067e-6617-3f535cb246ed",
+      "sha256": "a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770",
+      "size": 29072,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/placebets.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/a25740b3-3d92-067e-6617-3f535cb246ed/a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770.mp3",
+        "sha256": "a25740b33d92067e66173f535cb246ed212cab79748de9574f19131a038c6770",
+        "size": 29072,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/push.mp3",
+      "id": "a440d0c4-3536-9d7a-8c02-0b5be2358e13",
+      "sha256": "a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6",
+      "size": 23851,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/push.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/a440d0c4-3536-9d7a-8c02-0b5be2358e13/a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6.mp3",
+        "sha256": "a440d0c435369d7a8c020b5be2358e130c7aaeecb6ede9df3ae6d45a22d327a6",
+        "size": 23851,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/sidebet.mp3",
+      "id": "d29b7d5c-2803-318e-587f-06bef6a81202",
+      "sha256": "d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808",
+      "size": 27508,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/sidebet.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/d29b7d5c-2803-318e-587f-06bef6a81202/d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808.mp3",
+        "sha256": "d29b7d5c2803318e587f06bef6a81202f8fd9538facb99840fb6621116d68808",
+        "size": 27508,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "logicalPath": "dealers/astrid/runtime/indexed/audio/en/win.mp3",
+      "id": "5c0352e8-34d1-a16e-9d72-fc081b59828b",
+      "sha256": "5c0352e834d1a16e9d72fc081b59828b44ee8b7df207dc15e17658caa861140b",
+      "size": 43548,
+      "access": "public",
+      "legacyUrls": [
+        "/dealers/astrid/audio/en/win.mp3"
+      ],
+      "storage": {
+        "provider": "vercel-blob",
+        "pathname": "croupier/media/dealers/astrid/runtime/indexed/audio/en/5c0352e8-34d1-a16e-9d72-fc081b59828b/5c0352e834d1a16e9d72fc081b59828b44ee8b7df207dc15e17658caa861140b.mp3",
+        "sha256": "5c0352e834d1a16e9d72fc081b59828b44ee8b7df207dc15e17658caa861140b",
+        "size": 43548,
+        "contentType": "audio/mpeg"
       }
     },
     {

@@ -86,9 +86,10 @@ borttagna Caddy-filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
 ### Verktyg som finns kvar
 
 Den indexerade dealerbanken (`media/dealers/{astrid,amira,vera,mei}/runtime/indexed`)
-är borta ur Git och ur Render-imagen. Presentationsbanken
+är borta ur Git och ur Render-imagen, utom 34 MP3 i `runtime/indexed/audio/en`
+(Astrid och Amira) som de bevarade green-speak-talparen kräver. Presentationsbanken
 `media/dealers/*/runtime/presentation` står kvar. Blob-objekten är inte raderade;
-raderna i `media/blob-index.json` för banken är det.
+raderna i `media/blob-index.json` för de borttagna filerna är det.
 
 Manuella byggare som B9 behöll, och som fortfarande namnger den borttagna banken:
 
@@ -176,7 +177,8 @@ Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
 mediebytes. Native Studio läser gemensam driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
 media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
-en dealer registreras. `runtime/indexed` är borta. Kvarvarande
+en dealer registreras. `runtime/indexed` är borta utom green-speak-talparens
+34 MP3. Kvarvarande
 `runtime/presentation` och övriga dealer-mappar behövs inte som reserv för
 Studios molnuppspelning.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
