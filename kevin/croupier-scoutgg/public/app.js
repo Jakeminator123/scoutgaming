@@ -300,8 +300,10 @@ function bubble(cls, html) {
 function sys(t, cls = "sys") { const d = document.createElement("div"); d.className = cls; d.textContent = t; logEl.append(d); logEl.scrollTop = logEl.scrollHeight; }
 
 const secs = (ms) => ms == null ? "–" : (ms / 1000).toFixed(1) + " s";
+// Kevin 12 Oct: players never see the timings under a dealer reply ("hide"); ?timing shows them for us.
+const SHOW_TIMING = new URLSearchParams(location.search).has("timing");
 function metaLine(ms) {
-  if (!ms) return "";
+  if (!ms || !SHOW_TIMING) return "";
   const parts = ms.llm != null ? [`text ${secs(ms.llm)}`] : [];
   parts.push(`voice ${secs(ms.tts)}`, `lip sync ${secs(ms.lipsync)}`, `total ${secs(ms.total)}`);
   return `<div class="meta">${parts.join(" · ")}</div>`;
