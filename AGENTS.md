@@ -58,11 +58,11 @@ At task start and before commit/push, read remote `main` security status with `n
 ## Dealer speech, media, cards, and wallet
 
 - Preserve dirty files, especially raw media and calibration scripts. Do not reset or replace the whole media directory.
-- Keep all four dealers on the shared playback path. Never choose a speaking video by approximate duration or loop a recorded sentence over continuing audio.
+- Keep every registered dealer on the shared playback path. Never choose a speaking video by approximate duration or loop a recorded sentence over continuing audio.
 - Each speech change is a set: exact text, recorded audio, video, frame index, calibration, and acceptance notes. A different audio/video hash invalidates prior visual approval.
 - Build replacement takes in a separate staging directory. `build-index.mjs` refuses to overwrite calibrated video with different bytes. Do not delete live-index metadata to bypass that check.
-- Run `node pipeline/audit-dealer-sync.mjs --probe` and the tests in `.githooks/pre-commit` for every media/player change. Review all four dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
-- The asset baseline is not proof of lip sync. Do not mark a take approved from a hash, waveform, test pass, or first-mouth onset. Update the baseline only after inspecting intentional changes and recording the per-line result. Never regenerate unrelated approved assets while repairing one take. Do not use pasted mouth overlays.
+- Run the tests in `.githooks/pre-commit` for every media/player change. Review the affected registered dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
+- A hash, waveform or test pass is not proof of lip sync. Do not mark a take approved from a hash, waveform, test pass, or first-mouth onset. Never regenerate unrelated approved assets while repairing one take. Do not use pasted mouth overlays.
 - Keep server-owned cards, shoe counts, wallet, and payouts authoritative. Do not manipulate the real user database for testing. Use an isolated server/database and a different hostname.
 - A Studio migration ships in two steps: run it against production Neon first, then merge the code. CI's migration readiness step enforces this; do not add continue-on-error to it. The one exception is a `deploymentOptional` version (a table only a new, isolated feature needs): tolerant code deploys first, the operator applies afterwards, and a follow-up PR pins it required. See the fixed procedure in `docs/CLOUD-MIGRATION.md`.
 - Temporary guest access stays on for local product development until the user asks otherwise. Do not treat this demo as ready for real money.

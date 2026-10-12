@@ -140,3 +140,8 @@ som också finns i levande text. Verkliga namn:
 - `scene-join.mjs` kräver fortfarande sökvägsprefixet `dealers/astrid/performance/joins/`. Den levande spelaren sätter inte `joins`.
 - GitGuardian mot `main` var köad vid start. Incidentlistan lästes inte.
 - Hela kroken är inte grön här. Node är 22, inte 24. Första stoppet är `test/system-map.mjs` (cancelled mot failed). Resten föll på saknade paket och `node:sqlite`.
+
+## Beslut efter rapporten (Jakob 2026-10-12)
+
+- Läppsynkverktygen i `pipeline/` (`apply-lipsync.py`, `sync-audio-warp.py`, `sync-existing.py`, `auto-phrase-warp.py`, `measure-lipsync.py`, `measure-onset.py`, `retime-video-map.py`, `retime-video-warp.py`, `trim-speak-start.py`) och `pipeline/lipsync-overrides.json` tas bort tillsammans med banken. De hörde till bankens inspelade talklipp. Jakob vill i stället ha en ny väg som automatiskt genererar talklipp från dealerns vilobild, på svenska och engelska. Den utreds separat. De tre auditarna och `docs/dealer-sync-baseline.json` är borta av samma skäl.
+- `AGENTS.md` rad 61, 64 och 65 är uppdaterade: varje registrerad dealer på den delade spelvägen, kroken plus provspelning av berörda registrerade dealers, och ingen baslinje att uppdatera.

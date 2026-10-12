@@ -330,14 +330,25 @@ Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 `media/dealers/{astrid,amira,vera,mei}/runtime/indexed` (632 filer, 279,0 MiB)
 är borta ur Git, liksom layoutrader, blob-indexrader och de auditar som bara
 läste banken (`audit-dealer-sync`, `audit-performance`, `audit-astrid-actor`)
-plus läppsynkskripten som bara hade banken som underlag. Blob-objekt är inte
-raderade. `runtime/presentation` (83 filer) är orörd. Partnerdokumentet visar
+och deras baslinje `docs/dealer-sync-baseline.json`. Blob-objekt är inte
+raderade. `runtime/presentation` (83 filer) är orörd. Läppsynkverktygen i
+`pipeline/` (`sync-audio-warp.py`, `retime-video-warp.py` m.fl. och
+`lipsync-overrides.json`) är också borta, på Jakobs beslut, eftersom de hörde
+till bankens inspelade talklipp. En ny väg som automatiskt genererar talklipp
+från dealerns vilobild, på svenska och engelska, utreds separat. Röstprofiler,
+ElevenLabs- och Cartesia-källorna och GPU-workerns läppsynk är orörda. Partnerdokumentet visar
 tomma `streams`, `deals` och `speech`, och att `/dealer/…` och `/dealers/…`
-svarar 410. API-beteendet är oförändrat. Prov: katalog- och manifestkontroll,
-orphan-test, systemkarta, miljövariabler, raderingsgrind och riktade
-`node --test`. Kvar: `AGENTS.md` kräver fortfarande `audit-dealer-sync --probe`;
-handmattor i `runtime/hands` har ingen audit; B9-byggarna namnger den borttagna
-banken. Studio- och frontendbygge samt hela sviten är orkestratorns.
+svarar 410. API-beteendet är oförändrat. `AGENTS.md` kräver nu kroken och
+provspelning av berörda registrerade dealers i stället för den borttagna proben.
+
+Prov, lokalt med Node 24:
+- Studio- och frontendbygget och full pre-commit är gröna.
+- `build-runtime-media-catalog --check` och `build-lab-video-manifest --check`
+  är gröna. Det finns 0 föräldralösa prov och 0 röda i systemkartan.
+- Raderingsspärren visar 0 kvarvarande importer och 0 registerrader.
+
+Kvar: handmattorna i `runtime/hands` har ingen audit, och B9-byggarna nämner den
+borttagna banken som tidigare källa.
 
 **Kompositorn ligger i `packages/presentation`, 12 oktober.** Paketet äger
 `compositor/`, `docs/` och `preview/`. Publika adresser
