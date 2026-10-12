@@ -5,14 +5,16 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createStudioActivity, sidOf } from '../server/studio-activity.mjs';
+import { createHash } from 'node:crypto';
+const keyFor = t => createHash('sha256').update(t).digest('hex');   // as shared-table.mjs stores a guest
 
 test('a sign-in is followed by its sid, rounds are credited to it, and chat text is never stored (Kevin 12 Oct)', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'act-')), tableDb = path.join(dir, 'demo.sqlite');
   const t = new DatabaseSync(tableDb);
   t.exec(`CREATE TABLE shared_players (room TEXT, token TEXT, id TEXT, name TEXT, balance REAL, seen REAL, last_return REAL);
           CREATE TABLE shared_settlements (room TEXT, round_id TEXT, player_id TEXT, receipt TEXT);`);
-  t.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,?)').run('tbl-a', 'g'.repeat(64), 'p1', 'Guest 1', 1000, 0, null);
-  t.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,?)').run('tbl-a', 'h'.repeat(64), 'p2', 'Guest 2', 1000, 0, null);
+  t.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,?)').run('tbl-a', keyFor('g'.repeat(64)), 'p1', 'Guest 1', 1000, 0, null);
+  t.prepare('INSERT INTO shared_players VALUES (?,?,?,?,?,?,?)').run('tbl-a', keyFor('h'.repeat(64)), 'p2', 'Guest 2', 1000, 0, null);
   t.prepare('INSERT INTO shared_settlements VALUES (?,?,?,?)').run('tbl-a', 'r1', 'p1', JSON.stringify({ settledAt: Date.now() + 60000, staked: 10, net: 10 }));
   t.prepare('INSERT INTO shared_settlements VALUES (?,?,?,?)').run('tbl-a', 'r1', 'p2', JSON.stringify({ settledAt: Date.now() + 60000, staked: 50, net: -50 }));
   t.close();

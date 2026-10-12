@@ -35,7 +35,8 @@ export function createStudioActivity(file, tableDb) {
         try {
           const players = tdb.prepare('SELECT room, token, id FROM shared_players').all();
           for (const p of players) {
-            const who = seen.get(`${h16(p.token)}|${p.room}`); if (!who) continue;
+            // shared_players.token is already sha256(cookie) (shared-table.mjs keyFor): its first 16 hex are the guest hash.
+            const who = seen.get(`${String(p.token).slice(0, 16)}|${p.room}`); if (!who) continue;
             for (const s of tdb.prepare('SELECT receipt FROM shared_settlements WHERE room = ? AND player_id = ?').all(p.room, p.id)) {
               let rc; try { rc = JSON.parse(s.receipt); } catch { continue; }
               const at = new Date(rc.settledAt ?? 0).toISOString();
