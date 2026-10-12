@@ -46,12 +46,17 @@ export const DEALERS = {
     clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: null, idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
 };
 
+// Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him
+// (a ?table= link) still plays with him. Keep this list in step with stage-pending.js.
+export const PUBLIC_HIDDEN = ['marten'];
 function pick() {
   try {
-    const asked = new URLSearchParams(globalThis.location?.search ?? '').get('dealer');
-    if (asked && DEALERS[asked]) { globalThis.localStorage?.setItem('dealer', asked); return asked; }
+    const q = new URLSearchParams(globalThis.location?.search ?? ''), onTable = q.has('table');
+    const ok = id => !!DEALERS[id] && (onTable || !PUBLIC_HIDDEN.includes(id));
+    const asked = q.get('dealer');
+    if (asked && ok(asked)) { globalThis.localStorage?.setItem('dealer', asked); return asked; }
     const saved = globalThis.localStorage?.getItem('dealer');
-    return DEALERS[saved] ? saved : 'astrid';
+    return ok(saved) ? saved : 'astrid';
   } catch { return 'astrid'; }
 }
 

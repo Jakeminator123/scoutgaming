@@ -11,7 +11,9 @@
   var d = 'astrid', room = 'darkhall';
   try {
     var q = new URLSearchParams(location.search), asked = q.get('dealer'), saved = localStorage.getItem('dealer');
-    d = asked === 'astrid' || KEYED.indexOf(asked) >= 0 ? asked : KEYED.indexOf(saved) >= 0 ? saved : 'astrid';
+    // Mårten only on a Table Studio table (?table=), like dealers.js PUBLIC_HIDDEN.
+    var keyed = q.has('table') ? KEYED : KEYED.filter(function (k) { return k !== 'marten'; });
+    d = asked === 'astrid' || keyed.indexOf(asked) >= 0 ? asked : keyed.indexOf(saved) >= 0 ? saved : 'astrid';
     var r = q.get('room'); if (ROOMS.indexOf(r) < 0) r = localStorage.getItem('room'); if (ROOMS.indexOf(r) >= 0) room = r;
   } catch (e) {}
   if (d === 'astrid') { im.src = '/media/startbild.png'; im.alt = 'Astrid at the blackjack table'; return; }

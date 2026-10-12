@@ -15,7 +15,7 @@ import { createSharedGameTable,tableSession } from "./shared-table.js";
 import { createVideoBuffer, tableVideoSources } from "./video-buffer.js";
 import { createVideoPreloader, initialVideoOffset } from "./video-preloader.js";
 import { createPlaybackRecovery } from "./playback-recovery.js";
-import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer } from "./dealers.js";
+import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer, PUBLIC_HIDDEN } from "./dealers.js";
 import { createDealerLayer } from "./dealer-layer.js";
 import { greetingFor } from "./dealer-remarks.js";
 import { faceAtTime } from "./card-face-projection.js";
@@ -490,7 +490,7 @@ $("#toggleChat").addEventListener("click", e => {
       keyHalf: dealer.ready?.card ? [Math.ceil(dealer.ready.card[0] / 2) + 4, Math.ceil(dealer.ready.card[1] / 2) + 4] : [38, 48] });
   }).catch(() => {});
   // A studio table keeps the dealer it was built with (its deals are timed on his takes).
-  const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS);
+  const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS).filter(d => !PUBLIC_HIDDEN.includes(d.id));   // Mårten only on his own studio tables
   const picker = document.querySelector("#dealerPick");
   if (picker) {
     picker.innerHTML = dealerChoices.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
