@@ -158,17 +158,14 @@ for current commands and the actual addresses printed by the launcher.
 
 ## Validation
 
-The repository hook runs the media/player audits and regression suites:
+The repository hook runs the media/player checks and regression suites:
 
 ```sh
 .githooks/pre-commit
 ```
 
-For any media or player change, also run:
-
-```sh
-node pipeline/audit-dealer-sync.mjs --probe
-```
+The indexed dealer bank and `pipeline/audit-dealer-sync.mjs` are no longer in
+the tree. Rehearsal of registered clips stays in the real player.
 
 Passing hashes and tests protect against regressions but do not prove visual
 quality, lip sync or physical card contact. See

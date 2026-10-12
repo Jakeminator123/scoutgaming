@@ -85,21 +85,22 @@ borttagna Caddy-filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
 
 ### Verktyg som finns kvar
 
-Manuella byggare, enda källa till media som produkten läser:
+Den indexerade dealerbanken (`media/dealers/{astrid,amira,vera,mei}/runtime/indexed`)
+är borta ur Git och ur Render-imagen. Presentationsbanken
+`media/dealers/*/runtime/presentation` står kvar. Blob-objekten är inte raderade;
+raderna i `media/blob-index.json` för banken är det.
 
-- `pipeline/build-previews.sh` — förhandsvisningar av röstrepliker
-- `pipeline/encode.sh` — Annex-B
-- `pipeline/build-hands.sh` — handmattor
-- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — uppmätta kontaktkandidater
+Manuella byggare som B9 behöll, och som fortfarande namnger den borttagna banken:
 
-Läppsynk och kalibrering: `sync-existing.py`, `sync-audio-warp.py`,
-`auto-phrase-warp.py`, `measure-lipsync.py`, `measure-onset.py`,
-`retime-video-map.py`, `retime-video-warp.py`, `apply-lipsync.py`,
-`trim-speak-start.py`, `mouth-crops.json` och `encode.sh`.
+- `pipeline/build-previews.sh` — förhandsvisningar av de gamla röstreplikerna
+- `pipeline/encode.sh` — Annex-B, generell
+- `pipeline/build-hands.sh` — handmattor; indata var bankens strömmar, utdata är `runtime/hands`
+- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — kontaktkandidater mot den borttagna performance-mappen
 
-Krok och CI: `audit-dealer-sync.mjs`, `audit-performance.mjs`,
-`audit-astrid-actor.mjs`, `build-lab-video-manifest.mjs`, `build-index.mjs`,
-`pack-contact-media.mjs`.
+Läppsynkskripten som bara läste banken är borta tillsammans med
+`audit-dealer-sync.mjs`, `audit-performance.mjs` och `audit-astrid-actor.mjs`.
+`pipeline/mouth-crops.json` står kvar. Krok och CI kör fortfarande
+`build-lab-video-manifest.mjs`, `build-index.mjs` och `pack-contact-media.mjs`.
 
 ## Egen talprofil för registrerade dealers, 11 oktober 2026
 
@@ -175,8 +176,9 @@ Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
 mediebytes. Native Studio läser gemensam driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
 media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
-en dealer registreras. Originalens media/dealers-mappar är fortsatt underlag
-för lokala pipelines och kalibrering, men behövs inte i Studios molnartefakt.
+en dealer registreras. `runtime/indexed` är borta. Kvarvarande
+`runtime/presentation` och övriga dealer-mappar behövs inte som reserv för
+Studios molnuppspelning.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
 --check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.
@@ -591,8 +593,8 @@ Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 Sparade `gameLanes`/`gameLane` styr renderer, dealer och mediesamling.
 Mobile Phone Lane är förval. Äldre `original` migreras vid läsning till Mobile;
 gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
-En uttryckligen registrerad `indexed-video`-lane kan använda den gemensamma
-indexspelaren för dealerbanken. Ingen automatisk videofallback införs.
+En sparad `indexed-video`-lane ger inga dealers och startar inte banken.
+Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs.
 Källkontrakt: `web/public/game-lanes.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i

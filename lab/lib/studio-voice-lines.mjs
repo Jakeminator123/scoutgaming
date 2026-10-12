@@ -49,7 +49,15 @@ export function createRegisteredVoiceLines({ env = process.env, repositoryRoot =
       const dealers = [];
       for (const [dealer, name] of Object.entries(roster)) {
         const base = dealer === 'vera' ? 'dealer' : `dealers/${dealer}`;
-        const [bank, index] = await Promise.all([registeredJson(`/${base}/audio/en/bank.json`), registeredJson(`/${base}/streams/index.json`)]);
+        const bankUrl = `/${base}/audio/en/bank.json`, indexUrl = `/${base}/streams/index.json`;
+        // The indexed speech bank is gone. A dealer with neither register is an
+        // empty list, not a storage failure. A partial or corrupt register still
+        // fails closed.
+        if (!resolvePublicMedia(bankUrl, options) && !resolvePublicMedia(indexUrl, options)) {
+          dealers.push({ dealer, name, lines: [] });
+          continue;
+        }
+        const [bank, index] = await Promise.all([registeredJson(bankUrl), registeredJson(indexUrl)]);
         if (!bank || Array.isArray(bank) || !index?.clips || Array.isArray(index.clips)) fail();
         const ids = new Set([...Object.keys(bank), ...Object.keys(index.clips).filter(key => /^idle-1\/speak\/[a-z][a-z0-9_-]{0,99}$/.test(key)).map(key => key.split('/').at(-1))]);
         if (ids.size > 200 || [...ids].some(key => !lineKey.test(key))) fail();
