@@ -35,6 +35,10 @@ function emptyLines(dealerId) {
 }
 function projectFrom(playback, { registeredDealers, projectRevision }) {
   const project = structuredClone(seed);
+  // Published packages keep the event set they captured. The optional shoe slot
+  // is present only when the frozen lines include it; mandatory events stay required.
+  const eventIds = new Set(playback.lines.map(line => line?.eventId));
+  project.events = project.events.filter(event => event.id !== 'transition.shoe' || eventIds.has(event.id));
   project.revision = projectRevision;
   project.dealers = registeredDealers.map(({ id, label }) => ({ id, label }));
   project.lines = structuredClone(playback.lines);

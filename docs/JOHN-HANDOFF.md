@@ -1,5 +1,18 @@
 # Aktuell handoff — Scoutgaming
 
+## Publik bolagskatalog: äldre frysta paket, 12 oktober 2026
+
+/play laddade men /api/operators gav 503 efter det valfria skoeventet.
+Den frysta projektprojektionen krävde den nya 17-eventmallen även för redan
+publicerade 16-eventpaket. Projektionen följer nu paketets frysta linjer för
+transition.shoe; obligatoriska event och medie-/paketvalidering krävs fortsatt.
+Regressionen täcker gammalt och nytt paket, oförändrat innehåll, fryst talval
+samt avvisning av saknad obligatorisk linje. Den faller utan rättningen.
+78 riktade tester passerade. Läskontroll av Nordic Bets oförändrade paket
+återskapade felet och ger nu ett giltigt spelrum i lokal produktionskod.
+Inga produktionsdata eller migrationer ändrades. Liveutfall verifieras efter deploy.
+
+
 ## Rensning av lokala prototyper och cache, 12 oktober 2026
 
 Åtta frikopplade prototypfiler är borttagna: den gamla riggade bordsspelaren,
