@@ -204,6 +204,30 @@ test('a lost outcome write is retried and read back; a double click with one req
   assert.equal(submitted.length, 2, 'one POST for the first request and one for the double click');
 });
 
+test('two concurrent requests with one key: the lease winner pays with the journaled seed even when its own insert lost the race', async () => {
+  const { service, store, submitted } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const body = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  // Both read prior=null; the first insert lands but its acknowledgement is held until the second request is done.
+  const read = store.getJob, insert = store.insertJob; let emptyReads = 0, inserts = 0, release;
+  const held = new Promise(resolve => { release = resolve; });
+  store.getJob = async id => { const job = await read(id); if (!job) emptyReads += 1; return job; };
+  store.insertJob = async row => { const result = await insert(row); if (++inserts === 1) await held; return result; };
+  const random = Math.random, seeds = [0.1, 0.2]; Math.random = () => seeds.shift() ?? random();
+  let first, second;
+  try {
+    first = service.createJob('paow', body, actor);
+    second = await service.createJob('paow', body, actor);
+  } finally { Math.random = random; release(); }
+  first = await first;
+  assert.equal(emptyReads, 2, 'both requests started without a journaled row');
+  assert.deepEqual([first.jobId, second.jobId], [body.requestId, body.requestId]);
+  assert.equal(submitted.length, 1, 'one paid POST');
+  const journal = store.jobs.get(body.requestId).request;
+  assert.equal(submitted[0].params.seed, journal.seed, 'the paid request carries the journaled seed');
+  assert.equal(submitted[0].params.promptText, journal.prompt);
+});
+
 test('a prepared row never reached Runway: a retry resumes it once, an expired one fails without charge', async () => {
   const { service, store, submitted, clock } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
@@ -498,7 +522,8 @@ async function faultRun(slotId, fault) {
   const committed = slotId === 'idle.ready/' ? f.media.size
     : slotId === 'layer/table' ? (f.documents.get('project').value.layerAssets ?? []).length
       : [...f.blobs.keys()].filter(path => path.includes('/source/anchors/')).length - 1;
-  return { calls, log, paid: paid.length, committed, status: f.store.jobs.get(body.requestId)?.status ?? 'absent' };
+  const journal = f.store.jobs.get(body.requestId)?.request;
+  return { calls, log, paid: paid.length, committed, status: f.store.jobs.get(body.requestId)?.status ?? 'absent', seedMatches: paid.every(row => row.params.seed === journal?.seed) };
 }
 
 test('fault sweep: any single failure in a job, retried with the same requestId, pays at most once and commits exactly once', async () => {
@@ -513,6 +538,7 @@ test('fault sweep: any single failure in a job, retried with the same requestId,
         const where = `${slotId} · call ${index} ${clean.log[index]} · ${mode} → paid ${run.paid}, committed ${run.committed}, ${run.status}`;
         assert.ok(run.paid <= 1, `paid twice: ${where}`);
         assert.ok(run.committed <= 1, `committed twice: ${where}`);
+        assert.ok(run.seedMatches, `paid seed differs from the journal: ${where}`);
         if (run.paid === 1) assert.deepEqual([run.status, run.committed], ['succeeded', 1], `paid output lost: ${where}`);
         else assert.ok(['failed', 'cancelled'].includes(run.status) && run.committed === 0, `unpaid job not closed: ${where}`);
         scenarios += 1;

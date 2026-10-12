@@ -418,13 +418,18 @@ export function createDealerForgeService({ repository, scope, env = process.env,
           return publicJob(queued.created ? queued.job : sameRequest(queued.job));
         }
       }
-      // A resumed prepared row keeps its journaled seed so the paid request matches what was recorded.
-      const { params, summary } = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, prior?.request?.seed === undefined ? body : { ...body, seed: prior.request.seed });
+      // Whoever pays sends the journaled seed and prompt, so the stored request describes the generated output.
+      const journaled = recorded => ({ ...body, seed: recorded.seed ?? body.seed, ...(typeof recorded.prompt === 'string' && recorded.prompt ? { prompt: recorded.prompt } : {}) });
+      let built = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, prior ? journaled(prior.request) : body);
       if (!prior) {
         // Journal first, pay second: the row exists (prepared) before any Runway POST can start.
-        const request = { plan, ...summary, slotLabel: slot.label, fingerprint, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
+        const request = { plan, ...built.summary, slotLabel: slot.label, fingerprint, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
         const inserted = await store.insertJob({ jobId, dealerId, slotId: slot.id, kind: slot.kind, status: 'prepared', request, actor });
-        if (!inserted.created && sameRequest(inserted.job).status !== 'prepared') return publicJob(inserted.job);
+        if (!inserted.created) {
+          if (sameRequest(inserted.job).status !== 'prepared') return publicJob(inserted.job);
+          // A concurrent request with the same key inserted first: its row, not our own random draw, is what gets paid.
+          built = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, journaled(inserted.job.request));
+        }
       }
       // Lease: exactly one request moves prepared → submitting and pays; a concurrent duplicate gets the row back.
       try { await store.updateJob(jobId, { expectedStatus: 'prepared', status: 'submitting' }); }
@@ -433,7 +438,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
         if (current && current.status !== 'prepared') return publicJob(current);
         throw cause;
       }
-      return publicJob(await submitLeased(jobId, plan.endpoint, params, client));
+      return publicJob(await submitLeased(jobId, plan.endpoint, built.params, client));
     },
 
     /** Advance one job: read the Runway task; on success download, verify and commit into the exact slot. */
