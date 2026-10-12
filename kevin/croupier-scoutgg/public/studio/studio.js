@@ -144,4 +144,6 @@ let sayT;$('#tableName').value=st.name;$('#customFelt').value=st.custom;syncSoun
 // Every visit starts at the sign-in. Only the game's "Back to Table Studio" (?resume) reopens where you were,
 // and only with a live back office session.
 const was=st.screen;st.email='';go('login');
+// After choosing a password the backoffice can send ?email=… so the sign-in is not typed twice (Kevin 12 Oct).
+{const pre=new URLSearchParams(location.search).get('email');if(pre&&/^[^@\s]+@[^@\s]+$/.test(pre)){$('#email').value=pre;$('#pw').focus()}}
 if(new URLSearchParams(location.search).has('resume'))fetch('/api/studio/session').then(r=>r.ok?r.json():{}).then(me=>{if(me.user){st.email=me.user;go(was&&was!=='login'?was:'builder')}}).catch(()=>{});
