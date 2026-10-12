@@ -1,5 +1,33 @@
 # Aktuell handoff — Scoutgaming
 
+## Rensning av lokala prototyper och cache, 12 oktober 2026
+
+Åtta frikopplade prototypfiler är borttagna: den gamla riggade bordsspelaren,
+grön-waiting-spelaren, packed-speech, performance-authoring samt dealer-studio
+och collection-export-review med respektive HTML. Importsökning, exportnamn
+och en konservativ modulanalys fann inga konsumenter i aktuell kod eller tester.
+Tre genererade Python-bytecodefiler är också borttagna. Gemensam .gitignore
+skyddar nu Next-/Nuxt-cache, .cache/.turbo, testresultat, Python-cache,
+virtuella miljöer, byggmetadata och loggar. node_modules var redan ignorerat.
+
+754 995 884 byte disponibel lab/.next/cache rensades efter tom sessionspost
+och kontroll av Node-processernas script/identitet. Övrig .next-runtime,
+beroenden, sparade data, råmedia och kalibreringar bevarades. Det pågående
+lokala 3lager-materialet med Johanna/Paow är kvar och lades inte till i Git.
+
+Verifiering: 11 ignore-prov, full precommit-regression med 2 874 godkända
+prov/11 villkorliga undantag/0 fel, samt audit-dealer-sync --probe. Alla fyra
+medieset matchar befintlig baseline; detta är inget nytt visuellt
+lipsynkgodkännande. Aktiva spel-/Studio-/partner-moduler har bevarats.
+
+En privat Git-bundle av originalhistoriken är verifierad utanför repot.
+Isolerad historikrensning gav 692 MB för endast main och 1,59 GB för brancher
+plus omskrivna historiska taggar; alla aktiva branchers filträd var identiska
+före/efter. Originaltippen var 77b760529f8be4eebb9c38737d25e111aa05a5ab.
+GitHub-historiken är inte omskriven. Faktisk publicering kräver samordning,
+färsk inventering efter denna commit samt hantering av Jakobs-v1 och gamla
+checkpoint-SHA:n; nuvarande leveransregel förbjuder force-push/andra brancher.
+
 ## Offentlig bolagslista och GitGuardian, 12 oktober 2026
 
 Publika /api/operators svarade 503 fast Johns spelbolag och Nordic Bet hade
