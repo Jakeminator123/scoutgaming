@@ -32,7 +32,7 @@ function component(file, name, props) {
     if (modules.has(filename)) return modules.get(filename).exports;
     const module = { exports: {} }; modules.set(filename, module);
     const code = transformSync(readFileSync(new URL(filename, import.meta.url), 'utf8'), { filename, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './file-video' ? load('./file-video.tsx') : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : id === './presentation-frame' ? load('./presentation-frame.tsx') : id === './file-video' ? load('./file-video.tsx') : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
     return module.exports;
   }
   function renderFunction(fn, values, path) {
@@ -94,6 +94,39 @@ const project = createSeedProject();
 function stage(extra = {}) {
   return component('./stage.tsx', 'Stage', { event: project.events[0], asset: project.assets[0], dealer: 'Astrid', variantLabel: 'Standard', playId: 0, playing: false, hasResult: false, busy: false, onPlay() {}, onPreview() {}, ...extra });
 }
+
+test('compact file controls start and pause the exact video and respect blocked playback', () => {
+  const receipts = [], h = stage({ videoUrl: '/wide-clip', playId: 7, onPlaybackEvent: value => receipts.push(value) });
+  const tree = h.render(), video = byType(tree, 'video'), toggle = button(tree, 'Spela / pausa');
+  assert.equal(toggle.props['aria-label'], 'Spela eller pausa klippet');
+  assert.equal(video.props.ref.current.paused, true);
+  toggle.props.onClick(); videoEvent(video, 'onPlaying');
+  assert.equal(video.props.ref.current.paused, false);
+  toggle.props.onClick(); assert.equal(video.props.ref.current.paused, true);
+  toggle.props.onClick(); videoEvent(video, 'onPlaying'); videoEvent(video, 'onEnded');
+  assert.equal(receipts.at(-1).phase, 'completed');
+  h.props.blocked = true; const locked = h.render();
+  assert.equal(button(locked, 'Spela / pausa').props.disabled, true);
+  button(locked, 'Spela / pausa').props.onClick(); toggle.props.onClick();
+  assert.equal(byType(locked, 'video').props.ref.current.paused, true);
+});
+test('idle format switches preserve the playing base and do not edit the policy', () => {
+  const policy = createDefaultIdlePolicy(), changes = [];
+  const inventory = { families: [{ id: policy.familyId, standardIds: policy.base.map(row => row.videoId), variantIds: policy.variants.map(row => row.videoId) }],
+    videos: [...policy.base, ...policy.variants].map(row => ({ id: row.videoId, available: true, fileName: row.videoId + '.mp4', previewUrl: '/api/videos/' + row.videoId })) };
+  const h = component('./idle-policy-editor.tsx', 'IdlePolicyEditor', { policy, inventory, blocked: false, onChange: value => changes.push(value), onBusyChange() {} });
+  button(h.render(), 'Spela basklipp').props.onClick();
+  const video = byType(h.render(), 'video'), element = video.props.ref.current;
+  videoEvent(video, 'onPlaying');
+  for (const label of ['Mobil · 9:16', 'Dator · 16:9']) {
+    button(h.render(), label).props.onClick();
+    assert.equal(byType(h.render(), 'video').props.ref.current, element);
+    assert.equal(element.paused, false);
+    assert.equal(find(h.render(), node => node.props?.['data-presentation-format']).props['data-presentation-format'], label.startsWith('Mobil') ? 'mobile' : 'desktop');
+  }
+  assert.deepEqual(changes, []);
+});
+
 test('idle minute keeps base loops alive and rejects late start/finish after stop or action takeover', () => {
   for (const reason of ['stop', 'action']) {
     const policy = createDefaultIdlePolicy(), busy = [];

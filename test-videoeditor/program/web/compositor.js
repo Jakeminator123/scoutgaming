@@ -86,14 +86,14 @@ export class Compositor {
     const previewScale=Math.min(1,1280/Math.max(...dims));const width=Math.round(dims[0]*previewScale),height=Math.round(dims[1]*previewScale);
     if(this.canvas.width!==width||this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height;}
     gl.viewport(0,0,width,height);gl.clearColor(.018,.025,.04,1);gl.clear(gl.COLOR_BUFFER_BIT);
-    const rect=[x,y,1080*s,1920*s],get=role=>assets.get(scene[role]);
+    const rect=[x,y,1080*s,1920*s],dealerRect=scene.dealerAspect?[(dims[0]-1920*s*scene.dealerAspect)/2+scene.stage[scene.layout].x*dims[0],y,1920*s*scene.dealerAspect,1920*s]:rect,get=role=>assets.get(scene[role]);
     const sceneRect=(a,t)=>[x+t.x*1080*s,y+t.y*1920*s,t.width*1080*s,t.width*1080*s*(a.height/a.width)];
     const background=get('background');if(scene.show.background&&background?.el)this.draw(background.el,backgroundRect(scene,background,dims));
     const mask=get('matte')?.el,hand=get('handmatte')?.el;
     if(scene.key.mode!=='composite'){
-      this.draw(actor,rect,{key:{...scene.key,enabled:scene.key.enabled&&scene.key.mode==='alpha'},mask:scene.key.mode==='alpha'?mask:null,debug:scene.key.mode==='alpha'?2:0});return;
+      this.draw(actor,dealerRect,{key:{...scene.key,enabled:scene.key.enabled&&scene.key.mode==='alpha'},mask:scene.key.mode==='alpha'?mask:null,debug:scene.key.mode==='alpha'?2:0});return;
     }
-    const actorPass=p=>{if(scene.show.dealer)this.draw(actor,rect,{key:scene.key,mask,hand,pass:p,splitY:scene.splitY});};
+    const actorPass=p=>{if(scene.show.dealer)this.draw(actor,dealerRect,{key:scene.key,mask,hand,pass:p,splitY:scene.splitY});};
     if(scene.tableFront===true)actorPass(0);
     else if(scene.layerMode==='split')actorPass(1);
     const table=get('table');if(scene.show.table&&table?.el)this.draw(table.el,tableRect(scene,table,{dims,s,x,y}));
@@ -142,12 +142,12 @@ class CanvasFallback {
     const get=role=>assets.get(scene[role]),rect=(a,trans)=>[x+trans.x*1080*s,y+trans.y*1920*s,trans.width*1080*s,trans.width*1080*s*a.height/a.width];
     const draw=(el,r)=>{if(el&&(!(el instanceof HTMLVideoElement)||el.readyState>=2))ctx.drawImage(el,...r);};
     const bg=get('background');if(scene.show.background&&bg?.el)draw(bg.el,backgroundRect(scene,bg,dims));
-    const ready=this.prepare(actor,scene,assets),actorRect=[x,y,1080*s,1920*s];
+    const ready=this.prepare(actor,scene,assets),cardRect=[x,y,1080*s,1920*s],actorRect=scene.dealerAspect?[(dims[0]-1920*s*scene.dealerAspect)/2+scene.stage[scene.layout].x*dims[0],y,1920*s*scene.dealerAspect,1920*s]:cardRect;
     if(scene.key.mode!=='composite'){if(ready)draw(scene.key.mode==='alpha'?this.alpha:actor,actorRect);return;}
     if(ready&&scene.show.dealer&&scene.tableFront===true)draw(this.full,actorRect);
     else if(ready&&scene.show.dealer&&scene.layerMode==='split')draw(this.body,actorRect);
     const table=get('table');if(scene.show.table&&table?.el)draw(table.el,tableRect(scene,table,{dims,s,x,y}));
-    if(scene.show.cards)draw(cards,actorRect);
+    if(scene.show.cards)draw(cards,cardRect);
     if(ready&&scene.show.dealer&&scene.tableFront!==true)draw(scene.layerMode==='split'?this.hands:this.full,actorRect);
     for(const role of ['foreground','overlay']){const a=get(role);if(a?.el&&scene.show[role])draw(a.el,rect(a,scene[role+'Transform']));}
   }

@@ -52,7 +52,7 @@ export function FileVideo({ url, name, playId, playing, blocked, onReceipt, onFa
     void element.play().catch(() => { if (run.epoch === epoch) fail('Videon kunde inte startas.'); });
     return () => { run.epoch++; run.live = false; window.clearInterval(timer); element.pause(); };
   }, [playing, blocked]);
-  return <video ref={video} src={url} controls={!blocked} preload="metadata" muted playsInline
+  return <><video ref={video} src={url} controls={!blocked} preload="metadata" muted playsInline
     aria-label={`Labbklipp: ${name ?? 'video'}`}
     onPlaying={event => {
       const element = event.currentTarget, run = current.current;
@@ -72,5 +72,12 @@ export function FileVideo({ url, name, playId, playing, blocked, onReceipt, onFa
       // must never turn a delayed error into a new playback owner.
       if (!run.attempted) run.live = true;
       fail('Videon kunde inte läsas.');
-    }} />;
+    }} />
+    <button type="button" disabled={blocked} aria-label="Spela eller pausa klippet" style={{position:'absolute',top:8,right:8,zIndex:2,maxWidth:'calc(100% - 16px)'}} onClick={()=>{
+      const element=video.current,run=current.current,epoch=run.epoch;
+      if(!element||!run.mounted||run.blocked||blocked)return;
+      if(!element.paused){element.pause();return;}
+      run.live=true;run.started=false;run.terminal=false;run.attempted=true;
+      void element.play().catch(()=>{if(run.epoch===epoch)fail('Videon kunde inte startas.');});
+    }}>Spela / pausa</button></>;
 }

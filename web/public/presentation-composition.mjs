@@ -1,4 +1,5 @@
 import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from './composition-settings.mjs';
+import {drawDealerFrame,validateDealerFraming} from './dealer-framing.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
@@ -38,7 +39,7 @@ export function clipCompositing(value) {
 export function createLayerComposition(document, initial, {loadRuntime=()=>import(/* webpackIgnore: true */ '/composition-runtime/compositor.js')}={}) {
   const host=document.querySelector('#scene');if(!host)return null;
   document.documentElement.dataset.presentationStandard='three-layer';
-  let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,frameNumber=0,preparation=0,raf=null,closed=false;
+  let current=initial?validateComposition(initial):null,compositor=null,runtime=null,key=null,framing=null,frameNumber=0,preparation=0,raf=null,closed=false;
   const mounts=new Map(),selected=new Map(),pending=new Map();
   const view=document.defaultView??globalThis;
   const actorFrame=document.createElement('canvas');
@@ -50,8 +51,9 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   function paintHeld() {
     if(!compositor||!key||!actorFrame.width||closed)return;
     const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
-    const scene=sceneForComposition(current.settings??defaultCompositionSettings(),layout,
-      {dealer:current.dealer.enabled,background:current.background.enabled&&current.background.mode!=='baked',table:current.table.enabled},key);
+    const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
+      {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&current.background.mode!=='baked'),table:Boolean(key.enabled&&current?.table.enabled)},key);
+    scene.dealerAspect=16/9;
     compositor.render(scene,actorFrame,assets(),[],null);
   }
   function animate() {paintHeld();if(!closed&&key&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);}
@@ -80,26 +82,26 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     for(const role of ['background','table'])render(role,current[role].default);
     host.dataset.dealerLayerEnabled=String(current.dealer.enabled);host.dataset.presentationClipMode='opaque';
   }
-  async function prepareClip(compositing) {
-    const revision=++preparation;stopAnimation();key=null;
+  async function prepareClip(compositing,sourceFraming) {
+    const revision=++preparation;stopAnimation();key=null;framing=sourceFraming?validateDealerFraming(sourceFraming):null;
     const nextKey=clipCompositing(compositing);
-    if(!current||current.dealer.compatibility!=='per-clip'||!nextKey){
+    if(!framing&&(!current||current.dealer.compatibility!=='per-clip'||!nextKey)){
       // Keep the previous presented picture until this clip presents its own frame.
       return false;
     }
     runtime??=loadRuntime();const {Compositor}=await runtime;
     await Promise.all(pending.values());if(closed||revision!==preparation)return false;
     if(!compositor){const canvas=document.createElement('canvas');canvas.className='presentation-composed-film';host.append(canvas);compositor=new Compositor(canvas);}
-    key=nextKey;return true;
+    key=nextKey??{mode:'composite',enabled:false,despill:0};return true;
   }
   function renderFrame(video) {
     if(closed)return false;
     if(!key||!compositor){host.dataset.presentationClipMode='opaque';if(compositor)compositor.canvas.style.visibility='hidden';return false;}
     if(!video.videoWidth||!video.videoHeight)throw Error('Dealer frame unavailable');
-    if(actorFrame.width!==1080||actorFrame.height!==1920){actorFrame.width=1080;actorFrame.height=1920;}
-    const context=actorFrame.getContext('2d'),fit=Math.min(1080/video.videoWidth,1920/video.videoHeight);
-    const width=video.videoWidth*fit,height=video.videoHeight*fit;
-    context.clearRect(0,0,1080,1920);context.drawImage(video,(1080-width)/2,(1920-height)/2,width,height);
+    const targetWidth=1920,targetHeight=1080;
+    if(actorFrame.width!==targetWidth||actorFrame.height!==targetHeight){actorFrame.width=targetWidth;actorFrame.height=targetHeight;}
+    const context=actorFrame.getContext('2d');
+    drawDealerFrame(context,video,targetWidth,targetHeight,framing??undefined);
     actorFrame.src=`presented-frame-${++frameNumber}`;
     paintHeld();compositor.canvas.style.visibility='';host.dataset.presentationClipMode='green-screen';
     if(raf===null&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);

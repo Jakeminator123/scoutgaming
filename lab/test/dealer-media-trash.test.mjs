@@ -18,6 +18,9 @@ function harness(request){
   if(name==='react')return react;
   if(name==='./studio-types')return{requestJson:request,studioHref:()=>'/control/clips'};
   if(name==='./media-removal-feedback')return{mediaRemovalMessage:cause=>typeof cause==='string'?cause:cause?.message??'Fel'};
+  if(name==='./video-metadata-fields')return{VideoCompositingFields:()=>null,DealerFramingFields:()=>null};
+  if(name==='./dealer-video-surface')return{DealerClipPreview:()=>null};
+  if(name==='./dealer-file-settings')return{DealerFileSettings:()=>null};
   if(name.endsWith('.css'))return{default:{}};
   return require(name);
  }});

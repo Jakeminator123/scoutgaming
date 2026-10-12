@@ -89,7 +89,8 @@ test('two exact dealer plays reuse the shared compositor; absent classification 
     assert.equal(composition.renderFrame({id,videoWidth:1080,videoHeight:1920}),true);composition.hold();
   }
   composition.renderFrame({id:'wide-nora',videoWidth:1920,videoHeight:1080});
-  assert.deepEqual(rectangles,[[0,0,1080,1920],[0,0,1080,1920],[0,656.25,1080,607.5]]);
+  assert.deepEqual(rectangles,[[656.25,0,607.5,1080],[656.25,0,607.5,1080],[0,0,1920,1080]]);
+  assert.equal(renders.every(row=>row.scene.dealerAspect===16/9),true);
   assert.deepEqual(painted,['exact-nora-1','exact-nora-2','wide-nora']);assert.equal(host.dataset.presentationClipMode,'green-screen');
   assert.equal(renders.every(row=>row.scene.show.cards===false&&row.cards.length===0),true);
   assert.equal(await composition.prepareClip(undefined),false);assert.equal(host.dataset.presentationClipMode,'green-screen');

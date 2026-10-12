@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 import {sceneForComposition,type CompositionSettings} from '../../web/public/composition-settings.mjs';
+import {drawDealerFrame,type DealerFraming} from '../../web/public/dealer-framing.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};
 export type VideoCompositing={mode:'green-screen';threshold:number;softness:number;despill:number};
@@ -14,7 +15,7 @@ type CanvasActor=HTMLCanvasElement&{src?:string};
 
 // Optional silent layer videos share playback controls. Only the dealer owns
 // the finite play count, preserving the exact clip chosen by Studio.
-export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,language='sv'}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;language?:string}) {
+export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv'}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string}) {
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0);
@@ -22,11 +23,12 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const visible=compositionPreviewLayers(show,compositing,Boolean(dealer));
   const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
   const sourceKey=JSON.stringify(sources);
-  useEffect(()=>{scene.current=sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined);},[settings,layout,show,compositing]);
+  const frameSettings=useRef(framing);frameSettings.current=framing;
+  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined),dealerAspect:16/9};},[settings,layout,show,compositing,framing]);
 
   useEffect(()=>{
     const stage=canvas.current;if(!stage)return;stage.width=1080;stage.height=1920;
-    generation.current++;let active=true,frame=0,actorTime=-1,lastInfo=0;
+    generation.current++;let active=true,frame=0,actorTime=-1,lastFraming:DealerFraming|undefined,lastInfo=0;
     const abort=new AbortController(),elements:MediaElement[]=[],assets=new Map<string,Asset>();
     const actor=document.createElement('canvas') as CanvasActor;actor.width=1080;actor.height=1920;
     const context=actor.getContext('2d');
@@ -67,7 +69,13 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
         if(!active)return;
         try{
           const video=videos.current.dealer;
-          if(video&&context&&video.readyState>=2&&video.currentTime!==actorTime){actorTime=video.currentTime;context.clearRect(0,0,1080,1920);const fit=Math.min(1080/video.videoWidth,1920/video.videoHeight),width=video.videoWidth*fit,height=video.videoHeight*fit;context.drawImage(video,(1080-width)/2,(1920-height)/2,width,height);actor.src=`${video.currentSrc}@${actorTime}`;}
+          if(video&&context&&video.readyState>=2&&(video.currentTime!==actorTime||lastFraming!==frameSettings.current)){
+            actorTime=video.currentTime;lastFraming=frameSettings.current;
+            // Legacy and local files need the same height fit as classified clips.
+            const width=1920,height=1080;if(actor.width!==width||actor.height!==height){actor.width=width;actor.height=height;}
+            drawDealerFrame(context,video,width,height,lastFraming);
+            actor.src=`${video.currentSrc}@${actorTime}/${JSON.stringify(lastFraming)}`;
+          }
           if(scene.current)renderer.current?.render(scene.current,actor,assets,[],undefined);
           if(time-lastInfo>400){lastInfo=time;setMediaInfo([...assets.entries()].map(([role,asset])=>{const title=role==='dealer'?'Dealer':role==='table'?t('Bord','Table'):t('Bakgrund','Background');return asset.el instanceof HTMLVideoElement?title+': '+(asset.el.paused?t('pausad','paused'):t('spelar','playing'))+' · '+asset.el.currentTime.toFixed(2)+' / '+asset.el.duration.toFixed(2)+' s · '+asset.width+' × '+asset.height:title+t(': bild · ',': image · ')+asset.width+' × '+asset.height;}).join('\n'));}
         }catch(cause){pause();if(active)setError(cause instanceof Error?cause.message:t('Sammansättningen kunde inte visas.','The composition could not be displayed.'));return;}
@@ -89,9 +97,9 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     catch{channels.forEach(video=>video.pause());if(token!==generation.current)return;setPlaying(false);setError(t('Videorna kunde inte starta. Försök igen.','The videos could not start. Try again.'));}
   }
   function pause(){Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
-  return <div>
+  return <div style={{containerType:'inline-size'}}>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
-      <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',width:'100%',maxWidth:layout==='mobile'?'min(100%, 45vh)':undefined,aspectRatio:layout==='mobile'?'9 / 16':'16 / 9'}}/>
+      <canvas key={sourceKey} ref={canvas} aria-label={(layout==='mobile'?t('Mobil 9:16','Mobile 9:16'):'Desktop 16:9')+t(' · dealer, bord och bakgrund',' · dealer, table and background')} style={{display:'block',height:'min(540px, 60vh, 56.25cqw)',width:layout==='mobile'?'calc(min(540px, 60vh, 56.25cqw) * 9 / 16)':'calc(min(540px, 60vh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}/>
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
       <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>

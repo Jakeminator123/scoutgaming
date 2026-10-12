@@ -1,6 +1,7 @@
 import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
 import {isDealerId} from './dealer-identity.mjs';
 import {validateCompositionSettings} from './composition-settings.mjs';
+import {validateDealerFraming} from './dealer-framing.mjs';
 
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const types=new Set(['image/png','image/jpeg','image/webp','video/mp4','video/webm']);
@@ -36,11 +37,12 @@ export function validatePublicOperatorPreview(value,expected={}) {
   if(value.independentLayers!==(value.settings!==null))fail();
   if(value.media.dealer!==null) {
     const media=value.media.dealer;
-    exact(media,['src','contentType'],['compositing']);
+    exact(media,['src','contentType'],['compositing','framing']);
     if(!['video/mp4','video/webm'].includes(media.contentType)||typeof media.src!=='string')fail();
     const id=media.src.split('/').at(-1);
     if(media.src!==previewMediaPath(context,'dealer',id))fail();
     if(media.compositing!==undefined)compositing(media.compositing);
+    if(media.framing!==undefined)validateDealerFraming(media.framing);
   }
   for(const [key,role] of [['tables','table'],['backgrounds','background']]) {
     const rows=value.media[key];

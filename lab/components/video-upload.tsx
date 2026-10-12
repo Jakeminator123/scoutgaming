@@ -10,6 +10,8 @@ import { VideoMetadataFields } from './video-metadata-fields';
 import { VariantSelectionFields } from './variant-selection';
 import styles from './video-intake.module.css';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
+import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../web/public/dealer-framing.mjs';
+import {DealerClipPreview} from './dealer-video-surface';
 
 export interface UploadBinding { role: 'standard' | 'alternative'; selection: VariantSelection; triggerIds: string[] }
 export function VideoUpload({ project, dealerId, eventId, initialSituation, onUploaded, disabled = false, onBusyChange, lockDealer = false, previewOnly = false, open }: {
@@ -18,7 +20,7 @@ export function VideoUpload({ project, dealerId, eventId, initialSituation, onUp
 }) {
   const [metadata, setMetadata] = useState<VideoMetadata>(() => {
     const event = project.events.find(e => e.id === eventId)!;
-    return { label: '', dealerId: dealerId as VideoMetadata['dealerId'], eventId, kind: kindForEvent(event), role: 'standard', situation: initialSituation && situationsForEvent(event).includes(initialSituation) ? initialSituation : situationsForEvent(event)[0] ?? '', playback: 'once', notes: '' };
+    return { label: '', dealerId: dealerId as VideoMetadata['dealerId'], eventId, kind: kindForEvent(event), role: 'standard', situation: initialSituation && situationsForEvent(event).includes(initialSituation) ? initialSituation : situationsForEvent(event)[0] ?? '', playback: 'once', notes: '',framing:{...DEFAULT_DEALER_FRAMING},compositing:{...DEFAULT_GREEN_SCREEN} };
   });
   const [selection, setSelection] = useState<VariantSelection>({ ...MANUAL_SELECTION });
   const [triggerIds, setTriggerIds] = useState<string[]>([]);
@@ -81,7 +83,7 @@ export function VideoUpload({ project, dealerId, eventId, initialSituation, onUp
     <form onSubmit={submit}><fieldset disabled={busy || disabled} className={styles.form}>
       <label className="field">Videofil<input ref={fileInput} type="file" accept="video/mp4,video/webm,.mp4,.webm" required onChange={e => { const file = e.target.files?.[0]; setSelectedFile(file ?? null); if (file && !metadata.label) setMetadata(m => ({ ...m, label: file.name.replace(/\.[^.]+$/, '').slice(0, 120) })); }} /></label>
       <VideoMetadataFields project={project} value={metadata} onChange={setMetadata} lockedDealerId={lockDealer ? dealerId : undefined} />
-      {localUrl ? <video src={localUrl} controls playsInline preload="metadata" aria-label="Förhandsvisa vald fil" style={{width:'100%',maxHeight:420}} /> : null}
+      {localUrl ? <DealerClipPreview url={localUrl} framing={metadata.framing} compositing={metadata.compositing}/> : null}
       {!previewOnly ? <label className="check-field"><input type="checkbox" checked={bind} onChange={e => setBind(e.target.checked)} /><span>Koppla till projektutkastet direkt<small>{metadata.role === 'standard' ? 'Ersätter linjens nuvarande standardkoppling i utkastet.' : 'Skapar ett nytt alternativ. Befintliga varianter behålls.'}</small></span></label> : null}
       {!previewOnly && metadata.role === 'alternative' && bind ? <><VariantSelectionFields value={selection} onChange={setSelection} /><details><summary>Villkor / triggers (valfritt)</summary><p className="helper">Inga valda = inget extra villkor. Alla valda måste matcha. Själva eventet krävs alltid.</p>{project.triggers.map(t => <label className="check-field" key={t.id}><input type="checkbox" checked={triggerIds.includes(t.id)} onChange={e => setTriggerIds(ids => e.target.checked ? [...ids, t.id] : ids.filter(id => id !== t.id))} /><span>{t.label}</span></label>)}</details></> : null}
       {!previewOnly && bind && full ? <p role="alert">Linjen har redan fyra alternativ. Spara filmen i banken och koppla till ett befintligt alternativ i editorn.</p> : null}
