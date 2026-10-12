@@ -16,7 +16,7 @@ utbetalning ägs av servern.
 | --- | --- | --- | --- |
 | 1 | Intern personal | `/control` | Studio, Spelbolag, Drift, System. Sidfot: Översikt och Guide & hjälp. Källa: `lab/lib/scout-navigation.mjs`. |
 | 2 | Operatör | `/partner`, `/partner/login`, `/partner/{slug}` | Översikt, Spelrum, Team & behörigheter (kräver `team.read`), Integration. Källa: `lab/components/kevin-bo/partner-copy.mjs`. |
-| 3 | Spelare | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Lobby, profil (namn och språk), historik. Saldo är serverägt. |
+| 3 | Spelare | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack`, `/play/roulette` | Lobby, profil (namn och språk), historik. Saldo är serverägt. |
 
 **Nivå 1, sidor.** Studio: Dealers & klipp `/control/clips` (med fliken Skapa
 material, tidigare Dealer Forge), Bord & bakgrunder `/control/library`,
@@ -239,28 +239,49 @@ omfattar desktop, mobil, tappat svar/återförsök och omladdat sparat utfall.
 Vercel-preview `dpl_2RWmjsBKynRcnnczoKhReXWEJt7S` är READY för samma kod.
 Dealer-audit --probe matchar alla fyra baseline-set,
 med tidigare saknade tal-takes och mänsklig läppsynkacceptans fortsatt öppna.
-Leverans: PR #35 mergades som `6414dd0e`. Dess main-CI stoppades före Render-
-aktivering efter två sena integrationsfynd. Rättningen på
-`codex/roulette-runtime-fixes` för den validerade speltypen genom Studios
-yttre publiceringstransaktion och läser aktuell publicering på samma klient
-som plånbokstransaktionen, i en enda SQL-snapshot. Nya regressioner täcker
-hela första-publiceringen mot gammal/ny motor samt åtta samtidiga spelare
-med verklig publiceringskontroll och rollback vid revokering. Produktions-
-byggen och livekontroll följs upp i rättnings-PR; ingen ny DDL behövs.
-Partnerns snapshot behåller också rummets speltyp så provspelningslänken
-öppnar roulette i stället för den tidigare hårdkodade blackjack-adressen.
+Leverans: PR #35, #36 och #39 är mergade. Slutlig spelkod är
+`3e841f826bc0a416a240b454987a7886eec2023b`; main-CI `38294703862` passerade.
+Render `dep-db6itqmq1p3s73aiq810` är live och Vercel
+`dpl_H2xPS4enfJcVgNVAr4vL34BnaHkR` är READY med produktionsalias för samma SHA.
+Live-SHA, HTTP 200-hälsa, kapabilitet 9 och faktisk dealerscen har verifierats.
+Studios yttre publiceringstransaktion bevarar speltypen. PG:s omkontroll av
+publiceringen använder samma klient som plånboken, i en enda SQL-snapshot.
+Regressionerna täcker första publiceringen mot gammal/ny motor och åtta
+samtidiga spelare med verklig publiceringskontroll och rollback vid revokering.
+Partnerns snapshot bevarar speltypen och öppnar rätt speladress.
 
-PR #36 mergades som `7ccc2f6c`; main-CI `38291644958` passerade, inklusive
-isolerad PostgreSQL. Samma SHA verifierades live på Render och Vercel med
-kapabilitet 9. Nordic Bet fick på Jakobs begäran sitt första rouletterum,
+Nordic Bet fick på Jakobs begäran sitt första rouletterum,
 `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, i paketversion 7. PAOW:s redan
 uppladdade grundloop `13d044b3-0582-4f8f-a754-75bb099a0237` återkopplades via
 Studio till den tomma standardvarianten före publiceringen; inga mediabytes
 ändrades. Befintligt blackjackrum `paow3` finns kvar. Publicerad katalog,
 partnerlänk och spelarkontots läsflöde verifierades utan insats/saldoändring.
-Livekontrollen hittade också fel frågeparameternamn i roulettescenens
-preview-anrop: `revision` krävs, inte `packageRevision`. Sluträttningen
-använder serverns kontrakt och uppdaterar lobbyns gamla planerat-märkning.
+Scenens preview-anrop använder `revision`, inte `packageRevision`, enligt
+serverns kontrakt. Lobbyn visar nu roulette som demo i stället för planerat.
+
+**Nästa UI/UX-agent:** arbeta med den spelbara första versionen i
+`web/public/roulette/{index.html,style.css,app.mjs,scene.mjs}`. Det är HTML och
+ES-moduler som levereras från Render via Vercel, inte en Next-sida.
+`web/games/roulette/README.md` beskriver API, filansvar och verifiering.
+Behåll serverns regler/RNG/plånbok, inloggning, bolags- och rumskontext samt
+exakt återförsök av väntande rundor. Utveckla layout, mobil, satsningsflöde,
+återkoppling, tillgänglighet och animationer. `/roulette-test` är en separat
+kontofri generatordemo. Ny UI-kontroll görs med isolerat testsaldo; inga
+produktionsinsatser har lagts för verifieringen här.
+
+**Dealerfråga samordnas i MERGE:** PAOW avvecklas parallellt. Återkopplingen
+ovan skedde innan den samordningsinformationen nådde roulettechatten. Gör
+inga ytterligare PAOW-återkopplingar, raderingar eller godtyckliga dealerbyten.
+Den 12 oktober var paket 7 fortfarande publicerat med PAOW. Johanna är ett
+verifierat förslag: grundloop `f1e92965-940b-4722-9910-063ff409d110`, SHA-256
+`bb0b11931d108d9afef72dd40b4d45a0e864dc12409969be1b315c1c3ebcfbd3`, cirka
+10,04 sekunder, aktiv koppling och green-screen-metadata. Två uppspelningar
+utan mediafel och lokal paketering med befintliga bord/bakgrunder passerade.
+Ingen Johanna-sammansättning eller ersättningspublicering är skapad; visuell
+acceptans i ett nytt rum återstår. Förslaget är ett separat Johanna-rouletterum
+hos Nordic Bet och därefter paus av PAOW-rouletten efter samordnat beslut.
+Blackjackrummet behöver inte ändras. Äldre frysta paket behåller sitt
+medieskydd även om ett nytt rum publiceras.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
