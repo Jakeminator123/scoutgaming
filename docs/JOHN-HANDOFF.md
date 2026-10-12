@@ -20,13 +20,29 @@ prov/11 villkorliga undantag/0 fel, samt audit-dealer-sync --probe. Alla fyra
 medieset matchar befintlig baseline; detta är inget nytt visuellt
 lipsynkgodkännande. Aktiva spel-/Studio-/partner-moduler har bevarats.
 
-En privat Git-bundle av originalhistoriken är verifierad utanför repot.
-Isolerad historikrensning gav 692 MB för endast main och 1,59 GB för brancher
-plus omskrivna historiska taggar; alla aktiva branchers filträd var identiska
-före/efter. Originaltippen var 77b760529f8be4eebb9c38737d25e111aa05a5ab.
-GitHub-historiken är inte omskriven. Faktisk publicering kräver samordning,
-färsk inventering efter denna commit samt hantering av Jakobs-v1 och gamla
-checkpoint-SHA:n; nuvarande leveransregel förbjuder force-push/andra brancher.
+Historikrensningen är publicerad efter Jakobs uttryckliga godkännande av ett
+engångsundantag från force-push-förbudet. Nio brancher och tre historiska taggar
+uppdaterades atomiskt med exakta gamla SHA:n som leases. Main före/efter är
+1667d25e2427c220982f9388b6d684328e4c9cd9 respektive
+40c38c49b75dd8614a4da65f32d6c1bbe66ab462; filträdet är identiskt.
+Alla 24 skyddade branch-/stash-/arbetskopietillstånd har identiska filträd.
+3 996 äldre media-/Kevin-blobbar rensades; den filtrerade Git-kopian är
+1 589 627 782 byte, jämfört med originalbundlens 4 504 287 614 byte.
+En oberoende färsk GitHub-klon mäter 1 587 059 164 byte med alla tolv refs
+verifierade. Lokal .git minskade från 4 661 041 880 till 1 612 773 938 byte:
+3 048 267 942 byte frigjort. Båda integritetskontrollerna passerade.
+Full regression på färska main: 2 875 pass, 11 villkorliga undantag, 0 fel.
+Git-integritet och systemkartans blockerande kontroll passerade. Detta är
+inte ett nytt visuellt mediegodkännande eller full GitGuardian-historiktäckning.
+
+Alla sju befintliga lokala arbetskopior följer motsvarande nya commits med
+oförändrade index och arbetsfiler. Originalhistorik, reflog-exklusiva objekt
+och Git-metadata är säkerhetskopierade privat utanför repot; återställning och
+råd för andra kloner finns i ENVIRONMENT-RESTORATION.md. Jakobs-v1 pekar nu
+på b9355ab824cd332835e7cc306862fcf53ad35f21. Vanlig leveranspolicy och hook
+förbjuder fortfarande force-push/andra brancher. Inga DB-/Blob-data ändrades.
+GitHubs rapporterade lagringsstorlek kan dröja och äldre PR-referenser kan
+behålla objekt. Historiska commit-ID:n i äldre dokument är ursprunglig proveniens.
 
 ## Offentlig bolagslista och GitGuardian, 12 oktober 2026
 
