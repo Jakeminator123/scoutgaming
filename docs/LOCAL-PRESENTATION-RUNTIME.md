@@ -65,11 +65,39 @@ Proportionerna är nästan 16:9; aktuell höjd blir cirka 864,46 px. Inför MP4
 passas originalet proportionerligt in på exakt 1920 × 1080 och alpha-masken
 exporteras från samma registrering. Uppskalning skapar inte ny bilddetalj.
 
-Mobilen visar hela samma 16:9-scen ovanför separata, läsbara satsningsknappar.
+Mobilen visar samma 16:9-scen med genomskinliga satsningsytor på bordets filt.
 Vid 1080 px scenbredd multipliceras alla scenkoordinater med 0,5625;
-vid faktisk CSS-bredd W används W/1920. Ingen beskärning av bordets sidor,
-sträckning eller separat dealerfilm. Bordets tryckta siffror är dekorativa;
-serverns kvitto och de tillgängliga spelkontrollerna är auktoritativa.
+vid faktisk CSS-bredd W används W/1920. Huvudvyn visar hela bordet; en separat
+förstoringsvy låter spelaren rulla över samma bild/video för precisa tryck.
+Ingen sträckning eller separat dealerfilm. Serverns kvitto är auktoritativt.
+
+### Satsningsytor och marker, 13 oktober 2026
+
+Det separata röda/svarta numrerrutnätet är borttaget. Roulette följer samma
+interaktion som blackjack: välj markervärde, tryck på bordet, se markerstapeln,
+ångra/rensa och starta rundan. Marker sätts direkt utan flyg-/landningsanimation.
+"Senaste utfall" och historiken finns kvar som en kompakt rad.
+
+`web/public/roulette/table-layout.mjs` registrerar målpolygoner i den orörda
+PNG:ns 1672 × 941-koordinater. Lagret följer bildytans x=10 %, y=20 %,
+bredd=80 % av scenen. Nummerfältens hörn är (703,393), (971,393),
+(1018,721), (646,721); radernas y-gränser är 393,416,439,463,486,511,537,
+565,595,624,655,687,721. Dussinens och utsidessatsningarnas polygoner ligger
+på sina tryckta etiketter. Ingen separat nummergrafik eller numrering ritas.
+Delnings-/hörnsatsningar får marker mellan respektive nummer; gata/sexrad
+ligger på fältets vänstra kant. Alla satsningstyper kan väljas i en tillgänglig
+dialog. Källbilden saknar tryckta 2:1-fält: kolumner väljs i dialogen och markeras
+vid respektive kolumnfot, utan nya fält på bordet.
+
+Förstoringsvyn flyttar samma scen och kontroller till en dialog; den skapar
+ingen extra videospelare eller dealeruppspelning. Första trycket i mobilens
+översiktsvy öppnar den större vyn och debiterar/lägger inga marker. Den större
+vyn har minst 26 px höga nummerträffytor; kontrollerna har minst 44 px höjd.
+Escape/stäng återställer scenen och fokus. Snurra/återförsök stänger vyn och
+visar det bekräftade resultatet i huvudvyn. Tangentbord och satsningsdialog
+fungerar också direkt från översikten. En ny bild-/videoexport behöver ny
+registrering om filten eller bildytan flyttas; nuvarande mål godkänner inte
+framtida filmer automatiskt.
 
 ### Roulette: croupier som keystonebild och idle-video
 

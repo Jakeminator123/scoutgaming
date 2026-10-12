@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 const files = new Map([
   ['/play/roulette','index.html'], ['/roulette-rules.mjs','rules.mjs'], ['/roulette/app.mjs','app.mjs'], ['/roulette/style.css','style.css'], ['/roulette/scene.mjs','scene.mjs'],
   ['/roulette/media.mjs','media.mjs'], ['/roulette/assets/roulette-bord.png','assets/roulette-bord.png'],
+  ['/roulette/table-layout.mjs','table-layout.mjs'],
 ]);
 const headers = { 'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff',
   'Referrer-Policy':'no-referrer', 'X-Robots-Tag':'noindex, nofollow',

@@ -432,6 +432,27 @@ Dealer-audit --probe matchar fyra baseline-set. PostgreSQL var inte startad
 i denna körning; tidigare PG-bevis ersätts inte. Verkliga nya dealerklipp
 saknas; mänsklig media-/läppsynkacceptans är fortsatt öppen.
 
+### Roulette: satsningar på det verkliga bordet, 13 oktober 2026
+
+Det separata numrerrutnätet är borttaget. Genomskinliga träffytor för nummer,
+dussin och utsidessatsningar följer den bifogade PNG:ns perspektiv. Valda
+marker visas som stilla staplar direkt på filten, med samma välj/placera/ångra-
+princip som blackjack. Alla satsningar finns även i en tillgänglig dialog;
+kolumnfält som saknas i bilden ritas inte till. Senaste utfall/historik är en
+kompakt rad. Ingen ny hjul-, kula- eller markeranimation.
+
+Mobilen kan förstora och rulla över samma scen. Scen och markerkontroller
+flyttas till dialogen, utan en andra videospelare; Escape återställer fokus.
+Första trycket på den lilla översikten öppnar vyn utan satsning. Minsta
+nummerträffyta där är 26 px och markerkontrollerna är minst 44 px höga.
+Serverkvitto, låsning, saldo och exakt återförsök är kvar.
+
+29 roulettekontroller inklusive bildregistrering passerar. Browserkontroll
+på 1440/390/320 px bekräftar placering, ångra, fokus och frånvaro av sidspill.
+Tappat kvitto + omladdning + återförsök ger samma requestId/version/bets och
+en enda debitering för den rundan. Dealer-audit --probe matchar fyra baseline-
+set; nya dealerklipp/mediaacceptans och framtida MP4-registrering återstår.
+
 ## 3. Senaste leveranser
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per

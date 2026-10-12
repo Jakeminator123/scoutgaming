@@ -1,4 +1,5 @@
 import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
+import {TABLE_ARTWORK,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
 
 const $ = id => document.getElementById(id);
 const context = Object.fromEntries(new URL(location.href).searchParams);
@@ -19,30 +20,24 @@ function addBet(id) {
   undo.push(new Map(draft)); draft.set(id,amount); renderDraft(); message('Satsningarna är redo. Snurra när du vill.');
 }
 
-function boardButton(id,row,column,label) {
-  const def = BET_BY_ID[id], button = node('button',label ?? def.label,'bet');
+function boardButton(def) {
+  const {polygon}=tableBetGeometry(def);
+  if(!polygon)return;
+  const id=def.id, button = node('button',undefined,'table-bet');
   button.type='button'; button.dataset.bet=id;
-  button.style.gridRow=row; button.style.gridColumn=column;
-  button.style.setProperty('--desktop-row',row); button.style.setProperty('--desktop-column',column);
-  let mobileRow, mobileColumn;
-  if(def.type==='straight') {
-    const n=def.numbers[0]; mobileRow=n ? String(2+Math.floor((n-1)/3)) : '1'; mobileColumn=n ? String(1+(n-1)%3) : '1 / 4';
-  } else if(def.type==='column') {mobileRow='14';mobileColumn=id.slice(-1);}
-  else if(def.type==='dozen') {mobileRow=`${2+(Number(id.slice(-1))-1)*4} / span 4`;mobileColumn='4';}
-  else {mobileRow=`${2+['low','even','red','black','odd','high'].indexOf(id)*2} / span 2`;mobileColumn='5';}
-  button.style.setProperty('--mobile-row',mobileRow); button.style.setProperty('--mobile-column',mobileColumn);
-  if(def.type==='straight') button.classList.add(pocketColor(def.numbers[0]));
-  if(id==='red'||id==='black') button.classList.add(id);
-  button.addEventListener('click',()=>addBet(id));
+  const rect=polygonButtonStyle(polygon);
+  Object.assign(button.style,{left:rect.left+'%',top:rect.top+'%',width:rect.width+'%',height:rect.height+'%',clipPath:`polygon(${rect.clip})`});
+  button.title=def.label;
+  button.addEventListener('click',event=>{
+    if(event.detail>0&&matchMedia('(max-width:760px)').matches&&!$('table-zoom').open) {openTable(id);return;}
+    addBet(id);
+  });
   betButtons.set(id,button); $('board').append(button);
 }
 function buildBoard() {
-  boardButton('straight-0','1 / 4','1');
-  for(let n=1;n<=36;n++) boardButton(`straight-${n}`,String(3-(n-1)%3),String(2+Math.floor((n-1)/3)));
-  for(let n=1;n<=3;n++) { boardButton(`column-${n}`,String(4-n),'14','2:1'); boardButton(`dozen-${n}`,'4',`${2+(n-1)*4} / span 4`); }
-  ['low','even','red','black','odd','high'].forEach((id,i)=>boardButton(id,'5',`${2+i*2} / span 2`));
+  BETS.forEach(boardButton);
   for(const value of [1,5,25,100]) {
-    const button=node('button',String(value),'chip'); button.type='button'; button.dataset.value=value;
+    const button=node('button',String(value),'chip c'+value); button.type='button'; button.dataset.value=value;
     button.setAttribute('aria-label',`Marker ${value}`);
     button.addEventListener('click',()=>{chip=value;renderDraft();}); $('chips').append(button);
   }
@@ -55,16 +50,38 @@ function buildBoard() {
   $('add-inside').addEventListener('click',()=>{addBet($('inside-bet').value);$('inside').close();});
 }
 
+function openTable(id='straight-2') {
+  $('table-zoom').showModal();
+  $('zoom-viewport').append($('dealer-scene'));
+  $('zoom-controls').append(document.querySelector('.controls'));
+  const {anchor}=tableBetGeometry(BET_BY_ID[id]);
+  const visual=$('dealer-scene'),viewport=$('zoom-viewport');
+  const width=visual.clientWidth,height=visual.clientHeight;
+  viewport.scrollLeft=width*(.1+.8*anchor[0]/TABLE_ARTWORK.width)-viewport.clientWidth/2;
+  viewport.scrollTop=height*.2+width*.8*anchor[1]/TABLE_ARTWORK.width-60;
+}
+$('show-table').addEventListener('click',()=>openTable());
+$('table-zoom').addEventListener('close',()=>{
+  $('scene-home').append($('dealer-scene'));
+  $('controls-home').append(document.querySelector('.controls'));
+  $('show-table').focus();
+});
+
 function renderDraft() {
   const locked = busy || Boolean(pending) || !state;
   for(const [id,button] of betButtons) {
-    button.querySelector('.marker')?.remove();
     const value=draft.get(id);
-    if(value) button.append(node('span',String(value/100),'marker'));
     button.disabled=locked;
     const def=BET_BY_ID[id];
     button.setAttribute('aria-label',`${def.label}${def.type==='straight'?', '+colourNames[pocketColor(def.numbers[0])] : ''}, vinst ${def.payout}:1${value?', satsat '+money(value/100):''}`);
   }
+  $('table-markers').replaceChildren(...[...draft].map(([id,amount])=>{
+    const {anchor}=tableBetGeometry(BET_BY_ID[id]), marker=node('span',undefined,'table-marker');
+    marker.style.left=100*anchor[0]/TABLE_ARTWORK.width+'%';marker.style.top=100*anchor[1]/TABLE_ARTWORK.height+'%';
+    const chips=chipBreakdown(amount/100);
+    chips.forEach((value,index)=>{const disc=node('i',undefined,'c'+value);disc.style.setProperty('--n',index);marker.append(disc);});
+    marker.append(node('b',String(amount/100)));return marker;
+  }));
   for(const button of $('chips').children) { button.disabled=locked;button.setAttribute('aria-pressed',String(Number(button.dataset.value)===chip)); }
   $('stake').textContent=money(sum()/100);
   $('bet-count').textContent=String(draft.size);
@@ -121,6 +138,7 @@ async function command(request) {
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
 async function submit() {
   if(busy||!pending) return;
+  if($('table-zoom').open)$('table-zoom').close();
   busy=true;$('retry').hidden=true;renderDraft();message('Satsningarna är låsta. Rundan avgörs…');
   try {
     const result=await command(pending);

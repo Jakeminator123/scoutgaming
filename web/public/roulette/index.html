@@ -16,19 +16,18 @@
   <main>
     <section class="stage" aria-label="Roulettebord och senaste resultat">
       <figure class="room-scene">
-        <div id="dealer-scene" class="room-visual">
+        <div id="scene-home"><div id="dealer-scene" class="room-visual">
           <img id="scene-fallback" src="/roulette/assets/roulette-bord.png" alt="Roulettebord sett snett ovanifrån" width="1672" height="941" fetchpriority="high">
-        </div>
+          <div id="board" class="table-hit-layer" role="group" aria-label="Satsningsytor på roulettebordet"></div>
+          <div id="table-markers" class="table-hit-layer" aria-hidden="true"></div>
+        </div></div>
         <figcaption><span id="scene-caption">Europeisk roulette · Enkel nolla</span><button id="scene-toggle" class="secondary" type="button" aria-pressed="false" hidden>Spela video</button></figcaption>
         <p id="scene-status" role="status">Laddar rummets media…</p>
       </figure>
       <div class="result-panel"><span class="eyebrow">SENASTE UTFALL</span><div id="result-number" class="result-number">—</div><div id="result-color">Välkommen till bordet</div><p id="round-return">Lägg din första satsning</p><div class="recent"><span class="eyebrow">SENASTE 20 RUNDER</span><ol id="history" aria-label="Senaste rouletteutfall"></ol></div></div>
     </section>
-    <section class="table-section" aria-labelledby="table-title">
-      <div class="table-heading"><h2 id="table-title">Lägg dina satsningar</h2><span id="phase" class="phase">ANSLUTER</span><span class="limits">1–2 000 per fält · högst 10 000 per runda</span></div>
-      <div class="board-scroll"><div id="board" class="board" role="group" aria-label="Satsningsbord"></div></div>
-      <div class="table-tools"><button class="text-button" id="show-rules">Spelregler & utbetalningar ↗</button><button class="text-button" id="show-inside">Fler insatser: delning, gata, hörn…</button><p>Nollan är grön. Röd/svart, jämnt/udda och hög/låg förlorar på 0.</p></div>
-    </section>
+    <div class="table-tools"><span id="phase" class="phase">ANSLUTER</span><button class="text-button" id="show-table">Förstora bordet ↗</button><button class="text-button" id="show-inside">Välj satsning…</button><button class="text-button" id="show-rules">Spelregler ↗</button><span class="limits">1–2 000 per fält · högst 10 000 per runda</span></div>
+    <div id="controls-home">
     <section class="controls" aria-label="Marker och spelkontroller">
       <div class="chips"><span class="eyebrow">VÄLJ MARKER</span><div id="chips" role="group" aria-label="Markervärde"></div></div>
       <div class="bet-actions"><button id="undo" class="secondary" disabled>↶ Ångra</button><button id="clear" class="secondary" disabled>Rensa</button><button id="rebet" class="secondary" disabled>Upprepa</button></div>
@@ -36,10 +35,12 @@
       <button id="spin" class="spin" disabled>SNURRA <span aria-hidden="true">↗</span></button>
       <div class="status-row"><p id="status" role="status" aria-live="polite" aria-atomic="true">Hämtar ditt saldo och sparade rundor…</p><button id="retry" class="secondary" hidden>Kontrollera rundan igen</button><a id="login" href="/player-login?returnTo=%2Fplay%2Froulette" hidden>Logga in</a></div>
     </section>
+    </div>
     <details class="bet-summary"><summary>Mina satsningar <span id="bet-count">0</span></summary><ul id="bet-list"></ul></details>
     <footer><a href="/play">← Till lobbyn</a><span>Demospel · Europeisk roulette · Individuella rundor</span></footer>
   </main>
   <dialog id="rules"><form method="dialog"><button class="close" aria-label="Stäng spelregler">×</button></form><span class="eyebrow">PRIVÉ ROULETTE</span><h2>Spelregler</h2><p>Europeisk roulette med 0–36. Varje nummer har samma chans. Varje snurr är oberoende.</p><table><thead><tr><th>Satsning</th><th>Vinst</th></tr></thead><tbody><tr><td>Ett nummer</td><td>35:1</td></tr><tr><td>Delning, 2 nummer</td><td>17:1</td></tr><tr><td>Gata eller trio, 3 nummer</td><td>11:1</td></tr><tr><td>Hörn / första fyra</td><td>8:1</td></tr><tr><td>Sexrad, 6 nummer</td><td>5:1</td></tr><tr><td>Dussin / kolumn</td><td>2:1</td></tr><tr><td>Röd/svart, jämnt/udda, låg/hög</td><td>1:1</td></tr></tbody></table><p>Vid vinst får du även tillbaka den vinnande insatsen. Ingen La Partage eller En Prison. Demosaldot är gemensamt med blackjack.</p><p>Satsningarna låses när du snurrar. Servern sparar utfall och saldo samtidigt; resultatrutan visar det sparade resultatet. Efter omladdning visas dina senaste sparade rundor.</p></dialog>
-  <dialog id="inside"><form method="dialog"><button class="close" aria-label="Stäng fler insatser">×</button></form><span class="eyebrow">INSIDESSATSNINGAR</span><h2>Välj nummergrupp</h2><label for="inside-type">Typ av satsning</label><select id="inside-type"><option value="split">Delning · 17:1</option><option value="street">Gata · 11:1</option><option value="trio">Trio med nollan · 11:1</option><option value="corner">Hörn / första fyra · 8:1</option><option value="line">Sexrad · 5:1</option></select><label for="inside-bet">Nummer</label><select id="inside-bet"></select><p id="inside-chip"></p><button id="add-inside" class="spin">Lägg marker</button></dialog>
+  <dialog id="inside"><form method="dialog"><button class="close" aria-label="Stäng satsningsval">×</button></form><span class="eyebrow">SATSNINGAR</span><h2>Välj satsning</h2><label for="inside-type">Typ av satsning</label><select id="inside-type"><option value="straight">Ett nummer · 35:1</option><option value="outside">Röd/svart, jämnt/udda, låg/hög · 1:1</option><option value="dozen">Dussin · 2:1</option><option value="column">Kolumn · 2:1</option><option value="split">Delning · 17:1</option><option value="street">Gata · 11:1</option><option value="trio">Trio med nollan · 11:1</option><option value="corner">Hörn / första fyra · 8:1</option><option value="line">Sexrad · 5:1</option></select><label for="inside-bet">Nummer eller område</label><select id="inside-bet"></select><p id="inside-chip"></p><button id="add-inside" class="spin">Lägg marker</button></dialog>
+  <dialog id="table-zoom" aria-labelledby="zoom-title"><form method="dialog"><button class="close" aria-label="Stäng förstorat bord">×</button></form><h2 id="zoom-title">Roulettebordet</h2><p>Dra eller rulla för att se hela satsningsytan. Välj marker och tryck på filten.</p><div id="zoom-viewport" tabindex="0" aria-label="Förstorat roulettebord. Rulla åt sidorna och nedåt för fler fält."></div><div id="zoom-controls"></div></dialog>
 </body>
 </html>

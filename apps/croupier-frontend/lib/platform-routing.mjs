@@ -36,7 +36,7 @@ const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile'
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // Public, unlisted roulette diagnostics; exact files only, no game/server source.
 const ROULETTE_PREVIEW = new Set(['/roulette-test', '/roulette-test/', '/roulette-test/app.mjs', '/roulette-test/style.css', '/api/roulette-test/spin']);
-const ROULETTE_ROOM = new Set(['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-rules.mjs','/api/roulette/table']);
+const ROULETTE_ROOM = new Set(['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;

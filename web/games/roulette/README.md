@@ -98,7 +98,8 @@ Det befintliga gränssnittet är en spelbar första version som kan omarbetas.
 | --- | --- |
 | Sidstruktur, kontroller och dialoger | `web/public/roulette/index.html` |
 | Layout, färg, responsivitet och rörelse | `web/public/roulette/style.css` |
-| Satsningsutkast, hjul, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
+| Satsningsutkast, marker, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
+| Träffytor och markerankare på den fotograferade filten | `web/public/roulette/table-layout.mjs` |
 | Bolagets frysta dealer, bord och bakgrund | `web/public/roulette/scene.mjs` |
 | Delad scenrenderare för lobby och roulette | `web/public/published-scene.mjs` |
 | Lobby och rummets ingång | `apps/croupier-frontend/components/player/` |
@@ -110,8 +111,8 @@ Parametern heter `revision`, inte `packageRevision`. Ändringar i den delade
 scenrenderaren kräver också kontroll av lobbyn och blackjackens presentation.
 
 En ny design ska behålla serverns regler, RNG, inloggning, plånbok och
-publiceringskontroller. Animationen visar det mottagna utfallet; den väljer
-inget nummer. När ett svar saknas ska samma sparade `requestId`, version och
+publiceringskontroller. Resultatet visas från kvittot. Ingen ny animation
+byggs. När ett svar saknas ska samma sparade `requestId`, version och
 satsningar återanvändas. Skapa inte en ny snurr för att lösa ett osäkert svar.
 Satsningar förblir låsta tills det väntande kommandot har hanterats.
 
