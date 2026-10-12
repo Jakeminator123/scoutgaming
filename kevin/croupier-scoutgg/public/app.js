@@ -1,5 +1,6 @@
 import {initPresentation} from './game-presentation.js';
 import {enqueueSynchronizedReply} from './chat-response-sync.js';
+import {pickQueued,clipDuration} from './chat-priority.js';
 // Astrid demo 2.0 - klient.
 //
 // Scenen: stillbild + två <video> som växlar. Alla klipp (idle, prat, utdelning) börjar och slutar i
@@ -36,6 +37,8 @@ let me = "";
 let unlocked = false;       // har besökaren rört sidan (ljud tillåtet)
 let tableBoxes, gameTable;
 let finishCurrent = null;
+let playing = null;              // the clip play() is on, and whether it has started (chat answers yield to the table)
+const voiceOvers = new Set();    // answers still talking as sound after the table took the screen
 
 // ------------------------------------------------------------------ spelaren ---
 const queue = [];           // { url, sound, text, kind }
@@ -98,11 +101,15 @@ function next() {
   if (loading) return;
   if(gameTable?.busy) { running=false; return; }
   // Mid-round only the dealer's own remarks may play, and only between deals (the plan has ended
-  // while the player decides); everything else waits for the round to finish.
-  const remarkAt = gameTable?.playing ? queue.findIndex(q => q.kind === 'remark' || q.own) : -1;
-  let item = gameTable?.playing ? (remarkAt >= 0 ? queue.splice(remarkAt, 1)[0] : null) : queue.shift();
+  // while the player decides); everything else waits for the round to finish. A chat answer starts only when it
+  // can end before the table may need the screen (Emil: answers were cut by the next deal), else it waits.
+  const at = pickQueued(queue, { playing: Boolean(gameTable?.playing), quietMs: gameTable?.quietMs ?? Infinity });
+  let item = at >= 0 ? queue.splice(at, 1)[0] : null;
   if (!item) {
-    if (!manifest.idle.length || Date.now() < holdUntil) { running = false; return; }   // står på stillbilden
+    // A ready dealer waits on his rest pose between deals in a round: the next card (a hit, his turn) cut into an idle
+    // loop mid-way and his face snapped back to rest (Kevin 11 Oct: "an idle position between, looks weird"). Every take
+    // starts from that pose, so it joins cleanly. His idles play while the table bets and after the round.
+    if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
     const c = pickIdle();
     item = { url: c.url, sound: false, kind: "idle" };
   }
@@ -123,6 +130,7 @@ async function play(item) {
     item = { ...item, url: line ?? dealerClipUrl(item.url, item.variant ?? (item.kind === 'event' ? 'iu' : '')) };
   }
   loading = true;
+  playing = { item, started: false };
   const token = ++playToken;
   const v = cur === A ? B : A;
   v.onended = v.oncanplay = v.onerror = v.ontimeupdate = null;
@@ -181,10 +189,11 @@ async function play(item) {
       clearTimeout(loadTimeout);
       v.classList.add("on");
       if (cur && cur !== v) { cur.classList.remove("on"); cur.pause(); }
-      cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound));
+      cur = v; currentItem = item; loading = false; audio.speech(Boolean(item.sound) || voiceOvers.size > 0); if (playing?.item === item) playing.started = true;
       if(item.kind==='idle')warmIdle();
       document.querySelector('#stage').dataset.clip = item.id ?? item.kind;
-      playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(item.text);
+      // A dealer with a voice is heard, not captioned over the table (Kevin 10 Oct); Mårten (no voice yet) keeps his words.
+      playbackFeedback(); tableBoxes?.setActive(item.id); if (item.text || Date.now() >= captionUntil) showCaption(isAlternative && !dealer.lines ? item.text : null);
       gameTable?.sourceStarted(item.id);
       item.onStart?.();
       if (v.requestVideoFrameCallback) frameId = v.requestVideoFrameCallback(tick);
@@ -211,6 +220,23 @@ let greeted = false;
 function remarkNow(id) {
   const url = id && dealerExtraLineUrl(id, $('#dealerLanguage').value);
   if (url) enqueue({ url, sound: true, kind: 'remark', text: null });
+}
+
+// The table's next step takes the screen now (shared timeline, it never waits). An answer already speaking talks on as
+// sound only while the dealer's film goes on; one that had not started yet goes back to the front of the queue.
+function yieldAnswer() {
+  const p = playing;
+  if (!p || p.item.kind !== 'answer' || !finishCurrent) return;
+  if (!p.started) { queue.unshift({ ...p.item }); return; }
+  const v = cur;
+  if (!v || v.paused || v.ended || v.muted) return;
+  const a = new Audio(p.item.url), from = v.currentTime, at = performance.now();
+  a.volume = v.volume; a.preload = 'auto'; a.dataset.voiceOver = '1';
+  a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(from + (performance.now() - at) / 1000, a.duration || from); }, { once: true });
+  const end = () => { voiceOvers.delete(a); if (!voiceOvers.size && !currentItem?.sound) audio.speech(false); };
+  a.onended = a.onerror = end;
+  voiceOvers.add(a);
+  a.play().then(() => audio.speech(true)).catch(end);
 }
 
 function enqueue(item) {
@@ -319,9 +345,11 @@ function connect() {
         if ((j.dealer ?? 'astrid') !== dealer.id) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
         // No clip (Paow, or his voice was not ready in time): show the words now, never behind a deal.
         if (isAlternative && !j.url) { render({ who: "astrid", text: j.text, ms: j.ms }); break; }
-        enqueueSynchronizedReply(enqueue, { url: j.url, sound: true, text: j.text, kind: "answer", own: Boolean(j.dealer) }, () => {
-          render({ who: "astrid", text: j.text, ms: j.ms });
-        });
+        // Its length decides when it may start (chat-priority.js); Astrid's answers carry it, the others' clips are read.
+        (Number(j.dur) > 0 ? Promise.resolve(Number(j.dur)) : clipDuration(j.url)).then(dur =>
+          enqueueSynchronizedReply(enqueue, { url: j.url, sound: true, text: j.text, kind: "answer", own: Boolean(j.dealer), dur }, () => {
+            render({ who: "astrid", text: j.text, ms: j.ms });
+          }));
         break;
       }
       case "play":    // Shared manual review must not interrupt a private game round.
@@ -340,11 +368,19 @@ function connect() {
   ws.onerror = () => { try { ws.close(); } catch {} };
 }
 
-who.addEventListener("change", () => {
-  const n = who.value.trim().slice(0, 18);
-  if (!n) return;
-  store.set("astrid.name", n);
-  if (ws?.readyState === 1) ws.send(JSON.stringify({ t: "name", name: n }));
+// Emil 11 Oct (#9): the name box looked editable but was read-only. Enter or leaving the box renames you at the table
+// (shared-table.js rename); the chat name follows. Escape keeps the old name.
+who.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); who.blur(); }   // commits the name, never sends the chat line
+  else if (e.key === "Escape") { who.value = me; who.blur(); }
+});
+who.addEventListener("change", async () => {
+  const n = who.value.trim().replace(/\s+/g, " ");
+  if (!n || n === me) { who.value = me; return; }
+  const name = await gameTable?.rename(n);
+  if (!name) { who.value = me; return; }   // taken or invalid: the server's reason is in the game status
+  me = name; who.value = name; store.set("astrid.name", name);
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ t: "name", name }));
 });
 $("#form").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -357,8 +393,11 @@ $("#form").addEventListener("submit", (e) => {
 
 // Serhiy: after a round where this viewer's boxes ended differently, ask the dealer they watch for
 // the box-by-box result (the server builds it from their own settlement and voices it lip-synced).
+// John 12 Oct: the dealer no longer reads out the box-by-box summary after each round ("Förra rundan: Box 4: 25,
+// tjock…"); the win/lose lines and the receipt on the table stay. Flip to true to bring the summary back.
+const SPEAK_ROUND_SUMMARY = false;
 window.addEventListener("dealer:round-result", (e) => {
-  if (ws?.readyState === 1) ws.send(JSON.stringify({ t: "roundResult", roundId: e.detail?.roundId, dealer: dealer.id }));
+  if (SPEAK_ROUND_SUMMARY && ws?.readyState === 1) ws.send(JSON.stringify({ t: "roundResult", roundId: e.detail?.roundId, dealer: dealer.id }));
 });
 
 // ------------------------------------------------------------------ spelhändelser ---
@@ -402,7 +441,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     prepareMedia:async(seats,onProgress,language)=>{await videoBuffer.prepare(tableVideoSources(m,seats,language).filter(url=>!unusedLine(url)).map(url=>dealerLineUrl(url,language)??url).flatMap(dealerClipVariants),onProgress);tableMediaReady=true;warmIdle();},
     preloadNext:clip=>{if(loading||!cur||unusedLine(clip.url))return;videoPreloader.prepare(cur===A?B:A,dealerLineUrl(clip.url,$('#dealerLanguage').value)??dealerClipUrl(clip.url,clip.variant)).catch(()=>{});},
     warmPlan:plan=>{for(const step of plan?.steps??[])if(step.clip&&!unusedLine(step.clip.url))videoBuffer.load(dealerLineUrl(step.clip.url,$('#dealerLanguage').value)??dealerClipUrl(step.clip.url,readyVariant(plan,step)),0).catch(()=>{});},
-    playNow:item=>{if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
+    playNow:item=>{yieldAnswer();if(finishCurrent)finishCurrent(true);holdUntil=0;running=true;play(item);},
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
     onEnter:name=>{me=name;who.value=name;store.set('astrid.name',name);if(ws?.readyState===1)ws.send(JSON.stringify({t:'name',name}));if(!greeted){greeted=true;remarkNow(greetingFor(name));}},
