@@ -1,0 +1,30 @@
+name: Verified FFmpeg packages
+description: Install FFmpeg and jq from an image-bound package cache, without network on a cache hit.
+runs:
+  using: composite
+  steps:
+    - name: Identify Ubuntu image
+      id: image
+      shell: bash
+      run: |
+        echo "key=ubuntu-24.04-ffmpeg-v2-${RUNNER_ARCH}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+    - name: Restore ffmpeg package cache
+      id: cache
+      continue-on-error: true
+      uses: actions/cache/restore@v6
+      with:
+        path: /home/runner/apt-cache/ffmpeg
+        key: ${{ steps.image.outputs.key }}
+    - name: Install ffmpeg and jq when missing
+      id: install
+      shell: bash
+      env:
+        FFMPEG_CACHE_DIR: /home/runner/apt-cache/ffmpeg
+      run: bash tools/ci-install-ffmpeg.sh
+    - name: Save complete ffmpeg package cache
+      if: steps.install.outputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v6
+      with:
+        path: /home/runner/apt-cache/ffmpeg
+        key: ${{ steps.image.outputs.key }}
