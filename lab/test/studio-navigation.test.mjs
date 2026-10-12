@@ -7,6 +7,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
+import { studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
 // Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
@@ -293,4 +294,11 @@ test('both real page guards protect dirty project drafts on native leave and cle
       assert.equal(JSON.stringify(project), before);
     }
   }
+});
+
+test('unavailable search params leave Studio navigation unselected', () => {
+  assert.deepEqual(studioNavigationContextFromQuery(null), {});
+  assert.deepEqual(studioNavigationContextFromQuery(undefined), {});
+  assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams()), {});
+  assert.deepEqual(studioNavigationContextFromQuery(new URLSearchParams('dealer=vera&event=speak.goodluck&lane=explicit-layout&token=private')), { dealerId: 'vera', eventId: 'speak.goodluck', laneId: 'explicit-layout' });
 });

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createProjectStore } from '../lib/project-store.mjs';
-import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createEmptyProject, createSeedProject, validateProject } from '../lib/studio-model.mjs';
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-studio-project-'));
@@ -12,13 +12,16 @@ async function fixture(t) {
   return { directory, store: createProjectStore(directory) };
 }
 
-test('missing project returns independent seed without writing to disk', async t => {
+test('missing project returns independent empty project without writing to disk', async t => {
   const { directory, store } = await fixture(t);
   const first = await store.load();
   first.events[0].label = 'Only this clone';
   const second = await store.load();
   assert.notEqual(first.events[0].label, second.events[0].label);
-  assert.deepEqual(second, createSeedProject());
+  assert.deepEqual(second, createEmptyProject());
+  assert.deepEqual(second.dealers, []);
+  assert.deepEqual(second.lines, []);
+  assert.deepEqual(second.lanes, []);
   assert.deepEqual(await readdir(directory), []);
 });
 

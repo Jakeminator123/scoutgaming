@@ -24,7 +24,7 @@ run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
 run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs
 run_node_tests lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
-run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs
+run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs lab/test/http-guard.test.mjs
 run_node_tests test/partner-access-policy.mjs test/operator-store.mjs
 run_node_tests lab/test/partner-branding-drafts.test.mjs lab/test/partner-appearance.test.mjs lab/test/partner-appearance-loader.test.mjs lab/test/partner-appearance-state.test.mjs lab/test/partner-appearance-preview.test.mjs test/operator-appearance-api.mjs test/operator-appearance-boundary.mjs test/operator-appearance-integration.mjs test/partner-branding-postgres.mjs
 run_node_tests lab/test/partner-preview.test.mjs lab/test/partner-admin-workspace.test.mjs lab/test/partner-session.test.mjs lab/test/partner-session-actions.test.mjs lab/test/partner-team-api.test.mjs lab/test/partner-team.test.mjs lab/test/partner-team-loader.test.mjs lab/test/partner-journal-loader.test.mjs lab/test/operator-audit.test.mjs lab/test/partner-branding-api.test.mjs lab/test/partner-workspace-visual.test.mjs lab/test/workspace-surfaces.test.mjs lab/test/workspace-surface-pages.test.mjs lab/components/kevin-bo/preview.test.mjs lab/components/dashboard-brand.test.mjs
@@ -34,17 +34,17 @@ run_node_tests test/studio-game-policy.mjs test/studio-media-runtime.mjs test/st
 run_node_tests test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs test/speech-ledger-import.mjs test/postgres-operator-speech-qa.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
 run_node_tests test/registered-cloud-idle.mjs test/registered-cloud-playback.mjs
 run_node_tests test/managed-media-contract.mjs test/frozen-dealer-idle.mjs test/frozen-presentation-capture.mjs test/frozen-dealer-events.mjs test/frozen-dealer-presentation.mjs test/presentation-capability-contract.mjs test/presentation-capabilities.mjs
-run_node_tests lab/test/room-lifecycle.test.mjs lab/test/dealer-archive-impact.test.mjs lab/test/dealer-lifecycle.test.mjs lab/test/control-resource-lifecycle.test.mjs lab/test/control-flow.test.mjs lab/test/activity-session.test.mjs lab/components/kevin-bo/partner-navigation-guard.test.mjs
+run_node_tests lab/test/room-lifecycle.test.mjs lab/test/dealer-archive-impact.test.mjs lab/test/dealer-lifecycle.test.mjs lab/test/control-resource-lifecycle.test.mjs lab/test/control-flow.test.mjs lab/test/activity-session.test.mjs lab/test/activity-presentation-owner.test.mjs lab/components/kevin-bo/partner-navigation-guard.test.mjs
 run_node_tests lab/test/operator-package-api.test.mjs lab/test/presentation-room-api.test.mjs lab/test/presentation-room-create.test.mjs
 run_node_tests test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/composition-runtime.mjs lab/test/dealer-framing.test.mjs test/registered-idle.mjs
 run_node_tests lab/test/dealer-registration.test.mjs lab/test/dealer-speech-profile.test.mjs lab/test/dealer-video-registration.test.mjs lab/test/presentation-runtime-readiness.test.mjs
 run_node_tests lab/test/control-lanes-page.test.mjs lab/test/lane-editor.test.mjs lab/test/preview-page.test.mjs lab/test/scout-navigation.test.mjs lab/test/control-workspace.test.mjs lab/test/control-overview.test.mjs lab/test/partner-presentation-flow.test.mjs
 run_node_tests test/studio-preview.mjs test/studio-preview-client.mjs
 run_node_tests test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-offline.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/croupier-frontend/test/game-entry.mjs apps/croupier-frontend/test/player-profile.mjs
-run_node_tests lab/test/neon-project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
+run_node_tests lab/test/neon-project-store.test.mjs lab/test/project-store.test.mjs lab/test/studio-document-api.test.mjs lab/test/neon-video-registry.test.mjs lab/test/studio-media-api.test.mjs lab/test/studio-project-bindings.test.mjs lab/test/studio-upload-service.test.mjs lab/test/upload-native-video.test.mjs lab/test/studio-login-client.test.mjs lab/components/studio-login.test.mjs lab/test/studio-login-form.test.mjs
 run_node_tests lab/test/studio-render-persistence.test.mjs lab/test/studio-clip-controls-api.test.mjs lab/test/studio-social-status.test.mjs lab/test/studio-companion-cookie.test.mjs lab/test/check-build-traces.test.mjs
 run_node_tests test/speech-reply-library.mjs lab/test/studio-replies-api.test.mjs lab/test/studio-replies-query.test.mjs lab/components/control-replies-page.test.mjs
-run_node_tests lab/components/control-events-page.test.mjs lab/components/control-probe-page.test.mjs lab/test/studio-workspace-navigation.test.mjs lab/components/studio-dealer-context.test.mjs lab/test/layer-library-page.test.mjs
+run_node_tests lab/components/control-events-page.test.mjs lab/components/control-probe-page.test.mjs lab/components/control-videos-page.test.mjs lab/components/studio-repair.test.mjs lab/test/studio-workspace-navigation.test.mjs lab/components/studio-dealer-context.test.mjs lab/test/layer-library-page.test.mjs
 run_node_tests lab/test/studio-navigation.test.mjs lab/test/dealer-workspace.test.mjs lab/test/openclaw-dashboard.test.mjs lab/components/dealer-workspace.test.mjs lab/components/openclaw-workspace.test.mjs lab/components/partner-reference.test.mjs lab/components/voice-preview-panel.test.mjs lab/components/event-tree.test.mjs
 run_node_tests lab/components/registered-idle-editor.test.mjs lab/components/dealer-removal.test.mjs lab/test/idle-video-duration.test.mjs lab/test/idle-advice-server.test.mjs
 run_node_tests lab/test/zone-reference.test.mjs lab/test/zone-cloud-store.test.mjs open-claw/lab/test/dashboard-proxy.test.mjs
@@ -59,6 +59,7 @@ node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test.mjs
 node test/player-auth.mjs
+node test/table-http.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs ops/vercel-entry/test/build-preview.mjs
 run_node_tests ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs ops/vercel-entry/test/preview-routes.mjs
 node test/craig-login.mjs

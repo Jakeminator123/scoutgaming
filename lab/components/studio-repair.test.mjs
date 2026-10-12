@@ -13,10 +13,13 @@ import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const empty = () => null;
+let activityProps;
+const navigationUrls = [];
 const mocks = {
+  'next/navigation': { usePathname: () => '/control/events', useSearchParams: () => new URLSearchParams() },
   './studio-guide': { StudioGuide: empty },
   './event-tree': { EventTree: empty },
-  './activity-log': { ActivityLog: empty },
+  './activity-log': { ActivityLog: props => { activityProps = props; return null; } },
   './stage': { Stage: () => React.createElement('section', { 'data-testid': 'table-preview' }) },
   './social-chat-panel': { SocialChatPanel: ({compact}) => React.createElement('section', { 'data-testid': 'table-chat', 'data-compact': String(compact) }) },
   './trigger-editor': { TriggerEditor: empty, categoryLabels: {}, defaultValue: () => null },
@@ -39,6 +42,7 @@ function loadComponent(relativeFile) {
   const localRequire = createRequire(url);
   vm.runInNewContext(output.code, {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    window: { location: { assign: href => navigationUrls.push(href) } },
     require: name => {
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: {} };
       if (mocks[name]) return mocks[name];
@@ -57,12 +61,13 @@ function loadComponent(relativeFile) {
   return module.exports;
 }
 const { ControlEventsPage } = loadComponent('./control-events-page.tsx');
-const render = project => renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
+const selectedClip = { initialDealerId: 'astrid', initialEventId: 'speak.goodluck' };
+const render = project => renderToStaticMarkup(React.createElement(ControlEventsPage, { ...selectedClip, initialProject: project, initialVideos: { videos: [] }, initialStatus: {} }));
 
 test('manifest-owned studio displays real files and zero folder variants instead of the seed demos', () => {
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true })) };
   const project = createSeedProject(), before = JSON.stringify(project);
-  const html = renderToStaticMarkup(React.createElement(ControlEventsPage, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
+  const html = renderToStaticMarkup(React.createElement(ControlEventsPage, { ...selectedClip, initialProject: project, initialVideos: inventory, initialStatus: {} }));
   assert.match(html, /Standard och varianter/);
   const realClip = inventory.videos.find(video => video.relativePath === 'repliker/goodluck/goodluck.mp4');
   assert.ok(realClip);
@@ -72,7 +77,7 @@ test('manifest-owned studio displays real files and zero folder variants instead
   assert.doesNotMatch(html, /Rodnande tack|Lekfull dubbelvink|Välkommen tillbaka · tyska|Lägg till variant/);
   assert.equal(JSON.stringify(project), before);
   const { ControlTreePage } = loadComponent('./control-tree-page.tsx');
-  const overview = renderToStaticMarkup(React.createElement(ControlTreePage, { initialProject: project, initialVideos: inventory, initialStatus: {} }));
+  const overview = renderToStaticMarkup(React.createElement(ControlTreePage, { ...selectedClip, initialProject: project, initialVideos: inventory, initialStatus: {} }));
   assert.match(overview, /deal\/deal_pos3/);
   assert.match(overview, /repliker\/goodluck/);
 });
@@ -115,7 +120,7 @@ test('testsituation selection is derived from actual values, including custom ed
 });
 
 test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
-  const props = { initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {} };
+  const props = { ...selectedClip, initialProject: createSeedProject(), initialVideos: { videos: [] }, initialStatus: {} };
   const { ControlOpenClawChat } = loadComponent('./control-openclaw-chat.tsx');
   const openclaw = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: true }));
   assert.doesNotMatch(openclaw, /class="event-sidebar"/);
@@ -130,7 +135,16 @@ test('Guide, activity and OpenClaw stay free of the event sidebar', () => {
     assert.doesNotMatch(html, /studio-chat-shortcuts/);
     assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/);
     assert.doesNotMatch(html, /Osparade ändringar/);
-    assert.match(html, /href="\/control\/events\?dealer=astrid&amp;event=speak\.goodluck"/);
+    if (Page === ControlGuidePage) {
+      assert.match(html, /<h1>Guide &amp; hjälp<\/h1>/);
+      assert.doesNotMatch(html, /dealer=astrid/);
+    } else {
+      assert.match(html, /href="\/control\/clips\?dealer=astrid"/);
+      assert.equal(activityProps.streamView.dealerId, 'astrid');
+      navigationUrls.length = 0;
+      activityProps.streamView.onOpenEvent('speak.goodluck', { eventId: 'speak.goodluck', blocked: false });
+      assert.deepEqual(navigationUrls, ['/control/events?dealer=astrid&event=speak.goodluck']);
+    }
   }
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/guide'), 'guide');
   assert.equal(loadComponent('./studio-types.ts').studioViewForPath('/activity'), 'activity');
