@@ -1,5 +1,29 @@
 # Aktuell handoff — Scoutgaming
 
+## Merge-samordning och CI-cache, 12 oktober 2026
+
+Övertagen av merge-cd76. Merge gäller bara PR-author `Jakeminator123`, samma
+repo `Jakeminator123/scoutgaming`, mål `main`, exakt aktuell head och granskade
+gröna kontroller. #19 är utkast; aktiva Cursor-grenar och privata worktrees sparas.
+Worktree e37e togs bort efter renhets-, privatfil-, process- och ancestrykontroll.
+Den mergade lokala codex/john-n2-admin-partners-grenen togs bort; fjärrgrenen och
+Johns miljö består. 8e3c har fyra egna commits och privat videoeditormaterial;
+d5ed har privata reproduktioner och sparas.
+
+CI använder samma FFmpeg/jq-installation i alla tre jobb, cache per Ubuntu-image
+och ingen nedladdning vid komplett cacheträff. Ubuntu-indexuppdatering avgränsas
+till Ubuntu när dess sources-fil finns. Studios två byggen behålls för oberoende
+jobb men återanvänder `.next/cache` enligt Nexts CI-guide. Åttaminutersgränsen,
+alla tester och migrationsgrinden består. Lokal installer-fixture täcker varm,
+kall och ofullständig cache samt saknad ffprobe; full regression körs före push.
+Tidsvinst och en riktig Ubuntu-cacheträff återstår att mäta efter leveransen.
+
+91969107 verifierad: tre gröna GitHub-jobb, Vercel READY i produktion och Render
+live (dep-db6b0649v7es739sh6g0). /api/operators gav 200 för Johns och Nordic Bet.
+Kvar: blandade frysta 16/17-eventpaket kan ge 409 vid publicering; rotens env-filer
+är ännu inte konsoliderade. Inga produktionsmigrationer ingår i samordningen.
+
+
 ## Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
 Jakobs mål: en mycket enklare modell. Behåll sammansättningen (dealer, bord,
