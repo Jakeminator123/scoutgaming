@@ -3,7 +3,7 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 3 · först i strukturfasen · ensam, inga parallella kodflyttar |
-| Väntar på | B12 · PR V2 mergad till `main` och verifierad · inga öppna PR:er som rör konsumenterna nedan |
+| Väntar på | B12 · PR V2 mergad till `main` och verifierad · inga öppna PR:er som rör konsumenterna nedan · lane-uppdraget (handoffen §2) rör inte samma moduler samtidigt |
 | Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 30 % · tre byggkedjor och layer-lanens runtime |
@@ -64,12 +64,15 @@ och `docs/JOHN-HANDOFF.md`, `.githooks/pre-commit-full` (om en testsökväg
 
 0. Steg 0 enligt ORKESTRERING §4. Kontrollera att inga öppna PR:er rör
    konsumentfilerna (`gh pr list --state open`, sedan `gh pr diff <nr> --name-only`).
-1. **Commit 1, ren flytt:** `git mv test-videoeditor/program/web packages/presentation/compositor`,
-   och motsvarande för `program/docs` och `preview`. Inget innehåll ändras.
-2. **Commit 2, sökvägar:** uppdatera varje konsument. Publika URL:er och
+1. **En grön commit:** `git mv test-videoeditor/program/web packages/presentation/compositor`,
+   och motsvarande för `program/docs` och `preview`. I **samma** commit:
+   uppdatera varje konsument, testsökväg och konfiguration. Publika URL:er och
    utdatamappar (`public/composition-runtime/`, `lab/preview-build`) ändras inte.
-   Sök med `rg 'test-videoeditor'`. Bara `ordning/` och historiska dokumentcitat
-   får finnas kvar.
+   Affärslogiken ändras inte. Sök med `git grep -n test-videoeditor`. Bara
+   `ordning/` och historiska dokumentcitat får finnas kvar.
+2. **Beroenden före och efter:** kör `node ordning/verktyg/cross-imports.mjs --all-edges`
+   före och efter, och redovisa skillnaden per paket. Målet är färre oönskade
+   beroenden, inte att samma beroenden blir osynliga efter flytten.
 3. **README** i `packages/presentation/`: ägarskap, konsumenter och regeln att
    publika URL:er är stabila.
 4. **Prov:**

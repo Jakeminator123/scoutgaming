@@ -79,8 +79,13 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 6. **Medieregler gäller.** AGENTS.md "Dealer speech, media, cards, and wallet"
    gäller fullt ut. Registrerade molnobjekt och sparade referenser (12 bankklipp,
    72,3 MB i `runtime/presentation`) avregistreras inte.
-7. **Flytta med historik.** Använd `git mv`, en ren flytt per commit.
-8. **Tomma mappar tas bort.** Det gäller inte mappar med ospårat lokalt material,
+7. **Flytta i gröna steg.** `git mv`, importer, konfiguration och testvägar i
+   samma commit, utan ändrad affärslogik (ORKESTRERING §4 punkt 9).
+8. **"Ingen konsument" är en kandidat, inte ett bevis.** Radering kräver
+   integrationsgrinden i ORKESTRERING §6: dynamiska sökvägar, byggskript,
+   manuella arbetsflöden och `git grep` över allt spårat material. Läsfel är
+   osäkerhet.
+9. **Tomma mappar tas bort.** Det gäller inte mappar med ospårat lokalt material,
    t.ex. `web/public/review/2026-09-09/3lager/`, `lab/data` och `web/data`.
 
 ## 4. Beslut
@@ -91,18 +96,19 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | B2 | Hur når arbetet `main`? | **Beslutat** (Jakob 2026-10-12): via integrationsbranchen `jakob/repo-ordning`, med **en PR per våg** till `main` (V1–V4, §5). | alla |
 | B3 | `random/` och `planes/` ur Git | **Ja** (Jakob 2026-10-12) | A01 |
 | B4 | Avveckla 3D-, rigg- och ansiktsspåret | **Provisoriskt ja.** Intern kod utan användaryta; bekräftas i PR V2. | A10 |
-| B5 | `/casino.html` (3D-kasinogolv, olänkat) | Öppet. Rekommendation: pensionera med 308 till `/play`. | A11 |
-| B6 | Originalmedia som Studio-reserv | Öppet. Rekommendation: pensionera när A04 visat att registrerad media finns. | A12 |
+| B5 | `/casino.html` (3D-kasinogolv, olänkat) | **Ja** (Jakob 2026-10-12): pensionera, och omdirigera `/casino.html` till `/play`. | A11 |
+| B6 | Originalmedia som Studio-reserv | **Ja** (Jakob 2026-10-12): pensionera. Studio visar "Ingen spelbar video" där registrerad video saknas. | A12 |
 | B7 | Partnerportalens 24 diagnostiska vyer | **Provisoriskt:** bryt ut och isolera, ta inte bort något. Borttagning är öppen. | A13 |
-| B8 | Staging- och experimentmedia | Öppet. Astrids staging innehåller kalibreringsmetadata och prövas per mapp. | A14 |
-| B9 | Pipeline-skript utan konsument | **Provisoriskt ja.** Läppsynk- och kalibreringskedjan behålls. | A15 |
-| B10 | `/v2`, composited-media (91 MB) och gamla granskningssidor | Öppet. Avgörs efter A04/A05. | A16 |
+| B8 | Staging- och experimentmedia | **Delvis** (Jakob 2026-10-12): ta bort `media/game/staging` och Amiras staging. Astrids staging bara efter klassning per mapp; kalibreringsdata behålls. | A14 |
+| B9 | Pipeline-skript utan konsument | **Provisoriskt ja**, med tillägg (Jakob 2026-10-12, T8): verktyg som är enda byggaren av media som fortfarande används behålls, även utan automatisk anropare (`build-previews.sh`, `encode.sh`, `build-hands.sh`, samt kontaktbyggarna `build-contact-review.mjs` och `prepend-contact-entry.mjs`). Läppsynk- och kalibreringskedjan behålls. | A15 |
+| B10 | `/v2`, composited-media (91 MB) och gamla granskningssidor | **Ja** (Jakob 2026-10-12): ta bort composited-media och de fem granskningssidorna. `/v2` behålls som den 307-omdirigering den redan är. | A16 |
 | B11 | Indexerad bank, originalmotor och partnerprotokoll | Öppet. A30 utreder först. | A30, A31 |
 | B12 | Strukturfasen | Öppet. Rekommendation: ja till A20–A21, A22 efter utvärdering, A23 valfri. | A20–A23 |
 | B13 | Brancher och worktrees | **Ja**, efter A03:s underlag (Jakob 2026-10-12). Lokala `ORCHISTRATOR` är redan raderad; dess commit fanns på `main`. | A03 |
 | B14 | Kevin-integration | Öppet. Rekommendation: selektiv, i en egen plan. | (utanför) |
-| B15 | Ops-arv: gamla `vercel-entry`-projektet, `preview/`, Caddy för bettalotto.se | Öppet. A18 utreder och flyttar `build.mjs` till frontendens ägo. | A18 |
+| B15 | Ops-arv: gamla `vercel-entry`-projektet, `preview/`, Caddy för bettalotto.se | **Ja** (Jakob 2026-10-12): ta bort, men beskriv vad filerna var. Vercel-projektet `github-work-vercel-entry` finns inte längre (env-granskningen). `ops/caddy/bettalotto-game-auth.Caddyfile` lades till 2026-09-20 av Kevin (ImpactPL) för backoffice-inloggning till original- och V2-spelen. Live-servern för bettalotto.se (Caddy, 37.27.199.225) svarar nu 301 till croupier.scoutgg.dev och använder inte den konfigurationen; Kevins aktuella Caddy-filer ligger på hans branch (`kevin/croupier-scoutgg/drift/`). Filen tas bort ur `main` och finns kvar i Git-historiken. | A18 |
 | B16 | Lokala ignorerade mappar (`lab/data`, `.venv`, byggutdata, `media/.migration`) | Jakobs data. A19 ger förslag; inget raderas utan Jakob. | A19 |
+| B17 | Ignoreringsregler: skilj säkerhet från indexering | Öppet. Rekommendation (andra granskaren): `.cursorignore` behåller hemligheter och privata data (`.env*`, `lab/data/`, `web/data/`, arkivet). Ofarligt, tungt spårat projektmaterial (`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`, `media/**/staging/*.md`) flyttas till `.cursorindexingignore`, som bara stoppar indexering, så att agenter kan läsa det uttryckligen. | A17 |
 
 ### Tveksamt
 
@@ -112,7 +118,7 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | T2 | **Besvarad** (A05): `/v2` är en 307-alias till `/blackjack` eller `/play/blackjack`, inte en egen spelare. |
 | T3 | **Besvarad** (A05): båda behålls. `audit-performance.mjs` skyddar manifestet som partner-API:t läser; `audit-astrid-actor.mjs` skyddar indexerade mattor och talhashar. |
 | T7 | (A30) `POST /api/v1/assets` returnerar 0 strömmar, 0 utdelningar och 0 tal för alla fyra dealers, medan `web/public/docs/partner-api.md` visar fyllda listor. Fel efter medieflytten, eller avsiktligt? Att fylla listorna ändrar partnerkontraktet. |
-| T8 | (A15) Borttagna `build-previews.sh`, `encode.sh` och `build-hands.sh` var de enda byggarna av preview-mp4, Annex-B-kodning och handmattor. Medierna finns kvar. Ska verktygen återställas före PR V2? |
+| T8 | **Besvarad** (Jakob 2026-10-12): `build-previews.sh`, `encode.sh` och `build-hands.sh` återställs, liksom kontaktbyggarna. De togs bara bort på A15:s agentbranch (`cursor/a15-pipeline-workshop-c5f3`, `5ec63cdc`) och har aldrig lämnat den. Se B9. |
 | T9 | (A03) Agenten såg inga `bypass_actors` på regel 24642403. Orkestratorns läsning 2026-10-12 visade `RepositoryRole 5` (admin) med `always`. Kontrollera igen innan `--admin-main` används. |
 | T4 | Filer i `ordning/` utlöser full pre-commit (cirka 3,5 minuter). Det accepteras hellre än att verktyget ändras. |
 | T5 | `jakob-export` har 78 egna commits. Den rörs inte förrän Jakob sagt vad den är. |
@@ -154,8 +160,8 @@ Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) 
 | --- | --- | --- | --- | --- | --- |
 | [A00](aktiviteter/A00-start-och-arbetsytor.md) | Start, integrationsbranch och omgångar | 0 | – | 5 % | klar |
 | [A01](aktiviteter/A01-random-och-planes.md) | Avveckla `random/` och `planes/` | 1 | B3 | 15 % | inmergad (V1) |
-| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | klar, väntar på `merge-cd76` (handoff) |
-| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | klar, väntar på `merge-cd76` (test) |
+| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | inmergad (V1) |
+| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | inmergad (V1) |
 | [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
 | [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
 | [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | inmergad (V1) |
@@ -206,6 +212,15 @@ A99 mäter de faktiska värdena.
   `e160af12` mergades medan planen skrevs.
 - [A99](aktiviteter/A99-slutavstamning.md) stämmer av allt mot baslinjen och har
   en reservdel för drift som upptäcks sent.
+- **Lane-uppdraget** (handoffen §2, "lanes blir bara sammansättning") är ett
+  eget arbete på `main` och rör cirka 230 filer. Våg 3 (A20–A23) flyttar samma
+  centrala moduler. De körs aldrig samtidigt på samma moduler; orkestratorn
+  kontrollerar läget före varje strukturomgång.
+- **Andra granskningen 2026-10-12** gav fyra skärpningar som nu står i planen:
+  täckningskrav (`coverage.mjs`, ORKESTRERING §4 punkt 16), integrationsgrind
+  för raderingar (§6), atomära flyttar per paket med full kantlista
+  (`cross-imports.mjs --all-edges`), och verklig återläsning av Blob-kopior samt
+  acceptans på riktiga bolag och rum med negativa prov (A31, A99).
 
 ## 9. Klart när
 

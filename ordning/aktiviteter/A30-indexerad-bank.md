@@ -68,6 +68,10 @@ Rapport: `ordning/rapporter/A30-indexerad-bank.md`.
 
 En skiva per PR, enligt det godkända förslaget. Krav:
 
+- verklig återläsning av varje Blob-objekt som ska ersätta en fil i trädet
+  (orkestratorn hämtar, läsande) och SHA-256 som stämmer med Git-blobben. En
+  rad i `media/blob-index.json` räcker inte (A31 steg 3);
+
 - partnerprotokollets prov är oförändrade;
 - `audit-dealer-sync` är grön, eller pensionerad med Jakobs uttryckliga ok;
 - offline-läget fungerar enligt `lab/docs/README.md`;

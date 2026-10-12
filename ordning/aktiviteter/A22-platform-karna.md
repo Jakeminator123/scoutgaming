@@ -63,8 +63,12 @@ Inga appar importerar längre från varandras kataloger. Beteendet är oföränd
 ## 22b och framåt · En skiva per PR
 
 1. Steg 0 och ombasering.
-2. Commit 1: `git mv` till `packages/platform/<del>/`. Commit 2: sökvägar i alla
-   importörer. Inga omvägsfiler ("shims") om det inte finns en extern konsument.
+2. En grön commit per skiva: `git mv` till `packages/platform/<del>/` och
+   sökvägar i alla importörer, tester och konfigurationer, utan ändrad
+   affärslogik. Redovisa `cross-imports.mjs --all-edges` före och efter, per
+   paket (`packages/platform` och `packages/presentation` räknas separat).
+   Skivan får inte röra moduler som lane-uppdraget (handoffen §2) ändrar
+   funktionellt samtidigt. Inga omvägsfiler ("shims") om det inte finns en extern konsument.
    Behövs en: dokumentera den och ta bort den i nästa skiva.
 3. Uppdatera `docs/environment-variables.json` (`sources`) och
    `ENVIRONMENT-VARIABLES.md` för flyttade env-läsare. Kör

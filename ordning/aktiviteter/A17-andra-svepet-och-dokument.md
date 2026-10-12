@@ -29,6 +29,22 @@ Dokumenten beskriver det nya läget i ett samlat pass.
   `actor-edge-blend.mjs`, `actor-grade.mjs`, `speech-playback.mjs`,
   `vendor/three/*` och `performance-contact.mjs`. Bara om de saknar
   produktkonsument efter våg 2 och A30 inte behöver dem.
+- Från våg 1–2: täckningsluckorna i `ordning/rapporter/A00-tackning.md`
+  (`apps/croupier-frontend/public`, `media/site/*`, `services/astrid-gpu-worker/assets`,
+  `pipeline/data`, `pipeline/irs`). Därtill `pipeline/load-dealer-rig.mjs`, som
+  importerar den borttagna `dealer-rig.mjs` (A10), kommentarer som nämner
+  borttagna skript (`web/public/styles.css`, `pipeline/build-index.mjs`,
+  `pipeline/trim-speak-start.py`), `ops/cloud/CONTAINER-CONTEXT.md` och
+  `.dockerignore`-rader för `assets/astrid-3d` och `assets/blackjack-3d`, samt B17
+  (ignoreringsregler) om Jakob säger ja.
+- Från våg 1–2: täckningsluckorna i `ordning/rapporter/A00-tackning.md`
+  (`apps/croupier-frontend/public`, `media/site/*`, `services/astrid-gpu-worker/assets`,
+  `pipeline/data`, `pipeline/irs`). Därtill `pipeline/load-dealer-rig.mjs`, som
+  importerar den borttagna `dealer-rig.mjs` (A10), kommentarer som nämner
+  borttagna skript (`web/public/styles.css`, `pipeline/build-index.mjs`,
+  `pipeline/trim-speak-start.py`), `ops/cloud/CONTAINER-CONTEXT.md` och
+  `.dockerignore`-rader för `assets/astrid-3d` och `assets/blackjack-3d`, samt B17
+  (ignoreringsregler) om Jakob säger ja.
 - Engångsverktyg: `tools/migrate-media-layout.mjs` och
   `tools/deduplicate-media.mjs`, med `test/media-migration.mjs` och
   `test/media-deduplication.mjs` i kroken. De behålls om de används för

@@ -15,8 +15,12 @@ const targets = code.filter(path => dirs.some(dir => path.startsWith(dir + '/'))
   && !/\.test\.(?:mjs|js|ts|tsx)$/.test(path) && !path.endsWith('.d.mts') && !path.endsWith('.d.ts'));
 const isTest = path => /(^|\/)(test|tests)\//.test(path) || /\.test\.(?:mjs|js|ts|tsx)$/.test(path);
 const strip = path => path.replace(/\.(?:d\.mts|mjs|cjs|js|jsx|ts|tsx|mts)$/, '').replace(/\/index$/, '');
-const keyOf = new Map(targets.map(path => [strip(path), path]));
+// Several files can share a key (page-template.mjs and page-template.tsx); an import
+// without extension then counts for all of them (conservative).
+const keyOf = new Map();
+for (const path of targets) keyOf.set(strip(path), [...(keyOf.get(strip(path)) || []), path]);
 const importers = new Map(targets.map(path => [path, { product: new Set(), test: new Set() }]));
+const unreadable = [];
 const patterns = [
   /\bimport\s+(?:type\s+)?(?:[\w*{}\s,$]+?\s+from\s+)?['"]([^'"]+)['"]/g,
   /\bexport\s+(?:type\s+)?(?:[\w*{}\s,$]+?\s+)?from\s+['"]([^'"]+)['"]/g,
@@ -24,16 +28,19 @@ const patterns = [
   /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
 ];
 for (const file of code) {
-  const text = readFileSync(file, 'utf8');
+  let text;
+  try { text = readFileSync(file, 'utf8'); } catch (error) { unreadable.push(file + ' (' + error.code + ')'); continue; }
   for (const pattern of patterns) for (const match of text.matchAll(pattern)) {
     const spec = match[1];
     let target = null;
     if (spec.startsWith('@/')) target = posix.join('lab', spec.slice(2));
     else if (spec.startsWith('.')) target = posix.normalize(posix.join(posix.dirname(file), spec));
     if (!target) continue;
-    const hit = keyOf.get(strip(target));
-    if (!hit || hit === file) continue;
-    importers.get(hit)[isTest(file) ? 'test' : 'product'].add(file);
+    const exact = targets.includes(target) ? [target] : null;
+    for (const hit of exact || keyOf.get(strip(target)) || []) {
+      if (hit === file) continue;
+      importers.get(hit)[isTest(file) ? 'test' : 'product'].add(file);
+    }
   }
 }
 const isRoot = path => /\/(?:page|layout|route|loading|error|not-found|template|default|middleware|instrumentation)\.(?:tsx?|jsx?|mjs)$/.test(path);
@@ -46,4 +53,9 @@ console.log('checked', targets.length, 'files in', dirs.join(', '));
 for (const [label, list] of [['no importer at all', noImporter], ['imported only by tests', testOnly]]) {
   console.log(`== ${label}: ${list.length}`);
   for (const path of list.sort()) console.log('  ', path);
+}
+if (unreadable.length) {
+  console.error('UNREADABLE (not analysed):');
+  for (const file of unreadable) console.error('  ', file);
+  process.exitCode = 2;
 }

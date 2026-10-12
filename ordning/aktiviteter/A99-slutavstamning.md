@@ -37,8 +37,21 @@ planmappen är borta.
    - röktest av `/`, `/play`, `/play/blackjack?operator=<ett aktivt bolag>`,
      `/control/login`, `/partner/login` och `/casino.html` (omdirigering, om A11
      är gjord);
-   - rehearsal `?dealer=<namn>&rehearsal=1` för fyra dealers, två uppspelningar i
-     rad, samt `?lane=layer-preview&rehearsal=1`.
+   - **Acceptans** byggd kring verkliga, godkända bolag och spelrum
+     (`sg-test`, `johns-spelbolag`, `nordic-bet`), med rätt `operator` och
+     `table` i speladressen:
+     - hela kedjan N1 (sammansättning) → publicering → N2 (bolagets rum och
+       utseende) → N3 (`/play?operator=` → rum → spel);
+     - tre lager (bakgrund, dealer, bord) på mobil och desktop, med två
+       uppspelningar i rad per rum;
+     - tal och OpenClaw genom testadaptern, eller ett separat liveprov som Jakob
+       godkänt; spelmotorns auktoritet över kort, sko och saldo oförändrad;
+     - **negativa prov:** fel bolag ger ingen åtkomst till ett annat bolags rum,
+       och saknad media ger ett tydligt fel, aldrig en annan dealers reservklipp
+       eller en gammal presentation;
+     - rehearsal `?dealer=<namn>&rehearsal=1` för de registrerade dealers som
+       ingår i paketen, och `?lane=layer-preview&rehearsal=1` så länge
+       layer-lanen finns.
 5. **Dokument:**
    - `docs/JOHN-HANDOFF.md`: avsnittet "Ordning 2026-10" med vad som ändrats, prov,
      vad som är kvar och före/efter-tabellen.

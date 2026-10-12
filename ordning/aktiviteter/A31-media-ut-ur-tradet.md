@@ -41,10 +41,14 @@ spelmotorn behöver och offline-läget fungerar.
    imagen lokalt (`docker build -f ops/cloud/Dockerfile .`), startar den
    isolerat (ingen produktionsdatabas) och röktestar `/api/table` och en
    presentation.
-3. **Utflytt** (bara det B11 godkänt): verifiera Blob-kopian per fil (hash i
-   `media/blob-index.json`), uppdatera `media/layout.json` och katalogerna via
-   verktygen, och `git rm`. Ett material vars enda kopia finns i trädet tas
-   inte bort.
+3. **Utflytt** (bara det B11 godkänt). En rad i `media/blob-index.json` är
+   inte bevis. Före borttagning ur trädet krävs, per fil: verklig
+   **återläsning** av Blob- eller arkivkopian (orkestratorn hämtar objektet,
+   läsande) och SHA-256 som stämmer med Git-blobben. Kontrollera också sparade
+   projekt, publicerad historik och att återställningsvägen i
+   `docs/ENVIRONMENT-RESTORATION.md` fungerar för filen. Uppdatera sedan
+   `media/layout.json` och katalogerna via verktygen och kör `git rm`. Material
+   vars enda verifierade kopia finns i trädet tas inte bort.
 4. **Offline-läge:** följ `lab/docs/README.md` (`node lab/start.mjs --offline --no-open`,
    körs bara av orkestratorn, ensam session) och kontrollera att de dealers och
    rum som ska fungera offline gör det. Ändra annars dokumentationen med Jakobs ok.

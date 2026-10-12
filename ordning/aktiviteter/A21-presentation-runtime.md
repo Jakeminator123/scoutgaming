@@ -3,7 +3,7 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 3 · efter A20 · ensam |
-| Väntar på | A20 mergad och deployad |
+| Väntar på | A20 mergad och deployad · lane-uppdraget (handoffen §2) rör inte `presentation-runtime/` samtidigt |
 | Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 30 % · cirka 45 importörer och en publik URL |
@@ -46,14 +46,17 @@ A22.
 ## Steg
 
 0. Steg 0 enligt ORKESTRERING §4. Inga öppna PR:er som rör konsumenterna.
-1. **Commit 1, ren flytt:** `git mv presentation-runtime packages/presentation/runtime`.
-2. **Commit 2, sökvägar:**
+1. **En grön commit:** `git mv presentation-runtime packages/presentation/runtime`
+   och, i samma commit:
    - Relativa importer i alla konsumenter. Kontrollera djupet (`../` blir
      `../../packages/presentation/runtime/` osv.).
    - `web/server.mjs`: URL:en `/presentation-runtime/<fil>` serverar filen från
      den nya platsen. URL:en ändras inte.
-   - `ops/vercel-entry/build.mjs`: samma mappning.
+   - Bygglogiken som släpper igenom `presentation-runtime/` (rad ~20 i
+     `apps/croupier-frontend/tools/player-ui-build.mjs` efter A18; tidigare
+     `ops/vercel-entry/build.mjs`): samma mappning.
    - `web/public/*`, som laddar via URL, ändras inte.
+2. Kör `node ordning/verktyg/cross-imports.mjs --all-edges` före och efter.
 3. **Beroendekarta** i rapporten: varje import från `runtime/` till `lab/`,
    `web/` och `open-claw/`, med vad som används. Det är indata till A22.
 4. **Prov:**

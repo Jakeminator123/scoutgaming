@@ -41,7 +41,8 @@ tid.
 1. Inventera varje förekomst av den gamla sökvägen:
    `rg -n --hidden --glob '!.git' '<gammal>'`, även i `.github`, `.githooks`,
    Dockerfiler, `vercel.json` och `render.yaml`. Skriv listan i rapporten.
-2. Commit 1: `git mv`. Commit 2: alla sökvägar.
+2. En grön commit: `git mv` och alla sökvägar, konfigurationer och tester
+   tillsammans.
 3. Prov: hela sviten, alla byggen och Docker-bygget (orkestratorn),
    `node docs/system-map/verify.mjs --check`,
    `node tools/check-environment-variables.mjs` och

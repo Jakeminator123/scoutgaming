@@ -4,20 +4,23 @@
 //   review-only   = only reachable from the tracked QA pages under web/public/review/
 //   test-only     = only reachable from modules that tests name or import
 //   pipeline-only = only reachable from modules that pipeline/ names
+//   doc/media     = only named in documentation or tracked media manifests/notes
 //   none          = no consumer found
 // Untracked local material (for example web/public/review/2026-09-09/3lager/) is never listed.
 // External consumers are matched by bare file name (conservative: a mention counts).
-// Docs, random/, planes/, ordning/ and media/ never count as consumers.
+// "none" and "doc/media" are CANDIDATES, not proof of non-use (dynamic paths, manual
+// workflows). Unreadable files are listed and make the exit code 2.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 
 const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\0').filter(Boolean);
-const isSource = path => /\.(?:mjs|cjs|js|jsx|ts|tsx|mts|html|css|json|py|sh|yml|yaml)$/.test(path);
+const isSource = path => /\.(?:mjs|cjs|js|jsx|ts|tsx|mts|html|css|json|py|sh|yml|yaml|md|txt)$/.test(path);
 const pub = tracked.filter(path => path.startsWith('web/public/') && /\.(?:mjs|js|html|css)$/.test(path)
   && !path.includes('/vendor/'));
 const isReview = path => path.startsWith('web/public/review/');
-const read = path => { try { return readFileSync(path, 'utf8'); } catch { return ''; } };
+const unreadable = [];
+const read = path => { try { return readFileSync(path, 'utf8'); } catch (error) { unreadable.push(path + ' (' + error.code + ')'); return ''; } };
 const kind = path => {
   if (/(^|\/)(test|tests)\//.test(path) || /\.test\.(?:mjs|js|ts|tsx)$/.test(path)) return 'test';
   if (path.startsWith('pipeline/')) return 'pipeline';
@@ -76,7 +79,8 @@ const pipelineRoots = reach(pub.filter(path => byName.get(path).has('pipeline'))
 const rows = pub.map(path => ({
   path,
   cls: product.has(path) ? 'product' : reviewRoots.has(path) ? 'review-only' : testRoots.has(path) ? 'test-only'
-    : pipelineRoots.has(path) ? 'pipeline-only' : 'none',
+    : pipelineRoots.has(path) ? 'pipeline-only'
+    : (byName.get(path).has('doc') || byName.get(path).has('media')) ? 'doc/media' : 'none',
   html: htmlOnly.has(path),
 }));
 const counts = rows.reduce((acc, row) => ({ ...acc, [row.cls]: (acc[row.cls] || 0) + 1 }), {});
@@ -86,3 +90,8 @@ for (const row of rows.filter(row => row.cls !== 'product').sort((a, b) => a.cls
 }
 console.log('--- product files NOT reachable from any HTML page (named by server/lab/apps code):');
 for (const row of rows.filter(row => row.cls === 'product' && !row.html)) console.log('  ', row.path);
+if (unreadable.length) {
+  console.error('UNREADABLE (not analysed):');
+  for (const file of unreadable) console.error('  ', file);
+  process.exitCode = 2;
+}

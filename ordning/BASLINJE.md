@@ -147,6 +147,10 @@ Därefter, samma förmiddag:
 | `f410c229` | PR #18 `jakob/dealer-forge-seed` mergad | Studio (Dealer Forge) |
 | `e160af12` | "Keep published dealer packages readable after optional shoe slots": frysta paket utan `transition.shoe` (johns-spelbolag rev 14, sg-test rev 15, nordic-bet rev 1) läses igen av `/play`. Det är Codex-överlämningens prioriterade avvikelse. | A04 och A99 kontrollerar |
 | `c0827abc` | `origin/main` mergad in i `jakob/repo-ordning` | Integrationsbranchen |
+| `12a12fd6` | Studio låst till Node 24.x (`lab/package.json`) | Agenter med Node 22 kör fortfarande proven; CI och Vercel kör 24 |
+| `91969107` | Migration 008 körd i produktion; båda runtime-kontrollerna kräver exakt 001–008. 008 är **inte** längre valfri. | Bevaras vid varje integration |
+| `45ff5c25` | CI: gemensam FFmpeg/jq-installation med cache per Ubuntu-image (`.github/actions/setup-ffmpeg`, `tools/ci-install-ffmpeg.sh`) | CI-timeouten från 12 oktober |
+| (plan, ingen kod) | Handoffen §2: "Nästa uppdrag: lanes blir bara sammansättning", cirka 230 filer | Våg 3 får inte flytta samma moduler samtidigt |
 
 - Lokala branchen `ORCHISTRATOR` (`4ecedd72`, samma patch som `e160af12`) är raderad.
 - `kevin` har rört sig till `eea5e40b`.
@@ -203,7 +207,9 @@ lokalt utanför repot:
 Ignoreringsregler: `.cursorignore` = `.ignore`. De döljer för Cursor och `rg`:
 `media/**/source/`, `media/**/staging/`, `media/layout.json`,
 `media/blob-index.json`, `vendor/`, alla binärer (`*.mp4`, `*.png`, `*.glb` …),
-`lab/data/`, `web/data/` och `.env*`. Spårade filer under mönstren läses med
-`git ls-files`, `git show HEAD:<sökväg>` eller en explicit filsökväg.
+`lab/data/`, `web/data/` och `.env*`. `.cursorignore` stoppar dessutom Cursors
+egna filverktyg; terminal och MCP omfattas inte. Spårade filer under mönstren
+söks med `git grep` och läses med `git show HEAD:<sökväg>` (ORKESTRERING §4
+punkt 13), aldrig med `rg --no-ignore`.
 Privata mönster (`random-stuff-jakob/jakob-docs/arkiv/`, `.env*`,
 `lab/data/platform-private/`) läses aldrig.

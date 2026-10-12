@@ -157,8 +157,10 @@ Avvikelse mot baslinjen (med origin/main-SHA) · Dokumentändringar som behövs 
    env uppdaterar `docs/environment-variables.json` (`sources`) och
    `docs/ENVIRONMENT-VARIABLES.md`. Kör sedan
    `node tools/check-environment-variables.mjs`.
-9. **Flytt:** använd `git mv`, utan innehållsändring i samma commit. Uppdatera
-   sedan importerna.
+9. **Flytt:** varje strukturell flytt är byggbar som helhet. `git mv`,
+   importuppdateringar och nödvändiga konfigurations- och testvägar ligger i
+   samma gröna commit, utan ändrad affärslogik. Git hittar ändå flytten
+   (rename detection), så historiken följer med.
 10. **Riktade prov:** kör `node --test <filer>` för det du rört, samt
     `node docs/system-map/verify.mjs --check` och
     `node tools/check-orphan-tests.mjs`.
@@ -167,12 +169,29 @@ Avvikelse mot baslinjen (med origin/main-SHA) · Dokumentändringar som behövs 
     `git ls-files <mapp>` att inget spårat finns kvar.
 12. **Ospårat lokalt material** (BASLINJE §9) finns inte i molnet. Skriv aldrig
     att det kan raderas, och skriv inte regler som skulle radera det.
-13. **Ignorerade sökvägar:** `.ignore` och `.cursorignore` döljer
+13. **Ignorerade sökvägar:** `.ignore` (ripgrep) och `.cursorignore` döljer
     `media/**/source`, `media/**/staging`, `media/layout.json`,
-    `media/blob-index.json`, `vendor/` och binärer. Använd `git ls-files`,
-    `git show HEAD:<sökväg>`, en explicit filsökväg eller
-    `rg --no-ignore -g '!random-stuff-jakob/**' -g '!**/node_modules/**'`.
+    `media/blob-index.json`, `vendor/` och binärer. `.cursorignore` begränsar
+    också Cursors egna filverktyg (Read/Grep/Glob), medan terminal- och
+    MCP-verktyg inte omfattas. Sök därför i **spårade** textfiler med
+    `git grep -n <mönster> -- <sökvägar>` (läser bara spårat innehåll och
+    struntar i `.ignore`) och läs enskilda filer med `git show HEAD:<sökväg>`.
+    Använd inte `rg --no-ignore`: det tar med `lab/data/`, `web/data/` och annan
+    privat lokal data. Läs aldrig `.env*`, `lab/data/`, `web/data/` eller
+    `random-stuff-jakob/`.
 14. **Rapport:** slutar alltid med `Tveksamt`. Skriv "inget" om det är tomt.
+15. **"Ingen konsument" är bara en kandidat.** Innan en fil tas bort ska du
+    kontrollera dynamiska sökvägar (mallsträngar, `path.join`, URL:er som byggs
+    i koden), byggskript, manuella arbetsflöden (verktyg som körs för hand
+    behöver ingen importör) och referenser i spårat käll- och stagingmaterial
+    (`git grep` över alla spårade textfiler, även `media/**`). Ett läsfel är
+    osäkerhet, aldrig tomt innehåll: verktygen i `ordning/verktyg/` avslutar med
+    kod 2 och listar filer som inte kunde läsas.
+16. **Täckning är ett leveranskrav.** Inventerande rapporter innehåller en
+    täckningstabell från `node ordning/verktyg/coverage.mjs`: varje spårad mapp i
+    aktivitetens omfång, med antal filer och storlek, och om den analyserats
+    eller varför inte. Lokala, ospårade mappar finns inte i molnet. Molnagenter
+    markerar dem aldrig som inventerade; de täcks av A19.
 
 ## 5. Delade filer och merge-ordning
 
@@ -203,6 +222,16 @@ git -C $wt merge --no-ff "origin/$b" -m "Merge <ID>: <titel>"
 
 1. Läs rapporten. Lyft allt under `Tveksamt` till Jakob. Tveksamma ändringar
    mergas inte in, eller backas ur (`git revert -m 1`) tills han svarat.
+   **Integrationsgrind för raderingar:** innan en branch som tar bort filer
+   mergas in, jämför dess lista med A04/A05:s klassning och med aktuell
+   integrations-SHA:
+   - `git diff --name-status --diff-filter=D HEAD...origin/<branch>` ger listan;
+   - för varje borttagen fil: `git grep -n <filnamn>` över alla spårade
+     textfiler på integrationsbranchen, inklusive `media/**`, plus kontroll av
+     dynamiska sökvägar och manuella arbetsflöden enligt §4 punkt 15;
+   - bara filer märkta `säker` i A05 (eller som orkestratorn bevisat säkra)
+     mergas in. Övriga återställs i samma merge
+     (`git checkout <bas> -- <fil>` före merge-commiten) eller lyfts till Jakob.
 2. Kontrollera att diffen bara rör ägda filer. Kör riktade prov i `$wt`, samt
    `node docs/system-map/verify.mjs --check` (0 röda) och
    `node tools/check-orphan-tests.mjs`.
@@ -224,9 +253,10 @@ git -C $wt merge --no-ff "origin/$b" -m "Merge <ID>: <titel>"
    uppdatera PR #19:s brödtext, eller öppna en ny PR från samma branch efter en
    tidigare merge. Ta bort utkastläget och be Jakob om ok. Efter merge:
    kontrollera att Render-deployen för `croupier-v2` är live och att Vercel är
-   READY, och röktesta `/`, `/play`, `/control/login` och `/partner/login`.
-   Har media eller spelare ändrats: rehearsal `?dealer=<namn>&rehearsal=1` för
-   fyra dealers med två uppspelningar i rad, samt `?lane=layer-preview&rehearsal=1`.
+   READY, och kör acceptansen i A99 §"Acceptans": verkliga, godkända bolag
+   och spelrum, hela kedjan N1 → publicering → N2 → N3, tre lager på mobil och
+   desktop, två uppspelningar i rad, tal/OpenClaw via testadapter, och negativa
+   prov.
 
 ## 7. Återställning
 
