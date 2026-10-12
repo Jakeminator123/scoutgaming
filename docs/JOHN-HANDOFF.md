@@ -1,5 +1,35 @@
 # Aktuell handoff — Scoutgaming
 
+## Materialskapande i dealerns arbetsyta, 12 oktober 2026
+
+Dealer Forge är samlat i **Dealers & klipp → Skapa material** för vald dealer.
+Den separata menyposten och det dubbla registreringsformuläret är borttagna;
+registrering och arkivering ligger kvar under Hantera dealers. Gamla
+`/control/dealer-forge` omdirigerar till den nya fliken med säkert bevarad
+dealer-, sammansättnings-, bolags- och rumskontext, även efter inloggning.
+
+`studio_native_unavailable` berodde på att den interna Next-anpassningen
+inte återställde `/studio` för `/api/forge`. Namespace-listan är rättad utan
+att utöka behörigheter eller query-policy. Grundbilder begärs utan den
+avvisade `?v`-parametern; hash byter bildens React-nyckel och privat media
+har fortsatt `no-store`.
+
+Materialutkast bevaras vid flikbyte och tillfälligt API-fel. Dealerbyte,
+historik och sidlämning skyddas; sena lässvar från tidigare dealer ignoreras.
+Otillgänglig anslutning spärrar skrivning och erbjuder återanslutning med
+utkastet kvar. Jobbpollning pausas när fliken är dold. Efter generering
+används befintliga Uppdatera klipplistan för att läsa in nytt material.
+
+56 riktade prov passerar, inklusive transportens scope/roll/återkallning/CSRF,
+komponenternas effekter, utkast, återanslutning, dealerbyte och omdirigering.
+Ytterligare körning av material-, arbetsyte- och scen-navigation passerar
+60 prov efter att den äldre komponentfixturen och flikantalet uppdaterats.
+Studio-produktionsbygget med Node 24.21.0 passerar, inklusive TypeScript och
+byggspårskontroll. Ordinarie fulla commit-hook passerar; de nya komponentproven
+ingår även där. Villkorade miljöprov behåller sina befintliga skips.
+Ingen betald generering, medieändring eller verklig DB-skrivning har gjorts.
+Användarens öppna Forge-flik med osparade fält har lämnats orörd.
+
 ## Blackjackstart och granskning av uppspelningslogik, 12 oktober 2026
 
 `prepareTable` anropade `loadLabClipConfiguration` efter att funktionen tagits
@@ -39,7 +69,11 @@ inga media eller godkännanden ändrades. Det är inget nytt visuellt
 lipsynkgodkännande. Amira är avvecklad som aktiv identitet; offline-start får
 inte kringgå kravet på registrerad dealer och publicerat/sparat provpaket.
 Full pre-commit-regression med Node 24.21.0 och högst fyra lokala testworkers
-passerade. Produktionsleveransen är ännu inte verifierad i detta kvitto.
+passerade. Fixen levererades i `dda785ec`; alla tre GitHub CI-jobb är gröna.
+Vercel-deploy `dpl_DWJPqPpjsz8wzkDAsgx8ckK6Vh3E` är READY och den publika
+`www.scoutgaming.tech/app.mjs` matchar den rättade källan (normaliserade
+radslut). Render `/__cloud/version` bekräftar också `dda785ec`.
+Inget verkligt spelarbelopp har använts för ett liveprov.
 
 ## Merge-samordning och CI-cache, 12 oktober 2026
 

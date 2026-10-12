@@ -33,6 +33,7 @@ function harness(file, initialStates = [], overrides = {}) {
   const mocks = {
     './activity-log': { ActivityLog: marker('observation') },
     './dealer-media-library': {DealerMediaLibrary: marker('dealer-media')},
+    './dealer-forge-page': {DealerMaterialCreator: marker('dealer-material')},
     './dealer-registration': {DealerRegistration: empty},
     './dealer-speech-settings': {DealerSpeechSettings: marker('speech-settings')},
     './studio-navigation': {StudioNavigation: props => React.createElement('nav', {'aria-label':'Dealerflikar'}, studioNavigationTabs(props).map(tab => React.createElement('a', {key:tab.id,href:tab.href,'aria-current':tab.id===props.active?'page':undefined,onClick:event=>props.onNavigate(event,tab.href)},tab.label)))},
@@ -423,8 +424,8 @@ test('clips route and dealer management preserve composition operator and room t
   function setLocation(value){const next=new URL(value,runtimeWindow.location.href);Object.assign(runtimeWindow.location,{href:next.href,search:next.search,hash:next.hash});}
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow,'./studio-navigation':navModule.exports});
   let tree=h.render(page.props);
-  const tabLinks=()=>{const component=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];return nodes(component.type(component.props),node=>node.type==='a'&&['Grundloop','Klipp','Sammansättning','Tal & automatik','Svarsbibliotek','Provspelning & logg','Inställningar'].includes(node.props.children));};
-  function assertTabs(dealer,composition,operator=null,table=null){const links=tabLinks();assert.equal(links.length,7);for(const link of links){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('dealer'),dealer);assert.equal(query.get('composition'),composition);assert.equal(query.get('operator'),operator);assert.equal(query.get('table'),table);assert.equal(query.has('lane'),false);}return links;}
+  const tabLinks=()=>{const component=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];return nodes(component.type(component.props),node=>node.type==='a'&&['Grundloop','Klipp','Skapa material','Sammansättning','Tal & automatik','Svarsbibliotek','Provspelning & logg','Inställningar'].includes(node.props.children));};
+  function assertTabs(dealer,composition,operator=null,table=null){const links=tabLinks();assert.equal(links.length,8);for(const link of links){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('dealer'),dealer);assert.equal(query.get('composition'),composition);assert.equal(query.get('operator'),operator);assert.equal(query.get('table'),table);assert.equal(query.has('lane'),false);}return links;}
   assertTabs('paow','mobile-phone','operator-42','room-7');
   h.flushEffects();tree=h.render(page.props);
   const management=nodes(tree,node=>node.type==='button'&&node.props['aria-controls']==='dealer-settings')[0];assert.ok(management);management.props.onClick();tree=h.render(page.props);

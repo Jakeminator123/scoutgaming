@@ -1,8 +1,8 @@
 'use client';
 
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState, type MouseEvent} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
-import {PageTemplate} from './page-template.mjs';
+import {studioNavigationHref, type StudioNavigationContext} from '../lib/studio-navigation.mjs';
 import styles from './dealer-forge-page.module.css';
 
 type Status={level:'ready'|'required'|'recommended'|'optional'|'pending'|'blocked';label:string;count?:number};
@@ -40,71 +40,82 @@ async function downsizeImage(file:File):Promise<Blob>{
 
 export type ForgeIndex={dealers:{id:string;label:string}[];migrationReady:boolean;runwayConfigured:boolean};
 
-export function DealerForgePage({initialDealerId,initialIndex,initialState}:{initialDealerId?:string;initialIndex?:ForgeIndex|null;initialState?:State|null}) {
-  const [dealers,setDealers]=useState<{id:string;label:string}[]>(initialIndex?.dealers??[]);
+function materialError(cause:unknown) {
+  const error=cause as {code?:string;status?:number;message?:string};
+  if(error.status===401)return 'Din inloggning har gått ut. Logga in igen för att fortsätta. Ditt utkast finns kvar på sidan.';
+  if(error.status===403)return 'Materialskapandet kunde inte öppnas med din nuvarande behörighet. Kontrollera inloggningen och försök igen.';
+  if(error.code==='forge_migration_pending')return 'Materialskapandet är inte färdigkonfigurerat. Kontakta administratören.';
+  if(!error.status||error.status>=500||error.code?.startsWith('studio_'))return 'Materialskapandet är tillfälligt otillgängligt. Försök ansluta igen. Ditt utkast finns kvar på sidan.';
+  return error.message&&!/^[a-z_]+$/.test(error.message)?error.message:'Åtgärden kunde inte slutföras. Kontrollera uppgifterna och försök igen.';
+}
+
+export function DealerMaterialCreator({dealerId,initialIndex,initialState,active=true,disabled=false,onPendingChange,navigationContext={},onNavigate}:{dealerId:string;initialIndex?:ForgeIndex|null;initialState?:State|null;active?:boolean;disabled?:boolean;onPendingChange?:(status:{dirty:boolean;busy:boolean})=>void;navigationContext?:StudioNavigationContext;onNavigate?:(event:MouseEvent<HTMLAnchorElement>,href:string)=>void}) {
   const [meta,setMeta]=useState<{migrationReady:boolean;runwayConfigured:boolean}|null>(initialIndex?{migrationReady:initialIndex.migrationReady,runwayConfigured:initialIndex.runwayConfigured}:null);
-  const [dealerId,setDealerId]=useState(initialState?.dealer.id??initialDealerId??initialIndex?.dealers[0]?.id??'');
   const [state,setState]=useState<State|null>(initialState??null);
   const [error,setError]=useState('');const [notice,setNotice]=useState('');
   const [busy,setBusy]=useState(false);
-  const [newDealer,setNewDealer]=useState({id:'',label:''});
+  const [reading,setReading]=useState(!initialState);
+  const [unavailable,setUnavailable]=useState(!initialState);
   const [composer,setComposer]=useState<{slotId:string;quality:string;duration:number;mode:string;expression:string;referenceMediaId:string;prompt:string;maxCredits:number;preview:Preview|null;loading:boolean}|null>(null);
   const [profileDraft,setProfileDraft]=useState<Partial<Profile>|null>(null);
   const [showPositions,setShowPositions]=useState(false);
   const [uploadError,setUploadError]=useState('');
   const pollingRef=useRef(false);
+  const actionRef=useRef(false);
+  const previewRef=useRef(0);
+  const mountedRef=useRef(true);
+  const readRef=useRef(0);
+  const dealerRef=useRef(dealerId);dealerRef.current=dealerId;
   // One idempotency key per distinct job request: a retry after a network/5xx error reuses it, so the server returns the journaled job instead of paying again.
   const attemptRef=useRef<{signature:string;requestId:string}|null>(null);
+  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;readRef.current++;previewRef.current++;};},[]);
 
-  const loadIndex=useCallback(async()=>{
-    try{const data=await call<{dealers:{id:string;label:string}[];migrationReady:boolean;runwayConfigured:boolean}>('');setDealers(data.dealers);setMeta({migrationReady:data.migrationReady,runwayConfigured:data.runwayConfigured});
-      setDealerId(current=>current||data.dealers[0]?.id||'');}
-    catch(cause){setError(cause instanceof Error?cause.message:'Dealer Forge kunde inte läsas.');}
-  },[]);
   const loadState=useCallback(async(id:string)=>{
-    if(!id)return;
-    try{const data=await call<State>(`/${encodeURIComponent(id)}`);setState(data);setError('');}
-    catch(cause){setState(null);setError(cause instanceof Error?cause.message:'Dealern kunde inte läsas.');}
+    if(!id||!mountedRef.current)return;const request=++readRef.current;setReading(true);
+    const current=()=>mountedRef.current&&request===readRef.current&&id===dealerRef.current;
+    try{const data=await call<State>(`/${encodeURIComponent(id)}`);if(!current())return;setState(data);setMeta({migrationReady:data.migrationReady,runwayConfigured:data.runwayConfigured});setUnavailable(false);setError('');}
+    catch(cause){if(current()){setUnavailable(true);setError(materialError(cause));}}
+    finally{if(current())setReading(false);}
   },[]);
-  const hydrated=useRef(Boolean(initialState));
-  useEffect(()=>{if(!initialIndex)void loadIndex();},[loadIndex,initialIndex]);
-  useEffect(()=>{setComposer(null);setProfileDraft(null);
-    if(hydrated.current&&initialState&&initialState.dealer.id===dealerId){hydrated.current=false;}
-    else void loadState(dealerId);
-    if(typeof window!=='undefined'&&dealerId){const url=new URL(window.location.href);url.searchParams.set('dealer',dealerId);window.history.replaceState(null,'',url.pathname+url.search);}
-  },[dealerId,loadState,initialState]);
+  useEffect(()=>{if(!initialState)void loadState(dealerId);},[dealerId,loadState,initialState]);
+  const draftPending=Boolean(profileDraft||composer), operationPending=busy||Boolean(composer?.loading);
+  useEffect(()=>{onPendingChange?.({dirty:draftPending,busy:operationPending});},[draftPending,operationPending,onPendingChange]);
+  useEffect(()=>()=>onPendingChange?.({dirty:false,busy:false}),[onPendingChange]);
 
   // Poll active jobs one at a time; the server advances the Runway task and commits finished output.
   useEffect(()=>{
-    if(!state||!dealerId)return;
-    const active=state.jobs.filter(job=>ACTIVE.has(job.status)&&!(job.status==='queued'&&!job.taskId&&!job.request?.awaitingAvatar));
-    if(!active.length)return;
+    if(!active||disabled||unavailable||!state||!dealerId)return;
+    const activeJobs=state.jobs.filter(job=>ACTIVE.has(job.status)&&!(job.status==='queued'&&!job.taskId&&!job.request?.awaitingAvatar));
+    if(!activeJobs.length)return;
     const timer=window.setTimeout(async()=>{
       if(pollingRef.current)return;pollingRef.current=true;
       let changed=false;
       try{
-        for(const job of active){
+        for(const job of activeJobs){
           try{const next=await post<Job>(`/${encodeURIComponent(dealerId)}/jobs/${job.jobId}/poll`,{});if(next.status!==job.status||next.result?.progress!==job.result?.progress)changed=true;}
-          catch(cause){changed=true;setNotice(cause instanceof Error?`Jobb ${job.jobId.slice(0,8)}: ${cause.message}`:'Pollning misslyckades.');}
+          catch(cause){setUnavailable(true);setError(materialError(cause));return;}
         }
       } finally{pollingRef.current=false;}
       if(changed)await loadState(dealerId);else setState(current=>current?{...current}:current);
     },5000);
     return()=>window.clearTimeout(timer);
-  },[state,dealerId,loadState]);
+  },[state,dealerId,loadState,active,disabled,unavailable]);
 
   const slotsByGroup=useMemo(()=>{const map=new Map<string,Slot[]>();for(const slot of state?.slots??[])map.set(slot.group,[...(map.get(slot.group)??[]),slot]);return map;},[state]);
-  const anchorUrl=(pose:string)=>state?.profile.anchors[pose]?`${api(`/${encodeURIComponent(dealerId)}/anchor/${pose}`)}?v=${state.profile.anchors[pose].sha256.slice(0,12)}`:null;
+  const anchorUrl=(pose:string)=>state?.profile.anchors[pose]?api(`/${encodeURIComponent(dealerId)}/anchor/${pose}`):null;
   const posterFor=(slot:Slot)=>anchorUrl(slot.start==='REDO'?'redo':'vila')??undefined;
 
-  async function run(action:()=>Promise<void>,success?:string){
-    setBusy(true);setError('');
-    try{await action();if(success)setNotice(success);}
-    catch(cause){setError(cause instanceof Error?cause.message:'Åtgärden misslyckades.');}
-    finally{setBusy(false);}
+  function actionError(cause:unknown){
+    setError(materialError(cause));
+    const {status,code}=cause as {status?:number;code?:string};
+    if(!status||status>=500||status===401||status===403||code?.startsWith('studio_'))setUnavailable(true);
   }
-  async function createDealer(){
-    await run(async()=>{const created=await post<{dealer:{id:string;label:string}}>('/dealers',{dealerId:newDealer.id.trim(),label:newDealer.label.trim()});setNewDealer({id:'',label:''});await loadIndex();setDealerId(created.dealer.id);},'Dealern är registrerad i projektet. Ladda upp VILA-bilden för att börja.');
+  async function run(action:()=>Promise<void>,success?:string){
+    if(actionRef.current||disabled||unavailable||reading||!mountedRef.current||state?.dealer.id!==dealerId)return;
+    actionRef.current=true;setBusy(true);setError('');
+    try{await action();if(success)setNotice(success);}
+    catch(cause){actionError(cause);}
+    finally{actionRef.current=false;setBusy(false);}
   }
   async function uploadAnchor(pose:'vila'|'redo',file:File|undefined){
     if(!file)return;setUploadError('');
@@ -115,18 +126,22 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
     },pose==='vila'?'VILA-bilden är normaliserad till 1080×1920 på grönt och sparad som ankare.':'REDO-bilden är sparad som ankare.').catch(()=>{});
   }
   async function openComposer(slot:Slot,mode='keyframe',referenceMediaId=''){
+    if(disabled||unavailable||reading||busy)return;
+    const request=++previewRef.current;
     const quality=slot.kind==='table'||slot.kind==='pose'?'1080':'720';
     const base={slotId:slot.id,quality,duration:slot.group==='deal'||slot.group==='transition'?2:5,mode,expression:'neutral',referenceMediaId,prompt:'',maxCredits:200,preview:null as Preview|null,loading:true};
     attemptRef.current=null;setComposer(base);
     try{const preview=await post<Preview>(`/${encodeURIComponent(dealerId)}/preview`,{slotId:slot.id,quality,duration:base.duration,mode:mode==='keyframe'?undefined:mode,expression:'neutral',hasReference:Boolean(referenceMediaId)});
-      setComposer(current=>current&&current.slotId===slot.id?{...current,preview,prompt:preview.prompt,loading:false}:current);}
-    catch(cause){setComposer(current=>current?{...current,loading:false}:current);setError(cause instanceof Error?cause.message:'Förhandsgranskningen misslyckades.');}
+      if(request===previewRef.current)setComposer(current=>current&&current.slotId===slot.id?{...current,preview,prompt:preview.prompt,loading:false}:current);}
+    catch(cause){if(request!==previewRef.current)return;setComposer(current=>current?{...current,loading:false}:current);actionError(cause);}
   }
   async function refreshPreview(next:NonNullable<typeof composer>){
+    if(disabled||unavailable||reading||busy)return;
+    const request=++previewRef.current;
     setComposer({...next,loading:true});
     try{const preview=await post<Preview>(`/${encodeURIComponent(dealerId)}/preview`,{slotId:next.slotId,quality:next.quality,duration:next.duration,mode:next.mode==='keyframe'?undefined:next.mode,expression:next.expression,hasReference:Boolean(next.referenceMediaId)});
-      setComposer(current=>current&&current.slotId===next.slotId?{...current,preview,prompt:current.prompt&&current.prompt!==current.preview?.prompt?current.prompt:preview.prompt,loading:false}:current);}
-    catch(cause){setComposer(current=>current?{...current,loading:false}:current);setError(cause instanceof Error?cause.message:'Förhandsgranskningen misslyckades.');}
+      if(request===previewRef.current)setComposer(current=>current&&current.slotId===next.slotId?{...current,preview,prompt:current.prompt&&current.prompt!==current.preview?.prompt?current.prompt:preview.prompt,loading:false}:current);}
+    catch(cause){if(request!==previewRef.current)return;setComposer(current=>current?{...current,loading:false}:current);actionError(cause);}
   }
   async function submitJob(){
     if(!composer)return;const c=composer;
@@ -152,24 +167,19 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
     await run(async()=>{const patch:any={};for(const key of ['subject','theme','tableStyle','positions','language'] as const)if(profileDraft[key]!==undefined)patch[key]=profileDraft[key];if(profileDraft.voice)patch.voice={presetId:profileDraft.voice.presetId};
       await post(`/${encodeURIComponent(dealerId)}/profile`,patch);setProfileDraft(null);await loadState(dealerId);},'Profilen är sparad.');
   }
-  const profile=useMemo(()=>state?{...state.profile,...(profileDraft??{})}:null,[state,profileDraft]);
+  const profile=useMemo(()=>state?.dealer.id===dealerId?{...state.profile,...(profileDraft??{})}:null,[state,profileDraft,dealerId]);
 
-  return <PageTemplate eyebrow="// STUDIO" title="Dealer Forge" intro="Från en enda stillbild till en komplett dealerbank: grundposer, idle, övergångar, givningar, repliker, bord och bakgrund genereras via Runway och landar som granskningsklipp i rätt fack."
-    primary={<a className="sg-btn" href={labUrl(`/control/clips${dealerId?`?dealer=${encodeURIComponent(dealerId)}`:''}`)}>Öppna i Dealers &amp; klipp</a>}>
-    <div className="sg-page-body">
-      <nav className={styles.breadcrumbs} aria-label="Brödsmulor i Studio"><a href={labUrl('/control/clips')}>Studio</a><span aria-hidden="true">/</span><span aria-current="page">Dealer Forge</span></nav>
-      {error?<div className={`${styles.banner} ${styles.bad}`} role="alert">{error}</div>:null}
+  return <section aria-label="Skapa material" className={styles.workspace}>
+      <h2>Skapa material{state?` · ${state.dealer.label}`:''}</h2>
+      <p className={styles.muted}>Utgå från dealerns grundbilder och skapa förslag på klipp, repliker och scenbilder. Granska resultatet i klippbiblioteket och provspela innan du använder det i en publicerad sammansättning.</p>
+      {error?<div className={`${styles.banner} ${styles.bad}`} role="alert">{error} {unavailable?<button type="button" className="sg-btn" disabled={reading||busy} onClick={()=>void loadState(dealerId)}>{reading?'Ansluter…':'Försök ansluta igen'}</button>:null}</div>:null}
       {notice?<div className={`${styles.banner} ${styles.ok}`} role="status">{notice} <button type="button" className="sg-btn" onClick={()=>setNotice('')}>Ok</button></div>:null}
-      {meta&&!meta.migrationReady?<div className={`${styles.banner} ${styles.warn}`}>Studio-migration 008 (forge_dealers/forge_jobs) är inte körd mot den här databasen. Dealers kan registreras, men inga ankare eller jobb sparas förrän migrationen är applicerad.</div>:null}
-      {meta&&!meta.runwayConfigured?<div className={`${styles.banner} ${styles.warn}`}>RUNWAY_API_KEY saknas i miljön. Facken och ankarna kan förberedas, men ingen generering kan startas.</div>:null}
+      {meta&&!meta.migrationReady?<div className={`${styles.banner} ${styles.warn}`}>Materialskapandet är inte färdigkonfigurerat. Kontakta administratören för att aktivera lagring av grundbilder och jobb.</div>:null}
+      {meta&&!meta.runwayConfigured?<div className={`${styles.banner} ${styles.warn}`}>Genereringstjänsten är inte ansluten. Du kan förbereda grundbilder och profil. En administratör behöver ansluta tjänsten innan du skapar material.</div>:null}
+      {disabled?<p className={styles.muted}>Spara dealerinställningarna och kontrollera spelanslutningen innan du skapar material.</p>:null}
+      {draftPending?<p className={styles.muted}>Du har ett utkast under Skapa material. <button type="button" className="sg-btn" disabled={operationPending} onClick={()=>{previewRef.current++;setComposer(null);setProfileDraft(null);attemptRef.current=null;}}>Ångra materialutkast</button></p>:null}
 
-      <div className={styles.toolbar}>
-        <label>Dealer<select value={dealerId} onChange={event=>setDealerId(event.target.value)} disabled={busy}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label} ({row.id})</option>)}{!dealers.length?<option value="">Inga dealers</option>:null}</select></label>
-        <label>Ny dealer · id<input value={newDealer.id} onChange={event=>setNewDealer({...newDealer,id:event.target.value})} placeholder="t.ex. paow" pattern="[a-z][a-z0-9-]*" /></label>
-        <label>Visningsnamn<input value={newDealer.label} onChange={event=>setNewDealer({...newDealer,label:event.target.value})} placeholder="Paow" /></label>
-        <button type="button" className="sg-btn sg-btn-primary" disabled={busy||!newDealer.id.trim()||!newDealer.label.trim()} onClick={()=>void createDealer()}>Registrera dealer</button>
-      </div>
-
+      <fieldset className={styles.controls} disabled={disabled||unavailable||reading||busy}>
       {state&&profile?<>
         <div className={styles.grid}>
           <section className={styles.card} aria-labelledby="forge-anchors">
@@ -178,7 +188,7 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
             <div className={styles.anchors}>
               {(['vila','redo'] as const).map(pose=>{const slot=state.slots.find(row=>row.id===`pose/${pose}`)!;const url=anchorUrl(pose);
                 return <div key={pose} className={styles.anchor}>
-                  <div className={styles.anchorFrame}>{url?<img src={url} alt={`${pose.toUpperCase()}-ankare för ${state.dealer.label}`} />:<span className={styles.muted}>{pose.toUpperCase()} saknas</span>}</div>
+                  <div className={styles.anchorFrame}>{url?<img key={state.profile.anchors[pose]?.sha256} src={url} alt={`${pose.toUpperCase()}-ankare för ${state.dealer.label}`} />:<span className={styles.muted}>{pose.toUpperCase()} saknas</span>}</div>
                   <div><span className={`${styles.pill} ${styles[slot.status.level]}`}>{slot.status.label}</span></div>
                   <div className={styles.actions}>
                     <label className="sg-btn">{url?'Byt bild':'Ladda upp'}<input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy||!state.migrationReady} onChange={event=>void uploadAnchor(pose,event.target.files?.[0])} /></label>
@@ -218,7 +228,7 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
             <table className={styles.table}>
               <thead><tr><th>Fack</th><th>Status</th><th>Klipp &amp; varianter</th><th>Pågår</th><th>Åtgärd</th></tr></thead>
               <tbody>{slots.map(slot=>{const active=slot.jobs.filter(job=>ACTIVE.has(job.status)||job.status==='submit_unknown');
-                return <RowFragment key={slot.id} slot={slot} active={active} poster={posterFor(slot)} state={state} busy={busy} dealerId={dealerId}
+                return <RowFragment key={`${slot.id}:${state.profile.anchors.vila?.sha256}:${state.profile.anchors.redo?.sha256}`} slot={slot} active={active} poster={posterFor(slot)} state={state} busy={busy} dealerId={dealerId} navigationContext={navigationContext} onNavigate={onNavigate}
                   onCreate={mode=>void openComposer(slot,mode)} onVariant={mediaId=>void openComposer(slot,'reference',mediaId)}
                   onCancel={job=>void run(async()=>{await post(`/${encodeURIComponent(dealerId)}/jobs/${job.jobId}/cancel`,{});await loadState(dealerId);})}
                   onResolve={(job,taskId)=>void run(async()=>{await post(`/${encodeURIComponent(dealerId)}/jobs/${job.jobId}/resolve`,{taskId});await loadState(dealerId);},'Task-ID kopplat; pollning fortsätter.')}
@@ -233,20 +243,21 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
           </tbody></table>:<p className={styles.muted}>Inga jobb ännu.</p>}
         </section>
       </>:!error&&dealerId?<p className={styles.muted}>Läser dealern…</p>:null}
-    </div>
-  </PageTemplate>;
+      </fieldset>
+  </section>;
 }
 
-function RowFragment({slot,active,poster,state,busy,dealerId,onCreate,onVariant,onCancel,onResolve,composer}:{slot:Slot;active:Job[];poster?:string;state:State;busy:boolean;dealerId:string;onCreate:(mode:string)=>void;onVariant:(mediaId:string)=>void;onCancel:(job:Job)=>void;onResolve:(job:Job,taskId:string)=>void;composer:React.ReactNode}) {
+function RowFragment({slot,active,poster,state,busy,dealerId,navigationContext,onNavigate,onCreate,onVariant,onCancel,onResolve,composer}:{slot:Slot;active:Job[];poster?:string;state:State;busy:boolean;dealerId:string;navigationContext:StudioNavigationContext;onNavigate?:(event:MouseEvent<HTMLAnchorElement>,href:string)=>void;onCreate:(mode:string)=>void;onVariant:(mediaId:string)=>void;onCancel:(job:Job)=>void;onResolve:(job:Job,taskId:string)=>void;composer:React.ReactNode}) {
   const [taskInput,setTaskInput]=useState('');
   const canGenerate=state.runwayConfigured&&state.migrationReady&&!slot.needsEvent&&!(slot.kind==='pose'&&slot.pose==='vila');
   const videos=slot.media.filter(row=>row.mediaType!=='audio'&&!row.archived);
   const audio=slot.media.filter(row=>row.mediaType==='audio');
+  const clipHref=studioNavigationHref('/control/clips?view=clips',{...navigationContext,dealerId,eventId:slot.eventId,situation:slot.situation});
   return <>
     <tr>
       <td><span className={styles.slotLabel}>{slot.label}</span><span className={styles.slotMeta}>{slot.id}{slot.start?` · ${slot.start} → ${slot.end}`:''}{slot.kind==='speech'&&state.speechLines[slot.situation??'']?` · ”${state.speechLines[slot.situation??'']}”`:''}</span></td>
       <td><span className={`${styles.pill} ${styles[slot.status.level]}`}>{slot.status.label}</span></td>
-      <td>{videos.length?<div className={styles.thumbs}>{videos.map(media=><a key={media.id} className={`${styles.thumb} ${media.role!=='standard'?styles.thumbVariant:''}`} href={labUrl(`/control/clips?dealer=${encodeURIComponent(dealerId)}&event=${encodeURIComponent(slot.eventId??'')}&situation=${encodeURIComponent(slot.situation??'')}`)} title={media.label}>
+      <td>{videos.length?<div className={styles.thumbs}>{videos.map(media=><a key={media.id} className={`${styles.thumb} ${media.role!=='standard'?styles.thumbVariant:''}`} href={clipHref} onClick={event=>{if(!event.defaultPrevented&&event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey)onNavigate?.(event,clipHref);}} title={media.label}>
         <span className={styles.thumbFrame}>{media.previewUrl?<video src={media.previewUrl} poster={poster} muted playsInline preload="metadata" onMouseEnter={event=>{void event.currentTarget.play().catch(()=>{});}} onMouseLeave={event=>{event.currentTarget.pause();event.currentTarget.currentTime=0;}} />:poster?<img src={poster} alt="" />:null}</span>
         <span>{media.role==='standard'?'Standard':'Variant'}{media.available?'':' · saknas'}</span></a>)}</div>
         :slot.kind==='table'||slot.kind==='background'?<span className={styles.muted}>{state.layers.filter(layer=>layer.role===slot.role).length?`${state.layers.filter(layer=>layer.role===slot.role).length} i Bord & bakgrunder`:'—'}</span>:<span className={styles.muted}>{audio.length?`${audio.length} ljudfil(er), ingen video`:'—'}</span>}</td>

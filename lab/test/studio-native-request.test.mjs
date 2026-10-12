@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server.js';
 import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest, studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from '../lib/studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest } from '../lib/studio-native-runtime.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
+import { createDealerForgeApi } from '../lib/dealer-forge-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 
 const publicOrigin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
@@ -79,6 +80,64 @@ test('already canonical requests and unrelated paths never receive another names
   const base=new Request(labOrigin+'/api/auth/session');assert.equal(normalizeNativeStudioRequest(base,local),base);
   for(const path of ['/api/unknown','/other/api/admin/overview','/studio/studio/api/admin/overview']){
     const request=new Request(labOrigin+path);assert.equal(normalizeNativeStudioRequest(request,config),request);
+  }
+});
+
+test('Forge reads restore Next basePath through direct and public requests before scoped authorization',async()=>{
+  let reads=0,authorized=0;
+  const service={status:async()=>({migrationReady:true,runwayConfigured:false}),listDealers:async()=>{reads++;return [{id:'paow',label:'Paow'}];},
+    state:async id=>{reads++;return {dealer:{id}};},anchorResponse:async()=>{reads++;return new Response('fixture-anchor',{headers:{'Cache-Control':'private, no-store'}});}};
+  const api=createDealerForgeApi({config,authorize:async request=>{authorized++;assert.equal(request.headers.get('cookie'),forwarded.cookie);return {user:'fixture',role:'admin',scope};}},{service});
+  for(const [headers,origin] of [[{origin:labOrigin,cookie:forwarded.cookie},labOrigin],[forwarded,publicOrigin]]){
+    for(const path of ['/api/forge','/api/forge/paow','/api/forge/paow/anchor/vila']){
+      const request=new NextRequest(labOrigin+path,{headers});
+      assert.equal(normalizeNativeStudioRequest(request,config).url,origin+'/studio'+path);
+      assert.equal((await api.handle(request)).status,200,path);
+    }
+  }
+  assert.equal(reads,6);assert.equal(authorized,6);
+  const canonical=new NextRequest(labOrigin+'/studio/api/forge',{nextConfig:{basePath:'/studio'},headers:{cookie:forwarded.cookie}});
+  assert.equal(normalizeNativeStudioRequest(canonical,config),canonical);
+  assert.equal((await api.handle(canonical)).status,200);
+  for(const session of [null,{user:'fixture',role:'reader',scope},{user:'fixture',role:'admin',scope:{...scope,workspaceId:'other'}}]){
+    const denied=createDealerForgeApi({config,authorize:async()=>session},{service});
+    assert.equal((await denied.handle(new NextRequest(labOrigin+'/api/forge'))).status,403);
+  }
+  assert.equal(reads,7);
+});
+
+test('Forge writes preserve body, CSRF and fresh authorization after the public rewrite',async()=>{
+  let writes=0,authorized=0,role='admin';
+  const api=createDealerForgeApi({config,authorize:async request=>{authorized++;assert.equal(request.headers.get('cookie'),forwarded.cookie);return {user:'fixture',role,scope};}},
+    {service:{createDealer:async(body,{actor})=>{writes++;assert.deepEqual(body,{dealerId:'paow',label:'Paow'});assert.equal(actor,'fixture');return {dealer:body};}}});
+  const request=(headers=forwarded)=>new NextRequest(labOrigin+'/api/forge/dealers',{method:'POST',headers:{...headers,'content-type':'application/json'},body:JSON.stringify({dealerId:'paow',label:'Paow'})});
+  assert.equal((await api.handle(request())).status,200);assert.equal(writes,1);assert.equal(authorized,2);
+  role='reader';assert.equal((await api.handle(request())).status,403);assert.equal(writes,1);
+  role='admin';
+  const missingOrigin={...forwarded};delete missingOrigin.origin;
+  const missingSite={...forwarded};delete missingSite['sec-fetch-site'];
+  for(const headers of [missingOrigin,missingSite,{...forwarded,origin:'https://evil.invalid'},{...forwarded,'sec-fetch-site':'cross-site'}]){
+    assert.equal((await api.handle(request(headers))).status,403);
+  }
+  assert.equal(writes,1);
+  let rechecks=0;
+  const revoked=createDealerForgeApi({config,authorize:async()=>++rechecks===1?{user:'fixture',role:'admin',scope}:null},
+    {service:{createDealer:async()=>assert.fail('revoked session reached mutation')}});
+  assert.equal((await revoked.handle(request())).status,403);assert.equal(rechecks,2);
+});
+
+test('Forge transport keeps query, action, origin and near-match endpoint restrictions',async()=>{
+  const api=createDealerForgeApi({config,authorize:async()=>{assert.fail('rejected transport reached authorization');}},{service:{}});
+  for(const path of ['/api/forge?x=1','/api/forge/paow/anchor/vila?v=abcdef123456','/api/forge/%70aow','/api/forge#fragment']){
+    assert.equal((await api.handle(new NextRequest(labOrigin+path,{headers:forwarded}))).status,403,path);
+  }
+  for(const change of [{'next-action':'fixture'},{'sec-fetch-site':'cross-site'},{'x-forwarded-host':'evil.invalid'},{origin:labOrigin}]){
+    assert.equal((await api.handle(new NextRequest(labOrigin+'/api/forge',{headers:{...forwarded,...change}}))).status,403);
+  }
+  for(const path of ['/api/forgery','/api/forge-extra','/other/api/forge']){
+    const request=new NextRequest(labOrigin+path);
+    assert.equal(normalizeNativeStudioRequest(request,config),request);
+    assert.equal((await api.handle(request)).status,404);
   }
 });
 

@@ -17,6 +17,12 @@ export function canonicalControlHref(value) {
   }
   if (url.pathname === '/control/preview') url.pathname = '/control/compositions';
   if (url.pathname === '/control/activity') url.pathname = '/control/rehearsal';
+  if (url.pathname === '/control/dealer-forge') {
+    url.pathname = '/control/clips';
+    url.searchParams.set('view', 'generate');
+    if (!url.searchParams.has('dealer') && url.searchParams.get('dealerId')) url.searchParams.set('dealer', url.searchParams.get('dealerId'));
+    url.searchParams.delete('dealerId');
+  }
   if (url.pathname.startsWith('/control/')) {
     if (!url.searchParams.has('composition') && url.searchParams.get('lane')) url.searchParams.set('composition', url.searchParams.get('lane'));
     url.searchParams.delete('lane');
