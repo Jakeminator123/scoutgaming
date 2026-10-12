@@ -38,7 +38,7 @@ export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, sta
     };
   }, [url, videoId, kind, repeat, standardBase]);
   return <div className="stage-video" style={{ position: 'relative' }}>
-    <video ref={video} src={url} loop={repeat} muted playsInline preload="auto" aria-label={kind === 'variant' ? 'Automatisk variation i grundloopen' : standardBase ? 'Grundloopens basklipp' : 'Alternativt basklipp i grundloopen'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+    <video ref={video} src={url} loop={repeat} muted playsInline preload="auto" aria-label={kind === 'variant' ? 'Automatisk variation i grundloopen' : standardBase ? 'Grundloopens basklipp' : 'Alternativt basklipp i grundloopen'} />
     <span style={{ position: 'absolute', top: 8, left: 8, color: '#ddd', background: '#102020cc', padding: '4px 8px', fontSize: 11 }}>{kind === 'variant' ? 'Variation' : repeat ? 'Grundloop' : 'Grundloop · basklipp'}</span>
   </div>;
 }

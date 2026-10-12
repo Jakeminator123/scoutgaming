@@ -5,6 +5,7 @@ import { clipLabel } from '../lib/clip-label.mjs';
 import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
 import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../lib/idle-policy.mjs';
 import type { VideoEntry, VideoInventory } from './studio-types';
+import { PresentationFrame } from './presentation-frame';
 import styles from './idle-policy-editor.module.css';
 
 const useLabels: Record<IdleVariantUse, string> = {
@@ -265,6 +266,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
     <section className={styles.player} aria-label="Spelare för grundloop">
       <div><strong title={shown(previewId).title}>{shown(previewId).text}</strong></div>
+      <PresentationFrame label="Grundloop"><div className="stage-video">
       {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
         onBusyChange(true);
@@ -272,6 +274,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
         playback.current.started = true; log(`started · ${fileLabel(preview, previewId)}`);
         if (planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
       }} onPause={event => { if (event.currentTarget === videoRef.current && !event.currentTarget.ended && playback.current?.serial === playSerial) stop('Pausat'); }} onEnded={() => advance(playSerial)} onError={event => { if (event.currentTarget === videoRef.current) stop('Videofel — provet avbröts'); }} /> : <p className={styles.warning}>Videon finns inte tillgänglig i klippbiblioteket.</p>}
+      </div></PresentationFrame>
       <div className={styles.previewControls}><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => stop()}>Stoppa</button></div>
       <details className={styles.help}><summary>Avancerat · uppspelningsplan</summary><p>Förhandsvisningen styr inte spelet. Samma slumpfrö ger samma planerade förlopp.</p>
         <div className={styles.previewControls}><label>Slumpfrö<input type="number" min={0} max={4294967295} value={seed} onChange={event => { stop('Slumpfrö ändrades'); setSeed(Math.max(0, Number(event.target.value))); }} /></label><button type="button" className="text-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj plan' : 'Visa plan'}</button></div>
