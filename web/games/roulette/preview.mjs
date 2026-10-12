@@ -4,7 +4,7 @@ import { performance } from 'node:perf_hooks';
 import { createSpinResult } from './index.mjs';
 
 const files = new Map([
-  ['/roulette-test/', ['index.html', 'text/html; charset=utf-8']],
+  ['/roulette-test', ['index.html', 'text/html; charset=utf-8']],
   ['/roulette-test/app.mjs', ['app.mjs', 'text/javascript; charset=utf-8']],
   ['/roulette-test/style.css', ['style.css', 'text/css; charset=utf-8']],
 ]);
@@ -22,15 +22,15 @@ export function createRoulettePreview({ origin, now = () => performance.now(), d
   let tokens = 30, lastRefill = now();
   return async function roulettePreview(req, res) {
     const url = new URL(req.url, expectedOrigin);
-    if (url.pathname !== '/roulette-test' && !files.has(url.pathname) && url.pathname !== apiPath) return false;
+    if (url.pathname !== '/roulette-test/' && !files.has(url.pathname) && url.pathname !== apiPath) return false;
     const json = (status, data, extra = {}) => {
       res.writeHead(status, { ...headers, 'Content-Type': 'application/json; charset=utf-8', ...extra });
       res.end(req.method === 'HEAD' ? undefined : JSON.stringify(data));
     };
     if (url.pathname !== apiPath) {
       if (!['GET', 'HEAD'].includes(req.method)) { json(405, { error: 'method_not_allowed' }, { Allow: 'GET, HEAD' }); return true; }
-      if (url.pathname === '/roulette-test') {
-        res.writeHead(308, { ...headers, Location: '/roulette-test/' }); res.end(); return true;
+      if (url.pathname === '/roulette-test/') {
+        res.writeHead(308, { ...headers, Location: '/roulette-test' }); res.end(); return true;
       }
       const [name, type] = files.get(url.pathname);
       const data = await readFile(new URL(`../../public/roulette-test/${name}`, import.meta.url));

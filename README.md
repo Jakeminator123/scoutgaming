@@ -124,7 +124,7 @@ documentation are paused. Personal archives remain outside agent reading paths.
 | --- | --- |
 | Blackjack rules and cryptographic demo shuffle | `web/public/blackjack.mjs` |
 | Persistent shoe, commands and public game view | `web/shoe-game.mjs` |
-| Roulette generator, result events and `/roulette-test/` diagnostics (no bets or wallet) | [`web/games/roulette/`](web/games/roulette/README.md) |
+| Roulette generator, result events and `/roulette-test` diagnostics (no bets or wallet) | [`web/games/roulette/`](web/games/roulette/README.md) |
 | Wallet, persistence and HTTP server | `web/server.mjs` |
 | Partner transport and presentation events | `web/partner-api.mjs`, `web/partner-presentation.mjs` |
 | Dealer playback | Game client: `web/public/local-presentation.mjs`, `web/public/layered-presentation.mjs`, `web/public/performance-player.mjs`. `web/public/app.mjs` accepts only `local` or `layered`. Studio's original-media reserve is retired; registered video stays on the shared stage |

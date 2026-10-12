@@ -99,7 +99,7 @@ try {
     server.stderr.on('data', chunk => { startupError ||= String(chunk).match(/(?:Error|SyntaxError|TypeError)(?: \[[A-Z_]+\])?:[^\n]*/)?.[0] ?? ''; });
   });
 
-  const roulettePage = await request(game + '/roulette-test/');
+  const roulettePage = await request(game + '/roulette-test');
   assert.equal(roulettePage.status, 200);
   const rouletteSpin = await request(game + '/api/roulette-test/spin', {
     method: 'POST', headers: { Origin: game, 'X-Roulette-Preview': '1' },
