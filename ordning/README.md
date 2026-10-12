@@ -102,7 +102,8 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 | B8 | Staging- och experimentmedia | **Delvis** (Jakob 2026-10-12): ta bort `media/game/staging` och Amiras staging. Astrids staging bara efter klassning per mapp; kalibreringsdata behålls. | A14 |
 | B9 | Pipeline-skript utan konsument | **Provisoriskt ja**, med tillägg (Jakob 2026-10-12, T8): verktyg som är enda byggaren av media som fortfarande används behålls, även utan automatisk anropare (`build-previews.sh`, `encode.sh`, `build-hands.sh`, samt kontaktbyggarna `build-contact-review.mjs` och `prepend-contact-entry.mjs`). Läppsynk- och kalibreringskedjan behålls. | A15 |
 | B10 | `/v2`, composited-media (91 MB) och gamla granskningssidor | **Ja** (Jakob 2026-10-12): ta bort composited-media och de fem granskningssidorna. `/v2` behålls som den 307-omdirigering den redan är. | A16 |
-| B11 | Indexerad bank, originalmotor och partnerprotokoll | **Väntar** (Jakob 2026-10-12): inte nu. Först reds partnerkontraktet ut (T7), liksom motsägelsen mellan A30 (börja med `performance`) och A05/T3 (`audit-performance.mjs` skyddar manifestet som partner-API:t läser). | A30 fas 2, A31 |
+| B11 | Indexerad bank, originalmotor och partnerprotokoll | **Ja, ta bort** (Jakob 2026-10-12, efter `ordning/rapporter/B11-beslutsunderlag.md`): `media/dealers/*/runtime/indexed` (632 filer, 279 MiB) bort ur Git och Render-imagen, liksom registerraderna och de kontroller som bara skyddade banken. Partnerdokumentet ska visa de verkliga tomma listorna. Blob-objekten ligger kvar tills vidare. `runtime/presentation` rörs inte. | A30 fas 2; A31 struken |
+| B18 | Permanent radering av dealer och klipp i Studio | **Ja** (Jakob 2026-10-12, efter `ordning/rapporter/radera-permanent-plan.md`): raden och sökvägen försvinner, med journal (migration `009` före merge). Varje sparad paketversion, fryst presentation och öppet rum som refererar klippet spärrar raderingen. Bekräftelse kräver inskrivet namn. Byggs som egen PR direkt efter repo-ordningen. | (utanför ordning) |
 | B12 | Strukturfasen | **Delvis ja** (Jakob 2026-10-12): A20 och A21, en i taget med produktionskontroll emellan. A22 bara som utredning. A23 inte nu. | A20–A23 |
 | B13 | Brancher och worktrees | **Ja**, efter A03:s underlag (Jakob 2026-10-12). Lokala `ORCHISTRATOR` är redan raderad; dess commit fanns på `main`. | A03 |
 | B14 | Kevin-integration | Öppet. Rekommendation: selektiv, i en egen plan. | (utanför) |
@@ -177,12 +178,12 @@ V2-provet (`jakob/ordning-v2-trial`) är därefter infört i `jakob/repo-ordning
 | [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | inmergad (V2) |
 | [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | inmergad (V2) |
 | [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | förslag till Jakob |
-| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar (B12 ja) |
-| [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar (B12 ja) |
+| [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | i V3a (`faf0e822`, PR #34); kontrollerad i produktion |
+| [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar på fria konsumentfiler (merge-cd76) |
 | [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar; bara utredning (B12) |
 | [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | struken tills vidare (B12) |
-| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 i V1 (`dd837cf4`); fas 2 väntar (B11) |
-| [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | väntar (B11) |
+| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 i V1 (`dd837cf4`); fas 2 inmergad (V4): banken borttagen |
+| [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | struken (B11: banken bort; `runtime/presentation` används och stannar) |
 | [A99](aktiviteter/A99-slutavstamning.md) | Slutavstämning, drift, mappen bort | 4 | allt | 20 % | väntar |
 
 Risk anger sannolikheten att aktiviteten kräver omtag eller ger en regression

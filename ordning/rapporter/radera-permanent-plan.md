@@ -198,3 +198,10 @@ Rör inte:
 - De 12 presentationsklippen och de sex `RETAINED_BANK_VARIANTS` är olika mängder. A04 kunde inte peka ut de 12 sökvägarna. Planen skyddar båda, men utan en produktionsläsning vet vi inte om någon av de 12 också ligger som en vanlig `media_records`-rad.
 - `inspectMediaDeletion` läser paket utan scope-filter och högst 1000 rader (`web/storage/studio-repository.mjs:304`). Över gränsen är radering redan spärrad. En ny kontroll får inte höja det taket i tysthet.
 - Att neka projektsparning när media-id:t saknas vidgar en skrivväg som i dag bara tittar på rader som finns kvar. Det behövs för att tombstonens skydd inte ska försvinna, och det ska ha egna prov innan det mergas.
+
+## Beslut (Jakob 2026-10-12, B18)
+
+1. Raden och sökvägen försvinner. Raderingen loggas i en ny journal (migration `009`), som körs mot produktions-Neon före merge enligt `docs/CLOUD-MIGRATION.md`.
+2. Raderingen spärras av varje sparad paketversion, fryst presentation och öppet rum som refererar klippet. Historiken skrivs aldrig om.
+3. Bekräftelsen kräver att namnet skrivs in, efter konsekvenslistan och token.
+4. Bygget görs direkt efter repo-ordningen, som en egen PR med migration.

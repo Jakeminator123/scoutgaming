@@ -326,7 +326,7 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
-**Indexerad dealerbank borttagen, 12 oktober (`cursor/a30-indexed-bank-6a84`).**
+**Indexerad dealerbank borttagen, 12 oktober (V4, `jakob/repo-ordning`).**
 `media/dealers/{astrid,amira,vera,mei}/runtime/indexed` (632 filer, 279,0 MiB)
 är borta ur Git, liksom layoutrader, blob-indexrader och de auditar som bara
 läste banken (`audit-dealer-sync`, `audit-performance`, `audit-astrid-actor`)
