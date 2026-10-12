@@ -20,6 +20,15 @@ export function designPreviewFile(segments = []) {
   const file = segments.slice(1).join('/');
   return types[extname(file)] && extname(file) !== '.html' ? file : null;
 }
+// The public build contains only the lobby UI. Never expose the admin bundle,
+// its catalog or arbitrary files through this independent address.
+export function publicLobbyFile(segments = []) {
+  if (!Array.isArray(segments)) return null;
+  if (!segments.length) return 'public-lobby/index.html';
+  if (segments[0] !== '_assets' || !['lobby', 'fonts'].includes(segments[1])) return null;
+  const file = designPreviewFile(segments);
+  return file?.startsWith('lobby/') ? 'public-lobby/' + file.slice(6) : file;
+}
 export const designPreviewHeaders = Object.freeze({
   'Cache-Control': 'private, no-store', 'Vary': 'Cookie', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow',
   'Cross-Origin-Resource-Policy': 'same-origin',
@@ -48,6 +57,17 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
   if (typeof authorize !== 'function') throw new Error('design_preview_authorization_required');
   await authorize(new Request(request.url, { method: 'GET', headers: request.headers, signal: request.signal }));
   const path = designPreviewFile(segments);
+  return servePreviewFile(request, path, root);
+}
+
+export async function servePublicLobby(request, segments = [], { root = designPreviewDirectory } = {}) {
+  if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
+  const path = publicLobbyFile(segments);
+  const directory = path?.startsWith('fonts/') ? 'fonts' : 'public-lobby';
+  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory));
+}
+
+async function servePreviewFile(request, path, root) {
   if (!path) return new Response(null, { status: 404, headers: designPreviewHeaders });
   let file, info;
   try {

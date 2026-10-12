@@ -3,7 +3,7 @@ import postcss from 'postcss';
 import tailwind3 from 'tailwindcss3';
 import tailwind4 from '@tailwindcss/postcss';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, sep, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -16,8 +16,11 @@ for (const surface of ['admin', 'lobby']) {
 }
 await mkdir(output, { recursive: true });
 const commonCss = await readFile(resolve(root, 'runtime/preview.css'), 'utf8');
-for (const surface of ['admin', 'lobby']) {
-  const source = resolve(root, surface), outdir = resolve(output, surface);
+for (const surface of ['admin', 'lobby', 'public-lobby']) {
+  const publicLobby = surface === 'public-lobby';
+  const source = resolve(root, publicLobby ? 'lobby' : surface), outdir = resolve(output, surface);
+  const assetBase = publicLobby ? '/lobby' : '/admin';
+  const assetSurface = publicLobby ? 'lobby' : surface;
   await mkdir(outdir, { recursive: true });
   await build({ entryPoints: [resolve(source, 'entry.tsx')], outfile: resolve(outdir, 'app.js'),
     bundle: true, minify: true, sourcemap: false, platform: 'browser', target: 'es2022', jsx: 'automatic',
@@ -25,8 +28,21 @@ for (const surface of ['admin', 'lobby']) {
     // It is served by the game runtime and is never used by the design lobby.
     external: ['/composition-runtime/compositor.js'],
     define: { 'process.env.NODE_ENV': '"production"' },
-    alias: { '@': source, 'next/link': resolve(root, 'runtime/navigation.tsx'),
+    alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
+      '@': source, 'next/link': resolve(root, 'runtime/navigation.tsx'),
       'next/navigation': resolve(root, 'runtime/navigation.tsx'), 'next/image': resolve(root, 'runtime/image.ts') },
+    // Keep the imported internal design intact. The independent public bundle
+    // uses its own asset URLs, player readers and home link.
+    plugins: publicLobby ? [{ name: 'public-lobby-paths', setup(builder) {
+      builder.onLoad({ filter: /\.(?:tsx?|mjs)$/ }, async args => {
+        if (!args.path.startsWith(source + sep)) return;
+        const contents = (await readFile(args.path, 'utf8'))
+          .replaceAll('/admin/_assets/lobby/', '/lobby/_assets/lobby/')
+          .replaceAll('/admin/structure', '/')
+          .replaceAll('Till administrationen', 'Till startsidan');
+        return { contents, loader: extname(args.path) === '.mjs' ? 'js' : extname(args.path).slice(1) };
+      });
+    } }] : [],
   });
   let css = await readFile(resolve(source, 'app/globals.css'), 'utf8');
   let plugins;
@@ -46,14 +62,15 @@ for (const surface of ['admin', 'lobby']) {
     plugins = [tailwind4({ base: source })];
   }
   const result = await postcss(plugins).process(css, { from: resolve(source, 'app/globals.css') });
-  await writeFile(resolve(outdir, 'theme.css'), result.css + '\n' + commonCss);
+  await writeFile(resolve(outdir, 'theme.css'), result.css + '\n' + (publicLobby
+    ? commonCss.replaceAll('/admin/_assets/fonts/', '/lobby/_assets/fonts/') : commonCss));
   await cp(resolve(source, 'public'), resolve(outdir), { recursive: true });
   const title = surface === 'admin' ? 'Administration' : 'Spellobby';
   const extra = surface === 'admin' ? '<link rel="stylesheet" href="/admin/_assets/admin/app.css">' : '';
-  await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} · Arbetsversion · Scoutgaming</title>${extra}<link rel="stylesheet" href="/admin/_assets/${surface}/theme.css"></head><body class="preview-${surface} font-sans antialiased"><div id="root"></div><script src="/admin/_assets/${surface}/app.js" defer></script></body></html>`);
+  await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} · Arbetsversion · Scoutgaming</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script></body></html>`);
 }
 await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
   await cp(resolve(root, '../../lab/app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));
 }
-console.log('Design workspaces built: /admin and /admin/lobby (registered catalogue, no writes).');
+console.log('Design workspaces built: /admin, /admin/lobby and /lobby (registered catalogues, no writes).');

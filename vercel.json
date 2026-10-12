@@ -24,13 +24,13 @@
       "buildCommand": "npm run build",
       "routes": [
         {
-          "src": "^/(control|partner|admin)$",
+          "src": "^/(control|partner|admin|lobby)$",
           "dest": "/studio/$1",
           "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1" }],
           "continue": true
         },
         {
-          "src": "^/(control|partner|admin)/(.*)$",
+          "src": "^/(control|partner|admin|lobby)/(.*)$",
           "dest": "/studio/$1/$2",
           "transforms": [{ "type": "request.path", "op": "set", "args": "/studio/$1/$2" }],
           "continue": true
@@ -45,6 +45,7 @@
     { "source": "/control/:path*", "destination": { "service": "studio" } },
     { "source": "/partner/:path*", "destination": { "service": "studio" } },
     { "source": "/admin/:path*", "destination": { "service": "studio" } },
+    { "source": "/lobby/:path*", "destination": { "service": "studio" } },
     { "source": "/", "destination": { "service": "web", "path": "/" } },
     { "source": "/(.*)", "destination": { "service": "web" } }
   ]
