@@ -31,10 +31,12 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
-  const source = await readFile(new URL('../../../lab/middleware.ts', import.meta.url), 'utf8');
+  const middlewareUrl = new URL('../../../lab/middleware.ts', import.meta.url);
+  const requireMiddleware = createRequire(middlewareUrl);
+  const source = await readFile(middlewareUrl, 'utf8');
   const compiled = transpileModule(source, {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
   const module = {exports:{}};
-  new Function('require', 'module', 'exports', compiled)(name => require(name === '../apps/croupier-frontend/lib/platform-routing.mjs' ? './lib/platform-routing.mjs' : name), module, module.exports);
+  new Function('require', 'module', 'exports', compiled)(requireMiddleware, module, module.exports);
   const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
   const previous = Object.fromEntries(Object.keys(unifiedEnv).map(key => [key, process.env[key]]));
   Object.assign(process.env, unifiedEnv);
@@ -49,6 +51,21 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('x-middleware-request-x-croupier-lab-authorized'), null);
       assert.equal(response.headers.get('x-middleware-request-forwarded'), null);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
+    }
+    const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
+    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies?dealer=paow', {headers:navigation}));
+    assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/control/replies?dealer=paow');
+    assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
+    assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
+    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies', {headers:{...navigation,origin:'https://foreign.example'}}));
+    assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
+    for (const [path, init] of [
+      ['/studio/api/project', {headers:navigation}],
+      ['/control/replies', {method:'POST',headers:navigation,body:'mutation'}],
+      ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
+    ]) {
+      const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, init));
+      assert.equal(response.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site', path);
     }
     const transport = module.exports.middleware(new NextRequest(config.publicOrigin + '/studio/api/inputs', {headers}));
     assert.equal(transport.headers.get('x-middleware-rewrite'), config.backendOrigin + '/studio/api/inputs');

@@ -1,5 +1,18 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
+import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+
+// Apply the existing document-navigation exception before Next's internal
+// rewrite can discard Fetch Metadata. This is only a known staff document;
+// API/action/body requests and Origin retain their original protections.
+export function studioDocumentNavigationHeaders(request) {
+  const headers = new Headers(request.headers);
+  const surface = resolveWorkspaceSurfacePath(new URL(request.url).pathname);
+  if (surface?.surface === 'control' && request.method === 'GET' && request.body === null
+    && headers.get('sec-fetch-mode') === 'navigate' && headers.get('sec-fetch-dest') === 'document'
+    && !headers.has('next-action')) headers.delete('sec-fetch-site');
+  return headers;
+}
 
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 

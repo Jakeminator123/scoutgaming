@@ -30,7 +30,7 @@ const clipCategories = ['all', 'deal', 'speech', 'reaction', 'action'];
 const validView = (value: string | null | undefined): value is WorkspaceView => workspaceViews.includes(value as WorkspaceView);
 const eventSection = (eventId: string): DealerWorkspaceSection => eventId === 'idle.ready' ? 'idle' : /^(deal|reveal)\./.test(eventId) ? 'deal' : 'clips';
 
-export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation, initialView, initialCategory }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string; initialView?: string; initialCategory?: string }) {
+export function LabStudio({ initialProject, initialVideos, connectedLane, initialDealerId, initialEventId, initialSituation, initialView, initialCategory, initialLaneId }: { initialProject: StudioProject; initialVideos: VideoInventory; connectedLane: boolean; initialDealerId?: string; initialEventId?: string; initialSituation?: string; initialView?: string; initialCategory?: string; initialLaneId?: string }) {
   const cloudStudio = labBasePath() === '/studio';
   const startingView = validView(initialView) ? initialView : initialEventId && initialEventId !== 'idle.ready' ? 'clips' : 'idle';
   const startingEvent = initialProject.events.find(row => row.id === initialEventId && (startingView === 'idle' ? row.id === 'idle.ready' : startingView === 'clips' && row.id !== 'idle.ready'));
@@ -58,6 +58,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(startingView);
   const [category, setCategory] = useState(startingCategory);
   const [speechDraft, setSpeechDraft] = useState(false);
+  const [laneId, setLaneId] = useState(initialLaneId ?? '');
   const navigationRef = useRef({ dealerId, blocked: false, busy: false, speechDraft: false, href: '' });
   navigationRef.current = { ...navigationRef.current, dealerId, blocked: uploading || dealerBusy || intakePending || speechDraft, busy: uploading || dealerBusy, speechDraft };
   const settingsRef=useRef<HTMLElement>(null);
@@ -76,8 +77,9 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
         setNotice(navigationRef.current.speechDraft ? 'Använd talunderlaget i utkastet eller ångra ändringarna under Tal & automatik innan du byter dealer.' : 'Avsluta eller töm pågående uppladdningar innan du byter dealer.');
         return;
       }
+      setLaneId(query.get('lane') ?? '');
       if (projectRef.current.dealers.some(row => row.id === requestedDealer)) setDealerId(requestedDealer!);
-      if (location.redirect) { window.location.replace(studioHref(location.redirect, { dealerId: requestedDealer ?? undefined })); return; }
+      if (location.redirect) { window.location.replace(studioNavigationHref(location.redirect, { dealerId: requestedDealer ?? undefined, laneId: query.get('lane') ?? undefined })); return; }
       const requestedEvent = query.get('event');
       const requestedDefinition = projectRef.current.events.find(row => row.id === requestedEvent);
       const requestedSituation = query.get('situation') ?? '';
@@ -178,7 +180,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     else continueLock.current = false;
   }
   function contentLink(path: string) {
-    return studioHref(path, { dealerId, eventId: selection?.eventId, variantId: variantId || undefined, situation: selection?.situation });
+    return studioNavigationHref(path, { dealerId, eventId: selection?.eventId, variantId: variantId || undefined, situation: selection?.situation, laneId });
   }
   function open(eventId: string, situation: string) {
     if (uploading || dealerBusy) return;
@@ -239,7 +241,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const saveButton = <button type="button" className="sg-btn sg-btn-secondary" disabled={!dirty || speechDraft || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>;
   const clipSettings = showEditor ? <section ref={settingsRef} className={styles.clipSettings} aria-label="Klippval, varianter och villkor">
     <div className={styles.sectionHeader}><div><h2>{selection ? clipSituationLabel(selection.eventId,selection.situation) : view === 'idle' ? 'Grundloop och variationer' : 'Klippval för ' + dealer?.label}</h2><p className={styles.intro}>Välj klipp, varianter och hur de används. Spara inställningarna efter ditt val.</p></div></div>
-    {selection || view === 'idle' ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
+    {selection || view === 'idle' ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioNavigationHref(studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab}),{laneId});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
     {view==='idle'&&familyWorkspace?<section><div className={styles.sectionHeader}><span/><button type="button" className="text-button" disabled={refreshing} onClick={()=>void refresh()}>{refreshing?'Läser…':'Uppdatera klipplistan'}</button></div><fieldset disabled={saving||!connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy??createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy=>edit(draft=>{draft.idlePolicy=policy;})} onBusyChange={()=>{}} onImportBusyChange={setUploading}/></fieldset></section>:null}
     {(view==='deal'||view==='clips')&&familyWorkspace&&media&&variant?<fieldset disabled={saving||!connectedLane} className={styles.editor}><div>{video?<video key={video.id} className={styles.preview} src={video.previewUrl} controls playsInline preload="none"/>:<p>Ingen tillgänglig film för detta fack.</p>}</div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={()=>void refresh()} refreshing={refreshing}/></fieldset>:null}
     {!familyWorkspace&&!customDealer?<fieldset className={styles.fields} disabled={saving||!connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></fieldset>:null}
@@ -247,13 +249,13 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     {view==='clips'&&familyWorkspace&&category==='speech'?<section className={styles.help}><h3>Inspelade tal-klipp</h3><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></section>:null}
     {saveButton}
   </section> : null;
-  const reviewHref=studioNavigationHref('/control/administration?tab=media-review',{dealerId});
+  const reviewHref=studioNavigationHref('/control/administration?tab=media-review',{dealerId,laneId});
   return <div className={styles.shell}>
     <PageTemplate eyebrow="// STUDIO" title="Dealers" primary={saveButton}>
     <main className={styles.main}><fieldset className={styles.fields} disabled={dealerBusy} onClickCapture={event=>{if(dealerBusy){event.preventDefault();event.stopPropagation();}}}>
       <div className={styles.dealerHeader}><div><p className={styles.eyebrow}>DEALERBIBLIOTEK · {project.dealers.length} DEALERS</p><h2>{dealer?.label ?? 'Välj dealer'}</h2><p className={styles.intro}>Grundloop, klipp och talinställningar för vald dealer.</p></div><button type="button" className="sg-btn sg-btn-secondary" disabled={uploading||dealerBusy} onClick={()=>{setWorkspaceView('settings');writeSelection(dealerId,'','',undefined,'settings');}}>Hantera dealers</button></div>
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">{project.dealers.map(dealer => <button type="button" className="sg-chip" disabled={intakePending||uploading} aria-pressed={dealerId === dealer.id} key={dealer.id} onClick={() => selectDealer(dealer.id)}>{dealer.label.slice(0, 1)} {dealer.label}</button>)}</div>
-      <StudioNavigation dealerId={dealerId} dealerLabel={dealer?.label} active={workspaceView} eventId={selection?.eventId} variantId={variantId||undefined} situation={selection?.situation} onNavigate={navigateWorkspace} crumbs={selection&&selection.eventId!=='idle.ready'?[{label:clipSituationLabel(selection.eventId,selection.situation)}]:[]} />
+      <StudioNavigation dealerId={dealerId} laneId={laneId} dealerLabel={dealer?.label} active={workspaceView} eventId={selection?.eventId} variantId={variantId||undefined} situation={selection?.situation} onNavigate={navigateWorkspace} crumbs={selection&&selection.eventId!=='idle.ready'?[{label:clipSituationLabel(selection.eventId,selection.situation)}]:[]} />
       {!connectedLane ? <p role="alert" className="feedback error">Spelanslutningen är inte tillgänglig. Inställningarna är skrivskyddade tills anslutningen har återställts.</p> : null}
       {error ? <p role="alert" className="feedback error">{error}</p> : null}
       {speechDraft?<p role="status" className="feedback">Talformuläret har ändringar som inte lagts till i projektutkastet. Flikarna kan bytas. Innan du byter dealer eller lämnar sidan: använd talunderlaget eller ångra ändringarna under Tal &amp; automatik.</p>:null}
