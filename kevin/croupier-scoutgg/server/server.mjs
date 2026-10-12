@@ -330,7 +330,8 @@ async function api(req, res, route) {
     try{const design=await readPresentation(brand),tag='"'+design.revision+'"';res.setHeader('ETag',tag);res.setHeader('Cache-Control','no-cache');if(req.headers['if-none-match']===tag){res.writeHead(304);return res.end();}return json(res,200,design);}
     catch{return json(res,503,{error:'Published design unavailable'});}
   }
-  if (req.method === "GET" && route === "clips") return json(res, 200, MANIFEST);
+  // MEDIA_BASE_URL (e.g. https://media.scoutgg.dev): where the game fetches dealer clips; empty = this host. Unset it to go back.
+  if (req.method === "GET" && route === "clips") return json(res, 200, { ...MANIFEST, mediaBase: process.env.MEDIA_BASE_URL ?? "" });
   if (req.method === "GET" && route === "health") {
     return json(res, 200, { ok: true, demo: true });
   }

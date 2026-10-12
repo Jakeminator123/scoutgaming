@@ -52,7 +52,11 @@ let playToken = 0;
 // Use the native HTTP media path on iOS. Keep full-file preparation in the
 // browser cache, but do not route its hardware decoder through Blob URLs.
 const nativeIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{});
+// Dealer clips can come from a cache in front of this host (Kevin 12 Oct: media.scoutgg.dev through Cloudflare). The
+// server names it in /api/clips (MEDIA_BASE_URL, empty = this host). iOS plays the clip URL itself, so it stays here.
+let mediaBase='';
+const mediaUrl=u=>mediaBase&&/^\/media\/[^?]+\.mp4(\?|$)/.test(u)?mediaBase+u:u;
+const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:(u,o)=>fetch(mediaUrl(u),o)});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
 function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}
@@ -428,6 +432,7 @@ function eventButtons() {
 
 // ------------------------------------------------------------------ start ---
 fetch("/api/clips").then((r) => r.json()).then((m) => {
+  if (typeof m.mediaBase === 'string' && /^https:\/\/[a-z0-9.-]+$/.test(m.mediaBase)) mediaBase = m.mediaBase;
   if (isAlternative) m = { ...m, idle: dealer.idles || [], deal: m.deal.map(d => ({ ...d, url: dealerClipUrl(d.url) })),
     // A ready dealer's prop card is bigger than Emil's: the game's card takes its size so the handoff does not jump.
     ...(dealer.ready?.card ? { kort_storlek: { bredd: dealer.ready.card[0], hojd: dealer.ready.card[1] } } : {}) };
