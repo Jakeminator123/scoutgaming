@@ -228,8 +228,9 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     for(const btn of document.querySelectorAll('[data-insurance]'))btn.disabled=sending||(btn.dataset.insurance==='yes'&&(paused||cost>(me?.balance??0)));
     $('#nextRound').hidden=state.phase!=='settled'||b||!entered;$('#nextRound').disabled=sending;
     $('#dealNow').textContent=ready?'Ready ✓':preparing?'Loading…':'Deal';$('#dealNow').disabled=sending||ready||preparing||!ownStake();
-    for(const id of ['clearBets','doubleBets','undoBet'])$('#'+id).disabled=sending||ready||!ownStake();
-    $('#repeatBet').disabled=sending||ready||ownStake()>0||!me?.repeatable||state.phase!=='bets';
+    // John 12 Oct: only the buttons that apply show (Undo/Clear/2x with a bet down, Repeat with a previous bet and none down).
+    for(const id of ['clearBets','doubleBets','undoBet']){$('#'+id).hidden=!ownStake();$('#'+id).disabled=sending||ready;}
+    $('#repeatBet').hidden=ownStake()>0||!me?.repeatable||state.phase!=='bets';$('#repeatBet').disabled=sending||ready;
     $('#allSeats').disabled=sending||ready||!own().length;
     for(const btn of document.querySelectorAll('[data-chip]'))btn.disabled=sending||ready;
     $('#changeSeats').disabled=sending;   // mid-round changes are queued for the next round (feedback #7)

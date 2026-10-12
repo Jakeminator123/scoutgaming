@@ -50,3 +50,6 @@ body{font-family:var(--design-font)}
 .game-dock .insurance-panel{background:color-mix(in srgb,var(--design-surface) 92%,transparent);border:1px solid #f2f1ed24;box-shadow:none;color:var(--design-text)}.game-dock .insurance-panel p span,.game-dock .insurance-panel small{color:#f2f1edb3}.game-dock .insurance-panel button[data-insurance=yes]{background:var(--design-primary);border-color:var(--design-primary);color:var(--design-on-primary)}
 /* The seat box (two buttons, "Take your place") in Scout's colours too: no gold Privé buttons on the Scout table. */
 .gate-card{border-color:#f2f1ed24}.gate .entry-actions button:not(.ghost){background:var(--design-primary);color:var(--design-on-primary)}.gate .entry-actions button:not(.ghost):disabled{opacity:.5}.gate .entry-actions .ghost{color:var(--design-text);border-color:#f2f1ed33}#playerName{border-color:#f2f1ed33}
+/* John 12 Oct: Repeat sat under Deal. Hidden (not applicable) buttons leave the row, the rest get room and wrap rather than crowd */
+.game-dock #betActions{flex-wrap:wrap;gap:10px}
+.game-dock #betActions>button[hidden]{display:none}
