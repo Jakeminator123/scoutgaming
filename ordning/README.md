@@ -108,9 +108,12 @@ produktionsfakta som bara lästes med SELECT (BASLINJE §8).
 
 | ID | Fråga |
 | --- | --- |
-| T1 | Handoffens påstående om originalmotorn. Koden och produktionsläsningen säger nej. A02 rättar texten och A04 bekräftar. |
-| T2 | Vad gör `/v2` i dag, utöver att servera `game.html`? (A05) |
-| T3 | Skyddar `pipeline/audit-astrid-actor.mjs` och `audit-performance.mjs` något som är live? (A05) |
+| T1 | **Besvarad** (A02, A04): spelklienten kräver `local`/`layered`; originalmotorn är bara Studio-reserv. A02 rättar handoffen. |
+| T2 | **Besvarad** (A05): `/v2` är en 307-alias till `/blackjack` eller `/play/blackjack`, inte en egen spelare. |
+| T3 | **Besvarad** (A05): båda behålls. `audit-performance.mjs` skyddar manifestet som partner-API:t läser; `audit-astrid-actor.mjs` skyddar indexerade mattor och talhashar. |
+| T7 | (A30) `POST /api/v1/assets` returnerar 0 strömmar, 0 utdelningar och 0 tal för alla fyra dealers, medan `web/public/docs/partner-api.md` visar fyllda listor. Fel efter medieflytten, eller avsiktligt? Att fylla listorna ändrar partnerkontraktet. |
+| T8 | (A15) Borttagna `build-previews.sh`, `encode.sh` och `build-hands.sh` var de enda byggarna av preview-mp4, Annex-B-kodning och handmattor. Medierna finns kvar. Ska verktygen återställas före PR V2? |
+| T9 | (A03) Agenten såg inga `bypass_actors` på regel 24642403. Orkestratorns läsning 2026-10-12 visade `RepositoryRole 5` (admin) med `always`. Kontrollera igen innan `--admin-main` används. |
 | T4 | Filer i `ordning/` utlöser full pre-commit (cirka 3,5 minuter). Det accepteras hellre än att verktyget ändras. |
 | T5 | `jakob-export` har 78 egna commits. Den rörs inte förrän Jakob sagt vad den är. |
 | T6 | Körs `ops/caddy/bettalotto-game-auth.Caddyfile` på någon extern server? Svaret avgör B15. |
@@ -150,27 +153,27 @@ Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) 
 | ID | Aktivitet | Våg | Beroenden | Risk | Status |
 | --- | --- | --- | --- | --- | --- |
 | [A00](aktiviteter/A00-start-och-arbetsytor.md) | Start, integrationsbranch och omgångar | 0 | – | 5 % | klar |
-| [A01](aktiviteter/A01-random-och-planes.md) | Avveckla `random/` och `planes/` | 1 | B3 | 15 % | körs |
-| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | körs |
-| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | körs |
-| [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | körs |
-| [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | körs |
-| [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | körs |
-| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | körs |
+| [A01](aktiviteter/A01-random-och-planes.md) | Avveckla `random/` och `planes/` | 1 | B3 | 15 % | inmergad (V1) |
+| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | klar, väntar på `merge-cd76` (handoff) |
+| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | klar, väntar på `merge-cd76` (test) |
+| [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
+| [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
+| [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | inmergad (V1) |
+| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | klar, väntar på V1 |
 | [A11](aktiviteter/A11-kasinogolvet.md) | Kasinogolvet `/casino.html` | 2 | B5, A10 | 25 % | väntar |
 | [A12](aktiviteter/A12-originalmedia-i-studio.md) | Originalmedia som Studio-reserv | 2 | B6, A04, A05 | 35 % | väntar |
 | [A13](aktiviteter/A13-partnerportalens-prototyper.md) | Partnerportalens prototypfabrik | 2 | B7 (prov.) | 40 % | körs |
 | [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | väntar |
-| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | körs |
+| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | klar, väntar på V1 |
 | [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | väntar |
 | [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | väntar |
-| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | körs |
+| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | klar (flytt), väntar på V1 |
 | [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | väntar |
 | [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar |
 | [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar |
 | [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar |
 | [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | väntar |
-| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 körs |
+| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 inmergad (V1) |
 | [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | väntar |
 | [A99](aktiviteter/A99-slutavstamning.md) | Slutavstämning, drift, mappen bort | 4 | allt | 20 % | väntar |
 
