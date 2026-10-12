@@ -5,6 +5,9 @@ const context = Object.fromEntries(new URL(location.href).searchParams);
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
 let state, pending, pendingKey, busy = true, chip = 5, rotation = 0;
 let draft = new Map(), undo = [];
+const motion = matchMedia('(prefers-reduced-motion: reduce)');
+let finishMotion = () => {};
+let restoreSpinFocus = false;
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
 const sum = () => [...draft.values()].reduce((a,b)=>a+b,0);
@@ -40,6 +43,14 @@ function boardButton(id,row,column,label) {
   const def = BET_BY_ID[id], button = node('button',label ?? def.label,'bet');
   button.type='button'; button.dataset.bet=id;
   button.style.gridRow=row; button.style.gridColumn=column;
+  button.style.setProperty('--desktop-row',row); button.style.setProperty('--desktop-column',column);
+  let mobileRow, mobileColumn;
+  if(def.type==='straight') {
+    const n=def.numbers[0]; mobileRow=n ? String(2+Math.floor((n-1)/3)) : '1'; mobileColumn=n ? String(1+(n-1)%3) : '1 / 4';
+  } else if(def.type==='column') {mobileRow='14';mobileColumn=id.slice(-1);}
+  else if(def.type==='dozen') {mobileRow=`${2+(Number(id.slice(-1))-1)*4} / span 4`;mobileColumn='4';}
+  else {mobileRow=`${2+['low','even','red','black','odd','high'].indexOf(id)*2} / span 2`;mobileColumn='5';}
+  button.style.setProperty('--mobile-row',mobileRow); button.style.setProperty('--mobile-column',mobileColumn);
   if(def.type==='straight') button.classList.add(pocketColor(def.numbers[0]));
   if(id==='red'||id==='black') button.classList.add(id);
   button.addEventListener('click',()=>addBet(id));
@@ -71,7 +82,8 @@ function renderDraft() {
     const value=draft.get(id);
     if(value) button.append(node('span',String(value/100),'marker'));
     button.disabled=locked;
-    button.setAttribute('aria-label',`${BET_BY_ID[id].label}, vinst ${BET_BY_ID[id].payout}:1${value?', satsat '+money(value/100):''}`);
+    const def=BET_BY_ID[id];
+    button.setAttribute('aria-label',`${def.label}${def.type==='straight'?', '+colourNames[pocketColor(def.numbers[0])] : ''}, vinst ${def.payout}:1${value?', satsat '+money(value/100):''}`);
   }
   for(const button of $('chips').children) { button.disabled=locked;button.setAttribute('aria-pressed',String(Number(button.dataset.value)===chip)); }
   $('stake').textContent=money(sum()/100);
@@ -86,7 +98,8 @@ function renderDraft() {
   $('spin').disabled=locked||!draft.size||sum()>Math.round(state.balance*100);
   $('show-inside').disabled=locked; $('add-inside').disabled=locked;
   $('inside-chip').textContent='Lägg en marker på '+money(chip)+'.';
-  $('phase').textContent=busy?'VÄNTA':pending?'KONTROLLERAR':'SATSNINGAR ÖPPNA';
+  $('phase').textContent=busy?(state?'RUNDAN PÅGÅR':'ANSLUTER'):pending?'INVÄNTAR KVITTO':state?'SATSNINGAR ÖPPNA':'EJ ANSLUTEN';
+  $('board').setAttribute('aria-busy',String(busy));
 }
 function showResult(round) {
   if(!round) return;
@@ -94,6 +107,7 @@ function showResult(round) {
   rotation=(360-WHEEL.indexOf(number)*360/37)%360;
   $('wheel-disk').style.transform=`rotate(${rotation}deg)`;
   $('result-number').textContent=number; $('result-number').className='result-number '+color;
+  $('wheel').setAttribute('aria-label',`Europeiskt roulettehjul. Senaste utfall: ${number}, ${colourNames[color]}.`);
   $('result-color').textContent=colourNames[color]+(number ? number%2===0?' · Jämnt':' · Udda':' · Nolla');
   $('round-return').textContent=round.returned ? 'Tillbaka '+money(round.returned,round.currency)+' · netto '+money(round.net,round.currency) : 'Ingen vinst denna runda';
   for(const [id,button] of betButtons) button.classList.toggle('winner',id===`straight-${number}`);
@@ -105,7 +119,8 @@ function renderState() {
   document.title=state.room.name+' · '+(state.room.operatorName ?? 'Scoutgaming');
   $('history').replaceChildren(...state.rounds.map(round=>{
     const el=node('li',String(round.event.outcome.number),round.event.outcome.color);
-    el.title=`${new Date(round.event.occurredAt).toLocaleString('sv-SE')} · insats ${money(round.wagered,round.currency)} · tillbaka ${money(round.returned,round.currency)}`;return el;
+    el.title=`${round.event.outcome.number}, ${colourNames[round.event.outcome.color]} · ${new Date(round.event.occurredAt).toLocaleString('sv-SE')} · insats ${money(round.wagered,round.currency)} · tillbaka ${money(round.returned,round.currency)}`;
+    el.setAttribute('aria-label',el.title);return el;
   }));
   showResult(state.rounds[0]); renderDraft();
 }
@@ -128,12 +143,21 @@ async function command(request) {
 }
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
 async function animate(number) {
-  const duration=matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden?0:2400;
+  const duration=motion.matches||document.hidden?0:3200;
   const destination=(360-WHEEL.indexOf(number)*360/37)%360;
   const next=rotation+360*4+(destination-rotation%360+360)%360;
-  const animation=$('wheel-disk').animate([{transform:`rotate(${rotation}deg)`},{transform:`rotate(${next}deg)`}],{duration,easing:'cubic-bezier(.15,.6,.15,1)',fill:'forwards'});
-  try { await animation.finished; } catch { /* The saved result remains authoritative. */ }
-  rotation=next;$('wheel-disk').style.transform=`rotate(${rotation}deg)`;animation.cancel();
+  const timing={duration,easing:'cubic-bezier(.18,.65,.22,1)',fill:'forwards'};
+  const animations=[
+    $('wheel-disk').animate([{transform:`rotate(${rotation}deg)`},{transform:`rotate(${next}deg)`}],timing),
+    $('ball-orbit').animate([{transform:'rotate(0deg)'},{transform:'rotate(-1800deg)'}],timing),
+    $('ball').animate([{top:'2%'},{top:'2%',offset:.65},{top:'16%'}],{duration,fill:'forwards'}),
+  ];
+  $('ball-orbit').classList.add('visible');$('skip-motion').hidden=!duration;
+  finishMotion=()=>animations.forEach(animation=>animation.finish());
+  try { await Promise.all(animations.map(animation=>animation.finished)); } catch { /* The saved result remains authoritative. */ }
+  rotation=next;$('wheel-disk').style.transform=`rotate(${rotation}deg)`;
+  $('ball').style.top='16%';animations.forEach(animation=>animation.cancel());
+  finishMotion=()=>{};restoreSpinFocus=document.activeElement===$('skip-motion');$('skip-motion').hidden=true;
 }
 async function submit() {
   if(busy||!pending) return;
@@ -141,6 +165,7 @@ async function submit() {
   try {
     const result=await command(pending);
     if(result.player.id!==pending.playerId||result.requestId!==pending.requestId||!result.round) throw Error('invalid_receipt');
+    message('Rundan är bekräftad. Kulan stannar strax…');
     await animate(result.round.event.outcome.number);
     state=result;clearPending();draft=new Map();undo=[];
     renderState();showResult(result.round);
@@ -153,7 +178,7 @@ async function submit() {
     if(error.status===401) $('login').hidden=false;
     message(errorText[error.message] ?? 'Svaret kunde inte bekräftas. Kontrollera samma runda igen innan du spelar vidare.',true);
     $('retry').hidden=!pending;
-  } finally {busy=false;renderDraft();}
+  } finally {busy=false;renderDraft();if(restoreSpinFocus){$('rebet').focus();restoreSpinFocus=false;}}
 }
 async function init() {
   try {
@@ -168,7 +193,10 @@ async function init() {
     renderState();busy=false;renderDraft();
     if(pending) { $('retry').hidden=false;message('En tidigare runda inväntar bekräftelse. Kontrollera den igen.',true); }
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
-    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{});
+    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{
+      $('dealer-scene').className='published-scene';
+      $('dealer-scene').replaceChildren(node('p','Dealerscenen är inte tillgänglig just nu. Spelet fungerar fortfarande.'));
+    });
   } catch(error) {
     message(errorText[error.message] ?? 'Rummet kunde inte öppnas. Ladda om sidan och försök igen.',true);
     if(error.status===401) $('login').hidden=false;
@@ -191,5 +219,8 @@ $('spin').addEventListener('click',()=>{
   pending=request;void submit();
 });
 $('retry').addEventListener('click',()=>void submit());
+$('skip-motion').addEventListener('click',()=>finishMotion());
+motion.addEventListener('change',()=>{if(motion.matches)finishMotion();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)finishMotion();});
 document.querySelector('.table-tools').append($('show-rules'));
 drawWheel();buildBoard();renderDraft();void init();

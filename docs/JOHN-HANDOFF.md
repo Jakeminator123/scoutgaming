@@ -355,6 +355,38 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
   `docs/CLOUD-MIGRATION.md`. Den är inte stängd här.
 - Vercel-byggets nya logg för Node 24-låsningen (`12a12fd6`) är inte verifierad.
 
+### Roulette: responsiv spelvy och kontofritt rörelselabb, 12 oktober 2026
+
+Arbetsbranch `codex/roulette-responsive-experiments` utgår från mergad PR42
+(`bf01c8bb`). Avstämning med ROULETTE bekräftade paket 7 och PAOW i Nordic
+Bets befintliga rum. Inget dealerbyte, ingen rumspublicering och ingen
+ändring i `/admin`, blackjack eller serverns spel-/plånbokslogik ingår.
+
+Mobilvyn har stående satsningsbord utan sidscroll och samma publicerade
+dealerfil som desktop. Kontrollraden håller marker, insats, start och
+återförsök tillgängliga. Separat kula/hjul visar det bekräftade kvittot;
+reducerad rörelse och Visa resultat direkt stöds. Saknad scen har en tydlig
+reservtext. `/roulette-test#experiments` har valbar mus-/touchparallax,
+mobil-/desktoputsnitt och geststart mot det befintliga kontofria demo-API:t.
+Kamera är endast undersökt, inte aktiverad. Bord, miljö och dealerplan i
+labbet är tydligt märkta skisser.
+
+27 riktade roulettester passerade på Node 24.21.0. Isolerad webbläsar-QA
+med verklig SQLite-avräkning omfattade spel, otillräckligt saldo, kontobyte,
+dialogfokus, 1440/390/320 px, geststart, tangentbordsstart och reducerad
+rörelse. Avklippt svar efter commit plus omladdning/återförsök gav två exakt
+identiska kommandon, en dragning och en insatsbokning. En bruten socket
+provade också Chromiums transparenta återförsök utan extra dragning.
+`tools/roulette-ui-fixture.mjs` återger dessa fall med egna minneskonton,
+utan env-filer eller produktionsdata. Testbevis ligger privat utanför Git.
+
+Mediaaudit `--probe` matchar alla fyra historiska set. Detta ger inget nytt
+visuellt/läppsynkgodkännande; verklig dealerrehearsal och nytt hyperrealistiskt
+material är fortsatt öppna. Ingen isolerad PostgreSQL-körning utfördes i
+denna UI-fixtur. Full regression ingår fortfarande i leveransgrinden.
+Runway-prompter, föreslagna bild-/bordsmått, loopacceptans och kamerans
+tekniska begränsningar finns i `web/games/roulette/README.md`.
+
 ## 3. Senaste leveranser
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per

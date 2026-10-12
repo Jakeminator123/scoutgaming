@@ -165,3 +165,114 @@ Kontrollera också mobil, desktop och den faktiska dealerscenen. Ett godkänt
 API-test är inte visuellt godkännande. Använd inte produktionskonton eller
 ändra riktiga användares demosaldon för testning. Starta lokalt enligt
 `AGENTS.md` med `node lab/start.mjs --no-open`; endast ett serverpar åt gången.
+
+## Visuell riktning, rörelselabb och mediaunderlag (12 oktober 2026)
+
+Spelvyn använder samma publicerade scen och samma dealerfil på mobil och
+skärm. Mobilbordet står på höjden (tre nummerkolumner, dussin och enkla
+chanser bredvid); desktop behåller det liggande bordet. Markervärde, insats,
+start och återhämtning ligger i en fäst kontrollrad. Text och tillgängliga
+namn skiljer rött, svart och grönt. Hjul och separat kula animeras först efter
+serverns kvitto; Visa resultat direkt och reducerad rörelse hoppar över
+rörelsen. Det grafiska hjulet är en fungerande prototyp, inte godkänd
+hyperrealistisk slutmedia.
+
+`/roulette-test#experiments` är den separata, kontofria rörelseytan: mus/
+touch-parallax, mobil-/desktoputsnitt och geststart efter minst 45 graders
+sammanhängande dragning. Gesten skickar samma tomma förhandsvisningsanrop som
+knappen. Kraft och riktning påverkar inte utfallet. Avbruten pekare och dubbla
+starter skapar inte extra anrop. Reducerad rörelse stänger av parallax och
+animation. Inga kamerabilder eller dealerfiler laddas i den här skissen.
+Testytans nya klick skapar nya demorundor; dess stateless-anrop får aldrig
+ersätta spelrummets beständiga återförsök.
+
+Parallaxen är en liten förskjutning mellan bakgrund, dealerplan och bord,
+inte en fri kamera. En inspelad frontal dealer innehåller inga sidovyer.
+Behåll kameran låst vid inspelning och rör lagren lite i spelaren. Dealer och
+bordets kontaktkant måste följa samma förankring, annars glider händerna.
+Inbränt blackjackbord kan inte döljas genom att lägga ett roulettebord ovanpå.
+Ett nytt frilagt idleklipp eller en ny sammanhängande roulettescen behövs.
+Den befintliga rumspubliceringen väljer dealer; arbetet gör inget dealerbyte.
+
+### Föreslaget produktionsformat för Runway / 3D-artist
+
+Detta är ett arbetsunderlag för nya tillgångar, inte en ändring av Studios
+publiceringskontrakt. Börja med en godkänd stillbild och prova kompositionen
+med skisslagren före betald video. Bakgrunder kan använda blackjackmiljöns
+material och ljus, medan bord och hjul är rouletteunika.
+
+| Tillgång | Föreslagen leverans |
+| --- | --- |
+| Dealer idle | En enda stående master, 2160 × 3840 om källan medger det; runtimevariant 1080 × 1920, kvadratiska pixlar. Frontal, låst kamera. Hela huvudet, axlarna, armarna, händerna och kroppen till nedanför bordskanten i bild. Ingen separat mobil-/desktoptagning. |
+| Inramning | Ansiktets mitt omkring x=50 %, ögon y=25–30 %, händer i y=60–70 %. Minst 12 % fri marginal åt sidorna och 8 % över huvudet. Bevara ett neutralt parti under händerna för maskning. Detta är startvärden som måste kalibreras mot den valda referensbilden. |
+| Bakgrund | Ljudlös, låst miljöplåt 3840 × 2160 med minst 15 % extra scen runt avsett utsnitt; kompletterande stående miljöplåt vid behov. Ingen inbakad dealer, text, marker eller bordsgeometri. |
+| Roulettebord | Separat frilagd stillbild eller 3D-modell. Startmått 2,4 × 1,35 m, höjd 0,9 m, hjuldiameter cirka 0,8 m. Måtten är scenförslag, inte påstådda standardmått. Valnöt, mässing, mörkgrön filt; samma ljusriktning som miljön. |
+| Bordets bildplan | Separata exports för 16:9 och 9:16 är tillåtna för bord/bakgrund. Dealerfilen är samma. Hjulyta och händer ska förbli läsbara; skala eller placera om bordet, aldrig sträcka det. Behåll neutral filt under det kodritade satsningsbordet. |
+| Hjul | Helst GLB/glTF: stationär skål, roterande rotor och kula som separata delar, gemensam centrumaxel, meter som enhet, PBR-material och separata texturer. Siffror/fack följer exakt WHEEL i rules.mjs. En grön nolla. |
+| Video | Välj en källängd runt 8–10 sekunder som aktuell modell stöder. Leverera original och en redigerad sömlös loop med konstant bildfrekvens (föreslagen runtime 30 fps), ljudlös. Bevara källans riktiga upplösning; uppskalning är inte mer detalj. |
+| Friläggning | Be om ren bakgrund och stabil siluett. Separat alfamaster efter friläggning är önskad leverans, inte en garanti från videogeneratorn. Registrera och prova via befintlig compositing; introducera inget nytt runtimeformat enbart för briefen. |
+
+Alla lager ska dela ljus: stor mjuk huvudkälla ovanför kamerans vänstra sida,
+varm praktisk belysning i bakgrunden och svag neutral upplättning från höger.
+Undvik extremt kort skärpedjup; händer och bordskant måste vara skarpa.
+Bordets framkant ockluderar den frilagda kroppen under den kalibrerade
+kontaktlinjen. Vid parallax ska kontaktlinjen inte glida.
+
+### Prompt: dealer i vila (image-to-video, engelska)
+
+Använd en godkänd referensbild av den dealer som senare ska publiceras.
+Prompten kan klistras in i Runway efter att referensbilden är förberedd:
+
+> Locked-off camera, continuous photorealistic shot. The standing roulette dealer holds the same relaxed neutral pose throughout. Gentle natural breathing, one soft blink and tiny eye movements. Lips remain gently closed. Both hands rest calmly at the same height in front of the body, with all fingers stable and visible. Shoulders and head return naturally to their initial neutral position at the end. The framing, focus, exposure and lighting remain constant throughout. Quiet, attentive presence, restrained movement, realistic skin and fabric detail.
+
+Referensbilden bestämmer utseende och komposition; rörelseprompten ska beskriva
+rörelsen. För loopförsök kan samma godkända bild användas som första och sista
+bild i Runways Animate Frames. Sömlöshet är inte garanterad: granska och
+redigera skarven. Källa: [Runway Image to Video Prompting Guide](https://help.runwayml.com/hc/en-us/articles/48324313115155-Image-to-Video-Prompting-Guide).
+
+Acceptans: ingen talrörelse, utdelning av kort eller beröring av hjulet; inga
+nya fingrar eller vandrande händer, hopp i belysning eller kameradrift. Spela
+loopen minst två gånger i följd i båda utsnitten och inspektera skarven vid
+normal hastighet. Spara original, filhash, beskärning, mask, kontaktlinje och
+acceptansnotering. Nya hashvärden får inget ärvt mediegodkännande.
+
+### Prompt: bord och atmosfärisk referens
+
+> A photorealistic private European roulette room with a single-zero roulette table. Dark walnut cabinet, finely machined brushed brass, deep forest-green wool felt, subtle wear and physically believable reflections. A standing dealer position centered behind the table, an unobstructed circular wheel to the viewer's left, and a clean felt betting area to the right. Camera locked at seated player eye height with a natural 45 mm equivalent lens. Warm architectural lighting, soft neutral key light from camera left, precise straight edges, crisp materials and restrained depth of field. A quiet, premium private gaming salon.
+
+För en separat miljöplåt används samma referens, ljus och kamera med tomt rum.
+Nummer, logotyper och satsningsrutor läggs på kontrollerat i kod/3D efteråt.
+Genererad video av en snurr är användbar som look-/rörelsereferens. Den kan
+inte vara produktens enda resultatvisning: aktuell server måste kunna styra
+samtliga 37 slutpositioner, även samma nummer flera gånger. Slutlösningen bör
+vara ett fotorealistiskt modellerat hjul med kodstyrd rotor/kula, eller en
+verifierad uppsättning exakta utfall som matchar samma kamerageometri.
+
+### Kamera: nästa avgränsade experiment
+
+Webbkamera är undersökt men inte aktiverad. [MediaPipe Face Landmarker för webben](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js)
+kan ge ansiktslandmärken och transformationer. En möjlig implementation är
+lokal huvudpositionsberäkning, filtrerad och begränsad till samma lilla
+parallaxintervall. Lägg inferens i en worker så spelkontrollerna inte blockeras.
+Det kräver ett uttryckligt Starta kamera-val, synlig avstängning, ingen
+inspelning/uppladdning, stopp av alla kameraspår vid sidbyte eller när fliken
+döljs och fungerande mus/touch utan kamera. Modell, WASM och CSP ska hanteras
+som en separat granskad integration; den här PR:n lägger inte in CDN-skript.
+
+### Isolerad manuell UI-acceptans
+
+`node tools/roulette-ui-fixture.mjs` skapar en kortlivad testserver på
+`127.0.0.2` med slumpad port, SQLite i minnet och två egna testkonton. Den
+läser inga env-filer och kopplar inte upp mot Neon, Blob eller produktionen.
+Öppna utskriven `/fixture`-adress. Verktyget är ingen alternativ produktstart:
+använd det bara för test och avsluta efteråt (automatisk stängning efter 30 min).
+
+Kontrollera 1440 px desktop, 390 px mobil och 320 px smal mobil: inga dolda
+satsningskolumner, minst 44 px tryckhöjd, läsbart saldo och åtkomliga kontroller.
+Spela, upprepa, ångra, rensa, öppna/stäng dialoger med tangentbord och prova
+reducerad rörelse. `/fixture` kan tappa nästa svar efter riktig SQLite-commit;
+återförsök från spelet och efter omladdning ska ha identiskt requestId,
+version och bets. `/fixture/evidence` visar antal generatoranrop, kommandon
+och testledger. Byte till det andra testkontot ska neka det förra kontots
+kommando. Scenen ska ge ett begripligt fel när ingen media finns. En godkänd
+fixtur ger inte acceptans av produktionsauth, PostgreSQL eller verklig dealer.
