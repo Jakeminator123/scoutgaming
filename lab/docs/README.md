@@ -285,8 +285,8 @@ omladdning. Enbart omladdning behåller den publicerade grundloopen.
 Under klippens uppladdning väljer du exakt familj och originalklipp.
 **Ladda upp och spara klipp** lagrar filmen i videobanken. Välj sedan hur
 klippet får användas och tryck **Spara inställningar** för att behålla
-urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
-idlepolicy eller originalmotorns klippval.
+urvalsreglerna. Ladda om spelklienten mellan händer efter ändrad
+idlepolicy eller presentationsspelarens klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är bevarad historik och visas inte som importerbara val i Dealers & klipp.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
@@ -304,7 +304,7 @@ tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslu
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till AI-småprat vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
@@ -496,7 +496,7 @@ standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 `node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
 
 **Diagnostik** samlar verifiering, videokarta, import/export och särskilda
-videolägen. Sekvenssteg öppnar befintlig editor. Uppspelningens logg håller högst 150
+videolägen. Sekvenssteg öppnar befintlig editor. Loggen i Provspelning & logg håller högst 150
 poster i `sessionStorage`, följer med vid sidbyte och töms när fliken stängs.
 Observationsprotokollet håller högst 300 meddelanden/4 MiB i
 flikens minne och stannar vid gränsen.

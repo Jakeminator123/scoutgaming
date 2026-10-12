@@ -7,6 +7,16 @@ Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
+## Avvecklade arbetsanteckningar, 12 oktober 2026
+
+Spårade arbetsanteckningar och de åtta planfilerna tas bort ur trädet i denna leverans. Git-historiken på `00ea55c5` behåller dem. Lokala ignorerade env-kopior och bildmappar är oförändrade och ingår inte i produkten.
+
+Öppet som fortfarande gäller, och som inte redan har en egen rad nedan:
+
+- Probe är fortfarande Astrid-specifik (handoff 12 oktober). Checklistans C9, textprov verifierat i produktion, är inte stängd av senare handoff.
+
+Övriga öppna rader från checklistan 8 oktober finns redan i denna tracker: spelare, transaktioner och rapporter (N2.4, JN2-E), marker (JN2-D), partnerns lösenordsåterställning (JN2-J), visuell partneracceptans (JN2-B) och samlad P6 med fyra dealers. Operatörsjournalen (N2.5) är levererad i JN2-C och öppnas inte igen. Systemkartans planerade ruta N2.4 pekar på `docs/system-map/planned.json`.
+
 ## Flödesomstrukturering, 12 oktober 2026
 
 N1 samlas i Studio, Spelbolag, Drift och System. Kanoniska adresser är `/control/compositions`, `/control/companies`, `/control/rooms` och kontextuell `/control/rehearsal`; gamla adresser leder vidare. Sammansättning ersätter presentationslane i användarflödet, medan kompatibla lagrings-ID:n och intern uppspelningskonfiguration behålls. N2 samlar rummets inställningar på `/partner/{slug}/rooms` med bevarade utkast och navigationsskydd.
@@ -166,7 +176,7 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
 
 Författaren till det frysta GitLab-headet är ImpactPL; identiteten är ännu inte
 bekräftad som Kevin. Överföringens källrevision är därför explicit dokumenterad.
-Privata originalanteckningar i `random/` är inte del av produkt eller deployment.
+Tidigare privata arbetsanteckningar är inte del av produkt eller deployment. Git-historiken på `00ea55c5` behåller dem. Lokala ignorerade env-kopior och bildmappar står kvar utanför Git.
 
 ### Johns N2-skiss — implementationsplan, 11 oktober 2026
 
@@ -238,7 +248,7 @@ affärsformulär och toppmeny B ingår inte i detta grundskal. Ingen produktions
 migration, provider/env eller deployment har ändrats av kodleveransen.
 
 **Underlag och nuläge.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
-pekar på `random/n2-skiss-john/index.html` på John-revision `aaadfb49`.
+pekar på Johns fristående HTML-skiss på revision `aaadfb49` (historiken behåller filen; den finns inte i det här trädet).
 Skissen är fristående HTML/JS med exempeldata och simulerade anrop, inte en
 färdig backend. Den historiska kodinventeringen före PR #12 nedan utgår från main
 `9d151fa6be364f4af5999c8163a6055dd8fc5fc8`. Webbläsarobservationerna gjordes

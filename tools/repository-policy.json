@@ -2,6 +2,7 @@
   "mode": "github-only",
   "repository": "Jakeminator123/scoutgaming",
   "branch": "main",
+  "featureBranches": ["jakob/*", "codex/*", "cursor/*"],
   "gitlabPaused": true,
   "checkpointTag": "Jakobs-v1",
   "checkpointCommit": "b9355ab824cd332835e7cc306862fcf53ad35f21"

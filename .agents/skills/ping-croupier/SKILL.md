@@ -20,4 +20,5 @@ Agents in the **same checkout** coordinate with `tools/agent-talk.mjs` (`claim`,
 
 The GitLab inbox is retired. Do not initialize, restore or poll `.croupier-inbox/`,
 read a GitLab token or contact the old thread. Deliver code only to GitHub with
-`tools/push-github-work.mjs`; policy in `AGENTS.md`.
+`tools/push-github-work.mjs` from a `jakob/*`, `codex/*` or `cursor/*` branch;
+the rule is in `AGENTS.md`.

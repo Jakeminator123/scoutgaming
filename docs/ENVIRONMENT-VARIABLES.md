@@ -129,6 +129,22 @@ ta bort dem ur Vercel och förvara inloggningen i en lösenordshanterare. Studio
 inloggningen är ett konto i Neon (`/control/administration?tab=accounts`), inte
 en miljövariabel. Värden står aldrig här.
 
+Panelgranskning 12 oktober 2026 (Vercel `scoutgaming`, namn och typer jämförda
+mot denna förteckning; inga värden lästes eller kopierades). Borttaget efter
+Jakobs beslut: `LLM_LOGIN_UN` och `LLM_LOGIN_PW` (sensitive, alla tre miljöer)
+samt sex tomma plain-rader i Production som ingen Vercel-tjänst skiljer från
+saknade värden: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `LAB_REMOTE_URL`,
+`LAB_REMOTE_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_TOKEN` och `NODE_OPTIONS`.
+Kvar med avsikt: tomma `CARTESIA_API_KEY` och `RUNPOD_API_KEY` (blockerade för
+`vercel-lab-ui`; `lab/lib/voice-preview.mjs` skiljer tomt från saknat),
+`CROUPIER_MEDIA_STORE_ID` och `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` (managed,
+hör till Blob-kopplingen; publik Ed25519-nyckel med giltiga radbrytningar,
+läses inte av koden), samt `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`
+och `CROUPIER_LISSABON_PROFILES` = `0` i Production (läses av talvägen;
+Render-motorn vägrar starta om någon är `1`, `ops/cloud/config.mjs`). Inga
+formatfel (radbrytningar, citattecken, blanksteg) hittades i läsbara variabler.
+Sensitive-värdens form går inte att läsa tillbaka och är okontrollerad.
+
 Lokala env-filer (konsoliderade 8 oktober 2026). Vercel production är källan
 för delade nycklar. Förnya lokalt med `vercel env pull --environment=production
 --yes <tempfil>` och slå ihop; systemnycklar `VERCEL_*`, `NX_*`, `TURBO_*` tas
