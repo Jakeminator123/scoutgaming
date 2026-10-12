@@ -47,6 +47,29 @@ function serviceFor(presentation) {
 }
 const context = {operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
 
+test('published 16-event packages remain readable after the optional shoe slot is added', async () => {
+  const current = captureFrozenPresentation(fixture({secondDealer:true})).presentation;
+  const legacy = structuredClone(current);
+  legacy.playback.lines = legacy.playback.lines.filter(line => line.eventId !== 'transition.shoe');
+  const used = new Set(legacy.playback.lines.flatMap(line => line.variants.map(variant => variant.assetId)));
+  legacy.playback.assets = legacy.playback.assets.filter(asset => used.has(asset.id));
+  const before = JSON.stringify(legacy);
+  const encoded = encodePresentationPackage(legacy);
+  assert.deepEqual(decodePresentationPackage(encoded), legacy);
+  assert.equal(JSON.stringify(legacy), before);
+  const frozen = frozenPlaybackProject(legacy.playback, {registeredDealers:legacy.registeredDealers,projectRevision:legacy.projectRevision});
+  assert.equal(frozen.events.length, 16);
+  assert.equal(frozen.lines.length, 32);
+  assert.equal(frozen.lines.find(line => line.dealerId === 'johanna' && line.eventId === 'speak.goodluck').variants[0].videoGenerationId, uuid(2));
+  const service = serviceFor(legacy).service;
+  assert.equal((await service.resolve(context)).dealer.id, 'johanna');
+  const newFrozen = frozenPlaybackProject(current.playback, {registeredDealers:current.registeredDealers,projectRevision:current.projectRevision});
+  assert.equal(newFrozen.events.length, 17);
+  const damaged = structuredClone(legacy);
+  damaged.playback.lines = damaged.playback.lines.filter(line => !(line.dealerId === 'johanna' && line.eventId === 'speak.goodluck'));
+  assert.throws(() => validatePresentationPackage(damaged), /studio_invalid_presentation/);
+});
+
 test('v3 freezes own exact event binding and policy; later live edits cannot change shared selection', async () => {
   const input = fixture(), project = input.snapshot.projectDocument.value;
   project.triggers.push({id:'johanna.goodluck',label:'Good luck',category:'deterministic',path:'event.line',op:'eq',value:'goodluck'});

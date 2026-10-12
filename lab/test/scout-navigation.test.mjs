@@ -20,7 +20,7 @@ const { transformSync } = require('next/dist/build/swc');
 test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
   assert.deepEqual(groups.map(group => group.label), ['Studio', 'Spelbolag', 'Drift', 'System']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/clips', 'Dealers & klipp'], ['/control/library', 'Bord & bakgrunder'], ['/control/compositions', 'Sammansättningar']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/dealer-forge', 'Dealer Forge'], ['/control/library', 'Bord & bakgrunder'], ['/control/compositions', 'Sammansättningar']],
     [['/control/companies', 'Bolag & team'], ['/control/rooms', 'Spelrum & publicering']],
     [['/control/administration?tab=operations', 'Spelstatus & integritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
     [['/control/administration?tab=accounts', 'Konton & åtkomst'], ['/control/administration?tab=partners', 'API & integrationer'], ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt']],

@@ -365,7 +365,8 @@
         "lab/lib/neon-video-registry.mjs",
         "lab/lib/voice-preview.mjs",
         "lab/lib/studio-voice-lines.mjs",
-        "lab/lib/openclaw-admin.mjs"
+        "lab/lib/openclaw-admin.mjs",
+        "lab/lib/runway-client.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -394,7 +395,8 @@
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
         "LAB_STUDIO_DATA_DIR",
-        "OPENCLAWAPI_KEY"
+        "OPENCLAWAPI_KEY",
+        "RUNWAY_API_KEY"
       ],
       "managed": [],
       "blocked": [

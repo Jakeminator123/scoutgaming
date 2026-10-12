@@ -5,6 +5,7 @@ import { canonicalControlHref } from './control-flow.mjs';
 export const SCOUT_NAVIGATION = Object.freeze([
   { id: 'studio', label: 'Studio', items: [
     { href: '/control/clips', label: 'Dealers & klipp' },
+    { href: '/control/dealer-forge', label: 'Dealer Forge' },
     { href: '/control/library', label: 'Bord & bakgrunder' },
     { href: '/control/compositions', label: 'Sammansättningar' },
   ] },

@@ -2940,6 +2940,37 @@
       ]
     },
     {
+      "id": "studio-api-forge",
+      "path": "/api/forge/:path*",
+      "publicPath": "/studio/api/forge/:path*",
+      "methods": [
+        "GET",
+        "HEAD",
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/forge/[[...path]]/route.ts",
+      "serving": "Vercel native Lab; Dealer Forge state, anchors, Runway generation jobs and polling",
+      "access": "Live scoped admin; exact same-origin writes and reauthorization before mutation",
+      "boundary": "Runway is the only provider and never receives Blob credentials. Anchors are private source images; finished clips are re-hashed and registered as review uploads in their exact slot through media_records, layers through project.layerAssets by CAS. Job journal lives in migration 008 (deployment-optional); without it the route reports forge_migration_pending and generates nothing.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/lib/dealer-forge-api.mjs",
+          "line": 1
+        },
+        {
+          "path": "lab/lib/dealer-forge-service.mjs",
+          "line": 1
+        },
+        {
+          "path": "lab/lib/runway-client.mjs",
+          "line": 1
+        }
+      ]
+    },
+    {
       "id": "studio-api-layer-assets",
       "path": "/api/layer-assets/:path*",
       "publicPath": "/studio/api/layer-assets/:path*",
@@ -3871,6 +3902,27 @@
         },
         {
           "path": "lab/components/control-layer-library-page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-dealer-forge",
+      "path": "/control/dealer-forge",
+      "publicPath": "/control/dealer-forge",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/dealer-forge/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "authorizeUiPage gates the page; all data flows through /api/forge. Shows the per-dealer slot matrix (poses, idle, transitions, deals, speech, reactions, table/background), existing clips with posters, running Runway jobs and credit estimates. Generation always lands as review material; publication stays in the existing package flow.",
+      "groupId": "studio",
+      "sources": [
+        {
+          "path": "lab/app/control/dealer-forge/page.tsx"
+        },
+        {
+          "path": "lab/components/dealer-forge-page.tsx"
         }
       ]
     },
