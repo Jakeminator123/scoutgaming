@@ -18,7 +18,7 @@ function SelectedControlTreePage({ initialProject, initialVideos, initialStatus,
   initialEventId?: string;
 }) {
   const session = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, overview: true });
-  const { media, videos, project, dealerId, event, line, variant, mode, originals, selectDealer, selectEvent, selectVariant, dealer, error, setError, notice, setNotice } = session;
+  const { media, videos, project, dealerId, event, line, variant, mode, selectDealer, selectEvent, selectVariant, dealer, error, setError, notice, setNotice } = session;
   const eventHref = studioHref('/control/events', { dealerId, eventId: event.id });
   return <PageTemplate eyebrow="// STUDIO" title="Spelhändelser & villkor" intro={<StudioContextIntro dealerLabel={dealer.label} pageLabel="Händelser" eventHref={eventHref} eventLabel={event.label} />}>
     <div className="sg-page-body">
@@ -29,7 +29,7 @@ function SelectedControlTreePage({ initialProject, initialVideos, initialStatus,
     <ClipSelectionHelp />
     {media.managed
       ? <FamilyOverview inventory={videos} project={project} dealerId={dealerId} hrefFor={(id, situation) => studioHref('/control/events', { dealerId, eventId: id, situation: situation || undefined })} />
-      : <details className={styles.legacy}><summary>Avancerat · äldre händelsegrupper och testanimationer</summary><p>Här finns de sparade grupperna, varianterna och villkoren kvar. Vänster, mitten och höger samlar flera exakta spelplatser. Använd i första hand dealerns klippfack; en labbanimation är ett jämförelseprov och bevisar inte att en inspelad video finns.</p><EventTree project={project} inventory={videos} originals={originals} dealerId={dealerId} event={event} line={line} variant={variant} mode={mode} onSelectDealer={selectDealer} onSelectEvent={selectEvent} onSelectVariant={selectVariant} onEdit={tab => { window.location.assign(studioHref('/control/events', { dealerId, eventId: event.id, tab })); }} onVideos={() => { window.location.assign(studioHref('/control/videos', { dealerId, eventId: event.id })); }} onOpenClaw={() => { window.location.assign(studioHref('/control/openclaw', { dealerId, eventId: event.id, tab: 'chat' })); }} /></details>}
+      : <details className={styles.legacy}><summary>Avancerat · äldre händelsegrupper och testanimationer</summary><p>Här finns de sparade grupperna, varianterna och villkoren kvar. Vänster, mitten och höger samlar flera exakta spelplatser. Använd i första hand dealerns klippfack; en labbanimation är ett jämförelseprov och bevisar inte att en inspelad video finns.</p><EventTree project={project} inventory={videos} dealerId={dealerId} event={event} line={line} variant={variant} mode={mode} onSelectDealer={selectDealer} onSelectEvent={selectEvent} onSelectVariant={selectVariant} onEdit={tab => { window.location.assign(studioHref('/control/events', { dealerId, eventId: event.id, tab })); }} onVideos={() => { window.location.assign(studioHref('/control/videos', { dealerId, eventId: event.id })); }} onOpenClaw={() => { window.location.assign(studioHref('/control/openclaw', { dealerId, eventId: event.id, tab: 'chat' })); }} /></details>}
     </div>
   </PageTemplate>;
 }

@@ -26,7 +26,7 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   let clock = 0;
   const documentListeners = new Map(), document = { hidden: false, addEventListener: (key, fn) => documentListeners.set(key, fn), removeEventListener: key => documentListeners.delete(key) };
   const project = createSeedProject();
-  let props = { trace: { records, bytes: 0, limited: false }, project, videos: { videos: [] }, originals: null, dealerId: 'astrid', active: true, onActivity: entry => activity.push(entry), onOpenEvent() {} };
+  let props = { trace: { records, bytes: 0, limited: false }, project, videos: { videos: [] }, dealerId: 'astrid', active: true, onActivity: entry => activity.push(entry), onOpenEvent() {} };
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const react = { ...React,
     useState(initial) { const index = cursor++; hooks[index] ??= { value: typeof initial === 'function' ? initial() : initial }; return [hooks[index].value, value => { const next = typeof value === 'function' ? value(hooks[index].value) : value; if (!Object.is(next, hooks[index].value)) { hooks[index].value = next; dirty = true; } }]; },
@@ -38,7 +38,6 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   };
   const mocks = {
     '../lib/presentation-sequence.mjs': require('../lib/presentation-sequence.mjs'),
-    '../lib/original-media.mjs': require('../lib/original-media.mjs'),
     '../lib/video-intake.mjs': require('../lib/video-intake.mjs'),
     './test-context': { neutralContext: {} },
     './studio-types': { requestJson: (url, init) => new Promise((resolve, reject) => {
