@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Hemsidans separata byggtest, 12 oktober 2026
+
+Hemsidans middleware-test laddar nu `next/server` från hemsidans egen
+Next-installation. Relativa Studio-importer använder fortfarande resolvern vid
+`lab/middleware.ts`. Samma verkliga middleware transpileras och alla befintliga
+assertioner för session, transport, alias och avvisade anrop består.
+Det isolerade provet har enbart hemsidans beroenden: före rättningen gav det
+`MODULE_NOT_FOUND`; efter rättningen passerar samma test. Alla 23 prov i filen
+och hela hemsidans testsvit passerar med Node 24.21.0 och fyra workers.
+Inga miljövärden, testgrindar eller produktflöden ändrades. GitHub-CI och ett
+nytt isolerat Vercel-förhandsbygge ska verifieras efter leverans.
+
 ## PAOW-omstart och obligatorisk friläggning, 12 oktober 2026
 
 Jakob bad uttryckligen om återställbar städning och en metodisk ombyggnad efter
