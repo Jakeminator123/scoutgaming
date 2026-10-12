@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
-import { resolve, dirname, join, relative, sep } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from './player-ui-build.mjs';
 import { platformConfiguration } from '../lib/platform-routing.mjs';
@@ -29,28 +29,6 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
     }
   }
   await publish(generated);
-  // The existing casino view shares the player assets and backend media.
-  // Follow only its source imports inside web/public; never copy media bytes.
-  const publicRoot = join(repo, 'web/public');
-  const queue = [join(publicRoot, 'casino.mjs')], visited = new Set();
-  while (queue.length) {
-    const source = resolve(queue.shift());
-    if (visited.has(source)) continue;
-    visited.add(source);
-    const name = relative(publicRoot, source).split(sep).join('/');
-    if (name.startsWith('../') || !/\.(?:mjs|js)$/.test(name)) throw Error('Casino dependency must remain a public source module.');
-    const content = await readFile(source, 'utf8');
-    const target = join(output, 'public', name);
-    await mkdir(dirname(target), {recursive: true}); await writeFile(target, content);
-    files.push('/' + name);
-    for (const pattern of [/^\s*(?:import|export)\s+(?:[\w\s{},*$]+?\s+from\s*)?['"]([^'"]+)['"]/gm,
-      /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g]) {
-      for (const match of content.matchAll(pattern)) {
-        if (!match[1].startsWith('.')) throw Error('Casino dependency must be a relative public module.');
-        queue.push(fileURLToPath(new URL(match[1], pathToFileURL(source))));
-      }
-    }
-  }
   // Distribute the exact shared compositor source used by Studio; no media is copied.
   for(const name of ['compositor.js','geometry.js']){
     const target=join(output,'public','composition-runtime',name);
@@ -64,7 +42,7 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
     await writeFile(join(output, 'public', entry.name), await readFile(join(repo, 'web/public', entry.name)));
     if (!files.includes('/' + entry.name)) files.push('/' + entry.name);
   }
-  for (const [target, source] of [['game.html', 'index.html'], ['blackjack.html', 'blackjack-entry.html'], ['casino.html', 'casino.html']]) {
+  for (const [target, source] of [['game.html', 'index.html'], ['blackjack.html', 'blackjack-entry.html']]) {
     await writeFile(join(runtime, target), await readFile(join(repo, 'web/public', source)));
   }
   await writeFile(join(runtime, 'manifest.json'), JSON.stringify({files: [...new Set(files)].sort(), mediaCopied: false, actualPlayback: false}, null, 2));

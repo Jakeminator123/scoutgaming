@@ -289,14 +289,15 @@ test('prepared player uses the actual shared player and redirects retired BO doc
         await readFile(new URL('../../../test-videoeditor/program/web/' + name, import.meta.url), 'utf8'));
     }
     assert.ok(prepared.files.every(path => !path.startsWith('/bo/')));
-    assert.ok(prepared.files.includes('/casino.mjs'));
-    assert.ok(prepared.files.includes('/vendor/three/GLTFLoader.js'));
+    assert.equal(prepared.files.includes('/casino.mjs'), false);
+    assert.equal(prepared.files.includes('/casino-navigation.mjs'), false);
+    await assert.rejects(readFile(join(directory, 'runtime-ui/casino.html'), 'utf8'));
     assert.ok(prepared.files.every(path => !/\.(mp4|webm|png|jpg|wav|mp3)$/.test(path)));
     assert.equal(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'),await readFile(new URL('../../../web/public/blackjack-entry.mjs',import.meta.url),'utf8'));
     const game = await platformUiDocument(new Request(config.publicOrigin + '/game'), {env, directory: join(directory, 'runtime-ui')});
     assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
     assert.match(game.headers.get('cache-control'), /no-store/);
-    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/casino.html'), {env, directory: join(directory, 'runtime-ui')})).status,200);
+    assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/casino.html'), {env, directory: join(directory, 'runtime-ui')})).status,404);
     const retired=await platformUiDocument(new Request(config.publicOrigin+'/v2'),{env,directory:join(directory,'runtime-ui')});assert.equal(retired.status,307);assert.equal(retired.headers.get('location'),'/');
     const runtime = join(directory, 'runtime-ui'), state = 'a'.repeat(64), token = 'b'.repeat(43);
     for (const [path,location] of [['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
@@ -310,6 +311,22 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo',{method:'POST'}),{env,directory:runtime})).status,405);
     assert.equal((await platformUiDocument(new Request(config.publicOrigin + '/bo/generations.json'), {env, directory})).status, 404);
   } finally {await rm(directory, {recursive: true, force: true});}
+});
+
+test('retired casino floor redirects to /play and keeps the query', async () => {
+  const require = createRequire(new URL('../package.json', import.meta.url));
+  const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
+  const compiled = transpileModule(await readFile(new URL('../app/casino.html/route.ts', import.meta.url), 'utf8'), {compilerOptions: {module: ModuleKind.CommonJS, target: ScriptTarget.ES2022}}).outputText;
+  const module = {exports: {}};
+  new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
+  const plain = await module.exports.GET(new Request(config.publicOrigin + '/casino.html'));
+  assert.equal(plain.status, 308);
+  assert.equal(plain.headers.get('location'), '/play');
+  assert.match(plain.headers.get('cache-control'), /no-store/);
+  const kept = await module.exports.HEAD(new Request(config.publicOrigin + '/casino.html?operator=sg-test&dealer=astrid'));
+  assert.equal(kept.status, 308);
+  assert.equal(kept.headers.get('location'), '/play?operator=sg-test&dealer=astrid');
+  assert.equal(await kept.text(), '');
 });
 
 test('actual Next middleware disables rewrite caching for backend and authenticated Lab without leaking ingress to the UI zone', async () => {

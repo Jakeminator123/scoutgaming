@@ -976,14 +976,26 @@
     },
     {
       "from": [
-        "/v2",
-        "/casino.html"
+        "/v2"
       ],
       "behavior": "Existing GET/HEAD prepared HTML routes remain. /v2 is not generally canonicalized by gameEntryRedirect.",
       "sources": [
         "apps/croupier-frontend/app/v2/route.ts:3",
-        "apps/croupier-frontend/app/casino.html/route.ts:3",
         "apps/croupier-frontend/lib/server-ui.mjs"
+      ]
+    },
+    {
+      "from": [
+        "/casino.html"
+      ],
+      "to": "/play",
+      "status": 308,
+      "retired": true,
+      "note": "Permanent redirect that keeps the request query. The 3D casino floor is retired.",
+      "sources": [
+        "apps/croupier-frontend/app/casino.html/route.ts:13",
+        "apps/croupier-frontend/app/casino.html/route.ts:17",
+        "ops/cloud/vercel-ingress.mjs:32"
       ]
     },
     {
@@ -1212,34 +1224,21 @@
       "app": "frontend",
       "handlerFile": "apps/croupier-frontend/app/casino.html/route.ts",
       "serving": "Vercel frontend / Next",
-      "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "access": "Permanent redirect to /play. The query string is preserved. No casino document is served.",
+      "boundary": "GET and HEAD return 308 to /play with the same query. The retired 3D floor is not prepared or traced.",
       "groupId": "aliases",
       "sources": [
         {
           "path": "apps/croupier-frontend/app/casino.html/route.ts",
-          "line": 3
+          "line": 13
         },
         {
           "path": "apps/croupier-frontend/app/casino.html/route.ts",
-          "line": 4
+          "line": 17
         },
         {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 66
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
+          "path": "ops/cloud/vercel-ingress.mjs",
+          "line": 32
         }
       ],
       "historicalAlias": true
