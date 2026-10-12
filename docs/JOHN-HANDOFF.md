@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: central Studio och rumsmodell
+
+Målkontraktet för nya `/admin` finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md#central-studio-rum-spel-och-lager-13-oktober-2026):
+spelbolag → rum/bakgrund → spel → dealeruppsättning; bord separat och
+bakgrundsautomation på miljön. Det skiljer målmodellen från dagens rum med
+ett spel per post. Ingen produktkod, media eller produktionsdata ändrades.
+
+Read-only produktläsning fann `paow3` som öppet Nordic Bet-rum, samma
+PAOW-sammansättning som rouletterummet, samt sju videobakgrunder och två
+bordsbilder. ID, referenser, filformatregler och kvarstående visuell
+acceptans dokumenteras i kontraktet. Sju videor avkodades och spelades till
+slut i webbläsaren utan mediefel; codecprofil/loopskarv är inte granskade.
+SIDOR3 äger UI-arbetet; första preview använder isolerat QA-underlag.
+Verifiering för denna dokumentationsleverans: källkontrakt och synligt
+produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
+Rumsövergång, riktiga lager i preview och spelacceptans återstår.
+
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
 `jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
