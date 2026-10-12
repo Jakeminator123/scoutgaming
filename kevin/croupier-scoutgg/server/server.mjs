@@ -443,6 +443,9 @@ async function api(req, res, route) {
 
 // A request that cannot be handled (a path like "//x" that URL rejects, a bad %-escape) answers 400; it must never
 // throw out of the handler, because an unhandled rejection stops the process and drops every table (12 Oct).
+// A clip cache in front of this host (MEDIA_BASE_URL, e.g. https://media.scoutgg.dev) must be allowed by the CSP, or no clip
+// loads (12 Oct: turning it on without this left the tables without video). Unset, the CSP is unchanged.
+const MEDIA_ORIGIN = /^https:\/\/[a-z0-9.-]+$/.test(process.env.MEDIA_BASE_URL ?? "") ? " " + process.env.MEDIA_BASE_URL : "";
 const http = createServer((req, res) => {
   handleHttp(req, res).catch(e => {
     console.error("request failed", String(req.url).slice(0, 120), e?.message);
@@ -453,7 +456,7 @@ async function handleHttp(req, res) {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
   res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'");
+  res.setHeader('Content-Security-Policy',`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:${MEDIA_ORIGIN}; connect-src 'self'${MEDIA_ORIGIN}; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`);
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
   if (p.startsWith("/api/")) { api(req, res, p.slice(5)).catch(() => json(res, 500, { error: "Request could not be completed" })); return; }
