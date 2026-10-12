@@ -2,7 +2,7 @@ import {comparisonStudio} from './comparison-studio.mjs';
 import { basename, resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
-import { createRenderStudioPolicy, createRegisteredDealerIdle } from '../../web/storage/studio-runtime.mjs';
+import { createRenderStudioPolicy } from '../../web/storage/studio-runtime.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { createNeonSocialStore } from './neon-project-store.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
@@ -39,10 +39,7 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
     const storage = storeFactory({pool});
     const source = await readText(resolve(repositoryRoot,'ops/neon-game/product-schema.sql'),'utf8');
     const checkedStorage = {...storage,db:{...storage.db,assertInstalled: () => storage.db.assertInstalled({source})}};
-    const dealerIdle = createRegisteredDealerIdle({repositoryRoot,
-      mediaAvailable:createStudioPublicMediaAvailability({env,repositoryRoot}),
-      pathFor:(base,file) => resolveMediaPath(`web/public/${base}/${file}`,{repositoryRoot})});
-    const shared = await policyFactory({storage:checkedStorage,env,dealerIdle,
+    const shared = await policyFactory({storage:checkedStorage,env,
       schemaCheck:({pool:checkedPool}) => schemaCheck({pool:checkedPool,directory:resolve(repositoryRoot,'ops/neon-studio')})});
     if (!shared?.policy?.projectStore || !shared.repository || !shared.scope) throw new Error('missing policy');
     const media = mediaFactory({...shared,env,repositoryRoot});

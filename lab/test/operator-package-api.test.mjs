@@ -1,12 +1,19 @@
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {publicPackageBranding,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createSeedProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
+import { createSeedProject as createHistoricalProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 
+// Test fixture selects its historical dealer explicitly; product startup has no composition.
+function createSeedProject() {
+  const project = createHistoricalProject();
+  project.lanes = [defaultPresentationLane('astrid')];
+  return project;
+}
 const origin = 'https://studio.example';
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };
 const session = { user: 'lane-actor', role: 'admin', scope };
@@ -118,17 +125,17 @@ test('publishing lanes carries the operator branding, games and tables forward',
   assert.equal(readPackagePresentation(current).projectRevision, body.presentation.projectRevision);
 });
 
-test('an empty project.lanes list accepts only the default mobile-phone lane', async () => {
+test('an empty project.lanes list never materializes a default publication', async () => {
   const project = createSeedProject();
   project.lanes = [];
   const { api } = apiFor(memoryPool(), project);
   await api.handle(request('operator-create-demo', {}));
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['vip-table'] }))).status, 422);
-  assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 200);
+  assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 422);
 });
 
 test('a registered extra cannot publish through a legacy adapter merely by presenting a matching game lane',async()=>{
-  const project=addDealer(createSeedProject(),'nora','Nora'),lane=defaultPresentationLane();
+  const project=addDealer(createSeedProject(),'nora','Nora'),lane=defaultPresentationLane('astrid');
   lane.dealers=['nora'];lane.layers.dealer.default='nora';lane.layers.dealer.allowed=['nora'];project.lanes=[lane];
   let writes=0;
   const api=createOperatorPackageApi({pool:memoryPool(),scope,project,gameLanes:[{schemaVersion:1,id:lane.id,label:'Nora',renderer:'portrait-video',dealer:'nora',mediaCollection:'nora-presentation'}],
@@ -190,7 +197,7 @@ function nativePool(){
 }
 async function nativeFixture({dealer='johanna'}={}){
   const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
-  const project=addDealer(createSeedProject(),dealer,dealer==='johanna'?'Johanna':'Nora'),lane=defaultPresentationLane();
+  const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='johanna'?'Johanna':'Nora'),lane=defaultPresentationLane(dealer);
   lane.id='johns-presentation';lane.dealers=[dealer];lane.layers.dealer.default=dealer;lane.layers.dealer.allowed=[dealer];project.lanes=[lane];
   project.lines.find(row=>row.dealerId===dealer&&row.eventId==='idle.ready').variants[0].videoGenerationId=mediaId;
   const classification={dealerId:dealer,eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen dealerfilm',notes:'',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}};
@@ -200,6 +207,7 @@ async function nativeFixture({dealer='johanna'}={}){
   await repository.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});
   await repository.initializeDocument('administration',{value:administration,revision:'admin-initial',actor:'tester'});
   await repository.registerMedia(record,{actor:'tester'});
+  for (const {revision,...supportRecord} of support.mediaRows) await repository.registerMedia(supportRecord,{actor:'tester'});
   let io=0,changeDuringVerification=async()=>{};
   const videoRegistry={
     async loadCaptured(snapshot){
@@ -207,7 +215,7 @@ async function nativeFixture({dealer='johanna'}={}){
       assert.equal(reads.at(-1).marker,'COMMIT','provider work follows completed SQL reads');
       return {videos:snapshot.mediaRows.map(row=>({id:row.id,sha256:row.sha256,bytes:row.size,dealer:row.classification.dealerId,available:true,classification:row.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
     },
-    async verifyCapturedMedia(preconditions){io++;assert.equal(preconditions[0].record.id,record.id);await changeDuringVerification();}
+    async verifyCapturedMedia(preconditions){io++;assert.ok(preconditions.length > 0);await changeDuringVerification();}
   };
   const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
   const context={body:{operatorId:'north',lanes:[lane.id]},actor:{user:'tester'},scope:nativeScope};
@@ -266,7 +274,7 @@ test('advanced republication refuses removing an in-use presentation or changing
   const room={schemaVersion:2,id:'room-10000000-0000-4000-8000-000000000002',name:'Johns',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
   const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
   await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'Johns'},first.presentation)});
-  const saved=await f.repository.readDocument('project'),other=defaultPresentationLane();other.id='other-presentation';saved.value.lanes.push(other);
+  const saved=await f.repository.readDocument('project'),other=defaultPresentationLane('astrid');other.id='other-presentation';saved.value.lanes.push(other);
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   const context={...f.context,body:{operatorId:'north',lanes:[other.id]}};
   const prepared=await f.api.preparations.get('POST /studio/api/admin/operator-package')(context);
@@ -336,13 +344,13 @@ test('publishing the whole existing selection refreezes one shared dealer snapsh
 });
 
 
-test('v3 republication changes the allowed default from Amira to Johanna without replacing its room or adapter', async () => {
+test('v3 republication changes the allowed default from Astrid to Johanna without replacing its room or adapter', async () => {
   const f=await nativeFixture(), saved=await f.repository.readDocument('project');
-  saved.value.lanes[0].dealers=['amira','johanna'];saved.value.lanes[0].layers.dealer={enabled:true,default:'amira',allowed:['amira','johanna']};
+  saved.value.lanes[0].dealers=['astrid','johanna'];saved.value.lanes[0].layers.dealer={enabled:true,default:'astrid',allowed:['astrid','johanna']};
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   const admin=await f.repository.readDocument('administration');
-  admin.value.gameLanes[0].dealer='amira';admin.value.gameLanes[0].mediaCollection='amira-presentation';
-  const room={schemaVersion:2,id:'room-existing-amira',name:'Existing Amira',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
+  admin.value.gameLanes[0].dealer='astrid';admin.value.gameLanes[0].mediaCollection='astrid-presentation';
+  const room={schemaVersion:2,id:'room-existing-astrid',name:'Existing Astrid',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:'johns-game',state:'live'};
   admin.value.rooms=[room];
   await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
   const first=await f.publish();
@@ -357,9 +365,76 @@ test('v3 republication changes the allowed default from Amira to Johanna without
   const entry=await select('?operator=north&table='+room.id);
   assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'johanna');assert.equal(entry.selection.presentation,'local');
   assert.equal(entry.selection.roomId,room.id);assert.equal(entry.selection.lane,room.gameLaneId);
-  const amira=await select('?operator=north&table='+room.id+'&dealer=amira');
-  assert.equal(amira.selection.dealer,'amira');assert.equal(amira.selection.presentation,'original');
-  const denied=await select('?operator=north&table='+room.id+'&dealer=vera');
-  assert.equal(denied.selection.dealer,'johanna');assert.deepEqual(denied.selection.choices.dealers,['johanna','amira']);
-  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers[0].idle.id,mediaId);
+  const astrid=await select('?operator=north&table='+room.id+'&dealer=astrid');
+  assert.equal(astrid.selection.dealer,'astrid');assert.equal(astrid.selection.presentation,'local');
+  const denied=await select('?operator=north&table='+room.id+'&dealer=mei');
+  assert.equal(denied.status,404);assert.deepEqual(entry.selection.choices.dealers,['johanna','astrid']);
+  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers.find(row=>row.id==='johanna').idle.id,mediaId);
+});
+
+test('native publication rejects a stale editor revision before provider verification',async()=>{
+  const f=await nativeFixture();
+  await f.direct.publishPackage({actor:'partner',operatorId:'north',lanes:[f.lane.id],games:['blackjack'],tables:[],branding:{name:'Newer selection'}});
+  f.context.body.expectedPackageRevision=null;
+  const before=f.pool.snapshot();
+  await assert.rejects(f.prepare(),error=>error.statusCode===409);
+  assert.equal(f.io(),0);assert.deepEqual(f.pool.snapshot(),before);
+  f.context.body.expectedPackageRevision=1;
+  await f.direct.publishPackage({actor:'partner',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[],branding:{name:'Latest selection'}});
+  const newer=f.pool.snapshot();
+  await assert.rejects(f.prepare(),error=>error.statusCode===409);
+  assert.equal(f.io(),0);assert.deepEqual(f.pool.snapshot(),newer);
+});
+
+test('an explicit editor revision retains the transaction CAS when publication changes after preparation',async()=>{
+  const f=await nativeFixture();f.context.body.expectedPackageRevision=null;
+  const initial=await f.publish();assert.equal(initial.packageRevision,1);
+  f.context.body.expectedPackageRevision=1;
+  const prepared=await f.prepare();
+  const current=await f.direct.getCurrentPackage('north');
+  await f.direct.publishPackage({actor:'partner',operatorId:'north',expectedRevision:1,lanes:current.lanes,games:current.games,tables:current.tables,branding:{...current.branding,name:'Concurrent branding'}});
+  const before=f.pool.snapshot();
+  await assert.rejects(f.publish(prepared),error=>error.statusCode===409);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('malformed explicit editor revisions are refused before native reads or provider work',async()=>{
+  const f=await nativeFixture();
+  for(const revision of [undefined,0,-1,1.5,'1',false,{},Number.MAX_SAFE_INTEGER+1]){
+    f.context.body.expectedPackageRevision=revision;const calls=f.pool.calls.length;
+    await assert.rejects(f.prepare(),error=>error.statusCode===422);
+    assert.equal(f.pool.calls.length,calls);assert.equal(f.io(),0);
+  }
+});
+
+test('legacy adapter enforces explicit revisions and retains compatibility for omitted revisions',async()=>{
+  const pool=memoryPool(),{api}=apiFor(pool);
+  assert.equal((await api.handle(request('operator-create-demo',{}))).status,200);
+  const body={operatorId:'sg-test',lanes:['mobile-phone'],expectedPackageRevision:null};
+  const first=await api.handle(request('operator-package',body));assert.equal(first.status,200);assert.equal((await first.json()).packageRevision,1);
+  assert.equal((await api.handle(request('operator-package',body))).status,409);
+  const second=await api.handle(request('operator-package',{...body,expectedPackageRevision:1}));assert.equal(second.status,200);assert.equal((await second.json()).packageRevision,2);
+  assert.equal((await api.handle(request('operator-package',{operatorId:'sg-test',lanes:['mobile-phone']}))).status,200);
+});
+test('native publication cannot invent a presentation from a missing or empty saved collection',async()=>{
+  for(const missing of [false,true]){
+    const f=await nativeFixture(),saved=await f.repository.readDocument('project');
+    if(missing)delete saved.value.lanes;else saved.value.lanes=[];
+    await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+    const before=f.pool.snapshot();
+    await assert.rejects(f.prepare(),error=>error.code==='studio_presentation_required'&&error.statusCode===422);
+    assert.equal(f.io(),0);assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+test('an explicitly saved Astrid uses the same native own-idle capture and cannot publish without it',async()=>{
+  const f=await nativeFixture({dealer:'astrid'}), first=await f.publish();
+  assert.equal(first.presentation.schemaVersion,3);assert.equal(f.io(),2);
+  assert.deepEqual(first.presentation.registeredDealers.map(row=>row.id),['astrid']);
+  assert.equal(first.presentation.registeredDealers[0].idle.id,mediaId);
+  const saved=await f.repository.readDocument('project');
+  saved.value.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+  const before=f.pool.snapshot();
+  await assert.rejects(f.publish(),error=>error.code==='studio_dealer_idle_required');
+  assert.deepEqual(f.pool.snapshot(),before);
 });

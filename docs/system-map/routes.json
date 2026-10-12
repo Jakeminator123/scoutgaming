@@ -4093,6 +4093,105 @@
       ]
     },
     {
+      "id": "studio-control-companies",
+      "path": "/control/companies",
+      "publicPath": "/control/companies",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/companies/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "loadControlStudio and studioUiInitialData revalidate the internal administrator before loading operators. Team and operator lifecycle writes use authorized admin endpoints with revision checks. The legacy /control/lanes?tab=companies path redirects here.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/companies/page.tsx"
+        },
+        {
+          "path": "lab/app/control/operator-page.tsx"
+        },
+        {
+          "path": "lab/app/control/lanes/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-rooms",
+      "path": "/control/rooms",
+      "publicPath": "/control/rooms",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/rooms/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "loadControlStudio and studioUiInitialData revalidate the internal administrator. Room creation, publication and lifecycle actions use authorized admin endpoints; lifecycle changes require current revisions and compatible Render capabilities. The legacy /control/lanes publication path redirects here.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/rooms/page.tsx"
+        },
+        {
+          "path": "lab/app/control/operator-page.tsx"
+        },
+        {
+          "path": "lab/app/control/lanes/page.tsx"
+        },
+        {
+          "path": "lab/lib/resource-lifecycle-api.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-compositions",
+      "path": "/control/compositions",
+      "publicPath": "/control/compositions",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/compositions/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "loadControlStudio and studioUiInitialData guard the composition editor. Saved composition changes use the authorized Studio project API; the embedded preview is not a player acceptance result. The legacy /control/preview path redirects here.",
+      "groupId": "layer-preview",
+      "sources": [
+        {
+          "path": "lab/app/control/compositions/page.tsx"
+        },
+        {
+          "path": "lab/components/control-preview-page.tsx"
+        },
+        {
+          "path": "lab/app/control/preview/page.tsx"
+        }
+      ]
+    },
+    {
+      "id": "studio-control-rehearsal",
+      "path": "/control/rehearsal",
+      "publicPath": "/control/rehearsal",
+      "methods": [],
+      "kind": "page",
+      "app": "studio",
+      "handlerFile": "lab/app/control/rehearsal/page.tsx",
+      "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
+      "access": "Internal admin.",
+      "boundary": "loadControlStudio and studioUiInitialData guard rehearsal and observation. Dealer, composition and operator-room context are passed to the observation view; connecting the player retains its own authentication and runtime checks. The legacy /control/activity path redirects here.",
+      "groupId": "studio-tools",
+      "sources": [
+        {
+          "path": "lab/app/control/rehearsal/page.tsx"
+        },
+        {
+          "path": "lab/components/control-activity-page.tsx"
+        },
+        {
+          "path": "lab/app/control/activity/page.tsx"
+        }
+      ]
+    },
+    {
       "id": "studio-preview-files",
       "path": "/preview/:path+",
       "publicPath": "/studio/preview/:path+",
@@ -4278,7 +4377,7 @@
       "handlerFile": "lab/app/api/dealers/archive/route.ts",
       "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
       "access": "Native live admin/superadmin session with matching environment/workspace scope.",
-      "boundary": "Same-origin reversible custom dealer archive/restore with project revision CAS. Snapshots own selections, idle policy and active uploads atomically. Published/admin/lane dependencies and enabled speech profiles block archive; pending purge blocks restore. Original dealers remain protected. Native runtime only; unsupported/offline backends fail closed.",
+      "boundary": "Same-origin dealer archive/restore with project revision CAS. A confirmed consequence token binds project, media, administration and current publications. Archive turns speech off, snapshots clips and compositions, and atomically withdraws affected current publications/rooms. Historical packages and retained media are preserved and still protect permanent deletion. Restore returns a draft with speech off, rejects conflicting composition IDs or dependencies, and never republishes rooms. Runtime capability v7 is required for cascade archives; unsupported/offline backends fail closed.",
       "groupId": "studio-media",
       "sources": [
         {
@@ -4293,6 +4392,33 @@
         },
         {
           "path": "web/storage/studio-repository.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-dealers-archive-check",
+      "path": "/api/dealers/archive-check",
+      "publicPath": "/studio/api/dealers/archive-check",
+      "methods": [
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/dealers/archive-check/route.ts",
+      "serving": "Vercel Lab native Studio / Node route when nativeStudio is enabled; otherwise the platform router selects protected Render",
+      "access": "Native live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Read-only consequence plan for an explicitly selected dealer and current project revision. Fresh scoped admin authorization and same-origin POST required. Returns affected clips, compositions, rooms and companies with a scope/revision token for archive confirmation. Does not change project, media, publications or runtime speech.",
+      "groupId": "studio-media",
+      "sources": [
+        {
+          "path": "lab/app/api/dealers/archive-check/route.ts",
+          "line": 4
+        },
+        {
+          "path": "lab/lib/studio-dealer-api.mjs"
+        },
+        {
+          "path": "lab/lib/dealer-archive-impact.mjs"
         }
       ]
     },

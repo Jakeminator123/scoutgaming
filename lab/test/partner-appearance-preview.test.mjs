@@ -13,7 +13,7 @@ const require=createRequire(import.meta.url),{transformSync}=require('next/dist/
 const fileUrl=new URL('../components/partner-appearance-preview.tsx',import.meta.url),localRequire=createRequire(fileUrl);
 const compiled=transformSync(readFileSync(fileUrl,'utf8'),{filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const table1='00000000-0000-4000-8000-000000000001',table2='00000000-0000-4000-8000-000000000002',bg='00000000-0000-4000-8000-000000000003',dealer='00000000-0000-4000-8000-000000000004';
-function props(){const lane={...defaultPresentationLane(),composition:defaultCompositionSettings()};lane.layers.table={enabled:true,default:table1,allowed:[table1,table2]};lane.layers.background={enabled:true,mode:'image',default:bg,allowed:[bg]};lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};return {server:{operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:[],rooms:[{id:'north-main',label:'Main',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],presentation:{schemaVersion:2,projectRevision:'r1',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna',idle:null}]}},branding:{table:table2},scope:'north-main',operatorSlug:'north',onStale:()=>{}};}
+function props(){const lane={...defaultPresentationLane('johanna'),composition:defaultCompositionSettings()};lane.layers.table={enabled:true,default:table1,allowed:[table1,table2]};lane.layers.background={enabled:true,mode:'image',default:bg,allowed:[bg]};lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};return {server:{operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:[],rooms:[{id:'north-main',label:'Main',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],presentation:{schemaVersion:2,projectRevision:'r1',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna',idle:null}]}},branding:{table:table2},scope:'north-main',operatorSlug:'north',onStale:()=>{}};}
 function descriptor(roomId='north-main') {const context={operatorSlug:'north',roomId,packageRevision:7,dealerId:'johanna'};return {schemaVersion:1,operatorSlug:'north',roomId,packageRevision:7,dealer:{id:'johanna',label:'Johanna'},independentLayers:true,settings:defaultCompositionSettings(),media:{dealer:{src:previewMediaPath(context,'dealer',dealer),contentType:'video/mp4'},tables:[table1,table2].map(id=>({id,label:id===table1?'Default table':'Chosen table',src:previewMediaPath(context,'table',id),contentType:'image/png'})),backgrounds:[{id:bg,label:'Backdrop',src:previewMediaPath(context,'background',bg),contentType:'image/png'}]}};}
 function walk(tree,predicate){if(!tree||typeof tree!=='object')return [];return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(row=>walk(row,predicate))];}
 function harness(fetcher){const slots=[],effects=[];let cursor=0;const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},useEffect:(callback,deps)=>{const index=cursor++,previous=slots[index];if(!previous||deps.some((v,i)=>v!==previous.deps[i])){previous?.cleanup?.();slots[index]={deps};effects.push(()=>{slots[index].cleanup=callback();});}}};
@@ -58,7 +58,41 @@ test('shared composition controls keep Swedish default and translate English wit
  assert.match(sv,/Spela två gånger/);assert.match(en,/Play twice/);assert.match(en,/Choose a clip or layer/);assert.match(en,/Mobile 9:16/);assert.doesNotMatch(en,/Spela|Avancerat/);
 });
 
-test('unset room dealer follows the first playable frozen choice if the presentation default cannot render there',async()=>{
- const calls=[],p=props();p.server.presentation.lanes[0].layers.dealer.default='astrid';p.server.roomDealerChoices={'north-main':['johanna']};
- const h=harness(async url=>{calls.push(url);return response(descriptor());});open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.match(calls[0],/dealer=johanna&revision=7$/);assert.equal(h.compositions(h.render(p))[0].props.dealer.label,'Johanna');
+test('an unavailable published default never falls back to the first room dealer',async()=>{
+ const calls=[],p=props();p.server.presentation.lanes[0].layers.dealer.default='astrid';p.server.presentation.lanes[0].layers.dealer.allowed=['astrid','johanna'];p.server.roomDealerChoices={'north-main':['johanna']};
+ const h=harness(async url=>{calls.push(url);return response(descriptor());});
+ let tree=h.render(p);assert.equal(open(tree).props.disabled,true);assert.match(renderToStaticMarkup(tree),/Det sparade dealervalet kan inte användas/);
+ open(tree).props.onClick();h.render(p);await h.flush();tree=h.render(p);
+ assert.equal(calls.length,0);assert.equal(h.compositions(tree).length,0);assert.doesNotMatch(renderToStaticMarkup(tree),/Hämtar frysta lager/);
+ assert.equal(p.server.presentation.lanes[0].layers.dealer.default,'astrid','a blocked preview does not rewrite the saved choice');
+});
+
+test('a missing published dealer choice requires an explicit choice and does not select a room dealer',async()=>{
+ const calls=[],p=props();p.server.presentation.lanes[0].layers.dealer.default=null;p.server.roomDealerChoices={'north-main':['johanna']};
+ const h=harness(async url=>{calls.push(url);return response(descriptor());});
+ open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.equal(calls.length,0);
+ assert.match(renderToStaticMarkup(h.render(p)),/saknar ett publicerat dealerval/);
+ assert.match(renderToStaticMarkup(h.render({...p,language:'en'})),/no published dealer choice/);
+});
+
+test('explicit company and room dealer choices remain authoritative when the published default is unavailable',async()=>{
+ for(const explicit of [{dealer:'johanna'},{roomOverrides:{'north-main':{dealer:'johanna'}}}]){
+  const calls=[],p=props();p.server.presentation.lanes[0].layers.dealer.default='astrid';p.server.roomDealerChoices={'north-main':['johanna']};p.branding={...p.branding,...explicit};
+  const h=harness(async url=>{calls.push(url);return response(descriptor());});
+  assert.equal(open(h.render(p)).props.disabled,false);open(h.render(p)).props.onClick();h.render(p);await h.flush();
+  assert.equal(calls.length,1);assert.match(calls[0],/dealer=johanna&revision=7$/);assert.equal(h.compositions(h.render(p))[0].props.dealer.label,'Johanna');
+ }
+});
+
+test('a saved explicit choice outside the room grant remains unchanged and cannot show another dealer',async()=>{
+ const calls=[],p=props();p.branding={...p.branding,dealer:'astrid'};p.server.presentation.lanes[0].layers.dealer.allowed=['johanna','astrid'];p.server.roomDealerChoices={'north-main':['johanna']};
+ const h=harness(async url=>{calls.push(url);return response(descriptor());});open(h.render(p)).props.onClick();h.render(p);await h.flush();
+ assert.equal(calls.length,0);assert.equal(p.branding.dealer,'astrid');assert.match(renderToStaticMarkup(h.render({...p,language:'en'})),/saved dealer choice cannot be used/);
+});
+
+test('leaving the retained room workspace removes playing preview media without changing draft choices',async()=>{
+  const p=props(),h=harness(async()=>response(descriptor()));
+  open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.equal(h.compositions(h.render(p)).length,1);
+  h.render({...p,active:false});await h.flush();assert.equal(h.compositions(h.render({...p,active:false})).length,0);
+  assert.equal(h.compositions(h.render({...p,active:true})).length,0,'preview resumes only on an explicit user action');
 });

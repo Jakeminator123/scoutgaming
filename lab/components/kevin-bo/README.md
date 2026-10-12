@@ -9,7 +9,7 @@ apiBase, user, initialView })`. The same component serves two snapshot modes:
   demonstration. The banner stays **Intern förhandsvisning**, and the demo
   picker can switch the two example operators.
 - **Real operator data** (`preview: false`): compact header with the operator
-  name and current package revision, John's grouped navigation, light/dark
+  name and current package revision, a compact Overview, Game rooms, Team and Integration navigation, light/dark
   theme and Swedish/English preferences. No demo picker. An operator switcher
   is shown only when the authorized `operators` list contains several entries.
   Both the real directory and operator header expose **Byt konto / Logga ut**
@@ -55,7 +55,7 @@ transaction layouts, statistics, report catalogue and internal library views.
 All original CSS is fenced under `.kevin-bo`. Eleven static BO reference
 images are imported as build assets; no approved gameplay assets were changed.
 
-`navigation.mjs` inventories all 24 destinations: 17 operator-visible sections
+`navigation.mjs` inventories the 24 diagnostic destinations: 17 fixture operator sections
 and seven internal-only sections. Roulette and Baccarat remain planned views.
 Partner dealers expose assigned presentation profiles; dealer construction,
 voice/clip generation, original pit-boss villkor and background uploads
@@ -94,9 +94,9 @@ not the original global role editor.
 ## Addresses and lane status
 
 This preview's public links use /partner/{operatorSlug}, with readable sections
-such as presentation, table-design, lanes and tables. Component IDs stay
+with rooms as the single composition and publishing workspace. Old presentation, table-design, lanes, preview and tables links open that workspace. Component IDs stay
 internal; old short paths and hash bookmarks resolve to the current address.
-Menu changes preserve mounted drafts; history back/forward is observed.
+Menu and same-operator history changes retain the mounted room editor and its unsaved choices. Hidden room previews stop playback. Document navigation warns on unsaved edits; account/operator changes confirm before leaving. Failed logout restores the warning.
 Cross-operator history reloads through the existing server authorization gate.
 
 The partner design sections show an explicit missing-presentationslane notice.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation} from '../../web/public/dealer-speech-profile.mjs';
-import {addDealer,createSeedProject,validateProject} from '../lib/studio-model.mjs';
+import {addDealer,createSeedProject,createEmptyProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
 import {createStudioProjectBindings} from '../lib/studio-project-bindings.mjs';
 import {captureFrozenRegisteredDealers} from '../../web/storage/frozen-dealer-idle.mjs';
 const voice={provider:'elevenlabs',voiceId:'paow-own-voice',modelId:'fixture-model'};
@@ -44,14 +44,14 @@ test('save binding checks own source, hash and archive state on authoritative re
 test('frozen dealer capture projects id/label/idle only and omits speech preparation',()=>{
   const project=addDealer(createSeedProject(),'paow','PAOW');delete project.idlePolicy;
   project.dealers.find(row=>row.id==='paow').speechProfile=profile();
-  const lane=project.lanes[0];lane.dealers.push('paow');lane.layers.dealer.allowed.push('paow');
+  const lane=defaultPresentationLane('paow');project.lanes=[lane];
   const captured=captureFrozenRegisteredDealers({project,selectedLaneIds:[lane.id],inventory:{videos:[],families:[]},mediaRows:[]});
   const dealer=captured.registeredDealers.find(row=>row.id==='paow');
   assert.deepEqual(dealer,{id:'paow',label:'PAOW',idle:null});
   assert.doesNotMatch(JSON.stringify(captured),/voiceId|elevenlabs|own-idle|speechProfile/);
 });
 
-test('speech settings shows only own video and requires a decoded reference before saving',async()=>{
+for(const dealerId of ['astrid','vera','mei','paow'])test('speech settings uses own reviewed reference and explicit voice for registered '+dealerId,async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('next/dist/build/swc');
   const helpers=await import('../../web/public/dealer-speech-profile.mjs');
@@ -60,22 +60,31 @@ test('speech settings shows only own video and requires a decoded reference befo
   let cursor=0,refCursor=0;const states=[],refs=[],module={exports:{}};
   const fakeReact={...React,useState(initial){const i=cursor++;if(!(i in states))states[i]=initial;return [states[i],next=>{states[i]=typeof next==='function'?next(states[i]):next;}];},useRef(initial){return refs[refCursor++]??={current:initial};},useEffect(){}};
   runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-speech-profile')?helpers:require(name)});
-  const project=addDealer(createSeedProject(),'paow','PAOW'),dealer=project.dealers.find(row=>row.id==='paow');
-  dealer.speechProfile=profile();
-  const own={...video(),label:'Egen neutral video',previewUrl:'/studio/api/videos/own-idle'};
+  const project=addDealer(createEmptyProject(),dealerId,dealerId),dealer=project.dealers[0];
+  const saved={...profile(),voice:{...voice,voiceId:dealerId+'-own-voice'}};dealer.speechProfile=saved;
+  const own={...video(),dealer:dealerId,label:'Egen neutral video',previewUrl:'/studio/api/videos/own-idle'};
   let edited=null;
-  const props={dealer,inventory:{videos:[own,{...own,id:'other',dealer:'astrid',label:'ANNAN DEALER'}]},onEdit:change=>{edited=change(project);}};
+  const props={dealer,inventory:{videos:[own,{...own,id:'other',dealer:'foreign-dealer',label:'ANNAN DEALER'}]},onEdit:change=>{edited=change(project);}};
   const render=()=>{cursor=refCursor=0;return module.exports.DealerSpeechSettings(props);};
   const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
   let tree=render(),button=nodes(tree,node=>node.type==='button')[0];
   assert.equal(button.props.disabled,true);
+  const enabled=nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1);
+  assert.equal(enabled.props.disabled,false,'a registered name never blocks an explicit own speech profile');
   assert.equal(nodes(tree,node=>node.type==='option'&&node.props.children==='ANNAN DEALER').length,0);
   const preview=nodes(tree,node=>node.type==='video')[0];
   preview.props.ref.current={readyState:2,seeking:false,currentTime:.2,duration:3};
   preview.props.onLoadedMetadata();preview.props.onLoadedData();tree=render();button=nodes(tree,node=>node.type==='button')[0];
   assert.equal(button.props.disabled,false);button.props.onClick();
-  assert.deepEqual(edited.dealers.find(row=>row.id==='paow').speechProfile,{...profile(),schemaVersion:2});
-  assert.equal(edited.dealers.find(row=>row.id==='paow').speechProfile.state,'preparation');
+  assert.deepEqual(edited.dealers[0].speechProfile,{...saved,schemaVersion:2});
+  assert.equal(edited.dealers[0].speechProfile.state,'preparation');
+  tree=render();nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1).props.onChange({target:{checked:true}});
+  tree=render();assert.equal(nodes(tree,node=>node.type==='button')[0].props.disabled,true,'changing the profile never bypasses reference review');
+  nodes(tree,node=>node.type==='video')[0].props.onLoadedData();tree=render();nodes(tree,node=>node.type==='button')[0].props.onClick();
+  assert.deepEqual(edited.dealers[0].speechProfile,{...saved,schemaVersion:2,state:'enabled'});
+  tree=render();nodes(tree,node=>node.type==='select'&&node.props.value==='video-frame')[0].props.onChange({target:{value:'motion-video'}});
+  tree=render();const disabled=nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1);
+  assert.equal(disabled.props.disabled,true);assert.equal(disabled.props.checked,false);
 });
 
 test('enabled request needs voice and a still frame, remains unapproved and stays bound on save',async()=>{

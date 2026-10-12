@@ -9,6 +9,8 @@ import {
   type StudioProject,
 } from '../lib/studio-model.mjs';
 import styles from './lane-editor.module.css';
+import { compositionLabel } from '../lib/control-flow.mjs';
+import { activeStudioDealers } from './studio-types';
 
 export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';
 const adjustmentLabels:Record<string,string>={'table.color':'Bordsfärg',table:'Bord',background:'Bakgrund',dealer:'Dealer',branding:'Bolagets profil'};
@@ -21,8 +23,8 @@ export function commitLanes(project: StudioProject, lanes: StudioLane[]) {
   return validateProject(next);
 }
 
-export function addLane(project: StudioProject, id: string, label: string) {
-  const lane = defaultPresentationLane();
+export function addLane(project: StudioProject, id: string, label: string, dealerId: string) {
+  const lane = defaultPresentationLane(dealerId);
   lane.id = id;
   lane.label = label;
   return commitLanes(project, [...(project.lanes ?? []), lane]);
@@ -40,8 +42,8 @@ export function newCompositionId(project: StudioProject, label: string, newKey: 
   throw new Error('Ett unikt ID kunde inte skapas. Försök igen.');
 }
 
-export function addDefaultLane(project: StudioProject) {
-  return commitLanes(project, [...(project.lanes ?? []), defaultPresentationLane()]);
+export function addDefaultLane(project: StudioProject, dealerId: string) {
+  return commitLanes(project, [...(project.lanes ?? []), defaultPresentationLane(dealerId)]);
 }
 
 export function removeLane(project: StudioProject, id: string) {
@@ -63,7 +65,7 @@ function layerText(lane: StudioLane) {
 
 function LaneSummary({ lane }: { lane: StudioLane }) {
   const items: [string, string][] = [
-    ['Namn', lane.label],
+    ['Namn', compositionLabel(lane.label)],
     ['Dealers', lane.dealers.join(', ')],
     ['Lager', layerText(lane)],
   ];
@@ -87,21 +89,23 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
   project: StudioProject; onEdit: Edit; selectedId: string; onSelect: (id: string) => void; disabled?: boolean;
 }) {
   const onEdit: Edit = change => { if (!disabled) onModelEdit(change); };
+  const dealers = activeStudioDealers(project);
   const lanes = project.lanes ?? [];
   const selected = lanes.find(lane => lane.id === selectedId) ?? lanes[0] ?? null;
   const [draftLabel, setDraftLabel] = useState('');
+  const [draftDealer, setDraftDealer] = useState('');
   const creating = useRef(false);
   function addNew(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const label = draftLabel.trim();
-    if (disabled || creating.current || !label) return;
+    if (disabled || creating.current || !label || !dealers.some(row => row.id === draftDealer)) return;
     creating.current = true;
     try {
       // Generate once outside the React updater so replays keep the same identity.
       const id = newCompositionId(project, label);
-      addLane(project, id, label);
-      onEdit(current => addLane(current, id, label));
-      setDraftLabel(''); onSelect(id);
+      addLane(project, id, label, draftDealer);
+      onEdit(current => addLane(current, id, label, draftDealer));
+      setDraftLabel(''); setDraftDealer(''); onSelect(id);
     } catch (cause) {
       creating.current = false;
       onEdit(() => { throw cause; });
@@ -115,17 +119,18 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
   return <fieldset className={styles.editor} disabled={disabled} aria-label="Välj och namnge sammansättning">
     <section className={styles.card}>
       {selected ? <div className={styles.create}>
-        <label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{lane.label}</option>)}</select></label>
-        <label className={styles.field}>Sammansättningens namn<input value={selected.label} maxLength={80} onChange={event => rename(event.target.value)} /></label>
+        <label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{compositionLabel(lane.label)}</option>)}</select></label>
+        <label className={styles.field}>Sammansättningens namn<input value={compositionLabel(selected.label)} maxLength={80} onChange={event => rename(event.target.value)} /></label>
       </div> : <div className={styles.suggestion}>
-        <p>Ingen sparad sammansättning.</p><LaneSummary lane={defaultPresentationLane()} />
-        <button type="button" className="sg-btn sg-btn-secondary" onClick={() => { if (!disabled) applyWhenValid(project, onEdit, addDefaultLane, () => onSelect(defaultPresentationLane().id)); }}>Skapa standardsammansättning</button>
+        <p>Ingen sparad sammansättning. Välj ett namn och en dealer nedan.</p>
+        {!dealers.length ? <p>Registrera först en dealer under Dealers &amp; klipp.</p> : null}
       </div>}
     </section>
-    <details className={styles.card}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
+    <details className={styles.card} open={!selected || undefined}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
       <h2 id="new-lane-title">Skapa sammansättning</h2><div className={styles.create}>
         <label className={styles.field}>Namn på ny sammansättning<input value={draftLabel} required maxLength={80} onChange={event => { creating.current = false; setDraftLabel(event.target.value); }} /></label>
-        <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim()}>Skapa sammansättning</button>
+        <label className={styles.field}>Dealer för ny sammansättning<select value={draftDealer} required onChange={event => { creating.current = false; setDraftDealer(event.target.value); }}><option value="">Välj dealer</option>{dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
+        <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim() || !draftDealer}>Skapa sammansättning</button>
       </div><p className={styles.help}>Ett tekniskt ID skapas automatiskt och behålls när namnet ändras.</p>
     </form></details>
   </fieldset>;
@@ -179,10 +184,10 @@ export function CompositionSettings({ project, lane, onEdit: onModelEdit, disabl
         </label>)}
       </div>
     </fieldset>
-    <p className={styles.idLine}>Presentationens tekniska ID <strong>{lane.id}</strong></p></details>
-    <section className={styles.card} aria-label="Hantera sammansättning"><h3>Hantera sammansättning</h3><p>Ta bort {lane.label} ur projektet. Dealerklipp, bord och bakgrunder behålls. Publicerade paket ändras separat i Publicering.</p>
+    <p className={styles.idLine}>Sammansättningens tekniska ID <strong>{lane.id}</strong></p></details>
+    <section className={styles.card} aria-label="Hantera sammansättning"><h3>Hantera sammansättning</h3><p>Ta bort {compositionLabel(lane.label)} ur projektet. Dealerklipp, bord och bakgrunder behålls. Publicerade spelrum behåller sin publicerade version. Hantera dem under Spelrum & publicering.</p>
     {confirmDelete ? <div className={styles.confirm} role="group" aria-label={`Bekräfta borttagning av ${lane.id}`}>
-      <p>Ta bort sammansättningen {lane.label}?</p>
+      <p>Ta bort sammansättningen {compositionLabel(lane.label)}?</p>
       <button type="button" className="sg-btn sg-btn-secondary" onClick={() => onEdit(current => removeLane(current, lane.id))}>Ta bort sammansättning</button>
       <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(false)}>Avbryt</button>
     </div> : <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setConfirmDelete(true)}>Ta bort sammansättning</button>}</section>

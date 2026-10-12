@@ -9,6 +9,7 @@
 // Branding is package data. It is not a permission boundary.
 import { createHash, randomUUID } from 'node:crypto';
 import { publicEditableBranding } from './partner-branding.mjs';
+import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
 import { isAdministratorRole } from '../account-role.mjs';
 import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
 import {
@@ -531,18 +532,32 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
       const lanes = canonicalIdList(ownValue(input, 'lanes'));
       const games = canonicalIdList(ownValue(input, 'games'));
       const tables = canonicalIdList(ownValue(input, 'tables'));
-      const branding = canonicalBranding(ownValue(input, 'branding'));
+      let branding = canonicalBranding(ownValue(input, 'branding'));
       const expectedRevision = optionalOwn(input, 'expectedRevision');
       if (expectedRevision !== undefined && expectedRevision !== null) integer(expectedRevision, 1, 'studio_invalid_data', 422);
       if (!await lockOperator(txQuery, operatorId)) fail('studio_operator_not_found', 404);
-      if (expectedRevision !== undefined) {
+      {
         const rows = await txQuery(`/* operator-store:current-package */
           SELECT environment_id, workspace_id, operator_id, package_revision, lanes, games, tables, branding, published_at_ms
           FROM croupier_studio.operator_packages
           WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3
           ORDER BY package_revision DESC LIMIT 1`, [operatorId]);
         const current = rows[0] ? packageRow(rows[0]) : null;
-        if ((current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
+        if (expectedRevision !== undefined && (current?.revision ?? null) !== expectedRevision) fail('studio_conflict', 409);
+        const lifecycle = optionalOwn(input, 'lifecycle');
+        if (lifecycle !== undefined && (!plain(lifecycle) || Object.keys(lifecycle).sort().join(',') !== 'archived,resourceId,resourceType'
+          || !['operator','room'].includes(lifecycle.resourceType) || typeof lifecycle.archived !== 'boolean')) fail('studio_invalid_data',422);
+        if (lifecycle !== undefined) idText(lifecycle.resourceId);
+        const nextBranding = JSON.parse(branding);
+        // Ordinary publication, including restoration of design drafts, may not
+        // discard archives or bring an archived room back through old table IDs.
+        if (lifecycle === undefined) {
+          delete nextBranding[OPERATOR_LIFECYCLE_KEY];
+          if (Object.hasOwn(current?.branding ?? {}, OPERATOR_LIFECYCLE_KEY)) nextBranding[OPERATOR_LIFECYCLE_KEY] = structuredClone(current.branding[OPERATOR_LIFECYCLE_KEY]);
+        }
+        const archived = readOperatorLifecycle(nextBranding);
+        if (archived.rooms.some(entry => JSON.parse(tables).includes(entry.room.id) || entry.room.operatorId !== operatorId)) fail('studio_conflict',409);
+        branding = canonicalBranding(nextBranding);
       }
       const row = (await txQuery(`/* operator-store:publish-package */
       INSERT INTO croupier_studio.operator_packages
@@ -553,10 +568,29 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
     [operatorId, lanes, games, tables, branding, clock()]))[0];
     if (!row) fail('studio_storage_unavailable');
       const saved=packageRow(row);
-      await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables}});
+      await auditWrite(txQuery,input,{operatorId,action:'package.publish',resourceType:'package',resourceId:operatorId,beforeRevision:saved.revision > 1 ? saved.revision-1 : null,afterRevision:saved.revision,after:{lanes:saved.lanes,games:saved.games,tables:saved.tables,...(optionalOwn(input,'lifecycle') ? {lifecycle:optionalOwn(input,'lifecycle')} : {})}});
       return saved;
   }
   async function publishPackage(input={}) { return withOperatorLock(txQuery=>publishWithin(txQuery,input)); }
+  async function changeOperatorStatus(input={}) {
+    actorOf(input);
+    const operatorId=idText(ownValue(input,'operatorId'));
+    const status=statusText(ownValue(input,'status'),operatorStatuses,'studio_invalid_data',422);
+    const expectedStatus=statusText(ownValue(input,'expectedStatus'),operatorStatuses,'studio_invalid_data',422);
+    if (!Object.hasOwn(input,'expectedRevision') || !input.lifecycle || input.lifecycle.resourceType!=='operator'
+      || input.lifecycle.resourceId!==operatorId || input.lifecycle.archived!==(status==='suspended')) fail('studio_invalid_data',422);
+    const lifecycle=readOperatorLifecycle(ownValue(input,'branding'));
+    if (Boolean(lifecycle.operator)!==(status==='suspended')) fail('studio_invalid_data',422);
+    return withOperatorLock(async txQuery=>{
+      if (!await lockOperator(txQuery,operatorId)) fail('studio_operator_not_found',404);
+      const rows=await txQuery(`/* operator-store:operator-status */ UPDATE croupier_studio.operators SET status=$4
+        WHERE environment_id=$1 AND workspace_id=$2 AND operator_id=$3 AND status=$5
+        RETURNING environment_id,workspace_id,operator_id,slug,name,status,created_at_ms`,[operatorId,status,expectedStatus]);
+      if(rows.length!==1)fail('studio_conflict',409);
+      const pack=await publishWithin(txQuery,input);
+      return {operator:operator(rows[0]),package:pack};
+    });
+  }
 
   const packageColumns='environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms';
   const draftColumns='environment_id,workspace_id,operator_id,draft_revision,base_package_revision,branding,source_package_revision,published_package_revision,action,occurred_at_ms';
@@ -646,6 +680,6 @@ export async function createOperatorStore({ sql, scope, now = Date.now, transact
 
   return Object.freeze({
     scope, listAuditEvents, listOperators, getOperatorBySlug, getOperatorById, listRoles, getRole, getMembership, listMemberships,
-    getCurrentPackage, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, upsertRole, upsertMembership, publishPackage,
+    getCurrentPackage, getPackage, listPackages, getBrandingDraft, saveBrandingDraft, publishBrandingDraft, resolvePartnerContext, createOperator, changeOperatorStatus, upsertRole, upsertMembership, publishPackage,
   });
 }

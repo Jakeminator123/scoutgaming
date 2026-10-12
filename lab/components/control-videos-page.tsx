@@ -1,4 +1,5 @@
 'use client';
+import { StudioDealerRequired } from './studio-dealer-required';
 
 import { DealerMediaLibrary } from './dealer-media-library';
 import { useEffect, useState } from 'react';
@@ -12,11 +13,11 @@ import { PageTemplate } from './page-template.mjs';
 import { ProjectConflict } from './project-conflict';
 import styles from './control-videos-page.module.css';
 import { StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
-import { studioHref, type ConnectionStatus, type VideoEntry, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoEntry, type VideoInventory } from './studio-types';
 import type { UploadBinding } from './video-upload';
 import { ClipNameEditor, VideoLibrary } from './video-library';
 
-export function ControlVideosPage({
+function SelectedControlVideosPage({
   initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, initialVariantId, initialSituation, connectedLane = false,
 }: {
   initialProject: StudioProject;
@@ -108,7 +109,7 @@ export function ControlVideosPage({
         </div>
       ) : null}
       <div className="sg-chip-row" role="group" aria-label="Välj dealer">
-        {project.dealers.map(item => (
+        {activeStudioDealers(project).map(item => (
           <button type="button" className="sg-chip" disabled={intakePending} aria-pressed={dealerId === item.id} key={item.id} onClick={() => selectDealer(item.id)}>
             {item.label.slice(0, 1)} {item.label}
           </button>
@@ -183,4 +184,9 @@ export function ControlVideosPage({
       </fieldset></div>
     </PageTemplate>
   );
+}
+
+export function ControlVideosPage(props: Parameters<typeof SelectedControlVideosPage>[0]) {
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Klippbibliotek" />;
+  return <SelectedControlVideosPage {...props} />;
 }

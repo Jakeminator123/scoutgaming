@@ -1,14 +1,15 @@
-import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,createEmptyProject,addDealer} from '../lib/studio-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
-import { GAME_LANES } from '../../web/public/game-lanes.mjs';
+// Explicit persisted test catalogue; production has no built-in dealer lanes.
+const SAVED_GAME_LANES=[{schemaVersion:1,id:'mobile-phone',label:'Saved Vera room',renderer:'portrait-video',dealer:'vera',mediaCollection:'vera-presentation'}];
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
 const voiceIdentity = { audioSha256: 'a'.repeat(64), videoSha256: 'b'.repeat(64), previewSha256: 'c'.repeat(64),
   textSha256: 'd'.repeat(64), indexSha256: 'e'.repeat(64), audioDelayMs: 42 };
 function fixture() {
-  const state = { document: { revision: 'studio-original', value: { rooms: [{ id: 'one', state: 'preview' }], tiers: { classic: 'vera' }, tournaments: [] } }, writes: [], reads: [], rows: [] };
+  const state = { document: { revision: 'studio-original', value: { gameLane:'mobile-phone',gameLanes:structuredClone(SAVED_GAME_LANES),rooms: [{ id: 'one', state: 'preview' }], tiers: { classic: 'vera' }, tournaments: [] } }, writes: [], reads: [], rows: [] };
   state.voices = { dealers: ['vera','astrid','amira','mei'].map(dealer => ({ dealer, name: dealer,
     lines: [{ key: 'goodluck', text: 'Exact registered text', identity: structuredClone(voiceIdentity), reviewable: true }] })) };
   const db = { prepare(sql) {
@@ -46,20 +47,20 @@ test('active lane requires admin and a current revision; it preserves the other 
   assert.equal(f.state.writes.length,0);
   const before=structuredClone(f.state.document.value);
   assert.deepEqual(await f.call('POST','game-lane',body),{ok:true,revision:'studio-new'});
-  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone',gameLanes:GAME_LANES});
+  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone',gameLanes:SAVED_GAME_LANES});
   await assert.rejects(f.call('POST','game-lane',{...body,lane:'original'}),error=>error.statusCode===409);
   assert.equal(f.state.document.value.gameLane,'mobile-phone');
 });
 
 test('lane creation and removal enforce role, CAS, replacement and preserve shared state', async () => {
-  const f = fixture(), definition = { ...GAME_LANES[0], id: 'mobile-two', label: 'Second mobile' };
+  const f = fixture(), definition = { ...SAVED_GAME_LANES[0], id: 'mobile-two', label: 'Second mobile' };
   const body = { definition, expectedRevision: 'studio-original' };
   for (const action of ['game-lanes/create', 'game-lanes/remove']) {
     await assert.rejects(f.data.handlers.get(`POST /studio/api/admin/${action}`)({ ...f.context(body), actor: { user: 'viewer', role: 'reader' } }), e => e.statusCode === 403);
   }
   await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'stale' }), e => e.statusCode === 409);
   await f.call('POST', 'game-lanes/create', body);
-  assert.deepEqual(f.state.document.value.gameLanes, [...GAME_LANES, definition]);
+  assert.deepEqual(f.state.document.value.gameLanes, [...SAVED_GAME_LANES, definition]);
   assert.equal(f.state.document.value.gameLane, 'mobile-phone');
   await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'studio-new' }));
   await assert.rejects(f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: null, expectedRevision: 'studio-new' }));
@@ -164,7 +165,7 @@ test('players expose an exact boolean password capability without changing accou
 });
 
 test('Nora catalogue registration requires her saved dealer identity and staff role',async()=>{
- const f=fixture(),body={definition:{...GAME_LANES[0],id:'nora-room',label:'Nora',dealer:'nora',mediaCollection:'nora-presentation'},expectedRevision:'studio-original'};
+ const f=fixture(),body={definition:{...SAVED_GAME_LANES[0],id:'nora-room',label:'Nora',dealer:'nora',mediaCollection:'nora-presentation'},expectedRevision:'studio-original'};
  await assert.rejects(f.call('POST','game-lanes/create',body));assert.equal(f.state.writes.length,0);
  f.state.project=addDealer(createSeedProject(),'nora','Nora');
  await assert.rejects(f.data.handlers.get('POST /studio/api/admin/game-lanes/create')({...f.context(body),actor:{user:'viewer',role:'reader'}}),e=>e.statusCode===403);
@@ -175,7 +176,7 @@ test('Nora catalogue registration requires her saved dealer identity and staff r
 test('removing a game lane referenced by any existing room is rejected before writes regardless of room state or operator', async () => {
   for(const state of ['live','preview','pending']){
     const f=fixture(),room={schemaVersion:2,id:'room-existing',name:'Existing',operatorId:'another-operator',presentationLaneId:'published-presentation',gameLaneId:'mobile-phone',state};
-    f.state.document.value.gameLanes=[...GAME_LANES,{...GAME_LANES[0],id:'spare'}];f.state.document.value.gameLane='spare';
+    f.state.document.value.gameLanes=[...SAVED_GAME_LANES,{...SAVED_GAME_LANES[0],id:'spare'}];f.state.document.value.gameLane='spare';
     f.state.document.value.rooms.push(room);const before=structuredClone(f.state.document);
     await assert.rejects(f.call('POST','game-lanes/remove',{lane:'mobile-phone',replacementLane:'spare',expectedRevision:'studio-original'}),error=>error.statusCode===409);
     assert.deepEqual(f.state.document,before);assert.deepEqual(f.state.writes,[]);
@@ -198,16 +199,25 @@ test('config exposes only validated saved dealer IDs and labels after authorizat
 });
 
 test('missing, unreadable or invalid saved dealer registry is explicit null with no seeded fallback or raw error', async () => {
-  for(const mode of ['missing','unreadable','duplicate','missing-base','label','id']){
+  for(const mode of ['missing','unreadable','duplicate','label','id']){
     const f=fixture();f.state.project=createSeedProject();
     if(mode==='missing')f.state.project=null;
     if(mode==='unreadable')f.state.projectReadError=true;
     if(mode==='duplicate')f.state.project.dealers.push({...f.state.project.dealers[0]});
-    if(mode==='missing-base')f.state.project.dealers.pop();
     if(mode==='label')f.state.project.dealers[0].label='Bad\nlabel';
     if(mode==='id')f.state.project.dealers[0].id='constructor';
     const result=await f.call('GET','config');
     assert.equal(result.savedDealers,null,mode);assert.equal(result.revision,'studio-original');
     assert.doesNotMatch(JSON.stringify(result),/private database details/);assert.deepEqual(f.state.writes,[]);
+  }
+});
+
+test('empty and custom saved registries require no built-in dealers or game lanes',async()=>{
+  for(const project of [createEmptyProject(),addDealer(createEmptyProject(),'johanna','Johanna')]){
+    const f=fixture();f.state.project=project;
+    delete f.state.document.value.gameLane;delete f.state.document.value.gameLanes;
+    const result=await f.call('GET','config');
+    assert.deepEqual(result.savedDealers,project.dealers.map(({id,label})=>({id,label})));
+    assert.deepEqual(result.gameLanes,[]);assert.equal(result.gameLane,null);assert.deepEqual(f.state.writes,[]);
   }
 });

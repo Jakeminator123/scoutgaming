@@ -1,3 +1,4 @@
+import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -17,14 +18,14 @@ import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.m
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 function asset(role,n){const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
 function fixture(dealerId='nora',label='Nora'){
-  const project=addDealer(createSeedProject(),dealerId,label),lane=defaultPresentationLane(),background=asset('background',1),table=asset('table',2);
+  let project=addDealer(createSeedProject(),dealerId,label); const lane=defaultPresentationLane(dealerId),background=asset('background',1),table=asset('table',2);
   lane.id=`${dealerId}-lane`;lane.dealers=[dealerId];lane.layers.dealer={enabled:true,default:dealerId,allowed:[dealerId]};
   lane.layers.background={enabled:true,mode:'image',default:background.id,allowed:[background.id]};
   lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=defaultCompositionSettings();
   project.lanes=[lane];project.layerAssets=[background,table];
   const serverLane={schemaVersion:1,id:lane.id,label,renderer:'portrait-video',dealer:dealerId,mediaCollection:`${dealerId}-presentation`};
   const administration={gameLane:lane.id,gameLanes:[serverLane]};
-  const presentation=buildPresentationPackage(project,[lane.id],project.layerAssets,dealerId==='nora'?{}:{registeredDealers:[{id:dealerId,label,idle:null}]});
+  const cloud=cloudPresentationFixture({project,lanes:[lane]});project=cloud.project;const presentation=cloud.presentation;
   const pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[],branding:withPackagePresentation({},presentation)};
   const descriptor={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},background:lane.layers.background,table:lane.layers.table,settings:lane.composition,
     assets:presentation.assets.map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/north/${id}`}))};
@@ -47,11 +48,12 @@ test('compositor uses the same actor frame with explicit table order and never p
     Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
     assert.deepEqual(calls,tableFront?['actor','table','project-cards']:['table','project-cards','actor']);}
 });
-test('published Nora requires a saved named registry and ignores query requests for another dealer',async()=>{
+test('published Nora uses the frozen named registry and rejects query requests for another dealer',async()=>{
   const {project,administration,pack,presentation}=fixture();
   const policy={readGameConfiguration(){},readSaved:async()=>({project,administration})};
   const select=createGameEntrySelector({policy,packages:{resolve:async()=>({operator:{id:'north'},package:pack})}});
-  const {selection}=await select('operator=north&lane=nora-lane&dealer=astrid');
+  assert.equal((await select('operator=north&lane=nora-lane&dealer=astrid')).status,404);
+  const {selection}=await select('operator=north&lane=nora-lane');
   assert.equal(selection.dealer,'nora');assert.equal(selection.presentation,'local');assert.equal(selection.localDealer,'nora');
   assert.equal(selection.composition.dealer.compatibility,'per-clip');
   project.lanes[0].composition.mobile.dealer.scale=3;
@@ -66,7 +68,7 @@ test('published Nora requires a saved named registry and ignores query requests 
   assert.equal(gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local',gameLocalDealer:'nora',gameRegisteredDealers:JSON.stringify([{id:'nora',label:'Nora'}])}).dealer,'nora');
   assert.throws(()=>gameLaneFromDocument({gameLane:'nora-lane',gameDealer:'nora',gamePresentation:'local'}));
   project.dealers=project.dealers.filter(row=>row.id!=='nora');
-  await assert.rejects(select('operator=north'),error=>error.statusCode===503);
+  assert.equal((await select('operator=north')).selection.dealer,'nora','frozen registration survives mutable Studio edits');
   assert.throws(()=>buildPresentationPackage(project,['nora-lane'],project.layerAssets));
   assert.doesNotThrow(()=>validateGameLanes([{...administration.gameLanes[0],dealer:'unregistered',mediaCollection:'unregistered-presentation'}])); // syntax is not server registration
 });
@@ -124,7 +126,7 @@ test('authenticated config projects only an exactly bound own Nora idle with ret
     classification:{dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Nora idle',notes:'',playback:'once',compositing:key}};
   const inventory={families:[],videos:[video]};
   const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
-  const get=async player=>{const res={writeHead(s){this.status=s;},end(body){this.body=JSON.parse(body);}};await handler({method:'GET',url:'/api/presentation/config'},res,'/api/presentation/config',player);return res;};
+  const get=async player=>{const res={writeHead(s){this.status=s;},end(body){this.body=JSON.parse(body);}};await handler({method:'GET',url:'/api/presentation/config?dealerId=nora'},res,'/api/presentation/config',player);return res;};
   assert.equal((await get(null)).status,401);
   const response=await get('own-fixture');assert.equal(response.status,200);
   assert.deepEqual(response.body.dealerIdle.nora,{id,sha256:video.sha256,fileName:video.fileName,src:'/api/presentation/videos/'+id,compositing:key});
@@ -144,12 +146,13 @@ test('runtime selection accepts exactly saved registered dealers and rejects syn
 
 test('published Johanna follows her own room and frozen display label through actual HTML and document choices',async()=>{
   const f=fixture('johanna','Johanna vid publicering');
-  const presentation=buildPresentationPackage(f.project,[f.lane.id],f.project.layerAssets,{registeredDealers:[{id:'johanna',label:'Johanna vid publicering',idle:null}]});
+  const presentation=f.presentation;
   const pack={...f.pack,tables:['room-johanna'],branding:withPackagePresentation({},presentation)};
   const room={schemaVersion:2,id:'room-johanna',name:'Johannas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
   f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='johanna');
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  const {selection}=await select('operator=north&table=room-johanna&dealer=astrid');
+  assert.equal((await select('operator=north&table=room-johanna&dealer=astrid')).status,404);
+  const {selection}=await select('operator=north&table=room-johanna');
   assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'johanna',label:'Johanna vid publicering'}]);
   assert.deepEqual(selection.choices.dealers,['johanna']);assert.equal(selection.packageRevision,1);
   const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
@@ -170,10 +173,10 @@ test('presentation API forwards the opt-in capability header and preserves defau
   }
 });
 
-test('actual published room entry rejects a drifted portrait lane even when both dealers remain frozen and allowed',async()=>{
+test('historical v2 room entry rejects a drifted portrait adapter even when both dealers remain frozen and allowed',async()=>{
   const f=fixture('johanna','Johanna');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
   f.lane.dealers=['johanna','nora'];f.lane.layers.dealer.allowed=['johanna','nora'];
-  const presentation=buildPresentationPackage(f.project,[f.lane.id],f.project.layerAssets,{registeredDealers:[{id:'johanna',label:'Johanna',idle:null},{id:'nora',label:'Nora',idle:null}]});
+  const presentation=cloudPresentationFixture({project:f.project,lanes:[f.lane]}).presentation;presentation.schemaVersion=2;delete presentation.playback;
   const pack={...f.pack,tables:['room-overlap'],branding:withPackagePresentation({},presentation)};
   f.administration.rooms=[{schemaVersion:2,id:'room-overlap',name:'Overlap',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'}];
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});

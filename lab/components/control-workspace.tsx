@@ -29,13 +29,13 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
   const dealers = [...new Map(confirmed?.rooms.flatMap(room => room.dealers).map(dealer => [dealer.id, dealer]) ?? []).values()];
   const presentations = [...new Map(confirmed?.rooms.map(room => [room.presentation.id, room.presentation]) ?? []).values()];
   const query = selected && live ? '?' + new URLSearchParams({ operator: selected.id }) : '';
-  const publishingHref = labUrl('/control/lanes' + query);
-  const companyHref = labUrl('/control/lanes?' + new URLSearchParams({ tab: 'companies', ...(selected && live ? { operator: selected.id } : {}) }));
+  const publishingHref = labUrl('/control/rooms' + query);
+  const companyHref = labUrl('/control/companies' + query);
   const playerHref = selected && live ? '/play?operator=' + encodeURIComponent(selected.slug) : '/play';
   const partnerHref = selected ? workspaceSurfacePath('partner', 'ops', selected.slug) ?? '/partner' : '/partner';
-  const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/control/preview' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
+  const nextHref = ({ studio: labUrl('/control/clips'), composition: labUrl('/control/compositions' + query), publish: publishingHref, company: companyHref, play: playerHref } as Record<string, string>)[next.kind];
   const firstPublished = confirmed?.rooms[0];
-  const compositionHref = labUrl('/control/preview?' + new URLSearchParams({ ...(selected && live ? { operator: selected.id } : {}), ...(firstPublished ? { lane: firstPublished.presentation.id } : {}) }));
+  const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ ...(selected && live ? { operator: selected.id } : {}), ...(firstPublished ? { composition: firstPublished.presentation.id } : {}) }));
 
   useEffect(() => {
     const sync = () => setChoice(new URLSearchParams(window.location.search).get('operator'));
@@ -56,9 +56,9 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
   }
   const steps = [
     { title: 'Dealer & klipp', detail: 'Välj grundloop, tal och reaktioner. Granska i verklig uppspelning.', href: labUrl('/control/clips' + query), link: 'Arbeta med dealers', meta: studio ? studio.dealers.length + ' dealers i studion' : 'Gemensamt innehåll', scope: 'STUDIO' },
-    { title: 'Sammansättning', detail: 'Kombinera dealer, bord och bakgrund till en sparad presentation.', href: compositionHref, link: 'Sätt ihop presentation', meta: studio ? studio.lanes.length + ' sparade presentationer' : 'Sparade presentationer', scope: 'STUDIO' },
-    { title: 'Publicering', detail: 'Välj vad bolaget får använda. En ändring i Studio behöver publiceras.', href: publishingHref, link: 'Hantera publicering', meta: confirmed ? confirmed.packageRevision ? 'Publicerat · version ' + confirmed.packageRevision : 'Ännu inte publicerat' : 'Status inväntas', scope: 'VALT BOLAG' },
-    { title: 'Spelrum', detail: 'Spelarens ingång till bolagets publicerade presentation och dealers.', href: roomCount ? playerHref : publishingHref, link: roomCount ? 'Öppna spellobbyn' : 'Skapa spelrum', meta: roomCount === undefined ? 'Status inväntas' : roomCount + ' öppna spelrum', scope: 'VALT BOLAG' },
+    { title: 'Sammansättning', detail: 'Kombinera dealer, bord och bakgrund till en sparad sammansättning.', href: compositionHref, link: 'Sätt ihop sammansättning', meta: studio ? studio.lanes.length + ' sparade sammansättningar' : 'Sparade sammansättningar', scope: 'STUDIO' },
+    { title: 'Bolagets publicering', detail: 'Välj vad bolaget får använda. En ändring i Studio behöver publiceras.', href: publishingHref, link: 'Hantera publicering', meta: confirmed ? confirmed.packageRevision ? 'Publicerat · version ' + confirmed.packageRevision : 'Ännu inte publicerat' : 'Status inväntas', scope: 'VALT BOLAG' },
+    { title: 'Spelrum', detail: 'Spelarens ingång till bolagets publicerade sammansättning och dealers.', href: roomCount ? playerHref : publishingHref, link: roomCount ? 'Öppna spellobbyn' : 'Skapa spelrum', meta: roomCount === undefined ? 'Status inväntas' : roomCount + ' öppna spelrum', scope: 'VALT BOLAG' },
   ];
   return <main className={styles.shell}>
     <header className={styles.intro}><div><p className={styles.eyebrow}>DIN ARBETSYTA</p><h1>Översikt</h1><p>Från dealer till spelrum. Arbeta i Studio, publicera till ett bolag och se resultatet i lobbyn.</p></div><span className={styles.user}>Inloggad som {user}</span></header>
@@ -76,10 +76,10 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
           : next.kind === 'retry' ? <button className="sg-btn sg-btn-primary" type="button" onClick={() => { if (status === 'error' && selected) void reader.read(selected.slug); else window.location.reload(); }}>{next.label}</button>
             : <span role="status" className={styles.loading}>{next.label}</span>}
           {live && selected && next.kind !== 'publish' ? <a href={publishingHref}>Spelrum & publicering ↗</a> : null}</div>
-        <p className={styles.hint}>Ett nytt spelrum publicerar den valda presentationen i samma steg.</p>
+        <p className={styles.hint}>Ett nytt spelrum publicerar den valda sammansättningen i samma steg.</p>
       </section>
       <section className={styles.statusCard} aria-labelledby="overview-status"><div className={styles.cardHeading}><h2 id="overview-status">Bolagets publicering</h2><span className={styles.pill} data-state={confirmed ? 'confirmed' : 'unknown'}>{confirmed ? 'Hämtad från spellobbyn' : operatorStatus === 'demo' ? 'Demonstration' : next.kind === 'loading' ? 'Hämtar…' : 'Ej bekräftad'}</span></div>
-        <dl className={styles.metrics}><div><dt>Öppna spelrum</dt><dd>{roomCount ?? '—'}</dd></div><div><dt>Valbara dealers</dt><dd>{confirmed ? dealers.length : '—'}</dd></div><div><dt>Presentationer i spelrum</dt><dd>{confirmed ? presentations.length : '—'}</dd></div><div><dt>Paketversion</dt><dd>{confirmed ? confirmed.packageRevision ?? 'Ej publicerat' : '—'}</dd></div></dl>
+        <dl className={styles.metrics}><div><dt>Öppna spelrum</dt><dd>{roomCount ?? '—'}</dd></div><div><dt>Valbara dealers</dt><dd>{confirmed ? dealers.length : '—'}</dd></div><div><dt>Sammansättningar i spelrum</dt><dd>{confirmed ? presentations.length : '—'}</dd></div><div><dt>Paketversion</dt><dd>{confirmed ? confirmed.packageRevision ?? 'Ej publicerat' : '—'}</dd></div></dl>
         <p className={styles.hint}>Visar det bolagets spelare kan välja. Sparade ändringar och läppsynksbedömningar kontrolleras i Studio.</p>
       </section>
     </div>
@@ -91,7 +91,7 @@ export function ControlWorkspace({ user, operators = [], operatorStatus = 'unava
         {confirmed?.rooms.length ? <ul className={styles.roomList}>{confirmed.rooms.map(room => <li key={room.id}><div><strong>{room.name}</strong><p>{room.presentation.label} · {room.dealers.map(dealer => dealer.label).join(', ')}</p></div><a href={room.playUrl}>Öppna rum <span aria-hidden="true">↗</span></a></li>)}</ul>
           : <p className={styles.empty}>{confirmed ? 'Inga öppna spelrum ännu. Skapa det första i Spelrum & publicering.' : operatorStatus === 'demo' ? 'Demonstrationen visar inga verkliga spelrum.' : 'Spelrum visas när bolagets publicering har kunnat bekräftas.'}</p>}
       </section>
-      <section className={styles.destinations} aria-labelledby="overview-destinations"><h2 id="overview-destinations">Rätt vy för rätt arbete</h2><a href={partnerHref}><span>Bolagets arbetsyta<small>Partnerinloggning och aktivt medlemskap krävs. Utan partnersession visas en märkt förhandsvisning.</small></span><span aria-hidden="true">↗</span></a><a href={labUrl('/control/administration?tab=media-review')}><span>Talgranskning<small>Bedöm tal och läppsynk för exakt ljud- och videopar.</small></span><span aria-hidden="true">→</span></a><a href={labUrl('/control/guide')}><span>Guide & hjälp<small>Begrepp, arbetssätt och hur delarna hänger ihop.</small></span><span aria-hidden="true">→</span></a></section>
+      <section className={styles.destinations} aria-labelledby="overview-destinations"><h2 id="overview-destinations">Rätt vy för rätt arbete</h2><a href={partnerHref}><span>Bolagets arbetsyta<small>Bolagets spelrum, tillåtna val och team. Kräver partnerinloggning eller en aktiv administratörssession.</small></span><span aria-hidden="true">↗</span></a><a href={labUrl('/control/administration?tab=media-review')}><span>Talgranskning<small>Bedöm tal och läppsynk för exakt ljud- och videopar.</small></span><span aria-hidden="true">→</span></a><a href={labUrl('/control/guide')}><span>Guide & hjälp<small>Begrepp, arbetssätt och hur delarna hänger ihop.</small></span><span aria-hidden="true">→</span></a></section>
     </div>
   </main>;
 }

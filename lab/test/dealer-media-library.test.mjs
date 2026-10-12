@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,createEmptyProject,addDealer} from '../lib/studio-model.mjs';
 import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot,draftUsesMedia} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
@@ -42,7 +42,7 @@ test('a ten-file batch preserves successes, skips saved rows and never automatic
   assert.equal(saved,8);assert.deepEqual(calls,[1,2,3,4,5,6,7,8,9]);assert.equal(states.get('4').state,'error');assert.equal(states.get('9').state,'saved');
 });
 
-test('required idle is red until an available exact dealer video is selected, with legacy uncertainty explicit',()=>{
+test('required idle uses only available own registry clips and explicit saved choices',()=>{
   const draft=structuredClone(project),slot=dealerMediaSlots(draft,'idle')[0];
   const video={id:'own-idle',dealer:'paow',available:true,eventId:slot.eventId,situation:''};
   assert.equal(dealerSlotStatus(draft,{videos:[]},'paow',slot).level,'required');
@@ -51,9 +51,9 @@ test('required idle is red until an available exact dealer video is selected, wi
   line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=video.id;
   assert.equal(dealerSlotStatus(draft,{videos:[video]},'paow',slot).level,'ready');
   for(const patch of [{available:false},{dealer:'astrid'},{classification:{archived:true}},{classification:{mediaType:'audio'}}])assert.equal(dealerSlotStatus(draft,{videos:[{...video,...patch}]},'paow',slot).level,'required');
-  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot).level,'unknown');
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot).level,'required');
   const legacy={defaults:{idle:'idle/default'},clips:[{id:'vera-idle',engineKey:'idle/default',dealerId:'vera',available:true,exactParts:['idle']}]};
-  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot,legacy).level,'ready');
+  assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot,legacy).level,'required','legacy inventory alone is not registered media');
   draft.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'missing'}];
   assert.equal(dealerSlotStatus(draft,{videos:[]},'vera',slot,legacy).level,'required');
 });
@@ -88,4 +88,50 @@ test('AI speech references count as active usage; labels and trash bookkeeping d
  draft.dealers.find(row=>row.id==='paow').speechProfile={reference:{videoId:id}};
  assert.equal(draftUsesMedia(draft,id),true);
  assert.equal(mediaUsage(draft,{id},'paow'),'Referensklipp för AI-tal');
+});
+
+
+test('former dealer names and new dealers share exact own idle-policy status without global defaults',()=>{
+  for(const dealerId of ['astrid','vera','mei','paow']){
+    const draft=addDealer(createEmptyProject(),dealerId,dealerId),slot=dealerMediaSlots(draft,'idle')[0];
+    const own={id:dealerId+'-idle',dealer:dealerId,available:true,eventId:slot.eventId,situation:''};
+    draft.idlePolicy={base:[{videoId:own.id}],variants:[]};
+    assert.equal(dealerSlotStatus(draft,{videos:[own]},dealerId,slot).level,'required',dealerId+' never borrows global idle');
+    assert.equal(mediaUsage(draft,own,dealerId),'Inte vald i utkastet');
+    draft.dealerIdlePolicies=[{dealerId,policy:{base:[{videoId:own.id}],variants:[]}}];
+    assert.equal(dealerSlotStatus(draft,{videos:[own]},dealerId,slot).level,'ready');
+    assert.equal(mediaUsage(draft,own,dealerId),'Grundloop');
+    for(const patch of [{dealer:'foreign-dealer'},{available:false},{classification:{archived:true}},{classification:{mediaType:'audio'}}]){
+      assert.equal(dealerSlotStatus(draft,{videos:[{...own,...patch}]},dealerId,slot).level,'required');
+    }
+  }
+});
+
+test('library renders registered clips consistently without requesting local clip-controls',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const file=new URL('../components/dealer-media-library.tsx',import.meta.url),require=createRequire(file),React=require('react');
+  const {renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('next/dist/build/swc');
+  const output=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+  for(const dealerId of ['astrid','vera','mei','paow']){
+    const calls=[],effects=[],module={exports:{}};
+    const fakeReact={...React,useState:initial=>[initial,()=>{}],useRef:initial=>({current:initial}),useEffect:run=>effects.push(run)};
+    runInNewContext(output.code,{module,exports:module.exports,require:name=>{
+      if(name==='react')return fakeReact;
+      if(name==='./studio-types')return {requestJson:async path=>{calls.push(path);return {};},studioHref:()=>'/control/clips'};
+      if(name==='./media-removal-feedback')return {mediaRemovalMessage:()=>''};
+      if(name==='./video-metadata-fields')return {VideoCompositingFields:()=>null,DealerFramingFields:()=>null};
+      if(name==='./dealer-video-surface')return {DealerClipPreview:()=>null};
+      if(name==='./dealer-file-settings')return {DealerFileSettings:()=>null};
+      if(name.endsWith('.css'))return {default:{}};
+      return require(name);
+    }});
+    const draft=addDealer(createEmptyProject(),dealerId,dealerId);
+    const own={id:dealerId+'-clip',dealer:dealerId,source:'upload',available:true,label:'Own '+dealerId,previewUrl:'/own',classification:{dealerId,eventId:'idle.ready',situation:''}};
+    const tree=module.exports.DealerMediaLibrary({project:draft,inventory:{videos:[own,{...own,id:'foreign',dealer:'foreign-dealer',label:'Foreign clip'}]},dealerId,onInventory(){},onProjectSaved(){},onLifecycleChange(){},onPendingChange(){}});
+    const cleanup=effects.map(run=>run());await new Promise(resolve=>setImmediate(resolve));
+    assert.deepEqual(calls,[],dealerId+' needs no local registry request');
+    const html=renderToStaticMarkup(tree);assert.ok(html.includes('Own '+dealerId));assert.doesNotMatch(html,/Foreign clip|Originalklipp behöver kontrolleras/);
+    assert.match(html,/Krävs · välj grundloop/);
+    for(const stop of cleanup)if(typeof stop==='function')stop();
+  }
 });

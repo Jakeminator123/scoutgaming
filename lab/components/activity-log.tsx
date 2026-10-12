@@ -2,6 +2,7 @@
 import { labUrl } from "../lib/lab-url.mjs";
 
 import { useEffect, useRef, useState } from 'react';
+import { observationActivity, splitObservationEntries } from '../lib/activity-session.mjs';
 import { eventSummary, createIdleLogFilter, type ActivityEntry } from '../lib/activity-log.mjs';
 import styles from './activity-log.module.css';
 import { ReferenceCapture } from './reference-capture';
@@ -13,6 +14,7 @@ import { buildPlaybackTrace, playbackOutcome } from '../lib/playback-trace.mjs';
 import type { LegacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 
 export type ActivityDraft = Omit<ActivityEntry, 'id' | 'time'>;
+export type ObservationContext = { dealerId?: string; dealerLabel?: string; operatorSlug?: string; tableId?: string };
 interface PartnerStatus { configured: boolean; missing: string[]; invalid: string[]; endpoint: string | null }
 const sourceNames = { lab: 'Labb', manual: 'Manuellt val', social: 'Socialt prov', partner: 'Partner-indata', native: 'Originalspelaren', player: 'Labbspelare', config: 'Konfiguration' };
 const stageNames = { input: 'Indata', decision: 'Beslut', playback: 'Uppspelning', connection: 'Anslutning', configuration: 'Konfiguration' };
@@ -21,9 +23,29 @@ const statusNames = { received: 'Mottaget', waiting: 'Väntar', selected: 'Valt'
 // `rolling` keeps the observation window open past 300 records / 4 MiB without
 // switching to the focused layout, so Uppspelning keeps Partner SSE and the
 // reference capture. Focused mode implies rolling.
-export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen, streamView, focused = false, rolling = focused, savedRevision }: { savedRevision?: string; focused?: boolean; rolling?: boolean; entries: ActivityEntry[]; onActivity: (entry: ActivityDraft) => void; onClear: () => void; full?: boolean; onOpen: () => void; streamView?: Omit<GameStreamProps, 'trace' | 'active' | 'onActivity'> }) {
+export function ActivityLog({ entries, onActivity: recordActivity, onClear, full = false, onOpen, streamView, focused = false, rolling = focused, savedRevision, observationContext }: { observationContext?: ObservationContext; savedRevision?: string; focused?: boolean; rolling?: boolean; entries: ActivityEntry[]; onActivity: (entry: ActivityDraft) => void; onClear: () => void; full?: boolean; onOpen: () => void; streamView?: Omit<GameStreamProps, 'trace' | 'active' | 'onActivity'> }) {
   const [expanded, setExpanded] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [logScope, setLogScope] = useState('current');
+  const [observationId, setObservationId] = useState<string | null>(null);
+  const observationIdentity = useRef<string | null>(null);
+  const [imported, setImported] = useState(false);
+  const [observedDealer, setObservedDealer] = useState('');
+  function ensureObservation() {
+    if (!observationIdentity.current) {
+      observationIdentity.current = crypto.randomUUID();
+      setObservationId(observationIdentity.current);
+    }
+    return observationIdentity.current;
+  }
+  function onActivity(entry: ActivityDraft) {
+    recordActivity(observationActivity(entry, ensureObservation(), observationContext));
+  }
+  function startObservation() {
+    if (imported) newObservation();
+    else ensureObservation();
+    setLogScope('current');
+  }
   const [configuration, setConfiguration] = useState<PartnerStatus | null>(null);
   const [connection, setConnection] = useState('Frånkopplad');
   const [statusError, setStatusError] = useState('');
@@ -152,7 +174,11 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
         owner: 'Astrids chatt och tal', reason: data.state === 'chat-failed' ? String(data.reason) : 'Tid sedan frågan skickades. Uppspelningen har ett separat kvitto.', data });
       return;
     }
-    if (record.kind === 'status' && data.state === 'attached') setNativePresentationOwner(String(data.presentationOwner ?? 'legacy'));
+    if (record.kind === 'status' && data.state === 'attached') {
+      setNativePresentationOwner(String(data.presentationOwner ?? 'legacy'));
+      const id = String(data.dealerId ?? data.dealer ?? '');
+      if (id) setObservedDealer(streamView?.project.dealers.find(dealer => dealer.id === id)?.label ?? id);
+    }
     const playback = record.kind === 'playback';
     const phase = String(data.state ?? 'observed');
     const status = playback ? ({ start: 'started', end: 'completed', error: 'failed', fallback: 'failed', interrupted: 'cancelled', selected: 'selected' } as const)[phase as 'start'] ?? 'observed' : 'observed';
@@ -164,6 +190,9 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
   }
 
   function newObservation() {
+    observationIdentity.current = crypto.randomUUID();
+    setObservationId(observationIdentity.current);
+    setLogScope('current'); setImported(false);
     setPreviewRequested(false);
     keepNativeLog.reset();
     setTrace(current => restartPartnerTrace(current, { observedVersions: observedVersions.current }));
@@ -175,20 +204,23 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
       data: { discardedRecords: trace.records.length, previousLimited: trace.limited, gap: true } });
   }
 
-  const visible = entries.filter(entry => filter === 'all' || entry.stage === filter).slice(full ? -150 : -5).reverse();
+  const grouped = splitObservationEntries(entries, observationId);
+  const scopedEntries: ActivityEntry[] = full ? grouped[logScope === 'previous' ? 'previous' : 'current'] : entries;
+  const visible = scopedEntries.filter(entry => filter === 'all' || entry.stage === filter).slice(full ? -150 : -5).reverse();
+  const dealerLabel = observedDealer || observationContext?.dealerLabel || (observationContext?.tableId ? 'Spelrummets publicerade dealer' : streamView?.dealerId || 'Vald dealer');
   const rounds = trace.records.filter(record => record.kind === 'round').length;
   // Astrid launches the shared Web runtime. Do not start a second renderer while
   // the attachment is pending, or when the bounded observation log is reset.
   const webOwnsPresentation = streamView?.dealerId === 'astrid' || nativePresentationOwner === 'web-local';
   const liveStatus = !connected && !nativeConnected ? `${connection}${rounds ? ` · ${rounds} sparade meddelanden` : ''}` : rounds ? `Speldata mottagna · ${rounds} meddelanden${nativeConnected ? ' · native-observation' : ''}` : nativeConnected ? 'Original anslutet · väntar på en spelrunda' : connection;
-  const playbackTrace = buildPlaybackTrace(trace.records, { inventory: streamView?.videos, clipInventory, dealerId: streamView?.dealerId, savedRevision: savedRevision ?? streamView?.project?.revision });
+  const playbackTrace = buildPlaybackTrace(trace.records, { inventory: streamView?.videos, clipInventory, dealerId: observationContext ? observationContext.dealerId : streamView?.dealerId, savedRevision: savedRevision ?? streamView?.project?.revision });
   const previewTrace = trace.records.some(record => record.source === 'native')
     ? { ...trace, records: trace.records.filter(record => record.source !== 'partner') } : trace;
   const logList = <>
     <div className={styles.filters} role="group" aria-label="Filtrera detaljlogg"><button aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Alla</button>{Object.entries(stageNames).map(([id, label]) => <button key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
     {!visible.length ? <p className={styles.empty}>{full ? 'Inga registrerade händelser i detta urval.' : 'Inga registrerade händelser i detta urval. Kör Testa event, spela en variant, använd chatten eller anslut den läsande strömmen. Inga exempelrader visas som verkliga händelser.'}</p> : <ol className={styles.timeline}>{visible.map(entry => <li key={entry.id} data-status={entry.status}><div className={styles.timestamp}><time dateTime={entry.time}>{new Date(entry.time).toLocaleTimeString('sv-SE')}</time><span>{stageNames[entry.stage]}</span></div><div className={styles.body}><div className={styles.tags}><span>{sourceNames[entry.source]}</span><span>{statusNames[entry.status]}</span></div><h3>{entry.title}</h3><p><strong>Vem:</strong> {entry.owner}. <strong>Varför:</strong> {entry.reason}</p>{entry.runId ? <small className={styles.run}>Förlopp {entry.runId}</small> : null}{entry.data != null ? <details><summary>Visa faktisk data och fält</summary><pre>{JSON.stringify(entry.data, null, 2)}</pre></details> : null}</div></li>)}</ol>}
   </>;
-  const observationSlot = webOwnsPresentation
+  const observationSlot = (webOwnsPresentation || Boolean(observationContext?.tableId))
     ? (focused
       ? <section aria-label="Web äger presentationen"><h3>En spelare · Web</h3></section>
       : <details className={styles.mapping}><summary>Visa spelbild här</summary><section aria-label="Web äger presentationen"><h3>En spelare · Web</h3><ReferenceCapture quiet onActivity={onActivity} /></section></details>)
@@ -196,12 +228,17 @@ export function ActivityLog({ entries, onActivity, onClear, full = false, onOpen
       ? <section aria-label="Separat Lab-preview"><h3>Separat Lab-preview · {streamView.dealerId}</h3><p>Manuellt jämförelseprov. Dess uppspelning är ett Lab-kvitto och räknas inte som visad i spelfliken.</p><button className="text-button" onClick={() => { setFollowFromRecord(previewTrace.records.length); setPreviewRequested(current => !current); }}>{previewRequested ? 'Stäng Lab-preview' : 'Öppna separat Lab-preview'}</button>{previewRequested ? <GameStream {...streamView} trace={previewTrace} active={full} autoFollow={false} followFromRecord={followFromRecord} observationRevision={observationRevision} onActivity={onActivity} /> : null}</section>
       : null;
   return <section className={styles.panel} aria-label="Händelselogg i realtid">
-    {!full ? <header className={styles.header}><div><span className="eyebrow">EVENT → KLIPPVAL → SPELARKVITTO</span><h2>Uppspelning <small>{focused ? `${entries.length} senaste` : `${entries.length}/150`}</small></h2><p>Följ spelflikens faktiska presentation. Sparade val, visad bild och avslut har separata kvitton.</p></div><div className={styles.tools}><button className="text-button" onClick={() => setExpanded(value => !value)}>{expanded ? 'Fäll ihop' : 'Visa senaste'}</button><button className="text-button" onClick={onOpen}>Öppna uppspelning →</button></div></header> : null}
-    <div hidden={!full}><PartnerReference focused={focused} trace={trace} connected={connected || nativeConnected} connection={liveStatus} dealerId={streamView?.dealerId} onConnect={connect} onDisconnect={() => disconnect()} onNative={receiveNative} onNewObservation={newObservation} onActivity={onActivity} onImport={records => { setPreviewRequested(false); let imported = createPartnerTrace({ rolling }); for (const record of records) imported = appendPartnerTrace(imported, record); setTrace(imported); }} diagnostics={<div className={styles.connection}><div><strong>{focused ? liveStatus : connection}</strong><button className="text-button" onClick={() => void readConfiguration()}>Läs om konfiguration</button></div><div>{configuration && !configuration.configured ? <p>{[...configuration.missing, ...configuration.invalid].join(', ')}</p> : <p>Konfiguration finns på Studio-servern.</p>}{statusError ? <p role="alert">{statusError}</p> : null}</div></div>} layout={full ? ({ card, toolbar, diagnostics }) => <>
+    {!full ? <header className={styles.header}><div><span className="eyebrow">EVENT → KLIPPVAL → SPELARKVITTO</span><h2>Provspelning &amp; logg <small>{focused ? `${entries.length} senaste` : `${entries.length}/150`}</small></h2><p>Följ spelflikens faktiska presentation. Sparade val, visad bild och avslut har separata kvitton.</p></div><div className={styles.tools}><button className="text-button" onClick={() => setExpanded(value => !value)}>{expanded ? 'Fäll ihop' : 'Visa senaste'}</button><button className="text-button" onClick={onOpen}>Öppna provspelning →</button></div></header> : null}
+    <div hidden={!full}><PartnerReference focused={focused} trace={trace} connected={connected || nativeConnected} connection={liveStatus} dealerId={observationContext ? observationContext.dealerId : streamView?.dealerId} operatorSlug={observationContext?.operatorSlug} tableId={observationContext?.tableId} onObservationStart={startObservation} onConnect={connect} onDisconnect={() => disconnect()} onNative={receiveNative} onNewObservation={newObservation} onActivity={onActivity} onImport={records => { observationIdentity.current = crypto.randomUUID(); setObservationId(observationIdentity.current); setLogScope('current'); setImported(true); setPreviewRequested(false); let imported = createPartnerTrace({ rolling }); for (const record of records) imported = appendPartnerTrace(imported, record); setTrace(imported); }} diagnostics={<div className={styles.connection}><div><strong>{focused ? liveStatus : connection}</strong><button className="text-button" onClick={() => void readConfiguration()}>Läs om konfiguration</button></div><div>{configuration && !configuration.configured ? <p>{[...configuration.missing, ...configuration.invalid].join(', ')}</p> : <p>Konfiguration finns på Studio-servern.</p>}{statusError ? <p role="alert">{statusError}</p> : null}</div></div>} layout={full ? ({ card, toolbar, diagnostics }) => <>
+      <section className={styles.observationContext} aria-label="Aktuell provspelning">
+        <div><span className={styles.contextKind}>{imported ? 'Sparat protokoll' : observationContext?.tableId ? 'Spelrum' : 'Dealerprov'}</span><h2>{imported ? 'Inläst observation' : observationContext?.tableId ?? dealerLabel}</h2>
+          {imported ? <p>Historiska händelser från filen. De räknas inte som provspelning av det valda rummet eller dealern.</p> : observationContext?.tableId ? <p>{observationContext.operatorSlug ? 'Spelbolag: ' + observationContext.operatorSlug + ' · ' : ''}{dealerLabel}</p> : <p>Dealerns material provas med din spelarinloggning.</p>}</div>
+        <p role="status">{imported ? 'Inläst observation · historiska händelser' : nativeConnected ? 'Aktuell observation · spelflik ansluten' : observationId ? 'Observation påbörjad · väntar på spelfliken' : 'Redo för en ny observation'}</p>
+      </section>
+      {card}
       <PlaybackTraceView trace={playbackTrace} nativeConnected={nativeConnected} />
       {clipInventoryError ? <p role="status" className={styles.note}>{clipInventoryError}</p> : null}
-      {card}
-      <div className={styles.logBlock}><h2>Logg <small>{focused ? `${entries.length} senaste` : `${entries.length}/150`}</small></h2><div className={styles.toolbar}><button className="text-button" disabled={!entries.length} onClick={() => { keepNativeLog.reset(); onClear(); }}>Töm detaljloggen</button>{toolbar}</div>{logList}</div>
+      <div className={styles.logBlock}><h2>Logg <small>{scopedEntries.length}/150</small></h2><div className={styles.filters} role="group" aria-label="Välj observation"><button aria-pressed={logScope === 'current'} onClick={() => setLogScope('current')}>Denna observation ({grouped.current.length})</button><button aria-pressed={logScope === 'previous'} onClick={() => setLogScope('previous')}>Tidigare i fliken ({grouped.previous.length})</button></div><p className={styles.note}>{logScope === 'previous' ? 'Sparade händelser från tidigare observationer och klippförhandsvisningar. De ingår inte i den aktuella provspelningen.' : 'Här visas bara händelser från denna observation. Äldre poster finns kvar under Tidigare i fliken.'}</p><div className={styles.toolbar}><button className="text-button" disabled={!entries.length} onClick={() => { keepNativeLog.reset(); onClear(); }}>Töm detaljloggen</button>{toolbar}</div>{logList}</div>
       <details className={styles.mapping}><summary>Diagnostik</summary><PlaybackDiagnostics trace={playbackTrace} partnerConnected={connected} />{diagnostics}</details>
     </> : undefined}>{observationSlot}</PartnerReference></div>
     {!full ? (expanded ? <>{logList}<p className={styles.note}>Tillfällig logg i den här fliken, högst 150 poster. Den följer med vid sidbyte och töms när fliken stängs. Den är ingen komplett spelhistorik. Stora listor och objekt kortas med en $logTruncation-markör från loggvisningen som visar totalt, visat och utelämnat antal. Ett valt klipp eller avslutad preview innebär inte godkänd läppsynk.</p></> : <p className={styles.latest} aria-live="polite">{entries.length ? `${sourceNames[entries.at(-1)!.source]} · ${entries.at(-1)!.title} — ${statusNames[entries.at(-1)!.status]}` : 'Redo att registrera labbets verkliga anrop och uppspelningshändelser.'}</p>) : null}
@@ -215,11 +252,14 @@ function PlaybackTraceView({ trace, nativeConnected }: { trace: ReturnType<typeo
   const latest = trace.rows.at(-1);
   return <section className={styles.playbackTrace} aria-label="Spårbar uppspelning">
     <dl className={styles.traceStatus}>
-      <div><dt>Aktiv anslutning</dt><dd>{nativeConnected ? 'Spelflik · native-kvitton' : 'Spelflik frånkopplad'}{trace.latestChannel ? <small>{trace.latestChannel}</small> : null}</dd></div>
+      <div><dt>Aktiv anslutning</dt><dd>{nativeConnected ? 'Spelflik ansluten' : 'Spelflik frånkopplad'}</dd></div>
+      <div><dt>Senaste uppspelning</dt><dd>{latest ? playbackOutcome(latest) : 'Inget klipp observerat ännu'}</dd></div>
+    </dl>
+    <details className={styles.mapping}><summary>Versioner och klippval</summary><dl className={styles.traceStatus}>
       <div><dt>Klippväljare i spelet</dt><dd>{trace.mode ? modeNames[trace.mode] ?? trace.mode : 'Inte observerad'}</dd></div>
       <div><dt>Sparad Lab-revision</dt><dd>{trace.savedRevision ?? 'Inte läst'}</dd></div>
       <div><dt>Senast kvitterad klipprevision</dt><dd>{trace.projectRevision ?? 'Inget revisionskvitto'}<small>Spelversion {trace.latestVersion ?? 'ej observerad'}</small>{mismatched ? <small>Kvitto och sparad revision skiljer sig</small> : null}</dd></div>
-    </dl>
+    </dl>{trace.latestChannel ? <p className={styles.note}>Observationskanal: {trace.latestChannel}</p> : null}</details>
     <div className={styles.traceLines}>
       {!trace.rows.length ? <p>Inspelade klipp: inga uppspelningskvitton ännu</p> : <details><summary>Inspelade klipp: {trace.rows.length} kvittokedjor · senaste {playbackOutcome(latest!)}</summary><ol className={styles.playbackRows}>{trace.rows.slice(-20).reverse().map(row => <li key={row.id}>
       <div className={styles.traceHeading}><strong>{eventSummary(row.event)}</strong><span>{row.historical ? 'Historisk · ' : ''}{playbackOutcome(row)}</span></div>

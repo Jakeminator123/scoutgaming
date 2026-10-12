@@ -10,7 +10,7 @@ const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
 const styles = [
   'styles.css', 'calibration.css', 'environment.css', 'auth-modal.css',
   'local-presentation.css', 'rigged-review.css', 'astrid-voice-shell.css',
-  'astrid-voice-control.css', 'dealer-version-switcher.css', 'blackjack-entry.css',
+  'astrid-voice-control.css', 'blackjack-entry.css',
 ];
 
 function outputName(source) {
@@ -46,7 +46,7 @@ async function writePreview(output) {
     if (!textExtensions.has(ext)) throw Error(`Frontend import är inte text: ${name}`);
     let content = await readFile(sourcePath, 'utf8');
     if (name === 'blackjack-entry.mjs') {
-      const previous = "const destination = '/?dealer=astrid&presentation=local';";
+      const previous = "const destination = '/play';";
       if (!content.includes(previous)) throw Error('Inloggningens interna destination har ändrats.');
       content = content.replace(previous, "const destination = '/frontend-preview/game/?dealer=astrid&presentation=local';");
     }

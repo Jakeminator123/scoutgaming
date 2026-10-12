@@ -1,5 +1,34 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Endast registrerad dealeruppspelning, 12 oktober 2026
+
+Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.
+Amira är avvecklad som aktiv identitet. De andra namnen har samma krav som
+andra registrerade dealers: sparad dealerpost, uttryckligt tillåtet val och
+egen grundloop. Nya projekt och tom serverkonfiguration skapar ingen dealer
+eller spelbana. Historiska namn och paketscheman kan läsas för material och
+historik, men ger inte rätt att starta en gammal indexed-video-spelare.
+
+Spelstart binder dealer, spelbana och publicerat paket före uppspelning.
+Ett saknat paket/grundklipp är ett fel, aldrig ett skäl att låna en annan
+dealers klipp. Frysta paket tar med de faktiskt valda registrerade dealerserna,
+även Astrid/Vera/Mei, med egna mediereferenser. Rumsadaptern måste vara aktiv,
+tillåten och registrerad i paketet. Allt spelarval går till samma moderna
+presentationsspelare; gamla dealer-URL:er och legacy-config svarar 410.
+
+presentation-startup.mjs håller scenen dold under laddning och visar tydligt
+fel vid utebliven första bildruta. Navigering till ett sparat spelarval
+avbryter den gamla sidans initiering. local-presentation.css laddas i HTML-
+huvudet för att undvika den tidigare sena växlingen från inbakad scen.
+
+Rehearsal är fortsatt ett provläge i den riktiga spelaren, inte en separat
+lokal dealerbank. Prov av två efterföljande repliker och visuell läppsynk
+måste göras på de faktiska registrerade klippen. Molnkatalogens äldre klipp
+bevaras som material; lokal arkivsökning sker endast när ett verktyg/test
+uttryckligen anger archiveDir. Den gamla LAB_VIDEO_ARCHIVE-inställningen
+återskapar inte lokala standarddealers. Serverns konfigurerade tjänster för
+genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
+
 ## Egen talprofil för registrerade dealers, 11 oktober 2026
 
 Dealerpostens privata speechProfile v2 sparar önskemålet enabled/preparation,

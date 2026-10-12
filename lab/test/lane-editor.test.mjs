@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, defaultPresentationLane, validateLanes, validateProject, LANE_ID } from '../lib/studio-model.mjs';
+import { createSeedProject as createEmptyProject, defaultPresentationLane, validateLanes, validateProject, LANE_ID } from '../lib/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 
 const require = createRequire(import.meta.url);
@@ -48,12 +48,12 @@ function modelEdit(project, edit) {
   catch (cause) { return { project, error: cause instanceof Error ? cause.message : '' }; }
 }
 
-test('a new lane starts from the default and validateProject accepts it', () => {
+test('a new composition uses the explicitly selected dealer and validates', () => {
   const project = createSeedProject();
   const before = structuredClone(project.lanes);
-  const applied = modelEdit(project, current => addLane(current, 'tablet-lane', 'Surfplatta'));
+  const applied = modelEdit(project, current => addLane(current, 'tablet-lane', 'Surfplatta', 'astrid'));
   const added = applied.project.lanes.at(-1);
-  const base = defaultPresentationLane();
+  const base = defaultPresentationLane('astrid');
   assert.equal(applied.error, '');
   assert.equal(validateProject(applied.project), applied.project);
   assert.equal(added.id, 'tablet-lane');
@@ -70,7 +70,7 @@ test('invalid lane ids are rejected and lanes stay unchanged', () => {
   const project = createSeedProject();
   const before = structuredClone(project.lanes);
   for (const id of ['Original', 'MOBILE', 'a b']) {
-    const applied = modelEdit(project, current => addLane(current, id, 'Namn'));
+    const applied = modelEdit(project, current => addLane(current, id, 'Namn', 'astrid'));
     assert.match(applied.error, /lane-id/);
     assert.equal(applied.project, project);
     assert.deepEqual(project.lanes, before);
@@ -109,7 +109,7 @@ test('layers.dealer.default outside the lane dealers is rejected and lanes stay 
 test('removing a lane leaves the project valid and the original list untouched', () => {
   const project = createSeedProject();
   const before = structuredClone(project.lanes);
-  const added = addLane(project, 'tablet-lane', 'Surfplatta');
+  const added = addLane(project, 'tablet-lane', 'Surfplatta', 'astrid');
   const removed = removeLane(added, 'tablet-lane');
   assert.equal(validateProject(removed), removed);
   assert.deepEqual(removed.lanes.map(lane => lane.id), project.lanes.map(lane => lane.id));
@@ -122,7 +122,7 @@ test('removing a lane leaves the project valid and the original list untouched',
 test('unsaved lanes are marked until the project is clean', () => {
   const project = createSeedProject();
   const saved = JSON.stringify(project);
-  const next = addLane(project, 'tablet-lane', 'Surfplatta');
+  const next = addLane(project, 'tablet-lane', 'Surfplatta', 'astrid');
   const dirty = publishLaneRows(next.lanes, saved, true);
   assert.equal(dirty.find(row => row.id === 'tablet-lane').unsaved, true);
   assert.equal(dirty.find(row => row.id === project.lanes[0].id).unsaved, false);
@@ -130,15 +130,15 @@ test('unsaved lanes are marked until the project is clean', () => {
   assert.equal(clean.every(row => row.unsaved === false), true);
 });
 
-test('the editor keeps the default lane suggestion and ID format while rooms are created from Publicering', () => {
+test('the empty editor requires a named composition and an explicit dealer', () => {
   const source = readFileSync(new URL('../components/lane-editor.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /window\.confirm/);
   assert.equal(LANE_ID_HELP, 'Unikt id: små bokstäver, siffror och bindestreck.');
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
-  assert.match(editorHtml, /Skapa standardsammansättning/);
-  assert.match(editorHtml, /Mobile Phone Lane/);
+  assert.doesNotMatch(editorHtml, /Skapa standardsammansättning/);
+  assert.match(editorHtml, /Dealer för ny sammansättning/);
   assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
   const html = renderToStaticMarkup(React.createElement(page.ControlLanesPage, {
     initialProject: empty,
@@ -148,27 +148,20 @@ test('the editor keeps the default lane suggestion and ID format while rooms are
     storeAvailable: false,
   }));
   assert.doesNotMatch(html, /Skapa standardsammansättning|Sammansättningens namn/);
-  assert.match(html, /vald sammansättning/);
-  // No saved lanes: the standard remains available, but a company must be
-  // explicitly selected before assigning it to a package.
-  const standardChoice = html.match(/<input[^>]*name="lanes"[^>]*value="mobile-phone"[^>]*>/)?.[0];
-  assert.ok(standardChoice, 'the publish list still offers the API-supported standard lane');
-  assert.match(standardChoice, /disabled=""/);
-  assert.doesNotMatch(standardChoice, /checked=/);
+  assert.match(html, /Välj bolag/);
+  // An empty composition collection is genuinely empty; no phantom package
+  // choice or publish action is offered before a company is selected.
+  assert.doesNotMatch(html, /name="lanes"|value="mobile-phone"|Publicera sammansättningar/);
   assert.match(html, /<option value="" selected="">Välj bolag<\/option>/);
-  assert.doesNotMatch(html, /\(osparad\)/);
-  assert.doesNotMatch(html, /Använd samma lane-id/);
-  assert.doesNotMatch(html, /Spara presentationer/);
-  assert.match(html, /Skapa spelrum/);
-  assert.match(html, /<button class="sg-btn sg-btn-primary"[^>]*disabled[^>]*>Publicera paket<\/button>/);
-  assert.equal(validateProject(addDefaultLane(empty)).lanes[0].id, 'mobile-phone');
+  assert.match(html, /Skapa ett spelbolag/);
+  assert.equal(validateProject(addDefaultLane(empty, 'astrid')).lanes[0].id, 'mobile-phone');
 });
 
-test('the suggestion keeps human labels and new composition asks only for a name', () => {
+test('new compositions ask for a name and dealer while technical IDs remain automatic', () => {
   const empty = createSeedProject();
   empty.lanes = [];
   const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
-  assert.match(editorHtml, /<dt>Namn<\/dt><dd>Mobile Phone Lane<\/dd>/);
+  assert.match(editorHtml, /<option value="" selected="">Välj dealer<\/option>/);
   assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
   assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
   assert.match(editorHtml, /Namn på ny sammansättning/);
@@ -180,7 +173,7 @@ test('the suggestion keeps human labels and new composition asks only for a name
     storeAvailable: false,
   }));
   assert.doesNotMatch(html, /Spara presentationer/);
-  assert.match(html, /Skapa spelrum/);
+  assert.match(html, /Välj bolag/);
 });
 
 test('the editor omits inactive phase controls and retains presentation settings', () => {
@@ -200,9 +193,9 @@ test('the editor omits inactive phase controls and retains presentation settings
   }));
   assert.doesNotMatch(html, /Bakgrundszoner|Zoner, en per rad|control\/zones/);
   assert.doesNotMatch(html, /type="color"|Variationsfrekvens|Spara presentationer/);
-  assert.match(html, /vald sammansättning/);
+  assert.match(html, /Välj bolag/);
   assert.doesNotMatch(html, /Spara presentationer/);
-  assert.match(html, /Skapa spelrum/);
+  assert.match(html, /Välj bolag/);
 });
 
 test('replaceLane stores the new fields and rejects an invalid table color', () => {
@@ -262,12 +255,12 @@ test('composition metadata creates and selects explicitly while renaming preserv
   project.lanes[0].layers.table.colors = ['#112233'];
   const before = structuredClone(project), h = compositionControls(project);
   let tree = h.metadata();
-  h.find(tree, node => node.type === 'input' && node.props.value === project.lanes[0].label).props.onChange({ target: { value: 'Ny scen' } });
+  h.find(tree, node => node.type === 'input' && node.props.value === 'Standardsammansättning').props.onChange({ target: { value: 'Ny scen' } });
   assert.equal(h.error, '');
   assert.deepEqual(h.project, { ...before, lanes: [{ ...before.lanes[0], label: 'Ny scen' }] });
   tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.required && node.props.maxLength === 80).props.onChange({ target: { value: 'Kvällsscenen' } });
-  tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  tree = h.metadata(); h.find(tree, node => node.type === 'select' && node.props.required).props.onChange({target:{value:'astrid'}}); tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
   assert.equal(h.error, ''); assert.match(h.selectedId, /^kvallsscenen-[0-9a-f-]{36}$/);
   assert.equal(h.project.lanes.length, 2); assert.equal(h.project.lanes[1].label, 'Kvällsscenen');
   assert.deepEqual(h.project.lanes[0], { ...before.lanes[0], label: 'Ny scen' });
@@ -278,7 +271,7 @@ test('creation generates only one identity for double submit and renaming preser
   const h = compositionControls(), original = structuredClone(h.project);
   let tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.required).props.onChange({ target: { value: 'Ny scen' } });
-  tree = h.metadata(); const submit = h.find(tree, node => node.type === 'form').props.onSubmit;
+  tree = h.metadata(); h.find(tree, node => node.type === 'select' && node.props.required).props.onChange({target:{value:'astrid'}}); tree = h.metadata(); const submit = h.find(tree, node => node.type === 'form').props.onSubmit;
   submit({ preventDefault() {} }); submit({ preventDefault() {} });
   const id = h.selectedId;
   assert.equal(h.project.lanes.length, 2); assert.equal(h.error, '');
@@ -288,7 +281,7 @@ test('creation generates only one identity for double submit and renaming preser
   assert.deepEqual(h.project.lanes[0], original.lanes[0]);
   tree = h.metadata();
   h.find(tree, node => node.type === 'input' && node.props.required).props.onChange({ target: { value: 'Ny scen' } });
-  tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  tree = h.metadata(); h.find(tree, node => node.type === 'select' && node.props.required).props.onChange({target:{value:'astrid'}}); tree = h.metadata(); h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
   assert.equal(h.project.lanes.length, 3); assert.notEqual(h.selectedId, id);
 });
 
@@ -297,10 +290,10 @@ test('generated composition IDs normalize names, obey the model limit and retry 
   for (const label of ['ÅÄÖ fin scen', '123 kväll', '🔥', 'original', 'a'.repeat(80)]) {
     const id = newCompositionId(project, label, () => key);
     assert.ok(LANE_ID.test(id)); assert.ok(id.length <= 63);
-    assert.equal(addLane(project,id,label).lanes.at(-1).id,id);
+    assert.equal(addLane(project,id,label,'astrid').lanes.at(-1).id,id);
   }
   const id = newCompositionId(project, 'Ny scen', () => key);
-  const occupied = addLane(project, id, 'Ny scen'); let calls = 0;
+  const occupied = addLane(project, id, 'Ny scen', 'astrid'); let calls = 0;
   assert.equal(newCompositionId(occupied, 'Ny scen', () => ++calls === 1 ? key : other), 'ny-scen-' + other);
   assert.equal(calls, 2);
   assert.throws(() => newCompositionId(occupied, 'Ny scen', () => key), /unikt ID/);
@@ -324,7 +317,7 @@ test('visible colour controls preserve hidden policies and dealer assignments', 
 test('disabled composition controls reject direct callbacks as well as disabling native inputs', () => {
   const h = compositionControls(createSeedProject(), true), before = structuredClone(h.project);
   let tree = h.metadata();
-  h.find(tree, node => node.type === 'input' && node.props.value === before.lanes[0].label).props.onChange({ target: { value: 'Blocked' } });
+  h.find(tree, node => node.type === 'input' && node.props.value === 'Standardsammansättning').props.onChange({ target: { value: 'Blocked' } });
   h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
   tree = h.settings(); h.find(tree, node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({target:{checked:false}});
   h.find(tree, node => node.type === 'button' && node.props.children === 'Lägg till färg').props.onClick();
@@ -341,4 +334,13 @@ test('disabled composition controls reject direct callbacks as well as disabling
   const next=replaceLane(project,lane.id,changed);
   for(const key of ['openclaw','probe','idle'])assert.deepEqual(next.lanes[0][key],original.lanes[0][key]);
   assert.deepEqual(project,original);
+});
+
+// This suite exercises a saved composition, not an automatically populated new project.
+function createSeedProject() { const project = createEmptyProject(); project.lanes = [defaultPresentationLane('astrid')]; return project; }
+
+test('new compositions never infer a dealer from the project list', () => {
+  const project = createSeedProject();
+  assert.throws(() => addLane(project, 'new-room', 'New room'), /dealer/i);
+  assert.deepEqual(addLane(project, 'new-room', 'New room', 'vera').lanes.at(-1).dealers, ['vera']);
 });

@@ -1,4 +1,4 @@
-import { BASE_DEALER_IDS, isDealerId } from './dealer-identity.mjs';
+import { isActiveDealerId as isDealerId } from './dealer-identity.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { selectRegisteredIdleRule } from '../presentation-runtime/registered-idle-rules.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../presentation-runtime/registered-idle-policy.mjs';
@@ -14,7 +14,6 @@ import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.m
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
-import { legacyClipControls } from '../lab/lib/legacy-clip-inventory.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `presentation-runtime/${name}.mjs`]));
@@ -53,8 +52,7 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
-  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, legacyOptions, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  legacyControls = project => legacyClipControls(project, { ...legacyOptions, ...(env.CROUPIER_DATA_DIR ? { dataDirectory: env.CROUPIER_DATA_DIR } : {}) }) } = {}) {
+  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -103,7 +101,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       if (pathname === '/api/presentation/config' && req.method === 'GET') {
         const query = new URL(req.url||pathname,'http://localhost').searchParams;
         const requestedDealer = query.size === 1 && query.getAll('dealerId').length === 1 ? query.get('dealerId') : null;
-        if (query.size && requestedDealer === null) {
+        if (requestedDealer === null) {
           const keys = ['operatorSlug','roomId','packageRevision','dealerId'];
           if (!frozenDealerContext || query.size !== 4 || keys.some(key=>query.getAll(key).length!==1) || !/^[1-9][0-9]{0,15}$/.test(query.get('packageRevision')||'')) fail('Invalid presentation context');
           json(200, { inventory:{videos:[],families:[]},defaultMode:'off',
@@ -111,15 +109,14 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         }
         const [project, inventory] = await Promise.all([store.load(), registryLoader()]);
         if (requestedDealer !== null && (!isDealerId(requestedDealer) || !project.dealers.some(row => row.id === requestedDealer))) fail('Invalid presentation dealer');
-        const ownPolicy = requestedDealer && !BASE_DEALER_IDS.includes(requestedDealer) ? registeredIdlePolicy(project, requestedDealer) : null;
-        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: requestedDealer && !BASE_DEALER_IDS.includes(requestedDealer) ? ownPolicy : project.idlePolicy, inventory,
+        const ownPolicy = registeredIdlePolicy(project, requestedDealer);
+        json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: ownPolicy, inventory,
           ...(ownPolicy ? {idleInventory:registeredIdleInventory(inventory,{dealerId:requestedDealer,policy:ownPolicy})} : {}),
-          dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>!BASE_DEALER_IDS.includes(dealer.id)).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
+          dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>dealer.id===requestedDealer).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
-        const controls = await legacyControls(await store.load());
-        json(200, controls.runtime); return true;
+        json(410, {error:'legacy_presentation_retired'}); return true;
       }
       if (!['/api/presentation/select', '/api/presentation/idle-advice'].includes(pathname) || req.method !== 'POST') fail('Unknown presentation endpoint', 404);
       let raw = '';
@@ -134,7 +131,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         }
         const project = frozen?.project ?? await store.load();
         const { presentationContext: _context, ...adviceBody } = body;
-        const ownInventory = !frozen && isDealerId(body.dealerId) && !BASE_DEALER_IDS.includes(body.dealerId)
+        const ownInventory = !frozen && isDealerId(body.dealerId)
           ? registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}) : null;
         adviceService ??= createIdleAdviceServer({ settings, registryLoader });
         const advise = await adviceService;

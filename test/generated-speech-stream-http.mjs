@@ -1,3 +1,4 @@
+import {withPublishedChatContext} from './fixtures/published-chat-authority.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -51,7 +52,7 @@ test('real product HTTP result survives into authenticated stream; memory forget
     CROUPIER_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1', CROUPIER_GENERATED_SPEECH_DIR: join(directory, 'speech'),
     CROUPIER_SPEECH_STREAM_WORKER_SECRET: secret, CROUPIER_SPEECH_STREAM_TICKET_SECRET: `ticket-${secret}`, CARTESIA_API_KEY: 'isolated-test-key',
     OPENCLAW_BASE_URL: `http://127.0.0.1:${llm.address().port}`, OPENCLAWAPI_KEY: 'fixture-key', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat' });
-  child = spawn(process.execPath, ['--import', new URL('./fixtures/generated-speech-stream-fetch.mjs', import.meta.url).href, fileURLToPath(new URL('../web/server.mjs', import.meta.url))], {
+  child = spawn(process.execPath, ['--import',new URL('./fixtures/published-chat-authority-register.mjs',import.meta.url).href,'--import', new URL('./fixtures/generated-speech-stream-fetch.mjs', import.meta.url).href, fileURLToPath(new URL('../web/server.mjs', import.meta.url))], {
     cwd: fileURLToPath(new URL('../web/', import.meta.url)), env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stdout.on('data', b => { output += b; }); child.stderr.on('data', b => { errors += b; });
@@ -64,6 +65,7 @@ test('real product HTTP result survives into authenticated stream; memory forget
   });
   let cookie = '';
   const post = async (path, value, expected = 200) => {
+    if(['/chat','/api/chat/memory/forget'].includes(path))value=withPublishedChatContext(value);
     const response = await fetch(origin + path, { method: 'POST', headers: { 'content-type': 'application/json', Origin: origin, Cookie: cookie }, body: JSON.stringify(value), signal: AbortSignal.timeout(5000) });
     cookie = response.headers.getSetCookie().map(v => v.split(';')[0]).join('; ') || cookie;
     const data = await response.json(); assert.equal(response.status, expected, JSON.stringify(data)); return data;

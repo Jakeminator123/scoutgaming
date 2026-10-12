@@ -67,7 +67,10 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
   for(const row of index.values())if(/^croupier\/media\/dealers\/[^/]+\/review\/uploads\//.test(row.storage?.pathname??''))fail('studio_media_delete_coverage_incomplete',503);
   return true;
  }
- const descriptor={kind:'project',value:{dealerTrash:[]}};
+ async function deletionDescriptor(){
+  const saved=await repository.readDocument('project');if(!saved)fail('studio_document_missing',503);
+  return {kind:'project',value:{...saved.value,dealerTrash:saved.value.dealerTrash??[]}};
+ }
  async function dealerPlan(body,indexVerified){
   if(!body||Object.keys(body).sort().join(',')!=='dealerId,expectedRevision'||typeof body.dealerId!=='string')fail('studio_invalid_request',400);
   validateRevision(body.expectedRevision);
@@ -104,7 +107,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
     if(current.deletion?.state!=='pending')fail('studio_conflict');
     return repository.setMediaDeletion(current.id,{sha256:current.sha256,expectedRevision:current.revision,actor,
       deletion:{...current.deletion,state:'deleted',completedAt:new Date(Math.max(now(),Date.parse(current.deletion.requestedAt))).toISOString()}});
-  }),{presentationMutation:descriptor});
+  }),{presentationMutation:await deletionDescriptor()});
  }
  return Object.freeze({
   async checkDealer(body){const verified=verifiedIndex();return repository.transaction(async()=>(await dealerPlan(body,verified)).result,{readOnly:true});},
@@ -123,7 +126,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
     const next=structuredClone(plan.saved.value);next.dealerTrash.find(row=>row.dealer.id===body.dealerId).deletion=deletion;
     await repository.saveDealerLifecycle(next,{expectedRevision:plan.saved.revision,actor});
     return deletion;
-   }),{presentationMutation:descriptor});
+   }),{presentationMutation:await deletionDescriptor()});
    try{
     for(const id of batch.mediaIds){const row=await repository.getMedia(id);if(!row||row.classification.dealerId!==body.dealerId)fail('studio_conflict');if(row.deletion?.state==='deleted')continue;await finishOne(row,stillAuthorized);}
     return await mutationTransaction(()=>repository.transaction(async()=>{
@@ -134,7 +137,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
       for(const id of batch.mediaIds)if((await repository.getMedia(id))?.deletion?.state!=='deleted')fail('studio_dealer_delete_pending',503);
       const next=structuredClone(saved.value);next.dealerTrash=next.dealerTrash.filter(row=>row.dealer.id!==body.dealerId);
       return (await repository.saveDealerLifecycle(next,{expectedRevision:saved.revision,actor})).value;
-    }),{presentationMutation:descriptor});
+    }),{presentationMutation:await deletionDescriptor()});
    }catch(error){if(error?.statusCode===403)throw error;fail('studio_dealer_delete_pending',503);}
   },
   async check(body){const indexVerified=verifiedIndex();return checkPermanentMediaDeletion(repository,body,{indexVerified,now});},
@@ -154,7 +157,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
     // v5 field also makes old readers fail closed instead of ignoring tombstones.
     await repository.saveDealerLifecycle(next,{expectedRevision:saved.revision,actor});
     return marked;
-   }),{presentationMutation:descriptor});
+   }),{presentationMutation:await deletionDescriptor()});
    if(pending.deletion.state==='deleted')return pending;
    await stillAuthorized();
    try{await purge(pending,mediaOptions);}catch{fail('studio_media_delete_failed',503);}
@@ -165,7 +168,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
     if(row.revision!==pending.revision||canonicalStudioJson(row.deletion)!==canonicalStudioJson(pending.deletion))fail('studio_conflict');
     return repository.setMediaDeletion(row.id,{sha256:row.sha256,expectedRevision:row.revision,actor,
       deletion:{...row.deletion,state:'deleted',completedAt:new Date(Math.max(now(),Date.parse(row.deletion.requestedAt))).toISOString()}});
-   }),{presentationMutation:descriptor});
+   }),{presentationMutation:await deletionDescriptor()});
   }
  });
 }

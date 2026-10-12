@@ -7,7 +7,7 @@ import {REPLY_CATEGORIES} from '../../web/public/speech-reply-library.mjs';
 import type {SpeechReplyItem as ReplyItem} from '../../web/speech-reply-library.mjs';
 import {PageTemplate} from './page-template.mjs';
 import {StudioNavigation} from './studio-navigation';
-import {requestJson} from './studio-types';
+import {activeStudioDealers,requestJson} from './studio-types';
 import styles from './control-replies-page.module.css';
 
 const categories=(REPLY_CATEGORIES as readonly {id:string;label:string}[]).map(({id,label})=>[id,label] as const);
@@ -35,8 +35,9 @@ function checkedItem(value:ReplyItem,dealerId:string,expectedId?:string):ReplyIt
   return value;
 }
 
-export function ControlRepliesPage({dealers,initialDealerId,initialCategory,initialNavigationContext={}}:{dealers:Dealer[];initialDealerId?:string;initialCategory?:string;initialNavigationContext?:StudioNavigationContext}){
-  const [dealerId,setDealerId]=useState(dealers.some(row=>row.id===initialDealerId)?initialDealerId!:initialDealerId?'':dealers[0]?.id??'');
+export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,initialCategory,initialNavigationContext={}}:{dealers:Dealer[];initialDealerId?:string;initialCategory?:string;initialNavigationContext?:StudioNavigationContext}){
+  const dealers=activeStudioDealers({dealers:registeredDealers});
+  const [dealerId,setDealerId]=useState(dealers.some(row=>row.id===initialDealerId)?initialDealerId!:'');
   const [category,setCategory]=useState(validCategory(initialCategory));
   const [navigationContext,setNavigationContext]=useState<StudioNavigationContext>(initialNavigationContext);
   const [items,setItems]=useState<ReplyItem[]>([]);
@@ -77,7 +78,7 @@ export function ControlRepliesPage({dealers,initialDealerId,initialCategory,init
     context.current.href=window.location.href;
     const unload=(event:BeforeUnloadEvent)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();event.returnValue='';}};
     const restore=()=>{
-      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??dealers[0]?.id??'',nextCategory=validCategory(query.get('category'));
+      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??'',nextCategory=validCategory(query.get('category'));
       if(context.current.dirty||context.current.writing||writeLock.current){window.history.replaceState(null,'',context.current.href);setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return;}
       setDealerId(dealers.some(row=>row.id===nextDealer)?nextDealer:'');setCategory(nextCategory);setNavigationContext(studioNavigationContextFromQuery(query));setDrafts({});context.current.href=window.location.href;
     };
@@ -85,8 +86,9 @@ export function ControlRepliesPage({dealers,initialDealerId,initialCategory,init
     return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('popstate',restore);++writeSerial.current;writeRequest.current?.abort();};
   },[]);
   function choose(nextDealer:string,nextCategory:string){
+    if(nextDealer&&!dealers.some(row=>row.id===nextDealer))return;
     if(dirty||writeLock.current){setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return;}
-    const nextContext=nextDealer===dealerId?navigationContext:{laneId:navigationContext.laneId};
+    const nextContext=nextDealer===dealerId?navigationContext:{laneId:navigationContext.laneId,operatorId:navigationContext.operatorId,tableId:navigationContext.tableId};
     setDealerId(nextDealer);setCategory(nextCategory);setNavigationContext(nextContext);setDrafts({});
     const url=new URL(studioNavigationHref('/control/replies',{...nextContext,dealerId:nextDealer}),window.location.href);if(nextCategory)url.searchParams.set('category',nextCategory);
     window.history.pushState(null,'',url);context.current.href=url.href;

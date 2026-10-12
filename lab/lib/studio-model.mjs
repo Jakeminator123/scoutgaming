@@ -1,7 +1,7 @@
 import { normalizeDealerSpeechProfile } from '../../web/public/dealer-speech-profile.mjs';
 import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
 import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
-import { isDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
+import { isDealerId, isActiveDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
 import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
@@ -9,7 +9,7 @@ import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
-import { applyLegacyStandardVariants, LEGACY_VARIANT_DEALERS } from '../../presentation-runtime/legacy-standard-variants.mjs';
+
 
 // Pure, browser-safe policy model. This file never reads environment, network,
 // player identities, game state or media files. JSON is the editable artefact.
@@ -108,16 +108,17 @@ const colorList = (value, at, fail) => {
 };
 
 // Same id rule as web/public/game-lanes.mjs isGameLaneId. The server catalogue is not imported or changed.
-export function defaultPresentationLane() {
+export function defaultPresentationLane(dealerId) {
+  if (!isActiveDealerId(dealerId)) throw new StudioValidationError(['sammansättning: välj en aktiv dealer innan du skapar den']);
   return {
     id: 'mobile-phone',
     label: 'Mobile Phone Lane',
     renderer: 'layered',
-    dealers: ['astrid'],
+    dealers: [dealerId],
     layers: {
       background: { enabled: true, mode: 'baked', default: null, allowed: [] },
       table: { enabled: true, default: null, allowed: [] },
-      dealer: { enabled: true, default: 'astrid', allowed: ['astrid'] },
+      dealer: { enabled: true, default: dealerId, allowed: [dealerId] },
     },
     openclaw: { idle: 'active', deal: 'active', reveal: 'active', speak: 'active', probe: 'off' },
     operatorAdjustable: ['table.color', 'branding'],
@@ -235,24 +236,27 @@ export class StudioValidationError extends Error {
   }
 }
 
-function needsLegacyVariantMigration(project) {
-  return Array.isArray(project.legacyClipPolicy) && project.legacyClipPolicy.some(row => LEGACY_VARIANT_DEALERS.includes(row?.dealerId));
-}
-
 export function normalizeProject(project, options) {
   const preserveMissingLanes = options?.preserveMissingLanes === true;
   const validation = options ? { ...options } : undefined;
   if (validation) delete validation.preserveMissingLanes;
   if (!record(project)) return validateProject(project, validation);
-  const migrate = needsLegacyVariantMigration(project);
+
   const addLanes = !preserveMissingLanes && !Object.hasOwn(project, 'lanes');
-  if (!migrate && !addLanes) return validateProject(project, validation);
+  if (!addLanes) return validateProject(project, validation);
   const next = clone(project);
-  if (addLanes) next.lanes = [defaultPresentationLane()];
-  if (migrate) applyLegacyStandardVariants(next);
+  if (addLanes) next.lanes = [];
+
   return validateProject(next, validation);
 }
 
+// Fresh installations have no implicit dealer or composition. Event contracts
+// and neutral animation primitives remain available for explicit registration.
+export function createEmptyProject() {
+  return normalizeProject({...clone(seed), dealers:[], lines:[], lanes:[], probePolicy:createDefaultProbePolicy()});
+}
+
+// Historical demo/fixture profile. Production empty-state readers use createEmptyProject.
 export function createSeedProject() {
   return normalizeProject({ ...clone(seed), idlePolicy: createDefaultIdlePolicy(), probePolicy: createDefaultProbePolicy() });
 }
@@ -261,7 +265,7 @@ export function createSeedProject() {
 // fallbacks are shared; another dealer's recorded film or speech never is.
 export function addDealer(project, dealerId, dealerLabel) {
   validateProject(project);
-  if (!isDealerId(dealerId) || (project.dealers.some(row => row.id === dealerId) || project.dealerTrash?.some(row => row.dealer.id === dealerId))) throw new StudioValidationError(['dealers: ogiltigt eller upptaget dealer-id']);
+  if (!isActiveDealerId(dealerId) || (project.dealers.some(row => row.id === dealerId) || project.dealerTrash?.some(row => row.dealer.id === dealerId))) throw new StudioValidationError(['dealers: ogiltigt eller upptaget dealer-id']);
   const next = clone(project);
   next.dealers.push({id: dealerId, label: dealerLabel});
   for (const event of next.events) {
@@ -318,7 +322,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   id(project.revision, 'revision');
   if (project.gameId !== 'blackjack') error('gameId', 'endast blackjack är implementerat; roulette är en platshållare');
   const dealerIds = new Set();
-  if (array(project.dealers, 'dealers', DEALER_IDS.length, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
+  if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
     if (!keys(dealer, ['id', 'label'], at, ['speechProfile'])) return;
     if (Object.hasOwn(dealer, 'speechProfile')) {
@@ -328,7 +332,6 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!isDealerId(dealer.id)) error(`${at}.id`, 'ogiltigt croupier-id');
     duplicate(dealerIds, dealer.id, `${at}.id`); label(dealer.label, `${at}.label`);
   });
-  for (const dealerId of DEALER_IDS) if (!dealerIds.has(dealerId)) error('dealers', `kompatibilitetsdealer saknas: ${dealerId}`);
   const eventIds = new Set();
   if (array(project.events, 'events', seed.events.length, seed.events.length)) project.events.forEach((event, i) => {
     const at = `events[${i}]`;
@@ -421,11 +424,12 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   }
   if (Object.hasOwn(project, 'dealerTrash')) {
     const trash = project.dealerTrash, seen = new Set(dealerIds);
-    if (array(trash, 'dealerTrash', 0, MAX_DEALERS - DEALER_IDS.length)) {
+    if (array(trash, 'dealerTrash', 0, MAX_DEALERS)) {
       if (dealerIds.size + trash.length > MAX_DEALERS) error('dealerTrash', 'för många registrerade och arkiverade dealers');
       for (const [i, entry] of trash.entries()) {
         const at = `dealerTrash[${i}]`;
-        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt'], at, ['deletion'])) continue;
+        const cascade=entry?.schemaVersion===2;
+        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt',...(cascade?['compositions']:[])], at, ['deletion',...(cascade?['legacyClipPolicy','mediaPolicy','globalIdlePolicy']:[])])) continue;
         if(entry.deletion!==undefined){
           const deletion=entry.deletion;
           if(!keys(deletion,['state','requestedAt','mediaIds'],at+'.deletion') || deletion.state!=='pending'
@@ -434,9 +438,9 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
             || deletion.mediaIds.some(id=>typeof id!=='string'||!(/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/).test(id)))error(at,'ogiltig pågående dealerradering');
         }
         const dealerId = entry.dealer?.id;
-        if (entry.schemaVersion !== 1 || !isDealerId(dealerId) || DEALER_IDS.includes(dealerId) || seen.has(dealerId)) error(at, 'ogiltig eller upptagen arkiverad dealer');
+        if (![1,2].includes(entry.schemaVersion) || !isDealerId(dealerId) || seen.has(dealerId)) error(at, 'ogiltig eller upptagen arkiverad dealer');
         seen.add(dealerId);
-        if (entry.dealer?.speechProfile?.state === 'enabled') error(at, 'stäng av genererat tal innan arkivering');
+        if (entry.dealer?.speechProfile?.state === 'enabled') error(at, 'arkiverat tal ska vara avstängt');
         if (typeof entry.archivedAt !== 'string' || !Number.isFinite(Date.parse(entry.archivedAt)) || new Date(entry.archivedAt).toISOString() !== entry.archivedAt) error(at, 'ogiltig arkiveringstid');
         if (!Array.isArray(entry.activeMediaIds) || entry.activeMediaIds.length > 5000 || new Set(entry.activeMediaIds).size !== entry.activeMediaIds.length
           || entry.activeMediaIds.some(value => typeof value !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value))) error(at, 'ogiltig lista med arkiverade klipp');
@@ -444,9 +448,15 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
         // Shared triggers/assets cannot disappear while an archived snapshot needs them.
         try {
           if (!Array.isArray(entry.lines) || entry.lines.some(line => line.dealerId !== dealerId)) throw Error();
-          const restored = {...project, dealers:[...project.dealers,entry.dealer], lines:[...project.lines,...entry.lines]};
+          const restored = {...project,
+            dealers:[...project.dealers,...trash.map(row=>row.dealer)],
+            lines:[...project.lines,...trash.flatMap(row=>Array.isArray(row.lines)?row.lines:[])],
+            lanes:entry.compositions??[]};
+          if(entry.legacyClipPolicy!==undefined)validateLegacyClipPolicy(entry.legacyClipPolicy);
+          if(entry.mediaPolicy!==undefined)validateMediaPolicy(entry.mediaPolicy,project.triggers.map(row=>row.id));
+          if(entry.globalIdlePolicy!==undefined){validateIdlePolicy(entry.globalIdlePolicy);if(entry.globalIdlePolicy.familyId!=='astrid/idle.ready/ready')throw Error();}
           delete restored.dealerTrash;
-          if (entry.idlePolicy !== null) restored.dealerIdlePolicies = [...(project.dealerIdlePolicies ?? []),{dealerId,policy:entry.idlePolicy}];
+          restored.dealerIdlePolicies = [...(project.dealerIdlePolicies ?? []),...trash.filter(row=>row.idlePolicy!==null).map(row=>({dealerId:row.dealer.id,policy:row.idlePolicy}))];
           validateProject(restored, {allowIncompatibleAnimations});
         } catch { error(at, 'ogiltigt dealersnapshot eller saknade gemensamma inställningar'); }
       }

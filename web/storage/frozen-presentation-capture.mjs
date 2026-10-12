@@ -1,8 +1,8 @@
-import {BASE_DEALER_IDS} from '../dealer-identity.mjs';
+import {isActiveDealerId} from '../dealer-identity.mjs';
 import {isPresentationRoom} from '../presentation-room-contract.mjs';
 import {gameLaneConfiguration, laneDealerSelection} from '../public/game-lanes.mjs';
 import {buildPresentationPackage} from '../presentation-layers.mjs';
-import {defaultPresentationLane, normalizeProject} from '../../lab/lib/studio-model.mjs';
+import {normalizeProject} from '../../lab/lib/studio-model.mjs';
 import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';
 import {validateRevision, StudioStorageError} from './studio-contract.mjs';
 
@@ -14,7 +14,7 @@ export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory,
   const projectRevision = validateRevision(projectDocument.revision);
   const administrationRevision = validateRevision(administrationDocument.revision);
   const project = normalizeProject(projectDocument.value);
-  const source = project.lanes?.length ? project : {...project, lanes:[defaultPresentationLane()]};
+  const source = project;
   const captured = captureFrozenRegisteredDealers({project:source, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds});
   const events = captured.registeredDealers.length ? captureFrozenDealerPlayback({project:source, inventory, mediaRows, registeredDealers:captured.registeredDealers}) : null;
   const presentation = buildPresentationPackage(source, selectedLaneIds, source.layerAssets ?? [],
@@ -27,7 +27,7 @@ export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory,
 }
 export function selectedRegisteredIdleDefaults(project, selectedLaneIds) {
   return [...new Set(selectedLaneIds.map(id => project.lanes?.find(lane => lane.id === id)?.layers.dealer.default)
-    .filter(id => id && !BASE_DEALER_IDS.includes(id)))];
+    .filter(isActiveDealerId))];
 }
 /** Call only after project/admin/package CAS, on the same bound write client. */
 export async function assertCapturedPresentationMedia(repository, mediaPreconditions) {
@@ -41,7 +41,7 @@ export async function assertCapturedPresentationMedia(repository, mediaPrecondit
 }
 
 export function isPresentationRoomLaneCompatible(gameLane, presentationLane, frozenPresentation = null) {
-  if (!gameLane || !presentationLane || !['portrait-video', 'indexed-video'].includes(gameLane.renderer)) return false;
+  if (!gameLane || !presentationLane || gameLane.renderer !== 'portrait-video') return false;
   const dealer = presentationLane.layers.dealer.default;
   // The caller supplies the already validated frozen package, never the mutable
   // Studio registry. v3 portrait rooms select their adapter per allowed dealer.
@@ -49,16 +49,18 @@ export function isPresentationRoomLaneCompatible(gameLane, presentationLane, fro
     if (gameLane.mediaCollection !== `${gameLane.dealer}-presentation`) return false;
     const frozenLane = frozenPresentation.lanes.find(lane => lane.id === presentationLane.id);
     if (frozenLane?.layers.dealer.default !== dealer || !frozenLane.layers.dealer.allowed.includes(dealer)) return false;
+    if (!isActiveDealerId(gameLane.dealer)
+      || !frozenLane.layers.dealer.allowed.includes(gameLane.dealer)
+      || !frozenPresentation.registeredDealers.some(row => row.id === gameLane.dealer)) return false;
     try {
-      if (!BASE_DEALER_IDS.includes(dealer) && !resolveFrozenDealerIdle(frozenPresentation.registeredDealers,
+      if (!resolveFrozenDealerIdle(frozenPresentation.registeredDealers,
         { dealerId: dealer, allowedDealerIds: frozenLane.layers.dealer.allowed })) return false;
-      const portraitDealerIds = [...BASE_DEALER_IDS, ...frozenPresentation.registeredDealers.map(row => row.id)];
+      const portraitDealerIds = frozenPresentation.registeredDealers.map(row => row.id).filter(isActiveDealerId);
       return laneDealerSelection('', gameLane, frozenLane.layers.dealer, { portraitDealerIds }) === dealer;
     } catch { return false; }
   }
-  if (!BASE_DEALER_IDS.includes(dealer)) return gameLane.renderer === 'portrait-video' && gameLane.dealer === dealer
-    && gameLane.mediaCollection === `${dealer}-presentation`;
-  try { return laneDealerSelection('', gameLane, presentationLane.layers.dealer) === dealer; } catch { return false; }
+  return isActiveDealerId(dealer) && Boolean(frozenPresentation?.registeredDealers?.some(row => row.id === dealer && row.idle))
+    && gameLane.dealer === dealer && gameLane.mediaCollection === `${dealer}-presentation`;
 }
 export function assertPublishedRoomBindings({administration, operatorId, currentPackage, presentation}) {
   const {gameLanes} = gameLaneConfiguration(administration);

@@ -1,10 +1,12 @@
 'use client';
 
-// useStudioSession(options) — shared control-page state. One field per line:
+// useStudioProjectSession(options) — project state with optional dealer context.
+// useStudioSession(options) — the same state, with a required, validated dealer-editor context.
+// One field per line:
 // initialProject: StudioProject — server project and the saved-revision baseline
 // initialVideos: VideoInventory — server video inventory
 // initialStatus: ConnectionStatus — connection status, returned as status
-// initialDealerId?: string — query dealer; unknown values fall back to the first dealer
+// initialDealerId?: string — explicit query dealer; absent or unknown values stay unselected
 // initialEventId?: string — query event; unknown values fall back to the first event
 // initialVariantId?: string — query variant; unknown values fall back to the line default
 // connectedLane?: boolean — save notice mentions the live lane when true
@@ -60,7 +62,7 @@ import { isAssetCompatible, type DealerId, type StudioProject } from '../lib/stu
 import { videoFitsLine } from '../lib/video-intake.mjs';
 import { publishShellStatus } from './page-template.mjs';
 import { stripLabBasePath } from '../lib/lab-url.mjs';
-import { requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
+import { activeStudioDealers, requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
 import type { ConnectionStatus, DirectorMode, VideoInventory } from './studio-types';
 
 export type UnsavedSocialDraft = { draft: unknown; status: { policy: unknown } };
@@ -86,7 +88,7 @@ type SessionOptions = {
   overview?: boolean;
 };
 
-export function useStudioSession(options: SessionOptions) {
+export function useStudioProjectSession(options: SessionOptions) {
   const { initialProject, initialVideos, initialStatus, connectedLane = false, observation } = options;
   const [project, setProjectState] = useState(initialProject);
   const [conflict, setConflict] = useState(false);
@@ -102,8 +104,8 @@ export function useStudioSession(options: SessionOptions) {
     setProjectState(next);
   }, []);
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialProject));
-  const [dealerId, setDealerId] = useState<DealerId>(() => resolveStudioDealerId(initialProject, options.initialDealerId));
-  const [eventId, setEventId] = useState(() => resolveStudioEventId(initialProject, options.initialEventId));
+  const [selectedDealerId, setDealerId] = useState<DealerId>(() => resolveStudioDealerId(initialProject, options.initialDealerId));
+  const [eventId, setEventId] = useState(() => initialProject.events.length ? resolveStudioEventId(initialProject, options.initialEventId) : '');
   const [variantId, setVariantId] = useState(() => options.initialVariantId ?? '');
   const [mode, setMode] = useState<DirectorMode>('off');
   const [saving, setSaving] = useState(false);
@@ -118,17 +120,20 @@ export function useStudioSession(options: SessionOptions) {
   const clearActivities = useCallback(() => setActivities([]), []);
   const projectJson = JSON.stringify(project);
   const dirty = projectJson !== savedJson;
+  const dealer = activeStudioDealers(project).find(item => item.id === selectedDealerId);
+  const dealerId = dealer?.id ?? '';
   const eventDefinition = project.events.find(item => item.id === eventId) ?? project.events[0];
-  const observedEvent = observation?.active && observation.step?.eventId === eventDefinition.id && observation.step.event && typeof observation.step.event === 'object'
+  const observedEvent = eventDefinition && observation?.active && observation.step?.eventId === eventDefinition.id && observation.step.event && typeof observation.step.event === 'object'
     ? observation.step.event as Record<string, unknown> : null;
-  const speechExample = eventDefinition.id === 'speak.other' ? { ...eventDefinition.exampleEvent, line: observation?.speechLine ?? 'placebets' } : null;
-  const event = observedEvent ? { ...eventDefinition, exampleEvent: observedEvent }
+  const speechExample = eventDefinition?.id === 'speak.other' ? { ...eventDefinition.exampleEvent, line: observation?.speechLine ?? 'placebets' } : null;
+  const event = !eventDefinition ? undefined : observedEvent ? { ...eventDefinition, exampleEvent: observedEvent }
     : observation?.situation ? { ...eventDefinition, exampleEvent: mediaExampleEvent(eventDefinition, observation.situation) }
       : speechExample ? { ...eventDefinition, exampleEvent: speechExample } : eventDefinition;
-  const media = mediaLineForEvent(project, videos, dealerId, event.id, event.exampleEvent);
-  const line = media.line;
-  const variant = line.variants.find((item: { id: string }) => item.id === variantId) ?? line.variants[0];
-  const dealer = project.dealers.find(item => item.id === dealerId)!;
+  const savedLine = dealer && event ? project.lines.find(item => item.dealerId === dealerId && item.eventId === event.id) : undefined;
+  const media = event && savedLine?.variants.some(item => item.id === savedLine.baselineVariantId)
+    ? mediaLineForEvent(project, videos, dealerId, event.id, event.exampleEvent) : undefined;
+  const line = media?.line;
+  const variant = line?.variants.find((item: { id: string }) => item.id === variantId) ?? line?.variants[0];
 
   function replaceSelectionQuery(nextDealer: string, nextEvent: string, nextVariant = '') {
     if (typeof window === 'undefined' || !window.location || !window.history?.replaceState) return;
@@ -142,9 +147,9 @@ export function useStudioSession(options: SessionOptions) {
   function assignSelection(patch: StudioSelectionPatch, call: { invalidate?: boolean } = {}) {
     const nextDealer = patch.dealerId ?? dealerId;
     const nextEvent = patch.eventId ?? eventId;
-    if (patch.dealerId && !project.dealers.some(item => item.id === patch.dealerId)) return;
+    if (patch.dealerId && !resolveStudioDealerId(project, patch.dealerId)) return;
     if (patch.eventId && !project.events.some(item => item.id === patch.eventId)) return;
-    if (patch.dealerId) setDealerId(patch.dealerId);
+    if (patch.dealerId !== undefined) setDealerId(patch.dealerId);
     if (patch.eventId) setEventId(patch.eventId);
     const selectionMoved = patch.dealerId !== undefined || patch.eventId !== undefined;
     const nextVariant = patch.variantId !== undefined ? patch.variantId : selectionMoved ? '' : variantId;
@@ -238,6 +243,17 @@ export function useStudioSession(options: SessionOptions) {
     mode, changeMode, status: initialStatus, event, observedEvent, line, variant, media, dealer,
     activities, recordActivity, clearActivities, setActivities, projectRef,
   };
+}
+
+// Dealer pages gate entry before mounting this hook. Project-only pages use the
+// nullable project session above and never need a synthetic dealer or line.
+export function useStudioSession(options: SessionOptions) {
+  const session = useStudioProjectSession(options);
+  const { dealer, event, media, line, variant } = session;
+  if (!dealer || !event || !media || !line || !variant) {
+    throw new Error('Dealervyn kräver en vald dealer och en sparad händelse med klippvariant.');
+  }
+  return { ...session, dealer, event, media, line, variant };
 }
 
 export function StudioMessages({ error, notice, setError, setNotice }: { error: string; notice: string; setError: (value: string) => void; setNotice: (value: string) => void }) {

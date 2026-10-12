@@ -1,6 +1,6 @@
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES,layerAssetPath} from '../../web/presentation-layers.mjs';
-import {defaultPresentationLane,validateProject} from './studio-model.mjs';
+import {validateProject} from './studio-model.mjs';
 import {rebaseProjectDraft} from './project-rebase.mjs';
 
 export function compositionPreviewLayers(show,compositing,hasDealer=true) {
@@ -18,9 +18,9 @@ export function registerCompositionLayer(base,draft,remote,{id,role,laneId}) {
   const existing=project.layerAssets?.find(row=>row.id===id);
   if(existing&&JSON.stringify(existing)!==JSON.stringify(asset))throw new Error('Lagerfilens registrering krockar med utkastet.');
   if(!existing)project.layerAssets=[...(project.layerAssets??[]),structuredClone(asset)];
-  const lanes=project.lanes?.length?project.lanes:[defaultPresentationLane()];
+  const lanes=project.lanes??[];
   const lane=lanes.find(row=>row.id===laneId);
-  if(!lane)throw new Error('Filen är registrerad men den valda lanen finns inte längre. Utkastet har behållits.');
+  if(!lane)throw new Error('Filen är registrerad men den valda sammansättningen finns inte längre. Utkastet har behållits.');
   const layer=lane.layers[role];
   layer.default=id;layer.enabled=true;
   if(!layer.allowed.includes(id))layer.allowed.push(id);

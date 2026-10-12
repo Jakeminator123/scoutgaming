@@ -154,7 +154,7 @@ test('fixture preview keeps its internal banner while real operators use Johns h
   assert.match(single, /class="kevin-operator-header"/);
   assert.match(single, /href="\/partner">Alla partners</);
   assert.match(single, /Paketversion rev-7/);
-  assert.match(single, /<h1 class="kevin-shell-heading">Spelare</);
+  assert.match(single, /<h1 class="kevin-shell-heading">Integration</);
   assert.match(single, /data-theme="light" lang="sv"/);
   assert.match(single, /Operatörspersonal/);
   assert.doesNotMatch(single, /Intern förhandsvisning|Exempeloperatör|id="kevin-operator"|Ingen serverdata har lästs|No players match/);
@@ -170,7 +170,7 @@ test('fixture preview keeps its internal banner while real operators use Johns h
   assert.match(several, /Amber House/);
   assert.doesNotMatch(several, /Exempeloperatör|Intern förhandsvisning/);
   const reports = renderPortal({ initialSnapshot:realSnapshot(), initialView:'reports' });
-  assert.match(reports, /<h1 class="kevin-shell-heading">Rapporter</);
+  assert.match(reports, /<h1 class="kevin-shell-heading">Integration</);
   assert.match(reports, /Spelkoppling återstår/);
   assert.match(reports, /Spelare, transaktioner och ekonomiska rapporter är ännu inte anslutna/);
   const unavailablePanel = reports.slice(reports.indexOf('<div class="page-b kevin-disconnected"'));
@@ -188,7 +188,7 @@ test('real partner presentation destinations use assigned packages instead of lo
     const html=renderPortal({initialSnapshot:realSnapshot(),initialView:view});
     assert.match(html,/saknar det publicerade trelagersformatet/,view);
     assert.doesNotMatch(html.slice(html.indexOf('<main '),html.indexOf('</main>')),/Saved board designs|CasinoBackground|Vald lokalt|kevin-lane-status|<svg|Apply theme|Reset theme/,view);
-    assert.equal((html.match(/Hämtar utseende/g)||[]).length,view==='test'?0:1,view);
+    assert.equal((html.match(/Hämtar utseende/g)||[]).length,1,view);
   }
   const fixtureHtml=renderPortal({initialSnapshot:fixture,initialView:'theme'});
   assert.match(fixtureHtml,/Intern förhandsvisning/);
@@ -221,11 +221,31 @@ test('verified own-operator saved receipt updates the real package view without 
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
   const view=()=>{cursor=0;return walk(session(props)).find(node=>node.type?.name==='PreviewView');};
   const before=view().props.runtime.snapshot;
-  const lane=defaultPresentationLane();lane.dealers=['astrid','vera'];lane.layers.dealer.allowed=['astrid','vera'];
+  const lane=defaultPresentationLane('astrid');lane.dealers=['astrid','vera'];lane.layers.dealer.allowed=['astrid','vera'];
   const receipt={operatorId:'op-1',packageRevision:8,branding:{lane:lane.id,dealer:'vera'},presentation:{schemaVersion:1,projectRevision:'frozen-r1',lanes:[lane],assets:[]}};
   view().props.onAppearanceSaved({...receipt,operatorId:'other'});assert.deepEqual(view().props.runtime.snapshot,before);
   view().props.onAppearanceSaved(receipt);const after=view().props.runtime.snapshot;
   assert.equal(after.packageRevision,'8');assert.equal(after.operator.packageRevision,'8');assert.equal(after.presentations[0].dealer,'vera');
   assert.deepEqual(after.team,before.team);assert.deepEqual(after.tables,before.tables);assert.deepEqual(after.operators,before.operators);
   view().props.onAppearanceSaved({...receipt,packageRevision:7,branding:{dealer:'astrid'}});assert.deepEqual(view().props.runtime.snapshot,after);
+});
+
+test('real room editor keeps its element identity across menu and history view changes',()=>{
+  const output={exports:{}},slots=[];let cursor=0;
+  const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},useEffect:callback=>callback()};
+  new Function('require','module','exports',portalCode)(name=>{
+    if(name==='react')return hooks;if(name.endsWith('.css'))return {};
+    if(name==='./assets.mjs')return {assetUrl:()=>undefined};
+    if(name==='./original-views.jsx')return {createOriginalViews};
+    if(name==='../partner-session-actions')return actionsModule.exports;
+    return (name.startsWith('.')?portalRequire:require)(name);
+  },output,output.exports);
+  const runtime=makeRuntime('partner',realSnapshot()),base={runtime,original:{},copy:{},apiBase:'/api/partner',language:'sv'};
+  const render=view=>{cursor=0;return output.exports.PreviewView({...base,view});};
+  const room=tree=>tree.props.children[0];
+  const first=room(render('bj')),away=room(render('ops')),back=room(render('bj'));
+  assert.equal(first.props.hidden,false);assert.equal(away.props.hidden,true);assert.equal(back.props.hidden,false);
+  assert.equal(first.type,away.type);assert.equal(first.key,away.key);
+  assert.equal(first.props.children.type,away.props.children.type);assert.equal(first.props.children.key,away.props.children.key);
+  assert.equal(away.props.children.props.active,false);assert.equal(back.props.children.props.active,true);
 });

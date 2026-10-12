@@ -1,19 +1,12 @@
-import { BASE_DEALER_IDS, isDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
+import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
-export const GAME_LANES = Object.freeze([
-  Object.freeze({ schemaVersion: 1, id: 'mobile-phone', label: 'Mobile Phone Lane', renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }),
-]);
+export const GAME_LANES = Object.freeze([]);
 const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'paow', mediaCollection: 'layer-packs-preview' });
-const dealers = BASE_DEALER_IDS;
-const indexedDealers = new Set(['vera', 'amira', 'mei']);
-// These approved dealer banks are indexed frames, not Studio portrait films.
-// A room keeps its identity and permissions while selecting the working adapter.
 export function gamePresentationForDealer(dealerId, renderer) {
-  if (!isDealerId(dealerId) || !['portrait-video', 'indexed-video', 'layered'].includes(renderer)) throw Error('Invalid dealer presentation');
-  if (renderer === 'layered') return 'layered';
-  return renderer === 'portrait-video' && !indexedDealers.has(dealerId) ? 'local' : 'original';
+  if (!isActiveDealerId(dealerId) || !['portrait-video', 'layered'].includes(renderer)) throw Error('Registered cloud presentation required');
+  return renderer === 'layered' ? 'layered' : 'local';
 }
 const layerPreviewDealers = ['paow', 'dragge'];
 export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
@@ -44,8 +37,8 @@ export function validateGameLanes(value) {
 export function gameLaneConfiguration(value = {}) {
   const explicit = Object.hasOwn(value, 'gameLanes');
   const gameLanes = validateGameLanes(explicit ? value.gameLanes : GAME_LANES);
-  const gameLane = explicit ? value.gameLane : value.gameLane === 'original' || value.gameLane === undefined ? 'mobile-phone' : value.gameLane;
-  if (gameLanes.length ? !isGameLane(gameLane, gameLanes) : gameLane !== null) throw Error('Invalid active lane');
+  const gameLane = explicit ? value.gameLane : value.gameLane ?? null;
+  if (gameLane !== null && !isGameLane(gameLane, gameLanes)) throw Error('Invalid active lane');
   return { gameLanes, gameLane };
 }
 
@@ -59,12 +52,10 @@ export function packageLaneIds(allowedLanes, lanes = GAME_LANES) {
 
 // allowedLanes only narrows the catalogue. An empty intersection keeps the
 // saved active lane; the caller decides whether that deserves a warning.
-export function gameLaneSelection(query, activeLane = 'mobile-phone', lanes = GAME_LANES, allowedLanes) {
+export function gameLaneSelection(query, activeLane = null, lanes = GAME_LANES, allowedLanes) {
   lanes = validateGameLanes(lanes);
   const fallbackLayer = LAYER_PREVIEW_LANE;
   const published = fallbackLayer && !lanes.some(row => row.id === fallbackLayer.id) ? [...lanes, fallbackLayer] : lanes;
-  if (activeLane === 'original') activeLane = 'mobile-phone';
-  if (!isGameLane(activeLane, lanes)) throw Error('No active game lane');
   const permitted = allowedLanes === undefined ? [] : packageLaneIds(allowedLanes, published);
   if (permitted.length) {
     lanes = permitted.map(id => published.find(lane => lane.id === id));
@@ -73,9 +64,10 @@ export function gameLaneSelection(query, activeLane = 'mobile-phone', lanes = GA
   const params = query instanceof URLSearchParams ? query : new URLSearchParams(query);
   const explicit = params.getAll('lane').length === 1 ? params.get('lane') : null;
   const lane = lanes.find(row => row.id === (isGameLane(explicit, lanes) ? explicit : activeLane));
+  if (!lane) throw Error('No configured game lane');
   const layeredDealer = lane.renderer === 'layered' && params.getAll('dealer').length === 1 && layerPreviewDealers.includes(params.get('dealer'))
     ? params.get('dealer') : null;
-  const dealer = lane.renderer === 'indexed-video' && params.getAll('dealer').length === 1 && dealers.includes(params.get('dealer'))
+  const dealer = lane.renderer === 'indexed-video' && params.getAll('dealer').length === 1 && isActiveDealerId(params.get('dealer'))
     ? params.get('dealer') : layeredDealer || lane.dealer;
   const presentation = gamePresentationForDealer(dealer, lane.renderer);
   return { lane: lane.id, dealer, presentation };
@@ -86,24 +78,24 @@ export function gameLaneSelection(query, activeLane = 'mobile-phone', lanes = GA
 // layer default comes first. null means no overlap; the caller keeps its dealer.
 export function laneDealerSelection(query, lane, dealerLayer, { portraitDealerIds = [] } = {}) {
   if (!lane || !['portrait-video', 'indexed-video'].includes(lane.renderer) || !isDealerId(lane.dealer)) throw Error('Invalid lane definition');
-  const renderable = lane.renderer === 'indexed-video' ? dealers : [lane.dealer, ...portraitDealerIds.filter(isDealerId)];
+  const renderable = lane.renderer === 'portrait-video' ? [lane.dealer, ...portraitDealerIds.filter(isActiveDealerId)] : [];
   const listed = [dealerLayer?.default, ...(Array.isArray(dealerLayer?.allowed) ? dealerLayer.allowed : [])];
-  const permitted = [...new Set(listed)].filter(id => renderable.includes(id));
+  const permitted = [...new Set(listed)].filter(id => renderable.includes(id) && isActiveDealerId(id));
   if (!permitted.length) return null;
   const params = query instanceof URLSearchParams ? query : new URLSearchParams(query);
   const requested = params.getAll('dealer').length === 1 ? params.get('dealer') : null;
-  return permitted.includes(requested) ? requested : permitted[0];
+  return params.has('dealer') ? (permitted.includes(requested) ? requested : null) : permitted[0];
 }
 
 const packageRevisionPattern = /^[1-9][0-9]{0,15}$/;
-const CHOICE_DEALERS = Object.freeze([...BASE_DEALER_IDS, 'paow', 'dragge']);
+const CHOICE_DEALERS = Object.freeze(['paow', 'dragge']);
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const CHOICE_BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 // Same layers as lab/lib/studio-model.mjs defaultPresentationLane. web does not import lab.
 const STANDARD_PRESENTATION_LAYERS = Object.freeze({
   background: Object.freeze({ enabled: true, mode: 'baked', default: null, allowed: Object.freeze([]) }),
   table: Object.freeze({ enabled: true, default: null, allowed: Object.freeze([]) }),
-  dealer: Object.freeze({ enabled: true, default: 'astrid', allowed: Object.freeze(['astrid']) }),
+  dealer: Object.freeze({ enabled: false, default: null, allowed: Object.freeze([]) }),
 });
 const choiceText = value => typeof value === 'string' && value.length >= 1 && value.length <= 200 && !/[\u0000-\u001f\u007f]/u.test(value);
 
@@ -128,7 +120,7 @@ export function gameChoicesFromDocument(text, options) {
 export function assertGameChoices(value, { registeredDealerIds = [] } = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Invalid game presentation');
   if (Object.keys(value).length !== 5 || !['dealers', 'dealerDefault', 'tableColors', 'tableDefault', 'background'].every(key => Object.hasOwn(value, key))) throw Error('Invalid game presentation');
-  const dealers = choiceList(value.dealers, id => CHOICE_DEALERS.includes(id) || registeredDealerIds.includes(id) && isDealerId(id), 32);
+  const dealers = choiceList(value.dealers, id => (CHOICE_DEALERS.includes(id) || registeredDealerIds.includes(id)) && isActiveDealerId(id), 32);
   if (!dealers || (value.dealerDefault !== null && !dealers.includes(value.dealerDefault))) throw Error('Invalid game presentation');
   const tableColors = choiceList(value.tableColors, color => TABLE_COLOR.test(color), 16);
   if (!tableColors || (value.tableDefault !== null && !tableColors.includes(value.tableDefault))) throw Error('Invalid game presentation');
@@ -172,10 +164,10 @@ export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitD
   const found = Array.isArray(projectLanes) ? projectLanes.find(row => row && row.id === laneId) : undefined;
   const layers = found?.layers && typeof found.layers === 'object' ? found.layers : STANDARD_PRESENTATION_LAYERS;
   const renderable = !serverLane ? CHOICE_DEALERS
-    : serverLane.renderer === 'indexed-video' ? BASE_DEALER_IDS
+    : serverLane.renderer === 'indexed-video' ? []
     : isDealerId(serverLane.dealer) ? [serverLane.dealer, ...portraitDealerIds.filter(isDealerId)] : [];
   const dealerLayer = layers.dealer && typeof layers.dealer === 'object' ? layers.dealer : {};
-  const dealers = keptStrings([dealerLayer.default, ...(Array.isArray(dealerLayer.allowed) ? dealerLayer.allowed : [])], id => renderable.includes(id), 32);
+  const dealers = keptStrings([dealerLayer.default, ...(Array.isArray(dealerLayer.allowed) ? dealerLayer.allowed : [])], id => renderable.includes(id) && isActiveDealerId(id), 32);
   const table = layers.table && typeof layers.table === 'object' ? layers.table : {};
   const tableColors = keptStrings(Array.isArray(table.colors) ? table.colors : table.allowed, color => TABLE_COLOR.test(color), 16);
   const background = layers.background && typeof layers.background === 'object' ? layers.background : {};
@@ -198,20 +190,13 @@ export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitD
 // reselect a retired adapter or override that server-owned decision.
 // Operator context is read-only here; it is not a selector.
 export function gameLaneFromDocument(dataset, lanes = GAME_LANES) {
-  if (!dataset?.gameLane) return gameLaneSelection('');
+  if (!dataset?.gameLane) throw Error('No configured game presentation');
   const registry = dataset.gameRegisteredDealers === undefined ? [] : validatePublicRegisteredDealers(JSON.parse(dataset.gameRegisteredDealers));
-  const extra = !BASE_DEALER_IDS.includes(dataset.gameDealer) && !layerPreviewDealers.includes(dataset.gameDealer);
-  if (!isGameLaneId(dataset.gameLane) || !isDealerId(dataset.gameDealer)
-    || !['local', 'original', 'layered'].includes(dataset.gamePresentation)) throw Error('Invalid game presentation');
+  const extra = dataset.gamePresentation !== 'layered';
+  if (!isGameLaneId(dataset.gameLane) || !isActiveDealerId(dataset.gameDealer)
+    || !['local', 'layered'].includes(dataset.gamePresentation)) throw Error('Invalid game presentation');
   if (extra && (dataset.gamePresentation !== 'local' || dataset.gameLocalDealer !== dataset.gameDealer
     || !registry.some(row => row.id === dataset.gameDealer))) throw Error('Invalid game presentation');
-  if (dataset.gamePresentation === 'local' && dataset.gameDealer !== 'astrid' && !extra && dataset.gameLocalDealer !== dataset.gameDealer) {
-    let catalogue;
-    try { catalogue = validateGameLanes(lanes); }
-    catch { throw Error('Invalid game presentation'); }
-    const lane = catalogue.find(row => row.id === dataset.gameLane);
-    if (!lane || lane.renderer !== 'portrait-video' || lane.dealer !== dataset.gameDealer) throw Error('Invalid game presentation');
-  }
   if (dataset.gamePresentation === 'layered') {
     if (dataset.gameLane !== 'layer-preview' || !layerPreviewDealers.includes(dataset.gameDealer)) throw Error('Invalid game presentation');
   }

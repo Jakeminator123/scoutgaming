@@ -19,7 +19,7 @@ test('next step handles missing companies, previews, failures, drafts, publicati
   assert.equal(next({operator:{...company,publishedPackage:null},data:room('alpha')}).kind,'retry');
 });
 test('studio summary projects names only and selection accepts a known id or slug',()=>{
-  assert.deepEqual(controlStudioSummary({dealers:[{id:'astrid',label:'Astrid',secret:'private'}],lanes:[{id:'standard',label:'Standard',mediaUrl:'private'}],assets:['private']}),{dealers:[{id:'astrid',label:'Astrid'}],lanes:[{id:'standard',label:'Standard'}]});
+  assert.deepEqual(controlStudioSummary({dealers:[{id:'astrid',label:'Astrid',secret:'private'},{id:'amira',label:'Amira'}],lanes:[{id:'standard',label:'Standard',mediaUrl:'private'}],assets:['private']}),{dealers:[{id:'astrid',label:'Astrid'}],lanes:[{id:'standard',label:'Standard'}]});
   assert.equal(controlStudioSummary(null),null);
   const list=[company,{id:'b',slug:'beta',name:'Beta'}];
   assert.equal(selectedOverviewOperator(list,'beta').id,'b');assert.equal(selectedOverviewOperator(list,'b').id,'b');

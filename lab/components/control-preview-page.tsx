@@ -1,21 +1,22 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
+import {compositionLabel} from '../lib/control-flow.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
-import {defaultPresentationLane,validateProject,type StudioProject,type StudioLane} from '../lib/studio-model.mjs';
+import {validateProject,type StudioProject,type StudioLane} from '../lib/studio-model.mjs';
 import {registerCompositionLayer} from '../lib/studio-composition.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 import {StudioNavigation} from './studio-navigation';
 import {PageTemplate} from './page-template.mjs';
-import {useStudioSession} from './studio-session';
+import {useStudioProjectSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
 import {LayerAssetManager} from './layer-asset-manager';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
-import {studioHref,type VideoInventory,type ConnectionStatus} from './studio-types';
+import {activeStudioDealers,studioHref,type VideoInventory,type ConnectionStatus} from './studio-types';
 import styles from './control-preview-page.module.css';
 
 type Role='dealer'|'table'|'background';
@@ -24,15 +25,15 @@ const labels={dealer:'Dealer',table:'Bord',background:'Bakgrund'};
 const defaultKey:VideoCompositing={mode:'green-screen',threshold:0.23,softness:0.15,despill:0};
 
 export function initialCompositionLaneId(project:StudioProject,laneId?:string,dealerId?:string) {
-  const lanes=project.lanes?.length?project.lanes:[defaultPresentationLane()];
+  const lanes=project.lanes??[];
   return lanes.find(row=>row.id===laneId)?.id
     ??lanes.find(row=>row.layers.dealer.default===dealerId)?.id
     ??lanes.find(row=>row.layers.dealer.allowed.includes(dealerId??''))?.id
-    ??lanes[0].id;
+    ??lanes[0]?.id??'';
 }
 
-export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string}) {
-  const session=useStudioSession({initialProject,initialVideos,initialStatus});
+export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string}) {
+  const session=useStudioProjectSession({initialProject,initialVideos,initialStatus});
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
@@ -44,11 +45,16 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const layerTabs=useRef<Partial<Record<Role,HTMLButtonElement>>>({});
   const objectUrls=useRef<Partial<Record<Role,string>>>({}),savedBaseline=useRef(savedJson),continuing=useRef(false),uploadLock=useRef(false),uploads=useRef(new Set<string>());
   savedBaseline.current=savedJson;
-  const lanes=project.lanes?.length?project.lanes:[defaultPresentationLane()];
-  const lane=lanes.find(row=>row.id===laneId)??lanes[0];
-  const contentDealer=project.dealers.find(row=>row.id===initialDealerId);
-  const navigationDealer=contentDealer??project.dealers.find(row=>row.id===lane.layers.dealer.default);
-  const clips=videos.videos.filter(video=>video.available&&(video.dealer===lane.layers.dealer.default||video.classification?.dealerId===lane.layers.dealer.default));
+  const lanes=project.lanes??[];
+  const lane=lanes.find(row=>row.id===laneId)??lanes[0]??{id:'',label:'',renderer:'layered',dealers:[],layers:{background:{enabled:false,mode:'baked',default:null,allowed:[]},table:{enabled:false,default:null,allowed:[]},dealer:{enabled:false,default:'',allowed:[]}},openclaw:{idle:'off',deal:'off',reveal:'off',speak:'off',probe:'off'},operatorAdjustable:[]} as StudioLane;
+  const dealers=activeStudioDealers(project);
+  const contentDealer=dealers.find(row=>row.id===initialDealerId);
+  const startDealer=dealers.find(row=>row.id===lane.layers.dealer.default);
+  const navigationDealer=initialDealerId?contentDealer:startDealer;
+  const invalidDealerIds=[...new Set([lane.layers.dealer.default,...lane.dealers,...lane.layers.dealer.allowed])].filter(id=>!dealers.some(row=>row.id===id));
+  const invalidDealerLabel=(id:string)=>project.dealers.find(row=>row.id===id)?.label??id;
+  const invalidDealerSelection=!startDealer||invalidDealerIds.length>0;
+  const clips=videos.videos.filter(video=>Boolean(startDealer)&&video.available&&(video.dealer===lane.layers.dealer.default||video.classification?.dealerId===lane.layers.dealer.default));
   const idleFamily=videos.families?.find(row=>row.dealerId===lane.layers.dealer.default&&row.playbackType==='idle-pool');
   const idleIds=idleFamily&&project.idlePolicy?.familyId===idleFamily.id?project.idlePolicy.base.map(row=>row.videoId):idleFamily?.standardIds??[];
   const idleClip=idleIds.map(id=>clips.find(row=>row.id===id)).find(Boolean)
@@ -60,7 +66,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const hasSavedLane=Boolean(project.lanes?.some(row=>row.id===lane.id));
   const previewContext=useRef({laneId:lane.id,revision:project.revision,dirty,saving,conflict,temporary});
   previewContext.current={laneId:lane.id,revision:project.revision,dirty,saving,conflict,temporary};
-  const previewBlocked=dirty||saving||uploading||conflict||temporary||!hasSavedLane||previewBusy;
+  const previewBlocked=dirty||saving||uploading||conflict||temporary||!hasSavedLane||invalidDealerSelection||previewBusy;
   useEffect(()=>()=>{Object.values(objectUrls.current).forEach(url=>URL.revokeObjectURL(url));},[]);
   useEffect(()=>{
     if(!continueHref||dirty||saving||uploading||conflict||temporary)return;
@@ -90,7 +96,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     }
   }
   function markUpload(role:Role,busy:boolean){if(busy)uploads.current.add(role);else uploads.current.delete(role);uploadLock.current=uploads.current.size>0;setUploading(uploadLock.current);}
-  const edit=(next:StudioLane)=>modelEdit(current=>validateProject({...current,lanes:(current.lanes?.length?current.lanes:[defaultPresentationLane()]).map(row=>row.id===lane.id?{...next,renderer:'layered',composition:next.composition??defaultCompositionSettings()}:row)}));
+  const edit=(next:StudioLane)=>modelEdit(current=>validateProject({...current,lanes:(current.lanes??[]).map(row=>row.id===lane.id?{...next,renderer:'layered',composition:next.composition??defaultCompositionSettings()}:row)}));
   function setPlacement(role:Role,key:'scale'|'width'|'x'|'y',value:number){
     const next=structuredClone(lane),composition=structuredClone(settings);
     const placement=composition[layout][role] as unknown as Record<string,number>;placement[key]=value;next.composition=composition;edit(next);
@@ -105,7 +111,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const compositing=localMedia.dealer?(localKey?defaultKey:undefined):storedCompositing?.mode==='green-screen'?storedCompositing:undefined;
   const fullFrame=Boolean(dealer&&!compositing&&lane.layers.dealer.enabled);
   function chooseDealer(id:string){
-    if(previewAttempt.current||saving||uploading||!project.dealers.some(row=>row.id===id))return;
+    if(previewAttempt.current||saving||uploading||!dealers.some(row=>row.id===id))return;
     const next=structuredClone(lane);next.layers.dealer.default=id;
     if(!next.dealers.includes(id))next.dealers.push(id);
     if(!next.layers.dealer.allowed.includes(id))next.layers.dealer.allowed.push(id);
@@ -151,27 +157,38 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
   }
-  const publicationHref=labUrl(`/control/lanes?lane=${encodeURIComponent(lane.id)}`);
-  const contentHref=studioHref('/control/clips',{dealerId:lane.layers.dealer.default});
-  const uploadHref=studioHref('/control/videos',{dealerId:lane.layers.dealer.default,eventId:clip?.classification?.eventId??project.events[0]?.id});
-  return <PageTemplate eyebrow="// STUDIO" title="Sammansättning"
-    primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict} href={publicationHref} onClick={event=>{event.preventDefault();void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
+  const publicationHref=labUrl('/control/rooms?'+new URLSearchParams({composition:lane.id,...(initialOperatorId?{operator:initialOperatorId}:{})}));
+  const contentHref=studioHref('/control/clips',{dealerId:startDealer?.id,laneId:lane.id,operatorId:initialOperatorId});
+  const uploadHref=studioHref('/control/videos',{dealerId:startDealer?.id,eventId:clip?.classification?.eventId??project.events[0]?.id,laneId:lane.id,operatorId:initialOperatorId});
+  if (!lanes.length) return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar" intro="Samla dealer, bord och bakgrund till en sammansättning som kan användas i flera spelrum."
+    primary={<button className="sg-btn sg-btn-primary" disabled={!dirty||saving||conflict} onClick={()=>void save()}>{saving?'Sparar…':'Spara'}</button>}>
+    <div className={styles.empty}><p>Inga sammansättningar finns i utkastet. Skapa en nedan för att börja.</p>
+      {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
+      {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
+      <CompositionMetadata project={project} onEdit={modelEdit} selectedId="" onSelect={setLaneId} disabled={saving||conflict}/>
+      <p>{dirty?'Osparade ändringar. Spara för att bekräfta borttagningen.':'Inga sammansättningar sparade.'}</p>
+      <a href={labUrl('/control/rooms'+(initialOperatorId?'?operator='+encodeURIComponent(initialOperatorId):''))}>Spelrum &amp; publicering →</a>
+    </div></PageTemplate>;
+  return <PageTemplate eyebrow="// STUDIO" title="Sammansättningar"
+    primary={<><button className="sg-btn sg-btn-secondary" disabled={!dirty||previewBusy||saving||uploading||conflict} onClick={()=>{if(!uploadLock.current&&!previewAttempt.current)void save();}}>{saving?'Sparar…':'Spara'}</button><button type="button" className="sg-btn sg-btn-primary" disabled={previewBlocked} aria-describedby="studio-preview-help" onClick={()=>void startPreview()}>{previewBusy?'Startar provspelning…':'Provspela'}</button><a className="sg-btn sg-btn-secondary" aria-disabled={previewBusy||saving||uploading||conflict||invalidDealerSelection} href={publicationHref} onClick={event=>{event.preventDefault();if(!invalidDealerSelection)void continueTo(publicationHref);}}>{saving?'Sparar…':dirty?'Spara och fortsätt':'Fortsätt till publicering'}</a></>}>
     <div className="sg-page-body">
-      <StudioNavigation dealerId={navigationDealer?.id??lane.layers.dealer.default} dealerLabel={navigationDealer?.label} active="scene" laneId={lane.id} crumbs={[{label:lane.label}]} onNavigate={(event,href)=>{event.preventDefault();void continueTo(href);}} />
+      <StudioNavigation dealerId={navigationDealer?.id} dealerLabel={navigationDealer?.label} active="scene" laneId={lane.id} operatorId={initialOperatorId} crumbs={[{label:compositionLabel(lane.label)}]} onNavigate={(event,href)=>{event.preventDefault();void continueTo(href);}} />
+      {invalidDealerSelection?<p role="alert">Sammansättningen innehåller ett inaktivt dealerval: {invalidDealerIds.map(id=>invalidDealerLabel(id)||"saknas").join(", ")}. Välj en aktiv startdealer och ta bort inaktiva val innan du provspelar eller publicerar.</p>:null}
+      {initialDealerId&&!contentDealer?<p role="alert">Dealern i länken är inte aktiv. Välj en aktiv dealer uttryckligen.</p>:null}
       {previewError?<p role="alert">{previewError}</p>:null}
       {error?<p role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
       {conflict?<ProjectConflict base={JSON.parse(savedJson)} draft={project} onResolve={(remote,merged)=>{setSavedJson(JSON.stringify(remote));setProject(merged);setConflict(false);setError('');setNotice('Granska sammanslagningen och spara.');}}/>:null}
       <CompositionMetadata project={project} onEdit={modelEdit} selectedId={lane.id} disabled={previewBusy||saving||uploading||conflict} onSelect={id=>{
         if(previewAttempt.current||uploadLock.current||saving||conflict)return;setLaneId(id);setClipId('');
-        const url=new URL(window.location.href);url.searchParams.set('lane',id);window.history.replaceState(null,'',url.pathname+url.search);
+        const url=new URL(window.location.href);url.searchParams.set('composition',id);url.searchParams.delete('lane');window.history.replaceState(null,'',url.pathname+url.search);
       }}/>
       <p className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</p>
       <p id="studio-preview-help" className={styles.hint}>{temporary?'Avsluta det tillfälliga filprovet före provspelning.':dirty||!hasSavedLane?'Spara sammansättningen först för att provspela.':'Provspela blackjack med sparade dealers, bord och bakgrunder från biblioteket. Ett separat provspel startas utan att publicera till ett bolag.'}</p>
-      <p className={styles.hint}>En presentation samlar dealer, bord och bakgrund samt vilka alternativ partnern får välja. Efter provspelning väljer du bolag och paketinnehåll i Publicering.</p>
+      <p className={styles.hint}>En sammansättning samlar dealer, bord och bakgrund samt vilka val bolaget får göra. Provspela här och koppla den sedan till ett spelrum under Spelrum & publicering.</p>
       {contentDealer&&contentDealer.id!==lane.layers.dealer.default?<aside className={styles.hint} aria-label="Dealer från klippbiblioteket">
         <p>Du valde {contentDealer.label} i dealerbiblioteket. {lane.layers.dealer.allowed.includes(contentDealer.id)
-          ? 'Dealern är tillåten i den här presentationen, men är inte startdealer.'
-          : 'Dealern ingår inte i den här presentationen ännu. Välj en befintlig presentation ovan eller lägg till dealern här.'}</p>
+          ? 'Dealern är tillåten i den här sammansättningen, men är inte startdealer.'
+          : 'Dealern ingår inte i den här sammansättningen ännu. Välj en befintlig sammansättning ovan eller lägg till dealern här.'}</p>
         <button type="button" className="sg-btn sg-btn-secondary" disabled={previewBusy||saving||uploading} onClick={()=>chooseDealer(contentDealer.id)}>Använd {contentDealer.label} som startdealer</button>
       </aside>:null}
       <div className={styles.workspace}>
@@ -185,16 +202,17 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         <section className={styles.controls} aria-label="Tre lager">
           <div className={styles.layerTabs} role="tablist" aria-label="Välj lager">{roles.map(role=><button key={role} ref={element=>{layerTabs.current[role]=element??undefined;}} id={`composition-tab-${role}`} role="tab" aria-selected={activeRole===role} aria-controls={`composition-panel-${role}`} tabIndex={activeRole===role?0:-1} onClick={()=>setActiveRole(role)} onKeyDown={event=>{let index=roles.indexOf(role);if(event.key==='ArrowRight')index=(index+1)%roles.length;else if(event.key==='ArrowLeft')index=(index+roles.length-1)%roles.length;else if(event.key==='Home')index=0;else if(event.key==='End')index=roles.length-1;else return;event.preventDefault();setActiveRole(roles[index]);layerTabs.current[roles[index]]?.focus();}}>{labels[role]}</button>)}</div>
           <section className={styles.layer} id="composition-panel-dealer" role="tabpanel" aria-labelledby="composition-tab-dealer" hidden={activeRole!=='dealer'} tabIndex={0}>
-            <label className="field">Dealer<select value={lane.layers.dealer.default} disabled={previewBusy||saving||uploading} onChange={event=>chooseDealer(event.target.value)}>{project.dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+            <label className="field">Dealer<select value={startDealer?.id??''} disabled={previewBusy||saving||uploading} onChange={event=>chooseDealer(event.target.value)}>{!startDealer?<option value="" disabled>Välj en aktiv dealer</option>:null}{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
             <p className={styles.hint}>Dealern börjar i grundloop. Publicerade händelseklipp avbryter den när spelet utlöser en händelse; sedan återgår dealern till grundloopen.</p>
-            <fieldset disabled={previewBusy||saving||uploading}><legend>Tillåtna dealers i presentationen</legend>
-              {project.dealers.map(row=><label className="check-field" key={row.id}><input type="checkbox" aria-label={`Tillåt ${row.label}`} checked={lane.layers.dealer.allowed.includes(row.id)} disabled={row.id===lane.layers.dealer.default} onChange={event=>{
+            <fieldset disabled={previewBusy||saving||uploading}><legend>Tillåtna dealers i sammansättningen</legend>
+              {dealers.map(row=><label className="check-field" key={row.id}><input type="checkbox" aria-label={`Tillåt ${row.label}`} checked={lane.layers.dealer.allowed.includes(row.id)} disabled={row.id===lane.layers.dealer.default} onChange={event=>{
                 if(row.id===lane.layers.dealer.default)return;
                 const next=structuredClone(lane);
                 if(event.target.checked){if(!next.dealers.includes(row.id))next.dealers.push(row.id);if(!next.layers.dealer.allowed.includes(row.id))next.layers.dealer.allowed.push(row.id);}
                 else {next.dealers=next.dealers.filter(id=>id!==row.id);next.layers.dealer.allowed=next.layers.dealer.allowed.filter(id=>id!==row.id);}
                 edit(next);
               }}/>{row.label}{row.id===lane.layers.dealer.default?' · startdealer':''}</label>)}
+              {invalidDealerIds.filter(Boolean).map(id=><div key={id}><span>{invalidDealerLabel(id)} · inaktivt val</span> <button type="button" className="sg-btn sg-btn-secondary" disabled={id===lane.layers.dealer.default} onClick={()=>{if(previewAttempt.current||saving||uploading||id===lane.layers.dealer.default)return;const next=structuredClone(lane);next.dealers=next.dealers.filter(value=>value!==id);next.layers.dealer.allowed=next.layers.dealer.allowed.filter(value=>value!==id);edit(next);}}>Ta bort inaktivt val</button>{id===lane.layers.dealer.default?<small> Välj först en aktiv startdealer.</small>:null}</div>)}
               <p className={styles.hint}>Startdealern ingår alltid. Avmarkera äldre dealers som inte ska följa med paketet. Byte av startdealer ändrar inte övriga tillåtna dealers.</p>
             </fieldset>
             {placementControls('dealer')}
@@ -212,7 +230,6 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbildsklippet behåller sin bild.</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
         <details><summary>Snabbprov med tre lokala filer</summary><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><label className="check-field"><input type="checkbox" checked={localKey} disabled={previewBusy||saving||uploading} onChange={event=>setLocalKey(event.target.checked)}/>Nyckla grön bakgrund i lokal dealerfilm</label><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></details>
-        <details><summary>Frilagda dealerpaket · Paow och Dragge</summary><iframe loading="lazy" title="Förhandsvisning · lagerprov" src={labUrl('/preview/index.html')} style={{display:'block',width:'100%',height:'88vh',minHeight:720,border:0}}/></details>
       </div></details>
     </div>
   </PageTemplate>;

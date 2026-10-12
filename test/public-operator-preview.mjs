@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
@@ -18,14 +18,14 @@ function asset(role,n) {
   return {...row,pathname:layerAssetPath(row)};
 }
 function fixture({schemaVersion=3,compositing=true}={}) {
-  const project=addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'nora','Nora');
-  const lane=project.lanes[0];lane.id='north-presentation';lane.label='Published scene';
-  lane.dealers=['johanna','nora','astrid','amira'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
+  const project=[['johanna','Johanna'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
+  const lane=defaultPresentationLane('johanna');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
+  lane.dealers=['johanna','nora','astrid'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
   lane.composition=defaultCompositionSettings();
   project.layerAssets=[asset('background',1),asset('background',2),asset('table',3),asset('table',4)];
   lane.layers.background={enabled:true,mode:'image',default:project.layerAssets[0].id,allowed:project.layerAssets.slice(0,2).map(row=>row.id)};
   lane.layers.table={enabled:true,default:project.layerAssets[2].id,allowed:[project.layerAssets[2].id],colors:[]};
-  const mediaRows=['johanna','nora'].map((dealerId,index)=>{
+  const mediaRows=lane.dealers.map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
     project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
     return {id,sha256,size:4096,contentType:'video/mp4',pathname:'croupier/media/dealers/'+dealerId+'/review/uploads/'+id+'/'+sha256+'.mp4',
@@ -36,7 +36,7 @@ function fixture({schemaVersion=3,compositing=true}={}) {
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
   let presentation=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
     administrationDocument:{kind:'administration',revision:'admin-snapshot',value:{rooms:[]}},mediaRows},inventory,
-    selectedLaneIds:[lane.id],requiredIdleDealerIds:['johanna','nora']}).presentation;
+    selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
   if(schemaVersion===2){presentation=clone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
   const room={schemaVersion:2,id:context.roomId,name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-johanna',state:'live'};
   const saved={operator:{id:'north-id',slug:'north',name:'North',status:'active',secret:'NEVER_PUBLIC'},
@@ -122,16 +122,17 @@ test('opaque registered dealer retains own fullframe idle and cannot access inde
   assert.deepEqual(value.media.tables,[]);assert.deepEqual(value.media.backgrounds,[]);
   assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,404);
 });
-test('built-ins do not borrow registered dealer media or a mutable live registry',async()=>{
+test('former dealer names require own published media and retired Amira remains rejected',async()=>{
   const f=fixture(),response=await request(f,descriptor.replace('dealer=johanna','dealer=astrid'));
   assert.equal(response.status,200);const value=await response.json();
-  assert.equal(value.dealer.id,'astrid');assert.equal(value.media.dealer,null);assert.equal(f.served.length,0);
+  assert.equal(value.dealer.id,'astrid');assert.equal(value.media.dealer.src,previewMediaPath({...context,dealerId:'astrid'},'dealer',f.mediaRows[2].id));assert.equal(f.served.length,0);
   const original=await request(f,descriptor.replace('dealer=johanna','dealer=amira'));
-  assert.equal(original.status,200);assert.deepEqual((await original.json()).media,{dealer:null,tables:[],backgrounds:[]});
+  assert.equal(original.status,400);assert.deepEqual(await original.json(),{error:'invalid_preview_request'});
+  const unpublished=await request(f,descriptor.replace('dealer=johanna','dealer=vera'));assert.equal(unpublished.status,404);assert.equal(f.served.length,0);
   const legacy=createPortraitRoomEntryFixture({dealer:'amira'});
-  const api=createPublicOperatorPreview({readCurrentContext:async()=>({operator:{id:legacy.room.operatorId,slug:'sg-test',status:'active'},package:legacy.pack,administration:legacy.administration}),privateMedia:()=>assert.fail('no builtin media proxy')});
+  const api=createPublicOperatorPreview({readCurrentContext:async()=>({operator:{id:legacy.room.operatorId,slug:'sg-test',status:'active'},package:legacy.pack,administration:legacy.administration}),privateMedia:()=>assert.fail('retired dealer never reaches private media')});
   const old=await api.handle(new Request('https://example.test/api/operators/sg-test/rooms/'+legacy.room.id+'/preview?dealer=amira&revision=7'));
-  assert.equal(old.status,200);assert.equal((await old.json()).media.dealer,null);
+  assert.equal(old.status,400);assert.deepEqual(await old.json(),{error:'invalid_preview_request'});
 });
 test('strict request grammar rejects duplicate/extra queries, malformed ids and methods before snapshots',async()=>{
   const f=fixture();

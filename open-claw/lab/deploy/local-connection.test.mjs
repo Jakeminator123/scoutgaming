@@ -300,7 +300,8 @@ test('launcher starts isolated native and the real Next Eventstudio without revi
   const repoRoot = await runtimeFixture(t);
   const fixture = await startIsolatedConnection({ repoRoot, envFiles: [file], env: {}, productPort, labPort });
   t.after(() => fixture.stop());
-  assert.equal((await fetch(fixture.urls.product + '/')).status, 200);
+  const entry=await fetch(fixture.urls.product + '/');
+  assert.equal(entry.status,503);assert.match(await entry.text(),/<h1>Ingen presentation vald<\/h1>/);
   const studioHealth = await fetch(fixture.urls.lab + '/api/health');
   assert.equal(studioHealth.status, 200);
   assert.deepEqual(await studioHealth.json(), { ok: true, service: 'croupier-next-studio', localOnly: true, streamLane: null });

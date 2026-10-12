@@ -20,6 +20,7 @@ function loadTs(fileUrl) {
     module, exports: module.exports, structuredClone, URL, URLSearchParams,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (name === 'next/navigation') return { usePathname: () => '/control/probe', useSearchParams: () => new URLSearchParams() };
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name.startsWith('./') || name.startsWith('../')) {
         for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
@@ -37,7 +38,7 @@ function loadTs(fileUrl) {
 }
 
 const project = createSeedProject();
-const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false } };
+const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'astrid' };
 
 test('speech review keeps the probe editor, a disabled save button and no old studio chrome', () => {
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
@@ -67,7 +68,7 @@ test('probe route loads studio data for /control/probe and tolerates a missing s
 test('unsupported dealers keep their identity and cannot edit or test Astrids probe policy', () => {
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
   const customProject = addDealer(project, 'paow', 'PAOW');
-  for (const dealerId of ['paow', 'vera', 'amira', 'mei']) {
+  for (const dealerId of ['paow', 'vera', 'mei']) {
     const html = renderToStaticMarkup(React.createElement(ControlProbePage, { ...props, initialProject: customProject, initialDealerId: dealerId }));
     assert.match(html, /aria-label="Talinitiativ för vald dealer"/);
     assert.match(html, new RegExp(`dealer=${dealerId}`));
@@ -75,4 +76,11 @@ test('unsupported dealers keep their identity and cannot edit or test Astrids pr
     assert.match(html, /ännu bara anslutet för Astrid/);
     assert.doesNotMatch(html, /aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text<|>Automatiskt · OpenClaw<|<input|<select/);
   }
+});
+
+test('probe page requires an explicit dealer before rendering any speech policy',()=>{
+  const {ControlProbePage}=loadTs(new URL('./control-probe-page.tsx',import.meta.url));
+  const html=renderToStaticMarkup(React.createElement(ControlProbePage,{...props,initialDealerId:undefined}));
+  assert.match(html,/<h2>Välj dealer<\/h2>/);
+  assert.doesNotMatch(html,/aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text</);
 });

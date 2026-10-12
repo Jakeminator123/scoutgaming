@@ -1,12 +1,15 @@
-import { ControlActivityPage } from '@/components/control-activity-page';
-import { firstQueryValue } from '@/components/studio-types';
-import { loadControlStudio } from '../../control-studio-data';
+import { redirectToPublicControl } from '../public-redirect';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Uppspelning · Croupier Studio' };
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
-  const data = await loadControlStudio('/control/activity');
-  return <ControlActivityPage initialProject={data.project} initialVideos={data.videos} initialStatus={data.status} initialDealerId={firstQueryValue(query.dealer)} initialEventId={firstQueryValue(query.event)} />;
+  const params = new URLSearchParams();
+  for (const key of ['dealer', 'operator', 'table', 'composition']) {
+    const value = query[key];
+    if (typeof value === 'string' && value) params.set(key, value);
+  }
+  if (!params.has('composition') && typeof query.lane === 'string' && query.lane) params.set('composition', query.lane);
+  const search = params.toString();
+  await redirectToPublicControl('/control/rehearsal' + (search ? '?' + search : ''));
 }

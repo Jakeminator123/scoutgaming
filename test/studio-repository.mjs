@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, createEmptyProject } from '../lab/lib/studio-model.mjs';
 import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
@@ -371,4 +371,19 @@ test('missing or unreadable capture documents/media fail closed without partial 
   const project=createSeedProject();await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
   pool.failNext('list-media');await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_storage_unavailable',503));
   assert.equal(pool.connects,pool.releases);
+});
+
+test('project PUT cannot add a retired dealer and leaves already saved historical profiles intact',async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool),empty=createEmptyProject(),historical=createSeedProject();
+  const initial=await repo.initializeDocument('project',{value:empty,actor:'tester',revision:'empty'});
+  const next=structuredClone(empty);next.dealers=historical.dealers.filter(row=>row.id==='amira');next.lines=historical.lines.filter(row=>row.dealerId==='amira');
+  const before=pool.snapshot();
+  await assert.rejects(repo.saveDocument('project',{value:next,actor:'tester',expectedRevision:initial.revision}),rejection('studio_dealer_inactive',409));
+  assert.deepEqual(pool.snapshot(),before);
+  const oldPool=createStudioMemoryPool(),oldRepo=repository(oldPool);
+  const old=await oldRepo.initializeDocument('project',{value:historical,actor:'historical-fixture',revision:'historical'});
+  const edited=structuredClone(old.value);edited.events[0].label='Explicit unrelated edit';
+  const saved=await oldRepo.saveDocument('project',{value:edited,actor:'tester',expectedRevision:old.revision});
+  assert.deepEqual(saved.value.dealers,historical.dealers);assert.deepEqual(saved.value.lines,historical.lines);
+  assert.equal((await oldRepo.listDocumentHistory('project')).length,1);
 });

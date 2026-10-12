@@ -20,12 +20,14 @@ function documentFeatures(kind, value) {
         ? value.registeredDealers.map(row => row?.id).filter(extraDealer) : [];
   const composition = Boolean(kind === 'project' && Array.isArray(value?.lanes)
     && value.lanes.some(lane => object(lane) && Object.hasOwn(lane, 'composition')));
-  const rooms = Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.schemaVersion === 2));
+  const cascade = kind === 'dealer-archive' || kind === 'project' && value?.dealerTrash?.some?.(entry=>entry?.schemaVersion===2);
+  const resourceLifecycle = cascade || kind === 'resource-lifecycle';
+  const rooms = resourceLifecycle || Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.schemaVersion === 2));
   const frozen = kind === 'presentation-package' && [2, 3].includes(value?.schemaVersion);
   const frozenEvents = kind === 'presentation-package' && value?.schemaVersion === 3;
-  const lifecycle = kind === 'project' && Object.hasOwn(value ?? {}, 'dealerTrash');
+  const lifecycle = cascade || kind === 'project' && Object.hasOwn(value ?? {}, 'dealerTrash');
   const generic = dealers.some(id => id !== 'nora');
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle, dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle };
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle, dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -45,6 +47,8 @@ function mutationFeatures(input) {
     frozen: features.some(value => value.frozen),
     frozenEvents: features.some(value => value.frozenEvents),
     lifecycle: features.some(value => value.lifecycle),
+    resourceLifecycle: features.some(value => value.resourceLifecycle),
+    cascade: features.some(value => value.cascade),
   };
 }
 function trustedOrigin(env) {
@@ -84,6 +88,8 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.frozen || active.features.frozen)
       && (!features.frozenEvents || active.features.frozenEvents)
       && (!features.lifecycle || active.features.lifecycle)
+      && (!features.resourceLifecycle || active.features.resourceLifecycle)
+      && (!features.cascade || active.features.cascade)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -97,7 +103,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),
@@ -131,6 +137,13 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       if (features.required) await ready(features);
       return repository.saveDocument.call(repository, kind, proposed);
     },
+    ...(typeof repository.saveDealerLifecycle === 'function' ? {
+      async saveDealerLifecycle(value, options = {}) {
+        const features=documentFeatures('project',value),proposed=features.required?structuredClone(value):value;
+        if(features.required)await ready(features);
+        return repository.saveDealerLifecycle.call(repository,proposed,options);
+      },
+    } : {}),
     async registerMedia(record, options = {}) {
       const features = mediaFeatures(record?.classification);
       const proposed = features.required ? structuredClone(record) : record;

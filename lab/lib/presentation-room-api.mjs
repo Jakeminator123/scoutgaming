@@ -1,10 +1,10 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
-import { normalizeProject, defaultPresentationLane } from './studio-model.mjs';
+import { normalizeProject } from './studio-model.mjs';
 import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
-import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+
 import { gameLaneConfiguration, isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
@@ -44,12 +44,11 @@ function intentHash(value) {
   return createHash('sha256').update(canonicalStudioJson([value.operatorId, value.presentationLaneId, value.name])).digest('hex');
 }
 function sourceProject(project, id) {
-  const source = project.lanes?.length ? project : { ...project, lanes: [defaultPresentationLane()] };
-  if (!source.lanes.some(lane => lane.id === id)) fail(404);
-  return source;
+  if (!project.lanes?.some(lane => lane.id === id)) fail(404, 'studio_presentation_required');
+  return project;
 }
-function lanePlan(presentation, administration) {
-  const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => isPresentationRoomLaneCompatible(lane, presentation));
+function lanePlan(presentation, administration, frozen) {
+  const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => lane.dealer === presentation.layers.dealer.default && isPresentationRoomLaneCompatible(lane, presentation, frozen));
   if (candidates.length === 1) return { lane: candidates[0], administration };
   const dealer = presentation.layers.dealer.default;
   const hash = createHash('sha256').update(canonicalStudioJson([presentation.id, dealer])).digest('hex').slice(0, 24);
@@ -64,8 +63,8 @@ function lanePlan(presentation, administration) {
   return { lane, administration: validateStudioGameAdministration({ ...administration,
     gameLanes: [...config.gameLanes, lane], gameLane: config.gameLane ?? lane.id }) };
 }
-function extraIds(lanes) {
-  return new Set(lanes.flatMap(lane => [...(lane.dealers ?? []), ...lane.layers.dealer.allowed]).filter(id => !BASE_DEALER_IDS.includes(id)));
+function selectedDealerIds(lanes) {
+  return new Set(lanes.flatMap(lane => [...(lane.dealers ?? []), ...lane.layers.dealer.allowed]));
 }
 // Only this selected saved definition changes. Other frozen lanes, assets and
 // dealer idle records cannot acquire unpublished edits as a side effect.
@@ -84,14 +83,14 @@ function mergePresentation(current, selected) {
   const base = { projectRevision: selected.projectRevision, lanes, assets: [...assets.values()].filter(asset => used.has(asset.id)) };
   if (old.schemaVersion === 1 && selected.schemaVersion === 1) return validatePresentationPackage({ schemaVersion: 1, ...base });
   const registry = new Map((old.registeredDealers ?? []).map(entry => [entry.id, entry]));
-  const preservedIds = extraIds(old.lanes.filter(lane => lane.id !== id));
+  const preservedIds = selectedDealerIds(old.lanes.filter(lane => lane.id !== id));
   if (old.schemaVersion === 1 && preservedIds.size) fail(409, 'studio_presentation_legacy_package_conflict');
   for (const entry of selected.registeredDealers ?? []) {
     if (preservedIds.has(entry.id) && registry.has(entry.id)
       && canonicalStudioJson(registry.get(entry.id)) !== canonicalStudioJson(entry)) fail(409, 'studio_presentation_shared_dealer_conflict');
     registry.set(entry.id, entry);
   }
-  const ids = extraIds(lanes);
+  const ids = selectedDealerIds(lanes);
   if ([...ids].some(id => !registry.has(id))) fail(409, 'studio_presentation_legacy_package_conflict');
   const registeredDealers = [...registry.values()].filter(entry => ids.has(entry.id));
   let playback;
@@ -104,7 +103,7 @@ function assertReplayBinding(saved, room) {
   const gameLane = gameLaneConfiguration(saved.administration).gameLanes.find(lane => lane.id === room.gameLaneId);
   if (!isPresentationRoomLaneCompatible(gameLane, presentation, frozen)) fail(409);
   const dealer = presentation.layers.dealer.default;
-  if ([2,3].includes(frozen.schemaVersion) && !BASE_DEALER_IDS.includes(dealer)
+  if ([2,3].includes(frozen.schemaVersion)
     && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed })) fail(409);
   return frozen;
 }
@@ -135,9 +134,9 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
   }
   async function capture(snapshotValue, id) {
     const project = normalizeProject(snapshotValue.projectDocument.value), source = sourceProject(project, id);
-    const hasExtras = extraIds(source.lanes.filter(lane => lane.id === id)).size > 0;
-    if (hasExtras && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) fail(503, 'studio_media_registry_unavailable');
-    const inventory = hasExtras ? await videoRegistry.loadCaptured(snapshotValue) : null;
+    const hasDealers = selectedDealerIds(source.lanes.filter(lane => lane.id === id)).size > 0;
+    if (hasDealers && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) fail(503, 'studio_media_registry_unavailable');
+    const inventory = hasDealers ? await videoRegistry.loadCaptured(snapshotValue) : null;
     const captured = captureFrozenPresentation({ snapshot: snapshotValue, selectedLaneIds: [id], inventory,
       requiredIdleDealerIds: selectedRegisteredIdleDefaults(source, [id]) });
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
@@ -188,7 +187,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     try {
       selected = await capture(snapshotValue, id);
       merged = mergePresentation(saved.pack, selected.presentation);
-      const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration);
+      const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged);
       try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
       catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
     } catch (error) {
@@ -236,7 +235,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
       await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
-      const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration);
+      const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation);
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });
       const room = { schemaVersion: 2, id: roomId, name: body.name, operatorId: body.operatorId,
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live' };

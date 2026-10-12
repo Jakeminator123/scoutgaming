@@ -7,7 +7,7 @@ import { StudioStorageError } from '../web/storage/studio-contract.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration, exactRegisteredDealerIdle } from '../web/storage/studio-game-policy.mjs';
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'croupier' });
-const idle = dealerId => ({ dealerId, engineKey: 'idle-1/idle/idle', available: true });
+const idle = dealerId => ({ dealerId, mediaId:'11111111-1111-4111-8111-111111111111',sha256:'a'.repeat(64),available:true });
 const administration = () => ({
   tiers: { classic: 'vera', high: 'astrid', vip: 'amira' },
   rooms: [{ id: 'room', name: 'Room', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' }],
@@ -28,13 +28,14 @@ async function fixture({ dealerIdle = idle, fixtureScope = scope, indexed = fals
 test('saved lane is shared across policy instances with CAS and preserves every unrelated setting',async () => {
   const {policy,repository}=await fixture();
   const before=await policy.readAdministration();
-  assert.equal((await policy.readGameConfiguration()).gameLane,'mobile-phone');
-  await policy.saveAdministration({...before.value,gameLane:'mobile-phone'},before.revision,{actor:'operator'});
+  assert.equal((await policy.readGameConfiguration()).gameLane,null);
+  const gameLanes=[{schemaVersion:1,id:'mobile-phone',label:'Saved',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}];
+  await policy.saveAdministration({...before.value,gameLane:'mobile-phone',gameLanes},before.revision,{actor:'operator'});
   const second=createStudioGamePolicy({repository,scope,dealerIdle:idle});
   assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
-  const saved=await second.readAdministration();const {gameLane,...unchanged}=saved.value;
+  const saved=await second.readAdministration();const {gameLane,gameLanes:_,...unchanged}=saved.value;
   assert.deepEqual(unchanged,before.value);
-  await assert.rejects(policy.saveAdministration({...before.value,gameLane:'original'},before.revision,{actor:'other'}),rejected('studio_conflict',409));
+  await assert.rejects(policy.saveAdministration({...before.value,gameLane:'mobile-phone',gameLanes},before.revision,{actor:'other'}),rejected('studio_conflict',409));
   assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
 });
 
@@ -132,21 +133,21 @@ test('simultaneous Studio saves preserve CAS, exactly one history row and no dou
 });
 
 test('tier assignments require the exact registered dealer idle and do not accept neighbouring keys or approximate duration', async () => {
-  for (const record of [null, true, { ...idle('vera'), dealerId: 'amira' }, { ...idle('vera'), engineKey: 'idle-2/idle/idle', durationMs: 3000 },
-    { ...idle('vera'), engineKey: 'idle-1/idle/idle-base1' }, { ...idle('vera'), available: false }]) assert.equal(exactRegisteredDealerIdle(record, 'vera'), false);
+  for (const record of [null, true, { ...idle('vera'), dealerId: 'amira' }, { ...idle('vera'), mediaId:'not-media',durationMs:3000 },
+    { ...idle('vera'), sha256:'invalid' }, { ...idle('vera'), available: false }]) assert.equal(exactRegisteredDealerIdle(record, 'vera'), false);
   assert.equal(exactRegisteredDealerIdle(idle('vera'), 'vera'), true);
   const { repository, pool } = await fixture({indexed:true});
   const policy = createStudioGamePolicy({ repository, scope, dealerIdle: dealerId => dealerId === 'mei' ? null : idle(dealerId) });
   assert.equal(await policy.canAssignDealer('mei'), false); assert.equal(await policy.canAssignDealer('vera'), true); assert.equal(await policy.canAssignDealer('__proto__'), false);
-  const saved = await policy.readSaved(), proposed = structuredClone(saved.administration); proposed.tiers.vip = 'mei';
-  await assert.rejects(policy.saveAdministration(proposed, saved.administrationRevision, { actor: 'editor' }), rejected('studio_game_dealer_unavailable', 409));
+  assert.equal(await policy.canAssignDealer('amira'),false);
+  assert.equal(await policy.canAssignDealer('unregistered'),false);
   assert.equal(pool.snapshot().history.length, 0); assert.equal((await policy.readSaved()).administration.tiers.vip, 'amira');
 });
 
-test('missing registered idle for an active tier rejects reads and never borrows another dealer', async () => {
+test('historical tiers remain readable but never authorize foreign dealer media', async () => {
   const { policy } = await fixture({ indexed:true, dealerIdle: dealerId => dealerId === 'astrid' ? idle('vera') : idle(dealerId) });
-  await assert.rejects(policy.readSaved(), rejected('studio_game_dealer_unavailable'));
-  await assert.rejects(policy.readGameConfiguration(), rejected('studio_game_dealer_unavailable'));
+  await policy.readSaved();await policy.readGameConfiguration();
+  assert.equal(await policy.canAssignDealer('astrid'),false);
 });
 
 test('invalid game domains, hidden administration data and incompatible animation choices cannot be saved', async () => {
@@ -171,8 +172,8 @@ test('persisted missing domains and SQL/schema/media failures produce fixed erro
   pool.failNext('read-document', new Error('secret connection Neon schema missing private path'));
   await assert.rejects(policy.readSaved(), error => rejected('studio_storage_unavailable')(error) && !error.message.includes('secret'));
   const broken = await fixture({ dealerIdle: () => { throw new Error('provider URL secret'); } });
-  await assert.rejects(broken.policy.readSaved(), rejected('studio_game_media_unavailable'));
-  assert.equal(broken.pool.connects, 2); // Explicit fixture imports only, no attempted policy DB read.
+  await broken.policy.readSaved();
+  await assert.rejects(broken.policy.canAssignDealer('vera'),rejected('studio_game_media_unavailable'));
 });
 
 test('read-only project adapter forbids unauthenticated writes and snapshots the actor and draft before awaiting', async () => {

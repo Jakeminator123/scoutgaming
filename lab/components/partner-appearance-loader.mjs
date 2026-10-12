@@ -7,7 +7,7 @@ export function brandingApiBase(apiBase) {
   return typeof apiBase === 'string' ? apiBase.replace(/\/snapshot$/, '') : '';
 }
 
-export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, section = 'all', onSaved, language = 'sv' }) {
+export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, section = 'all', onSaved, language = 'sv', roomId, onRoomChange, onDirtyChange, active = true }) {
   const [state, setState] = React.useState({ status: 'loading' });
   const base = brandingApiBase(apiBase);
   const identity = `${base}:${operatorId || ''}:${operatorSlug}`;
@@ -50,7 +50,7 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, sec
   if (current.status === 'loading') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, en ? 'Loading appearance…' : 'Hämtar utseende…');
   if (current.status === 'none') return React.createElement('p', { role: 'status', className: 'kevin-appearance-state' }, en ? 'No operator package is published yet. Internal staff publish it from Publishing.' : 'Inget operatörspaket är publicerat än. Intern personal publicerar under Publicering.');
   return React.createElement('section', { className: 'kevin-appearance', 'aria-label': en ? 'Appearance and publishing' : 'Utseende och publicering' },
-    React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, section, language, onSaved: saved => {
+    React.createElement(current.Panel, { key: identity, initial: current.initial, apiBase: base, operatorSlug, section, language, active, roomId, onRoomChange, onDirtyChange, onSaved: saved => {
       if (activeIdentity.current !== identity || saved.operatorId !== current.initial.operatorId) return;
       setState(previous => previous.status === 'ready' && previous.identity === identity && previous.initial.operatorId === saved.operatorId ? { ...previous, initial: saved } : previous);
       onSaved?.(saved);

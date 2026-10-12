@@ -68,6 +68,7 @@ export async function createLayeredPresentationWithRuntime({
   dealerId,
   receipt = () => {},
   onBusy = () => {},
+  onReady = () => {},
   rehearsal = false,
   loadRuntime = () => {
     const runtimeBase = `/${['layer-packs', 'runtime'].join('/')}/`;
@@ -117,6 +118,7 @@ export async function createLayeredPresentationWithRuntime({
     player.addEventListener('card-landed', () => { if (!closed) status.textContent = 'card-landed'; });
     if (rehearsal) mountRehearsal({ host, player, manifest, status });
     status.textContent = '';
+    onReady();
   } catch (error) {
     status.textContent = laneUnavailable(error) ? 'Lagerpaket saknas' : 'Lagerpresentation kunde inte startas';
     throw error;

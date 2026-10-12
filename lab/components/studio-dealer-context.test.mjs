@@ -46,7 +46,7 @@ test('PAOW event editor keeps clip identity in every dealer tab and shows no Ast
   const nav = html.match(/<nav aria-label="Studio för PAOW"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
   assert.ok(nav);
   const links = [...nav.matchAll(/href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll('&amp;', '&'), 'https://studio.invalid'));
-  assert.equal(links.length, 6);
+  assert.equal(links.length, 7);
   assert.equal(links.filter(link=>link.pathname.endsWith('/control/replies')).length,1);
   for (const link of links) {
     assert.equal(link.searchParams.get('dealer'), 'paow');
@@ -79,6 +79,8 @@ test('authenticated administration route forwards the first selected dealer to t
     'next/headers': { headers: async () => new Headers({ host: 'studio.invalid' }) },
     'next/navigation': { redirect: () => assert.fail('Authenticated fixture should not redirect') },
     '@/components/native-administration': { NativeAdministration: () => null },
+    '@/components/studio-types':loadTs(new URL('./studio-types.ts',import.meta.url)),
+    '../public-redirect':{redirectToPublicControl:()=>assert.fail('media review remains an administration view')},
     '@/lib/studio-native-request.mjs': { normalizeNativeStudioPageRequest: request => request },
     '@/lib/studio-native-runtime.mjs': {
       nativeStudioAdminConfiguration: () => config,
@@ -90,4 +92,24 @@ test('authenticated administration route forwards the first selected dealer to t
   const page = await Page({ searchParams: Promise.resolve({ tab: 'media-review', dealer: ['paow', 'astrid'] }) });
   assert.equal(page.props.initialGroup, 'media-review');
   assert.equal(page.props.initialDealerId, 'paow');
+});
+
+
+test('retired dealer links and active pickers are rejected without deleting saved dealer history',()=>{
+  const project=createSeedProject(),before=structuredClone(project);
+  assert.ok(project.dealers.some(row=>row.id==='amira'));
+  const {activeStudioDealers,resolveStudioDealerId}=loadTs(new URL('./studio-types.ts',import.meta.url));
+  assert.equal(resolveStudioDealerId(project,'amira'),'');
+  assert.equal(activeStudioDealers(project).some(row=>row.id==='amira'),false);
+  const overrides={'next/navigation':{usePathname:()=>'/control/events',useSearchParams:()=>new URLSearchParams('dealer=amira')},
+    './studio-session':{useStudioSession:()=>assert.fail('retired selection cannot enter a dealer editor')}};
+  for(const [file,name] of [['control-events-page','ControlEventsPage'],['control-tree-page','ControlTreePage'],['control-probe-page','ControlProbePage'],['control-videos-page','ControlVideosPage'],['control-openclaw-chat','ControlOpenClawChat'],['control-activity-page','ControlActivityPage']]){
+    const Component=loadTs(new URL('./'+file+'.tsx',import.meta.url),overrides)[name];
+    assert.equal(typeof Component,'function',name);
+    const html=renderToStaticMarkup(React.createElement(Component,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'amira'}));
+    assert.match(html,/Välj (en )?dealer/i,name);
+    assert.doesNotMatch(html,/dealer=amira|Studio för Amira|aria-label="Chatt med Amira"/,name);
+    assert.match(html,/dealer=astrid/,name);
+  }
+  assert.deepEqual(project,before,'UI selection must preserve stored dealer, media and line history');
 });

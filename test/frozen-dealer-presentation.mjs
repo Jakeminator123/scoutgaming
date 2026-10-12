@@ -98,9 +98,9 @@ test('a frozen allowed dealer still requires her exact portrait game lane, never
   }
 });
 
-test('empty frozen idle gives 2D configuration and no other dealer or latest baseline replacement', async () => {
+test('empty frozen idle is unavailable without another dealer or latest baseline replacement', async () => {
   const f = fixture(); f.presentation.registeredDealers[0].idle = null;
-  assert.equal((await f.service.configuration(input)).dealerIdle.johanna, null);
+  await assert.rejects(f.service.configuration(input),error=>error.statusCode===404);
   assert.equal((await f.service.response(new Request(mediaUrl(input)))).status, 404);
   assert.equal(f.served.length, 0);
 });

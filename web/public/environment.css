@@ -39,7 +39,7 @@ body { position: fixed; inset: 0; }
 
 /* Full room behind the calibrated centre plate; no width-dependent black bars. */
 #room {
-  background-image: linear-gradient(to bottom, transparent 45%, rgba(6,8,9,.18) 100%), var(--room-plate, url('assets/room-extended.png'));
+  background-image: linear-gradient(to bottom, transparent 45%, rgba(6,8,9,.18) 100%), var(--room-plate, none);
   background-repeat: no-repeat;
   background-size: max(100vw, calc(var(--dealer-h) * 4.41378)) calc(var(--dealer-h) * 1.47126);
   background-position: center calc(var(--dealer-top) - var(--dealer-h) * .0143678);

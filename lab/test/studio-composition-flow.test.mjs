@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,validateProject} from '../lib/studio-model.mjs';
+import {createSeedProject as createEmptyProject,validateProject, defaultPresentationLane} from '../lib/studio-model.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {compositionPreviewLayers,registerCompositionLayer,uploadCompositionLayer} from '../lib/studio-composition.mjs';
@@ -49,7 +49,7 @@ test('a simultaneous remote lane edit remains an explicit conflict and retains t
 test('a missing or wrong-role upload receipt cannot change the draft',()=>{
   const {base,draft,remote,selection}=fixture(),before=structuredClone(draft);
   assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,role:'table'}),/registrering kunde inte verifieras/);
-  assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,laneId:'deleted-lane'}),/valda lanen finns inte längre/);
+  assert.throws(()=>registerCompositionLayer(base,draft,remote,{...selection,laneId:'deleted-lane'}),/valda sammansättningen finns inte längre/);
   assert.deepEqual(draft,before);
 });
 
@@ -103,3 +103,6 @@ test('failed commit or mismatched receipt cannot produce a selected layer',async
     await assert.rejects(uploadCompositionLayer(file,metadata,dependencies),options.failCommit?/commit failed/:/registreringen kunde inte verifieras/);
   }
 });
+
+// This suite exercises a saved composition, not an automatically populated new project.
+function createSeedProject() { const project = createEmptyProject(); project.lanes = [defaultPresentationLane('astrid')]; return project; }

@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSeedProject, normalizeProject, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject, createEmptyProject, addDealer, normalizeProject, validateProject } from '../lib/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { LEGACY_CLIP_PARTS } from '../../presentation-runtime/legacy-clip-policy.mjs';
-import { LEGACY_PART_PLACEMENTS, legacySituationLine } from '../../presentation-runtime/legacy-standard-variants.mjs';
+import { LEGACY_PART_PLACEMENTS, legacySituationLine, applyLegacyStandardVariants } from '../../presentation-runtime/legacy-standard-variants.mjs';
 
 const clip = (dealer, part) => `${dealer}:legacy/${part}`;
 const policyFor = dealer => LEGACY_CLIP_PARTS.map(part => ({ dealerId: dealer, part, clipId: clip(dealer, part) }));
@@ -19,7 +19,7 @@ function baseline(project, dealerId, eventId) {
   return row.variants.find(variant => variant.id === row.baselineVariantId);
 }
 
-test('every legacy part has one placement and Astrid is not migrated', () => {
+test('historical adapter remains explicit while normal reads preserve stored bindings', () => {
   assert.deepEqual(Object.keys(LEGACY_PART_PLACEMENTS).sort(), [...LEGACY_CLIP_PARTS].sort());
   const before = createSeedProject();
   const astridBefore = structuredClone(before.lines.filter(row => row.dealerId === 'astrid'));
@@ -27,6 +27,9 @@ test('every legacy part has one placement and Astrid is not migrated', () => {
     ...policyFor('vera'), ...policyFor('amira'), ...policyFor('mei'),
     { dealerId: 'astrid', part: 'idle', clipId: 'astrid:legacy/idle' },
   ] });
+  assert.deepEqual(project.lines, before.lines);
+  assert.deepEqual(project.triggers, before.triggers);
+  applyLegacyStandardVariants(project); // Historical compatibility fixture only.
   assert.deepEqual(project.lines.filter(row => row.dealerId === 'astrid'), astridBefore);
   assert.deepEqual(project.legacyClipPolicy.at(-1), { dealerId: 'astrid', part: 'idle', clipId: 'astrid:legacy/idle' });
   assert.equal(baseline(project, 'vera', 'idle.ready').videoGenerationId, clip('vera', 'idle'));
@@ -66,9 +69,31 @@ test('a saved standard video is kept and a read does not rewrite the file', asyn
   const loaded = await createProjectStore(directory).load();
   assert.equal(await readFile(file, 'utf8'), bytes);
   assert.equal(baseline(loaded, 'vera', 'idle.ready').videoGenerationId, '11111111-1111-4111-8111-111111111111');
-  const played = legacySituationLine(line(loaded, 'vera', 'deal.player.centre'), { type: 'deal', to: 'box', box: 3, faceDown: false });
+  assert.deepEqual(loaded.lines, draft.lines);
+  const historical = applyLegacyStandardVariants(structuredClone(loaded));
+  const played = legacySituationLine(line(historical, 'vera', 'deal.player.centre'), { type: 'deal', to: 'box', box: 3, faceDown: false });
   assert.equal(played.variants.find(variant => variant.id === played.baselineVariantId).videoGenerationId, clip('vera', 'box3'));
   assert.equal(baseline(loaded, 'vera', 'deal.player.centre').videoGenerationId, null);
   assert.throws(() => validateProject({ ...createSeedProject(), lines: createSeedProject().lines.map(row => row.dealerId === 'vera' && row.eventId === 'idle.ready'
     ? { ...row, variants: [{ ...row.variants[0], videoGenerationId: '../secret' }] } : row) }), /sökväg/);
+});
+
+test('local saves preserve historical Amira but reject adding or restoring her',async t=>{
+ const directory=await mkdtemp(join(tmpdir(),'retired-dealer-save-'));
+ t.after(()=>rm(directory,{recursive:true,force:true}));
+ const store=createProjectStore(directory),empty=await store.load();
+ assert.deepEqual(empty.dealers,[]);
+ const old=createSeedProject();
+ await assert.rejects(store.save(old,empty.revision),error=>error.statusCode===422);
+ assert.deepEqual((await store.load()).dealers,[]);
+ const registered=await store.save(addDealer(createEmptyProject(),'astrid','Astrid'),empty.revision);
+ assert.deepEqual(registered.dealers,[{id:'astrid',label:'Astrid'}]);
+ await writeFile(join(directory,'project.json'),JSON.stringify(old)); // Existing historical document, not new API registration.
+ const kept=await store.save(old,old.revision);
+ assert.ok(kept.dealers.some(row=>row.id==='amira'));
+ const removed={...kept,dealers:kept.dealers.filter(row=>row.id!=='amira'),lines:kept.lines.filter(row=>row.dealerId!=='amira')};
+ const current=await store.save(removed,kept.revision);
+ await assert.rejects(store.save({...kept,revision:current.revision},current.revision),error=>error.statusCode===422);
+ await assert.rejects(store.save(kept,kept.revision),error=>error.statusCode===409);
+ assert.ok(!(await store.load()).dealers.some(row=>row.id==='amira'));
 });

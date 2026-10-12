@@ -21,7 +21,7 @@ function load(hooks=React, fetcher) {
 }
 const Panel=load();
 const initialState = (extra={}) => {
-  const lane={...defaultPresentationLane(),composition:defaultCompositionSettings(),operatorAdjustable:['background','table','table.color','dealer','branding']};
+  const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),operatorAdjustable:['background','table','table.color','dealer','branding']};
   lane.layers.background={enabled:true,mode:'image',default:'bg-one',allowed:['bg-one','bg-two']};
   lane.layers.table={enabled:true,default:'table-one',allowed:['table-one','table-two'],colors:['#112233','#445566']};
   lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
@@ -39,13 +39,13 @@ const select=(tree,label)=>walk(tree,node=>node.type==='select'&&node.props?.['a
 const response=(data,status=200)=>({ok:status>=200&&status<300,status,json:async()=>data});
 const reviewed=(initial,extra={})=>({reviewToken:'a-valid-review-token',draftRevision:initial.draftRevision,packageRevision:initial.packageRevision,branding:initial.draft.branding,changes:[{roomId:null,key:'color',before:'#112233',after:'#445566'}],affectedRooms:['north-main'],...extra});
 function stateful(initial,fetcher,options={}) {
-  const slots=[],cleanups=[];let cursor=0;
+  const slots=[];let cursor=0;
   const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next;}];},
     useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},
-    useEffect:callback=>{const index=cursor++;if(!(index in slots)){slots[index]=true;cleanups.push(callback());}}};
+    useEffect:(callback,deps)=>{const index=cursor++,previous=slots[index];if(!previous||deps.some((value,i)=>value!==previous.deps[i])){previous?.cleanup?.();slots[index]={effect:true,deps,cleanup:callback()};}}};
   const Component=load(hooks,fetcher);
   const render=()=>{cursor=0;return Component({initial,apiBase:'/studio/api/partner',operatorSlug:'north',...options});};
-  return {render,unmount:()=>cleanups.forEach(fn=>fn?.())};
+  return {render,unmount:()=>slots.filter(slot=>slot?.effect).forEach(slot=>slot.cleanup?.())};
 }
 function html(initial,options={}) {return renderToStaticMarkup(React.createElement(Panel,{initial,apiBase:'/api/partner',operatorSlug:'north',...options}));}
 
@@ -125,7 +125,7 @@ test('restore creates a draft only, protects unsaved input and requires a new re
 test('room reset removes only that override and room presentation remains server-owned',async()=>{
   const initial=initialState({branding:{color:'#112233',roomOverrides:{'north-main':{color:'#445566'},'north-vip':{table:'table-two'}}}}),calls=[];
   const {render}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);calls.push(body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});});
-  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Presentation').props.disabled,true);
+  select(render(),'Gäller för').props.onChange({target:{value:'north-main'}});assert.equal(select(render(),'Sammansättning').props.disabled,true);
   byAction(render(),'reset-room').props.onClick();await byAction(render(),'save-draft').props.onClick();
   assert.deepEqual(calls[0].branding,{color:'#112233',roomOverrides:{'north-vip':{table:'table-two'}}});
 });
@@ -172,4 +172,16 @@ test('oversized packages explain how to reduce scope and preserve the draft for 
     assert.equal(select(render(),label).props.value,'#445566');assert.equal(byAction(render(),'save-draft').props.disabled,false);assert.equal(byAction(render(),'publish').props.disabled,true);
     const markup=renderToStaticMarkup(render());assert.match(markup,language==='en'?/Reduce the number of room overrides/:/Minska antalet rumsundantag/);assert.match(markup,language==='en'?/20 latest published/:/20 senaste publicerade/);
   }
+});
+
+test('parent receives real dirty state and room switches preserve all unsaved room choices',async()=>{
+  const changes=[],initial=initialState(),options={roomId:'north-main',onDirtyChange:dirty=>changes.push(dirty)};
+  const {render,unmount}=stateful(initial,async(_url,request)=>{const body=JSON.parse(request.body);return response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}});},options);
+  render();assert.equal(changes.at(-1),false);
+  select(render(),'Dealer').props.onChange({target:{value:'vera'}});render();assert.equal(changes.at(-1),true);
+  options.roomId='north-vip';assert.equal(select(render(),'Dealer').props.value,'');
+  options.roomId='north-main';assert.equal(select(render(),'Dealer').props.value,'vera');
+  assert.equal(select(render(),'Gäller för'),undefined,'controlled room selector is not duplicated');
+  await byAction(render(),'save-draft').props.onClick();render();assert.equal(changes.at(-1),false);
+  unmount();assert.equal(changes.at(-1),false);
 });

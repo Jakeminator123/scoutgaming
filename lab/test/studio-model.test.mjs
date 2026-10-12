@@ -7,7 +7,7 @@ import {
   validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
   StudioValidationError, isAssetCompatible, createSeedProject as createStudioSeed,
-  normalizeProject, defaultPresentationLane
+  normalizeProject, defaultPresentationLane, createEmptyProject, addDealer
 } from '../lib/studio-model.mjs';
 import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
@@ -41,7 +41,7 @@ test('JSON schema agrees with model variant limits and allowed predicate fields/
   assert.equal(schema.$defs.line.properties.variants.maxItems, 5);
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
-  assert.equal(schema.properties.lines.minItems, 64);
+  assert.equal(schema.properties.lines.minItems, 0);
   assert.equal(schema.properties.lines.maxItems, 512);
   assert.equal(schema.$defs.trigger.oneOf.length, allowedPathDescriptors.length);
   for (const descriptor of allowedPathDescriptors) {
@@ -257,7 +257,7 @@ test('old projects without idle policy remain readable while edited policies are
   assert.throws(() => validateProject(invalid), /idlePolicy.*summera till 100/);
 });
 
-test('seed is valid with the default lane and a saved project without lanes stays valid', () => {
+test('empty startup and saved projects without compositions never choose a dealer', () => {
   assert.equal(schema.properties.schemaVersion.const, 1);
   assert.equal(schema.required.includes('lanes'), false);
   assert.equal(schema.required.includes('clipLabels'), false);
@@ -286,14 +286,14 @@ test('seed is valid with the default lane and a saved project without lanes stay
   const seeded = createStudioSeed();
   assert.equal(validateProject(seeded), seeded);
   assert.equal(seeded.schemaVersion, 1);
-  assert.deepEqual(seeded.lanes, [defaultPresentationLane()]);
+  assert.deepEqual(seeded.lanes, []);
   const legacy = createSeedProject();
   assert.equal(Object.hasOwn(legacy, 'lanes'), false);
   const before = structuredClone(legacy);
   assert.equal(validateProject(legacy), legacy);
   assert.deepEqual(legacy, before);
   const normalized = normalizeProject(structuredClone(legacy));
-  assert.deepEqual(normalized.lanes, [defaultPresentationLane()]);
+  assert.deepEqual(normalized.lanes, []);
   assert.equal(normalized.schemaVersion, 1);
   const emptied = structuredClone(legacy);
   emptied.lanes = [];
@@ -302,7 +302,7 @@ test('seed is valid with the default lane and a saved project without lanes stay
 });
 
 test('invalid lane id, unknown dealer, allowed outside dealers, duplicate ids and unknown openclaw mode are rejected', () => {
-  const base = () => normalizeProject(structuredClone(createSeedProject()));
+  const base = () => normalizeProject({...structuredClone(createSeedProject()), lanes:[defaultPresentationLane('astrid')]});
   const invalidId = base();
   invalidId.lanes[0].id = 'original';
   assert.throws(() => validateProject(invalidId), /lane-id/);
@@ -335,4 +335,46 @@ test('lab assets cannot reverse a published deal or replace a reveal', () => {
     line.variants[0].assetId = wrongAsset.id;
     assert.throws(() => validateProject(p), /delningsriktning eller kortvändning/);
   }
+});
+
+test('composition construction requires an explicit dealer and normalization preserves saved choices',()=>{
+  for(const dealer of [undefined,null,'','Not a dealer',42]) assert.throws(()=>defaultPresentationLane(dealer),StudioValidationError);
+  const project=createStudioSeed(),lane=defaultPresentationLane('vera');
+  assert.deepEqual(lane.dealers,['vera']);assert.equal(lane.layers.dealer.default,'vera');assert.deepEqual(lane.layers.dealer.allowed,['vera']);
+  project.lanes=[lane];const before=structuredClone(project);
+  assert.equal(normalizeProject(project),project);assert.deepEqual(project,before);
+});
+test('a fresh installation has no dealer, composition or borrowed idle and can register its first dealer',()=>{
+  const project=createEmptyProject();
+  assert.deepEqual(project.dealers,[]);assert.deepEqual(project.lines,[]);assert.deepEqual(project.lanes,[]);assert.equal(Object.hasOwn(project,'idlePolicy'),false);
+  assert.equal(schema.properties.dealers.minItems,0);assert.equal(schema.properties.lines.minItems,0);
+  assert.equal(validateProject(project),project);
+  const registered=addDealer(project,'johanna','Johanna');
+  assert.deepEqual(registered.dealers,[{id:'johanna',label:'Johanna'}]);assert.equal(registered.lines.length,project.events.length);
+  assert.ok(registered.lines.every(line=>line.dealerId==='johanna'&&line.variants.every(variant=>variant.videoGenerationId===null)));
+  registered.lanes=[defaultPresentationLane('johanna')];assert.equal(validateProject(registered),registered);
+  assert.deepEqual(project.dealers,[]);assert.deepEqual(createEmptyProject().lanes,[]);
+});
+test('normalization preserves historical policy and explicit bindings without expanding legacy situations',()=>{
+  const project=createStudioSeed();
+  project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:legacy/idle'},
+    {dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'},
+    {dealerId:'amira',part:'think',clipId:'amira:legacy/think'}];
+  project.lines.find(row=>row.dealerId==='amira'&&row.eventId==='idle.ready').variants[0].videoGenerationId='11111111-1111-4111-8111-111111111111';
+  const before=structuredClone(project);
+  assert.equal(normalizeProject(project),project);assert.deepEqual(project,before);
+  const {lanes,...missingLanes}=structuredClone(project), normalized=normalizeProject(missingLanes);
+  assert.deepEqual(normalized,{...before,lanes:[]});assert.equal(Object.hasOwn(missingLanes,'lanes'),false);
+});
+
+test('new retired dealers and compositions are refused while historical Amira remains readable without loss',()=>{
+  const empty=createEmptyProject();
+  assert.throws(()=>addDealer(empty,'amira','Amira'),StudioValidationError);
+  assert.throws(()=>defaultPresentationLane('amira'),StudioValidationError);
+  assert.deepEqual(empty.dealers,[]);assert.deepEqual(empty.lines,[]);
+  const saved=createStudioSeed(), historical=defaultPresentationLane('astrid');
+  historical.dealers=['amira'];historical.layers.dealer={enabled:true,default:'amira',allowed:['amira']};
+  saved.lanes=[historical];const before=structuredClone(saved);
+  assert.equal(normalizeProject(saved),saved);assert.deepEqual(saved,before);
+  assert.ok(saved.dealers.some(row=>row.id==='amira'));assert.ok(saved.lines.some(row=>row.dealerId==='amira'));
 });

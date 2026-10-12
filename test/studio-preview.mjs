@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createStudioPreview} from '../web/studio-preview.mjs';
 import {createStudioNativeAuth} from '../lab/lib/studio-native-auth.mjs';
-import {addDealer,createSeedProject} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
 import {layerAssetPath} from '../web/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
@@ -13,8 +13,8 @@ const origin='https://studio.example.invalid',scope={environment:'fixture',works
 const videoId='10000000-0000-4000-8000-000000000001',layerId='20000000-0000-4000-8000-000000000001';
 const bets=[{main:5,pp:0,tp:0},...Array.from({length:6},()=>({main:0,pp:0,tp:0}))];
 function fixture(t,options={}){
-  const project=addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'unfinished','Utan grundloop');
-  project.revision='preview-fixture.1';const lane=project.lanes[0];lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};lane.dealers=['johanna'];lane.composition=defaultCompositionSettings();
+  const project=addDealer(addDealer(createEmptyProject(),'johanna','Johanna'),'unfinished','Utan grundloop');
+  project.revision='preview-fixture.1';const lane=defaultPresentationLane('johanna');project.lanes=[lane];lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};lane.dealers=['johanna'];lane.composition=defaultCompositionSettings();
   const row={id:videoId,sha256:'a'.repeat(64),size:128,contentType:'video/mp4',revision:'media.1',
     pathname:`croupier/media/dealers/johanna/review/uploads/${videoId}/${'a'.repeat(64)}.mp4`,
     classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',playback:'once',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}};
@@ -28,7 +28,7 @@ function fixture(t,options={}){
   const api=createStudioPreview({scope,origin,now:()=>state.time,ttlMs:2000,maxSessions:4,maxSessionsPerAdmin:2,
     repository:{scope,readPresentationSnapshot:async()=>{state.reads++;return snapshot;}},
     authorize:async()=>{state.authCalls++;if(state.revoked)throw Object.assign(Error('revoked'),{code:'studio_login_required',statusCode:401});return{user:state.actor,role:state.role,scope};},
-    registryLoader:async()=>{state.registryReads++;return inventory;},legacyControlsCaptured:async(s,p)=>{state.legacyReads++;assert.equal(s.projectDocument.revision,p.revision);return{runtime:{revision:p.revision,saved:true}};},
+    registryLoader:async()=>{state.registryReads++;await options.onRegistryLoad?.();return inventory;},legacyControlsCaptured:async(s,p)=>{state.legacyReads++;assert.equal(s.projectDocument.revision,p.revision);return{runtime:{revision:p.revision,saved:true}};},
     privateMedia:async(record,req)=>{state.media.push({record:structuredClone(record),method:req.method,range:req.headers.get('range')});return new Response(req.method==='HEAD'?null:'abcdefgh',{status:req.headers.has('range')?206:200,headers:{ETag:`"sha256-${state.mediaHash??record.sha256}"`,'Content-Type':record.contentType}});},
     bankVideoResponse:async(id,req)=>{state.bank.push(id);return new Response(req.method==='HEAD'?null:'bank',{headers:{ETag:`"sha256-${state.mediaHash??'c'.repeat(64)}"`}});},
     readHtml:async()=>'<html lang="sv"><body>Preview</body></html>',
@@ -39,14 +39,14 @@ function fixture(t,options={}){
 }
 async function start(f){const result=await f.create();assert.equal(result.response.status,201,JSON.stringify(result.body));return result.body;}
 
-test('preview captures project, media and legacy policy once without publishing or product state',async t=>{
+test('preview captures saved project and media once without consulting legacy policy or publishing',async t=>{
   const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;
   assert.match(session.entryUrl,new RegExp('^/studio-preview/'+session.sessionId+'$'));assert.equal(session.projectRevision,f.project.revision);
   f.project.revision='changed';f.inventory.videos=[];f.row.sha256='f'.repeat(64);
   const config=await f.api.handle(f.request(base+'/presentation/config?dealerId=johanna'));
   assert.equal(config.status,200);const body=await config.json();assert.equal(body.projectRevision,session.projectRevision);
   assert.equal(body.dealerIdle.johanna.src,base+'/videos/'+videoId);assert.equal(body.inventory.videos[0].previewUrl,base+'/videos/'+videoId);
-  assert.equal(body.inventory.videos[0].sha256,'a'.repeat(64));assert.deepEqual([f.state.reads,f.state.registryReads,f.state.legacyReads],[1,1,1]);
+  assert.equal(body.inventory.videos[0].sha256,'a'.repeat(64));assert.deepEqual([f.state.reads,f.state.registryReads,f.state.legacyReads],[1,1,0]);
   const player=await f.api.handle(f.request(base+'/player','POST',{id:'real-player'}));assert.equal(player.status,200);
   const value=await player.json();assert.equal(value.id,'studio-preview:'+session.sessionId);assert.equal(value.balance,10000);assert.equal(player.headers.get('set-cookie'),null);
 });
@@ -98,7 +98,7 @@ test('HTML and session metadata preserve own identity and expose incomplete deal
   assert.equal(info.dealerAvailability.find(row=>row.id==='unfinished').reason,'studio_preview_idle_required');assert.deepEqual(info.externalServices,{ai:false,speech:false});
   const htmlResponse=await f.api.handle(f.request(session.entryUrl));assert.equal(htmlResponse.status,200);const html=await htmlResponse.text();
   assert.match(html,/data-studio-preview=/);assert.match(html,/data-game-dealer="johanna"/);assert.match(html,/data-game-local-dealer="johanna"/);assert.match(html,new RegExp(base+'/layers/'+layerId));assert.doesNotMatch(html,/data-game-operator|data-game-room-id|data-game-package-revision|croupier\/media/);
-  const original=await f.api.handle(f.request(session.entryUrl+'?dealer=amira'));assert.equal(original.status,200);assert.match(await original.text(),/data-game-presentation="original"/);
+  assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=amira'))).status,404);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=unfinished'))).status,422);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=foreign'))).status,404);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?operator=sg-test'))).status,400);
@@ -147,14 +147,14 @@ test('real native Studio auth rechecks password stamp and rejects partner-only c
 
 test('pending captures count toward admin and global limits before database allocation',async t=>{
   let release;const barrier=new Promise(resolve=>{release=resolve;});let entered;const waiting=new Promise(resolve=>{entered=resolve;});
-  const f=fixture(t,{maxSessions:1,maxSessionsPerAdmin:1,legacyControlsCaptured:async()=>{entered();await barrier;return{runtime:{}};}});
+  const f=fixture(t,{maxSessions:1,maxSessionsPerAdmin:1,onRegistryLoad:async()=>{entered();await barrier;}});
   const first=f.create();await waiting;const second=await f.create();assert.equal(second.response.status,429);assert.equal(f.state.dbs.length,0);
   release();assert.equal((await first).response.status,201);f.state.actor='another-admin';assert.equal((await f.create()).response.status,429);
 });
 
 test('scope mismatch and revocation during capture cannot allocate or leak a preview',async t=>{
   const f=fixture(t);f.snapshot.scope={...scope,workspaceId:'other'};assert.equal((await f.create()).response.status,503);assert.equal(f.state.dbs.length,0);
-  const g=fixture(t,{legacyControlsCaptured:async()=>{g.state.revoked=true;return{runtime:{}};}});assert.equal((await g.create()).response.status,401);assert.equal(g.state.dbs.length,0);
+  const g=fixture(t,{onRegistryLoad:async()=>{g.state.revoked=true;}});assert.equal((await g.create()).response.status,401);assert.equal(g.state.dbs.length,0);
 });
 
 test('a media request expiring while verification runs returns no bytes and frees the database',async t=>{
@@ -181,11 +181,7 @@ test('preview exposes captured layer choices from baked defaults, with optional 
     assert.deepEqual(composition.settings,savedGeometry?saved.lanes[0].composition:defaultCompositionSettings());
     const selected=resolvePlayerSelection({choices,composition,currentDealer:'johanna',stored:{background:background.id,tableAsset:layerId}});
     assert.equal(selected.backgroundDisabled,false);assert.equal(selected.backgroundValue,background.id);assert.equal(selected.tableValue,layerId);
-    const original=await f.api.handle(f.request(session.entryUrl+'?dealer=amira'));assert.equal(original.status,200);const originalHtml=await original.text();
-    const originalChoices=attribute(originalHtml,'data-game-choices'),originalComposition=attribute(originalHtml,'data-game-composition');
-    assert.equal(originalComposition.dealer.compatibility,'full-frame');assert.equal(originalComposition.table.enabled,false);assert.equal(originalComposition.background.enabled,false);
-    const originalSelected=resolvePlayerSelection({choices:originalChoices,composition:originalComposition,currentDealer:'amira',stored:{background:background.id,tableAsset:layerId}});
-    assert.equal(originalSelected.backgroundDisabled,true);assert.equal(originalSelected.backgroundValue,null);assert.equal(originalSelected.tableValue,null);
+    for(const dealer of ['amira','astrid','vera','mei'])assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer='+dealer))).status,404,'No implicit legacy dealer: '+dealer);
     assert.deepEqual(f.project,saved);
   }
 });

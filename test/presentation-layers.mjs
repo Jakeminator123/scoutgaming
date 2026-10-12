@@ -1,3 +1,4 @@
+import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
@@ -12,13 +13,13 @@ import {validateComposition,createLayerComposition} from '../web/public/presenta
 
 function asset(role,n) {const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
 function fixture() {
-  const project=createSeedProject(),lane=defaultPresentationLane();
+  let project=createSeedProject(); const lane=defaultPresentationLane('astrid');
   const background=asset('background',1),table=asset('table',2);
   lane.layers.background={enabled:true,mode:'image',default:background.id,allowed:[background.id]};
   lane.layers.table={enabled:true,default:table.id,allowed:[table.id],colors:['#123456']};
   lane.operatorAdjustable=['background','table','dealer','table.color','branding'];
   project.lanes=[lane];project.layerAssets=[background,table,asset('background',3)];
-  const presentation=buildPresentationPackage(project,[lane.id],project.layerAssets);
+  const cloud=cloudPresentationFixture({project,lanes:[lane],compositingByDealer:{astrid:{mode:'opaque'}}});project=cloud.project;const presentation=cloud.presentation;
   return {project,presentation,pack:{operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[],branding:withPackagePresentation({name:'North'},presentation)}};
 }
 test('publication freezes lane data and only referenced assets; subsequent Studio edits cannot change it',()=>{
@@ -35,7 +36,7 @@ test('an incomplete three-layer Nora can be published and entered through her ow
     assert.equal(line.variants[0].videoGenerationId, null);
   }
   assert.doesNotThrow(() => validateProject(project));
-  const presentation = buildPresentationPackage(project, [lane.id], project.layerAssets);
+  const presentation = cloudPresentationFixture({project,lanes:[lane]}).presentation;
   const pack = { lanes: [lane.id], revision: 1, branding: withPackagePresentation({}, presentation) };
   assert.deepEqual(readPackagePresentation(pack), presentation);
   const administration = { gameLane: lane.id, gameLanes: [{ schemaVersion: 1, id: lane.id, label: 'Nora', renderer: 'portrait-video', dealer: 'nora', mediaCollection: 'nora-presentation' }] };
@@ -68,7 +69,7 @@ test('partner can choose only within the frozen lane and cannot replace the serv
 
 test('switching or republishing a lane removes incompatible old design choices without allowing new forbidden choices',async()=>{
   const {presentation,pack}=fixture();
-  const second=defaultPresentationLane();second.id='vip-table';second.label='VIP';
+  const second=defaultPresentationLane('astrid');second.id='vip-table';second.label='VIP';
   second.layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
   second.layers.table={enabled:true,default:null,allowed:[],colors:['#654321']};
   second.operatorAdjustable=['dealer'];
@@ -90,7 +91,7 @@ test('published private asset access is limited to that operator; a library-only
 });
 test('game entry uses the published snapshot after Studio is edited and keeps authority separate',async()=>{
   const {pack,project,presentation}=fixture();project.lanes[0].layers.table.colors=['#ffffff'];
-  const select=createGameEntrySelector({policy:{readSaved:async()=>({project,administration:{}}),readGameConfiguration:async()=>({})},packages:{resolve:async()=>({operator:{id:'north'},package:pack})}});
+  const select=createGameEntrySelector({policy:{readSaved:async()=>({project,administration:{gameLane:'mobile-phone',gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}]}}),readGameConfiguration:async()=>({})},packages:{resolve:async()=>({operator:{id:'north'},package:pack})}});
   const {selection}=await select('?operator=north');
   assert.deepEqual(selection.choices.tableColors,['#123456']);assert.equal(selection.branding._scoutPresentation,undefined);
   assert.equal(selection.composition.assets.length,2);assert.deepEqual(Object.keys(selection.composition).sort(),['assets','background','dealer','schemaVersion','table']);

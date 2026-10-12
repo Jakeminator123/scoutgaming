@@ -5,20 +5,20 @@ import { endPartnerSession } from '../lib/partner-session-actions.mjs';
 import { partnerCopy } from './kevin-bo/partner-copy.mjs';
 import styles from './partner-session-actions.module.css';
 
-export function PartnerSessionActions({ apiBase, accessClass, language, returnTo }: {
-  apiBase: string; accessClass: 'partner' | 'internal-admin'; language: string; returnTo: string;
+export function PartnerSessionActions({ apiBase, accessClass, language, returnTo, beforeNavigate, onNavigationCancelled }: {
+  apiBase: string; accessClass: 'partner' | 'internal-admin'; language: string; returnTo: string; beforeNavigate?: () => boolean; onNavigationCancelled?: () => void;
 }) {
   const copy = partnerCopy(language);
   const writing = useRef(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState(false);
   async function endSession(action: 'switch' | 'logout') {
-    if (writing.current) return;
+    if (writing.current || beforeNavigate?.() === false) return;
     writing.current = true; setBusy(true); setError(false);
     try {
       const destination = await endPartnerSession({ apiBase, accessClass, action, returnTo });
       window.location.assign(destination);
     } catch {
-      setError(true);
+      onNavigationCancelled?.(); setError(true);
     } finally {
       writing.current = false; setBusy(false);
     }

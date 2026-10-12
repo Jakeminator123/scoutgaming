@@ -1,4 +1,4 @@
-import { BASE_DEALER_IDS, MAX_DEALERS, isDealerId } from '../web/dealer-identity.mjs';
+import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../web/dealer-identity.mjs';
 import { validateIdlePolicy } from './idle-policy.mjs';
 import { videoFitsLine } from '../lab/lib/video-intake.mjs';
 
@@ -8,12 +8,11 @@ export function registeredIdleFamilyId(dealerId) {
   return dealerId + '/idle.ready/ready';
 }
 export function createRegisteredIdlePolicy({ dealerId, baselineVideoId, durationMs } = {}) {
-  if (BASE_DEALER_IDS.includes(dealerId)) fail();
+  if (!isActiveDealerId(dealerId)) fail();
   return validateIdlePolicy({schemaVersion:1,familyId:registeredIdleFamilyId(dealerId),
     base:[{videoId:baselineVideoId,weight:100,durationMs}],variants:[]});
 }
 export function registeredIdlePolicy(project, dealerId) {
-  if (dealerId === 'astrid') return project?.idlePolicy ?? null;
   return project?.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy ?? null;
 }
 export function validateRegisteredIdlePolicies(value, { dealers, lines, requireBaseline = false } = {}) {
@@ -21,7 +20,7 @@ export function validateRegisteredIdlePolicies(value, { dealers, lines, requireB
   const registered = new Set((dealers ?? []).map(row => row.id)), seen = new Set();
   for (const row of value) {
     if (!row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).sort().join(',') !== 'dealerId,policy'
-      || !isDealerId(row.dealerId) || BASE_DEALER_IDS.includes(row.dealerId) || !registered.has(row.dealerId) || seen.has(row.dealerId)) fail();
+      || !isDealerId(row.dealerId) || !registered.has(row.dealerId) || seen.has(row.dealerId)) fail();
     seen.add(row.dealerId);
     validateIdlePolicy(row.policy);
     if (row.policy.familyId !== registeredIdleFamilyId(row.dealerId)) fail();

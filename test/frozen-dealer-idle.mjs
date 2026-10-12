@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';
 import { BASE_DEALER_IDS } from '../web/dealer-identity.mjs';
 import { buildPresentationPackage } from '../web/presentation-layers.mjs';
 import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
@@ -31,6 +31,7 @@ function fixture() {
     const line = project.lines.find(row => row.dealerId === dealerId && row.eventId === 'idle.ready');
     line.variants.find(row => row.id === line.baselineVariantId).videoGenerationId = id;
   }
+  project.lanes = [defaultPresentationLane('johanna')];
   const lane = project.lanes[0]; lane.id = 'johns-johanna'; lane.label = 'Johns Johanna';
   lane.dealers = ['johanna']; lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
   return { project, selectedLaneIds: [lane.id], inventory: { videos: [video(johanna), video(nora)], families: [] },
@@ -152,7 +153,7 @@ test('selection and registration authority reject unsaved dealer IDs, unknown la
     const input = fixture(); mutate(input); assert.throws(() => captureFrozenRegisteredDealers(input));
   }
 });
-test('frozen registry is all and only selected extras; original dealers keep their legacy authority', () => {
+test('historical registries remain readable without granting local playback authority', () => {
   const input = fixture(), entries = captureFrozenRegisteredDealers(input).registeredDealers;
   assert.deepEqual(validateFrozenRegisteredDealers(entries, { dealerIds: [...BASE_DEALER_IDS, 'johanna'] }), entries);
   assert.deepEqual(validateFrozenRegisteredDealers([], { dealerIds: BASE_DEALER_IDS }), []);
@@ -211,11 +212,11 @@ test('corrupt or duplicated preconditions cannot bypass the media CAS guard', ()
     assert.throws(() => assertFrozenMediaPreconditions(value, input.mediaRows));
   }
 });
-test('legacy v1 package/envelope and original-four behavior remain byte-for-byte unchanged', () => {
-  const project = createSeedProject(), selectedLaneIds = [project.lanes[0].id], before = structuredClone(project);
+test('historical v1 package remains readable but a new capture requires saved cloud media', () => {
+  const project = createSeedProject(); project.lanes=[defaultPresentationLane('astrid')];
+  const selectedLaneIds = [project.lanes[0].id], before = structuredClone(project);
   const packageBefore = buildPresentationPackage(project, selectedLaneIds, []), envelopeBefore = encodePresentationPackage(packageBefore);
-  const capture = captureFrozenRegisteredDealers({ project, selectedLaneIds, inventory: null, mediaRows: null });
-  assert.deepEqual(capture, { registeredDealers: [], mediaPreconditions: [] });
+  assert.throws(() => captureFrozenRegisteredDealers({ project, selectedLaneIds, inventory: null, mediaRows: null }));
   assert.deepEqual(project, before);
   assert.deepEqual(encodePresentationPackage(buildPresentationPackage(project, selectedLaneIds, [])), envelopeBefore);
   assert.deepEqual(decodePresentationPackage(envelopeBefore), packageBefore);

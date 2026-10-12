@@ -1,4 +1,4 @@
-import { isRegisteredDealer } from '../dealer-identity.mjs';
+import { isRegisteredDealer, isActiveDealerId } from '../dealer-identity.mjs';
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
@@ -75,8 +75,9 @@ export function validateStudioGameAdministration(input) {
 // This is presence in a dealer's exact registered engine path, not media/lip
 // sync acceptance. A nearby key, approximate duration or another dealer fails.
 export function exactRegisteredDealerIdle(record, dealerId) {
-  return dealerIds.includes(dealerId) && object(record) && record.dealerId === dealerId
-    && record.engineKey === 'idle-1/idle/idle' && record.available === true;
+  return isActiveDealerId(dealerId) && object(record) && record.dealerId === dealerId
+    && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(record.mediaId)
+    && /^[a-f0-9]{64}$/.test(record.sha256) && record.available === true;
 }
 
 // Construction remains inert. The caller verifies product-v1 and Studio 001/002
@@ -85,14 +86,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
   if (!repository?.transaction || !repository?.readDocument || !repository?.saveDocument || typeof dealerIdle !== 'function') fail('studio_invalid_configuration');
   scope = validateStudioScope(scope);
   if (canonicalStudioJson(scope) !== canonicalStudioJson(validateStudioScope(repository.scope))) fail('studio_scope_mismatch');
-  async function idleSnapshot() {
-    // All provider/index reads happen before entering a database transaction.
-    try {
-      const rows = await Promise.all(dealerIds.map(async dealerId => [dealerId, await dealerIdle(dealerId)]));
-      return new Map(rows.map(([dealerId, record]) => [dealerId, exactRegisteredDealerIdle(record, dealerId)]));
-    } catch { fail('studio_game_media_unavailable'); }
-  }
-  function validate(projectDocument, administrationDocument, idle, { write = false } = {}) {
+  function validate(projectDocument, administrationDocument, { write = false } = {}) {
     if (!projectDocument || !administrationDocument) fail('studio_game_policy_missing');
     try {
       if (projectDocument.kind !== 'project' || administrationDocument.kind !== 'administration'
@@ -101,12 +95,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
       const administration = validateStudioGameAdministration(administrationDocument.value);
       validateRevision(administrationDocument.revision);
       if (gameLaneConfiguration(administration).gameLanes.some(lane => lane.renderer === 'portrait-video' && !isRegisteredDealer(project, lane.dealer))) fail('studio_invalid_game_policy', 422);
-      // Old tier names do not make retired indexed assets dependencies of a
-      // portrait lane. Indexed adapters keep their exact availability checks.
-      const indexed = gameLaneConfiguration(administration).gameLanes.filter(lane => lane.renderer === 'indexed-video');
-      for (const dealerId of new Set(indexed.length ? [...Object.values(administration.tiers), ...indexed.map(lane => lane.dealer)] : [])) {
-        if (idle.get(dealerId) !== true) fail('studio_game_dealer_unavailable', write ? 409 : 503);
-      }
+      // Old indexed lane records remain readable; entry rejects their retired renderer.
       return { project, administration };
     } catch (error) {
       if (error instanceof StudioStorageError && error.code === 'studio_game_dealer_unavailable') throw error;
@@ -119,8 +108,8 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
     if (!project || !administration) fail('studio_game_policy_missing');
     return { project, administration };
   }
-  function projection(saved, idle) {
-    const { project, administration } = validate(saved.project, saved.administration, idle);
+  function projection(saved) {
+    const { project, administration } = validate(saved.project, saved.administration);
     const projectRevision = saved.project.revision, administrationRevision = saved.administration.revision;
     const revision = `studio-game-${createHash('sha256').update(canonicalStudioJson({ scope, projectRevision, administrationRevision, project, administration })).digest('hex')}`;
     return freeze({ revision, projectRevision, administrationRevision,
@@ -128,9 +117,8 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
   }
   async function readSaved() {
     try {
-      const idle = await idleSnapshot();
       const saved = await repository.transaction(repo => documents(repo), { readOnly: true });
-      return projection(saved, idle);
+      return projection(saved);
     } catch (error) { throw studioStorageFailure(error); }
   }
   async function save(kind, value, expectedRevision, actor) {
@@ -138,12 +126,11 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
     // Clone caller-owned drafts before awaiting; mutations during a save never
     // become persisted policy. Pure domain validation also precedes DB I/O.
     const proposed = kind === 'project' ? validateDocumentValue('project', value, expectedRevision) : validateStudioGameAdministration(value);
-    const idle = await idleSnapshot();
     return repository.transaction(async repo => {
       const saved = await documents(repo);
       if (saved[kind].revision !== expectedRevision) fail('studio_conflict', 409);
       const next = { ...saved, [kind]: { kind, revision: expectedRevision, value: proposed } };
-      validate(next.project, next.administration, idle, { write: true });
+      validate(next.project, next.administration, { write: true });
       return repo.saveDocument(kind, { value: proposed, expectedRevision, actor });
     }, { presentationMutation: {kind,value:proposed} });
   }
@@ -163,8 +150,10 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
     saveProject: (value, expectedRevision, { actor } = {}) => save('project', value, expectedRevision, actor).then(saved => freeze(saved.value)),
     saveAdministration: (value, expectedRevision, { actor } = {}) => save('administration', value, expectedRevision, actor).then(saved => freeze(saved)),
     async canAssignDealer(dealerId) {
-      if (!dealerIds.includes(dealerId)) return false;
-      try { return exactRegisteredDealerIdle(await dealerIdle(dealerId), dealerId); }
+      if (!isActiveDealerId(dealerId)) return false;
+      const {project} = await readSaved();
+      if (!isRegisteredDealer(project,dealerId)) return false;
+      try { return exactRegisteredDealerIdle(await dealerIdle(dealerId, project), dealerId); }
       catch { fail('studio_game_media_unavailable'); }
     },
     projectStore({ actor } = {}) {

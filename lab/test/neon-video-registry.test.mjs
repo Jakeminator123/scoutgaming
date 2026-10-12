@@ -47,7 +47,11 @@ async function fixture(t) {
     return rm(root, { recursive: true, force: true });
   });
   const archive = join(root, 'media/dealers/astrid/runtime/presentation'); await mkdir(archive, {recursive:true});
-  const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
+  const pool = createStudioMemoryPool();
+  // This registry fixture has no operators or packages. Keep real archive checks,
+  // while supplying the scoped empty directory used by the lifecycle test fixture.
+  const connect=pool.connect.bind(pool);pool.connect=async()=>{const client=await connect(),query=client.query.bind(client);client.query=(sql,values)=>sql.includes('/* operator-store:list-operators */')?Promise.resolve({rows:[]}):query(sql,values);return client;};
+  const repository = createStudioRepository({ pool, scope });
   seedSavedVideoProject(pool,scope);
   const objects = new Map(), items = [], files = [], layout = [];
   for (const family of MEDIA_FAMILY_DEFINITIONS) for (const relativePath of family.standardPaths) {
@@ -146,7 +150,7 @@ test('captured inventory rejects foreign scope/registration and unavailable sele
 
 test('trash dealer uploads remain readable in live and captured inventory without active registration',async t=>{
  const {addDealer}=await import('../lib/studio-model.mjs');
- const {changeDealerLifecycle}=await import('../lib/dealer-lifecycle.mjs');
+ const {changeDealerLifecycle,checkDealerArchive}=await import('../lib/dealer-lifecycle.mjs');
  const f=await fixture(t),current=await f.repository.readDocument('project');
  const project=addDealer(current.value,'paow','PAOW');
  seedSavedVideoProject(f.pool,scope,project);
@@ -154,7 +158,8 @@ test('trash dealer uploads remain readable in live and captured inventory withou
  const {record:original,bytes}=await f.newMedia();
  const id=randomUUID(),record={...original,id,pathname:mediaBlobPath('dealers/paow/review/uploads',id,original.sha256,'mp4'),classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'PAOW',notes:''}};
  f.objects.set(record.pathname,bytes);await f.repository.registerMedia(record,{actor:'Admin'});
- const archived=await changeDealerLifecycle({repository:f.repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',archived:true,expectedRevision:project.revision}});
+ const {impact}=await checkDealerArchive({repository:f.repository,body:{dealerId:'paow',expectedRevision:project.revision}});
+ const archived=await changeDealerLifecycle({repository:f.repository,mutationTransaction:work=>work(),stillAuthorized:async()=> 'Admin',body:{dealerId:'paow',archived:true,expectedRevision:project.revision,impactToken:impact.token}});
  const live=await f.registry.load(),captured=await f.registry.loadCaptured(await f.repository.readPresentationSnapshot());
  for(const inventory of [live,captured]){const video=inventory.videos.find(row=>row.id===id);assert.equal(video.dealer,'paow');assert.equal(video.classification.archived,true);assert.match(video.revision,/^studio-/);}
  assert.equal(archived.dealers.some(row=>row.id==='paow'),false);

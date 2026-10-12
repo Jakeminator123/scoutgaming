@@ -144,7 +144,8 @@ export async function loadRegistry() {
     const here = realpathSync(process.cwd());
     const root = realpathSync(repoRoot);
     if (here !== root) process.chdir(root);
-    return loadVideoRegistry();
+    // Explicit historical fixture for baseline comparison; never a product default.
+    return loadVideoRegistry({archiveDir:join(repoRoot, 'media/dealers/astrid/runtime/presentation')});
   })();
   return registryPromise;
 }

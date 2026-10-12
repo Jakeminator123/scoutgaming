@@ -24,3 +24,6 @@
 .history small { display:block; margin-top:4px; opacity:.8; }
 @media (max-width:600px) { .editor,.review,.history { padding:12px; } .actions > button { flex:1 1 180px; } .history li { align-items:stretch; flex-direction:column; } .panel { gap:14px; } }
 .preview { display:grid; gap:12px; min-width:0; } .fullFrame { width:100%; max-height:65vh; background:#111827; border-radius:12px; }
+
+.history > summary { font-weight:600; cursor:pointer; padding:3px 0; }
+.history[open] > summary { margin-bottom:14px; }

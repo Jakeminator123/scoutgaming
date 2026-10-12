@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject, validateProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../lab/lib/studio-model.mjs';
 import { createRegisteredIdlePolicy, registeredIdleInventory } from '../presentation-runtime/registered-idle-policy.mjs';
 import { selectRegisteredIdleRule } from '../presentation-runtime/registered-idle-rules.mjs';
 import { createLiveIdleController } from '../presentation-runtime/live-idle.mjs';
@@ -9,7 +9,7 @@ import { frozenPlaybackProject } from '../web/frozen-dealer-playback.mjs';
 
 const uuid = n => '20000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function fixture() {
-  const project = addDealer(createSeedProject(), 'johanna', 'Johanna');
+  const project = addDealer(createEmptyProject(), 'johanna', 'Johanna');
   const line = project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready');
   line.variants[0].videoGenerationId = uuid(1);
   const policy = createRegisteredIdlePolicy({ dealerId: 'johanna', baselineVideoId: uuid(1), durationMs: 1000 });
@@ -88,7 +88,8 @@ test('simulated context never becomes a production rule and hidden cards stay pr
 });
 
 test('published rule, trigger and idle media stay frozen after draft changes', () => {
-  const f = fixture(), lane = f.project.lanes[0];
+  const f = fixture(), lane = defaultPresentationLane('johanna');
+  f.project.lanes=[lane];
   lane.id = 'johns-johanna'; lane.dealers = ['johanna'];
   lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
   validateProject(f.project);

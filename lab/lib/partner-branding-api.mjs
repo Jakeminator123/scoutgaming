@@ -6,7 +6,6 @@ import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-prese
 import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../web/storage/partner-branding.mjs';
 import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
-import { defaultPresentationLane } from './studio-model.mjs';
 import { effectivePartnerAdjustments } from './partner-package-view.mjs';
 import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../web/storage/presentation-package.mjs';
 
@@ -39,11 +38,10 @@ export function adjustableForPackage(laneIds, saved) {
   for (const lane of projectLanes(saved)) {
     if (lane && typeof lane.id === 'string' && !byId.has(lane.id)) byId.set(lane.id, lane);
   }
-  const standard = defaultPresentationLane();
   const found = new Set();
   for (const id of Array.isArray(laneIds) ? laneIds : []) {
     if (typeof id !== 'string') continue;
-    const lane = byId.has(id) ? byId.get(id) : (id === standard.id ? standard : null);
+    const lane = byId.get(id);
     const items = Array.isArray(lane?.operatorAdjustable) ? lane.operatorAdjustable : [];
     for (const item of items) if (ADJUSTABLE_ORDER.includes(item)) found.add(item);
   }
@@ -103,8 +101,12 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return { ...view(pack, adjustableForPackage(pack.lanes, saved)), ...(presentation ? { presentation, dealerChoices:choices(pack,presentation,document) } : {}) };
   }
   async function prepareBranding(current, branding, document) {
+    if (!Array.isArray(current.lanes) || !current.lanes.length) fail(409);
     const presentation = readPackagePresentation(current);
-    const adjustable = adjustableForPackage(current.lanes, presentation ? { lanes: presentation.lanes } : await savedProject());
+    const source = presentation ? { lanes: presentation.lanes } : await savedProject();
+    const assigned = new Set(projectLanes(source).map(lane => lane.id));
+    if (current.lanes.some(id => !assigned.has(id))) fail(409);
+    const adjustable = adjustableForPackage(current.lanes, source);
     gateKeys(branding, adjustable);
     let nextBranding={...structuredClone(current.branding),...branding};
     if (presentation) {
@@ -253,7 +255,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
       if(await context.reauthorize()!==true)fail(403);
       requireDraftStore(context.store);
       const pack=await load(input.operatorId,context.store),draft=await context.store.getBrandingDraft(input.operatorId);
-      if(pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
+      if(!Array.isArray(pack.lanes)||!pack.lanes.length||pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
       const document=await administrationSnapshot(context.readAdministration);
       if(input.action==='save-draft'||input.action==='restore'){
         let branding=input.branding;

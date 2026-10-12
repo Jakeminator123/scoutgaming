@@ -1,9 +1,8 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {platformConfiguration,platformBackendHeaders,launchHasPartnerClaim,blackjackLobbyDestination} from './platform-routing.mjs';
+import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from './platform-routing.mjs';
 import {gameEntryEnabled,gameEntryRedirect,approvedGameQuery,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
-import {gameLaneSelection} from '../../../web/public/game-lanes.mjs';
-import {requestedOperator,OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
+import {OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
 
 const DOCUMENTS = new Map([
   ['/game', 'game.html'], ['/game/', 'game.html'], ['/blackjack', 'blackjack.html'], ['/blackjack/', 'blackjack.html'],
@@ -31,7 +30,7 @@ function safeGameLocation(location) {
   return location;
 }
 
-// Authenticated ?operator=<slug> is the engine document: package lane/dealer, or the company 404.
+// Every authenticated game entry uses the engine document and its saved dealer/media context.
 async function proxyOperatorGame(request, url, config, fetchImpl, headers) {
   const unavailable = () => new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
     {status:503,headers:{...headers,'Content-Type':'text/plain; charset=utf-8'}});
@@ -79,7 +78,6 @@ export async function platformUiDocument(request, {env = process.env, directory 
   if (lobby) return new Response(null,{status:303,headers:{...headers,Location:lobby}});
   const destination = gameEntryRedirect(url,env);
   if (destination) return new Response(null,{status:307,headers:{...headers,Location:destination}});
-  let selection;
   if (canonical && ['/blackjack','/blackjack/'].includes(path)) {
     // The public UI uses the same live account session and saved policy as the
     // engine. No cached/default player shell is served while access is unknown.
@@ -95,12 +93,7 @@ export async function platformUiDocument(request, {env = process.env, directory 
       const session = await read('/api/auth/session');
       if (typeof session?.authenticated !== 'boolean') throw Error('Invalid session');
       if (!session.authenticated) return new Response(null,{status:303,headers:{...headers,Location:playerLoginDestination(url)}});
-      // Invalid slugs never reach this branch: requestedOperator is null and the catalogue path below is unchanged.
-      if (typeof requestedOperator(url.searchParams) === 'string' && !launchHasPartnerClaim(url.searchParams.get('launch'))) {
-        return proxyOperatorGame(request,url,config,fetchImpl,headers);
-      }
-      const policy = await read('/api/bo/config');
-      selection = gameLaneSelection(url.searchParams,policy?.gameLane === undefined ? 'mobile-phone' : policy.gameLane,policy?.gameLanes);
+      return proxyOperatorGame(request,url,config,fetchImpl,headers);
     } catch {
       return new Response(request.method === 'HEAD' ? null : 'Spelet kunde inte öppnas. Försök igen om en stund.',
         {status:503,headers:{...headers,'Content-Type':'text/plain; charset=utf-8'}});
@@ -108,5 +101,5 @@ export async function platformUiDocument(request, {env = process.env, directory 
   }
   let html;
   try { html = await readFile(resolve(directory, file), 'utf8'); } catch { return new Response(null, {status: 503, headers}); }
-  return new Response(request.method === 'HEAD' ? null : decorateGameEntryHtml(html,env,selection), {headers: {...headers, 'Content-Type': 'text/html; charset=utf-8'}});
+  return new Response(request.method === 'HEAD' ? null : decorateGameEntryHtml(html,env), {headers: {...headers, 'Content-Type': 'text/html; charset=utf-8'}});
 }

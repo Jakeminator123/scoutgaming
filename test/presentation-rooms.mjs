@@ -1,19 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { defaultPresentationLane } from '../lab/lib/studio-model.mjs';
+import { cloudPresentationFixture } from '../lab/test/fixtures/cloud-presentation.mjs';
 import { validateStudioGameAdministration } from '../web/storage/studio-game-policy.mjs';
 import { isPresentationRoom, listPackageRooms, resolvePackageRoom } from '../web/presentation-room-contract.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
-import { buildPresentationPackage, layerAssetPath } from '../web/presentation-layers.mjs';
+import { layerAssetPath } from '../web/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../web/public/composition-settings.mjs';
 import { withPackagePresentation } from '../web/storage/presentation-package.mjs';
 
 const legacy = { id: 'old-room', name: 'Old', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' };
 const room = { schemaVersion: 2, id: 'room-one', name: 'North table', operatorId: 'north', presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'live' };
 function fixture() {
-  const project = createSeedProject();
+  const { project, presentation } = cloudPresentationFixture({lanes:[defaultPresentationLane('astrid')]});
   const administration = { rooms: [legacy, structuredClone(room)], tiers: { classic: 'vera', high: 'astrid', vip: 'amira' }, pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
-  const presentation = buildPresentationPackage(project, ['mobile-phone'], []);
+  administration.gameLane = 'mobile-phone';
+  administration.gameLanes = [{schemaVersion:1,id:'mobile-phone',label:'Explicit portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}];
   const pack = { operatorId: 'north', revision: 1, lanes: ['mobile-phone'], tables: ['room-one'], branding: withPackagePresentation({}, presentation) };
   const policy = { readSaved: async () => ({ project, administration }), readGameConfiguration: async () => administration };
   return { project, administration, pack, policy };
@@ -83,7 +85,7 @@ test('a VIP presentation binds a different real game lane without adding artific
   administration.rooms[1].gameLaneId = 'compatible-portrait';
   administration.gameLane = 'mobile-phone';
   administration.gameLanes = ['mobile-phone', 'compatible-portrait'].map(id => ({ schemaVersion: 1, id, label: id, renderer: 'portrait-video', dealer: 'astrid', mediaCollection: 'astrid-presentation' }));
-  const presentation = buildPresentationPackage(project, [vip.id], assets);
+  const {presentation} = cloudPresentationFixture({project,lanes:[vip],assets});
   const pack = { operatorId: 'north', revision: 1, lanes: [vip.id], tables: [room.id], branding: withPackagePresentation({}, presentation) };
   const select = createGameEntrySelector({ policy: { readSaved: async () => ({ project, administration }), readGameConfiguration: async () => administration },
     packages: { resolve: async () => ({ operator: { id: 'north' }, package: pack }) } });

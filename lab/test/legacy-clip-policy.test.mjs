@@ -82,7 +82,7 @@ test('review rejection blocks explicit Lab import/binding without changing proje
   assert.deepEqual(project, before);
 });
 
-test('a saved version changes only the intended engine config and stale editors cannot overwrite it', async t => {
+test('historical policy remains stored but its runtime endpoint is retired and stale saves fail', async t => {
   const options = await fixture(t), store = createProjectStore(join(options.repository, 'studio'));
   const base = await store.load(), edited = structuredClone(base);
   edited.legacyClipPolicy = [{ dealerId: 'amira', part: 'idle', clipId: 'amira:idle-2/idle/idle' }];
@@ -93,13 +93,14 @@ test('a saved version changes only the intended engine config and stale editors 
   t.after(() => { server.closeAllConnections(); server.close(); });
   const url = `http://127.0.0.1:${server.address().port}/api/presentation/legacy-config`;
   assert.equal((await fetch(url, { headers: { 'x-fixture-player': 'none' } })).status, 401);
-  const saved = await (await fetch(url)).json();
-  assert.equal(saved.projectRevision, first.revision); assert.equal(saved.dealers.amira.engine.idle, 'idle-2/idle/idle');
-  assert.deepEqual(saved.dealers.vera.engine, {});
+  const retired = await fetch(url);
+  assert.equal(retired.status, 410);
+  assert.equal((await store.load()).revision, first.revision);
+  assert.deepEqual((await store.load()).legacyClipPolicy, edited.legacyClipPolicy);
   const next = structuredClone(first); next.legacyClipPolicy = [];
   const second = await store.save(next, first.revision);
-  const cleared = await (await fetch(url)).json();
-  assert.equal(cleared.projectRevision, second.revision); assert.deepEqual(cleared.dealers.amira.engine, {});
+  assert.equal((await fetch(url)).status, 410);
+  assert.deepEqual((await store.load()).legacyClipPolicy, []);
   await assert.rejects(store.save(edited, base.revision), { statusCode: 409 });
   assert.equal((await store.load()).revision, second.revision);
 });

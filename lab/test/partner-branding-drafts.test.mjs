@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
@@ -15,7 +16,7 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
  const pool=operatorMemoryPool(),store=await createOperatorStore({sql:pool,scope}),actor='fixture';
  const audit={actorId:'42',accessClass:'partner',requestId:randomUUID()};
  await store.createOperator({operatorId,actor,slug:'draft-unit',name:'Draft'});
- const lane={...defaultPresentationLane(),composition:defaultCompositionSettings(),operatorAdjustable,dealers:['astrid','vera']};
+ const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),operatorAdjustable,dealers:['astrid','vera']};
  lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
  lane.layers.table={...lane.layers.table,enabled:true,colors:['#112233','#334455','#556677']};
  const assets=large?['table','background'].map((role,index)=>{
@@ -27,13 +28,14 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
   lane.layers.background={...lane.layers.background,enabled:true,mode:'image',default:assets[1].id,allowed:[assets[1].id]};
  }
  const tables=large?Array.from({length:28},(_,i)=>'room-'+String(i).padStart(2,'0')+'x'.repeat(50)):['room-a','room-b'];
- const presentation={schemaVersion:1,projectRevision:'draft-unit',lanes:[lane],assets};
+ const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets}).presentation;
+ const presentation={...captured,schemaVersion:2};
  const initial=withPackagePresentation({lane:lane.id,color:'#112233'},presentation);
  if(metadataBytes)initial.n1Note='x'.repeat(metadataBytes);
  await store.publishPackage({operatorId,actor,lanes:[lane.id],games:['blackjack'],tables,branding:initial});
  let allowed=true,adminRevision='a1';
- const readAdministration=async()=>({revision:adminRevision,value:{gameLane:'indexed',gameLanes:[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'}],
- rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'indexed',state:'live'}))}});
+ const readAdministration=async()=>({revision:adminRevision,value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
+ rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'portrait-astrid',state:'live'}))}});
  const api=createPartnerBrandingApi({store,readProject:async()=>assert.fail('frozen only'),readAdministration,
  withWriteContext:work=>work({store,readAdministration,reauthorize:async()=>allowed})});
  const command=input=>api.command({operatorId,actor,audit,expectedDraftRevision:0,expectedPackageRevision:1,...input});

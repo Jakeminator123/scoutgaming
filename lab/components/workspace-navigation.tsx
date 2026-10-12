@@ -20,8 +20,8 @@ function ItemLink({ item, active, routeKey }: { item: ScoutLink; active: boolean
   const currentPath = routeKey.split('?')[0].replace(/^\/studio(?=\/)/, '');
   if (active && currentPath === item.href.split('?')[0]) return <span className={styles.itemActive} aria-current="page">{item.label}</span>;
   const params = new URLSearchParams(routeKey.split('?')[1] ?? '');
-  const href = item.href.startsWith('/control/') && !item.href.includes('?tab=companies')
-    ? studioNavigationHref(item.href, {dealerId:params.get('dealer') ?? undefined, laneId:params.get('lane') ?? undefined}) : labUrl(item.href);
+  const href = item.href.startsWith('/control/')
+    ? studioNavigationHref(item.href, {dealerId:params.get('dealer') ?? undefined, laneId:params.get('composition') ?? params.get('lane') ?? undefined, operatorId:params.get('operator') ?? undefined, tableId:params.get('table') ?? undefined}) : labUrl(item.href);
   return <a className={active ? styles.itemActive : styles.item} href={href} aria-current={active ? 'page' : undefined}>{item.label}</a>;
 }
 

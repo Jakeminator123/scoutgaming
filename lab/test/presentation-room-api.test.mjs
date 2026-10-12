@@ -1,6 +1,8 @@
+import {AsyncLocalStorage} from 'node:async_hooks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, defaultPresentationLane, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../lib/studio-model.mjs';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
@@ -9,10 +11,16 @@ import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
-import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
 
 const scope = { environment: 'room-fixture', workspaceId: 'isolated' };
+// Test fixture selects its historical dealer explicitly; product startup has no composition.
+function createSeedProject() {
+  const project = createHistoricalProject();
+  project.lanes = [defaultPresentationLane('astrid')];
+  return project;
+}
 const origin = 'https://studio.example.invalid';
 const capability4 = { schemaVersion:4, registeredDealerIds:['nora'], compositing:'per-clip', rooms:'operator-owned-v2', registeredDealerMode:'saved-registry-idle-v1', frozenDealerIdle:'operator-package-v2', frozenDealerEvents:'operator-package-v3' };
 const capability = { schemaVersion: 2, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2' };
@@ -31,23 +39,23 @@ function combinedPool() {
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
   ] }, tail = Promise.resolve(), clientId = 0, tick = 0;
-  const trace = [], faults = new Set();
+  const trace = [], faults = new Set(), requestTransactions = new AsyncLocalStorage();
   const sameScope = (row, values) => row.environment_id === values[0] && row.workspace_id === values[1];
   const documentKey = values => JSON.stringify(values.slice(0, 3));
   const result = (rows = [], command = 'SELECT') => ({ rows: clone(rows), command });
-  const pool = { trace, active: 0, setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); }, snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
-    const id = ++clientId; let working, unlock, readOnly = false;
+  const pool = { trace, active: 0, currentActive:()=>requestTransactions.getStore()?.active ?? pool.active, request:work=>requestTransactions.run({active:0},work), setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); }, snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
+    const id = ++clientId, requestScope = requestTransactions.getStore(); let working, unlock, readOnly = false;
     return { async query(sql, values = []) {
       const marker = /\/\* (?:studio|operator-store|presentation-room):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
       trace.push({ client: id, marker, values: clone(values) });
       if (faults.delete(marker)) throw Error('private forced failure');
-      if (sql.startsWith('BEGIN')) { pool.active++; readOnly = sql.includes('READ ONLY'); working = readOnly ? clone(state) : undefined; return result([], 'BEGIN'); }
+      if (sql.startsWith('BEGIN')) { pool.active++; if(requestScope)requestScope.active++; readOnly = sql.includes('READ ONLY'); working = readOnly ? clone(state) : undefined; return result([], 'BEGIN'); }
       if (sql.startsWith('SET LOCAL')) return result([], 'SET');
       if (sql.includes('pg_advisory_xact_lock')) {
         const previous = tail; tail = new Promise(resolve => { unlock = resolve; }); await previous; working = clone(state); return result();
       }
       if (sql === 'COMMIT' || sql === 'ROLLBACK') {
-        pool.active--; if (sql === 'COMMIT' && !readOnly) state = working; working = undefined; unlock?.(); unlock = null; return result([], sql);
+        pool.active--; if(requestScope)requestScope.active--; if (sql === 'COMMIT' && !readOnly) state = working; working = undefined; unlock?.(); unlock = null; return result([], sql);
       }
       assert.ok(working, 'all domain queries use the repository transaction');
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
@@ -81,18 +89,21 @@ function combinedPool() {
 }
 async function fixture(options = {}) {
   const pool = combinedPool(), repository = createStudioRepository({ pool, scope });
-  const project = createSeedProject();
-  const vip = defaultPresentationLane(); vip.id = 'vip-presentation'; vip.label = 'VIP';
+  let project = createSeedProject();
+  const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
   project.lanes.push(vip);
-  const administration = { rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
+  const lanes = project.lanes, cloud = cloudPresentationFixture({project,lanes:[...lanes,...['vera','mei'].map(dealer => ({...defaultPresentationLane(dealer),id:'fixture-'+dealer}))]});
+  project = cloud.project; project.lanes = lanes;
+  for (const {revision,...record} of cloud.mediaRows) pool.setMedia(record,revision);
+  const administration = { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
     tiers: { classic: 'vera', high: 'astrid', vip: 'amira' }, tournaments: [], pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 } };
   await repository.initializeDocument('project', { value: project, revision: project.revision, actor: session.user });
   await repository.initializeDocument('administration', { value: administration, revision: 'admin-initial', actor: session.user });
-  const videoRegistry = { async loadCaptured(snapshot) { assert.equal(pool.active, 0, 'inventory loading outside SQL'); return { videos: snapshot.mediaRows.map(record => ({ id: record.id, dealer: record.classification.dealerId, sha256: record.sha256, bytes: record.size, classification: clone(record.classification), available: true, integrity: 'verified' })) }; }, async verifyCapturedMedia() { assert.equal(pool.active, 0, 'provider HEAD outside SQL'); } };
+  const videoRegistry = { async loadCaptured(snapshot) { assert.equal(pool.currentActive(), 0, 'inventory loading outside this request SQL'); return { videos: snapshot.mediaRows.map(record => ({ id: record.id, dealer: record.classification.dealerId, sha256: record.sha256, bytes: record.size, classification: clone(record.classification), available: true, integrity: 'verified' })) }; }, async verifyCapturedMedia() { assert.equal(pool.currentActive(), 0, 'provider HEAD outside this request SQL'); } };
   const roomApi = createPresentationRoomApi({ repository, scope, videoRegistry, runtimeCapabilities: async presentation => presentation?.schemaVersion === 3 ? capability4 : presentation?.schemaVersion === 2 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability, now: () => 1700000000000, ...options });
   const context = body => ({ body, actor: session, scope });
   const prepare = (operatorId = 'north', presentationLaneId = vip.id) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}`) });
-  const create = body => roomApi.handlers.get('POST /studio/api/admin/presentation-room')(context(body));
+  const create = body => pool.request(()=>roomApi.handlers.get('POST /studio/api/admin/presentation-room')(context(body)));
   const payload = async (overrides = {}) => { const ready = await prepare(); return { operatorId: 'north', presentationLaneId: vip.id, name: 'VIP room', idempotencyKey: key,
     expectedProjectRevision: ready.projectRevision, expectedAdministrationRevision: ready.administrationRevision, expectedPackageRevision: ready.packageRevision, ...overrides }; };
   const publish = async input => repository.transaction(() => repository.withTransactionClient(async client => {
@@ -105,7 +116,7 @@ const status = expected => error => error.statusCode === expected;
 test('preparation is read-only and returns actual nullable package revision plus verified runtime contract', async () => {
   const f = await fixture(), before = f.pool.snapshot(); const ready = await f.prepare();
   assert.equal(ready.ready, true); assert.equal(ready.conflictCode, null); assert.equal(ready.packageRevision, null); assert.equal(ready.projectRevision, f.project.revision);
-  assert.equal(ready.administrationRevision, 'admin-initial'); assert.deepEqual(ready.capabilities, capability); assert.deepEqual(f.pool.snapshot(), before);
+  assert.equal(ready.administrationRevision, 'admin-initial'); assert.deepEqual(ready.capabilities, capability4); assert.deepEqual(f.pool.snapshot(), before);
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Brand' }, buildPresentationPackage(f.project, ['mobile-phone'], [])) });
   assert.equal((await f.prepare()).packageRevision, 1);
   await assert.rejects(f.prepare('unknown'), status(404)); await assert.rejects(f.prepare('north', 'unknown'), status(404));
@@ -168,7 +179,7 @@ test('removed package membership and removed rooms cannot be repaired by idempot
 });
 
 test('selected definition changes are isolated from other frozen lanes; branding and existing table IDs survive', async () => {
-  const f = await fixture(), frozen = buildPresentationPackage(f.project, ['mobile-phone'], []);
+  const f = await fixture(), frozen = cloudPresentationFixture({project:f.project,lanes:[f.project.lanes[0]]}).presentation;
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Brand', logo: 'https://example.invalid/logo.png' }, frozen) });
   const draft = await f.repository.readDocument('project'); const changed = clone(draft.value); changed.lanes[0].label = 'Unpublished change';
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: draft.revision, value: changed });
@@ -185,14 +196,14 @@ test('selected definition changes are isolated from other frozen lanes; branding
 
 test('unavailable runtime refuses before writer locks; an unrelated layered catalogue can acquire an own portrait lane', async () => {
   const f = await fixture(); let version = 1, fetches = 0;
-  const guarded = wrapNativePresentationRepository(f.repository, { env: { CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid' }, fetchImpl: async () => { fetches++; return Response.json(version === 2 ? capability : { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' }); } });
-  const blocked = createPresentationRoomApi({ repository: guarded, scope, runtimeCapabilities: () => guarded.withMutationContext(async () => capability, { kind: 'administration', value: { rooms: [{ schemaVersion: 2 }] } }) });
+  const guarded = wrapNativePresentationRepository(f.repository, { env: { CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid' }, fetchImpl: async () => { fetches++; return Response.json(version === 4 ? capability4 : { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' }); } });
+  const blocked = createPresentationRoomApi({ repository: guarded, scope, videoRegistry:f.videoRegistry, runtimeCapabilities: presentation => guarded.withMutationContext(async () => capability4, [{ kind:'administration',value:{rooms:[{schemaVersion:2}]} },{kind:'presentation-package',value:presentation}]) });
   const prep = () => blocked.handlers.get('GET /studio/api/admin/presentation-room')({ actor: session, scope, request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=north&presentationLaneId=vip-presentation`) });
   assert.equal((await prep()).ready, false); const body = await f.payload(), before = f.pool.snapshot(), queryCount = f.pool.trace.length;
   await assert.rejects(blocked.handlers.get('POST /studio/api/admin/presentation-room')({ body, actor: session, scope }), status(503));
   assert.equal(f.pool.trace.slice(queryCount).filter(row => ['save-document', 'publish-package', 'lock-operator'].includes(row.marker)).length, 0, 'capability refusal precedes writer lock and all writes');
   assert.deepEqual(f.pool.snapshot(), before); assert.equal(f.pool.trace.slice(queryCount).filter(row => row.marker === 'save-document').length, 0);
-  version = 2; assert.equal((await prep()).ready, true); assert.ok(fetches >= 3);
+  version = 4; assert.equal((await prep()).ready, true); assert.ok(fetches >= 3);
   const admin = await f.repository.readDocument('administration');
   await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: admin.revision, value: { ...admin.value, gameLane: 'layer-preview', gameLanes: [{ schemaVersion: 1, id: 'layer-preview', label: 'Layer', dealer: 'paow', renderer: 'layered', mediaCollection: 'layer-packs-preview' }] } });
   assert.equal((await f.prepare()).ready, true);
@@ -216,7 +227,7 @@ test('room endpoint retains fresh session role, Origin and exact query/body/scop
 
 test('Nora uses an own frozen idle, accepts a different compatible lane ID and empty optional positions', async () => {
   const f = await fixture(), project = await f.repository.readDocument('project');
-  const saved = addDealer(project.value, 'nora', 'Nora'), lane = defaultPresentationLane();
+  const saved = addDealer(project.value, 'nora', 'Nora'), lane = defaultPresentationLane('astrid');
   lane.id = 'nora-presentation'; lane.label = 'Nora'; lane.renderer = 'portrait-video'; lane.dealers = ['nora']; lane.layers.dealer = { enabled: true, default: 'nora', allowed: ['nora'] }; saved.lanes.push(lane);
   const record = idleRecord('nora'); f.pool.setMedia(record);
   const line = saved.lines.find(row => row.dealerId === 'nora' && row.eventId === 'idle.ready'); line.variants.find(row => row.id === line.baselineVariantId).videoGenerationId = record.id;
@@ -242,7 +253,7 @@ test('frozen assets and existing branding choices survive unrelated draft edits 
     lane.composition = defaultCompositionSettings(); lane.composition.mobile.table.y = .13 + i * .1;
   }
   project.layerAssets = assets;
-  const frozen = buildPresentationPackage(project, ['mobile-phone'], assets);
+  const frozen = cloudPresentationFixture({project,lanes:[project.lanes[0]],assets}).presentation;
   const branding = { lane: 'mobile-phone', background: assets[0].id, table: assets[1].id, dealer: 'astrid', color: '#123abc', name: 'Brand' };
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation(branding, frozen) });
   project.layerAssets[0].label = 'Unpublished library edit'; project.lanes[0].composition.mobile.table.y = .8;
@@ -312,7 +323,7 @@ async function registeredFixture(options = {}) {
   const project = addDealer(current.value, 'johanna', 'Johanna'), record = idleRecord(); f.pool.setMedia(record);
   const baseline = project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready');
   baseline.variants.find(row => row.id === baseline.baselineVariantId).videoGenerationId = record.id;
-  const lane = defaultPresentationLane(); lane.id = 'johns-johanna'; lane.label = 'Johns Johanna'; lane.renderer = 'portrait-video';
+  const lane = defaultPresentationLane('astrid'); lane.id = 'johns-johanna'; lane.label = 'Johns Johanna'; lane.renderer = 'portrait-video';
   lane.dealers = ['johanna']; lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
   lane.composition = defaultCompositionSettings(); lane.composition.mobile.dealer.y = .27;
   project.lanes.push(lane);
@@ -436,7 +447,7 @@ test('creating an unrelated original dealer room preserves the previously frozen
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
   await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444', name: 'Original room' }));
   const row = f.pool.snapshot().packages.at(-1), final = readPackagePresentation({ lanes: JSON.parse(row.lanes), branding: JSON.parse(row.branding) });
-  assert.equal(final.schemaVersion, 3); assert.deepEqual(final.registeredDealers, old.registeredDealers);
+  assert.equal(final.schemaVersion, 3); assert.deepEqual(final.registeredDealers.filter(row=>row.id==='johanna'), old.registeredDealers);
   assert.deepEqual(final.lanes.find(lane => lane.id === f.lane.id), old.lanes[0]); assert.ok(JSON.parse(row.tables).includes(first.room.id));
 });
 
@@ -455,15 +466,15 @@ test('a selected generic idle cannot silently replace the idle of another frozen
   assert.deepEqual(f.pool.snapshot(), before);
 });
 
-test('all original four dealers remain playable through real room entry with byte-compatible v1 publication', async () => {
-  for (const dealer of BASE_DEALER_IDS) {
+test('explicit active historical dealer registrations are playable only with frozen own idle and v3 publication', async () => {
+  for (const dealer of ['vera','astrid','mei']) {
     const f = await fixture(), project = await f.repository.readDocument('project'), next = clone(project.value);
     const lane = next.lanes.find(row => row.id === 'vip-presentation'); lane.dealers = [dealer]; lane.layers.dealer = { enabled: true, default: dealer, allowed: [dealer] };
     await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
-    const ready = await f.prepare(); assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 2);
+    const ready = await f.prepare(); assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 4);
     const room = await f.create(await f.payload()), raw = f.pool.snapshot().packages.at(-1);
     const pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
-    assert.equal(readPackagePresentation(pack).schemaVersion, 1);
+    assert.equal(readPackagePresentation(pack).schemaVersion, 3);
     const saved = { project: (await f.repository.readDocument('project')).value, administration: (await f.repository.readDocument('administration')).value };
     const selector = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => saved.administration },
       packages: { resolve: async () => ({ operator: { id: 'north', status: 'active' }, package: pack }) } });
@@ -472,9 +483,9 @@ test('all original four dealers remain playable through real room entry with byt
   }
 });
 
-test('new v2 output with an empty registry still requires v3 before adding another original room', async () => {
+test('existing frozen v3 publication requires v4 before adding another room', async () => {
   const f = await fixture({ runtimeCapabilities: async () => capability });
-  const v2 = buildPresentationPackage(f.project, ['mobile-phone'], [], { registeredDealers: [] });
+  const v2 = cloudPresentationFixture({project:f.project,lanes:[f.project.lanes[0]]}).presentation;
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({}, v2) });
   const ready = await f.prepare(); assert.equal(ready.ready, false); assert.equal(ready.reason, 'studio_presentation_runtime_update_required');
   const before = f.pool.snapshot(); await assert.rejects(f.create(await f.payload()), status(503)); assert.deepEqual(f.pool.snapshot(), before);
@@ -482,7 +493,7 @@ test('new v2 output with an empty registry still requires v3 before adding anoth
 
 test('adding Johanna cannot silently migrate an unrelated legacy Nora presentation without its frozen idle', async () => {
   const f = await registeredFixture(), current = await f.repository.readDocument('project'), project = addDealer(current.value, 'nora', 'Nora');
-  const nora = defaultPresentationLane(); nora.id = 'nora-mobile'; nora.dealers = ['nora']; nora.layers.dealer = { enabled: true, default: 'nora', allowed: ['nora'] }; project.lanes.push(nora);
+  const nora = defaultPresentationLane('astrid'); nora.id = 'nora-mobile'; nora.dealers = ['nora']; nora.layers.dealer = { enabled: true, default: 'nora', allowed: ['nora'] }; project.lanes.push(nora);
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: current.revision, value: project });
   const legacy = buildPresentationPackage(project, [nora.id], []);
   await f.publish({ actor: session.user, operatorId: 'north', lanes: [nora.id], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Legacy Nora' }, legacy) });
@@ -555,11 +566,11 @@ test('room listing exposes only live published rooms of this operator and presen
 });
 
 
-test('a saved Amira-Johanna-Astrid presentation can add a room while preserving the current Johanna package and room', async () => {
+test('a saved Vera-Johanna-Astrid presentation can add a room while preserving the current Johanna package and room', async () => {
   const f=await registeredFixture(), first=await f.create(await f.registeredPayload());
   const initial=f.pool.snapshot().packages.at(-1), previous=readPackagePresentation({lanes:JSON.parse(initial.lanes),branding:JSON.parse(initial.branding)});
   const saved=await f.repository.readDocument('project'), project=clone(saved.value), mobile=project.lanes.find(lane=>lane.id==='mobile-phone');
-  mobile.dealers=['amira','johanna','astrid'];mobile.layers.dealer={enabled:true,default:'amira',allowed:[...mobile.dealers]};
+  mobile.dealers=['vera','johanna','astrid'];mobile.layers.dealer={enabled:true,default:'vera',allowed:[...mobile.dealers]};
   mobile.composition=defaultCompositionSettings();
   await f.repository.saveDocument('project',{actor:session.user,expectedRevision:saved.revision,value:project});
   const prepared=await f.prepare('north','mobile-phone');assert.equal(prepared.ready,true);assert.equal(prepared.reason,null);
@@ -569,13 +580,15 @@ test('a saved Amira-Johanna-Astrid presentation can add a room while preserving 
   const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
   const frozen=readPackagePresentation(pack);
   assert.deepEqual(frozen.lanes.find(lane=>lane.id==='johns-johanna'),previous.lanes[0]);
-  assert.deepEqual(frozen.registeredDealers,previous.registeredDealers);assert.deepEqual(frozen.playback,previous.playback);
+  assert.deepEqual(frozen.registeredDealers.filter(row=>row.id==='johanna'),previous.registeredDealers);
+  assert.deepEqual(frozen.playback.lines.filter(row=>row.dealerId==='johanna'),previous.playback.lines);
+  for(const key of ['media','assets','triggers']) for(const old of previous.playback[key]) assert.deepEqual(frozen.playback[key].find(row=>row.id===old.id),old);
   assert.deepEqual(new Set(pack.tables),new Set([first.room.id,created.room.id]));
   const administration=(await f.repository.readDocument('administration')).value;
   const select=createGameEntrySelector({policy:{readSaved:async()=>({project,administration}),readGameConfiguration:async()=>administration},
     packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'amira');
-  assert.deepEqual(entry.selection.choices.dealers,['amira','johanna','astrid']);
+  const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'vera');
+  assert.deepEqual(entry.selection.choices.dealers,['vera','johanna','astrid']);
   assert.equal((await select(new URL(first.playUrl,origin).search)).selection.dealer,'johanna');
 });
 
@@ -624,9 +637,9 @@ test('unknown internal conflicts remain generic and never reflect raw errors or 
 });
 
 
-test('room preflight accepts a saved v3 allowed default change on the existing Amira room without writes', async () => {
+test('room preflight accepts a saved v3 allowed default change on the existing Astrid room without writes', async () => {
   const f=await registeredFixture(), saved=await f.repository.readDocument('project'), lane=saved.value.lanes.find(row=>row.id===f.lane.id);
-  lane.dealers=['amira','johanna'];lane.layers.dealer={enabled:true,default:'amira',allowed:['amira','johanna']};
+  lane.dealers=['astrid','johanna'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','johanna']};
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
   const created=await f.create(await f.registeredPayload()), changed=await f.repository.readDocument('project');
   changed.value.lanes.find(row=>row.id===f.lane.id).layers.dealer.default='johanna';
@@ -634,4 +647,17 @@ test('room preflight accepts a saved v3 allowed default change on the existing A
   const before=f.pool.snapshot(), ready=await f.prepare('north',f.lane.id);
   assert.equal(ready.ready,true);assert.equal(ready.conflictCode,null);assert.equal(ready.rooms[0].id,created.room.id);
   assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('missing or empty saved compositions cannot create a default room or publication',async()=>{
+  for(const missing of [false,true]){
+    const f=await fixture(),body=await f.payload(),saved=await f.repository.readDocument('project');
+    if(missing)delete saved.value.lanes;else saved.value.lanes=[];
+    const changed=await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
+    body.expectedProjectRevision=changed.revision;
+    const before=f.pool.snapshot();
+    await assert.rejects(f.prepare('north','mobile-phone'),error=>error.code==='studio_presentation_required'&&error.statusCode===404);
+    await assert.rejects(f.create(body),error=>error.code==='studio_presentation_required'&&error.statusCode===404);
+    assert.deepEqual(f.pool.snapshot(),before);
+  }
 });

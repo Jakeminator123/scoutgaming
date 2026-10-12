@@ -6,7 +6,7 @@ const password = document.querySelector('#password');
 const username = document.querySelector('#username');
 const help = document.querySelector('#login-help');
 const administratorEntry = document.querySelector('#legacy-admin');
-const destination = '/?dealer=astrid&presentation=local';
+const destination = '/play';
 const gameDestination = document.documentElement.dataset.gamePath === '/blackjack'
   ? canonicalGameDestination(new URL(location.href,location.origin),{includeLaunch:false}) : destination;
 let busy = false, loginEndpoint = null, localLogin = false;

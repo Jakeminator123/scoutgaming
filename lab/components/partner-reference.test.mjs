@@ -30,7 +30,7 @@ function harness(dealerQuery, dealerId = 'vera') {
     replace: () => calls.navigate++,
   } };
   const module = { exports: {} };
-  vm.runInNewContext(output.code, { module, exports: module.exports, window, URL, Error,
+  vm.runInNewContext(output.code, { module, exports: module.exports, window, URL, URLSearchParams, Error,
     require: name => name === 'react' ? fakeReact : name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === '../lib/lab-url.mjs' ? { labBasePath: () => '/studio', labUrl: path => `/studio${path}` }
       : name === './native-speech-context' ? { NativeSpeechContext: React.createContext(null) } : require(name),

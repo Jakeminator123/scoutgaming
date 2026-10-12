@@ -18,7 +18,7 @@ async function freePort(host) {
   return port;
 }
 
-test('comparison seeds isolated BO/Partner data and leaves only local disposable state', async t => {
+test('comparison keeps isolated BO/Partner data and refuses a game without a published presentation', async t => {
   const gamePort = await freePort('localhost'), labPort = await freePort('127.0.0.1');
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-comparison-repo-test-'));
   await symlink(fileURLToPath(new URL('../web/', import.meta.url)), join(repoRoot, 'web'), process.platform === 'win32' ? 'junction' : 'dir');
@@ -33,12 +33,11 @@ test('comparison seeds isolated BO/Partner data and leaves only local disposable
     for (const name of ['game','original','v2']) {
       assert.equal(new URL(fixture.urls[name]).searchParams.get('rehearsal'),'1');
       const response = await fetch(fixture.urls[name]);
-      assert.equal(response.status,200);
+      assert.equal(response.status,503);
       const html = await response.text();
-      assert.match(html,/data-local-comparison="true"/);
-      assert.match(html,/Isolerad mediarepetition/);
-      assert.match(html,/class="casino-return" href="https:\/\/www\.scoutgaming\.tech\/play"/);
-      assert.match(html,/https:\/\/www\.scoutgaming\.tech\/play/);
+      assert.match(html,/<h1>Ingen presentation vald<\/h1>/);
+      assert.match(html,/Starta ett publicerat bord/);
+      assert.doesNotMatch(html,/<video|<script|data-game-entry/);
     }
     const partner = fixture.credentials.partner;
     const ts = String(Math.floor(Date.now() / 1000)), body = '{}', path = '/api/v1/ping';

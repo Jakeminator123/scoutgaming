@@ -1,6 +1,6 @@
 import type { StudioProject } from './studio-model.mjs';
 export interface DealerRemovalStatus {
-  kind: 'missing' | 'base' | 'referenced' | 'ready';
+  kind: 'missing' | 'ready';
   references: { id: string; label: string }[];
   message: string;
 }

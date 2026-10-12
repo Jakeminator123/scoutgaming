@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BASE_DEALER_IDS,isDealerId,registeredDealerIds} from '../../web/dealer-identity.mjs';
+import {BASE_DEALER_IDS,MAX_DEALERS,isDealerId,registeredDealerIds} from '../../web/dealer-identity.mjs';
 import {validateVideoMetadata,validateVideoCompositing,videoCompositing,videoFitsLine} from '../lib/video-intake.mjs';
 import {mediaBlobPath,validatePrivateMedia} from '../lib/cloud-media-store.mjs';
 import {requireSavedVideoDealer} from '../lib/video-dealer-registration.mjs';
@@ -12,7 +12,9 @@ test('registered dealer IDs are bounded and cannot inject unsafe Blob paths',()=
   for(const id of [...BASE_DEALER_IDS,'nora','dealer-2'])assert.equal(isDealerId(id),true);
   for(const value of ['Nora','../nora','nora/x','nora%2fx','nora--two','nora-','constructor','prototype','api','a'.repeat(41)]){assert.equal(isDealerId(value),false);assert.throws(()=>mediaBlobPath('dealers/'+value+'/review/uploads',id,sha256,'mp4'));}
   assert.equal(registeredDealerIds(project()).size,5);
-  assert.throws(()=>registeredDealerIds({dealers:project().dealers.slice(1)}));
+  assert.deepEqual([...registeredDealerIds({dealers:[{id:'nora'}]})],['nora'],'the saved roster does not require historical base dealers');
+  assert.equal(registeredDealerIds({dealers:[]}).size,0,'an empty installation grants no dealer');
+  assert.throws(()=>registeredDealerIds({dealers:Array.from({length:MAX_DEALERS+1},(_,i)=>({id:'dealer-'+i}))}));
   assert.throws(()=>registeredDealerIds({dealers:[...project().dealers,{id:'nora'}]}));
   const pathname=mediaBlobPath('dealers/nora/review/uploads',id,sha256,'mp4');
   assert.equal(validatePrivateMedia({provider:'vercel-blob',pathname,sha256,size:32,contentType:'video/mp4'}).pathname,pathname);

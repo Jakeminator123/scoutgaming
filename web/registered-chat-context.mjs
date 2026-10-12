@@ -1,7 +1,6 @@
-import {BASE_DEALER_IDS,isDealerId} from './public/dealer-identity.mjs';
+import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
 import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
 
-const base=new Set(BASE_DEALER_IDS);
 const keys=['operatorSlug','roomId','packageRevision','dealerId'];
 const fail=(code,statusCode)=>{throw Object.assign(Error(code),{code,statusCode});};
 function contextFor(value,dealerId) {
@@ -21,7 +20,6 @@ export function createRegisteredChatContext({resolvePublishedContext=null}={}) {
   if(resolvePublishedContext!==null&&typeof resolvePublishedContext!=='function')throw TypeError('Invalid published chat context resolver');
   return async function authorize({dealerId,presentationContext}={}) {
     if(!isDealerId(dealerId))fail('invalid_chat_dealer',400);
-    if(base.has(dealerId))return Object.freeze({dealerId,registered:false,presentationContext:null,recheck:async()=>true});
     const context=contextFor(presentationContext,dealerId);
     if(!resolvePublishedContext)fail('chat_dealer_unavailable',503);
     async function recheck() {

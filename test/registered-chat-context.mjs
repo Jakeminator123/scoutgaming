@@ -12,7 +12,7 @@ function fixture() {
     administration:{rooms:[{schemaVersion:2,id:'paow-room',name:'PAOW room',operatorId:'north-id',presentationLaneId:'paow-presentation',gameLaneId:'portrait-paow',state:'live'}],
       gameLanes:[{schemaVersion:1,id:'portrait-paow',label:'PAOW',dealer:'paow',renderer:'portrait-video',mediaCollection:'paow-presentation'}]}};
   const presentation={schemaVersion:2,projectRevision:'published-project',assets:[],lanes:[{id:'paow-presentation',dealers:['paow'],layers:{dealer:{allowed:['paow'],default:'paow'}}}],
-    registeredDealers:[{id:'paow',label:'PAOW',idle:null}]};
+    registeredDealers:[{id:'paow',label:'PAOW',idle:{id:'00000000-0000-4000-8000-000000000001',sha256:'a'.repeat(64),size:4096,contentType:'video/mp4',pathname:'croupier/media/dealers/paow/review/uploads/00000000-0000-4000-8000-000000000001/'+ 'a'.repeat(64)+'.mp4',classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Idle',notes:'',playback:'once'}}}]};
   const reads=[];
   const resolvePublishedContext=createPublishedChatResolver({
     readCurrentContext:async slug=>{reads.push(slug);return clone(saved);},
@@ -30,10 +30,10 @@ test('published registered dealer can authorize text chat without any idle bytes
   assert.equal(granted.presentationContext.dealerId,'paow');assert.equal(granted.presentationContext.packageRevision,7);
   assert.deepEqual(Object.keys(granted).sort(),['dealerId','presentationContext','recheck','registered']);
 });
-test('four existing dealers retain current authorization route without optional Studio dependency',async()=>{
+test('former local dealer names cannot bypass the published context',async()=>{
   const authorize=createRegisteredChatContext({resolvePublishedContext:()=>assert.fail('Existing dealer must not read Studio')});
   for(const dealerId of ['astrid','vera','amira','mei']){
-    const granted=await authorize({dealerId});assert.equal(granted.registered,false);assert.equal(granted.presentationContext,null);assert.equal(await granted.recheck(),true);
+    await assert.rejects(authorize({dealerId}),error(400));
   }
 });
 test('safe syntax is not registration: extra dealer requires exact published context',async()=>{

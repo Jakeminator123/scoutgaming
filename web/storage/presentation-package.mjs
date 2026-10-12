@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { OPERATOR_LIFECYCLE_KEY } from './operator-lifecycle.mjs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { validatePresentationPackage } from '../presentation-layers.mjs';
 import { canonicalStudioJson, StudioStorageError } from './studio-contract.mjs';
@@ -40,7 +41,7 @@ export function readPackagePresentation(pack) {
   return presentation;
 }
 export function withPackagePresentation(branding, presentation) {
-  const next = { ...normalizePresentationBranding(branding,presentation), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation) };
+  const next = { ...normalizePresentationBranding(branding,presentation), ...(Object.hasOwn(branding ?? {}, OPERATOR_LIFECYCLE_KEY) ? { [OPERATOR_LIFECYCLE_KEY]: structuredClone(branding[OPERATOR_LIFECYCLE_KEY]) } : {}), [PRESENTATION_PACKAGE_KEY]: encodePresentationPackage(presentation) };
   if (Buffer.byteLength(canonicalStudioJson(next)) > 8000) fail(413);
   return next;
 }
@@ -58,5 +59,6 @@ export function normalizePresentationBranding(branding,presentation) {
 export function publicPackageBranding(branding) {
   const copy = structuredClone(branding ?? {});
   delete copy[PRESENTATION_PACKAGE_KEY];
+  delete copy[OPERATOR_LIFECYCLE_KEY];
   return copy;
 }

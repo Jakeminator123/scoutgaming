@@ -18,7 +18,7 @@
   "properties": {
     "dealerTrash": {
       "type": "array",
-      "maxItems": 28,
+      "maxItems": 32,
       "items": {
         "$ref": "#/$defs/dealerTrashEntry"
       }
@@ -35,7 +35,7 @@
     },
     "dealers": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 0,
       "maxItems": 32,
       "items": {
         "$ref": "#/$defs/dealer"
@@ -591,7 +591,7 @@
     },
     "lines": {
       "type": "array",
-      "minItems": 64,
+      "minItems": 0,
       "maxItems": 512,
       "items": {
         "$ref": "#/$defs/line"
@@ -668,7 +668,10 @@
       ],
       "properties": {
         "schemaVersion": {
-          "const": 1
+          "enum": [
+            1,
+            2
+          ]
         },
         "dealer": {
           "$ref": "#/$defs/dealer"
@@ -730,8 +733,62 @@
               }
             }
           }
+        },
+        "compositions": {
+          "$ref": "#/properties/lanes"
+        },
+        "legacyClipPolicy": {
+          "$ref": "#/properties/legacyClipPolicy"
+        },
+        "mediaPolicy": {
+          "$ref": "#/properties/mediaPolicy"
+        },
+        "globalIdlePolicy": {
+          "$ref": "#/properties/idlePolicy"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "const": 2
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "compositions"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "compositions"
+                  ]
+                },
+                {
+                  "required": [
+                    "legacyClipPolicy"
+                  ]
+                },
+                {
+                  "required": [
+                    "mediaPolicy"
+                  ]
+                },
+                {
+                  "required": [
+                    "globalIdlePolicy"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "composition": {
       "type": "object",

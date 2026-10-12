@@ -20,7 +20,7 @@ function loadTs(fileUrl, overrides = {}) {
   const localRequire = createRequire(fileUrl);
   vm.runInNewContext(output.code, {
     module, exports: module.exports, structuredClone, URL, URLSearchParams, fetch: overrides.fetch ?? globalThis.fetch,
-    window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
+    window: overrides.window ?? new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
@@ -91,7 +91,7 @@ test('without a store the card says so, and without the prop the page renders as
   assert.match(offline, /Bolag och team kunde inte hämtas/);
   assert.equal(offline.includes('Skapa bolag'), false);
   assert.equal((offline.match(/sg-btn-primary/g)?.length ?? 0), 0);
-  assert.equal(page({}).includes('operator-directory'), false);
+  assert.match(page({}), /Bolag och team kunde inte hämtas/);
   const alone = renderToStaticMarkup(React.createElement(ControlOperatorDirectory, { directory: { standardRoles, operators: [] } }));
   assert.match(alone, /Inga bolag ännu\./);
 });
@@ -108,7 +108,7 @@ test('failures name the cause the admin API status allows, without guessing betw
   assert.match(operatorDirectoryFailure('role', 409), /sista administratören/);
   assert.match(operatorDirectoryFailure('member', 403), /Åtkomst nekad/);
   assert.match(operatorDirectoryFailure('create', 503), /Neon-pool/);
-  const pageSource = readFileSync(new URL('../app/control/lanes/page.tsx', import.meta.url), 'utf8');
+  const pageSource = readFileSync(new URL('../app/control/operator-page.tsx', import.meta.url), 'utf8');
   assert.match(pageSource, /directory=\{directory\}/);
   assert.match(pageSource, /listOperatorDirectory/);
 });
@@ -122,16 +122,16 @@ test('human input suggests an editable address and selects exactly one membershi
   assert.deepEqual(plain(operatorMemberInput(' north-admin ')), { username: 'north-admin', status: 'active' });
 });
 
-function directoryHarness() {
+function directoryHarness(options={}) {
   const slots = [], requests = []; let cursor = 0;
-  const fakeReact = { ...React,
+  const fakeReact = { ...React, useEffect(){},
     useState(initial) { const i=cursor++; if (!(i in slots)) slots[i]=typeof initial==='function'?initial():initial; return [slots[i], value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}]; },
     useRef(value) { return slots[cursor++] ??= {current:value}; },
   };
   const { ControlOperatorDirectory: View }=loadTs(new URL('../components/control-operator-directory.tsx',import.meta.url),{
-    react:fakeReact, fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve})),
+    react:fakeReact, window:options.window??{confirm:()=>true}, fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve})),
   });
-  const render=()=>{cursor=0;return View({directory});};
+  const render=()=>{cursor=0;return View({directory,...options});};
   function all(node,predicate) { if(!node||typeof node!=='object') return [];return [...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))]; }
   const nodes=predicate=>all(render(),predicate);
   return { requests, render, nodes, html:()=>renderToStaticMarkup(render()),
@@ -158,4 +158,28 @@ test('role updates retain the server membership revision and are never applied o
   h.nodes(node=>node.type==='button'&&node.props.children==='Spara roll')[0].props.onClick();
   assert.deepEqual(JSON.parse(h.requests[0].options.body),{operatorId:'nordic-bet',userId:'42',roleId:'partner-editor',status:'active',expectedRevision:2});
   await h.reply(0,{},409);assert.match(h.html(),/Spara roll/);assert.match(h.html(),/sista administratören/);
+});
+
+
+test('membership suspension asks about the concrete person/company before sending the saved revision',()=>{
+  let accepted=false;const prompts=[];
+  const h=directoryHarness({window:{confirm:message=>{prompts.push(message);return accepted;}}});h.select('Nordic Bet');
+  h.nodes(node=>node.type==='button'&&node.props.children==='Stäng av')[0].props.onClick();
+  assert.equal(h.requests.length,0);assert.match(prompts[0],/north-admin hos Nordic Bet/);
+  accepted=true;h.nodes(node=>node.type==='button'&&node.props.children==='Stäng av')[0].props.onClick();
+  assert.deepEqual(JSON.parse(h.requests[0].options.body),{operatorId:'nordic-bet',userId:'42',roleId:'partner-admin',status:'suspended',expectedRevision:2});
+});
+
+test('archived companies show their team in read mode while suspended members keep a separate label',()=>{
+  const h=directoryHarness({selectedOperatorId:'nordic-bet',lifecycleStatuses:{'nordic-bet':'suspended'},lifecycleArchives:{'nordic-bet':'2026-10-12T00:00:00Z'}});
+  const html=h.html();assert.match(html,/Bolaget är arkiverat/);assert.match(html,/avstängd/);
+  assert.equal(h.input().props.disabled,true);h.input().props.onChange({target:{value:'person@example.test'}});h.submit();assert.equal(h.requests.length,0);
+  h.nodes(node=>node.type==='button'&&node.props.children==='Stäng av')[0].props.onClick();assert.equal(h.requests.length,0);
+});
+
+test('foreign mutation receipts cannot replace another company or erase the pending invitation',async()=>{
+  const busy=[];const h=directoryHarness({onBusyChange:value=>busy.push(value)});h.select('Nordic Bet');
+  h.input().props.onChange({target:{value:'person@example.test'}});h.submit();assert.equal(busy.at(-1),true);
+  await h.reply(0,{operator:directory.operators[1]});assert.match(h.html(),/kunde inte bekräftas/);
+  assert.equal(h.input().props.value,'person@example.test');assert.equal(busy.at(-1),false);
 });

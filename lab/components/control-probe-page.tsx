@@ -1,4 +1,5 @@
 'use client';
+import { StudioDealerRequired } from './studio-dealer-required';
 
 import { createDefaultProbePolicy } from '../lib/probe-policy.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
@@ -8,9 +9,9 @@ import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { ProbeEditor } from './probe-editor';
 import { ProjectConflict } from './project-conflict';
 import { StudioMessages, useStudioSession } from './studio-session';
-import type { ConnectionStatus, VideoInventory } from './studio-types';
+import { resolveStudioDealerId, type ConnectionStatus, type VideoInventory } from './studio-types';
 
-export function ControlProbePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
+function SelectedControlProbePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
@@ -32,4 +33,9 @@ export function ControlProbePage({ initialProject, initialVideos, initialStatus,
       {dealerId === 'astrid' ? <ProbeEditor policy={project.probePolicy ?? createDefaultProbePolicy()} onChange={policy => updateProject(draft => { draft.probePolicy = policy; })} onActivity={recordActivity} /> : <section aria-label="Talinitiativ för vald dealer"><h2>Tal vid inaktivitet · {dealer.label}</h2><p>Automatiskt nygenererat tal vid inaktivitet är ännu bara anslutet för Astrid. Den här sidan ändrar inte Astrids inställningar.</p><p>{dealer.label}s inspelade klipp och grundloopvariationer kan användas med deras egna villkor. Egen röst och läppsynk hanteras i dealerns talinställningar.</p><a className="sg-btn sg-btn-secondary" href={studioNavigationHref('/control/clips?view=speech',{dealerId})}>Till dealerns tal och automatik</a></section>}
     </div>
   </PageTemplate>;
+}
+
+export function ControlProbePage(props: Parameters<typeof SelectedControlProbePage>[0]) {
+  if (!resolveStudioDealerId(props.initialProject, props.initialDealerId)) return <StudioDealerRequired project={props.initialProject} title="Tal vid inaktivitet" />;
+  return <SelectedControlProbePage {...props} />;
 }

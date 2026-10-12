@@ -1,10 +1,13 @@
-export type StudioDealerTab = 'idle' | 'clips' | 'scene' | 'speech' | 'replies' | 'settings';
+export type StudioDealerTab = 'idle' | 'clips' | 'scene' | 'speech' | 'replies' | 'playback' | 'settings';
 export type StudioNavigationContext = {
   dealerId?: string;
   eventId?: string;
   variantId?: string;
   situation?: string;
   laneId?: string;
+  operatorId?: string;
+  operatorSlug?: string;
+  tableId?: string;
 };
 export type StudioCrumb = { label: string; href?: string };
 export type StudioNavigationCrumbOptions = StudioNavigationContext & {

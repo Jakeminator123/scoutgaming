@@ -197,7 +197,7 @@ html[data-theme="light"] {
 }
 
 .sg-page { display: contents; }
-.sg-page-body { max-width: 1368px; margin: 0 auto; padding: 8px 32px 40px; }
+.sg-page-body { width: 100%; max-width: 1368px; margin: 0; padding: 8px 32px 40px; box-sizing: border-box; }
 .sg-page > .sg-tabs { padding: 4px 32px 0; }
 .sg-page-head {
   display: flex;

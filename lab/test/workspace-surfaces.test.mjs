@@ -85,3 +85,15 @@ test('disconnected control previews are unknown while partner previews and contr
   assert.equal(resolveWorkspaceSurfacePath('/control/backgrounds').view, 'background');
   assert.equal(resolveWorkspaceSurfacePath('/control/overview').view, 'ops');
 });
+
+test('game rooms have a canonical partner address while existing table links still resolve',()=>{
+  assert.equal(workspaceSurfacePath('partner','bj','north'),'/partner/north/rooms');
+  for(const section of ['rooms','tables','game-tables']){
+    const route=resolveWorkspaceSurfacePath('/partner/north/'+section);
+    assert.equal(route.view,'bj');assert.equal(route.canonicalPath,'/partner/north/rooms');
+  }
+  for(const section of ['companies','rooms','compositions','rehearsal']){
+    const route=resolveWorkspaceSurfacePath('/control/'+section);
+    assert.equal(route.view,null);assert.equal(route.canonicalPath,'/control/'+section);
+  }
+});

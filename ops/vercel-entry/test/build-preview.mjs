@@ -65,10 +65,11 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       'frontend-preview/blackjack/index.html', 'frontend-preview/game/index.html',
       'blackjack-entry.mjs', 'app.mjs', 'styles.css', 'vendor/three/three.module.js',
       'vendor/three/three.core.min.js',
-      'vendor/three/GLTFLoader.js', 'vendor/three/BufferGeometryUtils.js',
       'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
       'astrid-camera-audio-worklet.mjs', 'dealer-identity.mjs',
     ]) assert.ok(names.includes(required), `missing ${required}`);
+    assert.ok(!names.includes('dealer-version-switcher.css'));
+    assert.ok(!names.includes('vendor/three/GLTFLoader.js'));
     const total = (await Promise.all(names.map(async name => (await stat(join(directory, name))).size)))
       .reduce((sum, size) => sum + size, 0);
     assert.ok(total < 5 * 1024 * 1024, `preview is ${total} bytes`);
@@ -92,7 +93,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     assert.match(login, /const destination = '\/frontend-preview\/game\/\?dealer=astrid&presentation=local'/);
     assert.match(modal,/\/api\/auth\/login/);assert.doesNotMatch(modal,/\/api\/auth\/player\/(?:login|register)/);assert.match(modal,/const playerLoginPath = '\/frontend-preview\/blackjack\/'/);
     assert.equal(legacyPlayerEntryDestination(modal),'/frontend-preview/blackjack/');
-    assert.equal(legacyPlayerEntryDestination(modal,true),'/player-login?dealer=mei&motion=smooth60');
+    assert.equal(legacyPlayerEntryDestination(modal,true),'/player-login?dealer=mei');
     assert.equal(modal,(await readFile(new URL('../../../web/public/auth-modal.mjs',import.meta.url),'utf8')).replace("const playerLoginPath = '/blackjack';","const playerLoginPath = '/frontend-preview/blackjack/';"));
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),

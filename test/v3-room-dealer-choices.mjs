@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
@@ -8,14 +8,16 @@ import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
 import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
+import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
 
-function fixture({schemaVersion=3,includeLegacy=false}={}) {
-  const project=addDealer(addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'nora','Nora'),'foreign','Foreign draft');
-  const lane=project.lanes[0];lane.id='johns-presentation';lane.dealers=['johanna','nora',...(includeLegacy?['amira','vera','mei','astrid']:[])];
+function fixture({schemaVersion=3,includeHistoricalNames=false}={}) {
+  let project=addDealer(addDealer(addDealer(createEmptyProject(),'johanna','Johanna'),'nora','Nora'),'foreign','Foreign draft');
+  if(includeHistoricalNames)for(const id of ['vera','mei','astrid'])project=addDealer(project,id,id);
+  const lane=defaultPresentationLane('johanna');project.lanes=[lane];lane.id='johns-presentation';lane.dealers=['johanna','nora',...(includeHistoricalNames?['vera','mei','astrid']:[])];
   lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
-  lane.operatorAdjustable=['dealer','branding'];
-  const mediaRows=['johanna','nora'].map((dealerId,index)=>{
+  lane.operatorAdjustable=['dealer','branding'];lane.composition=defaultCompositionSettings();
+  const mediaRows=lane.dealers.map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
     project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
     return {id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
@@ -26,7 +28,7 @@ function fixture({schemaVersion=3,includeLegacy=false}={}) {
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
   const snapshot={projectDocument:{kind:'project',revision:project.revision,value:project},
     administrationDocument:{kind:'administration',revision:'admin-snapshot',value:{rooms:[]}},mediaRows};
-  let presentation=captureFrozenPresentation({snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['johanna','nora']}).presentation;
+  let presentation=captureFrozenPresentation({snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
   if(schemaVersion===2){presentation=structuredClone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
   const room={schemaVersion:2,id:'room-johns',name:'Johns room',operatorId:'north',presentationLaneId:lane.id,
     gameLaneId:'portrait-johanna',state:'live'};
@@ -55,7 +57,7 @@ function clientDocument(selection) {
 
 test('v3 room switches between its two frozen own dealers and excludes a dealer from the latest draft',async()=>{
   const f=fixture(),before=f.pack();
-  for(const [requested,expected]of [['johanna','johanna'],['nora','nora'],['foreign','johanna'],['amira','johanna']]) {
+  for(const [requested,expected]of [['johanna','johanna'],['nora','nora']]) {
     const result=await f.select('operator=north&table=room-johns&dealer='+requested);
     assert.equal(result.status,200);
     const {selection}=clientDocument(result.selection);
@@ -65,6 +67,7 @@ test('v3 room switches between its two frozen own dealers and excludes a dealer 
     assert.deepEqual(selection.choices.dealers,['johanna','nora']);
     assert.deepEqual(selection.registeredDealers.map(row=>row.id),['johanna','nora']);
   }
+  for(const dealer of ['foreign','amira'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
   assert.deepEqual(f.pack(),before);
   assert.equal((await f.select('operator=north&table=foreign-room&dealer=nora')).status,404);
   assert.equal((await f.select('operator=foreign&table=room-johns&dealer=nora')).status,404);
@@ -83,7 +86,8 @@ test('dealer navigation round trip retains the v3 room and exact requested ident
 });
 test('v2 own-dealer room keeps its single-dealer contract even if its frozen lane lists a second dealer',async()=>{
   const f=fixture({schemaVersion:2});
-  const result=await f.select('operator=north&table=room-johns&dealer=nora');
+  assert.equal((await f.select('operator=north&table=room-johns&dealer=nora')).status,404);
+  const result=await f.select('operator=north&table=room-johns');
   assert.equal(result.selection.dealer,'johanna');
   assert.deepEqual(result.selection.choices.dealers,['johanna']);
   assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['johanna']);
@@ -106,20 +110,18 @@ test('partner can save either frozen v3 dealer and the chosen identity reaches t
   assert.equal(reverted.branding.dealer,'johanna');assert.equal(reverted.packageRevision,3);
 });
 
-test('a mixed frozen v3 room selects the indexed adapter for legacy faces and returns to local for its own dealers',async()=>{
-  const f=fixture({includeLegacy:true}),before=f.pack();
-  for(const [dealer,presentation]of [['amira','original'],['nora','local'],['vera','original'],['johanna','local'],['mei','original'],['astrid','local']]){
+test('historical dealer names use their own frozen cloud media and never indexed adapters',async()=>{
+  const f=fixture({includeHistoricalNames:true}),before=f.pack();
+  for(const dealer of ['nora','vera','johanna','mei','astrid']){
     const result=await f.select('operator=north&table=room-johns&dealer='+dealer);
+    assert.equal(result.status,200);
     const {selection}=clientDocument(result.selection);
-    assert.equal(selection.dealer,dealer);assert.equal(selection.presentation,presentation);
+    assert.equal(selection.dealer,dealer);assert.equal(selection.presentation,'local');assert.equal(selection.localDealer,dealer);
     assert.equal(selection.operator,'north');assert.equal(selection.roomId,'room-johns');assert.equal(selection.lane,'portrait-johanna');assert.equal(selection.packageRevision,1);
-    assert.deepEqual(selection.choices.dealers,['johanna','nora','amira','vera','mei','astrid']);
-    if(presentation==='original'){
-      assert.equal(selection.localDealer,undefined);assert.equal(selection.composition.dealer.compatibility,'full-frame');
-      assert.equal(selection.choices.background.mode,'baked');assert.deepEqual(selection.choices.background.allowed,[]);
-    }
+    assert.deepEqual(selection.choices.dealers,['johanna','nora','vera','mei','astrid']);
+    assert.equal(selection.composition.dealer.compatibility,'per-clip');
+    assert.ok(f.presentation.playback.media.some(row=>row.classification.dealerId===dealer));
   }
-  const rejected=await f.select('operator=north&table=room-johns&dealer=foreign');
-  assert.equal(rejected.selection.dealer,'johanna');
+  for(const dealer of ['foreign','amira'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
   assert.deepEqual(f.pack(),before);
 });

@@ -3,11 +3,16 @@ import styles from './playback-guidance.module.css';
 
 export function PlaybackGuidance({ dealerId, observation = false }: { dealerId: string; observation?: boolean }) {
   const clips = labUrl('/control/clips?' + new URLSearchParams({ dealer: dealerId }));
+  if (observation) return <details className={styles.help}>
+    <summary>Klippförhandsvisning och provspelning</summary>
+    <p>Klippförhandsvisning visar en vald fil. Här följer du spelflikens klippval, visad bild och avslut. Ett valt klipp räknas först som visat när spelaren bekräftar det.</p>
+    <p><a href={clips}>Redigera dealerns klipp</a> · <a href={labUrl('/control/probe?' + new URLSearchParams({ dealer: dealerId }))}>Tal vid inaktivitet</a></p>
+  </details>;
   return <section className={styles.guide} aria-label="Inspelade klipp och AI-tal">
     <div className={styles.heading}><div><p className={styles.eyebrow}>{observation ? 'FÖLJ VAD SOM HÄNDE' : 'VAD STYR VAD?'}</p><h2>{observation ? 'Klippval och genererat tal har olika spår' : 'En spelhändelse. Ett exakt fack. Ett klipp.'}</h2></div><p>{observation ? 'Ett valt klipp är ett beslut. Start, visad bild och avslut behöver egna kvitton från spelfliken.' : 'Spelmotorn anger vad som händer. Klippreglerna väljer hur dealern visar det.'}</p></div>
     <div className={styles.cards}>
       <article><span className={styles.tag}>INSPELADE KLIPP</span><h3>Kort, repliker och grundloop</h3><p>Färdiga videor för en bestämd spelplats, replik eller rörelse. Tal-klipp har redan inspelat ljud och video.</p><a href={clips}>Öppna dealerns klipp och fack →</a></article>
-      <article><span className={styles.tag}>NYTT AI-TAL</span><h3>Chatt och småprat</h3><p>Ny svarstext går via röst och läppsynk innan den kan spelas. Det kräver en aktiverad talintegration för dealern.</p><a href={labUrl('/control/probe')}>AI-småprat vid inaktivitet →</a></article>
+      <article><span className={styles.tag}>NYTT AI-TAL</span><h3>Chatt och småprat</h3><p>Ny svarstext går via röst och läppsynk innan den kan spelas. Det kräver en aktiverad talintegration för dealern.</p><a href={labUrl('/control/probe?' + new URLSearchParams({ dealer: dealerId }))}>AI-småprat vid inaktivitet →</a></article>
     </div>
     {!observation ? <><ol className={styles.flow}><li><strong>1 · Spelhändelse</strong><span>Till exempel: ge kort till plats 2.</span></li><li><strong>2 · Exakt fack</strong><span>Den valda dealern + plats 2.</span></li><li><strong>3 · Klippval</strong><span>Standard, regler, slump eller OpenClaw.</span></li><li><strong>4 · Uppspelning</strong><span>Spelaren visar filen och lämnar kvitto.</span></li></ol><p className={styles.note}>”Deal vänster” är en äldre samlingsgrupp för flera platser. Spelarplatsen finns kvar i händelsen och avgör det exakta facket. En inspelad replik väljs på sitt exakta replik-ID.</p></> : null}
   </section>;

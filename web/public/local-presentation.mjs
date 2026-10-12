@@ -1,13 +1,13 @@
-import { BASE_DEALER_IDS } from './dealer-identity.mjs';
+import { isActiveDealerId } from './dealer-identity.mjs';
 import { createLiveIdleController } from '../../presentation-runtime/live-idle.mjs';
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, muted, composition = null, entry = null, transport = null }) {
-  const ownDealer = !BASE_DEALER_IDS.includes(dealerId);
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, muted, composition = null, entry = null, transport = null }) {
+  if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
   const preview=Boolean(transport?.context);
   const request=transport?.request??((...args)=>globalThis.fetch(...args));
   const mediaUrl=transport?.mediaUrl??(video=>video.src||`/api/presentation/videos/${video.id}`);
-  const context = ownDealer && entry?.operator ? { operatorSlug: entry.operator, roomId: entry.roomId, packageRevision: entry.packageRevision, dealerId } : null;
-  const configUrl = '/api/presentation/config' + (context ? '?' + new URLSearchParams(Object.entries(context).map(([key,value])=>[key,String(value)])) : ownDealer || preview ? '?dealerId=' + encodeURIComponent(dealerId) : '');
+  const context = entry?.operator ? { operatorSlug: entry.operator, roomId: entry.roomId, packageRevision: entry.packageRevision, dealerId } : null;
+  const configUrl = '/api/presentation/config' + (context ? '?' + new URLSearchParams(Object.entries(context).map(([key,value])=>[key,String(value)])) : '?dealerId=' + encodeURIComponent(dealerId));
   const packageError = () => Object.assign(new Error('Presentationspaketet har ändrats. Ladda om spelet.'), { code:'studio_presentation_idle_package_changed' });
   const response = await request(configUrl, { cache: 'no-store' });
   if (response.status === 409) throw packageError();
@@ -35,8 +35,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   control.value = mode;
   control.className = 'local-presentation-mode'; host.append(control);
-  const hasOwnIdlePolicy = ownDealer && config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
-  const idle = ownDealer && !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
+  const hasOwnIdlePolicy = config.idlePolicy?.familyId === `${dealerId}/idle.ready/ready`;
+  const idle = !hasOwnIdlePolicy ? null : createLiveIdleController({ policy: config.idlePolicy, inventory: config.idleInventory ?? config.inventory, dealerId, seed: crypto.getRandomValues(new Uint32Array(1))[0],
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { composition?.hold(video); if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
@@ -112,9 +112,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     return true;
   }
   function resumeOwnIdle() {
-    if (!ownDealer || packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden || idleRun) return;
+    if (packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden || idleRun) return;
     const video = config.dealerIdle?.[dealerId];
-    if (!video) { status.textContent = 'Ingen egen idlefilm · 2D-reserv'; return; }
+    if (!video) { const error = new Error('Dealern saknar en publicerad grundloop'); status.textContent = error.message; onError(error); return; }
     presentationKind = 'idle'; onBusy();
     const epoch = ++serial; idleRun = epoch;
     void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
@@ -125,11 +125,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     }).then(() => { if (epoch !== serial || closed) return; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (requireReload(error)) return;
-        idleError = `Idle: ${error.message}`; status.textContent = idleError; });
+        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error); });
   }
   function resumeIdle() {
-    if (ownDealer && !idle) { resumeOwnIdle(); return; }
-    if (!idle || (!ownDealer && dealerId !== 'astrid') || packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden) return;
+    if (!idle) { resumeOwnIdle(); return; }
+    if (!idle || packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden) return;
     const clip = idle.snapshot().clip;
     if (!clip || clip.playId === idleRun) return;
     presentationKind = 'idle'; onBusy();
@@ -142,7 +142,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         idle.presented(clip.playId); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
-      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; idle.failed(clip.playId); resumeIdle(); });
+      .catch(error => { if (epoch !== serial || closed) return; if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error); idle.failed(clip.playId); resumeIdle(); });
   }
   function state(patch) {
     if (Object.hasOwn(patch, 'action')) { if (patch.action && !action) pendingRule = null; action = patch.action; idleDuringAction = false; }
@@ -187,7 +187,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
           requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
           projectRevision: result.projectRevision, configurationSource });
         retainRule(result, requestVersion);
-        if (ownDealer && kind === 'deal' && config.dealerIdle?.[dealerId]) {
+        if (kind === 'deal' && config.dealerIdle?.[dealerId]) {
           idleDuringAction = true; idleRun = 0;
           idle?.updateScene({actionBusy:false});
           resumeIdle();

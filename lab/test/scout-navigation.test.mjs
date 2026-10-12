@@ -18,12 +18,12 @@ const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
 test('four work groups expose the consolidated tools and keep overview and help secondary', () => {
-  assert.deepEqual(groups.map(group => group.label), ['Studio', 'Drift', 'AI & chatt', 'Administration']);
+  assert.deepEqual(groups.map(group => group.label), ['Studio', 'Spelbolag', 'Drift', 'System']);
   assert.deepEqual(groups.map(group => group.items.map(item => [item.href, item.label])), [
-    [['/control/clips', 'Dealers & klipp'], ['/control/library', 'Bord & bakgrunder'], ['/control/preview', 'Sammansättning'], ['/control/lanes', 'Publicering']],
-    [['/control/administration?tab=tables', 'Spelmotor & rum'], ['/control/activity', 'Uppspelning'], ['/control/administration?tab=operations', 'Spelintegritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
-    [['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt']],
-    [['/control/lanes?tab=companies#operator-directory', 'Bolag & team'], ['/control/administration?tab=accounts', 'Interna konton & spelare'], ['/control/administration?tab=partners', 'API & integrationer']],
+    [['/control/clips', 'Dealers & klipp'], ['/control/library', 'Bord & bakgrunder'], ['/control/compositions', 'Sammansättningar']],
+    [['/control/companies', 'Bolag & team'], ['/control/rooms', 'Spelrum & publicering']],
+    [['/control/administration?tab=operations', 'Spelstatus & integritet'], ['/control/administration?tab=finance', 'Betalningar & journal']],
+    [['/control/administration?tab=accounts', 'Konton & åtkomst'], ['/control/administration?tab=partners', 'API & integrationer'], ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt']],
   ]);
   assert.deepEqual(SCOUT_FOOTER_NAVIGATION.map(item => [item.href, item.label]), [
     ['/control', 'Översikt'], ['/control/guide', 'Guide & hjälp'],
@@ -59,11 +59,11 @@ test('old direct routes and content aliases retain pages and a visible navigatio
 test('active item resolves public and native paths with content aliases and the administration default', () => {
   for (const base of ['', '/studio']) {
     for (const [path, label] of [
-      ['/control', 'Översikt'], ['/control/clips', 'Dealers & klipp'], ['/activity', 'Uppspelning'],
-      ['/control/administration', 'Spelintegritet'], ['/control/zones', 'Sammansättning'],
-      ['/control/backgrounds', 'Sammansättning'], ['/control/events', 'Dealers & klipp'],
+      ['/control', 'Översikt'], ['/control/clips', 'Dealers & klipp'], ['/activity', 'Dealers & klipp'],
+      ['/control/administration', 'Spelstatus & integritet'], ['/control/zones', 'Sammansättningar'],
+      ['/control/backgrounds', 'Sammansättningar'], ['/control/events', 'Dealers & klipp'],
       ['/control/replies', 'Dealers & klipp'],
-      ['/control/administration?tab=not-a-group', 'Spelintegritet'],
+      ['/control/administration?tab=not-a-group', 'Spelstatus & integritet'],
       ['/control/administration?tab=media-review', 'Dealers & klipp'],
     ]) {
       assert.equal(scoutNavigationItem(path, base)?.label, label, path);
@@ -118,7 +118,7 @@ test('partner pages retain their own shell and the staff shell retains its share
   }
   const { WorkspaceNavigation, ShellStatus } = loadNavigation('/control/administration');
   const html = renderToStaticMarkup(WorkspaceNavigation());
-  assert.match(html, /aria-current="page"[^>]*>Spelintegritet/);
+  assert.match(html, /aria-current="page"[^>]*>Spelstatus &amp; integritet/);
   assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
   assert.doesNotMatch(html, /status-marker/);
   const withStatus = renderToStaticMarkup(React.createElement(ShellStatus.Provider, { value: 'status-marker' }, React.createElement(WorkspaceNavigation)));
@@ -128,16 +128,16 @@ test('partner pages retain their own shell and the staff shell retains its share
 
 test('query-specific links win without losing the chat alias or selecting publicering for bolag', () => {
   const cases = [
-    ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Operatörschatt'],
-    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Operatörschatt'],
-    ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Operatörschatt'],
-    ['/control/operator-chat', 'Operatörschatt'], ['/control/lanes?lane=t10', 'Publicering'],
+    ['/control/openclaw', 'Agentmodeller'], ['/control/openclaw?tab=chat', 'Intern agentchatt'],
+    ['/control/openclaw?dealer=astrid&event=idle.ready&tab=chat', 'Intern agentchatt'],
+    ['/control/openclaw?dealer=astrid', 'Agentmodeller'], ['/operator-chat', 'Intern agentchatt'],
+    ['/control/operator-chat', 'Intern agentchatt'], ['/control/lanes?lane=t10', 'Spelrum & publicering'],
     ['/control/lanes?dealer=astrid&lane=t10&tab=companies', 'Bolag & team'],
     ['/control/lanes?tab=companies#operator-directory', 'Bolag & team'],
-    ['/control/administration?tab=tables', 'Spelmotor & rum'],
-    ['/control/administration?tab=operations', 'Spelintegritet'],
+    ['/control/administration?tab=tables', 'Spelrum & publicering'],
+    ['/control/administration?tab=operations', 'Spelstatus & integritet'],
     ['/control/administration?tab=finance', 'Betalningar & journal'],
-    ['/control/administration?tab=accounts', 'Interna konton & spelare'],
+    ['/control/administration?tab=accounts', 'Konton & åtkomst'],
     ['/control/administration?tab=partners', 'API & integrationer'],
   ];
   for (const base of ['', '/studio']) for (const [path, label] of cases) {
@@ -148,11 +148,11 @@ test('query-specific links win without losing the chat alias or selecting public
 
 test('reload on a deep route expands only its work group and marks exactly one sublink', () => {
   for (const [pathname, search, groupId, label] of [
-    ['/control/preview', 'lane=t10', 'studio', 'Sammansättning'],
+    ['/control/preview', 'lane=t10', 'studio', 'Sammansättningar'],
     ['/control/events', 'dealer=astrid&event=idle.ready', 'studio', 'Dealers &amp; klipp'],
-    ['/control/administration', 'tab=tables', 'operations', 'Spelmotor &amp; rum'],
-    ['/control/openclaw', 'tab=chat&dealer=astrid', 'ai', 'Operatörschatt'],
-    ['/control/lanes', 'tab=companies&lane=t10', 'administration', 'Bolag &amp; team'],
+    ['/control/administration', 'tab=tables', 'companies', 'Spelrum &amp; publicering'],
+    ['/control/openclaw', 'tab=chat&dealer=astrid', 'system', 'Intern agentchatt'],
+    ['/control/lanes', 'tab=companies&lane=t10', 'companies', 'Bolag &amp; team'],
   ]) {
     const html = renderToStaticMarkup(loadNavigation(pathname, search).WorkspaceNavigation());
     assert.match(html, new RegExp(`id="scout-navigation-${groupId}"[^>]*aria-expanded="true"`), pathname);
@@ -249,8 +249,8 @@ test('mobile menu starts collapsed and closes with Escape or its native button w
 
 test('current document does not reload a draft and contextual tools still link back to their workspace', () => {
   const { ItemLink } = loadNavigation('/control/preview');
-  const composition = groups[0].items.find(item => item.href === '/control/preview'), content = groups[0].items.find(item => item.href === '/control/clips');
-  for (const routeKey of ['/control/preview?lane=saved', '/studio/control/preview?lane=saved']) {
+  const composition = groups[0].items.find(item => item.href === '/control/compositions'), content = groups[0].items.find(item => item.href === '/control/clips');
+  for (const routeKey of ['/control/compositions?composition=saved', '/studio/control/compositions?composition=saved']) {
     const current = ItemLink({ item: composition, active: true, routeKey });
     assert.equal(current.type, 'span');
     assert.equal(current.props['aria-current'], 'page');

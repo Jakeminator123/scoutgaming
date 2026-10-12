@@ -67,3 +67,9 @@ test('client rejects unknown bases/actions and sanitizes all server/network fail
 test('Studio permission denial explains the admin boundary without echoing server data',()=>{
   assert.match(new StudioLoginUiError(403).message,/administratörsbehörighet/);
 });
+
+test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
+  const value='/control/clips?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
+  assert.equal(studioLoginReturnTo(value),value);
+  for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/studio');
+});

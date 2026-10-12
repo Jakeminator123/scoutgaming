@@ -5,18 +5,35 @@ import { once, EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
-import { createPresentationApi, presentationInput } from '../web/presentation-api.mjs';
+import { createPresentationApi as buildPresentationApi, presentationInput } from '../web/presentation-api.mjs';
 import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
-import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject as historicalProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
-import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
+import { loadVideoRegistry as readVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../lab/lib/lab-video-manifest.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import {fileURLToPath} from 'node:url';
+const fixtureArchive=fileURLToPath(new URL('../media/dealers/astrid/runtime/presentation',import.meta.url));
+// Archived media is explicitly injected test data, never an automatic runtime source.
+async function loadVideoRegistry(options={}) {
+  const registry=await readVideoRegistry({archiveDir:options.env?.LAB_VIDEO_ARCHIVE??fixtureArchive,...options});
+  for(const video of registry.videos)if(video.eventId==='idle.ready'&&!video.classification)video.classification={dealerId:video.dealer,eventId:'idle.ready',kind:'idle',role:video.role==='standard'?'standard':'alternative',situation:'',label:video.fileName,notes:'',playback:'once'};
+  return registry;
+}
+function createSeedProject(){
+  const project=historicalProject();
+  project.dealerIdlePolicies=[{dealerId:'astrid',policy:structuredClone(project.idlePolicy)}];
+  return project;
+}
+function createPresentationApi(options={}){
+ const registryOptions={env:options.env??{},archiveDir:options.env?.LAB_VIDEO_ARCHIVE??fixtureArchive};
+ return buildPresentationApi({registryOptions,registryLoader:()=>loadVideoRegistry(registryOptions),...options});
+}
 
 
 test('local server dispatch serves the complete idle browser import graph without broadening web paths', async(t) => {
@@ -167,7 +184,7 @@ test('an explicitly unavailable Nora positional baseline is skipped; available d
     const handler = createPresentationApi({ db: { prepare: () => ({ get: async () => ({ version: 2, payload: JSON.stringify([event]) }) }) },
       env: {}, store: { load: async () => project }, registryLoader: async () => inventory });
     const response = await presentationFixtureRequest(handler, 'nora-fixture', { dealerId: 'nora', version: 2, mode: 'off', event });
-    assert.equal(response.status, 200); assert.deepEqual(response.body.decision.sourceEvent, event);
+    assert.equal(response.status, 200, JSON.stringify(response.body)); assert.deepEqual(response.body.decision.sourceEvent, event);
     if (event.type === 'deal' && !available) {
       assert.equal(response.body.videoGenerationId, null); assert.equal(response.body.video, null); assert.equal(response.body.standard, null);
       assert.equal(response.body.decision.media.reason, 'position_clip_missing'); assert.equal(response.body.decision.media.situation, 'box3');
@@ -301,7 +318,7 @@ test('native endpoint selects the same exact family, deduplicates requests and r
   assert.equal(advice.configurationSource, 'lab/project.json');
 });
 
-test('product selection and Lab inventory use the same configured Astrid archive', async t => {
+test('explicit test archive feeds the same exact product and library media', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-shared-archive-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const archiveDir = join(directory, 'archive'), media = Buffer.from('configured-archive-video-fixture');
@@ -344,6 +361,8 @@ test('product selection and Lab inventory use the same configured Astrid archive
 test('native player reads saved deal frequencies, caches retries and picks up an edited percentage without a restart', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-deal-frequency-'));
   const store = createProjectStore(directory), project = createSeedProject();
+  project.dealers = project.dealers.filter(row => row.id === 'astrid');
+  project.lines = project.lines.filter(row => row.dealerId === 'astrid');
   const registry = await loadVideoRegistry();
   const family = registry.families.find(row => row.situation === 'box0');
   const variant = registry.videos.find(row => family.variantIds.includes(row.id) && row.available);
@@ -605,7 +624,7 @@ test('Nora repeats only her exact configured silent idle, and stale frames canno
 
 test('Nora without a saved exact idle never borrows Astrid media',async t=>{
   const missing=await controllerFixture(t,{dealerId:'nora'});missing.controller.start();
-  assert.equal(missing.jobs.length,0);assert.match(missing.status.textContent,/Ingen egen idlefilm/);
+  assert.equal(missing.jobs.length,0);assert.match(missing.status.textContent,/saknar en publicerad grundloop/);
 });
 
 test('Nora never spins on an idle failure',async t=>{
@@ -822,7 +841,7 @@ test('a frozen event rechecks package authority even when its video could be cac
   assert.match(f.status.textContent,/Ladda om spelet/);
 });
 
-test('local own-dealer configuration selects its saved idle policy without changing Astrid configuration',async()=>{
+test('configuration requires explicit identity and each dealer uses only its saved idle policy',async()=>{
   const project=addDealer(createSeedProject(),'johanna','Johanna'),id='00000000-0000-4000-8000-000000000096';
   project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
   const policy={schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
@@ -837,7 +856,8 @@ test('local own-dealer configuration selects its saved idle policy without chang
   }
   const own=await get('?dealerId=johanna');assert.equal(own.status,200);assert.deepEqual(own.body.idlePolicy,policy);
   assert.equal(own.body.idleInventory.families[0].dealerId,'johanna');assert.equal(own.body.idleInventory.videos[0].id,id);
-  assert.deepEqual((await get('')).body.idlePolicy,project.idlePolicy);
+  assert.equal((await get('')).status,400);
+  assert.equal((await get('?dealerId=astrid')).body.idlePolicy,project.dealerIdlePolicies.find(row=>row.dealerId==='astrid')?.policy??null);
   assert.equal((await get('?dealerId=unknown')).status,400);
   assert.equal((await get('?dealerId=johanna&dealerId=johanna')).status,400);
 });

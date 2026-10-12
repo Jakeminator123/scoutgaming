@@ -37,20 +37,20 @@ test('legacy dealer paths highlight the current page in the visible menu', () =>
   expectLabel('/control/clips', 'Dealers & klipp');
   expectLabel('/videos', 'Dealers & klipp');
   expectLabel('/control/videos', 'Dealers & klipp');
-  expectLabel('/zones', 'Sammansättning');
-  expectLabel('/control/zones', 'Sammansättning');
+  expectLabel('/zones', 'Sammansättningar');
+  expectLabel('/control/zones', 'Sammansättningar');
   expectLabel('/events', 'Dealers & klipp');
   expectLabel('/control/events', 'Dealers & klipp');
   expectLabel('/probe', 'Dealers & klipp');
   expectLabel('/control/probe', 'Dealers & klipp');
   expectLabel('/clips', 'Dealers & klipp');
-  expectLabel('/administration', 'Spelintegritet');
+  expectLabel('/administration', 'Spelstatus & integritet');
   expectLabel('/openclaw', 'Agentmodeller');
-  expectLabel('/operator-chat', 'Operatörschatt');
-  expectLabel('/control/operator-chat', 'Operatörschatt');
+  expectLabel('/operator-chat', 'Intern agentchatt');
+  expectLabel('/control/operator-chat', 'Intern agentchatt');
   expectLabel('/tree', 'Dealers & klipp');
   expectLabel('/control/tree', 'Dealers & klipp');
-  expectLabel('/activity', 'Uppspelning');
+  expectLabel('/activity', 'Dealers & klipp');
   expectLabel('/guide', 'Guide & hjälp');
 });
 
@@ -129,7 +129,7 @@ test('internal menu keeps native Studio anchors and adds public control and part
       assert.match(html, /Nivå 1 </);
       assert.match(html, /CROUPIER STUDIO/);
       assert.doesNotMatch(html, /<details|<summary[^>]*>Verktyg/);
-      assert.match(html, /aria-current="page"[^>]*>Uppspelning/);
+      assert.match(html, /aria-current="page"[^>]*>Dealers &amp; klipp/);
       assert.doesNotMatch(html, /Backoffice\/Lab|Administration<\/summary>|#ops|#users|\/studio\/studio/);
       assert.equal((html.match(/aria-current="page"/g) ?? []).length, 1);
     }
@@ -195,6 +195,12 @@ test('the global menu cannot introduce SPA history that bypasses existing before
   for (const anchor of anchors) assert.doesNotMatch(anchor, /onClick|onNavigate/);
 });
 
+function mountSelectedPage(component, props) {
+  const element = component(props);
+  return typeof element.type === 'function' && element.type.name.startsWith('SelectedControl')
+    ? element.type(element.props) : element;
+}
+
 function visit(node, callback) {
   if (!node || typeof node !== 'object') return;
   if (Array.isArray(node)) { node.forEach(child => visit(child, callback)); return; }
@@ -211,7 +217,7 @@ test('internal landing links real tools and old clip hashes no longer open a sec
   const html = renderToStaticMarkup(ControlWorkspace({ user: 'fixture-admin' }));
   assert.match(html, /Sammansättning/);
   assert.match(html, /Dealer &amp; klipp/);
-  assert.match(html, /Publicering/);
+  assert.match(html, /Bolagets publicering/);
   assert.match(html, /Bolagets arbetsyta/);
   assert.doesNotMatch(html, /Exempeloperatör|Casino live|API keys|data-preview=/);
   const cleanup = effects[0]();
@@ -234,15 +240,15 @@ test('OpenClaw chat is a document route and keeps the Gateway panel and project 
         useEffect: () => {}, useRef: current => ({current}), useMemo: fn => fn(), useCallback: fn => fn};
       function GatewayPanel() { return null; }
       const {ControlOpenClawChat} = loadComponent('control-openclaw-chat.tsx', {react: hooks, './gateway-panel': {GatewayPanel}});
-      const props = {initialProject: project, initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true};
-      const tree = ControlOpenClawChat(props);
+      const props = {initialProject: project, initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true};
+      const tree = mountSelectedPage(ControlOpenClawChat, props);
       let panel;
       visit(tree, node => {if (node.type === GatewayPanel) panel = node;});
       assert.ok(panel); assert.equal(panel.props.dealerId, 'astrid');
       assert.equal(panel.props.dirty, false); assert.equal(panel.props.status, props.initialStatus);
       assert.equal(typeof panel.props.onModeChange, 'function'); assert.equal(typeof panel.props.onPlayerChat, 'function');
       assert.equal(panel.props.standaloneVoicePreviewAvailable, true);
-      visit(ControlOpenClawChat({...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
+      visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
       assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
       const html = renderToStaticMarkup(tree);
       assert.match(html, /href="\/control\/openclaw\?tab=chat"/);
@@ -268,7 +274,7 @@ test('both real page guards protect dirty project drafts on native leave and cle
         useMemo: fn => fn(), useCallback: fn => fn,
       };
       const component = loadComponent(file, { react: hooks }, browser)[name];
-      const tree = component({ initialProject: project, initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
+      const tree = mountSelectedPage(component, { initialProject: project, initialDealerId: 'astrid', initialVideos: { videos: [] }, initialStatus: {}, connectedLane: true });
       const guardEffects = effects.filter(effect => effect.toString().includes('beforeunload') && effect.toString().includes('addEventListener'));
       assert.equal(guardEffects.length, 1);
       const release = guardEffects[0]();

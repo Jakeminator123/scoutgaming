@@ -325,3 +325,39 @@ test('v3 readiness cannot authorize schema3 events inside SQL and v4 readiness c
   await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
   assert.equal(begun,1);assert.equal(input.fetches.length,3);
 });
+
+test('resource archive writes require exact v6 before SQL and reuse verification for the complete room mutation',async()=>{
+ const descriptor=[{kind:'resource-lifecycle',value:{}},{kind:'project',value:{dealers:[...dealers,'johanna'].map(id=>({id})),lanes:[]}}];
+ const cap5={...cap4,schemaVersion:5,dealerLifecycle:'trash-v1'};
+ const cap6={...cap5,schemaVersion:6,resourceLifecycle:'operator-room-archive-v1'};
+ for(const response of [cap4,cap5,{...cap6,resourceLifecycle:'unsafe-delete'}]){
+  let begun=0;const input=fixture({fetcher:async()=>Response.json(response)});
+  input.repository.transaction=async work=>{begun++;return work(input.repository);};
+  await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
+  assert.equal(begun,0);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'6');
+ }
+ let begun=0;const input=fixture({fetcher:async()=>Response.json(cap6)});
+ input.repository.transaction=async work=>{begun++;return work(input.repository);};
+ await input.wrapped.transaction(repo=>repo.saveDocument('administration',{value:{rooms:[{schemaVersion:2}],gameLanes:[{dealer:'johanna',renderer:'portrait-video'}]}}),{presentationMutation:descriptor});
+ assert.equal(begun,1);assert.equal(input.fetches.length,1);assert.equal(input.writes.length,1);
+});
+
+test('an older verified mutation may not acquire resource lifecycle authority after SQL starts',async()=>{
+ const cap5={...cap4,schemaVersion:5,dealerLifecycle:'trash-v1'};
+ const input=fixture({fetcher:async()=>Response.json(cap5)});
+ await input.wrapped.withMutationContext(async()=>{
+  await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('must not run'),{kind:'resource-lifecycle',value:{}}),blocked);
+ },{kind:'project',value:{dealers:[],dealerTrash:[]}});
+ assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
+});
+test('cascade archives and final v2 restore negotiate exact v7 before SQL, without widening a v6 transaction',async()=>{
+ const cap6={...cap4,schemaVersion:6,dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1'},cap7={...cap6,schemaVersion:7,dealerArchiveCascade:'dealer-compositions-rooms-v1'};
+ for(const descriptor of [{kind:'project',value:{dealers:[],dealerTrash:[{schemaVersion:2}]}},{kind:'dealer-archive',value:{dealers:[],dealerTrash:[]}}]){
+  let begun=0;const rejected=fixture({fetcher:async()=>Response.json(cap6)});rejected.repository.transaction=async()=>begun++;
+  await assert.rejects(rejected.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);assert.equal(begun,0);assert.equal(rejected.fetches[0][1].headers['X-Presentation-Capability-Version'],'7');
+  const accepted=fixture({fetcher:async()=>Response.json(cap7)});accepted.repository.transaction=async work=>{begun++;return work(accepted.repository);};
+  await accepted.wrapped.transaction(repo=>repo.saveDocument('project',{value:{dealers:[],dealerTrash:[]}}),{presentationMutation:descriptor});assert.equal(begun,1);assert.equal(accepted.fetches.length,1);
+ }
+ const input=fixture({fetcher:async()=>Response.json(cap6)});
+ await input.wrapped.withMutationContext(async()=>{await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('no widening'),{kind:'dealer-archive',value:{}}),blocked);},{kind:'resource-lifecycle',value:{}});assert.equal(input.fetches.length,1);
+});
