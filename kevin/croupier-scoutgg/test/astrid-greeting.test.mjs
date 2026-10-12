@@ -20,6 +20,7 @@ test('the original named greeting is localized and spoken without sending the na
     assert.equal(result.text,'Hi Kevin, how are you today?');
     assert.equal(calls[0].text,result.text);assert.equal(calls[0].lang,'en');
     assert.equal(personalizedGreeting('Ana María','es'),'Hola, Ana María. ¿Cómo estás hoy?');
+    assert.equal(personalizedGreeting('Guest 871','sv'),'Hej Guest 871, hur mår du idag?');
     assert.throws(()=>personalizedGreeting('<script>','en'),/invalid/);
   } finally { await rm(dir,{recursive:true,force:true}); }
 });

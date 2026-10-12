@@ -45,6 +45,7 @@ export function personalizedGreeting(name,language='en') {
   const clean=String(name??'').normalize('NFC').trim().replace(/\s+/g,' ');
   if(!VALID_NAME.test(clean))throw new Error('Greeting name is invalid');
   switch(dealerLanguage(language)) {
+    case 'sv': return `Hej ${clean}, hur mår du idag?`;   // Svenska Spel demo 15 Oct: a Swedish table greeted in English text
     case 'es': return `Hola, ${clean}. ¿Cómo estás hoy?`;
     case 'fr': return `Bonjour ${clean}, comment allez-vous aujourd’hui ?`;
     case 'zh': return `你好，${clean}。今天过得怎么样？`;

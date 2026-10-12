@@ -294,7 +294,8 @@ function bubble(cls, html) {
   d.className = "msg " + cls;
   d.innerHTML = html;
   logEl.append(d);
-  if (near) logEl.scrollTop = logEl.scrollHeight;
+  // A reply taller than the log (a phone with the chat docked) shows from its first line, not cut off at the top.
+  if (near) logEl.scrollTop = d.offsetHeight > logEl.clientHeight ? d.offsetTop - logEl.offsetTop : logEl.scrollHeight;
   return d;
 }
 function sys(t, cls = "sys") { const d = document.createElement("div"); d.className = cls; d.textContent = t; logEl.append(d); logEl.scrollTop = logEl.scrollHeight; }

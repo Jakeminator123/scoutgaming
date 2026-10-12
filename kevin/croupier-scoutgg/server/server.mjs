@@ -158,15 +158,16 @@ async function talkReply(ws, text, dealer) {
   broadcast({ t: "said", who: ws.name, text },ws.session);
   remember({ who: ws.name, text },ws.session);
   send(ws,{t:'thinking',on:true,queued:0});
-  const view=shared.snapshot(ws.session, ws.guest), visitor=dealerMemory.key(ws.guest??ws.address), fid=factId(text);
+  // Memory only per visitor cookie (Svenska Spel rehearsal 12 Oct): keyed by IP, everyone in one office shared it, names included.
+  const view=shared.snapshot(ws.session, ws.guest), visitor=ws.guest?dealerMemory.key(ws.guest):null, fid=factId(text);
   let reply, talk=null;
   if(fid)reply=tableFact(fid,view,language);
   else {
-    const past=dealerMemory.recall(visitor,dealer);
+    const past=visitor?dealerMemory.recall(visitor,dealer):{known:false,text:'You have never met this player before.',lines:[]};
     const facts=[tableFact('hand',view,'en'),tableFact('last',view,'en')].join(' ');
     talk=await dealerTalk({text,dealer,language,facts,history:past.lines,memory:past.text,playerName:view.me?.name??ws.name}).catch(()=>null);
     reply=talk?.text??localizeResponse(RESPONSES[localResponse(text)??'social'],language);
-    if(talk)dealerMemory.remember(visitor,dealer,{name:view.me?.name??ws.name,said:text,reply,note:talk.note});
+    if(talk&&visitor)dealerMemory.remember(visitor,dealer,{name:view.me?.name??ws.name,said:text,reply,note:talk.note});
   }
   remember({ who: "astrid", text: reply },ws.session);
   const out=m=>fid?send(ws,m):broadcast(m,ws.session);
