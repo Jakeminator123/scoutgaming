@@ -14,10 +14,10 @@ async function readHealth(): Promise<Health> {
 }
 
 const healthText: Record<Health, string> = {
-  checking: 'Kontrollerar kontakten med den lokala servern…',
-  ready: 'Den lokala servern svarar. Ladda om hela sidan för att hämta den aktuella versionen.',
-  unready: 'Den lokala servern svarar, men labbet verkar inte vara redo. Försök ladda om när starten är klar.',
-  unreachable: 'Den lokala servern kunde inte nås. Om den är stoppad behöver du starta labbet innan du laddar om.',
+  checking: 'Kontrollerar anslutningen till Studio…',
+  ready: 'Studio-servern svarar. Ladda om hela sidan för att försöka igen.',
+  unready: 'Studio-servern svarar, men kunde inte bekräfta att tjänsten är redo. Försök igen om en stund.',
+  unreachable: 'Kunde inte nå Studio-servern. Kontrollera anslutningen och försök igen.',
 };
 
 export default function ErrorPage({ error }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -32,7 +32,7 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
   }, []);
   const reference = typeof error.digest === 'string' && /^[a-f0-9]{6,64}$/i.test(error.digest) ? error.digest : null;
   return <main style={{ padding: 'clamp(24px, 5vw, 48px)', color: '#edf5f5', background: '#10171d', minHeight: '100vh' }}>
-    <h1>Labbet kunde inte läsas</h1>
+    <h1>Studio kunde inte läsas</h1>
     <p role="status">{healthText[health]}</p>
     <p>Omladdningen ändrar inte sparade inställningar. Osparade ändringar kan gå förlorade.</p>
     <button className="primary-button" onClick={() => window.location.reload()}>Ladda om hela sidan</button>
