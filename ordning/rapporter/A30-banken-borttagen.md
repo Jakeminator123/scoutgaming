@@ -106,6 +106,28 @@ Förslag (Jakob beslutar):
 
 > Run the tests in `.githooks/pre-commit` for every media or player change. The indexed dealer bank and `pipeline/audit-dealer-sync.mjs` are no longer in the tree. Review registered dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
 
+## Raderingsgrind mot `origin/main`
+
+`head f81669c5`, 666 borttagna filer (banken plus tidigare vågor på
+integrationsbranchen). **0 IMPORT. 0 REGISTRY.** 32 MENTION. De flesta är
+två sista sökvägsled (`en/bank.json`, `streams/index.json`, `speech/win.mp4`)
+som också finns i levande text. Verkliga namn:
+
+| Fil | Vad träffen är |
+| --- | --- |
+| `AGENTS.md` | Proben som inte ändrades, enligt uppdraget |
+| `README.md` | Säger att `audit-dealer-sync.mjs` inte längre finns |
+| `docs/JOHN-HANDOFF.md` | Leveransraden för den här borttagningen |
+| `lab/test/studio-voice-lines.test.mjs`, `lab/test/blob-source-routing.test.mjs` | Tillfälliga fixturer som bygger egna indexed-sökvägar |
+| `media/game/runtime/speech-media.json` | `dealers/astrid/speech/{win,goodluck}.mp4` (suffix mot de borttagna filerna) |
+| `pipeline/build-hands.sh`, `build-previews.sh`, `prepend-contact-entry.mjs` | B9-byggare som fortfarande namnger banken |
+| `pipeline/build-index.mjs`, `web/partner-presentation.mjs`, `web/clip-mapping.mjs`, `lab/lib/legacy-clip-inventory.mjs`, `lab/lib/studio-voice-lines.mjs`, `test/clip-mapping.mjs`, `test/build-index.mjs`, `test/game-entry-offline.mjs`, `lab/test/legacy-clip-policy.test.mjs`, `lab/test/studio-project-bindings.test.mjs` | Relativa `streams/index.json` och `bank.json`, inte Git-filerna |
+| `media/catalog/legacy.json`, grön-tal-JSON, staging-`speak.json` | Ljudfilnamn som delar suffix med borttagna mp3 |
+| `runtime/presentation/repliker/README.md`, `take-anchors.json`, staging-README och `sha256.txt`, `branding-qa/result.json` | Historiska anteckningar |
+| `web/public/environment.css` | Suffix `room.jpg`, inte bankens fil |
+| `test/speech-package-contract.mjs`, `pipeline/test-amira-green-speak.mjs` | Talnamn `goodluck`/`bank.json`, inte bankens bytes |
+| `lab/components/studio-administration.test.mjs` | Samma suffix i ett adminprov |
+
 ## Tveksamt
 
 - Läppsynkkedjan och de tre auditarna togs bort fast B9 sa att kedjan skulle stå kvar. De hade bara banken som underlag.
