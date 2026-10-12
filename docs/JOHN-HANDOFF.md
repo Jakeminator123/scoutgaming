@@ -110,6 +110,14 @@ diskreserv eller fröprojekt. Den långa listan står i den frysta handoffen und
 
 ## 2. Öppna kontroller och kända fel
 
+### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
+
+Molnets strömmande tal (`overlapAudio` på cloud-konfigurationen, ingen ny miljövariabel) startar Cartesia först efter att RunPod-jobbet är accepterat, medan workern kopplar upp. PCM stannar i spelprocessen, högst 25 sekunder, och går in i reläet först när webbläsarens engångsbiljett är autentiserad. Avbrott från ägare, spelare eller stängning stoppar hämtningen direkt, även medan GPU-väntan pågår. Ett nekat GPU-jobb startar ingen röst. Utan GPU-session, inklusive lokal förhandsvisning, startar rösten som tidigare först vid ansluten spelare.
+
+Worker-socketen är kvar på den publika Vercel-ingången `/lipsync-worker`. Render tar emot den via ingresshemligheten. Den hemligheten ska inte ligga i RunPod-jobbet, så workern pekas inte direkt på Render. Idle-stopp efter 60 sekunder är kvar: en varm GPU debiteras på riktigt, och sessionsreservationen återbetalas inte.
+
+Verifiering: 84 riktade stream-/session-/journal-/leveransprov passerade på Node 24.21.0 efter integration av main `ef9029a9`. Ordinarie full hook och nya PR-kontroller krävs före merge. Ingen betald generering eller produktionsdataändring. Kall och varm första bildruta är ett separat, ännu omätt uppdrag.
+
 ### Bakgrundsklipp och bordsstorlek, 12 oktober 2026
 
 Sammansättningens Bakgrund har nu valfria ljudlösa händelse-/intervallklipp

@@ -254,6 +254,7 @@ export function createJournalSpeechSessionManager(configuration, {
           throw error;
         }
       }
+      if (typeof input.onSubmitted === 'function') await input.onSubmitted();
       const started = now();
       while (!workerState(job.workerId).available) {
         await fresh();

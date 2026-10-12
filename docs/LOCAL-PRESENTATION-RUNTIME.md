@@ -278,6 +278,12 @@ och avvecklingsstatus finns i [driftkartan](CLOUD-MIGRATION.md).
 native-kvitton även utan Partner-konfiguration. Privat Blob levereras via
 behöriga mediarutter. Tal och lipsync-worker har varsin autentiserad native
 Node-WebSocket-ingress på Vercel och behåller Render som sessionsägare.
+I molnet startar Cartesia först efter att RunPod-jobbet är accepterat, medan
+workern kopplar upp. Ljudet buffras i spelprocessen och släpps till reläet
+först efter autentiserad spelarbiljett. Avbrott från ägare, spelare eller
+stängning stoppar hämtningen direkt.
+Workerns socket går via samma publika ingress. Ingresshemligheten lämnar inte
+Render, och en redan betald GPU-session stängs efter 60 sekunders tystnad.
 
 Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
 [handoffen](JOHN-HANDOFF.md). QA:s AI-flaggor är OFF; journaler och
