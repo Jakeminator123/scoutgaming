@@ -6,6 +6,8 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { partnerCopy, partnerNavigation } from '../components/kevin-bo/partner-copy.mjs';
+import { defaultPresentationLane } from '../lib/studio-model.mjs';
+import { PartnerPackageView } from '../components/partner-package-view.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -169,5 +171,40 @@ test('scoped John styles cover entry classes, local fonts, responsive shell and 
   for (const [front, back] of [['#0A0B0D', '#F2F1ED'], ['#55574F', '#FFFFFF'], ['#4A6200', '#F2F1ED'],
     ['#F2F1ED', '#121418'], ['#A3A59F', '#121418'], ['#D6FF3A', '#0A0B0D'], ['#0A0B0D', '#E3F8A6']]) {
     assert.ok(contrast(front, back) >= 4.5, `${front} on ${back}`);
+  }
+});
+
+
+test('all live partner composition names share localized labels while frozen data and room IDs stay unchanged', () => {
+  const named = [['mobile-phone','Mobile Phone Lane'],['layer-preview','Layer Preview Lane'],['company-custom','Norrsken']];
+  const snapshot = realSnapshot({
+    presentations: named.map(([id,name]) => ({id,name,operatorId:'john',dealer:'astrid'})),
+    presentation: {schemaVersion:1,projectRevision:'frozen-label-fixture',assets:[],lanes:named.map(([id,label]) => ({...defaultPresentationLane('astrid'),id,label}))},
+    branding: {lane:'mobile-phone'}, roomBindings:'operator-owned-v2',
+    tables: named.map(([presentationId],index) => ({id:'room-'+index,operatorId:'john',name:'Spelrum '+index,game:'blackjack',status:'active',presentationId})),
+  });
+  const before=JSON.stringify(snapshot);
+  for(const language of ['sv','en']) {
+    const {KevinBackoffice,PartnerLiveOverview}=components({language}),copy=partnerCopy(language);
+    const expected=language==='en'?['Standard composition','Layer composition','Norrsken']:['Standardsammansättning','Lagersammansättning','Norrsken'];
+    const page=view=>renderToStaticMarkup(React.createElement(KevinBackoffice,{surface:'partner',initialSnapshot:snapshot,user:'jakob',apiBase:'/studio/api/partner/snapshot',initialView:view}));
+    const overview=page('ops');
+    for(const label of expected) {
+      assert.ok(overview.includes('<li>'+label+'</li>'));
+      assert.ok(overview.includes('<td>'+label+'</td>'));
+    }
+    const tableOnly=renderToStaticMarkup(React.createElement(PartnerLiveOverview,{snapshot,copy,language,tablesOnly:true}));
+    for(const label of expected) assert.ok(tableOnly.includes('<td>'+label+'</td>'));
+    const rooms=page('bj'),integration=page('api');
+    assert.ok(rooms.includes('<p>'+expected[0]+'</p>'));
+    assert.ok(integration.includes(copy.apiBody));
+    for(const markup of [overview,tableOnly,rooms,integration]) assert.doesNotMatch(markup,/Mobile Phone Lane|Layer Preview Lane/);
+    for(const [index,room] of snapshot.tables.entries()) {
+      const preview=renderToStaticMarkup(React.createElement(PartnerPackageView,{snapshot,view:'test',roomId:room.id,language}));
+      assert.ok(preview.includes('<p>'+expected[index]+'</p>'));
+      assert.ok(preview.includes('/play/blackjack?operator=johnsspelbolag&amp;table='+room.id));
+      assert.doesNotMatch(preview,/Mobile Phone Lane|Layer Preview Lane/);
+    }
+    assert.equal(JSON.stringify(snapshot),before);
   }
 });
