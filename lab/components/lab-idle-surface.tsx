@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import {DealerVideoSurface} from './dealer-video-surface';
+import type {VideoMetadata} from '../lib/video-intake.mjs';
 
 export interface IdleSurfaceReceipt { phase: 'started' | 'presented' | 'completed' | 'failed' | 'cancelled'; videoId: string; kind: 'base' | 'variant'; reason?: string }
 /** A variant can report its lifecycle, but never a standard-position proof. */
-export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, standardBase = true, onReady, onReceipt }: {
+export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, standardBase = true, onReady, onReceipt,classification }: {
   url: string; videoId: string; kind?: 'base' | 'variant'; repeat?: boolean; standardBase?: boolean;
   onReady: (ready: boolean) => void; onReceipt?: (receipt: IdleSurfaceReceipt) => void;
+  classification?:VideoMetadata;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const callback = useRef({ onReady, onReceipt });
@@ -37,8 +40,8 @@ export function LabIdleSurface({ url, videoId, kind = 'base', repeat = true, sta
       element.pause(); callback.current.onReady(false); if (started && !terminal) emit('cancelled');
     };
   }, [url, videoId, kind, repeat, standardBase]);
-  return <div className="stage-video" style={{ position: 'relative' }}>
+  return <DealerVideoSurface framing={classification?.framing} compositing={classification?.compositing}>
     <video ref={video} src={url} loop={repeat} muted playsInline preload="auto" aria-label={kind === 'variant' ? 'Automatisk variation i grundloopen' : standardBase ? 'Grundloopens basklipp' : 'Alternativt basklipp i grundloopen'} />
     <span style={{ position: 'absolute', top: 8, left: 8, color: '#ddd', background: '#102020cc', padding: '4px 8px', fontSize: 11 }}>{kind === 'variant' ? 'Variation' : repeat ? 'Grundloop' : 'Grundloop · basklipp'}</span>
-  </div>;
+  </DealerVideoSurface>;
 }

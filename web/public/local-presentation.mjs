@@ -79,7 +79,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         if (current.status === 409) throw packageError();
         if (!current.ok) throw new Error('Dealerns film är inte längre tillgänglig');
       }
-      if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing);
+      if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing,video.framing ?? video.classification?.framing);
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,

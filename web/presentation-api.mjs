@@ -24,6 +24,7 @@ const publicVideo = item => item ? {
   id: item.id, sha256: item.sha256, fileName: item.fileName,
   src: `/api/presentation/videos/${item.id}`,
   ...(item.classification?.compositing ? { compositing: structuredClone(item.classification.compositing) } : {}),
+  ...(item.classification?.framing ? { framing: structuredClone(item.classification.framing) } : {}),
 } : null;
 
 function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
