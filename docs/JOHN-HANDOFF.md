@@ -4,6 +4,12 @@
 
 ### Gemensam namnväckning och sparning av genererade dealersvar
 
+CI-komplettering: OpenClaws separata produkttalprov avvisar nu en verkligt
+ogiltig dealeridentitet i stället för den avsiktligt stödda Vera. Samtycke,
+modell-, JPEG- och före-provider-kontroller behålls. Tolv positiva prov täcker
+sex dealers och båda granskade bildmodeller, inklusive återspelning utan nytt
+modellanrop och nekad dealerändring under samma requestId.
+
 12 oktober: publika dealerpresentationer delar röstkontroll, separat kameraopt-in,
 namnväckning efter vald dealer och hopfälld mobilchatt. Astrid/Vera/Amira/Mei samt
 registrerade PAOW/Dragge stöds; Studio-provspel behåller sin isolering. Mobilens

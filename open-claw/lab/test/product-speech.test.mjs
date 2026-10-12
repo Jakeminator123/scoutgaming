@@ -137,7 +137,18 @@ for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) test(`Director sends review
   assert.equal(calls, 1);
 });
 
-test('image models retain Astrid-only consent and image validation before any Gateway call', async () => {
+for(const dealerId of ['astrid','vera','amira','mei','paow','dragge'])for(const model of ['gpt-6-luna','gpt-5.6-terra'])
+test(`reviewed image consent is bound to selected ${dealerId} through ${model}`,async()=>{
+  const input=envelope({model});input.status.dealerId=dealerId;input.request.message='Hello '+dealerId;
+  input.request.observation=syntheticObservation();let calls=0;
+  const service=createProductSpeechService({settingsProvider:()=>settings(),completeImpl:async()=>{calls++;return JSON.stringify(silence(input));}});
+  assert.deepEqual(await service.handle(input),silence(input));
+  assert.deepEqual(await service.handle(structuredClone(input)),silence(input));assert.equal(calls,1);
+  const changed=structuredClone(input);changed.status.dealerId=dealerId==='astrid'?'vera':'astrid';
+  await assert.rejects(service.handle(changed),{code:'product_speech_request_conflict',statusCode:409});assert.equal(calls,1);
+});
+
+test('image models retain dealer identity, consent and image validation before any Gateway call', async () => {
   let calls = 0;
   const service = createProductSpeechService({ settingsProvider: () => settings(),
     completeImpl: async () => { calls++; return JSON.stringify(silence()); } });
@@ -148,7 +159,7 @@ test('image models retain Astrid-only consent and image validation before any Ga
   }
   for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) {
     for (const [edit, code] of [
-      [input => { input.status.dealerId = 'vera'; }, 'observation_astrid_only'],
+      [input => { input.status.dealerId = 'admin'; }, 'invalid_observation_dealer'],
       [input => { input.request.observation.consentTurnId = 'other-turn'; }, 'invalid_observation_consent'],
       [input => { input.request.observation.images.push(...input.request.observation.images, ...input.request.observation.images); }, 'invalid_observation_consent'],
       [input => { input.request.observation.images = ['https://example.test/player.jpg']; }, 'invalid_observation_url'],
