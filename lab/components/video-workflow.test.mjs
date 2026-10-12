@@ -94,6 +94,22 @@ const project = createSeedProject();
 function stage(extra = {}) {
   return component('./stage.tsx', 'Stage', { event: project.events[0], asset: project.assets[0], dealer: 'Astrid', variantLabel: 'Standard', playId: 0, playing: false, hasResult: false, busy: false, onPlay() {}, onPreview() {}, ...extra });
 }
+
+test('compact file controls start and pause the exact video and respect blocked playback', () => {
+  const receipts = [], h = stage({ videoUrl: '/wide-clip', playId: 7, onPlaybackEvent: value => receipts.push(value) });
+  const tree = h.render(), video = byType(tree, 'video'), toggle = button(tree, 'Spela / pausa');
+  assert.equal(toggle.props['aria-label'], 'Spela eller pausa klippet');
+  assert.equal(video.props.ref.current.paused, true);
+  toggle.props.onClick(); videoEvent(video, 'onPlaying');
+  assert.equal(video.props.ref.current.paused, false);
+  toggle.props.onClick(); assert.equal(video.props.ref.current.paused, true);
+  toggle.props.onClick(); videoEvent(video, 'onPlaying'); videoEvent(video, 'onEnded');
+  assert.equal(receipts.at(-1).phase, 'completed');
+  h.props.blocked = true; const locked = h.render();
+  assert.equal(button(locked, 'Spela / pausa').props.disabled, true);
+  button(locked, 'Spela / pausa').props.onClick(); toggle.props.onClick();
+  assert.equal(byType(locked, 'video').props.ref.current.paused, true);
+});
 test('idle format switches preserve the playing base and do not edit the policy', () => {
   const policy = createDefaultIdlePolicy(), changes = [];
   const inventory = { families: [{ id: policy.familyId, standardIds: policy.base.map(row => row.videoId), variantIds: policy.variants.map(row => row.videoId) }],
