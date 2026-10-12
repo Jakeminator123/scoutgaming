@@ -57,8 +57,22 @@ test('push rejects deletion, tags, other branches and other repositories', () =>
     assert.equal(error.message.includes('example-token'), false);
     return true;
   });
-  assert.doesNotThrow(() => validatePush('https://x-access-token:example-token@github.com/jakeminator123/scoutgaming', update, policy, () => true));
-  assert.equal(redactSecrets('fatal: https://x-access-token:example-token@github.com/jakeminator123/scoutgaming/info/refs').includes('example-token'), false);
+  for (const credentialUrl of [
+    'https://x-access-token:example-token@github.com/jakeminator123/scoutgaming',
+    'https://example-token@github.com/jakeminator123/scoutgaming.git',
+    'https://example-token:@github.com/Jakeminator123/scoutgaming',
+  ]) {
+    assert.throws(() => validatePush(credentialUrl, update, policy, () => true), error => {
+      assert.match(error.message, /approved GitHub/);
+      assert.equal(error.message.includes('example-token'), false);
+      return true;
+    }, credentialUrl);
+  }
+  for (const text of [
+    'fatal: https://x-access-token:example-token@github.com/jakeminator123/scoutgaming/info/refs',
+    "fatal: unable to access 'https://example-token@github.com/Jakeminator123/scoutgaming.git/': denied",
+    'remote: https://user@github.com/x/y and ssh://example-token@github.com/x/y',
+  ]) assert.equal(redactSecrets(text).includes('example-token') || redactSecrets(text).includes('user@'), false, text);
 });
 test('feature-branch pushes keep the system-map check', () => {
   const seen = [];

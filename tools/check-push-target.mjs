@@ -8,9 +8,10 @@ function knownAncestor(before, after) {
   return spawnSync('git', ['merge-base', '--is-ancestor', before, after], { encoding: 'utf8' }).status === 0;
 }
 
+// Masks all URL userinfo: user:password@, token@ and user@ alike.
 export function redactSecrets(text) {
   return String(text ?? '')
-    .replace(/([A-Za-z][A-Za-z0-9+.-]*:\/\/)[^/\s@]*:[^/\s@]*@/g, '$1[redacted]@');
+    .replace(/([A-Za-z][A-Za-z0-9+.-]*:\/\/)[^/\s@]+@/g, '$1[redacted]@');
 }
 
 export function repositoryFromRemote(url) {
@@ -25,7 +26,9 @@ export function repositoryFromRemote(url) {
     try { parsed = new URL(url); } catch { return null; }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'ssh:') return null;
     if (parsed.hostname.toLowerCase() !== 'github.com') return null;
-    if (parsed.protocol === 'ssh:' && parsed.username && parsed.username !== 'git') return null;
+    // Credential URLs are refused: a token in the remote must never reach a log.
+    if (parsed.protocol === 'https:' && (parsed.username || parsed.password)) return null;
+    if (parsed.protocol === 'ssh:' && (parsed.password || (parsed.username && parsed.username !== 'git'))) return null;
     path = parsed.pathname.replace(/^\//, '');
   }
   path = path.replace(/\.git$/, '').replace(/\/$/, '');
