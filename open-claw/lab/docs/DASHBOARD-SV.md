@@ -30,7 +30,7 @@ Du behöver normalt varken terminal eller nya inställningar vid nästa besök.
    då Renders egen `RENDER_EXTERNAL_URL`. Vid egen domän sätter du samma explicita
    `OPENCLAW_DASHBOARD_ORIGIN` på **båda** tjänsterna. Spara och driftsätt ändringarna.
 4. Öppna `https://<din-director-adress>.onrender.com/openclaw/`.
-   I **Gateway secret** anger du värdet i `OPENCLAWAPI_KEY` — inte OpenAI-nyckeln.
+   I **Gateway secret** anger du värdet i `OPENCLAW_API_KEY` — inte OpenAI-nyckeln.
    Inget extra konto, separat inloggningssystem eller MFA har lagts framför UI:t.
 
 Gatewayens eget lösenordsskydd gäller ända fram till OpenClaw. Director skickar
@@ -42,8 +42,8 @@ En ny webbläsare behöver normalt ett **engångsgodkännande**. När UI:t visar
 pairing required, öppna Render → privata OpenClaw-tjänsten → Shell:
 
 ```sh
-OPENCLAW_GATEWAY_PASSWORD="$OPENCLAWAPI_KEY" node /app/openclaw.mjs devices list
-OPENCLAW_GATEWAY_PASSWORD="$OPENCLAWAPI_KEY" node /app/openclaw.mjs devices approve <requestId>
+OPENCLAW_GATEWAY_PASSWORD="$OPENCLAW_API_KEY" node /app/openclaw.mjs devices list
+OPENCLAW_GATEWAY_PASSWORD="$OPENCLAW_API_KEY" node /app/openclaw.mjs devices approve <requestId>
 ```
 
 Kontrollera att begäran gäller din egen webbläsare innan du godkänner just dess

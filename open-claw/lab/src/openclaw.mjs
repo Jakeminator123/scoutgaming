@@ -27,7 +27,7 @@ export function providerStatus(settings) {
     configured: Boolean(settings.baseUrl && settings.gatewayKey),
     status: settings.baseUrl && settings.gatewayKey ? 'configured' : 'not_configured',
     agent: settings.agent, deadlineMs: settings.adviceTimeoutMs,
-    missing: [!settings.baseUrl && 'OPENCLAW_BASE_URL', !settings.gatewayKey && 'OPENCLAWAPI_KEY'].filter(Boolean),
+    missing: [!settings.baseUrl && 'OPENCLAW_BASE_URL', !settings.gatewayKey && 'OPENCLAW_API_KEY'].filter(Boolean),
   };
 }
 

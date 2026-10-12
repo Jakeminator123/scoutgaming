@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets } from './gateway-config.mjs';
+import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets, gatewayAuthenticationKey } from './gateway-config.mjs';
 import { syncRuntimeBundle } from './runtime-bundle.mjs';
 import { createSearchServer, openAiSearchKey } from './companion-search-server.mjs';
 
@@ -25,12 +25,14 @@ export function gatewayEnvironment(env) {
     ...env,
     OPENCLAW_STATE_DIR: stateDir,
     OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_GATEWAY_PASSWORD: env.OPENCLAWAPI_KEY.trim(),
+    OPENCLAW_API_KEY: gatewayAuthenticationKey(env).trim(),
+    OPENCLAW_GATEWAY_PASSWORD: gatewayAuthenticationKey(env).trim(),
   };
   // This service now uses native editable config and one password credential.
   // Never let a retired image/environment default put it back into read-only mode.
   delete childEnv.OPENCLAW_CONFIG_READONLY;
   delete childEnv.OPENCLAW_GATEWAY_TOKEN;
+  delete childEnv.OPENCLAWAPI_KEY;
   return childEnv;
 }
 
@@ -163,7 +165,7 @@ async function main() {
   console.info(`Croupier runtime bundle: ${JSON.stringify(bundle)}`);
   // Private helper: existing credential, no native tools or public ingress.
   const search = createSearchServer({ directory: gatewayEnv.OPENCLAW_STATE_DIR,
-    token: gatewayEnv.OPENCLAWAPI_KEY.trim(), key: openAiSearchKey(gatewayEnv, config),
+    token: gatewayEnv.OPENCLAW_GATEWAY_PASSWORD, key: openAiSearchKey(gatewayEnv, config),
     enabled: gatewayEnv.LAB_COMPANION_WEB_ENABLED !== 'false' && gatewayEnv.LAB_COMPANION_ENABLED !== 'false' });
   search.on('error', () => console.error('Private companion search listener is unavailable.'));
   search.listen(18790, '0.0.0.0', () => console.info('Private companion search ready on 18790; budget 5 SEK/hour.'));

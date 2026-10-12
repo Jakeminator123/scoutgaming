@@ -65,6 +65,25 @@ Vercel-team och projekt är båda `scoutgaming`. Gamla `croupier-lab-ui.vercel.a
 är ett alias till samma driftsättning som www; `croupier-frontend.vercel.app`
 och apex omdirigerar till www med 308. Inga domäner ändrades.
 
+## Env-städning och OpenClaw-namnbyte, 12 oktober 2026
+
+Gatewayens startkod stöder nu `OPENCLAW_API_KEY` med prioritet över det
+äldre namnet, uttryckligt tomt värde stänger av fallback, och barnprocessen
+får endast det rättade namnet och OpenClaws interna lösenordsvariabel.
+Blueprint, Compose, aktiva exempel och guider använder samma namn för
+Director och Gateway. Äldre namnet finns kvar endast som kompatibilitet och
+i daterade driftkvitton. 105 riktade Gateway-/konfigurations-/isolationsprov
+passerar med Node 24.21.0; namnbytet bevarar sparad Gateway-konfiguration.
+
+Gemini-nyckeln utan produktkonsument, tomma gamla `RUNPOD_ENDPOINT_ID` och
+plattformsägda `VERCEL` är borttagna från båda aktiva lokala env-filerna med
+privat backup. Render hade 37/53/16/10 env-poster för QA/spel/Director/Gateway;
+samtliga återstående namn har produktkällreferenser. Det rättade Gateway-
+namnet har lagts till i Director och Gateway med samma befintliga credential
+och oförändrade övriga värden. Molnbytet slutförs efter koddeploy och läsande
+hälsokontroll; gamla poster behålls tills dess. Ingen modell, media eller DB
+ändras av env-migreringen.
+
 ## Materialskapande i dealerns arbetsyta, 12 oktober 2026
 
 Dealer Forge är samlat i **Dealers & klipp → Skapa material** för vald dealer.

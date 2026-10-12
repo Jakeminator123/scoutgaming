@@ -24,11 +24,11 @@ services:
         value: /data/catalog
       - key: LAB_API_TOKEN
         generateValue: true
-      - key: OPENCLAWAPI_KEY
+      - key: OPENCLAW_API_KEY
         fromService:
           name: croupier-lab-openclaw
           type: pserv
-          envVarKey: OPENCLAWAPI_KEY
+          envVarKey: OPENCLAW_API_KEY
       - key: OPENCLAW_HOSTPORT
         fromService:
           name: croupier-lab-openclaw
@@ -70,7 +70,7 @@ services:
       mountPath: /data/openclaw
       sizeGB: 1
     envVars:
-      - key: OPENCLAWAPI_KEY
+      - key: OPENCLAW_API_KEY
         sync: false
       - key: OPENCLAW_MODEL_API_KEY
         sync: false
