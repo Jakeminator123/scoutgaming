@@ -28,6 +28,7 @@ import { draggeSay, draggeVoiceReady, draggeWarm, hasVoice, useLipsyncPod } from
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
+import { createDemoGate } from "./demo-gate.mjs";
 import {createDealerGameTools,gameStateIntent,tableFactForVoice} from './dealer-game-tools.mjs';
 
 import { auditAuthorized } from './audit-access.mjs';
@@ -65,6 +66,7 @@ const dealerMemory = createDealerMemory(path.join(path.dirname(tableDb), "dealer
 const safetyAudit=createSafetyAudit(tableDb);
 const chatLimit=createRateLimit();
 const apiLimit=createRateLimit({limit:20});
+const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Play demo password: see demo-gate.mjs
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
 const READY_TAKES=Object.fromEntries(['dragge','paow','marten'].map(id=>{try{return [id,{...JSON.parse(readFileSync(path.join(PUBLIC,'media','dealers',id,'v2','meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`}];}catch{return [id,null];}}));
@@ -415,7 +417,7 @@ async function api(req, res, route) {
   json(res, 404, { error: "okänd väg" });
 }
 
-const http = createServer((req, res) => {
+const http = createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
   res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
@@ -438,6 +440,22 @@ const http = createServer((req, res) => {
   const shared=/^\/t\/([a-z0-9_-]{1,40})\/?$/.exec(p);
   if(shared){const t=studioTables.get(shared[1]);res.writeHead(t?302:404,t?{Location:studioTables.gameUrl(t),"Cache-Control":"no-store"}:{"Content-Type":"text/plain; charset=utf-8"});res.end(t?"":"No such table");return;}
   if(["/backoffice","/backoffice/","/backoffice.html"].includes(p)){res.writeHead(302,{Location:"https://croupier.scoutgg.dev/bo/#shoes","Cache-Control":"no-store"});res.end();return;}
+  // Play demo password (Kevin 12 Oct): the website's /demo posts here; the right password gives a signed 30-day pass.
+  if(p==="/demo/unlock"&&req.method==="POST"){
+    const from=req.headers.origin??"";
+    if(from&&!["https://scoutgaminggroup.com","https://www.scoutgaminggroup.com","https://croupier.scoutgg.dev"].includes(from)){res.writeHead(403).end();return;}
+    if(!demoLimit(clientAddress(req))){res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=limit","Cache-Control":"no-store"});res.end();return;}
+    let raw="";req.on("data",c=>{raw+=c;if(raw.length>2000)req.destroy();});
+    req.on("end",()=>{const pw=new URLSearchParams(raw).get("pw");
+      if(demoGate.rightPassword(pw)){res.writeHead(303,{Location:"/?dealer=astrid&lang=en","Set-Cookie":demoGate.passCookie(true),"Cache-Control":"no-store"});res.end();return;}
+      res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=1","Cache-Control":"no-store"});res.end();});
+    return;
+  }
+  if(p==="/"&&demoGate.on&&!demoGate.hasPass(req.headers)){
+    const q=new URL(req.url,"http://x").searchParams, studioTable=studioTables.get(q.get("table")??"");
+    let who=null; if(!studioTable){try{who=await bo.user(req.headers);}catch{}}
+    if(!studioTable&&!who){res.writeHead(302,{Location:demoGate.passwordPage,"Cache-Control":"no-store"});res.end();return;}
+  }
   const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
   if (!file) { res.writeHead(404).end(); return; }
   sendFile(req, res, file);
