@@ -437,7 +437,7 @@ de uttryckligen läggs till och aktiveras i den sparade policyn.
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
-Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+Aktuell anslutning: [lokal anslutning](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
 
 Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget

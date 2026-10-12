@@ -405,7 +405,7 @@ node tools/start-local-comparison.mjs
 ```
 
 Öppna `http://127.0.0.1:4192/activity` (omdirigerar till Provspelning & logg, `/control/rehearsal`) och tryck **Anslut**. Spelet körs på
-`http://localhost:4194` med originalet på `/`. `/v2/` finns kvar. `/bo`, `/bo/` och `/bo/index.html`
+`http://localhost:4194` med originalet på `/`. `/v2/` finns kvar som 307-omdirigering, inte som egen spelare. `/casino.html` svarar 308 till `/play`. `/bo`, `/bo/` och `/bo/index.html`
 svarar 308 till `/control/administration`. Olika hostnamn håller testets
 spelcookies skilda från labbet. Tillfälliga databaser och en
 syntetisk demospelare skapas; `.env`-filer och riktiga konton/saldon används

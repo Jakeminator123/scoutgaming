@@ -29,6 +29,48 @@ uttryckligen anger archiveDir. Den gamla LAB_VIDEO_ARCHIVE-inställningen
 återskapar inte lokala standarddealers. Serverns konfigurerade tjänster för
 genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
 
+## Adresser och verktyg efter repo-ordning våg 2, 12 oktober 2026
+
+`/casino.html` svarar 308 till `/play` för GET och HEAD. Query följer med.
+Kasinogolvet och dess GLB-filer är borta. `/v2` är kvar som 307-omdirigering,
+inte en egen spelare. De fem granskningssidorna svarar 404. Registrerad video
+spelas på den gemensamma scenen. Studios originalmediareserv är pensionerad;
+ett hanterat klipp utan spelbar fil visar den befintliga statustexten.
+Partnerns levande vyer (översikt, spelrum, integration och skal) renderas från
+`lab/components/kevin-bo/views/*.jsx`. En riktig operatörsögonblicksbild
+utvärderar inte `original-views.jsx`.
+
+3D-, rigg-, ansikts-, Blender-, GLB- och hårspåret är borta ur klient, pipeline
+och Astrids indexerade rigg. `vendor/three` står kvar: `performance-player.mjs`
+importerar `three.module.js`. Katalogstyrda composited-talklipp står kvar
+eftersom `media/catalog/legacy.json` refererar dem. `media/game/staging`,
+Amiras staging och tre avslutade Astrid-experiment är borta. Astrids
+kalibrering, godkännandeanteckningar och osäkra mappar står kvar.
+
+Spelar-UI-bygget är `apps/croupier-frontend/tools/player-ui-build.mjs`.
+`ops/vercel-entry` och `ops/caddy/bettalotto-game-auth.Caddyfile` är borta.
+Vercel-projektet `github-work-vercel-entry` finns inte. A18: bettalotto.se
+svarar 301 till `https://croupier.scoutgg.dev/` och använder inte den
+borttagna Caddy-filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
+
+### Verktyg som finns kvar
+
+Manuella byggare, enda källa till media som produkten läser:
+
+- `pipeline/build-previews.sh` — förhandsvisningar av röstrepliker
+- `pipeline/encode.sh` — Annex-B
+- `pipeline/build-hands.sh` — handmattor
+- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — uppmätta kontaktkandidater
+
+Läppsynk och kalibrering: `sync-existing.py`, `sync-audio-warp.py`,
+`auto-phrase-warp.py`, `measure-lipsync.py`, `measure-onset.py`,
+`retime-video-map.py`, `retime-video-warp.py`, `apply-lipsync.py`,
+`trim-speak-start.py`, `mouth-crops.json` och `encode.sh`.
+
+Krok och CI: `audit-dealer-sync.mjs`, `audit-performance.mjs`,
+`audit-astrid-actor.mjs`, `build-lab-video-manifest.mjs`, `build-index.mjs`,
+`pack-contact-media.mjs`.
+
 ## Egen talprofil för registrerade dealers, 11 oktober 2026
 
 Dealerpostens privata speechProfile v2 sparar önskemålet enabled/preparation,

@@ -10,7 +10,7 @@ labbeditorns installations- och GitLab-instruktioner har tagits bort.
 
 - [Aktuell drift, QA och återstående migrering](../../docs/CLOUD-MIGRATION.md)
 - [Nyckelnamn och placering per tjänst](../../docs/ENVIRONMENT-VARIABLES.md)
-- [Daterat OpenClaw-anslutningskvitto från 29 september](docs/CLOUD-ACTIVATION-2026-09-29.md)
+- [Teknisk drift och kvarvarande kedja](docs/DEPLOYMENT.md)
 - [Drift av befintliga Render-tjänster](docs/RENDER-START-SV.md)
 - [Roller, talbeslut och behörigheter](docs/PRODUCT-SPEECH-DEPLOYMENT-SV.md)
 - [Lokal isolerad anslutning](docs/LOCAL-CONNECTION-SV.md)

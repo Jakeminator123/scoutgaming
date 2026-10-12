@@ -19,10 +19,10 @@ state must be mounted or supplied by an external store, never copied from a
 developer's machine into an image. Environment variables must be supplied by
 the deployment platform. `content/staging/` contains review and source renders;
 runtime presentation media is retained in its published locations above.
-The editable root source trees `assets/astrid-3d/` (about 563 MiB) and
-`assets/blackjack-3d/` (about 220 MiB) are also excluded. Their consumers
-are offline Blender/asset scripts; the browser loads separate exports from
-`web/public/`. This is a static dependency check, not a built-image test.
+The old editable trees `assets/astrid-3d/` and `assets/blackjack-3d/` were
+removed on 12 October 2026 with the 3D track. `.dockerignore` still names
+them so a restored checkout is not sent as build context. This is a static
+dependency check, not a built-image test.
 
 On this workstation, targeted metadata inspection found approximately
 2,075 MiB in `content/staging/`, 1,084 MiB in `lab/.next`, `.next-probe`, and
@@ -33,7 +33,7 @@ builder, its context directory, and generated files present at build time.
 
 Docker is not installed on this workstation. Before the first deployment,
 build an image with the repository root as its context and verify that the
-studio can read its video manifest, that original media previews and gameplay
+studio can read its video manifest, that registered playback and gameplay
 video serve the retained files, and that no local `.env` or database entered
 the image. The current `.dockerignore` does not make the product cloud ready;
 `docs/CLOUD-MIGRATION.md` tracks storage, authentication, HTTPS, and runtime
