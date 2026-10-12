@@ -59,7 +59,11 @@ två spelningar, källbyte, sena callbacks, fel och återhämtning samt separata
 `audit-dealer-sync --probe` bekräftar oförändrade fyra historiska medieset;
 det är inget nytt visuellt läppsynksgodkännande. Bildkvitton och maskinbevis
 ligger privat under `lab/data/platform-private/greenscreen-browser-20261012`
-och `paow-rebuild-20261012`. Full ordinarie commit-hook körs inför leveransen.
+och `paow-rebuild-20261012`. Full ordinarie commit-hook passerar för
+kodcommit `0c04d1a2`; inga kontroller hoppades över utöver svitens deklarerade skips.
+Vercel-team och projekt är båda `scoutgaming`. Gamla `croupier-lab-ui.vercel.app`
+är ett alias till samma driftsättning som www; `croupier-frontend.vercel.app`
+och apex omdirigerar till www med 308. Inga domäner ändrades.
 
 ## Materialskapande i dealerns arbetsyta, 12 oktober 2026
 
