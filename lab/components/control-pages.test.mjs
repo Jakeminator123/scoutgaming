@@ -12,15 +12,16 @@ const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const modeLabels = { off: 'Standard', rules: 'Regler', shadow: 'Skuggläge', active: 'Aktivt', random: 'Slump' };
 
-function loadTs(fileUrl) {
+function loadTs(fileUrl, overrides = {}) {
   const source = readFileSync(fileUrl, 'utf8');
   const output = transformSync(source, { filename: fileURLToPath(fileUrl), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
   const localRequire = createRequire(fileUrl);
   vm.runInNewContext(output.code, {
-    module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    module, exports: module.exports, structuredClone, URL, URLSearchParams, AbortController,
     window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
     require: name => {
+      if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
       if (name === 'next/navigation') return {useSearchParams:()=>new URLSearchParams(globalThis.window?.location?.search ?? ''),usePathname:()=>globalThis.window?.location?.pathname ?? '/control/clips'};
       if (name === './gateway-panel') return { modeLabels, modeExplanations: modeLabels, GatewayPanel() { return null; } };
@@ -30,7 +31,7 @@ function loadTs(fileUrl) {
           const path = fileURLToPath(candidate);
           if (!existsSync(path)) continue;
           if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) return localRequire(path);
-          return loadTs(pathToFileURL(path));
+          return loadTs(pathToFileURL(path), overrides);
         }
       }
       return localRequire(name);
@@ -141,7 +142,7 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
   for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes('/control/rehearsal?dealer='+dealer.id+'&amp;composition=mobile-phone&amp;operator=operator-42'));
  }
  const room=renderPage('control-activity-page.tsx',{initialDealerId:undefined,initialOperatorSlug:'operator-42',initialTableId:'room-7'});
- assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/room-7/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);
+ assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/<h2>Valt spelrum<\/h2>/);assert.match(room,/Spelbolag: Valt spelbolag/);assert.doesNotMatch(room,/<h2>room-7<\/h2>|Spelbolag: operator-42/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);
 });
 
 
@@ -154,4 +155,77 @@ test('dealer editor routes gate missing and invalid dealers before mounting thei
    for(const dealer of project.dealers.filter(row=>row.id!=='amira'))assert.ok(html.includes(path+'?dealer='+dealer.id+'&amp;composition=composition-1&amp;operator=operator-42&amp;table=room-7'),file+' keeps context for '+dealer.id);
   }
  } finally {if(previous===undefined)delete globalThis.window;else globalThis.window=previous;}
+});
+
+
+function rehearsalNamesHarness() {
+  const slots = [], effects = [], requests = []; let cursor = 0, queued = [];
+  const input = { ...props, initialDealerId: undefined, initialOperatorSlug: 'johns-spelbolag', initialTableId: 'room-a' };
+  const react = { ...React,
+    useState(initial) { const index = cursor++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial;
+      return [slots[index], value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value; }]; },
+    useCallback: callback => callback,
+    useEffect(fn, deps) { const index = cursor++, previous = effects[index];
+      if (!previous || deps.some((value, i) => value !== previous.deps[i])) queued.push(() => { previous?.cleanup?.(); effects[index] = { deps, cleanup: fn() }; }); },
+  };
+  function ActivityLog() { return null; }
+  const studioTypes = loadTs(new URL('../components/studio-types.ts', import.meta.url));
+  const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url), {
+    react,
+    './activity-log': { ActivityLog },
+    './page-template.mjs': { PageTemplate() { return null; }, publishShellStatus() {} },
+    '../lib/activity-store.mjs': { loadActivities: () => [], saveActivities() {} },
+    './studio-types': { ...studioTypes, requestJson: (path, options) => new Promise((resolve, reject) => requests.push({ path, options, resolve, reject })) },
+  });
+  const flatten = node => !node || typeof node !== 'object' ? [] : [node, ...React.Children.toArray(node.props?.children).flatMap(flatten)];
+  return { input, requests, render() { cursor = 0; queued = []; const tree = ControlActivityPage(input); for (const effect of queued) effect();
+    return flatten(tree).find(node => node.type === ActivityLog); } };
+}
+const namesSnapshot = {
+  operators: [{ id: 'company-john', slug: 'johns-spelbolag', name: 'Johns spelbolag' }, { id: 'company-other', slug: 'other', name: 'Annat bolag' }],
+  rooms: [{ id: 'room-a', name: 'Johannas blackjack', operatorId: 'company-john' }, { id: 'room-b', name: 'Andra rummet', operatorId: 'company-other' }],
+};
+const settleNames = () => new Promise(resolve => setImmediate(resolve));
+
+test('rehearsal uses saved scoped names without replacing the observation identity', async () => {
+  const harness = rehearsalNamesHarness(), before = harness.render();
+  assert.equal(before.props.observationContext.tableLabel, undefined);
+  assert.equal(harness.requests.length, 1);
+  assert.equal(harness.requests[0].path, '/api/admin/resource-lifecycle');
+  assert.equal(harness.requests[0].options.credentials, 'same-origin');
+  assert.equal(harness.requests[0].options.cache, 'no-store');
+  harness.requests[0].resolve(namesSnapshot); await settleNames();
+  const after = harness.render(), context = after.props.observationContext;
+  assert.equal(after.key, before.key, 'loading labels cannot remount the log or disconnect the player');
+  assert.equal(context.tableId, 'room-a'); assert.equal(context.operatorSlug, 'johns-spelbolag');
+  assert.equal(context.tableLabel, 'Johannas blackjack'); assert.equal(context.operatorLabel, 'Johns spelbolag');
+  const { ActivityLog } = loadTs(new URL('../components/activity-log.tsx', import.meta.url));
+  const html = renderToStaticMarkup(React.createElement(ActivityLog, { ...after.props, observationContext: context }));
+  assert.match(html, /<h2>Johannas blackjack<\/h2>/); assert.match(html, /Spelbolag: Johns spelbolag/);
+  assert.doesNotMatch(html, /<h2>room-a<\/h2>|Spelbolag: johns-spelbolag/);
+});
+
+test('rehearsal cannot show another company room name and ignores stale name responses', async () => {
+  const wrongOwner = rehearsalNamesHarness(); wrongOwner.render();
+  wrongOwner.requests[0].resolve({ ...namesSnapshot, rooms: [{ id: 'room-a', name: 'Andra bolagets rum', operatorId: 'company-other' }] }); await settleNames();
+  assert.equal(wrongOwner.render().props.observationContext.tableLabel, undefined);
+  const harness = rehearsalNamesHarness(); harness.render();
+  harness.input.initialTableId = 'room-b'; harness.input.initialOperatorSlug = 'other';
+  const changed = harness.render(); assert.equal(harness.requests[0].options.signal.aborted, true);
+  harness.requests[0].resolve(namesSnapshot); await settleNames();
+  assert.equal(harness.render().props.observationContext.tableLabel, undefined);
+  harness.requests[1].resolve(namesSnapshot); await settleNames();
+  const after = harness.render();
+  assert.equal(after.key, changed.key); assert.equal(after.props.observationContext.tableLabel, 'Andra rummet');
+  assert.equal(after.props.observationContext.operatorLabel, 'Annat bolag');
+});
+
+test('rehearsal keeps its selected IDs when names are unavailable or not usable', async () => {
+  for (const snapshot of [null, { operators: [], rooms: [] }, { operators: namesSnapshot.operators, rooms: [{ id: 'room-a', name: 'room-a', operatorId: 'company-john' }] }]) {
+    const harness = rehearsalNamesHarness(), before = harness.render();
+    if (snapshot === null) harness.requests[0].reject(new Error('unavailable')); else harness.requests[0].resolve(snapshot);
+    await settleNames(); const after = harness.render();
+    assert.equal(after.key, before.key); assert.equal(after.props.observationContext.tableId, 'room-a');
+    assert.equal(after.props.observationContext.tableLabel, undefined);
+  }
 });
