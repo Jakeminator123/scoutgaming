@@ -179,7 +179,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
           {fullFrame?<p className={styles.hint}>Inbakat bord och bakgrund · välj frilagt klipp för separata lager.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
-          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing}/>
+          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing}/>
           {localError?<p role="alert">{localError}</p>:null}
         </section>
         <section className={styles.controls} aria-label="Tre lager">

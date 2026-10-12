@@ -21,7 +21,7 @@ function fixture({ kind = 'base', standardBase = true, repeat = false, frameApi 
   const same = (a, b) => a && b && a.length === b.length && a.every((value, i) => Object.is(value, b[i]));
   const react = { useRef(initial) { return hooks[cursor++] ??= { current: initial }; },
     useEffect(effect, deps) { const i = cursor++; if (!hooks[i] || !same(hooks[i].deps, deps)) { const old = hooks[i]; hooks[i] = { deps }; effects.push(() => { old?.cleanup?.(); hooks[i].cleanup = effect(); }); } } };
-  const module = { exports: {} }; vm.runInNewContext(code, { module, exports: module.exports, Promise, require: name => name === 'react' ? react : require(name) });
+  const module = { exports: {} }; vm.runInNewContext(code, { module, exports: module.exports, Promise, require: name => name === 'react' ? react : name === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : require(name) });
   function nodes(node, found = []) { if (Array.isArray(node)) node.forEach(child => nodes(child, found)); else if (node?.props) { found.push(node); nodes(node.props.children, found); } return found; }
   function render() { cursor = 0; tree = module.exports.LabIdleSurface(props); nodes(tree).find(node => node.type === 'video').props.ref.current = video; for (const effect of effects.splice(0)) effect(); }
   render();

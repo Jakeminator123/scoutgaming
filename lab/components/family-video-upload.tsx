@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
 import { kindForEvent, MAX_VIDEO_BYTES, type VideoCompositing, type VideoMetadata } from '../lib/video-intake.mjs';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
-import { VideoCompositingFields } from './video-metadata-fields';
+import { VideoCompositingFields,DealerFramingFields } from './video-metadata-fields';
+import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../web/public/dealer-framing.mjs';
+import {DealerClipPreview} from './dealer-video-surface';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
@@ -17,7 +19,8 @@ export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyI
 }) {
   const families = (inventory.families ?? []).filter(row => !dealerId || row.dealerId === dealerId);
   const [familyId, setFamilyId] = useState(families.some(row => row.id === initialFamilyId) ? initialFamilyId! : '');
-  const [compositing, setCompositing] = useState<VideoCompositing>({ mode: 'opaque' });
+  const [compositing, setCompositing] = useState<VideoCompositing>({...DEFAULT_GREEN_SCREEN});
+  const [framing,setFraming]=useState({...DEFAULT_DEALER_FRAMING});
   const [label, setLabel] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [localUrl, setLocalUrl] = useState('');
@@ -50,7 +53,7 @@ export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyI
       familyId: family.id, dealerId: family.dealerId, eventId: family.eventId,
       situation: family.playbackType === 'idle-pool' ? '' : family.situation,
       kind: kindForEvent(definition), role: 'alternative', playback: 'once',
-      label: label.trim() || clipSituationLabel(family.eventId, family.situation), notes: '', compositing,
+      label: label.trim() || clipSituationLabel(family.eventId, family.situation), notes: '', compositing,framing,
     };
     setBusy(true); onBusyChange?.(true); setError(''); setNotice(''); setSaved(null); setProgress(0);
     const controller = new AbortController();nativeRequest.current = controller;
@@ -101,7 +104,8 @@ export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyI
         {families.map(row => <option key={row.id} value={row.id}>{clipSituationLabel(row.eventId, row.situation)}</option>)}
       </select></label>
       <VideoCompositingFields value={compositing} onChange={setCompositing} />
-      {localUrl ? <video src={localUrl} controls playsInline preload="metadata" aria-label="Förhandsvisa vald fil" style={{ width: '100%', maxHeight: 420 }} /> : null}
+      <DealerFramingFields value={framing} onChange={setFraming}/>
+      {localUrl ? <DealerClipPreview url={localUrl} framing={framing} compositing={compositing}/> : null}
       {!families.length ? <p role="status">Inga egna klippfamiljer registrerade för vald dealer. Lägg in klippet via Klippbibliotek.</p> : null}
       <button type="submit" className="primary-button" disabled={disabled || busy || !file || !family}>{busy ? 'Sparar…' : 'Spara klipp'}</button>
     </fieldset></form>

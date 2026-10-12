@@ -68,7 +68,17 @@ På Dealers & klipp kan du lägga till en egen dealer, exempelvis **Johanna**, o
 Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
 och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett nytt
 media-ID utan att ta över en annan dealers registrering. Varje film
-har ett eget val **Fullbild / grönskärm** med tröskel, mjukhet och färgspill.
+har ett eget val **Grön bakgrund / Bakgrund inbakad** med tröskel, mjukhet och färgspill.
+Nya videouppladdningar föreslår grön bakgrund. **Bakgrund inbakad** är ett aktivt val
+för filmer vars miljö ska behållas. Under **Bildformat och bakgrund · ändra** kan du
+rätta valet även efter uppladdning, både i biblioteket och vid den egna grundloopen.
+Mobilklipp får automatiskt gröna sidor i datorramen; mobilramen beskär breda klipp
+från sidorna. Förstoring och placering sparas med klippet och används i båda vyerna.
+Om dealern är för liten redan i källfilen: öka **Förstoring**, justera placeringen
+och jämför Dator/Mobil. **Visa utan grön bakgrund** visar resultatet på rutmönster
+redan vid första filvalet. Originalfilen behålls. Spara filinställningarna och
+publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar behåller
+sitt tidigare bildläge.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 En egen dealer flyttas till **Papperskorg för dealers** under Hantera dealers. Spara utkastet först. Servern flyttar dealer, klippval och uppladdade klipp tillsammans; **Återställ dealer och klipp** återställer samma innehåll. Redan arkiverade enskilda klipp stannar i papperskorgen. **Radera dealer permanent** tar bort hela den arkiverade dealern och dess filer efter en separat kontroll och bekräftelse. Det går tidigast 15 minuter efter arkiveringen, så gamla uppladdningstillåtelser hinner upphöra. Vid ett delvis lagringsfel visas **Slutför radering**; dealern går då inte att återställa och inga redan raderade filer återuppladdas. Presentationer, spelrum, publicerade paket och aktiverat AI-tal kan hindra borttagning. Grunddealerna tillhör den skyddade originalbanken.
 

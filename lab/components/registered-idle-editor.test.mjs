@@ -24,8 +24,8 @@ function harness(file,read){
     useState(initial){const index=stateIndex++;if(!(index in values))values[index]=typeof initial==='function'?initial():initial;return [values[index],value=>values[index]=typeof value==='function'?value(values[index]):value];},
     useEffect(run,deps){const index=effectIndex++,old=effects[index];effects[index]={...old,run,deps,changed:!old||!deps||deps.some((value,key)=>old.deps?.[key]!==value)};}};
   const SharedEditor=()=>null;
-  const mocks={'../../presentation-runtime/registered-idle-policy.mjs':registered,'../../presentation-runtime/registered-idle.mjs':ownIdle,
-    '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../lib/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor}};
+  const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../presentation-runtime/registered-idle-policy.mjs':registered,'../../presentation-runtime/registered-idle.mjs':ownIdle,
+    '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../lib/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor},'./presentation-frame':{PresentationFrame:({children})=>children}};
   const output=transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{filename:file,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}};
   vm.runInNewContext(output.code,{module,exports:module.exports,AbortController,structuredClone,setTimeout,clearTimeout,

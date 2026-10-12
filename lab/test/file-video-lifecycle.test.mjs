@@ -29,7 +29,8 @@ function mount(playId = 1) {
   vm.runInNewContext(compiled.code, { module, exports: module.exports, performance: { now: () => clock },
     window: { setInterval(fn) { timers.set(++nextTimer, fn); return nextTimer; }, clearInterval(id) { timers.delete(id); } },
     require: name => name === 'react' ? react : require(name) });
-  function render(patch = {}) { props = { ...props, ...patch }; cursor = 0; tree = module.exports.FileVideo(props); tree.props.ref.current = element; for (const effect of effects.splice(0)) effect(); }
+  function findVideo(node) { if (node?.type === 'video') return node; return React.Children.toArray(node?.props?.children).map(findVideo).find(Boolean); }
+  function render(patch = {}) { props = { ...props, ...patch }; cursor = 0; tree = findVideo(module.exports.FileVideo(props)); assert.ok(tree, 'the real video remains the playback clock'); tree.props.ref.current = element; for (const effect of effects.splice(0)) effect(); }
   render();
   return { receipts, element, render, get handlers() { return tree.props; }, get failures() { return failures; }, get ends() { return ends; },
     poll(ms = 250) { clock += ms; for (const timer of timers.values()) timer(); },

@@ -7,10 +7,11 @@ import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
 import type {IdlePolicy} from '../lib/idle-policy.mjs';
 import type {StudioProject} from '../lib/studio-model.mjs';
 import type {VideoInventory} from './studio-types';
+import {DealerFileSettings} from './dealer-file-settings';
 
-export function RegisteredIdleEditor({project,inventory,dealerId,blocked,onChange,onBusyChange}:{
+export function RegisteredIdleEditor({project,inventory,dealerId,blocked,onChange,onBusyChange,onInventory}:{
   project:StudioProject;inventory:VideoInventory;dealerId:string;blocked:boolean;
-  onChange:(policy:IdlePolicy)=>void;onBusyChange:(busy:boolean)=>void;
+  onChange:(policy:IdlePolicy)=>void;onBusyChange:(busy:boolean)=>void;onInventory?:(inventory:VideoInventory)=>void;
 }) {
   const policy=registeredIdlePolicy(project,dealerId);
   const baseline=ownDealerIdle(project,inventory,dealerId);
@@ -39,6 +40,7 @@ export function RegisteredIdleEditor({project,inventory,dealerId,blocked,onChang
     }
   }
   return <section aria-label="Schema för egen grundloop">
+    {baseline&&onInventory?<DealerFileSettings key={baseline.id+JSON.stringify(baseline.classification)} video={baseline} disabled={blocked||busy} onSaved={onInventory} onBusyChange={onBusyChange}/>:null}
     {!policy?<><p>Det valda basklippet loopar tills en spelhändelse tar över. Lägg till ett schema för fler basklipp eller variationer.</p>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={blocked||busy||!baseline} onClick={()=>void configure()}>{busy?'Läser klipplängd…':'Anpassa grundloop'}</button></>:null}
     {mismatched?<><p role="alert">Valt basklipp har ändrats. Använd det i schemat innan du publicerar. Tidigare basklipp ersätts; variationernas inställningar behålls.</p>

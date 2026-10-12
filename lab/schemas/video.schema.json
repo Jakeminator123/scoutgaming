@@ -131,6 +131,32 @@
       "enum": [
         "audio"
       ]
+    },
+    "framing": {
+      "type": "object",
+      "required": [
+        "scale",
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 2
+        },
+        "y": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 2
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 6
+        }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
