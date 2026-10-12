@@ -4,6 +4,19 @@
 
 ### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
 
+Fortsatt livekontroll efter 77b3de84: CI är grön, Vercel READY och Render LIVE.
+Intern navigering PAOW → Svarsbibliotek → Grundloop bevarar dealer och scen.
+Direktöppning från webbläsaren ger däremot fortfarande SSR-fel 403/HTTP 500,
+även genom den interna /studio/control-vägen. Vanlig omladdning fungerar.
+Detta är ett öppet acceptansfel; ingen komplett direktlänksacceptans hävdas.
+
+En begränsad transportdiagnos visar nu fasta enum-/booleanflaggor vid middleware
+och avvisad sidnormalisering. Den bevarar samtliga request- och N1-kontroller
+och innehåller inga cookie-, Origin-, URL-, query-, identitets- eller tokenvärden.
+Felvyn använder generell Studio-text även i produktion. Webbläsarens
+navigate/document/cross-site är verifierat; en intern transport som ändrar
+metadata är ännu en hypotes. Nästa steg är att jämföra mottagarflaggorna live.
+
 12 oktober: PAOW:s sparade basklipp är dealer_desktop, 1920×1080 och 5 sekunder.
 I den inloggade produktionsvyn verifierades byte till det äldre porträttklippet
 och tillbaka som osparat utkast, därefter omladdning till sparat desktopklipp.
@@ -32,7 +45,7 @@ täcker dealerregistrering, livscykel och borttagning.
 
 Scenvalet (lane) följer nu dealerflikar, utgående klipplänkar och webbläsarhistorik.
 33 riktade navigeringsprov passerar. Direktlänkar till kända Control-dokument
-normaliserar webbläsarens navigeringsmetadata före Nexts interna rewrite.
+har en snäv normalisering av webbläsarens navigeringsmetadata före routing-/SSR-gränsen.
 Undantaget gäller endast GET-dokument utan body eller server action; Origin,
 cookie, N1-behörighet och API-kontroller behålls. 24 request-/navigeringsprov och
 provet mot den verkliga middleware-kedjan passerar. Två oberoende granskningar

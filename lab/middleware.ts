@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { platformConfiguration, platformRoute, platformBackendHeaders } from '../apps/croupier-frontend/lib/platform-routing.mjs';
-import { studioDocumentNavigationHeaders } from './lib/studio-native-request.mjs';
+import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from './lib/studio-native-request.mjs';
 
 // Services route Studio documents directly to this app. Retain the same exact
 // transport boundary that the separate frontend previously enforced.
 export function middleware(request: NextRequest) {
+  const metadata = studioDocumentNavigationMetadata(request);
+  if (metadata.controlDocument && metadata.crossSite) console.info('studio_document_transport', {
+    stage: 'middleware', ...metadata,
+  });
   if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return NextResponse.next();
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });

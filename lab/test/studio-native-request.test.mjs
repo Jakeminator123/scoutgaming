@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server.js';
-import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest, studioDocumentNavigationHeaders } from '../lib/studio-native-request.mjs';
+import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest, studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from '../lib/studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest } from '../lib/studio-native-runtime.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
@@ -141,7 +141,7 @@ test('only the room preparation GET retains two exact query keys through the pub
   assert.throws(() => normalizeNativeStudioRequest(new NextRequest(labOrigin + '/api/admin/presentation-room' + query, { headers: { ...forwarded, origin: 'https://evil.invalid' } }), config), error => error.statusCode === 403);
 });
 
-test('known staff document navigation remains readable after Next drops mode and destination during rewrite',()=>{
+test('known staff document navigation remains readable when transport omits mode and destination',()=>{
   const navigation={...forwarded,'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
   for(const path of ['/control','/control/clips','/control/replies','/studio/control/replies']) {
     const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
@@ -163,4 +163,28 @@ test('known staff document navigation remains readable after Next drops mode and
     assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{headers})).get('sec-fetch-site'),'cross-site');
   }
   assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{method:'POST',headers:navigation,body:'mutation'})).get('sec-fetch-site'),'cross-site');
+});
+
+test('transport diagnostics keep only fixed enums and booleans while rejected reads stay rejected',()=>{
+  const privateValue='never-log-fixture-private';
+  const request=new Request(publicOrigin+'/control/replies?dealer='+privateValue,{headers:{...forwarded,origin:privateValue,cookie:privateValue,'sec-fetch-mode':privateValue,'sec-fetch-dest':privateValue,'sec-fetch-site':'cross-site','next-action':privateValue}});
+  const metadata=studioDocumentNavigationMetadata(request);
+  assert.deepEqual(metadata,{controlDocument:true,mode:'other',destination:'other',crossSite:true,originPresent:true,actionPresent:true});
+  assert.equal(JSON.stringify(metadata).includes(privateValue),false);
+  assert.throws(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+'/control/replies',{headers:request.headers}),config),error=>{
+    assert.equal(error.statusCode,403);assert.deepEqual(error.studioNavigation,{stage:'ssr',...metadata});assert.equal(JSON.stringify(error.studioNavigation).includes(privateValue),false);return true;
+  });
+  const absent=studioDocumentNavigationMetadata(new Request(publicOrigin+'/control/replies'));
+  assert.equal(absent.mode,'missing');assert.equal(absent.destination,'missing');
+});
+
+test('rejected SSR reads built with a synthetic root URL expose fixed metadata without relaxing the guard',()=>{
+  for(const path of ['/','/studio']){
+    const request=new Request(publicOrigin+path,{headers:{cookie:'private-fixture-only','sec-fetch-mode':'cors','sec-fetch-dest':'document','sec-fetch-site':'cross-site'}});
+    assert.throws(()=>normalizeNativeStudioPageRequest(request,config),error=>{
+      assert.equal(error.statusCode,403);
+      assert.deepEqual(error.studioNavigation,{stage:'ssr',controlDocument:false,mode:'cors',destination:'document',crossSite:true,originPresent:false,actionPresent:false});
+      assert.equal(JSON.stringify(error.studioNavigation).includes('private-fixture-only'),false);return true;
+    });
+  }
 });

@@ -2,8 +2,23 @@ import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
 
-// Apply the existing document-navigation exception before Next's internal
-// rewrite can discard Fetch Metadata. This is only a known staff document;
+// Only fixed enums and booleans are exposed in transport diagnostics. Never
+// return header values, URLs, queries, cookies, identities or credentials.
+export function studioDocumentNavigationMetadata(request) {
+  const headers = request.headers;
+  const mode = headers.get('sec-fetch-mode'), destination = headers.get('sec-fetch-dest');
+  return {
+    controlDocument: resolveWorkspaceSurfacePath(new URL(request.url).pathname)?.surface === 'control'
+      && request.method === 'GET' && request.body === null,
+    mode: mode === null ? 'missing' : ['navigate','cors'].includes(mode) ? mode : 'other',
+    destination: destination === null ? 'missing' : ['document','iframe'].includes(destination) ? destination : 'other',
+    crossSite: headers.get('sec-fetch-site') === 'cross-site',
+    originPresent: headers.has('origin'), actionPresent: headers.has('next-action'),
+  };
+}
+
+// Apply the existing document-navigation exception at the middleware boundary.
+// This is only a known staff document;
 // API/action/body requests and Origin retain their original protections.
 export function studioDocumentNavigationHeaders(request) {
   const headers = new Headers(request.headers);
@@ -81,7 +96,14 @@ export function normalizeNativeStudioPageRequest(request, config) {
     && url.pathname !== '/studio' && !url.pathname.startsWith('/studio/')) {
     url.pathname = '/studio' + (url.pathname === '/' ? '' : url.pathname);
   }
-  return normalizeNativeStudioRequest(new Request(url, { method: 'GET', headers,
-    signal: request.signal, redirect: request.redirect, cache: request.cache,
-    credentials: request.credentials, mode: request.mode, referrerPolicy: request.referrerPolicy }), config);
+  try {
+    return normalizeNativeStudioRequest(new Request(url, { method: 'GET', headers,
+      signal: request.signal, redirect: request.redirect, cache: request.cache,
+      credentials: request.credentials, mode: request.mode, referrerPolicy: request.referrerPolicy }), config);
+  } catch (error) {
+    const metadata = studioDocumentNavigationMetadata(request);
+    if (error?.statusCode === 403 && metadata.crossSite)
+      error.studioNavigation = { stage: 'ssr', ...metadata };
+    throw error;
+  }
 }
