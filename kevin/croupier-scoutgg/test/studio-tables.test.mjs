@@ -56,3 +56,12 @@ test('Table Studio never takes a slug that is already a room people play at', ()
   assert.equal(tables.create({ ...table, name: 'Astrid' }).slug, 'astrid-2');
   assert.equal(tables.create({ ...table, name: 'Party' }).slug, 'party-2');
 });
+
+test('each back office account sees only the tables it built (Kevin 12 Oct: aggregators see their own account)', () => {
+  const tables = createStudioTables(path.join(mkdtempSync(path.join(tmpdir(), 'studio-')), 't.json'));
+  const a = tables.create(table, 'agg@one.com'), b = tables.create({ ...table, name: 'Other' }, 'agg@two.com');
+  tables.create({ ...table, name: 'Nobody' });
+  assert.deepEqual(tables.ownedBy('agg@one.com').map(t => t.slug), [a.slug]);
+  assert.deepEqual(tables.ownedBy('agg@two.com').map(t => t.slug), [b.slug]);
+  assert.deepEqual(tables.ownedBy(null), []);
+});

@@ -358,10 +358,19 @@ async function api(req, res, route) {
     res.setHeader("Set-Cookie", bo.logoutCookie(req.headers["x-forwarded-proto"] === "https"));
     return json(res, 200, { ok: true });
   }
+  // The signed-in account's own tables (Kevin 12 Oct: an aggregator only sees its own account).
+  if (route === "studio/mine" && req.method === "GET") {
+    let who;
+    try { who = await bo.user(req.headers); } catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }
+    if (!who) return json(res, 401, { error: "Sign in required" });
+    return json(res, 200, { tables: studioTables.ownedBy(who.user).map(({ owner, logo, ...t }) => ({ ...t, url: studioTables.gameUrl(t) })) });
+  }
   if (route === "studio/table") {
     if (req.method === "GET") {
       const t = studioTables.get(new URL(req.url, "http://x").searchParams.get("slug") ?? "");
-      return t ? json(res, 200, { ...t, url: studioTables.gameUrl(t) }) : json(res, 404, { error: "No such table" });
+      if (!t) return json(res, 404, { error: "No such table" });
+      const { owner, ...pub } = t;   // the share link is public, the owner's account is not
+      return json(res, 200, { ...pub, url: studioTables.gameUrl(pub) });
     }
     if (req.method !== "POST") return json(res, 405, { error: "Use GET or POST" });
     // Creating a table needs a signed-in back office user; the cookie-authenticated POST must come from this site.
@@ -374,7 +383,7 @@ async function api(req, res, route) {
     try {
       const input = await body(req, LOGO_MAX + 50000);
       if ((who.hiddenDealers ?? []).includes(input?.dealer)) return json(res, 403, { error: "That dealer is not available for this account" });
-      const t = studioTables.create(input); return json(res, 201, { ...t, url: studioTables.gameUrl(t) });
+      const { owner, ...t } = studioTables.create(input, who.user); return json(res, 201, { ...t, url: studioTables.gameUrl(t) });
     }
     catch (e) { return json(res, 400, { error: e.message }); }
   }

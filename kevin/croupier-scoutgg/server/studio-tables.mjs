@@ -35,7 +35,8 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   try { tables = JSON.parse(readFileSync(file, "utf8")); } catch {}
   const persist = () => { writeFileSync(file + ".tmp", JSON.stringify(tables)); renameSync(file + ".tmp", file); };
 
-  function create(input = {}) {
+  // owner: the back office account that built it (Kevin 12 Oct: an aggregator only sees its own account).
+  function create(input = {}, owner = null) {
     const config = {};
     for (const [key, allowed] of Object.entries(STUDIO_CHOICES)) {
       if (!allowed.includes(input[key])) throw new Error(`Invalid ${key}`);
@@ -51,7 +52,7 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
     const base = slugOf(config.name);
     let slug = base;
     for (let n = 2; tables[slug] || reserved(slug); n++) slug = `${base}-${n}`;
-    tables[slug] = { ...config, slug, created: new Date().toISOString() };
+    tables[slug] = { ...config, slug, created: new Date().toISOString(), ...(owner ? { owner } : {}) };
     persist();
     return tables[slug];
   }
@@ -63,5 +64,8 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   // The game URL for a saved table: its own shared-table session, so every table plays apart.
   const gameUrl = t => `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
 
-  return { create, get, gameUrl, limitsFor };
+  // A back office account's own tables, newest first.
+  const ownedBy = owner => Object.values(tables).filter(t => owner && t.owner === owner).sort((a, b) => b.created.localeCompare(a.created));
+
+  return { create, get, gameUrl, limitsFor, ownedBy };
 }
