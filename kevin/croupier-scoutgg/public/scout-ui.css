@@ -22,6 +22,8 @@ button:disabled { opacity:.36; }
 /* ...and printed on the clean felt between the filmed arc and box 4 (1080 × 1920 frame, under boxes and cards). */
 .felt-brand { position:absolute; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; opacity:.8; }
 .felt-brand[hidden] { display:none; }
+.felt-brand-hands { position:absolute; z-index:2; pointer-events:none; }
+.felt-brand-hands[hidden] { display:none; }
 /* The felt's printed brand slot (felt-logo.js): Scout wordmark by default, the operator's logo when set, both in one
    ink so they read as printed on the felt. The felt keeps its own dark shade in every colour (table-style.js), so the ink is cream. */
 .felt-brand { opacity:.5; --felt-ink:#efe3c2; }

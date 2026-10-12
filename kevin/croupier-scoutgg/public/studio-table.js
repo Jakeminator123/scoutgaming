@@ -1,6 +1,7 @@
 // A Table Studio table (?table=<slug>): the operator's logo in the header and/or printed on the felt.
 // Its felt colour is applied by table-style.js; its limits and name come with the table state (shared-table.js).
 import { readLogo } from './felt-logo.js';
+import { keepHandsOverFeltBrand } from './felt-brand-hands.js';
 const slug = new URLSearchParams(location.search).get('table');
 if (slug && /^[a-z0-9_-]{1,40}$/.test(slug)) {
   try {
@@ -16,6 +17,7 @@ if (slug && /^[a-z0-9_-]{1,40}$/.test(slug)) {
       // The felt carries a printed brand slot: the Scout wordmark until the operator's logo replaces it.
       // SVG elements have no .hidden property: the attribute itself has to go.
       document.querySelector('#feltBrand').removeAttribute('hidden');
+      keepHandsOverFeltBrand();   // Astrid's hands stay above the printed brand (felt-brand-hands.js)
       // Only a raster data URL (the server refuses anything else); set as a source, never as markup.
       if (typeof t.logo === 'string' && /^data:image\/(png|jpeg|webp);base64,/.test(t.logo)) {
         const ink = await readLogo(t.logo);
