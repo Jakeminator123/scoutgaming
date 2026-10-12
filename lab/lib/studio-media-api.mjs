@@ -74,6 +74,8 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         if(Object.keys(body).sort().join(',')!=='archived,id,previous,sha256'||typeof body.archived!=='boolean')fail('studio_invalid_request',400);
         validateMediaId(body.id);
         if(typeof mutationTransaction!=='function'||typeof repository?.findMediaReferences!=='function')fail('studio_mutation_transaction_required');
+        const proposedMetadata={...body.previous,archived:body.archived};
+        const presentationMutation={metadata:body.archived?proposedMetadata:writeMetadata(proposedMetadata)};
         await mutationTransaction(async()=>{
           await refresh();
           await repository.transaction(async()=>{
@@ -86,8 +88,8 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
             if(body.archived&&usage.references.some(row=>!row.historical))fail('studio_media_in_use',409);
             const metadata={...current.classification,archived:body.archived};
             await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.archived?metadata:writeMetadata(metadata),actor});
-          });
-        });
+          },{presentationMutation});
+        },{presentationMutation});
         return json(await videoRegistry());
       }
       if (baseOverride === undefined && path === `${base}/classify` && request.method === 'POST') {

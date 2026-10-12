@@ -407,6 +407,18 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
+**PAOW: grundloopen väljs och kopplas loss uttryckligen, 12 oktober (`jakob/paow-media-controls`).**
+Merge-samordnarens patch, levererad av orkestratorn. Studio väljer och kopplar
+loss grundloopen uttryckligen. Röst, andra dealers och filbytes bevaras, och
+readiness-beskrivningen för arkivering och återställning är normaliserad.
+Behörighet, revisionskontroll och referensskydd är oförändrade
+(`findMediaReferences`, `expectedRevision`). Prov: 42 API- och readinessprov,
+50 UI-prov och full commit-hook. Separat datautfall på Jakobs uttryckliga
+bekräftelse: 20 av 26 registrerade PAOW-klipp är permanent raderade genom appens
+beroendekontroll. Sex skyddas fortfarande av fryst publiceringshistorik, och
+ingen spärr kringgicks. Det är inget nytt kvitto på media- eller
+talacceptans.
+
 **Kompositorn ligger i `packages/presentation`, 12 oktober.** Paketet äger
 `compositor/`, `docs/` och `preview/`. Publika adresser
 (`/composition-runtime/*`, `/layer-packs/*`, Studio `/preview/*`) och
