@@ -19,6 +19,39 @@ function unpaidTrace(phase) {
   const trace = globalThis[Symbol.for('croupier.unpaid-stream-diagnostics')];
   if (typeof trace === 'function') { try { trace(phase, {}); } catch {} }
 }
+const PCM_LIMIT = 24000 * 2 * 25;
+function startAudioPrefetch(open, signal) {
+  const chunks = [], waiters = [];
+  let done = false, error = null, bytes = 0;
+  const wake = () => { const pending = waiters.splice(0); for (const resolve of pending) resolve(); };
+  signal.addEventListener('abort', wake, { once: true });
+  const task = (async () => {
+    try {
+      for await (const pcm of open()) {
+        signal.throwIfAborted();
+        const length = pcm?.byteLength;
+        if (!Number.isInteger(length) || length < 1 || length % 2 || bytes + length > PCM_LIMIT) throw Error('Audio duration exceeded');
+        chunks.push(pcm); bytes += length; wake();
+      }
+      done = true;
+    } catch (failure) { error = failure; }
+    finally { wake(); }
+  })();
+  return {
+    task,
+    get error() { return error; },
+    async *read() {
+      let index = 0;
+      for (;;) {
+        while (index < chunks.length) yield chunks[index++];
+        if (done) return;
+        if (error) throw error;
+        signal.throwIfAborted();
+        await new Promise(resolve => waiters.push(resolve));
+      }
+    },
+  };
+}
 function fail(code, statusCode = 503) { throw Object.assign(new Error(code), { code, statusCode }); }
 function privateDirectory(value) {
   if (typeof value !== 'string' || !isAbsolute(value)) return false;
@@ -48,11 +81,16 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
   const configuration = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR, origin,
     workerSecret: env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, ticketSecret: env.CROUPIER_SPEECH_STREAM_TICKET_SECRET,
     apiKey: env.CARTESIA_API_KEY, voiceId: ASTRID_VOICE_PROFILE.voiceId, modelId: ASTRID_VOICE_PROFILE.modelId };
-  if (cloud) configuration.session = {
-    apiKey: env.RUNPOD_API_KEY, endpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
-    reserveUsd: env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD,
-    dailyBudgetUsd: env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,
-  };
+  if (cloud) {
+    configuration.session = {
+      apiKey: env.RUNPOD_API_KEY, endpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
+      reserveUsd: env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD,
+      dailyBudgetUsd: env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD,
+    };
+    // Cartesia may start while the already-requested GPU session is connecting.
+    // PCM stays in this process until the browser ticket is authenticated.
+    configuration.overlapAudio = true;
+  }
   const secret = v => typeof v === 'string' && v.length >= 32 && v.length <= 2048 && !/\s/.test(v);
   const sessionConfigured = !cloud || (typeof configuration.session.apiKey === 'string' && configuration.session.apiKey.length > 0
     && !/\s/.test(configuration.session.apiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(configuration.session.endpointId ?? '')
@@ -65,8 +103,11 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
 }
 
 /** No websocket dependency is loaded unless this opt-in service is constructed.
- * prepare reserves durable request identity; TTS starts only on an authenticated
- * browser attachment. Normal HTTP result completion does not own this lifetime.
+ * prepare reserves durable request identity. Without a cloud GPU session, TTS
+ * starts only on an authenticated browser attachment. With overlapAudio, TTS
+ * starts while that session connects and is discarded if the ticket never
+ * authenticates. PCM enters the relay only after that authentication.
+ * Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
   resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
@@ -159,7 +200,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
   };
   const cancel = record => {
     if (!records.has(record.id)) return;
-    record.controller.abort(); record.handle?.abort(); forget(record);
+    record.controller.abort(); record.stopPrefetch?.(); record.handle?.abort(); forget(record);
     if (journal && record.journalClaim && !record.journalSettled) {
       record.journalSettled = true;
       track((async () => { await journal.failRequest({ key:record.journalClaim.key,
@@ -230,13 +271,15 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         const ttsStartedAt = performance.now();
         let firstAudio = true;
         unpaidTrace('tts_source_before');
-        if (journal) {
+        if (journal && !record.submissionMarked) {
           await track((async () => journal.markRequestSubmissionStarted({ key:record.journalClaim.key, lease:await ownership.get() }))());
+          record.submissionMarked = true;
           await fresh(record);
         }
-        for await (const pcm of (record.runtime?.source ?? source)({ text: record.input.text, signal, beforeCostly: async () => {
+        const audio = record.audioPrefetch ? record.audioPrefetch.read() : (record.runtime?.source ?? source)({ text: record.input.text, signal, beforeCostly: async () => {
           await fresh(record); if (ownership) await ownership.get(); await fresh(record);
-        } })) {
+        } });
+        for await (const pcm of audio) {
           await fresh(record);
           if (firstAudio) {
             firstAudio = false;
@@ -315,6 +358,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       preparations.set(input.owner, preparation);
       inFlight.add(preparation);
       const current = () => { input.signal?.throwIfAborted(); if (preparations.get(input.owner) !== preparation) fail('generated_speech_stream_cancelled', 499); };
+      let prefetchAbort = null, published = false;
       try {
       current(); await input.beforeCostly(); current();
       const runtime = input.dealerId === 'astrid' ? null : await dealerRuntime.prepare(input);
@@ -328,7 +372,19 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       if (owners.has(input.owner)) cancel(owners.get(input.owner));
       preparation.journalClaim = await reserve(input, key, fingerprint);
       current(); await input.beforeCostly(); current();
-      let workerId;
+      let workerId, audioPrefetch = null;
+      if (configuration.overlapAudio === true && sessionManager) {
+        if (journal) {
+          await track((async () => journal.markRequestSubmissionStarted({ key:preparation.journalClaim.key, lease:await ownership.get() }))());
+          preparation.submissionMarked = true;
+          current();
+        }
+        prefetchAbort = new AbortController();
+        const prefetchSignal = input.signal ? AbortSignal.any([input.signal, prefetchAbort.signal]) : prefetchAbort.signal;
+        audioPrefetch = startAudioPrefetch(() => (runtime?.source ?? source)({ text: input.text, signal: prefetchSignal, beforeCostly: async () => {
+          current(); await input.beforeCostly(); await runtime?.assertFresh(); current();
+        } }), prefetchSignal);
+      }
       if (sessionManager) {
         const ready = await sessionManager.ensure({ signal: input.signal, ...(runtime ? {avatar:runtime.avatar} : {}), beforeCostly: async () => { current(); await input.beforeCostly(); await runtime?.assertFresh(); current(); } });
         workerId = ready?.workerId;
@@ -336,19 +392,21 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         current(); await input.beforeCostly(); current();
         if (!relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       }
+      if (audioPrefetch?.error) throw audioPrefetch.error;
       const id = randomBytes(16).toString('hex'), controller = new AbortController(), issuedAt = Date.now(), expiresAt = issuedAt + ticketLifetimeMs;
       const descriptor = { schemaVersion: runtime ? 2 : 1, kind: 'generated-speech-stream', id, requestId: input.requestId, dealerId: input.dealerId, exactText: input.text,
         textSha256: digest(input.text), reviewStatus: 'pending', url: '/speech-stream',
         ticket: issueTicket(ticketSecret, { userId: digest(input.owner), sessionId: id, ttlSeconds: ticketLifetimeMs / 1000 }, issuedAt), expiresAt,
         ...(runtime ? {profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,compositing:runtime.compositing} : {}) };
-      const record = { id, descriptor, input, controller, runtime, workerId, state: 'prepared', journalClaim:preparation.journalClaim, libraryChunks:{audio:[],video:[]}, libraryBytes:{audio:0,video:0} };
-      records.set(id, record); owners.set(input.owner, record);
+      const record = { id, descriptor, input, controller, runtime, workerId, state: 'prepared', journalClaim:preparation.journalClaim, submissionMarked:preparation.submissionMarked === true, audioPrefetch, stopPrefetch: prefetchAbort ? () => prefetchAbort.abort() : null, libraryChunks:{audio:[],video:[]}, libraryBytes:{audio:0,video:0} };
+      records.set(id, record); owners.set(input.owner, record); published = true;
       record.externalAbort = () => cancel(record);
       input.signal?.addEventListener('abort', record.externalAbort, { once: true });
       record.deadline = setTimeout(() => cancel(record), ticketLifetimeMs); record.deadline.unref?.();
       return descriptor;
       } catch (error) {
-        if (journal && preparation.journalClaim) {
+        if (!published) prefetchAbort?.abort();
+        if (journal && preparation.journalClaim && !published) {
           try { await journal.failRequest({ key:preparation.journalClaim.key, lease:await ownership.get(), safeCode:'generated_speech_stream_failed' }); } catch {}
         }
         releaseOwner(input.owner);

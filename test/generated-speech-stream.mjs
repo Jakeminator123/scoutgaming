@@ -10,7 +10,7 @@ const secret = 'isolated-stream-secret-at-least-32-characters';
 async function fixture(t, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-test-'));
   let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0, available = options.initialAvailable ?? 1;
-  const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model' };
+  const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model', ...(options.overlapAudio ? { overlapAudio: true } : {}) };
   const services = [];
   const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
   const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
@@ -138,7 +138,9 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   const cloud = { ...env, CROUPIER_CLOUD_RUNTIME: '1', CROUPIER_GENERATED_SPEECH_PREVIEW: '', CROUPIER_CLOUD_GENERATED_SPEECH: '1', NODE_ENV: 'production', PUBLIC_URL: 'https://game.example.test',
     RUNPOD_API_KEY: 'fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint',
     CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '0.50', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '9.94' };
+  assert.equal(generatedSpeechStreamConfiguration(env).configuration.overlapAudio, undefined);
   assert.equal(generatedSpeechStreamConfiguration(cloud).configured, true);
+  assert.equal(generatedSpeechStreamConfiguration(cloud).configuration.overlapAudio, true);
   assert.equal(generatedSpeechStreamConfiguration({ ...cloud, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
     'Neon session/request journals replace the cloud stream directory');
   for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10.01' }, { RUNPOD_API_KEY: '' }]) {
@@ -331,4 +333,47 @@ test('prewarm reads only the selected dealer runtime; no GPU session or audio is
   assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),true);
   assert.equal(references,1);assert.equal(workers,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
   f.stale();assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),false);assert.equal(references,1);assert.equal(workers,0);
+});
+
+test('cloud overlap buffers TTS while the GPU session starts and writes it once', async t => {
+  let release, seen;
+  const opened = new Promise(resolve => { seen = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  let calls = 0;
+  const f = await fixture(t, {
+    overlapAudio: true,
+    pcmSource: async function* ({ beforeCostly }) {
+      await beforeCostly(); calls++; seen();
+      yield new Uint8Array(24);
+      await gate;
+      yield new Uint8Array(24);
+    },
+    sessionManager: { async ensure({ beforeCostly }) { await beforeCostly(); await gate; return { ready: true }; }, close() {} },
+  });
+  const pending = f.service.prepare(f.input());
+  await opened;
+  assert.equal(calls, 1);
+  release();
+  const descriptor = await pending;
+  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
+  await f.relayOptions.onSessionReady({ ...identity, id: 'wire', signal: new AbortController().signal });
+  assert.equal(calls, 1); assert.equal(f.written, 48);
+});
+
+test('a failed GPU session aborts overlapped TTS before a ticket exists', async t => {
+  let calls = 0, aborted = false, seen;
+  const opened = new Promise(resolve => { seen = resolve; });
+  const f = await fixture(t, {
+    overlapAudio: true,
+    pcmSource: async function* ({ signal, beforeCostly }) {
+      await beforeCostly(); calls++; seen();
+      await new Promise((_, reject) => signal.addEventListener('abort', () => { aborted = true; reject(Object.assign(Error('aborted'), { code: 'generated_speech_stream_cancelled' })); }));
+    },
+    sessionManager: {
+      async ensure() { await opened; throw Object.assign(Error('blocked'), { code: 'generated_speech_session_worker_failed' }); },
+      close() {},
+    },
+  });
+  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_worker_failed' });
+  assert.equal(calls, 1); assert.equal(aborted, true); assert.equal(f.service.status().pending, 0);
 });

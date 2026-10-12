@@ -13,8 +13,9 @@ export function validatePush(url, updates, policy, isAncestor = knownAncestor) {
   if (!allowed.includes(url)) throw new Error('GitLab is paused. Push only to the approved GitHub repository.');
   for (const line of updates.trim().split(/\r?\n/).filter(Boolean)) {
     const [localRef, sha, remoteRef, remoteSha] = line.split(/\s+/);
+    const reviewBranch = /^refs\/heads\/cursor\/[a-z0-9-]{1,64}$/.test(remoteRef ?? '');
     if (!localRef || !/^[a-f0-9]{40,64}$/.test(sha || '') || !/^[a-f0-9]{40,64}$/.test(remoteSha || '')
-      || remoteRef !== `refs/heads/${policy.branch}` || /^0+$/.test(sha)) {
+      || !(remoteRef === `refs/heads/${policy.branch}` || reviewBranch) || /^0+$/.test(sha)) {
       throw new Error(`Only updates to ${policy.branch} are allowed; no branch deletion or other refs.`);
     }
     if (!/^0+$/.test(remoteSha) && !isAncestor(remoteSha, sha)) {

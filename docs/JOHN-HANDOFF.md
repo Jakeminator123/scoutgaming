@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## Talström: röst medan GPU-sessionen startar, 12 oktober 2026
+
+Molnets strömmande tal (`overlapAudio` på cloud-konfigurationen, ingen ny miljövariabel) startar Cartesia när svarstexten är känd, samtidigt som RunPod-sessionen kopplar upp. PCM stannar i spelprocessen, högst 25 sekunder, och går in i reläet först när webbläsarens engångsbiljett är autentiserad. Avbrott eller en session som inte blir klar stoppar röstbufferten. Utan GPU-session, inklusive lokal förhandsvisning, startar rösten som tidigare först vid ansluten spelare.
+
+Worker-socketen är kvar på den publika Vercel-ingången `/lipsync-worker`. Render tar emot den via ingresshemligheten. Den hemligheten ska inte ligga i RunPod-jobbet, så workern pekas inte direkt på Render. Idle-stopp efter 60 sekunder är kvar: en varm GPU debiteras på riktigt, och sessionsreservationen återbetalas inte.
+
+Verifiering: `node --test test/generated-speech-stream.mjs`. Ingen betald generering i den här ändringen.
+
 ## Materialskapande i dealerns arbetsyta, 12 oktober 2026
 
 Dealer Forge är samlat i **Dealers & klipp → Skapa material** för vald dealer.
