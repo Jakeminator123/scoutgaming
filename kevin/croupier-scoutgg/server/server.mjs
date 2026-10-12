@@ -417,7 +417,15 @@ async function api(req, res, route) {
   json(res, 404, { error: "okänd väg" });
 }
 
-const http = createServer(async (req, res) => {
+// A request that cannot be handled (a path like "//x" that URL rejects, a bad %-escape) answers 400; it must never
+// throw out of the handler, because an unhandled rejection stops the process and drops every table (12 Oct).
+const http = createServer((req, res) => {
+  handleHttp(req, res).catch(e => {
+    console.error("request failed", String(req.url).slice(0, 120), e?.message);
+    try { if (!res.headersSent) res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" }); res.end(); } catch {}
+  });
+});
+async function handleHttp(req, res) {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
   res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
@@ -451,21 +459,22 @@ const http = createServer(async (req, res) => {
       res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=1","Cache-Control":"no-store"});res.end();});
     return;
   }
-  if(p==="/"&&demoGate.on&&!demoGate.hasPass(req.headers)){
+  const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
+  if (!file) { res.writeHead(404).end(); return; }
+  // The gate goes by the file, not the path: /index.html and /%69ndex.html are the game page as well.
+  if(file===path.join(PUBLIC,"index.html")&&demoGate.on&&!demoGate.hasPass(req.headers)){
     const q=new URL(req.url,"http://x").searchParams, studioTable=studioTables.get(q.get("table")??"");
     let who=null; if(!studioTable){try{who=await bo.user(req.headers);}catch{}}
     if(!studioTable&&!who){res.writeHead(302,{Location:demoGate.passwordPage,"Cache-Control":"no-store"});res.end();return;}
   }
-  const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
-  if (!file) { res.writeHead(404).end(); return; }
   sendFile(req, res, file);
-});
+}
 
 // Två websocket-vägar på samma port: rummet på / och GPU-arbetarens uppringning på /lipsync-worker.
 const room = new WebSocketServer({ noServer: true, maxPayload:4096 });
 const workers = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, socket, head) => {
-  const url = new URL(req.url, "http://x");
+  let url; try { url = new URL(req.url, "http://x"); } catch { socket.destroy(); return; }
   if (url.pathname === "/lipsync-worker") workers.handleUpgrade(req, socket, head, (ws) => (pod ?? lip).adoptWorker(ws, url));
   else {
     try { if(!sameOrigin(req)){socket.destroy();return;} }
