@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { calibration } from '../web/public/card-presentation/calibration.mjs';
-import { createCardCursor } from '../web/public/local-card-overlay.mjs';
+import { createCardCursor, createLocalCardOverlay } from '../web/public/local-card-overlay.mjs';
 import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
@@ -99,6 +99,26 @@ const all=n=>[n,...n.children.flatMap(all)];
 const card=(r,s,shoeDraw)=>({r,s,shoeDraw});
 const fixture=()=>({phase:'decisions',active:0,holeDraw:4,dealer:[card('6','♣',2)],hands:[{box:3,cards:[card('4','♥',1),card('7','♠',3)]}]});
 function setup(){const svg=new Node('svg');svg.id='test';return {svg,cards:createGameCards(svg,manifest)};}
+test('resize during a calibrated deal revokes contact while preserving the server draw',()=>{
+  const {svg,cards}=setup();let aligned=true;
+  const cursor=createCardCursor(cards,{canTrack:()=>aligned});cursor.sync(fixture());
+  const token=cursor.begin(calibration.videos.find(v=>v.track==='4'),{to:'box',box:3,shoeDraw:1,handIndex:0});
+  cursor.frame(token,DEAL_CONTACT[4].contact);aligned=false;cursor.reproject();
+  cursor.frame(token,DEAL_CONTACT[4].clear);assert.equal(cursor.finish(token,1,true),false);
+  assert.ok(draw(svg,1));assert.equal(draw(svg,1).children[1].attrs.visibility,'hidden');
+});
+test('mobile card reflow retains exact draws, split hands and hidden hole through desktop restoration',()=>{
+  const host=new Node('div');host.dataset={};const overlay=createLocalCardOverlay(host),round=splitFixture();overlay.restore(round);
+  const svg=host.children[0],original=draw(svg,1),hole=draw(svg,4);
+  const projection={x:0,y:100,scale:.5,adjusted:true,offsets:{'4':120},boxes:[2,3,4]};
+  overlay.setProjection(projection,390,844);
+  assert.equal(draw(svg,1),original);assert.equal(hole.attrs['data-card'],'hidden');
+  assert.equal(draw(svg,5).attrs.transform,'translate(660.000 1115.000)');
+  assert.notEqual(draw(svg,6).attrs.transform,draw(svg,5).attrs.transform);
+  overlay.setProjection({x:0,y:0,scale:1,adjusted:false,offsets:{},boxes:[0,1,2,3,4,5,6]},1920,1080);
+  assert.equal(draw(svg,1),original);assert.equal(draw(svg,5).attrs.transform,'translate(540.000 1115.000)');
+  assert.equal(hole.attrs['data-card'],'hidden');overlay.close();assert.equal(host.children.length,0);
+});
 const draw=(svg,id)=>all(svg).find(n=>n.attrs['data-draw']===String(id));
 
 test('filmed hand clips every existing card and keeps moving after the incoming face locks',()=>{

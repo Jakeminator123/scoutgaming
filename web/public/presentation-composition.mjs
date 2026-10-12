@@ -3,6 +3,7 @@ import {drawDealerFrame,validateDealerFraming} from './dealer-framing.mjs';
 import {effectiveDealerCompositing} from './dealer-compositing.mjs';
 import {validateBackgroundPlayback} from './background-playback-policy.mjs';
 import {createBackgroundPlayback} from './background-playback.mjs';
+import {projectGamePlane} from './game-overlay-layout.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
@@ -50,6 +51,15 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   const mounts=new Map(),selected=new Map(),pending=new Map();
   let backgroundPlayback=null,backgroundEvent=null,backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
+  const geometryListeners=new Set();
+  let referenceFraming=null,lastGeometry='';
+  function referencePlane() {
+    if(!compositor?.geometry)return null;
+    const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
+    const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout);
+    return {...projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},referenceFraming??undefined),
+      sourceAligned:['scale','x','y'].every(name=>(referenceFraming?.[name]??(name==='scale'?1:0))===(framing?.[name]??(name==='scale'?1:0)))};
+  }
   const actorFrame=document.createElement('canvas');
   function assets() {
     const map=new Map();
@@ -64,6 +74,8 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
       {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&mounts.has('background')),table:Boolean(key.enabled&&current?.table.enabled)},key);
     scene.dealerAspect=16/9;
     compositor.render(scene,actorFrame,assets(),[],null);
+    const plane=referencePlane(),signature=JSON.stringify(plane);
+    if(signature!==lastGeometry){lastGeometry=signature;for(const listener of geometryListeners)listener();}
   }
   function animate() {paintHeld();if(!closed&&key&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);}
   function stopAnimation(){if(raf!==null)view.cancelAnimationFrame?.(raf);raf=null;}
@@ -120,17 +132,19 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }}
   function replace(value) {
     backgroundPlayback?.close();backgroundPlayback=null;
-    ++preparation;current=validateComposition(value);key=null;stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
+    ++preparation;current=validateComposition(value);key=null;referenceFraming=null;lastGeometry='';stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
     for(const role of ['background','table'])render(role,current[role].default);
     host.dataset.dealerLayerEnabled=String(current.dealer.enabled);host.dataset.presentationClipMode='pending';
     configureBackgroundPlayback();
   }
-  async function prepareClip(compositing,sourceFraming) {
+  async function prepareClip(compositing,sourceFraming,{kind}={}) {
     const revision=++preparation;stopAnimation();key=null;framing=sourceFraming?validateDealerFraming(sourceFraming):null;
     const nextKey=clipCompositing(compositing);
     runtime??=loadRuntime();const {Compositor}=await runtime;
     await Promise.all(pending.values());if(closed||revision!==preparation)return false;
     if(!compositor){const canvas=document.createElement('canvas');canvas.className='presentation-composed-film';host.append(canvas);compositor=new Compositor(canvas);}
+    // Talking/variant crops must not make bets and resting cards jump.
+    if(referenceFraming===null&&(kind===undefined||kind==='idle'))referenceFraming=framing??{scale:1,x:0,y:0};
     key=nextKey;return true;
   }
   function renderFrame(video) {
@@ -148,11 +162,12 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }
   if(current)replace(current);
   return {setBackground:id=>set('background',id),setTable:id=>set('table',id),replace,prepareClip,renderFrame,
+    referencePlane,onGeometryChange(listener){geometryListeners.add(listener);return()=>geometryListeners.delete(listener);},
     backgroundEvent:(eventId,eventKey)=>backgroundPlayback?.event(eventId,eventKey)??false,
     setBackgroundVisible(visible){backgroundVisible=Boolean(visible);
       if(backgroundVisible)backgroundPlayback?.start();else backgroundPlayback?.pause();
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},
-    close(){backgroundPlayback?.close();backgroundPlayback=null;closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
+    close(){geometryListeners.clear();backgroundPlayback?.close();backgroundPlayback=null;closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
 }

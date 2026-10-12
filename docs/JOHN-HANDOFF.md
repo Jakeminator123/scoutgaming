@@ -125,11 +125,33 @@ PR24 och main-CI passerar; `c320932a` är live på Vercel och Render med
 capability 8. Produktionsprov bekräftade bakgrundsåtergång och bord 140→150→140 %
 utan sparade dataändringar. Slutbilden fångade en float på fältrubriken som
 sköt första bordskontrollen utanför panelen; följande fält bryter nu floaten.
+PR25 `ff1d6e53` är verifierad live på Vercel/Render. Bordspanelens innehåll
+ryms i sina 378 px och reglagen är cirka 338 px breda utan horisontell klippning.
 Separat kvar: landningssidans Vercel-preview på `bf23b987` misslyckades i
 befintlig `next/font`-laddare; produktionsbygget passerade. Spelrummens nya regler ska
 väljas och publiceras uttryckligen i Studio. Användarguide och tekniskt
 kontrakt finns i `lab/docs/README.md` respektive
 `docs/LOCAL-PRESENTATION-RUNTIME.md`; A20/A21 bevarar modulerna vid flytt.
+
+### Responsiva insatsplatser och kort, 12 oktober 2026
+
+Spelkontrollerna använde en separat centrerad 9:16-yta även för en förändrad
+desktopkomposition. Insatser och kort delar nu grundloopens källinramning,
+kompositorns referensplan och canvasens contain-projektion. Kraftig beskärning
+får inte lägga spelkontroller bakom HUD eller utanför bilden. Mobilens tre
+kolumner flyttar kort och insats tillsammans, behåller verkliga serverplatser
+och har separata huvud-/sidobetstryckytor. Dealerinramning, lagerbilder,
+serverkort, saldo och publicerade inställningar ändras inte.
+
+Ett talklipps annan beskärning flyttar inte vilande kort. Om spelplanet måste
+flyttas, mobilkolumner ordnas om eller källinramningen skiljer sig, används
+statisk kortvisning och inspelad kortkontakt får inget kalibreringsgodkännande;
+det gäller även storleksbyte mitt i giv. Regression täcker inramning, contain,
+ytterplatser, split, hålkort och samma kortnoder vid omprojektion. Full hook och
+mediaaudit passerar; Chromeproven använder syntetiskt material, inte nya
+läppsynk-/PAOW-kalibreringar. Ändringen använder befintlig runtime och återinför
+inget från Kevins branch eller V2:s avvecklade motorer. PR-kontroller ska även
+verifiera kombinationen med omorganisationens nu mergade `061294ab`.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
