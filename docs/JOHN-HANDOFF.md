@@ -120,8 +120,13 @@ bygger vidare på mergad V1 `dd837cf4`.
 Riktade regressionsprov och nio verkliga Chrome-scenprov passerar, inklusive
 två på varandra följande bakgrundsfilmer och felåtergång. Mediaaudit med
 `--probe` bekräftar oförändrade fyra historiska set. Testerna använder
-syntetiskt material och ger inget nytt läppsynkgodkännande. Full build/hook
-och exakt driftkvitto kontrolleras vid leverans. Spelrummens nya regler ska
+syntetiskt material och ger inget nytt läppsynkgodkännande. Full build/hook,
+PR24 och main-CI passerar; `c320932a` är live på Vercel och Render med
+capability 8. Produktionsprov bekräftade bakgrundsåtergång och bord 140→150→140 %
+utan sparade dataändringar. Slutbilden fångade en float på fältrubriken som
+sköt första bordskontrollen utanför panelen; följande fält bryter nu floaten.
+Separat kvar: landningssidans Vercel-preview på `bf23b987` misslyckades i
+befintlig `next/font`-laddare; produktionsbygget passerade. Spelrummens nya regler ska
 väljas och publiceras uttryckligen i Studio. Användarguide och tekniskt
 kontrakt finns i `lab/docs/README.md` respektive
 `docs/LOCAL-PRESENTATION-RUNTIME.md`; A20/A21 bevarar modulerna vid flytt.
