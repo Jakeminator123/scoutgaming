@@ -160,33 +160,6 @@
       "publicUrl": "/review/amira-composite/contacts.json"
     },
     {
-      "legacyPath": "web/public/review/amira-composite/dealerblackjack-frame0.png",
-      "path": "dealers/amira/runtime/composited/amira-composite/dealerblackjack-frame0.png",
-      "size": 225984,
-      "sha256": "09e927b1c837fce783fd48b8c6e75f5d7f790065fad700ad89bcf65dd6ebbe64",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/amira-composite/dealerblackjack-frame0.png"
-    },
-    {
-      "legacyPath": "web/public/review/amira-composite/goodluck-frame0.png",
-      "path": "dealers/amira/runtime/composited/amira-composite/goodluck-frame0.png",
-      "size": 231843,
-      "sha256": "e7e796e09850bf8b1894eac31e3354342396639683eac90af4883367f0b6b2f0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/amira-composite/goodluck-frame0.png"
-    },
-    {
-      "legacyPath": "web/public/review/amira-composite/greeting-frame0.png",
-      "path": "dealers/amira/runtime/composited/amira-composite/greeting-frame0.png",
-      "size": 226147,
-      "sha256": "68701b5b98967d8aef3ce6759aa0f813f1a7633edaf7f046a385545d4ec96366",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/amira-composite/greeting-frame0.png"
-    },
-    {
       "legacyPath": "web/public/review/amira-composite/profile.json",
       "path": "dealers/amira/runtime/composited/amira-composite/profile.json",
       "size": 2690,
@@ -194,15 +167,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/amira-composite/profile.json"
-    },
-    {
-      "legacyPath": "web/public/review/amira-composite/waiting-frame0.png",
-      "path": "dealers/amira/runtime/composited/amira-composite/waiting-frame0.png",
-      "size": 587260,
-      "sha256": "773b3e2586ccd9cce19891b32b4e7b76f70042d203057a2b678561bc37d3e3ac",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/amira-composite/waiting-frame0.png"
     },
     {
       "legacyPath": "web/public/review/amira-green-speak/blackjack.mp4",
@@ -2088,15 +2052,6 @@
       "publicUrl": "/review/2026-09-09/mei-push.mp4"
     },
     {
-      "legacyPath": "web/public/review/2026-09-09/shoe.glb",
-      "path": "dealers/astrid/runtime/composited/2026-09-09/shoe.glb",
-      "size": 2449260,
-      "sha256": "42be7055ed313758fc19a479fab69f9c8d911b38b90d10d341e665f226302497",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/2026-09-09/shoe.glb"
-    },
-    {
       "legacyPath": "web/public/review/astrid-blue-box4/actor-packed.mp4",
       "path": "dealers/astrid/runtime/composited/astrid-blue-box4/actor-packed.mp4",
       "size": 1767176,
@@ -2241,15 +2196,6 @@
       "publicUrl": "/review/astrid-folded-rest/out-986dc34a7a2b.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/blackjack-enter-56a00345445d.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-enter-56a00345445d.png",
-      "size": 53463,
-      "sha256": "56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/blackjack-enter-56a00345445d.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/blackjack-enter-90c170f4e55b.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-enter-90c170f4e55b.png",
       "size": 54137,
@@ -2266,15 +2212,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/blackjack-exit-5ed0c206cd20.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png",
-      "size": 56668,
-      "sha256": "b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/blackjack-face-6052f1d41755.mp4",
@@ -2295,15 +2232,6 @@
       "publicUrl": "/review/astrid-green-speak/blackjack.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/bust-enter-a51492477220.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/bust-enter-a51492477220.png",
-      "size": 52837,
-      "sha256": "a514924772209750a0ed6261fe80805313401795f83dba6dfbfa4265e2675f38",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/bust-enter-a51492477220.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/bust-enter-afcc43d1b9d1.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/bust-enter-afcc43d1b9d1.png",
       "size": 52760,
@@ -2320,15 +2248,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/bust-exit-3671af65181d.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/bust-exit-a50e48460c60.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/bust-exit-a50e48460c60.png",
-      "size": 51950,
-      "sha256": "a50e48460c6076050b214c5c4432e0e2abaf916e9c803976342495ee44b3d5f0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/bust-exit-a50e48460c60.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/bust-face-1811e6e0ac57.mp4",
@@ -2358,15 +2277,6 @@
       "publicUrl": "/review/astrid-green-speak/chatter1-enter-14112b38c864.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/chatter1-enter-6745791efd46.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-enter-6745791efd46.png",
-      "size": 54048,
-      "sha256": "6745791efd4616e4e72700fb39707ba92e4da3a49ccf52de184b9e664410c104",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/chatter1-enter-6745791efd46.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/chatter1-exit-34ec891b2b1c.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-exit-34ec891b2b1c.png",
       "size": 54631,
@@ -2374,15 +2284,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/chatter1-exit-34ec891b2b1c.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/chatter1-exit-e6965845f372.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-exit-e6965845f372.png",
-      "size": 53800,
-      "sha256": "e6965845f3726e9f67517c9bf020f3691bbec76c9350aec587734088c9139df5",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/chatter1-exit-e6965845f372.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/chatter1-face-baa85a529b30.mp4",
@@ -2410,24 +2311,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/chatter2-enter-0538959f0c41.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/chatter2-enter-75b9680a3ee5.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/chatter2-enter-75b9680a3ee5.png",
-      "size": 54024,
-      "sha256": "75b9680a3ee54affe0df9fb9648f1662b5a8114bbca8200ccbcf9838b1010d39",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/chatter2-enter-75b9680a3ee5.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/chatter2-exit-54706973fb0c.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/chatter2-exit-54706973fb0c.png",
-      "size": 54982,
-      "sha256": "54706973fb0cb4b2d017e10fc2ed2dc4ae07ea009d1480f33f26a7ffbaf7e9c6",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/chatter2-exit-54706973fb0c.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/chatter2-exit-d1dbfd9623af.png",
@@ -2466,24 +2349,6 @@
       "publicUrl": "/review/astrid-green-speak/dealerblackjack-enter-3dcd7ed63488.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png",
-      "size": 51799,
-      "sha256": "846dcdf7e41474549169c40913f626555cded99989179d33fdef51a739e7e1bc",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/dealerblackjack-exit-762df9594999.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-exit-762df9594999.png",
-      "size": 55177,
-      "sha256": "762df95949991f6e2e31ace16145ced85f4d16617a85b53216fcabb3a0dca2ed",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/dealerblackjack-exit-762df9594999.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/dealerblackjack-exit-d419f42683e5.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-exit-d419f42683e5.png",
       "size": 53907,
@@ -2520,24 +2385,6 @@
       "publicUrl": "/review/astrid-green-speak/dealerbust-enter-24dff62116c8.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/dealerbust-enter-33973695665f.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-enter-33973695665f.png",
-      "size": 52794,
-      "sha256": "33973695665f7b44df2985c6e77b92c029d0a879a9bef5b74cda2dba58e0bc42",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/dealerbust-enter-33973695665f.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/dealerbust-exit-b9df191f2118.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-exit-b9df191f2118.png",
-      "size": 58315,
-      "sha256": "b9df191f2118d8182a42c0829afc89c47333fa892c712bab2a540868146bc456",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/dealerbust-exit-b9df191f2118.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/dealerbust-exit-eeab68ab45bd.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-exit-eeab68ab45bd.png",
       "size": 56821,
@@ -2565,15 +2412,6 @@
       "publicUrl": "/review/astrid-green-speak/dealerbust.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/double-enter-a3679b2a16c7.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/double-enter-a3679b2a16c7.png",
-      "size": 54179,
-      "sha256": "a3679b2a16c7e5d72731bda05ad02ce6a372ee75f032b9fc4b6aa81205eaca10",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/double-enter-a3679b2a16c7.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/double-enter-ed8225af20b2.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/double-enter-ed8225af20b2.png",
       "size": 54326,
@@ -2590,15 +2428,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/double-exit-cd829dc6d369.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/double-exit-e5e5e9cce12b.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/double-exit-e5e5e9cce12b.png",
-      "size": 52248,
-      "sha256": "e5e5e9cce12b550ca16b4815b95d9c8ffb90e2c299aad65b529116abef63bfe6",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/double-exit-e5e5e9cce12b.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/double-face-c27d613e68e0.mp4",
@@ -2626,24 +2455,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/farewell-enter-93e4feec6086.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/farewell-enter-9fa470ee8369.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/farewell-enter-9fa470ee8369.png",
-      "size": 53923,
-      "sha256": "9fa470ee836944e3aa21c02589dcca1d550292708422c1801999622b79b00b87",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/farewell-enter-9fa470ee8369.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/farewell-exit-40e44772e643.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/farewell-exit-40e44772e643.png",
-      "size": 60590,
-      "sha256": "40e44772e64390645b234ec8342410f98787910ec86e60a43120c24348c01c66",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/farewell-exit-40e44772e643.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/farewell-exit-dccfd4c47e5a.png",
@@ -2682,24 +2493,6 @@
       "publicUrl": "/review/astrid-green-speak/goodluck-enter-41f6d3a0ef58.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/goodluck-enter-4827ff40c8dd.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-enter-4827ff40c8dd.png",
-      "size": 54227,
-      "sha256": "4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/goodluck-enter-4827ff40c8dd.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/goodluck-exit-1e6d1f95be76.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-exit-1e6d1f95be76.png",
-      "size": 52066,
-      "sha256": "1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/goodluck-exit-1e6d1f95be76.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/goodluck-exit-ff33cb19ee1c.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-exit-ff33cb19ee1c.png",
       "size": 51921,
@@ -2727,15 +2520,6 @@
       "publicUrl": "/review/astrid-green-speak/goodluck.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/greeting-enter-5768c83c9ad1.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-enter-5768c83c9ad1.png",
-      "size": 55198,
-      "sha256": "5768c83c9ad16fc53ae81ade7097af8d58ffc52de9b5d5064c287e33b9b97f29",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/greeting-enter-5768c83c9ad1.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/greeting-enter-f1c60b8397e0.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-enter-f1c60b8397e0.png",
       "size": 54758,
@@ -2752,15 +2536,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/greeting-exit-af455f608b26.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/greeting-exit-c2ea7c08eda3.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-exit-c2ea7c08eda3.png",
-      "size": 54136,
-      "sha256": "c2ea7c08eda30b2150df9dff6bf0e30aaea2ec6798e2aeb75d98b48fce68162d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/greeting-exit-c2ea7c08eda3.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/greeting-face-5b1f348737ef.mp4",
@@ -2781,15 +2556,6 @@
       "publicUrl": "/review/astrid-green-speak/greeting.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/insurance-enter-63de5a3d848f.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-enter-63de5a3d848f.png",
-      "size": 54542,
-      "sha256": "63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/insurance-enter-63de5a3d848f.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/insurance-enter-7f3e26844842.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-enter-7f3e26844842.png",
       "size": 54854,
@@ -2806,15 +2572,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/insurance-exit-aedcf74ab746.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/insurance-exit-ded287a45cdb.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-exit-ded287a45cdb.png",
-      "size": 57847,
-      "sha256": "ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/insurance-exit-ded287a45cdb.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/insurance-face-80c938468af8.mp4",
@@ -2844,15 +2601,6 @@
       "publicUrl": "/review/astrid-green-speak/lose-enter-3bdfb14d7a3a.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/lose-enter-6632264b6458.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/lose-enter-6632264b6458.png",
-      "size": 53618,
-      "sha256": "6632264b6458e6ed4810a8f3173cab6ba43569b32ee7a962da9759e4b90675d7",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/lose-enter-6632264b6458.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/lose-exit-0549a15e5793.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/lose-exit-0549a15e5793.png",
       "size": 53547,
@@ -2860,15 +2608,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/lose-exit-0549a15e5793.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/lose-exit-a2da8d820298.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/lose-exit-a2da8d820298.png",
-      "size": 54594,
-      "sha256": "a2da8d820298cac8697a35f4338aa8aa8757d2e4d5ea605628ca3d928e36822d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/lose-exit-a2da8d820298.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/lose-face-2ac791b2f1a4.mp4",
@@ -2889,15 +2628,6 @@
       "publicUrl": "/review/astrid-green-speak/lose.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/peek-enter-25836c542f28.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/peek-enter-25836c542f28.png",
-      "size": 54248,
-      "sha256": "25836c542f280f462b5271239e1b7649b95a8b8781d5ba14567f4a1d96e76a85",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/peek-enter-25836c542f28.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/peek-enter-88afab544391.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/peek-enter-88afab544391.png",
       "size": 54369,
@@ -2905,15 +2635,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/peek-enter-88afab544391.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/peek-exit-84863f9ec4da.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/peek-exit-84863f9ec4da.png",
-      "size": 54880,
-      "sha256": "84863f9ec4dae93e7197ca25d76c2508d1d358f7df5d3e5e8caba626cda01c37",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/peek-exit-84863f9ec4da.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/peek-exit-ead411ac0ea3.png",
@@ -2952,24 +2673,6 @@
       "publicUrl": "/review/astrid-green-speak/placebets-enter-87b453d914d9.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/placebets-enter-93741fc1f7d7.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-enter-93741fc1f7d7.png",
-      "size": 53263,
-      "sha256": "93741fc1f7d7879334f17a92a2b9170e06a44eb8d46bd8a6bc632fef815656cf",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/placebets-enter-93741fc1f7d7.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/placebets-exit-64dbde5ccc6b.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-exit-64dbde5ccc6b.png",
-      "size": 54874,
-      "sha256": "64dbde5ccc6be80681e2e6779e03042c11f906e7f5f6d9e948cb316486e8d1ae",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/placebets-exit-64dbde5ccc6b.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/placebets-exit-bfc7c8290ff7.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-exit-bfc7c8290ff7.png",
       "size": 53099,
@@ -3006,15 +2709,6 @@
       "publicUrl": "/review/astrid-green-speak/push-enter-85867337f6d6.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/push-enter-996b52d8c11c.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/push-enter-996b52d8c11c.png",
-      "size": 52409,
-      "sha256": "996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/push-enter-996b52d8c11c.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/push-exit-588e66c57727.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/push-exit-588e66c57727.png",
       "size": 55881,
@@ -3022,15 +2716,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/push-exit-588e66c57727.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/push-exit-60d9cbfc5d4a.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/push-exit-60d9cbfc5d4a.png",
-      "size": 57834,
-      "sha256": "60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/push-exit-60d9cbfc5d4a.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/push-face-b31ee86831c9.mp4",
@@ -3051,15 +2736,6 @@
       "publicUrl": "/review/astrid-green-speak/push.mp4"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/sidebet-enter-c09b03237bbc.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-enter-c09b03237bbc.png",
-      "size": 54641,
-      "sha256": "c09b03237bbcd94a2b9be2112a38cbc68bfd823513c64324b9be5b9ef6dd0438",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/sidebet-enter-c09b03237bbc.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/sidebet-enter-d0978f71a91a.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-enter-d0978f71a91a.png",
       "size": 54966,
@@ -3076,15 +2752,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/sidebet-exit-1c52db526e83.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/sidebet-exit-afe8321c656a.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-exit-afe8321c656a.png",
-      "size": 57478,
-      "sha256": "afe8321c656ae9ec298a704005e30cd1abb45f8d0b3f339bb0908e335665766a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/sidebet-exit-afe8321c656a.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/sidebet-face-6ef921569fa3.mp4",
@@ -3123,15 +2790,6 @@
       "publicUrl": "/review/astrid-green-speak/win-enter-6b83017d5b00.png"
     },
     {
-      "legacyPath": "web/public/review/astrid-green-speak/win-enter-f4e3213c34c5.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/win-enter-f4e3213c34c5.png",
-      "size": 53075,
-      "sha256": "f4e3213c34c548068eadc5bb54584221c36eccb57e3a5dbd4485faaf3c43a1db",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/win-enter-f4e3213c34c5.png"
-    },
-    {
       "legacyPath": "web/public/review/astrid-green-speak/win-exit-09d6e0052923.png",
       "path": "dealers/astrid/runtime/composited/astrid-green-speak/win-exit-09d6e0052923.png",
       "size": 57264,
@@ -3139,15 +2797,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/astrid-green-speak/win-exit-09d6e0052923.png"
-    },
-    {
-      "legacyPath": "web/public/review/astrid-green-speak/win-exit-8982250430ec.png",
-      "path": "dealers/astrid/runtime/composited/astrid-green-speak/win-exit-8982250430ec.png",
-      "size": 58240,
-      "sha256": "8982250430ecfbaaf553a9edf432ee324b009f0e9e685890f171de15c8894c7b",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/astrid-green-speak/win-exit-8982250430ec.png"
     },
     {
       "legacyPath": "web/public/review/astrid-green-speak/win-face-f1fb10e61552.mp4",

@@ -88,57 +88,6 @@
       }
     },
     {
-      "logicalPath": "dealers/amira/runtime/composited/amira-composite/dealerblackjack-frame0.png",
-      "id": "09e927b1-c837-fce7-83fd-48b8c6e75f5d",
-      "sha256": "09e927b1c837fce783fd48b8c6e75f5d7f790065fad700ad89bcf65dd6ebbe64",
-      "size": 225984,
-      "access": "public",
-      "legacyUrls": [
-        "/review/amira-composite/dealerblackjack-frame0.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-composite/09e927b1-c837-fce7-83fd-48b8c6e75f5d/09e927b1c837fce783fd48b8c6e75f5d7f790065fad700ad89bcf65dd6ebbe64.png",
-        "sha256": "09e927b1c837fce783fd48b8c6e75f5d7f790065fad700ad89bcf65dd6ebbe64",
-        "size": 225984,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/amira/runtime/composited/amira-composite/goodluck-frame0.png",
-      "id": "e7e796e0-9850-bf8b-1894-eac31e335434",
-      "sha256": "e7e796e09850bf8b1894eac31e3354342396639683eac90af4883367f0b6b2f0",
-      "size": 231843,
-      "access": "public",
-      "legacyUrls": [
-        "/review/amira-composite/goodluck-frame0.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-composite/e7e796e0-9850-bf8b-1894-eac31e335434/e7e796e09850bf8b1894eac31e3354342396639683eac90af4883367f0b6b2f0.png",
-        "sha256": "e7e796e09850bf8b1894eac31e3354342396639683eac90af4883367f0b6b2f0",
-        "size": 231843,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/amira/runtime/composited/amira-composite/greeting-frame0.png",
-      "id": "68701b5b-9896-7d8a-ef3c-e6759aa0f813",
-      "sha256": "68701b5b98967d8aef3ce6759aa0f813f1a7633edaf7f046a385545d4ec96366",
-      "size": 226147,
-      "access": "public",
-      "legacyUrls": [
-        "/review/amira-composite/greeting-frame0.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-composite/68701b5b-9896-7d8a-ef3c-e6759aa0f813/68701b5b98967d8aef3ce6759aa0f813f1a7633edaf7f046a385545d4ec96366.png",
-        "sha256": "68701b5b98967d8aef3ce6759aa0f813f1a7633edaf7f046a385545d4ec96366",
-        "size": 226147,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/amira/runtime/composited/amira-composite/profile.json",
       "id": "a78a86d2-c41f-ab4d-0a4a-254f377f4f4a",
       "sha256": "a78a86d2c41fab4d0a4a254f377f4f4a1bd86e4d790b3c40440cda216c572003",
@@ -153,23 +102,6 @@
         "sha256": "a78a86d2c41fab4d0a4a254f377f4f4a1bd86e4d790b3c40440cda216c572003",
         "size": 2690,
         "contentType": "application/json"
-      }
-    },
-    {
-      "logicalPath": "dealers/amira/runtime/composited/amira-composite/waiting-frame0.png",
-      "id": "773b3e25-86cc-d9cc-e198-91b32b4e7b76",
-      "sha256": "773b3e2586ccd9cce19891b32b4e7b76f70042d203057a2b678561bc37d3e3ac",
-      "size": 587260,
-      "access": "public",
-      "legacyUrls": [
-        "/review/amira-composite/waiting-frame0.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/amira/runtime/composited/amira-composite/773b3e25-86cc-d9cc-e198-91b32b4e7b76/773b3e2586ccd9cce19891b32b4e7b76f70042d203057a2b678561bc37d3e3ac.png",
-        "sha256": "773b3e2586ccd9cce19891b32b4e7b76f70042d203057a2b678561bc37d3e3ac",
-        "size": 587260,
-        "contentType": "image/png"
       }
     },
     {
@@ -3491,23 +3423,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/2026-09-09/shoe.glb",
-      "id": "42be7055-ed31-3758-fc19-a479fab69f9c",
-      "sha256": "42be7055ed313758fc19a479fab69f9c8d911b38b90d10d341e665f226302497",
-      "size": 2449260,
-      "access": "public",
-      "legacyUrls": [
-        "/review/2026-09-09/shoe.glb"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/2026-09-09/42be7055-ed31-3758-fc19-a479fab69f9c/42be7055ed313758fc19a479fab69f9c8d911b38b90d10d341e665f226302497.glb",
-        "sha256": "42be7055ed313758fc19a479fab69f9c8d911b38b90d10d341e665f226302497",
-        "size": 2449260,
-        "contentType": "model/gltf-binary"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-blue-box4/actor-packed.mp4",
       "id": "0a7befac-e305-5fbe-0152-3b9c6f3a88ae",
       "sha256": "0a7beface3055fbe01523b9c6f3a88aedcae8eaf55279abe6e06b7a8eb3a9fab",
@@ -3780,23 +3695,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-enter-56a00345445d.png",
-      "id": "56a00345-445d-cc75-b1fb-c7b626047b0e",
-      "sha256": "56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b",
-      "size": 53463,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/blackjack-enter-56a00345445d.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/56a00345-445d-cc75-b1fb-c7b626047b0e/56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b.png",
-        "sha256": "56a00345445dcc75b1fbc7b626047b0e4f136de1cc0f1a3cbd5e582d9c75468b",
-        "size": 53463,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-enter-90c170f4e55b.png",
       "id": "90c170f4-e55b-97ed-3ec4-805ad36ebf18",
       "sha256": "90c170f4e55b97ed3ec4805ad36ebf18555aa9add157fd8dabf5d7edae504f67",
@@ -3827,23 +3725,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/5ed0c206-cd20-e829-f7ef-5146b2c52433/5ed0c206cd20e829f7ef5146b2c524337b544854c3391a7f5d25df81aed7719a.png",
         "sha256": "5ed0c206cd20e829f7ef5146b2c524337b544854c3391a7f5d25df81aed7719a",
         "size": 55412,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png",
-      "id": "b0f43fcd-cc29-9308-d589-2a951f7549af",
-      "sha256": "b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261",
-      "size": 56668,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/blackjack-exit-b0f43fcdcc29.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/b0f43fcd-cc29-9308-d589-2a951f7549af/b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261.png",
-        "sha256": "b0f43fcdcc299308d5892a951f7549afad977799f2e5af6a7aa2fe59eee89261",
-        "size": 56668,
         "contentType": "image/png"
       }
     },
@@ -3882,23 +3763,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/bust-enter-a51492477220.png",
-      "id": "a5149247-7220-9750-a0ed-6261fe808053",
-      "sha256": "a514924772209750a0ed6261fe80805313401795f83dba6dfbfa4265e2675f38",
-      "size": 52837,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/bust-enter-a51492477220.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/a5149247-7220-9750-a0ed-6261fe808053/a514924772209750a0ed6261fe80805313401795f83dba6dfbfa4265e2675f38.png",
-        "sha256": "a514924772209750a0ed6261fe80805313401795f83dba6dfbfa4265e2675f38",
-        "size": 52837,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/bust-enter-afcc43d1b9d1.png",
       "id": "afcc43d1-b9d1-cb18-1b48-76435344b435",
       "sha256": "afcc43d1b9d1cb181b4876435344b4353d85cc1b3bfd4f28e5475e6d29e6400a",
@@ -3929,23 +3793,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/3671af65-181d-a5db-44fc-12b5bb4ec118/3671af65181da5db44fc12b5bb4ec118878ad85078d6b9803dd826bf7125fdb8.png",
         "sha256": "3671af65181da5db44fc12b5bb4ec118878ad85078d6b9803dd826bf7125fdb8",
         "size": 51812,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/bust-exit-a50e48460c60.png",
-      "id": "a50e4846-0c60-7605-0b21-4c5c4432e0e2",
-      "sha256": "a50e48460c6076050b214c5c4432e0e2abaf916e9c803976342495ee44b3d5f0",
-      "size": 51950,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/bust-exit-a50e48460c60.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/a50e4846-0c60-7605-0b21-4c5c4432e0e2/a50e48460c6076050b214c5c4432e0e2abaf916e9c803976342495ee44b3d5f0.png",
-        "sha256": "a50e48460c6076050b214c5c4432e0e2abaf916e9c803976342495ee44b3d5f0",
-        "size": 51950,
         "contentType": "image/png"
       }
     },
@@ -4001,23 +3848,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-enter-6745791efd46.png",
-      "id": "6745791e-fd46-16e4-e727-00fb39707ba9",
-      "sha256": "6745791efd4616e4e72700fb39707ba92e4da3a49ccf52de184b9e664410c104",
-      "size": 54048,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/chatter1-enter-6745791efd46.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/6745791e-fd46-16e4-e727-00fb39707ba9/6745791efd4616e4e72700fb39707ba92e4da3a49ccf52de184b9e664410c104.png",
-        "sha256": "6745791efd4616e4e72700fb39707ba92e4da3a49ccf52de184b9e664410c104",
-        "size": 54048,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-exit-34ec891b2b1c.png",
       "id": "34ec891b-2b1c-c57c-66d4-ea36f05c99a1",
       "sha256": "34ec891b2b1cc57c66d4ea36f05c99a1dfbe1d2486c61b9ecde4cb1937ca2ca9",
@@ -4031,23 +3861,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/34ec891b-2b1c-c57c-66d4-ea36f05c99a1/34ec891b2b1cc57c66d4ea36f05c99a1dfbe1d2486c61b9ecde4cb1937ca2ca9.png",
         "sha256": "34ec891b2b1cc57c66d4ea36f05c99a1dfbe1d2486c61b9ecde4cb1937ca2ca9",
         "size": 54631,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/chatter1-exit-e6965845f372.png",
-      "id": "e6965845-f372-6e9f-6751-7c9bf020f369",
-      "sha256": "e6965845f3726e9f67517c9bf020f3691bbec76c9350aec587734088c9139df5",
-      "size": 53800,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/chatter1-exit-e6965845f372.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/e6965845-f372-6e9f-6751-7c9bf020f369/e6965845f3726e9f67517c9bf020f3691bbec76c9350aec587734088c9139df5.png",
-        "sha256": "e6965845f3726e9f67517c9bf020f3691bbec76c9350aec587734088c9139df5",
-        "size": 53800,
         "contentType": "image/png"
       }
     },
@@ -4099,40 +3912,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/0538959f-0c41-6d2f-c92a-aba61e48550c/0538959f0c416d2fc92aaba61e48550cb6c029518a733617905eebfaafaf29ec.png",
         "sha256": "0538959f0c416d2fc92aaba61e48550cb6c029518a733617905eebfaafaf29ec",
         "size": 54108,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/chatter2-enter-75b9680a3ee5.png",
-      "id": "75b9680a-3ee5-4aff-e0df-9fb9648f1662",
-      "sha256": "75b9680a3ee54affe0df9fb9648f1662b5a8114bbca8200ccbcf9838b1010d39",
-      "size": 54024,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/chatter2-enter-75b9680a3ee5.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/75b9680a-3ee5-4aff-e0df-9fb9648f1662/75b9680a3ee54affe0df9fb9648f1662b5a8114bbca8200ccbcf9838b1010d39.png",
-        "sha256": "75b9680a3ee54affe0df9fb9648f1662b5a8114bbca8200ccbcf9838b1010d39",
-        "size": 54024,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/chatter2-exit-54706973fb0c.png",
-      "id": "54706973-fb0c-b4b2-d017-e10fc2ed2dc4",
-      "sha256": "54706973fb0cb4b2d017e10fc2ed2dc4ae07ea009d1480f33f26a7ffbaf7e9c6",
-      "size": 54982,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/chatter2-exit-54706973fb0c.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/54706973-fb0c-b4b2-d017-e10fc2ed2dc4/54706973fb0cb4b2d017e10fc2ed2dc4ae07ea009d1480f33f26a7ffbaf7e9c6.png",
-        "sha256": "54706973fb0cb4b2d017e10fc2ed2dc4ae07ea009d1480f33f26a7ffbaf7e9c6",
-        "size": 54982,
         "contentType": "image/png"
       }
     },
@@ -4205,40 +3984,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png",
-      "id": "846dcdf7-e414-7454-9169-c40913f62655",
-      "sha256": "846dcdf7e41474549169c40913f626555cded99989179d33fdef51a739e7e1bc",
-      "size": 51799,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/dealerblackjack-enter-846dcdf7e414.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/846dcdf7-e414-7454-9169-c40913f62655/846dcdf7e41474549169c40913f626555cded99989179d33fdef51a739e7e1bc.png",
-        "sha256": "846dcdf7e41474549169c40913f626555cded99989179d33fdef51a739e7e1bc",
-        "size": 51799,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-exit-762df9594999.png",
-      "id": "762df959-4999-1f6e-2e31-ace16145ced8",
-      "sha256": "762df95949991f6e2e31ace16145ced85f4d16617a85b53216fcabb3a0dca2ed",
-      "size": 55177,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/dealerblackjack-exit-762df9594999.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/762df959-4999-1f6e-2e31-ace16145ced8/762df95949991f6e2e31ace16145ced85f4d16617a85b53216fcabb3a0dca2ed.png",
-        "sha256": "762df95949991f6e2e31ace16145ced85f4d16617a85b53216fcabb3a0dca2ed",
-        "size": 55177,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerblackjack-exit-d419f42683e5.png",
       "id": "d419f426-83e5-e6ac-5eaf-75129de3d19b",
       "sha256": "d419f42683e5e6ac5eaf75129de3d19b6316a5a3096feef26aae2cec80e8b58a",
@@ -4307,40 +4052,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-enter-33973695665f.png",
-      "id": "33973695-665f-7b44-df29-85c6e77b92c0",
-      "sha256": "33973695665f7b44df2985c6e77b92c029d0a879a9bef5b74cda2dba58e0bc42",
-      "size": 52794,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/dealerbust-enter-33973695665f.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/33973695-665f-7b44-df29-85c6e77b92c0/33973695665f7b44df2985c6e77b92c029d0a879a9bef5b74cda2dba58e0bc42.png",
-        "sha256": "33973695665f7b44df2985c6e77b92c029d0a879a9bef5b74cda2dba58e0bc42",
-        "size": 52794,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-exit-b9df191f2118.png",
-      "id": "b9df191f-2118-d818-2a42-c0829afc89c4",
-      "sha256": "b9df191f2118d8182a42c0829afc89c47333fa892c712bab2a540868146bc456",
-      "size": 58315,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/dealerbust-exit-b9df191f2118.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/b9df191f-2118-d818-2a42-c0829afc89c4/b9df191f2118d8182a42c0829afc89c47333fa892c712bab2a540868146bc456.png",
-        "sha256": "b9df191f2118d8182a42c0829afc89c47333fa892c712bab2a540868146bc456",
-        "size": 58315,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/dealerbust-exit-eeab68ab45bd.png",
       "id": "eeab68ab-45bd-a023-4c3c-001600252955",
       "sha256": "eeab68ab45bda0234c3c0016002529559b797628eb1f01e15b097ee0ad351949",
@@ -4392,23 +4103,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/double-enter-a3679b2a16c7.png",
-      "id": "a3679b2a-16c7-e5d7-2731-bda05ad02ce6",
-      "sha256": "a3679b2a16c7e5d72731bda05ad02ce6a372ee75f032b9fc4b6aa81205eaca10",
-      "size": 54179,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/double-enter-a3679b2a16c7.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/a3679b2a-16c7-e5d7-2731-bda05ad02ce6/a3679b2a16c7e5d72731bda05ad02ce6a372ee75f032b9fc4b6aa81205eaca10.png",
-        "sha256": "a3679b2a16c7e5d72731bda05ad02ce6a372ee75f032b9fc4b6aa81205eaca10",
-        "size": 54179,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/double-enter-ed8225af20b2.png",
       "id": "ed8225af-20b2-149a-d8aa-a5210506b569",
       "sha256": "ed8225af20b2149ad8aaa5210506b56907257e0d04caef22fa6813d98d0a79e4",
@@ -4439,23 +4133,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/cd829dc6-d369-21a7-b0b8-c2d32d2ed49a/cd829dc6d36921a7b0b8c2d32d2ed49aa6b850c307f808a9a840817609e6bca8.png",
         "sha256": "cd829dc6d36921a7b0b8c2d32d2ed49aa6b850c307f808a9a840817609e6bca8",
         "size": 53151,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/double-exit-e5e5e9cce12b.png",
-      "id": "e5e5e9cc-e12b-550c-a16b-4815b95d9c8f",
-      "sha256": "e5e5e9cce12b550ca16b4815b95d9c8ffb90e2c299aad65b529116abef63bfe6",
-      "size": 52248,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/double-exit-e5e5e9cce12b.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/e5e5e9cc-e12b-550c-a16b-4815b95d9c8f/e5e5e9cce12b550ca16b4815b95d9c8ffb90e2c299aad65b529116abef63bfe6.png",
-        "sha256": "e5e5e9cce12b550ca16b4815b95d9c8ffb90e2c299aad65b529116abef63bfe6",
-        "size": 52248,
         "contentType": "image/png"
       }
     },
@@ -4507,40 +4184,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/93e4feec-6086-4777-1fff-db12760702df/93e4feec608647771fffdb12760702dfcce2b0b5be4e70d58cbae72a9a15849b.png",
         "sha256": "93e4feec608647771fffdb12760702dfcce2b0b5be4e70d58cbae72a9a15849b",
         "size": 54869,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/farewell-enter-9fa470ee8369.png",
-      "id": "9fa470ee-8369-44e3-aa21-c02589dcca1d",
-      "sha256": "9fa470ee836944e3aa21c02589dcca1d550292708422c1801999622b79b00b87",
-      "size": 53923,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/farewell-enter-9fa470ee8369.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/9fa470ee-8369-44e3-aa21-c02589dcca1d/9fa470ee836944e3aa21c02589dcca1d550292708422c1801999622b79b00b87.png",
-        "sha256": "9fa470ee836944e3aa21c02589dcca1d550292708422c1801999622b79b00b87",
-        "size": 53923,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/farewell-exit-40e44772e643.png",
-      "id": "40e44772-e643-9064-5b23-4ec8342410f9",
-      "sha256": "40e44772e64390645b234ec8342410f98787910ec86e60a43120c24348c01c66",
-      "size": 60590,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/farewell-exit-40e44772e643.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/40e44772-e643-9064-5b23-4ec8342410f9/40e44772e64390645b234ec8342410f98787910ec86e60a43120c24348c01c66.png",
-        "sha256": "40e44772e64390645b234ec8342410f98787910ec86e60a43120c24348c01c66",
-        "size": 60590,
         "contentType": "image/png"
       }
     },
@@ -4613,40 +4256,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-enter-4827ff40c8dd.png",
-      "id": "4827ff40-c8dd-ed77-ede8-ba3fe98463a4",
-      "sha256": "4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88",
-      "size": 54227,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/goodluck-enter-4827ff40c8dd.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/4827ff40-c8dd-ed77-ede8-ba3fe98463a4/4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88.png",
-        "sha256": "4827ff40c8dded77ede8ba3fe98463a4cb110c6678ab54b6f983bfd00e4aba88",
-        "size": 54227,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-exit-1e6d1f95be76.png",
-      "id": "1e6d1f95-be76-8afa-150b-717f0bf72309",
-      "sha256": "1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d",
-      "size": 52066,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/goodluck-exit-1e6d1f95be76.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/1e6d1f95-be76-8afa-150b-717f0bf72309/1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d.png",
-        "sha256": "1e6d1f95be768afa150b717f0bf723093f3ab4efb87aa2a074c6e2ce29d93e3d",
-        "size": 52066,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/goodluck-exit-ff33cb19ee1c.png",
       "id": "ff33cb19-ee1c-116f-8f25-c02c97d54051",
       "sha256": "ff33cb19ee1c116f8f25c02c97d5405183f0cb86ce5cf0c0d9d4bf37cee08315",
@@ -4698,23 +4307,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-enter-5768c83c9ad1.png",
-      "id": "5768c83c-9ad1-6fc5-3ae8-1ade7097af8d",
-      "sha256": "5768c83c9ad16fc53ae81ade7097af8d58ffc52de9b5d5064c287e33b9b97f29",
-      "size": 55198,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/greeting-enter-5768c83c9ad1.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/5768c83c-9ad1-6fc5-3ae8-1ade7097af8d/5768c83c9ad16fc53ae81ade7097af8d58ffc52de9b5d5064c287e33b9b97f29.png",
-        "sha256": "5768c83c9ad16fc53ae81ade7097af8d58ffc52de9b5d5064c287e33b9b97f29",
-        "size": 55198,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-enter-f1c60b8397e0.png",
       "id": "f1c60b83-97e0-08a2-cee5-28d2412b4eba",
       "sha256": "f1c60b8397e008a2cee528d2412b4eba9f8cba143aecb6b1f6db798d7eb53a13",
@@ -4745,23 +4337,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/af455f60-8b26-7f48-6a6b-7dcef08ab868/af455f608b267f486a6b7dcef08ab8688596fb657ee288505abc6fc446ca7c54.png",
         "sha256": "af455f608b267f486a6b7dcef08ab8688596fb657ee288505abc6fc446ca7c54",
         "size": 53065,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/greeting-exit-c2ea7c08eda3.png",
-      "id": "c2ea7c08-eda3-0b21-50df-9dff6bf0e30a",
-      "sha256": "c2ea7c08eda30b2150df9dff6bf0e30aaea2ec6798e2aeb75d98b48fce68162d",
-      "size": 54136,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/greeting-exit-c2ea7c08eda3.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/c2ea7c08-eda3-0b21-50df-9dff6bf0e30a/c2ea7c08eda30b2150df9dff6bf0e30aaea2ec6798e2aeb75d98b48fce68162d.png",
-        "sha256": "c2ea7c08eda30b2150df9dff6bf0e30aaea2ec6798e2aeb75d98b48fce68162d",
-        "size": 54136,
         "contentType": "image/png"
       }
     },
@@ -4800,23 +4375,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-enter-63de5a3d848f.png",
-      "id": "63de5a3d-848f-468d-e8d2-cb9fe404b456",
-      "sha256": "63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df",
-      "size": 54542,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/insurance-enter-63de5a3d848f.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/63de5a3d-848f-468d-e8d2-cb9fe404b456/63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df.png",
-        "sha256": "63de5a3d848f468de8d2cb9fe404b4569cd672e8b4fc39617ec6fe48812554df",
-        "size": 54542,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-enter-7f3e26844842.png",
       "id": "7f3e2684-4842-f6e8-8661-9a76cdb66508",
       "sha256": "7f3e26844842f6e886619a76cdb665082ebda583e6180591f424f734a57eba2f",
@@ -4847,23 +4405,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/aedcf74a-b746-6773-1e0c-7dd0a4668b9e/aedcf74ab74667731e0c7dd0a4668b9eaecd662f1abffde2700d42aa6edb6fae.png",
         "sha256": "aedcf74ab74667731e0c7dd0a4668b9eaecd662f1abffde2700d42aa6edb6fae",
         "size": 55792,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/insurance-exit-ded287a45cdb.png",
-      "id": "ded287a4-5cdb-8c0c-f169-f8058376ba68",
-      "sha256": "ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c",
-      "size": 57847,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/insurance-exit-ded287a45cdb.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/ded287a4-5cdb-8c0c-f169-f8058376ba68/ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c.png",
-        "sha256": "ded287a45cdb8c0cf169f8058376ba68f7cd2b3fea79c0dcc6bf3790caef353c",
-        "size": 57847,
         "contentType": "image/png"
       }
     },
@@ -4919,23 +4460,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/lose-enter-6632264b6458.png",
-      "id": "6632264b-6458-e6ed-4810-a8f3173cab6b",
-      "sha256": "6632264b6458e6ed4810a8f3173cab6ba43569b32ee7a962da9759e4b90675d7",
-      "size": 53618,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/lose-enter-6632264b6458.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/6632264b-6458-e6ed-4810-a8f3173cab6b/6632264b6458e6ed4810a8f3173cab6ba43569b32ee7a962da9759e4b90675d7.png",
-        "sha256": "6632264b6458e6ed4810a8f3173cab6ba43569b32ee7a962da9759e4b90675d7",
-        "size": 53618,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/lose-exit-0549a15e5793.png",
       "id": "0549a15e-5793-8a99-233b-b7d802f3b0e4",
       "sha256": "0549a15e57938a99233bb7d802f3b0e4d73bec23880ffa67adcf3593da73feff",
@@ -4949,23 +4473,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/0549a15e-5793-8a99-233b-b7d802f3b0e4/0549a15e57938a99233bb7d802f3b0e4d73bec23880ffa67adcf3593da73feff.png",
         "sha256": "0549a15e57938a99233bb7d802f3b0e4d73bec23880ffa67adcf3593da73feff",
         "size": 53547,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/lose-exit-a2da8d820298.png",
-      "id": "a2da8d82-0298-cac8-697a-35f4338aa8aa",
-      "sha256": "a2da8d820298cac8697a35f4338aa8aa8757d2e4d5ea605628ca3d928e36822d",
-      "size": 54594,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/lose-exit-a2da8d820298.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/a2da8d82-0298-cac8-697a-35f4338aa8aa/a2da8d820298cac8697a35f4338aa8aa8757d2e4d5ea605628ca3d928e36822d.png",
-        "sha256": "a2da8d820298cac8697a35f4338aa8aa8757d2e4d5ea605628ca3d928e36822d",
-        "size": 54594,
         "contentType": "image/png"
       }
     },
@@ -5004,23 +4511,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/peek-enter-25836c542f28.png",
-      "id": "25836c54-2f28-0f46-2b52-71239e1b7649",
-      "sha256": "25836c542f280f462b5271239e1b7649b95a8b8781d5ba14567f4a1d96e76a85",
-      "size": 54248,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/peek-enter-25836c542f28.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/25836c54-2f28-0f46-2b52-71239e1b7649/25836c542f280f462b5271239e1b7649b95a8b8781d5ba14567f4a1d96e76a85.png",
-        "sha256": "25836c542f280f462b5271239e1b7649b95a8b8781d5ba14567f4a1d96e76a85",
-        "size": 54248,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/peek-enter-88afab544391.png",
       "id": "88afab54-4391-66c4-c539-512133e03e5f",
       "sha256": "88afab54439166c4c539512133e03e5fb899606e37cb2fd1db919d97605e68d0",
@@ -5034,23 +4524,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/88afab54-4391-66c4-c539-512133e03e5f/88afab54439166c4c539512133e03e5fb899606e37cb2fd1db919d97605e68d0.png",
         "sha256": "88afab54439166c4c539512133e03e5fb899606e37cb2fd1db919d97605e68d0",
         "size": 54369,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/peek-exit-84863f9ec4da.png",
-      "id": "84863f9e-c4da-e93e-7197-ca25d76c2508",
-      "sha256": "84863f9ec4dae93e7197ca25d76c2508d1d358f7df5d3e5e8caba626cda01c37",
-      "size": 54880,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/peek-exit-84863f9ec4da.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/84863f9e-c4da-e93e-7197-ca25d76c2508/84863f9ec4dae93e7197ca25d76c2508d1d358f7df5d3e5e8caba626cda01c37.png",
-        "sha256": "84863f9ec4dae93e7197ca25d76c2508d1d358f7df5d3e5e8caba626cda01c37",
-        "size": 54880,
         "contentType": "image/png"
       }
     },
@@ -5123,40 +4596,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-enter-93741fc1f7d7.png",
-      "id": "93741fc1-f7d7-8793-34f1-7a92a2b9170e",
-      "sha256": "93741fc1f7d7879334f17a92a2b9170e06a44eb8d46bd8a6bc632fef815656cf",
-      "size": 53263,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/placebets-enter-93741fc1f7d7.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/93741fc1-f7d7-8793-34f1-7a92a2b9170e/93741fc1f7d7879334f17a92a2b9170e06a44eb8d46bd8a6bc632fef815656cf.png",
-        "sha256": "93741fc1f7d7879334f17a92a2b9170e06a44eb8d46bd8a6bc632fef815656cf",
-        "size": 53263,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-exit-64dbde5ccc6b.png",
-      "id": "64dbde5c-cc6b-e806-81e2-e6779e03042c",
-      "sha256": "64dbde5ccc6be80681e2e6779e03042c11f906e7f5f6d9e948cb316486e8d1ae",
-      "size": 54874,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/placebets-exit-64dbde5ccc6b.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/64dbde5c-cc6b-e806-81e2-e6779e03042c/64dbde5ccc6be80681e2e6779e03042c11f906e7f5f6d9e948cb316486e8d1ae.png",
-        "sha256": "64dbde5ccc6be80681e2e6779e03042c11f906e7f5f6d9e948cb316486e8d1ae",
-        "size": 54874,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/placebets-exit-bfc7c8290ff7.png",
       "id": "bfc7c829-0ff7-d253-39df-10541d8950e9",
       "sha256": "bfc7c8290ff7d25339df10541d8950e9631eb6b6ace8dee61c9d425a448d41de",
@@ -5225,23 +4664,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/push-enter-996b52d8c11c.png",
-      "id": "996b52d8-c11c-a326-3360-6e0d99566a18",
-      "sha256": "996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a",
-      "size": 52409,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/push-enter-996b52d8c11c.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/996b52d8-c11c-a326-3360-6e0d99566a18/996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a.png",
-        "sha256": "996b52d8c11ca32633606e0d99566a1889d66b9fb37e038e097b28f929a12d0a",
-        "size": 52409,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/push-exit-588e66c57727.png",
       "id": "588e66c5-7727-8d94-5b5e-6ef26db72be7",
       "sha256": "588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d",
@@ -5255,23 +4677,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/588e66c5-7727-8d94-5b5e-6ef26db72be7/588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d.png",
         "sha256": "588e66c577278d945b5e6ef26db72be7931b760ca494c21176d2d9c5c9025a6d",
         "size": 55881,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/push-exit-60d9cbfc5d4a.png",
-      "id": "60d9cbfc-5d4a-028b-bc70-045d810307c5",
-      "sha256": "60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34",
-      "size": 57834,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/push-exit-60d9cbfc5d4a.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/60d9cbfc-5d4a-028b-bc70-045d810307c5/60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34.png",
-        "sha256": "60d9cbfc5d4a028bbc70045d810307c5a05c374289e257718325e7a2d7690f34",
-        "size": 57834,
         "contentType": "image/png"
       }
     },
@@ -5310,23 +4715,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-enter-c09b03237bbc.png",
-      "id": "c09b0323-7bbc-d94a-2b9b-e2112a38cbc6",
-      "sha256": "c09b03237bbcd94a2b9be2112a38cbc68bfd823513c64324b9be5b9ef6dd0438",
-      "size": 54641,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/sidebet-enter-c09b03237bbc.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/c09b0323-7bbc-d94a-2b9b-e2112a38cbc6/c09b03237bbcd94a2b9be2112a38cbc68bfd823513c64324b9be5b9ef6dd0438.png",
-        "sha256": "c09b03237bbcd94a2b9be2112a38cbc68bfd823513c64324b9be5b9ef6dd0438",
-        "size": 54641,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-enter-d0978f71a91a.png",
       "id": "d0978f71-a91a-6fae-9c64-a7a3358ded2d",
       "sha256": "d0978f71a91a6fae9c64a7a3358ded2d625332da9a059fe86b6d1a79e6977084",
@@ -5357,23 +4745,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/1c52db52-6e83-0e51-917d-413af20f7273/1c52db526e830e51917d413af20f72736c78beddf7cd121bbc6d19ba0edad119.png",
         "sha256": "1c52db526e830e51917d413af20f72736c78beddf7cd121bbc6d19ba0edad119",
         "size": 55238,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/sidebet-exit-afe8321c656a.png",
-      "id": "afe8321c-656a-e9ec-298a-704005e30cd1",
-      "sha256": "afe8321c656ae9ec298a704005e30cd1abb45f8d0b3f339bb0908e335665766a",
-      "size": 57478,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/sidebet-exit-afe8321c656a.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/afe8321c-656a-e9ec-298a-704005e30cd1/afe8321c656ae9ec298a704005e30cd1abb45f8d0b3f339bb0908e335665766a.png",
-        "sha256": "afe8321c656ae9ec298a704005e30cd1abb45f8d0b3f339bb0908e335665766a",
-        "size": 57478,
         "contentType": "image/png"
       }
     },
@@ -5446,23 +4817,6 @@
       }
     },
     {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/win-enter-f4e3213c34c5.png",
-      "id": "f4e3213c-34c5-4806-8ead-c5bb54584221",
-      "sha256": "f4e3213c34c548068eadc5bb54584221c36eccb57e3a5dbd4485faaf3c43a1db",
-      "size": 53075,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/win-enter-f4e3213c34c5.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/f4e3213c-34c5-4806-8ead-c5bb54584221/f4e3213c34c548068eadc5bb54584221c36eccb57e3a5dbd4485faaf3c43a1db.png",
-        "sha256": "f4e3213c34c548068eadc5bb54584221c36eccb57e3a5dbd4485faaf3c43a1db",
-        "size": 53075,
-        "contentType": "image/png"
-      }
-    },
-    {
       "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/win-exit-09d6e0052923.png",
       "id": "09d6e005-2923-4b22-6524-61636ca9d6e4",
       "sha256": "09d6e00529234b22652461636ca9d6e4c217731be512ff9f707ccbbbe813e92c",
@@ -5476,23 +4830,6 @@
         "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/09d6e005-2923-4b22-6524-61636ca9d6e4/09d6e00529234b22652461636ca9d6e4c217731be512ff9f707ccbbbe813e92c.png",
         "sha256": "09d6e00529234b22652461636ca9d6e4c217731be512ff9f707ccbbbe813e92c",
         "size": 57264,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/win-exit-8982250430ec.png",
-      "id": "89822504-30ec-fbaa-f553-a9edf432ee32",
-      "sha256": "8982250430ecfbaaf553a9edf432ee324b009f0e9e685890f171de15c8894c7b",
-      "size": 58240,
-      "access": "public",
-      "legacyUrls": [
-        "/review/astrid-green-speak/win-exit-8982250430ec.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/dealers/astrid/runtime/composited/astrid-green-speak/89822504-30ec-fbaa-f553-a9edf432ee32/8982250430ecfbaaf553a9edf432ee324b009f0e9e685890f171de15c8894c7b.png",
-        "sha256": "8982250430ecfbaaf553a9edf432ee324b009f0e9e685890f171de15c8894c7b",
-        "size": 58240,
         "contentType": "image/png"
       }
     },
