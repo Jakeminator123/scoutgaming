@@ -210,14 +210,24 @@ Hash- och bildruteproven för installerade ready-klipp och de levande talproven
 står kvar. `vendor/three` står kvar: den gemensamma spelaren importerar
 `three.module.js`.
 
-Prov här: riktade `node --test` för tal, ready-klipp, klippkatalog,
-dealer-växling och BO-auth; `check-orphan-tests` 0; systemkartan 0 röda.
-Inget Blob-objekt raderades. `migrate-media-layout --verify` har samma
-registerrad för en lokal ospårad Astrid-zonfil som på `33be100b`. Kvar:
-test-only-moduler i `lab/lib` som kan vara planerade, två oanvända filer i
-`vendor/three`, och A19:s lokala mappar. Full hook på Node 22 stoppas av ett
-befintligt systemkarteprov som inte hör till den här ändringen; se
-A17-rapporten.
+Jakobs beslut 12 oktober:
+- Ready-validatorn `web/public/ready-motion.mjs` står kvar, med sina prov. Den
+  kräver att väntläget är en komplett rundresa: ready-loop, talretur samt in-
+  och utgång från idle för varje tagning.
+- `GLTFLoader.js` och `BufferGeometryUtils.js` i `web/public/vendor/three` är
+  borttagna. De saknade importör sedan 3D-golvet togs bort.
+- `port-source.mjs` och fem Studio-moduler som kan vara planerade funktioner
+  står kvar, bland dem `family-video-upload.tsx`.
+
+Prov: orkestratorns lokala körning med Node 24 på den integrerade V2 är grön.
+Den omfattar full pre-commit, Studio- och frontendbyggena,
+`audit-dealer-sync --probe`, båda mediekatalogkontrollerna, `check-orphan-tests`
+(0) och systemkartan (0 röda). Spärren för raderingar gav 0 kvarvarande
+importer och 0 registerrader för 1151 borttagna filer. Inget Blob-objekt
+raderades. `migrate-media-layout --verify` har samma registerrad för en lokal,
+ospårad Astrid-zonfil som på `33be100b`. Kvar: visuell kontroll av
+partnerportalen i produktion direkt efter merge, med ljust och mörkt tema,
+SV/EN och mobilbredd.
 
 **PAOW-omstart och obligatorisk friläggning, 12 oktober (`0c04d1a2`, `c48fc657`).** Jakob bad uttryckligen om återställbar städning och en metodisk ombyggnad efter
 att bord/bakgrund inte gick att lägga bakom PAOW. Via den ordinarie N1-vyn

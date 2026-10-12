@@ -89,3 +89,12 @@ Flyttat från `.cursorignore` till `.cursorindexingignore`: `media/layout.json`,
 - `measure-target.mjs` i kvarhållen Astrid-staging importerar borttagen `blender-table-scene.mjs`.
 - GitGuardian: kontrollen för `2191349a` är `queued`. Incidentlistan är inte läst (`incidents:read` saknas). Ingen incident är markerad klar.
 - Node 22-felet i systemkartans cancellationsprov är inte A17:s. Det är inte omskrivet.
+
+## Beslut efter rapporten (Jakob 2026-10-12)
+
+- Ready-validatorn är återställd av orkestratorn. `web/public/ready-motion.mjs` och
+  kontrollerna av `readyMotionErrors` i `test/ready-motion.mjs` är tillbaka från V1.
+  Väntläget ready, med loop, talretur och in- och utgång från idle, ska finnas kvar.
+- `web/public/vendor/three/GLTFLoader.js` och `BufferGeometryUtils.js` är borttagna.
+  Spelarbyggets prov kontrollerar redan att `GLTFLoader.js` inte följer med.
+- `port-source.mjs`, `family-video-upload.tsx` och de fyra `lab/lib`-modulerna står kvar.
