@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { decisionAttribution, eventSummary } from '../lib/activity-log.mjs';
 import { dealFrequencyPolicies, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { getMotionClip } from '../lib/motion-library.mjs';
-import { resolveOriginalDefault } from '../lib/original-media.mjs';
 import { takeObservedStep } from '../lib/observed-step-store.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible } from '../lib/studio-model.mjs';
@@ -87,7 +86,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
   const {
     project, setProject, updateProject, modelEdit, dirty, saving, save, exportProject,
     error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
-    videos, refreshVideos, refreshingVideos, originals,
+    videos, refreshVideos, refreshingVideos,
     dealerId, selectDealer, eventId, selectEvent: selectStoredEvent, setVariantId, selectVariant, assignSelection,
     mode, changeMode, event, observedEvent, line, variant, media, dealer, recordActivity,
   } = session;
@@ -103,9 +102,6 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
   const eligibleIds = new Set((result?.eligible ?? []).map(item => typeof item === 'string' ? item : item.id ?? item.variantId).filter((id): id is string => Boolean(id)));
   const previewVideoId = previewVideoIdFor(variant, result, Boolean(socialAsset));
   const selectedVideo = media.managed ? mediaVideoForEvent(videos, dealerId, event.id, (result?.decision?.sourceEvent ?? event.exampleEvent) as Record<string, unknown>, previewVideoId) : previewVideoId ? videos.videos.find(item => item.id === previewVideoId && item.available && videoFitsLine(item, dealerId, event.id)) : undefined;
-  const currentVariant = result?.variant ?? variant;
-  const originalDefault = resolveOriginalDefault(originals, dealerId, (result?.decision?.sourceEvent ?? event.exampleEvent) as Record<string, unknown>);
-  const selectedOriginal = !media.managed && !socialAsset && !currentVariant.videoGenerationId && currentVariant.id === line.baselineVariantId ? originalDefault : null;
   const invalidVideoBindings = project.lines.filter(item => !videos.families?.some(family => family.dealerId === item.dealerId)).flatMap(item => item.variants.filter(candidate => candidate.videoGenerationId && !videoFitsLine(videos.videos.find(video => video.id === candidate.videoGenerationId), item.dealerId, item.eventId)));
   const isIdleEditor = dealerId === 'astrid' && event.id === 'idle.ready';
   const isDealEditor = Boolean(media.managed && dealerId === 'astrid' && event.sourceType === 'deal');
@@ -290,7 +286,6 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
           managed={managed}
           event={event}
           observed={Boolean(observedEvent)}
-          originals={originals}
           dealerId={dealerId}
           onSituation={chooseSituation}
           onSpeechLine={lineId => { setExampleSpeechLine(lineId); chooseSituation(lineId); }}
@@ -312,7 +307,6 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
             allow2dFallback: !managed || previewKind === 'social',
             fallbackVideo: managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, line.variants[0]?.videoGenerationId) : null,
             videoMissing: Boolean(previewVideoId && !selectedVideo),
-            originalMedia: selectedOriginal,
             sourceIsObserved: Boolean(observedEvent),
             onPlay: () => void simulate(),
             onPreview: previewSelected,
@@ -335,7 +329,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
           test={{
             dealClips: isDealEditor, dealFrequency: frequencyMode, open: testToolsOpen, onOpen: setTestToolsOpen,
             mode, onMode: changeMode, configured: Boolean(initialStatus.configured), context, onContext: changeTestContext,
-            dealer: dealer.label, eventLabel: event.label, sourceType: event.sourceType, result, originalLabel: selectedOriginal?.label,
+            dealer: dealer.label, eventLabel: event.label, sourceType: event.sourceType, result,
             manifestOwned: managed, previewKind, busy: simulating, blocked: socialBusyState, onRun: () => void simulate(),
           }}
         />
@@ -356,7 +350,6 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
           onRefresh={() => void refreshVideos()}
           selectedAsset={selectedAsset}
           selectedAnimationCompatible={selectedAnimationCompatible}
-          originalDefault={originalDefault}
           result={result}
           eligibleIds={eligibleIds}
           dirty={dirty}

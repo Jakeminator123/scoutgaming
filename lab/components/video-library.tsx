@@ -9,7 +9,6 @@ import { videoFitsLine, VIDEO_KINDS } from '../lib/video-intake.mjs';
 import styles from './video-intake.module.css';
 import type { VideoEntry, VideoInventory } from './studio-types';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
-import { resolveOriginalDefault, type OriginalMediaEntry, type OriginalMediaCatalog } from '../lib/original-media.mjs';
 
 const verdictLabels = { want: 'Want · utvald', no: 'No · bortvald', unrated: 'Ej bedömd' };
 
@@ -39,10 +38,9 @@ const optionLabel = (video: VideoEntry, clipLabels?: Record<string, string>) => 
   return displayName(video, clipLabels);
 };
 
-export function VariantVideoBinding({ inventory, dealerId, eventId, variant, isBaseline, originalDefault, onBind, onInspect, clipLabels }: {
+export function VariantVideoBinding({ inventory, dealerId, eventId, variant, isBaseline, onBind, onInspect, clipLabels }: {
   inventory: VideoInventory; dealerId: string; eventId: string; variant: StudioVariant; isBaseline: boolean;
   onBind: (id: string | null) => void; onInspect: () => void;
-  originalDefault?: OriginalMediaEntry | null;
   clipLabels?: Record<string, string>;
 }) {
   const [query, setQuery] = useState('');
@@ -54,19 +52,18 @@ export function VariantVideoBinding({ inventory, dealerId, eventId, variant, isB
     <span className="eyebrow">{isBaseline ? 'STANDARDVARIANTENS VIDEO' : 'ALTERNATIVETS VIDEO'}</span>
     <label className="field">Hitta video<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Namn eller video-ID…" /></label>
     <label className="field">Kopplad video<select value={variant.videoGenerationId ?? ''} onChange={event => onBind(event.target.value || null)}>
-      <option value="">{originalDefault ? `Originalförval · ${originalDefault.label}` : 'Inget klipp'}</option>
+      <option value="">Inget klipp</option>
       {variant.videoGenerationId && !candidates.some(video => video.id === variant.videoGenerationId) ? <option value={variant.videoGenerationId} title={variant.videoGenerationId}>{selected ? optionLabel(selected, clipLabels) : variant.videoGenerationId}{selected?.available ? '' : ' · fil saknas'}</option> : null}
       {candidates.map(video => <option key={video.id} value={video.id} title={video.id}>{optionLabel(video, clipLabels)}</option>)}
     </select></label>
-    <p className="helper">{originalDefault ? 'Standard använder originalklippet för exakt replik eller destination. En egen koppling ersätter förvalet.' : 'Video om denna variant har en koppling, annars dess 2D-rörelse. Ingen annan variants video lånas.'}</p>
-    {originalDefault && !variant.videoGenerationId ? <small className="helper">{originalDefault.note}</small> : null}
+    <p className="helper">Video om denna variant har en koppling, annars ingen registrerad film. Ingen annan variants video lånas.</p>
     {variant.videoGenerationId ? <button type="button" className="text-button" onClick={() => onBind(null)}>Koppla loss video</button> : null}
     <button type="button" className="text-button" onClick={onInspect}>Granska original i Videobanken ↗</button>
     <small className="helper">Manuell labbkoppling · innehåll, riktning och tal måste matcha. Sparas med Spara projekt.</small>
   </div>;
 }
 
-export function VideoLibrary({ project, inventory, originals, dealer, eventLabel, line, variant, onSelectVariant, onBind, onUploaded, onOpenEvent, onInventory, onClipLabel, initialSituation }: {
+export function VideoLibrary({ project, inventory, dealer, eventLabel, line, variant, onSelectVariant, onBind, onUploaded, onOpenEvent, onInventory, onClipLabel, initialSituation }: {
   project: StudioProject;
   initialSituation?: string;
   onInventory: (next: VideoInventory) => void;
@@ -74,7 +71,6 @@ export function VideoLibrary({ project, inventory, originals, dealer, eventLabel
   onOpenEvent: (eventId: string) => void;
   onClipLabel?: (clipId: string, text: string) => void;
   inventory: VideoInventory;
-  originals?: OriginalMediaCatalog | null;
   dealer: string;
   eventLabel: string;
   line: StudioLine;
@@ -98,14 +94,11 @@ export function VideoLibrary({ project, inventory, originals, dealer, eventLabel
   const selectedName = selected ? displayName(selected, project.clipLabels) : '';
   const bound = inventory.videos.find(video => video.id === variant.videoGenerationId);
   const boundName = bound ? displayName(bound, project.clipLabels) : '';
-  const event = project.events.find(item => item.id === line.eventId);
-  const originalDefault = event && variant.id === line.baselineVariantId && variant.videoGenerationId == null ? resolveOriginalDefault(originals, line.dealerId, event.exampleEvent) : null;
-
   return <div className="video-workspace">
 
-    <section className="binding-bar" aria-label="Vald videokoppling"><div><span className="eyebrow">DU KOPPLAR FÖR</span><strong>{dealer} <span>/</span> {eventLabel}</strong></div><label className="field">Variant<select value={variant.id} onChange={event => onSelectVariant(event.target.value)}>{line.variants.map(item => <option key={item.id} value={item.id}>{item.label}{item.id === line.baselineVariantId ? ' · standard' : ''}</option>)}</select></label><div className="binding-current"><span className="eyebrow">NUVARANDE MÅL</span><span title={bound?.id ?? variant.videoGenerationId ?? ''}>{bound ? (boundName) : (variant.videoGenerationId ? variant.videoGenerationId : originalDefault ? `Originalförval · ${originalDefault.label}` : 'Inget klipp')}</span>{originalDefault ? <small>{event?.id === 'speak.other' ? `För exemplet ${originalDefault.situation}; förvalet följer exakt replik` : 'För sparat eventexempel · ej visuellt godkänt'}</small> : null}{variant.videoGenerationId ? <button className="text-button" onClick={() => onBind(null)}>Koppla loss</button> : null}</div></section>
+    <section className="binding-bar" aria-label="Vald videokoppling"><div><span className="eyebrow">DU KOPPLAR FÖR</span><strong>{dealer} <span>/</span> {eventLabel}</strong></div><label className="field">Variant<select value={variant.id} onChange={event => onSelectVariant(event.target.value)}>{line.variants.map(item => <option key={item.id} value={item.id}>{item.label}{item.id === line.baselineVariantId ? ' · standard' : ''}</option>)}</select></label><div className="binding-current"><span className="eyebrow">NUVARANDE MÅL</span><span title={bound?.id ?? variant.videoGenerationId ?? ''}>{bound ? (boundName) : (variant.videoGenerationId ? variant.videoGenerationId : 'Inget klipp')}</span>{variant.videoGenerationId ? <button className="text-button" onClick={() => onBind(null)}>Koppla loss</button> : null}</div></section>
     <VideoUpload key={`${line.dealerId}/${line.eventId}/${initialSituation ?? ''}`} project={project} dealerId={line.dealerId} eventId={line.eventId} initialSituation={initialSituation} onUploaded={(next, video, binding) => { setSelectedId(video.id); onUploaded(next, video, binding); }} />
-    <details><summary>Avancerat · klipptäckning</summary><VideoCoverage project={project} inventory={inventory} originals={originals} dealerId={line.dealerId} onOpen={onOpenEvent} /></details>
+    <details><summary>Avancerat · klipptäckning</summary><VideoCoverage project={project} inventory={inventory} dealerId={line.dealerId} onOpen={onOpenEvent} /></details>
     <div className={styles.scopes} role="group" aria-label="Visa videor">{[['matching','För vald eventgrupp'],['inbox','Inkorg · kategorisera'],['all','Alla filmer']].map(([id,label])=><button type="button" key={id} className="text-button" aria-pressed={scope===id} onClick={()=>{setScope(id);setSelectedId(''); if(id !== 'matching') setSituationFilter('');}}>{label}</button>)}</div>
     <details><summary>Avancerat · filter</summary><div className={styles.filters}><select aria-label="Filtrera avsedd roll" value={role} onChange={e => setRole(e.target.value)}><option value="all">Standard och alternativ</option><option value="standard">Standardtagningar</option><option value="alternative">Alternativa tagningar</option></select><select aria-label="Filtrera källa" value={source} onChange={e => setSource(e.target.value)}><option value="all">Alla källor</option><option value="emil">Emils videomapp</option><option value="upload">Egna uppladdningar</option><option value="archive">Äldre generationsarkiv</option></select><select aria-label="Filtrera videotyp" value={kind} onChange={e => setKind(e.target.value)}><option value="all">Alla videotyper</option>{Object.entries(VIDEO_KINDS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><select aria-label="Filtrera dealer" value={dealerFilter} onChange={e => setDealerFilter(e.target.value)}><option value="all">Alla dealers</option>{project.dealers.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}</select><select aria-label="Filtrera event" value={eventFilter} onChange={e => setEventFilter(e.target.value)}><option value="all">Alla event</option>{project.events.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}</select></div></details>
     {situationFilter ? <p>{clipSituationLabel(line.eventId, situationFilter)} <button type="button" className="text-button" onClick={() => setSituationFilter('')}>Visa alla kortplatser och repliker</button></p> : null}

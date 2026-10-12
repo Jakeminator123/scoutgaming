@@ -621,7 +621,7 @@
     },
     {
       "id": "studio-render-tools",
-      "pattern": "/studio/api/{voice|inputs|chat|presentation|social-subroutes|probe|simulate|zones|original-media|generated-speech}/...",
+      "pattern": "/studio/api/{voice|inputs|chat|presentation|social-subroutes|probe|simulate|zones|generated-speech}/...",
       "serving": "Explicit frontend allowlist -> protected Render Lab transport/handlers",
       "access": "Render Lab authenticated request boundary; mutations and paid/provider work retain endpoint-specific gates.",
       "sources": [
@@ -2026,125 +2026,6 @@
         {
           "path": "lab/lib/partner-observer.mjs",
           "line": 198
-        }
-      ]
-    },
-    {
-      "id": "studio-api-original-media-path",
-      "path": "/api/original-media/:path+",
-      "publicPath": "/studio/api/original-media/:path+",
-      "methods": [
-        "GET",
-        "HEAD"
-      ],
-      "kind": "api",
-      "app": "studio",
-      "handlerFile": "lab/app/api/original-media/[...path]/route.ts",
-      "serving": "Protected Render gateway -> internal Lab Next handler for the public platform URL; same route file also exists in local Lab",
-      "access": "Gateway validates the current Lab session; internal handler requires the existing Lab request boundary.",
-      "boundary": "Frontend explicit LAB_API allowlist selects Render. Gateway injects its private authorization header only after session validation; assertLocalRequest/readLocalJson checks exact public Host/forwarding, origin and fetch-site. Local mode admits loopback only; no native Vercel writer is inferred from this route file.",
-      "groupId": "studio-render-tools",
-      "sources": [
-        {
-          "path": "lab/app/api/original-media/[...path]/route.ts",
-          "line": 5
-        },
-        {
-          "path": "lab/app/api/original-media/[...path]/route.ts",
-          "line": 9
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 79
-        },
-        {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 19
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 46
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 83
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 176
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 197
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 18
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 55
-        },
-        {
-          "path": "lab/lib/original-media-server.mjs",
-          "line": 111
-        }
-      ]
-    },
-    {
-      "id": "studio-api-original-media",
-      "path": "/api/original-media",
-      "publicPath": "/studio/api/original-media",
-      "methods": [
-        "GET"
-      ],
-      "kind": "api",
-      "app": "studio",
-      "handlerFile": "lab/app/api/original-media/route.ts",
-      "serving": "Protected Render gateway -> internal Lab Next handler for the public platform URL; same route file also exists in local Lab",
-      "access": "Gateway validates the current Lab session; internal handler requires the existing Lab request boundary.",
-      "boundary": "Frontend explicit LAB_API allowlist selects Render. Gateway injects its private authorization header only after session validation; assertLocalRequest/readLocalJson checks exact public Host/forwarding, origin and fetch-site. Local mode admits loopback only; no native Vercel writer is inferred from this route file.",
-      "groupId": "studio-render-tools",
-      "sources": [
-        {
-          "path": "lab/app/api/original-media/route.ts",
-          "line": 5
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 79
-        },
-        {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 19
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 46
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 83
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 176
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 197
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 18
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 55
-        },
-        {
-          "path": "lab/app/api/original-media/route.ts",
-          "line": 6
         }
       ]
     },

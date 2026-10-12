@@ -894,7 +894,7 @@
     {
       "id": "preview-versus-runtime",
       "title": "Historisk BO-preview, Lab-preview och riktigt spel är olika bevis",
-      "detail": "Historiska tysta /bo/gen/*.mp4 var preview och avvecklades med äldre BO, inte en aktiv lipsynkväg. Nuvarande FileVideo-preview startar muted och lämnar egna started/completed-kvitton. OriginalMediaPlayer kan i stället använda det exakta gemensamma originalmediepaketet. Studio följer spelets native-kvitton utan parallell Lab-film; en separat Lab-preview kräver uttryckligt val och räknas aldrig som uppspelad i spelfliken. Inget av dessa preview-avslut är mänskligt godkänd läppsynk.",
+      "detail": "Historiska tysta /bo/gen/*.mp4 var preview och avvecklades med äldre BO, inte en aktiv lipsynkväg. Nuvarande FileVideo-preview startar muted och lämnar egna started/completed-kvitton. Saknas registrerad video visas statustexten för ingen spelbar video. Studio följer spelets native-kvitton utan parallell Lab-film; en separat Lab-preview kräver uttryckligt val och räknas aldrig som uppspelad i spelfliken. Inget av dessa preview-avslut är mänskligt godkänd läppsynk.",
       "sources": [
         {
           "path": "docs/JOHN-HANDOFF.md",
@@ -910,11 +910,6 @@
           "label": "Dagens filpreview är muted från start"
         },
         {
-          "path": "lab/components/original-media-player.tsx",
-          "line": 62,
-          "label": "Exakt originalspelare i separat frame"
-        },
-        {
           "path": "lab/components/activity-log.tsx",
           "line": 187,
           "label": "Web äger playback; separat preview är uttryckligt val"
@@ -925,11 +920,6 @@
           "path": "lab/test/activity-presentation-owner.test.mjs",
           "line": 14,
           "label": "Web-ägande förhindrar en andra spelare"
-        },
-        {
-          "path": "lab/components/original-media-player.test.mjs",
-          "line": 53,
-          "label": "Inget autoplay vid val och inga stale kvitton"
         },
         {
           "path": "lab/components/video-workflow.test.mjs",

@@ -405,8 +405,6 @@
         "lab/app/api/inputs/reference/route.ts": "sha256:fd3e7d821879ca00dc6d4986c6e84e3eec10ccd73908f9188ab3a04c3eae5de2",
         "lab/app/api/inputs/route.ts": "sha256:eaf0a3b9b5f0a9f6f6ecaba4c8e3b701ab79e176acfc8b10a7b2420a7f649bcd",
         "lab/app/api/openclaw/admin/route.ts": "sha256:b4caed5a376848431abe86961e5b4834e61523963aa8e6fc9dc104e3241481bf",
-        "lab/app/api/original-media/[...path]/route.ts": "sha256:79266f2c82be0c9b25f75885eb3a12f91fdbc783d6b8f234d3aea1596a38127a",
-        "lab/app/api/original-media/route.ts": "sha256:c884cc2f9d67e755846ffc070f4bf76d0af89718df0302b8c62072306220de2e",
         "lab/app/api/partner-preview/route.ts": "sha256:d628ae22f762a041e1d5e00e63fd21277a4889e1238f765c712441fda09f7f3c",
         "lab/app/api/partner/[...action]/route.ts": "sha256:9cb6b4fed5247024d4924b7b078e3900a6d234050ded997383a05a5ae9301cc9",
         "lab/app/api/presentation/decision/route.ts": "sha256:0ca56cf9820cd86b217674903e0178b45e49aef799cbf16e7f37744bbe838144",

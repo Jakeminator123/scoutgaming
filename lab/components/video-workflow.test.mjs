@@ -32,7 +32,7 @@ function component(file, name, props) {
     if (modules.has(filename)) return modules.get(filename).exports;
     const module = { exports: {} }; modules.set(filename, module);
     const code = transformSync(readFileSync(new URL(filename, import.meta.url), 'utf8'), { filename, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : id === './presentation-frame' ? load('./presentation-frame.tsx') : id === './file-video' ? load('./file-video.tsx') : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : id === './presentation-frame' ? load('./presentation-frame.tsx') : id === './file-video' ? load('./file-video.tsx') : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
     return module.exports;
   }
   function renderFunction(fn, values, path) {
@@ -203,6 +203,13 @@ test('a stale missing variant URL falls back to its same-family standard without
   assert.equal(byType(h.render(), 'video'), undefined);
 });
 
+test('missing registered video without a 2D fallback shows the existing status text', () => {
+  const h = stage({ allow2dFallback: false });
+  const status = find(h.render(), node => node.type === 'div' && node.props.role === 'status');
+  assert.match(String(status.props.children), /Ingen spelbar video för den här situationen/);
+  assert.equal(byType(h.render(), 'iframe'), undefined);
+  assert.equal(button(h.render(), 'Bara 2D'), undefined);
+});
 test('Bara 2D is an explicit override; switching back restores exact bound video', () => {
   const h = stage({ videoUrl: '/api/videos/one' });
   button(h.render(), 'Bara 2D').props.onClick();
