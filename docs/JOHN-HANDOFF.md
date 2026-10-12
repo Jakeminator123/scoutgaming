@@ -79,6 +79,23 @@ och apex omdirigerar till www med 308. Inga domäner ändrades.
 
 ## Env-städning och OpenClaw-namnbyte, 12 oktober 2026
 
+`fe8b6372` passerar samtliga tre GitHub-jobb och är verifierad live på Vercel
+och spelservern; den publika friläggningsmodulen matchar samma commit bytevis.
+Gateway driftsattes med samma bevarade konfiguration. Director avslöjade däremot
+ett tidigare paketeringsfel: `astrid-observation.mjs` importerar gemensamma
+`web/public/dealer-identity.mjs`, men Docker-kontexten innehöll bara labbmappen.
+Render återgick till den friska gamla Director-versionen. Båda nyckelnamnen
+behölls. Hälsokontroll och admin visar anslutning samt oförändrade fem roller,
+fyra modeller och konfigurationshash.
+
+Director-paketet bevarar nu repo-sökvägar och kopierar endast sina faktiska
+runtimefiler samt den gemensamma identitetsfilen. En Dockerfile-specifik
+allowlist utesluter övriga filer, hemligheter och media. Render behöver Docker
+context `.` med oförändrad Dockerfile-sökväg och Root Directory; Gateway har
+kvar sin tidigare kontext. Tre isolerade paketprov och Blueprint-valideringen
+passerar. Faktiskt Director-bygge och ny start måste verifieras före borttagning
+av det gamla env-namnet. Slutligt driftkvitto förs i `ENVIRONMENT-VARIABLES.md`.
+
 Gatewayens startkod stöder nu `OPENCLAW_API_KEY` med prioritet över det
 äldre namnet, uttryckligt tomt värde stänger av fallback, och barnprocessen
 får endast det rättade namnet och OpenClaws interna lösenordsvariabel.

@@ -6,8 +6,8 @@ name: croupier-openclaw-lab
 services:
   director:
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ../../..
+      dockerfile: open-claw/lab/Dockerfile
     ports:
       - 127.0.0.1:4189:4188
     environment:

@@ -1,7 +1,15 @@
 FROM node:24-bookworm-slim
-WORKDIR /app
+# Keep repository-relative shared imports intact. Build from the repository root;
+# Dockerfile.dockerignore restricts that context to this runtime's source inputs.
+WORKDIR /app/open-claw/lab
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=4188 LAB_DATA_DIR=/data/catalog
-COPY --chown=node:node . .
+COPY --chown=node:node open-claw/lab/package.json ./package.json
+COPY --chown=node:node open-claw/lab/src/ ./src/
+COPY --chown=node:node open-claw/lab/public/ ./public/
+COPY --chown=node:node open-claw/lab/config/catalog.json ./config/catalog.json
+COPY --chown=node:node open-claw/lab/fixtures/scenarios.json ./fixtures/scenarios.json
+COPY --chown=node:node open-claw/lab/deploy/start-director.mjs ./deploy/start-director.mjs
+COPY --chown=node:node web/public/dealer-identity.mjs /app/web/public/dealer-identity.mjs
 RUN mkdir -p /data/catalog && chown -R node:node /data
 USER node
 EXPOSE 4188
