@@ -1,5 +1,6 @@
 import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from './composition-settings.mjs';
 import {drawDealerFrame,validateDealerFraming} from './dealer-framing.mjs';
+import {effectiveDealerCompositing} from './dealer-compositing.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
@@ -27,7 +28,7 @@ export function validateComposition(value) {
   return structuredClone(value);
 }
 export function clipCompositing(value) {
-  if(value===undefined||value?.mode==='opaque'&&Object.keys(value).length===1)return null;
+  value=effectiveDealerCompositing(value);
   if(!value||Object.keys(value).sort().join(',')!=='despill,mode,softness,threshold'||value.mode!=='green-screen'
     ||!Number.isFinite(value.threshold)||value.threshold<0||value.threshold>1
     ||!Number.isFinite(value.softness)||value.softness<=0||value.softness>1
@@ -52,7 +53,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(!compositor||!key||!actorFrame.width||closed)return;
     const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
     const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
-      {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&current.background.mode!=='baked'),table:Boolean(key.enabled&&current?.table.enabled)},key);
+      {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&mounts.has('background')),table:Boolean(key.enabled&&current?.table.enabled)},key);
     scene.dealerAspect=16/9;
     compositor.render(scene,actorFrame,assets(),[],null);
   }
@@ -61,13 +62,13 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   function render(role,id) {
     mounts.get(role)?.pause?.();mounts.get(role)?.remove();mounts.delete(role);pending.delete(role);
     selected.set(role,id);
-    if(!current||!current[role].enabled||current.dealer.enabled&&current.dealer.compatibility==='full-frame'||role==='background'&&current.background.mode==='baked')return;
+    if(!current||!current[role].enabled)return;
     const asset=current.assets.find(row=>row.id===id&&row.role===role);if(!asset)return;
     const node=document.createElement(asset.contentType.startsWith('video/')?'video':'img');
     node.className=`presentation-plane presentation-${role}`;node.dataset.layerAsset=asset.id;node.setAttribute('aria-hidden','true');
     if(node.tagName==='VIDEO'){node.muted=true;node.loop=true;node.playsInline=true;node.preload='auto';node.autoplay=true;}
     else node.alt='';
-    // Source planes supply textures; opaque dealer clips never reveal them.
+    // Independent source planes appear through the mandatory keyed dealer layer.
     if(node.style)node.style.visibility=current.dealer.enabled?'hidden':'';node.src=asset.src;host.append(node);mounts.set(role,node);
     if(node.addEventListener){const event=node.tagName==='VIDEO'?'loadeddata':'load';pending.set(role,new Promise((resolve,reject)=>{
       if(node.tagName==='VIDEO'?node.readyState>=2:node.complete&&node.naturalWidth){resolve();return;}
@@ -80,23 +81,19 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   function replace(value) {
     ++preparation;current=validateComposition(value);key=null;stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
     for(const role of ['background','table'])render(role,current[role].default);
-    host.dataset.dealerLayerEnabled=String(current.dealer.enabled);host.dataset.presentationClipMode='opaque';
+    host.dataset.dealerLayerEnabled=String(current.dealer.enabled);host.dataset.presentationClipMode='pending';
   }
   async function prepareClip(compositing,sourceFraming) {
     const revision=++preparation;stopAnimation();key=null;framing=sourceFraming?validateDealerFraming(sourceFraming):null;
     const nextKey=clipCompositing(compositing);
-    if(!framing&&(!current||current.dealer.compatibility!=='per-clip'||!nextKey)){
-      // Keep the previous presented picture until this clip presents its own frame.
-      return false;
-    }
     runtime??=loadRuntime();const {Compositor}=await runtime;
     await Promise.all(pending.values());if(closed||revision!==preparation)return false;
     if(!compositor){const canvas=document.createElement('canvas');canvas.className='presentation-composed-film';host.append(canvas);compositor=new Compositor(canvas);}
-    key=nextKey??{mode:'composite',enabled:false,despill:0};return true;
+    key=nextKey;return true;
   }
   function renderFrame(video) {
     if(closed)return false;
-    if(!key||!compositor){host.dataset.presentationClipMode='opaque';if(compositor)compositor.canvas.style.visibility='hidden';return false;}
+    if(!key||!compositor){host.dataset.presentationClipMode='unavailable';if(compositor)compositor.canvas.style.visibility='hidden';throw Error('Dealer background removal unavailable');}
     if(!video.videoWidth||!video.videoHeight)throw Error('Dealer frame unavailable');
     const targetWidth=1920,targetHeight=1080;
     if(actorFrame.width!==targetWidth||actorFrame.height!==targetHeight){actorFrame.width=targetWidth;actorFrame.height=targetHeight;}

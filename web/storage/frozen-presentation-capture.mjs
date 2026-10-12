@@ -17,13 +17,18 @@ export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory,
   const source = project;
   const captured = captureFrozenRegisteredDealers({project:source, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds});
   const events = captured.registeredDealers.length ? captureFrozenDealerPlayback({project:source, inventory, mediaRows, registeredDealers:captured.registeredDealers}) : null;
+  // A new publication must not reactivate an explicitly baked dealer source.
+  // Reading old immutable packages stays independent of this write guard.
+  const mediaPreconditions = events?.mediaPreconditions ?? captured.mediaPreconditions;
+  if (mediaPreconditions.some(({record}) => record.classification?.mediaType !== 'audio' && record.classification?.compositing?.mode === 'opaque'))
+    throw new StudioStorageError('studio_dealer_background_required',422);
   const presentation = buildPresentationPackage(source, selectedLaneIds, source.layerAssets ?? [],
     events ? {registeredDealers:captured.registeredDealers, playback:events.playback} : {});
   const freeze = value => {
     if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
     return value;
   };
-  return freeze({presentation, mediaPreconditions:events?.mediaPreconditions ?? captured.mediaPreconditions, projectRevision, administrationRevision});
+  return freeze({presentation, mediaPreconditions, projectRevision, administrationRevision});
 }
 export function selectedRegisteredIdleDefaults(project, selectedLaneIds) {
   return [...new Set(selectedLaneIds.map(id => project.lanes?.find(lane => lane.id === id)?.layers.dealer.default)

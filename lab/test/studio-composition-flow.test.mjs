@@ -53,9 +53,9 @@ test('a missing or wrong-role upload receipt cannot change the draft',()=>{
   assert.deepEqual(draft,before);
 });
 
-test('full-frame preview hides independent layers, greenscreen and layer-only preview retain them',()=>{
+test('legacy metadata never hides independently selected preview layers',()=>{
   const show={dealer:true,background:true,table:true};
-  assert.deepEqual(compositionPreviewLayers(show),{dealer:true,background:false,table:false});
+  assert.deepEqual(compositionPreviewLayers(show),show);
   assert.deepEqual(compositionPreviewLayers(show,{mode:'green-screen'}),show);
   assert.deepEqual(compositionPreviewLayers(show,undefined,false),show);
   assert.deepEqual(compositionPreviewLayers({...show,dealer:false}),{dealer:false,background:true,table:true});

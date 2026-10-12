@@ -1,5 +1,66 @@
 # Aktuell handoff — Scoutgaming
 
+## PAOW-omstart och obligatorisk friläggning, 12 oktober 2026
+
+Jakob bad uttryckligen om återställbar städning och en metodisk ombyggnad efter
+att bord/bakgrund inte gick att lägga bakom PAOW. Via den ordinarie N1-vyn
+granskades serverns konsekvenslista och `paow` arkiverades: 25 medieposter,
+två sammansättningar (`mobile-phone`, `johns-johanna`) och fyra rum
+(Testrummet, Johannas blackjack, ny-jhanna, nordic rum) hos SG-test, Johns
+och Nordic Bet. Historik, originalfiler och bolagskonton finns kvar.
+Ingen permanent radering eller direkt SQL-skrivning gjordes.
+
+Ny dealer `paow-v2`, visningsnamn PAOW, är sparad med tomma klippkopplingar
+och utan aktiv talprofil. Verifierad projektrevision efter omstart:
+`studio-5a750fc4-3132-4eaa-b26b-77e73ce13ca2`. Alla 25 gamla medieposter är
+arkiverade, noll raderade. Därefter skapades ett sparat utkast `PAOW · Studio`
+(`paow-studio-14b6c188-ef58-4ad9-9028-4f6fb58a6de9`) med enbart `paow-v2`,
+separat `Bord · Svart och guld` och `Bakgrund · Casino`. En verifierad grön
+grundloop har återanvänts med oförändrade originalbytes som ny mediepost
+`13d044b3-0582-4f8f-a754-75bb099a0237` och valts som standard för `idle.ready`.
+Övriga klipp, talprofil och publicering återstår. Återställ inte gamla PAOW automatiskt:
+återställning återför även hennes tidigare klippval och sammansättningar.
+
+Grundfelet i scenredigeringen: saknad compositing-metadata tolkades som
+fullbild, vilket dolde bords- och bakgrundslager och deras kontroller.
+PAOW hade 25 poster för 13 unika videofiler; elva saknade metadata. Kopior
+av samma video hade dessutom olika platskopplingar. Talprofilen fanns kvar;
+den tidigare öppna fliken spelade Johanna, som saknade talprofil.
+
+Dealerklipp friläggs nu obligatoriskt i Studio och gemensam uppspelning,
+även genererat tal. Grön bakgrund är standard för äldre saknad metadata.
+Explicit opaque är fortsatt läsbart i historik, men nekas vid nya skrivningar
+och publicering. En verkligt inbakad scen måste ersättas med grön källfilm;
+chromakey tar inte bort godtyckliga miljöer. Fel i friläggningen visar fel,
+aldrig rå grön video. Tillåtna separata lager kan inte längre spärras enbart
+av en gammal fullbildsmarkering. Originalbytes och frysta paket skrivs inte om.
+
+Ändringen gör inga katalogflyttar. PR #19 granskad på `33be100b`; A20/A21
+ska flytta kompositor/runtime atomärt med oförändrade URL:er efter denna
+beteenderättning (PR-head vid leveransförberedelse `a12a4bc2`). Fortsätt ombyggnaden med en grundloop, ett separat bord
+och en bakgrund före händelseklipp, tal och publicering. Godkänn två faktiska
+uppspelningar och exakt tal-/videopar; en grön testsvit är inte läppsynksacceptans.
+
+Den nya grundloopen är nu sparad med separat scen och anpassade mobil-/datorlägen.
+Två uppspelningar i följd har provats i Studio med PAOWs faktiska originalfilm;
+gröna ytor försvinner och bord/bakgrund är separata. Detta är grundloopens
+scenprov, inte acceptans av händelseklipp, tal eller ett publicerat spelrum.
+Publik rumskatalog och scenpreview respekterar samma uttryckliga lagergrants
+även med äldre full-frame/baked-flaggor; 43 tenant-/paketprov passerar.
+Talets fullfil och stream använder båda scenens gemensamma kompositor.
+Native P6-kvittensen granskar nu den synliga scenbilden efter lyckad rendering,
+med samma råvideo som dold ljudklocka. Saknad, dold eller skymd canvas samt
+renderingsfel nekar kvittens; 64 stream-/ägarskapsprov och 46 talspelarprov passerar.
+
+Verifiering: riktade UI-/runtime-/API-prov och TypeScript passerar.
+Studio-produktionsbygge med Node 24.21.0 och fyra workers passerar (92 byggspår).
+11 verkliga Chrome-prov med syntetiskt material passerar: transparenta pixlar,
+två spelningar, källbyte, sena callbacks, fel och återhämtning samt separata lager.
+`audit-dealer-sync --probe` bekräftar oförändrade fyra historiska medieset;
+det är inget nytt visuellt läppsynksgodkännande. Bildkvitton och maskinbevis
+ligger privat under `lab/data/platform-private/greenscreen-browser-20261012`
+och `paow-rebuild-20261012`. Full ordinarie commit-hook körs inför leveransen.
+
 ## Materialskapande i dealerns arbetsyta, 12 oktober 2026
 
 Dealer Forge är samlat i **Dealers & klipp → Skapa material** för vald dealer.

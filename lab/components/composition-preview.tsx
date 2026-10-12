@@ -1,9 +1,10 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,useMemo} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 import {sceneForComposition,type CompositionSettings} from '../../web/public/composition-settings.mjs';
 import {drawDealerFrame,type DealerFraming} from '../../web/public/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};
 export type VideoCompositing={mode:'green-screen';threshold:number;softness:number;despill:number};
@@ -20,11 +21,12 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
   const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0);
   const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState(t('Välj ett klipp eller ett lager.','Choose a clip or layer.')),[error,setError]=useState(''),[loaded,setLoaded]=useState(false),[playing,setPlaying]=useState(false);
-  const visible=compositionPreviewLayers(show,compositing,Boolean(dealer));
+  const keyed=useMemo(()=>effectiveDealerCompositing(compositing),[compositing?.threshold,compositing?.softness,compositing?.despill]);
+  const visible=compositionPreviewLayers(show,keyed,Boolean(dealer));
   const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
   const sourceKey=JSON.stringify(sources);
   const frameSettings=useRef(framing);frameSettings.current=framing;
-  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,compositing?{...compositing,mode:'composite',enabled:true}:undefined),dealerAspect:16/9};},[settings,layout,show,compositing,framing]);
+  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,{...keyed,mode:'composite',enabled:true}),dealerAspect:16/9};},[settings,layout,show,keyed,framing]);
 
   useEffect(()=>{
     const stage=canvas.current;if(!stage)return;stage.width=1080;stage.height=1920;

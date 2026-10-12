@@ -55,7 +55,8 @@ test('Sammansättning edits three saved lane choices and keeps the separated dea
   assert.match(html, /aria-label="Tre lager"/);
   assert.match(html, /<legend>Bord<\/legend>/);
   assert.match(html, /<legend>Bakgrund<\/legend>/);
-  assert.match(html, /Fullbildsklippet behåller sin bild/);
+  assert.match(html, /Grön bakgrund tas alltid bort/);
+  assert.doesNotMatch(html, /Fullbildsklippet behåller sin bild/);
   assert.doesNotMatch(html, /Frilagda dealerpaket|lagerprov/);
   assert.match(html, /<button[^>]*disabled[^>]*>Spara<\/button>/);
 });
@@ -247,7 +248,7 @@ test('composition idle preview stays within the chosen dealer and respects an ex
 });
 
 
-test('opaque clips keep all primary layer selectors discoverable while the preview retains full-frame protection',()=>{
+test('legacy clips keep selectors and separate layers visible with mandatory background removal',()=>{
   const inventory={videos:[{id:'opaque-astrid',dealer:'astrid',available:true,previewUrl:'/opaque-astrid',label:'Astrid original'}]};
   const harness=previewHarness({inventory,dirty:false}),tree=harness.render();
   const controls=harness.find(tree,node=>node.type==='section'&&node.props['aria-label']==='Tre lager');
@@ -264,7 +265,8 @@ test('opaque clips keep all primary layer selectors discoverable while the previ
   assert.ok(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Dealer storlek'));
   assert.equal(harness.find(placement,node=>node.type==='input'&&node.props['aria-label']==='Bord bredd'),null);
   const preview=harness.find(tree,node=>node.type?.name==='CompositionPreview');
-  assert.deepEqual(compositionPreviewLayers(preview.props.show,preview.props.compositing,Boolean(preview.props.dealer)),{dealer:true,background:false,table:false});
+  assert.equal(preview.props.compositing.mode,'green-screen');
+  assert.deepEqual(compositionPreviewLayers(preview.props.show,preview.props.compositing,Boolean(preview.props.dealer)),{dealer:true,background:true,table:true});
   assert.equal(harness.session.dirty,false);
 });
 

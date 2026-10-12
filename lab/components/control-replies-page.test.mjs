@@ -18,6 +18,7 @@ vm.runInNewContext(typesOutput.code,{module:typesModule,exports:typesModule.expo
 const navigationOutput=transformSync(readFileSync(new URL('./studio-navigation.tsx',import.meta.url),'utf8'),{filename:'studio-navigation.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const navigationModule={exports:{}};vm.runInNewContext(navigationOutput.code,{module:navigationModule,exports:navigationModule.exports,require:name=>name==='next/navigation'?{useSearchParams:()=>new URLSearchParams()}:name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
 const StudioNavigation=navigationModule.exports.StudioNavigation;
+const DealerClipPreview=({url,label})=>React.createElement('video',{src:url,'aria-label':label});
 const stateNames=[...source.matchAll(/const \[([^,]*),[^\]]*\]\s*=\s*useState/g)].map(match=>match[1].trim());
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -28,7 +29,7 @@ function harness(requestJson,p=props){
   const initialUrl=new URL(studioNavigationHref('/control/replies',{...p.initialNavigationContext,dealerId:p.initialDealerId}),'https://local.test');if(p.initialCategory)initialUrl.searchParams.set('category',p.initialCategory);
   const runtimeWindow={location:{href:initialUrl.href,search:initialUrl.search},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);runtimeWindow.location.search=new URL(url).search;},replaceState(_s,_t,url){runtimeWindow.location.href=String(url);runtimeWindow.location.search=new URL(url).search;}},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);}};
   const react={...React,useState(initial){const key=cursor++;if(!(key in values))values[key]=typeof initial==='function'?initial():initial;return[values[key],next=>{values[key]=typeof next==='function'?next(values[key]):next;}];},useRef(initial){return refs[refCursor++]??={current:initial};},useEffect(run,deps){const key=effectCursor++,previous=effects[key];effects[key]={...previous,run,deps,changed:!previous||!deps||deps.some((value,index)=>value!==previous.deps?.[index])};}};
-  const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,window:runtimeWindow,URL,URLSearchParams,AbortController,Intl,Date,require:name=>name==='react'?react:name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./studio-types'?{...typesModule.exports,requestJson(...args){calls.push(args);return requestJson(...args);}}:name==='./studio-navigation'?{StudioNavigation}:require(name)});
+  const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,window:runtimeWindow,URL,URLSearchParams,AbortController,Intl,Date,require:name=>name==='react'?react:name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./studio-types'?{...typesModule.exports,requestJson(...args){calls.push(args);return requestJson(...args);}}:name==='./studio-navigation'?{StudioNavigation}:name==='./dealer-video-surface'?{DealerClipPreview}:require(name)});
   const h={render(){cursor=refCursor=effectCursor=0;return module.exports.ControlRepliesPage(p);},effects(){for(const effect of effects.filter(row=>row.changed)){effect.cleanup?.();effect.changed=false;effect.cleanup=effect.run();}},state(name){return values[stateNames.indexOf(name)];},unmount(){for(const effect of effects)effect.cleanup?.();},calls,listeners,window:runtimeWindow};return h;
 }
 function nodes(node,predicate){if(!node||typeof node!=='object')return[];if(Array.isArray(node))return node.flatMap(child=>nodes(child,predicate));return[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];}
@@ -42,7 +43,7 @@ test('reply list shows exact private dealer metadata and N1 media paths with ten
   assert.match(html,/Exakt &lt;b&gt;text&lt;\/b&gt;/);assert.match(html,/Rad två/);assert.match(html,/Ej granskad/);assert.match(html,new RegExp('a'.repeat(64)));assert.match(html,/2026-10-12T10:20:00.000Z/);
   assert.equal(nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').length,10);
   for(const entry of REPLY_CATEGORIES)assert.match(html,new RegExp(entry.label));
-  for(const [tag,kind]of [['audio','audio'],['video','video']]){const media=nodes(tree,node=>node.type===tag)[0];assert.equal(media.props.src,`/api/replies/${item.id}/${kind}?dealer=astrid`);assert.equal(media.props.preload,'none');}
+  for(const [tag,kind]of [['audio','audio'],[DealerClipPreview,'video']]){const media=nodes(tree,node=>node.type===tag)[0];assert.equal(media.props.src??media.props.url,`/api/replies/${item.id}/${kind}?dealer=astrid`);if(kind==='audio')assert.equal(media.props.preload,'none');}
   assert.doesNotMatch(html,/blob\.vercel/);
   for(const action of nodes(tree,node=>node.type==='button'))assert.doesNotMatch(String(action.props.children),/Generera|Publicera|Radera|Återanvänd|Godkänn/);
   assert.equal(h.calls[0][0],'/api/replies?dealer=astrid');assert.equal(h.calls[0][1].cache,'no-store');
@@ -60,11 +61,11 @@ test('late dealer responses are aborted and cannot replace a newly selected deal
 });
 
 test('category changes require an explicit CAS save, lock double clicks and keep media keys stable',async()=>{
-  const write=deferred(),h=await loaded(async(_url,init)=>init.method==='PATCH'?write.promise:{items:[sample()],nextCursor:null});let tree=h.render();const videoKey=nodes(tree,node=>node.type==='video')[0].key;
+  const write=deferred(),h=await loaded(async(_url,init)=>init.method==='PATCH'?write.promise:{items:[sample()],nextCursor:null});let tree=h.render();const videoKey=nodes(tree,node=>node.type===DealerClipPreview)[0].key;
   category(tree,'Vänlig spelare').props.onChange();tree=h.render();assert.equal(h.calls.length,1);const save=button(tree,'Spara kategorier');save.props.onClick();save.props.onClick();tree=h.render();assert.equal(h.calls.length,2);
   const payload=JSON.parse(h.calls[1][1].body);assert.deepEqual(payload,{dealerId:'astrid',categories:['player-greeting','player-kind'],expectedRevision:1});assert.equal(h.calls[1][1].cache,'no-store');assert.equal(h.calls[1][0],'/api/replies/'+sample().id);assert.equal(new URL(h.calls[1][0],'https://test.invalid').search,'');assert.deepEqual(parseStudioRepliesRequest('PATCH',new URL(h.calls[1][0],'https://test.invalid')),{kind:'categorize',id:sample().id});assert.deepEqual(validateReplyCategories(payload.categories),['player-greeting','player-kind']);
   select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});assert.equal(h.state('dealerId'),'astrid');
-  write.resolve({item:sample({categories:['player-greeting','player-kind'],revision:2})});await settle();tree=h.render();assert.deepEqual(Object.keys(h.state('drafts')),[]);assert.equal(h.state('items')[0].revision,2);assert.equal(nodes(tree,node=>node.type==='video')[0].key,videoKey);
+  write.resolve({item:sample({categories:['player-greeting','player-kind'],revision:2})});await settle();tree=h.render();assert.deepEqual(Object.keys(h.state('drafts')),[]);assert.equal(h.state('items')[0].revision,2);assert.equal(nodes(tree,node=>node.type===DealerClipPreview)[0].key,videoKey);
 });
 
 test('409 retains category draft until an explicit fresh read and retries only on another Save click',async()=>{
@@ -94,7 +95,7 @@ test('paging deduplicates rows, preserves dealer identity and aborts pending rea
 
 test('foreign dealer rows or wrong reconciliation identities fail closed; failed media does not borrow a substitute',async()=>{
   const foreign=await loaded(async()=>({items:[sample({dealerId:'vera'})],nextCursor:null}));assert.equal(foreign.state('items').length,0);assert.match(renderToStaticMarkup(foreign.render()),/kunde inte läsas/);
-  const h=await loaded();let tree=h.render();nodes(tree,node=>node.type==='video')[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type==='video').length,0);assert.match(renderToStaticMarkup(tree),/Videon är inte tillgänglig/);assert.equal(nodes(tree,node=>node.type==='audio').length,1);
+  const h=await loaded();let tree=h.render();nodes(tree,node=>node.type===DealerClipPreview)[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type===DealerClipPreview).length,0);assert.match(renderToStaticMarkup(tree),/Videon är inte tillgänglig/);assert.equal(nodes(tree,node=>node.type==='audio').length,1);
 });
 
 test('page gets authorized dealers without serializing project, inventory or reply content into initial props',()=>{

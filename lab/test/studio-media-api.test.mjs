@@ -50,6 +50,13 @@ test('native list/HEAD/preview authenticate current admin and resolve only exact
     assert.equal((await api.handle(request())).status,403);
   }
 });
+test('native classification cannot save an opaque dealer while preserving the old record and journal',async()=>{
+  const {api,record,repository,pool}=await fixture(),before=await repository.getMedia(mediaId),audits=pool.snapshot().audits.length;
+  const response=await api.handle(request('/studio/api/videos/classify','POST',{id:record.id,sha256:record.sha256,previous:record.classification,
+    metadata:{...record.classification,compositing:{mode:'opaque'}}}));
+  assert.equal(response.status,422);assert.equal((await response.json()).error,'studio_dealer_background_required');
+  assert.deepEqual(await repository.getMedia(mediaId),before);assert.equal(pool.snapshot().audits.length,audits);
+});
 test('native metadata CAS uses prior exact classification and byte hash, audits authenticated actor and rejects stale writers',async () => {
   const {api,record,repository,pool} = await fixture();
   const changed = {...record.classification,label:'Changed clip'};

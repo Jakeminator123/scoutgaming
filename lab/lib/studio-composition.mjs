@@ -4,7 +4,9 @@ import {validateProject} from './studio-model.mjs';
 import {rebaseProjectDraft} from './project-rebase.mjs';
 
 export function compositionPreviewLayers(show,compositing,hasDealer=true) {
-  return hasDealer&&show.dealer&&!compositing?{...show,background:false,table:false}:{...show};
+  // Dealer keying is mandatory; legacy classification cannot hide the chosen
+  // room/table planes. The compositor, not this layout helper, validates pixels.
+  return {...show};
 }
 
 // Registration changes the server revision independently of the editor. Rebase

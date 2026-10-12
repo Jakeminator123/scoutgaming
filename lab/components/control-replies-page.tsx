@@ -7,6 +7,7 @@ import {REPLY_CATEGORIES} from '../../web/public/speech-reply-library.mjs';
 import type {SpeechReplyItem as ReplyItem} from '../../web/speech-reply-library.mjs';
 import {PageTemplate} from './page-template.mjs';
 import {StudioNavigation} from './studio-navigation';
+import {DealerClipPreview} from './dealer-video-surface';
 import {activeStudioDealers,requestJson} from './studio-types';
 import styles from './control-replies-page.module.css';
 
@@ -154,7 +155,7 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
           <div className={styles.heading}><h2>{dealer?.label} · {item.language||'Språk saknas'}</h2><span className={styles.review}>{reviewLabels[item.reviewStatus]??'Okänd granskningsstatus'}</span></div>
           <p className={styles.exactText}>{item.exactText}</p>
           <dl className={styles.metadata}><div><dt>Skapat</dt><dd><time dateTime={item.createdAt}>{dateLabel(item.createdAt)}</time></dd></div><div><dt>Profilrevision</dt><dd><code>{item.profileRevision||'Saknas'}</code></dd></div></dl>
-          <div className={styles.media}><section><h3>Ljud</h3>{item.media.audio.available&&!mediaErrors[item.id+':audio']?<audio key={item.id+':'+item.media.audio.sha256} controls preload="none" src={mediaPath(item.id,dealerId,'audio')} aria-label={'Ljud för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':audio']:true}))}/>:<p>Ljudet är inte tillgängligt.</p>}</section><section><h3>Läppsynkvideo</h3>{item.media.video.available&&!mediaErrors[item.id+':video']?<video key={item.id+':'+item.media.video.sha256} controls playsInline preload="none" src={mediaPath(item.id,dealerId,'video')} aria-label={'Läppsynk för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':video']:true}))}/>:<p>Videon är inte tillgänglig.</p>}</section></div>
+          <div className={styles.media}><section><h3>Ljud</h3>{item.media.audio.available&&!mediaErrors[item.id+':audio']?<audio key={item.id+':'+item.media.audio.sha256} controls preload="none" src={mediaPath(item.id,dealerId,'audio')} aria-label={'Ljud för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':audio']:true}))}/>:<p>Ljudet är inte tillgängligt.</p>}</section><section><h3>Läppsynkvideo</h3>{item.media.video.available&&!mediaErrors[item.id+':video']?<DealerClipPreview key={item.id+':'+item.media.video.sha256} url={mediaPath(item.id,dealerId,'video')} label={'Läppsynk för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':video']:true}))}/>:<p>Videon är inte tillgänglig.</p>}</section></div>
           <fieldset className={styles.categories} disabled={pending}><legend>Kategorier</legend><div>{categories.map(([id,label])=><label key={id}><input type="checkbox" checked={chosen.includes(id)} onChange={()=>toggle(item,id)}/>{label}</label>)}</div></fieldset>
           {edited||conflicts[item.id]?<p className={styles.saved}>Senast sparat: {item.categories.length?item.categories.map(labelFor).join(', '):'Ingen kategori'}.</p>:null}
           {conflicts[item.id]?<p role="status">Hämta senaste versionen innan du sparar. Dina kategorival är kvar.</p>:null}

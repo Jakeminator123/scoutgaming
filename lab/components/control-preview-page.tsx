@@ -37,7 +37,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
-  const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState(''),[localKey,setLocalKey]=useState(true);
+  const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState('');
   const [previewBusy,setPreviewBusy]=useState(false),[previewError,setPreviewError]=useState('');
   const previewAttempt=useRef<AbortController|null>(null);
   const modelEdit:typeof sessionEdit=change=>{if(!previewAttempt.current)sessionEdit(change);};
@@ -108,8 +108,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const dealer=localMedia.dealer??(clip?{url:labUrl(clip.previewUrl),label:clipName(clip),contentType:'video/mp4'}:null);
   const background=localMedia.background??savedMedia('background'),table=localMedia.table??savedMedia('table');
   const storedCompositing=clip?.classification?.compositing;
-  const compositing=localMedia.dealer?(localKey?defaultKey:undefined):storedCompositing?.mode==='green-screen'?storedCompositing:undefined;
-  const fullFrame=Boolean(dealer&&!compositing&&lane.layers.dealer.enabled);
+  const compositing=localMedia.dealer?defaultKey:storedCompositing?.mode==='green-screen'?storedCompositing:defaultKey;
+  const legacyBackground=!localMedia.dealer&&storedCompositing?.mode==='opaque';
   function chooseDealer(id:string){
     if(previewAttempt.current||saving||uploading||!dealers.some(row=>row.id===id))return;
     const next=structuredClone(lane);next.layers.dealer.default=id;
@@ -152,7 +152,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   function layerPanel(role:'table'|'background'){
     return <section className={styles.layer} key={role} id={`composition-panel-${role}`} role="tabpanel" aria-labelledby={`composition-tab-${role}`} hidden={activeRole!==role} tabIndex={0}>
       <fieldset disabled={previewBusy||saving}><LayerAssetSelect role={role} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
-      {fullFrame?<p className={styles.hint}>Inbakat i dealerklippet · välj ett frilagt klipp för att placera {labels[role].toLowerCase()}.</p>:placementControls(role)}
+      {placementControls(role)}
       <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
@@ -194,7 +194,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
           <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
-          {fullFrame?<p className={styles.hint}>Inbakat bord och bakgrund · välj frilagt klipp för separata lager.</p>:null}
+          {legacyBackground?<p role="alert" className={styles.hint}>Äldre bakgrundsinställning behöver åtgärdas före publicering. Om en miljö är inbakad i dealerfilmen behöver den ersättas med en grön originalfilm.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing}/>
           {localError?<p role="alert">{localError}</p>:null}
@@ -228,8 +228,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       <details className={styles.advanced}><summary>Avancerat · lager och filprov</summary><div>
         <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
-        <details><summary>Klippets greenscreen</summary>{compositing?<p>Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>:<p>Fullbildsklippet behåller sin bild.</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
-        <details><summary>Snabbprov med tre lokala filer</summary><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><label className="check-field"><input type="checkbox" checked={localKey} disabled={previewBusy||saving||uploading} onChange={event=>setLocalKey(event.target.checked)}/>Nyckla grön bakgrund i lokal dealerfilm</label><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></details>
+        <details><summary>Klippets greenscreen</summary><p>Grön bakgrund tas alltid bort. Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p><a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
+        <details><summary>Snabbprov med tre lokala filer</summary><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealerfilmen ska ha grön bakgrund, som alltid tas bort. Bord och miljö visas separat.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></details>
       </div></details>
     </div>
   </PageTemplate>;

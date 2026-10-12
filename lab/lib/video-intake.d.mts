@@ -10,6 +10,6 @@ export const MANUAL_SELECTION: Readonly<VariantSelection>;
 export function selectionFor(variant: StudioVariant): VariantSelection;
 export function kindForEvent(event: StudioEvent): VideoMetadata['kind'];
 export function situationsForEvent(event: StudioEvent): string[];
-export function validateVideoMetadata(input: unknown, options?: {allowLegacySituation?: boolean}): VideoMetadata;
+export function validateVideoMetadata(input: unknown, options?: {allowLegacySituation?: boolean;forWrite?: boolean}): VideoMetadata;
 export function videoFitsLine(video: {classification?: VideoMetadata} | undefined, dealerId: string, eventId: string): boolean;
 export function videoFitsEvent(video: {classification?: VideoMetadata}, event: Record<string, unknown>): boolean;

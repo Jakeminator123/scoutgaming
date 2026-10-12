@@ -12,20 +12,20 @@ export function isUnplayableOperatorRooms(error, slug) {
 const UNPLAYABLE_SELECTION_ERRORS = new Set(['presentation_dealer_unavailable', 'presentation_dealer_not_configured',
   'presentation_dealer_mismatch', 'presentation_lane_unavailable']);
 export function supportsIndependentLayers(selection, frozen, dealerId) {
-  if (selection.presentation === 'original' || selection.composition?.dealer.compatibility !== 'per-clip') return false;
+  if (selection.presentation === 'original' || !selection.composition) return false;
   const dealer = frozen.registeredDealers?.find(item => item.id === dealerId);
   if (!dealer) return false;
-  const composited = media => Boolean(clipCompositing(media?.classification.compositing));
+  const composited = media => Boolean(media && clipCompositing(media.classification.compositing));
   if (!composited(dealer.idle)) return false;
   const policy = frozen.playback?.dealerIdlePolicies?.find(item => item.dealerId === dealerId)?.policy;
-  // Any weighted base can be the initial/returning idle. A green-screen event
-  // cannot establish a layered idle scene; opaque events may still temporarily
-  // cover that scene. Use each clip's own supported keying parameters.
+  // Every weighted base uses its own keying settings or the legacy default.
+  // Historical full-frame metadata does not revoke explicit layer grants.
   return !policy || policy.base.every(item => composited(frozen.playback.media.find(media => media.id === item.videoId)));
 }
 function publicLayer(selection, role, independentLayers, defaults) {
   const composition = selection.composition, source = composition?.[role];
-  const enabled = independentLayers && source?.enabled === true && (role !== 'background' || source.mode !== 'baked');
+  const enabled = independentLayers && source?.enabled === true
+    && (role !== 'background' || source.mode !== 'baked' || source.allowed.length > 0);
   const allowed = enabled ? source.allowed.map(id => {
     const asset = composition.assets.find(item => item.id === id && item.role === role);
     if (!asset) unavailable();
@@ -34,7 +34,12 @@ function publicLayer(selection, role, independentLayers, defaults) {
   const preferred = role === 'table' ? defaults.tableValue : defaults.backgroundValue;
   const value = allowed.some(item => item.id === preferred) ? preferred
     : allowed.some(item => item.id === source?.default) ? source.default : null;
-  return { enabled, default: value, allowed, ...(role === 'background' ? { mode: enabled ? source.mode : 'baked' } : {}) };
+  // The public contract describes the selected independent asset, while the
+  // historical package retains its original baked marker unchanged.
+  const mode = role === 'background' && enabled && source.mode === 'baked'
+    ? (composition.assets.find(item => item.id === (value ?? allowed[0].id)).contentType.startsWith('video/') ? 'video' : 'image')
+    : source?.mode;
+  return { enabled, default: value, allowed, ...(role === 'background' ? { mode: enabled ? mode : 'baked' } : {}) };
 }
 
 /** Anonymous read-only directory. Its store is the same validated, scoped

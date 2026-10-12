@@ -80,7 +80,7 @@ test('runtime serves only the two shared code files and refuses data, queries an
   assert.equal((await compositionRuntimeResponse(new Request('https://local/composition-runtime/geometry.js?file=.env'))).status,400);
   assert.equal((await compositionRuntimeResponse(new Request('https://local/composition-runtime/geometry.js',{method:'POST'}))).status,405);
 });
-test('two exact dealer plays reuse the shared compositor; absent classification always restores opaque pixels',async()=>{
+test('two exact dealer plays and legacy metadata always use the shared keyed compositor',async()=>{
   const {descriptor}=fixture(),painted=[],rectangles=[],nodes=new Set(),host={dataset:{},clientWidth:1080,clientHeight:1920,append:node=>nodes.add(node)};
   const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:720,naturalHeight:1280,
     setAttribute(){},remove(){nodes.delete(this);},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage:(video,...rect)=>{painted.push(video.id);rectangles.push(rect);}})})};
@@ -95,15 +95,16 @@ test('two exact dealer plays reuse the shared compositor; absent classification 
   assert.equal(renders.every(row=>row.scene.dealerAspect===16/9),true);
   assert.deepEqual(painted,['exact-nora-1','exact-nora-2','wide-nora']);assert.equal(host.dataset.presentationClipMode,'green-screen');
   assert.equal(renders.every(row=>row.scene.show.cards===false&&row.cards.length===0),true);
-  assert.equal(await composition.prepareClip(undefined),false);assert.equal(host.dataset.presentationClipMode,'green-screen');
-  assert.equal(composition.renderFrame({id:'opaque-astrid'}),false);assert.equal(host.dataset.presentationClipMode,'opaque');
-  assert.equal(clipCompositing({mode:'opaque'}),null);assert.throws(()=>clipCompositing({...key,threshold:Infinity}));
+  assert.equal(await composition.prepareClip(undefined),true);assert.equal(host.dataset.presentationClipMode,'green-screen');
+  assert.equal(composition.renderFrame({id:'legacy-astrid',videoWidth:1080,videoHeight:1920}),true);
+  assert.equal(clipCompositing({mode:'opaque'}).enabled,true);assert.throws(()=>clipCompositing({...key,threshold:Infinity}));
   composition.close();
   let complete;const waiting=createLayerComposition(document,descriptor,{loadRuntime:()=>new Promise(resolve=>{complete=resolve;})});
-  const stale=waiting.prepareClip(key);assert.equal(await waiting.prepareClip(undefined),false);
-  complete({Compositor:SharedCompositor});assert.equal(await stale,false);
-  assert.equal(waiting.renderFrame({id:'stale-keyed',videoWidth:1080,videoHeight:1920}),false);
-  assert.equal(host.dataset.presentationClipMode,'opaque');waiting.close();
+  const stale=waiting.prepareClip(key),latest=waiting.prepareClip(undefined);
+  assert.throws(()=>waiting.renderFrame({id:'not-ready'}),/background removal unavailable/);
+  complete({Compositor:SharedCompositor});assert.equal(await stale,false);assert.equal(await latest,true);
+  assert.equal(waiting.renderFrame({id:'latest-keyed',videoWidth:1080,videoHeight:1920}),true);
+  assert.equal(host.dataset.presentationClipMode,'green-screen');waiting.close();
 });
 
 test('public capability metadata is exact and cannot read data, select media or authorize writes',async()=>{

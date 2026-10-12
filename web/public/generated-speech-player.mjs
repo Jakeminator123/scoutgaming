@@ -1,5 +1,19 @@
 import { validateSpeechPackage } from './speech-package.mjs';
 import { SpeechStreamPlayer } from './speech-stream-client.mjs';
+import {createLayerComposition} from './presentation-composition.mjs';
+import {effectiveDealerCompositing} from './dealer-compositing.mjs';
+
+function speechRenderer(mount, prepareRendering, renderFrame) {
+  if (typeof prepareRendering === 'function' && typeof renderFrame === 'function') return {prepareRendering,renderFrame,close(){}};
+  if (prepareRendering || renderFrame) throw Error('Dealer background removal unavailable');
+  // Native and legacy speech callers use the same compositor even when they
+  // have no independently configured room planes. Media/audio ownership stays
+  // with this player; this adapter only draws the presented video frame.
+  const composition=createLayerComposition({documentElement:document.documentElement,defaultView:document.defaultView,
+    querySelector:()=>mount,createElement:tag=>document.createElement(tag)},null);
+  if (!composition) throw Error('Dealer background removal unavailable');
+  return {prepareRendering:value=>composition.prepareClip(value),renderFrame:video=>composition.renderFrame(video),close:()=>composition.close()};
+}
 
 const mediaPath = /^\/api\/generated-speech\/[a-f0-9-]{32,64}\/(audio|video)$/;
 const abortError = () => new DOMException('Speech cancelled', 'AbortError');
@@ -49,13 +63,14 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(abort, 45000);
-  let player, surface, video, renderHandle, renderKind, started = false, completed = false;
+  let player, surface, video, renderHandle, renderKind, renderer, started = false, completed = false;
   try {
     const speech = await validateGeneratedSpeechStream(value, { exactText, dealerId, requestId });
     // Admission starts TTS/GPU work. Revalidate the shared queue/pose before
     // opening the socket, then again immediately before its first play().
     await abortable(Promise.resolve().then(beforeStart), controller.signal);
-    if(speech.schemaVersion===2&&prepareRendering)await abortable(Promise.resolve().then(()=>prepareRendering(speech.compositing)),controller.signal);
+    renderer=speechRenderer(mount,prepareRendering,renderFrame);
+    await abortable(Promise.resolve().then(()=>renderer.prepareRendering(effectiveDealerCompositing(speech.compositing??undefined))),controller.signal);
     if (controller.signal.aborted) throw abortError();
     if (speech.expiresAt <= Date.now()) throw new Error('speech_stream_ticket_expired');
     surface = document.createElement('div'); surface.className = 'generated-speech-surface';
@@ -72,9 +87,9 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     const draw = () => {
       if(controller.signal.aborted)return;
       try{
-        const composed=speech.schemaVersion===2&&renderFrame?renderFrame(video)===true:false;
-        surface.style.background=composed?'transparent':'#101618';video.style.opacity=composed?'0':'1';
-        if(speech.schemaVersion===2&&renderFrame){
+        if(renderer.renderFrame(video)!==true)throw Error('Dealer background removal unavailable');
+        surface.style.background='transparent';video.style.opacity='0';
+        {
           if(video.requestVideoFrameCallback){renderKind='video';renderHandle=video.requestVideoFrameCallback(draw);}
           else if(globalThis.requestAnimationFrame){renderKind='animation';renderHandle=requestAnimationFrame(draw);}
         }
@@ -98,6 +113,7 @@ async function playGeneratedSpeechStream(value, { exactText, dealerId, requestId
     completed = true;
   } finally {
     clearTimeout(timer); controller.abort(); signal?.removeEventListener('abort', abort);
+    renderer?.close();
     if(renderHandle!==undefined){if(renderKind==='video')video?.cancelVideoFrameCallback?.(renderHandle);else globalThis.cancelAnimationFrame?.(renderHandle);}
     player?.abort(); surface?.remove();
     onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
@@ -152,10 +168,12 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, requestI
   const controller = new AbortController();
   const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(() => controller.abort(), 45000);
-  let audio, video, surface, frame, presentedFrame, audioUrl, videoUrl;
+  let audio, video, surface, frame, presentedFrame, audioUrl, videoUrl, renderer;
   let started = false, completed = false;
   try {
     const loaded = await loadGeneratedSpeech(value, { exactText, dealerId, signal: controller.signal, media });
+    renderer=speechRenderer(mount,prepareRendering,renderFrame);
+    await abortable(Promise.resolve().then(()=>renderer.prepareRendering(effectiveDealerCompositing())),controller.signal);
     audioUrl = URL.createObjectURL(loaded.audio); videoUrl = URL.createObjectURL(loaded.video);
     audio = new Audio(audioUrl); audio.preload = 'auto';
     surface = document.createElement('div'); surface.className = 'generated-speech-surface';
@@ -198,10 +216,17 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, requestI
     // cannot leave an unhandled media-completion promise.
     void finished.catch(() => {});
     audio.currentTime = 0; video.currentTime = 0;
-    if (video.requestVideoFrameCallback) presentedFrame = video.requestVideoFrameCallback(() => {
-      presentedFrame = null;
-      if (!controller.signal.aborted && !completed) surface.style.visibility = '';
-    });
+    let pictured=false;
+    const draw=()=>{
+      if(controller.signal.aborted||completed)return;
+      try {
+        if(renderer.renderFrame(video)!==true)throw Error('Dealer background removal unavailable');
+        surface.style.background='transparent';video.style.opacity='0';surface.style.visibility='';
+        if(!pictured){pictured=true;onFirstFrame();}
+        if(video.requestVideoFrameCallback)presentedFrame=video.requestVideoFrameCallback(draw);
+      } catch { controller.abort(); }
+    };
+    if (video.requestVideoFrameCallback) presentedFrame = video.requestVideoFrameCallback(draw);
     await new Promise((resolve, reject) => {
       const cancel = () => reject(abortError());
       controller.signal.addEventListener('abort', cancel, { once: true });
@@ -211,10 +236,12 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, requestI
     if (controller.signal.aborted) throw abortError();
     // Older browsers lack frame callbacks; their decoded playing image is the
     // earliest supported boundary, never the initial empty media element.
-    if (!video.requestVideoFrameCallback) surface.style.visibility = '';
+    if (!video.requestVideoFrameCallback) draw();
     started = true; onStart(exactText); onReceipt({ state: 'start', packageId: loaded.speech.packageId, evidence: 'media-playing', reviewStatus: 'pending' });
     const sync = () => {
       if (controller.signal.aborted || audio.ended) return;
+      if(!video.requestVideoFrameCallback)draw();
+      if(controller.signal.aborted)return;
       const delta = video.currentTime - audio.currentTime;
       if (Math.abs(delta) > .2) video.currentTime = audio.currentTime;
       video.playbackRate = delta > .04 ? .97 : delta < -.04 ? 1.03 : 1;
@@ -224,6 +251,7 @@ export async function playGeneratedSpeech(value, { exactText, dealerId, requestI
     await finished;
   } finally {
     clearTimeout(timer); controller.abort(); signal?.removeEventListener('abort', abort);
+    renderer?.close();
     if (frame != null) cancelAnimationFrame(frame);
     if (presentedFrame != null) video.cancelVideoFrameCallback(presentedFrame);
     audio?.pause(); video?.pause(); surface?.remove();

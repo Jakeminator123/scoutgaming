@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react';
 import {CompositionPreview} from './composition-preview';
+import {DealerClipPreview} from './dealer-video-surface';
 import {validatePublicOperatorPreview} from '../../web/public/operator-preview-contract.mjs';
 import type {PublicOperatorPreview} from '../../web/public/operator-preview-contract.mjs';
 import type {EditableBranding,PartnerAppearanceInitial} from './partner-appearance-state.mjs';
@@ -67,7 +68,7 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
         {!payload.media.dealer?<p className={styles.hint}>{t('Denna dealer saknar tillgänglig fryst grundloop i förhandsvisningen. Övriga tillgängliga lager visas.','This dealer has no frozen idle clip available in the preview. Other available layers are shown.')}</p>:null}
         {missingLayers?<p role="alert">{t('Ett valt lager saknar tillgänglig förhandsvisningsfil. Bilden är ofullständig.','A selected layer has no available preview file. This image is incomplete.')}</p>:null}
         {payload.independentLayers&&payload.settings?<CompositionPreview language={language} dealer={payload.media.dealer?{url:payload.media.dealer.src,label:payload.dealer.label,contentType:payload.media.dealer.contentType}:null} table={media(table)} background={media(background)} settings={payload.settings} layout={layout} show={{dealer:Boolean(payload.media.dealer),table:Boolean(table),background:Boolean(background)}} compositing={payload.media.dealer?.compositing} framing={payload.media.dealer?.framing}/>
-          :payload.media.dealer?<video key={payload.media.dealer.src} className={styles.fullFrame} src={payload.media.dealer.src} controls playsInline preload="metadata" aria-label={payload.dealer.label}/>:null}
+          :payload.media.dealer?<DealerClipPreview key={payload.media.dealer.src} url={payload.media.dealer.src} compositing={payload.media.dealer.compositing} framing={payload.media.dealer.framing} label={payload.dealer.label}/>:null}
       </>:null}
     </>}
   </section>;

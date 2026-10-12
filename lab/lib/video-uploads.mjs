@@ -59,7 +59,7 @@ export async function uploadVideo(request, options = {}) {
   const header = request.headers.get('x-video-metadata');
   if (!header || header.length > 12000) throw new StudioError('Videons kategorisering saknas.');
   let metadata;
-  try { metadata = validateVideoMetadata(JSON.parse(decodeURIComponent(header))); }
+  try { metadata = validateVideoMetadata(JSON.parse(decodeURIComponent(header)), {forWrite:true}); }
   catch (error) { throw new StudioError(error instanceof SyntaxError || error instanceof URIError ? 'Ogiltig kategorisering.' : error.message); }
   if (!(await localDealerIds(options)).has(metadata.dealerId)) throw new StudioError('Välj en registrerad dealer.',422);
   const type = request.headers.get('content-type')?.split(';')[0];
