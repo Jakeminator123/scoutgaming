@@ -6,10 +6,17 @@ import styles from './studio-administration.module.css';
 type AuthBase = '/api/partner' | '/studio/api/partner';
 
 function noticeFor(status: number) {
-  if (status === 401 || status === 400) return 'Inloggningen kunde inte verifieras.';
+  if (status === 401 || status === 400) return 'Inloggningen kunde inte verifieras. Intern personal loggar in via Kontrollpanelen nedan.';
   if (status === 429) return 'För många försök. Vänta 15 minuter och försök igen.';
   if (status === 403) return 'Inloggningen måste göras från partnerportalen.';
   return 'Inloggningstjänsten är tillfälligt otillgänglig.';
+}
+
+// Internal administrators sign in through the N1 login, which returns them to
+// /partner with the same rights as in Kontrollpanelen. This form never mints a
+// session for them; it stays limited to operator staff.
+export function internalLoginHref(authBase: AuthBase) {
+  return `${authBase.startsWith('/studio/') ? '/studio' : ''}/login?returnTo=${encodeURIComponent('/partner')}`;
 }
 
 export function PartnerLogin({ authBase }: { authBase: AuthBase }) {
@@ -51,6 +58,7 @@ export function PartnerLogin({ authBase }: { authBase: AuthBase }) {
     <section className={styles.section} aria-busy={busy}>
       <h1>Logga in i partnerportalen</h1>
       <p>Operatörspersonal loggar in med sitt Croupier-konto. Intern personal använder Kontrollpanelen.</p>
+      <p><a href={internalLoginHref(authBase)}>Logga in som intern administratör</a></p>
       <noscript><p>Aktivera JavaScript för att använda den säkra inloggningen.</p></noscript>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
       <form className={styles.form} method="post" action={`${authBase}/login`} onSubmit={event => void submit(event)}>
