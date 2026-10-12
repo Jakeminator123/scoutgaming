@@ -10,7 +10,7 @@ import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mj
 // not read or written here.
 import { gamePresentationForDealer, gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
 import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
-import { resolvePackageRoom } from './presentation-room-contract.mjs';
+import { resolvePackageRoom, roomGame } from './presentation-room-contract.mjs';
 import {resolveRoomBranding} from './storage/partner-branding.mjs';
 
 export const OPERATOR_NOT_FOUND_HTML = '<!doctype html><html lang="sv"><head><meta charset="utf-8">'
@@ -24,7 +24,8 @@ export function requestedOperator(params) {
   return values.length === 1 && isOperatorSlug(values[0]) ? values[0] : null;
 }
 
-export function createGameEntrySelector({ policy, packages = null, log = console.warn } = {}) {
+export function createGameEntrySelector({ policy, packages = null, log = console.warn, game = 'blackjack' } = {}) {
+  if (!['blackjack','roulette','any'].includes(game)) throw TypeError('Invalid game');
   if (typeof policy?.readGameConfiguration !== 'function' || typeof policy?.readSaved !== 'function') throw new TypeError('Invalid game policy');
   if (packages !== null && typeof packages?.resolve !== 'function') throw new TypeError('Invalid operator package reader');
   if (typeof log !== 'function') throw new TypeError('Invalid game entry log');
@@ -78,6 +79,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     const current = context.package;
     if (!current) return {status:404};
     const room = explicitTable ? resolvePackageRoom({ administration: saved.administration, package: current, operatorId: context.operator.id, roomId: tables[0] }) : null;
+    if (room && game !== 'any' && roomGame(room) !== game || game === 'roulette' && (!room || !current.games?.includes('roulette'))) return {status:404};
     if (explicitTable && (!room || room.state !== 'live' || !gameLanes.some(lane => lane.id === room.gameLaneId))) return { status: 404 };
     if (room) params.set('lane', room.gameLaneId);
     let selection;
@@ -123,6 +125,6 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
     }
     if (room) next.roomId = room.id;
-    return {status:200,selection:next};
+    return {status:200,selection:next,...(game === 'roulette' ? {room:structuredClone(room)} : {})};
   };
 }

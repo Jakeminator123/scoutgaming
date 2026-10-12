@@ -26,7 +26,8 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     if(!operator||operator.status!=='active'||operator.slug!==context.operatorSlug||!pack)fail(404);
     if(pack.operatorId!==operator.id)fail();
     if(pack.revision!==context.packageRevision)fail(409);
-    if(!pack.games?.includes('blackjack'))fail(404);
+    const room = administration.rooms?.find(row=>row.id===context.roomId);
+    if(!pack.games?.includes(room?.game ?? 'blackjack'))fail(404);
     const [{readPackagePresentation},{createGameEntrySelector},{supportsIndependentLayers},{resolveFrozenDealerIdle},{validateLayerAsset}]=await Promise.all([
       import('./storage/presentation-package.mjs'),import('./game-entry-operator.mjs'),import('./public-operator-rooms.mjs'),
       import('./storage/frozen-dealer-idle.mjs'),import('./layer-asset-contract.mjs')]);
@@ -34,7 +35,7 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     if(!frozen)fail(404);
     const select=createGameEntrySelector({
       policy:{readSaved:async()=>({administration,project:{}}),readGameConfiguration:()=>fail()},
-      packages:{resolve:async()=>({operator,package:pack})},log:()=>{},
+      packages:{resolve:async()=>({operator,package:pack})},log:()=>{},game:'any',
     });
     const entry=await select(new URLSearchParams({operator:context.operatorSlug,table:context.roomId,dealer:context.dealerId}));
     const selection=entry.selection;

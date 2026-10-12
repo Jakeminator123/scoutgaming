@@ -91,6 +91,11 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     <details className={styles.create} open={rooms?.length === 0 && !receipt || undefined}><summary>Skapa nytt spelrum</summary>
     <p>Ange ett namn. Sammansättningen publiceras och kopplas till rummet i samma steg.</p>
     <form className={styles.form} onSubmit={submit}>
+      <label className={styles.field}>Spel
+        <select value={current ? state.game : 'blackjack'} disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event=>controller.setGame(event.target.value)}>
+          <option value="blackjack">Blackjack</option><option value="roulette">Roulette · enkel nolla</option>
+        </select>
+      </label>
       <label className={styles.field}>Rumsnamn
         <input type="text" value={current ? state.name : ''} maxLength={100} required
           disabled={!enabled || !current || busy || unresolved || state.status === 'loading'} onChange={event => { controller.setName(event.target.value);callbacks.current.onDraftChange?.(Boolean(controller.getSnapshot().name.trim())); }} autoComplete="off" />

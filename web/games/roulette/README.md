@@ -1,6 +1,6 @@
-# Roulette — serverägd slumpgenerator
+# Roulette — generator och publicerbara demorum
 
-Första byggstenen för ett framtida rouletterum: europeisk roulette med enkel
+Europeisk roulette med enkel
 nolla, 37 lika sannolika fack (0–36). Varje snurr är oberoende och samma nummer
 kan komma flera gånger i följd. Nollan är grön och tillhör inga röd/svart-,
 udda/jämn- eller låg/hög-satsningar.
@@ -53,26 +53,52 @@ Svaret är `{ demo: true, event }`; eventkontraktet ovan är oförändrat.
 Klienten återförsöker aldrig automatiskt. En processlokal begränsning till
 30 anrop i en burst, därefter ett nytt tillgängligt anrop per sekund, ger
 429 vid för hög belastning. Den är inte ett beständigt rundskydd.
-Insatser, spelrum och SSE är ännu inte inkopplade.
+## Spelrum
 
-När rummet byggs ska dess serverflöde:
+Studio och partnerportalen erbjuder Blackjack eller Roulette när ett rum skapas.
+Speltyp sparas som `game: 'roulette'`; äldre rum utan fältet är blackjack.
+Rum och bolagets frysta presentation publiceras i samma befintliga transaktion.
+Lobbyn följer aktuell publicering och öppnar
+`/play/roulette?operator=<slug>&table=<room-id>&dealer=<dealer-id>`.
 
-1. Kontrollera operatör och rum mot aktuell session och publicering. Stäng
-   satsningarna för alla spelare i rundan innan utfallet dras.
-2. Låsa rundan och läsa lagrat resultat. Anropa generatorn endast om resultat
-   saknas; lagra eventet atomiskt med rundan, med unik nyckel för
-   `(operatorId, roomId, roundId)`. En processlokal cache räcker inte vid
-   omstart eller flera Render-instanser.
-3. Skicka samma lagrade event efter commit till behöriga prenumeranter i det
-   rummet. Återförsök och återanslutning återspelar eventet; de anropar inte
-   generatorn igen. Mottagaren kan deduplicera med `eventId`.
-4. Animera hjulet mot `outcome.number`. Servern avgör utfallet och framtida
-   avräkning; animationens fysik/tid och klienten får inte välja resultatet.
+`room.mjs` validerar satsningar och räknar av dem. `rules.mjs` är den gemensamma
+satsningskatalogen som också skickas till webbläsaren. `storage.mjs` låser
+spelarens plånbok och sparar saldo, bokföring och rundkvitto i samma SQLite-/
+PostgreSQL-transaktion. `access.mjs` kontrollerar bolag, speltyp, publicerat
+rum och dealer; PostgreSQL kontrollerar publiceringen igen före commit.
+Utfallet lämnar transaktionen först efter lyckad commit.
 
-Generatorn är avsiktligt stateless: två anrop med samma ID:n drar två gånger.
-Transaktionsskyddet ovan ingår därför i nästa steg, tillsammans med satsningar,
-plånbok, utbetalningsregler och rumstransport. Detta är inte ett färdigt spel
-eller ett certifierat spel om pengar.
+`POST /api/roulette/table` accepterar `op: 'state'` eller `op: 'spin'`.
+Spin anger UUID `requestId`, aktuell `version`, `playerId`, `currency`,
+`bets: [{id, amount}]` och `context: {operator, table, dealer?}`.
+Sessionen äger spelar-ID; ändrat konto/valuta kan inte använda gamla insatser.
+Upprepade kommandon återfår samma kvitto; konkurrerande kommandon med gammal
+version avvisas. De senaste 20 kvittona sparas per spelare/bolag/rum.
+Äldre anrop stoppas av versionskontrollen. Webbläsaren sparar väntande
+kommando före anropet och erbjuder exakt återförsök efter anslutningsfel.
+
+Samma inloggning och demosaldo som blackjack används. Detta är personliga
+rundor som i blackjack; ett gemensamt tidsstyrt multiplayerhjul ingår inte.
+Standardvinster är 35:1, 17:1, 11:1, 8:1, 5:1, 2:1 eller 1:1 netto;
+ingen La Partage/En Prison. Gränser: 1–2 000 per fält, 10 000 per runda.
+Publicerad tyst idle och komposition återanvänder lobbyns `published-scene.mjs`.
+Inga blackjackrepliker eller nya rouletteinspelningar spelas. Externa
+partner-launch-konton är spärrade tills deras plånbokskontrakt stöder roulette.
+Profilens blackjackstatistik är oförändrad; roulettehistoriken finns i rummet.
+
+## Driftsättning
+
+Applicera den additiva `ops/neon-game/007-roulette-tables.sql` i den verifierade
+game-databasen efter godkännande. Den skapar endast
+`croupier_game.roulette_tables` med referens till befintliga spelare.
+Inga konton eller saldon ändras av migreringen. Render-kapabilitet 9 svarar
+inte redo innan tabellen finns; Studio vägrar publicera roulette mot äldre
+motorer. Befintliga blackjackrum fungerar före migreringen.
+Ingen ny tjänst, hemlighet eller miljövariabel behövs. Återställning sker genom
+att avpublicera rouletterummen; behåll tabellen och bokförda kvitton.
+
+Generatorn i `index.mjs` är fortfarande stateless och får inte anropas direkt
+som återförsök av en redan avgjord runda. Certifiering och riktiga pengar ingår inte.
 
 ## Verifiering
 

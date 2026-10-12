@@ -23,12 +23,13 @@ export interface PresentationRoomPreflight {
   rooms: readonly { id: string; name: string; playUrl: string }[];
 }
 export interface PresentationRoomPayload {
+  game?: 'blackjack' | 'roulette';
   operatorId: string; presentationLaneId: string; name: string; idempotencyKey: string;
   expectedProjectRevision: string; expectedAdministrationRevision: string; expectedPackageRevision: number | null;
 }
 export interface PresentationRoomReceipt {
   ok: true; duplicate: boolean;
-  room: { schemaVersion: 2; id: string; name: string; operatorId: string; presentationLaneId: string; gameLaneId: string; state: 'live' };
+  room: { schemaVersion: 2; id: string; name: string; operatorId: string; presentationLaneId: string; gameLaneId: string; state: 'live'; game?: 'blackjack' | 'roulette' };
   administrationRevision: string; packageRevision: number; playUrl: string;
 }
 export class PresentationRoomError extends Error { status: number; uncertain: boolean; constructor(message: string, options?: { status?: number; uncertain?: boolean }) }
@@ -40,6 +41,7 @@ export interface PresentationRoomClient {
 }
 export function createPresentationRoomClient(options?: { fetchImpl?: typeof fetch }): PresentationRoomClient;
 export interface PresentationRoomSnapshot {
+  game: 'blackjack' | 'roulette';
   key: string | null; name: string;
   status: 'idle' | 'loading' | 'ready' | 'busy' | 'uncertain' | 'conflict' | 'success' | 'unavailable' | 'error';
   preflight: PresentationRoomPreflight | null; receipt: PresentationRoomReceipt | null; message: string | null;
@@ -50,6 +52,7 @@ export interface PresentationRoomController {
   cancel(): void;
   configure(context: PresentationRoomContext): Promise<boolean>;
   setName(value: string): void;
+  setGame(value: string): void;
   refresh(): Promise<boolean>;
   create(expectedKey: string): Promise<PresentationRoomReceipt | null>;
 }

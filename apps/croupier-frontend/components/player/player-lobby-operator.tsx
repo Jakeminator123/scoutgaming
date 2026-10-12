@@ -73,7 +73,7 @@ export function PlayerRoomCard({catalog,room,stored,directPlay}:{catalog:PublicO
     showTable&&selected.tableAsset?choiceLabel(dealer.table.allowed.find(row=>row.id===selected.tableAsset)?.label??'','Valt bord'):null,
   ].filter(Boolean).join(' · ');
   return <article className="mt-6 overflow-clip rounded-[28px] border border-white/10 bg-[#0d0f11] shadow-[0_40px_120px_-40px_rgba(0,0,0,.9)] lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,.92fr)]" aria-labelledby={room.id+'-title'}>
-    <PlayerRoomPreview key={dealer.id} result={current} dealerId={dealer.id} dealerLabel={dealer.label} roomName={room.name} operatorName={catalog.operator.name} tableAsset={selected.tableAsset} background={selected.background}/>
+    <PlayerRoomPreview key={dealer.id} result={current} dealerId={dealer.id} dealerLabel={dealer.label} roomName={room.name} game={room.game} operatorName={catalog.operator.name} tableAsset={selected.tableAsset} background={selected.background}/>
     <div className="flex min-w-0 flex-col border-t border-white/10 lg:border-l lg:border-t-0">
       <header className="border-b border-white/10 px-5 pb-6 pt-7 sm:px-8 sm:pt-9">
         <p className={kickerClass}><span aria-hidden="true">{'// '}</span>Spelrum · {catalog.operator.name}</p>
@@ -128,13 +128,13 @@ export function PlayerRoomCatalogue({catalog,stored={},directPlay}:{catalog:Publ
   return <section className="mt-10" aria-label="Spelrum">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><p className={kickerClass}><span aria-hidden="true">{'// '}</span>02 · Spelrum</p><h2 className="mt-2 text-3xl font-medium tracking-[-0.03em] text-off sm:text-4xl">Välj din plats vid bordet.</h2></div>
-      <span className="font-mono text-[11px] uppercase tracking-[.16em] text-white/45">{catalog.rooms.length} spelrum · Blackjack</span>
+      <span className="font-mono text-[11px] uppercase tracking-[.16em] text-white/45">{catalog.rooms.length} spelrum</span>
     </div>
     <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {catalog.rooms.map(row=>{const active=row.id===room.id;return <button key={row.id} type="button" aria-pressed={active} onClick={()=>setRoomId(row.id)}
         className={'group flex min-w-0 items-center gap-4 rounded-2xl border p-4 text-left transition-[border-color,background-color,box-shadow] duration-200 '+focusClass+(active?' border-lime/70 bg-lime/[.06] shadow-[0_0_0_1px_rgba(214,255,58,.35)]':' border-white/10 bg-white/[.025] hover:border-white/30 hover:bg-white/[.04]')}>
         <DealerStack dealers={row.dealers}/>
-        <span className="min-w-0 flex-1"><span className="block break-words text-base font-medium text-off">{row.name}</span><span className="mt-1 block text-xs text-white/50">{row.dealers.length} {row.dealers.length===1?'dealer':'dealers'} att välja bland</span></span>
+        <span className="min-w-0 flex-1"><span className="block break-words text-base font-medium text-off">{row.name}</span><span className="mt-1 block text-xs text-white/50">{row.game==='roulette'?'Roulette':'Blackjack'} · {row.dealers.length} {row.dealers.length===1?'dealer':'dealers'} att välja bland</span></span>
         <span aria-hidden="true" className={'grid h-8 w-8 shrink-0 place-items-center rounded-full border text-sm transition-colors '+(active?'border-lime bg-lime text-ink':'border-white/15 text-white/50 group-hover:border-white/40 group-hover:text-off')}>{active?'✓':'↗'}</span>
       </button>;})}
     </div>
@@ -165,7 +165,7 @@ export function PlayerOperatorChooser({state,current,onChoose,onRetry,filter='',
         <span aria-hidden="true" className="absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(214,255,58,.22),transparent_70%)] opacity-40 transition-opacity duration-300 group-hover:opacity-100"/>
         <span className="flex items-start justify-between"><span aria-hidden="true" className={'h-14 w-14 rounded-2xl text-lg '+monogramClass}>{monogram(row.name)}</span><span aria-hidden="true" className="font-mono text-xs text-white/30">{String(index+1).padStart(2,'0')}</span></span>
         <span className="mt-auto block break-words pt-8 text-2xl font-medium tracking-[-0.02em] text-off">{row.name}</span>
-        <span className="mt-2 block text-sm text-white/50">Blackjack · välj rum och dealer</span>
+        <span className="mt-2 block text-sm text-white/50">Välj spelrum och dealer</span>
         <span className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-sm font-medium text-lime">Utforska spelrummen <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full border border-lime/40 transition-colors group-hover:bg-lime group-hover:text-ink">↗</span></span>
       </button>)}
     </div>

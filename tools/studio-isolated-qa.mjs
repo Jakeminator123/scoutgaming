@@ -34,6 +34,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
       'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'web/public/composition-settings.mjs',
       'web/presentation-layers.mjs', 'lab/lib/studio-model.mjs',
+      'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
       'ops/neon-studio/migrations.mjs', 'web/storage/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
@@ -156,7 +157,9 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
         const branding = await runPartnerBrandingPostgresChecks({ ...configuration, operatorPool: team.operatorPool, authPool: team.authPool });
         return { ...branding, checks: [...team.checks, ...branding.checks] };
       } });
-    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks];
+    const { runRoulettePostgresChecks } = await import('../test/roulette-postgres.mjs');
+    const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
+    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();

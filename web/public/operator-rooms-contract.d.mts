@@ -5,6 +5,7 @@ export interface PublicRoomDealer {
   table: PublicRoomLayer; background: PublicRoomLayer & { mode: 'baked' | 'image' | 'video' };
 }
 export interface PublicOperatorRoom {
+  game?: 'blackjack' | 'roulette';
   id: string; name: string; laneId: string; presentation: { id: string; label: string };
   dealerDefault: string; dealers: PublicRoomDealer[]; playUrl: string;
 }

@@ -64,7 +64,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     if (!pack) return validatePublicOperatorRooms(result, { operatorSlug: slug });
     if (pack.operatorId !== operator.id) unavailable();
     const frozen = readPackagePresentation(pack);
-    if (!frozen || !pack.games?.includes('blackjack')) return validatePublicOperatorRooms(result, { operatorSlug: slug });
+    if (!frozen) return validatePublicOperatorRooms(result, { operatorSlug: slug });
     const saved = await policy.readSaved();
     const rooms = listPackageRooms({ administration: saved.administration, package: pack, operatorId: operator.id }).filter(room => room.state === 'live');
     // All choices in this response use the same saved snapshot and immutable
@@ -72,7 +72,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     // the actual game selector instead of duplicating its authority.
     const select = createGameEntrySelector({
       policy: { readSaved: async () => saved, readGameConfiguration: policy.readGameConfiguration },
-      packages: { resolve: async () => ({ operator, package: pack }) }, log: () => {},
+      packages: { resolve: async () => ({ operator, package: pack }) }, log: () => {}, game:'any',
     });
     // Ownership and frozen-package validation have already passed. This selector
     // uses only the saved inputs above; storage errors must never receive this
@@ -89,6 +89,8 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
       return entry;
     }
     for (const room of rooms) {
+      const game = room.game ?? 'blackjack';
+      if (!pack.games?.includes(game)) continue;
       const query = new URLSearchParams({ operator: slug, table: room.id });
       const base = await playableEntry(query);
       if (base.status !== 200 || base.selection.roomId !== room.id) unavailable();
@@ -108,9 +110,9 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           table: publicLayer(selection, 'table', independentLayers, defaults),
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
-      result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId,
+      result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
-        playUrl: '/play/blackjack?' + new URLSearchParams({ operator: slug, table: room.id }).toString() });
+        playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }
     return validatePublicOperatorRooms(result, { operatorSlug: slug });
   }

@@ -7,8 +7,16 @@ const username = document.querySelector('#username');
 const help = document.querySelector('#login-help');
 const administratorEntry = document.querySelector('#legacy-admin');
 const destination = '/play';
-const gameDestination = document.documentElement.dataset.gamePath === '/blackjack'
-  ? canonicalGameDestination(new URL(location.href,location.origin),{includeLaunch:false}) : destination;
+function rouletteReturnPath() {
+  const raw = new URL(location.href).searchParams.get('returnTo');
+  if (!raw?.startsWith('/play/roulette') || raw.includes('\\')) return null;
+  const url = new URL(raw,location.origin);
+  if (url.origin !== location.origin || url.pathname !== '/play/roulette' || url.hash) return null;
+  if ([...url.searchParams.keys()].some(key=>!['operator','table','dealer'].includes(key)||url.searchParams.getAll(key).length!==1)) return null;
+  return url.pathname+url.search;
+}
+const gameDestination = rouletteReturnPath() ?? (document.documentElement.dataset.gamePath === '/blackjack'
+  ? canonicalGameDestination(new URL(location.href,location.origin),{includeLaunch:false}) : destination);
 let busy = false, loginEndpoint = null, localLogin = false;
 submit.disabled = true;
 function loginError(code) {

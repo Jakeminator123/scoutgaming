@@ -106,6 +106,24 @@ try {
   });
   assert.equal(rouletteSpin.status, 200);
   assert.equal((await rouletteSpin.json()).event.operatorId, 'roulette-demo');
+  const rouletteStateResponse = await request(game + '/api/roulette/table', {body:{op:'state'}});
+  assert.equal(rouletteStateResponse.status,200);
+  const rouletteCookie = cookies(rouletteStateResponse).join('; '), rouletteState = await rouletteStateResponse.json();
+  const rouletteRequest = {op:'spin',playerId:rouletteState.player.id,currency:rouletteState.currency,requestId:'00000000-0000-4000-8000-000000000001',version:0,bets:[{id:'red',amount:5}]};
+  const roulettePlay = body => request(game + '/api/roulette/table', {cookie:rouletteCookie,body});
+  assert.equal((await roulettePlay({...rouletteRequest,playerId:'other-player'})).status,401);
+  assert.equal((await request(game + '/api/roulette/table', {cookie:rouletteCookie,body:rouletteRequest,headers:{Origin:'https://other.invalid'}})).status,403);
+  const rouletteFirst = await roulettePlay(rouletteRequest);assert.equal(rouletteFirst.status,200);
+  const rouletteResult = await rouletteFirst.json();assert.equal(rouletteResult.version,1);
+  const rouletteReplay = await roulettePlay({...rouletteRequest,id:'forged-player-id'});assert.equal(rouletteReplay.status,200);
+  const rouletteReceipt = await rouletteReplay.json();assert.equal(rouletteReceipt.replayed,true);
+  assert.equal(rouletteReceipt.player.id,rouletteState.player.id);assert.equal(rouletteReceipt.round.id,rouletteResult.round.id);
+  assert.equal(rouletteReceipt.balance,rouletteResult.balance);
+  assert.equal((await roulettePlay({...rouletteRequest,requestId:'00000000-0000-4000-8000-000000000002'})).status,400);
+  assert.equal((await roulettePlay({op:'state',context:{operator:'unknown',table:'other'}})).status,503);
+  assert.equal((await request(game + '/api/roulette/table',{cookie:rouletteCookie})).status,405);
+  assert.equal((await request(game + '/api/balance',{cookie:rouletteCookie,body:{balance:999999}})).status,400);
+
   assert.equal(rouletteSpin.headers.has('set-cookie'), false, 'roulette demo does not create a guest player');
   const offlinePreview = await request(game + '/api/studio-preview');
   assert.equal(offlinePreview.status, 503, 'offline preview refuses before loading Studio or creating a player');
