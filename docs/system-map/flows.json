@@ -279,11 +279,6 @@
               "path": "test/speech-playback.mjs",
               "line": 1,
               "label": "Gemensamt inspelat tal"
-            },
-            {
-              "path": "test/dealer-sync-audit.mjs",
-              "line": 1,
-              "label": "Synk- och assetkontrakt; inte visuell approval"
             }
           ]
         }

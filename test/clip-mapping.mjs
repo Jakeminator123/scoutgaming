@@ -30,10 +30,13 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
       assert.equal(row.status, manifest.status);
       assert.equal(row.actualPlayback, false);
     }
-    const bank = read(`dealers/${dealer}/audio/en/bank.json`);
-    for (const row of mapping.dealers[dealer].engine.filter(row => row.kind === 'speech')) {
-      assert.equal(row.text, bank[row.line]?.text ?? null);
-      assert.equal(row.route, `/?dealer=${dealer}`);
+    const speech = (mapping.dealers[dealer].engine ?? []).filter(row => row.kind === 'speech');
+    if (speech.length) {
+      const bank = read(`dealers/${dealer}/audio/en/bank.json`);
+      for (const row of speech) {
+        assert.equal(row.text, bank[row.line]?.text ?? null);
+        assert.equal(row.route, `/?dealer=${dealer}`);
+      }
     }
   }
   const native = mapping.dealers.astrid.nativeSpeech.find(row => row.line === 'win');
@@ -53,7 +56,8 @@ test('paused V2 dealing and explicit staged candidates are not playback claims',
     assert.equal(row.route, '/v2/?dealer=astrid');
     assert.equal(row.actualPlayback, false);
   }
-  assert.ok(mapping.dealers.astrid.stagedTakes.length > 0);
+  assert.equal(mapping.dealers.astrid.stagedTakes.length, 0);
+  assert.equal(mapping.dealers.astrid.manifestStatus, null);
   for (const row of mapping.dealers.astrid.stagedTakes) {
     assert.equal(row.route, '/?dealer=astrid&performance=staged');
     assert.equal(row.candidate, true);

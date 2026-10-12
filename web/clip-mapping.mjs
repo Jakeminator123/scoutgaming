@@ -17,9 +17,19 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
   const available = file => typeof file === 'string' && existsSync(resolveMediaAbsolutePath(join(root, file)));
   const native = readJson(join(root, 'speech-media.json')) ?? {};
   for (const [dealer, base] of Object.entries(DEALERS)) {
-    const idx = readJson(join(root, base, 'streams/index.json')); if (!idx) continue;
+    const idx = readJson(join(root, base, 'streams/index.json'));
     const bank = readJson(join(root, base, 'audio/en/bank.json')) ?? {};
     const entries = [];
+    if (!idx?.clips) {
+      const nativeSpeech = Object.entries(native[dealer] ?? {}).map(([line, take]) => ({
+        event: `show.line.${line}`, kind: 'speech', line, text: take.text ?? null,
+        file: take.src, fileAvailable: available(take.src), audio: null, audioSource: 'embedded', plays: 'once',
+        route: `/?dealer=${dealer}`, candidate: true, actualPlayback: false, review: take.review ?? null,
+        selector: 'speech-media.json exact line override in playRecorded; embedded audio/video clock. Staged packed variants may use actor provenance.',
+      }));
+      dealers[dealer] = { engine: entries, nativeSpeech };
+      continue;
+    }
     const originalRoute = `/?dealer=${dealer}`;
     for (const [key, c] of Object.entries(idx.clips ?? {})) {
       const short = key.split('/').pop();

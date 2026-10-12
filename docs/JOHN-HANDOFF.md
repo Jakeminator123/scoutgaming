@@ -283,6 +283,19 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
+**Indexerad dealerbank borttagen, 12 oktober (`cursor/a30-indexed-bank-6a84`).**
+`media/dealers/{astrid,amira,vera,mei}/runtime/indexed` (632 filer, 279,0 MiB)
+är borta ur Git, liksom layoutrader, blob-indexrader och de auditar som bara
+läste banken (`audit-dealer-sync`, `audit-performance`, `audit-astrid-actor`)
+plus läppsynkskripten som bara hade banken som underlag. Blob-objekt är inte
+raderade. `runtime/presentation` (83 filer) är orörd. Partnerdokumentet visar
+tomma `streams`, `deals` och `speech`, och att `/dealer/…` och `/dealers/…`
+svarar 410. API-beteendet är oförändrat. Prov: katalog- och manifestkontroll,
+orphan-test, systemkarta, miljövariabler, raderingsgrind och riktade
+`node --test`. Kvar: `AGENTS.md` kräver fortfarande `audit-dealer-sync --probe`;
+handmattor i `runtime/hands` har ingen audit; B9-byggarna namnger den borttagna
+banken. Studio- och frontendbygge samt hela sviten är orkestratorns.
+
 **Kompositorn ligger i `packages/presentation`, 12 oktober.** Paketet äger
 `compositor/`, `docs/` och `preview/`. Publika adresser
 (`/composition-runtime/*`, `/layer-packs/*`, Studio `/preview/*`) och
