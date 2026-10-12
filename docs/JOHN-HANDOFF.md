@@ -1,5 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## Offentlig bolagslista och GitGuardian, 12 oktober 2026
+
+Publika /api/operators svarade 503 fast Johns spelbolag och Nordic Bet hade
+läsbara spelrum; SG test game providers rum svarade 503. Listan utesluter nu
+endast ett bolag som den riktiga spelvalideringen uttryckligen avvisar som
+ospelbart, efter verifierat bolagsägarskap och fryst paket. Lagringsfel,
+främmande data och korrupta paket stoppar fortsatt svaret. Inga bolag eller
+rum ändras av katalogläsningen. 62 riktade prov passerade, inklusive
+pensionerad dealer, bolagsordning, HEAD och tenant-/lagringsfel. Livekontroll
+av slutlig leverans återstår vid denna commit.
+
+GitGuardians befintliga skyddade API fungerar med incidents:read och
+sources:read. Samtliga 34 förekomster i de 12 öppna Scoutgaming-fynden
+kontrollerades mot sina exakta Git-versioner: 26 förekomster var filhashar
+under expectedHashes i docs/system-map/contracts.json, samtliga omräknade
+SHA-256 matchade. Åtta förekomster var rena konfigurationsfixturer i
+ops/cloud/test/container-entry.test.mjs utan databasanslutning.
+Åtta hashfynd (37867511, 37867512, 37879729–37879732, 37880359, 37880360)
+klassades som false_positive och fyra fixturefynd (37862641, 37863164–37863166)
+som test_credential i den inloggade GitGuardian-webbvyn. Efterläsning visade
+0 öppna och 17 ignorerade incidenter; de fem tidigare ignorerade ändrades inte.
+Bevakningen är aktiv. Historisk skanning är fortfarande too_large och ger
+inte full historisk täckning; detta kräver separat lösning för leverantörens
+storleksgräns. Inga API-behörigheter, detektorer, exclusions eller hemligheter
+ändrades. Andra repon i samma workspace ingår inte i denna klassning.
+
 ## Samlat kontroll- och partnerflöde, 12 oktober 2026
 
 N1 har fyra arbetsområden: Studio, Spelbolag, Drift och System. Skapa dealer

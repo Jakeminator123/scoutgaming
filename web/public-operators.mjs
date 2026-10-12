@@ -1,5 +1,6 @@
 // Public operator labels. The lobby list includes only currently playable rooms.
 import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS, isOperatorSlug } from './demo-operators.mjs';
+import { isUnplayableOperatorRooms } from './public-operator-rooms.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)$/;
 export const OPERATOR_PUBLIC_CACHE_MS = 60_000;
@@ -42,7 +43,12 @@ export function createPublicOperatorDirectory({store = null, readRooms = null, n
       if (!value || !value.name.trim()) continue;
       if (seen.has(value.slug)) throw Error('Duplicate operator');
       seen.add(value.slug);
-      const rooms = await readRooms(value.slug);
+      let rooms;
+      try { rooms = await readRooms(value.slug); }
+      catch (error) {
+        if (isUnplayableOperatorRooms(error, value.slug)) continue;
+        throw error;
+      }
       if (rooms === null) continue; // Operator was removed/suspended after listing.
       const current = validatePublicOperatorRooms(rooms, {operatorSlug: value.slug});
       if (current.rooms.length) operators.push({slug: current.operator.slug, name: current.operator.name});

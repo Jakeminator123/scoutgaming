@@ -132,3 +132,35 @@ test('list response is bounded by operator count and actual UTF-8 bytes without 
   const tooManyBytes=createPublicOperatorDirectory({store:{listOperators:async()=>rows},readRooms:async slug=>{const value=structuredClone(catalog);value.operator={slug,name};value.rooms[0].playUrl='/play/blackjack?operator='+slug+'&table='+value.rooms[0].id;return value;}});
   assert.equal((await requestList(tooManyBytes)).status,503);
 });
+
+
+test('one verified unplayable publication cannot hide another playable company',async()=>{
+  const good=liveDirectory(),retired=createPortraitRoomEntryFixture({operator:'retired',dealer:'amira'});
+  const retiredOperator={id:retired.room.operatorId,slug:'retired',name:'Retired dealer company',status:'active'};
+  const retiredStore={getOperatorBySlug:async slug=>slug==='retired'?retiredOperator:null,getCurrentPackage:async()=>retired.pack};
+  const policy={readSaved:async()=>({project:retired.project,administration:retired.administration}),readGameConfiguration(){}};
+  const denied=createPublicOperatorRooms({store:retiredStore,policy});
+  const readRooms=slug=>slug==='retired'?denied.read(slug):good.rooms.read(slug);
+  const before=JSON.stringify({good:good.fixture,retired,retiredOperator});
+  for(const rows of [[retiredOperator,good.rows[0]],[good.rows[0],retiredOperator]]){
+    const directory=createPublicOperatorDirectory({store:{listOperators:async()=>rows},readRooms});
+    const result=await requestList(directory);assert.equal(result.status,200);assert.equal(result.headers['Cache-Control'],'no-store');
+    assert.deepEqual(JSON.parse(result.body),{operators:[{slug:'north',name:'North <VIP>'}]});
+    assert.doesNotMatch(result.body,/retired|amira|operatorId|revision|branding|rooms/);
+    const head=await requestList(directory,{method:'HEAD'});assert.equal(head.status,200);assert.equal(head.body,undefined);
+  }
+  assert.equal((await requestList(denied,{url:'/api/operators/retired/rooms'})).status,503,'the blocked company still cannot expose or launch its room');
+  const allBlocked=createPublicOperatorDirectory({store:{listOperators:async()=>[retiredOperator]},readRooms});
+  assert.deepEqual(JSON.parse((await requestList(allBlocked)).body),{operators:[]});
+  assert.equal(JSON.stringify({good:good.fixture,retired,retiredOperator}),before);
+
+  // The marker belongs only to the operator that passed ownership checks.
+  let rejected;try{await denied.read('retired');}catch(error){rejected=error;}
+  const foreignMarker=createPublicOperatorDirectory({store:{listOperators:async()=>[good.rows[0]]},readRooms:async()=>{throw rejected;}});
+  assert.equal((await requestList(foreignMarker)).status,503);
+
+  // A storage failure remains global even if its text resembles a runtime rejection.
+  const broken=createPublicOperatorRooms({store:retiredStore,policy:{...policy,readSaved:async()=>{throw Error('Registered cloud presentation required');}}});
+  const unavailable=createPublicOperatorDirectory({store:{listOperators:async()=>[good.rows[0],retiredOperator]},readRooms:slug=>slug==='retired'?broken.read(slug):good.rooms.read(slug)});
+  const failure=await requestList(unavailable);assert.equal(failure.status,503);assert.equal(failure.body,'{"error":"operator_directory_unavailable"}');
+});
