@@ -238,12 +238,18 @@ git -C $wt merge --no-ff "origin/$b" -m "Merge <ID>: <titel>"
 3. Efter en grupp merger: bygg Studio, kör `node tools/precommit-checks.mjs --full`
    och, när frontendkod ändrats, `pnpm --dir apps/croupier-frontend build`.
 4. `node tools/security-status.mjs`: inga nya öppna incidenter.
-5. Pusha integrationsbranchen. Pre-push tillåter bara `main` tills A03 har
-   genomfört B1. Kör därför spärrens kontroll manuellt:
+5. Pusha integrationsbranchen från `$wt`, utan bypass:
    ```powershell
-   node docs/system-map/verify.mjs --check --ref HEAD   # i $wt, 0 röda
-   git -C $wt push --no-verify origin jakob/repo-ordning
+   Set-Location $wt
+   node tools/push-github-work.mjs --check   # förhandskontroll, pushar inget
+   node tools/push-github-work.mjs           # pushar aktuell branch, jakob/repo-ordning
    ```
+   Sedan A03 (B1) levererar `push-github-work.mjs` aktuell branch när den
+   matchar `jakob/*`, `codex/*` eller `cursor/*`. Pre-push kör
+   `check-push-target.mjs`: godkänd destination, branch och ref, förbud mot
+   radering, taggar och historikomskrivning, samt systemkartan för de
+   transporterade commitarna. `--no-verify` används inte. `main` nås bara via
+   PR; `--admin-main` är Jakobs uttryckliga nödväg.
 6. CI på PR #19: `gh pr checks 19 --watch --fail-fast` i bakgrunden. Vid fel:
    `gh run view <id> --log-failed`, filtrerat på felrader.
 7. Radera den inmergade agentbranchen:
