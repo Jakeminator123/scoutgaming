@@ -34,6 +34,7 @@ paket. Frysta paket läser privata Blob-sökvägar ur paketposten
 | Git-filer under `runtime/indexed` | 632 |
 | Byte | 292 543 726 (279,0 MiB) |
 | Layoutrader med `path` under banken | 652 (inkl. 20 som redan saknade Git-fil) |
+| Layout-rötter `web/public/dealer` och `web/public/dealers/{astrid,amira,mei}` | 4 (pekade bara på banken) |
 | Extra aliasrader utan egen Git-fil | 2 (`composited/.../astrid-win.mp4`, `source/.../camera.json`) |
 | Blob-indexrader med `logicalPath` under banken | 652 |
 | Extra blob-alias utan egen Git-fil | 2 |
