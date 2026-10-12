@@ -134,6 +134,29 @@ väljas och publiceras uttryckligen i Studio. Användarguide och tekniskt
 kontrakt finns i `lab/docs/README.md` respektive
 `docs/LOCAL-PRESENTATION-RUNTIME.md`; A20/A21 bevarar modulerna vid flytt.
 
+### Roulettegenerator och testyta, 12 oktober 2026
+
+`web/games/roulette/` innehåller en fristående servermodul för europeisk
+roulette (0–36), `node:crypto.randomInt` och JSON-eventet
+`roulette.spin.resolved` med operatörs-, rums- och rund-ID. `/roulette-test/`
+visar en snurrknapp, nummer/färg, fliklokal historik, JSON och kodexempel.
+Tom `POST /api/roulette-test/spin` skapar ett serverägt demoutfall. Den går
+via signerad Vercel-transport till befintlig Render-image; Render-bokmärket
+omdirigerar till www. Origin, metod, tom kropp och anropsfrekvens kontrolleras.
+Ytan är publik/olänkad/noindex och hoppar över konto-/gästflöden. Inga
+insatser, saldon, DB-skrivningar, medier eller nya tjänster ingår.
+
+Varje anrop drar ett nytt utfall. Nästa rumsintegration måste stänga
+satsningar, låsa rundan, spara utfallet atomiskt och återspela samma sparade
+event vid återförsök. Riktigt spelrum, satsningar och avräkning återstår.
+Kontrakt och integrationsgränser: `web/games/roulette/README.md`.
+Verifierat med Volta Node 24.21.0: nio generatortester och sex HTTP-/proxytest
+godkända. Isolerat webbläsarprov visade två serverutfall, korrekt JSON och
+rensning av lokal historik. Orphan-kontrollen efter V2: 346 testfiler, 0 orphan.
+Testerna ingår i pre-commit/CI. Labbets och frontendens låsta beroenden
+installerades för full leveranskontroll; tidigare saknade Next-moduler var
+en lokal installationsbrist. Inga befintliga produktservrar startades/stoppades.
+
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
 Jakobs mål: en mycket enklare modell. Behåll sammansättningen (dealer, bord,
