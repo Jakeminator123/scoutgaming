@@ -3,7 +3,7 @@ import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { basename, extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { parseByteRange } from './preview-files.mjs';
-import { designPreviewPages } from './design-preview-paths.mjs';
+import { designPreviewPages, designPreviewReturnTo } from './design-preview-paths.mjs';
 
 const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export const designPreviewDirectory = resolve(labRoot, 'design-preview-build');
@@ -25,6 +25,18 @@ export const designPreviewHeaders = Object.freeze({
   'Cross-Origin-Resource-Policy': 'same-origin',
   'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'self'; form-action 'none'; base-uri 'none'",
 });
+
+// Route Handlers do not add Next's basePath to the SSR login destination.
+// Only the known native login redirect is translated; remote handoffs stay intact.
+export function designPreviewAuthRedirect(destination, { basePath = '', resource = false } = {}) {
+  if (resource) return new Response(null, { status: 401, headers: designPreviewHeaders });
+  if (typeof destination !== 'string' || !destination.startsWith('/login?')) return null;
+  const login = new URL(destination, 'https://studio.invalid');
+  const returnTo = designPreviewReturnTo(login.searchParams.get('returnTo')) ?? '/admin';
+  const prefix = basePath === '/studio' ? '/studio' : '';
+  return new Response(null, { status: 307, headers: { ...designPreviewHeaders,
+    Location: `${prefix}/login?returnTo=${encodeURIComponent(returnTo)}` } });
+}
 
 // Every document and asset goes through the same server-side staff authorization.
 // No preview endpoint accepts mutations or imports the exported template's APIs.
