@@ -27,6 +27,7 @@ media/.migration/
 
 # Session-gated preview build. Served by lab/app/preview, never from public/.
 /lab/preview-build/
+/lab/design-preview-build/
 
 # Local env backups made while consolidating .env files (never commit)
 /random/env-backup-*/

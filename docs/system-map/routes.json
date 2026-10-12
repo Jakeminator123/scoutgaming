@@ -4124,6 +4124,20 @@
       ]
     },
     {
+      "id": "studio-design-preview",
+      "path": "/admin/:path*",
+      "publicPath": "/admin/:path*",
+      "methods": ["GET", "HEAD"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/admin/[[...path]]/route.ts",
+        "serving": "Separate admin and lobby documents/assets plus GET /admin/_data/catalog, reading the existing scoped Studio and published game registers.",
+      "access": "Internal admin through authorizeUiPage; existing loopback-only guard in local offline mode.",
+        "boundary": "N1-authorized read-only register projection, no fixture fallback or private media/credentials. Lobby uses the canonical published room selector and existing game entry. Assets remain private, no-store with containment and Range/HEAD. No production writes.",
+      "groupId": "layer-preview",
+        "sources": [{ "path": "lab/app/admin/[[...path]]/route.ts" }, { "path": "lab/lib/design-preview.mjs" }, { "path": "lab/lib/design-preview-catalog.mjs" }]
+    },
+    {
       "id": "studio-preview-files",
       "path": "/preview/:path+",
       "publicPath": "/studio/preview/:path+",

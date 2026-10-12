@@ -55,7 +55,9 @@ Klienten återförsöker aldrig automatiskt. En processlokal begränsning till
 429 vid för hög belastning. Den är inte ett beständigt rundskydd.
 ## Spelrum
 
-Studio och partnerportalen erbjuder Blackjack eller Roulette när ett rum skapas.
+Studio erbjuder Blackjack eller Roulette när ett rum skapas per bolag.
+Partnerportalen visar publicerade rum, tillåtna utseendeval och provspelningslänk;
+den skapar inte rum. Användarguiden finns i `lab/docs/README.md`.
 Speltyp sparas som `game: 'roulette'`; äldre rum utan fältet är blackjack.
 Rum och bolagets frysta presentation publiceras i samma befintliga transaktion.
 Lobbyn följer aktuell publicering och öppnar
@@ -86,6 +88,42 @@ Inga blackjackrepliker eller nya rouletteinspelningar spelas. Externa
 partner-launch-konton är spärrade tills deras plånbokskontrakt stöder roulette.
 Profilens blackjackstatistik är oförändrad; roulettehistoriken finns i rummet.
 
+## Spelargränssnitt och UI/UX-arbete
+
+Rouletterummet är en serverlevererad HTML-/ES-modulsida, inte en Next-/React-sida.
+Vercel vidarebefordrar dess kanoniska adress och tillgångar till Render.
+Det befintliga gränssnittet är en spelbar första version som kan omarbetas.
+
+| Ansvar | Källa |
+| --- | --- |
+| Sidstruktur, kontroller och dialoger | `web/public/roulette/index.html` |
+| Layout, färg, responsivitet och rörelse | `web/public/roulette/style.css` |
+| Satsningsutkast, hjul, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
+| Bolagets frysta dealer, bord och bakgrund | `web/public/roulette/scene.mjs` |
+| Delad scenrenderare för lobby och roulette | `web/public/published-scene.mjs` |
+| Lobby och rummets ingång | `apps/croupier-frontend/components/player/` |
+
+`app.mjs` kopplar kontroller till HTML-elementens ID:n. Ändra HTML och dessa
+kopplingar tillsammans. Scenen använder samma publicerade underlag som lobbyn:
+`GET /api/operators/<slug>/rooms/<room-id>/preview?revision=<paketversion>&dealer=<id>`.
+Parametern heter `revision`, inte `packageRevision`. Ändringar i den delade
+scenrenderaren kräver också kontroll av lobbyn och blackjackens presentation.
+
+En ny design ska behålla serverns regler, RNG, inloggning, plånbok och
+publiceringskontroller. Animationen visar det mottagna utfallet; den väljer
+inget nummer. När ett svar saknas ska samma sparade `requestId`, version och
+satsningar återanvändas. Skapa inte en ny snurr för att lösa ett osäkert svar.
+Satsningar förblir låsta tills det väntande kommandot har hanterats.
+
+Utforma och kontrollera även laddning, otillräckligt saldo, ändrad session,
+utgången publicering, tappat svar, återförsök och saknad dealerscen. Säkerställ
+mobil/desktop, tangentbord, synlig fokusmarkering, begripligt upplästa resultat
+och reducerad rörelse. Röd/svart ska kunna förstås utan enbart färg.
+Rundans utfall och saldo visas först från serverns bekräftade kvitto.
+
+Aktuell leverans, Nordic Bets exempelrum och den samordnade dealerfrågan finns
+i `docs/JOHN-HANDOFF.md`. Hårdkoda inte PAOW eller en annan dealer i gränssnittet.
+
 ## Driftsättning
 
 Applicera den additiva `ops/neon-game/007-roulette-tables.sql` i den verifierade
@@ -102,11 +140,28 @@ som återförsök av en redan avgjord runda. Certifiering och riktiga pengar ing
 
 ## Verifiering
 
-Kör från reporoten:
-`node --test --test-concurrency=4 test/roulette.mjs test/roulette-preview.mjs`.
-Testet ingår också i den gemensamma pre-commit-/CI-sviten. Det kontrollerar
+Använd Node 24 för hela repo-/Studio-flödet. Kör från reporoten:
+
+```sh
+node --test --test-concurrency=4 test/roulette.mjs test/roulette-preview.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
+```
+
+Tester för generator och testyta kontrollerar
 alla 37 fack och färger, slumpanropets gränser, upprepade nummer, eventets
 kontrakt, felaktiga indata och fel i slumpkällan. Statistiska stickprov är inte
 bevis för en rättvis eller certifierad generator. HTTP-testerna använder en
 isolerad loopback-server utan databas och kontrollerar också Origin, tomma
-anrop, belastningsgräns, felsvar och exakta proxyvägar.
+anrop, belastningsgräns, felsvar och exakta proxyvägar. Rumstesterna täcker
+satsningar, utbetalningar, idempotens, session/origin, publicering och SQLite.
+`test/roulette-postgres.mjs` kräver den isolerade PostgreSQL-fixturen för
+databastesterna; upptäckta eller hoppade tester är inte körd PG-verifiering.
+CI:s `tools/studio-isolated-qa.mjs` kör dessa med riktig isolerad databas,
+inklusive åtta samtidiga spelare, rollback och omstart. Hela uppsättningen
+ingår i `.githooks/pre-commit-full` och CI.
+
+Efter UI-ändringar: kontrollera ett fullständigt spelvarv i en isolerad miljö,
+inklusive ett tappat svar efter servercommit, exakt återförsök och omladdning.
+Kontrollera också mobil, desktop och den faktiska dealerscenen. Ett godkänt
+API-test är inte visuellt godkännande. Använd inte produktionskonton eller
+ändra riktiga användares demosaldon för testning. Starta lokalt enligt
+`AGENTS.md` med `node lab/start.mjs --no-open`; endast ett serverpar åt gången.

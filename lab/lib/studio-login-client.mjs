@@ -1,5 +1,6 @@
 import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
 import { canonicalControlHref } from './control-flow.mjs';
+import { designPreviewReturnTo } from './design-preview-paths.mjs';
 
 // Exact current document routes only; query values are narrowly allowlisted below.
 // Keep login and bearer-entry pages out of this list to avoid auth redirect loops.
@@ -24,6 +25,8 @@ function publicationReturn(value) {
 }
 export function studioLoginReturnTo(value) {
   if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/studio';
+  const preview = designPreviewReturnTo(value);
+  if (preview) return preview;
   if (returns.has(value) || handoff.test(value)) return value;
   const publication = publicationReturn(value);
   if (publication) return publication;
@@ -32,6 +35,7 @@ export function studioLoginReturnTo(value) {
 export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   const target = studioLoginReturnTo(value);
   if (authBase !== '/api/auth') return target;
+  if (designPreviewReturnTo(target)) return target;
   if (returns.has(target)) return target.slice('/studio'.length) || '/';
   if (resolveWorkspaceSurfacePath(target) || publicationReturn(target)) return target;
   // Host-only authentication must not be forwarded to a different origin.

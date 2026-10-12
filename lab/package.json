@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare:preview": "node tools/prepare-preview.mjs",
-    "dev": "node tools/prepare-preview.mjs && next dev --webpack --hostname 127.0.0.1 --port 4188",
-    "build": "node tools/prepare-preview.mjs && next build --webpack && node tools/check-build-traces.mjs --sanitize",
+    "dev": "node tools/prepare-preview.mjs && node tools/prepare-design-preview.mjs && next dev --webpack --hostname 127.0.0.1 --port 4188",
+    "build": "node tools/prepare-preview.mjs && node tools/prepare-design-preview.mjs && next build --webpack && node tools/check-build-traces.mjs --sanitize",
     "start": "next start --hostname 127.0.0.1 --port 4188",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs components/*.test.mjs"
