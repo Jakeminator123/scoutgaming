@@ -13,6 +13,7 @@ import { createGameAudio } from "./game-audio.js";
 import { createTableBoxes } from "./table-boxes.js";
 import { createSharedGameTable,tableSession } from "./shared-table.js";
 import { createVideoBuffer, tableVideoSources } from "./video-buffer.js";
+import { createMediaFetch } from "./media-fetch.js";
 import { createVideoPreloader, initialVideoOffset } from "./video-preloader.js";
 import { createPlaybackRecovery } from "./playback-recovery.js";
 import { dealer, isAlternative, dealerClipUrl, dealerClipVariants, readyVariant, dealerLineUrl, dealerExtraLineUrl, unusedLine, chooseDealer, DEALERS, ROOMS, savedRoom, chooseRoom, tableDealer, PUBLIC_HIDDEN } from "./dealers.js";
@@ -56,7 +57,8 @@ const nativeIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platfor
 // server names it in /api/clips (MEDIA_BASE_URL, empty = this host). iOS plays the clip URL itself, so it stays here.
 let mediaBase='';
 const mediaUrl=u=>mediaBase&&/^\/media\/[^?]+\.mp4(\?|$)/.test(u)?mediaBase+u:u;
-const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:(u,o)=>fetch(mediaUrl(u),o)});
+const mediaFetch=createMediaFetch(mediaUrl,()=>{if(mediaBase)console.warn('clip cache unavailable here, clips come from this host');mediaBase='';});
+const videoBuffer=createVideoBuffer(nativeIOS?{createURL:(_blob,source)=>source,revokeURL:()=>{}}:{fetchImpl:mediaFetch});
 const videoPreloader=createVideoPreloader(videoBuffer);
 let tableMediaReady=false;
 function warmIdle(){if(!tableMediaReady||gameTable?.playing||document.hidden)return;const next=manifest.idle.find(c=>!videoBuffer.has(c.url));if(next)videoBuffer.load(next.url,10).catch(()=>{});}
