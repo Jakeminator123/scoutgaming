@@ -105,8 +105,9 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
 /** No websocket dependency is loaded unless this opt-in service is constructed.
  * prepare reserves durable request identity. Without a cloud GPU session, TTS
  * starts only on an authenticated browser attachment. With overlapAudio, TTS
- * starts while that session connects and is discarded if the ticket never
- * authenticates. PCM enters the relay only after that authentication.
+ * starts only after the GPU job is accepted, while that worker connects.
+ * Owner, player and shutdown cancellation abort that fetch immediately.
+ * PCM enters the relay only after the browser ticket is authenticated.
  * Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
@@ -373,20 +374,24 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       preparation.journalClaim = await reserve(input, key, fingerprint);
       current(); await input.beforeCostly(); current();
       let workerId, audioPrefetch = null;
-      if (configuration.overlapAudio === true && sessionManager) {
-        if (journal) {
+      const beginAudio = async () => {
+        if (audioPrefetch || prefetchAbort) return;
+        prefetchAbort = new AbortController();
+        preparation.stopPrefetch = () => prefetchAbort.abort();
+        current();
+        if (journal && !preparation.submissionMarked) {
           await track((async () => journal.markRequestSubmissionStarted({ key:preparation.journalClaim.key, lease:await ownership.get() }))());
           preparation.submissionMarked = true;
           current();
         }
-        prefetchAbort = new AbortController();
+        if (prefetchAbort.signal.aborted) fail('generated_speech_stream_cancelled', 499);
         const prefetchSignal = input.signal ? AbortSignal.any([input.signal, prefetchAbort.signal]) : prefetchAbort.signal;
         audioPrefetch = startAudioPrefetch(() => (runtime?.source ?? source)({ text: input.text, signal: prefetchSignal, beforeCostly: async () => {
           current(); await input.beforeCostly(); await runtime?.assertFresh(); current();
         } }), prefetchSignal);
-      }
+      };
       if (sessionManager) {
-        const ready = await sessionManager.ensure({ signal: input.signal, ...(runtime ? {avatar:runtime.avatar} : {}), beforeCostly: async () => { current(); await input.beforeCostly(); await runtime?.assertFresh(); current(); } });
+        const ready = await sessionManager.ensure({ signal: input.signal, ...(runtime ? {avatar:runtime.avatar} : {}), beforeCostly: async () => { current(); await input.beforeCostly(); await runtime?.assertFresh(); current(); }, ...(configuration.overlapAudio === true ? { onSubmitted: beginAudio } : {}) });
         workerId = ready?.workerId;
         if (runtime && (!workerId || ready.binding?.dealerId !== input.dealerId || ready.binding?.profileRevision !== runtime.profileRevision || ready.binding?.imageSha256 !== runtime.imageSha256 || ready.binding?.protocolVersion !== 3)) fail('generated_speech_worker_binding_mismatch');
         current(); await input.beforeCostly(); current();
@@ -419,12 +424,13 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         settled();
       }
     },
-    cancelOwner(owner) { preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
-    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
+    cancelOwner(owner) { preparations.get(owner)?.stopPrefetch?.(); preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
+    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparation.stopPrefetch?.(); preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
     close(options) {
       if (closePromise) return closePromise;
       serviceClosing = true;
       const preparing = [...inFlight].map(preparation => preparation.done);
+      for (const preparation of preparations.values()) preparation.stopPrefetch?.();
       preparations.clear(); for (const record of [...records.values()]) cancel(record);
       // Provider retirement and cancelled-request journal flushing share the
       // same runtime window. Do not delay worker cleanup behind a SQL wait.

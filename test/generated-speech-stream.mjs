@@ -348,7 +348,7 @@ test('cloud overlap buffers TTS while the GPU session starts and writes it once'
       await gate;
       yield new Uint8Array(24);
     },
-    sessionManager: { async ensure({ beforeCostly }) { await beforeCostly(); await gate; return { ready: true }; }, close() {} },
+    sessionManager: { async ensure({ beforeCostly, onSubmitted }) { await beforeCostly(); await onSubmitted(); await gate; return { ready: true }; }, close() {} },
   });
   const pending = f.service.prepare(f.input());
   await opened;
@@ -360,8 +360,23 @@ test('cloud overlap buffers TTS while the GPU session starts and writes it once'
   assert.equal(calls, 1); assert.equal(f.written, 48);
 });
 
-test('a failed GPU session aborts overlapped TTS before a ticket exists', async t => {
-  let calls = 0, aborted = false, seen;
+test('a rejected GPU job never starts overlapped TTS', async t => {
+  let calls = 0;
+  const f = await fixture(t, {
+    overlapAudio: true,
+    pcmSource: async function* () { calls++; yield new Uint8Array(24); },
+    sessionManager: {
+      async ensure() { throw Object.assign(Error('blocked'), { code: 'generated_speech_session_worker_failed' }); },
+      close() {},
+    },
+  });
+  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_worker_failed' });
+  assert.equal(calls, 0); assert.equal(f.service.status().pending, 0);
+});
+
+test('owner cancellation aborts overlapped TTS while the GPU worker is still connecting', async t => {
+  let calls = 0, aborted = false, release, seen;
+  const gate = new Promise(resolve => { release = resolve; });
   const opened = new Promise(resolve => { seen = resolve; });
   const f = await fixture(t, {
     overlapAudio: true,
@@ -370,10 +385,15 @@ test('a failed GPU session aborts overlapped TTS before a ticket exists', async 
       await new Promise((_, reject) => signal.addEventListener('abort', () => { aborted = true; reject(Object.assign(Error('aborted'), { code: 'generated_speech_stream_cancelled' })); }));
     },
     sessionManager: {
-      async ensure() { await opened; throw Object.assign(Error('blocked'), { code: 'generated_speech_session_worker_failed' }); },
+      async ensure({ onSubmitted }) { await onSubmitted(); await gate; return { ready: true }; },
       close() {},
     },
   });
-  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_worker_failed' });
-  assert.equal(calls, 1); assert.equal(aborted, true); assert.equal(f.service.status().pending, 0);
+  const pending = f.service.prepare(f.input());
+  await opened;
+  f.service.cancelOwner(f.input().owner);
+  assert.equal(aborted, true);
+  release();
+  await assert.rejects(pending, { code: 'generated_speech_stream_cancelled' });
+  assert.equal(calls, 1); assert.equal(f.service.status().pending, 0);
 });

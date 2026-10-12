@@ -2,7 +2,7 @@
 
 ## Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 
-Molnets strömmande tal (`overlapAudio` på cloud-konfigurationen, ingen ny miljövariabel) startar Cartesia när svarstexten är känd, samtidigt som RunPod-sessionen kopplar upp. PCM stannar i spelprocessen, högst 25 sekunder, och går in i reläet först när webbläsarens engångsbiljett är autentiserad. Avbrott eller en session som inte blir klar stoppar röstbufferten. Utan GPU-session, inklusive lokal förhandsvisning, startar rösten som tidigare först vid ansluten spelare.
+Molnets strömmande tal (`overlapAudio` på cloud-konfigurationen, ingen ny miljövariabel) startar Cartesia först efter att RunPod-jobbet är accepterat, medan workern kopplar upp. PCM stannar i spelprocessen, högst 25 sekunder, och går in i reläet först när webbläsarens engångsbiljett är autentiserad. Avbrott från ägare, spelare eller stängning stoppar hämtningen direkt, även medan GPU-väntan pågår. Ett nekat GPU-jobb startar ingen röst. Utan GPU-session, inklusive lokal förhandsvisning, startar rösten som tidigare först vid ansluten spelare.
 
 Worker-socketen är kvar på den publika Vercel-ingången `/lipsync-worker`. Render tar emot den via ingresshemligheten. Den hemligheten ska inte ligga i RunPod-jobbet, så workern pekas inte direkt på Render. Idle-stopp efter 60 sekunder är kvar: en varm GPU debiteras på riktigt, och sessionsreservationen återbetalas inte.
 

@@ -272,6 +272,7 @@ export function createSpeechSessionManager(configuration, {
         job = { id, jobId: value.id, workerId, createdAt: started };
         await record(`${prefix(id)}.job.json`, { jobId: value.id });
       }
+      if (typeof input.onSubmitted === 'function') await input.onSubmitted();
       const waitStarted = now();
       while (!workerState(job.workerId).available) {
         await fresh();

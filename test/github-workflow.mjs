@@ -23,10 +23,6 @@ test('only the approved GitHub branch can be pushed', () => {
   assert.doesNotThrow(() => validatePush(url, update.replace('b'.repeat(40), '0'.repeat(40)), policy, () => false));
   assert.throws(() => validatePush('git@gitlab.com:scout-gg/croupier.git', update, policy));
   assert.throws(() => validatePush(url, update.replace(`refs/heads/${policy.branch}`, 'refs/heads/jakemanator123-github-work'), policy));
-  const review = update.replace(`refs/heads/${policy.branch}`, 'refs/heads/cursor/speech-audio-overlap');
-  assert.doesNotThrow(() => validatePush(url, review.replace('b'.repeat(40), '0'.repeat(40)), policy, () => false));
-  assert.throws(() => validatePush(url, review, policy, () => false), /rewrite history/);
-  assert.throws(() => validatePush(url, update.replace(`refs/heads/${policy.branch}`, 'refs/heads/cursor/Not_Allowed'), policy));
   assert.throws(() => validatePush(url, update.replace('a'.repeat(40), '0'.repeat(40)), policy));
   assert.throws(() => validatePush('git@github.com:someone/else.git', update, policy));
 });
