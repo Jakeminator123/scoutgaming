@@ -566,9 +566,6 @@ async function prepareTable() {
   const session=await gameApi.session();
   $('#sign-out').hidden=Boolean(studioPreview)||!session.authenticated;
   if(!session.authenticated && !session.guest){player=null;busy=false;renderBets();return null;}
-  // A page may show the dealer before login. Retry its private Lab policy once
-  // the actual session exists, before preparing that session's first hand.
-  await loadLabClipConfiguration();
   const out = await tableCommand('state'); showShoe(out.shoe);
   if (out.round) {
     bets = out.round.boxes.map(b => ({main:b.stake,pp:b.pp,tp:b.tp}));

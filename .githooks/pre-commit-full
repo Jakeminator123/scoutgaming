@@ -22,6 +22,7 @@ run_node_tests() {
 node docs/system-map/verify.mjs --check
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
+run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs
 run_node_tests lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs lab/test/http-guard.test.mjs

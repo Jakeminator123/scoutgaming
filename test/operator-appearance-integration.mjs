@@ -77,20 +77,35 @@ test('real server route bounds methods, operator query and room scope; unavailab
 const entry={operator:'north',roomId:'qa-room',lane:'qa-lane',packageRevision:4};
 const selectedBets=[{main:10,pp:2,tp:0},{main:0,pp:0,tp:0}];
 function browserStorage({failWrite=false}={}){const data=new Map();return {data,getItem:key=>data.get(key)??null,removeItem:key=>data.delete(key),setItem(key,value){if(failWrite)throw Error('quota');data.set(key,value);}};}
-function appFixture({responseRevision=4,requestError=false,storage=browserStorage(),activeRound=null,preview=false,initialBets=selectedBets,readGate=null}={}){
+function appFixture({responseRevision=4,requestError=false,storage=browserStorage(),activeRound=null,preview=false,initialBets=selectedBets,readGate=null,initialBusy=false,session={authenticated:true},expectedBets=selectedBets}={}){
   const events=[],hints=[],tableErrors=[],classList=new Set(activeRound?["in-round"]:[]);let reloaded=0,starts=0,reads=0;
   const init=text(appSource,declaration(appTree,'operatorAppearanceBoundary'));
   const restore=appTree.body.find(node=>node.type==='IfStatement'&&(()=>{let found=false;walk(node,child=>{if(child.type==='CallExpression'&&child.callee.name==='consumeAppearanceBets')found=true;});return found;})());assert.ok(restore,'actual app must consume preserved bets');
   let clickNode;walk(appTree,node=>{if(node.type==='AssignmentExpression'&&node.left.type==='MemberExpression'&&node.left.property.name==='onclick'&&node.left.object.type==='CallExpression'&&node.left.object.callee.name==='$'&&node.left.object.arguments[0]?.value==='#deal-now')clickNode=node.right;});assert.ok(clickNode,'actual deal button handler must exist');
   const runtime=compile({createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets,entrySelection:entry,studioPreview:preview?{}:null,
-    sessionStorage:storage,SEATS:2,bets:structuredClone(initialBets),round:activeRound,busy:false,balance:100,
+    sessionStorage:storage,SEATS:2,bets:structuredClone(initialBets),round:activeRound,busy:initialBusy,balance:100,
     apiFetch:async(url,options)=>{reads++;events.push('appearance');assert.equal(url,'/api/operator/appearance?operator=north&table=qa-room');assert.equal(options.cache,'no-store');if(readGate)await readGate;if(requestError)throw Error('fixture network unavailable');return new Response(JSON.stringify({operator:'north',roomId:'qa-room',packageRevision:responseRevision}));},
     location:{reload(){reloaded++;events.push('reload');}},hint:(...args)=>hints.push(args),tableReady:Promise.resolve(),
     document:{body:{classList:{add:value=>classList.add(value),remove:value=>classList.delete(value)}}},renderBets:()=>events.push('render'),
-    tableCommand:async(op,payload)=>{if(op==='state')return {round:null,shoe:{}};starts++;events.push('start');assert.equal(op,'start');assert.deepEqual(payload.bets,selectedBets);throw Error('fixture stops after actual start dispatch');},
-    ensureLogin:async()=>true,betTotal:()=>12,tableError:error=>tableErrors.push(error.message),gameApi:{session:async()=>({authenticated:true})},$:()=>({}),loadLabClipConfiguration:async()=>{},showShoe:()=>{},player:'isolated-player',
-  },`${init}\n${text(appSource,functionNode(appTree,'dealSequence'))}\n${text(appSource,functionNode(appTree,'prepareTable'))}\nreturn {deal:dealSequence,click:${text(appSource,clickNode)},prepare:prepareTable,restore:()=>{${text(appSource,restore)}},state:()=>({bets,busy,round,balance})};`);
+    tableCommand:async(op,payload)=>{if(op==='state'){events.push('state');return {round:null,shoe:{}};}starts++;events.push('start');assert.equal(op,'start');assert.deepEqual(payload.bets,expectedBets);throw Error('fixture stops after actual start dispatch');},
+    ensureLogin:async()=>true,tableError:error=>tableErrors.push(error.message),gameApi:{session:async()=>session},$:()=>({}),showShoe:()=>{},player:'isolated-player',
+    allSides:false,LIMITS:{max:1000},selected:10,undoStack:[],flyChip:()=>events.push('chip'),sfx:{play(){}},
+  },`${init}\n${text(appSource,declaration(appTree,'betTotal'))}\n${text(appSource,functionNode(appTree,'placeBet'))}\n${text(appSource,functionNode(appTree,'dealSequence'))}\n${text(appSource,functionNode(appTree,'prepareTable'))}\nreturn {deal:dealSequence,click:${text(appSource,clickNode)},prepare:prepareTable,place:()=>placeBet(0,'main',{}),restore:()=>{${text(appSource,restore)}},state:()=>({bets,busy,round,balance})};`);
   return {...runtime,events,hints,tableErrors,classList,storage,get reads(){return reads;},get starts(){return starts;},get reloaded(){return reloaded;}};
+}
+
+for(const [mode,options] of [['signed-in',{}],['guest',{session:{guest:true}}],['Studio rehearsal',{preview:true}]]){
+  test(`actual ${mode} startup opens betting and dispatches the selected chips to the server`,async()=>{
+    const empty=[{main:0,pp:0,tp:0},{main:0,pp:0,tp:0}];
+    const expected=[{main:10,pp:0,tp:0},{main:0,pp:0,tp:0}];
+    const f=appFixture({...options,initialBusy:true,initialBets:empty,expectedBets:expected});
+    f.place();assert.deepEqual(f.state().bets,empty,'bets stay locked until the server table loads');
+    await f.prepare();assert.equal(f.state().busy,false);assert.ok(f.events.includes('state'));
+    f.place();assert.deepEqual(f.state().bets,expected);assert.ok(f.events.includes('chip'));
+    await f.click();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(f.starts,1);assert.deepEqual(f.tableErrors,['fixture stops after actual start dispatch']);
+    assert.equal(f.reads,options.preview?0:1);
+  });
 }
 
 test('actual dealSequence checks fresh appearance before dispatching the server start command',async()=>{
