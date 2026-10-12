@@ -2,6 +2,30 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### PR-förslag: samma dealerskala i dator- och mobilram
+
+Grundloopens förhandsvisning använder nu den gemensamma visningsramen med
+Dator/Mobil-val och en bredare spelarkolumn. Båda ramarna skalar klippet efter
+samma bildhöjd: dator visar mer åt sidorna, mobil visar ett centrerat utsnitt.
+Formatbytet behåller videon och pågående uppspelning. Labbets befintliga
+presentation använder samma ram; den infångade originalspelfliken behåller
+sin separata visning. Detta är en PR-ändring, ännu inte publicerad i produktion.
+
+Verifiering: 38 riktade komponentprov, TypeScript och produktionsbygge passerar.
+Ordinarie fullhook kördes i kontrollgrupper: 2 661 PASS/11 skip/0 kvarvarande fel,
+efter komplettering av worktreens beroenden och den andra testharnessens import.
+Browserprov med verkligt renderad komponent/CSS och syntetiska breda/stående
+klipp passerar åtta fall vid 1440, 1024, 390 och 320 px, inklusive 16 färdiga
+uppspelningar. Vid 1440 px är videohöjden 347,625 px i båda ramarna. Audit --probe
+matchar alla fyra dealerbaslinjer; samma fyra dealers spelade goodluck två
+gånger i följd i en isolerad riktig spelare. Privata kvitton ligger under
+lab/data/platform-private/desktop-frame-qa/. QA-processerna är stängda.
+
+PAOW:s privata produktionsklipp har inte använts för en ny liveacceptans.
+Mediefiler och tidigare mänsklig läppsynksacceptans ändras inte. GitHub-checks
+och GitGuardian-sviten läses separat; incident-/plats-API-kopplingen saknar
+åtkomst, så incidenttäckningen är fortfarande ofullständig.
+
 ### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
 
 Slutkontroll 12 oktober: 03edad7d3b53b0ec3306e80d5db2db8c1f459e82 är Vercel
