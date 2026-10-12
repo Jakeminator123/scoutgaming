@@ -18,10 +18,11 @@ Kevin behåller produkt-/integrationsbesluten. Den lokala användaren styr uppdr
   godkännande att publicera andra agenters commits eller starta nya uppgifter.
 
 Läs `node tools/croupier-chef.mjs status`. Vid aktivering, välj känd målbranch
-(här `main` enligt Jakobs beslut 2026-10-02) och kör:
+(en gren som matchar `jakob/*`, `codex/*` eller `cursor/*`, enligt B1 2026-10-12)
+och kör:
 
 ```sh
-node tools/croupier-chef.mjs activate --owner Jakob --title "AKTUELL CHATTTITEL" --target main
+node tools/croupier-chef.mjs activate --owner Jakob --title "AKTUELL CHATTTITEL" --target BRANCH
 ```
 
 Använd verklig lokal ägare och titel; behåll samma Agent-ID som inboxen.
@@ -59,15 +60,18 @@ tekniskt sätt att stoppa agenter som saknar/förbigår instruktionerna.
    eller kontroll på varje verktygssvar. Skapa inte nya användaruppgifter utan
    uttrycklig beställning. Gemensamma svar följer befintlig ping-croupier/To/CC.
 3. **Integrera beställt arbete.** Bara när användaren beställt integration:
-   välj uttryckligen omfattade commits och testa på `main` i denna arbetskopia
-   efter lyckad fetch och kontroll mot `origin/main`, inte en äldre lokal
-   målbranch. Bevara original och smutsiga filer. Kontrollera
+   välj uttryckligen omfattade commits och testa på målbranchen i denna arbetskopia
+   efter lyckad fetch och kontroll mot dess `origin`, inte en äldre lokal
+   målbranch. Publicering till `main` är en pull request, inte en vanlig push.
+   Bevara original och smutsiga filer. Kontrollera
    patch-ekvivalenta commits; ”ahead” betyder inte alltid nya ändringar.
    Förenliga textändringar får sammanfogas. Motstridiga avsikter, events eller
    produktbeslut kräver ägarens besked; välj inte blint ours/theirs eller senaste.
    Kör relevanta tester och följ media-, säkerhets- och checklistreglerna i AGENTS.md.
 4. **Verifiera och lämna över.** Redovisa vad som ingår/utesluts, tester och
-   kvarvarande beslut. Push endast inom uttryckligt publiceringsuppdrag.
+   kvarvarande beslut. Push endast inom uttryckligt publiceringsuppdrag, med
+   `node tools/push-github-work.mjs` från feature-branchen. Direkt-push till
+   `main` kräver uttryckligt `--admin-main`.
    Kontrollera chefstatus igen före integration/push; om rollen övertagits, stopp.
    Fetch + verifiera aktuell målbranch, normal push utan force. Om fjärren gått
    vidare: omvärdera, sammanfoga och testa; forcera inte och loopa inte blint.
@@ -78,7 +82,7 @@ tekniskt sätt att stoppa agenter som saknar/förbigår instruktionerna.
 Rollen ligger kvar till `/chef av` eller uttryckligt byte, men arbetar bara
 på användarturer och inom beställd uppgift. Ingen timer, bakgrundsprocess,
 automatisk agentväckning eller obegränsad delegation. Andra agenter kan arbeta
-på `main` med tydliga filanspråk; chefen samordnar gemensam integration, inte deras varje åtgärd.
+på egna feature-brancher med tydliga filanspråk; chefen samordnar gemensam integration, inte deras varje åtgärd.
 Svara med en kort statuslista och nästa beslut, inte en kopia av all historik.
 När denna chatt förbereder ny gemensam integration: kontrollera ägarskapet igen.
 
