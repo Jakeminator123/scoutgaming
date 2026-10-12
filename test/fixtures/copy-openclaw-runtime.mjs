@@ -4,6 +4,11 @@ import { join } from 'node:path';
 // Disposable server copies keep the repository's sibling-module layout. Copy
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
+  const rouletteTarget = join(root, 'web/games/roulette');
+  await mkdir(rouletteTarget, { recursive: true });
+  for (const file of ['index.mjs', 'preview.mjs']) {
+    await copyFile(new URL(`../../web/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
+  }
   const source = new URL('../../open-claw/lab/src/', import.meta.url);
   const target = join(root, 'open-claw/lab/src');
   await mkdir(target, { recursive: true });

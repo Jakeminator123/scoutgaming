@@ -84,6 +84,7 @@ run_node_tests test/action-placement.mjs test/bugshot-report.mjs
 run_node_tests test/generations-api.mjs
 run_node_tests test/native-partner-events.mjs
 run_node_tests test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
+run_node_tests test/roulette.mjs test/roulette-preview.mjs
 run_node_tests test/fuzz-blackjack.mjs
 run_node_tests test/local-comparison-fixture.mjs test/generation-media.mjs
 run_node_tests test/registered-idle-rules.mjs
