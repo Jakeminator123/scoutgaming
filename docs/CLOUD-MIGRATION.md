@@ -104,6 +104,23 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   3. Operatör kör `node tools/check-migration-readiness.mjs --apply` med CROUPIER_MIGRATION_CONFIRM=apply-pending från en terminal med produktionsnyckeln.
   4. Merga PR, Vercel bygger.
   7 oktober 2026 pushades migration 005 till main innan den körts mot produktions-Neon; Vercel byggde inom tre minuter och varje /control-sida svarade att labbet inte kunde läsas.
+  **Fastställd ordning för deploy-valfria migrationer (beslut 12 oktober 2026).**
+  En migration som bara en ny, isolerad funktion behöver (först ut: `008-dealer-forge.sql`,
+  `forge_dealers` + `forge_jobs`) märks `deploymentOptional` i `ops/neon-studio/migrations.mjs`
+  och levereras i tre steg, i denna ordning och aldrig omvänt:
+  1. **Kod först.** PR:en gör båda runtime-kontrollerna (Lab `studio-native-runtime.mjs`,
+     Render `web/storage/studio-runtime.mjs`) toleranta för ledgern **med och utan** den nya
+     versionen. Readiness listar versionen under `optionalPending`, inte `pending`, så CI är
+     grön och mergen deployas. Funktionen svarar `forge_migration_pending` tills tabellerna finns.
+  2. **Migration efter deploy.** När Vercel och Render kör den toleranta koden kör operatören
+     `node tools/check-migration-readiness.mjs --apply` med
+     `CROUPIER_MIGRATION_CONFIRM=apply-pending`; `--apply` tar även valfria versioner och
+     `optionalPending` blir `[]`. Funktionen aktiveras utan ny deploy.
+  3. **Lås i uppföljning.** En senare PR tar bort `deploymentOptional`, pinnar runtime till
+     exakt 001–008 och återgår därmed till huvudregeln (migration före merge) för allt därefter.
+  Att köra 008 mot produktion **före** steg 1 bryter den körande koden
+  (`studio_migration_ambiguous_ledger`: ledgern har fler rader än koden känner). Precedens: 007
+  levererades så (`508c8f33`, "Prepare optional Studio branding drafts migration").
   Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
   Delsteg 6 oktober: `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.

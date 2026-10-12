@@ -1,0 +1,36 @@
+.breadcrumbs{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;font-size:.86rem;color:var(--sg-muted);margin-bottom:1.25rem}
+.breadcrumbs a{color:inherit;text-decoration:none}.breadcrumbs a:hover{text-decoration:underline}
+.toolbar{display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.25rem}
+.toolbar label{display:grid;gap:.3rem;font-size:.82rem;color:var(--sg-muted)}
+.toolbar select,.toolbar input,.field input,.field select,.field textarea{font:inherit;padding:.5rem .65rem;border:1px solid var(--sg-border,#343844);border-radius:8px;background:var(--sg-surface);color:inherit;min-width:0}
+.banner{padding:.85rem 1rem;border-radius:10px;border:1px solid var(--sg-border,#343844);margin-bottom:1rem;line-height:1.5;background:var(--sg-surface)}
+.warn{border-color:#b8872a}.bad{border-color:#b84b4b}.ok{border-color:#3f8f5a}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1.25rem;margin-bottom:1.5rem}
+@media(min-width:1100px){.grid{grid-template-columns:minmax(0,1.1fr) minmax(0,2fr)}}
+.card{padding:1.1rem 1.25rem;border:1px solid var(--sg-border,#343844);border-radius:12px;background:var(--sg-surface);min-width:0}
+.card h2,.card h3{margin:0 0 .6rem}.card p{line-height:1.5;margin:.4rem 0}.muted{color:var(--sg-muted);font-size:.86rem}
+.anchors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.anchor{display:grid;gap:.5rem}.anchorFrame{aspect-ratio:9/16;max-height:360px;border-radius:10px;overflow:hidden;background:repeating-conic-gradient(#1e2230 0% 25%,#292f3e 0% 50%) 50%/24px 24px;display:grid;place-items:center}
+.anchorFrame img{width:100%;height:100%;object-fit:contain}
+.fields{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}.field{display:grid;gap:.3rem;font-size:.82rem;color:var(--sg-muted)}.field textarea{min-height:5.5rem;resize:vertical}
+.positions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem .8rem;font-size:.82rem}.positions input{width:4.5rem}
+.group{margin-bottom:1.5rem}.group h2{display:flex;gap:.75rem;align-items:baseline;margin:0 0 .6rem;font-size:1.05rem}.group h2 span{font-size:.82rem;color:var(--sg-muted);font-weight:400}
+.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;vertical-align:top;padding:.6rem .5rem;border-top:1px solid var(--sg-border,#343844)}.table th{font-size:.78rem;color:var(--sg-muted);font-weight:600;border-top:0}
+.slotLabel{font-weight:600}.slotMeta{display:block;font-size:.78rem;color:var(--sg-muted)}
+.pill{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.76rem;border:1px solid var(--sg-border,#343844);white-space:nowrap}
+.ready{border-color:#3f8f5a;color:#8fd3a4}.required{border-color:#b84b4b;color:#f0a0a0}.recommended{border-color:#b8872a;color:#f1c67a}.optional{opacity:.75}.pending{border-color:#4f7fd1;color:#a9c4f5}.blocked{border-color:#6b6b6b;color:#bdbdbd}
+.thumbs{display:flex;gap:.5rem;flex-wrap:wrap}
+.thumb{width:84px;display:grid;gap:.25rem;font-size:.72rem;color:var(--sg-muted);text-decoration:none}
+.thumbFrame{width:84px;height:148px;border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#1e2230 0% 25%,#292f3e 0% 50%) 50%/16px 16px;border:1px solid var(--sg-border,#343844)}
+.thumbFrame video,.thumbFrame img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbVariant .thumbFrame{border-style:dashed}
+.job{font-size:.8rem;line-height:1.45}.job code{font-size:.74rem}
+.actions{display:flex;gap:.4rem;flex-wrap:wrap}
+.composer{margin-top:.6rem;padding:.9rem;border:1px solid var(--sg-mark,#8aa4ff);border-radius:10px;background:var(--sg-surface);display:grid;gap:.7rem}
+.composer textarea{min-height:7rem}
+.estimate{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;font-size:.86rem}
+.estimate strong{font-size:1.05rem}
+.log{font-size:.82rem;line-height:1.5}.log table{width:100%;border-collapse:collapse}.log td,.log th{padding:.35rem .4rem;border-top:1px solid var(--sg-border,#343844);text-align:left;vertical-align:top}
+.inlineForm{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.small{font-size:.78rem}
+@media(max-width:700px){.anchors{grid-template-columns:1fr}.positions{grid-template-columns:repeat(2,minmax(0,1fr))}.table th:nth-child(4),.table td:nth-child(4){display:none}}
