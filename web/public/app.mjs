@@ -668,6 +668,8 @@ const playedBoxes = () => {
 };
 
 function layoutSeats() {
+    const banner=$('#banner');
+    Object.assign(banner.style,{top:'',bottom:''});
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
@@ -679,6 +681,7 @@ function layoutSeats() {
         Object.assign(seatEls[seat.box].style,{left:(scene.left+seat.x-table.left)+'px',top:(scene.top+seat.y-table.top)+'px'});
         seatEls[seat.box].style.setProperty('--game-seat-scale',layout.controlScale);
       }
+      if(compactSeats)Object.assign(banner.style,{top:'auto',bottom:(scene.height-Math.min(...layout.seats.map(seat=>seat.y))+60*layout.controlScale+12)+'px'});
       Object.assign($('#dealer-cards').style,{left:(scene.left+layout.dealer.x-table.left)+'px',top:(scene.top+layout.dealer.y-table.top)+'px'});
       localCards?.setProjection(layout,scene.width,scene.height);
       return;

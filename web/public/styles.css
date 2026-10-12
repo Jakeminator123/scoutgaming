@@ -134,6 +134,7 @@ html[data-presentation-startup]:not([data-presentation-startup="ready"]) #scene 
 
 #banner {
   position: absolute; top: 62.5vh; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
   background: rgba(10,50,26,.8); border: 1px solid rgba(255,255,255,.15); color: #fff;
   padding: 8px 22px; border-radius: 6px; font-size: 14px; letter-spacing: .12em; z-index: 36; white-space: nowrap;
 }

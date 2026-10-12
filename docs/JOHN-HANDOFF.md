@@ -164,6 +164,11 @@ läppsynk-/PAOW-kalibreringar. Ändringen använder befintlig runtime och återi
 inget från Kevins branch eller V2:s avvecklade motorer. PR-kontroller ska även
 verifiera kombinationen med omorganisationen och den nya rouletteytan på `ef9029a9`.
 
+PR27 `c0cf3b20` är levererad via `3e10a7ad`, med grön main-CI och Vercel/Render
+live. Produktionsprovet visade att mobilens gamla vh-placerade statusrad kunde
+täcka mittplatsen. Följdrättningen placerar statusraden ovanför den faktiska
+insatsgruppen och gör den genomsläpplig för klick. Desktopplaceringen bevaras.
+
 ### En ingång till sammansättningar, 12 oktober 2026
 
 Sammansättningar finns i Studios huvudmeny. Den dubbla dealerfliken och
