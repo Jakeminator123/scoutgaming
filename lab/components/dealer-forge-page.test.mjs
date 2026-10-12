@@ -37,7 +37,7 @@ function loadTs(fileUrl) {
   return module.exports;
 }
 
-const { DealerForgePage } = loadTs(new URL('./dealer-forge-page.tsx', import.meta.url));
+const { DealerMaterialCreator } = loadTs(new URL('./dealer-forge-page.tsx', import.meta.url));
 const actor = { actor: 'tester' };
 
 async function realisticState() {
@@ -55,20 +55,20 @@ async function realisticState() {
 
 test('Dealer Forge page renders the full matrix server-side: groups, every slot, status pills, posters, running jobs and the log', async () => {
   const { index, state } = await realisticState();
-  const html = renderToStaticMarkup(React.createElement(DealerForgePage, { initialDealerId: 'paow', initialIndex: index, initialState: state }));
-  assert.match(html, /Dealer Forge/);
+  const html = renderToStaticMarkup(React.createElement(DealerMaterialCreator, { dealerId: 'paow', initialIndex: index, initialState: state }));
+  assert.match(html, /Skapa material/);
   for (const group of ['Idle', 'Övergångar', 'Givning', 'Repliker', 'Reaktioner', 'Bord &amp; bakgrund']) assert.match(html, new RegExp(group), group);
   for (const slot of state.slots.filter(row => row.group !== 'pose')) assert.ok(html.includes(slot.id), `slot row ${slot.id}`);
   assert.equal((html.match(/class="pill ready"/g) ?? []).length, state.slots.filter(row => row.status.level === 'ready').length + 0);
   assert.match(html, /Ge kort · plats 4/); assert.match(html, /1 klipp/);
   assert.match(html, /Till skon · VILA → REDO/); assert.doesNotMatch(html, /Facket saknas i projektet/);
   assert.match(html, /Genereras · ~20 kr|Genereras/); // running job in box0
-  assert.match(html, /<video src="\/api\/videos\//); assert.match(html, /poster="\/api\/forge\/paow\/anchor\/redo\?v=/);
-  assert.match(html, /<img src="\/api\/forge\/paow\/anchor\/vila\?v=/);
+  assert.match(html, /<video src="\/api\/videos\//); assert.match(html, /poster="\/api\/forge\/paow\/anchor\/redo"/);
+  assert.match(html, /<img src="\/api\/forge\/paow\/anchor\/vila"/);
   assert.match(html, /Jobblogg/); assert.match(html, /wan3/);
   assert.match(html, /”Welcome to Privé Blackjack/); // speech slot shows its line
   assert.doesNotMatch(html, /RUNWAY_API_KEY saknas/); assert.doesNotMatch(html, /migration 008/);
-  assert.match(html, /Öppna i Dealers &amp; klipp/);
+  assert.doesNotMatch(html, /Registrera dealer|Ny dealer · id|Dealer Forge/);
 });
 
 test('the composer sends one idempotency key per distinct request and keeps it across ambiguous failures', () => {
@@ -78,7 +78,7 @@ test('the composer sends one idempotency key per distinct request and keeps it a
   assert.match(source, /status>=400&&status<500\)attemptRef\.current=null/);
 });
 
-test('without native data the page still renders the shell, the dealer form and the warnings', async () => {
-  const html = renderToStaticMarkup(React.createElement(DealerForgePage, { initialDealerId: 'paow', initialIndex: { dealers: [{ id: 'paow', label: 'Paow' }], migrationReady: false, runwayConfigured: false }, initialState: null }));
-  assert.match(html, /Registrera dealer/); assert.match(html, /migration 008/); assert.match(html, /RUNWAY_API_KEY saknas/); assert.match(html, /Läser dealern/);
+test('without native data material creation has no duplicate dealer form and shows readable setup warnings', async () => {
+  const html = renderToStaticMarkup(React.createElement(DealerMaterialCreator, { dealerId: 'paow', initialIndex: { dealers: [{ id: 'paow', label: 'Paow' }], migrationReady: false, runwayConfigured: false }, initialState: null }));
+  assert.doesNotMatch(html, /Registrera dealer|RUNWAY_API_KEY|migration 008/); assert.match(html, /inte färdigkonfigurerat/); assert.match(html, /Genereringstjänsten är inte ansluten/); assert.match(html, /Läser dealern/); assert.match(html, /<fieldset[^>]*disabled/);
 });

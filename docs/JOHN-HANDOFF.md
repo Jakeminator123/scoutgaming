@@ -1,7 +1,7 @@
 # Aktuell handoff — Scoutgaming
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `dda785ec`.
+`jakob/repo-ordning` och ajour med `origin/main` `36c8ef59`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -18,9 +18,9 @@ utbetalning ägs av servern.
 | 2 | Operatör | `/partner`, `/partner/login`, `/partner/{slug}` | Översikt, Spelrum, Team & behörigheter (kräver `team.read`), Integration. Källa: `lab/components/kevin-bo/partner-copy.mjs`. |
 | 3 | Spelare | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Lobby, profil (namn och språk), historik. Saldo är serverägt. |
 
-**Nivå 1, sidor.** Studio: Dealers & klipp `/control/clips`, Dealer Forge
-`/control/dealer-forge`, Bord & bakgrunder `/control/library`, Sammansättningar
-`/control/compositions`. Spelbolag: Bolag & team `/control/companies`, Spelrum
+**Nivå 1, sidor.** Studio: Dealers & klipp `/control/clips` (med fliken Skapa
+material, tidigare Dealer Forge), Bord & bakgrunder `/control/library`,
+Sammansättningar `/control/compositions`. Spelbolag: Bolag & team `/control/companies`, Spelrum
 & publicering `/control/rooms`. Drift: `/control/administration?tab=operations`
 och `?tab=finance`. System: `?tab=accounts`, `?tab=partners`, Agentmodeller
 `/control/openclaw`, Intern agentchatt `/control/openclaw?tab=chat`.
@@ -40,6 +40,8 @@ query bevaras till `/control/clips`. `/control/preview` → `/control/compositio
 `/control/preview` → sammansättningar. `/control/backgrounds` →
 `/control/compositions`. `/control/tree` (permanent, query bevaras) →
 `/control/events`. `/control/operator-chat` → `/control/openclaw?tab=chat`.
+`/control/dealer-forge` → Dealers & klipp, fliken Skapa material, med dealer-,
+sammansättnings-, bolags- och rumskontext bevarad även efter inloggning.
 `/lissabon` → `/control`. Oprefixade `/videos`, `/events`, `/guide`, `/probe`,
 `/openclaw`, `/administration`, `/activity` och `/tree` leder in i `/control/…`.
 Gammal `lane` i Studio accepteras och länkar skrivs som `composition`
@@ -182,6 +184,35 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
+**Materialskapande i dealerns arbetsyta, 12 oktober (`d18a58e8`).** Dealer
+Forge är samlat i **Dealers & klipp → Skapa material** för vald dealer.
+Den separata menyposten och det dubbla registreringsformuläret är borttagna;
+registrering och arkivering ligger kvar under Hantera dealers. Gamla
+`/control/dealer-forge` omdirigerar till den nya fliken med säkert bevarad
+dealer-, sammansättnings-, bolags- och rumskontext, även efter inloggning.
+
+`studio_native_unavailable` berodde på att den interna Next-anpassningen
+inte återställde `/studio` för `/api/forge`. Namespace-listan är rättad utan
+att utöka behörigheter eller query-policy. Grundbilder begärs utan den
+avvisade `?v`-parametern; hash byter bildens React-nyckel och privat media
+har fortsatt `no-store`.
+
+Materialutkast bevaras vid flikbyte och tillfälligt API-fel. Dealerbyte,
+historik och sidlämning skyddas; sena lässvar från tidigare dealer ignoreras.
+Otillgänglig anslutning spärrar skrivning och erbjuder återanslutning med
+utkastet kvar. Jobbpollning pausas när fliken är dold. Efter generering
+används befintliga Uppdatera klipplistan för att läsa in nytt material.
+
+56 riktade prov passerar, inklusive transportens scope/roll/återkallning/CSRF,
+komponenternas effekter, utkast, återanslutning, dealerbyte och omdirigering.
+Ytterligare körning av material-, arbetsyte- och scen-navigation passerar
+60 prov efter att den äldre komponentfixturen och flikantalet uppdaterats.
+Studio-produktionsbygget med Node 24.21.0 passerar, inklusive TypeScript och
+byggspårskontroll. Ordinarie fulla commit-hook passerar; de nya komponentproven
+ingår även där. Villkorade miljöprov behåller sina befintliga skips.
+Ingen betald generering, medieändring eller verklig DB-skrivning har gjorts.
+Användarens öppna Forge-flik med osparade fält har lämnats orörd.
+
 **Blackjackstart och granskning av uppspelningslogik, 12 oktober (`dda785ec`).**
 `prepareTable` anropade `loadLabClipConfiguration` efter att funktionen tagits
 bort i `7f7f6fc0`. ReferenceError låste bordet före serverns `state`, så inga
@@ -220,7 +251,11 @@ inga media eller godkännanden ändrades. Det är inget nytt visuellt
 lipsynkgodkännande. Amira är avvecklad som aktiv identitet; offline-start får
 inte kringgå kravet på registrerad dealer och publicerat/sparat provpaket.
 Full pre-commit-regression med Node 24.21.0 och högst fyra lokala testworkers
-passerade. Produktionsleveransen är ännu inte verifierad i detta kvitto.
+passerade. Fixen levererades i `dda785ec`; alla tre GitHub CI-jobb är gröna.
+Vercel-deploy `dpl_DWJPqPpjsz8wzkDAsgx8ckK6Vh3E` är READY och den publika
+`www.scoutgaming.tech/app.mjs` matchar den rättade källan (normaliserade
+radslut). Render `/__cloud/version` bekräftar också `dda785ec`.
+Inget verkligt spelarbelopp har använts för ett liveprov.
 
 **Merge-samordning och CI-cache, 12 oktober (`45ff5c25`).** Övertagen av
 merge-cd76. Merge gäller bara PR-author `Jakeminator123`, samma repo, mål
@@ -238,7 +273,7 @@ peka APT:s arkivcache på samma mapp som download-only; kopplingen och fixturen
 är rättade i `dbc925c3`. Tidsvinst och en riktig varm cacheträff återstår att mäta.
 
 **Dealer Forge i produktion, 12 oktober (#16, #17, #18, `91969107`).**
-`/control/dealer-forge` genererar en dealers klippbank via Runway från ett
+Dealer Forge, nu fliken Skapa material, genererar en dealers klippbank via Runway från ett
 VILA-foto; se lab/docs/README.md. Migration 008 kördes cirka 11:08 som
 `croupier_game`; ledgern är 001–008 och båda runtime-kontrollerna kräver exakt
 001–008. Testat: 24 Dealer Forge-tester inklusive felinjektion, migrations- och
@@ -287,7 +322,7 @@ aktiv. Frysta paket kräver egna mediereferenser. Probe oförändrad. Kvar:
 visuell acceptans av publicerade dealers.
 
 **Dealer Forge, 12 oktober (PR #16 `234614e3`, PR #18 `f410c229`).** Studio har
-`/control/dealer-forge` och `/api/forge`. Migration `008-dealer-forge.sql` är
+`/api/forge`; sidan är sedan `d18a58e8` fliken Skapa material i Dealers & klipp. Migration `008-dealer-forge.sql` är
 valfri vid deploy och körs i tre steg, först mot produktions-Neon, enligt
 `docs/CLOUD-MIGRATION.md`. Den här omskrivningen ändrar inte den koden.
 

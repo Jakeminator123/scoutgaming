@@ -1,4 +1,4 @@
-export type StudioDealerTab = 'idle' | 'clips' | 'scene' | 'speech' | 'replies' | 'playback' | 'settings';
+export type StudioDealerTab = 'idle' | 'clips' | 'generate' | 'scene' | 'speech' | 'replies' | 'playback' | 'settings';
 export type StudioNavigationContext = {
   dealerId?: string;
   eventId?: string;

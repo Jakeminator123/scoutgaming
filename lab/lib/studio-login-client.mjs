@@ -15,7 +15,7 @@ function publicationReturn(value) {
   for (const [key, entry] of query) {
     if (query.getAll(key).length !== 1) return null;
     if (key === 'tab' && ['publish','companies','tables','operations','finance','accounts','partners','media-review','chat'].includes(entry)) continue;
-    if (key === 'view' && ['idle','clips','speech','settings'].includes(entry)) continue;
+    if (key === 'view' && ['idle','clips','generate','speech','settings'].includes(entry)) continue;
     if (key === 'category' && ['all','deal','speech','reaction','action','idle'].includes(entry)) continue;
     if (['lane','composition','operator','dealer','table','event','variant','situation'].includes(key) && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(entry)) continue;
     return null;

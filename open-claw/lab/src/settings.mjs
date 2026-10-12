@@ -9,7 +9,7 @@ export const LAB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_ENV_FILES = basename(dirname(resolve(LAB_ROOT))) === 'open-claw'
   ? [resolve(LAB_ROOT, '../../.env'), resolve(LAB_ROOT, '.env')] : [resolve(LAB_ROOT, '.env')];
 const KEYS = ['HOST', 'PORT', 'LAB_API_TOKEN', 'LAB_DATA_DIR', 'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',
-  'OPENCLAW_BASE_URL', 'OPENCLAW_HOSTPORT', 'OPENCLAWAPI_KEY', 'OPENCLAW_STUDIO_ADMIN_DEVICE_KEY', 'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_TIMEOUT_MS',
+  'OPENCLAW_BASE_URL', 'OPENCLAW_HOSTPORT', 'OPENCLAW_API_KEY', 'OPENCLAWAPI_KEY', 'OPENCLAW_STUDIO_ADMIN_DEVICE_KEY', 'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_TIMEOUT_MS',
   'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL', 'OPENCLAW_SPEECH_TIMEOUT_MS',
   'OPENCLAW_DASHBOARD_ENABLED', 'OPENCLAW_DASHBOARD_ORIGIN', 'OPENCLAW_DASHBOARD_ALLOW_LOOPBACK', 'RENDER_EXTERNAL_URL',
@@ -23,16 +23,22 @@ export function readSettings({ env = process.env, envFiles = DEFAULT_ENV_FILES }
     try {
       const parsed = parseEnv(readFileSync(path, 'utf8'));
       for (const key of KEYS) if (parsed[key] !== undefined) values[key] = parsed[key];
+      if (parsed.OPENCLAW_API_KEY !== undefined || parsed.OPENCLAWAPI_KEY !== undefined) {
+        values.OPENCLAW_API_KEY = parsed.OPENCLAW_API_KEY ?? parsed.OPENCLAWAPI_KEY;
+      }
     } catch (error) { if (error.code !== 'ENOENT') throw new Error('Could not parse lab environment file.'); }
   }
   for (const key of KEYS) if (env[key] !== undefined) values[key] = env[key];
+  if (env.OPENCLAW_API_KEY !== undefined || env.OPENCLAWAPI_KEY !== undefined) {
+    values.OPENCLAW_API_KEY = env.OPENCLAW_API_KEY ?? env.OPENCLAWAPI_KEY;
+  }
   const timeout = Number(values.OPENCLAW_TIMEOUT_MS ?? 2500);
   return {
     host: values.HOST || '127.0.0.1', port: Number(values.PORT || 4188),
     apiToken: values.LAB_API_TOKEN || '', dataDir: resolve(values.LAB_DATA_DIR || resolve(LAB_ROOT, 'data')),
     remoteUrl: values.LAB_REMOTE_URL || '', remoteToken: values.LAB_REMOTE_TOKEN || '',
     baseUrl: values.OPENCLAW_BASE_URL || (values.OPENCLAW_HOSTPORT ? `http://${values.OPENCLAW_HOSTPORT}` : ''),
-    gatewayKey: values.OPENCLAWAPI_KEY || '', adminDeviceKey: values.OPENCLAW_STUDIO_ADMIN_DEVICE_KEY || '', agent: values.OPENCLAW_AGENT || 'openclaw/croupier-director',
+    gatewayKey: (values.OPENCLAW_API_KEY ?? values.OPENCLAWAPI_KEY) || '', adminDeviceKey: values.OPENCLAW_STUDIO_ADMIN_DEVICE_KEY || '', agent: values.OPENCLAW_AGENT || 'openclaw/croupier-director',
     chatAgent: values.OPENCLAW_CHAT_AGENT || 'openclaw/croupier-chat',
     speechAgent: values.OPENCLAW_SPEECH_AGENT || 'openclaw/croupier-speech',
     speechUrl: values.OPENCLAW_PRODUCT_SPEECH_URL || '', speechToken: values.OPENCLAW_PRODUCT_SPEECH_TOKEN || '',

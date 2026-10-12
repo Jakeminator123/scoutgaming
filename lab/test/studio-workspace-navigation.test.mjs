@@ -38,7 +38,7 @@ function anchors(node) {
 
 test('switching dealer tabs keeps the selected event, variant, situation and composition', () => {
   const tabs = studioNavigationTabs(selection);
-  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Sammansättning', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
+  assert.deepEqual(tabs.map(tab => tab.label), ['Grundloop', 'Klipp', 'Skapa material', 'Sammansättning', 'Tal & automatik', 'Svarsbibliotek', 'Provspelning & logg', 'Inställningar']);
   for (const tab of tabs) {
     const params = query(tab.href);
     assert.equal(params.get('dealer'), selection.dealerId);

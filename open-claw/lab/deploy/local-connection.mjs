@@ -25,7 +25,7 @@ const DEFAULT_LAB_PORT = 4197;
 const RESERVED_SHARED_PORTS = new Set([4192, 4194]);
 const GUARD_INSTALLED = Symbol.for('croupier.openclaw-local-connection.guard');
 const PRIVATE_KEYS = new Set([
-  'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAWAPI_KEY',
+  'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN', 'OPENCLAW_BASE_URL', 'OPENCLAW_API_KEY', 'OPENCLAWAPI_KEY',
   'OPENCLAW_AGENT', 'OPENCLAW_CHAT_AGENT', 'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_SPEECH_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
   'LAB_VIDEO_ARCHIVE',
@@ -130,9 +130,15 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   for (const file of envFiles) {
     const parsed = readEnvFile(file);
     for (const key of allowedKeys) if (parsed[key] !== undefined) values[key] = parsed[key];
+    if (parsed.OPENCLAW_API_KEY !== undefined || parsed.OPENCLAWAPI_KEY !== undefined) {
+      values.OPENCLAW_API_KEY = parsed.OPENCLAW_API_KEY ?? parsed.OPENCLAWAPI_KEY;
+    }
   }
   for (const key of allowedKeys) if (env[key] !== undefined) values[key] = env[key];
-  const gatewayKey = values.OPENCLAWAPI_KEY?.trim() || '';
+  if (env.OPENCLAW_API_KEY !== undefined || env.OPENCLAWAPI_KEY !== undefined) {
+    values.OPENCLAW_API_KEY = env.OPENCLAW_API_KEY ?? env.OPENCLAWAPI_KEY;
+  }
+  const gatewayKey = (values.OPENCLAW_API_KEY ?? values.OPENCLAWAPI_KEY)?.trim() || '';
   const modelKey = values.OPENCLAW_MODEL_API_KEY?.trim() || '';
   const baseUrl = values.OPENCLAW_BASE_URL?.trim() || '';
   const speechUrl = values.OPENCLAW_PRODUCT_SPEECH_URL?.trim() || '';
@@ -398,7 +404,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
-        OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
+        OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAW_API_KEY: useSpeechRelay ? '' : configuration.gatewayKey, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         ...(configuration.speechTimeoutMs === undefined ? {} : { OPENCLAW_SPEECH_TIMEOUT_MS: String(configuration.speechTimeoutMs) }),
@@ -417,7 +423,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_LAB_DIST_DIR: labDistDir,
         LAB_DATA_DIR: '', LAB_REMOTE_URL: configuration.remoteUrl, LAB_REMOTE_TOKEN: configuration.remoteToken, LAB_API_TOKEN: '',
         CROUPIER_STREAM_LANE: streamLane,
-        OPENCLAW_BASE_URL: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
+        OPENCLAW_BASE_URL: '', OPENCLAW_API_KEY: '', OPENCLAWAPI_KEY: '', OPENCLAW_AGENT: configuration.directorAgent,
         OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: 'openclaw/croupier-speech', OPENCLAW_TIMEOUT_MS: String(configuration.timeoutMs),
         OPENCLAW_PRODUCT_SPEECH_URL: '', OPENCLAW_PRODUCT_SPEECH_TOKEN: '',
         LAB_COMPANION_ENABLED: 'false', LAB_COMPANION_FUN_ENABLED: 'false', LAB_COMPANION_WEB_ENABLED: 'false',

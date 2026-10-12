@@ -47,6 +47,40 @@ async function runtimeFixture(t) {
   return repoRoot;
 }
 
+test('corrected OpenClaw key works in settings and private connections, with legacy compatibility and explicit disabling', async t => {
+  for (const env of [
+    { OPENCLAW_API_KEY: 'fixture-canonical' },
+    { OPENCLAWAPI_KEY: 'fixture-legacy' },
+    { OPENCLAW_API_KEY: 'fixture-canonical', OPENCLAWAPI_KEY: 'fixture-legacy' },
+    { OPENCLAW_API_KEY: '', OPENCLAWAPI_KEY: 'fixture-legacy' },
+  ]) {
+    const expected = env.OPENCLAW_API_KEY ?? env.OPENCLAWAPI_KEY;
+    assert.equal(readSettings({ env, envFiles: [] }).gatewayKey, expected);
+    const { configuration } = loadPrivateConnection({ env, envFiles: [] });
+    assert.equal(configuration.gatewayKey, expected);
+  }
+  const file = await privateFixture(t, { OPENCLAW_API_KEY: 'fixture-file' });
+  assert.equal(readSettings({ env: {}, envFiles: [file] }).gatewayKey, 'fixture-file');
+  assert.equal(loadPrivateConnection({ env: {}, envFiles: [file] }).configuration.gatewayKey, 'fixture-file');
+  for (const env of [{ OPENCLAWAPI_KEY: 'fixture-process' }, { OPENCLAWAPI_KEY: '' }]) {
+    assert.equal(readSettings({ env, envFiles: [file] }).gatewayKey, env.OPENCLAWAPI_KEY);
+    assert.equal(loadPrivateConnection({ env, envFiles: [file] }).configuration.gatewayKey, env.OPENCLAWAPI_KEY);
+  }
+  const later = await privateFixture(t, { OPENCLAWAPI_KEY: 'fixture-later-file' });
+  assert.equal(readSettings({ env: {}, envFiles: [file, later] }).gatewayKey, 'fixture-later-file');
+  assert.equal(loadPrivateConnection({ env: {}, envFiles: [file, later] }).configuration.gatewayKey, 'fixture-later-file');
+  const { configuration } = loadPrivateConnection({ envFiles: [], env: {
+    OPENCLAW_BASE_URL: 'http://127.0.0.1:18789', OPENCLAW_API_KEY: 'fixture-private',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test', OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-relay',
+  } });
+  const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-canonical-key-fixture'));
+  for (const role of ['product', 'lab']) {
+    assert.equal(specs[role].env.OPENCLAW_API_KEY, '');
+    assert.equal(specs[role].env.OPENCLAWAPI_KEY, '');
+    assert.equal(readSettings({ env: specs[role].env, envFiles: [file] }).gatewayKey, '');
+  }
+});
+
 test('private configuration reports the dedicated speech role without exposing credential values', async t => {
   const gatewaySecret = 'fixture-gateway-secret-do-not-print';
   const providerSecret = 'fixture-provider-secret-do-not-print';
@@ -660,7 +694,7 @@ test('Astrid translation pairs the OpenAI credential with its endpoint metadata 
       }
     }
   }
-  for (const forbidden of ['OPENCLAWAPI_KEY', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'LAB_REMOTE_TOKEN', 'CARTESIA_API_KEY', 'RUNPOD_API_KEY']) {
+  for (const forbidden of ['OPENCLAW_API_KEY', 'OPENCLAWAPI_KEY', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', 'LAB_REMOTE_TOKEN', 'CARTESIA_API_KEY', 'RUNPOD_API_KEY']) {
     assert.throws(() => loadPrivateConnection({ envFiles: [], env: { [forbidden]: 'fixture-wrong-provider', OPENAI_API_KEY: 'fixture-wrong-provider' }, astridCamera: true }), /provider credential/);
   }
 });

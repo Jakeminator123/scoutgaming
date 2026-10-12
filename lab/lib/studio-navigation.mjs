@@ -4,6 +4,7 @@ import { canonicalControlHref } from './control-flow.mjs';
 export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'idle', label: 'Grundloop', href: '/control/clips?view=idle' },
   { id: 'clips', label: 'Klipp', href: '/control/clips?view=clips' },
+  { id: 'generate', label: 'Skapa material', href: '/control/clips?view=generate' },
   { id: 'scene', label: 'Sammansättning', href: '/control/compositions' },
   { id: 'speech', label: 'Tal & automatik', href: '/control/clips?view=speech' },
   { id: 'replies', label: 'Svarsbibliotek', href: '/control/replies' },
