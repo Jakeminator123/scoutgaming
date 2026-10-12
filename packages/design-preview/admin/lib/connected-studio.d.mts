@@ -1,0 +1,21 @@
+import type { StudioProject, StudioEvent } from '../../../../lab/lib/studio-model.mjs';
+import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
+export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;classification?:VideoMetadata;familyId?:string;duration?:number};
+export type MediaFamily = {id:string;dealerId:string;eventId:string;situation:string;playbackType:string;standardIds:string[];variantIds:string[]};
+export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};
+export type Room = { id:string; name:string; operatorId:string; game:string; compositionId:string; state:string; published:boolean; playable:boolean; dealerIds:string[]; dealers:{id:string;name:string}[] };
+export type Catalog = { source:'registered'; readAt:string; administration:{ revisions:{project:string}; operators:{id:string;name:string;slug:string;packageRevision:number|null}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[] } };
+export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null };
+export function clipSlots(project:StudioProject,inventory:VideoInventory,dealerId:string):ClipSlot[];
+export function clipsForSlot(inventory:VideoInventory,dealerId:string,slot:ClipSlot):VideoEntry[];
+export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string):string;
+export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string):string[];
+export function bindClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,options?:{variantId?:string;durationMs?:number}):StudioProject;
+export function selectLayer(project:StudioProject,room:Room,role:'background'|'table',assetId:string):StudioProject;
+export function uploadMetadata(project:StudioProject,dealerId:string,slot:ClipSlot,file:File,compositing:VideoMetadata['compositing']):VideoMetadata;
+export type Workspace = {catalog:Catalog;project:StudioProject;inventory:VideoInventory};
+export function createStudioClient(options?:{fetchImpl?:typeof fetch;uploadImpl?:typeof import('../../../../lab/lib/upload-native-video.mjs').uploadNativeVideo}):{
+  load(signal?:AbortSignal):Promise<Workspace>;
+  save(project:StudioProject,signal?:AbortSignal):Promise<StudioProject>;
+  upload(file:File,metadata:VideoMetadata,signal?:AbortSignal):Promise<{inventory:VideoInventory;video:VideoEntry}>;
+};

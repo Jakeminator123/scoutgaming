@@ -142,7 +142,7 @@ Källzippar och ursprungliga SHA-256: `packages/design-preview/source-provenance
 Zipparnas API:er, SQL och miljöinställningar importerades inte. Separata React/CSS-byggen
 bevarar Tailwind 3 respektive 4 och serveras från privata `lab/design-preview-build`.
 Svar är `private, no-store`; exakta sökvägar, filgränser, Range/HEAD och N1-returer
-kontrolleras. CSP tillåter endast anrop till samma origin och inga formulärpostningar.
+  kontrolleras. Lobby-CSP tillåter endast anrop till samma origin och inga formulärpostningar.
 
 Start: `node lab/start.mjs --offline --no-open`. Offlinekörning har INTE produktionsregister
 och visar därför datakällans otillgänglighet. Bygg: `npm --prefix packages/design-preview run build`.
@@ -183,6 +183,61 @@ felstatus och återförsök. Inga adminanrop eller speltransaktioner utfördes.
 Detta är inte ett nytt produktionsprov av `/lobby`; det görs efter separat
 godkänd merge/deploy. Frontend-/design-/Studio-produktionsbyggen och riktad
 lobbyregression ingår i leveranskontrollen.
+
+### Central Studio och dealerporträtt, 13 oktober 2026
+
+Första anslutna etappen på `codex/central-studio-map`, utgående från main
+`bb63beabd028b8d35618a98250af8620ab856f67`. `/admin`, `/admin/clips` och gamla
+Studio-adresser inom `/admin` visar samma klippkarta. Menyn har en Studio-ingång;
+rum, dealer och lager visas som kontextpaneler. Kartan har inga Control-utgångar.
+`/control` finns kvar. Drift och ekonomi är fortfarande märkta designexempel.
+
+Kortplatser kommer från sparade events och exakta registrerade mediafamiljer.
+Urval, förhandsvisning, drop och filval använder det befintliga privata
+uppladdningsflödet: grant, Blob, verifierad commit och exakt återläsning.
+Uppladdning registrerar filen; explicit koppling ändrar utkastet. Spara använder
+befintliga N1-skyddade `/studio/api/project`, aktuella serverkontroller och
+`expectedRevision`. Inga nya skriv-API:er, migrationer eller publiceringsflöden.
+Omläsning fryser ändringar, revisionsfel behåller utkast och navigation/växling
+skyddar osparat arbete. Bolag, verkligt rum, dealer och sammansättning följer URL.
+Endast det N1-skyddade admin-dokumentets CSP öppnar Blob-SDK:s avgränsade
+`https://vercel.com/api/blob`-endpoint; lobbyn behåller sin läsande policy.
+
+Bord och bakgrund väljs ur den sparade sammansättningens tillåtna lager.
+Roulettebord är skrivskyddat i denna panel tills Jakob lämnat designunderlag.
+Dealerbankens val byter inte rummets dealer. Rumspublicering, taluppladdningens
+hela text/ljud/video-uppsättning, flerbaspooler/frekvenser, bibliotekets uppladdning
+och mobil/desktopjustering är ännu inte anslutna till den nya panelen. Dessa
+luckor visas uttryckligen. Hela Studio-ersättningen och produktacceptansen är öppna.
+
+`public.zip` innehåller byte-identiska filer som redan finns i designens public.
+Färsk N1-registerläsning 12 oktober 23:47 verifierade aktiv `astrid`/Astrid och
+`paow-v2`/PAOW; Dragge/Mårten saknades och äldre `paow` var arkiverad.
+Endast de två aktiva identiteterna får sina namngivna bilder/MP4. Lobbyn behåller
+den kanoniska publiceringens dealerurval. Samma 1:1-utsnitt används för bild/video;
+tysta inline-gester spelas en gång med 45–55 sekunders variation, och avbryts när
+kort/flik är osynliga eller användaren valt reduced motion. Admins dealerpanel
+använder samma lookup och schemaläggare. Inga assetbytes, talmedia, HERO eller
+spelanimationer ändrades.
+
+Verifierat isolerat med riktiga byggda UI-filer och befintliga API-/uploadservice-
+implementationer: drop → grant → Blob-fixture → verifierad registercommit →
+explicit koppling → revisionssparande → omladdning → samma klippförhandsvisning.
+Browserprov på 1440/390 px täcker även N1-fel, utkast, konflikt och kontext.
+Porträttagentens 13 browserfall använde riktiga MP4 med posteråtergång,
+gemensam geometri, dold flik/offscreen och reduced motion. Nya riktade tester,
+designbygge, typkontroller och Studio-produktionsbygge passerade.
+Inga produktionsskrivningar, insatser eller speltransaktioner gjordes.
+Den gamla instruktionens `pipeline/audit-dealer-sync.mjs --probe` kan inte köras:
+filen finns inte på den aktuella main-basen. Speech/player-rehearsal är inte
+verifierad av denna porträttändring; mediefilerna är oförändrade.
+
+Den tidigare inloggade produktionsverifieringen av PR #43/#46 ska bevaras:
+4 bolag, 2 rum, 7 aktiva dealers; Nordic Bets paow3/blackjack och roulette med
+PAOW; korrekta `/play/{game}`-länkar med operator/table/dealer; återställt dealerval
+vid rumsbyte; partner- och spelarportaler öppnades med internadmin. Det är ett
+tidigare prov, inte acceptans av den nya skrivande klippkartan eller ett nytt
+produktionsprov i denna etapp. Full spel- och behörighetsacceptans återstår.
 
 ### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 

@@ -12,11 +12,7 @@ const SECTIONS: NavSection[] = [
     title: "Studio",
     minLevel: 3,
     links: [
-      { label: "Struktur", href: "/control/structure" },
-      { label: "Spelrum", href: "/control/rooms" },
-      { label: "Dealers", href: "/control/dealers" },
       { label: "Klippkarta", href: "/control/clips" },
-      { label: "Bord & bakgrunder", href: "/control/assets" },
     ],
   },
   { title: "Drift", minLevel: 2, links: [{ label: "Översikt", href: "/control/drift" }] },
@@ -97,7 +93,6 @@ export function StudioSidebar() {
           <a href="/partner" className="hover:text-sg-text">2 · Spelbolagsportal ↗</a>
           <a href="/play" className="hover:text-sg-text">3 · Spelarvy ↗</a>
           <a href="/admin/lobby" className="hover:text-sg-text">Ny spellobby ↗</a>
-          <a href="/control" className="hover:text-sg-text">Nuvarande Control ↗</a>
         </nav>
       </div>
     </aside>

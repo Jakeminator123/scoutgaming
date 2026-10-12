@@ -79,6 +79,10 @@ async function servePreviewFile(request, path, root) {
     if (!info.isFile()) throw new Error('not_file');
   } catch { return new Response(null, { status: 404, headers: designPreviewHeaders }); }
   const headers = { ...designPreviewHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
+  // Only the N1-authorized admin document can upload via the existing private
+  // client Blob SDK. Lobby documents keep the read-only same-origin policy.
+  if (path === 'admin/index.html') headers['Content-Security-Policy'] = headers['Content-Security-Policy']
+    .replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/");
   const range = parseByteRange(request.headers.get('range'), info.size);
   if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${info.size}` } });
   const start = range?.start ?? 0, end = range?.end ?? info.size - 1;
