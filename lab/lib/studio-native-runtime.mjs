@@ -80,7 +80,8 @@ export function assertNativeStudioRequest(request, config) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007') unavailable();
+    // 008 (Dealer Forge) is deployment-optional: the runtime starts before and after it is applied.
+    if (plan.toApply.length || !['001,002,003,004,005,006,007', '001,002,003,004,005,006,007,008'].includes(plan.applied.map(row => row.version).join(','))) unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,

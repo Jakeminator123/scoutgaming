@@ -104,6 +104,16 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   3. Operatör kör `node tools/check-migration-readiness.mjs --apply` med CROUPIER_MIGRATION_CONFIRM=apply-pending från en terminal med produktionsnyckeln.
   4. Merga PR, Vercel bygger.
   7 oktober 2026 pushades migration 005 till main innan den körts mot produktions-Neon; Vercel byggde inom tre minuter och varje /control-sida svarade att labbet inte kunde läsas.
+  **Undantag: deploy-valfria migrationer.** `008-dealer-forge.sql` (12 oktober,
+  `forge_dealers` + `forge_jobs` för Dealer Forge) är markerad `deploymentOptional`
+  i `ops/neon-studio/migrations.mjs`. Readiness räknar den inte som väntande och
+  båda runtime-kontrollerna (Lab och Render) accepterar ledgern 001–007 **och**
+  001–008. Ordningen är därför omvänd mot 005: merga och deploya koden först
+  (Dealer Forge svarar `forge_migration_pending` tills tabellerna finns), kör
+  därefter `node tools/check-migration-readiness.mjs --apply` med
+  `CROUPIER_MIGRATION_CONFIRM=apply-pending`. Att köra 008 mot produktion
+  **före** deploy bryter den körande koden, eftersom dess ledgerkontroll bara
+  känner sju versioner (`studio_migration_ambiguous_ledger`).
   Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
   Delsteg 6 oktober: `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.

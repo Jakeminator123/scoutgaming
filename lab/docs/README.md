@@ -364,6 +364,18 @@ På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering
 
 **Drift** samlar spelmotor, kortlek/spelintegritet, uppspelning och betalningsjournal. **Administration** samlar bolag/team, interna konton/spelare och API/integrationer. Flikarna inne på respektive sida visar bara det aktuella arbetsområdet. Standarddealer för classic/high/vip hör till den äldre bordsindelningen; bolagens publicerade spelrum styrs av sina presentationer.
 
+## Dealer Forge: ny dealer från en stillbild
+
+**Dealer Forge** (`/control/dealer-forge`, Studio-gruppen) genererar en dealers klippbank via Runway och lägger resultatet som granskningsklipp i exakt rätt fack – ingenting publiceras automatiskt.
+
+1. **Registrera dealer** (id + visningsnamn) eller välj en befintlig.
+2. **VILA**: ladda upp en stående bild med båda händerna i vila. Bilden förminskas i webbläsaren, normaliseras till 1080×1920 på kromagrönt och sparas som privat ankare. **REDO** (vänster hand vid skon) genereras från VILA med Gen-4 Image (8 krediter) eller laddas upp; första kandidaten antas automatiskt, fler kan väljas med *Använd som REDO*.
+3. **Matrisen** visar varje fack per grupp – Idle, Övergångar (*Till skon* VILA→REDO, *Från skon* REDO→VILA), Givning (plats 1–7, öppet/dolt dealerkort, vändning), Repliker (17 standardrepliker), Reaktioner samt Bord & bakgrund – med status (krävs/rekommenderas/valfritt/klar), befintliga klipp som miniatyrer med rätt pose som poster, pågående jobb med procent och knapparna **Skapa**, **Ny variant** och **Variant från klipp**.
+4. **Generering**: välj kvalitet (720p prov / 1080p master), längd, läge (keyframes VILA/REDO, referensklipp för varianter, avatar med läppsynk för repliker), uttryck och redigera prompten. Kostnaden visas i krediter före start och jämförs mot din gräns. Priser enligt Runways lista 2026-10-12: Gen-4 Turbo 5 kr/s, WAN 3 10/20 kr/s (720p/1080p), Gen-4 Image 5/8 kr, avatar 2 kr + 2 kr per 6 s.
+5. **Jobb** pollas var femte sekund. Klart resultat hämtas av servern, hashas och registreras som `standard` (första klippet i facket) eller `alternative` (varianter) med grön nyckling i klassificeringen. Bord blir ett alfamaskat WebP-lager (magenta nycklas bort) och bakgrund ett 1920×1080-lager i **Bord & bakgrunder**. Ett avbrutet eller tvetydigt jobb visas med task-ID så att inget betalas två gånger.
+
+Övergångsfacken aktiveras när eventet `transition.shoe` finns i det sparade projektet (separat PR). Kräver `RUNWAY_API_KEY` på Vercel och Studio-migration 008; saknas något visas det överst på sidan. Granskning, standardval och publicering sker som vanligt i **Dealers & klipp**, **Sammansättning** och **Publicering**.
+
 ## Grundloop och händelseklipp
 
 Astrids Händelser-sida och native-följning använder nu samma exakta mediefamilj:
