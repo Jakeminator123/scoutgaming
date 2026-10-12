@@ -2,7 +2,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { askDirector, boundedJson } from '../open-claw/lab/src/openclaw.mjs';
 import { prepareDecision, finalizeDecision } from '../open-claw/lab/src/engine.mjs';
-import { buildRuntimeCatalog, validateProject } from '../lab/lib/studio-model.mjs';
+import { buildRuntimeCatalog, isDirectorSourceType, validateProject } from '../lab/lib/studio-model.mjs';
 import { StudioError } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { selectionFor, videoFitsLine, videoFitsEvent } from '../lab/lib/video-intake.mjs';
@@ -63,6 +63,7 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   await validateVideoBindings(savedProject, { registry: videoRegistry });
   const event = savedProject.events.find(item => item.id === body.eventId);
   if (!event) throw new StudioError('Eventet finns inte i kontraktet.');
+  if (!isDirectorSourceType(event.sourceType)) throw new StudioError('Övergångar är klippfack och väljs inte som spelmotorevent.');
   const observed = Object.hasOwn(body, 'sourceEvent');
   if (observed && Object.hasOwn(body, 'exampleEvent')) throw new StudioError('Välj ett mottaget event eller ett labbexempel.');
   // Both routes use the same input projection, matching and variant gate. A

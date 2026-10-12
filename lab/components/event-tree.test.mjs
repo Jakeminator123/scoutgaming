@@ -48,7 +48,7 @@ test('node tree displays all four dealers, sixteen lab nodes and the fixed six-t
   const html = render(project);
   for (const dealer of project.dealers) assert.ok(html.includes(dealer.label));
   for (const event of project.events) assert.ok(html.includes(event.label));
-  assert.match(html, /16 labbnoder över 6 presentationstyper/);
+  assert.match(html, new RegExp(`${project.events.length} labbnoder över 6 presentationstyper`));
   assert.match(html, /inte nya händelser i Kevins spelmotor/);
   assert.match(html, /STANDARD \/ FALLBACK/);
   assert.equal(JSON.stringify(project), before, 'rendering must not mutate policy');
@@ -204,8 +204,9 @@ test('idle presentation does not claim loops or chat are triggered by an idle ev
 });
 
 test('tree distinguishes current single-clip binding from proposed take pools and video coverage', () => {
-  const html = render(createSeedProject());
-  assert.match(html, /16 grupper är inte 16 videobehov/);
+  const project = createSeedProject();
+  const html = render(project);
+  assert.match(html, new RegExp(`${project.events.length} grupper är inte ${project.events.length} videobehov`));
   assert.match(html, /Ett klippval per variant/);
   assert.match(html, /Inget viktat takeval görs/);
   assert.match(html, /SENARE \/ FÖRSLAG/);

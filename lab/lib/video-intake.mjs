@@ -63,6 +63,7 @@ export function videoFitsLine(video, dealerId, eventId) {
 export function videoFitsEvent(video, event) {
   const m = video?.classification;
   if (!m) return false;
+  if (m.eventId === 'transition.shoe' || m.situation === 'to-shoe' || m.situation === 'from-shoe') return false;
   if (!m?.situation) return true;
   if (m.kind === 'speech') return event.line === m.situation;
   if (m.situation.startsWith('box')) return event.to === 'box' && event.box === Number(m.situation.slice(3));

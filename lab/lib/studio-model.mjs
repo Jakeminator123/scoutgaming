@@ -65,6 +65,11 @@ export const allowedPathDescriptors = Object.freeze([
 export const ALLOWED_PATH_DESCRIPTORS = allowedPathDescriptors;
 const descriptorByPath = new Map(allowedPathDescriptors.map(item => [item.path, item]));
 const animationNames = new Set(contract.animations);
+const OPTIONAL_SEED_EVENT_IDS = new Set(['transition.shoe']);
+const DIRECTOR_SOURCE_TYPES = new Set(['speak', 'deal', 'reveal', 'settle', 'turn', 'idle']);
+export function isDirectorSourceType(sourceType) {
+  return DIRECTOR_SOURCE_TYPES.has(sourceType);
+}
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const canonical = value => JSON.stringify(value, function (key, value) {
   return record(value) ? Object.fromEntries(Object.keys(value).sort().map(k => [k, value[k]])) : value;
@@ -236,6 +241,70 @@ export class StudioValidationError extends Error {
   }
 }
 
+function contractEventsFor(events) {
+  const present = new Set(Array.isArray(events) ? events.map(event => event?.id) : []);
+  return seed.events.filter(event => !OPTIONAL_SEED_EVENT_IDS.has(event.id) || present.has(event.id));
+}
+
+function seedEventsMissing(project) {
+  if (!Array.isArray(project.events) || !Array.isArray(project.lines) || !Array.isArray(project.assets)) return false;
+  const present = new Set(project.events.map(event => event?.id));
+  if ([...present].some(id => !seed.events.some(event => event.id === id))) return false;
+  const ordered = seed.events.map(event => event.id).filter(id => present.has(id));
+  if (project.events.map(event => event?.id).join('\0') !== ordered.join('\0')) return false;
+  const missing = seed.events.filter(event => !present.has(event.id));
+  // Only deployment-optional slots may be appended on read. A document missing a mandatory
+  // event (e.g. a speech line) is corrupt and must fail validation, never be silently repaired.
+  return missing.length > 0 && missing.every(event => OPTIONAL_SEED_EVENT_IDS.has(event.id));
+}
+
+function standardLineFor(dealerId, eventId) {
+  const exact = seed.lines.find(line => line.dealerId === dealerId && line.eventId === eventId);
+  if (exact) return clone(exact);
+  const template = seed.lines.find(line => line.eventId === eventId);
+  const baseline = template.variants.find(variant => variant.id === template.baselineVariantId);
+  const id = `${dealerId}.${eventId}.standard`;
+  return { dealerId, eventId, label: template.label, baselineVariantId: id,
+    variants: [{ id, label: baseline.label, priority: baseline.priority, triggerIds: [], assetId: baseline.assetId, videoGenerationId: null }] };
+}
+
+function insertSeedLine(lines, line) {
+  const eventIndex = seed.events.findIndex(event => event.id === line.eventId);
+  let insertAt = lines.length;
+  for (let index = 0; index < lines.length; index += 1) {
+    const row = lines[index];
+    if (row?.dealerId !== line.dealerId) continue;
+    const rowIndex = seed.events.findIndex(event => event.id === row.eventId);
+    if (rowIndex > eventIndex) { insertAt = index; break; }
+    insertAt = index + 1;
+  }
+  lines.splice(insertAt, 0, line);
+}
+
+function upgradeSeedEvents(project) {
+  const present = new Set(project.events.map(event => event?.id));
+  const missing = seed.events.filter(event => !present.has(event.id));
+  project.events = seed.events.map(event => present.has(event.id) ? project.events.find(row => row.id === event.id) : clone(event));
+  for (const event of missing) {
+    const template = seed.lines.find(line => line.eventId === event.id);
+    const baseline = template.variants.find(variant => variant.id === template.baselineVariantId);
+    const asset = seed.assets.find(item => item.id === baseline.assetId);
+    if (asset && !project.assets.some(item => item.id === asset.id)) project.assets.push(clone(asset));
+    const dealers = [
+      ...(project.dealers ?? []).map(dealer => dealer?.id),
+      ...(project.dealerTrash ?? []).map(entry => entry?.dealer?.id),
+    ];
+    for (const dealerId of dealers) {
+      if (typeof dealerId !== 'string') continue;
+      const lines = (project.dealers ?? []).some(dealer => dealer?.id === dealerId)
+        ? project.lines
+        : project.dealerTrash?.find(entry => entry?.dealer?.id === dealerId)?.lines;
+      if (!Array.isArray(lines) || lines.some(line => line?.dealerId === dealerId && line?.eventId === event.id)) continue;
+      insertSeedLine(lines, standardLineFor(dealerId, event.id));
+    }
+  }
+}
+
 export function normalizeProject(project, options) {
   const preserveMissingLanes = options?.preserveMissingLanes === true;
   const validation = options ? { ...options } : undefined;
@@ -243,10 +312,11 @@ export function normalizeProject(project, options) {
   if (!record(project)) return validateProject(project, validation);
 
   const addLanes = !preserveMissingLanes && !Object.hasOwn(project, 'lanes');
-  if (!addLanes) return validateProject(project, validation);
+  const addEvents = seedEventsMissing(project);
+  if (!addLanes && !addEvents) return validateProject(project, validation);
   const next = clone(project);
   if (addLanes) next.lanes = [];
-
+  if (addEvents) upgradeSeedEvents(next);
   return validateProject(next, validation);
 }
 
@@ -333,14 +403,15 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     duplicate(dealerIds, dealer.id, `${at}.id`); label(dealer.label, `${at}.label`);
   });
   const eventIds = new Set();
-  if (array(project.events, 'events', seed.events.length, seed.events.length)) project.events.forEach((event, i) => {
+  const contractEvents = contractEventsFor(project.events);
+  if (array(project.events, 'events', contractEvents.length, contractEvents.length)) project.events.forEach((event, i) => {
     const at = `events[${i}]`;
     if (!keys(event, ['id', 'label', 'description', 'sourceType', 'sourceRef', 'sourceStatus', 'match', 'exampleEvent'], at)) return;
     duplicate(eventIds, event.id, `${at}.id`); label(event.label, `${at}.label`); label(event.description, `${at}.description`, 600);
     // Ordered matches are an executable contract. Moving a catch-all ahead of
     // specific matches changes meaning even if every source field is intact.
     for (const key of ['id', 'sourceType', 'sourceRef', 'sourceStatus', 'match', 'exampleEvent']) {
-      if (canonical(event[key]) !== canonical(seed.events[i][key])) error(`${at}.${key}`, 'källkontrakt och eventordning är låsta; ändra visningsnamnet i stället');
+      if (canonical(event[key]) !== canonical(contractEvents[i][key])) error(`${at}.${key}`, 'källkontrakt och eventordning är låsta; ändra visningsnamnet i stället');
     }
   });
   const triggerIds = new Set();
@@ -373,7 +444,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     if (!Number.isInteger(asset.durationMs) || asset.durationMs < 200 || asset.durationMs > 10000) error(`${at}.durationMs`, 'ska vara 200–10000 millisekunder');
   });
   const lineIds = new Set(), variantIds = new Set();
-  if (array(project.lines, 'lines', dealerIds.size * seed.events.length, dealerIds.size * seed.events.length)) project.lines.forEach((line, i) => {
+  if (array(project.lines, 'lines', dealerIds.size * contractEvents.length, dealerIds.size * contractEvents.length)) project.lines.forEach((line, i) => {
     const at = `lines[${i}]`;
     if (!keys(line, ['dealerId', 'eventId', 'label', 'baselineVariantId', 'variants'], at)) return;
     if (!dealerIds.has(line.dealerId)) error(`${at}.dealerId`, 'okänd croupierreferens');
@@ -405,7 +476,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     const baseline = line.variants.find(variant => variant?.id === expectedBaseline);
     if (!baseline || !Array.isArray(baseline.triggerIds) || baseline.triggerIds.length) error(`${at}.baselineVariantId`, 'standardvarianten måste finnas och vara ovillkorlig (utan triggers)');
   });
-  for (const dealerId of dealerIds) for (const event of seed.events) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
+  for (const dealerId of dealerIds) for (const event of contractEvents) if (!lineIds.has(`${dealerId}/${event.id}`)) error('lines', `standardlinje saknas för ${dealerId}/${event.id}`);
   if (Object.hasOwn(project, 'lanes')) errors.push(...laneErrors(project.lanes, dealerIds));
   if (Object.hasOwn(project, 'layerAssets')) {
     if (!Array.isArray(project.layerAssets) || project.layerAssets.length > 128) errors.push('layerAssets: högst 128 lagerfiler');
@@ -473,13 +544,13 @@ export function buildRuntimeCatalog(project, dealerId) {
   const lines = new Map(project.lines.filter(line => line.dealerId === dealerId).map(line => [line.eventId, line]));
   return clone({
     schemaVersion: 1, revision: project.revision,
-    sourceNote: 'Studio: 16 låsta semantiska mappningar över sex riktiga presentationstyper. Endast visningsnamn, varianter och tillåtna triggers är redigerbara. Spelmotor och källreplik ändras inte.',
+    sourceNote: `Studio: ${project.events.length} låsta semantiska mappningar. Sex riktiga presentationstyper går till presentationsregissören. Övergångar mellan vilopositioner är klippfack och är inte spelmotorevent.`,
     triggerSources: [
       { id: 'deterministic', label: 'Deterministiskt', description: 'Publicerade events och simulerad historik över redan avgjorda händer.', status: 'lab' },
       { id: 'social', label: 'Socialt', description: 'Simulerad chattklassificering och godkända spelarpreferenser; ingen produktionskoppling.', status: 'lab' },
       { id: 'temperament', label: 'Framtoning', description: 'Simulerad croupierframtoning, aldrig en diagnos av spelaren.', status: 'lab' }
     ],
-    events: project.events.map(event => {
+    events: project.events.filter(event => isDirectorSourceType(event.sourceType)).map(event => {
       const line = lines.get(event.id);
       return { ...event, baselineVariantId: line.baselineVariantId, variants: line.variants.map(variant => ({
         id: variant.id, label: variant.label, priority: variant.priority, assetId: variant.assetId,

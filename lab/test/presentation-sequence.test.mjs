@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildPresentationSequence, SEQUENCE_STEP_LIMIT } from '../lib/presentation-sequence.mjs';
-import { createSeedProject, buildRuntimeCatalog, DEALER_IDS } from '../lib/studio-model.mjs';
+import { createSeedProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../lib/studio-model.mjs';
 import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
 
@@ -19,7 +19,10 @@ test('connection-only observations never generate a round or presentation', () =
 });
 
 test('every existing event groups identically to the real resolver for all four dealers', () => {
-  const events = project.events.map(node => structuredClone(node.exampleEvent));
+  const director = project.events.filter(node => isDirectorSourceType(node.sourceType));
+  assert.equal(director.length, 16);
+  assert.ok(project.events.some(node => node.id === 'transition.shoe'));
+  const events = director.map(node => structuredClone(node.exampleEvent));
   const result = sequence([receipt(events)]);
   assert.deepEqual(result.steps.map(step => step.event), events);
   for (const dealerId of DEALER_IDS) {

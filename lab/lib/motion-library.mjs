@@ -14,6 +14,7 @@ import event12 from '../animations/settle.win.json' with { type: 'json' };
 import event13 from '../animations/settle.push.json' with { type: 'json' };
 import event14 from '../animations/settle.other.json' with { type: 'json' };
 import event15 from '../animations/idle.ready.json' with { type: 'json' };
+import event16 from '../animations/transition.shoe.json' with { type: 'json' };
 import index from '../animations/index.json' with { type: 'json' };
 import social from '../animations/social-reactions.json' with { type: 'json' };
 
@@ -73,7 +74,7 @@ export function validateMotionClip(clip) {
   return clip;
 }
 
-const events = [event0, event1, event2, event3, event4, event5, event6, event7, event8, event9, event10, event11, event12, event13, event14, event15];
+const events = [event0, event1, event2, event3, event4, event5, event6, event7, event8, event9, event10, event11, event12, event13, event14, event15, event16];
 function freeze(value) {
   if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
   return value;
@@ -92,6 +93,7 @@ export function motionAllowedForSource(clip, sourceType) { return !clip || clip.
 
 // Authoritative presentation facts stay intact even for a transient/manual preview.
 export function stageBaseAnimation(event, requestedAnimation) {
+  if (event.sourceType === 'transition') return 'idle';
   if (event.sourceType === 'reveal') return 'reveal';
   if (event.sourceType === 'deal') {
     const action = event.exampleEvent?.clip?.action;

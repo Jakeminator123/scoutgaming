@@ -19,9 +19,10 @@
     "settle.win.json",
     "settle.push.json",
     "settle.other.json",
-    "idle.ready.json"
+    "idle.ready.json",
+    "transition.shoe.json"
   ],
-  "clipCount": 64,
+  "clipCount": 68,
   "socialFiles": ["social-reactions.json"],
   "socialClipCount": 1
 }
