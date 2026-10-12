@@ -206,6 +206,33 @@ slash-normalisering och testsidans redirect. Testytans kanoniska adress är
 därför `/roulette-test` utan slutande snedstreck, även i Render-bokmärken.
 HTTP-testet kräver nu att redirectmålet ger 200 direkt utan fler redirects.
 
+### Rouletterum per bolag, 12 oktober 2026
+
+Roulette finns som spelval i samma skapa-/publicera-rum-flöde för Studio och
+partnerportalen. Befintliga rum är blackjack om speltyp saknas. Bolagets lobby
+skiljer spelen åt och öppnar roulette via `/play/roulette`. Fryst dealer, bord
+och bakgrund återanvänder lobbyns publicerade scen; inga tal-/mediafiler ändras.
+Personliga rundor använder befintlig inloggning och demosaldo. Insatser,
+utfall, saldo och bokföring sparas atomiskt under plånbokslås. Återförsök
+återger samma kvitto, med 20 sparade rundor per spelare/bolag/rum.
+Externa partner-launch-konton stöds inte för roulette ännu.
+
+Additiv migration: `ops/neon-game/007-roulette-tables.sql`. Produktions-DDL
+är ännu inte utförd. Runtime-kapabilitet 9 spärrar publicering tills både
+motor och tabell är redo. Ingen ny Render-tjänst eller miljövariabel behövs.
+Spelarvyn har hjul, marker, samtliga standardsatsningar, ångra/rensa/upprepa,
+regler, historik och återhämtning av väntande rundor. Gemensam profilstatistik
+är fortsatt blackjack; roulettehistorik visas i rummet. Roulette-tal/nya
+inspelningar, gemensamma tidsstyrda rundor och riktiga pengar ingår inte.
+
+Verifierat lokalt: satsningskatalog mot alla 37 utfall, idempotens, SQLite-
+omstart/rollback, spel-/bolagsisolering, atomisk rumspublicering, faktisk
+serverauth/origin, Studio-bygge och frontendens typkontroll. PostgreSQL-
+konkurrens, rollback och omstart ingår nu i befintlig isolerad CI-fixture;
+resultat inväntas. Dealer-audit --probe matchar alla fyra baseline-set,
+med tidigare saknade tal-takes och mänsklig läppsynkacceptans fortsatt öppna.
+Leverans/publicering och full regressionsstatus följs upp i PR före merge.
+
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
 Jakobs mål: en mycket enklare modell. Behåll sammansättningen (dealer, bord,

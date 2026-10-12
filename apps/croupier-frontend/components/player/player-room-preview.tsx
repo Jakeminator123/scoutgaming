@@ -32,7 +32,7 @@ export function StepHeading({step,title,value}:{step:string;title:string;value?:
  </span>;
 }
 
-export function PlayerRoomPreview({result,dealerId,dealerLabel,roomName,operatorName,tableAsset,background}:{result?:RoomPreviewResult;dealerId:string;dealerLabel:string;roomName:string;operatorName:string;tableAsset?:string;background?:string}){
+export function PlayerRoomPreview({result,dealerId,dealerLabel,roomName,operatorName,tableAsset,background,game='blackjack'}:{result?:RoomPreviewResult;dealerId:string;dealerLabel:string;roomName:string;operatorName:string;game?:'blackjack'|'roulette';tableAsset?:string;background?:string}){
  const ready=result?.status==='ready'?result.preview:null;
  const table=ready?.media.tables.find(row=>row.id===tableAsset)??null;
  const back=ready?.media.backgrounds.find(row=>row.id===background)??null;
@@ -58,7 +58,7 @@ export function PlayerRoomPreview({result,dealerId,dealerLabel,roomName,operator
    <div className="mx-auto w-full max-w-[440px]">
     <div className="flex flex-wrap items-end justify-between gap-3">
      <div className="min-w-0"><p className="text-2xl font-medium tracking-[-0.02em]">{dealerLabel}</p><p className="mt-1 truncate text-sm text-white/55">{roomName}</p></div>
-     <span className="rounded-full border border-white/15 bg-ink/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[.16em] text-white/55">Blackjack · Demo</span>
+     <span className="rounded-full border border-white/15 bg-ink/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[.16em] text-white/55">{game==='roulette'?'Roulette':'Blackjack'} · Demo</span>
     </div>
     {scene?.media.dealer?<p className="mt-3 text-xs leading-relaxed text-white/45">{scene.independentLayers?layers||'Dealern utan valbara miljölager':'Bord och bakgrund ingår i dealerfilmen.'}</p>:null}
     {result?.status==='changed'?<p role="status" className="mt-3 text-xs text-amber-200">Bolagets utbud har uppdaterats. Ladda om sidan för aktuella val.</p>:result?.status==='unavailable'?<p role="status" className="mt-3 text-xs text-white/50">Förhandsvisningen kan inte hämtas just nu.</p>:null}

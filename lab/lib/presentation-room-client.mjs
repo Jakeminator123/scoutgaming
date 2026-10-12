@@ -47,7 +47,7 @@ function preflight(value, context) {
   if (conflictCode !== null && (typeof conflictCode !== 'string' || !Object.hasOwn(conflictMessages, conflictCode)
     || value.reason !== 'presentation_package_conflict' || value.ready)) invalid();
   const capabilities = capability(value.capabilities);
-  if (value.ready && (value.reason !== null || ![2, 3, 4].includes(capabilities?.schemaVersion))) invalid();
+  if (value.ready && (value.reason !== null || ![2, 3, 4, 9].includes(capabilities?.schemaVersion))) invalid();
   const seen = new Set();
   const rooms = value.rooms.map(room => {
     if (!sameKeys(room, ['id', 'name', 'playUrl']) || !laneId(room.id) || !roomName(room.name) || seen.has(room.id)) invalid();
@@ -61,20 +61,22 @@ function preflight(value, context) {
     packageRevision: value.packageRevision, ready: value.ready, reason: value.reason, conflictCode, capabilities, rooms: Object.freeze(rooms) });
 }
 export function presentationRoomPlayUrl(value, { operatorSlug, roomId }) {
-  if (typeof value !== 'string' || value.length > 500 || !value.startsWith('/play/blackjack?') || /[#\\\u0000-\u0020\u007f]/u.test(value)) invalid();
+  if (typeof value !== 'string' || value.length > 500 || !/^\/play\/(blackjack|roulette)\?/.test(value) || /[#\\\u0000-\u0020\u007f]/u.test(value)) invalid();
   const url = new URL(value, 'https://studio.invalid');
-  if (url.origin !== 'https://studio.invalid' || url.pathname !== '/play/blackjack' || url.hash || url.searchParams.size !== 2
+  if (url.origin !== 'https://studio.invalid' || !['/play/blackjack','/play/roulette'].includes(url.pathname) || url.hash || url.searchParams.size !== 2
     || url.searchParams.getAll('operator').length !== 1 || url.searchParams.getAll('table').length !== 1
     || url.searchParams.get('operator') !== operatorSlug || url.searchParams.get('table') !== roomId) invalid();
-  return '/play/blackjack?' + new URLSearchParams({ operator: operatorSlug, table: roomId }).toString();
+  return url.pathname+'?' + new URLSearchParams({ operator: operatorSlug, table: roomId }).toString();
 }
 function receipt(value, context, payload) {
   const room = value?.room;
-  if (!object(value) || value.ok !== true || typeof value.duplicate !== 'boolean' || !sameKeys(room, ['schemaVersion', 'id', 'name', 'operatorId', 'presentationLaneId', 'gameLaneId', 'state'])
+  if (!object(value) || value.ok !== true || typeof value.duplicate !== 'boolean' || !sameKeys(room, ['schemaVersion', 'id', 'name', 'operatorId', 'presentationLaneId', 'gameLaneId', 'state', ...(Object.hasOwn(room ?? {},'game')?['game']:[])])
+    || (Object.hasOwn(room ?? {},'game') ? room.game : 'blackjack') !== (payload.game ?? 'blackjack')
     || room.schemaVersion !== 2 || !room.id?.startsWith('room-') || !uuid(room.id.slice(5)) || room.name !== payload.name
     || room.operatorId !== context.operator.id || room.presentationLaneId !== context.presentation.id || !laneId(room.gameLaneId) || room.state !== 'live'
     || !revision(value.administrationRevision) || !packageRevision(value.packageRevision)) invalid();
   const playUrl = presentationRoomPlayUrl(value.playUrl, { operatorSlug: context.operator.slug, roomId: room.id });
+  if (!playUrl.startsWith(`/play/${payload.game ?? 'blackjack'}?`)) invalid();
   return Object.freeze({ ok: true, duplicate: value.duplicate, room: Object.freeze({ ...room }),
     administrationRevision: value.administrationRevision, packageRevision: value.packageRevision, playUrl });
 }
@@ -116,7 +118,7 @@ function readinessMessage(prepared, context) {
   if (prepared.reason === 'presentation_package_too_large') return 'Paketet är för stort. Minska presentationens innehåll eller paketets urval och försök igen.';
   return prepared.ready ? null : 'Spelrummet kan inte skapas ännu.';
 }
-const empty = Object.freeze({ key: null, name: '', status: 'idle', preflight: null, receipt: null, message: null });
+  const empty = Object.freeze({ key: null, name: '', game: 'blackjack', status: 'idle', preflight: null, receipt: null, message: null });
 // One controller per mounted form. Attempts remain scoped to their original
 // company/presentation/revision, including when a response is lost or ignored.
 export function createPresentationRoomController({ client = createPresentationRoomClient(), newKey = () => crypto.randomUUID() } = {}) {
@@ -155,7 +157,7 @@ export function createPresentationRoomController({ client = createPresentationRo
       cancel(); context = structuredClone(next);
       const key = presentationRoomContextKey(context), attempt = attempts.get(key);
       const same = key === state.key;
-      notify({ key, name: attempt?.payload.name ?? (same ? state.name : ''), preflight: null, receipt: null, status: 'idle',
+      notify({ key, game: attempt?.payload.game ?? (same ? state.game : 'blackjack'), name: attempt?.payload.name ?? (same ? state.name : ''), preflight: null, receipt: null, status: 'idle',
         message: !context.storeAvailable ? 'Spelrum kräver en ansluten lagring.' : !context.projectSaved ? 'Spara presentationen först.' : !validContext(context) ? 'Välj bolag och presentation.' : null });
       return refresh();
     },
@@ -163,6 +165,10 @@ export function createPresentationRoomController({ client = createPresentationRo
       if (locked || attempts.has(state.key)) return;
       const editable = state.preflight?.ready && state.preflight.projectRevision === context.projectRevision && !['conflict', 'unavailable'].includes(state.status);
       notify({ name: value, receipt: null, message: editable ? null : state.message, status: editable ? 'ready' : state.status });
+    },
+    setGame(value) {
+      if (locked || attempts.has(state.key) || !['blackjack','roulette'].includes(value)) return;
+      notify({game:value,receipt:null,status:state.preflight?.ready?'ready':state.status});
     },
     refresh,
     async create(expectedKey) {
@@ -178,7 +184,7 @@ export function createPresentationRoomController({ client = createPresentationRo
           const prepared = await client.read(chosen, { signal: controller.signal }); if (!current(token)) return null;
           const message = readinessMessage(prepared, chosen);
           if (message) { notify({ preflight: prepared, status: 'unavailable', message }); return null; }
-          const payload = Object.freeze({ operatorId: chosen.operator.id, presentationLaneId: chosen.presentation.id, name, idempotencyKey: newKey(),
+          const payload = Object.freeze({ operatorId: chosen.operator.id, presentationLaneId: chosen.presentation.id, name, idempotencyKey: newKey(), ...(state.game==='roulette'?{game:'roulette'}:{}),
             expectedProjectRevision: prepared.projectRevision, expectedAdministrationRevision: prepared.administrationRevision, expectedPackageRevision: prepared.packageRevision });
           attempt = { payload }; attempts.set(key, attempt); notify({ preflight: prepared });
         }

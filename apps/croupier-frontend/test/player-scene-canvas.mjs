@@ -9,6 +9,8 @@ import {defaultCompositionSettings} from '../../../web/public/composition-settin
 const require = createRequire(import.meta.url), ts = require('typescript');
 const filename = fileURLToPath(new URL('../components/player/player-scene-canvas.tsx',import.meta.url));
 const code = ts.transpileModule(readFileSync(filename,'utf8'),{fileName:filename,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
+const sharedFilename = fileURLToPath(new URL('../../../web/public/published-scene.mjs',import.meta.url));
+const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileName:'published-scene.ts',compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const source = (name='dealer',contentType='video/mp4')=>({src:'/api/operators/fixture/preview/'+name,contentType});
 const settle = ()=>new Promise(resolve=>setImmediate(resolve));
 
@@ -56,13 +58,17 @@ function mount({reduced=false,defer=false,props={}}={}) {
     useEffect(callback){effects.push(callback);},
   };
   const localRequire=specifier=>{
+    if(specifier.endsWith('/published-scene.mjs')) {
+      const shared={...context,module:{exports:{}},exports:null};shared.exports=shared.module.exports;
+      vm.runInNewContext(sharedCode,shared,{filename:sharedFilename});return shared.module.exports;
+    }
     if(specifier==='react')return React;
     if(specifier==='react/jsx-runtime')return {jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
     if(specifier==='/composition-runtime/compositor.js')return {Compositor};
     if(specifier.includes('composition-settings.mjs'))return require('../../../web/public/composition-settings.mjs');
     throw Error('Unexpected module: '+specifier);
   };
-  const context={module:{exports:{}},exports:null,require:localRequire,document,window:{matchMedia:()=>motion},Image:Picture,HTMLVideoElement:Video,IntersectionObserver:Observer,AbortController,Event,queueMicrotask,setTimeout,clearTimeout,
+  const context={module:{exports:{}},exports:null,require:localRequire,document,window:{matchMedia:()=>motion,IntersectionObserver:Observer},Image:Picture,HTMLVideoElement:Video,IntersectionObserver:Observer,AbortController,Event,queueMicrotask,setTimeout,clearTimeout,
     requestAnimationFrame(callback){const id=++nextFrame;frames.set(id,callback);return id;},cancelAnimationFrame(id){frames.delete(id);}};
   context.exports=context.module.exports;
   vm.runInNewContext(code,context,{filename});

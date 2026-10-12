@@ -184,12 +184,14 @@ test('portrait room fixture exposes only its explicitly published cloud dealer',
   await assert.rejects(denied.read('sg-test'),error=>isUnplayableOperatorRooms(error,'sg-test')&&!isUnplayableOperatorRooms(error,'north'));
 });
 
-test('absence of a published blackjack presentation is empty, without any draft/demo fallback',async()=>{
+test('absence of an eligible published room is empty, without any draft/demo fallback',async()=>{
   for(const mode of ['none','unfrozen','other-game']){
     const f=fixture();if(mode==='none')f.state.pack=null;
     else if(mode==='unfrozen')f.state.pack.branding={name:'North'};else f.state.pack.games=['roulette'];
     const value=await f.api.read('north');assert.deepEqual(value.rooms,[]);assert.equal(value.packageRevision,mode==='none'?null:7);
-    assert.equal(f.calls.snapshots,0);
+    // A roulette-enabled package still needs its room game checked against the
+    // saved administration: the legacy blackjack room must remain excluded.
+    assert.equal(f.calls.snapshots,mode==='other-game'?1:0);
   }
 });
 

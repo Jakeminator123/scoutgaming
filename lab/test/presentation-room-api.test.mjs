@@ -13,6 +13,7 @@ import { readPackagePresentation, withPackagePresentation } from '../../web/stor
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
+import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
 
 const scope = { environment: 'room-fixture', workspaceId: 'isolated' };
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
@@ -112,6 +113,30 @@ async function fixture(options = {}) {
   return { pool, repository, project, administration, roomApi, videoRegistry, prepare, create, payload, publish };
 }
 const status = expected => error => error.statusCode === expected;
+
+test('roulette creation publishes its game and room atomically, replays once and preserves blackjack',async()=>{
+  const requested=[];
+  const f=await fixture({runtimeCapabilities:async(presentation,game)=>{requested.push(game);return presentationCapabilitiesForVersion(9);}});
+  const blackjack=await f.create(await f.payload());
+  const body=await f.payload({game:'roulette',name:'North Roulette',idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'});
+  const created=await f.create(body);
+  assert.equal(created.room.game,'roulette');assert.match(created.playUrl,/^\/play\/roulette\?/);
+  assert.equal((await f.create(body)).duplicate,true);
+  const saved=f.pool.snapshot(),pack=saved.packages.at(-1);
+  assert.deepEqual(JSON.parse(pack.games).sort(),['blackjack','roulette']);
+  assert.deepEqual(JSON.parse(pack.tables),[blackjack.room.id,created.room.id]);
+  assert.equal(saved.packages.length,2);assert.ok(requested.includes('roulette'));
+  const listed=await f.prepare();assert.equal(listed.rooms.length,2);
+  assert.match(listed.rooms.find(row=>row.id===created.room.id).playUrl,/^\/play\/roulette\?/);
+  await assert.rejects(f.create({...body,game:'blackjack'}),status(409));
+});
+
+test('roulette refuses old Render capabilities and invalid game values without domain writes',async()=>{
+  const f=await fixture(),body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  await assert.rejects(f.create(body),status(503));assert.deepEqual(f.pool.snapshot(),before);
+  for(const game of [null,undefined,'poker',1]) await assert.rejects(f.create({...body,game}),status(422));
+  assert.deepEqual(f.pool.snapshot(),before);
+});
 
 test('preparation is read-only and returns actual nullable package revision plus verified runtime contract', async () => {
   const f = await fixture(), before = f.pool.snapshot(); const ready = await f.prepare();

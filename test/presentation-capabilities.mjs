@@ -16,7 +16,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
@@ -74,4 +74,14 @@ test('v8 advertises background playback only when explicitly negotiated',async()
   assert.equal(Object.hasOwn(old,'backgroundPlayback'),false);
  }
  assert.throws(()=>validatePresentationCapabilities({...cap,backgroundPlayback:'unbounded'}, {expectedVersion:8}));
+});
+test('v9 advertises roulette while preserving every earlier capability representation', async () => {
+  const response = presentationCapabilitiesResponse(new Request(endpoint, {headers: {'X-Presentation-Capability-Version': '9'}}));
+  assert.equal(response.status, 200);
+  const cap = validatePresentationCapabilities(await response.json(), {expectedVersion: 9});
+  assert.equal(cap.rouletteRooms, 'european-single-zero-v1');
+  for (const version of [undefined, '2', '3', '4', '5', '6', '7', '8']) {
+    const old = await presentationCapabilitiesResponse(new Request(endpoint, {headers: version ? {'X-Presentation-Capability-Version': version} : {}})).json();
+    assert.equal(Object.hasOwn(old, 'rouletteRooms'), false);
+  }
 });

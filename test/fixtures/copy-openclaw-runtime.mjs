@@ -6,7 +6,7 @@ import { join } from 'node:path';
 export async function copyOpenClawRuntime(root) {
   const rouletteTarget = join(root, 'web/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
-  for (const file of ['index.mjs', 'preview.mjs']) {
+  for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {
     await copyFile(new URL(`../../web/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
   }
   const source = new URL('../../open-claw/lab/src/', import.meta.url);

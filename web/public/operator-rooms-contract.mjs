@@ -42,7 +42,8 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
   text(value.operator.name, 120);
   if (value.packageRevision !== null && (!Number.isSafeInteger(value.packageRevision) || value.packageRevision < 1)) fail();
   rows(value.rooms, 128, room => {
-    exact(room, ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl']);
+    exact(room, ['id', 'name', 'laneId', 'presentation', 'dealerDefault', 'dealers', 'playUrl', ...(Object.hasOwn(room,'game')?['game']:[])]);
+    if (!['blackjack','roulette'].includes(Object.hasOwn(room,'game') ? room.game : 'blackjack')) fail();
     if (!isGameLaneId(room.id) || !isGameLaneId(room.laneId)) fail();
     text(room.name, 100); exact(room.presentation, ['id', 'label']);
     if (!isGameLaneId(room.presentation.id)) fail();
@@ -56,7 +57,7 @@ export function validatePublicOperatorRooms(value, { operatorSlug } = {}) {
         || !dealer.independentLayers && (dealer.table.enabled || dealer.background.enabled)) fail();
     });
     if (!room.dealers.length || !room.dealers.some(dealer => dealer.id === room.dealerDefault)
-      || room.playUrl !== '/play/blackjack?' + new URLSearchParams({ operator: value.operator.slug, table: room.id }).toString()) fail();
+      || room.playUrl !== `/play/${room.game ?? 'blackjack'}?` + new URLSearchParams({ operator: value.operator.slug, table: room.id }).toString()) fail();
   });
   if (value.packageRevision === null && value.rooms.length) fail();
   return structuredClone(value);

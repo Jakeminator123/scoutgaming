@@ -9,7 +9,7 @@ import { gameLaneConfiguration, isGameLaneId } from '../../web/public/game-lanes
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { validateStudioGameAdministration } from '../../web/storage/studio-game-policy.mjs';
-import { isPresentationRoom, resolvePackageRoom } from '../../web/presentation-room-contract.mjs';
+import { isPresentationRoom, resolvePackageRoom, roomGame, roomPlayPath } from '../../web/presentation-room-contract.mjs';
 import { resolveFrozenDealerIdle } from '../../web/storage/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../web/storage/frozen-presentation-capture.mjs';
@@ -27,8 +27,9 @@ export const PRESENTATION_ROOM_MUTATION = Object.freeze({ kind: 'administration'
 }) });
 
 function intent(body) {
-  const keys = ['operatorId', 'presentationLaneId', 'name', 'idempotencyKey', 'expectedProjectRevision', 'expectedAdministrationRevision', 'expectedPackageRevision'];
+  const keys = ['operatorId', 'presentationLaneId', 'name', 'idempotencyKey', 'expectedProjectRevision', 'expectedAdministrationRevision', 'expectedPackageRevision', ...(Object.hasOwn(body ?? {},'game')?['game']:[])];
   if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== keys.length || keys.some(key => !Object.hasOwn(body, key))) fail(400);
+  if (!['blackjack','roulette'].includes(roomGame(body))) fail();
   if (typeof body.operatorId !== 'string' || !operatorIdPattern.test(body.operatorId) || !isGameLaneId(body.presentationLaneId)
     || typeof body.name !== 'string' || !body.name.trim() || body.name.length > 100 || body.name !== body.name.trim()
     || /[\u0000-\u001f\u007f-\u009f]/.test(body.name) || typeof body.idempotencyKey !== 'string' || !keyPattern.test(body.idempotencyKey)) fail();
@@ -41,7 +42,7 @@ function roomIdentity(scope, body) {
   return `room-${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
 }
 function intentHash(value) {
-  return createHash('sha256').update(canonicalStudioJson([value.operatorId, value.presentationLaneId, value.name])).digest('hex');
+  return createHash('sha256').update(canonicalStudioJson([value.operatorId, value.presentationLaneId, value.name, roomGame(value)])).digest('hex');
 }
 function sourceProject(project, id) {
   if (!project.lanes?.some(lane => lane.id === id)) fail(404, 'studio_presentation_required');
@@ -107,8 +108,8 @@ function assertReplayBinding(saved, room) {
     && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed })) fail(409);
   return frozen;
 }
-function runtimeAccepts(capabilities, presentation) {
-  if (!capabilities || ![2, 3, 4].includes(capabilities.schemaVersion)) return false;
+function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
+  if (!capabilities || ![2, 3, 4, 9].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion !== 9) return false;
   return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
@@ -130,7 +131,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
   }
   function receipt(saved, room, duplicate) {
     return { ok: true, duplicate, room: structuredClone(room), administrationRevision: saved.administrationRevision,
-      packageRevision: saved.pack.revision, playUrl: `/play/blackjack?operator=${saved.operator.slug}&table=${room.id}` };
+      packageRevision: saved.pack.revision, playUrl: roomPlayPath(room,saved.operator.slug) };
   }
   async function capture(snapshotValue, id) {
     const project = normalizeProject(snapshotValue.projectDocument.value), source = sourceProject(project, id);
@@ -142,8 +143,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
     return captured;
   }
-  async function capabilities(presentation) {
-    return validatePresentationCapabilities(await runtimeCapabilities(presentation));
+  async function capabilities(presentation, game = 'blackjack') {
+    return validatePresentationCapabilities(await runtimeCapabilities(presentation,game));
   }
   async function prepare(context) {
     const body = intent(context.body); assertScope(context);
@@ -169,7 +170,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       if (!room) fail(409);
       publicationPresentation = assertReplayBinding(saved, room);
     }
-    if (!runtimeAccepts(await capabilities(publicationPresentation), publicationPresentation)) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+    if (!runtimeAccepts(await capabilities(publicationPresentation,roomGame(body)), publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
     const value = freeze({ body: canonicalStudioJson(body), publicationPresentation, ...captured });
     preparedValues.add(value); return value;
@@ -209,7 +210,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       ready: reason === null, reason, conflictCode, capabilities: runtime,
       rooms: saved.administration.rooms.filter(room => room.state === 'live' && room.presentationLaneId === id
         && resolvePackageRoom({ administration:saved.administration, package:saved.pack, operatorId:saved.operator.id, roomId:room.id }))
-        .map(room => ({ id:room.id, name:room.name, playUrl:`/play/blackjack?operator=${saved.operator.slug}&table=${room.id}` })) };
+        .map(room => ({ id:room.id, name:room.name, playUrl:roomPlayPath(room,saved.operator.slug) })) };
   });
   handlers.set('POST /studio/api/admin/presentation-room', async context => {
     const body = intent(context.body), roomId = roomIdentity(scope, body); assertScope(context);
@@ -238,14 +239,14 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation);
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });
       const room = { schemaVersion: 2, id: roomId, name: body.name, operatorId: body.operatorId,
-        presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live' };
+        presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live', ...(roomGame(body)==='roulette'?{game:'roulette'}:{}) };
       const administration = validateStudioGameAdministration({ ...plan.administration, rooms: [...saved.administration.rooms, room] });
       const changed = await repository.saveDocument('administration', { value: administration, expectedRevision: body.expectedAdministrationRevision, actor: context.actor.user });
       const pack = await saved.operators.publishPackage({ actor: context.actor.user, audit: operatorAuditContext(context.actor), operatorId: body.operatorId, expectedRevision: body.expectedPackageRevision,
-        lanes: presentation.lanes.map(lane => lane.id), games: saved.pack?.games?.length ? saved.pack.games : ['blackjack'],
+        lanes: presentation.lanes.map(lane => lane.id), games: [...new Set([...(saved.pack?.games ?? []),roomGame(body)])],
         tables: [...(saved.pack?.tables ?? []), room.id], branding: withPackagePresentation(saved.pack?.branding ?? {}, presentation) });
       return receipt({ ...saved, administrationRevision: changed.revision, pack }, room, false);
-    }), { presentationMutation: [PRESENTATION_ROOM_MUTATION, ...(prepared.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : [])] });
+    }), { presentationMutation: [roomGame(body)==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(prepared.publicationPresentation ? [{ kind: 'presentation-package', value: prepared.publicationPresentation }] : [])] });
   });
   return Object.freeze({ handlers, preparations });
 }

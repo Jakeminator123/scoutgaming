@@ -44,6 +44,8 @@ import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { createRoulettePreview } from './games/roulette/preview.mjs';
+import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
+import { rouletteDocument } from './games/roulette/http.mjs';
 
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../..');
@@ -130,6 +132,9 @@ const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-oper
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
       ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
 }) : null;
+const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette/access.mjs')).createRouletteRoomAccess({
+  readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+}) : null;
 
 const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
@@ -209,7 +214,8 @@ function sqliteApiDeposit({ id, amount }) {
   return { balance, currency: p.currency };
 }
 function sqliteApiBalance({ id, balance, reason }) {
-  if (db.prepare('SELECT 1 FROM blackjack_tables WHERE player_id=?').get(id)) return { error: 'Table balances are server-managed' };
+  if (db.prepare('SELECT 1 FROM blackjack_tables WHERE player_id=?').get(id)
+      || db.prepare('SELECT 1 FROM roulette_tables WHERE player_id=?').get(id)) return { error: 'Table balances are server-managed' };
   const p = getPlayer(id);
   if (!p) return { error: 'no such player' };
   const b = Number(balance);
@@ -292,6 +298,14 @@ const nativeOptions = { db, getPlayer, logTx,
   onPublishError: () => console.warn('[partner-events] Native command committed; observation could not be published.'),
 };
 API['/api/table'] = postgres ? createPostgresNativeTableCommand({ ...nativeOptions, pool: storage.gamePool }) : createNativeTableCommand(nativeOptions);
+const rouletteCommand = postgres ? createPostgresRouletteCommand({ pool:storage.gamePool }) : createSqliteRouletteCommand({ db });
+API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
+  if (request.op === 'spin' && playerId !== id) throw Object.assign(Error('session_changed'),{statusCode:401});
+  if (request.op === 'spin' && typeof request.currency !== 'string') throw Object.assign(Error('currency_changed'),{statusCode:400});
+  if (!rouletteRoomAccess && (cloudRuntime || context && Object.keys(context).length)) throw Object.assign(Error('roulette_room_unavailable'),{statusCode:503});
+  const access = rouletteRoomAccess ? await rouletteRoomAccess(context) : undefined;
+  return rouletteCommand({id,...request},access);
+};
 
 // ---------- partner API v1 (operators / aggregators) ----------
 let partnerApi = null;
@@ -706,6 +720,10 @@ const server = createServer(async (req, res) => {
     if(response.body&&req.method!=='HEAD')Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);else res.end();
     return;
   }
+  if (pathname === '/api/presentation/capabilities' && req.headers['x-presentation-capability-version'] === '9' && postgres) {
+    const ready = (await storage.gamePool.query("SELECT to_regclass('croupier_game.roulette_tables') AS ready")).rows[0]?.ready;
+    if (!ready) { res.writeHead(503,{'Cache-Control':'no-store'}); res.end(); return; }
+  }
   const capability= presentationCapabilitiesResponse(new Request('http://local'+req.url,{method:req.method,headers:req.headers??{}}));
   if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return;}
   const compositionModule=await compositionRuntimeResponse(new Request('http://local'+req.url,{method:req.method}));
@@ -768,6 +786,8 @@ const server = createServer(async (req, res) => {
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
+  if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette-rules.mjs'].includes(pathname)
+      && await rouletteDocument(req,res,{authenticated,guestPreview,resolveRoom:rouletteRoomAccess})) return;
   if (pathname === '/api/profile') {
     if (await handlePlayerSurface(req, res, pathname, {
       db, playerId: authenticated, guest: false,
@@ -790,6 +810,9 @@ const server = createServer(async (req, res) => {
   }
   if(authenticated && !backoffice && req.method==='POST' && !playerPostOriginOk(req,{gameOrigin,frontendOrigin})) {
     res.writeHead(403);res.end('Invalid origin');return;
+  }
+  if (pathname === '/api/roulette/table' && req.method !== 'POST') {
+    res.writeHead(405,{'Content-Type':'application/json','Cache-Control':'no-store',Allow:'POST'}); res.end('{"error":"POST only"}'); return;
   }
   if(!backoffice) res.setHeader('Cache-Control','no-store');
   if (pathname === '/api/operator/appearance') {
@@ -1143,10 +1166,12 @@ const server = createServer(async (req, res) => {
       let out;
       try {
         const activeSession=(await playerSession(req));
+        if (req.url === '/api/roulette/table' && !guestPreview && activeSession?.playerId !== authenticated) throw Object.assign(Error('session_changed'),{statusCode:401});
+        if (req.url === '/api/roulette/table' && activeSession?.partnerKeyId) throw Object.assign(Error('roulette_native_account_required'),{statusCode:403});
         out = (await API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null));
         if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
       }
-      catch (e) { out = publicFailure(e); }
+      catch (e) { out = publicFailure(e, Number.isInteger(e?.statusCode) ? e.statusCode : 400); }
       res.writeHead(out.statusCode ?? (out.error ? 400 : 200), { 'Content-Type': 'application/json','Cache-Control': req.url === '/api/history' ? 'private, no-store' : 'no-store' });
       res.end(JSON.stringify(out));
     });

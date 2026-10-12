@@ -21,6 +21,20 @@ const created = (payload, chosen = context, extra = {}) => ({ ok: true, duplicat
   playUrl: '/play/blackjack?' + new URLSearchParams({ operator: chosen.operator.slug, table: id }), ...extra });
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
+test('roulette selection persists through an uncertain create and validates the matching game receipt',async()=>{
+  const f=fixture();await f.ready();f.controller.setGame('roulette');
+  const attempt=await f.start('Roulette');assert.equal(attempt.payload.game,'roulette');
+  attempt.post.reject(Error('connection lost'));await attempt.pending;
+  f.controller.setGame('blackjack');assert.equal(f.controller.getSnapshot().game,'roulette');
+  await f.ready();assert.equal(f.controller.getSnapshot().game,'roulette');
+  const index=f.requests.length,pending=f.controller.create(presentationRoomContextKey(context));
+  await tick();
+  const result=created(attempt.payload);result.room.game='roulette';result.playUrl=result.playUrl.replace('/blackjack?','/roulette?');
+  f.reply(index,result);await pending;
+  assert.equal(f.controller.getSnapshot().receipt.room.game,'roulette');
+  assert.match(f.controller.getSnapshot().receipt.playUrl,/^\/play\/roulette\?/);
+});
+
 function fixture() {
   const requests = []; let keys = 0;
   const fetchImpl = (path, options) => new Promise((resolve, reject) => requests.push({ path, options, resolve, reject }));
