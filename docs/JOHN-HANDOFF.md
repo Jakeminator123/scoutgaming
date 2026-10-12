@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Dealer Forge i produktion, 12 oktober 2026
+
+/control/dealer-forge (Studio) genererar en dealers klippbank via Runway från ett
+VILA-foto; se lab/docs/README.md. Levererat i #16 (jobbjournal, idempotenta
+beställningar, felklassning), #17 (skofacken) och #18 (seed vid samtidiga försök).
+Migration 008 kördes ~11:08 som croupier_game; ledgern är 001–008 och båda
+runtime-kontrollerna kräver nu exakt 001–008. Testat: 24 Dealer Forge-tester
+inklusive felinjektion, migrations- och runtimetester samt läsfråga mot produktion.
+Kvar: skapandet av Runway-avatar journalförs inte (ett nätfel kan ge en extra
+avatar, ingen dubbel klippdebitering). Första riktiga genereringen granskas i
+Dealers & klipp innan något publiceras.
+
 ## Publik bolagskatalog: äldre frysta paket, 12 oktober 2026
 
 /play laddade men /api/operators gav 503 efter det valfria skoeventet.

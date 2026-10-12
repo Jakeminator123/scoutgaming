@@ -22,9 +22,8 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
 
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
-    // 008 (Dealer Forge) is deployment-optional: not counted as pending, still applied by an explicit apply.
-    assert.equal(initial.toApply.length, 7, 'fixture must start without an existing Studio schema');
-    assert.deepEqual(initial.optionalPending.map(row => row.version), ['008']);
+    assert.equal(initial.toApply.length, 8, 'fixture must start without an existing Studio schema');
+    assert.deepEqual(initial.optionalPending, []);
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
