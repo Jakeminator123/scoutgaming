@@ -34,6 +34,7 @@ export function PlayerLobbyDocument({model}:{model:PlayerAreaModel}) {
             <li className="rounded-full bg-lime px-3.5 py-1.5 font-semibold text-ink">Blackjack</li>
             {model.pills.map(pill=><li key={pill.label} className="rounded-full border border-white/15 px-3.5 py-1.5 text-white/50">{pill.label} · {pill.status}</li>)}
           </ul>
+          {scoped&&!model.fields.length?<p className="mt-4 inline-flex rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/55 lg:hidden">18+ · Demo utan riktiga pengar</p>:null}
         </div>
         <aside aria-label={model.fields.length?'Ditt spelkonto':'Om spellobbyn'} className={'rounded-3xl border border-white/10 bg-[#0f1113]/80 p-5 backdrop-blur sm:p-6 '+(scoped&&!model.fields.length?'hidden lg:block':'')}>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-lime"><span aria-hidden="true">{'// '}</span>{model.fields.length?'Ditt spelkonto':'Så fungerar det'}</p>
