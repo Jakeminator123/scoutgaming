@@ -1,4 +1,5 @@
 'use client';
+import {DealerClipPreview} from './dealer-video-surface';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
@@ -561,7 +562,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
           {rows(dealer.lines).map((line, lineIndex) => <details className={styles.review} key={label(line.key, String(lineIndex))}>
             <summary><strong>{label(line.text, label(line.key))}</strong><span>{label(line.review, 'ej granskad')}</span></summary><p className={styles.notice}>{label(line.key)}</p>
             {line.reviewState === 'unbound-or-changed-media' && <p>Tidigare bedömning gäller inte för nuvarande mediepar.</p>}
-            {studioAdminMediaUrl(line.preview) && <video controls preload="none" src={studioAdminMediaUrl(line.preview)!} aria-label={`Förhandsvisning ${label(line.key)}`} />}
+            {studioAdminMediaUrl(line.preview) && <DealerClipPreview url={studioAdminMediaUrl(line.preview)!} label={`Förhandsvisning ${label(line.key)}`} />}
             {studioAdminMediaUrl(line.audio) && <audio controls preload="none" src={studioAdminMediaUrl(line.audio)!} aria-label={`Ljud ${label(line.key)}`} />}
             {mayWrite('voiceline-review', true) && line.reviewable === true && <form method="post" onSubmit={submit('voiceline-review', form => ({ dealer: dealer.dealer, line: line.key, verdict: value(form, 'verdict') || null, expectedIdentity: line.identity }), true)}>
               <label>Bedömning<select name="verdict" defaultValue={label(line.review, '')} disabled={busy}><option value="">Ej granskad</option><option value="approved">Godkänd</option><option value="rejected">Underkänd</option></select></label><button disabled={busy}>Spara manuell granskning</button>

@@ -1616,6 +1616,8 @@ async function playChatDecision(decision, signal, jobId) {
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
             beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
+            prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
+            renderFrame: video => layerComposition?.renderFrame(video) ?? false,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);
               if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));

@@ -9,7 +9,7 @@ import { createChatPlaybackDiagnostic } from '../web/public/chat-playback-diagno
 const text = 'Good evening. Your next hand is ready.';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const mime = 'video/mp4; codecs="avc1.64002a, mp4a.40.2"';
-const options = extra => ({ exactText: text, dealerId: 'astrid', requestId: 'request-a', ...extra });
+const options = extra => ({ exactText: text, dealerId: 'astrid', requestId: 'request-a',prepareRendering:async()=>{},renderFrame:()=>true,...extra });
 function descriptor() {
   const id = 'a'.repeat(32), expiresAt = Date.now() + 30000;
   const body = Buffer.from(JSON.stringify({ sessionId: id, userId: 'owner', nonce: 'nonce', exp: expiresAt })).toString('base64url');

@@ -5,6 +5,7 @@ import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { mediaFamilyFolder, mediaSituationLabel } from '../lib/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
 import type { StudioProject } from '../lib/studio-model.mjs';
+import {DealerClipPreview} from './dealer-video-surface';
 
 const familiesFor = (inventory: VideoInventory, dealerId: string) => (inventory.families ?? []).filter(family => family.dealerId === dealerId);
 const matchesGroup = (eventId: string, type: string) => eventId.startsWith(`${type}.`) || type === 'deal' && eventId === 'reveal.dealer';
@@ -83,7 +84,7 @@ export function FamilyVideoLibrary({ inventory, dealerId, onOpen, onRefresh, ref
   }
   return <section aria-label="Klipp och situationer">
     <div className={styles.libraryHeader}><label className={styles.search}>Hitta klipp<input type="search" value={filter} onChange={event => setFilter(event.target.value)} placeholder="Namn, replik eller spelarplats…" /></label><button type="button" className="text-button" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Läser…' : 'Uppdatera klipp'}</button></div>
-    {preview?.available ? <div className={styles.situation}><strong>{previewName}</strong><video key={preview.id} src={preview.previewUrl} controls autoPlay muted playsInline style={{ width: '100%', maxHeight: 420 }} aria-label={`Förhandsvisa ${previewName}`} /><button type="button" className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
+    {preview?.available ? <div className={styles.situation}><strong>{previewName}</strong><DealerClipPreview key={preview.id} url={preview.previewUrl} framing={preview.classification?.framing} compositing={preview.classification?.compositing} muted label={`Förhandsvisa ${previewName}`}/><button type="button" className="text-button" onClick={() => setPreviewId('')}>Stäng klippet</button></div> : null}
     {familyType !== 'speak' ? <div className={styles.positionGrid} aria-label="Spelarpositioner och dealer">{positionGroups.filter(group => !needle || group.families.length).map(group => <section className={styles.position} key={group.id} data-position={group.id}><h2>{group.label}</h2>{group.families.length ? group.families.map(family => card(family, true)) : <p className="helper">Exakt klippkoppling saknas.</p>}</section>)}</div> : null}
     <div className={styles.libraryGrid}>{families.filter(family => !matchesGroup(family.eventId, 'deal')).map(family => card(family))}</div>
     {!families.length && needle ? <p>Inga klipp matchar sökningen.</p> : null}

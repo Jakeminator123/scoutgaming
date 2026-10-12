@@ -26,7 +26,7 @@ function fixture({layered=false,fullFrame=false}={}) {
     lane.layers.background={enabled:true,mode:'image',default:assets[index+2].id,allowed:assets.slice(2).map(row=>row.id)};
     return lane;
   });
-  const presentation=structuredClone(cloudPresentationFixture({lanes,assets,compositingByDealer:{vera:{mode:'opaque'}}}).presentation);
+  const presentation=structuredClone(cloudPresentationFixture({lanes,assets}).presentation);
   let pack={operatorId:'north',revision:1,lanes:lanes.map(row=>row.id),games:['blackjack'],tables:['room-first','room-vip'],branding:withPackagePresentation({name:'North',primary:'#abcdef'},presentation)};
   const gameLanes=[{schemaVersion:1,id:'indexed',label:'Indexed',renderer:'indexed-video',dealer:'astrid',mediaCollection:'legacy-dealers'},
     {schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}];
@@ -121,7 +121,7 @@ test('permissions remain bound to the selected frozen presentation and fresh pac
   assert.equal(f.pack().revision,2);assert.equal(f.pack().branding.table,f.assets[1].id);
 });
 
-test('registered full-frame presentations suppress stored and company layer overrides without changing frozen room grants',async()=>{
+test('legacy full-frame presentations preserve authorized layer choices without changing frozen room grants',async()=>{
   for(const layered of [false,true]) {
     const f=fixture({layered,fullFrame:true});
     f.setBranding({lane:f.lanes[0].id,dealer:'vera',table:f.assets[1].id,background:f.assets[3].id,color:'#445566'});
@@ -131,8 +131,8 @@ test('registered full-frame presentations suppress stored and company layer over
     assert.equal(selection.dealer,'vera');assert.equal(selection.presentation,'local');
     assert.equal(selection.composition.dealer.compatibility,'full-frame');
     assert.equal(actual.dealer,'vera');assert.equal(actual.navigateDealer,null);
-    assert.equal(actual.tableValue,null);assert.equal(actual.backgroundValue,null);assert.equal(actual.backgroundDisabled,true);
-    assert.equal(actual.nextStored.tableAsset,undefined);assert.equal(actual.nextStored.background,undefined);
+    assert.equal(actual.tableValue,f.assets[1].id);assert.equal(actual.backgroundValue,f.assets[3].id);assert.equal(actual.backgroundDisabled,false);
+    assert.equal(actual.nextStored.tableAsset,f.assets[1].id);assert.equal(actual.nextStored.background,f.assets[3].id);
     assert.deepEqual(selection.choices.dealers,layered?['johanna','nora','vera']:['astrid','vera']);
     assert.equal(selection.operator,'north');assert.equal(selection.roomId,'room-first');assert.equal(selection.packageRevision,1);
     assert.deepEqual(selection.composition.settings,f.lanes[0].composition);

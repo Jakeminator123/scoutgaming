@@ -112,7 +112,7 @@ export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyI
     {busy ? <p role="status">{progress === 100 ? 'Filen är överförd. Väntar på sparat kvitto…' : `Laddar upp${progress === null ? '…' : ` · ${progress} %`}`}</p> : null}
     {error ? <p role="alert">{error}</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
-    {saved ? <div><video key={saved.id} src={saved.previewUrl} controls playsInline preload="metadata" aria-label="Förhandsvisa sparat klipp" style={{ width: '100%', maxHeight: 420 }} />
+    {saved ? <div><DealerClipPreview key={saved.id} url={saved.previewUrl} framing={saved.classification?.framing} compositing={saved.classification?.compositing} label="Förhandsvisa sparat klipp"/>
       <p>{saved.label}</p>
     </div> : null}
   </section>;

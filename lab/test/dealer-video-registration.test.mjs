@@ -5,6 +5,7 @@ import {validateVideoMetadata,validateVideoCompositing,videoCompositing,videoFit
 import {mediaBlobPath,validatePrivateMedia} from '../lib/cloud-media-store.mjs';
 import {requireSavedVideoDealer} from '../lib/video-dealer-registration.mjs';
 import {createStudioUploadService} from '../lib/studio-upload-service.mjs';
+import {DEFAULT_DEALER_COMPOSITING,effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
 const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Nora',notes:'',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
 const project=()=>({dealers:[...BASE_DEALER_IDS,'nora'].map(id=>({id,label:id}))});
 const scope={environment:'test',workspaceId:'nora-intake'},id='00000000-0000-4000-8000-000000000001',sha256='d'.repeat(64);
@@ -19,11 +20,17 @@ test('registered dealer IDs are bounded and cannot inject unsafe Blob paths',()=
   const pathname=mediaBlobPath('dealers/nora/review/uploads',id,sha256,'mp4');
   assert.equal(validatePrivateMedia({provider:'vercel-blob',pathname,sha256,size:32,contentType:'video/mp4'}).pathname,pathname);
 });
-test('greenscreen is explicit per video, opaque remains the default, and dealer/event bindings stay exact',()=>{
+test('legacy metadata remains readable while all new dealer video writes require green-screen',()=>{
   assert.deepEqual(validateVideoMetadata(classification).compositing,classification.compositing);
   assert.deepEqual(videoCompositing(),{mode:'opaque'});
   assert.deepEqual(videoCompositing({classification:{...classification,compositing:undefined}}),{mode:'opaque'});
   assert.deepEqual(validateVideoCompositing({mode:'opaque'}),{mode:'opaque'});
+  const legacy={...classification,compositing:{mode:'opaque'}},before=JSON.stringify(legacy);
+  assert.throws(()=>validateVideoMetadata(legacy,{forWrite:true}),/grön bakgrund/);
+  assert.equal(JSON.stringify(legacy),before);
+  assert.deepEqual(validateVideoMetadata({...classification,compositing:undefined},{forWrite:true}).compositing,DEFAULT_DEALER_COMPOSITING);
+  assert.deepEqual(effectiveDealerCompositing(legacy.compositing),DEFAULT_DEALER_COMPOSITING);
+  assert.equal(effectiveDealerCompositing({...classification.compositing,softness:.0001}).softness,.0001,'legacy renderer thresholds remain readable');
   assert.equal(videoFitsLine({classification},'nora','idle.ready'),true);
   assert.equal(videoFitsLine({classification},'astrid','idle.ready'),false);
   for(const value of [{mode:'opaque',threshold:.2},{mode:'green-screen'},{...classification.compositing,softness:0},{...classification.compositing,threshold:Infinity},{...classification.compositing,despill:2},{...classification.compositing,url:'https://invalid.example'}])assert.throws(()=>validateVideoMetadata({...classification,compositing:value}));

@@ -20,7 +20,7 @@ function packet() {
       profileRevision: 'astrid-spel2x-preview-v1', textSha256: hash(text), audioSha256: hash(audioBytes) },
   };
 }
-const options = extra => ({ exactText: text, dealerId: 'astrid', ...extra });
+const options = extra => ({ exactText: text, dealerId: 'astrid', prepareRendering:async()=>{},renderFrame:()=>true,...extra });
 function mediaResponse(url, patches = {}) {
   const audio = url.endsWith('/audio');
   return new Response(patches.bytes ?? (audio ? audioBytes : videoBytes), {
@@ -178,6 +178,18 @@ test('player starts once, mutes muxed video, ends on exact audio and releases me
   assert.ok(receipts.every(value => value.reviewStatus === 'pending'));
   assert.equal(env.audio().paused, true); assert.equal(env.video().paused, true);
   assert.equal(env.mount.children.length, 0); assert.equal(env.revoked.length, 2); assert.equal(env.frames.size, 0);
+});
+test('complete generated packages key every presented frame and never expose a failed raw frame',async t=>{
+  const env=browser(t),receipts=[],keys=[],pictures=[];
+  const playback=playGeneratedSpeech(packet(),options({mount:env.mount,prepareRendering:async key=>keys.push(key),
+    renderFrame:video=>{pictures.push(video);return pictures.length<2;},onReceipt:r=>receipts.push(r)}));
+  await until(()=>receipts.some(row=>row.state==='start'));
+  const surface=env.mount.children[0];
+  const first=[...env.videoFrames.values()][0];env.videoFrames.clear();first();
+  assert.equal(keys[0].mode,'green-screen');assert.equal(surface.style.background,'transparent');assert.equal(env.video().style.opacity,'0');
+  const second=[...env.videoFrames.values()][0];env.videoFrames.clear();second();
+  await assert.rejects(playback,/interrupted/);
+  assert.equal(pictures.length,2);assert.equal(env.video().paused,true);assert.equal(env.audio().paused,true);
 });
 
 test('abort after start interrupts once and performs cleanup, never claiming completion', async t => {

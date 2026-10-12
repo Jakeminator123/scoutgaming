@@ -122,7 +122,7 @@ test('baked background is disabled and an empty colour list hides the swatches',
   const backgroundButtons = rows[2].children.filter(child => child.tag === 'button');
   assert.equal(backgroundButtons.length, 1);
   assert.equal(backgroundButtons[0].disabled, true);
-  assert.equal(backgroundButtons[0].textContent, 'Kommer med nya dealerpaket');
+  assert.equal(backgroundButtons[0].textContent, 'Bakgrund saknas i paketet');
   assert.equal(rows[0].children.filter(child => child.tag === 'button').length, 2);
 
   const hidden = dom();
@@ -174,17 +174,17 @@ test('the lobby text names the last dealer and table colour', () => {
   assert.equal(lobbyChoiceText({ dealer: 'ghost', tableColor: 'green', background: 'stad' }), '');
 });
 
-test('full-frame dealer scenes never offer independent table or background controls',()=>{
+test('legacy full-frame dealer scenes retain their authorized table and background controls',()=>{
   const composition={dealer:{enabled:true,compatibility:'full-frame'},table:{allowed:['table-one'],default:'table-one'},
     assets:[{id:'table-one',label:'Independent table'},{id:'stad',label:'Independent background'}]};
   const selected=resolvePlayerSelection({choices:imageChoices,currentDealer:'astrid',composition,stored:{tableAsset:'table-one',background:'stad'}});
-  assert.equal(selected.tableValue,null);assert.equal(selected.backgroundValue,null);
-  assert.deepEqual(selected.nextStored,{});
+  assert.equal(selected.tableValue,'table-one');assert.equal(selected.backgroundValue,'stad');
+  assert.deepEqual(selected.nextStored,{tableAsset:'table-one',background:'stad'});
   const page=dom(),panel=mountPlayerChoices(page,{choices:imageChoices,composition,currentDealer:'astrid',tableValue:selected.tableValue,backgroundValue:selected.backgroundValue});
   const rows=panel.children.filter(row=>row.className==='choice-row');
   for(const label of ['Bord','Bakgrund']){
     const controls=rows.find(row=>row.children[0].textContent===label).children.filter(row=>row.tag==='button');
-    assert.equal(controls.length,1);assert.equal(controls[0].disabled,true);assert.equal(controls[0].textContent,'Ingår i dealerns scen');
+    assert.ok(controls.length>=1);assert.ok(controls.every(button=>!button.disabled));
   }
 });
 test('dealer footer labels its real action and returns to the same operator lobby',async()=>{

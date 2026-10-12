@@ -4,9 +4,14 @@ import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 import {checkPermanentMediaDeletion} from './studio-media-deletion.mjs';
+import {validateVideoMetadata} from './video-intake.mjs';
 
 const fail = (code, statusCode = 503) => { throw new StudioStorageError(code, statusCode); };
 const json = value => Response.json(value, { headers: {'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'} });
+function writeMetadata(value) {
+  try { return validateVideoMetadata(value,{forWrite:true}); }
+  catch (error) { fail(error.code==='dealer_background_required'?'studio_dealer_background_required':'studio_invalid_media',422); }
+}
 export function createStudioMediaApi({repository, authorize, config, videoRegistry, videoResponse, uploads, mediaDeletion, mutationTransaction, baseOverride} = {}) {
   if (typeof authorize !== 'function' || !config || !['/api/admin','/studio/api/admin'].includes(config.apiBase)) fail('studio_invalid_configuration');
   const scope = validateStudioScope(config.scope), prefix = config.apiBase === '/api/admin' ? '/api' : '/studio/api';
@@ -79,7 +84,8 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
             if(current.sha256!==body.sha256||canonicalStudioJson(body.previous)!==canonicalStudioJson(current.classification))fail('studio_conflict',409);
             const usage=await repository.findMediaReferences(body.id);
             if(body.archived&&usage.references.some(row=>!row.historical))fail('studio_media_in_use',409);
-            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:{...current.classification,archived:body.archived},actor});
+            const metadata={...current.classification,archived:body.archived};
+            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.archived?metadata:writeMetadata(metadata),actor});
           });
         });
         return json(await videoRegistry());
@@ -103,7 +109,7 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
               || canonicalStudioJson(body.previous) !== canonicalStudioJson(current.classification)) fail('studio_conflict',409);
             if (Boolean(body.metadata?.archived) !== Boolean(current.classification.archived)) fail('studio_invalid_request',400);
             await requireSavedVideoDealer(repository,body.metadata?.dealerId);
-            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.metadata,actor});
+            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:writeMetadata(body.metadata),actor});
           }, {presentationMutation:{metadata:body.metadata}});
         }, {presentationMutation:{metadata:body.metadata}});
         return json(await videoRegistry());

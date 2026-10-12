@@ -4,6 +4,7 @@ import schema from '../schemas/video.schema.json' with { type: 'json' };
 import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
 import { validateDealerFraming } from '../../web/public/dealer-framing.mjs';
+import { assertDealerCompositingWrite } from '../../web/public/dealer-compositing.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
@@ -16,7 +17,7 @@ export function kindForEvent(event) {
 export function situationsForEvent(event) {
   return [...(contract.events.find(e => e.id === event.id)?.situations ?? [])];
 }
-export function validateVideoMetadata(input, { allowLegacySituation = false } = {}) {
+export function validateVideoMetadata(input, { allowLegacySituation = false, forWrite = false } = {}) {
   const allowed = Object.keys(schema.properties);
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !allowed.includes(k))) throw new Error('Ogiltiga videofält.');
   if (input.archived !== undefined && typeof input.archived !== 'boolean') throw new Error('Ogiltig biblioteksstatus.');
@@ -42,7 +43,8 @@ export function validateVideoMetadata(input, { allowLegacySituation = false } = 
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
   if (input.compositing !== undefined) validateVideoCompositing(input.compositing);
   if (input.framing !== undefined) validateDealerFraming(input.framing);
-  return { ...input, label: input.label.trim(), notes: input.notes.trim() };
+  return { ...input, label: input.label.trim(), notes: input.notes.trim(),
+    ...(forWrite && input.mediaType !== 'audio' ? {compositing:assertDealerCompositingWrite(input.compositing)} : {}) };
 }
 export function validateVideoCompositing(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ogiltig friläggning.');

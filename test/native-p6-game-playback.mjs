@@ -9,6 +9,7 @@ import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,nativeP6Game
 import {createSpeechQueue} from '../web/public/speech-queue.mjs';
 import {createSpeechPoseGate} from '../web/public/speech-pose-gate.mjs';
 import {playGeneratedSpeech} from '../web/public/generated-speech-player.mjs';
+import {DEFAULT_DEALER_COMPOSITING} from '../web/public/dealer-compositing.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const paths=NATIVE_P6_GAME_SOURCE_PATHS;
 const sources=await Promise.all(paths.map(p=>readFile(new URL('../'+p,import.meta.url))));
@@ -20,14 +21,14 @@ function descriptor(){const id='a'.repeat(32),expiresAt=Date.now()+30000,exactTe
   return{schemaVersion:1,kind:'generated-speech-stream',id,requestId:'qa-game-'+randomUUID(),dealerId:'astrid',exactText,
     textSha256:hash(exactText),reviewStatus:'pending',url:'/speech-stream',expiresAt,
     ticket:Buffer.from(JSON.stringify({sessionId:id,exp:expiresAt})).toString('base64url')+'.'+'x'.repeat(43)};}
-function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=false,changedSource=false,poseChangeAt=0,quiet=true,serverSkewMs=0,serverRollbackAt=0,now=Date.now}={}){
-  const media=[],sockets=[],frames=new Map(),fetches=[],pending=new Map();let frameId=0,reads=0,acquired=0,released=0;
+function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=false,changedSource=false,poseChangeAt=0,quiet=true,serverSkewMs=0,serverRollbackAt=0,now=Date.now,renderFrameFails=false}={}){
+  const media=[],sockets=[],frames=new Map(),fetches=[],pending=new Map();let frameId=0,reads=0,acquired=0,released=0,prepared=false,rendered=0;
   const renderer={dealerId:'astrid',sessionRevision:randomUUID(),roundRevision:'0'},wireId=randomUUID();
   const install=(key,value)=>{const prior=Object.getOwnPropertyDescriptor(globalThis,key);
     Object.defineProperty(globalThis,key,{value,configurable:true,writable:true});
     t.after(()=>prior?Object.defineProperty(globalThis,key,prior):delete globalThis[key]);};
   class Element extends EventTarget{
-    constructor(){super();this.style={};this.children=[];this.isConnected=true;}
+    constructor(){super();this.style={};this.dataset={};this.children=[];this.isConnected=true;}
     append(...nodes){for(const n of nodes){this.children.push(n);n.parentElement=this;}}
     contains(value){return value===this||this.children.some(n=>n.contains(value));}
     remove(){this.isConnected=false;if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(n=>n!==this);}
@@ -54,13 +55,15 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
     close(){this.readyState=3;this.dispatchEvent(new Event('close'));}send(){}
   }
   install('location',{origin:NATIVE_P6_GAME_ORIGIN});install('innerWidth',800);install('innerHeight',600);
-  install('document',{hidden:false,visibilityState:'visible',createElement:k=>k==='video'?new Video():new Element(),elementFromPoint:()=>media[0]});
-  install('getComputedStyle',v=>({visibility:v.style.visibility||'visible',display:'block',opacity:'1'}));
+  install('document',{hidden:false,visibilityState:'visible',createElement:k=>k==='video'?new Video():new Element(),elementFromPoint:()=>mount});
+  install('getComputedStyle',v=>({visibility:v.style.visibility||'visible',display:v.style.display||'block',opacity:v.style.opacity??'1'}));
   install('MediaSource',MediaSource);install('WebSocket',Socket);
   install('Audio',class{constructor(){assert.fail('no second audible element');}});
   t.mock.method(URL,'createObjectURL',v=>{assert.ok(v instanceof MediaSource,'game mode imports no Blob wrapper');return'blob:mse';});
   t.mock.method(URL,'revokeObjectURL',()=>{});
   const mount=new Element(),original=new Element();mount.append(original);
+  original.tagName='CANVAS';original.className='presentation-composed-film';
+  mount.querySelector=selector=>selector==='.presentation-composed-film'&&mount.contains(original)?original:null;
   const queue=createSpeechQueue({canPlay:()=>!document.hidden});let gate;
   gate=createSpeechPoseGate({enqueue:fn=>queue.enqueue(fn),initialState:{...renderer,dealerPose:'standard-idle',actionOwner:'none',speechOwner:'none',
     idlePresented:{...renderer,presentationId:'actual-renderer-fixture'},visible:true,muted:false},
@@ -71,6 +74,11 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
         if(value.sessionRevision!==renderer.sessionRevision||value.roundRevision!==renderer.roundRevision||state.actionOwner!=='none'
           ||state.speechOwner!=='chat-'+job.jobId||!state.visible||state.muted)throw Error('stale_speech_stream_pose');};
       try{await playGeneratedSpeech(decision.speechStream,{exactText:decision.exactText,dealerId:'astrid',requestId:job.jobId,mount,signal,
+        // Match app.mjs's existing shared compositor injection. These remain
+        // simulated frames; this fixture cannot establish live pixel approval.
+        prepareRendering:async key=>{assert.deepEqual(key,DEFAULT_DEALER_COMPOSITING);prepared=true;},
+        renderFrame:video=>{assert.equal(prepared,true);assert.equal(video,media[0]);if(renderFrameFails)return false;
+          rendered++;mount.dataset.presentationClipMode='green-screen';return true;},
         beforeStart:async()=>{check();await own.beforeStart();check();},streamObserver:own.nativeP6Observer,onReceipt:own.nativeP6Receipt});}
       finally{gate.updateRendererState({dealerPose:'standard-idle',speechOwner:'none'});
         gate.presentStandardIdle({...renderer,presentationId:'actual-renderer-return'});}
@@ -99,7 +107,7 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
   const end=async()=>{present();sockets[0].message({t:'done',id:wireId,frames:12});await new Promise(r=>setTimeout(r,5));
     media[0].ended=true;media[0].dispatchEvent(new Event('ended'));};
   return{start,input,feed,end,renderer,gate,queue,pending,mount,original,sockets,media,fetches,frames,
-    availabilityState,counts:()=>({acquired,released,reads})};
+    availabilityState,rendered:()=>rendered,counts:()=>({acquired,released,reads})};
 }
 async function until(fn){for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,1));}assert.fail('fixture lifecycle timeout');}
 const quietComponents={busy:false,hasRound:false,chatBusy:false,speaking:false,muted:false,hidden:false,
@@ -154,6 +162,7 @@ test('actual gate/queue/player delivers one existing descriptor, keeps existing 
   await f.end();const result=await pending;
   assert.equal(result.binaryBytes,4);assert.equal(result.mediaSha256,hash(new Uint8Array([1,2,3,4])));
   assert.equal(f.sockets.length,1);assert.equal(f.media.length,1);assert.equal(f.mount.children.length,1);assert.equal(f.mount.children[0],f.original);
+  assert.equal(f.media[0].style.opacity,'0');assert.ok(f.rendered()>0,'the receipt follows a composited decoded frame');
   assert.equal(f.pending.size,0);assert.equal(f.queue.pending,0);assert.deepEqual(f.counts(),{acquired:1,released:1,reads:6});
   assert.equal(result.playback.gameQueueExecuted,true);assert.equal(result.playback.gameWrapperIntegrated,false);
   assert.equal(result.playback.liveIntegrationVerified,false);assert.equal(result.playback.playerScope,'decoded-product-game-queue');
@@ -163,6 +172,28 @@ test('actual gate/queue/player delivers one existing descriptor, keeps existing 
   assert.deepEqual(result.playback.sessionObserver.observations.map(v=>v.phase),['before-connect','before-play','after-end']);
   assert.equal(result.playback.sourceVerification,'same-origin-source-readback-loaded-module-unverified');
   await assert.rejects(api.run(input),/attempt_consumed/);assert.equal(f.sockets.length,1);
+});
+
+test('decoded speech without a visible owned compositor canvas cannot yield a playback receipt',async t=>{
+  for(const mode of ['missing','hidden','transparent','occluded'])await t.test(mode,async t=>{
+    const f=fixture(t),api=await f.start(),pending=api.run(f.input());void pending.catch(()=>{});
+    await until(()=>f.sockets.length===1);f.feed();await until(()=>f.media[0].paused===false);
+    if(mode==='missing')f.original.remove();
+    if(mode==='hidden')f.original.style.visibility='hidden';
+    if(mode==='transparent')f.original.style.opacity='0';
+    if(mode==='occluded')document.elementFromPoint=()=>({});
+    await f.end();await assert.rejects(pending,/actual_playback_required/);
+    assert.equal(f.media[0].style.opacity,'0');assert.equal(f.pending.size,0);assert.equal(f.sockets.length,1);
+    assert.equal(f.frames.size,0);
+  });
+});
+
+test('failed compositing cancels the queue and stream without granting a decoded receipt',async t=>{
+  const f=fixture(t,{renderFrameFails:true}),api=await f.start(),pending=api.run(f.input());void pending.catch(()=>{});
+  await until(()=>f.sockets.length===1);f.feed();await until(()=>f.media[0].paused===false);await f.end();
+  await assert.rejects(pending,/actual_queue_completion_required/);
+  assert.equal(f.rendered(),0);assert.equal(f.media[0].paused,true);assert.equal(f.sockets[0].readyState,3);
+  assert.equal(f.pending.size,0);assert.equal(f.frames.size,0);
 });
 for(const ownerKey of ['actorSha256','ownerSessionSha256','sessionRevision','roundRevision','policySha256'])
 test(ownerKey+' mismatch before enqueue mutates no queue',async t=>{

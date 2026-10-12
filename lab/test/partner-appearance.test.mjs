@@ -66,7 +66,7 @@ test('read-only and pre-draft backends fail closed but can inspect room scope',a
 });
 test('full-frame and section views only expose effective supported adjustments',()=>{
   const initial=initialState();delete initial.presentation.lanes[0].composition;
-  assert.match(html(initial,{section:'design'}),/Fullbildsklipp/);assert.doesNotMatch(html(initial,{section:'design'}),/aria-label="Bordsfärg"/);
+  assert.match(html(initial,{section:'design'}),/Äldre sammansättning/);assert.match(html(initial,{section:'design'}),/gröna bakgrund tas alltid bort/);assert.doesNotMatch(html(initial,{section:'design'}),/aria-label="Bordsfärg"/);
   const background=html(initialState(),{section:'background'});
   assert.match(background,/aria-label="Bakgrund"/);assert.doesNotMatch(background,/aria-label="Bord"|aria-label="Dealer"|aria-label="Bordsfärg"/);
 });

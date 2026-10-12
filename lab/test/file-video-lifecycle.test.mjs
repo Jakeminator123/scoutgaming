@@ -28,7 +28,7 @@ function mount(playId = 1) {
   const module = { exports: {} };
   vm.runInNewContext(compiled.code, { module, exports: module.exports, performance: { now: () => clock },
     window: { setInterval(fn) { timers.set(++nextTimer, fn); return nextTimer; }, clearInterval(id) { timers.delete(id); } },
-    require: name => name === 'react' ? react : require(name) });
+    require: name => name === 'react' ? react : name === './dealer-video-surface' ? {DealerVideoSurface:({children})=>children} : require(name) });
   function findVideo(node) { if (node?.type === 'video') return node; return React.Children.toArray(node?.props?.children).map(findVideo).find(Boolean); }
   function render(patch = {}) { props = { ...props, ...patch }; cursor = 0; tree = findVideo(module.exports.FileVideo(props)); assert.ok(tree, 'the real video remains the playback clock'); tree.props.ref.current = element; for (const effect of effects.splice(0)) effect(); }
   render();

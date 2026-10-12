@@ -75,7 +75,6 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
   const estimate = useMemo(() => idleShareEstimate(policy), [policy]);
   const [seed, setSeed] = useState(25);
   const [showPlan, setShowPlan] = useState(false);
-  const [removeGreen,setRemoveGreen]=useState(false);
   const [previewId, setPreviewId] = useState(policy.base[0]?.videoId ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [planIndex, setPlanIndex] = useState<number | null>(null);
@@ -268,7 +267,7 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
 
     <section className={styles.player} aria-label="Spelare för grundloop">
       <div><strong title={shown(previewId).title}>{shown(previewId).text}</strong></div>
-      <PresentationFrame label="Grundloop"><DealerVideoSurface framing={preview?.classification?.framing} compositing={preview?.classification?.compositing} removeGreen={removeGreen}>
+      <PresentationFrame label="Grundloop"><DealerVideoSurface framing={preview?.classification?.framing} compositing={preview?.classification?.compositing}>
       {preview?.available ? <video key={`${previewId}-${playSerial}`} ref={videoRef} src={preview.previewUrl} muted playsInline autoPlay={playRequested && !blocked} loop={Boolean(family?.standardIds.includes(previewId))} onPlaying={event => {
         if (event.currentTarget !== videoRef.current || blocked || playback.current?.serial !== playSerial) { event.currentTarget.pause(); return; }
         onBusyChange(true);
@@ -277,7 +276,6 @@ export function IdlePolicyEditor({ policy, inventory, blocked, onChange, onBusyC
         if (planIndex !== null && plan[planIndex].kind === 'base') segmentTimer.current = setTimeout(() => advance(playSerial), plan[planIndex].endMs - plan[planIndex].startMs);
       }} onPause={event => { if (event.currentTarget === videoRef.current && !event.currentTarget.ended && playback.current?.serial === playSerial) stop('Pausat'); }} onEnded={() => advance(playSerial)} onError={event => { if (event.currentTarget === videoRef.current) stop('Videofel — provet avbröts'); }} /> : <p className={styles.warning}>Videon finns inte tillgänglig i klippbiblioteket.</p>}
       </DealerVideoSurface></PresentationFrame>
-      {preview?.classification?.compositing?.mode==='green-screen'?<label><input type="checkbox" checked={removeGreen} onChange={event=>setRemoveGreen(event.target.checked)}/>Visa utan grön bakgrund</label>:null}
       <div className={styles.previewControls}><button type="button" className="primary-button" disabled={blocked} onClick={() => { stop(); setActualLog([]); startClip(plan[0].videoId, 0); }}>Spela en minut</button><button type="button" className="text-button" onClick={() => stop()}>Stoppa</button></div>
       <details className={styles.help}><summary>Avancerat · uppspelningsplan</summary><p>Förhandsvisningen styr inte spelet. Samma slumpfrö ger samma planerade förlopp.</p>
         <div className={styles.previewControls}><label>Slumpfrö<input type="number" min={0} max={4294967295} value={seed} onChange={event => { stop('Slumpfrö ändrades'); setSeed(Math.max(0, Number(event.target.value))); }} /></label><button type="button" className="text-button" onClick={() => setShowPlan(value => !value)}>{showPlan ? 'Dölj plan' : 'Visa plan'}</button></div>

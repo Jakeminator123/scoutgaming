@@ -14,6 +14,7 @@ import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
 
 const require = createRequire(import.meta.url);
+const DealerClipPreview = () => React.createElement('div', {'data-keyed-preview': true});
 const { transformSync } = require('next/dist/build/swc');
 const navigationSource = readFileSync(new URL('./studio-navigation.tsx', import.meta.url), 'utf8');
 const navigationModule = { exports: {} };
@@ -81,7 +82,7 @@ function harness() {
     crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
-    require: name => name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
+    require: name => name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -716,7 +717,7 @@ test('media preview allowlist refuses external/query/traversal URLs and manual r
   assert.equal(h.studioAdminMediaUrl('/dealer/preview/line.mp4'), '/dealer/preview/line.mp4');
   const calls = [];
   const tree = h.StudioAdministrationView({ ...viewProps('admin', 'media-review'), command: (action, body) => calls.push({ action, body }) });
-  assert.equal(nodes(tree, node => node.type === 'video' && node.props.preload === 'none').length, 1);
+  assert.equal(nodes(tree, node => node.type === DealerClipPreview).length, 1);
   nodes(tree, node => node.type === 'form')[0].props.onSubmit({ preventDefault() {}, currentTarget: new Form({ verdict: 'approved' }) });
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { action: 'voiceline-review', body: { dealer: 'astrid', line: 'goodluck', verdict: 'approved',expectedIdentity:'exact-pair-fixture', expectedRevision: 'studio-v1' } });
   assert.match(renderToStaticMarkup(tree), /Betald speech-QA körs inte/);

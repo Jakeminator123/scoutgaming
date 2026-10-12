@@ -63,24 +63,25 @@ Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelsek
 Klippbibliotek, Spelhändelser & villkor och AI-småprat vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
 Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
 Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Bordsfärger och bolagets tillåtna mindre ändringar har egna inställningar. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
-**Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Fullbildsklipp behåller sin inbakade miljö. **Till Sammansättning** återgår till presentationen som startade provet.
+**Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Dealerklipp friläggs alltid från grön bakgrund. **Till Sammansättning** återgår till presentationen som startade provet.
 
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
 På Dealers & klipp kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
 Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
 och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett nytt
 media-ID utan att ta över en annan dealers registrering. Varje film
-har ett eget val **Grön bakgrund / Bakgrund inbakad** med tröskel, mjukhet och färgspill.
-Nya videouppladdningar föreslår grön bakgrund. **Bakgrund inbakad** är ett aktivt val
-för filmer vars miljö ska behållas. Under **Bildformat och bakgrund · ändra** kan du
-rätta valet även efter uppladdning, både i biblioteket och vid den egna grundloopen.
+friläggs från grön bakgrund; det finns inget val att behålla en inbakad miljö.
+Under **Bildformat och bakgrund · ändra** justerar du tröskel, mjukhet och färgspill,
+både i biblioteket och vid den egna grundloopen. En källa med en verkligt inbakad
+scen måste ersättas med lämpligt originalmaterial; greenscreen tar bara bort grönt.
 Mobilklipp får automatiskt gröna sidor i datorramen; mobilramen beskär breda klipp
 från sidorna. Förstoring och placering sparas med klippet och används i båda vyerna.
 Om dealern är för liten redan i källfilen: öka **Förstoring**, justera placeringen
-och jämför Dator/Mobil. **Visa utan grön bakgrund** visar resultatet på rutmönster
+och jämför Dator/Mobil. Förhandsvisningen visar resultatet på rutmönster
 redan vid första filvalet. Originalfilen behålls. Spara filinställningarna och
-publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar behåller
-sitt tidigare bildläge.
+publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar får
+standardfriläggning. Klipp märkta med inbakad bakgrund behöver rättas innan ny
+publicering. Om friläggningen inte kan starta visas ett fel i stället för råvideo.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 Under **Hantera dealers** väljer du **Arkivera dealer**. Spara pågående utkast först. En samlad bekräftelse visar vilka klipp, sammansättningar, spelrum och bolag som påverkas. Servern stänger av AI-tal, arkiverar dealern med dess klipp och sammansättningar och avpublicerar berörda spelrum i samma åtgärd. Du behöver inte först gå runt mellan flikar och koppla loss innehållet. **Återställ dealer och klipp** återför materialet som utkast med AI-tal avstängt; publicering och öppning av rum görs separat. Tidigare arkiverade enskilda klipp förblir arkiverade. **Radera dealer permanent** kontrollerar och tar bort hela den arkiverade dealern och dess egna filer efter en separat bekräftelse. Tidigare publicerade filer och annat material som fortfarande används skyddas. Permanent radering kan ske tidigast 15 minuter efter arkiveringen, när tidigare uppladdningstillåtelser har löpt ut. Vid avbruten radering visas **Slutför radering**; redan raderade filer återskapas inte.
 
@@ -141,7 +142,7 @@ operatörspaketets dealer, bord och bakgrund, inklusive bild- och videoformat.
 Bord, Bakgrund och Presentationslanes visar paketets tillåtna inställningar;
 Färger, marker och kort visar dess branding. Skrivning kräver
 `presentations.configure`, rätt revision och val inom samma tilldelade sammansättning.
-Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
+Dealerns gröna bakgrund tas alltid bort. Bord och bakgrund väljs som egna lager.
 Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
 Provbord länkar till den riktiga spelklienten med bolag och faktiskt tilldelat,
 aktivt spelrum. Ett äldre paket utan sådant rum behöver kompletteras via Publicering.
