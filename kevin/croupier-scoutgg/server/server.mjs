@@ -371,7 +371,11 @@ async function api(req, res, route) {
     if (!who) return json(res, 401, { error: "Sign in required" });
     if (!apiLimit(clientAddress(req))) return json(res, 429, { error: "Please try again later" });
     // Room for an operator logo (a data URL up to LOGO_MAX); every other route keeps 20 KB.
-    try { const t = studioTables.create(await body(req, LOGO_MAX + 50000)); return json(res, 201, { ...t, url: studioTables.gameUrl(t) }); }
+    try {
+      const input = await body(req, LOGO_MAX + 50000);
+      if ((who.hiddenDealers ?? []).includes(input?.dealer)) return json(res, 403, { error: "That dealer is not available for this account" });
+      const t = studioTables.create(input); return json(res, 201, { ...t, url: studioTables.gameUrl(t) });
+    }
     catch (e) { return json(res, 400, { error: e.message }); }
   }
   if (req.method !== "POST") return json(res, 405, { error: "använd POST" });

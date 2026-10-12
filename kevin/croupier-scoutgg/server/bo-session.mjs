@@ -16,7 +16,9 @@ export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.
     const r = await fetcher(new URL('/api/bo/me', origin), { headers: { cookie: `bo_jwt=${jwt}` }, redirect: 'error', signal: AbortSignal.timeout(3000) });
     if (!r.ok) throw Error('Back office unavailable');
     const me = await r.json();
-    return typeof me?.user === 'string' && ROLES.includes(me.role) ? { user: me.user, role: me.role } : null;
+    // Dealers the BO hides for this account (Kevin 12 Oct: chosen per aggregator invite). Unknown ids are dropped.
+    const hiddenDealers = Array.isArray(me?.hiddenDealers) ? me.hiddenDealers.filter(d => typeof d === 'string' && /^[a-z]{1,20}$/.test(d)) : [];
+    return typeof me?.user === 'string' && ROLES.includes(me.role) ? { user: me.user, role: me.role, hiddenDealers } : null;
   }
 
   // Relays a sign-in. The BO's own limiter sees the visitor's address (it reads the first forwarded hop).

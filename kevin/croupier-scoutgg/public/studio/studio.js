@@ -95,7 +95,7 @@ if(!em||!pw){$('#formErr').textContent='Enter your back office login and passwor
 $('#formErr').textContent='Signing in…';
 try{const r=await fetch('/api/studio/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:em,pass:pw})});const me=await r.json();
 if(!r.ok||!me.user){$('#fEmail').classList.add('err');$('#fPw').classList.add('err');$('#formErr').textContent=me.error||'Sign-in failed.';return}
-$('#pw').value='';$('#formErr').textContent='';st.email=me.user;go('builder')}catch{$('#formErr').textContent='Sign-in is unavailable. Try again shortly.'}};
+$('#pw').value='';$('#formErr').textContent='';st.email=me.user;access(me);go('builder')}catch{$('#formErr').textContent='Sign-in is unavailable. Try again shortly.'}};
 let art=0;setInterval(()=>{if(st.screen!=='login')return;art^=1;$('#artA').style.opacity=art?0:1;$('#artB').style.opacity=art?1:0;
 $('#capRoom').textContent=art?'Mahogany Privé':'Golden Salon';$('#capDealer').textContent=(art?'Dragge':'Astrid')+' · AI dealer';$$('.login-dots i').forEach((d,i)=>d.classList.toggle('on',i===art))},6000);
 $('#signOut').onclick=async()=>{await fetch('/api/studio/logout',{method:'POST'}).catch(()=>{});st.email='';go('login')};
@@ -143,7 +143,12 @@ $('#copyBtn').onclick=()=>{navigator.clipboard?.writeText('https://'+$('#shareUr
 let sayT;$('#tableName').value=st.name;$('#customFelt').value=st.custom;syncSound();
 // Every visit starts at the sign-in. Only the game's "Back to Table Studio" (?resume) reopens where you were,
 // and only with a live back office session.
+// Dealers the back office hides for this account (Kevin 12 Oct: chosen when an aggregator is invited). Their cards go,
+// and a hidden dealer that was selected moves to the first one still shown.
+function access(me){const hide=Array.isArray(me.hiddenDealers)?me.hiddenDealers:[];
+$$('.opt[data-k="dealer"]').forEach(o=>{o.hidden=hide.includes(o.dataset.val)});
+if(hide.includes(st.dealer)){const first=$$('.opt[data-k="dealer"]').find(o=>!o.hidden);if(first)st.dealer=first.dataset.val}render()}
 const was=st.screen;st.email='';go('login');
 // After choosing a password the backoffice can send ?email=… so the sign-in is not typed twice (Kevin 12 Oct).
 {const pre=new URLSearchParams(location.search).get('email');if(pre&&/^[^@\s]+@[^@\s]+$/.test(pre)){$('#email').value=pre;$('#pw').focus()}}
-if(new URLSearchParams(location.search).has('resume'))fetch('/api/studio/session').then(r=>r.ok?r.json():{}).then(me=>{if(me.user){st.email=me.user;go(was&&was!=='login'?was:'builder')}}).catch(()=>{});
+if(new URLSearchParams(location.search).has('resume'))fetch('/api/studio/session').then(r=>r.ok?r.json():{}).then(me=>{if(me.user){st.email=me.user;access(me);go(was&&was!=='login'?was:'builder')}}).catch(()=>{});

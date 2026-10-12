@@ -144,6 +144,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sw.custom{background:conic-gradient(#125c43,#213e70,#70253c,#7a5a2a,#125c43)}
 .langs{display:flex;flex-direction:column;gap:8px}
 .lang-opt{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 14px}
+.dealer-opt[hidden]{display:none}  /* a dealer the BO hides for this account (Kevin 12 Oct); display:flex below would override [hidden] */
 .lang-opt[hidden]{display:none}  /* Emil 11 Oct: a language the dealer has not recorded is hidden; display:grid above overrode [hidden] */
 .lang-opt[aria-checked=true]::after{display:none}
 .lang-code{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#ffffff0a;border:1px solid var(--line2);font:600 14px var(--disp);color:var(--dim)}
