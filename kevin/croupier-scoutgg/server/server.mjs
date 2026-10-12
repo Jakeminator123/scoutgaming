@@ -245,7 +245,7 @@ function randomId(){return `${Date.now().toString(36)}-${Math.random().toString(
 
 // ------------------------------------------------------------------ http ---
 const TYPES = { ".mp3": "audio/mpeg", ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
-  ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml" };
+  ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
 
 /**
  * Fil med Range-stöd som ALLTID släpper sitt filhandtag (lärdomar från jep-live-blackjack):
