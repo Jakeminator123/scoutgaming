@@ -190,6 +190,16 @@ test('lobby includes a separate administrator preview link without changing the 
   assert.match(html,/separat testsaldo/);assert.doesNotMatch(html,/studio-preview\/[a-f0-9]|api\/auth\/bo/);
 });
 
+test('operator lobby keeps the age notice on small screens when the account panel is hidden',()=>{
+  const {PlayerAreaDocument}=load(resolve(root,'components/player/player-area-document.tsx'));
+  const model={surface:'lobby',eyebrow:'Spela',title:'Spellobby',intro:'Välj bolag',notice:null,fields:[],pills:[],links:[],
+    sentence:null,primary:{href:'/player-login',label:'Spela Blackjack'},empty:null,historyLines:[],clientLabel:'Spelklient',
+    profileForm:null,profileNote:null,operator:{slug:'johns-spelbolag',name:'Johns spelbolag'}};
+  const html=renderToStaticMarkup(React.createElement(PlayerAreaDocument,{model}));
+  assert.match(html,/<aside[^>]*class="[^"]*hidden lg:block/);
+  assert.match(html,/<p class="[^"]*lg:hidden"[^>]*>18\+ · Demo utan riktiga pengar/);
+});
+
 test('demo route actually redirects to the shared lobby and retains operator context',async()=>{
  const {default:DemoPage}=load(resolve(root,'app/demo/page.tsx'));
  for(const [query,path] of [[{},'/play'],[{operator:'sg-test'},'/play?operator=sg-test'],[{operator:['sg-test','other']},'/play']]){
