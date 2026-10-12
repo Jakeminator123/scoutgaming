@@ -3,6 +3,7 @@ import { validateRegisteredIdlePolicies } from '../../presentation-runtime/regis
 import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
 import { isDealerId, isActiveDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
 import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { validateBackgroundPlayback } from '../../web/public/background-playback-policy.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
@@ -138,7 +139,11 @@ function laneErrors(lanes, projectDealerIds) {
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
     // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition'])) return;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback'])) return;
+    if (Object.hasOwn(lane, 'backgroundPlayback')) {
+      try { validateBackgroundPlayback(lane.backgroundPlayback); }
+      catch { fail(`${at}.backgroundPlayback`, 'ogiltiga uppspelningsregler'); }
+    }
     if (Object.hasOwn(lane, 'composition')) {
       try { validateCompositionSettings(lane.composition); }
       catch { fail(`${at}.composition`, 'ogiltiga lagerplaceringar'); }
@@ -487,6 +492,15 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
         catch { errors.push('layerAssets: ogiltig eller dubblerad lagerfil'); }
       }
     }
+  }
+  for (const [index, lane] of (Array.isArray(project.lanes) ? project.lanes : []).entries()) {
+    if (!Object.hasOwn(lane ?? {}, 'backgroundPlayback')) continue;
+    try {
+      const background = lane.layers?.background;
+      const policy = validateBackgroundPlayback(lane.backgroundPlayback, { assets: project.layerAssets ?? [],
+        allowed: background?.allowed, defaultAssetId: background?.default });
+      if (policy.rules.length && background?.enabled !== true) throw Error();
+    } catch { error(`lanes[${index}].backgroundPlayback`, 'kräver aktiverad bakgrund med tillåten basbild eller basvideo och regelvideor'); }
   }
   if (Object.hasOwn(project, 'clipLabels')) errors.push(...clipLabelErrors(project.clipLabels));
   if (Object.hasOwn(project, 'dealerIdlePolicies')) {

@@ -1,5 +1,35 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Bakgrundens uppspelning, 12 oktober 2026
+
+Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
+och Studio-provet. Saknat fält behåller den tidigare bild-/videobasen.
+`web/public/background-playback-policy.mjs` validerar enbart data: tillåtna
+bakgrundsvideors ID, befintliga `speak.*`-händelser eller intervall, maxlängd,
+tid mellan starter och rullande gränser för starter/sekunder. Varje regel har
+egna gränser. Referenser omfattas av befintliga lagergrants, även vid arkivering.
+
+`background-playback.mjs` är gemensam scheduler för spel och Studio-prov.
+Ett separat ljudlöst videoelement visas över den fortsatta grundloopen.
+Slut, laddningsfel, paus eller maxlängd återställer basen och frigör texturen.
+Bakgrundsladdning inväntas aldrig av dealerns klippförberedelse; kort, tal,
+sko och plånbok behåller sina ägare. Spelhändelser fungerar även med talet
+avstängt. Dold flik stoppar effekten; missade tillfällen köas inte.
+
+Nya skrivningar kräver runtime capability 8, `backgroundPlayback: rules-v1`,
+innan beständig lagring sker. Ingen SQL-migration eller omskrivning av äldre
+publiceringar behövs. Bordets förstora/förminska/procentfält använder samma
+befintliga `composition.mobile/desktop.table.width` (0,1–4).
+
+Verifiering: 9 faktiska Chrome-prov av
+Studio-komponenten passerar, inklusive två följande bakgrundsfilmer, verkligt
+slut, fel, tidsgräns och bevarad minutbudget. Syntetiskt material används;
+det är inte visuell acceptans av en ny dealer eller läppsynk. Tester för
+kontrakt, budget, transport, capability och gränssnitt ingår i ordinarie hook.
+Privata bild-/maskinkvitton: `lab/data/platform-private/background-playback-20261012`.
+Ingen produktdata ändrades. A20/A21 ska bevara dessa konsumenter och publika
+moduladresser vid den kommande atomära källflytten.
+
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
 Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.
