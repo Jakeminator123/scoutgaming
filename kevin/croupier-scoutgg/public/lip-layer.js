@@ -72,8 +72,8 @@ export function createLipTracks() {
         const tag = meta.rutor?.[i], k = meta.fran + i, old = t.frames[k];
         if (old && old.ver > ver) { bitmap.close(); return; }
         old?.bitmap.close();
-        if (tag) { t.frames[k] = { bitmap, tag, ver }; const key = tag.tagning === 'vila' ? 'vila' : `${tag.tagning}:${tag.ruta}`; (t.index.get(key) ?? t.index.set(key, new Set()).get(key)).add(k); }
-        else { bitmap.close(); t.frames[k] = undefined; }
+        if (tag) { t.frames[k] = { bitmap, tag, ver }; t.silent.delete(k); const key = tag.tagning === 'vila' ? 'vila' : `${tag.tagning}:${tag.ruta}`; (t.index.get(key) ?? t.index.set(key, new Set()).get(key)).add(k); }
+        else { bitmap.close(); t.frames[k] = undefined; t.silent.add(k); }
       });
     } catch { t.seen.delete(seen); }
   }
@@ -103,7 +103,7 @@ export function createLipTracks() {
     talk(t, lips = true, shift = 0) {
       let x = talks.get(t.id);
       if (!x) {
-        x = { ...t, frames: [], index: new Map(), seen: new Set(), polling: false, ver: 0, lips, shift }; talks.set(t.id, x);
+        x = { ...t, frames: [], index: new Map(), silent: new Set(), seen: new Set(), polling: false, ver: 0, lips, shift }; talks.set(t.id, x);
         trace?.push(`${Math.round(time() - t.kartaStart)} replik ${t.kind}/${t.event ?? ''} känd, ${early.get(t.id)?.length ?? 0} bitar väntade`);
         for (const [m, bytes] of early.get(t.id) ?? []) piece(x, m, bytes);
         early.delete(t.id);
@@ -137,6 +137,14 @@ export function createLipTracks() {
         if (best >= 0) { const e = t.frames[best]; return { bitmap: e.bitmap, rect: e.tag.rect, key: `${t.id}:${best}` }; }
       }
       return null;
+    },
+    /** True when the talk is silent at this moment (a pause, its ramp in or out): no mouth patch on purpose. */
+    silentNow() {
+      for (const t of talks.values()) {
+        const n = time() - t.shift;
+        if (t.lips && n >= t.kartaStart && n < t.endAt + 600) return t.silent.has(Math.floor((n - t.kartaStart) * FPS / 1000));
+      }
+      return false;
     },
     /** Why at() found nothing (QA, ?lipdebug=1): the frame index it looked at and the nearest patch it had. */
     why(take, frame) {

@@ -96,7 +96,7 @@ export class RorligLipsync {
     onPiece = () => {}, inactivityMs = 480_000, ttlS = 540 }) {
     Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
-    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], queue: Promise.resolve() }]));
+    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
     this.durations = new Map();
     this.timer = setInterval(() => this.#tick(), 5000);
@@ -171,9 +171,25 @@ export class RorligLipsync {
       } else ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, ljud_url: base + talk.line, fran_ruta: fran }));
       ws.send(JSON.stringify({ t: 'end', id: talk.id }));
     });
-    s.queue = s.queue.then(run, run);   // one line at a time per worker, in plan order
-    return s.queue;
+    // One line at a time per worker, the one needed on screen soonest first (earliest deadline): a line starting in a
+    // second goes before an answer made for later, and a new map for what is on screen now goes before both.
+    return new Promise(resolve => {
+      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, run: () => run().then(resolve, resolve) });
+      this.#pump(dealer);
+    });
   }
+
+  #pump(dealer) {
+    const s = this.s.get(dealer);
+    if (s.busy) return;
+    if (!s.jobs.length) { for (const f of s.waiters.splice(0)) f(); return; }
+    s.jobs.sort((a, b) => a.deadline - b.deadline);
+    const job = s.jobs.shift();
+    s.busy = true;
+    job.run().finally(() => { s.busy = false; this.#pump(dealer); });
+  }
+
+  #idle(s) { return !s.busy && !s.jobs.length ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
 
   piece(talkId, del, ver) { const t = this.talks.get(talkId); return t && (!ver || t.ver === ver) ? t.pieces.find(p => p.meta.del === del) ?? null : null; }
   index(talkId) {
@@ -203,7 +219,7 @@ export class RorligLipsync {
       s.ws = ws; s.info = m; s.at = Date.now(); s.askedAt = 0;
       this.log(`läppsynk rörlig [${dealer}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
       // the session it replaces says goodbye once its line queue is empty
-      if (old && old !== ws) s.queue.then(() => { try { old.send(JSON.stringify({ t: 'bye' })); } catch {} });
+      if (old && old !== ws) this.#idle(s).then(() => { try { old.send(JSON.stringify({ t: 'bye' })); } catch {} });
     });
     ws.on('close', () => { if (s.ws === ws) { s.ws = null; s.info = null; this.log(`läppsynk rörlig [${dealer}]: arbetaren kopplade ner`); } });
     ws.on('error', () => {});

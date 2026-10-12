@@ -128,3 +128,20 @@ test('a piece splits into one access unit per frame at its delimiters, the first
   assert.equal(units[0].data[4],9);assert.equal(units[0].data.length,6+7+6+7);
   assert.deepEqual([...units[2].data.slice(-2)],[1,6]);
 });
+
+test('the worker makes what is needed on screen soonest first: a new map for now, then the next line, then a later answer', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const order=[],s=r.s.get('paow');
+  s.info={rutor_per_s:60};
+  s.ws={readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')order.push(j.id);},
+    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:order.at(-1)}),false),5);}};
+  const now=Date.now(),done=[];
+  done.push(r.speak('paow','rum',{id:'first',kartaStart:now+9000,line:'/a.mp4'},[]));   // the worker is free: it starts at once
+  done.push(r.speak('paow','rum',{id:'answer-later',kartaStart:now+5000,line:'/a.mp4'},[]));
+  done.push(r.speak('paow','rum',{id:'line-soon',kartaStart:now+1000,line:'/a.mp4'},[]));
+  done.push(r.speak('paow','rum',{id:'remap-now',kartaStart:now-3000,line:'/a.mp4'},[],{fran:10}));
+  await Promise.all(done);
+  assert.deepEqual(order,['first','remap-now','line-soon','answer-later']);
+});

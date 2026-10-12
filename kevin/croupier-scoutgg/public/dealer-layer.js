@@ -199,7 +199,7 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
     const rest = !v || (atEnd && !/^pos[a-z0-9]+(-i)?$/.test(name ?? ''));
     const lip = lips?.active() ? lips.at(name, raw, rest) : null;
     // ?lipdebug=1: how many drawn frames while he speaks got their mouth, and which take/frame missed (QA only)
-    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }
+    if (lipDebug && lips?.active()) { lipDebug.frames++; if (lip) lipDebug.hits++; else if (lips.silentNow?.()) lipDebug.silent = (lipDebug.silent ?? 0) + 1; else if (lipDebug.misses.length < 80) lipDebug.misses.push(`${name}:${raw}:${rest ? 'vila' : ''} [${lips.why?.(name, raw)}]`); }
     const stamp = (v ? `${v.currentSrc}@${v.currentTime}` : src ? 'still' : '') + (lip ? `|${lip.key}` : '');
     if (src && stamp !== lastStamp) {
       lastStamp = stamp;
