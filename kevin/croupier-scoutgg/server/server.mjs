@@ -24,7 +24,7 @@ import {speechBank} from '../public/dealer-language.js';
 import { factId, tableFact, roundResult } from './table-facts.mjs';
 import { dealerTalk } from './dealer-chat.mjs';
 import { createDealerMemory } from './dealer-memory.mjs';
-import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, useLipsyncPod } from './dragge-voice.mjs';
+import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
@@ -78,9 +78,10 @@ const READY_TAKES=Object.fromEntries(['dragge','paow','marten'].map(id=>{try{ret
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
 const dealerOf = room => studioTables.get(room)?.dealer ?? room;
 const rorligOn = () => process.env.RORLIG !== "0" && Boolean(process.env.RORLIG_ENDPOINT_ID || process.env.RORLIG === "1" || /(^|\/\/|\.)staging\./.test(publicOrigin));
-const rorlig = process.env.RUNPOD_API_KEY && !localQA ? new RorligLipsync({
+const RORLIG_KEY = runpodKey();   // the key Paow's voice already uses (local QA disables only Astrid's)
+const rorlig = RORLIG_KEY ? new RorligLipsync({
   endpointId: process.env.RORLIG_ENDPOINT_ID ?? "mq7eiwanda72fg",
-  apiKey: process.env.RUNPOD_API_KEY,
+  apiKey: RORLIG_KEY,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
   dealers: (process.env.RORLIG_DEALERS ?? "paow").split(",").map(s => s.trim()).filter(Boolean),
@@ -390,7 +391,7 @@ async function api(req, res, route) {
     res.writeHead(200, { "Content-Type": "application/octet-stream", "Cache-Control": "private, max-age=600" });
     return res.end(piece.bytes);
   }
-  if (req.method === "GET" && route === "lipsync-status") return json(res, 200, { rorlig: rorlig ? { on: rorligOn(), origin: publicOrigin || null, dealers: rorlig.status() } : null });
+  if (req.method === "GET" && route === "lipsync-status") return json(res, 200, { rorlig: rorlig ? { on: rorligOn(), origin: publicOrigin || null, dealers: rorlig.status() } : null, ...(rorlig ? {} : { orsak: "ingen RunPod-nyckel" }) });
   if (req.method === "GET" && route === "health") {
     return json(res, 200, { ok: true, demo: true });
   }

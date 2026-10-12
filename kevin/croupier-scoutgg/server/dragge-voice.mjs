@@ -53,6 +53,9 @@ function podLipsync(dealer, pcm) {
 }
 
 export const draggeVoiceReady = (dealer) => Boolean(XI() && (onPod(dealer) || RP()));
+// The RunPod key his voice uses (the real one even where local QA disables Astrid's): the lip sync on the moving clips
+// orders its worker with it too (rorlig-lipsync.mjs).
+export const runpodKey = () => RP();
 
 function wav(pcm) {
   const h = Buffer.alloc(44);
