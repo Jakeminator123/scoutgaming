@@ -19,6 +19,26 @@ Vercelprojektet `scoutgaming` bygger `apps/croupier-frontend` och `lab` som
 Services från reporoten. Båda använder samma projektmiljö och `fra1`.
 Aktuell drift och QA: [molnkarta](CLOUD-MIGRATION.md), [handoff](JOHN-HANDOFF.md).
 
+Slutkontroll 12 oktober 2026, 13:56 UTC: kod `19c44902` har grön
+[GitHub-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38257724379).
+Director `dep-db6eciqd0e5s73aef4f0` och Gateway `dep-db6eciid0e5s73aef360`
+är live på denna commit efter omstart med enbart `OPENCLAW_API_KEY`.
+Det äldre `OPENCLAWAPI_KEY` saknas på båda; 16 respektive 10 env-poster återstår.
+Credentialvärdet och samtliga andra värden är verifierat oförändrade;
+backup finns privat under `lab/data/platform-private/env-cleanup-20261012/`.
+Director använder nu repo-roten som Docker-kontext med en separat strikt
+filallowlist, samma Dockerfile-sökväg och bevarad disk. Gatewayens byggkontext,
+disk och sparade konfiguration är bevarade. Hälsa för spel, QA, Director och
+Vercel ger 200. Autentiserad admin visar ansluten Gateway, samma konfigurationshash,
+fem roller och fyra modeller. Detta är anslutningskontroll, inte nytt
+godkännande av genererat tal eller läppsynk.
+
+Webb och spelserver verifierades på `4ea767cf`, som innehåller PAOW-/envfixarna;
+den publika `dealer-compositing.mjs` matchar `fe8b6372` bytevis. Dockerfixen
+kräver enbart ny Director-image. GitGuardian läst på `19c44902`: noll öppna,
+17 tidigare ignorerade incidenter och aktiv övervakning. Platstäckningen är
+partiell och historisk skanning är `too_large`; detta är ingen full säkerhetsfriskrivning.
+
 Verifierad produktion 4 oktober: gemensam Neon-policy och native Studio är
 aktiva. Render kör utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
 `CROUPIER_MEDIA_BLOB_INDEX=/app/media/blob-index.json` och disponibel OS-temp
@@ -39,7 +59,9 @@ för befintliga tjänster. Inom samma env-källa vinner `OPENCLAW_API_KEY`;
 senare filer och processmiljön behåller sin vanliga prioritet. Ett uttryckligen
 tomt rättat värde stänger av anslutningen även när det gamla namnet är satt.
 Båda namnen töms i isolerade barn som inte ska få Gateway-hemligheten.
-Render-Gatewayens befintliga blueprint använder fortfarande det äldre namnet.
+Gatewayens startkod har samma prioritet och normaliserar barnprocessen till
+det rättade namnet. Render-Blueprint och Compose använder `OPENCLAW_API_KEY`
+för både Director och Gateway. Det äldre namnet är endast kompatibilitet.
 
 Env-granskning 12 oktober: 59 Vercel-poster motsvarar 51 unika namn.
 Alla 18 namn utan referens i produktkällorna hör till de registrerade Neon-/
@@ -64,7 +86,13 @@ har rättats mot Vercels publika post. Labbets kopia matchade redan den posten.
 `LAB_PARTNER_*` används genom en dynamisk kompatibilitetsmappning i
 `lab/lib/partner-observer.mjs`; en sökning efter fullständiga namn missar detta.
 `GEMINI_API_KEY` saknar referenser i mains källkod och ingår inte i den isolerade
-startarens allowlist. Den befintliga lokala posten är inte ett runtimekrav.
+startarens allowlist. Den har tagits bort från båda aktiva lokala env-filerna,
+tillsammans med tomma äldre `RUNPOD_ENDPOINT_ID` och plattformsägda `VERCEL`.
+Övriga lokala värden är oförändrade. Borttagna värden har en privat,
+Git-ignorerad backup under `lab/data/platform-private/env-cleanup-20261012/`.
+Den aktiva `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` och dynamiska partneralias
+behålls. Rendergranskningen omfattar endast Croupiers fyra tjänster i Jakobs
+workspace; andra projekt och de registrerade Vercel-integrationerna bevaras.
 
 På `croupier-lab-director` används dessutom
 `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`: en privat Ed25519-nyckel i base64-kodad
@@ -122,8 +150,9 @@ för delade nycklar. Förnya lokalt med `vercel env pull --environment=productio
 --yes <tempfil>` och slå ihop; systemnycklar `VERCEL_*`, `NX_*`, `TURBO_*` tas
 bort. Nycklar som bara finns lokalt (OpenClaw-agent/modell/tal-URL/token,
 `LAB_API_TOKEN`, `LAB_PARTNER_*`, `BETTALOTTO_*`, `ELEVENLABS_*`) behålls från
-den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` är samma
-innehåll; opt-in-filerna `lab/.env.generated-speech.local`,
+den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` har samma
+delade värden; rotens `ELEVENLABS_API_KEY` är avsiktligt spelserverlokal.
+Opt-in-filerna `lab/.env.generated-speech.local`,
 `lab/.env.cloud-storage.local` och `lab/.env.cloud-activation.local` läses av
 `open-claw/lab/deploy/local-connection.mjs` under respektive flagga. Äldre
 kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
@@ -333,11 +362,11 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 | --- | --- | --- | --- | --- |
 | Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
 | Vercel: spel/Studio-ingång (`apps/croupier-frontend`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
-| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar Dealer Forge-generering på `/control/dealer-forge`; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `lab/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
+| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/control/clips?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `lab/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
 | Frontendens spelarbygge (`apps/croupier-frontend/tools/player-ui-build.mjs`, tjänst `vercel-entry`) | `CROUPIER_GAME_ORIGIN` = spelserverns exakta HTTPS-origin utan snedstreck på slutet | – | Krävs när bygget anropas utan explicit origin | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
-| Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAWAPI_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
-| Render: privat OpenClaw Gateway | Separata `OPENCLAWAPI_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
+| Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAW_API_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
+| Render: privat OpenClaw Gateway | Separata `OPENCLAW_API_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
 | RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
 | Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 | GitHub Actions: Studio-migreringsgrind | – | – | `CROUPIER_GAME_DATABASE_URL` är repository secret och läses av readiness-kontrollen vid push till main; `CROUPIER_MIGRATION_CONFIRM` är lokal operatörsbekräftelse och sätts aldrig i CI eller Vercel | – |

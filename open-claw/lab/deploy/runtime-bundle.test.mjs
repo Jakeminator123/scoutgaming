@@ -19,7 +19,7 @@ async function fixture(t) {
   const stateDir = path.join(dir, 'state');
   await mkdir(stateDir);
   const env = { OPENCLAW_STATE_DIR: stateDir, OPENCLAW_CONFIG_PATH: path.join(stateDir, 'openclaw.json'),
-    OPENCLAWAPI_KEY: 'fake-gateway-secret-runtime-test', OPENCLAW_MODEL_API_KEY: 'fake-provider-secret-runtime-test' };
+    OPENCLAW_API_KEY: 'fake-gateway-secret-runtime-test', OPENCLAW_MODEL_API_KEY: 'fake-provider-secret-runtime-test' };
   const config = gatewayConfig(env);
   return { dir, stateDir, env, config, workspace: config.agents.entries['croupier-chat'].workspace };
 }
@@ -65,7 +65,7 @@ test('first sync installs versioned files and injected AGENTS content without ch
     assert.equal(await readFile(path.join(workspace, '.croupier-runtime', bundle.snapshot, 'manifest.json'), 'utf8'), bundle.files['manifest.json']);
   }
   const publicOutput = JSON.stringify(status) + Object.values(bundle.files).join('');
-  assert.equal(publicOutput.includes(env.OPENCLAWAPI_KEY), false);
+  assert.equal(publicOutput.includes(env.OPENCLAW_API_KEY), false);
   assert.equal(publicOutput.includes(env.OPENCLAW_MODEL_API_KEY), false);
   assert.equal(JSON.stringify(status).includes(stateDir), false);
 });

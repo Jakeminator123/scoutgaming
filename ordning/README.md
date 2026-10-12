@@ -155,33 +155,33 @@ Omgång 5:  A30 fas 2 ─► A31 ─► A99                       ══► PR V
 ## 6. Register
 
 Status: `väntar` · `redo` · `körs` · `inmergad` (på integrationsbranchen) · `i V1–V4` · `klar` · `struken`.
-`inmergad (V2-prov)` betyder på `jakob/ordning-v2-trial`. Den grenar från V1-headen
-`33be100b` och förs in i `jakob/repo-ordning` när V1 är mergad.
+V1 mergades 2026-10-12 som `dd837cf4` ([PR #19](https://github.com/Jakeminator123/scoutgaming/pull/19)).
+V2-provet (`jakob/ordning-v2-trial`) är därefter infört i `jakob/repo-ordning`.
 
 | ID | Aktivitet | Våg | Beroenden | Risk | Status |
 | --- | --- | --- | --- | --- | --- |
 | [A00](aktiviteter/A00-start-och-arbetsytor.md) | Start, integrationsbranch och omgångar | 0 | – | 5 % | klar |
-| [A01](aktiviteter/A01-random-och-planes.md) | Avveckla `random/` och `planes/` | 1 | B3 | 15 % | inmergad (V1) |
-| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | inmergad (V1) |
-| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | inmergad (V1) |
-| [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
-| [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | inmergad (V1) |
-| [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | inmergad (V1) |
-| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | inmergad (V2-prov) |
-| [A11](aktiviteter/A11-kasinogolvet.md) | Kasinogolvet `/casino.html` | 2 | B5, A10 | 25 % | inmergad (V2-prov) |
-| [A12](aktiviteter/A12-originalmedia-i-studio.md) | Originalmedia som Studio-reserv | 2 | B6, A04, A05 | 35 % | inmergad (V2-prov) |
-| [A13](aktiviteter/A13-partnerportalens-prototyper.md) | Partnerportalens prototypfabrik | 2 | B7 (prov.) | 40 % | inmergad (V2-prov); visuell kontroll kvar |
-| [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | inmergad (V2-prov) |
-| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | inmergad (V2-prov) |
-| [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | inmergad (V2-prov) |
-| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | inmergad (V2-prov) |
-| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | inmergad (V2-prov) |
+| [A01](aktiviteter/A01-random-och-planes.md) | Avveckla `random/` och `planes/` | 1 | B3 | 15 % | i V1 (`dd837cf4`) |
+| [A02](aktiviteter/A02-handoff-och-readme.md) | Handoff, README och guide i takt med koden | 1 | – | 15 % | i V1 (`dd837cf4`) |
+| [A03](aktiviteter/A03-agentregler-och-leverans.md) | Agentregler, leveransmodell, branchhygien | 1 | B1, B13 | 20 % | i V1 (`dd837cf4`) |
+| [A04](aktiviteter/A04-medieinventering.md) | Medieinventering (läsande) | 1 | – | 5 % | i V1 (`dd837cf4`) |
+| [A05](aktiviteter/A05-kodinventering.md) | Kodinventering (läsande) | 1 | – | 5 % | i V1 (`dd837cf4`) |
+| [A06](aktiviteter/A06-kevin-underlag.md) | Kevin-branchen: underlag (läsande) | 1 | – | 5 % | i V1 (`dd837cf4`) |
+| [A10](aktiviteter/A10-3d-rigg-ansikte.md) | 3D-, rigg- och ansiktsspåret | 2 | B4 (prov.) | 25 % | inmergad (V2) |
+| [A11](aktiviteter/A11-kasinogolvet.md) | Kasinogolvet `/casino.html` | 2 | B5, A10 | 25 % | inmergad (V2) |
+| [A12](aktiviteter/A12-originalmedia-i-studio.md) | Originalmedia som Studio-reserv | 2 | B6, A04, A05 | 35 % | inmergad (V2) |
+| [A13](aktiviteter/A13-partnerportalens-prototyper.md) | Partnerportalens prototypfabrik | 2 | B7 (prov.) | 40 % | inmergad (V2); visuell kontroll i produktion efter merge |
+| [A14](aktiviteter/A14-staging-media.md) | Staging- och experimentmedia | 2 | B8, A04, A10, A15 | 15 % | inmergad (V2) |
+| [A15](aktiviteter/A15-pipeline-verkstaden.md) | Pipeline-verkstaden | 2 | B9 (prov.) | 15 % | inmergad (V2) |
+| [A16](aktiviteter/A16-v2-och-composited.md) | `/v2`, composited-media och granskningssidor | 2 | B10, A04, A05, A11 | 45 % | inmergad (V2) |
+| [A17](aktiviteter/A17-andra-svepet-och-dokument.md) | Andra svepet, tomma mappar, samlade dokument | 2 | A10–A18 | 20 % | inmergad (V2) |
+| [A18](aktiviteter/A18-ops-arv.md) | Ops-arv: `vercel-entry`, `preview/`, Caddy | 2 | B15 för radering | 20 % | inmergad (V2) |
 | [A19](aktiviteter/A19-lokal-hygien.md) | Lokala ignorerade mappar (orkestratorn) | 2 | B16 | 10 % | förslag till Jakob |
 | [A20](aktiviteter/A20-presentation-kompositor.md) | `packages/presentation`: kompositor och preview | 3 | B12, V2 | 30 % | väntar (B12 ja) |
 | [A21](aktiviteter/A21-presentation-runtime.md) | `presentation-runtime` in i paketet | 3 | A20 | 30 % | väntar (B12 ja) |
 | [A22](aktiviteter/A22-platform-karna.md) | `packages/platform`: delad kärna | 3 | A21, B12 | 45 % | väntar; bara utredning (B12) |
 | [A23](aktiviteter/A23-appnamn-valfri.md) | Appnamn och tjänstegränser (valfri) | 3 | A22, B12 | 60 % | struken tills vidare (B12) |
-| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 inmergad (V1); fas 2 väntar (B11) |
+| [A30](aktiviteter/A30-indexerad-bank.md) | Indexerad bank och partnerprotokoll | 4 | fas 1: – · fas 2: B11 | 50 % | fas 1 i V1 (`dd837cf4`); fas 2 väntar (B11) |
 | [A31](aktiviteter/A31-media-ut-ur-tradet.md) | Tung media ut ur Git-trädet | 4 | A30, B11 | 45 % | väntar (B11) |
 | [A99](aktiviteter/A99-slutavstamning.md) | Slutavstämning, drift, mappen bort | 4 | allt | 20 % | väntar |
 

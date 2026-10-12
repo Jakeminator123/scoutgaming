@@ -3,13 +3,19 @@ import { isDeepStrictEqual } from 'node:util';
 
 const PROVIDER_APIS = new Set(['openai-completions', 'openai-responses', 'anthropic-messages', 'google-generative-ai']);
 
+export function gatewayAuthenticationKey(env) {
+  // An explicitly empty canonical credential disables the legacy fallback.
+  return env.OPENCLAW_API_KEY ?? env.OPENCLAWAPI_KEY ?? '';
+}
+
 export function requireGatewaySecrets(env) {
-  if (!env.OPENCLAWAPI_KEY?.trim()) throw new Error('Set OPENCLAWAPI_KEY for Gateway authentication.');
+  const gatewayKey = gatewayAuthenticationKey(env);
+  if (!gatewayKey.trim()) throw new Error('Set OPENCLAW_API_KEY for Gateway authentication.');
   if (!env.OPENCLAW_MODEL_API_KEY?.trim()) throw new Error('Set OPENCLAW_MODEL_API_KEY for the chosen model provider.');
-  if (/[\r\n]/.test(env.OPENCLAWAPI_KEY) || /[\r\n]/.test(env.OPENCLAW_MODEL_API_KEY)) {
+  if (/[\r\n]/.test(gatewayKey) || /[\r\n]/.test(env.OPENCLAW_MODEL_API_KEY)) {
     throw new Error('Gateway and model provider credentials must each be a single line.');
   }
-  if (env.OPENCLAWAPI_KEY.trim() === env.OPENCLAW_MODEL_API_KEY.trim()) {
+  if (gatewayKey.trim() === env.OPENCLAW_MODEL_API_KEY.trim()) {
     throw new Error('Gateway and model provider credentials must be different.');
   }
 }

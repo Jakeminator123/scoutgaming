@@ -32,7 +32,10 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
   const middlewareUrl = new URL('../../../lab/middleware.ts', import.meta.url);
-  const requireMiddleware = createRequire(middlewareUrl);
+  const requireMiddlewareSource = createRequire(middlewareUrl);
+  // The frontend service owns Next; Studio dependencies are installed separately.
+  const requireMiddleware = specifier => specifier === 'next/server'
+    ? require(specifier) : requireMiddlewareSource(specifier);
   const source = await readFile(middlewareUrl, 'utf8');
   const compiled = transpileModule(source, {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
   const module = {exports:{}};

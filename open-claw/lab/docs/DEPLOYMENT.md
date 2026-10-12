@@ -22,7 +22,7 @@ eller GPU-prov och inte godkänd läppsynk.
 - `croupier-lab-director`: publik HTTPS, eget `LAB_API_TOKEN`, separat
   `OPENCLAW_PRODUCT_SPEECH_TOKEN`, privat upstream
   `croupier-lab-openclaw:18789` och disk `/data/catalog`.
-- `croupier-lab-openclaw`: privat Gateway med `OPENCLAWAPI_KEY`, annan
+- `croupier-lab-openclaw`: privat Gateway med `OPENCLAW_API_KEY`, annan
   `OPENCLAW_MODEL_API_KEY` och beständig state på `/data/openclaw`.
 - `croupier-v2`: produktservern har speech-URL/token och separata
   Director-/Lab-rådpar. Den validerar session, kort, saldo och modellbeslut.
@@ -30,7 +30,7 @@ eller GPU-prov och inte godkänd läppsynk.
   `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet. Ingen av ovanstående
   OpenClaw-hemligheter behövs där.
 
-Gateway-starten mappar `OPENCLAWAPI_KEY` till OpenClaws interna
+Gateway-starten mappar `OPENCLAW_API_KEY` till OpenClaws interna
 `OPENCLAW_GATEWAY_PASSWORD`. Dashboard går via Directors `/openclaw/` och
 kräver Gateways inloggning och vid behov enhetsgodkännande. Publik proxy
 exponerar inte Gateways `/v1`-API. Se [dashboardguiden](DASHBOARD-SV.md).

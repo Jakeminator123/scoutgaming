@@ -1092,7 +1092,7 @@ Vercelkoppling kopierar inte nycklar till Render.
 Serverkonfiguration äger hemligheterna: Studio DB/Blob/auth/OpenClawadmin,
 Render spel/signering/provider/stream, Director/Gateway egen state/pairing.
 QA saknar Cartesia-/RunPodnycklar. Vercelkeys är inte automatiskt Renderkeys.
-OPENCLAWAPI_KEY/OPENCLAW_STUDIO_ADMIN_DEVICE_KEY är adminservervägen,
+OPENCLAW_API_KEY/OPENCLAW_STUDIO_ADMIN_DEVICE_KEY är adminservervägen,
 inte runtime-token eller publik credential. Jakobs egna lokala Cartesiakey
 ligger ignorerad i `.env`/`lab/.env.local` med förebackup; driftkey är inte därmed bytt.
 Bevara privata anslutnings-/utvecklarprofiler och hemligheter utanför Git.
