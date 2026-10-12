@@ -29,6 +29,7 @@ import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
 import { createDemoGate } from "./demo-gate.mjs";
+import { createStudioActivity, sidOf } from "./studio-activity.mjs";
 import {createDealerGameTools,gameStateIntent,tableFactForVoice} from './dealer-game-tools.mjs';
 
 import { auditAuthorized } from './audit-access.mjs';
@@ -61,6 +62,7 @@ mkdirSync(path.join(ROOT, "data"), { recursive: true });
 const tableDb = process.env.TABLE_DB ?? path.join(ROOT, "data", "demo.sqlite");
 // The dealers' memory of each visitor lives next to the table database.
 // A studio slug never takes over a room people already play at (the public "astrid" room included).
+const activity = createStudioActivity(path.join(path.dirname(tableDb), "studio-activity.sqlite"), tableDb);   // per sign-in: studio-activity.mjs
 const studioTables = createStudioTables(path.join(path.dirname(tableDb), "studio-tables.json"), { reserved: slug => slug === "astrid" || shared.hasRoom(slug) });
 const dealerMemory = createDealerMemory(path.join(path.dirname(tableDb), "dealer-memory.sqlite"));
 const safetyAudit=createSafetyAudit(tableDb);
@@ -346,7 +348,7 @@ async function api(req, res, route) {
     if (!sameOrigin(req)) return json(res, 403, { error: "Invalid origin" });
     if (!apiLimit(clientAddress(req))) return json(res, 429, { error: "Too many attempts. Try again later." });
     try {
-      const r = await bo.login(await body(req), clientAddress(req));
+      const r = await bo.login(await body(req), clientAddress(req), req.headers["user-agent"]);
       if (r.status === 401) return json(res, 401, { error: "Wrong username or password." });
       if (r.status === 429) return json(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
       if (r.status !== 200 || !r.cookie || !r.who) return json(res, 403, { error: "This account cannot sign in here." });
@@ -361,6 +363,14 @@ async function api(req, res, route) {
     return json(res, 200, { ok: true });
   }
   // The signed-in account's own tables (Kevin 12 Oct: an aggregator only sees its own account).
+  // What signed-in accounts did in the game, per sign-in (Kevin 12 Oct). Back office admins only; the BO reads it on this host.
+  if (route === "studio/activity" && req.method === "GET") {
+    let who;
+    try { who = await bo.user(req.headers); } catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }
+    if (!who || !["admin", "superadmin"].includes(who.role)) return json(res, 403, { error: "Admins only" });
+    const q = new URL(req.url, "http://x").searchParams;
+    return json(res, 200, activity.list({ user: q.get("user") || null, since: q.get("since") || null }));
+  }
   if (route === "studio/mine" && req.method === "GET") {
     let who;
     try { who = await bo.user(req.headers); } catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }
@@ -387,7 +397,9 @@ async function api(req, res, route) {
     try {
       const input = await body(req, LOGO_MAX + 50000);
       if ((who.hiddenDealers ?? []).includes(input?.dealer)) return json(res, 403, { error: "That dealer is not available for this account" });
-      const { owner, ...t } = studioTables.create(input, who.user); return json(res, 201, { ...t, url: studioTables.gameUrl(t) });
+      const { owner, ...t } = studioTables.create(input, who.user);
+      activity.log({ user: who.user, sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: "table.created", table: t.slug, detail: { name: t.name, dealer: t.dealer, room: t.room } });
+      return json(res, 201, { ...t, url: studioTables.gameUrl(t) });
     }
     catch (e) { return json(res, 400, { error: e.message }); }
   }
@@ -397,7 +409,16 @@ async function api(req, res, route) {
   let b;
   try { b = await body(req); } catch (e) { return json(res, 400, { error: e.message }); }
   try {
-    if (route === "table") return table.handle(req, res, b);
+    if (route === "table") {
+      const out = table.handle(req, res, b);
+      if ((b?.op === "join" || b?.op === "leave") && sidOf(req.headers)) {
+        // A first visit gets its guest cookie in this very response: take it from there, so the rounds can be linked.
+        const set = [].concat(res.getHeader("Set-Cookie") ?? []).join(";"), guest = guestToken(req.headers) ?? /astrid_guest=([a-f0-9]{64})/.exec(set)?.[1] ?? null;
+        const ev = { sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: b.op === "join" ? "seated" : "left", table: String(b.session ?? "").slice(0, 64), guest };
+        bo.user(req.headers).then(w => w && activity.log({ user: w.user, ...ev })).catch(() => {});
+      }
+      return out;
+    }
     if (route === "chat") {
       const text = String(b.text ?? "").trim().slice(0, 280);
       if (!text) return json(res, 400, { error: "text saknas" });
@@ -460,7 +481,7 @@ async function handleHttp(req, res) {
     // back office account (DEMO_BO_USER/DEMO_BO_PASS, an aggregator) and they go through Table Studio like everyone else.
     req.on("end",async()=>{const pw=new URLSearchParams(raw).get("pw");
       if(!demoGate.rightPassword(pw)){res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=1","Cache-Control":"no-store"});res.end();return;}
-      let r=null; try{ if(process.env.DEMO_BO_USER&&process.env.DEMO_BO_PASS) r=await bo.login({user:process.env.DEMO_BO_USER,pass:process.env.DEMO_BO_PASS},clientAddress(req)); }catch{}
+      let r=null; try{ if(process.env.DEMO_BO_USER&&process.env.DEMO_BO_PASS) r=await bo.login({user:process.env.DEMO_BO_USER,pass:process.env.DEMO_BO_PASS},clientAddress(req),req.headers["user-agent"]); }catch{}
       if(r?.status===200&&r.cookie){res.writeHead(303,{Location:"/studio/?resume","Set-Cookie":r.cookie,"Cache-Control":"no-store"});res.end();return;}
       console.error("demo unlock: Test Player sign-in failed", r?.status??"no account");
       res.writeHead(303,{Location:demoGate.passwordPage+"?wrong=down","Cache-Control":"no-store"});res.end();});
@@ -481,6 +502,11 @@ async function handleHttp(req, res) {
     let who=null; if(!studioTable){try{who=await bo.user(req.headers);}catch{}}
     if(!studioTable&&!who){res.writeHead(302,{Location:demoGate.passwordPage,"Cache-Control":"no-store"});res.end();return;}
   }
+  if (file === path.join(PUBLIC, "index.html") && sidOf(req.headers)) {
+    const q = new URL(req.url, "http://x").searchParams;
+    const ev = { sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: "table.opened", table: q.get("session") || "astrid", guest: guestToken(req.headers), detail: { dealer: q.get("dealer") } };
+    bo.user(req.headers).then(w => w && activity.log({ user: w.user, ...ev })).catch(() => {});
+  }
   sendFile(req, res, file);
 }
 
@@ -494,7 +520,7 @@ http.on("upgrade", (req, socket, head) => {
     try { if(!sameOrigin(req)){socket.destroy();return;} }
     catch {socket.destroy();return;}
     let session;try{session=sessionName(url.searchParams.get('session')??'astrid');}catch{socket.destroy();return;}
-    room.handleUpgrade(req, socket, head, (ws) => {ws.session=session;ws.address=clientAddress(req);ws.guest=guestToken(req.headers);room.emit("connection",ws);});
+    room.handleUpgrade(req, socket, head, (ws) => {ws.session=session;ws.address=clientAddress(req);ws.guest=guestToken(req.headers);ws.sid=sidOf(req.headers);ws.ua=req.headers["user-agent"];if(ws.sid)bo.user(req.headers).then(w=>{ws.boUser=w?.user??null;}).catch(()=>{});room.emit("connection",ws);});
   }
 });
 
@@ -518,6 +544,7 @@ room.on("connection", (ws) => {
       roundResultReply(ws, j.roundId, j.dealer).catch(() => {});
     } else if (j.t === "say") {
       const text = String(j.text ?? "").trim().slice(0, 280);
+      if(text&&ws.boUser)activity.log({user:ws.boUser,sid:ws.sid,ip:ws.address,ua:ws.ua,kind:"chat",table:ws.session,guest:ws.guest,detail:{len:text.length}});   // never the text
       if(!chatLimit(ws.address)){send(ws,{t:'notice',text:'Please wait a minute before sending more messages.'});return;}
       if(ws.guest&&shared.paused(ws.guest)){send(ws,{t:'notice',text:RESPONSES.support});return;}
       // Dragge, Paow and Mårten (a viewer's alternative dealers) answer with their own brain and memory, Dragge

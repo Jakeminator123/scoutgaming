@@ -22,10 +22,10 @@ export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.
   }
 
   // Relays a sign-in. The BO's own limiter sees the visitor's address (it reads the first forwarded hop).
-  async function login({ user: name, pass }, address) {
+  async function login({ user: name, pass }, address, userAgent = '') {
     const r = await fetcher(new URL('/api/bo/login', origin), {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000),
-      headers: { 'content-type': 'application/json', 'x-forwarded-for': address },
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': address, 'x-scout-via': 'table-studio', ...(userAgent ? { 'user-agent': String(userAgent).slice(0, 300) } : {}) },   // the BO log shows the visitor's device
       // Emil 11 Oct: 'Emil@…' failed where 'emil@…' worked, the BO matches user and e-mail case-sensitively and every
       // stored account is lower case, so the name goes over trimmed and in lower case. The password is untouched.
       body: JSON.stringify({ user: String(name ?? '').trim().toLowerCase().slice(0, 200), pass: String(pass ?? '').slice(0, 200) }),
