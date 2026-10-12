@@ -1,6 +1,13 @@
 // Wake audio stays in the browser's on-device recognizer. This module neither
 // records nor uploads audio and never exposes recognition transcripts to callers.
-const ASTRID = /(^|[^\p{L}\p{N}\p{M}_])astrid(?=$|[^\p{L}\p{N}\p{M}_])/iu;
+function nameMatcher(names) {
+  if (!Array.isArray(names) || !names.length || names.length > 4) throw new TypeError('A dealer wake name is required');
+  const escaped = names.map(name => {
+    if (typeof name !== 'string' || !name.trim() || name.length > 120 || /[\u0000-\u001f]/.test(name)) throw new TypeError('Invalid dealer wake name');
+    return name.trim().replace(/[.*+?^{}$()|[\]\\]/g, char => '\\' + char);
+  });
+  return new RegExp('(^|[^\\p{L}\\p{N}\\p{M}_])(?:' + escaped.join('|') + ')(?=$|[^\\p{L}\\p{N}\\p{M}_])', 'iu');
+}
 const REARM_DELAY_MS = 300;
 const START_TIMEOUT_MS = 10000;
 const MAX_REARMS_PER_MINUTE = 3;
@@ -38,7 +45,8 @@ function wakeError(code) {
  */
 export function createAstridWakeWord({ onWake = () => {}, onStatus = () => {}, onError = () => {},
   canWake = () => true, RecognitionClass = globalThis.window?.SpeechRecognition || globalThis.window?.webkitSpeechRecognition,
-  language = 'en-US' } = {}) {
+  language = 'en-US', wakeNames = ['Astrid'] } = {}) {
+  const dealerMatcher = nameMatcher(wakeNames), dealerName = wakeNames[0].trim();
   let generation = 0, wanted = false, listening = false, recognition = null;
   let pending = null, resolveStart = null, rearmTimer = null, startTimer = null, rearms = [];
   const valid = token => wanted && generation === token;
@@ -96,7 +104,7 @@ export function createAstridWakeWord({ onWake = () => {}, onStatus = () => {}, o
       clearTimeout(startTimer); startTimer = null;
       listening = true;
       settle(true);
-      emit('listening', 'Listening locally for Astrid. No audio is uploaded before the wake word.');
+      emit('listening', `Listening locally for ${dealerName}. No audio is uploaded before the wake word.`);
     };
     instance.onresult = event => {
       if (!current() || !listening) return;
@@ -109,9 +117,9 @@ export function createAstridWakeWord({ onWake = () => {}, onStatus = () => {}, o
       const first = Math.max(suppressedThrough + 1, Number.isInteger(event.resultIndex) ? event.resultIndex : 0);
       for (let index = first; index < results.length; index++) {
         const transcript = results[index]?.[0]?.transcript;
-        if (typeof transcript !== 'string' || !ASTRID.test(transcript)) continue;
+        if (typeof transcript !== 'string' || !dealerMatcher.test(transcript)) continue;
         if (!permitted(token) || !current()) return;
-        const stopped = halt('wake', 'Astrid heard. Wake-word recognition has stopped for recording.');
+        const stopped = halt('wake', `${dealerName} heard. Wake-word recognition has stopped for recording.`);
         if (generation !== stopped) return;
         try {
           Promise.resolve(onWake()).catch(() => {

@@ -46,7 +46,7 @@ const url = (width, height) => `data:image/jpeg;base64,${syntheticJpeg(width, he
 const profileRevision = 'a'.repeat(64);
 const valid = (images = [url(1, 1)]) => ({ version: 1, turnId: 'turn-1', consentTurnId: 'turn-1', profileRevision, images });
 
-test('image contract binds one turn, Astrid, consent, MIME, bytes and dimensions', () => {
+test('image contract binds one turn, selected dealer, consent, MIME, bytes and dimensions', () => {
   assert.deepEqual(normalizeAstridObservation(valid(), 'turn-1').images, [url(1, 1)]);
   for (const observation of [
     valid([url(1, 1), url(1, 1), url(1, 1)]),
@@ -57,7 +57,8 @@ test('image contract binds one turn, Astrid, consent, MIME, bytes and dimensions
     valid([`data:image/jpeg;base64,${Buffer.alloc(65537).toString('base64')}`]),
   ]) assert.throws(() => normalizeAstridObservation(observation, 'turn-1'));
   assert.throws(() => normalizeAstridObservation(valid(), 'turn-2'));
-  assert.throws(() => normalizeAstridObservation(valid(), 'turn-1', 'vera'));
+  for(const dealer of ['vera','amira','mei','paow','dragge']) assert.deepEqual(normalizeAstridObservation(valid(), 'turn-1', dealer).images,[url(1,1)]);
+  for(const dealer of ['', '../astrid', 'Invalid Dealer']) assert.throws(() => normalizeAstridObservation(valid(), 'turn-1', dealer));
   assert.throws(() => normalizeAstridObservation(valid(), 'turn-1', 'astrid', 'b'.repeat(64)));
 });
 

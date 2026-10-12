@@ -12,7 +12,7 @@ export function attachSpeechRelay(server, {
   maxBufferedBytes = 8 * 1024 * 1024, sessionTimeoutMs = 120000,
   idleTimeoutMs = 15000, cancelTimeoutMs = 5000,
   allowClientPCM = false, onSessionReady = () => {}, onFirstMedia = () => {}, onTransport = () => {},
-  onWorkerIdle = () => {},
+  onWorkerIdle = () => {}, onMedia = () => {}, onComplete = () => {},
 } = {}) {
   if (!workerSecret || workerSecret.length < 32 || !allowedOrigins?.length || typeof authenticateClient !== 'function') throw new Error('Worker secret, origin allowlist and authenticated sessions are required');
   const origins = new Set(allowedOrigins);
@@ -55,6 +55,7 @@ export function attachSpeechRelay(server, {
       const s = w.session;
       if (binary) {
         if (!s || !s.streaming) { ws.close(1008, 'Unexpected media'); return; }
+        if (!s.cancelled) { try { onMedia(s.identity,data); } catch {} }
         const first = !s.firstMedia && !s.cancelled;
         const receivedAt = first ? performance.now() : 0;
         if (!s.firstMedia && !s.cancelled) {
@@ -75,6 +76,7 @@ export function attachSpeechRelay(server, {
         s.streaming = true;
       } else if (!['done', 'error'].includes(m.t)) { abort(s, 'Unknown worker message'); return; }
       if (!s.cancelled && !json(s.client, m)) abort(s, 'Client is too slow');
+      if (m.t === 'done' && !s.cancelled && s.ended) { try { onComplete(s.identity,m); } catch {} }
       if (m.t === 'done' || m.t === 'error') release(s);
     });
     ws.on('close', () => {

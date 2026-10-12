@@ -15,7 +15,7 @@ const all = root => [root, ...root.children.flatMap(all)];
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const event = values => ({ preventDefault() {}, ...values });
 function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, permission = 'allow', cameraPermission = 'allow',
-  wakeStart = () => true, canStart = () => true, deferredPlayback = false, useRealWake = false, enablePlayback,
+  dealerId = 'astrid', dealerName = 'Astrid', cameraOptIn = true, wakeStart = () => true, canStart = () => true, deferredPlayback = false, useRealWake = false, enablePlayback,
   transcribe = async () => ({ ok: true, json: async () => ({ text: 'Hello Astrid' }) }), send = async () => true } = {}) {
   const globals = Object.fromEntries(['document', 'window', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'].map(name => [name, globalThis[name]]));
   const timers = new Map(), intervals = new Map(), listeners = new Map(); let timerId = 0;
@@ -51,7 +51,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
     if (behavior === 'pending') return new Promise(resolve => permissionResolvers.push(() => resolve(stream)));
     return Promise.resolve(stream);
   } };
-  const control = createAstridCameraControl({ container: root, identity: () => ({ playerId: profile, dealerId: 'astrid', sessionRevision: 's1', roundRevision: '0' }),
+  const control = createAstridCameraControl({ container: root, identity: () => ({ playerId: profile, dealerId, sessionRevision: 's1', roundRevision: '0' }), dealerName, wakeNames:[dealerName,dealerId],
     mediaDevices, AudioContextClass: class {}, canStart, onActivity: () => activity++,
     createWakeWord: options => {
       const instance = useRealWake ? createAstridWakeWord({ ...options, RecognitionClass: LocalRecognition })
@@ -79,6 +79,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
   const find = text => all(root).find(node => node.textContent === text);
   const dialog = all(root).find(node => node.tag === 'dialog'), debug = all(root).find(node => node.tag === 'section');
   const click = node => node.onclick(event());
+  if (cameraOptIn) click(all(root).find(node => node.attributes['aria-label'] === 'Include optional camera images'));
   const fire = delay => { const entry = [...timers].find(([, timer]) => timer.delay === delay); assert.ok(entry, `missing ${delay} ms timer`); timers.delete(entry[0]); entry[1].fn(); };
   const start = async () => { await tick(); click(record); click(find('Enable voice')); await tick(); await tick(); };
   const startManual = async () => { await tick(); click(record); click(find('Record one message')); await tick(); await tick(); };
@@ -98,7 +99,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
   };
 }
 
-test('page loads off with two compact buttons; first Record requires explicit English consent', async () => {
+test('page loads off with separate playback, microphone and camera controls; first Record requires explicit English consent', async () => {
   const h = harness();
   try {
     await tick(); assert.equal(h.control.active, false); assert.equal(h.control.busy, false);
@@ -631,4 +632,24 @@ test('a late old camera preview cannot interrupt the next voice session', async 
     h.playbackPromises[1](); await tick(); h.playbackPromises[0](); await tick();
     assert.equal(h.control.active, true); assert.equal(h.control.busy, true);
   } finally { h.restore(); }
+});
+
+test('all base and registered dealers use their own wake names, context and transcription dealer',async()=>{
+  for(const dealerId of ['vera','astrid','amira','mei','paow','dragge']) {
+    const dealerName=dealerId[0].toUpperCase()+dealerId.slice(1),h=harness({dealerId,dealerName,cameraOptIn:false});
+    try {
+      await h.start();assert.deepEqual(h.wakes[0].options.wakeNames,[dealerName,dealerId]);
+      await h.wake();h.pause();await tick();await tick();
+      assert.equal(h.uploads[0].headers['X-Astrid-Dealer'],dealerId);assert.equal(h.sent[0].images.length,0);
+      assert.equal(h.requests.filter(request=>request.video).length,0);
+    } finally {h.restore();}
+  }
+});
+test('ordinary listening status stays visible and explains busy suppression then recovery',async()=>{
+  let ready=true;const h=harness({canStart:()=>ready,cameraOptIn:false});
+  try {
+    await h.start();const status=all(h.root).find(node=>node.attributes.role==='status');assert.equal(status.hidden,false);
+    ready=false;h.identityCheck();assert.match(h.status(),/paused while the dealer replies/);assert.equal(h.wakes.at(-1).options.canWake(),false);
+    ready=true;h.identityCheck();assert.match(h.status(),/Listening locally for Astrid/);assert.equal(h.wakes.at(-1).options.canWake(),true);
+  } finally {h.restore();}
 });

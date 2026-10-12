@@ -2,6 +2,41 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Gemensam namnväckning och sparning av genererade dealersvar
+
+12 oktober: publika dealerpresentationer delar röstkontroll, separat kameraopt-in,
+namnväckning efter vald dealer och hopfälld mobilchatt. Astrid/Vera/Amira/Mei samt
+registrerade PAOW/Dragge stöds; Studio-provspel behåller sin isolering. Mobilens
+44px-knappar ligger i en smal högerkant utanför ansiktet. Normal lyssning och paus
+under dealer-/chattsvar visas; enbart bordets busy-status blockerar inte väckning.
+Generiska observation/transcription-rutter validerar aktuell publicering, session,
+profil och vald dealer, även genom de två exakta Vercel-proxyvägarna.
+
+Obetald röstkontroll och exakt bildreferens förbereds parallellt med modellsvaret.
+Betald TTS/GPU behåller färskhetskontroller och startar efter exakt text. Positiv
+röstbehörighet cachas högst60sekunder; referenscachen rymmer fyra bilder. Färdiga
+streamsvar arkiveras efter sista bildrutan som privat exakt text, WAV och MP4 i
+det separata Blob-svarsbiblioteket; mikrofonljud ingår aldrig. Gemensam64MiB-budget
+begränsar infångning och väntande sparningar. Sparningen blockerar inte media.
+
+Riktig privat Blob/SDK-kontroll verifierade save, omläsning efter rekonstruktion,
+Range-läsning, arbetsyteisolering och samtidiga kategoribyten: en vinnare/en409.
+Endast tre egna syntetiska objekt användes och samtliga raderades. SDK:s svaga
+GET-ETag normaliseras endast inför kategoribyte mot samma auktoritativa HEAD-version;
+race mellan GET/HEAD eller HEAD/PUT skriver aldrig över senaste kategorierna.
+Riktiga SDK-konfliktklasser mappas till409 även när error.name är Error.
+
+Verifiering: riktade röst-/HTTP-/stream-/routing-/lagringsprov passerar och ingår
+i ordinarie fullhook. Offlineprov i verklig spelare körde två efterföljande
+greeting-uppspelningar för Astrid, Vera, Amira och Mei utan rapporterat
+repetitionsfel; mobil360x800 kontrollerades. Assetbaslinjen ändras inte. Detta är
+ingen ny mänsklig läppsynksacceptans, fysisk mikrofonväckning eller uppmätt förbättrad
+live-latens. RunPod-kallstart och observerad NVENC→CPU-fallback återstår som
+prestandabegränsningar. Aktuell kontomappning finns i ENVIRONMENT-VARIABLES.md;
+PAOW/Dragges kloner finns kvar i Kevins workspace tills tillgång på Jakobs konto
+är verifierad. Ingen nyckel-/kontoändring, betald generering eller DB-ändring här.
+
+
 ### Studio: privat Svarsbibliotek per dealer
 
 12 oktober: Svarsbibliotek är en egen dealerflik på /control/replies?dealer=<id>. Den visar sparade genererade svar med exakt text, språk, tid, profilrevision samt privat ljud och video. Tio gemensamma kategorier kan filtreras och ändras. Biblioteket genererar, återanvänder, godkänner eller publicerar inga svar. Talgranskning av inspelade klipp finns fortsatt under vald dealer → Klipp → Tal-klipp & ljud.

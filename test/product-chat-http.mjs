@@ -499,6 +499,18 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(envelope().status.playResults.lastRound,last);
     assert.equal(envelope().status.playResults.currentRound.wagered,10);
   });
+  await t.test('shared voice configuration supports every base dealer and rejects forged registered context', async () => {
+    const {client}=await guest(),before=captured.length;
+    for(const dealer of ['astrid','vera','amira','mei']) {
+      const value=await client.get('/api/dealer/observation?dealer='+dealer);
+      assert.equal(value.enabled,lissabon);assert.equal(value.transcription.enabled,lissabon);
+    }
+    for(const query of ['dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
+      const result=await client.get('/api/dealer/observation?'+query,503);
+      assert.deepEqual(result,{enabled:false});
+    }
+    assert.equal(captured.length,before,'configuration reads never start the model');
+  });
   await t.test('optional Astrid images require the flag, same turn, profile, consent and a data JPEG', async () => {
     const a = await guest(), b = await guest();
     const config = await a.client.get('/api/astrid/observation');

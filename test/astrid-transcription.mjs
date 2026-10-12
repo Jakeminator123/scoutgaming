@@ -16,10 +16,10 @@ class ResponseSink extends EventEmitter {
   writeHead(status, headers) { this.status = status; this.headers = headers; }
   end(body) { this.body = JSON.parse(body); this.writableEnded = true; }
 }
-function request(api, { body = audio(), replaceHeaders = {}, enabled = true, method = 'POST', checkCurrent = async () => {} } = {}) {
+function request(api, { body = audio(), replaceHeaders = {}, enabled = true, method = 'POST', dealerId = 'astrid', checkCurrent = async () => {} } = {}) {
   const req = new PassThrough(); req.method = method; req.headers = { ...headers(), ...replaceHeaders };
   const res = new ResponseSink();
-  const done = api.handle(req, res, { enabled, profileRevision, checkCurrent });
+  const done = api.handle(req, res, { enabled, profileRevision, checkCurrent, dealerId });
   req.end(body);
   return { done, req, res };
 }
@@ -159,5 +159,14 @@ test('bounded or malformed provider output is rejected; empty words remain empty
     const api = createAstridTranscriptionApi({ apiKey: 'synthetic-key', fetchImpl: async () => response });
     const result = request(api); await result.done; assert.equal(result.res.status, status);
     if (status === 200) assert.equal(result.res.body.text, text);
+  }
+});
+
+test('shared transcription supports authorized dealer identities and rejects mismatched header before provider work',async()=>{
+  for(const dealerId of ['vera','amira','mei','paow','dragge']) {
+    let calls=0;const api=createAstridTranscriptionApi({apiKey:'fixture',fetchImpl:async()=>{calls++;return transcript('Hello');}});
+    const denied=request(api,{dealerId,replaceHeaders:{'x-astrid-dealer':'astrid'}});await denied.done;assert.equal(denied.res.status,400);assert.equal(calls,0);
+    const accepted=request(api,{dealerId,replaceHeaders:{'x-astrid-dealer':dealerId},checkCurrent:async context=>assert.equal(context.dealerId,dealerId)});
+    await accepted.done;assert.equal(accepted.res.status,200);assert.equal(calls,1);
   }
 });

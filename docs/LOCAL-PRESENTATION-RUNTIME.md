@@ -17,12 +17,37 @@ profileRevision. Frame 0 kan väljas när den granskade posen är lämplig.
 
 Streamdescriptor v2 binder dealerId/profileRevision/imageSha256 och bär enbart
 validerad compositing-metadata från referensvideon. Spelaren återanvänder
-bolagets befintliga lagerkomposition för varje faktisk videobildruta. Samma
-video bär ljudet; ingen separat munanimation eller matchning på ungefärlig
-längd används. Fullbildsklipp behåller inbakad miljö. Sessionens verifierade
+bolagets befintliga lagerkomposition för varje faktisk videobildruta. Exakt
+genererat ljud och tillhörande videobildrutor följer samma uppspelningsklocka;
+ingen separat munanimation eller matchning på ungefärlig längd används. Fullbildsklipp behåller inbakad miljö. Sessionens verifierade
 worker-handshake behövs för teknisk beredskap; reviewStatus förblir pending
 fram till separat visuell kontroll. Befintliga Astrid-v1/fullfile-kontrakt
 behålls. Rörlig avatarberedning stöds inte av denna version.
+
+## Genererade svar och svarsbibliotek, 12 oktober 2026
+
+Obetald kontroll av röstbehörighet och beredning av exakt dealerreferens kan
+överlappa modellens textsvar. Betald TTS/GPU väntar på exakt text och färska
+kontroller av spelare, runda, publicering och profil. Positiv röstbehörighet
+cachas högst 60 sekunder med leverantör/röst/modell och nyckelhash; misslyckade
+kontroller cachas inte. Profil- och ägarkontroller görs även vid cacheträff.
+Referenscachen rymmer fyra innehållsbundna bilder. Detta ersätter inte GPU-
+kallstart, och ingen förbättrad live-latens är slutgodkänd från adaptertester.
+
+Färdiga streamade dealersvar sparas efter sista mediebildrutan som privat WAV,
+MP4 och exakt text/profilhash. Separat metadata ligger i
+`croupier/reply-library/<miljo-arbetsyta-hash>/<dealer>/<uuid>.json`; ljud/video
+ligger i dealerfamiljens `runtime/conversation-replies`, avskilt från bank,
+grundloopar, källor och staging. Lagring blockerar inte första ljud/bildruta.
+Infångning och väntande Blob-sparningar delar högst 64 MiB i processen; större,
+avbrutna eller ofullständiga par arkiveras inte och lagringsfel loggas utan text,
+nycklar eller privata Blob-adresser. Spelarens mikrofonljud ingår aldrig.
+
+Studio visar `/control/replies?dealer=<id>` bakom N1. Biblioteket erbjuder
+tio kontrollerade kategorier, revideringssäkra ändringar och privat media-proxy.
+Miljö/arbetsyta/dealer omvalideras vid läsning. Media behåller exakta hashvärden;
+`reviewStatus=pending` innebär att sparning inte är godkänd läppsynk. Ingen
+automatisk återanvändning eller import av gamla klipp aktiveras här.
 
 ## Dealerbibliotek och molnkatalog, 11 oktober 2026
 
@@ -469,7 +494,14 @@ Verifiering och kvarstående arbete dokumenteras vid leverans i
 
 ## Kamera och mikrofon
 
-Record aktiverar lokal lyssning efter ”Astrid”; Play styr spelljudet.
+Record aktiverar lokal lyssning efter den valda dealerns namn (Astrid, Vera,
+Amira, Mei, PAOW, Dragge eller en publicerad dealerpost); Play styr spelljudet.
+Kamera väljs separat och är av från början. `/api/dealer/observation` och
+`/api/dealer/transcription` delar spelarens autentisering och validerar
+registrerade dealers mot aktuell publicering. De gamla Astrid-adresserna finns
+kvar för kompatibilitet. Uppspelning/chatt kan pausa namnväckningen med synlig
+status; ett upptaget bord blockerar den inte ensamt. Mobilens chattlogg är
+hopfälld och textfältet öppnas med Chatt.
 Efter aktiveringsordet skickas turen vid 1 150 ms tystnad. Ljudbufferten är
 högst tre sekunder i RAM; turen högst 30 sekunder. Kamerabilder tas först
 efter aktivering. Dold flik, spelarbyte och Record av avbryter. Första
@@ -478,7 +510,8 @@ fem sekunders långtryck, inte i normalvyn.
 
 Webbläsarens lokala talstöd krävs för aktiveringsordet. Produktservern
 använder Whisper `whisper-1` via audio/translations för engelsk text;
-Cartesia ger utgående röst. Nycklar finns enbart på servern. Modell- och
+Dealerprofilen väljer Cartesia eller ElevenLabs för utgående röst. Nycklar
+finns enbart på servern. Modell- och
 bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
 inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 

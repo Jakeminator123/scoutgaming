@@ -74,8 +74,20 @@ export function createSpeechReplyLibrary({ env = process.env, blobClient, cacheD
     try { result = await c.get(pathname,{ ...auth(), access:'private', useCache:false }); } catch { fail(); }
     if (!result) fail('reply_library_not_found',404);
     const value = checked(await boundedJSON(result,pathname),scopeHash,dealerId,id);
-    if (typeof result.blob.etag !== 'string' || !result.blob.etag || result.blob.etag.length > 256) fail();
-    return { value, etag:result.blob.etag };
+    const etag = result.blob.etag;
+    if (typeof etag !== 'string' || !etag || etag.length > 256) fail();
+    return { value, etag };
+  }
+  async function strongWriteETag(dealerId,id,etag) {
+    if (!etag.startsWith('W/')) return etag;
+    // Compressed JSON delivery may expose a weak ETag. Only writes need HEAD;
+    // it must match the exact downloaded version before the CAS can proceed.
+    const c = await client(), pathname = pathFor(scopeHash,dealerId,id); let head;
+    try { head = await c.head(pathname,auth()); } catch { fail(); }
+    privateResult(head,pathname);
+    if (typeof head.etag !== 'string' || !head.etag || head.etag.startsWith('W/') || head.etag.length > 256) fail();
+    if (head.etag !== etag.slice(2)) fail('reply_library_revision_conflict',409);
+    return head.etag;
   }
   async function write(value, etag) {
     const c = await client(), pathname = pathFor(scopeHash,value.dealerId,value.id), bytes = Buffer.from(JSON.stringify(value));
@@ -84,7 +96,9 @@ export function createSpeechReplyLibrary({ env = process.env, blobClient, cacheD
       const result = await c.put(pathname,bytes,{ ...auth(), access:'private', addRandomSuffix:false, allowOverwrite:Boolean(etag), contentType:'application/json', cacheControlMaxAge:60, ...(etag ? { ifMatch:etag } : {}) });
       privateResult(result,pathname);
     } catch (error) {
-      if (error.name === 'BlobPreconditionFailedError' || error.name === 'BlobAlreadyExistsError' || error.statusCode === 412) fail('reply_library_revision_conflict',409);
+      const providerConflict = ['BlobPreconditionFailedError','BlobAlreadyExistsError'].some(name =>
+        typeof c[name] === 'function' && error instanceof c[name]);
+      if (providerConflict || error.name === 'BlobPreconditionFailedError' || error.name === 'BlobAlreadyExistsError' || error.statusCode === 412) fail('reply_library_revision_conflict',409);
       if (error instanceof SpeechReplyLibraryError) throw error;
       fail();
     }
@@ -134,8 +148,9 @@ export function createSpeechReplyLibrary({ env = process.env, blobClient, cacheD
       const { value, etag } = await read(dealerId,id);
       if (value.revision !== expectedRevision) fail('reply_library_revision_conflict',409);
       const updated = { ...value,categories:next,revision:value.revision+1 };
+      const writeETag = await strongWriteETag(dealerId,id,etag);
       if (stillAuthorized !== undefined) { if (typeof stillAuthorized !== 'function') fail('reply_library_invalid_authorization',400); await stillAuthorized(); }
-      await write(updated,etag); return item(updated);
+      await write(updated,writeETag); return item(updated);
     },
     async media({dealerId,id,kind,request} = {}) {
       if (!Object.hasOwn(TYPES,kind) || !(request instanceof Request) || !['GET','HEAD'].includes(request.method)) fail('reply_library_invalid_media',400);

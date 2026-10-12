@@ -91,7 +91,7 @@ export function createDealerSpeechReferenceService({readVideoRegistry,readVideoR
       const refreshed=await readSource();await guard();
       if(JSON.stringify(refreshed.compositing??refreshed.classification?.compositing)!==JSON.stringify(candidate))fail('speech_reference_source_changed');
       const result={dealerId,profileRevision:revision,compositing,image:{sha256:hash(image),bytes:image,width:1080,height:1920,contentType:'image/png'}};
-      cache.set(key,result);while(cache.size>2)cache.delete(cache.keys().next().value);
+      cache.set(key,result);while(cache.size>4)cache.delete(cache.keys().next().value);
       return {...result,image:{...result.image,bytes:Buffer.from(image)}};
     }finally{
       clearTimeout(timer);signal?.removeEventListener('abort',stop);

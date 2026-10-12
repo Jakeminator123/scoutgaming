@@ -2133,13 +2133,11 @@ async function finish() {
 let chatHistory = [];
 let chatBusy = false;
 const pendingChatReplies = new Map();
-const compactChat = () => localPresentationEnabled && matchMedia('(max-width: 860px)').matches;
+const compactChat = () => matchMedia('(max-width: 860px)').matches;
 let chatToggle, chatStatus, chatElapsed;
 const chatPlaybackDiagnostic = createChatPlaybackDiagnostic(() => chatStatus);
 function setChatOpen(open) {
   if(studioPreview)return;
-  // Astrid's conversation stays visible independently of the private voice log.
-  open = (DEALER.key === 'astrid' && localPresentationEnabled) || open;
   $('#chat-log').classList.toggle('open', open);
   chatToggle?.setAttribute('aria-expanded', String(open));
   if (open && chatToggle) delete chatToggle.dataset.unread;
@@ -2149,7 +2147,7 @@ function setChatStatus(text) {
   chatElapsed.textContent = '';
   chatStatus.replaceChildren(...(text ? [document.createTextNode(text), chatElapsed] : []));
 }
-if (!studioPreview && localPresentationEnabled) {
+if (!studioPreview) {
   chatToggle = document.createElement('button'); chatToggle.id = 'chat-log-toggle';
   chatToggle.type = 'button'; chatToggle.textContent = 'Chatt';
   chatToggle.setAttribute('aria-label', 'Visa eller dölj chattloggen');
@@ -2455,9 +2453,11 @@ function sayLine(id) {
 
 $('#chat-send').onclick = () => void sendChat();
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
-const astridCamera = !studioPreview && DEALER.key === 'astrid' && localPresentationEnabled
+const astridCamera = !studioPreview
   ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
-    canStart: () => !chatBusy && !speaking && !busy,
+    dealerName: DEALER.name, wakeNames: [...new Set([DEALER.name, DEALER.key])],
+    presentationContext: () => chatPresentationContext(entrySelection, DEALER.key),
+    canStart: () => !chatBusy && !speaking,
     onActivity: () => probeClient?.activity(),
     onPlaybackToggle: () => setMuted(!voice.muted),
     onPlaybackEnable: () => setMuted(false),
@@ -2480,10 +2480,7 @@ const memoryForget = document.createElement('button'); memoryForget.type = 'butt
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
 if(studioPreview){chatMemory.hidden=true;memoryForget.disabled=true;}
-if (astridCamera) {
-  chatToggle.hidden = true;
-  setChatOpen(true);
-}
+if (astridCamera) setChatOpen(false);
 chatMemory.addEventListener('toggle', async () => {
   if (studioPreview || !chatMemory.open) return;
   try {

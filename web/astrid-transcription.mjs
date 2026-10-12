@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isDealerId } from './dealer-identity.mjs';
 import { CAMERA_AUDIO_MAX_BYTES, CAMERA_AUDIO_SECONDS } from './public/astrid-camera-audio.mjs';
 
 const REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
@@ -17,13 +18,13 @@ export function validateCameraWav(bytes) {
   return { durationMs: count / (sampleRate * 2) * 1000 };
 }
 
-export function validateTranscriptionHeaders(headers, expectedProfileRevision) {
+export function validateTranscriptionHeaders(headers, expectedProfileRevision, expectedDealerId = 'astrid') {
   const origin = headers.origin;
   if (!origin || !URL.canParse(origin) || !['http:', 'https:'].includes(new URL(origin).protocol)
     || new URL(origin).origin !== origin || new URL(origin).host !== headers.host || headers['sec-fetch-site'] === 'cross-site') {
     fail('transcription_same_origin_required', 403);
   }
-  if (headers['content-type'] !== 'audio/wav' || headers['x-astrid-dealer'] !== 'astrid'
+  if (headers['content-type'] !== 'audio/wav' || !isDealerId(expectedDealerId) || headers['x-astrid-dealer'] !== expectedDealerId
     || !['auto', 'sv', 'en'].includes(headers['x-astrid-language'])
     || !REVISION.test(headers['x-astrid-request-id'] ?? '')
     || !REVISION.test(headers['x-astrid-session-revision'] ?? '') || !REVISION.test(headers['x-astrid-round-revision'] ?? '')) {
@@ -32,7 +33,7 @@ export function validateTranscriptionHeaders(headers, expectedProfileRevision) {
   if (!/^[a-f0-9]{64}$/.test(headers['x-astrid-profile-revision'] ?? '')
     || headers['x-astrid-profile-revision'] !== expectedProfileRevision) fail('stale_transcription_profile', 409);
   return { requestId: headers['x-astrid-request-id'], language: headers['x-astrid-language'],
-    dealerId: 'astrid', sessionRevision: headers['x-astrid-session-revision'], roundRevision: headers['x-astrid-round-revision'] };
+    dealerId: expectedDealerId, sessionRevision: headers['x-astrid-session-revision'], roundRevision: headers['x-astrid-round-revision'] };
 }
 
 function readAudio(req, signal) {
@@ -96,7 +97,7 @@ async function readTranscript(response, signal) {
 export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock = Date.now } = {}) {
   const configured = typeof apiKey === 'string' && apiKey.length > 0 && apiKey.length <= 2048 && !/[\s\x00-\x1f]/.test(apiKey);
   const used = new Map(), active = new Set();
-  async function handle(req, res, { enabled, profileRevision, checkCurrent }) {
+  async function handle(req, res, { enabled, profileRevision, checkCurrent, dealerId = 'astrid' }) {
     const json = (code, value) => {
       if (res.destroyed || res.writableEnded) return;
       res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value));
@@ -110,7 +111,7 @@ export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock 
       if (req.method !== 'POST') fail('method_not_allowed', 405);
       if (!enabled) fail('transcription_disabled', 403);
       if (!configured) fail('transcription_not_configured', 503);
-      const context = validateTranscriptionHeaders(req.headers, profileRevision);
+      const context = validateTranscriptionHeaders(req.headers, profileRevision, dealerId);
       await checkCurrent(context); controller.signal.throwIfAborted();
       const now = clock();
       for (const [id, at] of used) if (now - at > 300000) used.delete(id);

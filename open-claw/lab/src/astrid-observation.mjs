@@ -1,3 +1,4 @@
+import { isDealerId } from '../../../web/public/dealer-identity.mjs';
 // The same small, closed image contract is checked at Web and Director.
 // It contains no audio and must never be copied into player memory or logs.
 const MAX_IMAGE_BYTES = 64 * 1024;
@@ -78,7 +79,7 @@ export function jpegSize(bytes) {
 }
 
 export function normalizeAstridObservation(value, requestId, dealerId = 'astrid', expectedProfileRevision = null) {
-  if (dealerId !== 'astrid') reject('observation_astrid_only');
+  if (!isDealerId(dealerId)) reject('invalid_observation_dealer');
   if (!exact(value, ['version', 'turnId', 'consentTurnId', 'profileRevision', 'images'])
     || value.version !== 1 || !SAFE_ID.test(value.turnId)
     || value.turnId !== requestId || value.consentTurnId !== requestId

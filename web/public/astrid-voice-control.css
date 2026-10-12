@@ -1,9 +1,9 @@
-#astrid-camera.astrid-voice-controls { display: flex; align-items: center; gap: 5px; }
-#astrid-camera .astrid-voice-button { width: 32px; height: 32px; padding: 0; font-size: 14px; touch-action: manipulation; user-select: none; }
+#astrid-camera.astrid-voice-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; max-width: min(340px, calc(100vw - 24px)); padding: 6px; border-radius: 12px; background: #101618e8; }
+#astrid-camera .astrid-voice-button { width: 44px; height: 44px; padding: 0; font-size: 14px; touch-action: manipulation; user-select: none; }
 #astrid-camera .astrid-voice-button[aria-pressed="true"] { border-color: #d6ff3a; color: #d6ff3a; }
 #astrid-camera .astrid-voice-button[data-error="true"] { border-color: #e5a365; }
 #astrid-camera [hidden] { display: none !important; }
-.astrid-voice-error { position: absolute; right: 0; top: calc(100% + 8px); width: min(320px, 82vw); padding: 9px 12px; background: #101618; color: #edc096; border: 1px solid #665243; border-radius: 10px; }
+.astrid-voice-error { position: static; flex-basis: 100%; max-width: 300px; color: #c1d0cb; font: 11px/1.35 Inter, sans-serif; text-align: right; overflow-wrap: anywhere; } .astrid-voice-error[data-error="true"] { color: #edc096; }
 .astrid-voice-dialog, .astrid-voice-debug { color: #f2f1ed; background: #101618; border: 1px solid #52605e; border-radius: 14px; padding: 18px; box-sizing: border-box; font: 13px/1.5 Inter, sans-serif; box-shadow: 0 16px 38px #000b; }
 .astrid-voice-dialog { width: min(450px, calc(100vw - 28px)); max-height: 85dvh; overflow: auto; }
 .astrid-voice-dialog::backdrop { background: #0009; }
