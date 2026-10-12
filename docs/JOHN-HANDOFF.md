@@ -218,7 +218,9 @@ utfall, saldo och bokföring sparas atomiskt under plånbokslås. Återförsök
 Externa partner-launch-konton stöds inte för roulette ännu.
 
 Additiv migration: `ops/neon-game/007-roulette-tables.sql`. Produktions-DDL
-är ännu inte utförd. Runtime-kapabilitet 9 spärrar publicering tills både
+utförd med Jakobs godkännande den 12 oktober i `croupier-production`, databas
+`croupier_game`: fyra TEXT-kolumner, sammansatt primärnyckel och spelar-FK
+verifierade; tabellen var tom efter skapandet. Runtime-kapabilitet 9 spärrar publicering tills både
 motor och tabell är redo. Ingen ny Render-tjänst eller miljövariabel behövs.
 Spelarvyn har hjul, marker, samtliga standardsatsningar, ångra/rensa/upprepa,
 regler, historik och återhämtning av väntande rundor. Gemensam profilstatistik
@@ -227,11 +229,17 @@ inspelningar, gemensamma tidsstyrda rundor och riktiga pengar ingår inte.
 
 Verifierat lokalt: satsningskatalog mot alla 37 utfall, idempotens, SQLite-
 omstart/rollback, spel-/bolagsisolering, atomisk rumspublicering, faktisk
-serverauth/origin, Studio-bygge och frontendens typkontroll. PostgreSQL-
-konkurrens, rollback och omstart ingår nu i befintlig isolerad CI-fixture;
-resultat inväntas. Dealer-audit --probe matchar alla fyra baseline-set,
+serverauth/origin, Studio-/frontend-byggen och frontendens typkontroll.
+Hela lokala regressionen passerade, liksom integrationen med A20-flytten.
+CI `38288136945` är grön för `931dc6cb`, inklusive verklig isolerad PostgreSQL:
+samtidiga identiska/olika kommandon, delad plånbok mellan rum, revokerad
+publicering, ledger-rollback, omstart och blockerad spelare. Browserkontroll
+omfattar desktop, mobil, tappat svar/återförsök och omladdat sparat utfall.
+Vercel-preview `dpl_2RWmjsBKynRcnnczoKhReXWEJt7S` är READY för samma kod.
+Dealer-audit --probe matchar alla fyra baseline-set,
 med tidigare saknade tal-takes och mänsklig läppsynkacceptans fortsatt öppna.
-Leverans/publicering och full regressionsstatus följs upp i PR före merge.
+Leverans: PR #35. Produktionsbyggen och livekontroll följs upp där efter merge;
+ovanstående förhandskontroller är inte bevis för produktionspublicering.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
