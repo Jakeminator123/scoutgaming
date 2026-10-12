@@ -12,7 +12,7 @@ import { PartnerPackageView } from '../components/partner-package-view.mjs';
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 const sourceUrl = new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url);
-const source = readFileSync(sourceUrl, 'utf8');
+const source = readFileSync(sourceUrl, 'utf8').replaceAll("import('./original-views.jsx')", "require('./original-views.jsx')").replaceAll("import('./original.css')", "require('./original.css')");
 const actionsUrl = new URL('../components/partner-session-actions.tsx', import.meta.url);
 const actionsCode = transformSync(readFileSync(actionsUrl, 'utf8'), { filename: 'partner-session-actions.tsx',
   jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;

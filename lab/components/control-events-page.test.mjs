@@ -74,6 +74,19 @@ test('video review link keeps the selected variant', () => {
   assert.match(html, /href="\/control\/videos\?dealer=astrid&amp;event=speak\.goodluck&amp;variant=/);
 });
 
+test('normal event previews show missing-video status for registered and unbound dealers', () => {
+  for (const dealerId of ['astrid', 'vera', 'johanna']) {
+    for (const videoGenerationId of [null, 'missing-video']) {
+      const draft = addDealer(createSeedProject(), 'johanna', 'Johanna');
+      const line = draft.lines.find(item => item.dealerId === dealerId && item.eventId === 'speak.goodluck');
+      line.variants[0].videoGenerationId = videoGenerationId;
+      const html = render({ initialProject: draft, initialDealerId: dealerId, initialEventId: 'speak.goodluck' });
+      assert.ok(/role="status">Ingen spelbar video för den här situationen/.test(html), `${dealerId}: missing video must show status`);
+      assert.doesNotMatch(html, /2D-RESERV · LABB|Bara 2D|data-motion-asset|<iframe/);
+    }
+  }
+});
+
 test('Astrid keeps the media-family editor and a Villkor tab', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };

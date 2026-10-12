@@ -1,7 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 
-// Same cwd rule as the other lab servers (zone-reference, original-media): the
+// Same cwd rule as the other lab servers (zone-reference): the
 // bundled import.meta.url does not point at the traced preview-build on Vercel.
 const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export const previewBuildDirectory = resolve(labRoot, 'preview-build');

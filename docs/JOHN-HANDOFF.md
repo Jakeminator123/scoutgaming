@@ -1,7 +1,7 @@
 # Aktuell handoff — Scoutgaming
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `deea75a5`.
+`jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -60,10 +60,13 @@ revisionskontroll. `lab/components/kevin-bo/navigation.mjs` är prototypkataloge
 Allt annat kastas med `Presentation requires registered cloud media`
 (`web/public/app.mjs`). Layered använder `layered-presentation.mjs`. Övriga
 publicerade rum använder `local-presentation.mjs` tillsammans med
-`performance-player.mjs`. `dealer-engine.mjs` är kvar som Studios
-originalmediareserv (`lab/lib/original-media-server.mjs`), inte som den
-publicerade spelarens motor. `/dealer/…` och `/dealers/{astrid,vera,amira,mei}/…`
-svarar 410 (`web/server.mjs`). Amira är inte en aktiv inbyggd dealer. Astrid,
+`performance-player.mjs`. Studios originalmediareserv är pensionerad:
+registrerad video stannar på den gemensamma scenen, och ett hanterat klipp
+utan spelbar fil visar den befintliga statustexten. `/casino.html` svarar
+308 till `/play` och behåller query. `/v2` är kvar som 307-omdirigering.
+De fem granskningssidorna svarar 404. `/dealer/…` och
+`/dealers/{astrid,vera,amira,mei}/…` svarar 410 (`web/server.mjs`). Amira är
+inte en aktiv inbyggd dealer. Astrid,
 Vera och Mei spelas bara när de är registrerade med giltig media och ingår i
 den valda publiceringen. Produktionsläsningen 12 oktober (BASLINJE §8, endast
 SELECT): ingen av Astrids 10 registerposter matchar de gamla Git-filerna, och
@@ -207,6 +210,61 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Repo-ordning våg 2, 12 oktober (V2, `jakob/repo-ordning`).** 3D-, rigg-,
+ansikts- och hårspåret, kasinogolvet, Studios originalmediareserv, avslutad
+staging, oanvända pipeline-skript, de fem granskningssidorna och
+`ops/vercel-entry` är borta ur trädet. `/casino.html` svarar 308 till `/play`
+med query kvar. `/v2` är kvar som 307. Katalogstyrda composited-talklipp
+stannar eftersom `media/catalog/legacy.json` refererar dem. Astrids
+kalibrering, godkännanden och osäkra stagingmappar står kvar. Fem manuella
+byggverktyg är enda byggare av media som produkten läser:
+`build-previews.sh`, `encode.sh`, `build-hands.sh`,
+`build-contact-review.mjs` och `prepend-contact-entry.mjs`. Läppsynkkedjan
+och `mouth-crops.json` står kvar. Spelarbygget ligger i
+`apps/croupier-frontend/tools/player-ui-build.mjs`. Vercel-projektet
+`github-work-vercel-entry` finns inte.
+`ops/caddy/bettalotto-game-auth.Caddyfile` är borttagen. A18: live
+bettalotto.se svarar 301 till croupier.scoutgg.dev och använder inte filen.
+Kevins aktuella Caddy ligger på `kevin`.
+
+Andra svepet tog bort skomodulen, skokontaktens ocklusion,
+`bo/media-preview.mjs` och originalmotorn, plus proven som bara skyddade dem.
+Hash- och bildruteproven för installerade ready-klipp och de levande talproven
+står kvar. `vendor/three` står kvar: den gemensamma spelaren importerar
+`three.module.js`.
+
+Jakobs beslut 12 oktober:
+- Ready-validatorn `web/public/ready-motion.mjs` står kvar, med sina prov. Den
+  kräver att väntläget är en komplett rundresa: ready-loop, talretur samt in-
+  och utgång från idle för varje tagning.
+- `GLTFLoader.js` och `BufferGeometryUtils.js` i `web/public/vendor/three` är
+  borttagna. De saknade importör sedan 3D-golvet togs bort.
+- `port-source.mjs` och fem Studio-moduler som kan vara planerade funktioner
+  står kvar, bland dem `family-video-upload.tsx`.
+
+Sluträttning efter granskning: main `ff1d6e53` är integrerad med
+bakgrundshändelsernas tester, capability 8, bordspanelens CSS och driftkvitton
+bevarade. Normal händelsepreview och GameStream visar saknad-video-status
+när registrerad video saknas eller fallerar; social/avsiktlig 2D-diagnos
+består. Raderingsgrinden stoppar med filnamn och felkod vid källäsfel.
+De fyra systemkartslänkarna går nu till befintliga docs. Kartan använder
+aktuell V2-katalog och verklig, äldre PR-CI-evidens: 14 gula, inga röda eller
+nya gröna och oförändrat historiskt runtimekvitto. Riktade prov: 108/108
+Studio och 4/4 grindprov; två Studio-prov och läsfelsprovet var röda före
+rättningen. `audit-dealer-sync --probe` passerar för fyra oförändrade set.
+Ny full hook, PR-CI och leveranskontroll krävs; inga nya visuella
+mediegodkännanden eller produktionsdataändringar ingår.
+
+Tidigare prov på `997a11a4`: orkestratorns lokala körning med Node 24 var grön.
+Den omfattar full pre-commit, Studio- och frontendbyggena,
+`audit-dealer-sync --probe`, båda mediekatalogkontrollerna, `check-orphan-tests`
+(0) och systemkartan (0 röda). Spärren för raderingar gav 0 kvarvarande
+importer och 0 registerrader för 1151 borttagna filer. Inget Blob-objekt
+raderades. `migrate-media-layout --verify` har samma registerrad för en lokal,
+ospårad Astrid-zonfil som på `33be100b`. Kvar: visuell kontroll av
+partnerportalen i produktion direkt efter merge, med ljust och mörkt tema,
+SV/EN och mobilbredd.
 
 **Env-städning och OpenClaw-namnbyte, 12 oktober (`8a8f434e`, `19c44902`, `deea75a5`).** `fe8b6372` passerar samtliga tre GitHub-jobb och är verifierad live på Vercel
 och spelservern; den publika friläggningsmodulen matchar samma commit bytevis.

@@ -139,4 +139,4 @@ Leverera granskade ändringar till `Jakeminator123/github-work`, branch
 `jakemanator123-github-work`, med `node tools/push-github-work.mjs`.
 Förvalta befintliga Render-tjänster enligt [driftguiden](RENDER-START-SV.md).
 Aktuella kontroller och kvarvarande verifiering finns i
-[live-kvittot](CLOUD-ACTIVATION-2026-09-29.md).
+[driften](DEPLOYMENT.md) och [molnkartan](../../../docs/CLOUD-MIGRATION.md).

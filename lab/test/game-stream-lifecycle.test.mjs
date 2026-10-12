@@ -26,7 +26,7 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   let clock = 0;
   const documentListeners = new Map(), document = { hidden: false, addEventListener: (key, fn) => documentListeners.set(key, fn), removeEventListener: key => documentListeners.delete(key) };
   const project = createSeedProject();
-  let props = { trace: { records, bytes: 0, limited: false }, project, videos: { videos: [] }, originals: null, dealerId: 'astrid', active: true, onActivity: entry => activity.push(entry), onOpenEvent() {} };
+  let props = { trace: { records, bytes: 0, limited: false }, project, videos: { videos: [] }, dealerId: 'astrid', active: true, onActivity: entry => activity.push(entry), onOpenEvent() {} };
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const react = { ...React,
     useState(initial) { const index = cursor++; hooks[index] ??= { value: typeof initial === 'function' ? initial() : initial }; return [hooks[index].value, value => { const next = typeof value === 'function' ? value(hooks[index].value) : value; if (!Object.is(next, hooks[index].value)) { hooks[index].value = next; dirty = true; } }]; },
@@ -38,7 +38,6 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   };
   const mocks = {
     '../lib/presentation-sequence.mjs': require('../lib/presentation-sequence.mjs'),
-    '../lib/original-media.mjs': require('../lib/original-media.mjs'),
     '../lib/video-intake.mjs': require('../lib/video-intake.mjs'),
     './test-context': { neutralContext: {} },
     './studio-types': { requestJson: (url, init) => new Promise((resolve, reject) => {
@@ -94,6 +93,21 @@ test('replay from the original view waits for the matching player completion and
   ui.find(Stage).onPlaybackEvent({ phase: 'started', medium: '2d' }); await tick(); assert.equal(complete, false);
   ui.find(Stage).onPlaybackEvent({ phase: 'completed', medium: '2d' });
   assert.deepEqual(await run.result, { completed: true }); ui.flush(); assert.equal(ui.find(Stage).playing, false);
+});
+
+test('missing registered video fails replay without completing the instruction as 2D', async () => {
+  const ui = setup();
+  const run = ui.play(1); ui.resolve(); await tick(); ui.flush();
+  const stage = ui.find(Stage);
+  assert.equal(stage.videoUrl, undefined);
+  assert.equal(stage.allow2dFallback, false);
+  stage.onPlaybackEvent({ playId: stage.playId, phase: 'failed', medium: 'video', reason: 'Ingen spelbar video för den exakta situationen.' });
+  const result = await run.result; ui.flush();
+  assert.match(result.error.message, /Ingen spelbar video/);
+  assert.equal(result.completed, undefined);
+  assert.equal(ui.find(Stage).playing, false);
+  assert.equal(ui.activity.some(entry => entry.stage === 'playback' && entry.status === 'completed'), false);
+  ui.unmount();
 });
 
 test('cancelled model requests cannot start playback after a late response', async () => {

@@ -119,18 +119,13 @@
     },
     "vercel-entry": {
       "sources": [
-        "ops/vercel-entry/build.mjs"
-      ],
-      "templates": [
-        "ops/vercel-entry/.env.example"
+        "apps/croupier-frontend/tools/player-ui-build.mjs"
       ],
       "required": [
         "CROUPIER_GAME_ORIGIN"
       ],
-      "frontendPreviewBuildCommand": "node build.mjs --frontend-preview (same required env; no new keys)",
-      "publicOriginConfigured": "https://croupier-v2.onrender.com",
-      "configurationCheckedOn": "2026-09-29",
-      "deploymentStatus": "Legacy landing retired; build source retained for isolated player preview",
+      "frontendPreviewBuildCommand": "node apps/croupier-frontend/tools/player-ui-build.mjs --frontend-preview (same required env; no new keys)",
+      "deploymentStatus": "Live player UI build. The retired Vercel project is gone; this service names the build tool that still reads the key.",
       "firstBoot": [],
       "conditional": [],
       "managed": [],

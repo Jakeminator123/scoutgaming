@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ACTIVITY_LIMIT, appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
-import type { OriginalMediaCatalog } from '../lib/original-media.mjs';
 import { saveObservedStep } from '../lib/observed-step-store.mjs';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
@@ -30,7 +29,6 @@ export function ControlActivityPage({ initialProject: project, initialVideos: vi
   const hasSelection = Boolean(dealer || roomOwnsDealer);
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [activitiesReady, setActivitiesReady] = useState(false);
-  const [originals, setOriginals] = useState<OriginalMediaCatalog | null>(null);
   const [contextNames, setContextNames] = useState<{ tableId?: string; operatorSlug?: string; tableLabel?: string; operatorLabel?: string } | null>(null);
   useEffect(() => { publishShellStatus(null); }, []);
   useEffect(() => {
@@ -41,12 +39,6 @@ export function ControlActivityPage({ initialProject: project, initialVideos: vi
     setActivitiesReady(true);
   }, []);
   useEffect(() => { if (activitiesReady) saveActivities(activities); }, [activities, activitiesReady]);
-  useEffect(() => {
-    if (!dealerId) return;
-    const controller = new AbortController();
-    requestJson<OriginalMediaCatalog>('/api/original-media', {signal: controller.signal}).then(setOriginals).catch(() => {});
-    return () => controller.abort();
-  }, [dealerId]);
   useEffect(() => {
     if (!initialTableId) return;
     const controller = new AbortController();
@@ -84,7 +76,7 @@ export function ControlActivityPage({ initialProject: project, initialVideos: vi
         savedRevision={project.revision}
         onOpen={() => { window.location.assign(studioNavigationHref('/control/rehearsal', context)); }}
         streamView={dealer ? {
-          project, videos, originals, dealerId,
+          project, videos, dealerId,
           onOpenEvent: (id, step) => {
             if (step.blocked || !step.eventId) return;
             saveObservedStep(step);

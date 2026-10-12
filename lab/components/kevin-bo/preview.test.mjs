@@ -62,7 +62,7 @@ test('local draft state and memory never cross runtimes and legacy mutations rej
 
 test('CSS is fenced inside the portal and source has no legacy loader or global BO state',async()=>{
   const postcss=require('postcss');
-  for(const file of ['./original.css','./preview.css']){
+  for(const file of ['./original.css','./preview.css','./views/live.css']){
     const css=postcss.parse(await readFile(new URL(file,import.meta.url),'utf8'));
     css.walkRules(rule=>{if(rule.parent.type==='atrule'&&/keyframes$/.test(rule.parent.name))return;for(const selector of postcss.list.comma(rule.selector))assert.ok(selector.startsWith('.kevin-bo'),selector);});
   }
@@ -92,7 +92,7 @@ test('initial operations and transaction markup are stable across server and bro
   finally {if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
 });
 
-const portalSource = await readFile(new URL('./kevin-backoffice.jsx', import.meta.url), 'utf8');
+const portalSource = (await readFile(new URL('./kevin-backoffice.jsx', import.meta.url), 'utf8')).replaceAll("import('./original-views.jsx')", "require('./original-views.jsx')").replaceAll("import('./original.css')", "require('./original.css')");
 const portalCode = babel.transformSync(portalSource, { babelrc:false, configFile:false, presets:[[require('next/dist/compiled/babel/preset-react'),{runtime:'automatic'}]], plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')] }).code;
 const portalModule = { exports:{} };
 const portalRequire = createRequire(new URL('./kevin-backoffice.jsx', import.meta.url));
@@ -103,7 +103,7 @@ const actionsCode = require('next/dist/build/swc').transformSync(await readFile(
 const actionsModule = { exports:{} }, actionsRequire = createRequire(actionsUrl);
 new Function('require','module','exports',actionsCode)(name=>name.endsWith('.css')?{}:actionsRequire(name),actionsModule,actionsModule.exports);
 new Function('require','module','exports', portalCode)(name => {
-  if (name === './original.css' || name === './preview.css' || name === './john-foundation.css') return {};
+  if (name.endsWith('.css')) return {};
   if (name === './assets.mjs') return { assetUrl: () => undefined };
   if (name === './original-views.jsx') return { createOriginalViews };
   if (name === '../partner-session-actions') return actionsModule.exports;

@@ -35,7 +35,7 @@ function SelectedControlVideosPage({
   const {
     project, setProject, updateProject, modelEdit, projectRef, dirty, saving, save,
     error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
-    videos, setVideos, refreshVideos, refreshingVideos, originals,
+    videos, setVideos, refreshVideos, refreshingVideos,
     dealerId, selectDealer, selectEvent, selectVariant, assignSelection,
     event, line, variant, media, dealer,
   } = session;
@@ -165,7 +165,6 @@ function SelectedControlVideosPage({
           <VideoLibrary
             key={`${dealerId}/${event.id}/${initialEventId === event.id ? initialSituation ?? '' : ''}`}
             initialSituation={initialEventId === event.id ? initialSituation : undefined}
-            originals={originals}
             onInventory={next => { setVideos(next); }}
             project={project}
             onUploaded={uploadedVideo}
