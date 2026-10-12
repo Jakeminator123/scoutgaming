@@ -59,6 +59,7 @@ test('old Render document bookmarks redirect to canonical UI without forwarding 
   assert.equal(vercelIngressRequest(direct('/blackjack?dealer=astrid&presentation=local&launch=private&token=secret'),ingress).redirect,'https://preview.example.test/game?dealer=astrid&presentation=local');
   assert.equal(vercelIngressRequest(direct('/studio/activity'),ingress).redirect,'https://preview.example.test/studio/activity');
   assert.equal(vercelIngressRequest(direct('/v2?dealer=amira&rehearsal=1'),ingress).redirect,'https://preview.example.test/v2?dealer=amira&rehearsal=1');
+  assert.equal(vercelIngressRequest(direct('/casino.html?dealer=astrid&rehearsal=1&operator=sg-test'),ingress).redirect,'https://preview.example.test/play?dealer=astrid&rehearsal=1');
   assert.equal(vercelIngressRequest(direct('/bo?token=secret'),ingress).redirect,'https://preview.example.test/control/administration');
   const state='a'.repeat(64),token='b'.repeat(43);
   assert.equal(vercelIngressRequest(direct(`/bo/login.html?returnTo=${encodeURIComponent(`/api/bo/lab-login?state=${state}`)}&token=secret`),ingress).redirect,

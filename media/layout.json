@@ -14081,33 +14081,6 @@
       "publicUrl": "/dealer/supervisor.webm"
     },
     {
-      "legacyPath": "web/public/assets/blackjack-3d/blackjack-room.glb",
-      "path": "game/runtime/assets/blackjack-3d/blackjack-room.glb",
-      "size": 164276,
-      "sha256": "c5e32f0d4c54d3f82c254fe25585c45e90523c6934c8fa9cc14c2a587b5e22e5",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/blackjack-3d/blackjack-room.glb"
-    },
-    {
-      "legacyPath": "web/public/assets/blackjack-3d/blackjack-table.glb",
-      "path": "game/runtime/assets/blackjack-3d/blackjack-table.glb",
-      "size": 4656368,
-      "sha256": "73be58fde84f81c91a8fb56a077835d9b9668020b2042112ba6a36219d47ec7a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/blackjack-3d/blackjack-table.glb"
-    },
-    {
-      "legacyPath": "web/public/assets/blackjack-3d/profile.json",
-      "path": "game/runtime/assets/blackjack-3d/profile.json",
-      "size": 1625,
-      "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/blackjack-3d/profile.json"
-    },
-    {
       "legacyPath": "web/public/assets/cardback.png",
       "path": "game/runtime/assets/cardback.png",
       "size": 97393,
@@ -14117,15 +14090,6 @@
       "publicUrl": "/assets/cardback.png"
     },
     {
-      "legacyPath": "web/public/assets/casino-floor.glb",
-      "path": "game/runtime/assets/casino-floor.glb",
-      "size": 18386504,
-      "sha256": "ea6a6e75d75a1bfd54e85230f7d333bacaf9214148d90ee02406ac327405437f",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/casino-floor.glb"
-    },
-    {
       "legacyPath": "web/public/assets/chip-gold.png",
       "path": "game/runtime/assets/chip-gold.png",
       "size": 42932,
@@ -14133,24 +14097,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/assets/chip-gold.png"
-    },
-    {
-      "legacyPath": "web/public/assets/player.asset.json",
-      "path": "game/runtime/assets/player.asset.json",
-      "size": 640,
-      "sha256": "6997096a856ae56ddad716305ac84609e771823188fc422df5e7ee2c492b2a8d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/player.asset.json"
-    },
-    {
-      "legacyPath": "web/public/assets/player.glb",
-      "path": "game/runtime/assets/player.glb",
-      "size": 2313620,
-      "sha256": "b0fff48fadd4f414ddb037f92366c075fe4735b7845cdde4e862dc5b0ddcc009",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/player.glb"
     },
     {
       "legacyPath": "web/public/assets/room-extended.png",
@@ -14178,15 +14124,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/assets/table.png"
-    },
-    {
-      "legacyPath": "web/public/assets/tray.png",
-      "path": "game/runtime/assets/tray.png",
-      "size": 57079,
-      "sha256": "0b65c48a799e4f6554a9c6979f7a680902505f2f7c897737863b6a7d5c12991d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/assets/tray.png"
     },
     {
       "legacyPath": "web/public/sfx/ambience.mp3",
@@ -14264,15 +14201,6 @@
       "sha256": "e3c48c776cddb2c9086ba855005152e6df92f133a3b731ac83d91c7214739593",
       "tracked": true,
       "access": "source"
-    },
-    {
-      "legacyPath": "assets/blackjack-3d/profile.json",
-      "path": "game/source/3d/profile.json",
-      "size": 1625,
-      "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-      "tracked": true,
-      "access": "source",
-      "canonicalPath": "game/runtime/assets/blackjack-3d/profile.json"
     },
     {
       "legacyPath": "assets/blackjack-3d/reference/provenance.json",

@@ -22644,57 +22644,6 @@
       }
     },
     {
-      "logicalPath": "game/runtime/assets/blackjack-3d/blackjack-room.glb",
-      "id": "c5e32f0d-4c54-d3f8-2c25-4fe25585c45e",
-      "sha256": "c5e32f0d4c54d3f82c254fe25585c45e90523c6934c8fa9cc14c2a587b5e22e5",
-      "size": 164276,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/blackjack-3d/blackjack-room.glb"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/blackjack-3d/c5e32f0d-4c54-d3f8-2c25-4fe25585c45e/c5e32f0d4c54d3f82c254fe25585c45e90523c6934c8fa9cc14c2a587b5e22e5.glb",
-        "sha256": "c5e32f0d4c54d3f82c254fe25585c45e90523c6934c8fa9cc14c2a587b5e22e5",
-        "size": 164276,
-        "contentType": "model/gltf-binary"
-      }
-    },
-    {
-      "logicalPath": "game/runtime/assets/blackjack-3d/blackjack-table.glb",
-      "id": "73be58fd-e84f-81c9-1a8f-b56a077835d9",
-      "sha256": "73be58fde84f81c91a8fb56a077835d9b9668020b2042112ba6a36219d47ec7a",
-      "size": 4656368,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/blackjack-3d/blackjack-table.glb"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/blackjack-3d/73be58fd-e84f-81c9-1a8f-b56a077835d9/73be58fde84f81c91a8fb56a077835d9b9668020b2042112ba6a36219d47ec7a.glb",
-        "sha256": "73be58fde84f81c91a8fb56a077835d9b9668020b2042112ba6a36219d47ec7a",
-        "size": 4656368,
-        "contentType": "model/gltf-binary"
-      }
-    },
-    {
-      "logicalPath": "game/runtime/assets/blackjack-3d/profile.json",
-      "id": "7920d9dc-2247-9baf-3145-cf1c6d193344",
-      "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-      "size": 1625,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/blackjack-3d/profile.json"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/blackjack-3d/7920d9dc-2247-9baf-3145-cf1c6d193344/7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db.json",
-        "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-        "size": 1625,
-        "contentType": "application/json"
-      }
-    },
-    {
       "logicalPath": "game/runtime/assets/cardback.png",
       "id": "3a133760-0e18-2ba9-ff69-7f30da08c34d",
       "sha256": "3a1337600e182ba9ff697f30da08c34d5094d5d343d85910093f08dadc3cb267",
@@ -22712,23 +22661,6 @@
       }
     },
     {
-      "logicalPath": "game/runtime/assets/casino-floor.glb",
-      "id": "ea6a6e75-d75a-1bfd-54e8-5230f7d333ba",
-      "sha256": "ea6a6e75d75a1bfd54e85230f7d333bacaf9214148d90ee02406ac327405437f",
-      "size": 18386504,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/casino-floor.glb"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/ea6a6e75-d75a-1bfd-54e8-5230f7d333ba/ea6a6e75d75a1bfd54e85230f7d333bacaf9214148d90ee02406ac327405437f.glb",
-        "sha256": "ea6a6e75d75a1bfd54e85230f7d333bacaf9214148d90ee02406ac327405437f",
-        "size": 18386504,
-        "contentType": "model/gltf-binary"
-      }
-    },
-    {
       "logicalPath": "game/runtime/assets/chip-gold.png",
       "id": "884f500e-cbe5-f176-3e2f-59973d5f9dea",
       "sha256": "884f500ecbe5f1763e2f59973d5f9dea76335394afff6a2abf8004c953538430",
@@ -22743,40 +22675,6 @@
         "sha256": "884f500ecbe5f1763e2f59973d5f9dea76335394afff6a2abf8004c953538430",
         "size": 42932,
         "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "game/runtime/assets/player.asset.json",
-      "id": "6997096a-856a-e56d-dad7-16305ac84609",
-      "sha256": "6997096a856ae56ddad716305ac84609e771823188fc422df5e7ee2c492b2a8d",
-      "size": 640,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/player.asset.json"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/6997096a-856a-e56d-dad7-16305ac84609/6997096a856ae56ddad716305ac84609e771823188fc422df5e7ee2c492b2a8d.json",
-        "sha256": "6997096a856ae56ddad716305ac84609e771823188fc422df5e7ee2c492b2a8d",
-        "size": 640,
-        "contentType": "application/json"
-      }
-    },
-    {
-      "logicalPath": "game/runtime/assets/player.glb",
-      "id": "b0fff48f-add4-f414-ddb0-37f92366c075",
-      "sha256": "b0fff48fadd4f414ddb037f92366c075fe4735b7845cdde4e862dc5b0ddcc009",
-      "size": 2313620,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/player.glb"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/b0fff48f-add4-f414-ddb0-37f92366c075/b0fff48fadd4f414ddb037f92366c075fe4735b7845cdde4e862dc5b0ddcc009.glb",
-        "sha256": "b0fff48fadd4f414ddb037f92366c075fe4735b7845cdde4e862dc5b0ddcc009",
-        "size": 2313620,
-        "contentType": "model/gltf-binary"
       }
     },
     {
@@ -22827,23 +22725,6 @@
         "pathname": "croupier/media/game/runtime/assets/6ea37cec-4ec8-9582-c21c-67301c3e9939/6ea37cec4ec89582c21c67301c3e9939cb03712016bad70c2d2897fb6c5c2609.png",
         "sha256": "6ea37cec4ec89582c21c67301c3e9939cb03712016bad70c2d2897fb6c5c2609",
         "size": 6864957,
-        "contentType": "image/png"
-      }
-    },
-    {
-      "logicalPath": "game/runtime/assets/tray.png",
-      "id": "0b65c48a-799e-4f65-54a9-c6979f7a6809",
-      "sha256": "0b65c48a799e4f6554a9c6979f7a680902505f2f7c897737863b6a7d5c12991d",
-      "size": 57079,
-      "access": "public",
-      "legacyUrls": [
-        "/assets/tray.png"
-      ],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/0b65c48a-799e-4f65-54a9-c6979f7a6809/0b65c48a799e4f6554a9c6979f7a680902505f2f7c897737863b6a7d5c12991d.png",
-        "sha256": "0b65c48a799e4f6554a9c6979f7a680902505f2f7c897737863b6a7d5c12991d",
-        "size": 57079,
         "contentType": "image/png"
       }
     },
@@ -22989,21 +22870,6 @@
         "pathname": "croupier/media/game/source/3d/editable-project/e3c48c77-6cdd-b2c9-086b-a855005152e6/e3c48c776cddb2c9086ba855005152e6df92f133a3b731ac83d91c7214739593.json",
         "sha256": "e3c48c776cddb2c9086ba855005152e6df92f133a3b731ac83d91c7214739593",
         "size": 8640,
-        "contentType": "application/json"
-      }
-    },
-    {
-      "logicalPath": "game/source/3d/profile.json",
-      "id": "7920d9dc-2247-9baf-3145-cf1c6d193344",
-      "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-      "size": 1625,
-      "access": "source",
-      "legacyUrls": [],
-      "storage": {
-        "provider": "vercel-blob",
-        "pathname": "croupier/media/game/runtime/assets/blackjack-3d/7920d9dc-2247-9baf-3145-cf1c6d193344/7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db.json",
-        "sha256": "7920d9dc22479baf3145cf1c6d1933449c428a380dffc740d7a70a4cbcd0b3db",
-        "size": 1625,
         "contentType": "application/json"
       }
     },
