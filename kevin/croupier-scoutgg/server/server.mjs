@@ -365,6 +365,8 @@ async function api(req, res, route) {
     let who;
     try { who = await bo.user(req.headers); } catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }
     if (!who) return json(res, 401, { error: "Sign in required" });
+    // Everyone with the demo password shares the Test Player account: never list its tables to them (prospects would see each other's).
+    if (process.env.DEMO_BO_USER && who.user === process.env.DEMO_BO_USER) return json(res, 200, { tables: [] });
     return json(res, 200, { tables: studioTables.ownedBy(who.user).map(({ owner, logo, ...t }) => ({ ...t, url: studioTables.gameUrl(t) })) });
   }
   if (route === "studio/table") {
@@ -466,6 +468,13 @@ async function handleHttp(req, res) {
   }
   const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
   if (!file) { res.writeHead(404).end(); return; }
+  // A Table Studio table plays its own dealer in its own session (Kevin 12 Oct, edge cases): a shared link edited to
+  // ?dealer=marten, or pointed at another session, goes back to the table's own link, so a dealer hidden for the
+  // account that built the table cannot be called up through it.
+  if(file===path.join(PUBLIC,"index.html")){
+    const q=new URL(req.url,"http://x").searchParams, t=studioTables.get(q.get("table")??"");
+    if(t&&(q.get("dealer")!==t.dealer||q.get("session")!==t.slug)){res.writeHead(302,{Location:studioTables.gameUrl(t),"Cache-Control":"no-store"});res.end();return;}
+  }
   // The gate goes by the file, not the path: /index.html and /%69ndex.html are the game page as well.
   if(file===path.join(PUBLIC,"index.html")&&demoGate.on){   // one path (Kevin 12 Oct): a Table Studio table or a signed-in back office account, nothing else
     const q=new URL(req.url,"http://x").searchParams, studioTable=studioTables.get(q.get("table")??"");
