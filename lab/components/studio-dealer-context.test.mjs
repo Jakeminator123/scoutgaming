@@ -46,7 +46,8 @@ test('PAOW event editor keeps clip identity in every dealer tab and shows no Ast
   const nav = html.match(/<nav aria-label="Studio för PAOW"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
   assert.ok(nav);
   const links = [...nav.matchAll(/href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll('&amp;', '&'), 'https://studio.invalid'));
-  assert.equal(links.length, 8);
+  assert.equal(links.length, 7);
+  assert.equal(links.filter(link => link.pathname.endsWith('/control/compositions')).length, 0);
   assert.equal(links.filter(link=>link.pathname.endsWith('/control/replies')).length,1);
   for (const link of links) {
     assert.equal(link.searchParams.get('dealer'), 'paow');

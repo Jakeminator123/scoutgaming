@@ -30,7 +30,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
         audio: kind === 'speech' && existsSync(resolveMediaAbsolutePath(join(root, base, 'audio/en', short + '.mp3'))) ? `${base}/audio/en/${short}.mp3` : null, audioDelayMs: c.audioDelayMs ?? null,
         preview: existsSync(resolveMediaAbsolutePath(join(root, base, 'preview', short + '.mp4'))) ? `${base}/preview/${short}.mp4` : null,
         route: originalRoute, candidate: true, actualPlayback: false, fileAvailable: available(`${base}/streams/${c.file}`),
-        selector: 'CLIP map in app.mjs + DealerEngine; catalogue entry, not proof the current route selects it. Exact line id, never nearest duration.' });
+        selector: 'CLIP map in app.mjs; catalogue entry, not proof the current route selects it. Exact line id, never nearest duration.' });
     }
     const nativeSpeech = Object.entries(native[dealer] ?? {}).map(([line, take]) => ({
       event: `show.line.${line}`, kind: 'speech', line, text: take.text ?? null,

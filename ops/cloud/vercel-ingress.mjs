@@ -29,7 +29,8 @@ export function vercelIngressRequest(request, ingress) {
   // accept API calls, credentials, launch tickets or a second game origin.
   if (request.headers.host === transportHost && request.method === 'GET' && !request.headers['x-croupier-vercel-secret']) {
     const queryAt=request.url.indexOf('?'),rawPath=queryAt<0?request.url:request.url.slice(0,queryAt);
-    const documents=new Map([['/','/game'],['/game','/game'],['/blackjack','/game'],['/v2','/v2'],['/v2/','/v2'],['/casino.html','/casino.html'],
+    const documents=new Map([['/','/game'],['/game','/game'],['/blackjack','/game'],['/v2','/v2'],['/v2/','/v2'],['/casino.html','/play'],
+      ['/roulette-test','/roulette-test/'],['/roulette-test/','/roulette-test/'],
       ['/bo','/control/administration'],['/bo/','/control/administration'],['/bo/index.html','/control/administration'],
       ['/bo/login.html','/control/login'],['/bo/set-password.html','/control/set-password'],
       ['/studio','/studio'],['/studio/','/studio'],['/studio/activity','/studio/activity'],['/studio/administration','/studio/administration'],['/lab','/control'],['/studio-astrid','/control'],['/studio-lissabon','/control']]);

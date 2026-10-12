@@ -101,8 +101,7 @@ test('dealer workspace has visible breadcrumbs tabs and in-category settings wit
   assert.equal(nodes(tree, node => node.props?.onConfigureSlot).length,1);
   assert.equal(nodes(tree, node => node.type === 'nav' && node.props['aria-label']==='Dealerns klippkategorier').length,0);
   assert.match(html,/Standard och varianter/);
-  assert.match(html, /href="\/control\/compositions\?dealer=astrid"/);
-  assert.match(html, /Sammansättning/);
+  assert.doesNotMatch(html, /href="\/control\/compositions/);
   assert.match(html, /Tal &amp; automatik/);
   assert.match(html, /Inställningar/);
   assert.equal(nodes(tree, node=>node.type==='details').length,0,'common workspace sections are not collapsed');
@@ -129,7 +128,7 @@ test('draft survives dealer chip and category changes', () => {
   assert.equal(nodes(tree, node => node.props?.inventory && (node.props?.family || node.props?.policy)).length, 0, 'Astrid family tools not rendered for Vera');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
-  assert.match(html, /href="\/control\/compositions\?dealer=vera"/);
+  assert.doesNotMatch(html, /href="\/control\/compositions/);
   assert.match(html, /href="\/control\/rehearsal\?dealer=vera"/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'V Vera');
@@ -384,7 +383,7 @@ test('unapplied actual speech edits protect dealer and route exits, remain acros
   input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'studio-qa-unsaved'}});render();assert.equal(h.state('speechDraft'),true);
   const guard={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(guard);assert.equal(guard.blocked,true);
   nodes(tree,node=>typeof node.props?.onNavigate==='function')[0].props.onNavigate({preventDefault(){}},'/control/clips?dealer=vera&view=clips');render();assert.equal(h.state('workspaceView'),'clips');assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'studio-qa-unsaved');
-  const route=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/compositions'))[0];route.props.onClick({preventDefault(){}});render();assert.equal(h.state('workspaceView'),'speech');assert.deepEqual(assigned,[]);assert.match(h.state('notice'),/ångra/);
+  const route=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/rehearsal'))[0];route.props.onClick({preventDefault(){}});render();assert.equal(h.state('workspaceView'),'speech');assert.deepEqual(assigned,[]);assert.match(h.state('notice'),/ångra/);
   pressDealer(tree,'Mei');render();assert.equal(h.state('dealerId'),'vera');assert.match(h.state('notice'),/talformuläret/);
   nodes(form,node=>node.type==='button'&&node.props.children==='Ångra ändringar i talformuläret')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'');
   const clean={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(clean);assert.equal(clean.blocked,undefined);
@@ -425,8 +424,8 @@ test('clips route and dealer management preserve composition operator and room t
   function setLocation(value){const next=new URL(value,runtimeWindow.location.href);Object.assign(runtimeWindow.location,{href:next.href,search:next.search,hash:next.hash});}
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow,'./studio-navigation':navModule.exports});
   let tree=h.render(page.props);
-  const tabLinks=()=>{const component=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];return nodes(component.type(component.props),node=>node.type==='a'&&['Grundloop','Klipp','Skapa material','Sammansättning','Tal & automatik','Svarsbibliotek','Provspelning & logg','Inställningar'].includes(node.props.children));};
-  function assertTabs(dealer,composition,operator=null,table=null){const links=tabLinks();assert.equal(links.length,8);for(const link of links){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('dealer'),dealer);assert.equal(query.get('composition'),composition);assert.equal(query.get('operator'),operator);assert.equal(query.get('table'),table);assert.equal(query.has('lane'),false);}return links;}
+  const tabLinks=()=>{const component=nodes(tree,node=>typeof node.props?.onNavigate==='function')[0];return nodes(component.type(component.props),node=>node.type==='a'&&['Grundloop','Klipp','Skapa material','Tal & automatik','Svarsbibliotek','Provspelning & logg','Inställningar'].includes(node.props.children));};
+  function assertTabs(dealer,composition,operator=null,table=null){const links=tabLinks();assert.equal(links.length,7);for(const link of links){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('dealer'),dealer);assert.equal(query.get('composition'),composition);assert.equal(query.get('operator'),operator);assert.equal(query.get('table'),table);assert.equal(query.has('lane'),false);}return links;}
   assertTabs('paow','mobile-phone','operator-42','room-7');
   h.flushEffects();tree=h.render(page.props);
   const management=nodes(tree,node=>node.type==='button'&&node.props['aria-controls']==='dealer-settings')[0];assert.ok(management);management.props.onClick();tree=h.render(page.props);

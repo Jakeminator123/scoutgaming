@@ -621,7 +621,7 @@
     },
     {
       "id": "studio-render-tools",
-      "pattern": "/studio/api/{voice|inputs|chat|presentation|social-subroutes|probe|simulate|zones|original-media|generated-speech}/...",
+      "pattern": "/studio/api/{voice|inputs|chat|presentation|social-subroutes|probe|simulate|zones|generated-speech}/...",
       "serving": "Explicit frontend allowlist -> protected Render Lab transport/handlers",
       "access": "Render Lab authenticated request boundary; mutations and paid/provider work retain endpoint-specific gates.",
       "sources": [
@@ -976,14 +976,26 @@
     },
     {
       "from": [
-        "/v2",
-        "/casino.html"
+        "/v2"
       ],
       "behavior": "Existing GET/HEAD prepared HTML routes remain. /v2 is not generally canonicalized by gameEntryRedirect.",
       "sources": [
         "apps/croupier-frontend/app/v2/route.ts:3",
-        "apps/croupier-frontend/app/casino.html/route.ts:3",
         "apps/croupier-frontend/lib/server-ui.mjs"
+      ]
+    },
+    {
+      "from": [
+        "/casino.html"
+      ],
+      "to": "/play",
+      "status": 308,
+      "retired": true,
+      "note": "Permanent redirect that keeps the request query. The 3D casino floor is retired.",
+      "sources": [
+        "apps/croupier-frontend/app/casino.html/route.ts:13",
+        "apps/croupier-frontend/app/casino.html/route.ts:17",
+        "ops/cloud/vercel-ingress.mjs:32"
       ]
     },
     {
@@ -1212,34 +1224,21 @@
       "app": "frontend",
       "handlerFile": "apps/croupier-frontend/app/casino.html/route.ts",
       "serving": "Vercel frontend / Next",
-      "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "access": "Permanent redirect to /play. The query string is preserved. No casino document is served.",
+      "boundary": "GET and HEAD return 308 to /play with the same query. The retired 3D floor is not prepared or traced.",
       "groupId": "aliases",
       "sources": [
         {
           "path": "apps/croupier-frontend/app/casino.html/route.ts",
-          "line": 3
+          "line": 13
         },
         {
           "path": "apps/croupier-frontend/app/casino.html/route.ts",
-          "line": 4
+          "line": 17
         },
         {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 4
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 66
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
-        },
-        {
-          "path": "apps/croupier-frontend/lib/server-ui.mjs"
+          "path": "ops/cloud/vercel-ingress.mjs",
+          "line": 32
         }
       ],
       "historicalAlias": true
@@ -1284,7 +1283,7 @@
       "handlerFile": "apps/croupier-frontend/app/game/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 remains a separate prepared entry, and /casino.html is a 308 redirect to /play (frontend-casino-html). This catalog does not infer /blackjack authorization for those legacy paths.",
       "groupId": "aliases",
       "sources": [
         {
@@ -1429,7 +1428,7 @@
       "handlerFile": "apps/croupier-frontend/app/v2/route.ts",
       "serving": "Vercel frontend / Next",
       "access": "Prepared legacy game document; canonical redirect/session checks depend on the exact URL and Neon-policy mode.",
-      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 and /casino.html remain separate prepared entries. This catalog does not infer /blackjack authorization for those legacy paths.",
+      "boundary": "Exact prepared document map and GET/HEAD gate. /game is canonicalized when enabled; /v2 remains a separate prepared entry, and /casino.html is a 308 redirect to /play (frontend-casino-html). This catalog does not infer /blackjack authorization for those legacy paths.",
       "groupId": "aliases",
       "sources": [
         {
@@ -2026,125 +2025,6 @@
         {
           "path": "lab/lib/partner-observer.mjs",
           "line": 198
-        }
-      ]
-    },
-    {
-      "id": "studio-api-original-media-path",
-      "path": "/api/original-media/:path+",
-      "publicPath": "/studio/api/original-media/:path+",
-      "methods": [
-        "GET",
-        "HEAD"
-      ],
-      "kind": "api",
-      "app": "studio",
-      "handlerFile": "lab/app/api/original-media/[...path]/route.ts",
-      "serving": "Protected Render gateway -> internal Lab Next handler for the public platform URL; same route file also exists in local Lab",
-      "access": "Gateway validates the current Lab session; internal handler requires the existing Lab request boundary.",
-      "boundary": "Frontend explicit LAB_API allowlist selects Render. Gateway injects its private authorization header only after session validation; assertLocalRequest/readLocalJson checks exact public Host/forwarding, origin and fetch-site. Local mode admits loopback only; no native Vercel writer is inferred from this route file.",
-      "groupId": "studio-render-tools",
-      "sources": [
-        {
-          "path": "lab/app/api/original-media/[...path]/route.ts",
-          "line": 5
-        },
-        {
-          "path": "lab/app/api/original-media/[...path]/route.ts",
-          "line": 9
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 79
-        },
-        {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 19
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 46
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 83
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 176
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 197
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 18
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 55
-        },
-        {
-          "path": "lab/lib/original-media-server.mjs",
-          "line": 111
-        }
-      ]
-    },
-    {
-      "id": "studio-api-original-media",
-      "path": "/api/original-media",
-      "publicPath": "/studio/api/original-media",
-      "methods": [
-        "GET"
-      ],
-      "kind": "api",
-      "app": "studio",
-      "handlerFile": "lab/app/api/original-media/route.ts",
-      "serving": "Protected Render gateway -> internal Lab Next handler for the public platform URL; same route file also exists in local Lab",
-      "access": "Gateway validates the current Lab session; internal handler requires the existing Lab request boundary.",
-      "boundary": "Frontend explicit LAB_API allowlist selects Render. Gateway injects its private authorization header only after session validation; assertLocalRequest/readLocalJson checks exact public Host/forwarding, origin and fetch-site. Local mode admits loopback only; no native Vercel writer is inferred from this route file.",
-      "groupId": "studio-render-tools",
-      "sources": [
-        {
-          "path": "lab/app/api/original-media/route.ts",
-          "line": 5
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 79
-        },
-        {
-          "path": "apps/croupier-frontend/middleware.ts",
-          "line": 19
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 46
-        },
-        {
-          "path": "apps/croupier-frontend/lib/platform-routing.mjs",
-          "line": 83
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 176
-        },
-        {
-          "path": "ops/cloud/gateway.mjs",
-          "line": 197
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 18
-        },
-        {
-          "path": "lab/lib/http-guard.mjs",
-          "line": 55
-        },
-        {
-          "path": "lab/app/api/original-media/route.ts",
-          "line": 6
         }
       ]
     },

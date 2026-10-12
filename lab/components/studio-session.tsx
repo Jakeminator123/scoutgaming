@@ -28,7 +28,6 @@
 // videos / setVideos: VideoInventory
 // refreshVideos(): Promise<void> — POST /api/videos/rescan
 // refreshingVideos: boolean
-// originals: OriginalMediaCatalog | null — loaded after mount
 // dealerId: DealerId
 // selectDealer(id): set dealer, clear variant, replaceState the query
 // eventId: string
@@ -56,7 +55,6 @@ import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
 import type { ActivityDraft } from './activity-log';
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
 import { mediaExampleEvent, mediaLineForEvent } from '../lib/media-family-policy.mjs';
-import type { OriginalMediaCatalog } from '../lib/original-media.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import { isAssetCompatible, type DealerId, type StudioProject } from '../lib/studio-model.mjs';
 import { videoFitsLine } from '../lib/video-intake.mjs';
@@ -93,7 +91,6 @@ export function useStudioProjectSession(options: SessionOptions) {
   const [project, setProjectState] = useState(initialProject);
   const [conflict, setConflict] = useState(false);
   const [videos, setVideos] = useState(initialVideos);
-  const [originals, setOriginals] = useState<OriginalMediaCatalog | null>(null);
   const [refreshingVideos, setRefreshingVideos] = useState(false);
   const projectRef = useRef(project);
   // The ref advances with each mutation, before React renders. Both sequential
@@ -210,11 +207,6 @@ export function useStudioProjectSession(options: SessionOptions) {
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-    requestJson<OriginalMediaCatalog>('/api/original-media', { signal: controller.signal }).then(setOriginals).catch(() => {});
-    return () => controller.abort();
-  }, []);
-  useEffect(() => {
     function onBeforeUnload(event: BeforeUnloadEvent) {
       const social = options.unsavedSocialRef?.current;
       if (dirty || social && JSON.stringify(social.draft) !== JSON.stringify(social.status.policy)) { event.preventDefault(); event.returnValue = ''; }
@@ -238,7 +230,7 @@ export function useStudioProjectSession(options: SessionOptions) {
   return {
     project, setProject, updateProject, modelEdit, dirty, saving, save, exportProject,
     error, setError, notice, setNotice, conflict, setConflict, savedJson, setSavedJson,
-    videos, setVideos, refreshVideos, refreshingVideos, originals,
+    videos, setVideos, refreshVideos, refreshingVideos,
     dealerId, selectDealer, eventId, selectEvent, variantId, setVariantId, selectVariant, assignSelection,
     mode, changeMode, status: initialStatus, event, observedEvent, line, variant, media, dealer,
     activities, recordActivity, clearActivities, setActivities, projectRef,

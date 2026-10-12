@@ -204,7 +204,8 @@ lokalt utanför repot:
 | `media/.migration/` | 9,5 MB · 4 filer | Journaler från medieomläggningen 2026-10-02 (`tools/migrate-media-layout.mjs`) | A19 (arkivera efter Jakobs ok) |
 | `random/*.pdf`, `random/env-backup-*/`, `random/bilder-*/` | – | Jakobs privata lokala filer | Nej |
 
-Ignoreringsregler: `.cursorignore` = `.ignore`. De döljer för Cursor och `rg`:
+Ignoreringsregler (vid `00ea55c5`; ändrade av A17 efter B17, se README §2):
+`.cursorignore` = `.ignore`. De döljer för Cursor och `rg`:
 `media/**/source/`, `media/**/staging/`, `media/layout.json`,
 `media/blob-index.json`, `vendor/`, alla binärer (`*.mp4`, `*.png`, `*.glb` …),
 `lab/data/`, `web/data/` och `.env*`. `.cursorignore` stoppar dessutom Cursors

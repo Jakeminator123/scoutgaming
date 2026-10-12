@@ -4,7 +4,6 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import type { DealerId, StudioProject } from '../lib/studio-model.mjs';
 import type { PartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence, type PresentationStep } from '../lib/presentation-sequence.mjs';
-import { resolveOriginalDefault, type OriginalMediaCatalog } from '../lib/original-media.mjs';
 import { mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
 import { videoFitsEvent } from '../lib/video-intake.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
@@ -26,7 +25,7 @@ import styles from './game-stream.module.css';
 
 export interface GameStreamProps {
   trace: PartnerTrace; project: StudioProject; videos: VideoInventory;
-  originals: OriginalMediaCatalog | null; dealerId: DealerId; active: boolean;
+  dealerId: DealerId; active: boolean;
   autoFollow?: boolean;
   followFromRecord?: number;
   observationRevision?: number;
@@ -38,7 +37,7 @@ interface PlaybackRun {
   generation: number; controller: AbortController; step: PresentationStep;
   cleanup: () => void; finish: { resolve: () => void; reject: (error: Error) => void } | null;
 }
-export function GameStream({ trace, project, videos, originals, dealerId, active, autoFollow = false, followFromRecord, observationRevision = 0, onActivity, onOpenEvent }: GameStreamProps) {
+export function GameStream({ trace, project, videos, dealerId, active, autoFollow = false, followFromRecord, observationRevision = 0, onActivity, onOpenEvent }: GameStreamProps) {
   const [mode, setMode] = useState<DirectorMode>('off');
   const sequence = useMemo(() => buildPresentationSequence(trace.records, project), [trace.records, project]);
   const table = useMemo(() => observedTable(trace.records, sequence), [trace.records, sequence]);
@@ -242,7 +241,6 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
   const videoId = currentResult ? currentResult.videoGenerationId : variant?.videoGenerationId;
   const sourceEvent = (currentResult?.decision?.sourceEvent ?? event?.exampleEvent) as Record<string, unknown> | undefined;
   const video = media?.managed && sourceEvent && event ? mediaVideoForEvent(videos, dealerId, event.id, sourceEvent, videoId) : videoId && sourceEvent ? videos.videos.find(video => video.id === videoId && video.available && videoFitsEvent(video, sourceEvent)) : null;
-  const original = !media?.managed && variant && line && variant.id === line.baselineVariantId && !variant.videoGenerationId && sourceEvent ? resolveOriginalDefault(originals, dealerId, sourceEvent) : null;
   const idleClip = idleState.clip;
   const idleVideo = idleClip ? videos.videos.find(item => item.id === idleClip.videoId && item.available) : null;
   const idleOwner = idleController.current;
@@ -259,7 +257,7 @@ export function GameStream({ trace, project, videos, originals, dealerId, active
       <div className={styles.speechStage}>
       {idleClip && idleVideo && active && !playing && !busy && !speechPriority.playing ? <LabIdleSurface key={idleKey} url={idleVideo.previewUrl} videoId={idleVideo.id} classification={idleVideo.classification}
         kind={idleClip.kind} repeat={idleClip.repeat} standardBase={idleClip.standardBase} onReady={() => {}}
-        onReceipt={value => idleReceipt(idleOwner, idleClip.playId, value)} /> : speechPriority.playing && !playing && !busy ? <div className="stage-video" aria-hidden="true" /> : event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.fileName ?? video?.label} videoId={videoId ?? undefined} familyId={media?.family?.id ?? video?.familyId} fallbackVideo={media?.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, media.line?.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(videoId && !video)} originalMedia={original} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
+        onReceipt={value => idleReceipt(idleOwner, idleClip.playId, value)} /> : speechPriority.playing && !playing && !busy ? <div className="stage-video" aria-hidden="true" /> : event && variant ? <Stage event={event} asset={currentResult?.asset ?? project.assets.find(asset => asset.id === variant.assetId)} dealer={project.dealers.find(dealer => dealer.id === dealerId)?.label ?? dealerId} variantLabel={variant.label} playId={playId} playing={playing && active && !step?.blocked} hasResult={Boolean(currentResult)} busy={busy} videoUrl={video?.previewUrl} videoName={video?.fileName ?? video?.label} videoId={videoId ?? undefined} familyId={media?.family?.id ?? video?.familyId} fallbackVideo={media?.managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, media.line?.variants[0]?.videoGenerationId) : null} videoMissing={Boolean(videoId && !video)} allow2dFallback={false} sourceIsObserved onPlaybackEvent={value => receipt(value, value.playId ?? playId)} onPlay={() => { if (step && !following && !playing && !busy) void playStep(step, { signal: new AbortController().signal }).catch(cause => { if (mounted.current) setError(cause.message); }); }} /> : <div className={styles.empty}><strong>Väntar på spelinstruktioner</strong><p>Tryck Anslut och spela i originalfliken. Labbet följer nya mottagna instruktioner automatiskt.</p></div>}
       <div ref={speechHost} className={styles.speechHost} data-dealer-speech-host />
       </div>
       </PresentationFrame>

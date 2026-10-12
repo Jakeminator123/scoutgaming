@@ -24,8 +24,8 @@
     <button id="sign-out" type="button" hidden>Sign out</button>
     <canvas id="table-canvas" aria-hidden="true"></canvas>
     <div id="dealer-wrap"><canvas id="dealer"></canvas></div>
-    <!-- her forearms/hands, re-painted ABOVE the table art from the same
-         frames via the streams-hands matte track (dealer-engine.mjs) -->
+    <!-- her forearms/hands sit above the table art. The published player
+         uses the shared stage; this canvas is not a second dealer engine. -->
     <div id="dealer-hands-wrap"><canvas id="dealer-hands"></canvas></div>
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
       <filter id="luma-alpha" color-interpolation-filters="sRGB">

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Roulette · Testbord | Scoutgaming</title>
+  <link rel="stylesheet" href="/roulette-test/style.css">
+  <script type="module" src="/roulette-test/app.mjs"></script>
+</head>
+<body>
+  <header class="topbar"><a href="/">SCOUT<span>GAMING</span></a><span class="badge">SPELMOTOR / TESTYTA</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">EUROPEISK ROULETTE · ENKEL NOLLA</p><h1>Roulette<span class="muted"> / testbord</span></h1><p class="description">Prova serverns slumpgenerator och se eventet som ett framtida spelrum kan ta emot.</p></div><span class="demo-badge">DEMO · INGA INSATSER</span></div>
+    <div class="workspace">
+      <section class="panel play-panel" aria-labelledby="result-title">
+        <div class="panel-heading"><h2 id="result-title">Serverns utfall</h2><span class="small-label">37 MÖJLIGA NUMMER</span></div>
+        <div class="result-area"><div class="result-ring" id="result-ring"><span class="result-number" id="result-number">—</span><span id="result-color">Redo att snurra</span></div></div>
+        <button class="primary" id="spin" type="button">Snurra på servern <span aria-hidden="true">↗</span></button>
+        <p id="status" class="status" role="status" aria-live="polite">Ett klick ger ett nytt, oberoende serverutfall.</p>
+        <div class="metrics"><div><strong id="spin-count">0</strong><span>snurr i denna flik</span></div><div><strong id="latency">—</strong><span>senaste svarstid</span></div><div><strong>0–36</strong><span>en grön nolla</span></div></div>
+      </section>
+      <section class="panel board-panel" aria-labelledby="board-title">
+        <div class="panel-heading"><h2 id="board-title">Nummeröversikt</h2><span class="small-label">SENASTE UTFALL MARKERAS</span></div>
+        <div id="number-board" class="number-board" aria-label="Roulettens 37 nummer"></div>
+        <p class="board-note">Nummeröversikten visar utfallet. Det finns inga satsningsknappar ännu.</p>
+        <div class="history-heading"><h3>Senaste snurr</h3><button id="clear" type="button" class="text-button" disabled>Rensa lokal historik</button></div>
+        <ol id="history" class="history" aria-label="Senaste 20 utfall, nyast först"></ol><p id="empty-history" class="muted">Dina resultat visas här när du snurrar.</p>
+      </section>
+      <section class="panel code-panel" aria-labelledby="event-title">
+        <div class="panel-heading"><div><p class="eyebrow">FRÅN SPELSERVERN</p><h2 id="event-title">Resultat-event</h2></div><button type="button" id="copy" class="secondary" disabled>Kopiera JSON</button></div>
+        <div class="endpoint"><span>POST</span><code>/api/roulette-test/spin</code><span class="endpoint-note">→ roulette.spin.resolved</span></div>
+        <pre id="event-json" tabindex="0" aria-label="Senaste eventet som JSON">// Snurra för att se det verkliga svaret från servern.</pre>
+        <details><summary>Visa anropet i kod</summary><pre tabindex="0">const response = await fetch('/api/roulette-test/spin', {
+  method: 'POST',
+  headers: { 'X-Roulette-Preview': '1' },
+  credentials: 'omit'
+});
+if (!response.ok) throw new Error('Snurret misslyckades');
+const { event } = await response.json();
+console.log(event.outcome); // { number, color }</pre><p>Kör från denna sidas origin. Varje anrop skapar en ny demorunda. Inga automatiska återförsök görs.</p></details>
+      </section>
+    </div>
+    <footer><p><strong>Servern drar. Testytan visar.</strong> Samma nummer kan komma flera gånger i följd.</p><p>Ingen plånbok, spelarkoppling eller sparad spelhistorik. Flikens historik försvinner när sidan laddas om. Ett framtida rum behöver beständiga rundor och avräkning.</p></footer>
+  </main>
+</body>
+</html>

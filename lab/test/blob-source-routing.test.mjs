@@ -6,8 +6,6 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
 import { getVideoResponse, getLabVideoResponse, loadVideoRegistry } from '../lib/video-registry.mjs';
-import { getOriginalMediaResponse, loadOriginalMediaCatalog } from '../lib/original-media-server.mjs';
-import { resolveOriginalDefault } from '../lib/original-media.mjs';
 import { mediaBlobPath } from '../lib/cloud-media-store.mjs';
 import { presentationBankRoot } from '../../tools/media-layout.mjs';
 
@@ -16,7 +14,6 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 const targetPath = 'deal/deal_pos1/deal_pos1.mp4';
 const unknownId = '00000000-0000-0000-0000-000000000000';
 const request = (id, method = 'GET', headers = {}) => new Request(`http://localhost:4188/api/videos/${id}`, { method, headers });
-const originalRequest = (parts, method = 'GET', headers = {}) => new Request(`http://localhost:4188/api/original-media/${parts.join('/')}`, { method, headers });
 const jsonFile = (file, data) => writeFile(file, JSON.stringify(data));
 
 function blobRow(logicalPath, value, access, id = videoIdFromSha256(hash(value))) {
@@ -168,58 +165,6 @@ test('custom archives, unknown IDs and foreign origins never inherit canonical B
   assert.equal((await getVideoResponse(unknownId, request(unknownId), f.options)).status, 404);
   assert.equal((await getVideoResponse(f.item.id, request(f.item.id, 'GET', { origin: 'https://foreign.invalid' }), f.options)).status, 403);
   assert.equal((await getVideoResponse(f.item.id, request(f.item.id, 'GET', { 'sec-fetch-site': 'cross-site' }), f.options)).status, 403);
-  assert.equal(f.calls.length, 0);
-});
-
-async function originalFixture(t, access = 'public') {
-  const f = await fixture(t);
-  const relative = 'dealers/astrid/speech/goodluck.mp4';
-  const row = blobRow('dealers/astrid/runtime/indexed/speech/goodluck.mp4', bytes, access);
-  f.layout.files.push({ path: row.logicalPath, legacyPath: `web/public/${relative}`, size: row.size, sha256: row.sha256, access,
-    ...(access === 'public' ? { publicUrl: `/${relative}` } : {}),
-  });
-  f.index.files.push(row);
-  await jsonFile(join(f.root, 'media/layout.json'), f.layout);
-  await jsonFile(f.indexPath, f.index);
-  f.objects.set(row.storage.pathname, { bytes, contentType: 'video/mp4' });
-  return { ...f, originalRow: row, parts: ['assets', ...relative.split('/')], originalId: 'original:astrid:speech:goodluck' };
-}
-
-test('authenticated allowlisted original speech preserves exact native identity and uses Blob GET, Range and HEAD', async t => {
-  const f = await originalFixture(t);
-  const catalog = await loadOriginalMediaCatalog(f.options);
-  const native = resolveOriginalDefault(catalog, 'astrid', { type: 'speak', line: 'goodluck' });
-  assert.equal(native.id, f.originalId);
-  assert.equal(native.available, true);
-  assert.equal(native.playbackKind, 'native');
-  assert.equal(native.sourcePath, 'dealers/astrid/speech/goodluck.mp4');
-  assert.equal(native.reviewStatus, 'unreviewed');
-  assert.equal(resolveOriginalDefault(catalog, 'astrid', { type: 'speak', line: 'unknown-sentence' }), null);
-  const definition = await getOriginalMediaResponse(['definition', f.originalId], originalRequest(['definition', f.originalId]), f.options);
-  assert.equal((await definition.json()).playbackKind, 'native');
-  assert.equal(f.calls.length, 0, 'catalog and definition read metadata only');
-  await assertBytes((method, headers) => getOriginalMediaResponse(f.parts, originalRequest(f.parts, method, headers), f.options));
-  assert.deepEqual(f.calls, [f.originalRow.storage.pathname]);
-  const moduleParts = ['assets', 'dealer-engine.mjs'];
-  const module = await getOriginalMediaResponse(moduleParts, originalRequest(moduleParts), f.options);
-  assert.equal(module.status, 200);
-  assert.match(module.headers.get('content-type'), /javascript/);
-  await module.text();
-  assert.equal(f.calls.length, 1, 'player modules remain source code rather than Blob assets');
-});
-
-test('original allowlists reject nonpublic mappings and foreign or unknown callers before any Blob read', async t => {
-  for (const access of ['source', 'private']) await t.test(access, async nested => {
-    const f = await originalFixture(nested, access);
-    assert.equal(resolveOriginalDefault(await loadOriginalMediaCatalog(f.options), 'astrid', { type: 'speak', line: 'goodluck' }), null);
-    await assert.rejects(getOriginalMediaResponse(f.parts, originalRequest(f.parts), f.options), { statusCode: 503 });
-    assert.equal(f.calls.length, 0);
-  });
-  const f = await originalFixture(t);
-  for (const parts of [['assets', '..', '.env'], ['assets', 'casino.html'], ['assets', 'dealers', 'astrid', 'streams', 'idle-1_actions_action-deal.h264']]) {
-    await assert.rejects(getOriginalMediaResponse(parts, originalRequest(parts), f.options), { statusCode: 404 });
-  }
-  await assert.rejects(getOriginalMediaResponse(f.parts, originalRequest(f.parts, 'GET', { origin: 'https://foreign.invalid' }), f.options), { statusCode: 403 });
   assert.equal(f.calls.length, 0);
 });
 

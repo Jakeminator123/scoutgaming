@@ -17,6 +17,14 @@ Spårade arbetsanteckningar och de åtta planfilerna tas bort ur trädet i denna
 
 Övriga öppna rader från checklistan 8 oktober finns redan i denna tracker: spelare, transaktioner och rapporter (N2.4, JN2-E), marker (JN2-D), partnerns lösenordsåterställning (JN2-J), visuell partneracceptans (JN2-B) och samlad P6 med fyra dealers. Operatörsjournalen (N2.5) är levererad i JN2-C och öppnas inte igen. Systemkartans planerade ruta N2.4 pekar på `docs/system-map/planned.json`.
 
+## Repo-ordning våg 2 i trädet, 12 oktober 2026
+
+Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efter våg 2, inte ett nytt produktionskvitto.
+
+- `github-work-vercel-entry` finns inte (A18:s env-granskning). Spelarbygget är `apps/croupier-frontend/tools/player-ui-build.mjs`. `ops/vercel-entry/` är borttagen.
+- `ops/caddy/bettalotto-game-auth.Caddyfile` är borttagen. A18: bettalotto.se svarar 301 till `https://croupier.scoutgg.dev/` och använder inte filen. Aktuell Caddy: `kevin/croupier-scoutgg/drift/`.
+- `/casino.html` är 308 till `/play`. Granskningssidorna är borta. `/v2` är kvar som 307. Originalmedia-API:t i Studio är borta. Registrerad video stannar på den gemensamma scenen.
+
 ## Flödesomstrukturering, 12 oktober 2026
 
 N1 samlas i Studio, Spelbolag, Drift och System. Kanoniska adresser är `/control/compositions`, `/control/companies`, `/control/rooms` och kontextuell `/control/rehearsal`; gamla adresser leder vidare. Sammansättning ersätter presentationslane i användarflödet, medan kompatibla lagrings-ID:n och intern uppspelningskonfiguration behålls. N2 samlar rummets inställningar på `/partner/{slug}/rooms` med bevarade utkast och navigationsskydd.
@@ -1123,7 +1131,11 @@ Efter Neoncutover kan offlineStudio ge 503 studio_read_storage_unavailable,
 ingen auth/lagringsfallback till QA. Lokal guestpolicy består enligt AGENTS.
 Byggcache rensas bara utan berörda sessioner/processer; behåll Labtestruntime.
 
-.ignore/Cursorignore begränsar sök/context/index, inte Git/build/filernas existens.
+`.ignore` döljer tung spårad media och hemligheter för vanlig sökning.
+`.cursorignore` behåller hemligheter och privat data. Ofarlig tung projekttext
+(`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`,
+`media/**/staging/*.md`) ligger i `.cursorindexingignore`: den indexeras inte,
+men kan läsas uttryckligen. Reglerna ändrar inte Git, bygge eller att filerna finns.
 Sök riktat källtext/JSON; binärer/cache/dependencies/private state undantas.
 Personarkivets gräns kringgås inte med no-ignore/Githistorik/backups.
 Tools används delvis i runtime; test/pipeline/media är inte generella raderingsmål.

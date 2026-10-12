@@ -6,7 +6,7 @@ import {OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
 
 const DOCUMENTS = new Map([
   ['/game', 'game.html'], ['/game/', 'game.html'], ['/blackjack', 'blackjack.html'], ['/blackjack/', 'blackjack.html'],
-  ['/v2', 'game.html'], ['/v2/', 'game.html'], ['/casino.html', 'casino.html'],
+  ['/v2', 'game.html'], ['/v2/', 'game.html'],
 ]);
 
 const HANDOFF = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;

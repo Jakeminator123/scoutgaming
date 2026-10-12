@@ -77,7 +77,7 @@ try {
     ['/api/bo/users/remove',{body:{username:'demo-reviewer'}}]])assert.equal((await request(bo+path,options)).status,404,path);
   let boCookie=administratorCookie();
   const speechQa=await request(bo+'/bo/speech-qa.html',{cookie:boCookie});assert.equal(speechQa.status,200);assert.match(await speechQa.text(),/speech-qa\.mjs/);
-  const protectedMedia=await request(bo+'/bo/media-preview.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/control/login');
+  const protectedMedia=await request(bo+'/bo/speech-qa.mjs');assert.equal(protectedMedia.status,302);assert.equal(location(protectedMedia),'/control/login');
   const boClaims=JSON.parse(Buffer.from(boCookie.split('.')[1],'base64url').toString());
   const launchCookie='bo_jwt='+sign({sub:'partner-player',partner:'partner-key',exp:boClaims.exp});
   assert.equal(location(await request((await begin()).authorize,{cookie:launchCookie})).startsWith('/studio/login'),true,'Partner launch JWT is not a BO session');

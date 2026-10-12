@@ -22,7 +22,10 @@ samma manifeststyrda mappstruktur.
 
 ### Lokala original som standardförval
 
-Från 21 september läser `/api/original-media` det lokala produktregistret.
+`/api/original-media` och spelaren för originalmedia är pensionerade
+(12 oktober 2026). Registrerad video stannar på den gemensamma scenen.
+Ett hanterat klipp utan spelbar fil visar den befintliga statustexten,
+inte en separat originalmedia-reserv.
 Standard utan `videoGenerationId` använder exakt matchande original för
 vald dealer, replik eller stödd destination. En explicit koppling går före;
 alternativ lånar aldrig standardens film. **Bara 2D** finns kvar.

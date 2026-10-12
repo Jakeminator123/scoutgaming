@@ -1,10 +1,10 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
-Status 2026-09-29: Gateway och Director kör GitHub-revision `15bd1541`.
-De verkliga env-värdena och tokenkopplingarna mellan spel, Director och
-Gateway är kontrollerade. Se [aktuellt driftkvitto](CLOUD-ACTIVATION-2026-09-29.md).
-Nedan beskrivs kodens kontrakt och avgränsade provväg. Konfigurationen är
-inte ensam bevis för ett färdigt tal-/bild-/GPU-flöde eller godkänd läppsynk.
+Kodkontraktet nedan är det som gäller. Driftkvittot från 29 september är
+inte dagens revision. Se [driften](DEPLOYMENT.md) och
+[molnkartan](../../../docs/CLOUD-MIGRATION.md).
+Konfigurationen är inte ensam bevis för ett färdigt tal-/bild-/GPU-flöde
+eller godkänd läppsynk.
 
 ## Låst kontrakt
 

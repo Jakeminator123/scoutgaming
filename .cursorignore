@@ -63,9 +63,7 @@ vendor/
 *.sqlite3
 *.db
 
-# Large source/staging metadata and generated layout stay available for explicit reads.
+# Local migration journals stay hidden. Heavy tracked project text is not
+# listed here: .cursorindexingignore stops indexing, and an explicit read
+# is allowed. See AGENTS.md.
 /media/.migration/
-/media/**/source/
-/media/**/staging/
-/media/layout.json
-/media/blob-index.json

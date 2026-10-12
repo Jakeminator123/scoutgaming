@@ -32,7 +32,7 @@ function component(file, name, props) {
     if (modules.has(filename)) return modules.get(filename).exports;
     const module = { exports: {} }; modules.set(filename, module);
     const code = transformSync(readFileSync(new URL(filename, import.meta.url), 'utf8'), { filename, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
-    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : id === './presentation-frame' ? load('./presentation-frame.tsx') : id === './file-video' ? load('./file-video.tsx') : id === './original-media-player' ? { OriginalMediaPlayer: () => null } : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
+    vm.runInNewContext(code, { module, exports: module.exports, ...clock, performance: { now: () => now }, window: { ...clock, matchMedia() { return { matches: false, addEventListener() {}, removeEventListener() {} }; } }, require: id => id === 'react' ? hooks : id.endsWith('.css') ? { __esModule: true, default: {} } : id === './dealer-video-surface' ? { DealerVideoSurface: ({children}) => children } : id === './presentation-frame' ? load('./presentation-frame.tsx') : id === './file-video' ? load('./file-video.tsx') : id === './video-classification' ? { VideoClassification: () => null } : id === './video-upload' ? { VideoUpload: () => null } : id === './video-coverage' ? { VideoCoverage: () => null } : require(id) });
     return module.exports;
   }
   function renderFunction(fn, values, path) {
@@ -201,6 +201,46 @@ test('a stale missing variant URL falls back to its same-family standard without
   assert.equal(byType(h.render(), 'video').props.src, '/standard');
   h.props.videoId = undefined;
   assert.equal(byType(h.render(), 'video'), undefined);
+});
+
+test('missing registered video without a 2D fallback shows the existing status text', () => {
+  const h = stage({ allow2dFallback: false });
+  const status = find(h.render(), node => node.type === 'div' && node.props.role === 'status');
+  assert.match(String(status.props.children), /Ingen spelbar video för den här situationen/);
+  assert.equal(byType(h.render(), 'iframe'), undefined);
+  assert.equal(button(h.render(), 'Bara 2D'), undefined);
+});
+test('missing required video emits failure without starting or completing a 2D animation', () => {
+  const receipts = []; let ended = 0;
+  const h = stage({ allow2dFallback: false, playing: true, hasResult: true, playId: 1,
+    onPlaybackEvent: value => receipts.push(value), onPlaybackEnd() { ended++; } });
+  const tree = h.render();
+  assert.match(String(find(tree, node => node.props?.role === 'status').props.children), /Ingen spelbar video/);
+  h.advance(10000);
+  assert.deepEqual(receipts.map(({ phase, medium }) => ({ phase, medium })), [{ phase: 'failed', medium: 'video' }]);
+  assert.equal(ended, 1, 'the editor stops the attempted preview without a completed receipt');
+  assert.equal(h.timers.size, 0);
+});
+
+test('broken required variant tries only its registered family standard, then reports no playable video', () => {
+  const receipts = [];
+  const h = stage({ allow2dFallback: false, playing: true, hasResult: true, playId: 1,
+    videoUrl: '/variant', videoId: 'variant', familyId: 'same',
+    fallbackVideo: { available: true, previewUrl: '/standard', id: 'standard', familyId: 'same', fileName: 'standard.mp4' },
+    onPlaybackEvent: value => receipts.push(value) });
+  videoEvent(byType(h.render(), 'video'), 'onError');
+  const standard = byType(h.render(), 'video');
+  assert.equal(standard.props.src, '/standard');
+  videoEvent(standard, 'onError');
+  const tree = h.render();
+  assert.match(String(find(tree, node => node.props?.role === 'status').props.children), /Ingen spelbar video/);
+  assert.equal(byType(tree, 'video'), undefined);
+  assert.equal(button(tree, 'Bara 2D'), undefined);
+  h.advance(10000);
+  assert.equal(receipts.at(-1).phase, 'failed');
+  assert.equal(receipts.some(value => value.medium === '2d' || value.phase === 'completed'), false);
+  h.props.playId++;
+  assert.equal(byType(h.render(), 'video').props.src, '/variant', 'an explicit retry gets a fresh video attempt');
 });
 
 test('Bara 2D is an explicit override; switching back restores exact bound video', () => {
