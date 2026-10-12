@@ -102,9 +102,9 @@ Kandidaterna ovan efter förnyad mätning, samt dokumenten
 
 ## Klart när
 
-- [ ] `public-reach.mjs` ger 0 `none` och 0 `test-only` utom motiverade undantag.
-- [ ] `lab-unused.mjs` ger bara motiverade poster.
-- [ ] Inga dokument pekar på borttagna filer.
+- [x] `public-reach.mjs` ger 0 `none` och 0 `test-only` utom motiverade undantag.
+- [x] `lab-unused.mjs` ger bara motiverade poster.
+- [x] Inga dokument pekar på borttagna filer.
 
 ## Tveksamt att lyfta
 

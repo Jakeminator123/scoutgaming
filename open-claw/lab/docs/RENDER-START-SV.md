@@ -21,8 +21,8 @@ de befintliga tjänsternas Environment-vyer visar deras faktiska värden.
    produkt-token ska ge 400 innan modellkörning. Ett giltigt talprov kräver
    separat syntetisk provprofil, kostnadsram och uppspelningskvitto.
 
-Aktuell drift och öppna kontroller finns i [handoffen](../../../docs/JOHN-HANDOFF.md).
-Den tidigare tokenkontrollen finns i [29 september-kvittot](CLOUD-ACTIVATION-2026-09-29.md).
+Aktuell drift och öppna kontroller finns i [handoffen](../../../docs/JOHN-HANDOFF.md)
+och [driften](DEPLOYMENT.md). Kvittot från 29 september är pensionerat.
 Gateway-modellens effektiva konfiguration ligger på beständig disk; ändrad
 `OPENCLAW_MODEL_ID` i env är inte ensam bevis på modellbyte. Nycklar och
 diskdata följer inte med en Git-push eller en Vercel-deploy.

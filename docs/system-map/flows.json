@@ -239,7 +239,7 @@
         {
           "id": "shared-player",
           "title": "Spela i den gemensamma spelarens ägda yta",
-          "detail": "Mobile Phone Lane använder hashverifierade MP4-filer via PerformancePlayer.playLocalClip. Originalvägen använder DealerEngine, exakta frameindex och kalibrerade talpaket för alla fyra dealers. start eller selected räknas inte som färdigt klipp: riktig visad bild och mediaavslut behövs. Kortkontakt och uppspelning följer faktiskt presenterade frames.",
+          "detail": "Mobile Phone Lane använder hashverifierade MP4-filer via PerformancePlayer.playLocalClip. Publicerad uppspelning är local eller layered, med exakta frameindex och kalibrerade talpaket för alla fyra dealers. Studios originalmediareserv är pensionerad. start eller selected räknas inte som färdigt klipp: riktig visad bild och mediaavslut behövs. Kortkontakt och uppspelning följer faktiskt presenterade frames.",
           "events": [
             "selected",
             "start",
@@ -262,11 +262,6 @@
               "path": "web/public/local-presentation.mjs",
               "line": 60,
               "label": "Exakt film och uppspelningskvitton"
-            },
-            {
-              "path": "web/public/dealer-engine.mjs",
-              "line": 172,
-              "label": "Originalspelarens clip-gräns och frameindex"
             }
           ],
           "tests": [

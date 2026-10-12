@@ -69,8 +69,9 @@ html[data-presentation-startup]:not([data-presentation-startup="ready"]) #scene 
 #room2::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.35) 100%); }
 
 #dealer-wrap {
-  /* invisible window: clips are baked over the exact scene crop this rect
-     occupies at the design aspect (pipeline/bake-composite.sh) */
+  /* invisible window: clips are framed to the scene crop this rect
+     occupies at the design aspect. The old composite baker is retired;
+     these crop values stay. */
   position: absolute; left: 50%; top: var(--dealer-top); transform: translateX(calc(-50% + var(--dealer-x, 0vw)));
   width: var(--dealer-h); height: calc(var(--dealer-h) * var(--dealer-crop, 0.86));
   overflow: hidden;

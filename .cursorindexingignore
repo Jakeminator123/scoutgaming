@@ -63,9 +63,12 @@ vendor/
 *.sqlite3
 *.db
 
-# Large source/staging metadata and generated layout stay available for explicit reads.
+# Indexing only. These paths stay readable on an explicit open.
+# Secrets and private data stay in .cursorignore, not only here.
 /media/.migration/
 /media/**/source/
 /media/**/staging/
 /media/layout.json
 /media/blob-index.json
+/media/**/source/*.json
+/media/**/staging/*.md
