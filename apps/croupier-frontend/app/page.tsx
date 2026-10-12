@@ -46,6 +46,16 @@ export default function Home() {
                   asChild
                   size="lg"
                   variant="outline"
+                  className="rounded-full border-2 border-off/70 bg-transparent px-8 text-sm font-semibold tracking-wide text-off uppercase transition-all duration-300 hover:border-lime hover:bg-off/10 hover:text-lime"
+                >
+                  <a href="/lobby">
+                    Lobby <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
                   className="rounded-full border-2 border-off/70 bg-transparent px-8 text-sm font-semibold tracking-wide text-off uppercase transition-all duration-300 hover:border-lime hover:bg-off/10 hover:text-lime hover:shadow-[0_0_20px_var(--scout-lime)]"
                 >
                   <a href="/videos/ai-casino-demo.mp4" target="_blank" rel="noreferrer">
