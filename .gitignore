@@ -33,3 +33,18 @@ media/.migration/
 
 # Skärmbilder från agentarbete; lokala, inte i Git
 /random/bilder-*/
+
+# Generated dependencies, build caches and local verification output.
+.next/
+.next-probe/
+.nuxt/
+.cache/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+__pycache__/
+*.py[cod]
+.venv/
+*.tsbuildinfo
+*.log
