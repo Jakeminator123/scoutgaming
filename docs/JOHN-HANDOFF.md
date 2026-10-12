@@ -208,8 +208,9 @@ HTTP-testet kräver nu att redirectmålet ger 200 direkt utan fler redirects.
 
 ### Rouletterum per bolag, 12 oktober 2026
 
-Roulette finns som spelval i samma skapa-/publicera-rum-flöde för Studio och
-partnerportalen. Befintliga rum är blackjack om speltyp saknas. Bolagets lobby
+Roulette finns som spelval i Studios skapa-/publicera-rum-flöde per bolag.
+Partnerportalen visar rummet, dess utseende och provspelningslänk, som för
+blackjack. Befintliga rum är blackjack om speltyp saknas. Bolagets lobby
 skiljer spelen åt och öppnar roulette via `/play/roulette`. Fryst dealer, bord
 och bakgrund återanvänder lobbyns publicerade scen; inga tal-/mediafiler ändras.
 Personliga rundor använder befintlig inloggning och demosaldo. Insatser,
@@ -248,6 +249,18 @@ med verklig publiceringskontroll och rollback vid revokering. Produktions-
 byggen och livekontroll följs upp i rättnings-PR; ingen ny DDL behövs.
 Partnerns snapshot behåller också rummets speltyp så provspelningslänken
 öppnar roulette i stället för den tidigare hårdkodade blackjack-adressen.
+
+PR #36 mergades som `7ccc2f6c`; main-CI `38291644958` passerade, inklusive
+isolerad PostgreSQL. Samma SHA verifierades live på Render och Vercel med
+kapabilitet 9. Nordic Bet fick på Jakobs begäran sitt första rouletterum,
+`room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, i paketversion 7. PAOW:s redan
+uppladdade grundloop `13d044b3-0582-4f8f-a754-75bb099a0237` återkopplades via
+Studio till den tomma standardvarianten före publiceringen; inga mediabytes
+ändrades. Befintligt blackjackrum `paow3` finns kvar. Publicerad katalog,
+partnerlänk och spelarkontots läsflöde verifierades utan insats/saldoändring.
+Livekontrollen hittade också fel frågeparameternamn i roulettescenens
+preview-anrop: `revision` krävs, inte `packageRevision`. Sluträttningen
+använder serverns kontrakt och uppdaterar lobbyns gamla planerat-märkning.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 

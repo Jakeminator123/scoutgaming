@@ -229,11 +229,11 @@ export function playerAreaModel(data, surface) {
         : 'Uppgifterna kommer från spelkontot och kan inte ändras här.'
       : surface === 'historik'
         ? 'Namn, saldo och valuta kommer från spelkontot.'
-        : 'Välj spel. Blackjack öppnas i spelklienten.',
+        : 'Välj ett publicerat blackjack- eller rouletterum.',
     notice: outage ? NOTICE : null,
     fields,
     pills: surface === 'lobby'
-      ? [{label: 'Roulette', status: 'planerat'}, {label: 'Baccarat', status: 'planerat'}]
+      ? [{label: 'Roulette', status: 'demo'}, {label: 'Baccarat', status: 'planerat'}]
       : surface === 'profil' && kind ? [{label: 'Kontotyp', status: kind}]
         : surface === 'historik' && signedIn && !historyRows.length && !outage ? [{label: 'Historik', status: 'inga rundor'}] : [],
     links: surface === 'lobby' && signedIn && !outage

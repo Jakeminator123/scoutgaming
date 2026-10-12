@@ -39,7 +39,7 @@ test('session 401 renders the lobby login call to action', async () => {
   assert.match(page.html, /Logga in för att se egen profil och egen historik/);
   assert.doesNotMatch(page.html, /href="\/play\/profil"|href="\/play\/historik"/);
   assert.doesNotMatch(page.html, /secret-stack-trace|Roulette<\/a>|Baccarat<\/a>/);
-  assert.match(page.html, /Roulette · planerat/);
+  assert.match(page.html, /Roulette · demo/);
   assert.match(page.html, /Baccarat · planerat/);
 });
 

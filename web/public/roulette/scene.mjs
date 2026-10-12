@@ -14,7 +14,7 @@ export async function mountRoomScene(room) {
     const base='/api/operators/'+encodeURIComponent(room.operator);
     const get=async url=>{const res=await fetch(url,{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});if(!res.ok)throw Error('preview_unavailable');return res.json();};
     const [catalogValue,previewValue]=await Promise.all([
-      get(base+'/rooms'),get(base+'/rooms/'+encodeURIComponent(room.id)+'/preview?'+new URLSearchParams({packageRevision:room.packageRevision,dealer:room.dealer})),
+      get(base+'/rooms'),get(base+'/rooms/'+encodeURIComponent(room.id)+'/preview?'+new URLSearchParams({revision:room.packageRevision,dealer:room.dealer})),
     ]);
     const catalog=validatePublicOperatorRooms(catalogValue,{operatorSlug:room.operator});
     const preview=validatePublicOperatorPreview(previewValue);
