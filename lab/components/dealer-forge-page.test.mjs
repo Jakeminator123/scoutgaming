@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -43,10 +44,10 @@ async function realisticState() {
   const { service, tasks } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
   await service.uploadAnchor('paow', { pose: 'redo', contentType: 'image/png', dataBase64: Buffer.concat([PNG, Buffer.from('redo')]).toString('base64') }, actor);
-  const deal = await service.createJob('paow', { slotId: 'deal.player.centre/box3', quality: '720' }, actor);
+  const deal = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.centre/box3', quality: '720' }, actor);
   tasks.set(deal.taskId, { id: deal.taskId, status: 'SUCCEEDED', output: ['https://out/clip.mp4'], credits: 20 });
   await service.pollJob('paow', deal.jobId, actor);
-  const running = await service.createJob('paow', { slotId: 'deal.player.left/box0', quality: '720' }, actor);
+  const running = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '720' }, actor);
   await service.pollJob('paow', running.jobId, actor);
   const index = { ...(await service.status()), dealers: await service.listDealers() };
   return { index, state: await service.state('paow') };
@@ -68,6 +69,13 @@ test('Dealer Forge page renders the full matrix server-side: groups, every slot,
   assert.match(html, /”Welcome to Privé Blackjack/); // speech slot shows its line
   assert.doesNotMatch(html, /RUNWAY_API_KEY saknas/); assert.doesNotMatch(html, /migration 008/);
   assert.match(html, /Öppna i Dealers &amp; klipp/);
+});
+
+test('the composer sends one idempotency key per distinct request and keeps it across ambiguous failures', () => {
+  const source = readFileSync(fileURLToPath(new URL('./dealer-forge-page.tsx', import.meta.url)), 'utf8');
+  assert.match(source, /\{\.\.\.payload,requestId\}/);
+  assert.match(source, /attemptRef\.current\?\.signature!==signature\)attemptRef\.current=\{signature,requestId:crypto\.randomUUID\(\)\}/);
+  assert.match(source, /status>=400&&status<500\)attemptRef\.current=null/);
 });
 
 test('without native data the page still renders the shell, the dealer form and the warnings', async () => {

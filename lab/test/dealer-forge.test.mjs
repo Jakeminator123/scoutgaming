@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
 import { forgeSlots, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
 import { ForgeError } from '../lib/dealer-forge-service.mjs';
@@ -71,9 +72,9 @@ test('anchor upload normalizes to the green master and stores a private source a
 test('deal job: keyframe wan3 with marked last frame, poll commits the MP4 into the exact slot as a review upload', async () => {
   const { service, submitted, tasks, registered, store, failPut } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  await assert.rejects(service.createJob('paow', { slotId: 'deal.player.centre/box3', quality: '720' }, actor), error => error instanceof ForgeError && error.code === 'forge_anchor_missing');
+  await assert.rejects(service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.centre/box3', quality: '720' }, actor), error => error instanceof ForgeError && error.code === 'forge_anchor_missing');
   await service.uploadAnchor('paow', { pose: 'redo', contentType: 'image/png', dataBase64: Buffer.concat([PNG, Buffer.from('redo')]).toString('base64') }, actor);
-  const job = await service.createJob('paow', { slotId: 'deal.player.centre/box3', quality: '720', maxCredits: 50 }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.centre/box3', quality: '720', maxCredits: 50 }, actor);
   assert.equal(job.status, 'running'); assert.equal(job.taskId, 'task-1'); assert.equal(job.request.params, undefined);
   const params = submitted[0].params;
   assert.equal(params.model, 'wan3'); assert.equal(params.ratio, 'auto_720p'); assert.equal(params.duration, 2); assert.equal(params.audio, false);
@@ -91,7 +92,7 @@ test('deal job: keyframe wan3 with marked last frame, poll commits the MP4 into 
   assert.equal(record.pathname, `croupier/media/dealers/paow/review/uploads/${record.id}/${record.sha256}.mp4`);
   assert.equal(record.sha256, sha(MP4));
   // The second clip in the same slot becomes a variant; a failed commit keeps the paid output for a retry.
-  const second = await service.createJob('paow', { slotId: 'deal.player.centre/box3', quality: '720', expression: 'smile' }, actor);
+  const second = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.centre/box3', quality: '720', expression: 'smile' }, actor);
   assert.match(second.request.prompt, /closed-mouth smile/);
   tasks.set(second.taskId, { id: second.taskId, status: 'SUCCEEDED', output: ['https://out/clip2.mp4'], credits: 20 });
   failPut.once = true;
@@ -109,13 +110,13 @@ test('reference mode reuses an existing clip in the slot; budget and missing eve
   const { service, submitted, tasks } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
   await service.uploadAnchor('paow', { pose: 'redo', contentType: 'image/png', dataBase64: Buffer.concat([PNG, Buffer.from('redo')]).toString('base64') }, actor);
-  await assert.rejects(service.createJob('paow', { slotId: 'deal.player.left/box0', quality: '1080', duration: 10, maxCredits: 100 }, actor), error => error.code === 'forge_budget_exceeded');
-  await assert.rejects(service.createJob('paow', { slotId: 'transition.shoe/to-shoe' }, actor), error => error.code === 'forge_slot_needs_event');
+  await assert.rejects(service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '1080', duration: 10, maxCredits: 100 }, actor), error => error.code === 'forge_budget_exceeded');
+  await assert.rejects(service.createJob('paow', { requestId: randomUUID(), slotId: 'transition.shoe/to-shoe' }, actor), error => error.code === 'forge_slot_needs_event');
   assert.equal(submitted.length, 0);
-  const job = await service.createJob('paow', { slotId: 'deal.player.left/box0', quality: '720' }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '720' }, actor);
   tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/a.mp4'], credits: 20 });
   const done = await service.pollJob('paow', job.jobId, actor);
-  const variant = await service.createJob('paow', { slotId: 'deal.player.left/box0', quality: '720', mode: 'reference', referenceMediaId: done.result.mediaId, duration: 5 }, actor);
+  const variant = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '720', mode: 'reference', referenceMediaId: done.result.mediaId, duration: 5 }, actor);
   const params = submitted.at(-1).params;
   assert.equal(variant.request.mode, 'reference'); assert.equal(params.ratio, '720:1280'); assert.equal(params.referenceVideos.length, 1); assert.equal(params.promptImage[0].position, undefined);
   assert.equal(variant.request.referenceMediaId, done.result.mediaId);
@@ -125,15 +126,15 @@ test('failed, cancelled and submit-unknown tasks are journaled without a second 
   const unknown = new RunwayError('timeout', { code: 'runway_submit_unknown', submitUnknown: true });
   const { service, tasks, submitted } = fixture({ runway: { imageToVideo: async params => { submitted.push({ params }); if (submitted.length === 1) throw unknown; const id = `task-${submitted.length}`; tasks.set(id, { id, status: 'FAILED', failure: 'content moderation' }); return id; } } });
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const first = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  const first = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
   assert.equal(first.status, 'submit_unknown'); assert.equal(first.taskId, null);
   assert.equal((await service.pollJob('paow', first.jobId, actor)).status, 'submit_unknown');
   const resolved = await service.resolveUnknown('paow', first.jobId, { taskId: 'task-manual' }, actor);
   assert.equal(resolved.status, 'running'); assert.equal(resolved.taskId, 'task-manual');
-  const second = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  const second = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
   const failed = await service.pollJob('paow', second.jobId, actor);
   assert.equal(failed.status, 'failed'); assert.match(failed.error, /content moderation/);
-  const third = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  const third = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
   tasks.set(third.taskId, { id: third.taskId, status: 'RUNNING' });
   assert.equal((await service.cancelJob('paow', third.jobId, actor)).status, 'cancelled');
   assert.equal(submitted.length, 3);
@@ -142,21 +143,127 @@ test('failed, cancelled and submit-unknown tasks are journaled without a second 
 test('paid calls are journaled first: a failing journal never reaches Runway, a definite rejection is recorded as failed, nothing is charged twice', async () => {
   const { service, store, submitted } = fixture({ runway: { imageToVideo: async params => { submitted.push({ params }); throw new RunwayError('Runway avvisade anropet: content moderation', { status: 422, code: 'runway_request_failed' }); } } });
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const body = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
   const insert = store.insertJob; store.insertJob = async () => { throw new Error('journal down'); };
-  await assert.rejects(service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor), /journal down/);
+  await assert.rejects(service.createJob('paow', body, actor), /journal down/);
   assert.equal(submitted.length, 0, 'no Runway POST without a journal row');
   store.insertJob = insert;
-  await assert.rejects(service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor), /content moderation/);
+  await assert.rejects(service.createJob('paow', body, actor), /content moderation/);
   const jobs = await store.listJobs('paow');
-  assert.equal(jobs.length, 1); assert.equal(jobs[0].status, 'failed'); assert.equal(jobs[0].taskId, null); assert.match(jobs[0].error, /content moderation/);
+  assert.equal(jobs.length, 1); assert.equal(jobs[0].jobId, body.requestId); assert.equal(jobs[0].status, 'failed'); assert.equal(jobs[0].taskId, null); assert.match(jobs[0].error, /content moderation/);
+  // The same request again returns the recorded rejection instead of a second POST.
+  assert.equal((await service.createJob('paow', body, actor)).status, 'failed');
   assert.equal(submitted.length, 1);
+  await assert.rejects(service.createJob('paow', { slotId: 'idle.ready/' }, actor), error => error.code === 'forge_request_id_required');
+});
+
+test('retry after the journal fails behind a paid POST returns the same job: one payment, one registration', async () => {
+  const { service, store, submitted, tasks, registered, clock } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const body = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  // The database goes away right after Runway accepted the POST: every outcome write and read-back fails.
+  const update = store.updateJob, read = store.getJob;
+  store.updateJob = async (id, change) => { if (change.expectedStatus === 'submitting') throw new Error('db down'); return update(id, change); };
+  let reads = 0; store.getJob = async id => { if (++reads > 1) throw new Error('db down'); return read(id); };
+  await assert.rejects(service.createJob('paow', body, actor), error => error.code === 'forge_submit_unrecorded' && /task-1/.test(error.message));
+  store.updateJob = update; store.getJob = read;
+  assert.equal(submitted.length, 1);
+  // The operator retries with the same request: the journaled job comes back, nothing is paid again.
+  const retried = await service.createJob('paow', body, actor);
+  assert.equal(retried.jobId, body.requestId); assert.equal(retried.status, 'submitting'); assert.equal(submitted.length, 1);
+  await assert.rejects(service.createJob('paow', { ...body, quality: '1080' }, actor), error => error.code === 'forge_request_reused');
+  clock.now += 4 * 60_000;
+  assert.equal((await service.pollJob('paow', body.requestId, actor)).status, 'submit_unknown');
+  await service.resolveUnknown('paow', body.requestId, { taskId: 'task-1' }, actor);
+  tasks.set('task-1', { id: 'task-1', status: 'SUCCEEDED', output: ['https://out/idle.mp4'], credits: 25 });
+  assert.equal((await service.pollJob('paow', body.requestId, actor)).status, 'succeeded');
+  assert.equal(submitted.length, 1); assert.equal(registered.length, 1);
+});
+
+test('a lost outcome write is retried and read back; a double click with one requestId pays once', async () => {
+  const { service, store, submitted } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const update = store.updateJob; let lost = true;
+  // The write lands but its acknowledgement is lost once.
+  store.updateJob = async (id, change) => { const saved = await update(id, change); if (lost && change.status === 'running') { lost = false; throw new Error('connection reset'); } return saved; };
+  const body = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  const job = await service.createJob('paow', body, actor);
+  assert.equal(job.status, 'running'); assert.equal(job.taskId, 'task-1');
+  store.updateJob = update;
+  const twin = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  const both = await Promise.all([service.createJob('paow', twin, actor), service.createJob('paow', twin, actor)]);
+  assert.deepEqual(both.map(row => row.jobId), [twin.requestId, twin.requestId]);
+  assert.equal(submitted.length, 2, 'one POST for the first request and one for the double click');
+});
+
+test('a prepared row never reached Runway: a retry resumes it once, an expired one fails without charge', async () => {
+  const { service, store, submitted, clock } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const update = store.updateJob; let block = true;
+  store.updateJob = async (id, change) => { if (block && change.expectedStatus === 'prepared') { block = false; throw new Error('db down'); } return update(id, change); };
+  const body = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  await assert.rejects(service.createJob('paow', body, actor), /db down/);
+  assert.equal((await store.getJob(body.requestId)).status, 'prepared'); assert.equal(submitted.length, 0);
+  const resumed = await service.createJob('paow', body, actor);
+  assert.equal(resumed.status, 'running'); assert.equal(submitted.length, 1);
+  assert.equal(submitted[0].params.seed, (await store.getJob(body.requestId)).request.seed, 'the resumed POST uses the journaled seed');
+  block = true;
+  const stale = { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' };
+  await assert.rejects(service.createJob('paow', stale, actor), /db down/);
+  assert.equal((await service.pollJob('paow', stale.requestId, actor)).status, 'prepared');
+  clock.now += 4 * 60_000;
+  const expired = await service.pollJob('paow', stale.requestId, actor);
+  assert.equal(expired.status, 'failed'); assert.match(expired.error, /inget debiterades/);
+  assert.equal((await service.createJob('paow', stale, actor)).status, 'failed');
+  assert.equal(submitted.length, 1);
+});
+
+test('commit retries reuse the job-derived IDs: a lost journal write or blob acknowledgement never registers twice', async () => {
+  const { service, store, tasks, registered, documents, repository, privateMedia, media } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const update = store.updateJob; let failSucceeded = 1;
+  store.updateJob = async (id, change) => { if (failSucceeded > 0 && change.status === 'succeeded') { failSucceeded -= 1; throw new Error('db down'); } return update(id, change); };
+  const clip = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  tasks.set(clip.taskId, { id: clip.taskId, status: 'SUCCEEDED', output: ['https://out/idle.mp4'], credits: 25 });
+  await assert.rejects(service.pollJob('paow', clip.jobId, actor), /db down/);
+  assert.equal(registered.length, 1);
+  const clipDone = await service.pollJob('paow', clip.jobId, actor);
+  assert.equal(clipDone.status, 'succeeded'); assert.equal(registered.length, 1); assert.equal(clipDone.result.mediaId, registered[0].id);
+  failSucceeded = 1;
+  const table = await service.createJob('paow', { requestId: randomUUID(), slotId: 'layer/table', quality: '1080' }, actor);
+  tasks.set(table.taskId, { id: table.taskId, status: 'SUCCEEDED', output: ['https://out/png/table.png'], credits: 8 });
+  await assert.rejects(service.pollJob('paow', table.jobId, actor), /db down/);
+  assert.equal((await service.pollJob('paow', table.jobId, actor)).status, 'succeeded');
+  assert.equal(documents.get('project').value.layerAssets.length, 1);
+  // Blob written but its acknowledgement lost, then registration fails: the retry finds the same object and registers once.
+  const put = privateMedia.put; let lostPut = true;
+  privateMedia.put = async (...args) => { await put(...args); if (lostPut) { lostPut = false; throw new Error('blob ack lost'); } };
+  const register = repository.registerMedia; let failRegister = true;
+  repository.registerMedia = async record => { if (failRegister) { failRegister = false; throw new Error('db down'); } return register(record); };
+  const second = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  tasks.set(second.taskId, { id: second.taskId, status: 'SUCCEEDED', output: ['https://out/idle2.mp4'], credits: 25 });
+  await assert.rejects(service.pollJob('paow', second.jobId, actor), /db down/);
+  assert.equal((await service.pollJob('paow', second.jobId, actor)).status, 'succeeded');
+  assert.equal(registered.length, 2); assert.equal(media.size, 2);
+});
+
+test('a broken 2xx provider response stays recoverable as submit_unknown and can be attached to its task', async () => {
+  const real = createRunwayClient({ env: { RUNWAY_API_KEY: 'k'.repeat(24) }, fetchImpl: async () => new Response('<html>upstream reset', { status: 200 }) });
+  const { service, tasks, registered } = fixture({ runway: { imageToVideo: params => real.imageToVideo(params) } });
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  assert.equal(job.status, 'submit_unknown'); assert.match(job.error, /kan ha startats/);
+  await service.resolveUnknown('paow', job.jobId, { taskId: 'task-from-portal' }, actor);
+  tasks.set('task-from-portal', { id: 'task-from-portal', status: 'SUCCEEDED', output: ['https://out/idle.mp4'], credits: 25 });
+  assert.equal((await service.pollJob('paow', job.jobId, actor)).status, 'succeeded');
+  assert.equal(registered.length, 1);
 });
 
 test('two pollers on an avatar-queued job submit exactly one paid avatar video; the loser gets a conflict', async () => {
   let avatarStatus = 'PROCESSING';
   const { service, submitted } = fixture({ runway: { avatar: async () => ({ id: 'avatar-1', status: avatarStatus }) } });
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const job = await service.createJob('paow', { slotId: 'speak.other/greeting' }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'speak.other/greeting' }, actor);
   assert.equal(job.status, 'queued');
   avatarStatus = 'READY';
   const outcomes = await Promise.allSettled([service.pollJob('paow', job.jobId, actor), service.pollJob('paow', job.jobId, actor)]);
@@ -169,7 +276,7 @@ test('two pollers on an avatar-queued job submit exactly one paid avatar video; 
 test('a commit lease held by a dead worker is reclaimed after the lease window and the paid output is still registered', async () => {
   const { service, store, tasks, registered, clock } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const job = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
   tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/idle.mp4'], credits: 25 });
   // Simulate a worker that took the lease and died before registering.
   Object.assign(store.jobs.get(job.jobId), { status: 'committing', result: { output: ['https://out/idle.mp4'], credits: 25, progress: 1 }, updatedAt: clock.now });
@@ -183,7 +290,7 @@ test('a commit lease held by a dead worker is reclaimed after the lease window a
 test('a submit lease held by a dead worker becomes submit_unknown instead of a silent resubmit; live leases cannot be cancelled', async () => {
   const { service, store, submitted, clock } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const job = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
   Object.assign(store.jobs.get(job.jobId), { status: 'submitting', taskId: null, updatedAt: clock.now });
   await assert.rejects(service.cancelJob('paow', job.jobId, actor), error => error.code === 'forge_job_busy');
   assert.equal((await service.pollJob('paow', job.jobId, actor)).status, 'submitting');
@@ -199,16 +306,16 @@ test('a submit lease held by a dead worker becomes submit_unknown instead of a s
 test('pose job adopts the generated REDO anchor; table and background jobs become Forge layer assets in the project', async () => {
   const { service, tasks, documents, blobs } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const pose = await service.createJob('paow', { slotId: 'pose/redo', quality: '1080' }, actor);
+  const pose = await service.createJob('paow', { requestId: randomUUID(), slotId: 'pose/redo', quality: '1080' }, actor);
   assert.equal(pose.request.model, 'gen4_image'); assert.equal(pose.request.plan.credits, 8);
   tasks.set(pose.taskId, { id: pose.taskId, status: 'SUCCEEDED', output: ['https://out/png/redo.png'], credits: 8 });
   const done = await service.pollJob('paow', pose.jobId, actor);
   assert.equal(done.status, 'succeeded'); assert.equal(done.result.adopted, true);
   assert.equal((await service.state('paow')).profile.anchors.redo.sha256, done.result.anchor.sha256);
-  const table = await service.createJob('paow', { slotId: 'layer/table', quality: '1080' }, actor);
+  const table = await service.createJob('paow', { requestId: randomUUID(), slotId: 'layer/table', quality: '1080' }, actor);
   tasks.set(table.taskId, { id: table.taskId, status: 'SUCCEEDED', output: ['https://out/png/table.png'], credits: 8 });
   const tableDone = await service.pollJob('paow', table.jobId, actor);
-  const background = await service.createJob('paow', { slotId: 'layer/background', quality: '720' }, actor);
+  const background = await service.createJob('paow', { requestId: randomUUID(), slotId: 'layer/background', quality: '720' }, actor);
   tasks.set(background.taskId, { id: background.taskId, status: 'SUCCEEDED', output: ['https://out/png/bg.png'], credits: 5 });
   await service.pollJob('paow', background.jobId, actor);
   const assets = documents.get('project').value.layerAssets;
@@ -225,7 +332,7 @@ test('speech job creates the avatar once, waits for READY, then submits an avata
   let avatarStatus = 'PROCESSING';
   const { service, submitted, tasks } = fixture({ runway: { avatar: async () => ({ id: 'avatar-1', status: avatarStatus }) } });
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
-  const job = await service.createJob('paow', { slotId: 'speak.other/greeting' }, actor);
+  const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'speak.other/greeting' }, actor);
   assert.equal(job.status, 'queued'); assert.equal(submitted.at(-1).endpoint, 'avatars'); assert.equal(submitted.at(-1).params.voice.presetId, 'clara');
   assert.equal((await service.pollJob('paow', job.jobId, actor)).status, 'queued');
   avatarStatus = 'READY';
@@ -239,7 +346,7 @@ test('speech job creates the avatar once, waits for READY, then submits an avata
   const state = await service.state('paow');
   assert.equal(state.profile.avatar.status, 'READY');
   assert.equal(state.slots.find(slot => slot.id === 'speak.other/greeting').media[0].role, 'standard');
-  const second = await service.createJob('paow', { slotId: 'speak.other/greeting' }, actor);
+  const second = await service.createJob('paow', { requestId: randomUUID(), slotId: 'speak.other/greeting' }, actor);
   assert.equal(second.status, 'running'); // avatar already READY: direct submission
 });
 
@@ -253,23 +360,36 @@ test('createDealer registers through the project store with every event line; mi
   store.setReady(false);
   const state = await service.state('nova');
   assert.equal(state.migrationReady, false); assert.equal(state.jobs.length, 0);
-  await assert.rejects(service.createJob('nova', { slotId: 'idle.ready/' }, actor), error => error.code === 'forge_migration_pending');
+  await assert.rejects(service.createJob('nova', { requestId: randomUUID(), slotId: 'idle.ready/' }, actor), error => error.code === 'forge_migration_pending');
 });
 
 test('store SQL keeps the scope-first parameter convention and journals jobs with CAS', async () => {
-  const calls = [];
-  const client = { query: async (sql, values) => { calls.push({ sql, values }); if (/forge:ready/.test(sql)) return { rows: [{ ready: true }] }; if (/profile-insert/.test(sql)) return { rows: [{ revision: 1 }] }; if (/job-update/.test(sql)) return { rows: [] }; return { rows: [] }; } };
+  const calls = [], rows = new Map();
+  const toRow = values => ({ job_id: values[2], dealer_id: values[3], slot_id: values[4], kind: values[5], status: values[6], provider: 'runway', task_id: values[7], request: JSON.parse(values[8]), result: null, error: values[10], actor_id: values[11], created_at_ms: values[12], updated_at_ms: values[12] });
+  const client = { query: async (sql, values) => {
+    calls.push({ sql, values });
+    if (/forge:ready/.test(sql)) return { rows: [{ ready: true }] };
+    if (/profile-insert/.test(sql)) return { rows: [{ revision: 1 }] };
+    if (/job-insert/.test(sql)) { if (rows.has(values[2])) return { rows: [] }; rows.set(values[2], toRow(values)); return { rows: [rows.get(values[2])] }; }
+    if (/forge:job \*\//.test(sql)) return { rows: rows.has(values[2]) ? [rows.get(values[2])] : [] };
+    return { rows: [] };
+  } };
   const repository = { async transaction(work) { return work(); }, async withTransactionClient(work) { return work(client); } };
   const store = createDealerForgeStore({ repository, scope, now: () => 42 });
   assert.equal(await store.ready(), true);
   const saved = await store.saveProfile('paow', { a: 1 }, { actor: 'tester' });
   assert.equal(saved.revision, 1);
-  const job = await store.insertJob({ dealerId: 'paow', slotId: 'idle.ready/', kind: 'clip', status: 'running', taskId: 't', request: { plan: {} }, actor: 'tester' });
-  assert.match(job.jobId, /^[a-f0-9-]{36}$/);
-  await assert.rejects(store.updateJob(job.jobId, { expectedStatus: 'running', status: 'succeeded' }), error => error.code === 'studio_forge_conflict');
+  const jobId = randomUUID();
+  const first = await store.insertJob({ jobId, dealerId: 'paow', slotId: 'idle.ready/', kind: 'clip', status: 'prepared', request: { plan: {} }, actor: 'tester' });
+  assert.equal(first.created, true); assert.equal(first.job.jobId, jobId); assert.equal(first.job.status, 'prepared');
+  const again = await store.insertJob({ jobId, dealerId: 'paow', slotId: 'idle.ready/', kind: 'clip', status: 'prepared', request: { plan: {} }, actor: 'tester' });
+  assert.equal(again.created, false); assert.equal(again.job.jobId, jobId);
+  assert.ok(calls.some(call => /ON CONFLICT DO NOTHING RETURNING \*/.test(call.sql)));
+  await assert.rejects(store.updateJob(jobId, { expectedStatus: 'running', status: 'succeeded' }), error => error.code === 'studio_forge_conflict');
   assert.ok(calls.every(call => call.values[0] === 'test' && call.values[1] === 'ws'));
-  assert.ok(calls.some(call => /INSERT INTO croupier_studio\.forge_jobs/.test(call.sql) && call.values[2] === job.jobId && call.values[12] === 42));
+  assert.ok(calls.some(call => /INSERT INTO croupier_studio\.forge_jobs/.test(call.sql) && call.values[2] === jobId && call.values[12] === 42));
   await assert.rejects(store.insertJob({ dealerId: 'paow', slotId: 'x/', kind: 'clip', status: 'bogus', request: {}, actor: 'tester' }), /status/);
+  await assert.rejects(store.insertJob({ jobId: 'not-a-uuid', dealerId: 'paow', slotId: 'x/', kind: 'clip', status: 'prepared', request: {}, actor: 'tester' }), error => error.code === 'studio_forge_invalid_job');
 });
 
 test('runway client: data URIs for small references, headers and no retry on ambiguous submit', async () => {
@@ -293,4 +413,103 @@ test('runway client: data URIs for small references, headers and no retry on amb
   assert.equal(headers['X-Runway-Version'], '2024-11-06'); assert.match(headers.Authorization, /^Bearer k+$/);
   assert.throws(() => createRunwayClient({ env: {} }), error => error.code === 'runway_key_missing');
   await assert.rejects(client.download('http://insecure/x.mp4'), /HTTPS/);
+});
+
+test('runway client: only a definite 4xx is a rejection; every ambiguous submit answer is submit_unknown', async () => {
+  const brokenBody = () => new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('{"id":')); controller.error(new Error('reset')); } }), { status: 200 });
+  const answers = {
+    'ok-garbage': () => new Response('<html>bad gateway', { status: 200 }),
+    'ok-no-id': () => new Response(JSON.stringify({ status: 'PENDING' }), { status: 200 }),
+    'ok-bad-id': () => new Response(JSON.stringify({ id: 'has spaces/and slashes' }), { status: 200 }),
+    'ok-broken-stream': brokenBody,
+    'server-error': () => new Response('oops', { status: 502 }),
+    'timeout-status': () => new Response('', { status: 408 }),
+    'rejected': () => new Response(JSON.stringify({ error: 'promptText too long' }), { status: 400 }),
+    'rate-limited': () => new Response(JSON.stringify({ error: 'slow down' }), { status: 429 }),
+  };
+  let current = 'ok-garbage';
+  const client = createRunwayClient({ env: { RUNWAY_API_KEY: 'k'.repeat(24) }, fetchImpl: async () => answers[current]() });
+  for (const name of ['ok-garbage', 'ok-no-id', 'ok-bad-id', 'ok-broken-stream', 'server-error', 'timeout-status']) {
+    current = name;
+    await assert.rejects(client.imageToVideo({}), error => error instanceof RunwayError && error.submitUnknown === true && error.code === 'runway_submit_unknown', name);
+    await assert.rejects(client.avatarVideo({}), error => error.submitUnknown === true, `${name} (avatar video)`);
+  }
+  for (const name of ['rejected', 'rate-limited']) {
+    current = name;
+    await assert.rejects(client.textToImage({}), error => error instanceof RunwayError && error.submitUnknown === false, name);
+  }
+  current = 'server-error';
+  await assert.rejects(client.task('t1'), error => error.submitUnknown === false, 'a failed read is never submit_unknown');
+  const truncated = createRunwayClient({ env: { RUNWAY_API_KEY: 'k'.repeat(24) }, fetchImpl: async () => new Response(new Uint8Array(10), { status: 200, headers: { 'Content-Length': '64' } }) });
+  await assert.rejects(truncated.download('https://cdn/x.mp4'), error => error.code === 'runway_download_truncated');
+});
+
+// Sweep: fail every external call of a full job once (before its effect, after its effect, or as an ambiguous
+// provider answer), keep retrying with the same requestId and let the operator resolve submit_unknown from the
+// portal. Whatever breaks, Runway is paid at most once and a paid output is registered exactly once.
+const SUBMIT_CALLS = new Set(['runway.imageToVideo', 'runway.textToImage']);
+async function faultRun(slotId, fault) {
+  const f = fixture();
+  await f.service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const log = []; let calls = 0;
+  const targets = { store: [f.store, ['insertJob', 'getJob', 'updateJob', 'saveProfile', 'getProfile']], repository: [f.repository, ['readDocument', 'saveDocument', 'getMedia', 'registerMedia']],
+    runway: [f.runway, ['asset', 'imageToVideo', 'textToImage', 'task', 'download']], blob: [f.privateMedia, ['put', 'get']] };
+  for (const [prefix, [target, names]] of Object.entries(targets)) for (const name of names) {
+    const real = target[name], label = `${prefix}.${name}`;
+    target[name] = async (...args) => {
+      const index = calls++; log.push(label);
+      if (!fault || fault.index !== index) return real(...args);
+      if (SUBMIT_CALLS.has(label)) {
+        if (fault.mode === 'before') throw new RunwayError('Runway avvisade anropet: injected', { status: 422, code: 'runway_request_failed' });
+        if (fault.mode === 'unknown') throw new RunwayError('injected timeout', { code: 'runway_submit_unknown', submitUnknown: true });
+        await real(...args); throw new RunwayError('injected lost answer', { code: 'runway_submit_unknown', submitUnknown: true });
+      }
+      if (fault.mode === 'after') { await real(...args); throw new Error('injected after effect'); }
+      throw new Error('injected before effect');
+    };
+  }
+  const body = { requestId: randomUUID(), slotId, quality: slotId === 'idle.ready/' ? '720' : '1080' };
+  const output = slotId === 'idle.ready/' ? 'https://out/idle.mp4' : 'https://out/png/out.png';
+  const settle = () => { for (const [id, task] of f.tasks) if (task.status !== 'SUCCEEDED') f.tasks.set(id, { id, status: 'SUCCEEDED', output: [output], credits: 8 }); };
+  const attempt = async work => { try { await work(); } catch { /* the operator just tries again */ } };
+  for (let round = 0; round < 5; round += 1) {
+    await attempt(() => f.service.createJob('paow', body, actor));
+    settle();
+    await attempt(() => f.service.pollJob('paow', body.requestId, actor));
+    await attempt(() => f.service.pollJob('paow', body.requestId, actor));
+    f.clock.now += 6 * 60_000;
+  }
+  const paid = f.submitted.filter(row => row.endpoint === 'image_to_video' || row.endpoint === 'text_to_image');
+  const parked = f.store.jobs.get(body.requestId);
+  if (parked?.status === 'submit_unknown') {
+    // The operator checks the Runway portal: attach the task that exists, otherwise cancel.
+    if (paid.length) await f.service.resolveUnknown('paow', body.requestId, { taskId: [...f.tasks.keys()].at(-1) }, actor);
+    else await f.service.cancelJob('paow', body.requestId, actor);
+    for (let round = 0; round < 3; round += 1) { settle(); await attempt(() => f.service.pollJob('paow', body.requestId, actor)); f.clock.now += 6 * 60_000; }
+  }
+  const committed = slotId === 'idle.ready/' ? f.media.size
+    : slotId === 'layer/table' ? (f.documents.get('project').value.layerAssets ?? []).length
+      : [...f.blobs.keys()].filter(path => path.includes('/source/anchors/')).length - 1;
+  return { calls, log, paid: paid.length, committed, status: f.store.jobs.get(body.requestId)?.status ?? 'absent' };
+}
+
+test('fault sweep: any single failure in a job, retried with the same requestId, pays at most once and commits exactly once', async () => {
+  let scenarios = 0;
+  for (const slotId of ['idle.ready/', 'layer/table', 'pose/redo']) {
+    const clean = await faultRun(slotId, null);
+    assert.deepEqual([clean.paid, clean.committed, clean.status], [1, 1, 'succeeded'], `clean run ${slotId}`);
+    for (let index = 0; index < clean.calls; index += 1) {
+      const modes = SUBMIT_CALLS.has(clean.log[index]) ? ['before', 'after', 'unknown'] : ['before', 'after'];
+      for (const mode of modes) {
+        const run = await faultRun(slotId, { index, mode });
+        const where = `${slotId} · call ${index} ${clean.log[index]} · ${mode} → paid ${run.paid}, committed ${run.committed}, ${run.status}`;
+        assert.ok(run.paid <= 1, `paid twice: ${where}`);
+        assert.ok(run.committed <= 1, `committed twice: ${where}`);
+        if (run.paid === 1) assert.deepEqual([run.status, run.committed], ['succeeded', 1], `paid output lost: ${where}`);
+        else assert.ok(['failed', 'cancelled'].includes(run.status) && run.committed === 0, `unpaid job not closed: ${where}`);
+        scenarios += 1;
+      }
+    }
+  }
+  assert.ok(scenarios > 60, `sweep covered ${scenarios} scenarios`);
 });

@@ -13,10 +13,10 @@ type Profile={subject:string;theme:string;tableStyle:string;positions:Record<str
 type State={dealer:{id:string;label:string};profile:Profile;groups:{id:string;label:string}[];slots:Slot[];jobs:Job[];layers:any[];speechLines:Record<string,string>;migrationReady:boolean;runwayConfigured:boolean;priceChecked:string};
 type Preview={plan:{model:string;mode:string;credits:number;duration:number;quality:string;ratio:string|null};prompt:string;anchors:string[];anchorsPresent:string[];slot:{needsEvent:boolean}};
 
-const ACTIVE=new Set(['submitting','queued','running','generated','committing']);
+const ACTIVE=new Set(['prepared','submitting','queued','running','generated','committing']);
 const VOICES=['victoria','vincent','clara','drew','skye','max','morgan','felix','mia','marcus','summer','ruby','aurora','jasper','leo','adrian','nina','emma','blake','david','maya','nathan','sam','georgia','petra','adam','zach','violet','roman','luna'];
 const api=(path:string)=>labUrl(`/api/forge${path}`);
-const statusText:Record<string,string>={submitting:'Skickas',submit_unknown:'Okänt – kontrollera Runway',queued:'I kö',running:'Genereras',generated:'Hämtar & registrerar',committing:'Registrerar',succeeded:'Klar',failed:'Misslyckades',cancelled:'Avbruten'};
+const statusText:Record<string,string>={prepared:'Förbereds',submitting:'Skickas',submit_unknown:'Okänt – kontrollera Runway',queued:'I kö',running:'Genereras',generated:'Hämtar & registrerar',committing:'Registrerar',succeeded:'Klar',failed:'Misslyckades',cancelled:'Avbruten'};
 
 async function call<T>(path:string,init?:RequestInit):Promise<T>{
   const response=await fetch(api(path),{credentials:'same-origin',...init,headers:{...(init?.body&&!(init.body instanceof Blob)?{'Content-Type':'application/json'}:{}),...(init?.headers??{})}});
@@ -53,6 +53,8 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
   const [showPositions,setShowPositions]=useState(false);
   const [uploadError,setUploadError]=useState('');
   const pollingRef=useRef(false);
+  // One idempotency key per distinct job request: a retry after a network/5xx error reuses it, so the server returns the journaled job instead of paying again.
+  const attemptRef=useRef<{signature:string;requestId:string}|null>(null);
 
   const loadIndex=useCallback(async()=>{
     try{const data=await call<{dealers:{id:string;label:string}[];migrationReady:boolean;runwayConfigured:boolean}>('');setDealers(data.dealers);setMeta({migrationReady:data.migrationReady,runwayConfigured:data.runwayConfigured});
@@ -115,7 +117,7 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
   async function openComposer(slot:Slot,mode='keyframe',referenceMediaId=''){
     const quality=slot.kind==='table'||slot.kind==='pose'?'1080':'720';
     const base={slotId:slot.id,quality,duration:slot.group==='deal'||slot.group==='transition'?2:5,mode,expression:'neutral',referenceMediaId,prompt:'',maxCredits:200,preview:null as Preview|null,loading:true};
-    setComposer(base);
+    attemptRef.current=null;setComposer(base);
     try{const preview=await post<Preview>(`/${encodeURIComponent(dealerId)}/preview`,{slotId:slot.id,quality,duration:base.duration,mode:mode==='keyframe'?undefined:mode,expression:'neutral',hasReference:Boolean(referenceMediaId)});
       setComposer(current=>current&&current.slotId===slot.id?{...current,preview,prompt:preview.prompt,loading:false}:current);}
     catch(cause){setComposer(current=>current?{...current,loading:false}:current);setError(cause instanceof Error?cause.message:'Förhandsgranskningen misslyckades.');}
@@ -128,9 +130,21 @@ export function DealerForgePage({initialDealerId,initialIndex,initialState}:{ini
   }
   async function submitJob(){
     if(!composer)return;const c=composer;
+    const payload={slotId:c.slotId,quality:c.quality,duration:c.duration,mode:c.mode==='keyframe'?undefined:c.mode,expression:c.expression,referenceMediaId:c.referenceMediaId||undefined,prompt:c.prompt,maxCredits:c.maxCredits};
+    const signature=JSON.stringify(payload);
+    if(attemptRef.current?.signature!==signature)attemptRef.current={signature,requestId:crypto.randomUUID()};
+    const {requestId}=attemptRef.current;
     await run(async()=>{
-      await post<Job>(`/${encodeURIComponent(dealerId)}/jobs`,{slotId:c.slotId,quality:c.quality,duration:c.duration,mode:c.mode==='keyframe'?undefined:c.mode,expression:c.expression,referenceMediaId:c.referenceMediaId||undefined,prompt:c.prompt,maxCredits:c.maxCredits});
-      setComposer(null);await loadState(dealerId);
+      let job:Job;
+      try{job=await post<Job>(`/${encodeURIComponent(dealerId)}/jobs`,{...payload,requestId});}
+      catch(cause){
+        // 4xx is a definite refusal (nothing paid): the next click is a new request. Otherwise keep the key.
+        const status=(cause as {status?:number})?.status;if(typeof status==='number'&&status>=400&&status<500)attemptRef.current=null;
+        throw cause;
+      }
+      attemptRef.current=null;await loadState(dealerId);
+      if(job.status==='failed'||job.status==='cancelled')throw new Error(job.error||'Runway avvisade jobbet.');
+      setComposer(null);
     },'Jobbet är skickat till Runway. Status uppdateras automatiskt var femte sekund.');
   }
   async function saveProfile(){

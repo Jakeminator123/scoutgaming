@@ -27,7 +27,12 @@ export function fakeStore(now = () => 1_700_000_000_000) {
       if (expectedRevision === null ? current : current?.revision !== expectedRevision) throw Object.assign(new Error('conflict'), { statusCode: 409, code: 'studio_forge_conflict' });
       const next = { dealerId, revision: (current?.revision ?? 0) + 1, profile: structuredClone(profile) }; profiles.set(dealerId, next); return structuredClone(next);
     },
-    async insertJob(row) { const job = { ...structuredClone(row), jobId: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, provider: 'runway', createdAt: now(), updatedAt: now(), taskId: row.taskId ?? null, result: row.result ?? null, error: row.error ?? null }; jobs.set(job.jobId, job); return structuredClone(job); },
+    async insertJob(row) {
+      const jobId = row.jobId ?? `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
+      if (jobs.has(jobId)) return { job: structuredClone(jobs.get(jobId)), created: false };
+      const job = { ...structuredClone(row), jobId, provider: 'runway', createdAt: now(), updatedAt: now(), taskId: row.taskId ?? null, result: row.result ?? null, error: row.error ?? null };
+      jobs.set(jobId, job); return { job: structuredClone(job), created: true };
+    },
     async getJob(id) { return jobs.get(id) ? structuredClone(jobs.get(id)) : null; },
     async updateJob(id, { expectedStatus, status, taskId, result, error }) {
       const job = jobs.get(id); if (!job || (expectedStatus && job.status !== expectedStatus)) throw Object.assign(new Error('conflict'), { statusCode: 409, code: 'studio_forge_conflict' });
@@ -46,7 +51,13 @@ export function fixture({ runway: runwayOverrides = {}, project } = {}) {
     async saveDocument(kind, { expectedRevision, value: next }) { const doc = documents.get(kind); if (doc.revision !== expectedRevision) throw Object.assign(new Error('studio_conflict'), { statusCode: 409 }); const saved = { revision: `rev-${documents.size + Math.random()}`, value: structuredClone(next) }; documents.set(kind, saved); return structuredClone(saved); },
     async getMedia(id) { return media.get(id) ? structuredClone(media.get(id)) : null; },
     async listMedia() { return [...media.values()].map(row => structuredClone(row)); },
-    async registerMedia(record) { validateStudioMedia(record); media.set(record.id, { ...structuredClone(record), revision: 'm1' }); registered.push(structuredClone(record)); return { duplicate: false }; },
+    // Mirrors studio-repository: the same ID with identical bytes is a duplicate, different bytes a conflict.
+    async registerMedia(record) {
+      validateStudioMedia(record);
+      const existing = media.get(record.id);
+      if (existing) { if (existing.sha256 === record.sha256 && existing.pathname === record.pathname) return { duplicate: true }; throw Object.assign(new Error('studio_conflict'), { statusCode: 409 }); }
+      media.set(record.id, { ...structuredClone(record), revision: 'm1' }); registered.push(structuredClone(record)); return { duplicate: false };
+    },
     async transaction(work) { return work(); },
     async withTransactionClient(work) { return work({ query: async () => ({ rows: [] }) }); },
   };
@@ -75,6 +86,6 @@ export function fixture({ runway: runwayOverrides = {}, project } = {}) {
   const store = fakeStore(() => clock.now);
   const service = createDealerForgeService({ repository, scope, env: { RUNWAY_API_KEY: 'test-key-0123456789abcdef', CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'x' }, mutationTransaction: async work => work(),
     gamePolicy, videoRegistry, validateProjectBindings: async () => {}, now: () => clock.now, runwayFactory: () => runway, store, images: fakeImages(), privateMedia });
-  return { service, store, repository, runway, tasks, submitted, registered, blobs, documents, projectSaves, media, failPut, clock };
+  return { service, store, repository, runway, tasks, submitted, registered, blobs, documents, projectSaves, media, failPut, clock, privateMedia };
 }
 

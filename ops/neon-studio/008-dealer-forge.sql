@@ -21,7 +21,7 @@ CREATE TABLE croupier_studio.forge_jobs (
   dealer_id text NOT NULL CHECK (dealer_id ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$' AND length(dealer_id) <= 40),
   slot_id text NOT NULL CHECK (slot_id ~ '^[a-z][a-z0-9.-]{0,60}/[a-z0-9-]{0,40}$'),
   kind text NOT NULL CHECK (kind IN ('clip', 'speech', 'pose', 'table', 'background')),
-  status text NOT NULL CHECK (status IN ('submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled')),
+  status text NOT NULL CHECK (status IN ('prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled')),
   provider text NOT NULL CHECK (provider = 'runway'),
   task_id text CHECK (task_id ~ '^[A-Za-z0-9._:-]{1,120}$'),
   request jsonb NOT NULL CHECK (jsonb_typeof(request) = 'object'),

@@ -4,7 +4,7 @@
 // existing private-Blob + media_records / project.layerAssets contracts.
 // Nothing here publishes: every committed clip lands as a review upload in
 // its exact slot and follows the ordinary Dealers & klipp acceptance flow.
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { StudioStorageError, validateActor } from '../../web/storage/studio-contract.mjs';
@@ -19,7 +19,7 @@ import { validateVideoMetadata } from './video-intake.mjs';
 import { anchorsFor, forgeSlots, slotById, slotPlan, slotPrompt, validateProfile, FORGE_GROUPS, speechTextFor } from './dealer-forge-catalog.mjs';
 import { backgroundGuide, backgroundLayer, markCardTarget, normalizeAnchor, poseFromGenerated, tableGuide, tableLayerFromMagenta } from './dealer-forge-images.mjs';
 import { createDealerForgeStore, ACTIVE_STATUSES } from './dealer-forge-store.mjs';
-import { createRunwayClient, runwayConfigured, RunwayError } from './runway-client.mjs';
+import { createRunwayClient, runwayConfigured, RunwayError, TASK_ID } from './runway-client.mjs';
 
 export class ForgeError extends Error {
   constructor(message, { status = 422, code = 'forge_invalid_request' } = {}) { super(message); this.name = 'ForgeError'; this.statusCode = status; this.code = code; }
@@ -31,6 +31,14 @@ const SUBMIT_LEASE_MS = 3 * 60_000;
 const COMMIT_LEASE_MS = 5 * 60_000;
 const MAX_ANCHOR_UPLOAD = 24 * 1024 * 1024;
 const MAX_REFERENCE_VIDEO = 60 * 1024 * 1024;
+const REQUEST_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const FINGERPRINT_FIELDS = ['slotId', 'quality', 'duration', 'mode', 'expression', 'referenceMediaId', 'audioMediaId', 'speechSeconds', 'speechText', 'prompt', 'seed', 'maxCredits'];
+const requestFingerprint = (dealerId, body) => createHash('sha256').update(JSON.stringify([dealerId, ...FINGERPRINT_FIELDS.map(key => body[key] ?? null)])).digest('hex');
+/** Same job + purpose → same UUID, so a retried commit targets the record an earlier attempt may already have written. */
+function forgeUuid(jobId, purpose) {
+  const hex = createHash('sha256').update(`dealer-forge:${jobId}:${purpose}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${((Number.parseInt(hex[16], 16) & 3) | 8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
 
 export function createDealerForgeService({ repository, scope, env = process.env, mutationTransaction, gamePolicy, videoRegistry, validateProjectBindings,
   now = Date.now, runwayFactory = options => createRunwayClient(options), fetchImpl = fetch, store = createDealerForgeStore({ repository, scope, now }),
@@ -73,15 +81,46 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     if (!record || record.deletion) fail('Mediafilen finns inte längre.', 404, 'forge_reference_missing');
     return [await readPrivate(record), record.contentType];
   }
-  async function storeAnchor(dealerId, normalized) {
-    const id = randomUUID();
+  /** Blob paths are immutable and content-addressed: when a retry finds the object already written with the same
+   *  hash, the earlier attempt succeeded and the write counts as done. */
+  async function putImmutable(pathname, bytes, { sha256, size, contentType }) {
+    try { await privateMedia.put(pathname, bytes, { sha256, size, contentType, env: mediaOptions.env, cacheDir: mediaOptions.cacheDir }); }
+    catch (cause) {
+      let present = false;
+      try {
+        const response = await privateMedia.get(validatePrivateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }), new Request('https://dealer-forge.internal/verify', { method: 'HEAD' }), mediaOptions);
+        await response.body?.cancel?.(); present = response.ok;
+      } catch { present = false; }
+      if (!present) throw cause;
+    }
+  }
+  async function storeAnchor(dealerId, normalized, id = randomUUID()) {
     const pathname = mediaBlobPath(`dealers/${dealerId}/source/anchors`, id, normalized.sha256, 'png');
-    await privateMedia.put(pathname, normalized.bytes, { sha256: normalized.sha256, size: normalized.size, contentType: 'image/png', env: mediaOptions.env, cacheDir: mediaOptions.cacheDir });
+    await putImmutable(pathname, normalized.bytes, { sha256: normalized.sha256, size: normalized.size, contentType: 'image/png' });
     return { pathname, sha256: normalized.sha256, size: normalized.size, contentType: 'image/png', width: normalized.width, height: normalized.height };
   }
-  /** The job row is already `submitting` (fresh insert or a CAS lease). Pay exactly once and record the outcome
-   *  on that row: running (task-ID), submit_unknown (ambiguous timeout, operator resolves) or failed (definite
-   *  rejection, nothing charged). A conflict on the final CAS means another worker owns the row; surface it. */
+  /** Record the outcome of a submit on the leased row. The paid POST already happened, so a lost write must
+   *  not be mistaken for "nothing started": retry, read back, and if the journal stays unreachable surface
+   *  the task-ID so the operator can attach it once the lease expires into submit_unknown. */
+  async function persistOutcome(jobId, outcome) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try { return await store.updateJob(jobId, { expectedStatus: 'submitting', ...outcome }); } catch (cause) { lastError = cause; }
+      const seen = await store.getJob(jobId).catch(() => null);
+      if (!seen || seen.status === 'submitting') continue;
+      if (seen.status === outcome.status && (seen.taskId ?? null) === (outcome.taskId ?? null)) return seen;
+      if (seen.status === 'submit_unknown' && outcome.taskId) {
+        try { return await store.updateJob(jobId, { expectedStatus: 'submit_unknown', status: 'running', taskId: outcome.taskId, error: null }); } catch (cause) { lastError = cause; continue; }
+      }
+      return seen;
+    }
+    if (outcome.status === 'failed') throw lastError;
+    fail(outcome.taskId
+      ? `Runway startade jobbet (task-ID ${outcome.taskId}) men journalen kunde inte uppdateras. Skicka inte om; koppla task-ID:t när jobbet visas som okänt.`
+      : 'Runway-svaret kunde inte journalföras. Skicka inte om; kontrollera Runway-portalen när jobbet visas som okänt.', 503, 'forge_submit_unrecorded');
+  }
+  /** The job row is already `submitting` (CAS from prepared or queued). Pay exactly once and record the outcome:
+   *  running (task-ID), submit_unknown (no definite answer, operator resolves) or failed (definite rejection). */
   async function submitLeased(jobId, endpoint, params, client, result) {
     let taskId = null, status = 'running', error = null;
     try {
@@ -89,11 +128,11 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     } catch (cause) {
       if (cause instanceof RunwayError && cause.submitUnknown) { status = 'submit_unknown'; error = cause.message; }
       else {
-        await store.updateJob(jobId, { expectedStatus: 'submitting', status: 'failed', error: String(cause?.message ?? 'Runway avvisade anropet.').slice(0, 2000) }).catch(() => {});
+        await persistOutcome(jobId, { status: 'failed', error: String(cause?.message ?? 'Runway avvisade anropet.').slice(0, 2000) }).catch(() => {});
         throw cause;
       }
     }
-    return store.updateJob(jobId, { expectedStatus: 'submitting', status, taskId, error, ...(result ? { result } : {}) });
+    return persistOutcome(jobId, { status, taskId, error, ...(result ? { result } : {}) });
   }
   const slotMedia = (projectValue, inventory, dealerId, slot) => slot.eventId
     ? dealerLibraryVideos(projectValue, inventory, dealerId).filter(video => mediaMatchesSlot(video, { eventId: slot.eventId, situation: slot.situation }))
@@ -173,45 +212,63 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     return { params, summary };
   }
 
+  /** A previous attempt may have registered the output before its journal write failed. Detect that by the
+   *  job's deterministic ID and finish from the stored record instead of registering a second copy. */
+  async function committedResult(job, slot, credits) {
+    if (slot.kind === 'clip' || slot.kind === 'speech') {
+      const record = await repository.getMedia(forgeUuid(job.jobId, 'clip'));
+      return record ? { mediaId: record.id, sha256: record.sha256, size: record.size, credits, role: record.classification?.role ?? 'standard', label: record.classification?.label ?? '' } : null;
+    }
+    if (slot.kind === 'table' || slot.kind === 'background') {
+      const saved = await repository.readDocument('project');
+      const asset = (saved?.value?.layerAssets ?? []).find(row => row.id === forgeUuid(job.jobId, 'layer'));
+      return asset ? { assetId: asset.id, sha256: asset.sha256, size: asset.size, width: asset.width, height: asset.height, credits, label: asset.label } : null;
+    }
+    return null;
+  }
+
   async function commitClip(job, bytes, slot, projectValue, inventory, credits) {
     if (!mediaHeaderMatches('video/mp4', bytes.subarray(0, 32))) fail('Runway levererade inte en MP4-fil.', 415, 'forge_output_not_mp4');
-    const { createHash } = await import('node:crypto');
     const sha256 = createHash('sha256').update(bytes).digest('hex');
     const existing = slotMedia(projectValue, inventory, job.dealerId, slot);
     const label = `Forge · ${slot.label}${existing.length ? ` · variant ${existing.length + 1}` : ''}`.slice(0, 80);
     let classification = mediaClassification(projectValue, { dealerId: job.dealerId, slotId: `${slot.eventId}/${slot.situation}`, label, contentType: 'video/mp4' });
     classification = validateVideoMetadata({ ...classification, role: existing.length ? 'alternative' : 'standard', notes: `Dealer Forge · Runway ${job.request.model} · job ${job.jobId}`.slice(0, 500),
       compositing: { mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0 } });
-    const id = randomUUID();
+    const id = forgeUuid(job.jobId, 'clip');
     const record = { id, sha256, size: bytes.byteLength, contentType: 'video/mp4', classification, pathname: mediaBlobPath(`dealers/${job.dealerId}/review/uploads`, id, sha256, 'mp4') };
-    await privateMedia.put(record.pathname, bytes, { sha256, size: bytes.byteLength, contentType: 'video/mp4', env: mediaOptions.env, cacheDir: mediaOptions.cacheDir });
+    await putImmutable(record.pathname, bytes, { sha256, size: bytes.byteLength, contentType: 'video/mp4' });
     await mutationTransaction(async () => repository.registerMedia(record, { actor: job.actor }), { presentationMutation: { metadata: classification } });
     return { mediaId: id, sha256, size: bytes.byteLength, credits, role: classification.role, label };
   }
 
   async function commitLayer(job, bytes, slot, profile, credits) {
     const layer = slot.kind === 'table' ? await images.tableLayerFromMagenta(bytes, profile) : await images.backgroundLayer(bytes);
-    const id = randomUUID();
-    const draft = { schemaVersion: 1, id, role: slot.role, label: `Forge · ${slot.kind === 'table' ? 'bord' : 'bakgrund'} · ${job.dealerId} · ${new Date(now()).toISOString().slice(0, 10)}`.slice(0, 80),
+    const id = forgeUuid(job.jobId, 'layer');
+    const draft = { schemaVersion: 1, id, role: slot.role, label: `Forge · ${slot.kind === 'table' ? 'bord' : 'bakgrund'} · ${job.dealerId} · ${new Date(job.createdAt ?? now()).toISOString().slice(0, 10)}`.slice(0, 80),
       sha256: layer.sha256, size: layer.size, contentType: layer.contentType, width: layer.width, height: layer.height };
     const record = validateLayerAsset({ ...draft, pathname: layerAssetPath(draft) });
-    await privateMedia.put(record.pathname, layer.bytes, { sha256: record.sha256, size: record.size, contentType: record.contentType, env: mediaOptions.env, cacheDir: mediaOptions.cacheDir });
+    await putImmutable(record.pathname, layer.bytes, { sha256: record.sha256, size: record.size, contentType: record.contentType });
     const captured = await repository.readDocument('project');
     if (!captured) fail('Projektdokumentet saknas.', 503, 'studio_document_missing');
-    const presentationMutation = { kind: 'project', value: { ...captured.value, layerAssets: [...(captured.value.layerAssets ?? []), record] } };
-    await mutationTransaction(async () => repository.transaction(async () => {
-      const saved = await repository.readDocument('project');
-      // Inside the repository transaction only StudioStorageError codes survive sanitization.
-      if (!saved || saved.revision !== captured.revision) throw new StudioStorageError('studio_forge_conflict', 409);
-      return repository.saveDocument('project', { expectedRevision: saved.revision, value: { ...saved.value, layerAssets: [...(saved.value.layerAssets ?? []), record] }, actor: job.actor });
-    }, { presentationMutation }), { presentationMutation });
+    const withAsset = value => (value.layerAssets ?? []).some(row => row.id === id) ? null : { ...value, layerAssets: [...(value.layerAssets ?? []), record] };
+    if (withAsset(captured.value)) {
+      const presentationMutation = { kind: 'project', value: withAsset(captured.value) };
+      await mutationTransaction(async () => repository.transaction(async () => {
+        const saved = await repository.readDocument('project');
+        // Inside the repository transaction only StudioStorageError codes survive sanitization.
+        if (!saved || saved.revision !== captured.revision) throw new StudioStorageError('studio_forge_conflict', 409);
+        const next = withAsset(saved.value);
+        return next ? repository.saveDocument('project', { expectedRevision: saved.revision, value: next, actor: job.actor }) : saved;
+      }, { presentationMutation }), { presentationMutation });
+    }
     return { assetId: id, sha256: record.sha256, size: record.size, width: record.width, height: record.height, credits, label: record.label };
   }
 
   async function commitPose(job, bytes, profile, current, credits) {
     const normalized = await images.poseFromGenerated(bytes);
-    const anchor = await storeAnchor(job.dealerId, normalized);
-    let adopted = false;
+    const anchor = await storeAnchor(job.dealerId, normalized, forgeUuid(job.jobId, 'pose'));
+    let adopted = profile.anchors.redo?.pathname === anchor.pathname;
     if (!profile.anchors.redo) {
       await saveProfile(job.dealerId, current, { ...profile, anchors: { ...profile.anchors, redo: anchor } }, job.actor);
       adopted = true;
@@ -319,10 +376,19 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       return { slot: { id: slot.id, label: slot.label, kind: slot.kind, group: slot.group, needsEvent: Boolean(slot.needsEvent) }, plan, prompt, anchors: anchorsFor(slot, plan), anchorsPresent: Object.keys(profile.anchors) };
     },
 
-    /** Submit one paid generation. Never retries a POST; an ambiguous timeout is journaled as submit_unknown. */
+    /** Submit one paid generation, idempotent on body.requestId (the job ID). A repeated request returns the
+     *  journaled job and never pays again; only a `prepared` row (no POST started) is resumed. */
     async createJob(dealerId, body, { actor }) {
       actor = validateActor(actor);
+      if (!body || typeof body !== 'object' || typeof body.requestId !== 'string' || !REQUEST_ID.test(body.requestId)) fail('requestId (UUID) krävs så att ett nytt försök aldrig betalar två gånger.', 422, 'forge_request_id_required');
       await ensureReady();
+      const jobId = body.requestId, fingerprint = requestFingerprint(dealerId, body);
+      const sameRequest = job => {
+        if (job.dealerId !== dealerId || job.slotId !== body.slotId || job.request?.fingerprint !== fingerprint) fail('requestId används redan för ett annat jobb.', 409, 'forge_request_reused');
+        return job;
+      };
+      const prior = await store.getJob(jobId);
+      if (prior && sameRequest(prior).status !== 'prepared') return publicJob(prior);
       if (!runwayConfigured(env)) fail('RUNWAY_API_KEY saknas i miljön.', 503, 'runway_key_missing');
       const { value } = await project(); dealerOf(value, dealerId);
       const slot = slotById(value, body.slotId);
@@ -347,15 +413,27 @@ export function createDealerForgeService({ repository, scope, env = process.env,
         if (fresh?.status === 'FAILED') fail(`Runway kunde inte skapa avataren: ${fresh.failureReason ?? 'okänt fel'}`, 422, 'forge_avatar_failed');
         if (fresh?.status === 'READY') { const saved = await saveProfile(dealerId, current, { ...profile, avatar: { ...profile.avatar, status: 'READY' } }, actor); profile = saved.profile; }
         else {
-          const request = { plan, prompt: '', slotLabel: slot.label, awaitingAvatar: true, options: { speechText: body.speechText ?? '', audioMediaId: body.audioMediaId ?? null, maxCredits } };
-          return publicJob(await store.insertJob({ dealerId, slotId: slot.id, kind: slot.kind, status: 'queued', request, actor }));
+          const request = { plan, prompt: '', slotLabel: slot.label, awaitingAvatar: true, fingerprint, options: { speechText: body.speechText ?? '', audioMediaId: body.audioMediaId ?? null, maxCredits } };
+          const queued = await store.insertJob({ jobId, dealerId, slotId: slot.id, kind: slot.kind, status: 'queued', request, actor });
+          return publicJob(queued.created ? queued.job : sameRequest(queued.job));
         }
       }
-      const { params, summary } = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, body);
-      const request = { plan, ...summary, slotLabel: slot.label, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
-      // Journal first, pay second: the `submitting` row exists before any Runway POST.
-      const created = await store.insertJob({ dealerId, slotId: slot.id, kind: slot.kind, status: 'submitting', request, actor });
-      return publicJob(await submitLeased(created.jobId, plan.endpoint, params, client));
+      // A resumed prepared row keeps its journaled seed so the paid request matches what was recorded.
+      const { params, summary } = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, prior?.request?.seed === undefined ? body : { ...body, seed: prior.request.seed });
+      if (!prior) {
+        // Journal first, pay second: the row exists (prepared) before any Runway POST can start.
+        const request = { plan, ...summary, slotLabel: slot.label, fingerprint, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
+        const inserted = await store.insertJob({ jobId, dealerId, slotId: slot.id, kind: slot.kind, status: 'prepared', request, actor });
+        if (!inserted.created && sameRequest(inserted.job).status !== 'prepared') return publicJob(inserted.job);
+      }
+      // Lease: exactly one request moves prepared → submitting and pays; a concurrent duplicate gets the row back.
+      try { await store.updateJob(jobId, { expectedStatus: 'prepared', status: 'submitting' }); }
+      catch (cause) {
+        const current = cause?.statusCode === 409 ? await store.getJob(jobId) : null;
+        if (current && current.status !== 'prepared') return publicJob(current);
+        throw cause;
+      }
+      return publicJob(await submitLeased(jobId, plan.endpoint, params, client));
     },
 
     /** Advance one job: read the Runway task; on success download, verify and commit into the exact slot. */
@@ -365,6 +443,11 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       let job = await store.getJob(jobId);
       if (!job || job.dealerId !== dealerId) fail('Jobbet finns inte.', 404, 'forge_job_unknown');
       if (!ACTIVE_STATUSES.includes(job.status) || job.status === 'submit_unknown') return publicJob(job);
+      if (job.status === 'prepared') {
+        // The POST only starts after the prepared → submitting lease, so an expired prepared row never reached Runway.
+        if (now() - job.updatedAt < SUBMIT_LEASE_MS) return publicJob(job);
+        return publicJob(await store.updateJob(jobId, { expectedStatus: 'prepared', status: 'failed', error: 'Startades aldrig; inget skickades till Runway och inget debiterades.' }));
+      }
       const { value } = await project();
       const slot = slotById(value, job.slotId);
       const client = runway();
@@ -413,17 +496,21 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       job = await store.updateJob(jobId, { expectedStatus: 'generated', status: 'committing' });
       if (!job.result?.output?.[0]) return publicJob(await store.updateJob(jobId, { expectedStatus: 'committing', status: 'failed', error: 'Resultatadress saknas; jobbet kan inte registreras.' }));
       try {
-        const bytes = await client.download(job.result.output[0], { maxBytes: MAX_OUTPUT_BYTES });
-        const inventory = await videoRegistry();
-        const current = await profileOf(dealerId);
-        const result = slot.kind === 'clip' || slot.kind === 'speech' ? await commitClip(job, bytes, slot, value, inventory, job.result.credits)
-          : slot.kind === 'pose' ? await commitPose(job, bytes, current.profile, current, job.result.credits)
-            : await commitLayer(job, bytes, slot, current.profile, job.result.credits);
+        let result = await committedResult(job, slot, job.result.credits);
+        if (!result) {
+          const bytes = await client.download(job.result.output[0], { maxBytes: MAX_OUTPUT_BYTES });
+          const inventory = await videoRegistry();
+          const current = await profileOf(dealerId);
+          result = slot.kind === 'clip' || slot.kind === 'speech' ? await commitClip(job, bytes, slot, value, inventory, job.result.credits)
+            : slot.kind === 'pose' ? await commitPose(job, bytes, current.profile, current, job.result.credits)
+              : await commitLayer(job, bytes, slot, current.profile, job.result.credits);
+        }
         return publicJob(await store.updateJob(jobId, { expectedStatus: 'committing', status: 'succeeded', error: null, result: { ...job.result, ...result, output: undefined, committedAt: new Date(now()).toISOString() } }));
       } catch (cause) {
-        // Keep the task output reference so the next poll retries the commit instead of paying again.
+        // Keep the task output reference so the next poll retries the commit instead of paying again. If this
+        // write fails too, the commit lease expires and the next poll reclaims the job.
         const message = (cause instanceof ForgeError || cause instanceof RunwayError || cause?.statusCode) ? cause.message : 'Efterarbetet misslyckades; nästa pollning försöker igen.';
-        await store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: String(message).slice(0, 2000) });
+        await store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: String(message).slice(0, 2000) }).catch(() => {});
         throw cause;
       }
     },
@@ -443,7 +530,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       actor = validateActor(actor); await ensureReady();
       const job = await store.getJob(jobId);
       if (!job || job.dealerId !== dealerId || job.status !== 'submit_unknown') fail('Jobbet väntar inte på ett task-ID.', 409, 'forge_job_unknown');
-      if (typeof taskId !== 'string' || !/^[A-Za-z0-9._:-]{1,120}$/.test(taskId)) fail('Ogiltigt task-ID.', 422, 'forge_invalid_request');
+      if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) fail('Ogiltigt task-ID.', 422, 'forge_invalid_request');
       return publicJob(await store.updateJob(jobId, { expectedStatus: 'submit_unknown', status: 'running', taskId, error: null }));
     },
   });

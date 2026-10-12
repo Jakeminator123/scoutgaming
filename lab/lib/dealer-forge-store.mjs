@@ -6,8 +6,9 @@ import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studi
 
 // Thrown inside repository transactions: only StudioStorageError survives the repository's failure sanitizer, so codes carry the meaning.
 const fail = (message, statusCode = 503, code = 'studio_forge_store_failed') => { const error = new StudioStorageError(code, statusCode); error.detail = message; throw error; };
-export const JOB_STATUSES = Object.freeze(['submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled']);
-export const ACTIVE_STATUSES = Object.freeze(['submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing']);
+// prepared: journaled, no provider POST has started (safe to pay or to drop). submitting: a POST may be in flight.
+export const JOB_STATUSES = Object.freeze(['prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing', 'succeeded', 'failed', 'cancelled']);
+export const ACTIVE_STATUSES = Object.freeze(['prepared', 'submitting', 'submit_unknown', 'queued', 'running', 'generated', 'committing']);
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 
 const rowToJob = row => row && ({
@@ -56,15 +57,21 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
         return { dealerId, revision: Number(updated.rows[0].revision), profile };
       });
     },
-    async insertJob({ dealerId, slotId, kind, status, taskId = null, request, result = null, error = null, actor }) {
+    /** Idempotent on jobId (the client's request key): a second insert returns the stored row with created=false. */
+    async insertJob({ jobId = randomUUID(), dealerId, slotId, kind, status, taskId = null, request, result = null, error = null, actor }) {
       if (!JOB_STATUSES.includes(status)) fail('Ogiltig jobbstatus.', 422, 'studio_forge_invalid_status');
-      const jobId = randomUUID(), at = now();
+      if (typeof jobId !== 'string' || !uuid.test(jobId)) fail('Ogiltigt jobb-ID.', 422, 'studio_forge_invalid_job');
+      const at = now();
       return run(async client => {
-        await query(client, `/* forge:job-insert */ INSERT INTO croupier_studio.forge_jobs
+        const inserted = await query(client, `/* forge:job-insert */ INSERT INTO croupier_studio.forge_jobs
           (environment_id,workspace_id,job_id,dealer_id,slot_id,kind,status,provider,task_id,request,result,error,actor_id,created_at_ms,updated_at_ms)
-          VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,'runway',$8,$9::jsonb,$10::jsonb,$11,$12,$13,$13)`,
+          VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,'runway',$8,$9::jsonb,$10::jsonb,$11,$12,$13,$13) ON CONFLICT DO NOTHING RETURNING *`,
         [jobId, dealerId, slotId, kind, status, taskId, canonicalStudioJson(request), result === null ? null : canonicalStudioJson(result), error, actor, at]);
-        return { jobId, dealerId, slotId, kind, status, provider: 'runway', taskId, request, result, error, actor, createdAt: at, updatedAt: at };
+        if (inserted.rows[0]) return { job: rowToJob(inserted.rows[0]), created: true };
+        const existing = (await query(client, `/* forge:job */ SELECT * FROM croupier_studio.forge_jobs
+          WHERE environment_id=$1 AND workspace_id=$2 AND job_id=$3::uuid`, [jobId])).rows[0];
+        if (!existing) fail('Jobbet kunde inte journalföras.', 409, 'studio_forge_conflict');
+        return { job: rowToJob(existing), created: false };
       });
     },
     async getJob(jobId) {

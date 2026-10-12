@@ -6,6 +6,7 @@ export const RUNWAY_API_BASE = 'https://api.dev.runwayml.com';
 export const RUNWAY_API_VERSION = '2024-11-06';
 const DATA_URI_LIMIT = 4_700_000; // Runway accepts base64 data URIs up to ~5 MB.
 const MAX_DOWNLOAD = 1024 * 1024 * 1024;
+export const TASK_ID = /^[A-Za-z0-9._:-]{1,120}$/;
 
 export class RunwayError extends Error {
   constructor(message, { status = 503, code = 'runway_error', submitUnknown = false } = {}) {
@@ -39,6 +40,11 @@ export function createRunwayClient({ env = process.env, fetchImpl = fetch, timeo
   const key = env.RUNWAY_API_KEY.trim();
   const headers = (extra = {}) => ({ Authorization: `Bearer ${key}`, 'X-Runway-Version': RUNWAY_API_VERSION, Accept: 'application/json', ...extra });
 
+  // For a paid POST only a definite 4xx rejection proves nothing was started. Timeouts, 408, 5xx, unreadable
+  // bodies and 2xx without a usable task-ID may all hide a running (billed) task: report them as submitUnknown.
+  const unknown = detail => new RunwayError(`Runway gav inget säkert svar (${detail}); jobbet kan ha startats. Kontrollera Runway-portalen: koppla task-ID eller avbryt.`,
+    { status: 503, code: 'runway_submit_unknown', submitUnknown: true });
+
   async function request(method, path, body, { submit = false } = {}) {
     let response;
     try {
@@ -46,19 +52,30 @@ export function createRunwayClient({ env = process.env, fetchImpl = fetch, timeo
         method, headers: headers(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs), redirect: 'error',
       });
-    } catch (error) {
-      // A paid POST that timed out may still have started a task; callers must not resubmit blindly.
-      throw new RunwayError(submit ? 'Runway svarade inte i tid; jobbet kan ha startats. Kontrollera Runway-portalen innan du skickar om.' : 'Runway kunde inte nås.',
-        { status: 503, code: submit ? 'runway_submit_unknown' : 'runway_unreachable', submitUnknown: submit });
+    } catch {
+      if (submit) throw unknown('inget svar i tid');
+      throw new RunwayError('Runway kunde inte nås.', { status: 503, code: 'runway_unreachable' });
     }
-    const text = await response.text();
-    let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+    let text;
+    try { text = await response.text(); }
+    catch {
+      if (submit && (response.ok || response.status >= 500 || response.status === 408)) throw unknown(`svaret bröts, HTTP ${response.status}`);
+      throw new RunwayError(`Runway-svaret kunde inte läsas (HTTP ${response.status}).`, { status: 503, code: 'runway_unreadable' });
+    }
+    let data = null, parsed = true; try { data = text ? JSON.parse(text) : null; } catch { data = null; parsed = false; }
     if (!response.ok) {
+      if (submit && (response.status >= 500 || response.status === 408)) throw unknown(`HTTP ${response.status}`);
       const detail = safeText(data?.error ?? data?.message ?? text) || `HTTP ${response.status}`;
       const code = response.status === 401 || response.status === 403 ? 'runway_unauthorized' : response.status === 429 ? 'runway_rate_limited' : response.status === 402 ? 'runway_credits' : 'runway_request_failed';
       throw new RunwayError(`Runway avvisade anropet: ${detail}`, { status: response.status >= 500 ? 503 : 422, code });
     }
+    if (submit && !parsed) throw unknown(`oläsbart svar, HTTP ${response.status}`);
     return data;
+  }
+  async function submitTask(path, params) {
+    const task = await request('POST', path, params, { submit: true });
+    if (typeof task?.id !== 'string' || !TASK_ID.test(task.id)) throw unknown('svaret saknade giltigt task-ID');
+    return task.id;
   }
 
   async function uploadEphemeral(bytes, filename, contentType) {
@@ -82,13 +99,13 @@ export function createRunwayClient({ env = process.env, fetchImpl = fetch, timeo
       if (4 * Math.ceil(bytes.byteLength / 3) < DATA_URI_LIMIT) return `data:${contentType};base64,${Buffer.from(bytes).toString('base64')}`;
       return uploadEphemeral(bytes, filename, contentType);
     },
-    async imageToVideo(params) { const task = await request('POST', '/v1/image_to_video', params, { submit: true }); if (typeof task?.id !== 'string') throw new RunwayError('Runway returnerade inget task-ID.'); return task.id; },
-    async textToImage(params) { const task = await request('POST', '/v1/text_to_image', params, { submit: true }); if (typeof task?.id !== 'string') throw new RunwayError('Runway returnerade inget task-ID.'); return task.id; },
-    async createAvatar(params) { const avatar = await request('POST', '/v1/avatars', params, { submit: true }); if (typeof avatar?.id !== 'string') throw new RunwayError('Runway returnerade inget avatar-ID.'); return avatar; },
+    async imageToVideo(params) { return submitTask('/v1/image_to_video', params); },
+    async textToImage(params) { return submitTask('/v1/text_to_image', params); },
+    async createAvatar(params) { const avatar = await request('POST', '/v1/avatars', params, { submit: true }); if (typeof avatar?.id !== 'string') throw unknown('svaret saknade avatar-ID'); return avatar; },
     async avatar(id) { return request('GET', `/v1/avatars/${encodeURIComponent(id)}`); },
-    async avatarVideo(params) { const task = await request('POST', '/v1/avatar_videos', params, { submit: true }); if (typeof task?.id !== 'string') throw new RunwayError('Runway returnerade inget task-ID.'); return task.id; },
+    async avatarVideo(params) { return submitTask('/v1/avatar_videos', params); },
     async task(id) {
-      if (typeof id !== 'string' || !/^[A-Za-z0-9._:-]{1,120}$/.test(id)) throw new RunwayError('Ogiltigt task-ID.', { status: 422, code: 'runway_bad_task' });
+      if (typeof id !== 'string' || !TASK_ID.test(id)) throw new RunwayError('Ogiltigt task-ID.', { status: 422, code: 'runway_bad_task' });
       return normalizeTask(await request('GET', `/v1/tasks/${encodeURIComponent(id)}`));
     },
     async cancelTask(id) { await request('DELETE', `/v1/tasks/${encodeURIComponent(id)}`); },
@@ -102,12 +119,21 @@ export function createRunwayClient({ env = process.env, fetchImpl = fetch, timeo
       catch { throw new RunwayError('Resultatet kunde inte hämtas från Runway.'); }
       if (!response.ok || !response.body) throw new RunwayError(`Resultatet kunde inte hämtas (HTTP ${response.status}).`);
       if (response.url && !response.url.startsWith('https:')) throw new RunwayError('Osäker omdirigering vid hämtning.');
+      // Content-Length counts encoded bytes; only compare when the body arrives unencoded.
+      const encoding = response.headers?.get?.('content-encoding');
+      const declared = encoding && encoding !== 'identity' ? NaN : Number(response.headers?.get?.('content-length'));
       const reader = response.body.getReader(), chunks = []; let size = 0;
-      for (;;) {
-        const { done, value } = await reader.read(); if (done) break;
-        size += value.byteLength; if (size > maxBytes) { await reader.cancel().catch(() => {}); throw new RunwayError('Resultatet överskrider storleksgränsen.', { status: 413, code: 'runway_output_too_large' }); }
-        chunks.push(value);
+      try {
+        for (;;) {
+          const { done, value } = await reader.read(); if (done) break;
+          size += value.byteLength; if (size > maxBytes) { await reader.cancel().catch(() => {}); throw new RunwayError('Resultatet överskrider storleksgränsen.', { status: 413, code: 'runway_output_too_large' }); }
+          chunks.push(value);
+        }
+      } catch (error) {
+        if (error instanceof RunwayError) throw error;
+        throw new RunwayError('Hämtningen av resultatet avbröts; nästa pollning försöker igen.', { status: 503, code: 'runway_download_interrupted' });
       }
+      if (Number.isSafeInteger(declared) && declared > 0 && declared !== size) throw new RunwayError(`Resultatet kom ofullständigt (${size} av ${declared} byte); nästa pollning försöker igen.`, { status: 503, code: 'runway_download_truncated' });
       return Buffer.concat(chunks.map(chunk => Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)));
     },
   });
