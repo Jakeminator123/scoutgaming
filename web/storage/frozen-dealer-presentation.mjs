@@ -31,7 +31,8 @@ function idlePath(context) {
 function publicIdle(record, context) {
   if (!record) return null;
   return { id: record.id, sha256: record.sha256, fileName: record.classification.label,
-    src: idlePath(context), ...(record.classification.compositing ? { compositing: structuredClone(record.classification.compositing) } : {}) };
+    src: idlePath(context), ...(record.classification.compositing ? { compositing: structuredClone(record.classification.compositing) } : {}),
+    ...(record.classification.framing ? {framing:structuredClone(record.classification.framing)} : {}) };
 }
 
 /**

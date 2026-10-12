@@ -62,7 +62,7 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
       schemaVersion:1,operatorSlug:context.operatorSlug,roomId:context.roomId,packageRevision:context.packageRevision,
       dealer:{id:context.dealerId,label},independentLayers,
       settings:independentLayers?(selection.composition?.settings??defaultCompositionSettings()):null,
-      media:{dealer:idle?{...item(idle,'dealer'),...(idle.classification.compositing?.mode==='green-screen'?{compositing:idle.classification.compositing}:{})}:null,
+      media:{dealer:idle?{...item(idle,'dealer'),...(idle.classification.compositing?.mode==='green-screen'?{compositing:idle.classification.compositing}:{}),...(idle.classification.framing?{framing:idle.classification.framing}:{})}:null,
         tables:assets.table.map(asset=>({id:asset.id,label:asset.label,...item(asset,'table')})),
         backgrounds:assets.background.map(asset=>({id:asset.id,label:asset.label,...item(asset,'background')}))},
     },context);

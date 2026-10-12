@@ -17,3 +17,7 @@
 .frame[data-presentation-source=dealer][data-presentation-format=mobile] .content :global(.stage-video) { width: calc(var(--dealer-height) * 9 / 16); }
 .frame[data-presentation-source=dealer] .content :global(.stage-video) video { position: absolute; top: 0; left: 50%; width: auto; height: 100%; max-width: none; max-height: none; transform: translateX(-50%); }
 .note { margin: 7px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) { background: repeating-conic-gradient(#333 0% 25%, #555 0% 50%) 0 / 20px 20px; }
+.frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) video { visibility: hidden; }
+.frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) canvas { position:absolute; top:0; left:50%; transform:translateX(-50%); height:100%; width:auto; max-width:none; aspect-ratio:16 / 9; }
+.frame[data-presentation-source=dealer] .content :global(.dealer-video-surface) [role=alert] { position:relative;z-index:1;background:var(--panel); }

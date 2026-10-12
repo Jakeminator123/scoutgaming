@@ -3,6 +3,7 @@ import contract from '../policies/studio-contract.json' with { type: 'json' };
 import schema from '../schemas/video.schema.json' with { type: 'json' };
 import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
+import { validateDealerFraming } from '../../web/public/dealer-framing.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
@@ -40,6 +41,7 @@ export function validateVideoMetadata(input, { allowLegacySituation = false } = 
   if (input.situation && !situations.includes(input.situation)) throw new Error('Situationen passar inte eventet.');
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
   if (input.compositing !== undefined) validateVideoCompositing(input.compositing);
+  if (input.framing !== undefined) validateDealerFraming(input.framing);
   return { ...input, label: input.label.trim(), notes: input.notes.trim() };
 }
 export function validateVideoCompositing(value) {

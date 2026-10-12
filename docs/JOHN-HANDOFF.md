@@ -2,29 +2,47 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
-### PR-förslag: samma dealerskala i dator- och mobilram
+### Samlad snabbgranskning och nästa steg, 12 oktober 2026
 
-Grundloopens förhandsvisning använder nu den gemensamma visningsramen med
-Dator/Mobil-val och en bredare spelarkolumn. Båda ramarna skalar klippet efter
-samma bildhöjd: dator visar mer åt sidorna, mobil visar ett centrerat utsnitt.
-Formatbytet behåller videon och pågående uppspelning. Labbets befintliga
-presentation använder samma ram; den infångade originalspelfliken behåller
-sin separata visning. Detta är en PR-ändring, ännu inte publicerad i produktion.
+Chatten ”Fortsätt Croupier-handoff” har levererat team/journal i e9e623dd och
+utkast/publicering/återställning i 270aaa38. Båda är förfäder till main d57df5c6,
+som vid denna kontroll matchar GitHub exakt, har grön CI 38191014202 och Vercel
+READY dpl_AZdysZfua2KBxkmbXva795wTLFCY. De berörda N2-filerna är oförändrade
+sedan 270aaa38. Huvudcheckouten samt chattarnas a1f5, 1068 och 36da är rena;
+sidoworktrees är äldre frysta utgångspunkter, inte osparade leveranser.
+Fortsätt i C:\Users\jakem\Projects\croupier på main. Inget återställs från de
+äldre arbetskopiorna. Separat pågående arbete i ”Anpassa desktopvyn för dealern”
+ingår inte i detta avslut och ska samordnas innan gemensam integration.
 
-Verifiering: 38 riktade komponentprov, TypeScript och produktionsbygge passerar.
-Ordinarie fullhook kördes i kontrollgrupper: 2 661 PASS/11 skip/0 kvarvarande fel,
-efter komplettering av worktreens beroenden och den andra testharnessens import.
-Browserprov med verkligt renderad komponent/CSS och syntetiska breda/stående
-klipp passerar åtta fall vid 1440, 1024, 390 och 320 px, inklusive 16 färdiga
-uppspelningar. Vid 1440 px är videohöjden 347,625 px i båda ramarna. Audit --probe
-matchar alla fyra dealerbaslinjer; samma fyra dealers spelade goodluck två
-gånger i följd i en isolerad riktig spelare. Privata kvitton ligger under
-lab/data/platform-private/desktop-frame-qa/. QA-processerna är stängda.
+Den snabba granskningen fann ingen ny funktionell regression i de granskade
+N2-vägarna. Detta är ingen fullständig ny säkerhets-/produktacceptans. Live
+lästes Johns paketversion 14, spelrum och beständiga publiceringshistorik utan
+skrivningar. Ingen ny SQL-, provider-, runtime- eller medieändring utfördes.
 
-PAOW:s privata produktionsklipp har inte använts för en ny liveacceptans.
-Mediefiler och tidigare mänsklig läppsynksacceptans ändras inte. GitHub-checks
-och GitGuardian-sviten läses separat; incident-/plats-API-kopplingen saknar
-åtkomst, så incidenttäckningen är fortfarande ofullständig.
+**Bekräftad visuell skuld, inte färdig N2-design:**
+- partner-appearance.module.css använder --sg-text från Studios mörka tema.
+  I partnerns ljusa tema blir formulärtexten #F2F1ED på ytan #F2F1ED; partnerns
+  egen textfärg --ink är #0A0B0D. Kopplingen fanns redan före 270aaa38.
+- PartnerPackageView visar samma fullständiga paketlista före flera olika
+  inställningsvyer. Korten har 0 px padding och visar MIME, mått, råa ID:n och
+  långa filnamn. De ersätter inte en visuell provbordsförhandsvisning.
+- Partnerns skal använder --ink/--paper medan formulär och knappar använder
+  --sg-* och sg-btn. Gemensam temakoppling, spacing och arbetsflödesstruktur
+  saknas. Funktionstesterna innebär inte att helhetsvyn är visuellt accepterad.
+
+Prioritera JN2-B i befintlig tracker: först text/ytor och fokuskontrast i båda
+lägena; därefter en sammanhållen redigeringsvy med kompakt paketinformation,
+begripliga namn och förhandsvisning. Bevara utkast, revisioner, granskat
+publicera/återställ och alla tenant-/behörighetsgränser. Kontrollera riktig
+livekomponent i 360/820/1440 px, SV/EN och ljust/mörkt. Därefter återstår breda
+JN2-D (logo/chips/knappar/full spelförhandsvisning) samt JN2-E–K enligt trackern.
+Visuella fel dokumenterades, men ingen oombedd omdesign gjordes i snabbgranskningen.
+
+Den egna förbrukade studio-navigation-fixture.mjs har tagits bort och dess
+processer är stoppade. Privata testkvitton, råmedia, env och återanvändbar CRUD-QA
+bevaras. Standardtaket är 5 USD per avgränsad testomgång; detta pass kostade 0 USD.
+GitGuardian: 12 befintliga öppna incidenter, partiella platser och ofullständig
+historisk skanning kvarstår. Ingen friskförklaring eller incidentåtgärd gjordes.
 
 ### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
 

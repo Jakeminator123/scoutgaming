@@ -11,12 +11,24 @@ import {uploadNativeVideo} from '../lib/upload-native-video.mjs';
 import {requestJson,studioHref,type VideoEntry,type VideoInventory} from './studio-types';
 import styles from './dealer-media-library.module.css';
 import {mediaRemovalMessage} from './media-removal-feedback';
+import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN,type DealerFraming} from '../../web/public/dealer-framing.mjs';
+import type {VideoCompositing} from '../lib/video-intake.mjs';
+import {VideoCompositingFields,DealerFramingFields} from './video-metadata-fields';
+import {DealerClipPreview} from './dealer-video-surface';
+import {DealerFileSettings} from './dealer-file-settings';
 
-type IntakeRow={id:string;file:File;label:string;slotId:string;state:'ready'|'saving'|'saved'|'error';message?:string;progress?:number};
-function LocalPreview({file}:{file:File}){
+type IntakeRow={id:string;file:File;label:string;slotId:string;state:'ready'|'saving'|'saved'|'error';message?:string;progress?:number;framing?:DealerFraming;compositing?:VideoCompositing};
+function LocalPreview({file,framing,compositing}:{file:File;framing?:DealerFraming;compositing?:VideoCompositing}){
   const [url,setUrl]=useState('');
   useEffect(()=>{const next=URL.createObjectURL(file);setUrl(next);return()=>URL.revokeObjectURL(next);},[file]);
-  return mediaContentType(file.name).startsWith('audio/')?<audio src={url} controls preload="metadata"/>:<video src={url} controls playsInline preload="metadata"/>;
+  return mediaContentType(file.name).startsWith('audio/')?<audio src={url} controls preload="metadata"/>:url?<DealerClipPreview url={url} framing={framing} compositing={compositing}/>:null;
+}
+function IntakePreview({row,disabled,update}:{row:IntakeRow;disabled:boolean;update:(id:string,patch:Partial<IntakeRow>)=>void}){
+  const [open,setOpen]=useState(row.slotId==='idle.ready/');
+  return <details open={open} onToggle={event=>setOpen(event.currentTarget.open)}><summary>{row.file.name} · {(row.file.size/1024/1024).toFixed(1)} MB · bildformat och bakgrund</summary>
+    {open?<fieldset disabled={disabled}>{row.framing?<><VideoCompositingFields value={row.compositing} onChange={compositing=>update(row.id,{compositing})}/><DealerFramingFields value={row.framing} onChange={framing=>update(row.id,{framing})}/></>:null}
+      <LocalPreview file={row.file} framing={row.framing} compositing={row.compositing}/></fieldset>:null}
+  </details>;
 }
 export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onProjectSaved,onLifecycleChange,onPendingChange,onConfigureSlot,onCategoryChange,initialSlotId='',disabled=false,archivedDealer=false,removalDisabledReason='',category:controlledCategory,slotId:controlledSlotId,onSlotChange,categoryIds,slotEditor}:{project:StudioProject;inventory:VideoInventory;dealerId:string;onInventory:(value:VideoInventory)=>void;onProjectSaved:(value:StudioProject)=>void;onLifecycleChange:(pending:boolean)=>void;onPendingChange:(value:boolean)=>void;onConfigureSlot?:(eventId:string,situation:string)=>void;onCategoryChange?:(category:string)=>void;initialSlotId?:string;category?:string;slotId?:string;onSlotChange?:(slotId:string)=>void;categoryIds?:string[];slotEditor?:ReactNode;disabled?:boolean;archivedDealer?:boolean;removalDisabledReason?:string}){
   const [localCategory,setCategory]=useState(dealerMediaSlots(project).find(row=>row.id===initialSlotId)?.category??'all'),[archived,setArchived]=useState(archivedDealer),[queue,setQueue]=useState<IntakeRow[]>([]);
@@ -48,7 +60,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     setQueue(rows=>[...rows,...selected.map(file=>{
       const type=mediaContentType(file.name),choices=type.startsWith('audio/')?allSlots.filter(slot=>slot.category==='speech'&&(!selectedSlot||slot.id===selectedSlot.id)):(selectedSlot?[selectedSlot]:slots);
       const invalid=!type?'Välj MP4, WebM, MP3 eller WAV.':file.size<16||file.size>MAX_VIDEO_BYTES?'Filen måste vara mellan 16 byte och 128 MB.':'';
-      return {id:crypto.randomUUID(),file,label:file.name.replace(/\.[^.]+$/,'').slice(0,120),slotId:choices.length===1?choices[0].id:'',state:invalid?'error' as const:'ready' as const,message:invalid};
+      return {id:crypto.randomUUID(),file,label:file.name.replace(/\.[^.]+$/,'').slice(0,120),slotId:choices.length===1?choices[0].id:'',state:invalid?'error' as const:'ready' as const,message:invalid,...(type.startsWith('video/')?{framing:{...DEFAULT_DEALER_FRAMING},compositing:{...DEFAULT_GREEN_SCREEN}}:{})};
     })]);setError('');if(input.current)input.current.value='';
   }
   function update(id:string,patch:Partial<IntakeRow>){setQueue(rows=>rows.map(row=>row.id===id?{...row,...patch}:row));}
@@ -57,7 +69,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     const ready=queue.filter(row=>row.state==='ready');
     if(!ready.length)return;
     let prepared;
-    try{prepared=ready.map(row=>({row,classification:mediaClassification(project,{dealerId,slotId:row.slotId,label:row.label,contentType:mediaContentType(row.file.name)})}));}
+    try{prepared=ready.map(row=>({row,classification:{...mediaClassification(project,{dealerId,slotId:row.slotId,label:row.label,contentType:mediaContentType(row.file.name)}),...(row.framing?{framing:row.framing,compositing:row.compositing}:{})}}));}
     catch(cause){setError(cause instanceof Error?cause.message:'Kontrollera facken.');return;}
     busyRef.current=true;setBusy(true);setError('');setNotice('');
     const abort=new AbortController();controller.current=abort;
@@ -114,7 +126,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     </div>{queue.length?<section className={styles.intake} aria-label="Filer att mappa"><div className={styles.heading}><h3>Mappa {queue.length} filer</h3><button disabled={busy} onClick={()=>setQueue([])}>Töm listan</button></div>
       <p>Dealer och kategori följer med. För Deal väljer du exakt box; för tal väljer du repliken. Sparade filer laddas inte upp igen.</p>
       {queue.map(row=><article key={row.id} className={styles.intakeRow}>
-        <details><summary>{row.file.name} · {(row.file.size/1024/1024).toFixed(1)} MB</summary><LocalPreview file={row.file}/></details>
+        <IntakePreview row={row} disabled={busy||disabled||row.state!=='ready'} update={update}/>
         <label>Namn<input aria-label={'Namn för '+row.file.name} value={row.label} maxLength={120} disabled={busy||row.state!=='ready'} onChange={event=>update(row.id,{label:event.target.value})}/></label>
         <label>Fack<select aria-label={'Fack för '+row.file.name} value={row.slotId} disabled={busy||row.state!=='ready'} onChange={event=>update(row.id,{slotId:event.target.value})}><option value="">Välj ett fack…</option>{DEALER_MEDIA_CATEGORIES.filter(item=>item.id!=='all').map(group=>{
           const options=allSlots.filter(slot=>slot.category===group.id&&(!mediaContentType(row.file.name).startsWith('audio/')||slot.category==='speech'));
@@ -135,6 +147,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
         {video.deletion?<div className={styles.empty}>Radering påbörjad · filen kan inte återställas</div>:metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<video src={video.previewUrl} controls playsInline preload="none"/>}
         <h4>{clipLabel({id:video.id,label:video.label,familyId:video.familyId,role:video.role},project.clipLabels)}</h4><p>{slot?.label??'Ej kategoriserad'} · {metadata?.mediaType==='audio'?'Ljud':'Video'}</p>
         <small>{mediaUsage(project,video,dealerId)}{!video.available?' · Otillgänglig':''}</small>
+        {editable&&!archived&&!video.deletion?<DealerFileSettings key={video.id+JSON.stringify(metadata)} video={video} disabled={busy||disabled} onSaved={onInventory} onBusyChange={onLifecycleChange}/>:null}
         <div className={styles.actions}>{!archived&&slot?settings(slot):null}
           {editable?<>
             {!archivedDealer&&!video.deletion?<button disabled={busy||disabled||Boolean(removalDisabledReason)||(!archived&&used)} title={removalDisabledReason||(used?'Koppla loss filen och spara projektet först.':undefined)} onClick={()=>archived?void archive(video,false):setRemoving(video)}>{archived?'Återställ':'Flytta till papperskorgen'}</button>:null}
