@@ -5,6 +5,7 @@ export function mediaSituationForEvent(eventId, event) {
   if (eventId === 'reveal.dealer' && event.type === 'reveal' && event.to === 'dealer') return 'dealer-hole';
   if (eventId?.startsWith('deal.player.') && event.type === 'deal' && event.to === 'box' && Number.isInteger(event.box) && event.box >= 0 && event.box <= 6) return `box${event.box}`;
   if (eventId === 'idle.ready' && event.type === 'idle') return 'ready';
+  if (eventId === 'transition.shoe' && (event.pose === 'to-shoe' || event.pose === 'from-shoe')) return event.pose;
   return null;
 }
 

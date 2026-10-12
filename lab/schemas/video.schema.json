@@ -47,7 +47,8 @@
         "settle.win",
         "settle.push",
         "settle.other",
-        "idle.ready"
+        "idle.ready",
+        "transition.shoe"
       ]
     },
     "kind": {
@@ -509,6 +510,28 @@
           "situation": {
             "enum": [
               ""
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventId": {
+            "const": "transition.shoe"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "action"
+          },
+          "situation": {
+            "enum": [
+              "to-shoe",
+              "from-shoe"
             ]
           }
         }

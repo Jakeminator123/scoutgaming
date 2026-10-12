@@ -24,7 +24,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { createSeedProject, OPENCLAW_MODES } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, isDirectorSourceType, OPENCLAW_MODES } from '../lab/lib/studio-model.mjs';
 import { selectPresentation } from '../presentation-runtime/selection.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 
@@ -76,7 +76,8 @@ export function modeList(modes = OPENCLAW_MODES) {
 
 export function astridEvents(project) {
   const ids = new Set(project.lines.filter(line => line.dealerId === 'astrid').map(line => line.eventId));
-  return project.events.filter(event => ids.has(event.id));
+  // Clip-only slots (transition.shoe) are never director events; select() refuses them by design.
+  return project.events.filter(event => ids.has(event.id) && isDirectorSourceType(event.sourceType));
 }
 
 export function listJobs(project = createSeedProject()) {

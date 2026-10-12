@@ -44,7 +44,7 @@
     "events": {
       "type": "array",
       "minItems": 16,
-      "maxItems": 16,
+      "maxItems": 17,
       "prefixItems": [
         {
           "$ref": "#/$defs/event",
@@ -578,6 +578,34 @@
               }
             }
           }
+        },
+        {
+          "$ref": "#/$defs/event",
+          "properties": {
+            "id": {
+              "const": "transition.shoe"
+            },
+            "sourceType": {
+              "const": "transition"
+            },
+            "sourceRef": {
+              "const": "lab/policies/studio-contract.json#transition.shoe"
+            },
+            "sourceStatus": {
+              "const": "proposed"
+            },
+            "match": {
+              "const": {
+                "type": "transition"
+              }
+            },
+            "exampleEvent": {
+              "const": {
+                "type": "transition",
+                "pose": "to-shoe"
+              }
+            }
+          }
         }
       ],
       "items": false
@@ -679,7 +707,7 @@
         "lines": {
           "type": "array",
           "minItems": 16,
-          "maxItems": 16,
+          "maxItems": 17,
           "items": {
             "$ref": "#/$defs/line"
           }
@@ -1320,7 +1348,8 @@
             "reveal",
             "settle",
             "turn",
-            "idle"
+            "idle",
+            "transition"
           ]
         },
         "sourceRef": {
@@ -1465,7 +1494,8 @@
                           "reveal",
                           "settle",
                           "turn",
-                          "idle"
+                          "idle",
+                          "transition"
                         ]
                       }
                     }
@@ -1480,7 +1510,8 @@
                         "reveal",
                         "settle",
                         "turn",
-                        "idle"
+                        "idle",
+                        "transition"
                       ]
                     }
                   }
@@ -3032,7 +3063,8 @@
             "settle.win",
             "settle.push",
             "settle.other",
-            "idle.ready"
+            "idle.ready",
+            "transition.shoe"
           ]
         },
         "label": {

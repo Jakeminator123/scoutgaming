@@ -19,11 +19,11 @@ function rig({ failAt } = {}) {
   return { calls, targets };
 }
 
-test('registry has 16 canonical lab events and exactly 4 finite clips per event', async () => {
+test('registry has one motion file per canonical lab event and exactly 4 finite clips per event', async () => {
   const seed = JSON.parse(await readFile(new URL('../policies/project.seed.json', import.meta.url), 'utf8'));
   assert.equal(MOTION_INDEX.synthetic, true);
   assert.equal(MOTION_INDEX.rig, 'astrid-2d-v1');
-  assert.equal(MOTION_CLIPS.length, 64);
+  assert.equal(MOTION_CLIPS.length, seed.events.length * 4);
   assert.deepEqual([...new Set(MOTION_CLIPS.map(clip => clip.eventId))], seed.events.map(event => event.id));
   for (const event of seed.events) {
     assert.deepEqual(MOTION_CLIPS.filter(clip => clip.eventId === event.id).map(clip => clip.assetId), ['standard', 'contextual', 'motion3', 'motion4'].map(slot => `${event.id}.${slot}`));
@@ -156,7 +156,7 @@ test('social.ledsen is separate from all 64 game clips and saved project binding
   assert.equal(social.reactionId, 'ledsen');
   assert.equal(social.eventId, undefined);
   assert.equal(social.durationMs, 4200);
-  assert.equal(MOTION_CLIPS.length, 64);
+  assert.equal(MOTION_CLIPS.length, seed.events.length * 4);
   assert.ok(!MOTION_CLIPS.includes(social));
   assert.deepEqual(SOCIAL_MOTION_CLIPS, [social]);
   assert.equal(MOTION_INDEX.socialClipCount, 1);

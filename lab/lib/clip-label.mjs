@@ -8,6 +8,7 @@ const ACTIONS = {
   idle: 'Grundloop',
   turn: 'Tur',
   settle: 'Resultat',
+  transition: 'Övergång',
 };
 const SEATS = {
   'player.left': 'spelare vänster',
@@ -36,6 +37,8 @@ const SITUATIONS = {
   push: 'Lika',
   sidebet: 'sidospel',
   win: 'vinst',
+  'to-shoe': 'Till skon',
+  'from-shoe': 'Från skon',
 };
 
 const situationText = situation => {
@@ -64,6 +67,7 @@ function labelFromFamily(familyId, role) {
   const rest = dot === -1 ? '' : eventId.slice(dot + 1);
   if (action === 'speak' && Object.hasOwn(SITUATIONS, situation)) return withRole(clipSituationLabel(eventId, situation), role);
   if (action === 'idle' && situation === 'ready') return role === 'variant' ? 'Variation' : 'Lugn blick';
+  if (action === 'transition' && (situation === 'to-shoe' || situation === 'from-shoe')) return withRole(clipSituationLabel(eventId, situation), role);
   if (action === 'deal' && /^box[0-6]$/.test(situation)) return withRole(`Ge kort · ${situationText(situation)}`, role);
   if (['deal', 'reveal'].includes(action) && ['dealer-up', 'dealer-hole'].includes(situation)) {
     return withRole(`${action === 'reveal' ? 'Vänd dolt kort' : situation === 'dealer-up' ? 'Ge öppet kort' : 'Ge dolt kort'} · Dealer`, role);
@@ -149,6 +153,8 @@ export function clipSituationLabel(eventId, situation) {
   if (situation === 'dealer-up') return 'Dealer · öppet kort';
   if (situation === 'dealer-hole') return 'Dealer · dolt kort';
   if (eventId === 'idle.ready') return 'Grundloop';
+  if (situation === 'to-shoe') return 'Till skon';
+  if (situation === 'from-shoe') return 'Från skon';
   const label = situationText(situation);
   return label ? label[0].toLocaleUpperCase('sv') + label.slice(1) : eventId;
 }

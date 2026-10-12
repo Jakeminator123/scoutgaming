@@ -8,7 +8,7 @@ test('all existing groups have an output profile without defining extra source t
   const project = createSeedProject();
   const counts = Object.fromEntries(OUTPUT_GROUPS.map(group => [group.id, 0]));
   for (const event of project.events) counts[presentationProfile(event.sourceType).id]++;
-  assert.deepEqual(counts, { idle: 1, action: 5, speech: 4, reaction: 6 });
+  assert.deepEqual(counts, { idle: 1, action: 6, speech: 4, reaction: 6 });
   assert.equal(presentationProfile('chat'), null);
   assert.equal(presentationProfile('ended'), null);
 });

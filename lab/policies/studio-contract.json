@@ -32,6 +32,10 @@
     "idle": {
       "label": "Grundloop",
       "kind": "idle"
+    },
+    "transition": {
+      "label": "Övergångar",
+      "kind": "action"
     }
   },
   "videoKinds": {
@@ -323,6 +327,14 @@
       "id": "idle.ready",
       "sourceType": "idle",
       "situations": []
+    },
+    {
+      "id": "transition.shoe",
+      "sourceType": "transition",
+      "situations": [
+        "to-shoe",
+        "from-shoe"
+      ]
     }
   ],
   "probe": {
