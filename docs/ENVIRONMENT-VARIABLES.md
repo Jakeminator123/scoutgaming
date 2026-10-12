@@ -51,10 +51,20 @@ produktionskonton, native Studio och leverantörsnycklar; dessa ska inte kopiera
 dit som del av namnbytet.
 Rättningen har verifierats med 56 riktade env-/Studio-/isolationsprov. De två
 aktiva lokala `.env.local`-filerna använder nu det rättade namnet och har samma
-Gateway-värde. Namnbytet i Vercel görs först efter levererat kodstöd; värdet
-behålls genom en ändring av nyckelnamnet på den befintliga hemliga posten.
+Gateway-värde. Kodstödet är levererat i `36c8ef59` med full regression:
+2 895 godkända prov, 11 villkorliga undantag och 0 fel. Vercel-versionen
+`dpl_5JueKQrBNhtvdVN2w4LaeNAALKbs` blev READY före env-bytet.
+Vercel tillåter inte namnbyte på Sensitive-poster. Det rättade namnet skapades
+därför som en Production-hemlighet från den lokala filen via CLI-stdin, efter
+ett läsande 200-svar från Directors admin-API med samma Gateway-nyckel.
+Den äldre Vercel-posten togs därefter bort. Efterläsning visar 59 poster,
+51 unika namn och inga ändringar av övriga posters namn, typ eller scope.
 Rotens lokala `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` saknade PEM-markörer och
 har rättats mot Vercels publika post. Labbets kopia matchade redan den posten.
+`LAB_PARTNER_*` används genom en dynamisk kompatibilitetsmappning i
+`lab/lib/partner-observer.mjs`; en sökning efter fullständiga namn missar detta.
+`GEMINI_API_KEY` saknar referenser i mains källkod och ingår inte i den isolerade
+startarens allowlist. Den befintliga lokala posten är inte ett runtimekrav.
 
 På `croupier-lab-director` används dessutom
 `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`: en privat Ed25519-nyckel i base64-kodad
