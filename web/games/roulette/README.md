@@ -40,7 +40,7 @@ misslyckas. Modulens frysning skyddar objekten i processen, inte datatransporten
 `ops/cloud/Dockerfile` kopierar redan `web/` till samma Node 24-image som
 blackjack. Ingen ny Render-tjänst, port eller miljövariabel behövs.
 
-Testytan finns på `/roulette-test/`, via samma signerade Vercel → Render-väg
+Testytan finns på `/roulette-test`, via samma signerade Vercel → Render-väg
 som blackjack. Render-bokmärket omdirigerar till den kanoniska sajten.
 `preview.mjs` kopplar `POST /api/roulette-test/spin` till generatorn; HTML,
 CSS och klientkod finns under `web/public/roulette-test/`. Ytan är publik,

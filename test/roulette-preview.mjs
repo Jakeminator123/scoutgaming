@@ -24,7 +24,7 @@ async function fixture(t, options = {}) {
 
 test('standalone preview serves actual UI/assets and server crypto without accounts or storage', async t => {
   const f = await fixture(t);
-  const page = await f.get('/roulette-test/');
+  const page = await f.get('/roulette-test', { redirect: 'manual' });
   assert.equal(page.status, 200); assert.match(await page.text(), /Snurra på servern/);
   assert.equal(page.headers.get('cache-control'), 'no-store');
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
@@ -32,9 +32,11 @@ test('standalone preview serves actual UI/assets and server crypto without accou
   for (const path of ['/roulette-test/app.mjs', '/roulette-test/style.css']) {
     const response = await f.get(path); assert.equal(response.status, 200); assert.ok((await response.text()).length > 100);
   }
-  const redirect = await f.get('/roulette-test', { redirect: 'manual' });
-  assert.equal(redirect.status, 308); assert.equal(redirect.headers.get('location'), '/roulette-test/');
-  const head = await f.get('/roulette-test/', { method: 'HEAD' });
+  const redirect = await f.get('/roulette-test/', { redirect: 'manual' });
+  assert.equal(redirect.status, 308); assert.equal(redirect.headers.get('location'), '/roulette-test');
+  // Next's public ingress strips trailing slashes; the destination must serve directly.
+  assert.equal((await f.get(redirect.headers.get('location'), { redirect: 'manual' })).status, 200);
+  const head = await f.get('/roulette-test', { method: 'HEAD', redirect: 'manual' });
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
   const a = await f.spin(), b = await f.spin();
   assert.equal(a.status, 200); assert.equal(a.headers.get('set-cookie'), null);
@@ -98,8 +100,10 @@ test('Vercel and Render admit only the exact diagnostic routes through authentic
   for (const path of ['/api/roulette-test/private', '/web/games/roulette/index.mjs', '/roulette-test/private.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
   }
-  const bookmark = vercelIngressRequest({ method: 'GET', url: '/roulette-test/', headers: { host: 'engine.example.test' } }, ingress);
-  assert.equal(bookmark.redirect, publicOrigin + '/roulette-test/');
+  for (const path of ['/roulette-test', '/roulette-test/']) {
+    const bookmark = vercelIngressRequest({ method: 'GET', url: path, headers: { host: 'engine.example.test' } }, ingress);
+    assert.equal(bookmark.redirect, publicOrigin + '/roulette-test');
+  }
   const direct = vercelIngressRequest({ method: 'POST', url: '/api/roulette-test/spin', headers: { host: 'engine.example.test' } }, ingress);
   assert.equal(direct.accepted, false);
 });

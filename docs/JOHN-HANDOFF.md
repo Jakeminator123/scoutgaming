@@ -176,7 +176,7 @@ passerar; produktionskontroll återstår vid leverans.
 
 `web/games/roulette/` innehåller en fristående servermodul för europeisk
 roulette (0–36), `node:crypto.randomInt` och JSON-eventet
-`roulette.spin.resolved` med operatörs-, rums- och rund-ID. `/roulette-test/`
+`roulette.spin.resolved` med operatörs-, rums- och rund-ID. `/roulette-test`
 visar en snurrknapp, nummer/färg, fliklokal historik, JSON och kodexempel.
 Tom `POST /api/roulette-test/spin` skapar ett serverägt demoutfall. Den går
 via signerad Vercel-transport till befintlig Render-image; Render-bokmärket
@@ -194,6 +194,12 @@ rensning av lokal historik. Orphan-kontrollen efter V2: 346 testfiler, 0 orphan.
 Testerna ingår i pre-commit/CI. Labbets och frontendens låsta beroenden
 installerades för full leveranskontroll; tidigare saknade Next-moduler var
 en lokal installationsbrist. Inga befintliga produktservrar startades/stoppades.
+
+PR #28 levererade generatorn till Render; publikt API-prov gav HTTP 200 och
+ett servergenererat event. Liveprovet hittade en loop mellan Vercels
+slash-normalisering och testsidans redirect. Testytans kanoniska adress är
+därför `/roulette-test` utan slutande snedstreck, även i Render-bokmärken.
+HTTP-testet kräver nu att redirectmålet ger 200 direkt utan fler redirects.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
