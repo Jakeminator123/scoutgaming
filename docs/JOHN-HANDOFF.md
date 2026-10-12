@@ -187,11 +187,15 @@ merge-cd76. Merge gäller bara PR-author `Jakeminator123`, samma repo, mål
 `main`, exakt aktuell head och granskade gröna kontroller. Worktree e37e togs
 bort efter renhets-, privatfil-, process- och ancestrykontroll; den mergade
 lokala `codex/john-n2-admin-partners` togs bort (fjärrgrenen består). 8e3c har
-fyra egna commits och privat videoeditormaterial; d5ed har privata
-reproduktioner och sparas. CI använder samma FFmpeg/jq-installation i alla tre
-jobb, cache per Ubuntu-image och ingen nedladdning vid komplett cacheträff.
-Studios två byggen återanvänder `.next/cache`. Åttaminutersgränsen, alla tester
-och migrationsgrinden består. Tidsvinsten återstår att mäta.
+fyra egna commits och privat videoeditormaterial. d5ed blev senare tom och
+oregistrerad genom en extern ändring; inget kommando från merge-cd76 raderade
+den, och backup av dess privata reproduktioner är ännu inte verifierad. CI
+använder samma FFmpeg/jq-installation i alla tre jobb, cache per Ubuntu-image
+och ingen nedladdning vid komplett cacheträff. Studios två byggen återanvänder
+`.next/cache`. Åttaminutersgränsen, alla tester och migrationsgrinden består.
+Första Ubuntu-körningen på `45ff5c25` visade att offlineinstallationen behövde
+peka APT:s arkivcache på samma mapp som download-only; kopplingen och fixturen
+är rättade i `dbc925c3`. Tidsvinst och en riktig varm cacheträff återstår att mäta.
 
 **Dealer Forge i produktion, 12 oktober (#16, #17, #18, `91969107`).**
 `/control/dealer-forge` genererar en dealers klippbank via Runway från ett

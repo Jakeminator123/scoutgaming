@@ -208,6 +208,8 @@ for (const scenario of ['warm', 'cold', 'incomplete', 'missing-tool']) {
       apt-get() {
         printf '%s\\n' "$*" >> "$APT_CALLS"
         if [[ " $* " == *" --no-download "* ]]; then
+          # APT refuses uncached archives when downloads are disabled.
+          [[ " $* " == *"Dir::Cache::archives=\${FFMPEG_CACHE_DIR}/"* ]] || return 1
           if [[ "$SCENARIO" == incomplete && "$tried_cache" == 0 ]]; then
             tried_cache=1
             return 1

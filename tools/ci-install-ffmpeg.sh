@@ -18,7 +18,7 @@ debs=( "$cache_dir"/*.deb )
 from_cache=0
 if [ "${#debs[@]}" -gt 0 ]; then
   # A cache hit must not silently download missing dependencies from Ubuntu.
-  if sudo apt-get --no-download install -y --no-install-recommends "${debs[@]}"; then
+  if sudo apt-get -o "Dir::Cache::archives=${cache_dir}/" --no-download install -y --no-install-recommends "${debs[@]}"; then
     from_cache=1
   fi
 fi
@@ -35,7 +35,7 @@ if [ "$from_cache" -eq 0 ]; then
     if sudo apt-get "${ubuntu_sources[@]}" -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq \
       && sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -qq --download-only --no-install-recommends -o "Dir::Cache::archives=${cache_dir}/" ffmpeg jq; then
       debs=( "$cache_dir"/*.deb )
-      if [ "${#debs[@]}" -gt 0 ] && sudo apt-get --no-download install -y --no-install-recommends "${debs[@]}"; then
+      if [ "${#debs[@]}" -gt 0 ] && sudo apt-get -o "Dir::Cache::archives=${cache_dir}/" --no-download install -y --no-install-recommends "${debs[@]}"; then
         break
       fi
     fi
