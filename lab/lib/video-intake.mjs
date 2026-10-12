@@ -1,7 +1,7 @@
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import schema from '../schemas/video.schema.json' with { type: 'json' };
-import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
+import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/media-families.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
 import { validateDealerFraming } from '../../web/public/dealer-framing.mjs';
 import { assertDealerCompositingWrite } from '../../web/public/dealer-compositing.mjs';

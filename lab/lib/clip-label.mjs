@@ -1,4 +1,4 @@
-import { MEDIA_FAMILY_DEFINITIONS } from '../../presentation-runtime/media-families.mjs';
+import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/media-families.mjs';
 
 // Display names only. Never rename files, hashes or family ids.
 const ACTIONS = {

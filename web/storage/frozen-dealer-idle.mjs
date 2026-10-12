@@ -1,10 +1,10 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
 import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../dealer-identity.mjs';
-import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { validateRegisteredIdlePolicies } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
 import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
-import { ownDealerIdle } from '../../presentation-runtime/registered-idle.mjs';
+import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,

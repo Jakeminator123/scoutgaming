@@ -1,7 +1,7 @@
-import { isActiveDealerId, registeredDealerIds } from '../web/public/dealer-identity.mjs';
-import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
-import { buildRuntimeCatalog } from '../lab/lib/studio-model.mjs';
-import { selectionFor } from '../lab/lib/video-intake.mjs';
+import { isActiveDealerId, registeredDealerIds } from '../../../web/public/dealer-identity.mjs';
+import { prepareDecision } from '../../../open-claw/lab/src/engine.mjs';
+import { buildRuntimeCatalog } from '../../../lab/lib/studio-model.mjs';
+import { selectionFor } from '../../../lab/lib/video-intake.mjs';
 import { registeredIdleInventory, registeredIdlePolicy } from './registered-idle-policy.mjs';
 
 /**

@@ -4,7 +4,7 @@ import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from 
 import { askDirector } from '../../open-claw/lab/src/openclaw.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
-import { registeredIdlePolicy } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { registeredIdlePolicy } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
 import { remoteRequest, studioVideoRegistry } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';

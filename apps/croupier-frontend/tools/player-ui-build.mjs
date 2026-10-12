@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+import { existsSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, relative, dirname, join, sep } from 'node:path';
 import { resolveMediaPath } from '../../../tools/media-layout.mjs';
@@ -13,11 +14,24 @@ const styles = [
   'astrid-voice-control.css', 'blackjack-entry.css',
 ];
 
+function canonicalSource(candidate) {
+  const normalized = resolve(candidate);
+  const rel = relative(repo, normalized).split(sep).join('/');
+  // The public module graph still spells /presentation-runtime/. Read the
+  // package file and keep that spelling as the static output path.
+  if (rel.startsWith('presentation-runtime/')) {
+    const moved = resolve(repo, 'packages/presentation/runtime', rel.slice('presentation-runtime/'.length));
+    if (existsSync(moved)) return realpathSync(moved);
+  }
+  return normalized;
+}
+
 function outputName(source) {
   if (source === resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo})) return 'speech-media.json';
   const path = relative(repo, source).split(sep).join('/');
   if (path.startsWith('web/public/')) return path.slice('web/public/'.length);
-  if (path.startsWith('presentation-runtime/') || path === 'lab/policies/idle-policy.seed.json') return path;
+  if (path.startsWith('packages/presentation/runtime/')) return 'presentation-runtime/' + path.slice('packages/presentation/runtime/'.length);
+  if (path === 'lab/policies/idle-policy.seed.json') return path;
   throw Error(`Frontend import utanför tillåten textyta: ${path}`);
 }
 
@@ -38,7 +52,7 @@ async function writePreview(output) {
   for (const style of styles) queue.push(join(publicRoot, style));
   queue.push(resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo}));
   while (queue.length) {
-    const sourcePath = resolve(queue.shift());
+    const sourcePath = canonicalSource(queue.shift());
     if (seen.has(sourcePath)) continue;
     seen.add(sourcePath);
     const name = outputName(sourcePath);
@@ -68,7 +82,7 @@ async function writePreview(output) {
     if (ext === '.mjs' || ext === '.js') {
       for (const specifier of moduleImports(content)) {
         if (!specifier.startsWith('.')) throw Error(`Oväntad extern modulimport i ${name}: ${specifier}`);
-        queue.push(fileURLToPath(new URL(specifier, pathToFileURL(sourcePath))));
+        queue.push(canonicalSource(fileURLToPath(new URL(specifier, pathToFileURL(sourcePath)))));
       }
     }
   }

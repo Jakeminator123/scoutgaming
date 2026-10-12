@@ -1,4 +1,4 @@
-import { videoFitsLine } from '../lab/lib/video-intake.mjs';
+import { videoFitsLine } from '../../../lab/lib/video-intake.mjs';
 
 const SITUATIONS = Object.freeze({ toShoe: 'to-shoe', fromShoe: 'from-shoe' });
 

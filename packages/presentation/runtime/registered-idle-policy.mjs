@@ -1,6 +1,6 @@
-import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../web/dealer-identity.mjs';
+import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../../../web/dealer-identity.mjs';
 import { validateIdlePolicy } from './idle-policy.mjs';
-import { videoFitsLine } from '../lab/lib/video-intake.mjs';
+import { videoFitsLine } from '../../../lab/lib/video-intake.mjs';
 
 const fail = () => { throw Error('Ogiltig sparad dealergrundloop.'); };
 export function registeredIdleFamilyId(dealerId) {
