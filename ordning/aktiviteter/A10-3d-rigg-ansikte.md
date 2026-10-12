@@ -3,8 +3,8 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 2 · parallell med A12, A13, A15, A16 · före A11, A14 och A17 |
-| Väntar på | B4 · rapporterna A04 och A05 |
-| Branch / worktree | `jakob/ordning-a10` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a10` |
+| Väntar på | B4 provisoriskt ja · A04 och A05 körs parallellt i omgång 1, så verifiera själv med verktygen |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 25 % · elva tester i kroken, register som måste stämma |
 
@@ -21,12 +21,17 @@ och den lokala och lagrade uppspelningen är oförändrade.
   `media/dealers/astrid/source/3d/` (26 filer, 23,0 MB, varav tre
   `motion-samples.json`), `media/dealers/astrid/runtime/assets/astrid-collection-sweep.glb`
   (38,5 MB) och möjligen `media/game/source/3d/` (5 filer). Totalt cirka 123,5 MB.
-- Klientmoduler som bara nås från test eller pipeline: `dealer-rig.mjs`,
-  `dealer-face.mjs`, `dealer-motion.mjs`, `dealer-collection.mjs`,
-  `rigged-card-layout.mjs`, `rigged-discard-state.mjs`,
-  `rigged-face-playback.mjs`, `blender-card-layout.mjs`,
-  `blender-table-details.mjs`, `blender-table-scene.mjs`, `dealing-card.mjs`.
-  Utan konsument: `dealer-studio.css`. Kontrollera även `rigged-review.css`.
+- Codex-överlämningen bekräftar oberoende de exakta byten:
+  `astrid-collection-sweep.glb` 40 375 164, `runtime/indexed/rig/` 64 991 762 och
+  `source/3d/` 24 129 459, totalt 129 496 385 byte. Ingen laddning av dem finns
+  i trelagerkedjan. Inga produktionspaket refererar dem (BASLINJE §8).
+- Klientmoduler som bara nås från test: `dealer-rig.mjs`, `dealer-face.mjs`,
+  `dealer-motion.mjs`, `dealer-collection.mjs`, `rigged-card-layout.mjs`,
+  `rigged-discard-state.mjs` och `rigged-face-playback.mjs`. Utan konsument:
+  `dealer-studio.css`. Kontrollera även `rigged-review.css`.
+  `blender-card-layout.mjs`, `blender-table-details.mjs`,
+  `blender-table-scene.mjs` och `dealing-card.mjs` nås från de spårade
+  granskningssidorna och ägs av **A16**. Rör dem inte här.
 - Tester i kroken (rad ~81–85): `test/dealer-motion.mjs`,
   `dealer-skin-contact.mjs`, `rigged-card-layout.mjs`,
   `rigged-layout-contact.mjs`, `rigged-discard-state.mjs`,
@@ -80,9 +85,11 @@ dokument i `docs/` och `lab/docs` (lista behovet för A17), samt allt i
 
 ## Steg
 
-0. Steg 0 enligt ORKESTRERING §4. Läs A05:s 3D-avsnitt och A04:s rader för
-   träden ovan. Stryk varje fil som A05 märkt `kräver beslut` eller `osäker`
-   och skriv den under `Tveksamt`.
+0. Steg 0 enligt ORKESTRERING §4. Finns rapporterna A04 och A05 i
+   `ordning/rapporter/`: läs 3D-avsnitten och stryk varje fil som A05 märkt
+   `kräver beslut` eller `osäker`. Finns de inte: verifiera varje fil själv med
+   `public-reach.mjs`, `pipeline-consumers.mjs` och `rg` (utan `ordning/`).
+   Skriv varje tveksam fil under `Tveksamt`.
 1. **Kontrollera registren.** Ta reda på hur `media/layout.json`,
    `media/blob-index.json` och katalogerna byggs (`tools/migrate-media-layout.mjs`,
    `tools/build-runtime-media-catalog.mjs`, `pipeline/build-lab-video-manifest.mjs`).

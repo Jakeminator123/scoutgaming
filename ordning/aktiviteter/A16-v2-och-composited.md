@@ -1,10 +1,10 @@
-# A16 · `/v2` och nycklad composited-media
+# A16 · `/v2`, nycklad composited-media och gamla granskningssidor
 
 | Fält | Värde |
 | --- | --- |
-| Våg | 2 · utvecklas parallellt, mergas efter A11 (samma frontendfiler) |
+| Våg | 2 · omgång 2 · mergas in efter A18 och A11 (samma frontendfiler) |
 | Väntar på | B10 · A04 (paket och partnerprotokoll) · A05 (T2: vad `/v2` gör) |
-| Branch / worktree | `jakob/ordning-a16` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a16` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 45 % · sammanflätat med `legacyClipPolicy` och partnerhändelser |
 
@@ -34,6 +34,17 @@ ingen partnerkontrakt påverkas.
   troligen bara ett alias. A05 avgör det (T2).
 - Handoffen: "`legacyClipPolicy` … har faktiska konsumenter … är inte
   generellt obsoleta". Ta inte bort policyfält eller läsare.
+- **Spårade granskningssidor** som serveras av spelservern:
+  `web/public/review/amira-composite/{index.html,review.mjs}` importerar
+  `blender-table-scene`, `actor-compositor`, `actor-composite-scene` och
+  `performance-contact`. `web/public/review/2026-09-09/{index.html,contact.html,contact.mjs}`
+  importerar `vendor/three` och `shoe-model`. Bara via granskningssidorna nås
+  `actor-composite-scene`, `animation-clock`, `blender-card-layout`,
+  `blender-table-details`, `blender-table-scene`, `dealing-card` och
+  `movement-cues`. Ta inte bort `actor-compositor`, `performance-contact` eller
+  `shoe-model` om de har andra konsumenter.
+- **`web/public/review/2026-09-09/` innehåller också Jakobs ospårade
+  `3lager/`-material lokalt.** Ta bara bort de tre spårade filerna, aldrig mappen.
 
 ## Ägda filer
 
@@ -48,16 +59,20 @@ poster i `docs/system-map/*.json`, register via verktyg och rader i kroken.
 0. Steg 0 enligt ORKESTRERING §4. Ombasera efter A11. Läs A04 (används
    composited-träden av något paket eller av partnerprotokollet?) och A05 (T2).
    Stoppa om något paket eller kontrakt använder trädet.
-1. **`/v2`:** om T2 visar ett alias, gör det till en 308 till `/play/blackjack`
+1. **Granskningssidorna:** om B10 pensionerar dem, ta bort de fem spårade filerna
+   och modulerna som bara de når. Adresserna `/review/2026-09-09/` och
+   `/review/amira-composite/` får en 308 till `/play`, eller svarar 410 som de
+   gamla dealeradresserna, enligt B10.
+2. **`/v2`:** om T2 visar ett alias, gör det till en 308 till `/play/blackjack`
    eller `/play` med bevarad query. Vilket mål det blir står i B10. Annars
    behålls `/v2` och skillnaden beskrivs i rapporten.
-2. **`web/clip-mapping.mjs`:** ta reda på vilka poster som pekar på composited-filer.
+3. **`web/clip-mapping.mjs`:** ta reda på vilka poster som pekar på composited-filer.
    Ta bara bort de posterna, och bara om ingen läsare behöver dem. Uppdatera
    `test/clip-mapping.mjs` för de borttagna posterna, utan att försvaga övriga
    asserts.
-3. **Ta bort** klientmoduler, pipeline-skript och media enligt den bekräftade
+4. **Ta bort** klientmoduler, pipeline-skript och media enligt den bekräftade
    listan. Uppdatera registren via verktygen.
-4. **Prov:**
+5. **Prov:**
    - `node --test test/clip-mapping.mjs test/native-partner-events.mjs test/native-observation.mjs apps/croupier-frontend/test/platform-ui.mjs ops/cloud/test/vercel-ingress.test.mjs`;
    - `node tools/build-runtime-media-catalog.mjs --check` och
      `node pipeline/build-lab-video-manifest.mjs --check`;

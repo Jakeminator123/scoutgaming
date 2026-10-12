@@ -2,9 +2,9 @@
 
 | Fält | Värde |
 | --- | --- |
-| Våg | 1 · parallell med A01, A02, A04–A06 |
-| Väntar på | B1 för verktyg och regeltext, B13 för radering av brancher/worktrees |
-| Branch / worktree | `jakob/ordning-a03` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a03` |
+| Våg | 1 · omgång 1 |
+| Väntar på | – · B1 och B13 är beslutade (README §4) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 20 % · leveransverktyg och hooks |
 
@@ -30,8 +30,18 @@ worktrees.
   (A02) och `tools/push-github-work.mjs` / `push-work-mirrors.mjs`.
   Testfilen är `test/github-workflow.mjs`.
 - `CLAUDE.md` listar den gamla `/control`-menyn och "Branches on GitHub: main,
-  kevin, john, emil only". Verkligt läge: se BASLINJE §1 (åtta remote-brancher
-  utöver `main`).
+  kevin, john, emil only". Verkligt läge: BASLINJE §1 och §6. Sedan dess har
+  `jakob/dealer-forge-seed` (PR #18) mergats, `jakob/dealer-forge-pin-008` är
+  aktiv lokalt, `jakob/repo-ordning` är integrationsbranch, och molnagenternas
+  brancher tillkommer och raderas efter inmergning. Den lokala `ORCHISTRATOR`
+  är redan raderad.
+- `.git` 1,61 GB: main-historiken cirka 754 MB packat, övriga brancher cirka
+  834 MB (med överlapp). Att radera gamla brancher lokalt och remote kan krympa
+  den lokala `.git` efter `gc`. GitHub kan behålla objekt via PR-referenser.
+- **B1 (beslutat):** feature-branch + PR. Pre-push tillåter `jakob/*`,
+  `codex/*` och `cursor/*` utan force-push, radering eller taggar. Direkt-push
+  till `main` finns kvar som admin-nödväg. **B13 (beslutat):** radera mergade
+  remote-brancher och tomma worktrees, efter rapporten.
 - Dubbla agentresurser: `.agents/skills/{chef,ping-croupier,source-command-chef}`,
   `.cursor/skills/{chef,ping-croupier}`, `.cursor/commands/{chef,ping}.md`.
   Dubbleringen kan vara avsiktlig (Codex läser `.agents/`, Cursor läser
@@ -79,10 +89,12 @@ push-spärren om den behövs, `.githooks/pre-push`, `.githooks/pre-commit-full`
    verkligheten. Ta bort påståenden som inte längre stämmer.
 4. **Dubbletter:** jämför `.agents/skills/*` med `.cursor/skills/*`. Rapportera
    avvikande innehåll. Radera inget utan B-beslut.
-5. **Branch- och worktree-underlag** `ordning/rapporter/A03-brancher.md`:
-   - remote-brancher: före/efter `main`, senaste commit, mergad PR, förslag;
-   - lokala worktrees (`git worktree list` och `git -C <wt> status --short | Measure-Object`):
-     branch, osparade poster, förslag.
+5. **Branch-underlag** `ordning/rapporter/A03-brancher.md`:
+   - remote-brancher (`git fetch origin` och `git branch -r`): före/efter
+     `main`, senaste commit, mergad PR (`gh pr list --state all`, om
+     tillgängligt), förslag;
+   - lokala worktrees syns inte i molnet. Lämna en tom tabell som orkestratorn
+     fyller i lokalt (`git worktree list`, osparade poster per worktree).
 
    Radera ingenting. Efter B13 raderar orkestratorn remote-brancher med
    `gh api -X DELETE repos/Jakeminator123/scoutgaming/git/refs/heads/<branch>`

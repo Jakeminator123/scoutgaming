@@ -2,9 +2,9 @@
 
 | Fält | Värde |
 | --- | --- |
-| Våg | 2 · utvecklas parallellt, mergas efter A10 och före A16 |
-| Väntar på | B5 · A05 · A10 mergad |
-| Branch / worktree | `jakob/ordning-a11` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a11` |
+| Våg | 2 · omgång 2 · mergas in efter A18 och A10, före A16 |
+| Väntar på | B5 · A05 · A10 och A18 inmergade |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 25 % · frontendbygget följer kasinots importträd |
 

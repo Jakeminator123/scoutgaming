@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 4 · sist · orkestratorn med en underagent för mätning och dokument |
 | Väntar på | Alla andra aktiviteter `klar` eller `struken` |
-| Branch / worktree | `jakob/ordning-a99` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a99` |
+| Branch | Molnagentens egen branch för mätning och dokument; orkestratorn gör drift- och milstolpsstegen på `jakob/repo-ordning` |
 | Modell | grok-4.7-xhigh-fast (mätning och dokument), orkestratorn (drift) |
 | Risk | 20 % |
 
@@ -46,10 +46,16 @@ planmappen är borta.
    - `README.md` och `AGENTS.md`: inga hänvisningar till `ordning/`.
 6. **Reserv för sen drift:** buffert för det steg 1–4 hittar. Fynd som tar mer än
    cirka en timme blir punkter i CLOUD-MIGRATION i stället för nya aktiviteter.
-7. **Avveckla planen:** `git rm -r ordning` i samma PR. Ta bort kvarvarande
-   `ordning-*`-worktrees (`git worktree remove`) och radera mergade
-   `jakob/ordning-*`-brancher med `gh api -X DELETE …/git/refs/heads/<branch>`
-   efter Jakobs ok. Avsluta med `node tools/agent-talk.mjs done`.
+7. **Avveckla planen:** `git rm -r ordning` på integrationsbranchen, som sista
+   commit i M3-PR:en. När M3 är mergad: radera kvarvarande molnagentbrancher och
+   `jakob/repo-ordning` med `gh api -X DELETE …/git/refs/heads/<branch>`, och ta
+   bort worktreen `repo-ordning` (`git worktree remove`, efter att `git status`
+   visat att den är tom). Kör `git worktree prune` och, med Jakobs ok,
+   `git gc` för att krympa den lokala `.git`. Avsluta med
+   `node tools/agent-talk.mjs done masterplan`.
+8. **Påminnelse:** fram till steg 7 bekräftar orkestratorn för Jakob vid varje
+   statusrapport att arbetet ligger på `jakob/repo-ordning` och vilka
+   milstolpar som återstår.
 
 ## Klart när
 

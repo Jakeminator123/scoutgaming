@@ -76,11 +76,13 @@ men **all `media/**/runtime` bakas in i spelmotorns image**.
 
 | Mätning | Resultat | Kommando |
 | --- | --- | --- |
-| `web/public` (117 källfiler) | 95 produkt · 13 bara test · 6 bara pipeline · 3 ingen | `node ordning/verktyg/public-reach.mjs` |
-| Bara test | animation-clock, blackjack-asset-state, bo/media-preview, dealer-collection, dealer-face, dealer-motion, dealer-rig, movement-cues, ready-motion, rigged-card-layout, rigged-discard-state, rigged-face-playback, shoe-contact-occlusion | samma |
-| Bara pipeline | astrid-folded-rest, astrid-idle-scheduler, blender-card-layout, blender-table-details, blender-table-scene, dealing-card | samma |
-| Ingen | actor-composite-scene.mjs, dealer-studio.css, table-scene.mjs | samma |
-| Produkt men inte från HTML | dealer-engine, speech-playback, astrid-green-dealer, astrid-green-speak m.fl. (nås via Studio-serverns originalmedia) | samma |
+| `web/public` (122 spårade källfiler inklusive 5 granskningssidor) | 95 produkt · 12 bara granskningssidor · 11 bara test · 2 bara pipeline · 2 ingen | `node ordning/verktyg/public-reach.mjs` (första mätningen exkluderade `review/` och gav 117 filer: 95/13/6/3) |
+| Bara granskningssidor | `review/2026-09-09/{index.html,contact.html,contact.mjs}`, `review/amira-composite/{index.html,review.mjs}`, samt actor-composite-scene, animation-clock, blender-card-layout, blender-table-details, blender-table-scene, dealing-card och movement-cues | samma |
+| Bara test | blackjack-asset-state, bo/media-preview, dealer-collection, dealer-face, dealer-motion, dealer-rig, ready-motion, rigged-card-layout, rigged-discard-state, rigged-face-playback, shoe-contact-occlusion | samma |
+| Bara pipeline | astrid-folded-rest, astrid-idle-scheduler | samma |
+| Ingen | dealer-studio.css, table-scene.mjs | samma |
+| Produkt men inte från HTML | dealer-engine, speech-playback, astrid-green-dealer, astrid-green-speak m.fl. (nås via Studio-serverns originalmedia) | samma, längre utdata |
+| Codex kontrollmätning | 90 publika moduler, 56 nås från produktions- eller lokala ingångar, 34 utanför den konservativa grafen | Codex `remaining-modules.json` (extern) |
 | Studio `lab/{components,lib,app}` (330 filer) | utan importör: family-video-upload.tsx, kevin-bo/port-source.mjs, page-template.mjs, original-media-runtime.mjs (serveras som fil) · bara test: background-zone-schedule, media-family-resolver, social-store, zone-workspaces | `node ordning/verktyg/lab-unused.mjs` |
 | `pipeline/` (109 skriptfiler) | 6 krok/CI · 2 externa · 14 bara interna · 87 utan konsument | `node ordning/verktyg/pipeline-consumers.mjs` |
 | Importer mellan områden | `lab/lib → web(server)` 125 · `web(server) → lab/lib` 34 · `lab/lib → web/public` 30 · `apps/croupier-frontend → web/public` 26 · `pipeline → web/public` 46 · `presentation-runtime → lab/lib` 13 · `lab/lib → open-claw/lab/src` 15 | `node ordning/verktyg/cross-imports.mjs` |
@@ -138,8 +140,20 @@ Aktiviteterna mäter om i steg 0.
 | `lab/package.json`: nytt beroende `sharp` 0.35.4 | Kataloglänkar för `node_modules` (ORKESTRERING §2) |
 | `ops/neon-studio/008-dealer-forge.sql`, `migrations.mjs`, `tools/check-migration-readiness.mjs` | Ingen planaktivitet. Migrationen är `deploymentOptional`. |
 
-Huvudcheckouten hade dessutom en lokal, opushad commit (`4ecedd72` "Keep published
-dealer packages readable after optional shoe slots") från en annan agent.
+Därefter, samma förmiddag:
+
+| SHA | Vad | Påverkar |
+| --- | --- | --- |
+| `f410c229` | PR #18 `jakob/dealer-forge-seed` mergad | Studio (Dealer Forge) |
+| `e160af12` | "Keep published dealer packages readable after optional shoe slots": frysta paket utan `transition.shoe` (johns-spelbolag rev 14, sg-test rev 15, nordic-bet rev 1) läses igen av `/play`. Det är Codex-överlämningens prioriterade avvikelse. | A04 och A99 kontrollerar |
+| `c0827abc` | `origin/main` mergad in i `jakob/repo-ordning` | Integrationsbranchen |
+
+- Lokala branchen `ORCHISTRATOR` (`4ecedd72`, samma patch som `e160af12`) är raderad.
+- `kevin` har rört sig till `eea5e40b`.
+- Worktreen `.codex/worktrees/180a` är borta och `a014` (detached) är ny.
+- `.cursor/worktrees/croupier/dealer-forge` står på `jakob/dealer-forge-pin-008` (aktiv).
+- Huvudcheckouten har ocommittade ändringar från andra agenter i
+  `docs/JOHN-HANDOFF.md` och `lab/package*.json` (Node 24-låsning).
 
 ## 7. Toleranser i steg 0
 
@@ -150,3 +164,46 @@ dealer packages readable after optional shoe slots") från en annan agent.
 - **Fortsätt men notera** om antal filer/MB avviker mindre än 5 % eller om nya
   gula systemkartevarningar uppstått.
 - Notera alltid aktuell `origin/main`-SHA i rapporten.
+
+## 8. Produktionsfakta (Codex-överlämning 2026-10-12, endast SELECT)
+
+Lästes av en annan agent från Neon-projektet `wandering-hill-60561912`, gren
+`br-flat-fog-b161a6r8`, databas `croupier_game`, scope `production/croupier`.
+Inga spelar- eller kontouppgifter lästes, och inget skrevs. Underlagen ligger
+lokalt utanför repot:
+`C:/Users/jakem/.codex/visualizations/2026/10/12/01a12ebb-0f5c-7e72-b93b-8e3c6f297053/history-cleanup/`
+(`astrid-audit.json`, `astrid-dependencies.json`, `astrid-production-audit.json`,
+`astrid-published-packages.json` m.fl.). Molnagenter når dem inte; fakta nedan räcker.
+
+| Fakta | Följd |
+| --- | --- |
+| 37 mediaregisterposter. Astrid har 10 poster (31,4 MB), och ingen av deras SHA-256 matchar Astrids gamla filer i Git | Gamla Astrid-filer i Git är inte molnuppspelningens källa |
+| 31 publicerade paket, varav 29 med presentationsdata (gzip avkodad, SHA-256 verifierad). Ingen direkt hashreferens till gamla Astrid-filer | Paketen påverkas inte av att gamla Astrid-filer tas bort ur trädet |
+| Sparad projektkonfiguration refererar **12 bankklipp i `media/dealers/astrid/runtime/presentation` (72 276 298 byte)** | Avregistrera inte och ta inte bort ur Blob. Behåll register och metadata. |
+| `runtime/presentation` har 51 registrerade bankklipp (172,3 MB) | Samma |
+| De senaste paketen för johns-spelbolag och sg-test har fem frysta mediarecords för Johanna och Paow | Ditt 3lager-material är separat; rör det inte |
+| Paketavvikelsen `transition.shoe` (se §6) | Rättad i `e160af12` |
+| Objektens existens i Blob och full visuell liveuppspelning är **inte** verifierade | Kontrolleras av orkestratorn i A31/A99 |
+| Astrids `staging` (6,3 MB) innehåller arbets- och kalibreringsmetadata | A14 får inte radera med en generell staging-regel |
+| Återställningsunderlag från historikrensningen finns i samma externa mapp under `approved/` (`original.bundle`, `reflog-only.pack`, `original-git-metadata.zip`) | Omfattar inte ignorerat eller ospårat arbete |
+
+## 9. Lokalt utanför Git (2026-10-12, namn och storlek, innehåll inte läst)
+
+| Sökväg | Storlek | Vad | Får agenter röra? |
+| --- | ---: | --- | --- |
+| `lab/data/platform-private/` | 748 MB · 9 839 filer | Privat plattformsdata: QA-evidens (`n2-pg-qa` 460 MB, `native-cloud-browser-evidence` 82 MB, `retained-bank-qa-readback` 32 MB …), loggar och privata produktionsnycklar | Nej, aldrig läsa innehåll |
+| `lab/data/` övrigt | 40 MB | Sparat projekt, historik, spelare, röstcache, QA-mappar från 21 sep, loggar | Nej |
+| `web/public/review/2026-09-09/3lager/` | – (ospårat) | Jakobs trelagermaterial (Johanna/Paow), inklusive `Gronstripp/.venv` 161 MB | Nej |
+| `apps/croupier-frontend/.next`, `lab/.next`, `lab/preview-build` | 159 · 13 · 12 MB | Byggutdata, återskapas | Bara orkestratorn, med Jakobs ok (A19) |
+| `apps/croupier-frontend/public/*` (genererade kopior), `runtime-ui/` | ~3 MB | Kopieras av `prepare-platform-ui.mjs`. Innehåller inaktuella kopior, t.ex. `rigged-table-scene.mjs` | A19 |
+| `ops/vercel-entry/preview/{.vercel,dist}` | 1,8 · 1,8 MB | Lokal länk till ett separat Vercel-projekt, och byggutdata | A18/A19 |
+| `media/.migration/` | 9,5 MB · 4 filer | Journaler från medieomläggningen 2026-10-02 (`tools/migrate-media-layout.mjs`) | A19 (arkivera efter Jakobs ok) |
+| `random/*.pdf`, `random/env-backup-*/`, `random/bilder-*/` | – | Jakobs privata lokala filer | Nej |
+
+Ignoreringsregler: `.cursorignore` = `.ignore`. De döljer för Cursor och `rg`:
+`media/**/source/`, `media/**/staging/`, `media/layout.json`,
+`media/blob-index.json`, `vendor/`, alla binärer (`*.mp4`, `*.png`, `*.glb` …),
+`lab/data/`, `web/data/` och `.env*`. Spårade filer under mönstren läses med
+`git ls-files`, `git show HEAD:<sökväg>` eller en explicit filsökväg.
+Privata mönster (`random-stuff-jakob/jakob-docs/arkiv/`, `.env*`,
+`lab/data/platform-private/`) läses aldrig.

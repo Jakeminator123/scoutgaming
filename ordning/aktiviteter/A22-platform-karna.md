@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 3 · efter A21 · ensam · i två delar: utredning (22a), sedan en skiva i taget (22b, 22c …) |
 | Väntar på | A21 · B12 (för 22b och framåt) |
-| Branch / worktree | `jakob/ordning-a22a` (sedan `-a22b` …) · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a22a` |
+| Branch | En molnagentbranch per del (22a, 22b …), inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 45 % · spelmotorns och Studios lagring och behörighet |
 

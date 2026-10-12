@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 2 · mergas efter A10 och A15 (som tar bort skripten som pekar hit) |
 | Väntar på | B8 · A04 · A10 · A15 |
-| Branch / worktree | `jakob/ordning-a14` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a14` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 15 % |
 
@@ -28,6 +28,16 @@ Spårbarheten finns kvar: filerna ligger i Git-historiken
   `test/dealer-reach.mjs`, som körs i kroken.
 - `.dockerignore` och `.ignore` utesluter redan `media/**/staging`, så trädet
   finns inte i Render-imagen. Vinsten är tydlighet och mindre checkout.
+- **Astrids staging (6,3 MB) innehåller arbets- och kalibreringsmetadata**
+  (Codex, BASLINJE §8). Den får inte raderas med en generell staging-regel.
+  Klassa varje undermapp i `media/dealers/astrid/staging/` (t.ex.
+  `2026-09-19/astrid-green-speak-elevenlabs/mask-face-repair`,
+  `2026-09-20/astrid-seam-repair/audit`): används den av läppsynk- eller
+  kalibreringskedjan (`pipeline/sync-*.py`, `retime-*`, `measure-*`,
+  `docs/dealer-sync-baseline.json`), eller är den enda kopian av ett
+  godkännandeunderlag? Behåll i så fall.
+- `web/public/review/2026-09-09/3lager/` är ospårat material från Jakob och finns
+  inte i molnet. Det är inte staging och berörs inte.
 - Kvarlämnad säkerhetskopia:
   `media/dealers/astrid/source/calibration/lipsync-overrides.json.pre-retime`
   (167 byte). Den nämns i `pipeline/sync-existing.py` och i JOHN-HANDOFF.
@@ -54,7 +64,10 @@ samt `.dockerignore` och `.ignore` (reglerna skyddar framtida staging).
 2. **test/dealer-reach.mjs:** läser testet staging, gör om fixturen så att den
    använder runtime-data eller en minimal fixtur i `test/fixtures/`, utan att
    försvaga asserten. Lyft det under `Tveksamt` om det inte går.
-3. **Ta bort** med `git rm -r` på träden ovan och säkerhetskopian.
+3. **Ta bort** med `git rm -r`: `media/game/staging/`, Amiras staging och de
+   Astrid-undermappar som steg 1–2 klassat som avslutade experiment, samt
+   säkerhetskopian. Astrid-mappar med kalibrerings- eller godkännandevärde står
+   kvar och listas i rapporten.
 4. **Prov:** `node --test test/dealer-reach.mjs`,
    `node tools/build-runtime-media-catalog.mjs --check`,
    `node pipeline/build-lab-video-manifest.mjs --check`,

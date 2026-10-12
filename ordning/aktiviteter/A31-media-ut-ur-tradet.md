@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 4 · efter A30 · ensam |
 | Väntar på | A30 · B11 · A04 |
-| Branch / worktree | `jakob/ordning-a31` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a31` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning`; Docker- och offlineproven gör orkestratorn lokalt |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 45 % · Render-imagen och offline-läget |
 
@@ -22,6 +22,13 @@ spelmotorn behöver och offline-läget fungerar.
   i planen.
 - **Snabb vinst utan radering:** rader i `.dockerignore` för media som inte
   behövs i spelmotorns runtime. Det minskar imagen direkt och är lätt att återställa.
+  Enligt produktionsläsningen är dealerfiler på disk inte reservkälla för
+  molnuppspelningen (BASLINJE §8). Bekräfta vad offline-läget och `layer-packs`
+  läser innan `media/dealers/**` utesluts.
+- **Får inte tas bort:** de 12 bankklipp i `media/dealers/astrid/runtime/presentation`
+  (72,3 MB) som sparad projektkonfiguration refererar, och deras register och
+  molnobjekt. Kontrollera Blob-existens för varje objekt innan något lokalt tas bort.
+- Återställningsunderlag från historikrensningen: BASLINJE §8 (`approved/`).
 
 ## Steg
 

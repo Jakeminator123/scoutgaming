@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 3 · sist i strukturfasen · valfri · en delaktivitet per PR |
 | Väntar på | A22 klar · uttryckligt B12-ja för varje del |
-| Branch / worktree | `jakob/ordning-a23-<del>` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a23-<del>` |
+| Branch | En molnagentbranch per del, inmergad på `jakob/repo-ordning` och levererad som egen milstolpe |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 60 % · drift, lokala data och alla byggkedjor |
 

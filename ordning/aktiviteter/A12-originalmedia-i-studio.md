@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 2 · parallell med A10, A13, A15, A16 · före A17 och A30 |
 | Väntar på | B6 · A04 (registrerad media finns för det Studio visar) · A05 |
-| Branch / worktree | `jakob/ordning-a12` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a12` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 35 % · många Studio-sidor berörs |
 
@@ -17,7 +17,11 @@ statustexten "Ingen spelbar video för den här situationen …". API:t
 ## Fakta (00ea55c5)
 
 - Spelklienten använder inte originalmedia: `web/public/app.mjs` kräver
-  presentation `local` eller `layered`.
+  presentation `local` eller `layered`. Spelserverns gamla `/dealer/…` och
+  `/dealers/astrid/…` svarar 410 (`web/server.mjs` ~1167). Studios
+  originalvisning läser index, talbank och performance-manifest (Codex,
+  BASLINJE §8). Native Studio spelar annars från Neon-registret och privat Blob
+  (`lab/lib/studio-media-runtime.mjs`, `neon-video-registry.mjs`).
 - Studio:
   - `lab/components/stage.tsx` visar `OriginalMediaPlayer` när ingen
     registrerad video finns (`showOriginal`).

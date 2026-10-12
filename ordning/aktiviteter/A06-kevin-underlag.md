@@ -5,7 +5,7 @@
 | Våg | 1 · parallell med alla · skriver bara i `ordning/rapporter/` |
 | Väntar på | – |
 | Leder till | B14 och svar på inkorg #10 (skickas av Jakob) |
-| Branch / worktree | `jakob/ordning-inventering` (delas med A04 och A05) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 5 % |
 
@@ -14,7 +14,7 @@
 Ett beslutsunderlag för vad som ska tas från `kevin` till `main`, utan att
 någon helmerge görs som del av städningen.
 
-## Fakta (00ea55c5 / `origin/kevin` `76bc5827`)
+## Fakta (00ea55c5 / `origin/kevin` `76bc5827`, nu `eea5e40b`; mät om i steg 0)
 
 - `kevin` ligger 113 commits före och 83 efter `main` (merge-base `7714ec6c`).
   Kevin mergade in `main` vid `0a1279a`.

@@ -1,122 +1,144 @@
 # Orkestrering
 
-Så körs aktiviteterna med grok-agenter, av Jakob själv eller av en
-orkestrerande chatt. Huvudcheckouten är `C:\Users\jakem\Projects\croupier`.
+Arbetssätt beslutat 2026-10-12: molnagenter, integrationsbranch och
+milstolps-PR:er. Huvudcheckouten är `C:\Users\jakem\Projects\croupier`.
+Orkestratorns worktree för integrationsbranchen är
+`C:\Users\jakem\.cursor\worktrees\croupier\repo-ordning`.
+
+## 0. Flödet i korthet
+
+```text
+origin/main ──merge──► jakob/repo-ordning (integrationsbranch, utkast-PR #19)
+                            │  push
+                            ▼
+              molnagenter (grok-4.7-xhigh-fast), en branch var
+                            │  push egen branch + rapport
+                            ▼
+              orkestratorn: granska → merge --no-ff → prov → push → CI på #19
+                            │
+              milstolpe klar ──► PR jakob/repo-ordning → main (Jakobs ok)
+```
+
+1. **Före varje omgång:** `git fetch origin --prune`, sedan
+   `git merge --no-ff origin/main` i integrations-worktreen. Lös konflikter,
+   uppdatera briefar och promptar efter det som ändrats, kör hela sviten och pusha.
+2. **Starta** molnagenterna i ett meddelande (§3).
+3. **När en agent är klar:** granska, merga in, prova och pusha (§6). CI körs
+   på PR #19 för varje push.
+4. **Milstolpe:** när en våg är inmergad och grön öppnas eller uppdateras PR:en
+   `jakob/repo-ordning → main`. Den mergas först efter Jakobs ok och följs av en
+   produktionskontroll.
+
+**Påminnelse till Jakob:** arbetet ligger på `jakob/repo-ordning`, inte på
+`main`. Orkestratorn påminner i varje statusrapport tills sista milstolpen är
+mergad.
 
 ## 1. Roller
 
 | Roll | Gör | Gör aldrig |
 | --- | --- | --- |
-| **Orkestrator** (Jakob eller en Cursor-chatt) | Skapar worktree och branch, registrerar claims, startar underagenter, granskar, kör full pre-commit, gör commit/push/PR, mergar efter Jakobs ok, verifierar deploy och uppdaterar registret i `README.md` | Mergar något tveksamt utan Jakobs ord |
-| **Underagent** (`grok-4.7-xhigh-fast`) | Arbetar i sin egen worktree med sina ägda filer, kör riktade prov och skriver en rapport | Committar, pushar, skapar brancher, kör migrationer, rör produktion, startar `lab/start.mjs`, ändrar filer utanför sin lista |
+| **Orkestrator** (denna chatt eller Jakob) | Mergar `main` in i integrationsbranchen, justerar briefar, startar agenter, granskar, mergar in agentbrancher, kör hela sviten, pushar, öppnar milstolps-PR:er, verifierar deploy, raderar inmergade agentbrancher och uppdaterar registret | Mergar till `main` utan Jakobs ok |
+| **Molnagent** (`grok-4.7-xhigh-fast`, `environment: cloud`) | Arbetar på sin egen branch med sina ägda filer, kör riktade prov, committar och pushar sin branch och skriver rapport | Öppnar PR, mergar, pushar till `main` eller `jakob/*`, rör produktion, kör migrationer, rör filer utanför sin lista |
 
-## 2. Förbered en aktivitet (orkestrator, PowerShell)
+## 2. Integrations-worktree och beroenden (orkestratorn, PowerShell)
 
 ```powershell
 $repo = 'C:\Users\jakem\Projects\croupier'
-$id   = 'a10'                                   # aktivitetens id, gemener
-$wt   = "C:\Users\jakem\.cursor\worktrees\croupier\ordning-$id"
-$base = 'origin/main'                           # 'origin/jakob/repo-ordning' om planen ännu inte är mergad (B2)
-
-node "$repo\tools\agent-talk.mjs" status "ordning-$id"
-node "$repo\tools\agent-talk.mjs" claim "ordning-$id" ".git" "Skapar worktree för $id"
+$wt   = 'C:\Users\jakem\.cursor\worktrees\croupier\repo-ordning'
+node "$repo\tools\agent-talk.mjs" status masterplan
+node "$repo\tools\agent-talk.mjs" claim masterplan "ordning,.git" "Synk/merge på jakob/repo-ordning"
 git -C $repo fetch origin --prune
-git -C $repo worktree add -b "jakob/ordning-$id" $wt $base
-git -C $wt branch --unset-upstream              # ingen oavsiktlig push till main
+git -C $wt merge --no-ff origin/main -m "Merge origin/main into jakob/repo-ordning"
 $locks = 'lab/package-lock.json','web/package-lock.json','services/astrid-gpu-worker/gateway/package-lock.json','apps/croupier-frontend/pnpm-lock.yaml'
-git -C $repo diff --quiet HEAD $base -- $locks   # 0 = huvudcheckoutens låsfiler = basens
-if ($LASTEXITCODE -eq 0) {
-  foreach ($d in 'lab','web','services\astrid-gpu-worker\gateway','apps\croupier-frontend') {
-    cmd /c mklink /J "$wt\$d\node_modules" "$repo\$d\node_modules"
-  }
-} else {
-  npm --prefix "$wt\lab" ci; npm --prefix "$wt\web" ci --ignore-scripts
-  npm --prefix "$wt\services\astrid-gpu-worker\gateway" ci --ignore-scripts
-  npx --yes pnpm@10.33.2 --dir "$wt\apps\croupier-frontend" install --frozen-lockfile
-}
+foreach ($l in $locks) { "{0}: wt={1} main={2}" -f $l, (git -C $wt rev-parse "HEAD:$l"), (git -C $repo rev-parse "HEAD:$l") }
+Remove-Item -Recurse -Force "$wt\lab\.next" -ErrorAction SilentlyContinue   # rent bygge efter merge
 npm --prefix "$wt\lab" run build                 # krävs av full pre-commit, se nedan
-node "$repo\tools\agent-talk.mjs" claim "ordning-$id" "<ägda sökvägar, kommaseparerade>" "<kort uppgift>"
 ```
 
-- **Bygg Studio i varje ny worktree före första commit.** Provet
+- **Rent Studio-bygge efter varje merge.** Ett inkrementellt bygge efter
+  `merge origin/main` gav 2026-10-12 ett tomt `lab/.next/prerender-manifest.json`.
+  Servern kraschade då med "Unexpected end of JSON input", och launcher-provet
+  fallerade med "fetch failed". Ta därför bort `lab/.next` före bygget.
+
+- **Beroenden:** `$wt` har kataloglänkar till huvudcheckoutens `node_modules`
+  (`lab`, `web`, `services\astrid-gpu-worker\gateway`, `apps\croupier-frontend`).
+  De gäller när låsfilernas Git-blobbar är lika (`rev-parse` ovan) och
+  huvudcheckouten är installerad från dem. Skiljer de sig: ta bort länken och kör
+  `npm --prefix "$wt\lab" ci` (motsvarande för övriga). Exempel: Dealer Forge
+  lade till `sharp` i `lab`.
+- **Bygg Studio före varje full svit.** Provet
   `open-claw/lab/deploy/local-connection.test.mjs` ("launcher starts isolated
   native and the real Next Eventstudio …") kräver ett verifierat
-  Next-produktionsbygge i `lab/.next`. CI bygger det före sviten. Utan bygget
-  stoppas commiten med "A verified Next production build is required" (sett
-  2026-10-12). Bygg om efter ändringar i `lab/` innan commit.
+  Next-produktionsbygge i `lab/.next`. Utan bygget stoppas commiten med
+  "A verified Next production build is required" (sett 2026-10-12).
+- **Full svit utan commit:** `node tools/precommit-checks.mjs --full` (cirka
+  3,5 minuter lokalt). En svit i taget på maskinen.
+- Starta inga lokala servrar (`lab/start.mjs`) från integrations-worktreen
+  medan en annan session kör.
 
-- Kataloglänkarna för `node_modules` gäller bara när låsfilerna är identiska med
-  huvudcheckoutens och dess `node_modules` är installerade från dem. Skriptet
-  ovan kontrollerar låsfilerna. Exempel: Dealer Forge (`234614e3`) lade till
-  `sharp` i `lab`, så en äldre huvudcheckout räcker inte för en worktree på nyare
-  bas. Ändrar en aktivitet beroenden: ta bort länken och kör riktig installation
-  enligt `else`-grenen.
-- Kör inte `npm ci` i huvudcheckouten medan worktree-prov pågår.
-- Läsande aktiviteter (A04, A05, A06, A30 fas 1) kan dela en worktree, eftersom
-  de bara skriver i `ordning/rapporter/`.
-
-## 3. Starta underagenter (Task-verktyget)
+## 3. Starta molnagenter (Task-verktyget)
 
 | Parameter | Värde |
 | --- | --- |
 | `subagent_type` | `generalPurpose` |
 | `model` | `grok-4.7-xhigh-fast` |
-| `run_in_background` | `true` när flera körs parallellt, alla i samma meddelande |
+| `environment` | `cloud` |
+| `cloud_base_branch` | `jakob/repo-ordning` (måste vara pushad med senaste ändringar) |
+| `run_in_background` | `true`, alla i samma meddelande |
 | `description` | `Ordning A10 3D-spåret` (unik per aktivitet) |
 | `prompt` | Mallen nedan, fullständigt ifylld |
 
-Högst fyra underagenter samtidigt. De delar maskinens CPU med testsviterna.
+Molnagenter kör på egna VM:ar, så antalet begränsas inte av den lokala
+maskinen. Orkestratorn mergar in dem i den ordning som §5 anger.
 
-### Promptmall
+### Promptmall (molnagent)
 
 ```text
-Du är underagent för aktivitet {ID} ({TITEL}) i ordningsplanen för repot Jakeminator123/scoutgaming.
-
-ARBETSYTA: {WT} på branch jakob/ordning-{id}. Alla läsningar, ändringar och kommandon sker där
-(Shell: working_directory={WT}; filverktyg: absoluta sökvägar under {WT}). Rör aldrig
-C:\Users\jakem\Projects\croupier eller andra worktrees, utom att köra
-node C:\Users\jakem\Projects\croupier\tools\agent-talk.mjs status ordning-{id}
-vid start och före rapport. Läs pingar där; registrera inga egna claims.
+Du är molnagent för aktivitet {ID} ({TITEL}) i ordningsplanen för repot Jakeminator123/scoutgaming.
+Du arbetar i en Linux-VM. Repot är utcheckat från branchen jakob/repo-ordning, en integrationsbranch som
+innehåller färsk main och planen i ordning/. Använd bash. Windows-sökvägar, PowerShell, agent-talk och
+"orkestratorn"-steg i planfilerna gäller inte dig. node-, git- och rg-kommandona fungerar likadant.
 
 LÄS I ORDNING:
-1. {WT}\ordning\README.md
-2. {WT}\ordning\ORKESTRERING.md, avsnitt 4 "Regler för underagenter"
-3. {WT}\ordning\BASLINJE.md
-4. {WT}\ordning\aktiviteter\{FIL}   <- din uppgift; följ stegen exakt
-5. Rapporter som din aktivitet anger under "Underlag" i {WT}\ordning\rapporter\
-6. {WT}\AGENTS.md (regler för media, spelmotor och dokument)
+1. ordning/README.md
+2. ordning/ORKESTRERING.md, avsnitt 4 "Regler för agenter"
+3. ordning/BASLINJE.md (särskilt §6 känd rörelse, §7 toleranser, §8 produktionsfakta)
+4. ordning/aktiviteter/{FIL}   <- din uppgift; följ stegen
+5. AGENTS.md (regler för media, spelmotor och dokument)
 
-JAKOBS BESLUT SOM GÄLLER: {B-id: beslutstext ordagrant, eller "inga"}
-ÄGDA FILER: {lista från aktivitetsfilen, justerad av orkestratorn}
+JAKOBS BESLUT SOM GÄLLER: {B-id: text ordagrant, eller "inga"}
+ÄGDA FILER: {lista}
+JUSTERINGAR FÖR DENNA OMGÅNG: {orkestratorns ändringar mot aktivitetsfilen, eller "inga"}
 
-FÅR INTE: committa, pusha, skapa brancher eller worktrees, köra migrationer, läsa eller skriva
-produktion (Neon, Blob, Render, Vercel, GitGuardian-ändringar), starta lab/start.mjs eller servrar
-på standardportar, köra docs/system-map/verify.mjs --refresh-baseline, läsa
-random-stuff-jakob/jakob-docs/arkiv/, skriva hemligheter, ändra ett rött befintligt test för att
-få det grönt.
+MILJÖ: Använd Node 24 (som CI) om det finns. Installera beroenden bara när ett prov kräver det:
+npm --prefix lab ci; npm --prefix web ci --ignore-scripts;
+npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts;
+npx --yes pnpm@10.33.2 --dir apps/croupier-frontend install --frozen-lockfile.
+Installera ffmpeg med apt om ett prov kräver det och det går. Kör riktade prov plus
+node docs/system-map/verify.mjs --check och node tools/check-orphan-tests.mjs. Hela pre-commit-sviten
+körs av orkestratorn.
 
-LEVERERA en rapport (högst cirka 300 ord plus bevis) med exakt dessa rubriker:
-Gjort · Filer (ändrade/borttagna/nya) · Prov (kommando → resultat) · Avvikelse mot baslinjen
-(med aktuell origin/main-SHA) · Dokumentändringar som behövs · Kvar · Tveksamt
+LEVERANS: committa på din egen branch, med engelska commitrubriker. En flytt med git mv är en egen
+commit. Pusha din branch. Öppna ingen PR, merga inget, pusha aldrig till main eller jakob/*.
+
+FÅR INTE: läsa eller skriva produktion (Neon, Blob, Render, Vercel), köra migrationer, skriva
+hemligheter, läsa random-stuff-jakob/, köra docs/system-map/verify.mjs --refresh-baseline, ändra ett
+rött befintligt test för att få det grönt, ändra filer utanför listan (behövs det: skriv under Tveksamt).
+
+RAPPORT (sista meddelandet, högst cirka 300 ord plus bevis) med exakt dessa rubriker:
+Branch och sista SHA · Gjort · Filer (ändrade/borttagna/nya) · Prov (kommando → resultat) ·
+Avvikelse mot baslinjen (med origin/main-SHA) · Dokumentändringar som behövs · Kvar · Tveksamt
 ```
 
-### Parallell start av våg 1 (exempel)
+## 4. Regler för agenter
 
-Ett meddelande med sex Task-anrop (A01–A06), alla med
-`run_in_background: true` och var sin `{WT}`. Läsande aktiviteter kan dela
-`ordning-inventering`. Orkestratorn väntar på aviseringarna och pollar inte.
-
-## 4. Regler för underagenter
-
-1. **Steg 0 i varje aktivitet:** kör `git log -1 --format="%H %s" origin/main`
-   och `git log --oneline 00ea55c5..origin/main -- <ägda sökvägar>`, kör
-   verktygen som aktiviteten anger och jämför mot `BASLINJE.md`. Följ
-   den kända rörelsen i BASLINJE §6 och toleranserna i §7.
-2. Ändra bara ägda filer. Behövs en annan fil: stoppa och skriv det under
-   `Tveksamt`.
+1. **Steg 0 i varje aktivitet:** kör `git log -1 --format="%H %s"`. Läs
+   BASLINJE §6, kör de verktyg aktiviteten anger och jämför med baslinjen.
+   Följ toleranserna i BASLINJE §7.
+2. Ändra bara ägda filer. Behövs en annan fil: stoppa den delen och skriv det
+   under `Tveksamt`.
 3. **Inget blir sämre:** ta inte bort en nåbar sida, länk eller handling utan att
-   motsvarande B-beslut finns i prompten. Pensionerade adresser får en
-   omdirigering.
+   motsvarande B-beslut står i prompten. Pensionerade adresser får en omdirigering.
 4. **Tester:** ta bort ett test endast tillsammans med funktionen det skyddar,
    och lista varje borttaget test. Ett rött test som inte hör till aktiviteten
    ska stå i rapporten och lämnas orört.
@@ -128,90 +150,96 @@ Ett meddelande med sex Task-anrop (A01–A06), alla med
    `lab/README.md`. Lista behovet under "Dokumentändringar som behövs";
    A17 för in ändringarna samlat.
 7. **Media:** AGENTS.md:s medieregler gäller. Regenerera eller ersätt aldrig
-   godkända filer. Har media- eller spelarfiler ändrats, kör
-   `node pipeline/audit-dealer-sync.mjs --probe` och redovisa resultatet.
+   godkända filer. Avregistrera aldrig något som sparade projekt refererar (BASLINJE §8).
+   Har media- eller spelarfiler ändrats, kör `node pipeline/audit-dealer-sync.mjs --probe`
+   och redovisa resultatet.
 8. **Miljövariabler:** varje tillägg, borttagning eller flytt av en fil som läser
    env uppdaterar `docs/environment-variables.json` (`sources`) och
    `docs/ENVIRONMENT-VARIABLES.md`. Kör sedan
    `node tools/check-environment-variables.mjs`.
-9. **Flytt:** använd `git mv`, utan innehållsändring i samma steg. Uppdatera
+9. **Flytt:** använd `git mv`, utan innehållsändring i samma commit. Uppdatera
    sedan importerna.
 10. **Riktade prov:** kör `node --test <filer>` för det du rört, samt
     `node docs/system-map/verify.mjs --check` och
-    `node tools/check-orphan-tests.mjs`. Hela pre-commit-sviten körs av
-    orkestratorn, en åt gången.
-11. **Skal:** PowerShell saknar heredoc. Använd `rg`, filtrera utdata och läs
-    stora filer med offset/limit.
-12. **Rapport:** slutar alltid med `Tveksamt`. Skriv "inget" om det är tomt.
+    `node tools/check-orphan-tests.mjs`.
+11. **Tomma mappar:** Git spårar inga tomma mappar. Ta bort platshållare
+    (`.gitkeep` m.m.) som bara håller en oanvänd mapp vid liv. Kontrollera med
+    `git ls-files <mapp>` att inget spårat finns kvar.
+12. **Ospårat lokalt material** (BASLINJE §9) finns inte i molnet. Skriv aldrig
+    att det kan raderas, och skriv inte regler som skulle radera det.
+13. **Ignorerade sökvägar:** `.ignore` och `.cursorignore` döljer
+    `media/**/source`, `media/**/staging`, `media/layout.json`,
+    `media/blob-index.json`, `vendor/` och binärer. Använd `git ls-files`,
+    `git show HEAD:<sökväg>`, en explicit filsökväg eller
+    `rg --no-ignore -g '!random-stuff-jakob/**' -g '!**/node_modules/**'`.
+14. **Rapport:** slutar alltid med `Tveksamt`. Skriv "inget" om det är tomt.
 
 ## 5. Delade filer och merge-ordning
 
 | Fil | Berörs av | Regel |
 | --- | --- | --- |
-| `.githooks/pre-commit-full` | A03, A10, A11, A12, A14, A15, A16, A17 | Egna testrader. Ombasera före merge och lös konflikter radvis. |
-| `tools/orphan-tests-exceptions.json` | A10–A17 | Lägg bara till undantag med Jakobs ok |
-| `docs/system-map/{routes,flows,contracts,catalog}.json` | A01, A11, A12, A16, A20–A23 | Egna poster. Baslinjen uppdateras bara i A99. |
-| `apps/croupier-frontend/lib/server-ui.mjs`, `ops/cloud/vercel-ingress.mjs`, `apps/croupier-frontend/test/platform-ui.mjs` | A11, A16, A20 | Merge i ordningen A11 → A16 → A20 |
-| `docs/JOHN-HANDOFF.md` | A02, A17, A99 | A02 i våg 1, A17 i våg 2, A99 sist |
+| `.githooks/pre-commit-full` | A03, A10, A11, A12, A14, A15, A16, A17, A18 | Egna testrader. Konflikter löses radvis vid merge. |
+| `tools/orphan-tests-exceptions.json` | A10–A18 | Undantag bara med Jakobs ok |
+| `docs/system-map/{routes,flows,contracts,catalog}.json` | A01, A10, A11, A12, A16, A18, A20–A23 | Egna poster. Baslinjen uppdateras bara i A99. |
+| `apps/croupier-frontend/lib/server-ui.mjs`, `ops/cloud/vercel-ingress.mjs`, `apps/croupier-frontend/test/platform-ui.mjs`, `apps/croupier-frontend/tools/prepare-platform-ui.mjs` | A11, A16, A18, A20 | Merge i ordningen A18 → A11 → A16 → A20 |
+| `docs/environment-variables.json`, `docs/ENVIRONMENT-VARIABLES.md` | A18, A22 | Egna poster |
+| `docs/JOHN-HANDOFF.md` | A02, A17, A99, och andra agenter på `main` | `main` mergas in före varje omgång |
 | `docs/CLOUD-MIGRATION.md` | A01, A17, A99 | Samma |
-| `AGENTS.md`, `CLAUDE.md` | A03, A17 (rader om media/legacy), A20–A23 (sökvägar) | A03 först |
+| `AGENTS.md`, `CLAUDE.md` | A03, A17, A20–A23 | A03 först |
 
-Merge-ordning: **våg 1** A04, A05, A06 (rapporter) → A02 + A01 i samma PR
-eller A02 först → A03. **Våg 2:** A10 → A11 · A12 · A13 · A15 → A14 · A16 →
-A17. **Våg 3–4:** strikt sekventiellt.
+Merge-ordning i omgång 1: rapporterna A04, A05, A06 och A30 →
+A02 → A01 → A03 → A15 → A10 → A13 → A18. Senare omgångar: A11 → A12 → A14 →
+A16 → A17. Därefter strikt sekventiellt.
 
-## 6. Granska och leverera (orkestrator)
+## 6. Merge-in och leverans (orkestratorn)
 
-1. Läs rapporten. Lyft allt under `Tveksamt` till Jakob innan något mergas.
-2. `git -C $wt status --short` och `git -C $wt diff --stat origin/main`:
-   bara ägda filer får vara ändrade.
-3. I `$wt`: `node docs/system-map/verify.mjs --check` (0 röda),
-   `node tools/check-orphan-tests.mjs`, och
-   `node tools/check-environment-variables.mjs` om env berörts.
-4. Bygg när koden berör dem: `npm --prefix lab run build` (Studio) och
-   `pnpm --dir apps/croupier-frontend build` (webb). En byggprocess i taget.
-5. Säkerhet: `node tools/security-status.mjs`. Inga nya öppna incidenter.
-6. Claim `.git`, sedan commit. Pre-commit kör hela sviten och ska vara grön.
-   Använd aldrig `--no-verify` vid commit.
+```powershell
+$b = '<agentens branch>'                        # står i rapporten
+git -C $repo fetch origin $b
+git -C $wt log --oneline "HEAD..origin/$b"
+git -C $wt diff --stat "HEAD...origin/$b"       # bara ägda filer?
+git -C $wt merge --no-ff "origin/$b" -m "Merge <ID>: <titel>"
+```
+
+1. Läs rapporten. Lyft allt under `Tveksamt` till Jakob. Tveksamma ändringar
+   mergas inte in, eller backas ur (`git revert -m 1`) tills han svarat.
+2. Kontrollera att diffen bara rör ägda filer. Kör riktade prov i `$wt`, samt
+   `node docs/system-map/verify.mjs --check` (0 röda) och
+   `node tools/check-orphan-tests.mjs`.
+3. Efter en grupp merger: bygg Studio, kör `node tools/precommit-checks.mjs --full`
+   och, när frontendkod ändrats, `pnpm --dir apps/croupier-frontend build`.
+4. `node tools/security-status.mjs`: inga nya öppna incidenter.
+5. Pusha integrationsbranchen. Pre-push tillåter bara `main` tills A03 har
+   genomfört B1. Kör därför spärrens kontroll manuellt:
    ```powershell
-   node "$repo\tools\agent-talk.mjs" claim "ordning-$id" "<ägda>,.git" "Commit/push $id"
-   git -C $wt add -A -- <ägda sökvägar>
-   git -C $wt commit -m "<rubrik>" -m "<brödtext: vad, varför, prov>"
+   node docs/system-map/verify.mjs --check --ref HEAD   # i $wt, 0 röda
+   git -C $wt push --no-verify origin jakob/repo-ordning
    ```
-7. Push. Tills B1 är genomförd blockerar pre-push andra brancher än `main`.
-   Kör därför spärrens kontroll manuellt och pusha med `--no-verify`, som i
-   PR #15 och #17:
-   ```powershell
-   node docs/system-map/verify.mjs --check --ref HEAD     # i $wt, ska ge 0 röda
-   git -C $wt push --no-verify -u origin "jakob/ordning-$id"
-   ```
-8. PR: skriv brödtexten till en fil och kör
-   `gh pr create --base main --head "jakob/ordning-$id" --title "<ID> <titel>" --body-file <fil>`.
-   Använd `--draft` om `Tveksamt` är öppet.
-9. CI: `gh pr checks <nr> --watch --fail-fast` i bakgrunden, sedan AwaitShell.
-   Vid fel: `gh run view <id> --log-failed`, filtrerat på felrader.
-10. Merge först efter Jakobs ok. Main har auto-deploy till Render och Vercel.
-11. Efter merge, läsande: Render-deploy för `croupier-v2` live, Vercel-deploy
-    READY, röktest av `/`, `/play` och `/control/login`. Har media eller
-    spelare ändrats: rehearsal `?dealer=<namn>&rehearsal=1` för fyra dealers med
-    två uppspelningar i rad, samt `?lane=layer-preview&rehearsal=1`.
-12. `node "$repo\tools\agent-talk.mjs" done "ordning-$id" "<SHA, prov, kvar>"`.
-    Uppdatera registret. Ta bort worktreen när PR:en är mergad eller stängd:
-    `git -C $repo worktree remove $wt` (länkarna försvinner med mappen; kontrollera
-    först att `git -C $wt status` är tom).
+6. CI på PR #19: `gh pr checks 19 --watch --fail-fast` i bakgrunden. Vid fel:
+   `gh run view <id> --log-failed`, filtrerat på felrader.
+7. Radera den inmergade agentbranchen:
+   `gh api -X DELETE repos/Jakeminator123/scoutgaming/git/refs/heads/<branch>`.
+8. Uppdatera registret i README (`inmergad`) och committa det med nästa merge.
+9. **Milstolpe:** när vågens aktiviteter är inmergade och CI är grön:
+   uppdatera PR #19:s brödtext, eller öppna en ny PR från samma branch efter en
+   tidigare merge. Ta bort utkastläget och be Jakob om ok. Efter merge:
+   kontrollera att Render-deployen för `croupier-v2` är live och att Vercel är
+   READY, och röktesta `/`, `/play`, `/control/login` och `/partner/login`.
+   Har media eller spelare ändrats: rehearsal `?dealer=<namn>&rehearsal=1` för
+   fyra dealers med två uppspelningar i rad, samt `?lane=layer-preview&rehearsal=1`.
 
 ## 7. Återställning
 
-- En mergad PR återställs med en revert-PR: `git revert -m 1 <merge-sha>` på en
-  ny `jakob/revert-<id>`-branch, sedan PR.
+- En inmergad agentbranch backas ur med `git revert -m 1 <merge-sha>` på
+  integrationsbranchen.
+- En mergad milstolpe återställs med en revert-PR mot `main`.
 - Borttagna filer finns kvar i Git-historiken:
   `git checkout 00ea55c5 -- <sökväg>`. Originalmedia före historikrensningen
-  finns i den privata backupen (`docs/ENVIRONMENT-RESTORATION.md`).
+  finns i den privata backupen (`docs/ENVIRONMENT-RESTORATION.md`, BASLINJE §8).
 - Rör aldrig `lab/data`, `web/data` eller lokala sparade profiler vid återställning.
 
 ## 8. Om Jakob kör själv
 
-Varje aktivitetsfil fungerar som startprompt i en ny Cursor-chatt med modellen
-grok 4.7 extra hög snabb. Klistra in promptmallen från §3 med värdena ifyllda.
-Ge chatten ett eget worktree enligt §2, eller låt den skapa det om du uttryckligen
-ber om det. Chatten gör då själv orkestratorns steg i §6.
+Varje aktivitetsfil fungerar som startprompt för en molnagent eller en ny
+Cursor-chatt med grok 4.7 extra hög snabb. Fyll i promptmallen i §3. Lokalt
+fungerar samma mall med en egen worktree enligt §2.

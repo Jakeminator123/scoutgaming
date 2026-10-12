@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 3 · efter A20 · ensam |
 | Väntar på | A20 mergad och deployad |
-| Branch / worktree | `jakob/ordning-a21` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a21` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 30 % · cirka 45 importörer och en publik URL |
 

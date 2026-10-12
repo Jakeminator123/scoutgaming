@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 2 · sist, efter att A10–A16 är mergade eller strukna |
 | Väntar på | A10–A16 · rapporternas "Dokumentändringar som behövs" |
-| Branch / worktree | `jakob/ordning-a17` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a17` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 20 % |
 
@@ -15,11 +15,11 @@ Dokumenten beskriver det nya läget i ett samlat pass.
 
 ## Fakta (00ea55c5, före våg 2)
 
-- Utan konsument i `web/public`: `actor-composite-scene.mjs`, `table-scene.mjs`
-  och `dealer-studio.css`.
-- Bara test: `animation-clock`, `blackjack-asset-state`, `bo/media-preview`,
-  `movement-cues`, `ready-motion` och `shoe-contact-occlusion` (de som A10,
-  A11 och A16 inte redan tagit).
+- Utan konsument i `web/public`: `table-scene.mjs` och `dealer-studio.css`
+  (om A10 inte redan tagit den).
+- Bara test: `blackjack-asset-state`, `bo/media-preview`, `ready-motion` och
+  `shoe-contact-occlusion` (de som A10, A11 och A16 inte redan tagit). Moduler
+  som bara granskningssidorna når hör till A16.
 - Studio utan importör: `family-video-upload.tsx`, `page-template.mjs` och
   `kevin-bo/port-source.mjs` (generator, A13 avgör). Bara test:
   `background-zone-schedule.mjs`, `media-family-resolver.mjs`,
@@ -57,7 +57,12 @@ Kandidaterna ovan efter förnyad mätning, samt dokumenten
    och liknande. För in det som fortfarande gäller i `open-claw/lab/docs/README.md`
    eller `DEPLOYMENT.md`, och ta bort resten. Läs först
    `open-claw/lab/docs/README.md` (projektregel).
-4. **Prov:** `node tools/check-orphan-tests.mjs`,
+4. **Tomma mappar:** kör `git ls-files` per mapp som omgångarna rört. Ta bort
+   platshållare (`.gitkeep`, tomma README) i mappar utan annat spårat innehåll
+   och utan användning. Lista mappar som bara innehåller ignorerade lokala filer
+   för A19. Ta aldrig bort `web/public/review/2026-09-09/`, `lab/data`,
+   `web/data` eller `random/` lokalt.
+5. **Prov:** `node tools/check-orphan-tests.mjs`,
    `node docs/system-map/verify.mjs --check`, riktade `node --test` och
    `rg` efter länkar till borttagna filer.
 

@@ -2,9 +2,9 @@
 
 | Fält | Värde |
 | --- | --- |
-| Våg | 1 · parallell med A01, A03–A06 · samma PR som A01, eller före A01 |
-| Väntar på | – (leveransmeningen i README följer B1 om beslutet finns) |
-| Branch / worktree | `jakob/ordning-a01` (delas med A01, disjunkta filer) |
+| Våg | 1 · omgång 1 · mergas in före A01 |
+| Väntar på | – · B1 är beslutat, och README:s leveransmening följer det (README §4) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 15 % · fakta kan tas bort som fortfarande gäller |
 
@@ -20,9 +20,11 @@ kvar i Git.
   många rundor. Exempel på föråldrad uppgift: avsnittet "Rätt dealer" säger att
   Amira/Vera/Mei använder originalmotorn, men `web/public/app.mjs` kräver
   presentation `local` eller `layered` och kastar
-  `Presentation requires registered cloud media` för allt annat. Kontrollera mot
-  A04 om rapporten finns, annars mot koden. Filen har cirka 17 referenser till
-  `random/`.
+  `Presentation requires registered cloud media` för allt annat. Produktionen
+  bekräftar (BASLINJE §8): inga registerposter eller paket refererar Astrids
+  gamla filer. Filen har cirka 17 referenser till `random/`.
+- `main` har ändrat handoffen under dagen (Dealer Forge, `/play`-fixen
+  `e160af12`, historikrensningen). Bevara de nya avsnitten i "Senaste leveranser".
 - `README.md` listar N1-sidor efter den gamla strukturen (`/control/videos`,
   `/control/zones`, `/control/lanes`, `/control/activity` …). AGENTS.md
   beskriver den nya: Studio (`/control/clips`, `/control/library`,

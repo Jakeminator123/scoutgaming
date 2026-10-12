@@ -4,7 +4,7 @@
 | --- | --- |
 | Våg | 4 · fas 1 (utredning, läsande) kan starta efter A12 och A16 · fas 2 bara efter B11 |
 | Väntar på | A12 · A16 · A04 · B11 (för fas 2) |
-| Branch / worktree | Fas 1: `jakob/ordning-inventering` · fas 2: `jakob/ordning-a30-<skiva>` |
+| Branch | Molnagentens egen branch per fas och skiva, inmergad på `jakob/repo-ordning` |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | Fas 1 5 % · fas 2 50 % (partnerkontrakt, medieacceptans, offline-läge) |
 
@@ -34,6 +34,10 @@ ersättas först. Ingenting tas bort i fas 1.
   `pipeline/audit-dealer-sync.mjs --probe` och `docs/dealer-sync-baseline.json`
   är byggda kring banken.
 - Offline-läget (`node lab/start.mjs --offline`) använder lokala filmer.
+- Produktion (BASLINJE §8): inga registerposter och inga paket refererar Astrids
+  gamla filer via hash. Spelserverns gamla `/dealer/…` och `/dealers/astrid/…`
+  svarar redan 410. Studios originalvisning läser index, talbank och
+  performance-manifest. Dealerfiler på disk är inte molnuppspelningens reservkälla.
 - Molnläget har `media/blob-index.json` (logisk sökväg → Blob) och
   `media/layout.json`.
 

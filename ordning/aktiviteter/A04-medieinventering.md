@@ -5,7 +5,7 @@
 | Våg | 1 · parallell med alla · skriver bara i `ordning/rapporter/` |
 | Väntar på | – |
 | Leder till | B6, B8, B10, B11 · A10–A16, A30, A31 |
-| Branch / worktree | `jakob/ordning-inventering` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-inventering` |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 5 % |
 
@@ -28,6 +28,24 @@ Kända konsumenter av den indexerade banken utanför `pipeline/`:
 `web/partner-presentation.mjs`, `web/public/dealer-engine.mjs`,
 `tools/build-runtime-media-catalog.mjs` (`--check` i kroken),
 `tools/deduplicate-media.mjs` och `tools/migrate-media-layout.mjs`, plus tester.
+
+### Redan kända produktionsfakta (BASLINJE §8, SELECT av en annan agent)
+
+- Inga registerposter och inga paket refererar Astrids gamla Git-filer via
+  hash. Sparad projektkonfiguration refererar 12 bankklipp i
+  `media/dealers/astrid/runtime/presentation` (72,3 MB), som ska stå kvar.
+- `layer-preview` (`test-videoeditor/preview/site`): 29 filer, 12,2 MB, Paow och
+  Dragge, inga Astrid-referenser.
+- Gamla `/dealer/…` och `/dealers/astrid/…` ger 410 i `web/server.mjs` (~1167).
+- Astrids `staging` innehåller arbets- och kalibreringsmetadata. Klassa den per
+  mapp, inte som helhet.
+- Paketavvikelsen `transition.shoe` är rättad i `e160af12`. Bekräfta i koden
+  (`web/frozen-dealer-playback.mjs`, `test/frozen-dealer-events.mjs`) att rev 14,
+  15 och 1 nu avkodas.
+
+`.ignore` döljer `media/**/source`, `media/**/staging`, `media/layout.json` och
+`media/blob-index.json`. Läs dem med `git ls-files` och explicita sökvägar
+(ORKESTRERING §4 punkt 13).
 
 ## Ägda filer
 

@@ -3,8 +3,8 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 2 · parallell med A10, A12, A13, A16 · före A14 |
-| Väntar på | B9 · A05 |
-| Branch / worktree | `jakob/ordning-a15` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a15` |
+| Väntar på | B9 provisoriskt ja, läppsynk- och kalibreringskedjan behålls · A05 körs parallellt i omgång 1 |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 15 % |
 

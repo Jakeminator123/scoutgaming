@@ -5,7 +5,7 @@
 | Våg | 1 · parallell med alla · skriver bara i `ordning/rapporter/` |
 | Väntar på | – |
 | Leder till | B4–B10 · exakta filistor för A10–A17 |
-| Branch / worktree | `jakob/ordning-inventering` (delas med A04 och A06) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 5 % |
 
@@ -19,8 +19,11 @@ i nästa steg.
 
 Se BASLINJE §3. Utgångslistor:
 
-- `web/public`: 13 moduler bara för test, 6 bara för pipeline, 3 utan
-  konsument (`node ordning/verktyg/public-reach.mjs`).
+- `web/public` (122 spårade filer): 12 nås bara från de fem spårade
+  granskningssidorna under `web/public/review/`, 11 bara från test, 2 bara från
+  pipeline och 2 har ingen konsument (`node ordning/verktyg/public-reach.mjs`).
+  Codex kontrollmätning: 34 av 90 moduler ligger utanför den konservativa
+  ingångsgrafen.
 - `pipeline/`: 87 skript utan konsument, 14 bara interna
   (`node ordning/verktyg/pipeline-consumers.mjs`).
 - Studio: 4 utan importör, 4 bara för test (`node ordning/verktyg/lab-unused.mjs`).
@@ -49,9 +52,11 @@ Endast `ordning/rapporter/A05-kodinventering.md` (ny).
 
 0. Steg 0 enligt ORKESTRERING §4. Kör alla fem verktyg och jämför.
 1. **Per område** (3D/rigg/ansikte · kasinot · originalmedia i Studio ·
-   `/v2` och composited/grön nyckling · staging · pipeline-rest ·
-   `web/public`-rest · Studio-rest · engångsverktyg i `tools/` som
-   `migrate-media-layout.mjs` och `deduplicate-media.mjs`):
+   `/v2`, composited/grön nyckling och de spårade granskningssidorna i
+   `web/public/review/` · staging · pipeline-rest · `web/public`-rest ·
+   Studio-rest · `ops/vercel-entry` och `ops/caddy` (samordna med A18) ·
+   engångsverktyg i `tools/` som `migrate-media-layout.mjs` och
+   `deduplicate-media.mjs`):
    - filer (exakta sökvägar);
    - importörer och namnare, uppdelade på produkt, test, pipeline och dokument
      (fil:rad);

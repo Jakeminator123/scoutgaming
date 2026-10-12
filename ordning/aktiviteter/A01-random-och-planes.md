@@ -2,9 +2,9 @@
 
 | Fält | Värde |
 | --- | --- |
-| Våg | 1 · parallell med A02–A06 · levereras i samma PR som A02, eller efter A02 |
-| Väntar på | B3 (för själva raderingen; kartläggningen kan börja direkt) |
-| Branch / worktree | `jakob/ordning-a01` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a01` |
+| Våg | 1 · omgång 1 · mergas in efter A02 |
+| Väntar på | – · B3 = ja (Jakob 2026-10-12) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 15 % · spärrar i systemkartan |
 

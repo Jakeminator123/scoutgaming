@@ -3,8 +3,8 @@
 | Fält | Värde |
 | --- | --- |
 | Våg | 2 · parallell med A10, A12, A15, A16 |
-| Väntar på | B7 (vilka diagnostiska destinationer som behålls) · A05 |
-| Branch / worktree | `jakob/ordning-a13` · `C:\Users\jakem\.cursor\worktrees\croupier\ordning-a13` |
+| Väntar på | B7 provisoriskt: bryt ut och isolera, ta inte bort någon destination (README §4) |
+| Branch | Molnagentens egen branch, inmergad på `jakob/repo-ordning` (lokalt alternativ: ORKESTRERING §2) |
 | Modell | grok-4.7-xhigh-fast |
 | Risk | 40 % · stor JSX-fil, visuell acceptans för N2 är öppen |
 
@@ -59,10 +59,10 @@ utöver importer.
 3. **Isolera diagnostiken:** riktiga operatörer importerar inte fabriken. Om B7
    behåller diagnostik laddas den bara i N1-diagnostikläget, med dynamisk
    import eller separat ingång.
-4. **Ta bort** de vyer B7 inte behåller, samt CSS som bara de använde.
-   Uppdatera `navigation.mjs` och `preview.test.mjs` (antal och namn) och
-   README:s regel. Uppdatera generatorfilerna, eller ta bort dem om fabriken
-   försvinner helt.
+4. **Ta bort** vyer bara om B7 i prompten uttryckligen pekar ut dem. Med det
+   provisoriska beslutet tas inget bort; lista i stället varje kandidat (t.ex.
+   Roulette och Baccarat) med motivering under `Tveksamt`. Uppdatera README:s
+   regel så att den beskriver den nya uppdelningen.
 5. **Prov:**
    - `node --test lab/components/kevin-bo/*.test.mjs lab/test/partner-*.test.mjs lab/test/workspace-surface-pages.test.mjs`;
    - orkestratorn kör `npm --prefix lab run build` och gör en visuell kontroll i
