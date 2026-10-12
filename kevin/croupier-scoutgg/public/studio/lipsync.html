@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lip sync keys · Table Studio</title>
+<style>
+  :root { color-scheme: dark; --bg: #0d0d0f; --panel: #17171b; --line: #2c2c33; --text: #ecebe6; --muted: #9a988f; --ok: #7bc47f; --bad: #e07a6a; --gold: #c9a961; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 520px; margin: 48px auto; padding: 0 16px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+  p { color: var(--muted); margin: 0 0 20px; }
+  form { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; }
+  label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  input { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font: 14px ui-monospace, monospace; padding: 10px; width: 100%; }
+  button { background: var(--gold); border: 0; border-radius: 6px; color: #111; cursor: pointer; font: 600 14px system-ui, sans-serif; padding: 11px; }
+  button:disabled { opacity: .5; cursor: default; }
+  #state { margin-top: 18px; font-size: 14px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  a { color: var(--gold); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lip sync keys</h1>
+  <p>Staging only. The keys Paow needs to speak and to move her mouth while she deals. They are kept on this server, never in the code. Leave a field empty to keep the key it already has.</p>
+  <form id="keys" autocomplete="off">
+    <label>RunPod API key <input name="runpod" type="password" spellcheck="false"></label>
+    <label>ElevenLabs API key <input name="elevenlabs" type="password" spellcheck="false"></label>
+    <button type="submit">Save</button>
+  </form>
+  <div id="state">Loading…</div>
+  <p style="margin-top:20px"><a href="/studio/">Back to Table Studio</a></p>
+</main>
+<script src="lipsync.js"></script>
+</body>
+</html>

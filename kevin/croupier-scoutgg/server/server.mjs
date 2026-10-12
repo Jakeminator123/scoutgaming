@@ -10,7 +10,7 @@ import {createPresentationReader} from './presentation.mjs';
 // Nycklarna i .env lämnar aldrig servern.
 
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync, mkdirSync } from "node:fs";
+import { createReadStream, statSync, readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { pipeline } from "node:stream";
 import path from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
@@ -77,11 +77,16 @@ const READY_TAKES=Object.fromEntries(['dragge','paow','marten'].map(id=>{try{ret
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
 const dealerOf = room => studioTables.get(room)?.dealer ?? room;
+// Emil 12 Oct: on staging a signed-in back office user can give the voice and lip-sync keys once (/studio/lipsync.html),
+// instead of the server's env file. They live next to the table database (0600), never in git; env always wins.
+const RORLIG_KEYS = path.join(path.dirname(tableDb), "rorlig-keys.json");
+const KEY_ENV = { runpod: "DRAGGE_RUNPOD_API_KEY", elevenlabs: "ELEVENLABS_VIDEO_KEY" };
+const savedKeys = () => { try { return existsSync(RORLIG_KEYS) ? JSON.parse(readFileSync(RORLIG_KEYS, "utf8")) : {}; } catch { return {}; } };
+for (const [k, name] of Object.entries(KEY_ENV)) { const v = savedKeys()[k]; if (v && !process.env[name]) process.env[name] = v; }
 const rorligOn = () => process.env.RORLIG !== "0" && Boolean(process.env.RORLIG_ENDPOINT_ID || process.env.RORLIG === "1" || /(^|\/\/|\.)staging\./.test(publicOrigin));
-const RORLIG_KEY = runpodKey();   // the key Paow's voice already uses (local QA disables only Astrid's)
-const rorlig = RORLIG_KEY ? new RorligLipsync({
+const makeRorlig = apiKey => new RorligLipsync({
   endpointId: process.env.RORLIG_ENDPOINT_ID ?? "mq7eiwanda72fg",
-  apiKey: RORLIG_KEY,
+  apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
   dealers: (process.env.RORLIG_DEALERS ?? "paow").split(",").map(s => s.trim()).filter(Boolean),
@@ -89,7 +94,9 @@ const rorlig = RORLIG_KEY ? new RorligLipsync({
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames
   onPiece: (room, talk, meta, bytes) => { for (const c of clients) if (c.session === room && c.readyState === WebSocket.OPEN) { c.send(JSON.stringify({ t: "lip", talk, ...meta, bytes: true })); c.send(bytes); } },
-}) : null;
+});
+// the key Paow's voice already uses (local QA disables only Astrid's); given later on /studio/lipsync.html it starts then
+let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
   talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
   onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
@@ -435,6 +442,29 @@ async function api(req, res, route) {
     if (process.env.DEMO_BO_USER && who.user === process.env.DEMO_BO_USER) return json(res, 200, { tables: [] });
     return json(res, 200, { tables: studioTables.ownedBy(who.user).map(({ owner, logo, ...t }) => ({ ...t, url: studioTables.gameUrl(t) })) });
   }
+  // Voice and lip-sync keys for this staging server (see RORLIG_KEYS): which are set, and setting them. Signed-in only.
+  if (route === "studio/lipsync-keys") {
+    if (!rorligOn()) return json(res, 404, { error: "Only on staging" });
+    if (req.method === "POST" && !sameOrigin(req)) return json(res, 403, { error: "Invalid origin" });
+    let who;
+    try { who = await bo.user(req.headers); } catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }
+    if (!who) return json(res, 401, { error: "Sign in required" });
+    if (req.method === "POST") {
+      if (!apiLimit(clientAddress(req))) return json(res, 429, { error: "Please try again later" });
+      let input; try { input = await body(req, 4000); } catch (e) { return json(res, 400, { error: e.message }); }
+      const keys = savedKeys();
+      for (const k of Object.keys(KEY_ENV)) {
+        const v = String(input?.[k] ?? "").trim();
+        if (!v) continue;
+        if (!/^[A-Za-z0-9_\-]{16,200}$/.test(v)) return json(res, 400, { error: `That ${k} key does not look right` });
+        keys[k] = v; process.env[KEY_ENV[k]] = v;
+      }
+      writeFileSync(RORLIG_KEYS, JSON.stringify(keys), { mode: 0o600 });
+      if (keys.runpod) { if (rorlig) rorlig.apiKey = keys.runpod; else rorlig = makeRorlig(keys.runpod); }
+      activity.log({ user: who.user, sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: "lipsync.keys", table: "", detail: { runpod: Boolean(keys.runpod), elevenlabs: Boolean(keys.elevenlabs) } });
+    } else if (req.method !== "GET") return json(res, 405, { error: "Use GET or POST" });
+    return json(res, 200, { runpod: Boolean(runpodKey()), elevenlabs: Boolean(process.env.ELEVENLABS_VIDEO_KEY), lipsync: rorlig ? rorlig.status() : null });
+  }
   if (route === "studio/table") {
     if (req.method === "GET") {
       const t = studioTables.get(new URL(req.url, "http://x").searchParams.get("slug") ?? "");
@@ -517,7 +547,7 @@ async function handleHttp(req, res) {
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
   // the lip-sync worker dials this server back: remember the public https origin visitors reach it on (Caddy in front)
-  if (rorlig && !process.env.RORLIG_PUBLIC_URL && req.headers["x-forwarded-proto"] === "https" && /^[a-z0-9.-]+(:\d+)?$/i.test(req.headers.host ?? "")) publicOrigin = `https://${req.headers.host}`;
+  if (!process.env.RORLIG_PUBLIC_URL && req.headers["x-forwarded-proto"] === "https" && /^[a-z0-9.-]+(:\d+)?$/i.test(req.headers.host ?? "")) publicOrigin = `https://${req.headers.host}`;
   if (p.startsWith("/api/")) { api(req, res, p.slice(5)).catch(() => json(res, 500, { error: "Request could not be completed" })); return; }
   if(p.startsWith('/answers/')){
     // Worker/session metadata is private; only generated MP4s can be served.
