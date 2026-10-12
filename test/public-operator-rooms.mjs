@@ -5,7 +5,7 @@ import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capt
 import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {layerAssetPath} from '../web/presentation-layers.mjs';
-import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
+import {createPublicOperatorRooms,isUnplayableOperatorRooms} from '../web/public-operator-rooms.mjs';
 import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
 
@@ -160,6 +160,7 @@ test('portrait room fixture exposes only its explicitly published cloud dealer',
   const denied=createPublicOperatorRooms({store:{getOperatorBySlug:async()=>({id:retired.room.operatorId,slug:'sg-test',name:'SG test',status:'active'}),getCurrentPackage:async()=>retired.pack},
     policy:{readGameConfiguration(){},readSaved:async()=>({project:retired.project,administration:retired.administration})}});
   const response=await request(denied,'/api/operators/sg-test/rooms');assert.equal(response.status,503);assert.deepEqual(JSON.parse(response.body),{error:'operator_rooms_unavailable'});
+  await assert.rejects(denied.read('sg-test'),error=>isUnplayableOperatorRooms(error,'sg-test')&&!isUnplayableOperatorRooms(error,'north'));
 });
 
 test('absence of a published blackjack presentation is empty, without any draft/demo fallback',async()=>{
@@ -187,6 +188,7 @@ test('unreadable or inconsistent published runtime fails closed without returnin
     if(mode==='duplicate-room')f.state.administration.rooms.push({...f.room});
     if(mode==='no-policy')api=createPublicOperatorRooms();
     const res=await request(api);assert.equal(res.status,503,mode);assert.deepEqual(JSON.parse(res.body),{error:'operator_rooms_unavailable'});
+    await assert.rejects(api.read('north'),error=>isUnplayableOperatorRooms(error,'north')===(mode==='renderer'),mode);
     assert.equal(res.headers['Cache-Control'],'no-store');
   }
   const api=createPublicOperatorRooms({store:{getOperatorBySlug:async()=>{throw Error('secret connection string');},getCurrentPackage(){}},

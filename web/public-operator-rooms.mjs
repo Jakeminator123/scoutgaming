@@ -3,6 +3,14 @@ import { clipCompositing } from './public/presentation-composition.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)\/rooms$/;
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
+class UnplayableOperatorRooms extends Error {
+  constructor(slug) { super('operator_rooms_unavailable'); this.operatorSlug = slug; }
+}
+export function isUnplayableOperatorRooms(error, slug) {
+  return error instanceof UnplayableOperatorRooms && error.operatorSlug === slug;
+}
+const UNPLAYABLE_SELECTION_ERRORS = new Set(['presentation_dealer_unavailable', 'presentation_dealer_not_configured',
+  'presentation_dealer_mismatch', 'presentation_lane_unavailable']);
 export function supportsIndependentLayers(selection, frozen, dealerId) {
   if (selection.presentation === 'original' || selection.composition?.dealer.compatibility !== 'per-clip') return false;
   const dealer = frozen.registeredDealers?.find(item => item.id === dealerId);
@@ -61,16 +69,30 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
       policy: { readSaved: async () => saved, readGameConfiguration: policy.readGameConfiguration },
       packages: { resolve: async () => ({ operator, package: pack }) }, log: () => {},
     });
+    // Ownership and frozen-package validation have already passed. This selector
+    // uses only the saved inputs above; storage errors must never receive this
+    // operator-specific marker or be hidden by the public directory.
+    async function playableEntry(query) {
+      let entry;
+      try { entry = await select(query); }
+      catch (error) {
+        if (error?.message === 'Registered cloud presentation required'
+          || error?.statusCode === 503 && UNPLAYABLE_SELECTION_ERRORS.has(error.message)) throw new UnplayableOperatorRooms(slug);
+        throw error;
+      }
+      if (entry.status === 404) throw new UnplayableOperatorRooms(slug);
+      return entry;
+    }
     for (const room of rooms) {
       const query = new URLSearchParams({ operator: slug, table: room.id });
-      const base = await select(query);
+      const base = await playableEntry(query);
       if (base.status !== 200 || base.selection.roomId !== room.id) unavailable();
       const initial = resolvePlayerSelection({ choices: base.selection.choices, currentDealer: base.selection.dealer,
         branding: base.selection.branding, composition: base.selection.composition });
       const lane = frozen.lanes.find(item => item.id === room.presentationLaneId), dealers = [];
       for (const id of base.selection.choices.dealers) {
         query.set('dealer', id);
-        const entry = await select(query), selection = entry.selection;
+        const entry = await playableEntry(query), selection = entry.selection;
         if (entry.status !== 200 || selection?.dealer !== id || selection.roomId !== room.id || selection.packageRevision !== pack.revision) unavailable();
         const label = frozen.registeredDealers?.find(item => item.id === id)?.label;
         if (!label) unavailable();
