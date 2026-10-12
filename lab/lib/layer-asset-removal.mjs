@@ -1,6 +1,7 @@
 import {validateProject} from './studio-model.mjs';
 export function layerAssetReferences(project,id){
-  return (project.lanes??[]).filter(lane=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))).map(lane=>({id:lane.id,label:lane.label}));
+  const lanes=[...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];
+  return lanes.filter(lane=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))).map(lane=>({id:lane.id,label:lane.label}));
 }
 export function removeLayerAsset(project,id){
   if(!project.layerAssets?.some(asset=>asset.id===id))throw Error('Filen finns inte längre i biblioteket.');

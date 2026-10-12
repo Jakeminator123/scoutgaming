@@ -22,6 +22,7 @@ run_node_tests() {
 node docs/system-map/verify.mjs --check
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
+run_node_tests ordning/verktyg/raderingsgrind.test.mjs
 run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests lab/test/dealer-material-navigation.test.mjs lab/components/dealer-forge-page.test.mjs
 run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs
@@ -39,6 +40,7 @@ run_node_tests test/managed-media-contract.mjs test/frozen-dealer-idle.mjs test/
 run_node_tests lab/test/room-lifecycle.test.mjs lab/test/dealer-archive-impact.test.mjs lab/test/dealer-lifecycle.test.mjs lab/test/control-resource-lifecycle.test.mjs lab/test/control-flow.test.mjs lab/test/activity-session.test.mjs lab/test/activity-presentation-owner.test.mjs lab/components/kevin-bo/partner-navigation-guard.test.mjs
 run_node_tests lab/test/operator-package-api.test.mjs lab/test/presentation-room-api.test.mjs lab/test/presentation-room-create.test.mjs
 run_node_tests test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/composition-runtime.mjs lab/test/dealer-framing.test.mjs test/registered-idle.mjs
+run_node_tests test/background-playback-policy.mjs test/background-playback.mjs lab/components/background-playback-editor.test.mjs lab/components/composition-preview.test.mjs
 run_node_tests lab/test/dealer-registration.test.mjs lab/test/dealer-speech-profile.test.mjs lab/test/dealer-video-registration.test.mjs lab/test/presentation-runtime-readiness.test.mjs
 run_node_tests lab/test/control-lanes-page.test.mjs lab/test/lane-editor.test.mjs lab/test/preview-page.test.mjs lab/test/scout-navigation.test.mjs lab/test/control-workspace.test.mjs lab/test/control-overview.test.mjs lab/test/partner-presentation-flow.test.mjs
 run_node_tests test/studio-preview.mjs test/studio-preview-client.mjs

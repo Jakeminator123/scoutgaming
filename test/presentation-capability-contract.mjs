@@ -9,7 +9,7 @@ const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForV
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
-test('negotiation preserves default v2 and opts into v3/v4/v5/v6/v7 only with one exact supported header', () => {
+test('negotiation preserves default v2 and opts into v3-v8 only with one exact supported header', () => {
   assert.equal(PRESENTATION_CAPABILITY_VERSION_HEADER, 'X-Presentation-Capability-Version');
   assert.equal(PRESENTATION_CAPABILITY_DEFAULT_VERSION, 2);
   for (const absent of [undefined, null]) assert.equal(negotiatePresentationCapabilityVersion(absent), 2);
@@ -19,12 +19,13 @@ test('negotiation preserves default v2 and opts into v3/v4/v5/v6/v7 only with on
   assert.equal(negotiatePresentationCapabilityVersion('5'), 5);
   assert.equal(negotiatePresentationCapabilityVersion('6'), 6);
   assert.equal(negotiatePresentationCapabilityVersion('7'), 7);
-  for (const malformed of ['', '1', '8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  assert.equal(negotiatePresentationCapabilityVersion('8'), 8);
+  for (const malformed of ['', '1', '9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
 
-test('v1/v2/v3/v4/v5/v6/v7 exact representations advertise features while the legacy ID list never becomes registry authority', () => {
+test('v1-v8 exact representations advertise features while the legacy ID list never becomes registry authority', () => {
   const shared = { registeredDealerIds: ['nora'], compositing: 'per-clip' };
   assert.deepEqual(presentationCapabilitiesForVersion(1), { schemaVersion: 1, ...shared });
   assert.deepEqual(presentationCapabilitiesForVersion(2), { schemaVersion: 2, ...shared, rooms: 'operator-owned-v2' });
@@ -34,7 +35,8 @@ test('v1/v2/v3/v4/v5/v6/v7 exact representations advertise features while the le
     registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' });
   assert.deepEqual(presentationCapabilitiesForVersion(5), {...presentationCapabilitiesForVersion(4),schemaVersion:5,dealerLifecycle:'trash-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(6), {...presentationCapabilitiesForVersion(5),schemaVersion:6,resourceLifecycle:'operator-room-archive-v1'});
-  for (const version of [1, 2, 3, 4, 5, 6, 7]) {
+  assert.deepEqual(presentationCapabilitiesForVersion(8), {...presentationCapabilitiesForVersion(7),schemaVersion:8,backgroundPlayback:'rules-v1'});
+  for (const version of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const input = parsed(version), checked = validatePresentationCapabilities(input);
     assert.deepEqual(checked, input); assert.ok(Object.isFrozen(checked)); assert.ok(Object.isFrozen(checked.registeredDealerIds));
     input.registeredDealerIds[0] = 'johanna'; input.compositing = 'anything';
@@ -44,18 +46,18 @@ test('v1/v2/v3/v4/v5/v6/v7 exact representations advertise features while the le
 });
 
 test('expected-version validation rejects downgrade even when the old response is otherwise valid', () => {
-  for (const version of [1, 2, 3, 4, 5, 6, 7]) {
+  for (const version of [1, 2, 3, 4, 5, 6, 7, 8]) {
     assert.equal(validatePresentationCapabilities(parsed(version), { expectedVersion: version }).schemaVersion, version);
-    for (const expected of [1, 2, 3, 4, 5, 6, 7].filter(expected => expected !== version)) {
+    for (const expected of [1, 2, 3, 4, 5, 6, 7, 8].filter(expected => expected !== version)) {
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 8, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 9, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 
 test('each schema rejects missing/extra properties and altered feature values', () => {
-  for (const version of [1, 2, 3, 4, 5, 6, 7]) {
+  for (const version of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const input = parsed(version);
     for (const key of Object.keys(input)) { const missing = { ...input }; delete missing[key]; assert.throws(() => validatePresentationCapabilities(missing), invalid); }
     for (const [key, value] of [['extra', true], ['schemaVersion', String(version)], ['compositing', 'layered'], ['registeredDealerIds', []],
@@ -65,7 +67,8 @@ test('each schema rejects missing/extra properties and altered feature values', 
     if (version >= 2) assert.throws(() => validatePresentationCapabilities({ ...input, rooms: 'any-room' }), invalid);
     if (version >= 4) assert.throws(() => validatePresentationCapabilities({ ...input, frozenDealerEvents: 'latest-draft' }), invalid);
     if (version >= 5) assert.throws(() => validatePresentationCapabilities({...input,dealerLifecycle:'unchecked-purge'}),invalid);
-    if(version===7)assert.throws(()=>validatePresentationCapabilities({...input,dealerArchiveCascade:'unchecked'}),invalid);
+    if(version>=7)assert.throws(()=>validatePresentationCapabilities({...input,dealerArchiveCascade:'unchecked'}),invalid);
+    if(version>=8)assert.throws(()=>validatePresentationCapabilities({...input,backgroundPlayback:'unbounded'}),invalid);
     if (version >= 3) {
       assert.throws(() => validatePresentationCapabilities({ ...input, registeredDealerMode: 'caller-registry' }), invalid);
       assert.throws(() => validatePresentationCapabilities({ ...input, frozenDealerIdle: 'latest-draft' }), invalid);

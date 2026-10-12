@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
 import { nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
 
 const env = { CROUPIER_BACKEND_ORIGIN: 'https://render.example.invalid' };
 const capability = { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' };
@@ -33,6 +34,31 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'nora' } }),
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
+
+test('background policy in project, archived composition and frozen package requires exact v8 before writes',async()=>{
+  const lane={backgroundPlayback:{schemaVersion:1,rules:[]}};
+  const descriptors=[{kind:'project',value:{lanes:[lane]}},
+    {kind:'project',value:{dealerTrash:[{schemaVersion:2,compositions:[lane]}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[],lanes:[lane]}}];
+  for(const descriptor of descriptors) {
+    for(const version of [7,8]) {
+      const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+      let begun=0;input.repository.transaction=async work=>{begun++;return work(input.repository);};
+      const write=()=>input.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
+      if(version===7){await assert.rejects(write(),blocked);assert.equal(begun,0);assert.equal(input.writes.length,0);}
+      else {await write();assert.equal(begun,1);assert.equal(input.writes.length,1);}
+      assert.equal(input.fetches.length,1);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'8');
+    }
+  }
+});
+
+test('a v7 mutation cannot add background automation after the SQL boundary',async()=>{
+  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(7))});
+  await input.wrapped.withMutationContext(async()=>{
+    await assert.rejects(input.wrapped.saveDocument('project',{value:{lanes:[{backgroundPlayback:{schemaVersion:1,rules:[]}}]}}),blocked);
+  },{kind:'dealer-archive',value:{}});
+  assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
+});
 
 test('old document and media writes stay local with unchanged arguments, results and original this', async () => {
   const input = fixture({ config: {}, fetcher: () => { throw Error('must not fetch'); } });

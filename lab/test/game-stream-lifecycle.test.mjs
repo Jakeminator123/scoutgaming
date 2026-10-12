@@ -95,6 +95,21 @@ test('replay from the original view waits for the matching player completion and
   assert.deepEqual(await run.result, { completed: true }); ui.flush(); assert.equal(ui.find(Stage).playing, false);
 });
 
+test('missing registered video fails replay without completing the instruction as 2D', async () => {
+  const ui = setup();
+  const run = ui.play(1); ui.resolve(); await tick(); ui.flush();
+  const stage = ui.find(Stage);
+  assert.equal(stage.videoUrl, undefined);
+  assert.equal(stage.allow2dFallback, false);
+  stage.onPlaybackEvent({ playId: stage.playId, phase: 'failed', medium: 'video', reason: 'Ingen spelbar video för den exakta situationen.' });
+  const result = await run.result; ui.flush();
+  assert.match(result.error.message, /Ingen spelbar video/);
+  assert.equal(result.completed, undefined);
+  assert.equal(ui.find(Stage).playing, false);
+  assert.equal(ui.activity.some(entry => entry.stage === 'playback' && entry.status === 'completed'), false);
+  ui.unmount();
+});
+
 test('cancelled model requests cannot start playback after a late response', async () => {
   const ui = setup(); const run = ui.play();
   run.controller.abort(); ui.resolve(); await tick(); ui.flush();

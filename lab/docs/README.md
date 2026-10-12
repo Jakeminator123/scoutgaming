@@ -54,6 +54,7 @@ En enda egen grundloop räcker för att testa flödet. Händelseklipp kan lägga
 - **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
 - **Bord**: det visuella bordslagret. Välj en bild för ett statiskt bord.
 - **Bakgrund**: ett separat lager; en bakgrundsfilm loopas.
+- **Bakgrundsklipp**: valfria ljudlösa MP4/WebM-klipp som startar vid en spelhändelse eller automatiskt. När klippet slutar, når sin maxlängd eller inte kan läsas visas grundbakgrunden igen. En grundfilm fortsätter loopa under klippet.
 - **Sammansättning**: dealer, bord, bakgrund, tillåtna alternativ och placering per format.
 - **Publicerad version**: bolagets tilldelade sammansättningar och val. Den fryses när du publicerar.
 - **Spelrum**: bolagets spelbara rum med en publicerad sammansättning. Samma rum visas i partnerportalen och för spelaren.
@@ -63,6 +64,10 @@ Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelsek
 Klippbibliotek, Spelhändelser & villkor och AI-småprat vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
 Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
 Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Bordsfärger och bolagets tillåtna mindre ändringar har egna inställningar. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
+
+I **Bakgrund** väljer du standardbild eller videoloop. Markera en uppladdad MP4/WebM som tillåten och välj **Lägg till bakgrundsklipp**. Välj exempelvis **Blackjack** eller **Automatiskt · tidsintervall**. Standard för automation är var 25:e sekund, högst 10 sekunder per klipp, minst 25 sekunder mellan starter och högst två starter/20 sekunder under en rullande minut. Gränserna gäller per regel; ett upptaget tillfälle köas inte. Spelhändelser kan avbryta automatiken. **Prova klipp** använder samma gränser utan att spara eller starta dealerns tal. Spara och publicera separat när scenen är klar.
+
+I **Bord → Storlek och placering** finns **Förminska**, **Förstora**, procentfält och reglage. Storleken behåller bordets proportioner och sparas separat för Mobil och Desktop. Knapparna ändrar med tio procentenheter; intervallet är 10–400 procent av scenbredden.
 **Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Dealerklipp friläggs alltid från grön bakgrund. **Till Sammansättning** återgår till presentationen som startade provet.
 
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.

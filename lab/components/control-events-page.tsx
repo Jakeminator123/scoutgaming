@@ -304,7 +304,7 @@ function SelectedControlEventsPage({ initialProject, initialVideos, initialStatu
             videoName: selectedVideo?.fileName ?? selectedVideo?.label,
             videoId: previewVideoId ?? undefined,
             familyId: media.family?.id ?? selectedVideo?.familyId,
-            allow2dFallback: !managed || previewKind === 'social',
+            allow2dFallback: previewKind === 'social',
             fallbackVideo: managed ? mediaVideoForEvent(videos, dealerId, event.id, event.exampleEvent, line.variants[0]?.videoGenerationId) : null,
             videoMissing: Boolean(previewVideoId && !selectedVideo),
             sourceIsObserved: Boolean(observedEvent),

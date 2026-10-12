@@ -5,7 +5,7 @@
 //   MENTION  tracked text files that name its full path or its last two path segments;
 //   REGISTRY media/layout.json or media/blob-index.json rows that still point at it.
 // A MENTION on a generic two-segment suffix (for example streams/index.json) can be a
-// different, live file: read the line before acting. Exit 2 when git cannot be read.
+// different, live file: read the line before acting. Exit 2 when Git or a source file cannot be read.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -38,7 +38,14 @@ const imports = new Map();
 for (const file of tracked) {
   if (!codeFile.test(file) || file.startsWith('ordning/')) continue;
   let text;
-  try { text = readFileSync(file, 'utf8'); } catch { continue; }
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch (error) {
+    const code = typeof error?.code === 'string' && /^E[A-Z0-9_]{1,31}$/.test(error.code)
+      ? error.code : 'UNKNOWN';
+    console.error(`source could not be read: ${JSON.stringify(file)} (${code})`);
+    process.exit(2);
+  }
   for (const match of text.matchAll(specifier)) {
     const target = posix.normalize(posix.join(posix.dirname(file), match[1].split(/[?#]/)[0]));
     for (const candidate of [target, `${target}.mjs`, `${target}.js`, `${target}.ts`, `${target}.tsx`, `${target}/index.mjs`, `${target}/index.js`]) {

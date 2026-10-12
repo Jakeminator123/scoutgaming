@@ -1,7 +1,7 @@
 # Aktuell handoff — Scoutgaming
 
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `dd837cf4`.
+`jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -109,6 +109,30 @@ diskreserv eller fröprojekt. Den långa listan står i den frysta handoffen und
 "Funktionella regler som aldrig får komprimeras bort".
 
 ## 2. Öppna kontroller och kända fel
+
+### Bakgrundsklipp och bordsstorlek, 12 oktober 2026
+
+Sammansättningens Bakgrund har nu valfria ljudlösa händelse-/intervallklipp
+med maxlängd, tid mellan starter och rullande minutgränser. Basbild eller
+videoloop återkommer efter slut/fel; dealerns tal och spelklocka är separata.
+Bordet har procentfält och förstora/förminska per mobil-/datorformat.
+Kontrakt, frysta lagergrants och capability 8 skyddar beständiga skrivningar.
+Ingen SQL-migration, källflytt eller produktdataändring ingår; leveransen
+bygger vidare på mergad V1 `dd837cf4`.
+
+Riktade regressionsprov och nio verkliga Chrome-scenprov passerar, inklusive
+två på varandra följande bakgrundsfilmer och felåtergång. Mediaaudit med
+`--probe` bekräftar oförändrade fyra historiska set. Testerna använder
+syntetiskt material och ger inget nytt läppsynkgodkännande. Full build/hook,
+PR24 och main-CI passerar; `c320932a` är live på Vercel och Render med
+capability 8. Produktionsprov bekräftade bakgrundsåtergång och bord 140→150→140 %
+utan sparade dataändringar. Slutbilden fångade en float på fältrubriken som
+sköt första bordskontrollen utanför panelen; följande fält bryter nu floaten.
+Separat kvar: landningssidans Vercel-preview på `bf23b987` misslyckades i
+befintlig `next/font`-laddare; produktionsbygget passerade. Spelrummens nya regler ska
+väljas och publiceras uttryckligen i Studio. Användarguide och tekniskt
+kontrakt finns i `lab/docs/README.md` respektive
+`docs/LOCAL-PRESENTATION-RUNTIME.md`; A20/A21 bevarar modulerna vid flytt.
 
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
@@ -219,7 +243,20 @@ Jakobs beslut 12 oktober:
 - `port-source.mjs` och fem Studio-moduler som kan vara planerade funktioner
   står kvar, bland dem `family-video-upload.tsx`.
 
-Prov: orkestratorns lokala körning med Node 24 på den integrerade V2 är grön.
+Sluträttning efter granskning: main `ff1d6e53` är integrerad med
+bakgrundshändelsernas tester, capability 8, bordspanelens CSS och driftkvitton
+bevarade. Normal händelsepreview och GameStream visar saknad-video-status
+när registrerad video saknas eller fallerar; social/avsiktlig 2D-diagnos
+består. Raderingsgrinden stoppar med filnamn och felkod vid källäsfel.
+De fyra systemkartslänkarna går nu till befintliga docs. Kartan använder
+aktuell V2-katalog och verklig, äldre PR-CI-evidens: 14 gula, inga röda eller
+nya gröna och oförändrat historiskt runtimekvitto. Riktade prov: 108/108
+Studio och 4/4 grindprov; två Studio-prov och läsfelsprovet var röda före
+rättningen. `audit-dealer-sync --probe` passerar för fyra oförändrade set.
+Ny full hook, PR-CI och leveranskontroll krävs; inga nya visuella
+mediegodkännanden eller produktionsdataändringar ingår.
+
+Tidigare prov på `997a11a4`: orkestratorns lokala körning med Node 24 var grön.
 Den omfattar full pre-commit, Studio- och frontendbyggena,
 `audit-dealer-sync --probe`, båda mediekatalogkontrollerna, `check-orphan-tests`
 (0) och systemkartan (0 röda). Spärren för raderingar gav 0 kvarvarande

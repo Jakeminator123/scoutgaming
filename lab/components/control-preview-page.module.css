@@ -30,7 +30,7 @@
 .layer .placementControls { margin:18px 0; padding:16px 0 0; border:0; border-top:1px solid var(--sg-border); min-width:0; }
 .placementControls legend { float:left; width:100%; margin-bottom:12px; font-weight:600; font-size:12px; }
 .placementControls legend span { display:block; color:var(--sg-muted); margin-top:4px; font-weight:400; }
-.placementControls legend + label { clear:both; }
+.placementControls legend + :global(.field) { clear:both; }
 .placementControls input[type='range'] { width:100%; accent-color:var(--sg-mark); margin:0; }
 .rangeLabel { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .rangeLabel output { color:var(--sg-text); font-variant-numeric:tabular-nums; }

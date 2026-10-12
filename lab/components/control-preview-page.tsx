@@ -13,6 +13,7 @@ import {useStudioProjectSession} from './studio-session';
 import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
 import {LayerAssetManager} from './layer-asset-manager';
+import {BackgroundPlaybackEditor} from './background-playback-editor';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
@@ -39,6 +40,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState('');
   const [previewBusy,setPreviewBusy]=useState(false),[previewError,setPreviewError]=useState('');
+  const [previewBackgroundRuleId,setPreviewBackgroundRuleId]=useState<string>(),[previewBackgroundRequest,setPreviewBackgroundRequest]=useState(0);
   const previewAttempt=useRef<AbortController|null>(null);
   const modelEdit:typeof sessionEdit=change=>{if(!previewAttempt.current)sessionEdit(change);};
   const [activeRole,setActiveRole]=useState<Role>('dealer');
@@ -47,6 +49,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   savedBaseline.current=savedJson;
   const lanes=project.lanes??[];
   const lane=lanes.find(row=>row.id===laneId)??lanes[0]??{id:'',label:'',renderer:'layered',dealers:[],layers:{background:{enabled:false,mode:'baked',default:null,allowed:[]},table:{enabled:false,default:null,allowed:[]},dealer:{enabled:false,default:'',allowed:[]}},openclaw:{idle:'off',deal:'off',reveal:'off',speak:'off',probe:'off'},operatorAdjustable:[]} as StudioLane;
+  const backgroundAssets=(project.layerAssets??[]).filter(asset=>asset.role==='background'&&lane.layers.background.allowed.includes(asset.id)).map(asset=>({id:asset.id,url:labUrl(`/api/layer-assets/${asset.id}`),label:asset.label,contentType:asset.contentType}));
   const dealers=activeStudioDealers(project);
   const contentDealer=dealers.find(row=>row.id===initialDealerId);
   const startDealer=dealers.find(row=>row.id===lane.layers.dealer.default);
@@ -77,6 +80,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
   },[uploading,temporary]);
   useEffect(()=>()=>{previewAttempt.current?.abort();previewAttempt.current=null;},[]);
+  useEffect(()=>{setPreviewBackgroundRuleId(undefined);setPreviewBackgroundRequest(0);},[lane.id]);
   async function startPreview(){
     if(previewBlocked||previewAttempt.current||continuing.current||uploadLock.current||projectRef.current!==project)return;
     const controller=new AbortController(),snapshot=projectRef.current,requestedLane=lane.id,revision=project.revision;
@@ -144,14 +148,26 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function placementControls(role:Role){
     const placement=settings[layout][role],size=role==='table'?'width':'scale',values=placement as unknown as Record<string,number>;
-    return <fieldset className={styles.placementControls} key={role} disabled={previewBusy||saving}><legend>Storlek och placering <span>{layout==='mobile'?'Mobil 9:16':'Desktop 16:9'}</span></legend>{([size,'x','y'] as const).map(key=><label className="field" key={key}>
-      <span className={styles.rangeLabel}><span>{key==='scale'?'Storlek':key==='width'?'Bredd':key==='x'?'Sidled':'Upp/ned'}</span><output>{key==='scale'||key==='width'?Math.round(values[key]*100)+' %':values[key].toFixed(2)}</output></span>
+    const sizeTable=(value:number)=>{if(!previewBusy&&!saving&&!uploading&&!conflict&&Number.isFinite(value))setPlacement('table','width',Math.round(Math.max(.1,Math.min(4,value))*100)/100);};
+    return <fieldset className={styles.placementControls} key={role} disabled={previewBusy||saving||uploading||conflict}><legend>Storlek och placering <span>{layout==='mobile'?'Mobil 9:16':'Desktop 16:9'}</span></legend>{([size,'x','y'] as const).map(key=><div className="field" key={key}><label>
+      <span className={styles.rangeLabel}><span>{key==='scale'?'Storlek':key==='width'?'Bordets storlek':key==='x'?'Sidled':'Upp/ned'}</span><output>{key==='scale'||key==='width'?Math.round(values[key]*100)+' %':values[key].toFixed(2)}</output></span>
       <input type="range" aria-label={`${labels[role]} ${key==='scale'?'storlek':key==='width'?'bredd':key==='x'?'sidled':'upp/ned'}`} min={key==='scale'||key==='width'?0.1:-2} max={key==='scale'||key==='width'?4:2} step="0.01" value={values[key]} onChange={event=>setPlacement(role,key,Number(event.target.value))}/>
-    </label>)}<button className={'sg-btn sg-btn-secondary '+styles.reset} disabled={previewBusy||saving} onClick={()=>{const next=structuredClone(lane),composition=structuredClone(settings);Object.assign(composition[layout][role],defaultCompositionSettings()[layout][role]);next.composition=composition;edit(next);}}>Återställ {labels[role].toLowerCase()}</button></fieldset>;
+    </label>{key==='width'?<div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+      <button type="button" className="sg-btn sg-btn-secondary" disabled={values.width<=.1} onClick={()=>sizeTable(values.width-.1)}>Förminska bord</button>
+      <label>Procent<input aria-label="Bordets storlek i procent" type="number" min={10} max={400} step={1} value={Math.round(values.width*100)} style={{width:80}} onChange={event=>sizeTable(event.target.valueAsNumber/100)}/></label>
+      <button type="button" className="sg-btn sg-btn-secondary" disabled={values.width>=4} onClick={()=>sizeTable(values.width+.1)}>Förstora bord</button>
+    </div>:null}</div>)}<button className={'sg-btn sg-btn-secondary '+styles.reset} disabled={previewBusy||saving} onClick={()=>{const next=structuredClone(lane),composition=structuredClone(settings);Object.assign(composition[layout][role],defaultCompositionSettings()[layout][role]);next.composition=composition;edit(next);}}>Återställ {labels[role].toLowerCase()}</button></fieldset>;
   }
   function layerPanel(role:'table'|'background'){
     return <section className={styles.layer} key={role} id={`composition-panel-${role}`} role="tabpanel" aria-labelledby={`composition-tab-${role}`} hidden={activeRole!==role} tabIndex={0}>
       <fieldset disabled={previewBusy||saving}><LayerAssetSelect role={role} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
+      {role==='background'?<><p className={styles.hint}>En bild ligger stilla. MP4 och WebM spelas som ljudlös grundloop. Lägg till separata bakgrundsklipp nedan för händelser och automatik.</p>
+        <BackgroundPlaybackEditor policy={lane.backgroundPlayback} assets={project.layerAssets??[]} allowed={lane.layers.background.allowed}
+          baseSelected={lane.layers.background.enabled&&backgroundAssets.some(asset=>asset.id===lane.layers.background.default)}
+          disabled={previewBusy||saving||uploading||conflict||temporary}
+          onChange={policy=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane);if(policy)next.backgroundPlayback=policy;else delete next.backgroundPlayback;edit(next);}}
+          onPreview={id=>{if(previewBusy||saving||uploading||conflict||temporary)return;setPreviewBackgroundRuleId(id);setPreviewBackgroundRequest(value=>value+1);}}/>
+      </>:null}
       {placementControls(role)}
       <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
@@ -196,7 +212,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
           {legacyBackground?<p role="alert" className={styles.hint}>Äldre bakgrundsinställning behöver åtgärdas före publicering. Om en miljö är inbakad i dealerfilmen behöver den ersättas med en grön originalfilm.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
-          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing}/>
+          <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing} backgroundPlayback={temporary?undefined:lane.backgroundPlayback} backgroundAssets={backgroundAssets} previewBackgroundRuleId={previewBackgroundRuleId} previewBackgroundRequest={previewBackgroundRequest}/>
           {localError?<p role="alert">{localError}</p>:null}
         </section>
         <section className={styles.controls} aria-label="Tre lager">
@@ -226,7 +242,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       </div>
       {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={previewBusy||saving||uploading||conflict}/>:null}
       <details className={styles.advanced}><summary>Avancerat · lager och filprov</summary><div>
-        <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} onChange={event=>{const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}</fieldset>
+        <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} disabled={role==='background'&&Boolean(lane.backgroundPlayback?.rules.length)} onChange={event=>{if(role==='background'&&lane.backgroundPlayback?.rules.length)return;const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}{lane.backgroundPlayback?.rules.length?<p>Ta bort bakgrundsklippen under Bakgrund innan du döljer bakgrundslagret.</p>:null}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary><p>Grön bakgrund tas alltid bort. Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p><a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
         <details><summary>Snabbprov med tre lokala filer</summary><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealerfilmen ska ha grön bakgrund, som alltid tas bort. Bord och miljö visas separat.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></details>
