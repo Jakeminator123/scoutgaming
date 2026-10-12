@@ -8,7 +8,7 @@ import { createServer } from 'node:http';
 import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { loadLegacyClipInventory, legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
-import { resolveLegacyClipPolicy, upsertLegacyClipBinding } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { resolveLegacyClipPolicy, upsertLegacyClipBinding } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { assertLocalRequest } from '../lib/http-guard.mjs';
 

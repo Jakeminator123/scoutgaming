@@ -6,7 +6,7 @@ which build from `open-claw/lab/` and have their own ignore file. No root Docker
 image has been built or deployed.
 
 The root context retains `web/`, `lab/` application code and `lab/docs/guide.json`,
-`lab/policies/project.seed.json`, `presentation-runtime/`, `open-claw/lab/src/`,
+`lab/policies/project.seed.json`, `packages/presentation/runtime/`, `open-claw/lab/src/`,
 `emil/dealklipp-v1/` with its exact video manifest, `web/public/` with the
 published dealer and table assets, `content/dealers/`, and `content/persona/`. It also
 retains `pipeline/`: `lab/lib/video-registry.mjs` imports

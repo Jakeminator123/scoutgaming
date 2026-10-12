@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLiveIdleController } from '../presentation-runtime/live-idle.mjs';
-import { createRegisteredIdlePolicy, registeredIdlePolicy } from '../presentation-runtime/registered-idle-policy.mjs';
+import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
+import { createRegisteredIdlePolicy, registeredIdlePolicy } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { createSeedProject, addDealer, validateProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';
 import { captureFrozenPresentation, assertCapturedPresentationMedia } from '../web/storage/frozen-presentation-capture.mjs';
 import { createFrozenDealerPresentationContext } from '../web/storage/frozen-dealer-presentation.mjs';
@@ -9,7 +9,7 @@ import { assertFrozenMediaPreconditions } from '../web/storage/frozen-dealer-idl
 import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
 import { validatePresentationPackage } from '../web/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../web/frozen-dealer-playback.mjs';
-import { selectPresentation } from '../presentation-runtime/selection.mjs';
+import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
 
 const uuid = n => '10000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function record(dealerId, eventId, n, situation = '') {

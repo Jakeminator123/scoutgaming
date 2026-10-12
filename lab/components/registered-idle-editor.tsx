@@ -1,8 +1,8 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {IdlePolicyEditor} from './idle-policy-editor';
-import {ownDealerIdle} from '../../presentation-runtime/registered-idle.mjs';
-import {createRegisteredIdlePolicy,registeredIdleInventory,registeredIdlePolicy} from '../../presentation-runtime/registered-idle-policy.mjs';
+import {ownDealerIdle} from '../../packages/presentation/runtime/registered-idle.mjs';
+import {createRegisteredIdlePolicy,registeredIdleInventory,registeredIdlePolicy} from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
 import type {IdlePolicy} from '../lib/idle-policy.mjs';
 import type {StudioProject} from '../lib/studio-model.mjs';

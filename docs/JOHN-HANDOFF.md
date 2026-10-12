@@ -601,8 +601,8 @@ borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
 skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
 Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
 och kompositorns JavaScript utan runtime-stubbar. Kompositorns katalog är
-`packages/presentation/compositor/`. A21 flyttar fortfarande `presentation-runtime/`
-i samma lista.
+`packages/presentation/compositor/`. Urval och idle ligger i
+`packages/presentation/runtime/`. Webbläsarens adress `/presentation-runtime/*` är oförändrad.
 
 Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
 `f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade

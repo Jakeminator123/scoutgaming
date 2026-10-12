@@ -1,5 +1,5 @@
 import { normalizeDealerSpeechProfile } from '../../web/public/dealer-speech-profile.mjs';
-import { validateRegisteredIdlePolicies } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { validateRegisteredIdlePolicies } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
 import { isDealerId, isActiveDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
 import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
@@ -9,7 +9,7 @@ import contract from '../policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
 import { validateMediaPolicy } from './media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
-import { validateLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,

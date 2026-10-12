@@ -5,8 +5,8 @@ import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
-import * as registered from '../../presentation-runtime/registered-idle-policy.mjs';
-import * as ownIdle from '../../presentation-runtime/registered-idle.mjs';
+import * as registered from '../../packages/presentation/runtime/registered-idle-policy.mjs';
+import * as ownIdle from '../../packages/presentation/runtime/registered-idle.mjs';
 import * as idlePolicy from '../lib/idle-policy.mjs';
 import * as clipLabels from '../lib/clip-label.mjs';
 
@@ -24,7 +24,7 @@ function harness(file,read){
     useState(initial){const index=stateIndex++;if(!(index in values))values[index]=typeof initial==='function'?initial():initial;return [values[index],value=>values[index]=typeof value==='function'?value(values[index]):value];},
     useEffect(run,deps){const index=effectIndex++,old=effects[index];effects[index]={...old,run,deps,changed:!old||!deps||deps.some((value,key)=>old.deps?.[key]!==value)};}};
   const SharedEditor=()=>null;
-  const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../presentation-runtime/registered-idle-policy.mjs':registered,'../../presentation-runtime/registered-idle.mjs':ownIdle,
+  const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../packages/presentation/runtime/registered-idle-policy.mjs':registered,'../../packages/presentation/runtime/registered-idle.mjs':ownIdle,
     '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../lib/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor},'./presentation-frame':{PresentationFrame:({children})=>children}};
   const output=transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{filename:file,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}};

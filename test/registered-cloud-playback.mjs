@@ -41,8 +41,8 @@ test('a published cloud lane is independent of a historical active indexed lane'
 
 test('historical box variants remain stored without automatically becoming the standard',async()=>{
  const {createSeedProject}=await import('../lab/lib/studio-model.mjs');
- const {applyLegacyStandardVariants}=await import('../presentation-runtime/legacy-standard-variants.mjs');
- const {selectPresentation}=await import('../presentation-runtime/selection.mjs');
+ const {applyLegacyStandardVariants}=await import('../packages/presentation/runtime/legacy-standard-variants.mjs');
+ const {selectPresentation}=await import('../packages/presentation/runtime/selection.mjs');
  const project=createSeedProject();
  project.legacyClipPolicy=[{dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'}];
  applyLegacyStandardVariants(project); // Explicit historical fixture, never a runtime import.
