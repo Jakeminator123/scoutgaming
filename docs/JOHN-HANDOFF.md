@@ -2,6 +2,48 @@
 
 ## Börja här: överlämning 12 oktober 2026
 
+### Samlad snabbgranskning och nästa steg, 12 oktober 2026
+
+Chatten ”Fortsätt Croupier-handoff” har levererat team/journal i e9e623dd och
+utkast/publicering/återställning i 270aaa38. Båda är förfäder till main d57df5c6,
+som vid denna kontroll matchar GitHub exakt, har grön CI 38191014202 och Vercel
+READY dpl_AZdysZfua2KBxkmbXva795wTLFCY. De berörda N2-filerna är oförändrade
+sedan 270aaa38. Huvudcheckouten samt chattarnas a1f5, 1068 och 36da är rena;
+sidoworktrees är äldre frysta utgångspunkter, inte osparade leveranser.
+Fortsätt i C:\Users\jakem\Projects\croupier på main. Inget återställs från de
+äldre arbetskopiorna. Separat pågående arbete i ”Anpassa desktopvyn för dealern”
+ingår inte i detta avslut och ska samordnas innan gemensam integration.
+
+Den snabba granskningen fann ingen ny funktionell regression i de granskade
+N2-vägarna. Detta är ingen fullständig ny säkerhets-/produktacceptans. Live
+lästes Johns paketversion 14, spelrum och beständiga publiceringshistorik utan
+skrivningar. Ingen ny SQL-, provider-, runtime- eller medieändring utfördes.
+
+**Bekräftad visuell skuld, inte färdig N2-design:**
+- partner-appearance.module.css använder --sg-text från Studios mörka tema.
+  I partnerns ljusa tema blir formulärtexten #F2F1ED på ytan #F2F1ED; partnerns
+  egen textfärg --ink är #0A0B0D. Kopplingen fanns redan före 270aaa38.
+- PartnerPackageView visar samma fullständiga paketlista före flera olika
+  inställningsvyer. Korten har 0 px padding och visar MIME, mått, råa ID:n och
+  långa filnamn. De ersätter inte en visuell provbordsförhandsvisning.
+- Partnerns skal använder --ink/--paper medan formulär och knappar använder
+  --sg-* och sg-btn. Gemensam temakoppling, spacing och arbetsflödesstruktur
+  saknas. Funktionstesterna innebär inte att helhetsvyn är visuellt accepterad.
+
+Prioritera JN2-B i befintlig tracker: först text/ytor och fokuskontrast i båda
+lägena; därefter en sammanhållen redigeringsvy med kompakt paketinformation,
+begripliga namn och förhandsvisning. Bevara utkast, revisioner, granskat
+publicera/återställ och alla tenant-/behörighetsgränser. Kontrollera riktig
+livekomponent i 360/820/1440 px, SV/EN och ljust/mörkt. Därefter återstår breda
+JN2-D (logo/chips/knappar/full spelförhandsvisning) samt JN2-E–K enligt trackern.
+Visuella fel dokumenterades, men ingen oombedd omdesign gjordes i snabbgranskningen.
+
+Den egna förbrukade studio-navigation-fixture.mjs har tagits bort och dess
+processer är stoppade. Privata testkvitton, råmedia, env och återanvändbar CRUD-QA
+bevaras. Standardtaket är 5 USD per avgränsad testomgång; detta pass kostade 0 USD.
+GitGuardian: 12 befintliga öppna incidenter, partiella platser och ofullständig
+historisk skanning kvarstår. Ingen friskförklaring eller incidentåtgärd gjordes.
+
 ### Studio: verifierat basklipp, Svarsbibliotek och dealerhantering
 
 Slutkontroll 12 oktober: 03edad7d3b53b0ec3306e80d5db2db8c1f459e82 är Vercel

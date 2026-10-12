@@ -293,6 +293,18 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   synlig fokus, dialogens fokus/återgång, etiketter, kontrast, tabellscroll och
   laddning/fel/tomläge. Exempeldata får inte se ut som verkliga pengar eller drift.
 
+
+  **Bekräftad visuell skuld 12 oktober, fortfarande öppet:** På verkliga
+  `/partner/johns-spelbolag/table-design` använder appearance-formuläret
+  Studios `--sg-text` (#F2F1ED) över partnerns ljusa `--paper` (#F2F1ED),
+  medan rätt partnertext är `--ink` (#0A0B0D). Rätta temakopplingen för text,
+  ytor, kantlinjer och knappar tillsammans; kontrollera båda teman och fokus.
+  `PartnerPackageView` renderar paneler utan invändig padding, tekniska ID:n/
+  MIME/filnamn och hela paketlistan före flera vyer. Samla kompakt paketstatus,
+  aktuell redigering och faktisk förhandsvisning i en konsekvent layout; behåll
+  N1:s frysta mediaurval och N2:s granskade publiceringsflöde. Den här visuella
+  acceptansen är inte bevisad av JN2-C/D:s isolerade funktionstester. Bristerna
+  föregår 270aaa38; ingen ny merge-regression är belagd av snabbgranskningen.
 #### Säker konfiguration och publicering
 
 - [x] **JN2-C — rättigheter, beständig audit och bolagsgräns (första leveransen).**
