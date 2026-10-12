@@ -289,7 +289,7 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     for (const name of ['compositor.js', 'geometry.js']) {
       assert.ok(prepared.files.includes('/composition-runtime/' + name));
       assert.equal(await readFile(join(directory, 'public/composition-runtime', name), 'utf8'),
-        await readFile(new URL('../../../test-videoeditor/program/web/' + name, import.meta.url), 'utf8'));
+        await readFile(new URL('../../../packages/presentation/compositor/' + name, import.meta.url), 'utf8'));
     }
     assert.ok(prepared.files.every(path => !path.startsWith('/bo/')));
     assert.equal(prepared.files.includes('/casino.mjs'), false);

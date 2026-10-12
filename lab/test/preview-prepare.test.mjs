@@ -11,8 +11,8 @@ import { preparePreview } from '../tools/prepare-preview.mjs';
 
 const lab = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(lab, '..');
-const previewRoot = join(repo, 'test-videoeditor/preview');
-const webRoot = join(repo, 'test-videoeditor/program/web');
+const previewRoot = join(repo, 'packages/presentation/preview');
+const webRoot = join(repo, 'packages/presentation/compositor');
 
 async function removeTemp(path) {
   assert.ok(resolve(path).startsWith(resolve(tmpdir())));

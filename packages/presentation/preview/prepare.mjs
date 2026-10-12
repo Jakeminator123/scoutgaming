@@ -22,7 +22,7 @@ export async function prepareLanePreview({env = process.env, output} = {}) {
   await mkdir(dest, {recursive: true});
   await cp(site, dest, {recursive: true});
   for (const filename of ['player.js', 'geometry.js', 'compositor.js']) {
-    await cp(join(root, '../program/web', filename), join(dest, filename));
+    await cp(join(root, '../compositor', filename), join(dest, filename));
   }
   return {enabled: true, mediaFiles: files.length};
 }
