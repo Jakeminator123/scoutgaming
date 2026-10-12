@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 import styles from './partner-appearance.module.css';
 import {PartnerAppearancePreview} from './partner-appearance-preview';
 import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
+import {compositionLabel} from '../lib/control-flow.mjs';
 import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
@@ -51,9 +52,13 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const canReview = editable && server.draft && !dirty && !stale;
   const canPublish = editable && reviewValid && Boolean(review?.changes.length);
   const endpoint = `${apiBase}/branding?operator=${encodeURIComponent(operatorSlug)}`;
-  const labelOf = (value: string|null) => value === null ? t('Standard','Default') : server.presentation?.assets.find(asset => asset.id === value)?.label
-    ?? ((server.presentation?.schemaVersion === 2 || server.presentation?.schemaVersion === 3) ? server.presentation.registeredDealers.find(dealer => dealer.id === value)?.label : undefined)
-    ?? server.presentation?.lanes.find(item => item.id === value)?.label ?? value;
+  const labelOf = (value: string|null) => {
+    if (value === null) return t('Standard','Default');
+    const composition = server.presentation?.lanes.find(item => item.id === value);
+    return server.presentation?.assets.find(asset => asset.id === value)?.label
+      ?? ((server.presentation?.schemaVersion === 2 || server.presentation?.schemaVersion === 3) ? server.presentation.registeredDealers.find(dealer => dealer.id === value)?.label : undefined)
+      ?? (composition ? compositionLabel(composition.label, language) : value);
+  };
   const roomLabel = (id: string|null) => id === null ? t('Bolagets standard','Company default') : server.rooms?.find(row => row.id === id)?.label ?? id;
 
   function change(key: string, selection: string) {
@@ -149,7 +154,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
     <fieldset className={styles.editor} disabled={!editable || busy}>
       <legend>{t('Val i spelet','In-game choices')}</legend>
-      <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>
       {room ? <p className={styles.hint}>{t('Rummets sammansättning bestäms av intern personal. Standardval ärvs från bolaget när sammansättningen är samma, annars från rummets sammansättning.','Internal staff set the room composition. Defaults inherit company choices for the same composition, otherwise the room composition defaults.')}</p> : null}
       {lane && !lane.composition ? <p className={styles.hint}>{t('Fullbildsklipp: bord och bakgrund är inbakade och kan inte bytas separat.','Full-frame video: table and background are baked in and cannot be changed separately.')}</p> : null}
       <div className={styles.fields}>{fields.map(key => {
