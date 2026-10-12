@@ -162,7 +162,10 @@ export function createDealerLayer({ stage, still, land, cardAt, faceAt, scale = 
   };
   room?.addEventListener('load', regrade);
   const img = new Image();
-  img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; };
+  // The stage waits dark (index.html, .pending) until the room and this dealer can both be drawn: then show it, two frames later.
+  const reveal = () => { if (room?.complete && room.naturalWidth && img.complete && img.naturalWidth) requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove('pending'))); };
+  room?.addEventListener('load', reveal);
+  img.onload = () => { gl.uniform2fv(uSkin, pickSkin(img)); lastStamp = ''; reveal(); };
   img.src = still;
   const videos = [...stage.querySelectorAll('video')];
   let lastStamp = '';
