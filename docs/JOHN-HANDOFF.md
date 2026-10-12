@@ -8,8 +8,18 @@ endast ett bolag som den riktiga spelvalideringen uttryckligen avvisar som
 ospelbart, efter verifierat bolagsägarskap och fryst paket. Lagringsfel,
 främmande data och korrupta paket stoppar fortsatt svaret. Inga bolag eller
 rum ändras av katalogläsningen. 62 riktade prov passerade, inklusive
-pensionerad dealer, bolagsordning, HEAD och tenant-/lagringsfel. Livekontroll
-av slutlig leverans återstår vid denna commit.
+pensionerad dealer, bolagsordning, HEAD och tenant-/lagringsfel. Kod 5ebe3ff4
+är verifierad live på Vercel dpl_9UmrNSYEKZr2CohshU2AqiQkfTyL och Render
+dep-db66cggu01pc73f9i9jg, med grön GitHub-körning 38204816606. Full lokal
+kontroll: 2 874 godkända, 11 villkorliga undantag, inga fel. Publik GET ger
+Johns spelbolag (tre rum, paket 14) och Nordic Bet (ett rum, paket 1). Webbvyn
+visar båda bolagen, och Nordic Bet leder till nordic rum med korrekt
+operator/table/dealer i speladressen. SG-test svarar fortsatt 503 för egen
+ospelbar publicering men blockerar inte listan. Inget spel startades.
+Den interna sammansättningsetiketten tas bort från spelarkortet: Nordic Bet
+ska inte visas med ett återanvänt konfigurationsnamn som nämner Johns bolag.
+Bolag, rum och vald dealer är kvar. Befintligt lobbyprov skyddar detta;
+19 lobbyprov och frontendens typkontroll passerar.
 
 GitGuardians befintliga skyddade API fungerar med incidents:read och
 sources:read. Samtliga 34 förekomster i de 12 öppna Scoutgaming-fynden
