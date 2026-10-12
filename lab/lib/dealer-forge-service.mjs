@@ -149,7 +149,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       const count = (projectValue.layerAssets ?? []).filter(asset => asset.role === slot.role && asset.label.startsWith('Forge ·')).length;
       return active ? { level: 'pending', label: 'Genereras…' } : count ? { level: 'ready', label: `${count} i biblioteket` } : { level: 'optional', label: 'Valfritt · generera' };
     }
-    if (slot.needsEvent) return { level: 'blocked', label: 'Facket saknas i projektet (väntar på PR)' };
+    if (slot.needsEvent) return { level: 'blocked', label: 'Facket saknas i projektet' };
     const usable = media.filter(row => row.available !== false && row.classification?.mediaType !== 'audio' && !row.classification?.archived);
     if (active) return { level: 'pending', label: usable.length ? `${usable.length} klipp · fler genereras` : 'Genereras…' };
     if (usable.length) return { level: 'ready', label: `${usable.length} klipp`, count: usable.length };
@@ -392,7 +392,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       if (!runwayConfigured(env)) fail('RUNWAY_API_KEY saknas i miljön.', 503, 'runway_key_missing');
       const { value } = await project(); dealerOf(value, dealerId);
       const slot = slotById(value, body.slotId);
-      if (slot.needsEvent) fail('Facket finns inte i det sparade projektet ännu (väntar på eventet transition.shoe). Generera när PR:en är inne.', 409, 'forge_slot_needs_event');
+      if (slot.needsEvent) fail('Facket finns inte i det sparade projektet (eventet transition.shoe saknas).', 409, 'forge_slot_needs_event');
       if (slot.kind === 'pose' && slot.pose === 'vila') fail('VILA laddas upp som bild.', 422, 'forge_slot_upload_only');
       const inventory = await videoRegistry();
       const existing = slotMedia(value, inventory, dealerId, slot);

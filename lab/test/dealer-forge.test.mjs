@@ -10,12 +10,16 @@ import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
 
 const actor = { actor: 'tester' };
 
-test('catalog: 40 slots in group order, deal slots carry targets and frames, transitions wait for the project event', () => {
+test('catalog: 40 slots in group order, deal slots carry targets and frames, transitions come from the project event', () => {
   const project = addDealer(createSeedProject(), 'paow', 'Paow');
   const slots = forgeSlots(project);
   assert.equal(slots.length, 40);
   assert.deepEqual(slots.slice(0, 5).map(slot => slot.id), ['pose/vila', 'pose/redo', 'idle.ready/', 'transition.shoe/to-shoe', 'transition.shoe/from-shoe']);
-  assert.equal(slots.find(slot => slot.id === 'transition.shoe/to-shoe').needsEvent, true);
+  const toShoe = slots.find(slot => slot.id === 'transition.shoe/to-shoe');
+  assert.deepEqual([toShoe.fromProject, Boolean(toShoe.needsEvent), toShoe.start, toShoe.end], [true, false, 'VILA', 'REDO']);
+  // A raw document without the event still lists the slots, marked as waiting for it.
+  const legacy = forgeSlots({ ...project, events: project.events.filter(event => event.id !== 'transition.shoe') });
+  assert.equal(legacy.length, 40); assert.equal(legacy.find(slot => slot.id === 'transition.shoe/to-shoe').needsEvent, true);
   const deal = slots.find(slot => slot.id === 'deal.player.centre/box3');
   assert.deepEqual([deal.target, deal.frames, deal.start, deal.end, deal.group], ['4', 26, 'REDO', 'REDO', 'deal']);
   assert.equal(slots.filter(slot => slot.group === 'speech').length, 17);
@@ -63,7 +67,7 @@ test('anchor upload normalizes to the green master and stores a private source a
   assert.equal(state.slots.find(slot => slot.id === 'pose/vila').status.level, 'ready');
   assert.equal(state.slots.find(slot => slot.id === 'pose/redo').status.level, 'required');
   assert.equal(state.slots.find(slot => slot.id === 'deal.player.left/box0').status.level, 'recommended');
-  assert.equal(state.slots.find(slot => slot.id === 'transition.shoe/to-shoe').status.level, 'blocked');
+  assert.equal(state.slots.find(slot => slot.id === 'transition.shoe/to-shoe').status.level, 'recommended');
   assert.equal(state.runwayConfigured, true); assert.equal(state.migrationReady, true);
   await assert.rejects(service.uploadAnchor('paow', { pose: 'side', contentType: 'image/png', dataBase64: 'AA==' }, actor), /vila eller redo/);
   await assert.rejects(service.uploadAnchor('nobody', { pose: 'vila', contentType: 'image/png', dataBase64: 'AA==' }, actor), /inte registrerad/);
@@ -106,13 +110,17 @@ test('deal job: keyframe wan3 with marked last frame, poll commits the MP4 into 
   assert.equal(state.jobs.length, 2);
 });
 
-test('reference mode reuses an existing clip in the slot; budget and missing event are refused before any paid call', async () => {
-  const { service, submitted, tasks } = fixture();
+test('reference mode reuses an existing clip in the slot; budget is refused before any paid call; shoe transitions use both poses', async () => {
+  const project = addDealer(createSeedProject(), 'paow', 'Paow');
+  // A saved document from before the shoe event: normalizeProject adds the optional event on read.
+  const { service, submitted, tasks } = fixture({ project: { ...project, events: project.events.filter(event => event.id !== 'transition.shoe') } });
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
   await service.uploadAnchor('paow', { pose: 'redo', contentType: 'image/png', dataBase64: Buffer.concat([PNG, Buffer.from('redo')]).toString('base64') }, actor);
   await assert.rejects(service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '1080', duration: 10, maxCredits: 100 }, actor), error => error.code === 'forge_budget_exceeded');
-  await assert.rejects(service.createJob('paow', { requestId: randomUUID(), slotId: 'transition.shoe/to-shoe' }, actor), error => error.code === 'forge_slot_needs_event');
   assert.equal(submitted.length, 0);
+  const toShoe = await service.createJob('paow', { requestId: randomUUID(), slotId: 'transition.shoe/to-shoe', quality: '1080', duration: 2, maxCredits: 100 }, actor);
+  assert.equal(toShoe.status, 'running'); assert.deepEqual(Object.keys(toShoe.request.anchors).sort(), ['redo', 'vila']);
+  assert.deepEqual(submitted.at(-1).params.promptImage.map(image => image.position), ['first', 'last']);
   const job = await service.createJob('paow', { requestId: randomUUID(), slotId: 'deal.player.left/box0', quality: '720' }, actor);
   tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/a.mp4'], credits: 20 });
   const done = await service.pollJob('paow', job.jobId, actor);

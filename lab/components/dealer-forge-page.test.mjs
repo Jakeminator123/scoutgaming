@@ -61,7 +61,7 @@ test('Dealer Forge page renders the full matrix server-side: groups, every slot,
   for (const slot of state.slots.filter(row => row.group !== 'pose')) assert.ok(html.includes(slot.id), `slot row ${slot.id}`);
   assert.equal((html.match(/class="pill ready"/g) ?? []).length, state.slots.filter(row => row.status.level === 'ready').length + 0);
   assert.match(html, /Ge kort · plats 4/); assert.match(html, /1 klipp/);
-  assert.match(html, /Till skon · VILA → REDO/); assert.match(html, /Facket saknas i projektet/);
+  assert.match(html, /Till skon · VILA → REDO/); assert.doesNotMatch(html, /Facket saknas i projektet/);
   assert.match(html, /Genereras · ~20 kr|Genereras/); // running job in box0
   assert.match(html, /<video src="\/api\/videos\//); assert.match(html, /poster="\/api\/forge\/paow\/anchor\/redo\?v=/);
   assert.match(html, /<img src="\/api\/forge\/paow\/anchor\/vila\?v=/);
