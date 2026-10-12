@@ -447,6 +447,9 @@ bankauditarna) och denna leverans (A21: `presentation-runtime/` till
 `packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
 plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
 `web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
+#51 är mergad som `a5441feb` och kontrollerad i produktion.
+`/presentation-runtime/idle-policy.mjs` har nya bytes bara i två relativa
+importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adresser.
 
 | Mått | Före `00ea55c5` | Efter `e602ea91` |
 | --- | --- | --- |
