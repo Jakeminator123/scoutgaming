@@ -6,17 +6,16 @@ Helpern läser privata lokala miljöfiler och ansluter via Render Director.
 Se [miljökartan](../../../docs/ENVIRONMENT-VARIABLES.md) för filernas placering och
 [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) för spelaren.
 
-## Aktuell anslutningskontroll — 2026-09-29
+## Anslutningskontroll
 
-Gateway och Director kör GitHub-revision `15bd1541`. Lokal hälsa och
-autentiserad Lab-status gav HTTP 200. En tom speech-envelope med lokal
-produkt-token gav förväntad HTTP 400 innan modellkörning. Tokenkopplingarna
-mellan Render-spelet, Director och Gateway matchar. Se
-[live-kvittot](CLOUD-ACTIVATION-2026-09-29.md).
+Kontrollen 29 september (revision `15bd1541` och de dåvarande Vercel-projekten)
+är inte dagens drift. Aktuell kedja står i [DEPLOYMENT.md](DEPLOYMENT.md) och
+[molnkartan](../../../docs/CLOUD-MIGRATION.md). En tom speech-envelope med
+giltig produkt-token ska fortfarande ge HTTP 400 innan modellkörning.
 
 Produkten använder `OPENCLAW_PRODUCT_SPEECH_URL` och separat speech-token.
 Lokalt Lab använder `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN`. En direkt publik
-Gateway-URL behövs inte för denna väg. `OPENCLAWAPI_KEY` hör till privat
+Gateway-URL behövs inte för denna väg. `OPENCLAW_API_KEY` hör till privat
 Gateway-autentisering; `OPENCLAW_MODEL_API_KEY` används av Gateway mot modellen.
 
 ## Ett lokalt serverpar

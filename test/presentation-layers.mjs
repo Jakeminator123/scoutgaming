@@ -19,7 +19,7 @@ function fixture() {
   lane.layers.table={enabled:true,default:table.id,allowed:[table.id],colors:['#123456']};
   lane.operatorAdjustable=['background','table','dealer','table.color','branding'];
   project.lanes=[lane];project.layerAssets=[background,table,asset('background',3)];
-  const cloud=cloudPresentationFixture({project,lanes:[lane],compositingByDealer:{astrid:{mode:'opaque'}}});project=cloud.project;const presentation=cloud.presentation;
+  const cloud=cloudPresentationFixture({project,lanes:[lane]});project=cloud.project;const presentation=cloud.presentation;
   return {project,presentation,pack:{operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[],branding:withPackagePresentation({name:'North'},presentation)}};
 }
 test('publication freezes lane data and only referenced assets; subsequent Studio edits cannot change it',()=>{
@@ -97,10 +97,10 @@ test('game entry uses the published snapshot after Studio is edited and keeps au
   assert.equal(selection.composition.assets.length,2);assert.deepEqual(Object.keys(selection.composition).sort(),['assets','background','dealer','schemaVersion','table']);
   assert.doesNotThrow(()=>validateComposition(selection.composition));
   const chosen=resolvePlayerSelection({choices:selection.choices,composition:selection.composition,currentDealer:'astrid',stored:{tableAsset:presentation.assets[1].id,background:presentation.assets[0].id}});
-  assert.equal(chosen.backgroundDisabled,true);assert.equal(chosen.applyBackground,false);
+  assert.equal(chosen.backgroundDisabled,false);assert.equal(chosen.applyBackground,true);
 });
 
-test('opaque dealer footage preserves its pixels; hiding it exposes only the chosen authorized layer planes',()=>{
+test('legacy full-frame flags cannot suppress independent background and table sources',()=>{
   const {presentation}=fixture(),lane=presentation.lanes[0];
   const descriptor={schemaVersion:1,
     dealer:{enabled:true,compatibility:'full-frame'},
@@ -111,14 +111,14 @@ test('opaque dealer footage preserves its pixels; hiding it exposes only the cho
   const document={documentElement:{dataset:{}},querySelector:()=>host,
     createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},setAttribute(){},remove(){mounted.delete(this);}})};
   const composition=createLayerComposition(document,descriptor);
-  assert.equal(mounted.size,0,'no plane may alter an opaque approved film');
+  assert.equal(mounted.size,2,'legacy compatibility cannot bypass the mandatory compositor');
   composition.replace({...descriptor,dealer:{enabled:false,compatibility:'full-frame'}});
   assert.deepEqual([...mounted].map(node=>node.src),descriptor.assets.map(asset=>asset.src));
   assert.equal(host.dataset.dealerLayerEnabled,'false');
   composition.setBackground(asset('background',3).id);
   assert.equal(mounted.size,2,'library-only references cannot be selected');
   composition.replace(descriptor);
-  assert.equal(mounted.size,0,'turning the dealer back on removes independent planes');
+  assert.equal(mounted.size,2,'turning the dealer back on retains its authorized plane sources');
 });
 
 function createPartnerBrandingApi(options) {

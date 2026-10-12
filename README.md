@@ -16,22 +16,38 @@ The public surfaces are not feature-complete:
 | 2 | Operator | [/partner](https://www.scoutgaming.tech/partner) and `/partner/{operatorSlug}` |
 | 3 | Player | [/play](https://www.scoutgaming.tech/play), [/play/profil](https://www.scoutgaming.tech/play/profil), [/play/historik](https://www.scoutgaming.tech/play/historik) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
 
-Staff pages share one template: Översikt `/control`, Dealers & klipp
-`/control/clips`, Klippbibliotek `/control/videos`, Bakgrundszoner `/control/zones`,
-Händelser `/control/events` (overview without `?event=`, editor with it),
-Förhandsvisning `/control/preview`, Lanes `/control/lanes`, Agentmodeller `/control/openclaw`,
-Operatörschatt `/control/openclaw?tab=chat`, Administration
-`/control/administration` with four deep links to its tabs, Uppspelning
-`/control/activity`, Probe `/control/probe` and Guide & hjälp `/control/guide`.
-`/control/tree` redirects to `/control/events` with its query. `/control/operator-chat`
-redirects to the chat tab. `/control/backgrounds` redirects to `/control/zones`.
+The staff menu has four groups (`lab/lib/scout-navigation.mjs`). Studio:
+Dealers & klipp `/control/clips`, Dealer Forge `/control/dealer-forge`,
+Bord & bakgrunder `/control/library`, Sammansättningar `/control/compositions`.
+Spelbolag: Bolag & team `/control/companies`, Spelrum & publicering
+`/control/rooms`. Drift: Spelstatus & integritet
+`/control/administration?tab=operations`, Betalningar & journal `?tab=finance`.
+System: Konton & åtkomst `?tab=accounts`, API & integrationer `?tab=partners`,
+Agentmodeller `/control/openclaw`, Intern agentchatt `/control/openclaw?tab=chat`.
+The footer is Översikt `/control` and Guide & hjälp `/control/guide`.
+Provspelning & logg `/control/rehearsal` stays contextual to dealer, composition,
+operator and room. Pages that remain without their own menu row: Spelhändelser
+& villkor `/control/events` (overview without `?event=`, editor with it),
+Klippbibliotek `/control/videos`, Svarsbibliotek `/control/replies` and Probe
+`/control/probe`. `/control/preview` redirects to `/control/compositions`.
+`/control/lanes` redirects to `/control/rooms`, and `?tab=companies` to
+`/control/companies`. `/control/activity` redirects to `/control/rehearsal`.
+`/control/zones` and `/zones` redirect to `/control/preview`, which then goes to
+compositions. `/control/backgrounds` redirects to `/control/compositions`.
+`/control/tree` redirects to `/control/events` with its query.
+`/control/operator-chat` redirects to the chat tab. Old `lane` query values are
+accepted; Studio links emit `composition`.
 
-The Partnerportal is level 2. Operator staff sign in at `/partner/login` and see
-a scoped snapshot. Internal staff without `partner_session` still see the demo
-preview. Operators, roles and memberships are created from the Bolag card on
-`/control/lanes`; a new e-mail receives an activation link. Company appearance
-(`branding`, table colour) is read and written within the lane by a member with
-`presentations.configure`. Players and transactions are not connected (N2.4).
+The partner portal is level 2. Operator staff sign in at `/partner/login` and see
+only active memberships. Internal admins use the same N1 login. Normal partner
+routes do not fall back to demo data. The menu is Översikt, Spelrum
+(`/partner/{operatorSlug}/rooms`), Team & behörigheter and Integration.
+Operators, roles and memberships are created from Bolag & team on
+`/control/companies`; a new e-mail receives an activation link to
+`/partner/set-password`. Company appearance (`branding`, table colour) is read
+and written with `presentations.configure`, with revision checks. Players,
+transactions and reports are not connected (N2.4). Chips (L4) and partner
+password reset are not done.
 The lobby, `/play/profil` and `/play/historik` exist. The profile can be edited
 (display name and language). The lobby shows Spelar hos from `?operator=`.
 Render's `/blackjack?operator=` and Vercel's `/play/blackjack?operator=` limit
@@ -64,7 +80,8 @@ node lab/start.mjs --offline --no-open
 `node lab/start.mjs --no-open` starts the existing connected profile.
 Private saved projects, history and players now live
 in `lab/data`, after a verified backup outside Git. See the restoration guide.
-In the cloud the general editor is `/control/events`. Key names and locations
+In the cloud, dealers and clips are edited at `/control/clips`, compositions at
+`/control/compositions`, and event conditions at `/control/events`. Key names and locations
 (no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).
 OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
 
@@ -81,7 +98,13 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 - Repo documentation is limited to five current Markdown files in `docs/`.
   Update them in place; further reports and sprint documents are paused.
 
-Work on `main`; deliver with `node tools/push-github-work.mjs`.
+Deliver on a feature branch (`jakob/*`, `codex/*` or `cursor/*`) and open a pull
+request into `main`. Those branches are the allowed push targets, without
+force-push, branch deletion or tags. A direct push to `main` is only an explicit
+admin emergency path. The push hook still only names `main` until that rule is
+applied in the hook. This repository-cleanup work is collected on
+`jakob/repo-ordning`; each wave reaches `main` as its own pull request after
+Jakob’s approval.
 Kevin’s reviewed source is imported selectively; no push to his branch is authorized.
 
 ## Documentation navigation
@@ -101,9 +124,10 @@ documentation are paused. Personal archives remain outside agent reading paths.
 | --- | --- |
 | Blackjack rules and cryptographic demo shuffle | `web/public/blackjack.mjs` |
 | Persistent shoe, commands and public game view | `web/shoe-game.mjs` |
+| Roulette generator, result events and `/roulette-test/` diagnostics (no bets or wallet) | [`web/games/roulette/`](web/games/roulette/README.md) |
 | Wallet, persistence and HTTP server | `web/server.mjs` |
 | Partner transport and presentation events | `web/partner-api.mjs`, `web/partner-presentation.mjs` |
-| Dealer playback | `web/public/dealer-engine.mjs`, `web/public/performance-player.mjs` |
+| Dealer playback | Game client: `web/public/local-presentation.mjs`, `web/public/layered-presentation.mjs`, `web/public/performance-player.mjs`. `web/public/app.mjs` accepts only `local` or `layered`. Studio's original-media reserve is retired; registered video stays on the shared stage |
 | Media build and validation | `pipeline/` |
 
 The code has two public client paths:

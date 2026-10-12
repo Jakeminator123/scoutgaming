@@ -5,6 +5,7 @@ import type { VideoMetadata } from '../lib/video-intake.mjs';
 import type { StudioProject } from '../lib/studio-model.mjs';
 import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
 import { VideoMetadataFields } from './video-metadata-fields';
+import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
 
 export function VideoClassification({project,video,dealerId,eventId,onSaved}:{project:StudioProject;video:VideoEntry;dealerId:string;eventId:string;onSaved:(next:VideoInventory)=>void}) {
   const [value,setValue]=useState<VideoMetadata>(()=>{
@@ -15,7 +16,7 @@ export function VideoClassification({project,video,dealerId,eventId,onSaved}:{pr
   async function submit(e:FormEvent) {
     e.preventDefault(); if(busy)return;
     setBusy(true);setError('');setNotice('');
-    try { onSaved(await requestJson<VideoInventory>('/api/videos/classify',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification ?? null,metadata:value})}));setNotice('Kategorisering sparad. Videofilen är oförändrad.'); }
+    try { onSaved(await requestJson<VideoInventory>('/api/videos/classify',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification ?? null,metadata:value.mediaType==='audio'?value:{...value,compositing:effectiveDealerCompositing(value.compositing)}})}));setNotice('Kategorisering sparad. Videofilen är oförändrad.'); }
     catch(cause){setError(cause instanceof Error?cause.message:'Kunde inte spara.');}
     finally{setBusy(false);}
   }

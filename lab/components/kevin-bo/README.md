@@ -45,7 +45,7 @@ The source design is pinned to GitLab commit
 verified as Kevin. `source-provenance.json` records each imported JSX file's
 SHA-256 and the runtime parts deliberately replaced.
 
-Medlemskap (`team`) has left the factory and renders from `views/team.jsx` for both the fixture preview and a real operator snapshot. Leave every other view in `original-views.jsx` until that view's own data is connected and the replacement is tested; delete only the factory functions that replacement covers.
+Live operator views render from their own files. Översikt is `views/overview.jsx`, Spelrum is `views/rooms.jsx`, Integration is `views/integration.jsx`, and the shell mark is `views/shared.jsx`. Medlemskap (`team`) remains `views/team.jsx`. Their shell rules are `views/live.css`. A real operator snapshot does not load `original-views.jsx` or `original.css`. The 24 diagnostic destinations stay in the factory and load only for the N1 fixture (`preview !== false`). Do not delete one of those destinations without a decision.
 
 ## Preserved and separated
 
@@ -123,10 +123,11 @@ imported design drafts, player-account operations, media mapping and reports rem
 explicit integration work. Existing scoped membership and lane branding flows
 are connected, not evidence that those other verticals are complete.
 Operator membership for the scoped snapshot is enforced for partner sessions;
-internal-admin snapshots use the bounded N1 authorization bridge. Medlemskap
-renders from `views/team.jsx`. The other imported
-views stay in the factory so their cross-view helpers remain intact; split a
-view out only when its data is connected and the replacement is tested.
+internal-admin snapshots use the bounded N1 authorization bridge.
+
+Live operator views render from `views/overview.jsx`, `views/rooms.jsx`,
+`views/integration.jsx` and `views/team.jsx`. A real operator snapshot does not
+import the diagnostic factory. Its cross-view helpers stay intact for the fixture.
 
 To reproduce the pinned transfer after changing the adaptation rules:
 

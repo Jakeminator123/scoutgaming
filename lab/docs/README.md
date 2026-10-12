@@ -54,6 +54,7 @@ En enda egen grundloop räcker för att testa flödet. Händelseklipp kan lägga
 - **Dealer**: en person med egen grundloop och egna klipp kopplade till spelhändelser.
 - **Bord**: det visuella bordslagret. Välj en bild för ett statiskt bord.
 - **Bakgrund**: ett separat lager; en bakgrundsfilm loopas.
+- **Bakgrundsklipp**: valfria ljudlösa MP4/WebM-klipp som startar vid en spelhändelse eller automatiskt. När klippet slutar, når sin maxlängd eller inte kan läsas visas grundbakgrunden igen. En grundfilm fortsätter loopa under klippet.
 - **Sammansättning**: dealer, bord, bakgrund, tillåtna alternativ och placering per format.
 - **Publicerad version**: bolagets tilldelade sammansättningar och val. Den fryses när du publicerar.
 - **Spelrum**: bolagets spelbara rum med en publicerad sammansättning. Samma rum visas i partnerportalen och för spelaren.
@@ -63,24 +64,29 @@ Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelsek
 Klippbibliotek, Spelhändelser & villkor och AI-småprat vid inaktivitet nås från Dealers & klipp, med vald dealer kvar.
 Dealers & klipp är dealerbiblioteket: fem dealers där betyder inte fem spelbara rum. Länken till Sammansättning öppnar först en befintlig presentation där vald dealer är startdealer, annars en där den är tillåten. En uttryckligen vald presentation behålls. Om dealern inte ingår visas det tydligt; inga dealer- eller paketrättigheter ändras av att följa länken.
 Sammansättning är den enda editorn för presentationen. **Ny sammansättning** behöver bara ett namn; ett stabilt tekniskt ID skapas automatiskt och finns under Avancerat. Dealerklipp laddas upp och kopplas till händelser i Dealers & klipp; Bord och Bakgrund laddas upp vid respektive lager. Bordsfärger och bolagets tillåtna mindre ändringar har egna inställningar. Publicering visar bolagets paketval och spelrum samt en länk tillbaka till vald sammansättning.
-**Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Fullbildsklipp behåller sin inbakade miljö. **Till Sammansättning** återgår till presentationen som startade provet.
+
+I **Bakgrund** väljer du standardbild eller videoloop. Markera en uppladdad MP4/WebM som tillåten och välj **Lägg till bakgrundsklipp**. Välj exempelvis **Blackjack** eller **Automatiskt · tidsintervall**. Standard för automation är var 25:e sekund, högst 10 sekunder per klipp, minst 25 sekunder mellan starter och högst två starter/20 sekunder under en rullande minut. Gränserna gäller per regel; ett upptaget tillfälle köas inte. Spelhändelser kan avbryta automatiken. **Prova klipp** använder samma gränser utan att spara eller starta dealerns tal. Spara och publicera separat när scenen är klar.
+
+I **Bord → Storlek och placering** finns **Förminska**, **Förstora**, procentfält och reglage. Storleken behåller bordets proportioner och sparas separat för Mobil och Desktop. Knapparna ändrar med tio procentenheter; intervallet är 10–400 procent av scenbredden.
+**Provspela** startar blackjack i samma flik från den sparade sammansättningen. Spara först och avsluta tillfälliga filprov; uppladdning, konflikt eller pågående sparning blockerar starten. Provet använder en tidsbegränsad adminsession med sparade dealers, bord och bakgrunder från biblioteket, utan bolagspublicering eller påverkan på riktiga spelarkonton. Startdealern måste ha en grundloop. Andra ofullständiga dealers visas med orsak och kan inte väljas. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda i provet. Dealerklipp friläggs alltid från grön bakgrund. **Till Sammansättning** återgår till presentationen som startade provet.
 
 Vald presentation följer länkarna mellan Sammansättning och Publicering. Spara och fortsätt i Sammansättning inväntar serverns kvitto; konflikt eller nyare ändringar lämnar dig i utkastet.
 På Dealers & klipp kan du lägga till en egen dealer, exempelvis **Johanna**, och spara projektet.
 Dealern får egna, tomma händelsekopplingar. Registrera filmen under den nya dealern
 och välj den som basklipp i Grundloop. Samma film kan återanvändas under ett nytt
 media-ID utan att ta över en annan dealers registrering. Varje film
-har ett eget val **Grön bakgrund / Bakgrund inbakad** med tröskel, mjukhet och färgspill.
-Nya videouppladdningar föreslår grön bakgrund. **Bakgrund inbakad** är ett aktivt val
-för filmer vars miljö ska behållas. Under **Bildformat och bakgrund · ändra** kan du
-rätta valet även efter uppladdning, både i biblioteket och vid den egna grundloopen.
+friläggs från grön bakgrund; det finns inget val att behålla en inbakad miljö.
+Under **Bildformat och bakgrund · ändra** justerar du tröskel, mjukhet och färgspill,
+både i biblioteket och vid den egna grundloopen. En källa med en verkligt inbakad
+scen måste ersättas med lämpligt originalmaterial; greenscreen tar bara bort grönt.
 Mobilklipp får automatiskt gröna sidor i datorramen; mobilramen beskär breda klipp
 från sidorna. Förstoring och placering sparas med klippet och används i båda vyerna.
 Om dealern är för liten redan i källfilen: öka **Förstoring**, justera placeringen
-och jämför Dator/Mobil. **Visa utan grön bakgrund** visar resultatet på rutmönster
+och jämför Dator/Mobil. Förhandsvisningen visar resultatet på rutmönster
 redan vid första filvalet. Originalfilen behålls. Spara filinställningarna och
-publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar behåller
-sitt tidigare bildläge.
+publicera paketet igen när de ska nå spelet. Äldre klipp utan inställningar får
+standardfriläggning. Klipp märkta med inbakad bakgrund behöver rättas innan ny
+publicering. Om friläggningen inte kan starta visas ett fel i stället för råvideo.
 Greenscreen är en filinställning och bevisar inte att klippet är visuellt godkänt.
 Under **Hantera dealers** väljer du **Arkivera dealer**. Spara pågående utkast först. En samlad bekräftelse visar vilka klipp, sammansättningar, spelrum och bolag som påverkas. Servern stänger av AI-tal, arkiverar dealern med dess klipp och sammansättningar och avpublicerar berörda spelrum i samma åtgärd. Du behöver inte först gå runt mellan flikar och koppla loss innehållet. **Återställ dealer och klipp** återför materialet som utkast med AI-tal avstängt; publicering och öppning av rum görs separat. Tidigare arkiverade enskilda klipp förblir arkiverade. **Radera dealer permanent** kontrollerar och tar bort hela den arkiverade dealern och dess egna filer efter en separat bekräftelse. Tidigare publicerade filer och annat material som fortfarande används skyddas. Permanent radering kan ske tidigast 15 minuter efter arkiveringen, när tidigare uppladdningstillåtelser har löpt ut. Vid avbruten radering visas **Slutför radering**; redan raderade filer återskapas inte.
 
@@ -141,7 +147,7 @@ operatörspaketets dealer, bord och bakgrund, inklusive bild- och videoformat.
 Bord, Bakgrund och Presentationslanes visar paketets tillåtna inställningar;
 Färger, marker och kort visar dess branding. Skrivning kräver
 `presentations.configure`, rätt revision och val inom samma tilldelade sammansättning.
-Fullbildsklipp behålls; deras inbakade bord och bakgrund kan inte bytas separat.
+Dealerns gröna bakgrund tas alltid bort. Bord och bakgrund väljs som egna lager.
 Äldre paket behöver återpubliceras under Publicering för att få lagerformatet.
 Provbord länkar till den riktiga spelklienten med bolag och faktiskt tilldelat,
 aktivt spelrum. Ett äldre paket utan sådant rum behöver kompletteras via Publicering.
@@ -284,8 +290,8 @@ omladdning. Enbart omladdning behåller den publicerade grundloopen.
 Under klippens uppladdning väljer du exakt familj och originalklipp.
 **Ladda upp och spara klipp** lagrar filmen i videobanken. Välj sedan hur
 klippet får användas och tryck **Spara inställningar** för att behålla
-urvalsreglerna. Ladda om originalspelaren mellan händer efter ändrad
-idlepolicy eller originalmotorns klippval.
+urvalsreglerna. Ladda om spelklienten mellan händer efter ändrad
+idlepolicy eller presentationsspelarens klippval.
 Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Äldre BO-val är bevarad historik och visas inte som importerbara val i Dealers & klipp.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
@@ -303,7 +309,7 @@ tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslu
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Händelser, `chat` på OpenClaw och `tables`, `operations`, `finance` eller `accounts` på Administration. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till AI-småprat vid inaktivitet, Sammansättning och Uppspelning. Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
@@ -437,7 +443,7 @@ de uttryckligen läggs till och aktiveras i den sparade policyn.
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
-Aktuell anslutning: [driftkvitto](../../open-claw/lab/docs/CLOUD-ACTIVATION-2026-09-29.md).
+Aktuell anslutning: [lokal anslutning](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
 
 Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
@@ -495,7 +501,7 @@ standardreserv tills den uppdaterats. Ett isolerat offlineprov startas med
 `node tools/start-local-comparison.mjs` efter labbygge; se README:s provavsnitt.
 
 **Diagnostik** samlar verifiering, videokarta, import/export och särskilda
-videolägen. Sekvenssteg öppnar befintlig editor. Uppspelningens logg håller högst 150
+videolägen. Sekvenssteg öppnar befintlig editor. Loggen i Provspelning & logg håller högst 150
 poster i `sessionStorage`, följer med vid sidbyte och töms när fliken stängs.
 Observationsprotokollet håller högst 300 meddelanden/4 MiB i
 flikens minne och stannar vid gränsen.

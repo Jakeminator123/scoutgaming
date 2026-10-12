@@ -10,7 +10,6 @@ import { clipLabel } from '../lib/clip-label.mjs';
 import { upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
 import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, MAX_ALTERNATIVES, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
 import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../lib/studio-model.mjs';
-import type { OriginalMediaEntry } from '../lib/original-media.mjs';
 
 export const EVENTS_EDITOR_TABS = ['event', 'triggers', 'variants'] as const;
 export type EventsEditorTab = typeof EVENTS_EDITOR_TABS[number];
@@ -29,7 +28,7 @@ function InspectorFooter({ dirty }: { dirty: boolean }) {
 
 export function EventsInspector({
   managed, isIdleEditor, editorTab, onTab, project, videos, family, dealerId, dealerLabel, event, line, variant,
-  refreshing, onRefresh, selectedAsset, selectedAnimationCompatible, originalDefault, result, eligibleIds,
+  refreshing, onRefresh, selectedAsset, selectedAnimationCompatible, result, eligibleIds,
   dirty, updateProject, modelEdit, setProject, setVariantId, setError, invalidateSimulation, selectVariant,
 }: {
   managed: boolean;
@@ -48,7 +47,6 @@ export function EventsInspector({
   onRefresh: () => void;
   selectedAsset?: StudioAsset;
   selectedAnimationCompatible: boolean;
-  originalDefault: OriginalMediaEntry | null;
   result: { eligible?: (string | { id?: string; variantId?: string })[] } | null;
   eligibleIds: Set<string>;
   dirty: boolean;
@@ -193,7 +191,6 @@ export function EventsInspector({
             eventId={event.id}
             variant={variant}
             isBaseline={isBaseline}
-            originalDefault={isBaseline ? originalDefault : null}
             onBind={id => updateVariant({ videoGenerationId: id })}
             onInspect={inspectVideos}
             clipLabels={project.clipLabels}

@@ -145,7 +145,7 @@ inbakade bord och bakgrunder; separat lagerval tar inte bort dessa pixlar.
 
 | Meny | Sidor och ansvar |
 |---|---|
-| Studio | Dealers & klipp `/control/clips`, Bord & bakgrunder `/control/library`, Sammansättningar `/control/compositions`. |
+| Studio | Dealers & klipp `/control/clips`, Dealer Forge `/control/dealer-forge`, Bord & bakgrunder `/control/library`, Sammansättningar `/control/compositions`. |
 | Spelbolag | Bolag & team `/control/companies`, Spelrum & publicering `/control/rooms`. |
 | Drift | Spelstatus & integritet `/control/administration?tab=operations`, Betalningar & journal `?tab=finance`. |
 | System | Konton & åtkomst `?tab=accounts`, API & integrationer `?tab=partners`, Agentmodeller och Intern agentchatt på `/control/openclaw`. |
@@ -155,7 +155,7 @@ Dealerns flikar är Grundloop, Klipp, Sammansättning, Tal & automatik, Svarsbib
 
 Partnerportalen har **Översikt**, **Spelrum**, **Team & behörigheter** och **Integration**. `/partner/{slug}/rooms` samlar rummets publicerade sammansättning, tillåtna ändringar, förhandsvisning och granskad publicering. Utkast bevaras vid interna menybyten; konto-/bolagsbyte och utloggning skyddas mot osparade ändringar.
 
-Äldre adresser leder vidare: `/control/preview` → `/control/compositions`, `/control/lanes` → `/control/rooms`, `/control/lanes?tab=companies` → `/control/companies`, `/control/activity` → `/control/rehearsal`. Zonadresserna är fortsatt alias. Gamla partneradresser behålls som alias till den gemensamma rumsvyn.
+Äldre adresser leder vidare: `/control/preview` → `/control/compositions`, `/control/lanes` → `/control/rooms`, `/control/lanes?tab=companies` → `/control/companies`, `/control/activity` → `/control/rehearsal`. `/zones` och `/control/zones` leder till `/control/preview`, som kanoniseras till `/control/compositions`. `/control/backgrounds` leder till `/control/compositions`. Gamla partneradresser behålls som alias till den gemensamma rumsvyn.
 
 I Studio väljer `composition` sammansättning; gamla `lane`-länkar accepteras. `operator` anger bolagskontext och `table` ett verkligt rums-ID. På spelarens adress används bolagets slug: `/play/blackjack?operator=<slug>&table=<rum-id>`. Varken slug eller ID ger behörighet. Spelarens äldre tekniska `lane`-parameter är separat från den nya menyn.
 

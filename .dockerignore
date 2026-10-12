@@ -44,6 +44,8 @@ media/.migration
 media/**/source
 media/**/staging
 media/**/review
+# Retired 3D source trees, removed 2026-10-12. The names stay so a restored
+# checkout is not copied into an image.
 assets/astrid-3d
 assets/blackjack-3d
 content/staging

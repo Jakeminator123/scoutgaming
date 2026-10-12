@@ -1,7 +1,8 @@
 // Reproducible one-time source transfer. Never executed by the application.
 // Usage: node port-source.mjs <Croupier-Kevin checkout>
-// Rerunning overwrites original-views.jsx and would restore the factory Team view.
-// Membership now renders from views/team.jsx; reapply `team: TeamViewRoute` after any rerun.
+// Rerunning overwrites original-views.jsx and original.css and would restore factory views.
+// Live views render from views/*.jsx. After any rerun, reapply `team: TeamViewRoute`
+// and do not point a real operator snapshot back at the factory.
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';

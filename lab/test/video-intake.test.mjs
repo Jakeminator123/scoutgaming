@@ -33,7 +33,11 @@ test('upload persists exact bytes and classification, deduplicates retry, surviv
   const options = await fixture(t);
   const result = await uploadVideo(request(), options);
   const saved = await readUploads(options);
-  assert.equal(saved.length, 1); assert.deepEqual(saved[0].classification, metadata);
+  assert.equal(saved.length, 1);
+  assert.deepEqual(saved[0].classification, {
+    ...metadata,
+    compositing: { mode: 'green-screen', threshold: 0.23, softness: 0.15, despill: 0 },
+  });
   assert.equal(saved[0].sha256, createHash('sha256').update(bytes).digest('hex'));
   assert.deepEqual(await readFile(join(options.uploadDir, `${result.id}.mp4`)), bytes);
   assert.deepEqual(await uploadVideo(request(), options), { id: result.id, duplicate: true });

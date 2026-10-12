@@ -1,10 +1,10 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
-Status 2026-09-29: Gateway och Director kör GitHub-revision `15bd1541`.
-De verkliga env-värdena och tokenkopplingarna mellan spel, Director och
-Gateway är kontrollerade. Se [aktuellt driftkvitto](CLOUD-ACTIVATION-2026-09-29.md).
-Nedan beskrivs kodens kontrakt och avgränsade provväg. Konfigurationen är
-inte ensam bevis för ett färdigt tal-/bild-/GPU-flöde eller godkänd läppsynk.
+Kodkontraktet nedan är det som gäller. Driftkvittot från 29 september är
+inte dagens revision. Se [driften](DEPLOYMENT.md) och
+[molnkartan](../../../docs/CLOUD-MIGRATION.md).
+Konfigurationen är inte ensam bevis för ett färdigt tal-/bild-/GPU-flöde
+eller godkänd läppsynk.
 
 ## Låst kontrakt
 
@@ -66,7 +66,7 @@ server-timeout och samma maximala svarsstorlek. Produkt-speech-hemligheten måst
 vara skild från `LAB_API_TOKEN`; koden vägrar att använda samma värde. Den
 hemligheten godkänns inte på `/api/status`, katalog-, studio-, social- eller
 operatörsendpoints. Director använder därefter sin befintliga privata
-`OPENCLAWAPI_KEY`; produktprocessen behöver och ska inte få Gatewayhemligheten.
+`OPENCLAW_API_KEY`; produktprocessen behöver och ska inte få Gatewayhemligheten.
 
 Säkerhetsgränsen är avsiktligt smal men inte en identitetsleverantör: den
 separata bearern autentiserar en betrodd produktprocess, inte en individuell
@@ -135,7 +135,7 @@ Ctrl+C; båda processerna stoppas och helperns tempdatabaser tas bort.
 I relayläge är credentialgränsen nu tvingande även om rotens privata fil också
 råkar innehålla direkt-Gatewayuppgifter: nativebarnet får endast
 `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` och talrollen;
-dess `OPENCLAW_BASE_URL` och `OPENCLAWAPI_KEY` töms. Next-barnet får endast
+dess `OPENCLAW_BASE_URL` och `OPENCLAW_API_KEY` töms. Next-barnet får endast
 `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` och de syntetiska Partneruppgifterna;
 produkt-token, Gateway-bearer och providerinställningar töms. Båda barnen är
 förhindrade att läsa `.env`/`.env.local` och nätgrinden tillåter bara deras två
@@ -163,7 +163,7 @@ en omstart före ny revision/hemlighet skulle bara starta gammalt beteende igen.
    som ska nå adaptern. Sätt produktens `OPENCLAW_PRODUCT_SPEECH_URL` till
    Directors exakta bara HTTPS-origin och
    `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`. Ge inte produkten
-   `OPENCLAWAPI_KEY` på adaptervägen. Inga Google/Gemini- eller
+   `OPENCLAW_API_KEY` på adaptervägen. Inga Google/Gemini- eller
    onboardinginställningar ska läggas till.
 4. Driftsätt Gateway-revisionen först. Starten ska rapportera
    `reconcile-speech` (eller `reconcile-roles` om även en tidigare additiv roll

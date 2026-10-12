@@ -1,6 +1,6 @@
 # In Croupier, select Blueprint path open-claw/lab/render.yaml.
-# When splitting lab/ into its own repository, remove open-claw/lab/ from
-# dockerfilePath, dockerContext, and buildFilter paths in both services.
+# Director preserves repository-relative shared imports with a restricted root
+# context. Gateway remains self-contained under open-claw/lab.
 services:
   - type: web
     name: croupier-lab-director
@@ -8,7 +8,7 @@ services:
     region: frankfurt
     plan: starter
     dockerfilePath: ./open-claw/lab/Dockerfile
-    dockerContext: ./open-claw/lab
+    dockerContext: .
     autoDeployTrigger: "off"
     healthCheckPath: /healthz
     disk:
@@ -24,11 +24,11 @@ services:
         value: /data/catalog
       - key: LAB_API_TOKEN
         generateValue: true
-      - key: OPENCLAWAPI_KEY
+      - key: OPENCLAW_API_KEY
         fromService:
           name: croupier-lab-openclaw
           type: pserv
-          envVarKey: OPENCLAWAPI_KEY
+          envVarKey: OPENCLAW_API_KEY
       - key: OPENCLAW_HOSTPORT
         fromService:
           name: croupier-lab-openclaw
@@ -57,6 +57,7 @@ services:
     buildFilter:
       paths:
         - open-claw/lab/**
+        - web/public/dealer-identity.mjs
   - type: pserv
     name: croupier-lab-openclaw
     runtime: docker
@@ -70,7 +71,7 @@ services:
       mountPath: /data/openclaw
       sizeGB: 1
     envVars:
-      - key: OPENCLAWAPI_KEY
+      - key: OPENCLAW_API_KEY
         sync: false
       - key: OPENCLAW_MODEL_API_KEY
         sync: false

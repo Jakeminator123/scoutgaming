@@ -140,7 +140,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
       const slot=allSlots.find(row=>row.eventId===eventId&&(row.situation===(situation??'')||row.eventId==='idle.ready'));
       const used=draftUsesMedia(project,video.id),editable=video.source==='upload'&&Boolean(metadata);
       return <article className={styles.card} key={video.id}>
-        {video.deletion?<div className={styles.empty}>Radering påbörjad · filen kan inte återställas</div>:metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<video src={video.previewUrl} controls playsInline preload="none"/>}
+        {video.deletion?<div className={styles.empty}>Radering påbörjad · filen kan inte återställas</div>:metadata?.mediaType==='audio'?<audio src={video.previewUrl} controls preload="none"/>:<DealerClipPreview url={video.previewUrl} framing={metadata?.framing} compositing={metadata?.compositing} label={`Förhandsvisa ${video.label}`}/>}
         <h4>{clipLabel({id:video.id,label:video.label,familyId:video.familyId,role:video.role},project.clipLabels)}</h4><p>{slot?.label??'Ej kategoriserad'} · {metadata?.mediaType==='audio'?'Ljud':'Video'}</p>
         <small>{mediaUsage(project,video,dealerId)}{!video.available?' · Otillgänglig':''}</small>
         {editable&&!archived&&!video.deletion?<DealerFileSettings key={video.id+JSON.stringify(metadata)} video={video} disabled={busy||disabled} onSaved={onInventory} onBusyChange={onLifecycleChange}/>:null}

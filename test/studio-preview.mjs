@@ -8,6 +8,7 @@ import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/s
 import {layerAssetPath} from '../web/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
+import {defaultBackgroundRule} from '../web/public/background-playback-policy.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'fixture',workspaceId:'croupier'};
 const videoId='10000000-0000-4000-8000-000000000001',layerId='20000000-0000-4000-8000-000000000001';
@@ -38,6 +39,25 @@ function fixture(t,options={}){
   return{api,state,project,snapshot,inventory,row,layer,request,create};
 }
 async function start(f){const result=await f.create();assert.equal(result.response.status,201,JSON.stringify(result.body));return result.body;}
+
+test('rehearsal freezes background rules and serves their captured layers through its own scoped grants',async t=>{
+  const f=fixture(t),id='20000000-0000-4000-8000-000000000002';
+  const background={...f.layer,id,role:'background',contentType:'video/mp4'};background.pathname=layerAssetPath(background);
+  f.project.layerAssets.push(background);
+  const lane=f.project.lanes[0];lane.layers.background={enabled:true,mode:'video',default:id,allowed:[id]};
+  lane.backgroundPlayback={schemaVersion:1,rules:[defaultBackgroundRule(id,'celebrate')]};
+  const captured=structuredClone(lane.backgroundPlayback),session=await start(f);
+  lane.backgroundPlayback.rules[0].trigger={eventId:'speak.win'};
+  f.project.layerAssets=[];
+  const response=await f.api.handle(f.request(session.entryUrl));assert.equal(response.status,200);
+  const html=await response.text(),raw=html.match(/data-game-composition="([^"]+)"/)[1];
+  const composition=JSON.parse(raw.replaceAll('&quot;','"').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&'));
+  assert.deepEqual(composition.backgroundPlayback,captured);
+  assert.equal(composition.assets.find(asset=>asset.id===id).src,`/api/studio-preview/${session.sessionId}/layers/${id}`);
+  assert.equal((await f.api.handle(f.request(`/api/studio-preview/${session.sessionId}/layers/${id}`))).status,200);
+  f.state.actor='another-admin';
+  assert.equal((await f.api.handle(f.request(`/api/studio-preview/${session.sessionId}/layers/${id}`))).status,404);
+});
 
 test('preview captures saved project and media once without consulting legacy policy or publishing',async t=>{
   const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;

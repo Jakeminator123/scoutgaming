@@ -2,38 +2,94 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { featurePatterns, matchesBranchPattern, redactSecrets, repositoryFromRemote } from './check-push-target.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const policy = JSON.parse(readFileSync(new URL('./repository-policy.json', import.meta.url), 'utf8'));
-const args = process.argv.slice(2);
-const ref = `refs/heads/${policy.branch}`;
-const allowed = [`git@github.com:${policy.repository}.git`, `https://github.com/${policy.repository}.git`];
-function git(...args) {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  if (result.error || result.status !== 0) throw new Error(result.error?.message || result.stderr.trim());
-  return result.stdout.trim();
+
+export function loadPolicy(read = readFileSync) {
+  return JSON.parse(read(new URL('./repository-policy.json', import.meta.url), 'utf8'));
 }
-try {
-  if (args.some(arg => arg !== '--check')) throw new Error('Usage: node tools/push-github-work.mjs [--check]');
+
+export function parseDeliveryArgs(args) {
+  if (args.some(arg => arg !== '--check' && arg !== '--admin-main')) {
+    throw new Error('Usage: node tools/push-github-work.mjs [--check] [--admin-main]');
+  }
+  return { check: args.includes('--check'), adminMain: args.includes('--admin-main') };
+}
+
+export function planGithubDelivery({ branch, adminMain = false, policy }) {
   if (policy.mode !== 'github-only') throw new Error('Expected GitHub-only repository policy.');
-  if (git('branch', '--show-current') !== policy.branch) throw new Error(`Use branch ${policy.branch}.`);
-  const urls = git('remote', 'get-url', '--push', '--all', 'origin').split(/\r?\n/);
-  if (urls.length !== 1 || !allowed.includes(urls[0])) throw new Error('origin must have exactly one push URL: the approved GitHub repository.');
+  const patterns = featurePatterns(policy);
+  if (adminMain) {
+    if (branch !== policy.branch) throw new Error(`--admin-main only pushes ${policy.branch}.`);
+    return { branch, ref: `refs/heads/${policy.branch}`, emergency: true, pullRequest: null };
+  }
+  if (branch === policy.branch) {
+    throw new Error(`Direct push to ${policy.branch} is an admin emergency path. Pass --admin-main, or deliver from a feature branch (${patterns.join(', ')}) and open a pull request.`);
+  }
+  if (!patterns.some(pattern => matchesBranchPattern(branch, pattern))) {
+    throw new Error(`Branch ${branch || '(detached)'} is not a delivery branch. Use ${patterns.join(', ')}.`);
+  }
+  return {
+    branch,
+    ref: `refs/heads/${branch}`,
+    emergency: false,
+    pullRequest: `gh pr create --repo ${policy.repository} --base ${policy.branch} --head ${branch}`,
+  };
+}
+
+function gitRunner(cwd) {
+  return (...args) => {
+    const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+    if (result.error || result.status !== 0) {
+      throw new Error(redactSecrets(result.error?.message || result.stderr.trim() || `git ${args[0]} failed`));
+    }
+    return result.stdout.trim();
+  };
+}
+
+export function deliver({ args = [], policy, git, log = console.log }) {
+  const options = parseDeliveryArgs(args);
+  const branch = git('branch', '--show-current');
+  const plan = planGithubDelivery({ branch, adminMain: options.adminMain, policy });
+  const urls = git('remote', 'get-url', '--push', '--all', 'origin').split(/\r?\n/).filter(Boolean);
+  const repo = urls.length === 1 ? repositoryFromRemote(urls[0]) : null;
+  if (!repo || repo.toLowerCase() !== String(policy.repository).toLowerCase()) {
+    throw new Error('origin must have exactly one push URL: the approved GitHub repository.');
+  }
   const local = git('rev-parse', 'HEAD');
-  const remote = git('ls-remote', '--heads', urls[0], ref).split(/\s+/)[0];
+  const remote = git('ls-remote', '--heads', urls[0], plan.ref).split(/\s+/)[0] || '';
   if (remote) {
     try { git('merge-base', '--is-ancestor', remote, local); }
-    catch { throw new Error(`GitHub is not a known ancestor. Run git fetch origin ${policy.branch}, then inspect divergence. No force push.`); }
+    catch { throw new Error(`GitHub is not a known ancestor. Run git fetch origin ${branch}, then inspect divergence. No force push.`); }
   }
-  console.log(JSON.stringify({ branch: policy.branch, local, remote: remote || null, gitlab: 'paused' }));
-  if (!args.includes('--check')) {
-    git('push', 'origin', `${local}:${ref}`);
-    const after = git('ls-remote', '--heads', urls[0], ref).split(/\s+/)[0];
+  log(JSON.stringify({
+    branch: plan.branch,
+    local,
+    remote: remote || null,
+    gitlab: 'paused',
+    emergency: plan.emergency,
+    pullRequest: plan.pullRequest,
+  }));
+  if (!options.check) {
+    git('push', 'origin', `${local}:${plan.ref}`);
+    const after = git('ls-remote', '--heads', urls[0], plan.ref).split(/\s+/)[0];
     if (after !== local) throw new Error('GitHub commit does not match the pushed commit.');
-    git('branch', `--set-upstream-to=origin/${policy.branch}`, policy.branch);
-    console.log(`GitHub verified: ${after}`);
+    git('branch', `--set-upstream-to=origin/${plan.branch}`, plan.branch);
+    log(`GitHub verified: ${after}`);
   }
-} catch (error) {
-  console.error(error.message);
-  process.exitCode = 1;
+  if (plan.pullRequest) log(`Pull request command (not created by this tool): ${plan.pullRequest}`);
+  return plan;
 }
+
+export function main(argv = process.argv.slice(2)) {
+  try {
+    deliver({ args: argv, policy: loadPolicy(), git: gitRunner(root) });
+  } catch (error) {
+    console.error(redactSecrets(error.message));
+    process.exitCode = 1;
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

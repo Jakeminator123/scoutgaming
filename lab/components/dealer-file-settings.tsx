@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {DEFAULT_DEALER_FRAMING} from '../../web/public/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
 import {VideoCompositingFields,DealerFramingFields} from './video-metadata-fields';
 import {DealerClipPreview} from './dealer-video-surface';
 import {requestJson,type VideoEntry,type VideoInventory} from './studio-types';
@@ -11,7 +12,7 @@ export function DealerFileSettings({video,disabled=false,onSaved,onBusyChange}:{
   async function save(){
     if(disabled||busy)return;setBusy(true);onBusyChange?.(true);setError('');setNotice('');
     try{
-      const next=await requestJson<VideoInventory>('/api/videos/classify',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification??null,metadata:value})});
+      const next=await requestJson<VideoInventory>('/api/videos/classify',{method:'POST',body:JSON.stringify({id:video.id,sha256:video.sha256,previous:video.classification??null,metadata:{...value,compositing:effectiveDealerCompositing(value.compositing)}})});
       onSaved(next);setNotice('Filinställningarna är sparade. Publicera paketet igen för att använda dem i spelet.');
     }catch(cause){setError(cause instanceof Error?cause.message:'Inställningarna kunde inte sparas.');}
     finally{setBusy(false);onBusyChange?.(false);}
@@ -19,7 +20,7 @@ export function DealerFileSettings({video,disabled=false,onSaved,onBusyChange}:{
   if(!video.classification||video.classification.mediaType==='audio')return null;
   return <details onToggle={event=>setOpen(event.currentTarget.open)}><summary>Bildformat och bakgrund · ändra</summary>{open?<fieldset disabled={disabled||busy} style={{minWidth:0,border:0,padding:0}}>
     <VideoCompositingFields value={value.compositing} onChange={compositing=>setValue({...value,compositing})}/>
-    <p>Valde du ”Bakgrund inbakad” av misstag? Byt till grön bakgrund här. Originalfilen behålls.</p>
+    <p>När du sparar blir grön nyckling obligatorisk för klippet. Granska kanterna och kontrollera att originalfilen har grön bakgrund. Originalfilen behålls.</p>
     <DealerFramingFields value={value.framing} onChange={framing=>setValue({...value,framing})}/>
     <DealerClipPreview url={video.previewUrl} framing={value.framing} compositing={value.compositing}/>
     <button type="button" disabled={busy||disabled||!video.available} onClick={()=>void save()}>{busy?'Sparar…':'Spara bildformat och bakgrund'}</button>

@@ -4,12 +4,16 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, validateStudioMedia } from '../../web/storage/studio-contract.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath, validatePrivateMedia } from './cloud-media-store.mjs';
-import { MAX_VIDEO_BYTES } from './video-intake.mjs';
+import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
 import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
 const exact = (value,keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 const TTL = 15 * 60 * 1000;
+function writeMetadata(value) {
+  try { return validateVideoMetadata(value,{forWrite:true}); }
+  catch (error) { fail(error.code==='dealer_background_required'?'studio_dealer_background_required':'studio_invalid_media',422); }
+}
 
 /** Direct private Blob upload followed by explicit authenticated, verified commit.
  * No state is written to disk, apart from disposable verified Blob scratch.
@@ -43,6 +47,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
     // Only the explicit retained-source import may register reserved originals.
     // Even a correctly signed upload ticket cannot grant bank identity authority.
     if (record.retainedBank) fail('studio_upload_grant_invalid',403);
+    record.classification = writeMetadata(record.classification);
     return record;
   }
   return Object.freeze({
@@ -53,7 +58,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
         || body.size < 16 || body.size > MAX_VIDEO_BYTES || !/^[a-f0-9]{64}$/.test(body.sha256)) fail('studio_invalid_media',422);
       const id = randomUUID();
       const record = validateStudioMedia({id,sha256:body.sha256,size:body.size,contentType:body.contentType,
-        classification:body.classification,pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,MEDIA_FILE_TYPES[body.contentType])});
+        classification:writeMetadata(body.classification),pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,MEDIA_FILE_TYPES[body.contentType])});
       if (record.classification.archived) fail('studio_invalid_media',422);
       await requireSavedVideoDealer(repository,record.classification.dealerId);
       const expiresAt = now()+TTL;

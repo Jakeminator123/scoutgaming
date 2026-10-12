@@ -49,7 +49,7 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     const assets={table:[],background:[]};
     for(const role of ['table','background']) {
       const layer=selection.composition?.[role];
-      if(!independentLayers||!layer?.enabled||role==='background'&&layer.mode==='baked')continue;
+      if(!independentLayers||!layer?.enabled)continue;
       assets[role]=layer.allowed.map(id=>{
         const asset=frozen.assets.find(row=>row.id===id&&row.role===role);
         if(!asset)fail();

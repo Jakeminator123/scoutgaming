@@ -63,7 +63,8 @@ test('Dealer Forge page renders the full matrix server-side: groups, every slot,
   assert.match(html, /Ge kort · plats 4/); assert.match(html, /1 klipp/);
   assert.match(html, /Till skon · VILA → REDO/); assert.doesNotMatch(html, /Facket saknas i projektet/);
   assert.match(html, /Genereras · ~20 kr|Genereras/); // running job in box0
-  assert.match(html, /<video src="\/api\/videos\//); assert.match(html, /poster="\/api\/forge\/paow\/anchor\/redo"/);
+  assert.doesNotMatch(html, /<video/,'the material grid links to the keyed library instead of playing raw dealer videos');
+  assert.match(html, /<img src="\/api\/forge\/paow\/anchor\/redo"/);
   assert.match(html, /<img src="\/api\/forge\/paow\/anchor\/vila"/);
   assert.match(html, /Jobblogg/); assert.match(html, /wan3/);
   assert.match(html, /”Welcome to Privé Blackjack/); // speech slot shows its line

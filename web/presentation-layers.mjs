@@ -1,5 +1,6 @@
 import {validateFrozenDealerPlayback} from './frozen-dealer-playback.mjs';
 import {validateCompositionSettings} from './public/composition-settings.mjs';
+import {validateBackgroundPlayback} from './public/background-playback-policy.mjs';
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from './managed-media-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
@@ -51,7 +52,7 @@ function layer(value, role, authorisedDealers = dealers) {
 }
 export function validatePresentationLane(value, {dealerIds = [...dealers]} = {}) {
   const authorisedDealers = new Set(list(dealerIds, isDealerId, MAX_DEALERS));
-  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition']);
+  exact(value, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback']);
   if (typeof value.id !== 'string' || value.id.length > 63 || !token.test(value.id)
     || ['original', 'constructor', 'prototype'].includes(value.id)) reject();
   text(value.label);
@@ -76,6 +77,11 @@ export function validatePresentationLane(value, {dealerIds = [...dealers]} = {})
     if (value.idle.variants !== undefined) list(value.idle.variants, id => typeof id === 'string' && id.length <= 200);
   }
   if(value.composition!==undefined)validateCompositionSettings(value.composition);
+  if (Object.hasOwn(value, 'backgroundPlayback')) {
+    const policy = validateBackgroundPlayback(value.backgroundPlayback,
+      { allowed: layers.background.allowed, defaultAssetId: layers.background.default });
+    if (policy.rules.length && !layers.background.enabled) reject();
+  }
   return { ...structuredClone(value), layers };
 }
 /** All and only extras in the selected frozen lane union have an entry.
@@ -129,6 +135,10 @@ export function validatePresentationPackage(value) {
     }
   }
   if (assets.some(asset => !used.has(asset.id))) reject();
+  for (const lane of lanes) if (Object.hasOwn(lane, 'backgroundPlayback')) {
+    validateBackgroundPlayback(lane.backgroundPlayback, { assets,
+      allowed: lane.layers.background.allowed, defaultAssetId: lane.layers.background.default });
+  }
   const selectedDealers = [...new Set(lanes.flatMap(lane => [...lane.dealers, ...lane.layers.dealer.allowed]))];
   if (v2) registry = validateFrozenRegisteredDealers(registry, {dealerIds:selectedDealers});
   const playback = v3 ? validateFrozenDealerPlayback(value.playback, {registeredDealers:registry, projectRevision:value.projectRevision}) : null;

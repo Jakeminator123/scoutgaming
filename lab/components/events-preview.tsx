@@ -11,7 +11,6 @@ import { SpeechSource } from './speech-source';
 import { Stage, type PlaybackReceipt } from './stage';
 import streamStyles from './game-stream.module.css';
 import type { StudioAsset, StudioEvent } from '../lib/studio-model.mjs';
-import type { OriginalMediaCatalog, OriginalMediaEntry } from '../lib/original-media.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
 import type { DirectorMode, SimulationResult, TestContext, VideoEntry } from './studio-types';
 import styles from './control-events-page.module.css';
@@ -103,7 +102,7 @@ export function EventsIdleNotice({ refreshing, onRefresh }: { refreshing: boolea
 }
 
 export function EventsPreview({
-  isIdleEditor, managed, event, observed, originals, dealerId, onSituation, onSpeechLine, onOpenSpeech,
+  isIdleEditor, managed, event, observed, dealerId, onSituation, onSpeechLine, onOpenSpeech,
   observedStep, onClearObserved, activityHref, showStage, stage, socialReply, isIdleCopy, frequencyHint,
   onShowChat, mainStage, speechHost, socialChat, social, showTest, test,
 }: {
@@ -111,7 +110,6 @@ export function EventsPreview({
   managed: boolean;
   event: StudioEvent;
   observed: boolean;
-  originals: OriginalMediaCatalog | null;
   dealerId: string;
   onSituation: (situation: string) => void;
   onSpeechLine: (line: string) => void;
@@ -138,7 +136,6 @@ export function EventsPreview({
     allow2dFallback: boolean;
     fallbackVideo: VideoEntry | null;
     videoMissing: boolean;
-    originalMedia: OriginalMediaEntry | null;
     sourceIsObserved: boolean;
     onPlay: () => void;
     onPreview: () => void;
@@ -178,7 +175,6 @@ export function EventsPreview({
     eventLabel: string;
     sourceType: string;
     result: SimulationResult | null;
-    originalLabel?: string;
     manifestOwned: boolean;
     previewKind: 'selected' | 'social' | null;
     busy: boolean;
@@ -197,7 +193,7 @@ export function EventsPreview({
     </div> : null}
     {isIdleEditor ? null : managed
       ? <MediaSituation event={event} observed={observed} onSelect={onSituation} />
-      : <SpeechSource event={event} originals={originals} dealerId={dealerId} observed={observed} onSelect={onSpeechLine} onOpenSpeech={onOpenSpeech} />}
+      : <SpeechSource event={event} dealerId={dealerId} observed={observed} onSelect={onSpeechLine} onOpenSpeech={onOpenSpeech} />}
     <div ref={mainStage} className={socialStyles.stageAnchor}>
       {observedStep ? <div className={streamStyles.context}>
         <strong>Mottaget steg {observedStep.presentationIndex + 1}</strong>
@@ -225,7 +221,6 @@ export function EventsPreview({
           allow2dFallback={stage.allow2dFallback}
           fallbackVideo={stage.fallbackVideo}
           videoMissing={stage.videoMissing}
-          originalMedia={stage.originalMedia}
           sourceIsObserved={stage.sourceIsObserved}
           onPlay={stage.onPlay}
           onPreview={stage.onPreview}
@@ -276,7 +271,6 @@ export function EventsPreview({
       eventLabel={test.eventLabel}
       sourceType={test.sourceType}
       result={test.result}
-      originalLabel={test.originalLabel}
       manifestOwned={test.manifestOwned}
       previewKind={test.previewKind}
       busy={test.busy}

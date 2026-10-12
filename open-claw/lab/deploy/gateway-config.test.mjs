@@ -4,27 +4,42 @@ import { readFile } from 'node:fs/promises';
 import { gatewayConfig, dashboardOrigin, planGatewayConfig } from './gateway-config.mjs';
 
 const example = {
-  OPENCLAWAPI_KEY: 'test-only-gateway-secret',
+  OPENCLAW_API_KEY: 'test-only-gateway-secret',
   OPENCLAW_MODEL_API_KEY: 'test-only-provider-secret',
 };
+
+test('canonical Gateway auth has precedence, legacy compatibility and explicit disablement', () => {
+  const legacy = { OPENCLAWAPI_KEY: example.OPENCLAW_API_KEY, OPENCLAW_MODEL_API_KEY: example.OPENCLAW_MODEL_API_KEY };
+  assert.deepEqual(gatewayConfig(legacy), gatewayConfig(example));
+  assert.deepEqual(gatewayConfig({ ...example, OPENCLAWAPI_KEY: example.OPENCLAW_MODEL_API_KEY }), gatewayConfig(example));
+  for (const key of ['', ' ', 'invalid\ncredential']) {
+    assert.throws(() => gatewayConfig({ ...legacy, OPENCLAW_API_KEY: key }), /OPENCLAW_API_KEY|single line/);
+  }
+  assert.throws(() => gatewayConfig({ ...legacy, OPENCLAW_API_KEY: example.OPENCLAW_MODEL_API_KEY }), /different/);
+});
 
 test('Render blueprint and local env example explicitly seed Terra', async () => {
   const blueprint = await readFile(new URL('../render.yaml', import.meta.url), 'utf8');
   const template = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
   assert.match(blueprint, /key: OPENCLAW_MODEL_ID\s+value: gpt-5\.6-terra\b/);
   assert.match(template, /^OPENCLAW_MODEL_ID=gpt-5\.6-terra\r?$/m);
+  assert.equal([...blueprint.matchAll(/- key: OPENCLAW_API_KEY\b/g)].length, 2);
+  assert.match(blueprint, /envVarKey: OPENCLAW_API_KEY\b/);
+  assert.doesNotMatch(blueprint, /OPENCLAWAPI_KEY/);
+  assert.match(template, /^OPENCLAW_API_KEY=\r?$/m);
+  assert.doesNotMatch(template, /OPENCLAWAPI_KEY/);
 });
 
 test('an unrelated inherited model key cannot configure the Gateway', () => {
-  assert.throws(() => gatewayConfig({ OPENAI_API_KEY: 'inherited-test-only-key' }), /OPENCLAWAPI_KEY/);
-  assert.throws(() => gatewayConfig({ OPENCLAWAPI_KEY: example.OPENCLAWAPI_KEY, OPENAI_API_KEY: 'inherited-test-only-key' }), /OPENCLAW_MODEL_API_KEY/);
-  assert.throws(() => gatewayConfig({ ...example, OPENCLAW_MODEL_API_KEY: example.OPENCLAWAPI_KEY }), /different/);
+  assert.throws(() => gatewayConfig({ OPENAI_API_KEY: 'inherited-test-only-key' }), /OPENCLAW_API_KEY/);
+  assert.throws(() => gatewayConfig({ OPENCLAW_API_KEY: example.OPENCLAW_API_KEY, OPENAI_API_KEY: 'inherited-test-only-key' }), /OPENCLAW_MODEL_API_KEY/);
+  assert.throws(() => gatewayConfig({ ...example, OPENCLAW_MODEL_API_KEY: example.OPENCLAW_API_KEY }), /different/);
 });
 
 test('generated configuration refers to secrets without writing their values', () => {
   const config = gatewayConfig(example);
   const serialized = JSON.stringify(config);
-  assert.equal(serialized.includes(example.OPENCLAWAPI_KEY), false);
+  assert.equal(serialized.includes(example.OPENCLAW_API_KEY), false);
   assert.equal(serialized.includes(example.OPENCLAW_MODEL_API_KEY), false);
   assert.equal(config.gateway.auth.mode, 'password');
   assert.equal(config.gateway.auth.password, '${OPENCLAW_GATEWAY_PASSWORD}');

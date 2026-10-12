@@ -160,6 +160,9 @@ const voice = {
   playing: false,
   greeted: false,
   say(t, { force = false } = {}) {
+    // Decorative events follow the already selected game outcome even when
+    // speech is muted. No background Promise enters the speech/game queues.
+    try{layerComposition?.backgroundEvent('speak.'+t,`${clientSessionRevision}:${entrySelection.roomId??entrySelection.lane}:${DEALER.key}:${tableVersion}:${t}`);}catch{}
     if (this.muted || speechQueue.pending > 0 && !force) return;
     return speechTurn(signal => localPresentation?.present({ type: 'speak', line: t }, { signal }));
   },
@@ -281,6 +284,7 @@ const sfx = {
 };
 sfx.load();
 document.addEventListener('visibilitychange', () => {
+  layerComposition?.setBackgroundVisible(!document.hidden);
   updatePoseState({ visible: !document.hidden }, document.hidden ? 'hidden' : 'visible');
   if(document.hidden){speechQueue.cancel();sfx.stopAmbience();tableAudio.reset();}
 });
@@ -1616,6 +1620,8 @@ async function playChatDecision(decision, signal, jobId) {
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechPackage, { exactText: decision.exactText, dealerId: DEALER.key, mount: $('#scene'), signal,
             beforeStart: pendingChatReplies.get(jobId)?.beforeStart,
+            prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
+            renderFrame: video => layerComposition?.renderFrame(video) ?? false,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);
               if (chatStatus && pending) chatStatus.dataset.playbackMs = String(Math.round(performance.now() - pending.requestedAt));

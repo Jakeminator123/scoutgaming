@@ -15,3 +15,9 @@ test('all presentation references block removal including allowed choices on dis
     assert.equal(layerAssetReferences(project,asset.id).length,1);assert.throws(()=>removeLayerAsset(project,asset.id),/Koppla loss/);assert.equal(project.layerAssets.length,1);
   }
 });
+test('archived dealer compositions retain their layer references until explicitly detached',()=>{
+  const {project,asset}=fixture(),lane=project.lanes[0];lane.layers.background.allowed=[asset.id];
+  project.lanes=[];project.dealerTrash=[{compositions:[lane]}];
+  assert.deepEqual(layerAssetReferences(project,asset.id),[{id:lane.id,label:lane.label}]);
+  assert.throws(()=>removeLayerAsset(project,asset.id),/Koppla loss/);
+});

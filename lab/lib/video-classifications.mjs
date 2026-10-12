@@ -36,7 +36,7 @@ export async function classifyVideo(body, registry, options = {}) {
   if (!video || video.sha256 !== body.sha256 || !video.available) throw new StudioError('Videon saknas eller har ändrats. Läs om banken.', 409);
   if (video.familyId) throw new StudioError('Manifeststyrd video kategoriseras genom sin fysiska familjemapp.', 409);
   let metadata;
-  try { metadata = validateVideoMetadata(body.metadata); }
+  try { metadata = validateVideoMetadata(body.metadata, {forWrite:true}); }
   catch (error) { throw new StudioError(error.message); }
   const dir = uploadDirectory(options);
   await safeDirectory(dir, true);

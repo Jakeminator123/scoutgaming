@@ -1,5 +1,35 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Bakgrundens uppspelning, 12 oktober 2026
+
+Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
+och Studio-provet. Saknat fält behåller den tidigare bild-/videobasen.
+`web/public/background-playback-policy.mjs` validerar enbart data: tillåtna
+bakgrundsvideors ID, befintliga `speak.*`-händelser eller intervall, maxlängd,
+tid mellan starter och rullande gränser för starter/sekunder. Varje regel har
+egna gränser. Referenser omfattas av befintliga lagergrants, även vid arkivering.
+
+`background-playback.mjs` är gemensam scheduler för spel och Studio-prov.
+Ett separat ljudlöst videoelement visas över den fortsatta grundloopen.
+Slut, laddningsfel, paus eller maxlängd återställer basen och frigör texturen.
+Bakgrundsladdning inväntas aldrig av dealerns klippförberedelse; kort, tal,
+sko och plånbok behåller sina ägare. Spelhändelser fungerar även med talet
+avstängt. Dold flik stoppar effekten; missade tillfällen köas inte.
+
+Nya skrivningar kräver runtime capability 8, `backgroundPlayback: rules-v1`,
+innan beständig lagring sker. Ingen SQL-migration eller omskrivning av äldre
+publiceringar behövs. Bordets förstora/förminska/procentfält använder samma
+befintliga `composition.mobile/desktop.table.width` (0,1–4).
+
+Verifiering: 9 faktiska Chrome-prov av
+Studio-komponenten passerar, inklusive två följande bakgrundsfilmer, verkligt
+slut, fel, tidsgräns och bevarad minutbudget. Syntetiskt material används;
+det är inte visuell acceptans av en ny dealer eller läppsynk. Tester för
+kontrakt, budget, transport, capability och gränssnitt ingår i ordinarie hook.
+Privata bild-/maskinkvitton: `lab/data/platform-private/background-playback-20261012`.
+Ingen produktdata ändrades. A20/A21 ska bevara dessa konsumenter och publika
+moduladresser vid den kommande atomära källflytten.
+
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
 Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.
@@ -28,6 +58,48 @@ bevaras som material; lokal arkivsökning sker endast när ett verktyg/test
 uttryckligen anger archiveDir. Den gamla LAB_VIDEO_ARCHIVE-inställningen
 återskapar inte lokala standarddealers. Serverns konfigurerade tjänster för
 genererat tal bevaras; det finns ingen automatisk fallback till lokal talbank.
+
+## Adresser och verktyg efter repo-ordning våg 2, 12 oktober 2026
+
+`/casino.html` svarar 308 till `/play` för GET och HEAD. Query följer med.
+Kasinogolvet och dess GLB-filer är borta. `/v2` är kvar som 307-omdirigering,
+inte en egen spelare. De fem granskningssidorna svarar 404. Registrerad video
+spelas på den gemensamma scenen. Studios originalmediareserv är pensionerad;
+ett hanterat klipp utan spelbar fil visar den befintliga statustexten.
+Partnerns levande vyer (översikt, spelrum, integration och skal) renderas från
+`lab/components/kevin-bo/views/*.jsx`. En riktig operatörsögonblicksbild
+utvärderar inte `original-views.jsx`.
+
+3D-, rigg-, ansikts-, Blender-, GLB- och hårspåret är borta ur klient, pipeline
+och Astrids indexerade rigg. `vendor/three` står kvar: `performance-player.mjs`
+importerar `three.module.js`. Katalogstyrda composited-talklipp står kvar
+eftersom `media/catalog/legacy.json` refererar dem. `media/game/staging`,
+Amiras staging och tre avslutade Astrid-experiment är borta. Astrids
+kalibrering, godkännandeanteckningar och osäkra mappar står kvar.
+
+Spelar-UI-bygget är `apps/croupier-frontend/tools/player-ui-build.mjs`.
+`ops/vercel-entry` och `ops/caddy/bettalotto-game-auth.Caddyfile` är borta.
+Vercel-projektet `github-work-vercel-entry` finns inte. A18: bettalotto.se
+svarar 301 till `https://croupier.scoutgg.dev/` och använder inte den
+borttagna Caddy-filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
+
+### Verktyg som finns kvar
+
+Manuella byggare, enda källa till media som produkten läser:
+
+- `pipeline/build-previews.sh` — förhandsvisningar av röstrepliker
+- `pipeline/encode.sh` — Annex-B
+- `pipeline/build-hands.sh` — handmattor
+- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — uppmätta kontaktkandidater
+
+Läppsynk och kalibrering: `sync-existing.py`, `sync-audio-warp.py`,
+`auto-phrase-warp.py`, `measure-lipsync.py`, `measure-onset.py`,
+`retime-video-map.py`, `retime-video-warp.py`, `apply-lipsync.py`,
+`trim-speak-start.py`, `mouth-crops.json` och `encode.sh`.
+
+Krok och CI: `audit-dealer-sync.mjs`, `audit-performance.mjs`,
+`audit-astrid-actor.mjs`, `build-lab-video-manifest.mjs`, `build-index.mjs`,
+`pack-contact-media.mjs`.
 
 ## Egen talprofil för registrerade dealers, 11 oktober 2026
 
@@ -384,8 +456,8 @@ inte anslutna. T2 är påbörjad, inte klar.
 Kontrollpanelens länkar till befintliga interna verktyg behåller deras ordinarie
 auktorisering. Det gamla backofficets rolltabell i klienten styr inte åtkomst.
 
-Privata `random/` undantas uttryckligen från byggtraces, liksom lokal QA-data.
-Detta kompletterar mappens lokala Git-ignore och ändrar inga medieregister.
+Privata lokala kopior (env-säkerhetskopior och bildmappar) undantas uttryckligen från byggtraces i `lab/next.config.mjs`, liksom lokal QA-data.
+Git-ignore för de mapparna står kvar. Detta ändrar inga medieregister.
 
 ### Byggutdata
 

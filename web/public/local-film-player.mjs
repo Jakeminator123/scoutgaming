@@ -30,6 +30,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       if (terminal) return;
       try {
         const composed = renderFrame?.(video, metadata) === true;
+        if (renderFrame && !composed) throw new Error('Dealer background removal unavailable');
         if (!presented) { presented = true; video.style.visibility = composed ? 'hidden' : ''; emit('presented'); }
         onFrame?.(metadata.mediaTime);
       } catch (error) { finish(error); return; }

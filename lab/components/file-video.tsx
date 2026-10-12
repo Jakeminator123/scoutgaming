@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { PlaybackReceipt } from './stage';
+import {DealerVideoSurface} from './dealer-video-surface';
 
 /** One mounted instance owns one file/play ID. Never share a render-time turn
  * ref between consecutive clips: an interrupted React render is not a new play. */
@@ -52,7 +53,7 @@ export function FileVideo({ url, name, playId, playing, blocked, onReceipt, onFa
     void element.play().catch(() => { if (run.epoch === epoch) fail('Videon kunde inte startas.'); });
     return () => { run.epoch++; run.live = false; window.clearInterval(timer); element.pause(); };
   }, [playing, blocked]);
-  return <><video ref={video} src={url} controls={!blocked} preload="metadata" muted playsInline
+  return <DealerVideoSurface><video ref={video} src={url} controls={!blocked} preload="metadata" muted playsInline
     aria-label={`Labbklipp: ${name ?? 'video'}`}
     onPlaying={event => {
       const element = event.currentTarget, run = current.current;
@@ -79,5 +80,5 @@ export function FileVideo({ url, name, playId, playing, blocked, onReceipt, onFa
       if(!element.paused){element.pause();return;}
       run.live=true;run.started=false;run.terminal=false;run.attempted=true;
       void element.play().catch(()=>{if(run.epoch===epoch)fail('Videon kunde inte startas.');});
-    }}>Spela / pausa</button></>;
+    }}>Spela / pausa</button></DealerVideoSurface>;
 }

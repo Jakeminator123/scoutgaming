@@ -196,8 +196,9 @@ mot överskrivning av kalibrerade bytes genom att ta bort metadata.
 
 Alla fyra dealers använder gemensam uppspelningsväg. Matcha exakt replik;
 välj aldrig talvideo efter ungefärlig längd eller loopa gammal mun över nytt
-ljud. Källor: `web/public/dealer-engine.mjs`,
-`web/public/performance-player.mjs`, `pipeline/build-index.mjs`.
+ljud. Källor: `web/public/local-presentation.mjs`,
+`web/public/layered-presentation.mjs`, `web/public/performance-player.mjs`,
+`pipeline/build-index.mjs`.
 Äldre automatiska warp-/offsetrecept är ingen generell instruktion för nya takes.
 
 För spelar-/mediaändring: kör hooken och
