@@ -1131,7 +1131,11 @@ Efter Neoncutover kan offlineStudio ge 503 studio_read_storage_unavailable,
 ingen auth/lagringsfallback till QA. Lokal guestpolicy består enligt AGENTS.
 Byggcache rensas bara utan berörda sessioner/processer; behåll Labtestruntime.
 
-.ignore/Cursorignore begränsar sök/context/index, inte Git/build/filernas existens.
+`.ignore` döljer tung spårad media och hemligheter för vanlig sökning.
+`.cursorignore` behåller hemligheter och privat data. Ofarlig tung projekttext
+(`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`,
+`media/**/staging/*.md`) ligger i `.cursorindexingignore`: den indexeras inte,
+men kan läsas uttryckligen. Reglerna ändrar inte Git, bygge eller att filerna finns.
 Sök riktat källtext/JSON; binärer/cache/dependencies/private state undantas.
 Personarkivets gräns kringgås inte med no-ignore/Githistorik/backups.
 Tools används delvis i runtime; test/pipeline/media är inte generella raderingsmål.
