@@ -145,3 +145,30 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   await Promise.all(done);
   assert.deepEqual(order,['first','remap-now','line-soon','answer-later']);
 });
+
+test('the next decision opens once the last card has landed; a card asked for then starts after the take, never cutting it', async () => {
+  const {DatabaseSync}=await import('node:sqlite');
+  const manifest={deal:[1,2,3,4,5,6,7,'dealer'].map(i=>({id:`deal_pos${i}`,url:`/media/deal/pos${i}.mp4`,dur:.1})).concat(['hole','flip'].map(i=>({id:`deal_${i}`,url:`/media/deal/${i}.mp4`,dur:.1}))),repliker:[],idle:[]};
+  const take={'-':39,'-i':60,'-u':60,'-iu':81,'-v':39,'-iv':60},frames=Object.fromEntries(['1','2','3','4','5','6','7','dealer'].map(k=>[k,take]));
+  frames.hole={'-':39,'-i':60,'-u':39,'-iu':60};frames.flip={'-':56,'-i':56,'-u':56,'-iu':56};
+  const dir=mkdtempSync(join(tmpdir(),'turn-'));let time=100000;
+  const s=createSharedTable(join(dir,'t.sqlite'),{manifest,now:()=>time,readyFor:()=>({frames,restEnd:['hole','flip'],restStart:['flip']})});
+  try{
+    const st=()=>s.run('kevin',{session:'v',op:'state'});const send=(op,extra={})=>s.run('kevin',{session:'v',op,version:st().version,requestId:crypto.randomUUID(),...extra});
+    send('join',{name:'Kevin',seats:[3]});
+    // fixed shoe (as in table-limits.test.mjs): 5 and 7 against a 6, then small cards, so the hand keeps deciding
+    {const db=new DatabaseSync(join(dir,'t.sqlite')),row=JSON.parse(db.prepare('SELECT state FROM shared_rooms WHERE id=?').get('v').state);
+     const ranks=['5','6','7','10','2','2','2','2'];row.game.shoe.cards.splice(-ranks.length,ranks.length,...ranks.map((r,i)=>({r,s:['♠','♦','♥','♣'][i%4]})).reverse());
+     db.prepare('UPDATE shared_rooms SET state=? WHERE id=?').run(JSON.stringify(row),'v');db.close();}
+    send('bet',{seat:3,field:'main',chip:5});send('ready');
+    time=st().plan.endAt+10;assert.equal(st().round.phase,'decisions');
+    send('act',{action:'hit'});
+    const hit=st().plan,card=hit.steps.find(x=>x.kind==='deal');
+    assert.ok(hit.turnAt<hit.endAt,'the turn opens before the take has returned to rest');
+    assert.equal(hit.turnAt,Math.round(card.startAt+.62*(card.endAt-card.startAt)),'once the card has landed');
+    time=hit.turnAt+10;assert.equal(st().round.phase,'decisions');
+    send('act',{action:'hit'});
+    const next=st().plan.steps.find(x=>x.kind==='deal');
+    assert.ok(next.startAt>=hit.endAt,'the next card starts after the previous take has ended');
+  }finally{s.close();rmSync(dir,{recursive:true,force:true});}
+});

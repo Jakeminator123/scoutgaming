@@ -101,7 +101,9 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // their next poll (700 ms), so a 700 ms lead would start the flip before they have it and they would join it
     // halfway. Give that plan time for one more poll; a player's own move keeps the short lead.
     const draws=planDraws(before,r.round,opening);
-    const steps=[];let at=now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:700);
+    // Emil 12 Oct: the next player may act once the last card has landed (turnAt below), while the dealer still brings her
+    // hand back to rest and talks about the bust. A card asked for then starts when that take has ended, never cutting it.
+    const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:700),r.plan?.endAt??0);
     const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[];
     const addClip=(clip,meta={})=>{if(!clip)return;
       // Emil 12 Oct: a ready dealer with a warm lip-sync worker says the line WHILE he deals. It leaves the timeline and is
@@ -128,7 +130,12 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const firstFrame=steps.find(x=>x.clip)?.startAt??Infinity;
     const live=(r.talk??[]).filter(t=>t.endAt>now()),omplanera=live.filter(t=>t.endAt+600>firstFrame);
     r.talk=[...live,...spoken];r.prevSteps=r.plan?.steps??[];
-    r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at};
+    // turnAt: when the table's next decision may be taken — the last card landed (~62 % into its take) when the plan hands
+    // the turn on, else the plan's end
+    const lastDeal=[...steps].reverse().find(x=>x.clip&&(x.kind==='deal'||x.kind==='reveal'));
+    const handsOn=steps.some(x=>x.kind==='turn')&&ready&&lastDeal&&!steps.some(x=>x.kind==='speech'&&x.startAt>lastDeal.startAt);
+    const turnAt=handsOn?Math.round(lastDeal.startAt+.62*(lastDeal.endAt-lastDeal.startAt)):at;
+    r.plan={id:randomUUID(),language:dealerLanguage(r.language),before,steps,startAt:now(),endAt:at,turnAt};
     const context=contexts.get(r);audit.event(context.id,r.roundId,'presentation.plan',{planId:r.plan.id,language:r.plan.language,steps,status:'scheduled; not a playback acknowledgement'},context.engine);
     r.actionDeadline=at+actionMs;
     r.version++;
@@ -288,7 +295,8 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
           } else {
             if(!p||!owned(r,p.id).length)throw new Error('Choose your boxes and enter your name first');
             if(r.leaving.includes(p.id)&&op!=='leave')throw new Error('Your current hand is finishing before you leave');
-            const own=owned(r,p.id),busy=r.plan&&now()<r.plan.endAt;
+            // decisions open once the last card has landed (plan.turnAt); the next round waits for the whole plan
+            const own=owned(r,p.id),busy=r.plan&&now()<r.plan.endAt,turnBusy=r.plan&&now()<(r.plan.turnAt??r.plan.endAt);
             if(op==='language') {
               if(!languages.includes(input.language))throw new Error('Choose an available dealer language');
               if(r.phase!=='bets'||r.bets.some(b=>sum(b)>0))throw new Error('Change dealer language before placing bets');
@@ -333,12 +341,12 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
               const seated=players(id).filter(x=>owned(r,x.id).length&&now()-x.seen<15000);
               if(seated.every(x=>r.ready.includes(x.id)))start(id,r);
             } else if(op==='act') {
-              if(busy||r.phase!=='round'||r.round.phase!=='decisions')throw new Error('Wait for your turn');
+              if(turnBusy||r.phase!=='round'||r.round.phase!=='decisions')throw new Error('Wait for your turn');
               const h=r.round.hands[r.round.active];if(r.owners[h.box]!==p.id)throw new Error('It is another player’s turn');
               if(['double','split'].includes(input.action)&&h.stake>p.balance)throw new Error('Insufficient demo balance');
               action(id,r,input.action);
             } else if(op==='insurance') {
-              if(busy||r.phase!=='round'||r.round.phase!=='insurance'||typeof input.take!=='boolean'||Object.hasOwn(r.insurance,p.id)||!r.round.hands.some(h=>own.includes(h.box)))throw new Error('Insurance is not available');
+              if(turnBusy||r.phase!=='round'||r.round.phase!=='insurance'||typeof input.take!=='boolean'||Object.hasOwn(r.insurance,p.id)||!r.round.hands.some(h=>own.includes(h.box)))throw new Error('Insurance is not available');
               const cost=r.round.hands.filter(h=>own.includes(h.box)).reduce((n,h)=>n+h.stake/2,0);
               if(input.take&&cost>p.balance)throw new Error('Insufficient demo balance');
               r.insurance[p.id]=input.take;insurance(id,r);

@@ -30,7 +30,9 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   }
   let selected=new Set(),stepKey=null,currentDeal=null,lastTick=null,sourceFrame=0,renderKey='';
   const time=()=>Date.now()+offset;
-  const busy=()=>Boolean(state?.plan&&time()<state.plan.endAt);
+  // the table waits for the deal until its last card has landed (plan.turnAt): the next player decides while the dealer
+  // finishes the move, and a card he asks for starts after it (server/shared-table.mjs)
+  const busy=()=>Boolean(state?.plan&&time()<(state.plan.turnAt??state.plan.endAt));
   // Whose turn the table shows: while the dealer is still dealing a card (a hit that busts, say), the hand that
   // drew it stays highlighted; the next box lights up only once that card is on the felt (Kevin's play test).
   const shownTurn=round=>busy()&&state.plan.before?.hands?state.plan.before:round;

@@ -115,10 +115,12 @@ function next() {
   const at = pickQueued(queue, { playing: Boolean(gameTable?.playing), quietMs: gameTable?.quietMs ?? Infinity });
   let item = at >= 0 ? queue.splice(at, 1)[0] : null;
   if (!item) {
-    // Emil 12 Oct: a ready dealer standing frozen while the players decide looked stiff, so his idles play then too
-    // (never while a deal runs: busy above). A card that comes in the middle of one no longer snaps his face back to rest
-    // (Kevin 11 Oct): the dealer layer fades the idle's last frame out under the next take.
-    if (!manifest.idle.length || Date.now() < holdUntil) { running = false; return; }   // står på stillbilden
+    // A ready dealer waits on his rest pose between deals in a round: the next card (a hit, his turn) cut into an idle
+    // loop mid-way and his face snapped back to rest (Kevin 11 Oct: "an idle position between, looks weird"). Every take
+    // starts from that pose, so it joins cleanly. His idles play while the table bets and after the round.
+    // (Emil 12 Oct tried idles mid-round with a cross-fade: two keyed poses blended read as a ghost. The way forward is
+    // short idles from rest to rest that may finish before a card, the take then catching up.)
+    if (!manifest.idle.length || Date.now() < holdUntil || (dealer.ready && gameTable?.playing)) { running = false; return; }   // står på stillbilden
     const c = pickIdle();
     item = { url: c.url, sound: false, kind: "idle" };
   }
@@ -474,7 +476,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
       if(!url)return false;
       if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them
-      // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now fades to his still
+      // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now gives way to his still
       if(currentItem?.kind==='idle'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
