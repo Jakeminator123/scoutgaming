@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { resolve, dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { build } from '../../../ops/vercel-entry/build.mjs';
+import { build } from './player-ui-build.mjs';
 import { platformConfiguration } from '../lib/platform-routing.mjs';
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..');

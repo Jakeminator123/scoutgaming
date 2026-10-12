@@ -1,9 +1,9 @@
 import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, relative, dirname, join, sep } from 'node:path';
-import { resolveMediaPath } from '../../tools/media-layout.mjs';
+import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 
-const repo = fileURLToPath(new URL('../../', import.meta.url));
+const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const publicRoot = join(repo, 'web', 'public');
 const previewRoot = 'frontend-preview';
 const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
@@ -92,17 +92,17 @@ export function blackjackUrl(value, { local = false } = {}) {
 }
 export async function build({ origin = process.env.CROUPIER_GAME_ORIGIN, local = false, frontendPreview = false, output = new URL('./dist/', import.meta.url) } = {}) {
   const href = blackjackUrl(origin, { local });
-  const source = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  const source = await readFile(new URL('./player-ui-landing.html', import.meta.url), 'utf8');
   await mkdir(output, { recursive: true });
   await writeFile(new URL('index.html', output), source.replace('{{BLACKJACK_URL}}', href));
-  await copyFile(new URL('../../web/public/blackjack-entry.css', import.meta.url), new URL('style.css', output));
+  await copyFile(new URL('../../../web/public/blackjack-entry.css', import.meta.url), new URL('style.css', output));
   if (frontendPreview) await writePreview(output);
   console.log('Statisk ingång byggd. Ingen deployment utförd.');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.some(arg => !['--local', '--frontend-preview'].includes(arg))) throw Error('Använd node build.mjs [--local] [--frontend-preview].');
+    if (args.some(arg => !['--local', '--frontend-preview'].includes(arg))) throw Error('Använd node apps/croupier-frontend/tools/player-ui-build.mjs [--local] [--frontend-preview].');
     await build({ local: args.includes('--local'), frontendPreview: args.includes('--frontend-preview') });
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
