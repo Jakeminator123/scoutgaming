@@ -107,6 +107,25 @@ diskreserv eller fröprojekt. Den långa listan står i den frysta handoffen und
 
 ## 2. Öppna kontroller och kända fel
 
+### Bakgrundsklipp och bordsstorlek, 12 oktober 2026
+
+Sammansättningens Bakgrund har nu valfria ljudlösa händelse-/intervallklipp
+med maxlängd, tid mellan starter och rullande minutgränser. Basbild eller
+videoloop återkommer efter slut/fel; dealerns tal och spelklocka är separata.
+Bordet har procentfält och förstora/förminska per mobil-/datorformat.
+Kontrakt, frysta lagergrants och capability 8 skyddar beständiga skrivningar.
+Ingen SQL-migration, källflytt eller produktdataändring ingår; leveransen
+bygger vidare på mergad V1 `dd837cf4`.
+
+Riktade regressionsprov och nio verkliga Chrome-scenprov passerar, inklusive
+två på varandra följande bakgrundsfilmer och felåtergång. Mediaaudit med
+`--probe` bekräftar oförändrade fyra historiska set. Testerna använder
+syntetiskt material och ger inget nytt läppsynkgodkännande. Full build/hook
+och exakt driftkvitto kontrolleras vid leverans. Spelrummens nya regler ska
+väljas och publiceras uttryckligen i Studio. Användarguide och tekniskt
+kontrakt finns i `lab/docs/README.md` respektive
+`docs/LOCAL-PRESENTATION-RUNTIME.md`; A20/A21 bevarar modulerna vid flytt.
+
 ### Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
 
 Jakobs mål: en mycket enklare modell. Behåll sammansättningen (dealer, bord,

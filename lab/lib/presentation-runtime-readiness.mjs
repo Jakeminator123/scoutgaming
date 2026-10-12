@@ -27,7 +27,12 @@ function documentFeatures(kind, value) {
   const frozenEvents = kind === 'presentation-package' && value?.schemaVersion === 3;
   const lifecycle = cascade || kind === 'project' && Object.hasOwn(value ?? {}, 'dealerTrash');
   const generic = dealers.some(id => id !== 'nora');
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle, dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade };
+  const backgroundPlayback = ['project', 'presentation-package'].includes(kind)
+    && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
+      .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
+      .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -49,6 +54,7 @@ function mutationFeatures(input) {
     lifecycle: features.some(value => value.lifecycle),
     resourceLifecycle: features.some(value => value.resourceLifecycle),
     cascade: features.some(value => value.cascade),
+    backgroundPlayback: features.some(value => value.backgroundPlayback),
   };
 }
 function trustedOrigin(env) {
@@ -90,6 +96,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.lifecycle || active.features.lifecycle)
       && (!features.resourceLifecycle || active.features.resourceLifecycle)
       && (!features.cascade || active.features.cascade)
+      && (!features.backgroundPlayback || active.features.backgroundPlayback)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -103,7 +110,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),
