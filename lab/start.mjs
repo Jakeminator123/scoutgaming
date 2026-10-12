@@ -10,6 +10,7 @@ import { createEmptyProject, validateProject } from './lib/studio-model.mjs';
 import { createProjectStore } from './lib/project-store.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 import { preparePreview } from './tools/prepare-preview.mjs';
+import { prepareDesignPreview } from './tools/prepare-design-preview.mjs';
 
 const profile = Object.freeze({id:'lissabon-stream-lane',productPort:4200,labPort:4201,generatedSpeech:true});
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -77,6 +78,7 @@ export async function main(args = process.argv.slice(2), { open = openBrowser, l
     const fixture = await startLocalComparison({ streamLane: profile.id,
       prepare: async session => {
         await preparePreview();
+        await prepareDesignPreview();
         if (!args.includes('--skip-build')) await buildLab(session);
       }, prepareStudio: prepareProject });
     console.log(`Lokalt Studio: ${fixture.labUrl}\nProvspel startas från en sparad sammansättning i Studio\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
@@ -106,6 +108,7 @@ export async function main(args = process.argv.slice(2), { open = openBrowser, l
     prepare: async session => {
       await prepareProject(studioDataDir);
       await preparePreview();
+      await prepareDesignPreview();
       if (!args.includes('--skip-build')) await buildLab(session);
     },
   });

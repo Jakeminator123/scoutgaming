@@ -110,6 +110,48 @@ diskreserv eller fröprojekt. Den långa listan står i den frysta handoffen und
 
 ## 2. Öppna kontroller och kända fel
 
+### Ny administration och lobby, 12 oktober 2026
+
+`/admin` och `/admin/lobby` är separata interna arbetsytor. `/control`,
+`/partner` och `/play` behåller sina befintliga roller. Den gröna toppbaren
+och den simulerade rollväljaren är borta; nivålänkar går till befintliga portaler.
+N1 kontrolleras av `authorizeUiPage` på varje dokument, tillgång och kataloganrop.
+En partner- eller spelarinloggning ger inte intern åtkomst.
+
+`GET /admin/_data/catalog` läser samma scoped operatörsregister och sparade
+Studio-policy som produkten. Administrationen visar bolag, rum och dealers;
+lobbyn visar endast rum godkända av den kanoniska publicerade rumsväljaren.
+Publicerade rum behåller paketets frysta dealers även när rummet inte är live.
+Sparad, opublicerad sammansättning märks separat. Blackjack och roulette länkar
+till befintlig `/play/{game}` med `operator`, verkligt `table` och tillåten `dealer`.
+Spelmotorn omprövar behörighet och publicering vid inträde. Inga DB-skrivningar,
+migrationer, nya konton eller publiceringsåtgärder ingår i anslutningen.
+
+Registerfel stänger med tydlig felstatus utan exempeldata som reserv. Övriga
+adminvyer, såsom statistik, är kvar som uttryckligen märkta designexempel;
+deras simulerade ändringar påverkar inga register. Porträtt, insatser och
+statistik hittas inte på för riktiga bolag/dealers. Redigering sker tills vidare
+via kontextbevarande länkar till Control. Nuvarande Control ska inte ersättas
+innan arbetsytorna är accepterade.
+
+Källzippar och ursprungliga SHA-256: `packages/design-preview/source-provenance.json`.
+Zipparnas API:er, SQL och miljöinställningar importerades inte. Separata React/CSS-byggen
+bevarar Tailwind 3 respektive 4 och serveras från privata `lab/design-preview-build`.
+Svar är `private, no-store`; exakta sökvägar, filgränser, Range/HEAD och N1-returer
+kontrolleras. CSP tillåter endast anrop till samma origin och inga formulärpostningar.
+
+Start: `node lab/start.mjs --offline --no-open`. Offlinekörning har INTE produktionsregister
+och visar därför datakällans otillgänglighet. Bygg: `npm --prefix packages/design-preview run build`.
+Studio-start/-bygge förbereder designerna och deras typkontroll automatiskt.
+Inga nya miljövariabler krävs i den befintliga native-deploymenten.
+
+Verifierat: designbyggen, Studio-produktionsbygge/typkontroll och 32 riktade
+auth-/routing-/katalogtest på Node 24.21.0. Katalogtesterna ingår nu i full hook.
+En separat granskning hittade och fick en regression för sammanblandning av sparade
+och publicerade dealers. Mediebaslinje är inte nytt läppsynkgodkännande.
+Publicerad N1-läsning och hela inloggade flödet är separata acceptanssteg;
+lokal offlinevy eller injicerade testdata bevisar inte dem.
+
 ### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 
 Molnets strömmande tal (`overlapAudio` på cloud-konfigurationen, ingen ny miljövariabel) startar Cartesia först efter att RunPod-jobbet är accepterat, medan workern kopplar upp. PCM stannar i spelprocessen, högst 25 sekunder, och går in i reläet först när webbläsarens engångsbiljett är autentiserad. Avbrott från ägare, spelare eller stängning stoppar hämtningen direkt, även medan GPU-väntan pågår. Ett nekat GPU-jobb startar ingen röst. Utan GPU-session, inklusive lokal förhandsvisning, startar rösten som tidigare först vid ansluten spelare.

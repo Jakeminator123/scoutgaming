@@ -26,6 +26,7 @@ import { presentationCapabilitiesForVersion } from '../../web/presentation-capab
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
+import { createDesignCatalogReader } from './design-preview-catalog.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import { readFile } from 'node:fs/promises';
@@ -164,6 +165,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
+      readDesignCatalog: createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }),
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction, ...media });

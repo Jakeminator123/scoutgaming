@@ -130,6 +130,9 @@ export function platformRoute(url, config) {
   if(workspace?.canonicalPath && workspace.publicPath!==workspace.canonicalPath){
     return {kind:'redirect',destination:`${config.publicOrigin}${workspace.canonicalPath}${url.search}`};
   }
+  if (path === '/admin' || path.startsWith('/admin/')) {
+    return { kind: 'lab', destination: `${config.labUiOrigin}/studio${path}${url.search}` };
+  }
   if (workspace && (path === '/control' || path.startsWith('/control/') || path === '/partner' || path.startsWith('/partner/'))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }

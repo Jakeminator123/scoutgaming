@@ -20,6 +20,7 @@ run_node_tests() {
   fi
 }
 node docs/system-map/verify.mjs --check
+run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
 run_node_tests ordning/verktyg/raderingsgrind.test.mjs

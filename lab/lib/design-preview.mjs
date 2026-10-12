@@ -1,0 +1,57 @@
+import { lstat, realpath } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
+import { basename, extname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { parseByteRange } from './preview-files.mjs';
+import { designPreviewPages } from './design-preview-paths.mjs';
+
+const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
+export const designPreviewDirectory = resolve(labRoot, 'design-preview-build');
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4', '.woff2': 'font/woff2' };
+export function designPreviewFile(segments = []) {
+  if (!Array.isArray(segments) || segments.length > 8
+    || segments.some(part => typeof part !== 'string' || !/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(part) || part.includes('..'))) return null;
+  const path = segments.join('/');
+  if (designPreviewPages.has(path)) return 'admin/index.html';
+  if (path === 'lobby') return 'lobby/index.html';
+  if (segments[0] !== '_assets' || !['admin', 'lobby', 'fonts'].includes(segments[1]) || segments.length < 3) return null;
+  const file = segments.slice(1).join('/');
+  return types[extname(file)] && extname(file) !== '.html' ? file : null;
+}
+export const designPreviewHeaders = Object.freeze({
+  'Cache-Control': 'private, no-store', 'Vary': 'Cookie', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'self'; form-action 'none'; base-uri 'none'",
+});
+
+// Every document and asset goes through the same server-side staff authorization.
+// No preview endpoint accepts mutations or imports the exported template's APIs.
+/** @param {Request} request
+ * @param {string[]} segments
+ * @param {{ authorize: (request: Request) => Promise<void>, root?: string }} options */
+export async function serveDesignPreview(request, segments, { authorize, root = designPreviewDirectory }) {
+  if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
+  if (typeof authorize !== 'function') throw new Error('design_preview_authorization_required');
+  await authorize(new Request(request.url, { method: 'GET', headers: request.headers, signal: request.signal }));
+  const path = designPreviewFile(segments);
+  if (!path) return new Response(null, { status: 404, headers: designPreviewHeaders });
+  let file, info;
+  try {
+    const base = await realpath(root);
+    file = await realpath(resolve(base, path));
+    const distance = relative(base, file);
+    if (!distance || distance === '..' || distance.startsWith('..' + sep) || isAbsolute(distance)) throw new Error('outside_preview');
+    info = await lstat(file);
+    if (!info.isFile()) throw new Error('not_file');
+  } catch { return new Response(null, { status: 404, headers: designPreviewHeaders }); }
+  const headers = { ...designPreviewHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
+  const range = parseByteRange(request.headers.get('range'), info.size);
+  if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${info.size}` } });
+  const start = range?.start ?? 0, end = range?.end ?? info.size - 1;
+  headers['Content-Length'] = String(end - start + 1);
+  if (range) headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;
+  const body = request.method === 'HEAD' || info.size === 0 ? null : Readable.toWeb(createReadStream(file, { start, end }));
+  return new Response(body, { status: range ? 206 : 200, headers });
+}

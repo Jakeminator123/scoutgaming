@@ -1,0 +1,13 @@
+@font-face{font-family:PreviewInter;src:url('/admin/_assets/fonts/inter.woff2') format('woff2');font-weight:100 900;font-display:swap}
+@font-face{font-family:PreviewSpace;src:url('/admin/_assets/fonts/space.woff2') format('woff2');font-weight:300 700;font-display:swap}
+@font-face{font-family:PreviewMono;src:url('/admin/_assets/fonts/mono.woff2') format('woff2');font-weight:100 800;font-display:swap}
+:root{--font-sans:PreviewSpace;--font-mono:PreviewMono;--font-inter:PreviewInter;--font-geist-mono:PreviewMono;--font-cormorant:Georgia;--preview-banner-height:0px}
+body{margin:0}.preview-banner{height:var(--preview-banner-height);box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:8px 20px;background:#18252a;color:#f3f4ee;font:12px/1.4 PreviewInter,Arial,sans-serif;border-bottom:1px solid #36505a;position:relative;z-index:100}
+.preview-banner strong{white-space:nowrap;color:#d6ff3a}.preview-banner span{flex:1}.preview-banner a{color:#fff;text-decoration:underline;white-space:nowrap}
+.preview-admin{height:100dvh}.preview-mobile-nav{display:none}
+.preview-admin section[aria-label="Klippkarta"]{min-height:440px}
+.preview-lobby header{top:var(--preview-banner-height)}.preview-lobby .preview-banner{position:sticky;top:0}.preview-lobby section{scroll-margin-top:140px}
+.preview-modal::backdrop{background:#000b}
+.preview-modal{margin:auto;max-width:520px;background:#202321;border:1px solid #4a5146;padding:32px;border-radius:16px;color:#f2f1ed;font:16px/1.6 PreviewInter,sans-serif}
+.preview-modal h2{font-size:24px}.preview-modal p{margin:16px 0}.preview-modal button{background:#d6ff3a;color:#161a13;padding:10px 16px;border-radius:20px}
+@media(max-width:767px){.preview-mobile-nav{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #33363b}.preview-mobile-nav select{max-width:75%;padding:8px;background:#232427;color:#f2f1ed}}
