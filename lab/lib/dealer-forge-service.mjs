@@ -26,6 +26,9 @@ export class ForgeError extends Error {
 }
 const fail = (message, status = 422, code = 'forge_invalid_request') => { throw new ForgeError(message, { status, code }); };
 const MAX_OUTPUT_BYTES = 256 * 1024 * 1024;
+// Leases are bounded by the route's maxDuration (120 s): a lease older than this belongs to a dead worker.
+const SUBMIT_LEASE_MS = 3 * 60_000;
+const COMMIT_LEASE_MS = 5 * 60_000;
 const MAX_ANCHOR_UPLOAD = 24 * 1024 * 1024;
 const MAX_REFERENCE_VIDEO = 60 * 1024 * 1024;
 
@@ -75,6 +78,22 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     const pathname = mediaBlobPath(`dealers/${dealerId}/source/anchors`, id, normalized.sha256, 'png');
     await privateMedia.put(pathname, normalized.bytes, { sha256: normalized.sha256, size: normalized.size, contentType: 'image/png', env: mediaOptions.env, cacheDir: mediaOptions.cacheDir });
     return { pathname, sha256: normalized.sha256, size: normalized.size, contentType: 'image/png', width: normalized.width, height: normalized.height };
+  }
+  /** The job row is already `submitting` (fresh insert or a CAS lease). Pay exactly once and record the outcome
+   *  on that row: running (task-ID), submit_unknown (ambiguous timeout, operator resolves) or failed (definite
+   *  rejection, nothing charged). A conflict on the final CAS means another worker owns the row; surface it. */
+  async function submitLeased(jobId, endpoint, params, client, result) {
+    let taskId = null, status = 'running', error = null;
+    try {
+      taskId = endpoint === 'text_to_image' ? await client.textToImage(params) : endpoint === 'avatar_videos' ? await client.avatarVideo(params) : await client.imageToVideo(params);
+    } catch (cause) {
+      if (cause instanceof RunwayError && cause.submitUnknown) { status = 'submit_unknown'; error = cause.message; }
+      else {
+        await store.updateJob(jobId, { expectedStatus: 'submitting', status: 'failed', error: String(cause?.message ?? 'Runway avvisade anropet.').slice(0, 2000) }).catch(() => {});
+        throw cause;
+      }
+    }
+    return store.updateJob(jobId, { expectedStatus: 'submitting', status, taskId, error, ...(result ? { result } : {}) });
   }
   const slotMedia = (projectValue, inventory, dealerId, slot) => slot.eventId
     ? dealerLibraryVideos(projectValue, inventory, dealerId).filter(video => mediaMatchesSlot(video, { eventId: slot.eventId, situation: slot.situation }))
@@ -334,14 +353,9 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       }
       const { params, summary } = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, body);
       const request = { plan, ...summary, slotLabel: slot.label, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
-      let taskId = null, status = 'running', error = null;
-      try {
-        taskId = plan.endpoint === 'text_to_image' ? await client.textToImage(params) : plan.endpoint === 'avatar_videos' ? await client.avatarVideo(params) : await client.imageToVideo(params);
-      } catch (cause) {
-        if (cause instanceof RunwayError && cause.submitUnknown) { status = 'submit_unknown'; error = cause.message; }
-        else throw cause;
-      }
-      return publicJob(await store.insertJob({ dealerId, slotId: slot.id, kind: slot.kind, status, taskId, request, error, actor }));
+      // Journal first, pay second: the `submitting` row exists before any Runway POST.
+      const created = await store.insertJob({ dealerId, slotId: slot.id, kind: slot.kind, status: 'submitting', request, actor });
+      return publicJob(await submitLeased(created.jobId, plan.endpoint, params, client));
     },
 
     /** Advance one job: read the Runway task; on success download, verify and commit into the exact slot. */
@@ -354,19 +368,37 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       const { value } = await project();
       const slot = slotById(value, job.slotId);
       const client = runway();
+      if (job.status === 'submitting') {
+        // A submitter that died mid-POST: we cannot know whether Runway received it. Never resubmit;
+        // after the lease expires the operator resolves it against the Runway portal (task-ID or cancel).
+        if (now() - job.updatedAt < SUBMIT_LEASE_MS) return publicJob(job);
+        return publicJob(await store.updateJob(jobId, { expectedStatus: 'submitting', status: 'submit_unknown', error: 'Inskicket avbröts utan svar från Runway. Kontrollera portalen: koppla task-ID eller avbryt.' }));
+      }
       if (job.status === 'queued' && job.request?.awaitingAvatar) {
-        const current = await profileOf(dealerId); const profile = current.profile;
+        const current = await profileOf(dealerId); let profile = current.profile;
         const fresh = profile.avatar?.id ? await client.avatar(profile.avatar.id) : null;
         if (!fresh || fresh.status === 'FAILED') return publicJob(await store.updateJob(jobId, { expectedStatus: 'queued', status: 'failed', error: `Runway kunde inte skapa avataren: ${fresh?.failureReason ?? 'avatar saknas'}`.slice(0, 2000) }));
         if (fresh.status !== 'READY') return publicJob(job);
-        const saved = await saveProfile(dealerId, current, { ...profile, avatar: { ...profile.avatar, status: 'READY' } }, actor);
-        const inventory = await videoRegistry();
-        const { params, summary } = await buildRunwayParams(client, slot, job.request.plan, saved.profile, value, inventory, dealerId, job.request.options ?? {});
-        let taskId = null, status = 'running', error = null;
-        try { taskId = await client.avatarVideo(params); } catch (cause) { if (cause instanceof RunwayError && cause.submitUnknown) { status = 'submit_unknown'; error = cause.message; } else throw cause; }
-        return publicJob(await store.updateJob(jobId, { expectedStatus: 'queued', status, taskId, error, result: { ...summary, awaitingAvatar: false } }));
+        // Take the lease before any paid call: a concurrent poller fails this CAS and cannot submit twice.
+        job = await store.updateJob(jobId, { expectedStatus: 'queued', status: 'submitting' });
+        let built;
+        try {
+          if (profile.avatar.status !== 'READY') profile = (await saveProfile(dealerId, current, { ...profile, avatar: { ...profile.avatar, status: 'READY' } }, actor)).profile;
+          const inventory = await videoRegistry();
+          built = await buildRunwayParams(client, slot, job.request.plan, profile, value, inventory, dealerId, job.request.options ?? {});
+        } catch (cause) {
+          // Nothing was paid yet; hand the lease back so the next poll retries the preparation.
+          await store.updateJob(jobId, { expectedStatus: 'submitting', status: 'queued', error: String(cause?.message ?? 'Förberedelsen misslyckades.').slice(0, 2000) }).catch(() => {});
+          throw cause;
+        }
+        return publicJob(await submitLeased(jobId, 'avatar_videos', built.params, client, { ...built.summary, awaitingAvatar: false }));
       }
-      if (job.status === 'committing') return publicJob(job);
+      if (job.status === 'committing') {
+        // A commit lease older than the function budget belongs to a dead worker. The paid output URL is
+        // still in result, so reclaim and register it instead of leaving the job stuck.
+        if (now() - job.updatedAt < COMMIT_LEASE_MS) return publicJob(job);
+        job = await store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: 'Registreringen avbröts; försöker igen.' });
+      }
       if (job.status !== 'generated') {
         if (!job.taskId) return publicJob(job);
         const task = await client.task(job.taskId);
@@ -379,6 +411,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       }
       // Exactly one poller commits: CAS generated → committing.
       job = await store.updateJob(jobId, { expectedStatus: 'generated', status: 'committing' });
+      if (!job.result?.output?.[0]) return publicJob(await store.updateJob(jobId, { expectedStatus: 'committing', status: 'failed', error: 'Resultatadress saknas; jobbet kan inte registreras.' }));
       try {
         const bytes = await client.download(job.result.output[0], { maxBytes: MAX_OUTPUT_BYTES });
         const inventory = await videoRegistry();
@@ -400,6 +433,8 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       const job = await store.getJob(jobId);
       if (!job || job.dealerId !== dealerId) fail('Jobbet finns inte.', 404, 'forge_job_unknown');
       if (!ACTIVE_STATUSES.includes(job.status)) return publicJob(job);
+      // A live submit/commit lease must finish (or expire) first; cancelling it would hide a paid task.
+      if (['submitting', 'committing'].includes(job.status)) fail('Jobbet skickas eller registreras just nu; vänta på svar innan du avbryter.', 409, 'forge_job_busy');
       if (job.taskId && ['queued', 'running'].includes(job.status)) { try { await runway().cancelTask(job.taskId); } catch { /* Local cancel still records intent; Runway may have finished. */ } }
       return publicJob(await store.updateJob(jobId, { expectedStatus: job.status, status: 'cancelled', error: 'Avbrutet av operatör.' }));
     },

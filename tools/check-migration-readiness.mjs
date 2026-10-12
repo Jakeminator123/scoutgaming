@@ -47,9 +47,11 @@ function present(state, appliedNow) {
   const role = safeToken(state?.target?.role);
   const applied = versionList(state?.applied);
   const pending = versionList(state?.pending ?? state?.toApply);
-  if (!database || !role || !applied || !pending) return null;
+  // Deployment-optional versions never block readiness, but the operator must see them to run --apply.
+  const optionalPending = versionList(state?.optionalPending ?? []);
+  if (!database || !role || !applied || !pending || !optionalPending) return null;
   const ready = pending.length === 0;
-  const report = { database, role, applied, pending, ready };
+  const report = { database, role, applied, pending, optionalPending, ready };
   if (appliedNow !== undefined) {
     const now = versionList(appliedNow);
     if (!now) return null;
@@ -108,7 +110,7 @@ async function main() {
       console.error(safeLine(result.code) ? result.code : 'migration_check_unreachable');
       code = 2;
     } else {
-      const output = { database: result.database, role: result.role, applied: result.applied, pending: result.pending, ready: result.ready };
+      const output = { database: result.database, role: result.role, applied: result.applied, pending: result.pending, optionalPending: result.optionalPending, ready: result.ready };
       if (apply) output.appliedNow = result.appliedNow ?? [];
       const line = JSON.stringify(output);
       if (!safeLine(line)) {

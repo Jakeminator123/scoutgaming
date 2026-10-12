@@ -139,6 +139,63 @@ test('failed, cancelled and submit-unknown tasks are journaled without a second 
   assert.equal(submitted.length, 3);
 });
 
+test('paid calls are journaled first: a failing journal never reaches Runway, a definite rejection is recorded as failed, nothing is charged twice', async () => {
+  const { service, store, submitted } = fixture({ runway: { imageToVideo: async params => { submitted.push({ params }); throw new RunwayError('Runway avvisade anropet: content moderation', { status: 422, code: 'runway_request_failed' }); } } });
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const insert = store.insertJob; store.insertJob = async () => { throw new Error('journal down'); };
+  await assert.rejects(service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor), /journal down/);
+  assert.equal(submitted.length, 0, 'no Runway POST without a journal row');
+  store.insertJob = insert;
+  await assert.rejects(service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor), /content moderation/);
+  const jobs = await store.listJobs('paow');
+  assert.equal(jobs.length, 1); assert.equal(jobs[0].status, 'failed'); assert.equal(jobs[0].taskId, null); assert.match(jobs[0].error, /content moderation/);
+  assert.equal(submitted.length, 1);
+});
+
+test('two pollers on an avatar-queued job submit exactly one paid avatar video; the loser gets a conflict', async () => {
+  let avatarStatus = 'PROCESSING';
+  const { service, submitted } = fixture({ runway: { avatar: async () => ({ id: 'avatar-1', status: avatarStatus }) } });
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await service.createJob('paow', { slotId: 'speak.other/greeting' }, actor);
+  assert.equal(job.status, 'queued');
+  avatarStatus = 'READY';
+  const outcomes = await Promise.allSettled([service.pollJob('paow', job.jobId, actor), service.pollJob('paow', job.jobId, actor)]);
+  const fulfilled = outcomes.filter(row => row.status === 'fulfilled'), rejected = outcomes.filter(row => row.status === 'rejected');
+  assert.equal(fulfilled.length, 1); assert.equal(fulfilled[0].value.status, 'running');
+  assert.equal(rejected.length, 1); assert.equal(rejected[0].reason.code, 'studio_forge_conflict');
+  assert.equal(submitted.filter(row => row.endpoint === 'avatar_videos').length, 1);
+});
+
+test('a commit lease held by a dead worker is reclaimed after the lease window and the paid output is still registered', async () => {
+  const { service, store, tasks, registered, clock } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/idle.mp4'], credits: 25 });
+  // Simulate a worker that took the lease and died before registering.
+  Object.assign(store.jobs.get(job.jobId), { status: 'committing', result: { output: ['https://out/idle.mp4'], credits: 25, progress: 1 }, updatedAt: clock.now });
+  assert.equal((await service.pollJob('paow', job.jobId, actor)).status, 'committing', 'a fresh lease is left alone');
+  assert.equal(registered.length, 0);
+  clock.now += 6 * 60_000;
+  const done = await service.pollJob('paow', job.jobId, actor);
+  assert.equal(done.status, 'succeeded'); assert.equal(registered.length, 1); assert.equal(done.result.credits, 25);
+});
+
+test('a submit lease held by a dead worker becomes submit_unknown instead of a silent resubmit; live leases cannot be cancelled', async () => {
+  const { service, store, submitted, clock } = fixture();
+  await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await service.createJob('paow', { slotId: 'idle.ready/', quality: '720' }, actor);
+  Object.assign(store.jobs.get(job.jobId), { status: 'submitting', taskId: null, updatedAt: clock.now });
+  await assert.rejects(service.cancelJob('paow', job.jobId, actor), error => error.code === 'forge_job_busy');
+  assert.equal((await service.pollJob('paow', job.jobId, actor)).status, 'submitting');
+  clock.now += 4 * 60_000;
+  const stale = await service.pollJob('paow', job.jobId, actor);
+  assert.equal(stale.status, 'submit_unknown'); assert.match(stale.error, /Kontrollera portalen/);
+  assert.equal(submitted.length, 1, 'no second paid submission');
+  const resolved = await service.resolveUnknown('paow', job.jobId, { taskId: job.taskId }, actor);
+  assert.equal(resolved.status, 'running');
+  assert.equal((await service.cancelJob('paow', job.jobId, actor)).status, 'cancelled');
+});
+
 test('pose job adopts the generated REDO anchor; table and background jobs become Forge layer assets in the project', async () => {
   const { service, tasks, documents, blobs } = fixture();
   await service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);

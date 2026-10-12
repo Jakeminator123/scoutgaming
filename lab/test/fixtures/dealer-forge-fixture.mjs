@@ -17,7 +17,7 @@ export function fakeImages() {
     backgroundLayer: async bytes => { const out = Buffer.concat([Buffer.from('RIFF....WEBP'), bytes.subarray(0, 4)]); return { bytes: out, width: 1920, height: 1080, contentType: 'image/webp', sha256: sha(out), size: out.byteLength }; } };
 }
 
-export function fakeStore() {
+export function fakeStore(now = () => 1_700_000_000_000) {
   const profiles = new Map(), jobs = new Map(); let ready = true, seq = 0;
   return { profiles, jobs, setReady: value => { ready = value; },
     async ready() { return ready; },
@@ -27,11 +27,11 @@ export function fakeStore() {
       if (expectedRevision === null ? current : current?.revision !== expectedRevision) throw Object.assign(new Error('conflict'), { statusCode: 409, code: 'studio_forge_conflict' });
       const next = { dealerId, revision: (current?.revision ?? 0) + 1, profile: structuredClone(profile) }; profiles.set(dealerId, next); return structuredClone(next);
     },
-    async insertJob(row) { const job = { ...structuredClone(row), jobId: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, provider: 'runway', createdAt: seq, updatedAt: seq, taskId: row.taskId ?? null, result: row.result ?? null, error: row.error ?? null }; jobs.set(job.jobId, job); return structuredClone(job); },
+    async insertJob(row) { const job = { ...structuredClone(row), jobId: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, provider: 'runway', createdAt: now(), updatedAt: now(), taskId: row.taskId ?? null, result: row.result ?? null, error: row.error ?? null }; jobs.set(job.jobId, job); return structuredClone(job); },
     async getJob(id) { return jobs.get(id) ? structuredClone(jobs.get(id)) : null; },
     async updateJob(id, { expectedStatus, status, taskId, result, error }) {
       const job = jobs.get(id); if (!job || (expectedStatus && job.status !== expectedStatus)) throw Object.assign(new Error('conflict'), { statusCode: 409, code: 'studio_forge_conflict' });
-      Object.assign(job, { status, taskId: taskId ?? job.taskId, result: result === undefined || result === null ? job.result : structuredClone(result), error: error ?? null, updatedAt: ++seq }); return structuredClone(job);
+      Object.assign(job, { status, taskId: taskId ?? job.taskId, result: result === undefined || result === null ? job.result : structuredClone(result), error: error ?? null, updatedAt: now() }); return structuredClone(job);
     },
     async listJobs(dealerId) { return [...jobs.values()].filter(job => job.dealerId === dealerId).map(job => structuredClone(job)).reverse(); } };
 }
@@ -71,9 +71,10 @@ export function fixture({ runway: runwayOverrides = {}, project } = {}) {
   const projectSaves = [];
   const gamePolicy = { projectStore: ({ actor }) => ({ save: async (next, expectedRevision) => { projectSaves.push({ actor, next }); return repository.saveDocument('project', { expectedRevision, value: next }); } }) };
   const videoRegistry = async () => ({ videos: [...media.values()].map(row => ({ id: row.id, label: row.classification.label, dealer: row.classification.dealerId, classification: row.classification, sha256: row.sha256, available: true, previewUrl: `/api/videos/${row.id}` })) });
-  const store = fakeStore();
+  const clock = { now: 1_700_000_000_000 };
+  const store = fakeStore(() => clock.now);
   const service = createDealerForgeService({ repository, scope, env: { RUNWAY_API_KEY: 'test-key-0123456789abcdef', CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'x' }, mutationTransaction: async work => work(),
-    gamePolicy, videoRegistry, validateProjectBindings: async () => {}, now: () => 1_700_000_000_000, runwayFactory: () => runway, store, images: fakeImages(), privateMedia });
-  return { service, store, repository, runway, tasks, submitted, registered, blobs, documents, projectSaves, media, failPut };
+    gamePolicy, videoRegistry, validateProjectBindings: async () => {}, now: () => clock.now, runwayFactory: () => runway, store, images: fakeImages(), privateMedia });
+  return { service, store, repository, runway, tasks, submitted, registered, blobs, documents, projectSaves, media, failPut, clock };
 }
 

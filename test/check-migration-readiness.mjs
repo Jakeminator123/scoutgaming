@@ -49,8 +49,25 @@ test('an empty pending ledger is ready and the JSON omits the connection string'
   assert.equal(result.exitCode, 0);
   assert.deepEqual(result.applied, ['001', '002', '003', '004', '005']);
   assert.deepEqual(result.pending, []);
+  assert.deepEqual(result.optionalPending, []);
   assert.equal(result.database, 'croupier');
   assert.equal(result.role, 'app');
+  assertNoSecret(result);
+});
+
+test('a deployment-optional version is reported separately and never blocks readiness', async () => {
+  const pool = fakePool({ target: [{ database: 'croupier', role: 'app', address: secret, port: 5432 }] });
+  const result = await checkMigrationReadiness({
+    pool,
+    plan: async ({ pool: given }) => {
+      const client = await given.connect();
+      const row = (await client.query('/* studio-migrations:target */ SELECT current_database() AS database, current_user AS role')).rows[0];
+      client.release();
+      return { target: row, applied: ['001', '002', '003', '004', '005', '006', '007'].map(version => ({ version, checksum: secret })), pending: [], optionalPending: [{ version: '008', file: '008-dealer-forge.sql', checksum: secret }] };
+    },
+  });
+  assert.equal(result.ready, true); assert.equal(result.exitCode, 0);
+  assert.deepEqual(result.pending, []); assert.deepEqual(result.optionalPending, ['008']);
   assertNoSecret(result);
 });
 
